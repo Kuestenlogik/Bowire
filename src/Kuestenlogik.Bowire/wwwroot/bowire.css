@@ -11464,6 +11464,83 @@ model picker wrap */
 .bowire-settings-ai-result.ok { color: var(--bowire-success, #6ad27a); }
 .bowire-settings-ai-result.err { color: var(--bowire-error, #d27a6a); }
 .bowire-settings-model-wrap { display: flex; align-items: center; }
+
+/* #309 — Discovery → Catalogue providers section. Same visual
+   vocabulary as the AI tab (#63): status badge across the top, then
+   the picker, then provider-specific fields, then an action row. */
+.bowire-settings-catalogue-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: var(--bowire-radius-sm);
+    margin-bottom: 14px;
+    border: 1px solid var(--bowire-border);
+    background: var(--bowire-bg-subtle, rgba(255, 255, 255, 0.02));
+}
+.bowire-settings-catalogue-status.live { border-color: var(--bowire-success, #6ad27a); color: var(--bowire-success, #6ad27a); }
+.bowire-settings-catalogue-status.idle { color: var(--bowire-text-tertiary); }
+.bowire-settings-catalogue-status-text { font-weight: 500; }
+.bowire-settings-catalogue-status-source {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    padding: 1px 8px;
+    border: 1px solid var(--bowire-border);
+    border-radius: 10px;
+    background: var(--bowire-bg);
+}
+.bowire-settings-catalogue-status-count {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.bowire-settings-catalogue-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+.bowire-settings-catalogue-provider {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-bg-subtle, rgba(255, 255, 255, 0.02));
+    cursor: pointer;
+    transition: border-color 0.1s ease-in-out, background-color 0.1s ease-in-out;
+}
+.bowire-settings-catalogue-provider:hover { border-color: var(--bowire-border-strong, var(--bowire-border)); }
+.bowire-settings-catalogue-provider.is-selected {
+    border-color: var(--bowire-accent, #4f7cd6);
+    background: var(--bowire-bg-elevated, rgba(255, 255, 255, 0.04));
+}
+.bowire-settings-catalogue-provider input[type="radio"] { margin-top: 3px; flex-shrink: 0; }
+.bowire-settings-catalogue-provider-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.bowire-settings-catalogue-provider-label { font-size: 13px; font-weight: 500; color: var(--bowire-text); }
+.bowire-settings-catalogue-provider-desc { font-size: 12px; color: var(--bowire-text-tertiary); line-height: 1.4; }
+
+.bowire-settings-catalogue-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+.bowire-settings-catalogue-result {
+    margin-top: 10px;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: var(--bowire-radius-sm);
+    border: 1px solid var(--bowire-border);
+    background: var(--bowire-bg-subtle, rgba(255, 255, 255, 0.02));
+}
+.bowire-settings-catalogue-result.ok { border-color: var(--bowire-success, #6ad27a); color: var(--bowire-success, #6ad27a); }
+.bowire-settings-catalogue-result.err { border-color: var(--bowire-error, #d27a6a); color: var(--bowire-error, #d27a6a); }
 /* Shortcuts table */
 .bowire-settings-shortcuts { display: flex; flex-direction: column; gap: 4px; }
 .bowire-settings-shortcut-row { display: flex; align-items: center; gap: 12px; padding: 4px 0; font-size: 13px; color: var(--bowire-text); }

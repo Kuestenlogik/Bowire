@@ -63,6 +63,12 @@ public static class BowireCatalogueServiceCollectionExtensions
                 .Bind(configuration.GetSection("Bowire:Discovery:Catalogue:Consul"));
 
         services.TryAddSingleton(sp => BuildAccessor(sp));
+        // #309 — the override store applies the persisted UI override
+        // (~/.bowire/catalogue-config.json) on first construction.
+        // Singleton so the file is read at most once per process.
+        services.TryAddSingleton(sp => new BowireCatalogueOverrideStore(
+            sp.GetRequiredService<BowireCatalogueProviderAccessor>(),
+            sp.GetService<ILoggerFactory>()));
         return services;
     }
 
@@ -84,6 +90,9 @@ public static class BowireCatalogueServiceCollectionExtensions
         services.AddOptions<BowireConsulCatalogueOptions>();
 
         services.TryAddSingleton(sp => BuildAccessor(sp));
+        services.TryAddSingleton(sp => new BowireCatalogueOverrideStore(
+            sp.GetRequiredService<BowireCatalogueProviderAccessor>(),
+            sp.GetService<ILoggerFactory>()));
         return services;
     }
 
@@ -127,8 +136,19 @@ public static class BowireCatalogueServiceCollectionExtensions
 /// when no provider is configured — the endpoint reads
 /// <see cref="Provider"/> and treats null as "empty catalogue".
 /// </summary>
+/// <remarks>
+/// The accessor is mutable so #309's Settings → Catalogue providers
+/// UI can hot-swap the active provider at runtime. The boot-time
+/// provider (resolved from <c>appsettings.json</c>) is captured as
+/// <see cref="DefaultProvider"/>; a UI-driven override replaces
+/// <see cref="Provider"/> in place. Clearing the override restores
+/// the boot-time provider.
+/// </remarks>
 public sealed class BowireCatalogueProviderAccessor
 {
+    private readonly object _lock = new();
+    private IBowireCatalogueProvider? _provider;
+
     /// <summary>
     /// Construct an accessor wrapping the resolved provider (or
     /// <c>null</c> when no provider is configured).
@@ -136,7 +156,8 @@ public sealed class BowireCatalogueProviderAccessor
     /// <param name="provider">The active provider, or <c>null</c>.</param>
     public BowireCatalogueProviderAccessor(IBowireCatalogueProvider? provider)
     {
-        Provider = provider;
+        _provider = provider;
+        DefaultProvider = provider;
     }
 
     /// <summary>
@@ -144,5 +165,45 @@ public sealed class BowireCatalogueProviderAccessor
     /// provider is configured. Consumers should treat <c>null</c> as
     /// "no catalogue" — symmetric with an empty fetch result.
     /// </summary>
-    public IBowireCatalogueProvider? Provider { get; }
+    public IBowireCatalogueProvider? Provider
+    {
+        get { lock (_lock) return _provider; }
+    }
+
+    /// <summary>
+    /// The boot-time provider resolved from <c>appsettings.json</c>.
+    /// Captured at construction so a UI override can be cleared and
+    /// the appsettings fallback restored without re-running
+    /// <see cref="BowireCatalogueProviderRegistry.Resolve"/>.
+    /// </summary>
+    public IBowireCatalogueProvider? DefaultProvider { get; }
+
+    /// <summary>
+    /// Whether a UI-driven override is currently active. When
+    /// <c>false</c>, <see cref="Provider"/> equals
+    /// <see cref="DefaultProvider"/> (the appsettings fallback).
+    /// </summary>
+    public bool HasOverride { get; private set; }
+
+    /// <summary>
+    /// Replace the active provider — used by the Settings →
+    /// Catalogue providers UI (#309) to hot-swap at runtime.
+    /// Pass <c>null</c> to fall back to <see cref="DefaultProvider"/>.
+    /// </summary>
+    public void SetOverride(IBowireCatalogueProvider? overrideProvider)
+    {
+        lock (_lock)
+        {
+            if (overrideProvider is null)
+            {
+                _provider = DefaultProvider;
+                HasOverride = false;
+            }
+            else
+            {
+                _provider = overrideProvider;
+                HasOverride = true;
+            }
+        }
+    }
 }

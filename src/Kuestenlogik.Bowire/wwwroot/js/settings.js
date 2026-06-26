@@ -44,7 +44,11 @@
             leaf('modules', 'Modules', 'plug'),
             leaf('shortcuts', 'Shortcuts', 'list'),
             leaf('data', 'Data', 'trash'),
-            leaf('ai', 'Assistant', 'spark')
+            leaf('ai', 'Assistant', 'spark'),
+            // #309 — Catalogue provider picker. Sits next to Assistant
+            // because both are "what backend talks to Bowire": Assistant
+            // is the AI backend, Discovery is the URL catalogue backend.
+            leaf('discovery', 'Discovery', 'search')
         ];
 
         // Per-plugin children. The Plugins group node itself routes to
@@ -136,6 +140,16 @@
         // re-fetches plugin data. See pluginsTabFetchedThisOpen in
         // renderSettingsPlugins() for the loop-prevention story.
         pluginsTabFetchedThisOpen = false;
+        // #309 — drop the per-open transient result strips so the
+        // operator doesn't see a stale "Saved" / "Test failed" line
+        // next time they open the Discovery tab. Server-side override
+        // state will re-fetch on next open.
+        if (typeof discoveryState === 'object' && discoveryState) {
+            discoveryState.loaded = false;
+            discoveryState.saveResult = null;
+            discoveryState.testResult = null;
+            discoveryState.refreshResult = null;
+        }
         renderSettingsDialog();
     }
 
@@ -206,6 +220,8 @@
             rightPanel.appendChild(renderSettingsData());
         } else if (settingsTab === 'ai') {
             rightPanel.appendChild(renderSettingsAi());
+        } else if (settingsTab === 'discovery') {
+            rightPanel.appendChild(renderSettingsDiscovery());
         } else if (settingsTab === 'plugins') {
             rightPanel.appendChild(renderSettingsPlugins());
         } else if (settingsTab === 'workspace') {
@@ -1313,6 +1329,571 @@
         ));
 
         return section;
+    }
+
+    // ---- #309 Discovery → Catalogue providers ----
+    //
+    // Configure the URL catalogue provider that #136 shipped as a
+    // server-side seam. Today every flip of the provider required an
+    // appsettings edit + restart; this section drives the runtime
+    // surface POST /api/catalogue/config exposes — pick a provider,
+    // fill its config, save. Test connection hits GET /api/catalogue/info
+    // (always 200, so it tells the operator "the wiring is up" rather
+    // than "the upstream is alive"). Refresh now hits
+    // POST /api/catalogue/refresh and surfaces the live entry count.
+    //
+    // Persistence layers:
+    //   - Server keeps the canonical config in ~/.bowire/catalogue-config.json
+    //     (BowireCatalogueOverrideStore). Survives restart, applies to
+    //     every workspace because catalogue is process-wide by design
+    //     (#136 ADR: one provider per process).
+    //   - The Settings UI ALSO mirrors the form fields per-workspace in
+    //     localStorage so an operator who switches workspaces and re-
+    //     opens this tab sees the form pre-filled with that workspace's
+    //     preferred config. Saving from the UI then pushes that config
+    //     to the server. Falls back to appsettings (no override file)
+    //     when the operator hasn't touched the UI.
+
+    var discoveryState = {
+        loaded: false,
+        loading: false,
+        info: null,             // last /api/catalogue/info body
+        override: null,         // last /api/catalogue/config body
+        draft: null,            // editable form values
+        testing: false,
+        testResult: null,       // { kind: 'ok'|'err', text }
+        refreshing: false,
+        refreshResult: null,    // { kind: 'ok'|'err', text, count }
+        saving: false,
+        saveResult: null,
+        entryCount: null        // last known entries.length
+    };
+
+    function discoveryPrefix() {
+        return (typeof config !== 'undefined' && config && config.prefix) ? config.prefix : '';
+    }
+
+    function _discoveryWsKey() {
+        // wsKey() lives in prologue.js; guard for boot order.
+        try {
+            if (typeof wsKey === 'function') return wsKey('bowire_catalogue_draft');
+        } catch { /* ignore */ }
+        return 'bowire_catalogue_draft';
+    }
+
+    function loadDiscoverySettings(force) {
+        if (discoveryState.loading) return;
+        if (discoveryState.loaded && !force) return;
+        discoveryState.loading = true;
+        var p = discoveryPrefix();
+        Promise.all([
+            fetch(p + '/api/catalogue/info').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+            fetch(p + '/api/catalogue/config').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+        ]).then(function (results) {
+            discoveryState.info = results[0];
+            discoveryState.override = results[1];
+            discoveryState.loaded = true;
+            discoveryState.loading = false;
+            discoveryState.draft = _seedDiscoveryDraft(discoveryState.override);
+            // Try to read a workspace-scoped draft override so an
+            // operator who saved a form for this workspace sees it on
+            // re-open even if the server-side override has since
+            // changed (e.g. another workspace overwrote it).
+            try {
+                var raw = localStorage.getItem(_discoveryWsKey());
+                if (raw) {
+                    var parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed === 'object') {
+                        discoveryState.draft = Object.assign(_seedDiscoveryDraft(null), parsed);
+                    }
+                }
+            } catch { /* ignore */ }
+            if (settingsOpen && settingsTab === 'discovery') renderSettingsDialog();
+        });
+    }
+
+    function _seedDiscoveryDraft(override) {
+        var draft = {
+            providerId: '',
+            localPath: '',
+            httpUrl: '',
+            httpAuthorization: '',
+            httpAuthorizationSet: false,
+            consulAddress: '',
+            consulToken: '',
+            consulTokenSet: false,
+            consulDatacenter: '',
+            consulTag: '',
+            consulScheme: 'http'
+        };
+        if (override && override.hasOverride) {
+            draft.providerId = override.provider || '';
+            if (override.local) draft.localPath = override.local.path || override.local.Path || '';
+            if (override.http) {
+                draft.httpUrl = override.http.url || override.http.Url || '';
+                var auth = override.http.authorization || override.http.Authorization || '';
+                draft.httpAuthorizationSet = auth === '__set__';
+            }
+            if (override.consul) {
+                draft.consulAddress = override.consul.address || override.consul.Address || '';
+                var tok = override.consul.token || override.consul.Token || '';
+                draft.consulTokenSet = tok === '__set__';
+                draft.consulDatacenter = override.consul.datacenter || override.consul.Datacenter || '';
+                draft.consulTag = override.consul.tag || override.consul.Tag || '';
+                draft.consulScheme = override.consul.scheme || override.consul.Scheme || 'http';
+            }
+        }
+        return draft;
+    }
+
+    function _persistDiscoveryDraft() {
+        try {
+            // Don't store the secret cleartext in localStorage — only
+            // remember which fields the operator filled in (the server
+            // is the authority for the actual token / auth header).
+            var sanitised = Object.assign({}, discoveryState.draft);
+            sanitised.httpAuthorization = '';
+            sanitised.consulToken = '';
+            localStorage.setItem(_discoveryWsKey(), JSON.stringify(sanitised));
+        } catch { /* ignore */ }
+    }
+
+    function renderSettingsDiscovery() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        section.appendChild(el('h3', {
+            className: 'bowire-settings-section-title',
+            textContent: 'Catalogue providers'
+        }));
+        section.appendChild(el('div', {
+            className: 'bowire-settings-section-hint',
+            textContent: 'Pick where Bowire reads its URL catalogue from. Local file, a remote JSON document, or a Consul agent. Saving from this UI overrides whatever Bowire:Discovery:Catalogue in appsettings.json sets; clearing the override falls back to appsettings.'
+        }));
+
+        if (!discoveryState.loaded) {
+            section.appendChild(el('p', {
+                className: 'bowire-settings-help',
+                textContent: 'Loading catalogue configuration…'
+            }));
+            loadDiscoverySettings(false);
+            return section;
+        }
+
+        var info = discoveryState.info || {};
+        var override = discoveryState.override || {};
+        var draft = discoveryState.draft;
+
+        // Status banner — green when a provider is wired (override
+        // OR appsettings), grey when none, with a tag telling the
+        // operator which layer is active.
+        var statusClass = info.available
+            ? 'bowire-settings-catalogue-status live'
+            : 'bowire-settings-catalogue-status idle';
+        var statusText = info.available
+            ? 'Active: ' + (info.providerName || info.providerId || '(unknown)')
+            : 'No catalogue provider active. Pick one below to wire it up.';
+        var statusBar = el('div', { className: statusClass });
+        statusBar.appendChild(el('span', { className: 'bowire-settings-catalogue-status-text', textContent: statusText }));
+        if (info.available) {
+            statusBar.appendChild(el('span', {
+                className: 'bowire-settings-catalogue-status-source',
+                textContent: override.hasOverride ? 'Source: UI override' : 'Source: appsettings.json'
+            }));
+        }
+        if (typeof discoveryState.entryCount === 'number') {
+            statusBar.appendChild(el('span', {
+                className: 'bowire-settings-catalogue-status-count',
+                textContent: discoveryState.entryCount + ' entries'
+            }));
+        }
+        section.appendChild(statusBar);
+
+        // Provider radio picker — None / Local / HTTP / Consul.
+        // The "None" option clears the override (falls back to
+        // appsettings); the named options drive the form below.
+        var picker = el('div', { className: 'bowire-settings-catalogue-picker' });
+        var providers = [
+            { id: '', label: 'None', desc: 'No UI override — fall back to appsettings.json (or empty when neither is set).' },
+            { id: 'local', label: 'Local file', desc: 'Read entries from a JSON file on disk. Defaults to ~/.bowire/catalogue.json when no path is set.' },
+            { id: 'http', label: 'HTTP endpoint', desc: 'Fetch a catalogue document over HTTP(S). Optional Authorization header for token-gated endpoints.' },
+            { id: 'consul', label: 'Consul', desc: 'Query a Consul agent for service entries. Optional ACL token, DC, and tag filter.' }
+        ];
+        providers.forEach(function (p) {
+            var row = el('label', {
+                className: 'bowire-settings-catalogue-provider' + (draft.providerId === p.id ? ' is-selected' : '')
+            });
+            var radio = el('input', {
+                type: 'radio',
+                name: 'bowire-catalogue-provider',
+                value: p.id,
+                checked: draft.providerId === p.id,
+                onChange: function () {
+                    draft.providerId = p.id;
+                    _persistDiscoveryDraft();
+                    renderSettingsDialog();
+                }
+            });
+            row.appendChild(radio);
+            row.appendChild(el('div', { className: 'bowire-settings-catalogue-provider-text' },
+                el('div', { className: 'bowire-settings-catalogue-provider-label', textContent: p.label }),
+                el('div', { className: 'bowire-settings-catalogue-provider-desc', textContent: p.desc })
+            ));
+            picker.appendChild(row);
+        });
+        section.appendChild(picker);
+
+        // Provider-specific config fields.
+        if (draft.providerId === 'local') {
+            section.appendChild(renderSettingsRow('Catalogue path',
+                'Absolute or relative path to the JSON document. Leave blank to fall back to ~/.bowire/catalogue.json.',
+                function () {
+                    var input = el('input', {
+                        type: 'text',
+                        className: 'bowire-settings-input',
+                        value: draft.localPath || '',
+                        placeholder: '~/.bowire/catalogue.json'
+                    });
+                    input.oninput = function () { draft.localPath = input.value; _persistDiscoveryDraft(); };
+                    return input;
+                }));
+        } else if (draft.providerId === 'http') {
+            section.appendChild(renderSettingsRow('Catalogue URL',
+                'HTTPS endpoint returning the catalogue document shape ({ "version": 1, "entries": [...] }). Required.',
+                function () {
+                    var input = el('input', {
+                        type: 'url',
+                        className: 'bowire-settings-input',
+                        value: draft.httpUrl || '',
+                        placeholder: 'https://catalogue.example.com/bowire.json'
+                    });
+                    input.oninput = function () { draft.httpUrl = input.value; _persistDiscoveryDraft(); };
+                    return input;
+                }));
+            section.appendChild(renderSettingsRow('Authorization header',
+                'Sent verbatim as the Authorization request header (e.g. "Bearer eyJ..."). Leave blank to keep the existing stored value; clear to remove the stored value.',
+                function () {
+                    var wrap = el('div', { className: 'bowire-settings-apikey-wrap' });
+                    var input = el('input', {
+                        type: 'password',
+                        className: 'bowire-settings-input bowire-settings-apikey-input',
+                        value: '',
+                        placeholder: draft.httpAuthorizationSet ? '••••••••••• (leave blank to keep)' : 'Bearer …',
+                        autocomplete: 'off',
+                        spellcheck: false
+                    });
+                    input.oninput = function () { draft.httpAuthorization = input.value; };
+                    wrap.appendChild(input);
+                    if (draft.httpAuthorizationSet) {
+                        wrap.appendChild(el('button', {
+                            type: 'button',
+                            className: 'bowire-settings-apikey-clear',
+                            textContent: 'Clear stored header',
+                            onClick: function () {
+                                draft.httpAuthorization = '__clear__';
+                                draft.httpAuthorizationSet = false;
+                                renderSettingsDialog();
+                            }
+                        }));
+                    }
+                    return wrap;
+                }));
+        } else if (draft.providerId === 'consul') {
+            section.appendChild(renderSettingsRow('Consul address',
+                'Consul agent base URL — e.g. http://localhost:8500. Required.',
+                function () {
+                    var input = el('input', {
+                        type: 'url',
+                        className: 'bowire-settings-input',
+                        value: draft.consulAddress || '',
+                        placeholder: 'http://localhost:8500'
+                    });
+                    input.oninput = function () { draft.consulAddress = input.value; _persistDiscoveryDraft(); };
+                    return input;
+                }));
+            section.appendChild(renderSettingsRow('ACL token',
+                'Optional X-Consul-Token sent on every catalogue request. Leave blank to keep the existing stored value.',
+                function () {
+                    var wrap = el('div', { className: 'bowire-settings-apikey-wrap' });
+                    var input = el('input', {
+                        type: 'password',
+                        className: 'bowire-settings-input bowire-settings-apikey-input',
+                        value: '',
+                        placeholder: draft.consulTokenSet ? '••••••••••• (leave blank to keep)' : 'Consul ACL token',
+                        autocomplete: 'off',
+                        spellcheck: false
+                    });
+                    input.oninput = function () { draft.consulToken = input.value; };
+                    wrap.appendChild(input);
+                    if (draft.consulTokenSet) {
+                        wrap.appendChild(el('button', {
+                            type: 'button',
+                            className: 'bowire-settings-apikey-clear',
+                            textContent: 'Clear stored token',
+                            onClick: function () {
+                                draft.consulToken = '__clear__';
+                                draft.consulTokenSet = false;
+                                renderSettingsDialog();
+                            }
+                        }));
+                    }
+                    return wrap;
+                }));
+            section.appendChild(renderSettingsRow('Datacenter (optional)',
+                'When set, every catalogue API call is made with ?dc=<value>. Leave blank to let Consul pick the local DC.',
+                function () {
+                    var input = el('input', {
+                        type: 'text',
+                        className: 'bowire-settings-input',
+                        value: draft.consulDatacenter || '',
+                        placeholder: 'dc1'
+                    });
+                    input.oninput = function () { draft.consulDatacenter = input.value; _persistDiscoveryDraft(); };
+                    return input;
+                }));
+            section.appendChild(renderSettingsRow('Tag filter (optional)',
+                'When set, only services carrying this tag are surfaced. Useful for scoping to env:staging or team:payments.',
+                function () {
+                    var input = el('input', {
+                        type: 'text',
+                        className: 'bowire-settings-input',
+                        value: draft.consulTag || '',
+                        placeholder: 'bowire'
+                    });
+                    input.oninput = function () { draft.consulTag = input.value; _persistDiscoveryDraft(); };
+                    return input;
+                }));
+            section.appendChild(renderSettingsRow('URL scheme',
+                'Consul does not carry the scheme intrinsically; pick http or https for the materialised service URLs.',
+                function () {
+                    var select = el('select', { className: 'bowire-settings-select' });
+                    ['http', 'https'].forEach(function (s) {
+                        var opt = el('option', { value: s, textContent: s });
+                        if (s === draft.consulScheme) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+                    select.onchange = function () { draft.consulScheme = select.value; _persistDiscoveryDraft(); };
+                    return select;
+                }));
+        }
+
+        // Action row — Save / Test connection / Refresh now / Clear.
+        var actionRow = el('div', { className: 'bowire-settings-catalogue-actions' });
+
+        var saveBtn = el('button', {
+            className: 'bowire-settings-action-btn',
+            textContent: discoveryState.saving ? 'Saving…' : (draft.providerId ? 'Save and apply' : 'Clear UI override'),
+            disabled: discoveryState.saving ? true : undefined,
+            onClick: function () { saveDiscoverySettings(); }
+        });
+        actionRow.appendChild(saveBtn);
+
+        var testBtn = el('button', {
+            className: 'bowire-settings-action-btn bowire-settings-catalogue-test',
+            textContent: discoveryState.testing ? 'Testing…' : 'Test connection',
+            disabled: discoveryState.testing ? true : undefined,
+            title: 'Hits GET /api/catalogue/info — checks the catalogue wiring is up. Pass = a provider is active; does not contact the upstream until you press Refresh.',
+            onClick: function () { testDiscoveryConnection(); }
+        });
+        actionRow.appendChild(testBtn);
+
+        var refreshBtn = el('button', {
+            className: 'bowire-settings-action-btn bowire-settings-catalogue-refresh',
+            textContent: discoveryState.refreshing ? 'Refreshing…' : 'Refresh now',
+            disabled: discoveryState.refreshing ? true : undefined,
+            title: 'Hits POST /api/catalogue/refresh — fetches the catalogue from the active provider and reports the entry count.',
+            onClick: function () { refreshDiscoveryEntries(); }
+        });
+        actionRow.appendChild(refreshBtn);
+
+        section.appendChild(actionRow);
+
+        // Result strip — shows the last action outcome inline so the
+        // operator gets feedback without a toast going off-screen.
+        if (discoveryState.saveResult) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-catalogue-result ' + (discoveryState.saveResult.kind === 'ok' ? 'ok' : 'err'),
+                textContent: discoveryState.saveResult.text
+            }));
+        }
+        if (discoveryState.testResult) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-catalogue-result ' + (discoveryState.testResult.kind === 'ok' ? 'ok' : 'err'),
+                textContent: discoveryState.testResult.text
+            }));
+        }
+        if (discoveryState.refreshResult) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-catalogue-result ' + (discoveryState.refreshResult.kind === 'ok' ? 'ok' : 'err'),
+                textContent: discoveryState.refreshResult.text
+            }));
+        }
+
+        // Fallback hint — call out the layering so an operator who
+        // doesn't see the UI override applied understands why.
+        if (!override.hasOverride && info.available) {
+            section.appendChild(el('p', {
+                className: 'bowire-settings-help',
+                style: 'margin-top:10px;',
+                textContent: 'The active provider comes from appsettings.json (Bowire:Discovery:Catalogue:Provider = ' + (info.defaultProviderId || info.providerId) + '). Saving from this UI replaces it.'
+            }));
+        }
+
+        return section;
+    }
+
+    function _buildOverridePayload() {
+        var d = discoveryState.draft;
+        var payload = { provider: d.providerId || '' };
+        if (d.providerId === 'local') {
+            payload.local = { path: d.localPath || null };
+        } else if (d.providerId === 'http') {
+            payload.http = {
+                url: d.httpUrl || null,
+                // Empty string = "keep existing"; explicit "__clear__"
+                // wipes the stored secret server-side; anything else
+                // overwrites.
+                authorization: d.httpAuthorization === '' ? '__keep__' : d.httpAuthorization
+            };
+        } else if (d.providerId === 'consul') {
+            payload.consul = {
+                address: d.consulAddress || null,
+                token: d.consulToken === '' ? '__keep__' : d.consulToken,
+                datacenter: d.consulDatacenter || null,
+                tag: d.consulTag || null,
+                scheme: d.consulScheme || 'http'
+            };
+        }
+        return payload;
+    }
+
+    function saveDiscoverySettings() {
+        if (discoveryState.saving) return;
+        discoveryState.saving = true;
+        discoveryState.saveResult = null;
+        discoveryState.testResult = null;
+        renderSettingsDialog();
+        var p = discoveryPrefix();
+        var d = discoveryState.draft;
+        var req;
+        if (!d.providerId) {
+            // Clearing the override = DELETE /api/catalogue/config.
+            req = fetch(p + '/api/catalogue/config', { method: 'DELETE' });
+        } else {
+            req = fetch(p + '/api/catalogue/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(_buildOverridePayload())
+            });
+        }
+        req.then(function (r) {
+            return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; })
+                .catch(function () { return { ok: r.ok, status: r.status, body: null }; });
+        })
+            .then(function (resp) {
+                discoveryState.saving = false;
+                if (resp.ok) {
+                    discoveryState.saveResult = {
+                        kind: 'ok',
+                        text: d.providerId
+                            ? 'Saved. Active provider: ' + (resp.body && (resp.body.providerName || resp.body.providerId) || d.providerId) + '.'
+                            : 'UI override cleared. Falling back to appsettings.'
+                    };
+                    // Reload status + override so the UI mirrors the
+                    // server's view of the world.
+                    discoveryState.loaded = false;
+                    loadDiscoverySettings(true);
+                    _persistDiscoveryDraft();
+                } else {
+                    discoveryState.saveResult = {
+                        kind: 'err',
+                        text: (resp.body && resp.body.title) || ('Save failed (HTTP ' + resp.status + ').')
+                    };
+                }
+                renderSettingsDialog();
+            })
+            .catch(function (err) {
+                discoveryState.saving = false;
+                discoveryState.saveResult = { kind: 'err', text: 'Network error: ' + (err && err.message ? err.message : err) };
+                renderSettingsDialog();
+            });
+    }
+
+    function testDiscoveryConnection() {
+        if (discoveryState.testing) return;
+        discoveryState.testing = true;
+        discoveryState.testResult = null;
+        renderSettingsDialog();
+        var p = discoveryPrefix();
+        fetch(p + '/api/catalogue/info')
+            .then(function (r) {
+                return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; });
+            })
+            .then(function (resp) {
+                discoveryState.testing = false;
+                if (resp.ok && resp.body && resp.body.available) {
+                    discoveryState.testResult = {
+                        kind: 'ok',
+                        text: 'OK — ' + (resp.body.providerName || resp.body.providerId) + ' wired and reachable from this host.'
+                    };
+                } else if (resp.ok) {
+                    discoveryState.testResult = {
+                        kind: 'err',
+                        text: 'No provider active. Pick one + Save and try again.'
+                    };
+                } else {
+                    discoveryState.testResult = {
+                        kind: 'err',
+                        text: 'Test failed (HTTP ' + resp.status + ').'
+                    };
+                }
+                renderSettingsDialog();
+            })
+            .catch(function (err) {
+                discoveryState.testing = false;
+                discoveryState.testResult = { kind: 'err', text: 'Network error: ' + (err && err.message ? err.message : err) };
+                renderSettingsDialog();
+            });
+    }
+
+    function refreshDiscoveryEntries() {
+        if (discoveryState.refreshing) return;
+        discoveryState.refreshing = true;
+        discoveryState.refreshResult = null;
+        renderSettingsDialog();
+        var p = discoveryPrefix();
+        fetch(p + '/api/catalogue/refresh', { method: 'POST' })
+            .then(function (r) {
+                return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; });
+            })
+            .then(function (resp) {
+                discoveryState.refreshing = false;
+                if (resp.ok && resp.body) {
+                    var entries = Array.isArray(resp.body.entries) ? resp.body.entries : [];
+                    discoveryState.entryCount = entries.length;
+                    discoveryState.refreshResult = {
+                        kind: 'ok',
+                        text: 'Refreshed — ' + entries.length + ' entr' + (entries.length === 1 ? 'y' : 'ies') + ' from ' + (resp.body.providerName || resp.body.providerId || 'provider') + '.'
+                    };
+                    // Push the freshly-fetched entries through the
+                    // catalogue merge so the sidebar lights up without
+                    // a reload.
+                    if (typeof applyCatalogueToServerUrls === 'function') {
+                        applyCatalogueToServerUrls(resp.body);
+                        if (typeof render === 'function') render();
+                    }
+                } else {
+                    discoveryState.refreshResult = {
+                        kind: 'err',
+                        text: (resp.body && resp.body.title) || ('Refresh failed (HTTP ' + resp.status + ').'),
+                        count: null
+                    };
+                }
+                renderSettingsDialog();
+            })
+            .catch(function (err) {
+                discoveryState.refreshing = false;
+                discoveryState.refreshResult = { kind: 'err', text: 'Network error: ' + (err && err.message ? err.message : err) };
+                renderSettingsDialog();
+            });
     }
 
     // ---- Workspace pointer (#193 Phase 2 item 4) ----
