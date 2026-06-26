@@ -1,6 +1,15 @@
 ---
-summary: 'Intercepting MITM proxy that captures real client / server traffic as Bowire recordings. The auto-generated CA is installed once into the client''s trust store; captured flows become templates that scan / fuzz / mock can replay.'
+summary: 'Observing + manipulating real client / server traffic. Unified Traffic rail surfaces the standalone MITM proxy CLI and the in-process middleware behind one workbench rail that adapts to the active deployment.'
 ---
+
+# Traffic — observe + manipulate live requests
+
+> **#315 — Unified rail.** The Proxy + Intercepted rails were folded into one **Traffic** rail. A given Bowire process is never both Standalone and Embedded at the same time, so the rail auto-detects from `BowireOptions.Mode` and adapts:
+>
+> * **Standalone** (the `bowire` CLI tool, `bowire proxy`, `bowire interceptor`) — header reads "Standalone proxy mode"; the Settings sub-tab exposes the sidecar URL.
+> * **Embedded** (`MapBowire()` inside an ASP.NET host) — header reads "Embedded middleware mode"; the Settings sub-tab surfaces the in-process middleware status (was `UseBowireInterceptor()` called?).
+>
+> The Flows + Mock Rules sub-tabs render identically across deployments — both back-ends write into the same in-process `InterceptedFlowStore` + `InterceptorMockStore`. The legacy `/api/intercepted/*` endpoints stay mounted; `/api/traffic/*` is the new canonical alias. The legacy rail descriptors (`BowireProxyRailContribution`, `BowireInterceptedRailContribution`) ship `[Obsolete]` with `HideFromRail = true` for one release window so embedded hosts that explicitly reference them in DI keep compiling. Existing installs with `localStorage.bowire_rail_mode='proxy'` or `'intercepted'` rewrite to `'traffic'` on first paint. The `bowire proxy` and `bowire interceptor` CLI subcommands keep working unchanged.
 
 # Intercepting Proxy — `bowire proxy`
 

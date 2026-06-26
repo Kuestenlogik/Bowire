@@ -22458,3 +22458,14 @@ not as the
     min-height: 200px;
     resize: vertical;
 }
+/* #315 — read-only value cell paired with bowire-env-editor-field-label
+   in the Traffic rail's Settings sub-tab. Same flex/typography rhythm
+   as the editable -input variant so a single label row reads uniform
+   whether the right side is a textbox or a static status string. */
+.bowire-env-editor-field-value {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--bowire-text);
+    line-height: 1.5;
+}

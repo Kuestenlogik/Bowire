@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #315 — Traffic rail package. Unifies the previous Proxy + Intercepted
+         rails into one descriptor that adapts to BowireOptions.Mode at
+         render time (Standalone proxy mode vs Embedded middleware mode).
+         The old Rail.Proxy / Rail.Intercepted packages stay shipped with
+         [Obsolete] markers for one release window so embedded hosts that
+         reference the descriptors in DI keep compiling. -->
+    <Description>Bowire Traffic rail — unified "observe + manipulate live traffic" surface. Auto-adapts to the running deployment (Standalone proxy CLI vs Embedded MapBowire middleware). Replaces the separate Proxy and Intercepted rails.</Description>
+    <PackageId>Kuestenlogik.Bowire.Rail.Traffic</PackageId>
+    <PackageTags>bowire;rail;traffic;proxy;interceptor;mitm;workbench;plugin</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- #315 — per-rail JS fragment. traffic-view.js depends on
+         renderHttpExchange from core's proxy-view.js; the HTML
+         generator stitches all rail fragments into the same IIFE as
+         core, so function-declaration hoisting + closure scope keep
+         the reference resolvable. -->
+    <EmbeddedResource Include="wwwroot\js\traffic-view.js"
+                      LogicalName="Kuestenlogik.Bowire.Rail.Traffic.wwwroot.js.traffic-view.js" />
+  </ItemGroup>
+</Project>

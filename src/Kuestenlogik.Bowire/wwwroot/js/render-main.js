@@ -5046,11 +5046,13 @@
                     ? 'proxy-' + (proxyFlowSelectedId || 'none')
                     : sidebarView === 'intercepted'
                         ? 'intercepted-' + (interceptedFlowSelectedId || 'none')
-                        : freeformRequest
-                            ? 'freeform'
-                            : selectedMethod
-                                ? (selectedService ? selectedService.name : '') + '-' + selectedMethod.name
-                                : 'landing';
+                        : sidebarView === 'traffic'
+                            ? 'traffic-' + (typeof interceptedFlowSelectedId !== 'undefined' ? (interceptedFlowSelectedId || 'none') : 'none')
+                            : freeformRequest
+                                ? 'freeform'
+                                : selectedMethod
+                                    ? (selectedService ? selectedService.name : '') + '-' + selectedMethod.name
+                                    : 'landing';
         const main = el('div', { id: 'bowire-main-' + mainViewKey, className: 'bowire-main' });
 
         // When the sidebar is in Environments view, the main pane
@@ -5079,6 +5081,17 @@
         // the standalone CLI proxy. Renderer lives in intercepted-view.js.
         if (sidebarView === 'intercepted') {
             main.appendChild(renderInterceptedMainPane());
+            return main;
+        }
+
+        // #315 — Unified Traffic view. Adapts header + Settings sub-tab
+        // to BowireOptions.Mode (Standalone vs Embedded); Flows + Mock
+        // Rules render identically across deployments. Renderer lives
+        // in Rail.Traffic's traffic-view.js fragment.
+        if (sidebarView === 'traffic') {
+            if (typeof renderTrafficMainPane === 'function') {
+                main.appendChild(renderTrafficMainPane());
+            }
             return main;
         }
 

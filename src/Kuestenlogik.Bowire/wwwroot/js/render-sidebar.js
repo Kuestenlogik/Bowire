@@ -843,6 +843,10 @@
     //   'benchmarks'   → Benchmarks list
     //   'flows'        → legacy flows sidebar via sidebarView='flows'
     //   'proxy'        → legacy proxy sidebar via sidebarView='proxy'
+    //   'intercepted'  → legacy intercepted sidebar via sidebarView='intercepted'
+    //   'traffic'      → unified Traffic rail (#315) — adapts to
+    //                     BowireOptions.Mode at render time and supersedes
+    //                     'proxy' + 'intercepted' for new installs
     //
     // #314 — sidebarRendererKey / mainPaneRendererKey: when a rail
     // descriptor sets either key, the dispatchers in renderSidebar +
@@ -985,6 +989,13 @@
             case 'intercepted':
                 return (typeof interceptedFlows !== 'undefined' && Array.isArray(interceptedFlows))
                     ? interceptedFlows.length : 0;
+            case 'traffic':
+                // #315 — unified Traffic rail reads the same
+                // InterceptedFlowStore as the legacy Intercepted rail
+                // (the only difference between deployments is the
+                // header banner + Settings sub-tab).
+                return (typeof interceptedFlows !== 'undefined' && Array.isArray(interceptedFlows))
+                    ? interceptedFlows.length : 0;
             default:
                 return null;
         }
@@ -1092,6 +1103,8 @@
                         sidebarView = 'proxy';
                     } else if (m.id === 'intercepted') {
                         sidebarView = 'intercepted';
+                    } else if (m.id === 'traffic') {
+                        sidebarView = 'traffic';
                     } else if (m.id === 'discover') {
                         sidebarView = 'services';
                     }
@@ -1170,6 +1183,7 @@
                         else if (m.id === 'flows') sidebarView = 'flows';
                         else if (m.id === 'proxy') sidebarView = 'proxy';
                         else if (m.id === 'intercepted') sidebarView = 'intercepted';
+                        else if (m.id === 'traffic') sidebarView = 'traffic';
                         else if (m.id === 'discover') sidebarView = 'services';
                         render();
                     }
@@ -3752,6 +3766,23 @@
         sidebar.appendChild(list);
         return sidebar;
     }
+    // #315 — Unified Traffic rail sidebar. Thin wrapper around the
+    // renderTrafficListInto helper in Rail.Traffic's traffic-view.js
+    // — same dispatcher pattern as Proxy + Intercepted. Replaces both
+    // for new installs (the boot-migration in prologue.js rewrites
+    // 'proxy' / 'intercepted' → 'traffic').
+    function renderTrafficSidebar() {
+        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+        var list = el('div', {
+            id: 'bowire-sidebar-list-traffic',
+            className: 'bowire-service-list'
+        });
+        if (typeof renderTrafficListInto === 'function') {
+            renderTrafficListInto(list);
+        }
+        sidebar.appendChild(list);
+        return sidebar;
+    }
 
     function renderSidebar() {
         // #314 — give rail-owned renderers first crack at the
@@ -3795,6 +3826,7 @@
             case 'flows':        sidebar = renderFlowsSidebar(); break;
             case 'proxy':        sidebar = renderProxySidebar(); break;
             case 'intercepted':  sidebar = renderInterceptedSidebar(); break;
+            case 'traffic':      sidebar = renderTrafficSidebar(); break;
         }
         if (sidebar) return sidebar;
         // Only 'services' falls through to the legacy Discover

@@ -43,8 +43,23 @@ internal static class BowireInterceptorEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        // GET /api/intercepted/flows — newest-first snapshot for the rail listing.
-        endpoints.MapGet($"{basePath}/api/intercepted/flows", (HttpContext ctx) =>
+        // #315 — Mount the same endpoint set twice, once under the legacy
+        // /api/intercepted/* prefix and once under the canonical
+        // /api/traffic/* prefix introduced with the unified Traffic rail.
+        // The Traffic rail prefers /api/traffic/* for new code; existing
+        // operators / scripts that hit /api/intercepted/* keep working.
+        // No behavioural difference between the two prefixes.
+        MapTrafficEndpoints(endpoints, basePath, "/api/intercepted");
+        MapTrafficEndpoints(endpoints, basePath, "/api/traffic");
+
+        return endpoints;
+    }
+
+    private static void MapTrafficEndpoints(
+        IEndpointRouteBuilder endpoints, string basePath, string apiPrefix)
+    {
+        // GET {prefix}/flows — newest-first snapshot for the rail listing.
+        endpoints.MapGet($"{basePath}{apiPrefix}/flows", (HttpContext ctx) =>
         {
             var store = ctx.RequestServices.GetService<InterceptedFlowStore>();
             if (store is null) return Results.Json(new { flows = Array.Empty<object>() }, s_jsonOpts);
@@ -53,7 +68,7 @@ internal static class BowireInterceptorEndpoints
         }).ExcludeFromDescription();
 
         // GET /api/intercepted/flows/{id} — full flow (headers + bodies) for detail pane.
-        endpoints.MapGet($"{basePath}/api/intercepted/flows/{{id:long}}", (long id, HttpContext ctx) =>
+        endpoints.MapGet($"{basePath}{apiPrefix}/flows/{{id:long}}", (long id, HttpContext ctx) =>
         {
             var store = ctx.RequestServices.GetService<InterceptedFlowStore>();
             if (store is null) return Results.NotFound();
@@ -62,7 +77,7 @@ internal static class BowireInterceptorEndpoints
         }).ExcludeFromDescription();
 
         // DELETE /api/intercepted/flows — workbench "Clear all" button.
-        endpoints.MapDelete($"{basePath}/api/intercepted/flows", (HttpContext ctx) =>
+        endpoints.MapDelete($"{basePath}{apiPrefix}/flows", (HttpContext ctx) =>
         {
             var store = ctx.RequestServices.GetService<InterceptedFlowStore>();
             store?.Clear();
@@ -70,7 +85,7 @@ internal static class BowireInterceptorEndpoints
         }).ExcludeFromDescription();
 
         // GET /api/intercepted/stream — SSE live feed of new flows.
-        endpoints.MapGet($"{basePath}/api/intercepted/stream", async (HttpContext ctx) =>
+        endpoints.MapGet($"{basePath}{apiPrefix}/stream", async (HttpContext ctx) =>
         {
             var store = ctx.RequestServices.GetService<InterceptedFlowStore>();
             if (store is null)
@@ -99,7 +114,7 @@ internal static class BowireInterceptorEndpoints
         // POST /api/intercepted/flows/{id}/recording — convert an intercepted
         // flow into a Bowire recording (same shape the proxy endpoints emit, so
         // the workbench's "Send to recording" flow stays uniform).
-        endpoints.MapPost($"{basePath}/api/intercepted/flows/{{id:long}}/recording", (long id, HttpContext ctx) =>
+        endpoints.MapPost($"{basePath}{apiPrefix}/flows/{{id:long}}/recording", (long id, HttpContext ctx) =>
         {
             var store = ctx.RequestServices.GetService<InterceptedFlowStore>();
             if (store is null) return Results.NotFound();
@@ -113,7 +128,7 @@ internal static class BowireInterceptorEndpoints
         // ----- Phase D — mock-injection rules (#308) -----
 
         // GET /api/intercepted/mocks — list rules + master toggle for the rail UI.
-        endpoints.MapGet($"{basePath}/api/intercepted/mocks", (HttpContext ctx) =>
+        endpoints.MapGet($"{basePath}{apiPrefix}/mocks", (HttpContext ctx) =>
         {
             var store = ctx.RequestServices.GetService<InterceptorMockStore>();
             var opts = ResolveOptions(ctx);
@@ -122,7 +137,7 @@ internal static class BowireInterceptorEndpoints
         }).ExcludeFromDescription();
 
         // POST /api/intercepted/mocks — create a rule, or upsert when an id is supplied.
-        endpoints.MapPost($"{basePath}/api/intercepted/mocks", async (HttpContext ctx) =>
+        endpoints.MapPost($"{basePath}{apiPrefix}/mocks", async (HttpContext ctx) =>
         {
             var store = ctx.RequestServices.GetService<InterceptorMockStore>();
             if (store is null) return Results.StatusCode(503);
@@ -141,7 +156,7 @@ internal static class BowireInterceptorEndpoints
         }).ExcludeFromDescription();
 
         // DELETE /api/intercepted/mocks/{id} — remove a rule by id.
-        endpoints.MapDelete($"{basePath}/api/intercepted/mocks/{{id}}", (string id, HttpContext ctx) =>
+        endpoints.MapDelete($"{basePath}{apiPrefix}/mocks/{{id}}", (string id, HttpContext ctx) =>
         {
             var store = ctx.RequestServices.GetService<InterceptorMockStore>();
             if (store is null) return Results.NotFound();
@@ -149,7 +164,7 @@ internal static class BowireInterceptorEndpoints
         }).ExcludeFromDescription();
 
         // DELETE /api/intercepted/mocks — drop every rule (workbench "Clear all" button).
-        endpoints.MapDelete($"{basePath}/api/intercepted/mocks", (HttpContext ctx) =>
+        endpoints.MapDelete($"{basePath}{apiPrefix}/mocks", (HttpContext ctx) =>
         {
             ctx.RequestServices.GetService<InterceptorMockStore>()?.Clear();
             return Results.NoContent();
@@ -158,7 +173,7 @@ internal static class BowireInterceptorEndpoints
         // PUT /api/intercepted/mocks/enabled — master toggle for the
         // mock-injection feature without touching individual rules.
         // Body: { "enabled": true|false }
-        endpoints.MapPut($"{basePath}/api/intercepted/mocks/enabled", async (HttpContext ctx) =>
+        endpoints.MapPut($"{basePath}{apiPrefix}/mocks/enabled", async (HttpContext ctx) =>
         {
             var opts = ResolveOptions(ctx);
             if (opts is null) return Results.StatusCode(503);
@@ -177,7 +192,7 @@ internal static class BowireInterceptorEndpoints
 
         // POST /api/intercepted/flows/{id}/mock — seed a mock rule from a captured flow.
         // Body (optional): { "pathPattern": "...", "method": "..." } to override defaults.
-        endpoints.MapPost($"{basePath}/api/intercepted/flows/{{id:long}}/mock", async (long id, HttpContext ctx) =>
+        endpoints.MapPost($"{basePath}{apiPrefix}/flows/{{id:long}}/mock", async (long id, HttpContext ctx) =>
         {
             var flowStore = ctx.RequestServices.GetService<InterceptedFlowStore>();
             var mockStore = ctx.RequestServices.GetService<InterceptorMockStore>();
@@ -199,8 +214,6 @@ internal static class BowireInterceptorEndpoints
             var rule = mockStore.Add(SeedRuleFromFlow(flow, overrides));
             return Results.Json(ProjectRule(rule), s_jsonOpts);
         }).ExcludeFromDescription();
-
-        return endpoints;
     }
 
     private static BowireInterceptorOptions? ResolveOptions(HttpContext ctx)

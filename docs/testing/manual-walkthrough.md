@@ -20,7 +20,7 @@ Status convention per step: `[ ]` not yet verified · `[x]` passes · `[!]` know
 ### What should be visible
 
 - [ ] Topbar carries the **B**-logo + brand, env selector (says "Workspace defaults" or similar default), command palette, **Undo / Redo / Trash** trio (#296), theme toggle, help, settings cog. **No** workspace chip (no workspace exists).
-- [ ] Left rail shows the always-on set: **Home** (active by default), Discover, **Compose**, Workspaces. Disabled / optional rails (Recordings, Mocks, Flows, Proxy, Benchmarks, Security) MAY also appear unchecked-but-visible.
+- [ ] Left rail shows the always-on set: **Home** (active by default), Discover, **Compose**, Workspaces. Disabled / optional rails (Recordings, Mocks, Flows, Traffic, Benchmarks, Security) MAY also appear unchecked-but-visible. (#315 unified Proxy + Intercepted into Traffic; legacy ids stay registered but `HideFromRail=true` for one release.)
 - [ ] Sidebar shows nothing rail-mode-specific (Home rail has `sidebar.kind: 'none'`).
 - [ ] Main pane renders the **"Create your first workspace"** empty card:
   - icon (layers)
@@ -378,6 +378,46 @@ Collections + Presets are managed from the **Compose rail's side panel**; the st
 2. [ ] `+ New flow` → visual canvas.
 3. [ ] Drop nodes (HTTP request, JS transform, branch).
 4. [ ] Wire edges, run → results panel.
+
+---
+
+## Phase 11.5 — Traffic rail (#315 unified Proxy + Intercepted)
+
+> Verifies the unified Traffic rail behaves correctly across the two deployment shapes a Bowire process can have. **Setup matters** — Standalone vs Embedded are tested in separate runs; a single process is never both.
+
+### Standalone (workbench tool)
+
+Run with `bowire` (no `--mode embedded`), open `http://localhost:5080/`.
+
+1. [ ] Rail strip carries a single **Traffic** icon (globe). No separate Proxy or Intercepted icons.
+2. [ ] Click Traffic → sidebar header reads **"Standalone proxy mode"** (chip under the toolbar).
+3. [ ] Three sub-tabs in the sidebar: **Flows** · **Mock Rules** · **Settings**.
+4. [ ] Flows sub-tab → empty state reads "No traffic yet" with the CLI-sidecar hint (not the `UseBowireInterceptor()` one).
+5. [ ] Settings sub-tab in the main pane shows: deployment = Standalone, **External sidecar URL** field (defaults to `http://127.0.0.1:8889`), Edit URL… button, CLI subcommands hint, Open Traffic docs button.
+6. [ ] Run `bowire proxy --port 8888 --workbench` in a terminal; drive a request through `HTTPS_PROXY=http://localhost:8888 curl https://api.example.com/users`. The captured flow appears in Flows live.
+7. [ ] Click a flow → main pane header reads `GET https://api.example.com/users` with **Send to recording** + **Mock this route** buttons. Metadata row + request/response exchange render below.
+
+### Embedded (`MapBowire()` inside an ASP.NET host)
+
+Run an ASP.NET host with `app.MapBowire()` + `app.UseBowireInterceptor()`, open the workbench under the host's path.
+
+1. [ ] Rail strip carries a single **Traffic** icon.
+2. [ ] Click Traffic → sidebar header reads **"Embedded middleware mode"**.
+3. [ ] Flows sub-tab → empty state reads "No traffic yet" with the `UseBowireInterceptor()` hint.
+4. [ ] Settings sub-tab in the main pane shows: deployment = Embedded, Middleware status, Endpoint base = `/api/traffic/* (alias of /api/intercepted/*)`, Open Traffic docs.
+5. [ ] Drive any request through the host pipeline → flow appears in Flows live. `flow.path` matches the request path.
+
+### Mock Rules (identical across deployments)
+
+1. [ ] Mock Rules sub-tab → toggle "Mock injection ON/OFF" → `PUT /api/traffic/mocks/enabled` lands on the server (or `/api/intercepted/mocks/enabled` — both prefixes work).
+2. [ ] `+ New mock rule` → editor opens in the main pane. Set name, path pattern, method, status, body, Save.
+3. [ ] Subsequent matching request returns the mocked body. The captured flow's metadata row shows **Source: mock rule**.
+4. [ ] Pause a rule → next matching request hits the real endpoint again.
+5. [ ] Open a captured flow → click **Mock this route** → seeds a rule pre-filled with the captured path + response. Editor swaps to the Mocks tab automatically.
+
+### Migration check
+
+1. [ ] Set `localStorage.bowire_rail_mode = 'proxy'` and `localStorage.bowire_sidebar_view = 'proxy'` manually; reload. Boot migration rewrites both to `'traffic'`; the unified rail paints. (Same for `'intercepted'`.)
 
 ---
 
