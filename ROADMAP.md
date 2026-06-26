@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**42/59 done** · 17 backlog
+**42/60 done** · 18 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ⬜ Backlog |  |
 | [297](https://github.com/Kuestenlogik/Bowire/issues/297) | Bowire | [Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip](#issue-kuestenlogik-bowire-297) | ⬜ Backlog |  |
+| [302](https://github.com/Kuestenlogik/Bowire/issues/302) | Bowire | [Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)](#issue-kuestenlogik-bowire-302) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ✅ Done |  |
@@ -297,6 +298,10 @@ The **Compose** rail (renamed from Design in commit `e52f7a9`) is now the home f
 #### <a id="issue-kuestenlogik-bowire-297"></a>⬜ Backlog · [#297](https://github.com/Kuestenlogik/Bowire/issues/297) Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip
 
 Rails already collapse into an overflow `⋮` button when the vertical space runs out (`bowire-rail-overflow-btn` in `render-sidebar.js`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/297)
+
+#### <a id="issue-kuestenlogik-bowire-302"></a>⬜ Backlog · [#302](https://github.com/Kuestenlogik/Bowire/issues/302) Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)
+
+User feedback (Phase 2 walkthrough): "response darstellung auf und einklappen sowie zeilennummern so wie bei hoppscotch" (Hoppscotch screenshot supplied). [[more]](https://github.com/Kuestenlogik/Bowire/issues/302)
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
