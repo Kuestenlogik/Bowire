@@ -927,57 +927,112 @@
     // #276 — Workspaces sidebar search + sort. Search is session-only
     // (Postman-style: each rail starts unfiltered after reload). Sort
     // persists so the operator's preferred order survives reload.
-    //   'lastUsed'    (default) → most-recently-switched-to first; keeps
-    //                             the workspace they actually live in at
-    //                             the top
-    //   'alphabetical'          → A→Z by display name
-    //   'created'               → newest first by createdAt
+    //
+    // #279 — default changed from 'lastUsed' to 'alphabetical'. The
+    // last-used mode auto-promotes whichever workspace the operator
+    // just switched to, which feels like the list is "jumping under
+    // them" — every workspace switch reshuffled the sidebar / chip /
+    // overview. Alphabetical is the least-surprising default; the old
+    // last-used behaviour is still available as an explicit opt-in,
+    // and a brand-new 'manual' mode lets the operator pin a custom
+    // order via drag-drop on the overview.
+    //
+    //   'alphabetical' (default) → A→Z by display name (stable)
+    //   'created'                → newest first by createdAt
+    //   'lastUsed'               → most-recently-switched-to first
+    //                              (opt-in: reorders on every switch)
+    //   'manual'                 → operator-defined order via drag-drop
+    //                              in the overview; persisted as an
+    //                              explicit id array
     let workspacesSearchQuery = '';
-    let workspacesSortBy = 'lastUsed';
+    let workspacesSortBy = 'alphabetical';
     try {
         var rawWsSort = localStorage.getItem('bowire_workspaces_sort');
-        if (rawWsSort === 'lastUsed' || rawWsSort === 'alphabetical' || rawWsSort === 'created') {
+        if (rawWsSort === 'lastUsed' || rawWsSort === 'alphabetical'
+            || rawWsSort === 'created' || rawWsSort === 'manual') {
             workspacesSortBy = rawWsSort;
         }
     } catch { /* corrupt — keep default */ }
     function setWorkspacesSortBy(mode) {
-        if (mode !== 'lastUsed' && mode !== 'alphabetical' && mode !== 'created') return;
+        if (mode !== 'lastUsed' && mode !== 'alphabetical'
+            && mode !== 'created' && mode !== 'manual') return;
         workspacesSortBy = mode;
         try { localStorage.setItem('bowire_workspaces_sort', mode); }
         catch { /* quota / disabled — survive */ }
     }
-    // Sort-only (no filter) — used by surfaces that don't have their
-    // own search input (topbar dropdown, workspaces overview list).
-    // The sort setting applies cross-cuttingly via the shared
-    // workspacesSortBy state; only the sidebar's filterbar layers
-    // the search filter on top via getSortedFilteredWorkspaces.
-    function getSortedWorkspaces() {
-        var list = Array.isArray(workspaces) ? workspaces.slice() : [];
-        if (workspacesSortBy === 'alphabetical') {
-            list.sort(function (a, b) {
-                return (a.name || '').localeCompare(b.name || '');
-            });
-        } else if (workspacesSortBy === 'created') {
-            list.sort(function (a, b) {
-                return (b.createdAt || 0) - (a.createdAt || 0);
-            });
-        } else {
-            list.sort(function (a, b) {
-                var aL = a.lastOpenedAt || a.createdAt || 0;
-                var bL = b.lastOpenedAt || b.createdAt || 0;
-                return bL - aL;
-            });
+    // #279 — manual ordering. Explicit array of workspace ids; positions
+    // not in the array fall back to the end (sorted alphabetically
+    // amongst themselves) so a brand-new workspace doesn't vanish from
+    // the list. Persisted per browser as a cross-workspace user
+    // preference (not per-workspace) — the order is a property of the
+    // list, not of any single workspace.
+    const WORKSPACES_MANUAL_ORDER_KEY = 'bowire_workspaces_manual_order';
+    let workspacesManualOrder = [];
+    try {
+        var rawWsManual = localStorage.getItem(WORKSPACES_MANUAL_ORDER_KEY);
+        if (rawWsManual) {
+            var parsedWsManual = JSON.parse(rawWsManual);
+            if (Array.isArray(parsedWsManual)) {
+                workspacesManualOrder = parsedWsManual.filter(function (v) {
+                    return typeof v === 'string';
+                });
+            }
         }
-        return list;
+    } catch { /* corrupt — start empty */ }
+    function persistWorkspacesManualOrder() {
+        try { localStorage.setItem(WORKSPACES_MANUAL_ORDER_KEY, JSON.stringify(workspacesManualOrder)); }
+        catch { /* quota / disabled — survive */ }
     }
-    function getSortedFilteredWorkspaces() {
-        var list = Array.isArray(workspaces) ? workspaces.slice() : [];
-        var q = (workspacesSearchQuery || '').trim().toLowerCase();
-        if (q) {
-            list = list.filter(function (w) {
-                return (w.name || '').toLowerCase().indexOf(q) !== -1;
-            });
-        }
+    function setWorkspacesManualOrder(ids) {
+        if (!Array.isArray(ids)) return;
+        workspacesManualOrder = ids.filter(function (v) {
+            return typeof v === 'string';
+        });
+        persistWorkspacesManualOrder();
+    }
+    // Move workspace `id` to position `toIdx` in the manual order. Used
+    // by the overview's drag-drop handler. Re-anchors the manual order
+    // against the current visible list so positions don't drift when
+    // workspaces have been added/removed since the order was last set.
+    function moveWorkspaceManualOrder(id, toIdx) {
+        if (!id || typeof toIdx !== 'number') return;
+        // Build the "current" order: start from the persisted manual
+        // order, drop ids no longer in workspaces, then append any
+        // workspaces that aren't yet in the order (alphabetical so the
+        // tail is deterministic).
+        var present = {};
+        workspaces.forEach(function (w) { present[w.id] = true; });
+        var current = workspacesManualOrder.filter(function (x) { return present[x]; });
+        var missing = workspaces
+            .filter(function (w) { return current.indexOf(w.id) === -1; })
+            .sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); })
+            .map(function (w) { return w.id; });
+        current = current.concat(missing);
+        var fromIdx = current.indexOf(id);
+        if (fromIdx < 0) return;
+        if (toIdx < 0) toIdx = 0;
+        if (toIdx > current.length) toIdx = current.length;
+        // Single-step splice — remove then re-insert. Match the
+        // semantics flows.js / proxy use: the caller passes the
+        // intended final position assuming the item has already been
+        // lifted from its current spot.
+        current.splice(fromIdx, 1);
+        if (toIdx > fromIdx) toIdx--;
+        current.splice(toIdx, 0, id);
+        setWorkspacesManualOrder(current);
+    }
+    // Reset the sort back to the canonical alphabetical order. Also
+    // clears any manual order so a stale drag-drop arrangement doesn't
+    // resurface the next time the operator flips back to 'manual'.
+    function resetWorkspacesSort() {
+        setWorkspacesSortBy('alphabetical');
+        workspacesManualOrder = [];
+        persistWorkspacesManualOrder();
+    }
+    // Shared sorter — every surface (sidebar tree, topbar dropdown,
+    // overview list) routes through here so the four modes are
+    // implemented in exactly one place.
+    function _sortWorkspaceList(list) {
         if (workspacesSortBy === 'alphabetical') {
             list.sort(function (a, b) {
                 return (a.name || '').localeCompare(b.name || '');
@@ -985,6 +1040,21 @@
         } else if (workspacesSortBy === 'created') {
             list.sort(function (a, b) {
                 return (b.createdAt || 0) - (a.createdAt || 0);
+            });
+        } else if (workspacesSortBy === 'manual') {
+            // Index lookup: known ids carry their persisted position,
+            // anything not yet in the manual order anchors past the
+            // end (Infinity) so brand-new workspaces append to the
+            // tail rather than silently jumping to position 0. Ties at
+            // the tail break alphabetically so the trailing block is
+            // deterministic.
+            var idx = {};
+            workspacesManualOrder.forEach(function (id, i) { idx[id] = i; });
+            list.sort(function (a, b) {
+                var aI = (a.id in idx) ? idx[a.id] : Infinity;
+                var bI = (b.id in idx) ? idx[b.id] : Infinity;
+                if (aI !== bI) return aI - bI;
+                return (a.name || '').localeCompare(b.name || '');
             });
         } else {
             // lastUsed — most recently opened first, falling back to
@@ -998,6 +1068,25 @@
             });
         }
         return list;
+    }
+    // Sort-only (no filter) — used by surfaces that don't have their
+    // own search input (topbar dropdown, workspaces overview list).
+    // The sort setting applies cross-cuttingly via the shared
+    // workspacesSortBy state; only the sidebar's filterbar layers
+    // the search filter on top via getSortedFilteredWorkspaces.
+    function getSortedWorkspaces() {
+        var list = Array.isArray(workspaces) ? workspaces.slice() : [];
+        return _sortWorkspaceList(list);
+    }
+    function getSortedFilteredWorkspaces() {
+        var list = Array.isArray(workspaces) ? workspaces.slice() : [];
+        var q = (workspacesSearchQuery || '').trim().toLowerCase();
+        if (q) {
+            list = list.filter(function (w) {
+                return (w.name || '').toLowerCase().indexOf(q) !== -1;
+            });
+        }
+        return _sortWorkspaceList(list);
     }
     // #152 — selected URL in the Sources rail-mode detail view.
     let sourcesSelectedUrl = null;

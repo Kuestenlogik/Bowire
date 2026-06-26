@@ -1,3 +1,11 @@
+    // #279 — Workspaces overview drag-drop state. Drives the manual-
+    // sort reordering in _renderWorkspacesOverview. Single slot
+    // because at most one row drag is in flight at a time. Lives
+    // outside any render function so the drag's lifecycle (start →
+    // move → drop) survives the re-renders fired by morphdom while
+    // the operator is mid-drag.
+    let _workspaceDragState = null;
+
     // ---- Freeform Request Builder ----
     //
     // Built deliberately against the discovered-method pane's chrome
@@ -1689,14 +1697,61 @@
             + '<polyline points="2 17 12 22 22 17"/>'
             + '<polyline points="2 12 12 17 22 12"/>'
             + '</svg>';
+        // #279 — header carries the current sort label + a Reset
+        // action to the right of the title so the operator always has
+        // a way back to the canonical order without hunting for the
+        // sidebar overflow menu. The Reset button only renders when
+        // the current sort isn't already alphabetical / there's a
+        // non-empty manual order to clear — otherwise it'd be a no-op
+        // visual nudge.
+        var sortLabelMap = {
+            alphabetical: 'Alphabetical',
+            created: 'Created date',
+            lastUsed: 'Last used',
+            manual: 'Manual'
+        };
+        var curSortLabel = sortLabelMap[workspacesSortBy] || 'Alphabetical';
+        var canReset = workspacesSortBy !== 'alphabetical'
+            || (Array.isArray(workspacesManualOrder) && workspacesManualOrder.length > 0);
+        var headerRight = el('div', { className: 'bowire-ws-detail-header-actions' });
+        headerRight.appendChild(el('span', {
+            className: 'bowire-ws-detail-sort-label',
+            textContent: 'Sort: ' + curSortLabel
+        }));
+        if (canReset && typeof resetWorkspacesSort === 'function') {
+            headerRight.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-ws-detail-sort-reset',
+                title: 'Reset workspace sort to alphabetical',
+                'aria-label': 'Reset workspace sort to alphabetical',
+                textContent: 'Reset sort',
+                onClick: function () {
+                    resetWorkspacesSort();
+                    if (typeof toast === 'function') {
+                        toast('Workspace sort reset to alphabetical.', 'info');
+                    }
+                    render();
+                }
+            }));
+        }
         main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
             el('span', { className: 'bowire-ws-detail-glyph', innerHTML: headerGlyph }),
             el('div', { className: 'bowire-ws-detail-title-stack' },
                 el('div', { className: 'bowire-ws-detail-title-static', textContent: 'Workspaces (' + workspaces.length + ')' })
-            )
+            ),
+            headerRight
         ));
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
+        // #279 — manual-mode hint sits above the list so the operator
+        // sees WHY rows have a drag handle. Skipped in other modes
+        // where the rows have no drag affordance.
+        if (workspacesSortBy === 'manual') {
+            section.appendChild(el('div', {
+                className: 'bowire-ws-detail-sort-hint',
+                textContent: 'Manual sort — drag the grip handle on a row to reorder. The order is shared across the sidebar, the topbar dropdown, and this overview.'
+            }));
+        }
         var list = el('div', { className: 'bowire-env-overview-list' });
         // Cross-cutting workspace sort applies in the overview
         // list too (same workspacesSortBy state as sidebar +
@@ -1704,7 +1759,8 @@
         // search bar separately; today no filter is applied here.
         var overviewWorkspaces = (typeof getSortedWorkspaces === 'function')
             ? getSortedWorkspaces() : workspaces;
-        overviewWorkspaces.forEach(function (w) {
+        var manualMode = workspacesSortBy === 'manual';
+        overviewWorkspaces.forEach(function (w, rowIdx) {
             var isActive = w.id === activeWorkspaceId;
             var wsColor = w.color || 'var(--bowire-text-tertiary)';
             // Same layers glyph idiom as the workspace settings
@@ -1720,7 +1776,72 @@
                 ? readWorkspaceEnvironments(w.id).length
                 : 0;
             var meta = envN + (envN === 1 ? ' env' : ' envs');
-            var row = el('div', { className: 'bowire-env-overview-row' });
+            var row = el('div', {
+                className: 'bowire-env-overview-row'
+                    + (manualMode ? ' is-draggable' : ''),
+                draggable: manualMode ? 'true' : 'false',
+                'data-ws-id': w.id
+            });
+            // #279 — drag handle, only in manual mode. Sits to the
+            // left of the layer glyph as a dedicated affordance so
+            // operators don't accidentally try to drag the glyph or
+            // the row body. We bind drag listeners to the whole row
+            // (`draggable="true"` above) so the operator can pick the
+            // row up by the handle OR by clicking-and-holding the row
+            // surface — the handle is the visible cue, not the only
+            // pick-up spot.
+            if (manualMode) {
+                row.appendChild(el('span', {
+                    className: 'bowire-env-overview-grip',
+                    title: 'Drag to reorder',
+                    'aria-hidden': 'true',
+                    innerHTML: svgIcon('grip')
+                }));
+                row.addEventListener('dragstart', function (e) {
+                    _workspaceDragState = { id: w.id, fromIndex: rowIdx };
+                    try {
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', w.id);
+                    } catch { /* ignore */ }
+                    row.classList.add('dragging');
+                });
+                row.addEventListener('dragend', function () {
+                    _workspaceDragState = null;
+                    row.classList.remove('dragging');
+                    var indicators = document.querySelectorAll(
+                        '.bowire-env-overview-row.bowire-drop-above,'
+                        + '.bowire-env-overview-row.bowire-drop-below'
+                    );
+                    for (var di = 0; di < indicators.length; di++) {
+                        indicators[di].classList.remove('bowire-drop-above', 'bowire-drop-below');
+                    }
+                });
+                row.addEventListener('dragover', function (e) {
+                    if (!_workspaceDragState) return;
+                    e.preventDefault();
+                    try { e.dataTransfer.dropEffect = 'move'; } catch { /* ignore */ }
+                    var rect = row.getBoundingClientRect();
+                    var midY = rect.top + rect.height / 2;
+                    row.classList.toggle('bowire-drop-above', e.clientY < midY);
+                    row.classList.toggle('bowire-drop-below', e.clientY >= midY);
+                });
+                row.addEventListener('dragleave', function () {
+                    row.classList.remove('bowire-drop-above', 'bowire-drop-below');
+                });
+                row.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    row.classList.remove('bowire-drop-above', 'bowire-drop-below');
+                    if (!_workspaceDragState) return;
+                    var rect = row.getBoundingClientRect();
+                    var toIdx = e.clientY < rect.top + rect.height / 2 ? rowIdx : rowIdx + 1;
+                    var draggedId = _workspaceDragState.id;
+                    _workspaceDragState = null;
+                    if (typeof moveWorkspaceManualOrder === 'function') {
+                        moveWorkspaceManualOrder(draggedId, toIdx);
+                    }
+                    render();
+                });
+            }
             row.appendChild(el('span', {
                 className: 'bowire-env-overview-glyph',
                 innerHTML: rowGlyph

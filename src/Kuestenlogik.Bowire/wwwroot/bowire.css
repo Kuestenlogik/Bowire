@@ -2156,6 +2156,85 @@ not just
 .bowire-env-overview-tool-danger:hover { color: var(--bowire-error); }
 .bowire-env-overview-tool svg { width: 12px; height: 12px; }
 
+/* #279 — manual-sort drag handle + drop indicators. Visible only on
+   rows in manual mode (the `is-draggable` modifier on the row),
+   ghosted by default, full-opacity on row hover so the affordance
+   doesn't crowd alphabetical / created / last-used modes. Drop
+   indicator borders match the flow-card pattern so the two drag-drop
+   surfaces feel related. */
+.bowire-env-overview-grip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    cursor: grab;
+    color: var(--bowire-text-tertiary);
+    opacity: 0.4;
+    transition: opacity var(--bowire-transition-fast);
+}
+.bowire-env-overview-grip svg { width: 12px; height: 12px; }
+.bowire-env-overview-row:hover .bowire-env-overview-grip { opacity: 1; }
+.bowire-env-overview-grip:active { cursor: grabbing; }
+.bowire-env-overview-row.is-draggable {
+    /* Hint that the row can be picked up — the cursor flips to grab
+       on every non-button hotspot so the operator sees the affordance
+       even if the grip handle is occluded by their own pointer. */
+    cursor: grab;
+}
+.bowire-env-overview-row.is-draggable:active { cursor: grabbing; }
+.bowire-env-overview-row.dragging { opacity: 0.4; }
+.bowire-env-overview-row.bowire-drop-above {
+    border-top: 2px solid var(--bowire-accent);
+}
+.bowire-env-overview-row.bowire-drop-below {
+    border-bottom: 2px solid var(--bowire-accent);
+}
+
+/* #279 — sort label + reset button in the workspaces overview header.
+   The label sits to the right of the title; the reset button (only
+   rendered when sort isn't already alphabetical / there's no manual
+   order to clear) sits next to it. */
+.bowire-ws-detail-sort-label {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    font-family: var(--bowire-font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    align-self: center;
+}
+.bowire-ws-detail-sort-reset {
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    border: 1px solid var(--bowire-border-subtle);
+    padding: 4px 10px;
+    border-radius: var(--bowire-radius-md);
+    cursor: pointer;
+    font-size: 11px;
+    transition: background var(--bowire-transition), color var(--bowire-transition), border-color var(--bowire-transition);
+}
+.bowire-ws-detail-sort-reset:hover,
+.bowire-ws-detail-sort-reset:focus-visible {
+    background: var(--bowire-surface);
+    color: var(--bowire-text);
+    border-color: var(--bowire-border);
+    outline: none;
+}
+/* #279 — manual-mode usage hint, sits above the list rows. Subtle
+   info-style block so the operator reads it once and ignores it
+   thereafter. */
+.bowire-ws-detail-sort-hint {
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-secondary);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
 /* Per-row glyph — Lucide 'layers' (same icon as the Workspaces
    activity rail), with the top "leaf" filled in the workspace's
    chosen colour. Replaces the old plain colour-dot leader. The
