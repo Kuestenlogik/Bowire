@@ -12,19 +12,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**47/60 done** · 13 backlog
+**50/60 done** · 10 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ⬜ Backlog |  |
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ⬜ Backlog |  |
-| [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ⬜ Backlog |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Backlog |  |
 | [194](https://github.com/Kuestenlogik/Bowire/issues/194) | Bowire | [Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces](#issue-kuestenlogik-bowire-194) | ⬜ Backlog |  |
-| [231](https://github.com/Kuestenlogik/Bowire/issues/231) | Bowire | [Benchmarks: 'random' run shape — pick N random endpoints per iteration](#issue-kuestenlogik-bowire-231) | ⬜ Backlog |  |
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
-| [280](https://github.com/Kuestenlogik/Bowire/issues/280) | Bowire | [Assistant hints: actionable inline buttons / links (not just descriptive text)](#issue-kuestenlogik-bowire-280) | ⬜ Backlog |  |
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ⬜ Backlog |  |
@@ -32,7 +29,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ✅ Done |  |
+| [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ✅ Done |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
+| [231](https://github.com/Kuestenlogik/Bowire/issues/231) | Bowire | [Benchmarks: 'random' run shape — pick N random endpoints per iteration](#issue-kuestenlogik-bowire-231) | ✅ Done |  |
 | [242](https://github.com/Kuestenlogik/Bowire/issues/242) | Bowire | [User-defined workspace templates — save current workspace as a template, surface in create dialog](#issue-kuestenlogik-bowire-242) | ✅ Done |  |
 | [243](https://github.com/Kuestenlogik/Bowire/issues/243) | Bowire | [Failed REST / gRPC invocation logs show only 'Error' — surface status code + response body + exception message](#issue-kuestenlogik-bowire-243) | ✅ Done |  |
 | [244](https://github.com/Kuestenlogik/Bowire/issues/244) | Bowire | [Discover rail toolbar: drop the '+ New' button — ad-hoc requests don't belong on the discovered-tree surface](#issue-kuestenlogik-bowire-244) | ✅ Done |  |
@@ -63,6 +62,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [277](https://github.com/Kuestenlogik/Bowire/issues/277) | Bowire | [Workspace sidebar: 'Switch to active' button uses '+' icon instead of checkmark](#issue-kuestenlogik-bowire-277) | ✅ Done |  |
 | [278](https://github.com/Kuestenlogik/Bowire/issues/278) | Bowire | [Save-as-template button: floppy-disk icon reads as 'save current state', not 'snapshot as template'](#issue-kuestenlogik-bowire-278) | ✅ Done |  |
 | [279](https://github.com/Kuestenlogik/Bowire/issues/279) | Bowire | [Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview](#issue-kuestenlogik-bowire-279) | ✅ Done |  |
+| [280](https://github.com/Kuestenlogik/Bowire/issues/280) | Bowire | [Assistant hints: actionable inline buttons / links (not just descriptive text)](#issue-kuestenlogik-bowire-280) | ✅ Done |  |
 | [282](https://github.com/Kuestenlogik/Bowire/issues/282) | Bowire | [Unified .bww format: UI export + CLI export converge on one canonical schema](#issue-kuestenlogik-bowire-282) | ✅ Done |  |
 | [285](https://github.com/Kuestenlogik/Bowire/issues/285) | Bowire | [Lift active recording state from browser localStorage into a server-side BowireRecordingSession](#issue-kuestenlogik-bowire-285) | ✅ Done |  |
 | [286](https://github.com/Kuestenlogik/Bowire/issues/286) | Bowire | [mcp serve --attach: MCP-over-MCP forwarder for connecting to a parent Bowire process](#issue-kuestenlogik-bowire-286) | ✅ Done |  |
@@ -239,10 +239,6 @@ Today a recording or collection runs sequentially: step 1 → step 2 → step 3,
 
 Today every Bowire instance maintains its own URL list — manually typed in the sidebar, persisted to localStorage / disk. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/136)
 
-#### <a id="issue-kuestenlogik-bowire-145"></a>⬜ Backlog · [#145](https://github.com/Kuestenlogik/Bowire/issues/145) Deprecate ${name} in favour of {{name}} (multi-phase migration)
-
-After #125 v1 landed, Bowire has two interpolation syntaxes that resolve identically: - `${name}` — Bowire's original Bash-style syntax (escape: `$${name}`) - `{{name}}` — Postman / Mustache convention (escape: `{{{{name}}}}`) [[more]](https://github.com/Kuestenlogik/Bowire/issues/145)
-
 #### <a id="issue-kuestenlogik-bowire-153"></a>⬜ Backlog · [#153](https://github.com/Kuestenlogik/Bowire/issues/153) Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy
 
 Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benchmarks** — the operator drives a call FROM Bowire's workbench and Bowire sees both sides. - **MITM Proxy view (#36)** — read-only inspection of traffic flowing through an external Bowire-as-proxy listener. [[more]](https://github.com/Kuestenlogik/Bowire/issues/153)
@@ -251,10 +247,6 @@ Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benc
 
 Phase 1 shipped in e084bc3 — central `actionLog`, Statusbar pill, Activity drawer tab, Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z global shortcuts, `toast({undo, logAction})` helper. The first five mutation sites (collection-delete, flow-delete, env-delete, history-clear, favorites-clear) write to the log. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/194)
 
-#### <a id="issue-kuestenlogik-bowire-231"></a>⬜ Backlog · [#231](https://github.com/Kuestenlogik/Bowire/issues/231) Benchmarks: 'random' run shape — pick N random endpoints per iteration
-
-Add the **random** run shape to the Benchmarks envelope — picks N random endpoints from the active workspace's discovered services on each iteration. Useful for chaos / fuzz-flavored load tests where the operator wants to hit "anything reachable" rather than a fixed list. [[more]](https://github.com/Kuestenlogik/Bowire/issues/231)
-
 #### <a id="issue-kuestenlogik-bowire-233"></a>⬜ Backlog · [#233](https://github.com/Kuestenlogik/Bowire/issues/233) Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)
 
 When the operator hits Run on a benchmark envelope that already has a previous run on file, surface a small diff banner: `p95 142 ms (-8 ms vs. previous · -5%)`, status histogram delta, throughput delta. So regressions jump out without reading two numbers side by side. [[more]](https://github.com/Kuestenlogik/Bowire/issues/233)
@@ -262,10 +254,6 @@ When the operator hits Run on a benchmark envelope that already has a previous r
 #### <a id="issue-kuestenlogik-bowire-234"></a>⬜ Backlog · [#234](https://github.com/Kuestenlogik/Bowire/issues/234) Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics
 
 Round out the Benchmarks export surface so result data can leave Bowire in the formats the surrounding tooling actually consumes: [[more]](https://github.com/Kuestenlogik/Bowire/issues/234)
-
-#### <a id="issue-kuestenlogik-bowire-280"></a>⬜ Backlog · [#280](https://github.com/Kuestenlogik/Bowire/issues/280) Assistant hints: actionable inline buttons / links (not just descriptive text)
-
-The Assistant drawer's context-aware hints describe what the operator should do but don't expose the action itself. Example from the no-workspace state (post-#272 fix): [[more]](https://github.com/Kuestenlogik/Bowire/issues/280)
 
 #### <a id="issue-kuestenlogik-bowire-281"></a>⬜ Backlog · [#281](https://github.com/Kuestenlogik/Bowire/issues/281) Guided tour: page-navigation + element spotlight + interactive flow
 
@@ -295,9 +283,17 @@ Two concepts have been conflated under "favorites" in the workbench's evolution:
 
 Recordings today scale to KB-to-single-digit-MB before the architecture pushes back: [[more]](https://github.com/Kuestenlogik/Bowire/issues/144)
 
+#### <a id="issue-kuestenlogik-bowire-145"></a>✅ Done · [#145](https://github.com/Kuestenlogik/Bowire/issues/145) Deprecate ${name} in favour of {{name}} (multi-phase migration)
+
+After #125 v1 landed, Bowire has two interpolation syntaxes that resolve identically: - `${name}` — Bowire's original Bash-style syntax (escape: `$${name}`) - `{{name}}` — Postman / Mustache convention (escape: `{{{{name}}}}`) [[more]](https://github.com/Kuestenlogik/Bowire/issues/145)
+
 #### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
 
 `Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
+
+#### <a id="issue-kuestenlogik-bowire-231"></a>✅ Done · [#231](https://github.com/Kuestenlogik/Bowire/issues/231) Benchmarks: 'random' run shape — pick N random endpoints per iteration
+
+Add the **random** run shape to the Benchmarks envelope — picks N random endpoints from the active workspace's discovered services on each iteration. Useful for chaos / fuzz-flavored load tests where the operator wants to hit "anything reachable" rather than a fixed list. [[more]](https://github.com/Kuestenlogik/Bowire/issues/231)
 
 #### <a id="issue-kuestenlogik-bowire-242"></a>✅ Done · [#242](https://github.com/Kuestenlogik/Bowire/issues/242) User-defined workspace templates — save current workspace as a template, surface in create dialog
 
@@ -418,6 +414,10 @@ The 'Save as template' button uses the floppy-disk SVG (added in commit 4f4f477)
 #### <a id="issue-kuestenlogik-bowire-279"></a>✅ Done · [#279](https://github.com/Kuestenlogik/Bowire/issues/279) Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview
 
 When a workspace is switched to active, it 'jumps to the top' of the list — currently the sidebar's sort uses 'Last used' (added in #276) which auto-promotes the active workspace. Operator finds this confusing — the list rearranges under them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/279)
+
+#### <a id="issue-kuestenlogik-bowire-280"></a>✅ Done · [#280](https://github.com/Kuestenlogik/Bowire/issues/280) Assistant hints: actionable inline buttons / links (not just descriptive text)
+
+The Assistant drawer's context-aware hints describe what the operator should do but don't expose the action itself. Example from the no-workspace state (post-#272 fix): [[more]](https://github.com/Kuestenlogik/Bowire/issues/280)
 
 #### <a id="issue-kuestenlogik-bowire-282"></a>✅ Done · [#282](https://github.com/Kuestenlogik/Bowire/issues/282) Unified .bww format: UI export + CLI export converge on one canonical schema
 
