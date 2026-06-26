@@ -826,7 +826,9 @@
     // rest of this file (sidebar dispatcher, layout pass, overflow
     // popover, _railModeById, currentRailSidebarSpec) keeps working
     // unchanged:
-    //   { id, icon, label, group, sidebar: { kind }, hideFromRail?, alwaysOn? }
+    //   { id, icon, label, group, sidebar: { kind },
+    //     hideFromRail?, alwaysOn?,
+    //     sidebarRendererKey?, mainPaneRendererKey? }
     //
     // sidebar.kind values recognised by the dispatcher (renderSidebar
     // in render-env-auth.js):
@@ -841,6 +843,15 @@
     //   'benchmarks'   → Benchmarks list
     //   'flows'        → legacy flows sidebar via sidebarView='flows'
     //   'proxy'        → legacy proxy sidebar via sidebarView='proxy'
+    //
+    // #314 — sidebarRendererKey / mainPaneRendererKey: when a rail
+    // descriptor sets either key, the dispatchers in renderSidebar +
+    // renderMain resolve the JS function from
+    // window.__bowireRailRenderers[key] and invoke it instead of
+    // taking the hardcoded switch arm above. Lets a rail package own
+    // its sidebar/main without core needing to grow a new arm; the
+    // legacy switch arm stays alive as the fall-through during
+    // incremental migration.
     //
     // Fallback to an empty list — defensive against a misconfigured
     // host that didn't ship the config block, the rail strip just
@@ -864,10 +875,43 @@
                 sidebar: r.sidebar || { kind: 'none' },
                 hideFromRail: !!r.hideFromRail,
                 alwaysOn: !!r.alwaysOn,
-                defaultEnabled: r.defaultEnabled !== false
+                defaultEnabled: r.defaultEnabled !== false,
+                // #314 — per-rail renderer keys. Lookup ids on
+                // window.__bowireRailRenderers when set; falls through
+                // to core's hardcoded switch arm when null/undefined.
+                sidebarRendererKey: r.sidebarRendererKey || null,
+                mainPaneRendererKey: r.mainPaneRendererKey || null
             };
         });
     })();
+
+    // #314 — global registry of per-rail render functions. Rail-owned
+    // JS fragments install their renderers here at load time; the
+    // dispatchers in renderSidebar / renderMain (this file +
+    // render-main.js) look up by id and invoke. Created as a
+    // window-scope property so the rail fragments stitched into the
+    // shared IIFE by BowireHtmlGenerator can both register against +
+    // read from the same map without having to thread a closure
+    // reference across the marker boundary. The dispatcher is
+    // null-safe so partial migration (some rails moved, others still
+    // in core) works during the incremental cut-over.
+    if (typeof window !== 'undefined' && !window.__bowireRailRenderers) {
+        window.__bowireRailRenderers = {};
+    }
+
+    // #314 — resolve the registered renderer for the active rail.
+    // `kind` is 'sidebar' or 'main'. Returns the render function or
+    // null when no key is set or the function hasn't loaded yet (so
+    // the caller can fall through to its legacy arm).
+    function _currentRailRenderer(kind) {
+        var m = _railModeById(railMode);
+        if (!m) return null;
+        var key = kind === 'sidebar' ? m.sidebarRendererKey : m.mainPaneRendererKey;
+        if (!key) return null;
+        var registry = (typeof window !== 'undefined' && window.__bowireRailRenderers) || {};
+        var fn = registry[key];
+        return (typeof fn === 'function') ? fn : null;
+    }
     function _railModeById(id) {
         for (var i = 0; i < _railModes.length; i++) {
             if (_railModes[i].id === id) return _railModes[i];
@@ -3710,6 +3754,28 @@
     }
 
     function renderSidebar() {
+        // #314 — give rail-owned renderers first crack at the
+        // sidebar. When a rail descriptor sets sidebarRendererKey and
+        // the rail's JS fragment has registered the function on
+        // window.__bowireRailRenderers, it takes precedence over the
+        // hardcoded switch arm below. Falls through silently when no
+        // key is set or the function hasn't loaded yet — keeps the
+        // incremental cut-over (some rails moved, others still in
+        // core) working without a flag-day.
+        var ownedSidebar = _currentRailRenderer('sidebar');
+        if (ownedSidebar) {
+            try {
+                var owned = ownedSidebar();
+                if (owned) return owned;
+            } catch (e) {
+                // Defensive: a buggy rail renderer must not take down
+                // the whole sidebar. Log + fall through to the core
+                // dispatcher so the operator at least sees the legacy
+                // arm (or empty sidebar) instead of a blank shell.
+                try { console.error('Rail sidebar renderer threw', e); } catch { /* ignore */ }
+            }
+        }
+
         // #137 — sidebar dispatch driven by the rail-mode catalogue.
         // Each mode declares its sidebar 'kind' in _railModes; this
         // dispatcher maps the kind to its renderer. New modes only
