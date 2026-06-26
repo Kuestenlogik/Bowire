@@ -845,7 +845,7 @@
         // Sidebar kind: 'none' (the strip lives in the main pane, not
         // the sidebar). #294 will fold this into the plugin-descriptor
         // model; for now it ships as another always-on entry.
-        { id: 'compose',       icon: 'feather',   label: 'Compose',            group: 'work',      sidebar: { kind: 'none' } },
+        { id: 'compose',       icon: 'pencilLarge', label: 'Compose',          group: 'work',      sidebar: { kind: 'none' } },
         // Collections rail mode kept in the catalogue (so the existing
         // sidebar + main-pane render paths still work when the
         // Workspaces tree dispatches to it), but hideFromRail removes
@@ -865,7 +865,7 @@
         { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', sidebar: { kind: 'recordings' } },
         { id: 'mocks',        icon: 'mock',      label: 'Mocks',             group: 'scenarios', sidebar: { kind: 'mocks' } },
         { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', sidebar: { kind: 'flows' } },
-        { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   sidebar: { kind: 'proxy' } },
+        { id: 'proxy',        icon: 'masks',     label: 'Proxy / MITM',      group: 'quality',   sidebar: { kind: 'proxy' } },
         { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   sidebar: { kind: 'benchmarks' } },
         // Parallel sessions: launched directly from a recording or
         // collection toolbar (#132 minimal). No standalone rail mode —
