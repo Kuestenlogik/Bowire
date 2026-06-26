@@ -4963,6 +4963,12 @@
     }
     let benchmarksSelectedId = null;
     let benchmarkActiveSpecId = null; // spec currently running, if any
+    // #233 — diff banner expand state. Keyed by spec id so collapsing
+    // one envelope's banner doesn't bleed into another when the
+    // operator hops between specs. Session-local — the next reload
+    // collapses every banner so the operator doesn't pay last
+    // session's expand cost on first paint.
+    let benchmarkDiffBannerExpanded = {};
 
     // ---- Request Chaining State ----
     // Holds the parsed JSON of the last successful response so subsequent

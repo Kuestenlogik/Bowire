@@ -114,7 +114,16 @@
     function migrateEnvelope(spec) {
         if (!spec) return spec;
         if (Array.isArray(spec.targets) && Array.isArray(spec.phases)) {
-            return spec; // already v2
+            // Already v2 envelope shape. The runs[] history (#233) is
+            // a forward-compat addition — bring it up to date once so
+            // a spec that has only `lastRun` from a previous build
+            // contributes that run as the first history entry. This is
+            // a one-shot bring-forward; if the operator never ran the
+            // spec on the new build runs[] simply stays empty.
+            if (!Array.isArray(spec.runs)) {
+                spec.runs = spec.lastRun ? [spec.lastRun] : [];
+            }
+            return spec;
         }
         spec.targets = [targetFromLegacySeed(spec)];
         spec.phases = [defaultEnvelopePhase({
@@ -122,6 +131,9 @@
             totalIterations: spec.n
         })];
         spec.mode = spec.mode || 'sequential';
+        if (!Array.isArray(spec.runs)) {
+            spec.runs = spec.lastRun ? [spec.lastRun] : [];
+        }
         return syncEnvelopeLegacyFields(spec);
     }
 
@@ -238,7 +250,12 @@
             mode: seed.mode || 'sequential',
 
             createdAt: 0,
-            lastRun: null
+            lastRun: null,
+            // #233 — runs history. Bounded ring; cap honoured at write
+            // time in runBenchmarkSpec(). The diff banner needs at
+            // least two entries to render, so it stays hidden on a
+            // fresh spec until the second run finishes.
+            runs: []
         };
         syncEnvelopeLegacyFields(spec);
 
@@ -723,7 +740,7 @@
         });
 
         var stats = computeBenchmarkStats();
-        spec.lastRun = {
+        var thisRun = {
             ranAt: benchmark.startTime,
             durations: benchmark.durations.slice(),
             statusCounts: Object.assign({}, benchmark.statusCounts),
@@ -741,9 +758,351 @@
             cancelled: benchmark.cancelled,
             stats: stats
         };
+
+        // #233 — Keep a bounded ring of recent runs alongside lastRun.
+        // The diff banner reads runs[len-2] (previous) vs runs[len-1]
+        // (current); the cap is operator-tunable (default 5) so the
+        // last N comparisons stay available without ballooning the
+        // serialised spec — durations[] is the heaviest field and
+        // dominates the size budget. lastRun stays as a mirror of the
+        // latest entry so every other call site (sidebar meta, presets
+        // bar, stats grid below) keeps reading the same shape.
+        if (!Array.isArray(spec.runs)) spec.runs = [];
+        spec.runs.push(thisRun);
+        var cap = _benchmarkHistoryCap();
+        if (spec.runs.length > cap) {
+            spec.runs.splice(0, spec.runs.length - cap);
+        }
+        spec.lastRun = thisRun;
+
         persistBenchmarks();
         if (typeof onProgress === 'function') onProgress();
         return spec.lastRun;
+    }
+
+    // ---- #233 Run-history settings + diff math ----
+    //
+    // The history cap and regression threshold are workspace-wide
+    // operator preferences. They read from localStorage so a power user
+    // who runs the same envelope dozens of times in a session can bump
+    // the cap to 20; a noise-tolerant team can crank the threshold to
+    // 10% and stop chasing every 6% blip. Both keys fall back to sane
+    // defaults so a fresh install never trips on missing settings.
+
+    function _benchmarkHistoryCap() {
+        try {
+            var raw = parseInt(localStorage.getItem('bowire_benchmarks_history_cap'), 10);
+            if (!isNaN(raw) && raw >= 2 && raw <= 50) return raw;
+        } catch { /* ignore */ }
+        return 5;
+    }
+
+    function _benchmarkRegressionThresholdPct() {
+        try {
+            var raw = parseFloat(localStorage.getItem('bowire_benchmarks_regression_threshold_pct'));
+            if (!isNaN(raw) && raw >= 0 && raw <= 100) return raw;
+        } catch { /* ignore */ }
+        return 5;
+    }
+
+    // Compute deltas between two runs for the diff banner. Returns
+    // null when either side is missing stats (cancelled mid-run, no
+    // successful calls). The threshold gates the visual flag —
+    // smaller-than-threshold latency deltas read as "flat", anything
+    // beyond is ▲ (regression) or ▼ (improvement). Status-histogram
+    // deltas surface every changed key (added, removed, count-shifted)
+    // because even a tiny error-count change is signal.
+    function _diffBenchmarkRuns(curr, prev, thresholdPct) {
+        if (!curr || !prev || !curr.stats || !prev.stats) return null;
+        var th = (typeof thresholdPct === 'number') ? thresholdPct : 5;
+
+        function pctChange(now, before) {
+            if (before == null || before === 0) return null;
+            return ((now - before) / before) * 100;
+        }
+        function classify(now, before) {
+            var pct = pctChange(now, before);
+            if (pct == null) return { delta: now - (before || 0), pct: null, dir: 'flat' };
+            var abs = Math.abs(pct);
+            var dir = abs < th ? 'flat' : (pct > 0 ? 'up' : 'down');
+            return { delta: now - before, pct: pct, dir: dir };
+        }
+
+        // Status histogram delta — collect every key from both sides.
+        // Anything that gained/lost calls makes the cut. We split into
+        // 2xx-ish / 4xx-ish / 5xx-ish / other buckets for the headline
+        // ("2xx: +12, 4xx: -3"); the expand-on-click table renders the
+        // raw per-key table for full detail.
+        var allKeys = {};
+        Object.keys(curr.statusCounts || {}).forEach(function (k) { allKeys[k] = true; });
+        Object.keys(prev.statusCounts || {}).forEach(function (k) { allKeys[k] = true; });
+        var perKey = [];
+        var buckets = { '2xx': 0, '4xx': 0, '5xx': 0, 'error': 0 };
+        Object.keys(allKeys).forEach(function (k) {
+            var nowC = (curr.statusCounts && curr.statusCounts[k]) || 0;
+            var beforeC = (prev.statusCounts && prev.statusCounts[k]) || 0;
+            var d = nowC - beforeC;
+            perKey.push({ key: k, before: beforeC, now: nowC, delta: d });
+            if (/^2/.test(k)) buckets['2xx'] += d;
+            else if (/^4/.test(k)) buckets['4xx'] += d;
+            else if (/^5/.test(k)) buckets['5xx'] += d;
+            else if (k === 'Error' || k === 'NetworkError' || k === 'MissingService'
+                  || k === 'MissingCollection' || k === 'MissingRecording') buckets['error'] += d;
+        });
+        // Sort so changed keys come first; alphabetic within.
+        perKey.sort(function (a, b) {
+            var dA = Math.abs(a.delta), dB = Math.abs(b.delta);
+            if (dA !== dB) return dB - dA;
+            return a.key.localeCompare(b.key);
+        });
+
+        return {
+            p50: classify(curr.stats.p50, prev.stats.p50),
+            p95: classify(curr.stats.p95, prev.stats.p95),
+            p99: classify(curr.stats.p99, prev.stats.p99),
+            avg: classify(curr.stats.avg, prev.stats.avg),
+            throughput: classify(curr.stats.throughput, prev.stats.throughput),
+            // Errors are inverted-direction — more errors is bad even
+            // though the raw delta is positive. Same threshold applies.
+            errors: (function () {
+                var nowErr = (curr.failure || 0);
+                var beforeErr = (prev.failure || 0);
+                var delta = nowErr - beforeErr;
+                return { delta: delta, before: beforeErr, now: nowErr };
+            })(),
+            statusBuckets: buckets,
+            statusPerKey: perKey,
+            ranAtPrev: prev.ranAt || prev.startTimeMs || 0,
+            ranAtCurr: curr.ranAt || curr.startTimeMs || 0
+        };
+    }
+
+    // Direction → glyph + tone. Latency / errors: 'up' is regression
+    // (warn). Throughput: caller flips dir before passing in.
+    function _diffGlyph(dir) {
+        if (dir === 'up') return '▲';
+        if (dir === 'down') return '▼';
+        return '·';
+    }
+    function _diffSign(n) {
+        if (n == null) return '';
+        if (n > 0) return '+';
+        return ''; // negative number already prints its own sign
+    }
+    function _formatMs(ms) {
+        if (ms == null || isNaN(ms)) return '—';
+        return (Math.round(ms * 10) / 10) + ' ms';
+    }
+    function _formatPct(pct) {
+        if (pct == null || isNaN(pct)) return '';
+        return (pct > 0 ? '+' : '') + (Math.round(pct * 10) / 10) + '%';
+    }
+
+    // ---- #233 Diff banner — collapsed strip + expand-on-click table ----
+    //
+    // Headline strip reads "p95 142 ms (▲ +8 ms · +5%) · rps 412/s
+    // (▼ -8/s · -2%) · 2xx +12 · 4xx -3 · 5xx +0". The click handler
+    // toggles `benchmarkDiffBannerExpanded[spec.id]`; expanded
+    // appends a small side-by-side table covering every percentile,
+    // throughput, totals and the full per-status histogram delta.
+    //
+    // Latency / errors: `up` paints as regression (warn), `down` as
+    // improvement (good). Throughput / OK count: inverted — `up` is
+    // good. _diffMetric() takes the inversion flag so the colour
+    // mapping stays in one place.
+    function _renderRunDiffBanner(spec, diff, runsList) {
+        var expanded = !!benchmarkDiffBannerExpanded[spec.id];
+
+        function relTime(ts) {
+            if (!ts) return '';
+            var dt = Date.now() - ts;
+            if (dt < 60000) return Math.round(dt / 1000) + 's ago';
+            if (dt < 3600000) return Math.round(dt / 60000) + 'm ago';
+            if (dt < 86400000) return Math.round(dt / 3600000) + 'h ago';
+            return Math.round(dt / 86400000) + 'd ago';
+        }
+
+        // Headline class — the worst regression among the tracked
+        // metrics drives the banner accent. If anything is up on
+        // latency or errors → warn. Else if throughput is down → warn.
+        // Else if any improvement → good. Else flat.
+        var overall = 'flat';
+        if (diff.p95.dir === 'up' || diff.p99.dir === 'up' || diff.errors.delta > 0) {
+            overall = 'warn';
+        } else if (diff.throughput.dir === 'down') {
+            overall = 'warn';
+        } else if (diff.p95.dir === 'down' || diff.throughput.dir === 'up' || diff.errors.delta < 0) {
+            overall = 'good';
+        }
+
+        var banner = el('div', {
+            className: 'bowire-bench-diff-banner is-' + overall + (expanded ? ' is-expanded' : ''),
+            role: 'button',
+            tabindex: '0',
+            'aria-expanded': expanded ? 'true' : 'false',
+            title: 'Compare run #' + runsList.length + ' vs #' + (runsList.length - 1)
+                + ' · click to ' + (expanded ? 'collapse' : 'expand'),
+            onClick: function () {
+                benchmarkDiffBannerExpanded[spec.id] = !benchmarkDiffBannerExpanded[spec.id];
+                render();
+            },
+            onKeyDown: function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    benchmarkDiffBannerExpanded[spec.id] = !benchmarkDiffBannerExpanded[spec.id];
+                    render();
+                }
+            }
+        });
+
+        // ---- Headline strip ----
+        var head = el('div', { className: 'bowire-bench-diff-head' });
+
+        head.appendChild(el('span', {
+            className: 'bowire-bench-diff-title',
+            textContent: 'vs previous run · ' + relTime(diff.ranAtPrev)
+        }));
+
+        function metricChip(label, classify, formatValue, currValue, invert) {
+            // invert: true ⇒ 'up' is good (used for throughput).
+            var dir = classify.dir;
+            var tone = 'flat';
+            if (dir === 'up') tone = invert ? 'good' : 'warn';
+            else if (dir === 'down') tone = invert ? 'warn' : 'good';
+
+            var chip = el('span', { className: 'bowire-bench-diff-chip is-' + tone });
+            chip.appendChild(el('span', {
+                className: 'bowire-bench-diff-chip-label',
+                textContent: label
+            }));
+            chip.appendChild(el('span', {
+                className: 'bowire-bench-diff-chip-value',
+                textContent: formatValue(currValue)
+            }));
+            var glyph = _diffGlyph(dir);
+            var pctText = _formatPct(classify.pct);
+            chip.appendChild(el('span', {
+                className: 'bowire-bench-diff-chip-delta',
+                textContent: glyph + ' ' + pctText
+            }));
+            return chip;
+        }
+
+        var currStats = runsList[runsList.length - 1].stats;
+        head.appendChild(metricChip('p95', diff.p95, _formatMs, currStats.p95, false));
+        head.appendChild(metricChip('p99', diff.p99, _formatMs, currStats.p99, false));
+        head.appendChild(metricChip(
+            'rps', diff.throughput,
+            function (v) { return (Math.round(v * 10) / 10) + '/s'; },
+            currStats.throughput, true
+        ));
+
+        // Status-bucket summary — keep it terse on the headline. Each
+        // bucket appears only if its delta is non-zero so banners
+        // don't get cluttered for stable runs.
+        var sb = diff.statusBuckets || {};
+        var bucketEntries = [];
+        if (sb['2xx']) bucketEntries.push({ k: '2xx', d: sb['2xx'], err: false });
+        if (sb['4xx']) bucketEntries.push({ k: '4xx', d: sb['4xx'], err: true });
+        if (sb['5xx']) bucketEntries.push({ k: '5xx', d: sb['5xx'], err: true });
+        if (sb['error']) bucketEntries.push({ k: 'err', d: sb['error'], err: true });
+        if (bucketEntries.length > 0) {
+            var statusWrap = el('span', { className: 'bowire-bench-diff-status' });
+            bucketEntries.forEach(function (b) {
+                // For error buckets, a positive delta is bad; for 2xx a
+                // positive delta is good. dir → tone uses the same
+                // mapping as the metric chips above.
+                var tone = 'flat';
+                if (b.err) tone = b.d > 0 ? 'warn' : (b.d < 0 ? 'good' : 'flat');
+                else       tone = b.d > 0 ? 'good' : (b.d < 0 ? 'warn' : 'flat');
+                statusWrap.appendChild(el('span', {
+                    className: 'bowire-bench-diff-status-chip is-' + tone,
+                    textContent: b.k + ' ' + _diffSign(b.d) + b.d
+                }));
+            });
+            head.appendChild(statusWrap);
+        }
+
+        head.appendChild(el('span', {
+            className: 'bowire-bench-diff-expand',
+            innerHTML: svgIcon(expanded ? 'chevronUp' : 'chevronDown')
+        }));
+
+        banner.appendChild(head);
+
+        // ---- Expanded comparison table ----
+        if (expanded) {
+            var prev = runsList[runsList.length - 2];
+            var curr = runsList[runsList.length - 1];
+
+            var table = el('table', { className: 'bowire-bench-diff-table' });
+            var thead = el('thead', {});
+            thead.appendChild(el('tr', {},
+                el('th', { textContent: 'Metric' }),
+                el('th', { textContent: 'Previous' }),
+                el('th', { textContent: 'Current' }),
+                el('th', { textContent: 'Δ' })
+            ));
+            table.appendChild(thead);
+
+            var tbody = el('tbody', {});
+            function row(label, prevVal, currVal, classify, fmt, invert) {
+                var tone = 'flat';
+                if (classify && classify.dir === 'up') tone = invert ? 'good' : 'warn';
+                else if (classify && classify.dir === 'down') tone = invert ? 'warn' : 'good';
+                var deltaText = '—';
+                if (classify) {
+                    var glyph = _diffGlyph(classify.dir);
+                    var pctText = _formatPct(classify.pct);
+                    deltaText = glyph + ' ' + pctText;
+                }
+                tbody.appendChild(el('tr', { className: 'is-' + tone },
+                    el('td', { className: 'bowire-bench-diff-table-label', textContent: label }),
+                    el('td', { textContent: fmt(prevVal) }),
+                    el('td', { textContent: fmt(currVal) }),
+                    el('td', { className: 'bowire-bench-diff-table-delta', textContent: deltaText })
+                ));
+            }
+            row('p50', prev.stats.p50, curr.stats.p50, diff.p50, _formatMs, false);
+            row('p95', prev.stats.p95, curr.stats.p95, diff.p95, _formatMs, false);
+            row('p99', prev.stats.p99, curr.stats.p99, diff.p99, _formatMs, false);
+            row('avg', prev.stats.avg, curr.stats.avg, diff.avg, _formatMs, false);
+            row('rps', prev.stats.throughput, curr.stats.throughput, diff.throughput,
+                function (v) { return (Math.round(v * 10) / 10) + '/s'; }, true);
+            row('errors',
+                prev.failure || 0, curr.failure || 0,
+                { dir: diff.errors.delta > 0 ? 'up' : (diff.errors.delta < 0 ? 'down' : 'flat'), pct: null },
+                function (v) { return String(v); }, false);
+
+            // Per-status histogram delta — every key with a non-zero
+            // change. Stable keys are skipped so the table stays
+            // readable on long status lists.
+            (diff.statusPerKey || []).forEach(function (entry) {
+                if (entry.delta === 0) return;
+                var isErr = entry.key === 'Error' || entry.key === 'NetworkError'
+                    || /^[45]/.test(entry.key);
+                var dir = entry.delta > 0 ? 'up' : 'down';
+                var classify = { dir: dir, pct: null };
+                row('status · ' + entry.key,
+                    entry.before, entry.now, classify,
+                    function (v) { return String(v); },
+                    !isErr); // for non-error keys, up is good
+            });
+
+            table.appendChild(tbody);
+            banner.appendChild(el('div', { className: 'bowire-bench-diff-body' }, table));
+
+            // Footer hint — threshold + history depth so the operator
+            // knows why a 4% change reads as 'flat' (and can change
+            // it in localStorage).
+            banner.appendChild(el('div', {
+                className: 'bowire-bench-diff-footer',
+                textContent: 'Threshold ' + _benchmarkRegressionThresholdPct()
+                    + '% · history ' + runsList.length + '/' + _benchmarkHistoryCap()
+                    + ' runs · click banner to collapse'
+            }));
+        }
+        return banner;
     }
 
     // Pretty-print a target for the console line above. Method targets
@@ -1825,6 +2184,26 @@
                     : null)
         );
         main.appendChild(runRow);
+
+        // ---- #233 Previous-run diff banner ----
+        // When the envelope has been run at least twice, surface the
+        // p95 / throughput / status-histogram deltas between the two
+        // most recent runs at the very top of the result block. The
+        // banner is clickable — expanded form shows a per-metric
+        // side-by-side table so the operator can drill into any line
+        // without leaving the pane. < 2 runs ⇒ nothing rendered
+        // (no empty chrome, per ticket acceptance).
+        var runsList = Array.isArray(spec.runs) ? spec.runs : [];
+        if (runsList.length >= 2) {
+            var diff = _diffBenchmarkRuns(
+                runsList[runsList.length - 1],
+                runsList[runsList.length - 2],
+                _benchmarkRegressionThresholdPct()
+            );
+            if (diff) {
+                main.appendChild(_renderRunDiffBanner(spec, diff, runsList));
+            }
+        }
 
         // ---- Last run ----
         var last = spec.lastRun;
