@@ -16,7 +16,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ⬜ Backlog |  |
+| [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | 🟦 In progress |  |
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ✅ Done |  |
@@ -236,9 +236,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-#### <a id="issue-kuestenlogik-bowire-132"></a>⬜ Backlog · [#132](https://github.com/Kuestenlogik/Bowire/issues/132) Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)
+#### <a id="issue-kuestenlogik-bowire-132"></a>🟦 In progress · [#132](https://github.com/Kuestenlogik/Bowire/issues/132) Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)
 
 Today a recording or collection runs sequentially: step 1 → step 2 → step 3, one session, one request in flight at a time. Useful for **functional** testing ("does the flow still work?") but unable to answer the parallel-shaped questions: [[more]](https://github.com/Kuestenlogik/Bowire/issues/132)
+
+**Phase 1 (local)** shipped in `fd59051` — 1/2/4/8/custom sessions running in-process with per-session captured-vars bags + live tiles. **Phase 2 (distributed)** lands in this commit: a coordinator endpoint (`POST /api/parallel/start`) fans the requested session count across N remote Bowire hosts via each host's `/api/parallel/start-local`; the Run-options modal grew Hosts / Ramp-up / Failure policy / Env pool fields; per-host roll-up + per-session host/env badges surface on the result panel. Outbound auth forwards `Authorization: Bearer ${BOWIRE_PARALLEL_TOKEN}` when set. Per-target allowlist + audit log + #128 Bowire Agent hub discovery remain follow-ups for a phase-3 hardening pass.
 
 #### <a id="issue-kuestenlogik-bowire-294"></a>⬜ Backlog · [#294](https://github.com/Kuestenlogik/Bowire/issues/294) Pluggable workbench: rails + modules as package contributions + meta-bundles
 
