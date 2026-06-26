@@ -229,7 +229,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [237](https://github.com/Kuestenlogik/Bowire/issues/237) | Bowire | [WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+](#issue-kuestenlogik-bowire-237) | ⬜ Backlog |  |
 | [288](https://github.com/Kuestenlogik/Bowire/issues/288) | Bowire | [IInlineSseSubscriber is an orphaned seam — give it a consumer or remove it](#issue-kuestenlogik-bowire-288) | ⬜ Backlog |  |
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog |  |
-| [304](https://github.com/Kuestenlogik/Bowire/issues/304) | Bowire | [Compose rail: hide standalone Collections rail tree node now that Compose hosts it](#issue-kuestenlogik-bowire-304) | ⬜ Backlog |  |
 | [305](https://github.com/Kuestenlogik/Bowire/issues/305) | Bowire | [Source catalogue providers: kubernetes + agent (Phase D+E)](#issue-kuestenlogik-bowire-305) | ⬜ Backlog |  |
 | [307](https://github.com/Kuestenlogik/Bowire/issues/307) | Bowire | [Bowire interceptor: standalone reverse-proxy mode (Phase C)](#issue-kuestenlogik-bowire-307) | ⬜ Backlog |  |
 | [308](https://github.com/Kuestenlogik/Bowire/issues/308) | Bowire | [Bowire interceptor: mock injection (Phase D)](#issue-kuestenlogik-bowire-308) | ⬜ Backlog |  |
@@ -875,10 +874,6 @@ During the v2.0.0 release publish on 2026-06-21, the `winget` workflow failed at
 #### <a id="issue-kuestenlogik-bowire-292"></a>⬜ Backlog · [#292](https://github.com/Kuestenlogik/Bowire/issues/292) Request-builder: GraphQL layout (#291 Phase D follow-up)
 
 Followup to #291. Phases A+B+C+E shipped (REST / gRPC / MCP / MQTT / WebSocket / SSE + streaming response pane). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/292)
-
-#### <a id="issue-kuestenlogik-bowire-304"></a>⬜ Backlog · [#304](https://github.com/Kuestenlogik/Bowire/issues/304) Compose rail: hide standalone Collections rail tree node now that Compose hosts it
-
-Phase A-F of #295 landed in 5160a3a — the Compose rail now hosts Collections + Presets in a side panel, and saves from any surface (Discover 'Add to', request-builder 'Save to collection', recording steps 'Open in Compose') land in the same buckets. [[more]](https://github.com/Kuestenlogik/Bowire/issues/304)
 
 #### <a id="issue-kuestenlogik-bowire-305"></a>⬜ Backlog · [#305](https://github.com/Kuestenlogik/Bowire/issues/305) Source catalogue providers: kubernetes + agent (Phase D+E)
 
