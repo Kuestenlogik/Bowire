@@ -57,4 +57,23 @@ public sealed class BowireInterceptorOptions
     /// re-deploying.
     /// </summary>
     public bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// Phase D — when <see langword="true"/>, the middleware consults
+    /// <see cref="InterceptorMockStore"/> for a matching rule BEFORE
+    /// forwarding the request. A matching rule short-circuits the
+    /// pipeline: the host's endpoint never runs, the rule's response
+    /// goes straight to the client, and the captured flow is still
+    /// recorded into <see cref="InterceptedFlowStore"/> (with the
+    /// <see cref="InterceptedFlow.Mocked"/> flag set).
+    /// </summary>
+    /// <remarks>
+    /// Defaults to <see langword="true"/> — when the rule set is empty
+    /// (the default) the check is free (one ref-equality null compare)
+    /// and the operator opts in by adding a rule. Hosts that explicitly
+    /// want to forbid mock injection (e.g. a production host that loaded
+    /// Bowire only for read-only observability) can flip this to
+    /// <see langword="false"/>.
+    /// </remarks>
+    public bool MocksEnabled { get; set; } = true;
 }

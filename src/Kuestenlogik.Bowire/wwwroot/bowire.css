@@ -22209,3 +22209,148 @@ not as the
     width: 13px;
     height: 13px;
 }
+
+/* ===== Intercepted rail — sub-tabs + mock-injection editor (#308, Phase D) ===== */
+
+/* Sub-tab strip — recessed surface, active tab adopts the pane's
+   elevated bg so the seam vanishes (same pattern as the main
+   workbench tab strip in lines 7989-8038). */
+.bowire-rail-subtabs {
+    display: flex;
+    gap: 0;
+    background: var(--bowire-tab-strip-bg);
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--bowire-border);
+    margin: 0;
+}
+.bowire-rail-subtab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-top: 2px solid transparent;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    user-select: none;
+}
+.bowire-rail-subtab:hover {
+    color: var(--bowire-text-secondary);
+}
+.bowire-rail-subtab.active {
+    color: var(--bowire-accent);
+    border-top-color: var(--bowire-accent);
+    background: var(--bowire-bg-elevated);
+}
+.bowire-rail-subtab-meta {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    opacity: 0.85;
+}
+
+/* Master toggle row above the rule list. */
+.bowire-rail-subtab-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--bowire-border);
+    background: var(--bowire-bg-elevated);
+}
+.bowire-rail-subtab-toggle-label {
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+}
+
+/* Tiny switch — minimal styling so it inherits the workbench palette
+   without needing per-theme overrides. */
+.bowire-switch {
+    position: relative;
+    display: inline-block;
+    width: 30px;
+    height: 16px;
+}
+.bowire-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.bowire-switch-track {
+    position: absolute;
+    inset: 0;
+    background: var(--bowire-border);
+    border-radius: 16px;
+    transition: background var(--bowire-transition);
+    cursor: pointer;
+}
+.bowire-switch-track::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--bowire-bg-elevated);
+    transition: transform var(--bowire-transition);
+}
+.bowire-switch input:checked + .bowire-switch-track {
+    background: var(--bowire-accent);
+}
+.bowire-switch input:checked + .bowire-switch-track::before {
+    transform: translateX(14px);
+}
+
+/* "+ New mock rule" affordance — full-width button above the list. */
+.bowire-rail-add-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px dashed var(--bowire-border);
+    color: var(--bowire-text-secondary);
+    padding: 8px;
+    margin: 8px 0;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    font-size: 12px;
+}
+.bowire-rail-add-btn:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+
+/* Rule-editor field rows in the main pane. */
+.bowire-env-editor-field-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 16px;
+}
+.bowire-env-editor-field-label {
+    flex: 0 0 120px;
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    padding-top: 6px;
+}
+.bowire-env-editor-field-input {
+    flex: 1;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    color: var(--bowire-text);
+    padding: 6px 8px;
+    border-radius: var(--bowire-radius-sm);
+    font-family: var(--bowire-font-mono, monospace);
+    font-size: 12px;
+}
+.bowire-env-editor-field-input:focus {
+    outline: none;
+    border-color: var(--bowire-accent);
+}
+.bowire-env-editor-field-body {
+    min-height: 200px;
+    resize: vertical;
+}

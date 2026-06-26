@@ -46,11 +46,23 @@ namespace Kuestenlogik.Bowire.Interceptor;
 /// This sidesteps the "buffer of doom" trap the ticket explicitly calls
 /// out as Phase 4 polish.
 /// </para>
+/// <para>
+/// Phase D (#308) — mock injection. When an
+/// <see cref="InterceptorMockStore"/> rule matches the request, the
+/// middleware short-circuits BEFORE invoking <c>_next</c>: the rule's
+/// status / headers / body go straight to the client, the endpoint
+/// never runs, and the captured flow is recorded with
+/// <see cref="InterceptedFlow.Mocked"/> set so the rail labels it
+/// accordingly. The recording-session integration sees the mocked flow
+/// the same way as a forwarded one — replay-from-mock is just replay,
+/// the capture trail doesn't care that the bytes came from a rule.
+/// </para>
 /// </remarks>
 internal sealed class BowireInterceptorMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly InterceptedFlowStore _store;
+    private readonly InterceptorMockStore? _mocks;
     private readonly BowireRecordingSession? _session;
     private readonly BowireInterceptorOptions _options;
     private readonly ILogger<BowireInterceptorMiddleware>? _logger;
@@ -59,6 +71,7 @@ internal sealed class BowireInterceptorMiddleware
         RequestDelegate next,
         InterceptedFlowStore store,
         IOptions<BowireInterceptorOptions> options,
+        InterceptorMockStore? mocks = null,
         BowireRecordingSession? session = null,
         ILogger<BowireInterceptorMiddleware>? logger = null)
     {
@@ -67,6 +80,7 @@ internal sealed class BowireInterceptorMiddleware
         ArgumentNullException.ThrowIfNull(options);
         _next = next;
         _store = store;
+        _mocks = mocks;
         _options = options.Value ?? new BowireInterceptorOptions();
         _session = session;
         _logger = logger;
@@ -123,6 +137,35 @@ internal sealed class BowireInterceptorMiddleware
         {
             if (_logger is { } log && log.IsEnabled(LogLevel.Debug))
                 log.LogDebug(ex, "bowire.interceptor: request body capture failed for {Method} {Path}", method, path);
+        }
+
+        // Phase D — mock injection (#308). When a rule matches the
+        // request, we short-circuit the pipeline: write the rule's
+        // response directly to the host's response stream, skip the
+        // downstream endpoint entirely, and record the flow with the
+        // Mocked flag so the rail labels it accordingly. The recording-
+        // session integration below sees the flow exactly the same way
+        // as a forwarded one — replay-from-mock is just replay, the
+        // capture trail doesn't care that the bytes came from a rule.
+        var matchedRule = _options.MocksEnabled
+            ? _mocks?.FindMatch(method, path)
+            : null;
+        if (matchedRule is not null)
+        {
+            await ServeMockAsync(context, matchedRule).ConfigureAwait(false);
+            sw.Stop();
+
+            RecordFlow(id, startedAt, method, url, scheme, path,
+                requestHeaders, requestBody, requestBodyBase64, requestBodyTruncated,
+                context.Response.StatusCode,
+                SnapshotHeaders(context.Response.Headers),
+                matchedRule.ResponseBody, matchedRule.ResponseBodyBase64, false,
+                streaming: false,
+                latencyMs: (int)sw.ElapsedMilliseconds,
+                error: null,
+                mocked: true,
+                mockRuleId: matchedRule.Id);
+            return;
         }
 
         // Response capture pattern: swap the host's IHttpResponseBodyFeature
@@ -249,7 +292,8 @@ internal sealed class BowireInterceptorMiddleware
         IReadOnlyList<KeyValuePair<string, string>> requestHeaders, string? requestBody, string? requestBodyBase64, bool requestBodyTruncated,
         int responseStatus, IReadOnlyList<KeyValuePair<string, string>> responseHeaders,
         string? responseBody, string? responseBodyBase64, bool responseBodyTruncated,
-        bool streaming, int latencyMs, string? error)
+        bool streaming, int latencyMs, string? error,
+        bool mocked = false, string? mockRuleId = null)
     {
         var flow = new InterceptedFlow
         {
@@ -271,6 +315,8 @@ internal sealed class BowireInterceptorMiddleware
             Streaming = streaming,
             LatencyMs = latencyMs,
             Error = error,
+            Mocked = mocked,
+            MockRuleId = mockRuleId,
         };
         _store.Add(flow);
 
@@ -298,6 +344,73 @@ internal sealed class BowireInterceptorMiddleware
                 if (_logger is { } log && log.IsEnabled(LogLevel.Debug))
                     log.LogDebug(ex, "bowire.interceptor: recording append failed");
             }
+        }
+    }
+
+    /// <summary>
+    /// Phase D — serve a mock response straight to the client without
+    /// running the host's endpoint. The rule's body is written to the
+    /// real response stream (not the capture buffer), so the client sees
+    /// the exact bytes the rule defines.
+    /// </summary>
+    private static async Task ServeMockAsync(HttpContext context, InterceptorMockRule rule)
+    {
+        if (rule.DelayMs > 0)
+        {
+            // Honour the rule's "pretend the upstream is slow" knob so
+            // operators can reproduce timeout / retry behaviour against
+            // the mocked surface.
+            try
+            {
+                await Task.Delay(rule.DelayMs, context.RequestAborted).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { return; }
+        }
+
+        var response = context.Response;
+        response.StatusCode = rule.ResponseStatus;
+
+        // Apply rule-defined headers. Default to application/json when
+        // the rule didn't supply a Content-Type — that's the 90% case
+        // for REST mocks; an operator who wants a different MIME just
+        // sets the header explicitly.
+        bool sawContentType = false;
+        foreach (var (k, v) in rule.ResponseHeaders)
+        {
+            if (string.IsNullOrEmpty(k)) continue;
+            response.Headers[k] = v ?? string.Empty;
+            if (string.Equals(k, "Content-Type", StringComparison.OrdinalIgnoreCase)) sawContentType = true;
+        }
+        if (!sawContentType)
+        {
+            response.Headers["Content-Type"] = "application/json";
+        }
+
+        // Pick the bytes: base64 wins when both are set (binary case);
+        // otherwise UTF-8 encode the text body. Null = empty body.
+        byte[] bytes;
+        if (!string.IsNullOrEmpty(rule.ResponseBodyBase64))
+        {
+            try { bytes = Convert.FromBase64String(rule.ResponseBodyBase64); }
+            catch (FormatException) { bytes = Array.Empty<byte>(); }
+        }
+        else if (rule.ResponseBody is { Length: > 0 })
+        {
+            bytes = Encoding.UTF8.GetBytes(rule.ResponseBody);
+        }
+        else
+        {
+            bytes = Array.Empty<byte>();
+        }
+
+        if (bytes.Length > 0)
+        {
+            response.ContentLength = bytes.Length;
+            await response.Body.WriteAsync(bytes, context.RequestAborted).ConfigureAwait(false);
+        }
+        else
+        {
+            response.ContentLength = 0;
         }
     }
 
