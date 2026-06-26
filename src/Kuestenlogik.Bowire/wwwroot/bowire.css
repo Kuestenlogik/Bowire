@@ -16827,6 +16827,133 @@ the action toolbar {
     color: var(--bowire-accent-text, #c2b5ff);
 }
 
+/* #132 Phase 1 polish — aggregate percentile tiles + per-step status
+   histogram + result-pane Save/Export toolbar. The aggregate row sits
+   above the histogram with the same visual rhythm as the per-session
+   tile strip; the histogram is a compact table with proportional bar
+   so the operator can scan "where did sessions diverge?" in a glance. */
+.bowire-parallel-agg-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+}
+.bowire-parallel-agg-tile {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 10px;
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-bg-elevated, #14141f);
+    min-width: 64px;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+}
+.bowire-parallel-agg-tile.tight {
+    border-left-width: 3px;
+    border-left-color: var(--bowire-accent);
+}
+.bowire-parallel-agg-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bowire-text-tertiary, #6a6a82);
+}
+.bowire-parallel-agg-value {
+    font-size: 13px;
+    color: var(--bowire-text);
+    font-weight: 600;
+}
+
+.bowire-parallel-histogram {
+    margin-top: 12px;
+}
+.bowire-parallel-histogram-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bowire-text-tertiary, #6a6a82);
+    margin-bottom: 6px;
+}
+.bowire-parallel-histogram-empty {
+    font-size: 12px;
+    color: var(--bowire-text-muted);
+    padding: 6px 0;
+}
+.bowire-parallel-histogram-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+}
+.bowire-parallel-histogram-table th,
+.bowire-parallel-histogram-table td {
+    padding: 4px 6px;
+    text-align: right;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+}
+.bowire-parallel-histogram-table th {
+    color: var(--bowire-text-tertiary, #6a6a82);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 10px;
+}
+.bowire-parallel-histogram-table th:first-child,
+.bowire-parallel-histogram-table td:first-child {
+    text-align: left;
+}
+.bowire-parallel-histogram-step {
+    color: var(--bowire-text);
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-parallel-histogram-pass {
+    color: var(--bowire-success, #34d399);
+}
+.bowire-parallel-histogram-fail {
+    color: var(--bowire-error, #f87171);
+}
+.bowire-parallel-histogram-mix {
+    text-align: left !important;
+    min-width: 160px;
+}
+.bowire-parallel-histogram-bar {
+    display: inline-flex;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--bowire-bg-elevated, #14141f);
+    margin-bottom: 2px;
+}
+.bowire-parallel-histogram-bar-pass {
+    background: var(--bowire-success, #34d399);
+    display: inline-block;
+    height: 100%;
+}
+.bowire-parallel-histogram-bar-fail {
+    background: var(--bowire-error, #f87171);
+    display: inline-block;
+    height: 100%;
+}
+.bowire-parallel-histogram-mix-text {
+    display: block;
+    color: var(--bowire-text-tertiary, #6a6a82);
+    font-size: 10px;
+}
+
+.bowire-parallel-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--bowire-border-subtle);
+}
+
 .bowire-recording-action-primary {
     border-color: var(--bowire-accent) !important;
     color: var(--bowire-accent) !important;

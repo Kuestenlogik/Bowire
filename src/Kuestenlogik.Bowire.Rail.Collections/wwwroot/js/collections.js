@@ -507,9 +507,28 @@
             (json.hosts || []).forEach(function (h) {
                 for (var k = 0; k < h.sessionCount; k++) perHostSessions.push(h.host);
             });
+            // #132 Phase 1 polish — slot the flat per-target results
+            // back onto their session so the aggregate panel (which
+            // walks session.results[]) sees the same shape for local
+            // and distributed runs.
+            var resultsBySession = {};
+            (json.results || []).forEach(function (r) {
+                var key = r.sessionIndex != null ? r.sessionIndex : 0;
+                if (!resultsBySession[key]) resultsBySession[key] = [];
+                resultsBySession[key].push({
+                    pass: !!r.pass,
+                    status: r.status != null ? String(r.status) : (r.pass ? 'OK' : 'Error'),
+                    durationMs: r.durationMs || 0,
+                    stepIndex: r.targetIndex != null ? r.targetIndex : 0,
+                    stepLabel: r.label || ((targets[r.targetIndex] && targets[r.targetIndex].label)
+                        || ('target ' + ((r.targetIndex || 0) + 1))),
+                    error: r.error || null
+                });
+            });
             parallelSessionsState.sessions = (json.sessions || []).map(function (s, idx) {
+                var sIdx = s.sessionIndex != null ? s.sessionIndex : idx;
                 return {
-                    index: s.sessionIndex != null ? s.sessionIndex : idx,
+                    index: sIdx,
                     host: perHostSessions[idx] || null,
                     envId: s.envId || null,
                     status: 'done',
@@ -520,7 +539,8 @@
                     stepIndex: -1,
                     stepTotal: targets.length,
                     aborted: s.aborted || null,
-                    error: s.aborted || null
+                    error: s.aborted || null,
+                    results: resultsBySession[sIdx] || []
                 };
             });
             parallelSessionsState.hostSummaries = json.hosts || [];
@@ -549,6 +569,11 @@
     // `session.captured` is the per-session vars bag forwarded into
     // pre/post-scripts so concurrent sessions don't write each other's
     // capture state.
+    //
+    // #132 Phase 1 polish — each result row carries stepIndex (the
+    // source-item index, NOT the per-session slice position) + label
+    // so the aggregate panel can roll up the per-step histogram across
+    // every session without re-derefencing the source.
     async function _runCollectionSession(col, session) {
         var startMs = performance.now();
         var results = [];
@@ -557,15 +582,22 @@
         for (var k = 0; k < indices.length; k++) {
             session.stepIndex = k;
             render();
-            var item = col.items[indices[k]];
+            var srcIdx = indices[k];
+            var item = col.items[srcIdx];
+            var stepLabel = (item && (item.name || (item.service && item.method
+                ? item.service + '/' + item.method : null)))
+                || ('item ' + (srcIdx + 1));
             try {
                 var r = await runCollectionItem(item, { capturedBag: session.captured });
+                r.stepIndex = srcIdx;
+                r.stepLabel = stepLabel;
                 results.push(r);
                 if (r.pass) session.passCount++; else { session.failCount++; allPass = false; }
             } catch (e) {
                 allPass = false;
                 session.failCount++;
-                results.push({ pass: false, status: 'NetworkError', error: e.message });
+                results.push({ pass: false, status: 'NetworkError',
+                    error: e.message, stepIndex: srcIdx, stepLabel: stepLabel });
             }
         }
         return { pass: allPass, results: results, durationMs: performance.now() - startMs };
@@ -573,6 +605,10 @@
 
     // One isolated recording session — sequential through every step
     // with the per-session captured bag forwarded into pre/post-scripts.
+    //
+    // #132 Phase 1 polish — same per-step annotation contract as the
+    // collection runner so the cross-session aggregator has one shape
+    // to consume regardless of source kind.
     async function _runRecordingSession(rec, session) {
         var startMs = performance.now();
         var results = [];
@@ -580,14 +616,21 @@
         for (var i = 0; i < rec.steps.length; i++) {
             session.stepIndex = i;
             render();
+            var step = rec.steps[i];
+            var stepLabel = (step.service && step.method)
+                ? (step.service + '/' + step.method)
+                : ('step ' + (i + 1));
             try {
-                var r = await replaySingleStep(rec.steps[i], { capturedBag: session.captured });
+                var r = await replaySingleStep(step, { capturedBag: session.captured });
+                r.stepIndex = i;
+                r.stepLabel = stepLabel;
                 results.push(r);
                 if (r.pass) session.passCount++; else { session.failCount++; allPass = false; }
             } catch (e) {
                 allPass = false;
                 session.failCount++;
-                results.push({ pass: false, status: 'NetworkError', error: e.message });
+                results.push({ pass: false, status: 'NetworkError',
+                    error: e.message, stepIndex: i, stepLabel: stepLabel });
             }
         }
         return { pass: allPass, results: results, durationMs: performance.now() - startMs };
@@ -697,7 +740,444 @@
         });
         panel.appendChild(tiles);
 
+        // #132 Phase 1 polish — aggregate percentile tiles + per-step
+        // status histogram + Save-to-Benchmarks / Export toolbar. The
+        // operator gets the cross-session distribution at the same
+        // altitude they already see per-session tiles; the histogram
+        // surfaces "did sessions diverge on the same step?" — the
+        // shape that turns a 200-iteration parallel run into actual
+        // load-test insight rather than a wall of OK/FAIL.
+        if (st.status === 'done') {
+            var agg = _computeParallelAggregates(st);
+            if (agg.count > 0) {
+                panel.appendChild(_renderParallelAggregateTiles(agg));
+                panel.appendChild(_renderParallelStepHistogram(agg));
+            }
+            panel.appendChild(_renderParallelResultToolbar(st));
+        }
+
         return panel;
+    }
+
+    // ---- #132 Phase 1 polish — aggregate math + post-run UI ----
+    //
+    // _computeParallelAggregates(state) → {
+    //     count, success, failure,
+    //     stats: { min, max, avg, p50, p90, p95, p99 },
+    //     statusCounts: { OK: n, NetworkError: n, ... },
+    //     perStep: { stepIndex: { label, count, success, failure,
+    //                             durations[], statusCounts{} } },
+    //     iterations: [{ i, sessionIndex, stepIndex, label, status,
+    //                    pass, durationMs }]
+    // }
+    //
+    // Walks every session.results[] entry. Distributed runs project
+    // the coordinator's flat result list back onto sessions (see
+    // _runDistributedParallel above) so this aggregator sees the same
+    // shape regardless of run mode.
+    function _computeParallelAggregates(state) {
+        var durations = [];
+        var statusCounts = {};
+        var perStep = {};
+        var iterations = [];
+        var success = 0;
+        var failure = 0;
+        var i = 0;
+        (state.sessions || []).forEach(function (s) {
+            (s.results || []).forEach(function (r) {
+                i++;
+                var d = r.durationMs || 0;
+                var status = r.status != null ? String(r.status) : (r.pass ? 'OK' : 'Error');
+                if (r.pass) success++; else failure++;
+                durations.push(d);
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
+                var key = r.stepIndex != null ? String(r.stepIndex) : '?';
+                var slot = perStep[key];
+                if (!slot) {
+                    slot = perStep[key] = {
+                        stepIndex: r.stepIndex != null ? r.stepIndex : -1,
+                        label: r.stepLabel || ('step ' + key),
+                        count: 0, success: 0, failure: 0,
+                        durations: [], statusCounts: {}
+                    };
+                }
+                slot.count++;
+                if (r.pass) slot.success++; else slot.failure++;
+                slot.durations.push(d);
+                slot.statusCounts[status] = (slot.statusCounts[status] || 0) + 1;
+                iterations.push({
+                    i: i, sessionIndex: s.index, stepIndex: r.stepIndex,
+                    label: r.stepLabel || '', status: status,
+                    pass: !!r.pass, durationMs: d
+                });
+            });
+        });
+        var sorted = durations.slice().sort(function (a, b) { return a - b; });
+        return {
+            count: sorted.length,
+            success: success,
+            failure: failure,
+            stats: _parallelStatsFromSorted(sorted),
+            statusCounts: statusCounts,
+            perStep: perStep,
+            durations: sorted,
+            iterations: iterations
+        };
+    }
+
+    function _parallelPercentile(sorted, p) {
+        if (!sorted || sorted.length === 0) return 0;
+        var idx = Math.ceil((p / 100) * sorted.length) - 1;
+        return sorted[Math.max(0, Math.min(idx, sorted.length - 1))];
+    }
+
+    function _parallelStatsFromSorted(sorted) {
+        if (!sorted || sorted.length === 0) {
+            return { min: 0, max: 0, avg: 0, p50: 0, p90: 0, p95: 0, p99: 0 };
+        }
+        var sum = 0;
+        for (var i = 0; i < sorted.length; i++) sum += sorted[i];
+        return {
+            min: sorted[0],
+            max: sorted[sorted.length - 1],
+            avg: sum / sorted.length,
+            p50: _parallelPercentile(sorted, 50),
+            p90: _parallelPercentile(sorted, 90),
+            p95: _parallelPercentile(sorted, 95),
+            p99: _parallelPercentile(sorted, 99)
+        };
+    }
+
+    function _formatParallelMs(v) {
+        if (v == null) return '—';
+        if (v >= 1000) return (v / 1000).toFixed(2) + ' s';
+        if (v >= 100) return Math.round(v) + ' ms';
+        return Math.round(v * 10) / 10 + ' ms';
+    }
+
+    function _renderParallelAggregateTiles(agg) {
+        var s = agg.stats;
+        var row = el('div', { className: 'bowire-parallel-agg-row' });
+        function tile(label, value, klass) {
+            return el('div', { className: 'bowire-parallel-agg-tile' + (klass ? ' ' + klass : '') },
+                el('span', { className: 'bowire-parallel-agg-label', textContent: label }),
+                el('span', { className: 'bowire-parallel-agg-value', textContent: value })
+            );
+        }
+        row.appendChild(tile('p50', _formatParallelMs(s.p50)));
+        row.appendChild(tile('p90', _formatParallelMs(s.p90)));
+        row.appendChild(tile('p95', _formatParallelMs(s.p95)));
+        row.appendChild(tile('p99', _formatParallelMs(s.p99), 'tight'));
+        row.appendChild(tile('min', _formatParallelMs(s.min)));
+        row.appendChild(tile('max', _formatParallelMs(s.max)));
+        row.appendChild(tile('avg', _formatParallelMs(s.avg)));
+        row.appendChild(tile('n', String(agg.count)));
+        return row;
+    }
+
+    function _renderParallelStepHistogram(agg) {
+        var section = el('div', { className: 'bowire-parallel-histogram' });
+        section.appendChild(el('div', { className: 'bowire-parallel-histogram-title',
+            textContent: 'Per-step status histogram' }));
+
+        var stepKeys = Object.keys(agg.perStep)
+            .sort(function (a, b) { return agg.perStep[a].stepIndex - agg.perStep[b].stepIndex; });
+        if (stepKeys.length === 0) {
+            section.appendChild(el('div', { className: 'bowire-parallel-histogram-empty',
+                textContent: 'No completed steps recorded.' }));
+            return section;
+        }
+
+        var table = el('table', { className: 'bowire-parallel-histogram-table' });
+        var thead = el('thead', null,
+            el('tr', null,
+                el('th', { textContent: 'Step' }),
+                el('th', { textContent: 'n' }),
+                el('th', { textContent: 'success' }),
+                el('th', { textContent: 'failure' }),
+                el('th', { textContent: 'p50' }),
+                el('th', { textContent: 'p95' }),
+                el('th', { textContent: 'p99' }),
+                el('th', { textContent: 'status mix' })
+            )
+        );
+        table.appendChild(thead);
+        var tbody = el('tbody');
+        stepKeys.forEach(function (k) {
+            var slot = agg.perStep[k];
+            var sorted = slot.durations.slice().sort(function (a, b) { return a - b; });
+            var stats = _parallelStatsFromSorted(sorted);
+            // status-mix bar — proportional segments of success / failure
+            // / abort buckets. Same 3-bucket logic the per-step row uses
+            // so the bar matches the count columns visually.
+            var bar = el('span', { className: 'bowire-parallel-histogram-bar' });
+            var passPct = slot.count > 0 ? Math.round(100 * slot.success / slot.count) : 0;
+            var failPct = slot.count > 0 ? Math.round(100 * slot.failure / slot.count) : 0;
+            if (passPct > 0) {
+                bar.appendChild(el('span', { className: 'bowire-parallel-histogram-bar-pass',
+                    style: 'width:' + passPct + '%', title: slot.success + ' success' }));
+            }
+            if (failPct > 0) {
+                bar.appendChild(el('span', { className: 'bowire-parallel-histogram-bar-fail',
+                    style: 'width:' + failPct + '%', title: slot.failure + ' failure' }));
+            }
+            var statusMix = Object.keys(slot.statusCounts).sort().map(function (sk) {
+                return sk + '=' + slot.statusCounts[sk];
+            }).join(' · ');
+            tbody.appendChild(el('tr', null,
+                el('td', { className: 'bowire-parallel-histogram-step', title: slot.label,
+                    textContent: slot.label }),
+                el('td', { textContent: String(slot.count) }),
+                el('td', { className: 'bowire-parallel-histogram-pass',
+                    textContent: String(slot.success) }),
+                el('td', { className: 'bowire-parallel-histogram-fail',
+                    textContent: String(slot.failure) }),
+                el('td', { textContent: _formatParallelMs(stats.p50) }),
+                el('td', { textContent: _formatParallelMs(stats.p95) }),
+                el('td', { textContent: _formatParallelMs(stats.p99) }),
+                el('td', { className: 'bowire-parallel-histogram-mix' },
+                    bar,
+                    el('span', { className: 'bowire-parallel-histogram-mix-text',
+                        textContent: statusMix })
+                )
+            ));
+        });
+        table.appendChild(tbody);
+        section.appendChild(table);
+        return section;
+    }
+
+    // Save-to-Benchmarks + Export toolbar. Routes through the
+    // benchmarks rail's exporters (#234) so CSV / k6-summary / OTLP
+    // for a parallel run is byte-identical to the same export off a
+    // regular benchmark envelope — operators only learn one format
+    // shape across both runners.
+    function _renderParallelResultToolbar(state) {
+        var bar = el('div', { className: 'bowire-parallel-toolbar' });
+
+        // Save to Benchmarks — lands a fresh benchmark spec keyed on
+        // (kind, sourceId, ranAt) so a parallel run is replayable +
+        // diff-able alongside regular benchmark history. Subsequent
+        // runs against the same source land additional `runs[]`
+        // entries on the same spec (history cap honoured by the
+        // existing #233 ring).
+        bar.appendChild(el('button', {
+            className: 'bowire-recording-action-btn',
+            title: 'Save this run into Benchmarks for replay + diff (#131 / #233)',
+            onClick: function () { _saveParallelRunToBenchmarks(state); }
+        },
+            el('span', { innerHTML: typeof svgIcon === 'function' ? svgIcon('lightning') : '' }),
+            el('span', { textContent: 'Save to Benchmarks' })
+        ));
+
+        // Export — same three formats as #234, accessed off the
+        // benchmarks rail. We build a transient spec.lastRun shape,
+        // call the exporter, and pipe the bytes through a download
+        // anchor; no benchmark spec is created when the operator
+        // just wants the file.
+        ['csv', 'k6-summary', 'otlp'].forEach(function (fmt) {
+            var label = fmt === 'csv' ? 'CSV'
+                : fmt === 'k6-summary' ? 'k6-summary' : 'OTLP';
+            bar.appendChild(el('button', {
+                className: 'bowire-recording-action-btn',
+                title: 'Export results as ' + label,
+                onClick: function () { _exportParallelRun(state, fmt); }
+            },
+                el('span', { innerHTML: typeof svgIcon === 'function' ? svgIcon('download') : '' }),
+                el('span', { textContent: label })
+            ));
+        });
+
+        return bar;
+    }
+
+    // Project the parallel-sessions state into the same shape
+    // exportRunAsCsv / exportRunAsK6Summary / exportRunAsOtlpJson
+    // consume from benchmarks.js (spec.lastRun.{stats, statusCounts,
+    // targetStats, iterations, durations, total, success, failure,
+    // startTimeMs, endTimeMs, ranAt, ranAtWallClock}). One projection
+    // keeps the three exporters DRY — and any new exporter the
+    // benchmarks rail adds (Grafana, Datadog) automatically picks up
+    // parallel-sessions runs.
+    function _parallelStateToBenchmarkSpec(state) {
+        var agg = _computeParallelAggregates(state);
+        var startWall = state.startedAt || Date.now();
+        var endWall = startWall + Math.round(state.durationMs || 0);
+        var totalSeconds = (state.durationMs || 0) / 1000;
+        // Per-step rollup → benchmark targetStats shape.
+        var targetStats = {};
+        Object.keys(agg.perStep).forEach(function (k) {
+            var slot = agg.perStep[k];
+            var sorted = slot.durations.slice().sort(function (a, b) { return a - b; });
+            targetStats['step_' + k] = {
+                key: 'step_' + k,
+                label: slot.label,
+                count: slot.count,
+                errors: slot.failure,
+                durations: sorted,
+                statusCounts: Object.assign({}, slot.statusCounts)
+            };
+        });
+        var iterationsForExport = agg.iterations.map(function (it) {
+            return {
+                i: it.i,
+                target: it.label,
+                targetKey: 'step_' + (it.stepIndex != null ? it.stepIndex : '?'),
+                durationMs: it.durationMs,
+                status: it.status,
+                pass: !!it.pass,
+                ranAt: startWall
+            };
+        });
+        var stats = Object.assign({}, agg.stats, {
+            count: agg.count,
+            totalSeconds: totalSeconds,
+            throughput: totalSeconds > 0 ? agg.count / totalSeconds : 0
+        });
+        var lastRun = {
+            ranAt: startWall,
+            ranAtWallClock: startWall,
+            durations: agg.durations,
+            statusCounts: agg.statusCounts,
+            iterationTargets: [],
+            success: agg.success,
+            failure: agg.failure,
+            total: agg.count,
+            startTimeMs: startWall,
+            endTimeMs: endWall,
+            cancelled: false,
+            stats: stats,
+            iterations: iterationsForExport,
+            targetStats: targetStats,
+            // Parallel-sessions marker — lets the Benchmarks pane label
+            // the run distinctly from a "regular" envelope iteration.
+            parallelSessions: {
+                kind: state.kind,
+                sourceId: state.sourceId,
+                sourceName: state.sourceName,
+                sessionCount: state.sessionCount,
+                distributed: !!state.distributed,
+                hosts: Array.isArray(state.hosts) ? state.hosts.slice() : null
+            }
+        };
+        return {
+            id: 'parallel_' + (state.kind || 'src') + '_' + (state.sourceId || 'unknown'),
+            name: 'Parallel: ' + (state.sourceName || state.kind || 'sessions'),
+            kind: 'parallel',
+            mode: 'parallel',
+            sourceKind: state.kind,
+            sourceId: state.sourceId,
+            // Synthetic single envelope target — the run already happened,
+            // so the spec exists for replay + diff bookkeeping only.
+            targets: [{
+                type: state.kind === 'collection' ? 'collection-ref'
+                    : state.kind === 'recording' ? 'recording-ref' : 'method',
+                collectionId: state.kind === 'collection' ? state.sourceId : undefined,
+                recordingId: state.kind === 'recording' ? state.sourceId : undefined,
+                label: state.sourceName
+            }],
+            phases: [{
+                vus: state.sessionCount || 1,
+                totalIterations: agg.count,
+                durationMs: null,
+                rampToVus: null,
+                arrivalRate: null
+            }],
+            lastRun: lastRun,
+            runs: [lastRun],
+            createdAt: startWall
+        };
+    }
+
+    function _saveParallelRunToBenchmarks(state) {
+        var transient = _parallelStateToBenchmarkSpec(state);
+        if (typeof loadBenchmarks === 'function') {
+            try { loadBenchmarks(); } catch { /* ignore — list is empty */ }
+        }
+        if (typeof benchmarksList === 'undefined' || !Array.isArray(benchmarksList)) {
+            toast('Benchmarks rail not available in this build', 'error');
+            return;
+        }
+        // Stable key — every parallel-sessions run on the SAME source
+        // lands additional history entries on the SAME spec so the
+        // diff banner (#233 prev-run delta) just works on the second
+        // run onwards. Cross-source runs get their own spec.
+        var existing = benchmarksList.find(function (s) { return s.id === transient.id; });
+        if (existing) {
+            existing.lastRun = transient.lastRun;
+            if (!Array.isArray(existing.runs)) existing.runs = [];
+            existing.runs.push(transient.lastRun);
+            var cap = (typeof _benchmarkHistoryCap === 'function') ? _benchmarkHistoryCap() : 5;
+            if (existing.runs.length > cap) {
+                existing.runs.splice(0, existing.runs.length - cap);
+            }
+            existing.sourceKind = transient.sourceKind;
+            existing.sourceId = transient.sourceId;
+        } else {
+            benchmarksList.push(transient);
+        }
+        if (typeof persistBenchmarks === 'function') persistBenchmarks();
+        var savedId = (existing && existing.id) || transient.id;
+        if (typeof benchmarksSelectedId !== 'undefined') {
+            benchmarksSelectedId = savedId;
+        }
+        toast('Saved parallel run to Benchmarks — open the Benchmarks rail to replay or diff',
+            'success', {
+                action: {
+                    label: 'Open',
+                    onClick: function () {
+                        railMode = 'benchmarks';
+                        try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); }
+                        catch { /* ignore */ }
+                        if (typeof benchmarksSelectedId !== 'undefined') {
+                            benchmarksSelectedId = savedId;
+                        }
+                        render();
+                    }
+                }
+            });
+        render();
+    }
+
+    function _exportParallelRun(state, format) {
+        var spec = _parallelStateToBenchmarkSpec(state);
+        var stem = ((state.sourceName || 'parallel') + '_'
+            + (state.sessionCount || 1) + 'x_' + Date.now())
+            .replace(/[^\w\-]+/g, '_');
+        var content;
+        var mime;
+        var ext;
+        if (format === 'csv') {
+            if (typeof exportRunAsCsv !== 'function') {
+                toast('CSV exporter not available — Benchmarks rail missing', 'error');
+                return;
+            }
+            content = exportRunAsCsv(spec, 'per-method');
+            mime = 'text/csv;charset=utf-8'; ext = '.results.csv';
+        } else if (format === 'k6-summary') {
+            if (typeof exportRunAsK6Summary !== 'function') {
+                toast('k6 exporter not available — Benchmarks rail missing', 'error');
+                return;
+            }
+            content = JSON.stringify(exportRunAsK6Summary(spec), null, 2);
+            mime = 'application/json'; ext = '.k6-summary.json';
+        } else if (format === 'otlp') {
+            if (typeof exportRunAsOtlpJson !== 'function') {
+                toast('OTLP exporter not available — Benchmarks rail missing', 'error');
+                return;
+            }
+            content = JSON.stringify(exportRunAsOtlpJson(spec), null, 2);
+            mime = 'application/json'; ext = '.otlp.json';
+        } else {
+            return;
+        }
+        var blob = new Blob([content], { type: mime });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = stem + ext;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast('Exported parallel run as ' + format.toUpperCase(), 'success');
     }
 
     // Compact host label for the per-session tile — strip scheme and
