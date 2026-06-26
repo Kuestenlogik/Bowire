@@ -140,5 +140,28 @@ public class BowireRailRegistryTests
         var json = registry.ToJson();
         Assert.Contains("\"id\":\"ai\"", json, StringComparison.Ordinal);
         Assert.Contains("\"defaultEnabled\":true", json, StringComparison.Ordinal);
+        // #310 — description field added so the Settings → Modules UI
+        // can render a one-line copy under each label. Empty by
+        // default; the field MUST still be emitted so the JS-side
+        // descriptor lookup hits a known key shape.
+        Assert.Contains("\"description\":\"\"", json, StringComparison.Ordinal);
+    }
+
+    private sealed class StubModuleWithDescription(string id, string description)
+        : IBowireModuleContribution
+    {
+        public string Id { get; } = id;
+        public string DisplayName => Id;
+        public string Description { get; } = description;
+    }
+
+    [Fact]
+    public void ModuleRegistry_ToJson_Emits_Description()
+    {
+        var registry = new BowireModuleRegistry();
+        registry.Register(new StubModuleWithDescription("ai", "Chat panel and hints."));
+
+        var json = registry.ToJson();
+        Assert.Contains("\"description\":\"Chat panel and hints.\"", json, StringComparison.Ordinal);
     }
 }

@@ -91,6 +91,7 @@ public sealed class BowireModuleRegistry
             sb.Append('{');
             sb.Append("\"id\":\"").Append(EscapeJson(module.Id)).Append("\",");
             sb.Append("\"label\":\"").Append(EscapeJson(module.DisplayName)).Append("\",");
+            sb.Append("\"description\":\"").Append(EscapeJson(module.Description)).Append("\",");
             sb.Append("\"defaultEnabled\":").Append(module.DefaultEnabled ? "true" : "false");
             sb.Append('}');
         }

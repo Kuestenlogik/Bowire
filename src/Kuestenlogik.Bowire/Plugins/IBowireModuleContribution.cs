@@ -38,6 +38,15 @@ public interface IBowireModuleContribution
     string DisplayName { get; }
 
     /// <summary>
+    /// One-sentence description shown under the module name in
+    /// Settings → Modules. Tells the operator what surface they're
+    /// turning on or off (e.g. "Chat-with-your-API panel and contextual
+    /// hints"). Defaults to empty — modules without a description just
+    /// render the label, same as the rails toggle.
+    /// </summary>
+    string Description => string.Empty;
+
+    /// <summary>
     /// Whether the module defaults to ON when the package is referenced.
     /// Most modules should default to <c>true</c> — operators expect the
     /// thing they explicitly installed to work. Set <c>false</c> only
