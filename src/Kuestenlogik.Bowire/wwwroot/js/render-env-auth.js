@@ -1287,6 +1287,14 @@
         var header = el('div', { className: 'bowire-activity-drawer-header' });
         var redoableCount = (typeof actionLogRedoStack !== 'undefined'
             && Array.isArray(actionLogRedoStack)) ? actionLogRedoStack.length : 0;
+        // #194 — multi-select bulk-undo. activitySelected lives in
+        // prologue.js so other surfaces (e.g. command palette) could
+        // pivot off it later. When at least one row is checked, the
+        // header gains an 'Undo N selected' button that walks the
+        // selected ids in newest-first log order.
+        var selCount = (typeof activitySelected !== 'undefined'
+            && activitySelected && typeof activitySelected.size === 'number')
+            ? activitySelected.size : 0;
         header.appendChild(el('button', {
             type: 'button',
             className: 'bowire-activity-action',
@@ -1315,6 +1323,33 @@
                 }
             }
         }));
+        if (selCount > 0) {
+            header.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-activity-action bowire-activity-action-primary',
+                title: 'Roll back the ' + selCount + ' selected actions in newest-first order',
+                textContent: 'Undo ' + selCount + ' selected',
+                onClick: function () {
+                    if (typeof undoActionsByIds !== 'function') return;
+                    var rolled = undoActionsByIds(Array.from(activitySelected));
+                    activitySelected.clear();
+                    if (rolled.length > 0 && typeof toast === 'function') {
+                        toast('Undone ' + rolled.length + ' action' + (rolled.length === 1 ? '' : 's'), 'info');
+                    }
+                    render();
+                }
+            }));
+            header.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-activity-action',
+                title: 'Clear selection',
+                textContent: 'Clear selection',
+                onClick: function () {
+                    activitySelected.clear();
+                    render();
+                }
+            }));
+        }
         header.appendChild(el('span', { style: 'flex:1' }));
         header.appendChild(el('button', {
             type: 'button',
@@ -1337,9 +1372,32 @@
             }));
         } else {
             actionLog.forEach(function (entry) {
+                var isSelectable = entry.status === 'available' && typeof entry.undoFn === 'function';
+                var isChecked = isSelectable && activitySelected && activitySelected.has(entry.id);
                 var row = el('div', {
                     className: 'bowire-activity-row bowire-activity-row-' + entry.status
+                        + (isChecked ? ' bowire-activity-row-selected' : '')
                 });
+                // #194 — per-row checkbox for multi-select. Only
+                // selectable entries (status==='available' + has
+                // undoFn) get a real checkbox; expired / undone
+                // entries render a reserved-width spacer so the
+                // rail / title columns stay aligned.
+                if (isSelectable) {
+                    row.appendChild(el('input', {
+                        type: 'checkbox',
+                        className: 'bowire-activity-row-check',
+                        checked: isChecked ? 'checked' : null,
+                        'aria-label': 'Select for bulk undo',
+                        onChange: function (e) {
+                            if (e.target.checked) activitySelected.add(entry.id);
+                            else activitySelected.delete(entry.id);
+                            render();
+                        }
+                    }));
+                } else {
+                    row.appendChild(el('span', { className: 'bowire-activity-row-check-spacer' }));
+                }
                 var meta = el('div', { className: 'bowire-activity-meta' });
                 meta.appendChild(el('div', {
                     className: 'bowire-activity-title',
@@ -1348,11 +1406,12 @@
                 meta.appendChild(el('div', {
                     className: 'bowire-activity-time',
                     textContent: _formatRelativeTime(entry.ts) + ' · ' + entry.kind
+                        + (entry.rail ? ' · ' + entry.rail : '')
                         + (entry.status === 'undone' ? ' · undone'
                             : (entry.status === 'expired' ? ' · expired' : ''))
                 }));
                 row.appendChild(meta);
-                if (entry.status === 'available' && typeof entry.undoFn === 'function') {
+                if (isSelectable) {
                     row.appendChild(el('button', {
                         type: 'button',
                         className: 'bowire-activity-row-undo',
@@ -1363,6 +1422,7 @@
                                 entry.undoFn();
                                 entry.status = 'undone';
                                 if (entry.redoFn) actionLogRedoStack.unshift(entry);
+                                activitySelected.delete(entry.id);
                                 _persistActionLog();
                                 if (typeof toast === 'function') toast('Undone: ' + entry.title, 'info');
                                 render();
@@ -1411,7 +1471,10 @@
             ? collectionsTrash : [];
         var tabs = (typeof tabsTrash !== 'undefined' && Array.isArray(tabsTrash))
             ? tabsTrash : [];
-        var totalCount = rec.length + col.length + tabs.length;
+        // #194 — workspaces are now a real bucket here.
+        var wsTrashLocal = (typeof workspacesTrash !== 'undefined' && Array.isArray(workspacesTrash))
+            ? workspacesTrash : [];
+        var totalCount = rec.length + col.length + tabs.length + wsTrashLocal.length;
 
         var backdrop = el('div', {
             id: 'bowire-trash-backdrop',
@@ -1530,22 +1593,30 @@
             }
         }));
 
-        // Workspaces section is a placeholder until #194 soft-delete
-        // ships. Render the row so the four-bucket aggregation is
-        // visible, but mark it as gated + non-interactive — clicking
-        // doesn't expand. Keeps the IA promise of "every bucket lives
-        // here" intact without pretending we already have the data.
-        body.appendChild(el('div', { className: 'bowire-trash-bucket bowire-trash-bucket-gated' },
-            el('div', { className: 'bowire-trash-bucket-header bowire-trash-bucket-header-gated' },
-                el('span', { className: 'bowire-trash-bucket-label', textContent: 'Workspaces' }),
-                el('span', { className: 'bowire-trash-bucket-count', textContent: '(0)' }),
-                el('span', {
-                    className: 'bowire-trash-bucket-gated-note',
-                    title: 'Workspaces become soft-deletable in #194; this section will populate then.',
-                    textContent: 'Soft-delete arrives with #194'
-                })
-            )
-        ));
+        // #194 — Workspaces bucket is now live. Soft-deleted via
+        // deleteWorkspace → workspacesTrash; restore re-creates the
+        // workspace + every per-workspace bucket from the snapshot.
+        var ws = (typeof workspacesTrash !== 'undefined' && Array.isArray(workspacesTrash))
+            ? workspacesTrash : [];
+        body.appendChild(_renderTrashBucketSection({
+            id: 'workspaces',
+            label: 'Workspaces',
+            entries: ws,
+            nameOf: function (e) {
+                if (!e || !e.workspace) return '(unnamed workspace)';
+                return e.workspace.name || '(unnamed workspace)';
+            },
+            onRestore: function (t) {
+                if (typeof restoreWorkspaceFromTrash === 'function') {
+                    restoreWorkspaceFromTrash(t);
+                }
+            },
+            onDeleteForever: function (t) {
+                if (typeof purgeWorkspaceFromTrash === 'function') {
+                    purgeWorkspaceFromTrash(t);
+                }
+            }
+        }));
 
         modal.appendChild(body);
 
@@ -1568,6 +1639,20 @@
                             if (Array.isArray(recordingsTrash)) recordingsTrash.length = 0;
                             if (Array.isArray(collectionsTrash)) collectionsTrash.length = 0;
                             if (Array.isArray(tabsTrash)) tabsTrash.length = 0;
+                            // #194 — workspaces bucket: a real purge
+                            // also wipes the per-workspace localStorage
+                            // namespace via purgeWorkspaceFromTrash so
+                            // the entries don't leave orphans behind.
+                            if (Array.isArray(workspacesTrash)) {
+                                while (workspacesTrash.length > 0) {
+                                    if (typeof purgeWorkspaceFromTrash === 'function') {
+                                        purgeWorkspaceFromTrash(workspacesTrash[0]);
+                                    } else {
+                                        workspacesTrash.shift();
+                                    }
+                                }
+                                if (typeof persistWorkspacesTrash === 'function') persistWorkspacesTrash();
+                            }
                             if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
                             if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
                             if (typeof persistTabsTrash === 'function') persistTabsTrash();
@@ -1624,6 +1709,16 @@
                                 }
                                 tabsTrash.length = 0;
                                 if (typeof persistTabsTrash === 'function') persistTabsTrash();
+                            }
+                            // #194 — Workspaces. Walk newest-first
+                            // (matches the other buckets) so the
+                            // original order is preserved.
+                            if (Array.isArray(workspacesTrash)) {
+                                for (var w = workspacesTrash.length - 1; w >= 0; w--) {
+                                    if (typeof restoreWorkspaceFromTrash === 'function') {
+                                        restoreWorkspaceFromTrash(workspacesTrash[w]);
+                                    }
+                                }
                             }
                             render();
                         },

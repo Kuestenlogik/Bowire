@@ -1306,8 +1306,10 @@
                     clearHistory();
                     toast('History cleared', 'success', {
                         undo: function () { restoreHistory(backup); },
-                        logAction: { kind: 'history-clear',
-                            title: 'Cleared call history (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)' }
+                        logAction: { kind: 'history-clear', rail: 'settings',
+                            title: 'Cleared call history (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)',
+                            undoSpec: { entries: backup },
+                            redo: function () { clearHistory(); } }
                     });
                 }, { title: 'Clear History', danger: true, confirmText: 'Clear' });
             }
@@ -1324,10 +1326,137 @@
                     render();
                     toast('Favorites cleared', 'success', {
                         undo: function () { try { localStorage.setItem(wsKey(FAVORITES_KEY), JSON.stringify(backup)); } catch {} render(); },
-                        logAction: { kind: 'favorites-clear',
-                            title: 'Cleared favorites (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)' }
+                        logAction: { kind: 'favorites-clear', rail: 'settings',
+                            title: 'Cleared favorites (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)',
+                            undoSpec: { entries: backup },
+                            redo: function () { try { localStorage.removeItem(wsKey(FAVORITES_KEY)); } catch {} render(); } }
                     });
                 }, { title: 'Clear Favorites', danger: true, confirmText: 'Clear' });
+            }
+        ));
+
+        // #194 — Settings → Data: bulk-clear recordings + collections.
+        // Routes through soft-delete (the per-rail trash buckets) so
+        // an undo restores every entry to its original index, and
+        // also records the bulk op in the action log.
+        section.appendChild(renderSettingsAction(
+            'Clear recordings',
+            'Move every recording in this workspace to the recordings trash',
+            'Clear Recordings',
+            function () {
+                bowireConfirm('Move all recordings to trash?', function () {
+                    if (!Array.isArray(recordingsList) || recordingsList.length === 0) {
+                        toast('No recordings to clear', 'info');
+                        return;
+                    }
+                    var snapshot = recordingsList.map(function (r, idx) {
+                        return { entry: JSON.parse(JSON.stringify(r)), originalIdx: idx };
+                    });
+                    var removed = recordingsList.splice(0, recordingsList.length);
+                    if (typeof recordingActiveId !== 'undefined') recordingActiveId = null;
+                    if (typeof recordingManagerSelectedId !== 'undefined') recordingManagerSelectedId = null;
+                    if (Array.isArray(recordingsTrash)) {
+                        for (var i = snapshot.length - 1; i >= 0; i--) {
+                            recordingsTrash.unshift({
+                                entry: snapshot[i].entry,
+                                originalIdx: snapshot[i].originalIdx,
+                                deletedAt: Date.now()
+                            });
+                        }
+                        if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
+                    }
+                    if (typeof persistRecordings === 'function') persistRecordings();
+                    render();
+                    toast(removed.length + ' recordings moved to trash', 'success', {
+                        undo: function () {
+                            snapshot.slice().sort(function (a, b) { return a.originalIdx - b.originalIdx; })
+                                .forEach(function (it) {
+                                    if (!recordingsList.find(function (r) { return r.id === it.entry.id; })) {
+                                        var idx = Math.min(it.originalIdx, recordingsList.length);
+                                        recordingsList.splice(idx, 0, it.entry);
+                                    }
+                                });
+                            if (Array.isArray(recordingsTrash)) {
+                                var ids = {};
+                                snapshot.forEach(function (it) { ids[it.entry.id] = true; });
+                                for (var j = recordingsTrash.length - 1; j >= 0; j--) {
+                                    if (recordingsTrash[j] && recordingsTrash[j].entry
+                                        && ids[recordingsTrash[j].entry.id]) {
+                                        recordingsTrash.splice(j, 1);
+                                    }
+                                }
+                                if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
+                            }
+                            if (typeof persistRecordings === 'function') persistRecordings();
+                            render();
+                        },
+                        logAction: {
+                            kind: 'recordings-clear', rail: 'recordings',
+                            title: 'Cleared recordings (' + snapshot.length + ' entries)',
+                            undoSpec: { entries: snapshot }
+                        }
+                    });
+                }, { title: 'Clear Recordings', danger: true, confirmText: 'Clear' });
+            }
+        ));
+
+        section.appendChild(renderSettingsAction(
+            'Clear collections',
+            'Move every collection in this workspace to the collections trash',
+            'Clear Collections',
+            function () {
+                bowireConfirm('Move all collections to trash?', function () {
+                    if (!Array.isArray(collectionsList) || collectionsList.length === 0) {
+                        toast('No collections to clear', 'info');
+                        return;
+                    }
+                    var snapshot = collectionsList.map(function (c, idx) {
+                        return { entry: JSON.parse(JSON.stringify(c)), originalIdx: idx };
+                    });
+                    var removed = collectionsList.splice(0, collectionsList.length);
+                    if (typeof collectionManagerSelectedId !== 'undefined') collectionManagerSelectedId = null;
+                    if (Array.isArray(collectionsTrash)) {
+                        for (var i = snapshot.length - 1; i >= 0; i--) {
+                            collectionsTrash.unshift({
+                                entry: snapshot[i].entry,
+                                originalIdx: snapshot[i].originalIdx,
+                                deletedAt: Date.now()
+                            });
+                        }
+                        if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
+                    }
+                    if (typeof persistCollections === 'function') persistCollections();
+                    render();
+                    toast(removed.length + ' collections moved to trash', 'success', {
+                        undo: function () {
+                            snapshot.slice().sort(function (a, b) { return a.originalIdx - b.originalIdx; })
+                                .forEach(function (it) {
+                                    if (!collectionsList.find(function (c) { return c.id === it.entry.id; })) {
+                                        var idx = Math.min(it.originalIdx, collectionsList.length);
+                                        collectionsList.splice(idx, 0, it.entry);
+                                    }
+                                });
+                            if (Array.isArray(collectionsTrash)) {
+                                var ids = {};
+                                snapshot.forEach(function (it) { ids[it.entry.id] = true; });
+                                for (var j = collectionsTrash.length - 1; j >= 0; j--) {
+                                    if (collectionsTrash[j] && collectionsTrash[j].entry
+                                        && ids[collectionsTrash[j].entry.id]) {
+                                        collectionsTrash.splice(j, 1);
+                                    }
+                                }
+                                if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
+                            }
+                            if (typeof persistCollections === 'function') persistCollections();
+                            render();
+                        },
+                        logAction: {
+                            kind: 'collections-clear', rail: 'collections',
+                            title: 'Cleared collections (' + snapshot.length + ' entries)',
+                            undoSpec: { entries: snapshot }
+                        }
+                    });
+                }, { title: 'Clear Collections', danger: true, confirmText: 'Clear' });
             }
         ));
 
@@ -1354,13 +1483,48 @@
 
         section.appendChild(renderSettingsAction(
             'Reset all settings',
-            'Clear localStorage and reload — returns everything to initial state',
+            'Clear localStorage and reload — undo restores from a pre-reset snapshot',
             'Reset All',
             function () {
-                bowireConfirm('Reset ALL Bowire data (history, favorites, environments, settings)?\n\nThis cannot be undone.', function () {
-                    localStorage.clear();
-                    toast('All data cleared \u2014 reloading...', 'success');
-                    setTimeout(function () { location.reload(); }, 500);
+                bowireConfirm('Reset ALL Bowire data (history, favorites, environments, settings)?\n\nThe action log keeps a pre-reset snapshot so Ctrl/Cmd+Z can put it back, but only until the page reloads.', function () {
+                    // #194 — snapshot every localStorage key into an
+                    // array of {key, value} pairs so undo can splat
+                    // it back. Snapshot necessarily includes the
+                    // action-log's own slot pre-reset, so a successful
+                    // undo restores the log to its pre-reset state
+                    // (dropping the reset entry itself). Operator can
+                    // Ctrl/Cmd+Z synchronously before the reload
+                    // timer fires.
+                    var snapshot = [];
+                    try {
+                        for (var i = 0; i < localStorage.length; i++) {
+                            var k = localStorage.key(i);
+                            if (k != null) snapshot.push({ key: k, value: localStorage.getItem(k) });
+                        }
+                    } catch { /* defensive */ }
+                    var keyCount = snapshot.length;
+                    try { localStorage.clear(); } catch { /* ignore */ }
+                    toast('All data cleared \u2014 Ctrl/Cmd+Z to undo, reload incoming', 'success', {
+                        duration: 8000,
+                        undo: function () {
+                            try {
+                                snapshot.forEach(function (pair) {
+                                    if (pair && typeof pair.key === 'string' && pair.value != null) {
+                                        localStorage.setItem(pair.key, pair.value);
+                                    }
+                                });
+                            } catch { /* ignore */ }
+                            toast('Settings restored from snapshot \u2014 reload for full effect', 'info');
+                        },
+                        logAction: {
+                            kind: 'settings-reset', rail: 'settings',
+                            title: 'Reset all settings (' + keyCount + ' keys snapshotted)',
+                            undoSpec: { entries: snapshot }
+                        }
+                    });
+                    // Wider window than the legacy 500 ms so the
+                    // operator can react to the Undo button.
+                    setTimeout(function () { location.reload(); }, 5000);
                 }, { title: 'Reset All Settings', danger: true, confirmText: 'Reset All' });
             },
             true // danger

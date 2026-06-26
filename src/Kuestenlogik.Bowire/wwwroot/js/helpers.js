@@ -2221,6 +2221,8 @@
             recordAction({
                 kind: options.logAction.kind || 'unknown',
                 title: options.logAction.title || message,
+                rail: options.logAction.rail || null,
+                undoSpec: options.logAction.undoSpec || null,
                 undo: options.undo,
                 redo: options.logAction.redo
             });

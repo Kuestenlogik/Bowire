@@ -1303,8 +1303,40 @@
                 innerHTML: svgIcon('trash'),
                 onClick: function () {
                     bowireConfirm('Delete recording "' + rec.name + '"?', function () {
+                        var snapshot = JSON.parse(JSON.stringify(rec));
+                        var originalIdx = recordingsList.findIndex(function (r) { return r.id === rec.id; });
                         deleteRecording(rec.id);
-                        toast('Recording deleted', 'success');
+                        // #194 — wire through the action log so
+                        // Ctrl/Cmd+Z + the Activity drawer + the
+                        // rail trail all surface the inverse.
+                        toast('Recording deleted', 'success', {
+                            undo: function () {
+                                if (!recordingsList.find(function (r) { return r.id === snapshot.id; })) {
+                                    var idx = Math.min(originalIdx < 0 ? recordingsList.length : originalIdx,
+                                        recordingsList.length);
+                                    recordingsList.splice(idx, 0, snapshot);
+                                    persistRecordings();
+                                }
+                                if (Array.isArray(recordingsTrash)) {
+                                    for (var i = 0; i < recordingsTrash.length; i++) {
+                                        if (recordingsTrash[i] && recordingsTrash[i].entry
+                                            && recordingsTrash[i].entry.id === snapshot.id) {
+                                            recordingsTrash.splice(i, 1);
+                                            if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
+                                            break;
+                                        }
+                                    }
+                                }
+                                render();
+                            },
+                            logAction: {
+                                kind: 'recording-delete',
+                                rail: 'recordings',
+                                title: 'Deleted recording "' + (snapshot.name || 'unnamed') + '"',
+                                undoSpec: { entry: snapshot, originalIdx: originalIdx },
+                                redo: function () { deleteRecording(snapshot.id); render(); }
+                            }
+                        });
                     }, { title: 'Delete Recording', danger: true, confirmText: 'Delete' });
                 }
             })
