@@ -230,6 +230,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [303](https://github.com/Kuestenlogik/Bowire/issues/303) | Bowire | [Guided tour: per-rail empty-state secondary tours](#issue-kuestenlogik-bowire-303) | ⬜ Backlog |  |
 | [304](https://github.com/Kuestenlogik/Bowire/issues/304) | Bowire | [Compose rail: hide standalone Collections rail tree node now that Compose hosts it](#issue-kuestenlogik-bowire-304) | ⬜ Backlog |  |
 | [305](https://github.com/Kuestenlogik/Bowire/issues/305) | Bowire | [Source catalogue providers: kubernetes + agent (Phase D+E)](#issue-kuestenlogik-bowire-305) | ⬜ Backlog |  |
+| [307](https://github.com/Kuestenlogik/Bowire/issues/307) | Bowire | [Bowire interceptor: standalone reverse-proxy mode (Phase C)](#issue-kuestenlogik-bowire-307) | ⬜ Backlog |  |
 
 ## Details
 
@@ -876,6 +877,10 @@ Phase A-F of #295 landed in 5160a3a — the Compose rail now hosts Collections +
 #### <a id="issue-kuestenlogik-bowire-305"></a>⬜ Backlog · [#305](https://github.com/Kuestenlogik/Bowire/issues/305) Source catalogue providers: kubernetes + agent (Phase D+E)
 
 Follow-up to #136. The provider seam (`IBowireCatalogueProvider` + `BowireCatalogueProviderRegistry`) and the three built-in providers (`local`, `http`, `consul`) shipped in ab8042fbe92611ccb41926af3be48d2947339282. The remaining two providers each need extra weight that doesn't belong in core: [[more]](https://github.com/Kuestenlogik/Bowire/issues/305)
+
+#### <a id="issue-kuestenlogik-bowire-307"></a>⬜ Backlog · [#307](https://github.com/Kuestenlogik/Bowire/issues/307) Bowire interceptor: standalone reverse-proxy mode (Phase C)
+
+Follow-up to #153 — Phases A + B (embedded middleware + record-session integration) shipped in commit b2b92483de079ef1f1701ce261ba1c9b1463e4b3. This issue tracks **Phase C — standalone reverse-proxy mode**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/307)
 
 ---
 
