@@ -25,7 +25,14 @@ public sealed class BowireHomeRailContribution : IBowireRailContribution
     /// <inheritdoc />
     public int SortIndex => 100;
     /// <inheritdoc />
-    public string Group => "work";
+    /// <remarks>
+    /// Own 'home' group so the rail-divider logic in render-sidebar.js
+    /// draws a separator BELOW Home (the group-change boundary),
+    /// visually anchoring it at the top the way Settings is anchored
+    /// at the bottom. Operator feedback: 'home sollte ebenso abgesetzt
+    /// sein wie einstellungen mit trennstrich'.
+    /// </remarks>
+    public string Group => "home";
     /// <inheritdoc />
     public string SidebarKind => "none";
     /// <inheritdoc />

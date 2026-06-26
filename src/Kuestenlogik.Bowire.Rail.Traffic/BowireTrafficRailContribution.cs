@@ -45,7 +45,13 @@ public sealed class BowireTrafficRailContribution : IBowireRailContribution
     /// <inheritdoc />
     public string DisplayName => "Traffic";
     /// <inheritdoc />
-    public string IconKey => "globe";
+    /// <remarks>
+    /// Operator-supplied traffic-light glyph (SVGRepo): vertical
+    /// three-bulb signal head with side arms. Reads as 'traffic
+    /// monitor' at the rail size and visually distinct from the
+    /// 'globe' the old Intercepted rail used.
+    /// </remarks>
+    public string IconKey => "trafficLight";
     /// <inheritdoc />
     /// <remarks>
     /// Sort index inherited from the old Intercepted rail (950) so the
