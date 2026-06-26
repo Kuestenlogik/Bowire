@@ -4667,6 +4667,13 @@
         failure: 0,
         durations: [],          // ms per call (success only)
         statusCounts: {},       // status name → count
+        // #231 — Per-iteration target labels. Populated by the envelope
+        // runner when a 'random' target is picked so the post-run UI
+        // can slice percentiles per endpoint. Each entry is an array of
+        // labels ('service/method' or 'collection:<id>'/'recording:<id>')
+        // for the targets actually invoked on that iteration. Stays
+        // empty for legacy (non-envelope) runBenchmark() runs.
+        iterationTargets: [],
         startTime: 0,
         endTime: 0,
         config: { n: 100, concurrency: 1 }
@@ -4682,6 +4689,7 @@
             failure: 0,
             durations: [],
             statusCounts: {},
+            iterationTargets: [],
             startTime: 0,
             endTime: 0,
             config: config || benchmark.config
