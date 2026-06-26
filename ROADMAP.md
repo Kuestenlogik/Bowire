@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**46/60 done** · 14 backlog
+**47/60 done** · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -24,7 +24,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [231](https://github.com/Kuestenlogik/Bowire/issues/231) | Bowire | [Benchmarks: 'random' run shape — pick N random endpoints per iteration](#issue-kuestenlogik-bowire-231) | ⬜ Backlog |  |
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
-| [279](https://github.com/Kuestenlogik/Bowire/issues/279) | Bowire | [Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview](#issue-kuestenlogik-bowire-279) | ⬜ Backlog |  |
 | [280](https://github.com/Kuestenlogik/Bowire/issues/280) | Bowire | [Assistant hints: actionable inline buttons / links (not just descriptive text)](#issue-kuestenlogik-bowire-280) | ⬜ Backlog |  |
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
@@ -63,6 +62,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [276](https://github.com/Kuestenlogik/Bowire/issues/276) | Bowire | [Workspaces sidebar: tool parity with Recordings/Benchmarks rails (per-row + toolbar + context menu)](#issue-kuestenlogik-bowire-276) | ✅ Done |  |
 | [277](https://github.com/Kuestenlogik/Bowire/issues/277) | Bowire | [Workspace sidebar: 'Switch to active' button uses '+' icon instead of checkmark](#issue-kuestenlogik-bowire-277) | ✅ Done |  |
 | [278](https://github.com/Kuestenlogik/Bowire/issues/278) | Bowire | [Save-as-template button: floppy-disk icon reads as 'save current state', not 'snapshot as template'](#issue-kuestenlogik-bowire-278) | ✅ Done |  |
+| [279](https://github.com/Kuestenlogik/Bowire/issues/279) | Bowire | [Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview](#issue-kuestenlogik-bowire-279) | ✅ Done |  |
 | [282](https://github.com/Kuestenlogik/Bowire/issues/282) | Bowire | [Unified .bww format: UI export + CLI export converge on one canonical schema](#issue-kuestenlogik-bowire-282) | ✅ Done |  |
 | [285](https://github.com/Kuestenlogik/Bowire/issues/285) | Bowire | [Lift active recording state from browser localStorage into a server-side BowireRecordingSession](#issue-kuestenlogik-bowire-285) | ✅ Done |  |
 | [286](https://github.com/Kuestenlogik/Bowire/issues/286) | Bowire | [mcp serve --attach: MCP-over-MCP forwarder for connecting to a parent Bowire process](#issue-kuestenlogik-bowire-286) | ✅ Done |  |
@@ -263,10 +263,6 @@ When the operator hits Run on a benchmark envelope that already has a previous r
 
 Round out the Benchmarks export surface so result data can leave Bowire in the formats the surrounding tooling actually consumes: [[more]](https://github.com/Kuestenlogik/Bowire/issues/234)
 
-#### <a id="issue-kuestenlogik-bowire-279"></a>⬜ Backlog · [#279](https://github.com/Kuestenlogik/Bowire/issues/279) Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview
-
-When a workspace is switched to active, it 'jumps to the top' of the list — currently the sidebar's sort uses 'Last used' (added in #276) which auto-promotes the active workspace. Operator finds this confusing — the list rearranges under them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/279)
-
 #### <a id="issue-kuestenlogik-bowire-280"></a>⬜ Backlog · [#280](https://github.com/Kuestenlogik/Bowire/issues/280) Assistant hints: actionable inline buttons / links (not just descriptive text)
 
 The Assistant drawer's context-aware hints describe what the operator should do but don't expose the action itself. Example from the no-workspace state (post-#272 fix): [[more]](https://github.com/Kuestenlogik/Bowire/issues/280)
@@ -418,6 +414,10 @@ When hovering a workspace row in the Workspaces sidebar, the activate/switch but
 #### <a id="issue-kuestenlogik-bowire-278"></a>✅ Done · [#278](https://github.com/Kuestenlogik/Bowire/issues/278) Save-as-template button: floppy-disk icon reads as 'save current state', not 'snapshot as template'
 
 The 'Save as template' button uses the floppy-disk SVG (added in commit 4f4f477). Operator's expectation when seeing a floppy: [[more]](https://github.com/Kuestenlogik/Bowire/issues/278)
+
+#### <a id="issue-kuestenlogik-bowire-279"></a>✅ Done · [#279](https://github.com/Kuestenlogik/Bowire/issues/279) Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview
+
+When a workspace is switched to active, it 'jumps to the top' of the list — currently the sidebar's sort uses 'Last used' (added in #276) which auto-promotes the active workspace. Operator finds this confusing — the list rearranges under them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/279)
 
 #### <a id="issue-kuestenlogik-bowire-282"></a>✅ Done · [#282](https://github.com/Kuestenlogik/Bowire/issues/282) Unified .bww format: UI export + CLI export converge on one canonical schema
 
