@@ -1125,8 +1125,24 @@
                 if (isExpanded) {
                     var editor = el('div', { className: 'bowire-flow-card-editor' });
                     if (node.type === 'request') {
-                        editor.appendChild(flowField('Protocol', 'select', node.protocol || '', function (v) { node.protocol = v; node.method = ''; persistFlows(); render(); },
-                            protocols.map(function (p) { return { value: p.id, label: p.name }; })));
+                        editor.appendChild(flowField('Protocol', 'select', node.protocol || '', function (v) {
+                            // Changing the protocol invalidates any previously-picked
+                            // service / method: services are scoped to a protocol via
+                            // s.source, so the old name almost certainly doesn't exist
+                            // on the new protocol. Drop the auto-filled Server URL too
+                            // so the next service-pick can re-seed it without the
+                            // operator having to clear stale text by hand (#298).
+                            node.protocol = v;
+                            node.service = '';
+                            node.method = '';
+                            node.methodType = '';
+                            node.serverUrl = '';
+                            // Default back to schema-driven picking on protocol change;
+                            // the old 'custom' toggle was a per-protocol preference.
+                            if (node.serviceMethodMode === 'custom') node.serviceMethodMode = 'discovered';
+                            persistFlows();
+                            render();
+                        }, protocols.map(function (p) { return { value: p.id, label: p.name }; })));
                         // Schema-aware picker: when the workbench has
                         // already discovered services, present
                         // Service + Method as dropdowns scoped to the
@@ -1529,6 +1545,21 @@
             // Clear method when service changes — the previous selection
             // probably doesn't exist on the new service.
             node.method = '';
+            node.methodType = '';
+            // Auto-fill the Server URL from the picked service's discovery
+            // origin so the operator doesn't have to re-type a value the
+            // workbench already knows. Empty-out when the service is cleared
+            // so the field tracks the picker faithfully (#298).
+            var picked = protoServices.find(function (s) { return s.name === v; });
+            node.serverUrl = (picked && picked.originUrl) ? picked.originUrl : '';
+            // Pre-pick the method when the service exposes exactly one —
+            // the dropdown would only ever resolve to that one entry, so
+            // forcing an extra click adds nothing (#298 acceptance).
+            if (picked && Array.isArray(picked.methods) && picked.methods.length === 1) {
+                var only = picked.methods[0];
+                node.method = only.name;
+                node.methodType = only.methodType || 'Unary';
+            }
             persistFlows();
             render();
         }, serviceOptions));
@@ -1543,7 +1574,15 @@
             : [{ value: '', label: '(select a service first)' }];
         wrap.appendChild(flowField('Method', 'select', node.method || '', function (v) {
             node.method = v;
+            // Carry the methodType alongside the name so streaming-aware
+            // codepaths (collection conversion at line 584, future runner
+            // hooks) don't have to re-resolve it from the discovery tree.
+            var picked = chosenService && Array.isArray(chosenService.methods)
+                ? chosenService.methods.find(function (m) { return m.name === v; })
+                : null;
+            node.methodType = picked && picked.methodType ? picked.methodType : 'Unary';
             persistFlows();
+            render();
         }, methodOptions));
 
         return wrap;
