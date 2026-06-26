@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**52/60 done** · 8 backlog
+**53/60 done** · 7 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -23,7 +23,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ⬜ Backlog |  |
-| [302](https://github.com/Kuestenlogik/Bowire/issues/302) | Bowire | [Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)](#issue-kuestenlogik-bowire-302) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ✅ Done |  |
@@ -76,6 +75,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [299](https://github.com/Kuestenlogik/Bowire/issues/299) | Bowire | [Embedded mode: Proxy rail surfaces 'Proxy not reachable' — proxy needs an embedded-mode story](#issue-kuestenlogik-bowire-299) | ✅ Done |  |
 | [300](https://github.com/Kuestenlogik/Bowire/issues/300) | Bowire | [Benchmark: switching mode works once, then becomes inert](#issue-kuestenlogik-bowire-300) | ✅ Done |  |
 | [301](https://github.com/Kuestenlogik/Bowire/issues/301) | Bowire | [Home/Welcome formatting inconsistency: Benchmarks + Workspaces rails differ from others](#issue-kuestenlogik-bowire-301) | ✅ Done |  |
+| [302](https://github.com/Kuestenlogik/Bowire/issues/302) | Bowire | [Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)](#issue-kuestenlogik-bowire-302) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -258,10 +258,6 @@ Bowire today hardcodes: - An 'always-on' rail set (Home, Discover, Workspaces) �
 #### <a id="issue-kuestenlogik-bowire-295"></a>⬜ Backlog · [#295](https://github.com/Kuestenlogik/Bowire/issues/295) Compose rail: integrate Collections + Presets — three sources, one organized destination
 
 The **Compose** rail (renamed from Design in commit `e52f7a9`) is now the home for the request-builder — ad-hoc requests live there. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/295)
-
-#### <a id="issue-kuestenlogik-bowire-302"></a>⬜ Backlog · [#302](https://github.com/Kuestenlogik/Bowire/issues/302) Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)
-
-User feedback (Phase 2 walkthrough): "response darstellung auf und einklappen sowie zeilennummern so wie bei hoppscotch" (Hoppscotch screenshot supplied). [[more]](https://github.com/Kuestenlogik/Bowire/issues/302)
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
@@ -470,6 +466,10 @@ Rails already collapse into an overflow `⋮` button when the vertical space run
 #### <a id="issue-kuestenlogik-bowire-301"></a>✅ Done · [#301](https://github.com/Kuestenlogik/Bowire/issues/301) Home/Welcome formatting inconsistency: Benchmarks + Workspaces rails differ from others
 
 1. Open each rail in turn (Home → Discover → Compose → Recordings → Mocks → Flows → Proxy → Benchmarks → Security → Workspaces) 2. Compare the empty-state / welcome cards in the main pane 3. **Most rails** follow a consistent shape: glyph + headline + body + primary CTA button 4. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/301)
+
+#### <a id="issue-kuestenlogik-bowire-302"></a>✅ Done · [#302](https://github.com/Kuestenlogik/Bowire/issues/302) Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)
+
+User feedback (Phase 2 walkthrough): "response darstellung auf und einklappen sowie zeilennummern so wie bei hoppscotch" (Hoppscotch screenshot supplied). [[more]](https://github.com/Kuestenlogik/Bowire/issues/302)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
