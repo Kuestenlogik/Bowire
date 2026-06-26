@@ -103,4 +103,40 @@ public interface IBowireRailContribution
     /// dedicated rail-strip icon renders. Defaults to <c>false</c>.
     /// </summary>
     bool HideFromRail => false;
+
+    /// <summary>
+    /// Identifier of a JS-side function the rail package's JS fragment
+    /// registers on <c>window.__bowireRailRenderers</c> at load time.
+    /// The core <c>renderSidebar</c> dispatcher looks up the renderer by
+    /// id and invokes it instead of hard-coding the per-rail branch.
+    /// Empty / <c>null</c> means "no rail-owned renderer; fall back to
+    /// the core dispatcher arm" — so the slice can be moved
+    /// incrementally rail-by-rail without breaking the bundle.
+    /// </summary>
+    /// <remarks>
+    /// Convention: <c>railId + 'Sidebar'</c> (e.g. <c>"recordingsSidebar"</c>,
+    /// <c>"proxySidebar"</c>). The hosted JS fragment writes
+    /// <c>window.__bowireRailRenderers["recordingsSidebar"] = function () { ... };</c>
+    /// inside the shared IIFE. The renderer takes no arguments and
+    /// returns the DOM root to mount as the sidebar — same contract as
+    /// the legacy <c>renderRecordingsSidebar()</c> &amp;c. arms.
+    /// </remarks>
+    string? SidebarRendererKey => null;
+
+    /// <summary>
+    /// Identifier of a JS-side function the rail package's JS fragment
+    /// registers on <c>window.__bowireRailRenderers</c> at load time.
+    /// The core <c>renderMain</c> dispatcher looks up the renderer by
+    /// id and invokes it instead of hard-coding the per-rail branch.
+    /// Empty / <c>null</c> means "no rail-owned renderer; fall back to
+    /// the core dispatcher arm".
+    /// </summary>
+    /// <remarks>
+    /// Convention: <c>railId + 'Main'</c> (e.g. <c>"recordingsMain"</c>,
+    /// <c>"benchmarksMain"</c>). The hosted JS fragment writes
+    /// <c>window.__bowireRailRenderers["recordingsMain"] = function () { ... };</c>
+    /// inside the shared IIFE. The renderer takes no arguments and
+    /// returns the DOM root for the main pane.
+    /// </remarks>
+    string? MainPaneRendererKey => null;
 }

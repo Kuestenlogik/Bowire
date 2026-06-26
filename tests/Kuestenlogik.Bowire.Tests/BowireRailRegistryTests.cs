@@ -107,6 +107,47 @@ public class BowireRailRegistryTests
         Assert.Contains("\"hideFromRail\":true", json, StringComparison.Ordinal);
     }
 
+    private sealed class StubRailWithRenderers : IBowireRailContribution
+    {
+        public string Id => "renderer-keys";
+        public string DisplayName => "Renderer Keys";
+        public string IconKey => "square";
+        public int SortIndex => 100;
+        public string Group => "work";
+        public string SidebarKind => "none";
+        public string? SidebarRendererKey => "rendererKeysSidebar";
+        public string? MainPaneRendererKey => "rendererKeysMain";
+    }
+
+    [Fact]
+    public void ToJson_Omits_Renderer_Keys_When_Unset()
+    {
+        // #314 — keys default to null. Emitted only when set so the
+        // JSON stays terse for rails relying on core's hardcoded
+        // dispatcher arm. Old shape stays byte-stable for those.
+        var registry = new BowireRailRegistry();
+        registry.Register(new StubRail("legacy"));
+
+        var json = registry.ToJson();
+        Assert.DoesNotContain("sidebarRendererKey", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("mainPaneRendererKey", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ToJson_Carries_Renderer_Keys_When_Set()
+    {
+        // #314 — when a rail descriptor sets SidebarRendererKey /
+        // MainPaneRendererKey, both must round-trip into the JSON
+        // seed so render-sidebar.js / render-main.js can dispatch
+        // through window.__bowireRailRenderers.
+        var registry = new BowireRailRegistry();
+        registry.Register(new StubRailWithRenderers());
+
+        var json = registry.ToJson();
+        Assert.Contains("\"sidebarRendererKey\":\"rendererKeysSidebar\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"mainPaneRendererKey\":\"rendererKeysMain\"", json, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Discover_Picks_Up_BuiltIn_Rails_From_Loaded_Assembly()
     {

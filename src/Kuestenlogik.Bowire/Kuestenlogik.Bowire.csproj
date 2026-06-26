@@ -106,9 +106,15 @@
          rail fragments share the IIFE's closure scope so the existing
          bare-identifier references into helpers.js / prologue.js / &c.
          keep resolving. Hosts that don't reference a rail's NuGet
-         don't ship that rail's JS in the browser bundle. -->
-    <BowireJsFragment Include="wwwroot\js\collections.js" />
-    <BowireJsFragment Include="wwwroot\js\proxy-view.js" />
+         don't ship that rail's JS in the browser bundle.
+         #314 — collections.js / proxy-view.js / benchmarks.js moved
+         out of core into Kuestenlogik.Bowire.Rail.Collections /
+         .Rail.Proxy / .Rail.Benchmarks (same #311 pattern). The
+         per-rail render-branch dispatch in render-sidebar.js +
+         render-main.js now resolves through window.__bowireRailRenderers
+         (see _currentRailRenderer in render-sidebar.js) so individual
+         rails can take over their sidebar/main pane at runtime
+         without core needing a hardcoded switch arm. -->
     <BowireJsFragment Include="wwwroot\js\api.js" />
     <BowireJsFragment Include="wwwroot\js\protocols.js" />
     <!-- #126 — protocol-typed pre/post-request script sandbox.
@@ -133,7 +139,12 @@
          Catalogue layer on the same API. Must come before benchmarks.js
          so benchmarks.js can call renderPresetsBar. -->
     <BowireJsFragment Include="wwwroot\js\presets.js" />
-    <BowireJsFragment Include="wwwroot\js\benchmarks.js" />
+    <!-- #314 — benchmarks.js moved to Kuestenlogik.Bowire.Rail.Benchmarks
+         (see the comment above the api.js fragment for the stitching
+         contract). The presets.js dependency ordering is now enforced
+         by the embedded-resource splice: rail fragments always come
+         after every core fragment (including presets.js) because the
+         splice happens at _rail-fragments-marker.js's slot. -->
     <BowireJsFragment Include="wwwroot\js\render-sidebar.js" />
     <BowireJsFragment Include="wwwroot\js\landing.js" />
     <BowireJsFragment Include="wwwroot\js\autocomplete.js" />

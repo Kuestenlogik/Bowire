@@ -1,12 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- #306 Phase G — Proxy / MITM rail package. -->
-    <Description>Bowire Proxy / MITM rail — man-in-the-middle traffic capture. Adds the Proxy rail descriptor to the rail registry.</Description>
+    <!-- #306 Phase G — Proxy / MITM rail package.
+         #314 — owns proxy-view.js fragment (captured-flow SSE stream +
+         per-flow actions). Stitched into the workbench bundle via the
+         #311 BowireHtmlGenerator.StitchRailFragments pipeline. -->
+    <Description>Bowire Proxy / MITM rail — man-in-the-middle traffic capture. Adds the Proxy rail descriptor + per-rail JS fragment to the workbench.</Description>
     <PackageId>Kuestenlogik.Bowire.Rail.Proxy</PackageId>
     <PackageTags>bowire;rail;proxy;mitm;workbench;plugin</PackageTags>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- #314 — per-rail JS fragment. Stitched into the IIFE by the
+         #311 marker pipeline (see BowireHtmlGenerator). -->
+    <EmbeddedResource Include="wwwroot\js\proxy-view.js"
+                      LogicalName="Kuestenlogik.Bowire.Rail.Proxy.wwwroot.js.proxy-view.js" />
   </ItemGroup>
 </Project>

@@ -132,6 +132,25 @@ public sealed class BowireRailRegistry
             sb.Append("\"hideFromRail\":").Append(rail.HideFromRail ? "true" : "false").Append(',');
             sb.Append("\"alwaysOn\":").Append(rail.AlwaysOn ? "true" : "false").Append(',');
             sb.Append("\"defaultEnabled\":").Append(rail.DefaultEnabled ? "true" : "false");
+            // #314 — per-rail renderer keys. Emitted only when set so
+            // the JSON stays terse for the (still common) case where a
+            // rail relies on core's hardcoded dispatcher arm. The JS
+            // dispatcher's lookup is null-safe: a missing key falls
+            // through to the legacy switch arm in render-sidebar.js /
+            // render-main.js, which is exactly the migration shape this
+            // issue's hook was built for.
+            if (!string.IsNullOrEmpty(rail.SidebarRendererKey))
+            {
+                sb.Append(",\"sidebarRendererKey\":\"")
+                    .Append(EscapeJson(rail.SidebarRendererKey))
+                    .Append('"');
+            }
+            if (!string.IsNullOrEmpty(rail.MainPaneRendererKey))
+            {
+                sb.Append(",\"mainPaneRendererKey\":\"")
+                    .Append(EscapeJson(rail.MainPaneRendererKey))
+                    .Append('"');
+            }
             sb.Append('}');
         }
         sb.Append(']');

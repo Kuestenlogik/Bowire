@@ -1,12 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- #306 Phase G — Benchmarks rail package. -->
-    <Description>Bowire Benchmarks rail — performance + load measurement surface. Adds the Benchmarks rail descriptor to the rail registry.</Description>
+    <!-- #306 Phase G — Benchmarks rail package.
+         #314 — owns benchmarks.js fragment (~3,500 LOC: envelope model,
+         phase runner, presets bar, charts). Stitched into the workbench
+         bundle via the #311 BowireHtmlGenerator.StitchRailFragments
+         pipeline. -->
+    <Description>Bowire Benchmarks rail — performance + load measurement surface. Adds the Benchmarks rail descriptor + per-rail JS fragment to the workbench.</Description>
     <PackageId>Kuestenlogik.Bowire.Rail.Benchmarks</PackageId>
     <PackageTags>bowire;rail;benchmarks;performance;workbench;plugin</PackageTags>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- #314 — per-rail JS fragment. Stitched into the IIFE by the
+         #311 marker pipeline (see BowireHtmlGenerator). Depends on
+         helpers.js (el, svgIcon, renderEmptyCard, bowireConfirm),
+         auth.js (applyAuth), history-env.js (substituteVars,
+         serverUrlParamForService), presets.js (renderPresetsBar) and
+         the live benchmark scratchpad declared in prologue.js — all
+         available because the rail-fragment splice happens AFTER every
+         core fragment in the IIFE. -->
+    <EmbeddedResource Include="wwwroot\js\benchmarks.js"
+                      LogicalName="Kuestenlogik.Bowire.Rail.Benchmarks.wwwroot.js.benchmarks.js" />
   </ItemGroup>
 </Project>

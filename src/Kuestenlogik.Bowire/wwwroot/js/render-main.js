@@ -4350,6 +4350,27 @@
     // item am I on" question without doubling the chrome.
 
     function renderMain() {
+        // #314 — give rail-owned renderers first crack at the main
+        // pane. When a rail descriptor sets mainPaneRendererKey and
+        // the rail's JS fragment has registered the function on
+        // window.__bowireRailRenderers, it takes precedence over the
+        // hardcoded `if (railMode === '…')` arms below. Falls through
+        // silently when no key is set or the function hasn't loaded —
+        // same incremental cut-over shape as the sidebar dispatch.
+        var ownedMain = (typeof _currentRailRenderer === 'function')
+            ? _currentRailRenderer('main') : null;
+        if (ownedMain) {
+            try {
+                var ownedRoot = ownedMain();
+                if (ownedRoot) return ownedRoot;
+            } catch (e) {
+                // Defensive: don't take down the workbench because a
+                // rail's main renderer threw — fall through to the
+                // core arms so the user still sees something.
+                try { console.error('Rail main renderer threw', e); } catch { /* ignore */ }
+            }
+        }
+
         // Honest empty state when there's no active workspace (first
         // run, or last workspace just deleted). Every other rail
         // would either render against stale in-memory state or against
