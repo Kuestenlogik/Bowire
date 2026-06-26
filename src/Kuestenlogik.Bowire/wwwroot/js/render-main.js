@@ -5885,7 +5885,7 @@
                                 render();
                             }
                         },
-                            el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('drill') }),
+                            el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('compose') }),
                             el('span', { textContent: 'Open in Compose' })
                         ));
                     }

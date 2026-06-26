@@ -1147,7 +1147,7 @@
             // centre the card in the main pane consistently.
             var padWrap = el('div', { className: 'bowire-main-pad' });
             padWrap.appendChild(renderEmptyCard({
-                icon: 'drill',
+                icon: 'compose',
                 headline: 'No request open',
                 body: 'Start with a new request — type a URL, pick a method, hit Execute. Ctrl+L opens a new request from anywhere.',
                 actions: [{

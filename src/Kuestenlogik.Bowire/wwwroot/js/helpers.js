@@ -2637,11 +2637,12 @@
             // small 'pencil' edit icon (used for inline rename buttons).
             // SVGRepo origin; reads as 'make/draw' at rail-strip size.
             pencilLarge: '<svg viewBox="0 0 508.089 508.089" fill="currentColor"><path d="M503.977,202.892l-198.6-198.7c-5.5-5.5-14.4-5.5-20,0c0,0-209.7,210.1-210.1,210.5c-1.2,1.5-74.8,275.9-74.8,275.9c-1.3,4.9,0.1,10.1,3.7,13.6c2.8,2.8,6.6,4.3,13.6,3.7l275.8-74.8c0.4-0.3,210.3-210.3,210.3-210.3C509.477,217.292,509.477,208.392,503.977,202.892z M295.477,34.192l29.6,29.7l-145.4,145.5h-59.3L295.477,34.192z M34.077,474.392l12.6-47.4c15.1,7.3,27.4,19.6,34.7,34.8L34.077,474.392z M270.577,410.092v1.2l-161.5,43.1c-10.4-24.8-30.2-44.6-55-55l43-161.7h1.2h73.1v85.2c0,7.8,6.3,14.1,14.1,14.1h85.1V410.092z M278.877,308.792h-79.3v-79.4l145.5-145.6l79.3,79.4L278.877,308.792z M298.877,388.092v-59.4l145.5-145.5l29.7,29.7L298.877,388.092z"/></svg>',
-            // Compose rail icon — pistol-grip drill (SVGRepo, mk-II).
-            // Horizontal body with the chuck pointing right + a 3-bar
-            // battery / grip pattern in the middle. Cleaner silhouette
-            // than the prior cordless variant at rail-strip size.
-            drill: '<svg viewBox="0 0 512 512" fill="currentColor"><path d="M468.203,120.768c-5.629-18.191-22.605-31.444-42.621-31.444h-16.687h-30.416h-16.216V75.356H29.246v61.485C10.101,171.672,0,210.964,0,250.743v185.901h123.679v-94.805h50.015l-7.592-73.288h95.029c50.596,0,92.631-37.349,99.987-85.923h17.36h30.416h16.687c20.016,0,36.992-13.252,42.621-31.444H512v-30.415H468.203z M123.68,311.423v-42.872h11.845l4.441,42.872H123.68z M331.848,167.419c0,38.992-31.723,70.715-70.715,70.715h-98.18H93.263v103.704v64.389H30.416V250.743c0-32.953,7.975-65.51,23.093-94.72h133.768v-30.416H59.662v-19.834h272.186V167.419z M378.48,152.211h-16.216V119.74h16.216V152.211z M439.771,138.023c0,7.824-6.364,14.188-14.188,14.188h-16.687V119.74h16.687c7.824,0,14.188,6.364,14.188,14.188V138.023z"/><rect x="217.545" y="116.047" width="38.441" height="30.416"/><rect x="217.545" y="156.743" width="38.441" height="30.416"/><rect x="217.545" y="197.44" width="38.441" height="30.416"/></svg>',
+            // Compose rail icon — SVGRepo 'design-line': dog-eared page
+            // outline with a pencil/ruler running along the top edge.
+            // Semantic 'design / compose a request' metaphor — replaces
+            // the prior drill glyph, which read as 'power tool' rather
+            // than 'craft a thing'. Operator-supplied.
+            compose: '<svg viewBox="0 0 36 36" fill="currentColor"><polygon points="9 17.41 9 27 18.59 27 16.59 25 11 25 11 19.41 9 17.41"/><path d="M34.87,32.29,32,29.38V32H4V27.85H6v-1.6H4V19.6H6V18H4V11.6H6V10H4V4.41L19.94,20.26V17.44L3.71,1.29A1,1,0,0,0,2,2V33a1,1,0,0,0,1,1H34.16a1,1,0,0,0,.71-1.71Z"/><path d="M24,30h4a2,2,0,0,0,2-2V8.7L27.7,4.47a2,2,0,0,0-1.76-1h0a2,2,0,0,0-1.76,1.08L22,8.72V28A2,2,0,0,0,24,30ZM24,9.2l1.94-3.77L28,9.21V24H24Zm0,16.43h4v2.44H24Z"/></svg>',
             filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
             grip: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>',
             // Three-dot overflow handle. Vertical orientation so the

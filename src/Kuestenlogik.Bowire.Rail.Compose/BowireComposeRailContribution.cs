@@ -15,7 +15,7 @@ public sealed class BowireComposeRailContribution : IBowireRailContribution
     /// <inheritdoc />
     public string DisplayName => "Compose";
     /// <inheritdoc />
-    public string IconKey => "drill";
+    public string IconKey => "compose";
     /// <inheritdoc />
     public int SortIndex => 300;
     /// <inheritdoc />
