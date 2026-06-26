@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #306 Phase G — Benchmarks rail package. -->
+    <Description>Bowire Benchmarks rail — performance + load measurement surface. Adds the Benchmarks rail descriptor to the rail registry.</Description>
+    <PackageId>Kuestenlogik.Bowire.Rail.Benchmarks</PackageId>
+    <PackageTags>bowire;rail;benchmarks;performance;workbench;plugin</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>

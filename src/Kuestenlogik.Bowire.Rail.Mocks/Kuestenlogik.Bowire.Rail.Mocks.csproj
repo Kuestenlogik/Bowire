@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #306 Phase G — Mocks rail package. -->
+    <Description>Bowire Mocks rail — mock server / fixture surface. Adds the Mocks rail descriptor to the rail registry.</Description>
+    <PackageId>Kuestenlogik.Bowire.Rail.Mocks</PackageId>
+    <PackageTags>bowire;rail;mocks;workbench;plugin</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>

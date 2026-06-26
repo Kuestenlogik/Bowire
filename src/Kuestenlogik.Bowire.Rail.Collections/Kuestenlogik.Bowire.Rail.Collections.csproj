@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #306 Phase G — Collections rail package. Hidden from rail strip
+         but kept in catalogue so workspace trees can dispatch into it. -->
+    <Description>Bowire Collections rail — hidden from the rail strip; surfaces the saved-request collections inside their workspace.</Description>
+    <PackageId>Kuestenlogik.Bowire.Rail.Collections</PackageId>
+    <PackageTags>bowire;rail;collections;workbench;plugin</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>

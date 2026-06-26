@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #306 Phase G — Compose rail package. -->
+    <Description>Bowire Compose rail — home for the ad-hoc Request Builder. Adds the Compose rail descriptor to the rail registry.</Description>
+    <PackageId>Kuestenlogik.Bowire.Rail.Compose</PackageId>
+    <PackageTags>bowire;rail;compose;request-builder;workbench;plugin</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>
