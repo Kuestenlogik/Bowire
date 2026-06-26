@@ -32,7 +32,15 @@
     // Modal-driven Run-options picker. Replaces the bare bowirePrompt
     // so the operator gets the preset shortcuts + an inline preview of
     // what the run will do (collection → round-robin / recording →
-    // independent). Resolves to a session count or null on cancel.
+    // independent). Resolves to a run-options object
+    // { sessions, hosts[], rampUpSeconds, continueOnError, envPool[] }
+    // or null on cancel.
+    //
+    // #132 Phase 2 — the modal grew Hosts / Ramp-up / Failure policy
+    // / Env pool fields. When the Hosts field carries a non-empty
+    // comma-separated list the workbench dispatches via the
+    // coordinator endpoint (/api/parallel/start); otherwise it stays
+    // on the Phase 1 in-browser runner.
     function _openRunOptionsModal(kind, sourceId, sourceName) {
         return new Promise(function (resolve) {
             var existing = document.querySelector('.bowire-confirm-overlay');
@@ -44,6 +52,10 @@
             var presetRow = el('div', { className: 'bowire-parallel-presets' });
             var customInput;
             var confirmBtn;
+            var hostsInput;
+            var rampUpInput;
+            var failureSelect;
+            var envPoolInput;
 
             function updateConfirmEnabled() {
                 if (!confirmBtn) return;
@@ -105,6 +117,53 @@
                 onInput: updateConfirmEnabled
             });
 
+            // Phase-2 fields — Hosts / Ramp-up / Failure / Env pool.
+            // Persisted in localStorage so repeat runs against the same
+            // executor fleet don't force the operator to retype the
+            // host list every time. Stored as a JSON blob keyed by
+            // workspace so two workspaces can target different
+            // executor fleets without one stomping the other's
+            // defaults.
+            var savedOpts = _loadParallelDefaults();
+            hostsInput = el('input', {
+                type: 'text',
+                className: 'bowire-parallel-field-input',
+                placeholder: 'https://exec-eu.example, https://exec-us.example',
+                value: savedOpts.hosts || '',
+                'aria-label': 'Hosts (comma-separated)'
+            });
+            rampUpInput = el('input', {
+                type: 'number',
+                className: 'bowire-parallel-field-input',
+                min: '0',
+                step: '1',
+                value: String(savedOpts.rampUpSeconds || 0),
+                'aria-label': 'Ramp-up seconds'
+            });
+            failureSelect = el('select', {
+                className: 'bowire-parallel-field-input',
+                'aria-label': 'Failure policy'
+            },
+                el('option', { value: 'continue', textContent: 'Continue on error' }),
+                el('option', { value: 'abort', textContent: 'Abort on first failure' })
+            );
+            failureSelect.value = savedOpts.continueOnError === false ? 'abort' : 'continue';
+            envPoolInput = el('input', {
+                type: 'text',
+                className: 'bowire-parallel-field-input',
+                placeholder: 'dev, staging, prod',
+                value: savedOpts.envPool || '',
+                'aria-label': 'Env pool (comma-separated)'
+            });
+
+            function makeField(labelText, hint, control) {
+                return el('div', { className: 'bowire-parallel-field' },
+                    el('label', { className: 'bowire-parallel-field-label', textContent: labelText }),
+                    control,
+                    hint ? el('div', { className: 'bowire-parallel-field-hint', textContent: hint }) : null
+                );
+            }
+
             var hintText = (kind === 'collection')
                 ? 'Each session walks a round-robin slice of the collection items. Variable substitution and pre/post-scripts run per-session with an isolated captured namespace.'
                 : 'Each session replays the full recording independently. Variable substitution and pre/post-scripts run per-session with an isolated captured namespace.';
@@ -116,8 +175,30 @@
                     var n = customMode ? parseInt(String(customInput.value || '').trim(), 10) : selected;
                     if (!n || n < 1) return;
                     if (n > PARALLEL_SESSION_CAP) n = PARALLEL_SESSION_CAP;
+                    var hosts = String(hostsInput.value || '')
+                        .split(',').map(function (h) { return h.trim(); })
+                        .filter(function (h) { return h.length > 0; });
+                    var envPool = String(envPoolInput.value || '')
+                        .split(',').map(function (h) { return h.trim(); })
+                        .filter(function (h) { return h.length > 0; });
+                    var rampUp = parseFloat(rampUpInput.value);
+                    if (!isFinite(rampUp) || rampUp < 0) rampUp = 0;
+                    var continueOnError = failureSelect.value !== 'abort';
+                    var opts = {
+                        sessions: n,
+                        hosts: hosts,
+                        rampUpSeconds: rampUp,
+                        continueOnError: continueOnError,
+                        envPool: envPool
+                    };
+                    _persistParallelDefaults({
+                        hosts: hostsInput.value,
+                        rampUpSeconds: rampUp,
+                        continueOnError: continueOnError,
+                        envPool: envPoolInput.value
+                    });
                     overlay.remove();
-                    resolve(n);
+                    resolve(opts);
                 }
             });
             var cancelBtn = el('button', {
@@ -138,6 +219,17 @@
                 presetRow,
                 customInput,
                 el('div', { className: 'bowire-parallel-hint', textContent: hintText }),
+                el('div', { className: 'bowire-parallel-section-label', textContent: 'Distribution + policy (optional)' }),
+                makeField('Hosts',
+                    'Comma-separated Bowire host URLs. Empty = run in-browser; one or more = coordinator fans sessions out via /api/parallel/start.',
+                    hostsInput),
+                makeField('Ramp-up (seconds)',
+                    '0 = launch all sessions at once. >0 = spread session starts evenly over N seconds.',
+                    rampUpInput),
+                makeField('Failure policy', null, failureSelect),
+                makeField('Env pool',
+                    'Comma-separated env ids. Session k uses pool[k % len]. Empty = active env for every session.',
+                    envPoolInput),
                 el('div', { className: 'bowire-confirm-actions' }, cancelBtn, confirmBtn)
             );
 
@@ -150,14 +242,39 @@
         });
     }
 
+    // Run-options defaults — persisted per-workspace so the host list
+    // and ramp-up survive a page reload. Wrapped in try/catch because
+    // localStorage may be unavailable (private windows, quota errors)
+    // — silent fallback keeps the modal usable.
+    var PARALLEL_DEFAULTS_KEY = 'bowire_parallel_defaults_v1';
+    function _loadParallelDefaults() {
+        try {
+            var raw = localStorage.getItem(wsKey(PARALLEL_DEFAULTS_KEY));
+            return raw ? JSON.parse(raw) : {};
+        } catch { return {}; }
+    }
+    function _persistParallelDefaults(opts) {
+        try {
+            localStorage.setItem(wsKey(PARALLEL_DEFAULTS_KEY), JSON.stringify(opts));
+        } catch { /* quota / disabled — defaults just won't survive reload */ }
+    }
+
     function _promptAndRunParallel(kind, sourceId, sourceName) {
-        _openRunOptionsModal(kind, sourceId, sourceName).then(function (n) {
-            if (n == null) return;
-            _runParallelSessions(kind, sourceId, sourceName, n);
+        _openRunOptionsModal(kind, sourceId, sourceName).then(function (opts) {
+            if (opts == null) return;
+            _runParallelSessions(kind, sourceId, sourceName, opts);
         });
     }
 
-    async function _runParallelSessions(kind, sourceId, sourceName, sessionCount) {
+    async function _runParallelSessions(kind, sourceId, sourceName, opts) {
+        // Back-compat: callers that still pass a bare number get
+        // promoted to the opts shape with empty hosts (local-only,
+        // matches Phase 1 behaviour).
+        if (typeof opts === 'number') {
+            opts = { sessions: opts, hosts: [], rampUpSeconds: 0,
+                continueOnError: true, envPool: [] };
+        }
+        var sessionCount = opts.sessions;
         var source = (kind === 'collection')
             ? collectionsList.find(function (c) { return c.id === sourceId; })
             : recordingsList.find(function (r) { return r.id === sourceId; });
@@ -172,6 +289,17 @@
         if (totalSteps === 0) {
             toast('Nothing to run — source is empty', 'error');
             return;
+        }
+
+        // Phase 2 — when the operator filled the Hosts field, the
+        // distributed coordinator endpoint owns the run. We POST the
+        // full target list + session count + ramp-up + failure policy
+        // and let the coordinator shard sessions across hosts. The
+        // per-session live tiles fall back to a single
+        // "distributed run" summary tile in this path because the
+        // browser doesn't observe per-step progress on remote hosts.
+        if (Array.isArray(opts.hosts) && opts.hosts.length > 0) {
+            return _runDistributedParallel(kind, sourceId, sourceName, source, opts);
         }
 
         // Per-session work distribution.
@@ -254,6 +382,166 @@
             failed === 0 ? 'success' : 'error'
         );
         render();
+    }
+
+    // #132 Phase 2 — Build the flat target list the coordinator
+    // endpoint replays. The browser pre-resolves env-var substitution
+    // and turns each recording step / collection item into a
+    // self-contained { url, method, body, headers, label, protocol }
+    // record so the worker stays oblivious to the source shape and
+    // doesn't need to ship the recording schema (or its protocol
+    // plugins) on every executor host.
+    //
+    // Both kinds collapse to "POST against the source's serverUrl with
+    // the substituted body". This is the same wire shape the
+    // collection runner's runCollectionItem emits — the executor host
+    // just hits the URL directly instead of routing through its own
+    // /api/invoke (which would need the recording's protocol plugin to
+    // be installed on every executor).
+    function _buildParallelTargets(kind, source) {
+        var out = [];
+        var raw = (kind === 'collection') ? (source.items || []) : (source.steps || []);
+        for (var i = 0; i < raw.length; i++) {
+            var step = raw[i];
+            if (step.methodType && step.methodType !== 'Unary') continue;
+            var bodyText = step.body
+                || (Array.isArray(step.messages) ? step.messages[0] : '')
+                || '{}';
+            var substitutedBody = (typeof substituteVars === 'function')
+                ? substituteVars(bodyText) : bodyText;
+            var headers = {};
+            if (step.metadata) {
+                Object.keys(step.metadata).forEach(function (k) {
+                    var v = String(step.metadata[k]);
+                    headers[k] = (typeof substituteVars === 'function')
+                        ? substituteVars(v) : v;
+                });
+            }
+            var serverUrl = step.serverUrl
+                || ((typeof serverUrls !== 'undefined' && serverUrls.length > 0)
+                    ? serverUrls[0] : '');
+            // Default to the gRPC-style {server}/{service}/{method}
+            // path. REST steps already carry the path on serverUrl
+            // (Postman import seeds serverUrl with the full URL), so
+            // the / service / method tail collapses to "//" which
+            // most servers accept. The executor host can be a real
+            // upstream or a Bowire host running in mock mode.
+            var url = serverUrl;
+            if (step.service && step.method
+                && url && url.indexOf(step.service) === -1) {
+                url = url.replace(/\/+$/, '') + '/'
+                    + step.service + '/' + step.method;
+            }
+            out.push({
+                url: url,
+                method: step.httpVerb || (step.protocol === 'rest' ? 'POST' : 'POST'),
+                body: substitutedBody,
+                headers: Object.keys(headers).length > 0 ? headers : null,
+                label: (step.service ? step.service + '/' : '')
+                    + (step.method || 'step ' + (i + 1)),
+                protocol: step.protocol || null
+            });
+        }
+        return out;
+    }
+
+    async function _runDistributedParallel(kind, sourceId, sourceName, source, opts) {
+        var targets = _buildParallelTargets(kind, source);
+        if (targets.length === 0) {
+            toast('Nothing to run — no unary targets in this ' + kind, 'error');
+            return;
+        }
+        // Render one synthetic "host" tile per remote host so the
+        // operator gets at-a-glance feedback while the coordinator
+        // is in flight. Per-step tiles only land after the
+        // coordinator returns; this matches the Phase-1 live-tile
+        // pattern within the constraints of remote execution.
+        parallelSessionsState = {
+            kind: kind,
+            sourceId: sourceId,
+            sourceName: sourceName,
+            sessionCount: opts.sessions,
+            totalSteps: targets.length,
+            sessions: [],
+            distributed: true,
+            hosts: opts.hosts.slice(),
+            status: 'running',
+            startedAt: Date.now(),
+            durationMs: 0
+        };
+        render();
+        toast('Dispatching ' + opts.sessions + ' sessions across '
+            + opts.hosts.length + ' host' + (opts.hosts.length === 1 ? '' : 's'), 'info');
+
+        var startMs = performance.now();
+        var body = {
+            targets: targets,
+            sessionCount: opts.sessions,
+            hosts: opts.hosts,
+            rampUpSeconds: opts.rampUpSeconds || 0,
+            continueOnError: opts.continueOnError !== false,
+            envPool: Array.isArray(opts.envPool) ? opts.envPool : []
+        };
+        try {
+            var resp = await fetch(config.prefix + '/api/parallel/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            var json = await resp.json();
+            if (!resp.ok) {
+                parallelSessionsState.status = 'done';
+                parallelSessionsState.durationMs = performance.now() - startMs;
+                toast('Distributed run failed: '
+                    + (json && json.title ? json.title : ('HTTP ' + resp.status)),
+                    'error');
+                render();
+                return;
+            }
+            // Project the wire shape onto the per-session tile model so
+            // the existing renderParallelSessionsPanel can show the
+            // result without a separate render path. Each session
+            // tile carries its host (derived from the hosts[] roll-up
+            // — sessions land in host order in the merged response).
+            var perHostSessions = [];
+            (json.hosts || []).forEach(function (h) {
+                for (var k = 0; k < h.sessionCount; k++) perHostSessions.push(h.host);
+            });
+            parallelSessionsState.sessions = (json.sessions || []).map(function (s, idx) {
+                return {
+                    index: s.sessionIndex != null ? s.sessionIndex : idx,
+                    host: perHostSessions[idx] || null,
+                    envId: s.envId || null,
+                    status: 'done',
+                    pass: s.failCount === 0 && !s.aborted,
+                    durationMs: s.durationMs || 0,
+                    passCount: s.passCount || 0,
+                    failCount: s.failCount || 0,
+                    stepIndex: -1,
+                    stepTotal: targets.length,
+                    aborted: s.aborted || null,
+                    error: s.aborted || null
+                };
+            });
+            parallelSessionsState.hostSummaries = json.hosts || [];
+            parallelSessionsState.status = 'done';
+            parallelSessionsState.durationMs = performance.now() - startMs;
+            toast(
+                'Distributed run finished — '
+                + (json.passCount || 0) + ' passed, '
+                + (json.failCount || 0) + ' failed'
+                + ' across ' + (json.hosts || []).length + ' host'
+                + ((json.hosts || []).length === 1 ? '' : 's')
+                + ' in ' + Math.round(parallelSessionsState.durationMs) + ' ms',
+                (json.failCount || 0) === 0 ? 'success' : 'error'
+            );
+            render();
+        } catch (e) {
+            parallelSessionsState.status = 'done';
+            parallelSessionsState.durationMs = performance.now() - startMs;
+            toast('Distributed run failed: ' + (e.message || e), 'error');
+            render();
+        }
     }
 
     // One isolated collection session — sequential through its assigned
@@ -339,6 +627,37 @@
             }) : null
         ));
 
+        // #132 Phase 2 — distributed runs show a per-host roll-up
+        // strip above the per-session tiles so the operator sees
+        // host-level pass/fail / latency at a glance. Local runs
+        // skip this (no host fan-out, no roll-up).
+        if (st.distributed && Array.isArray(st.hostSummaries) && st.hostSummaries.length > 0) {
+            var hostStrip = el('div', { className: 'bowire-parallel-hosts-strip' });
+            st.hostSummaries.forEach(function (h) {
+                var statusClass = h.error
+                    ? ' fail'
+                    : (h.failCount > 0 ? ' fail' : ' pass');
+                hostStrip.appendChild(el('div', { className: 'bowire-parallel-host-chip' + statusClass,
+                        title: h.error || (h.passCount + ' passed, ' + h.failCount + ' failed in ' + h.durationMs + ' ms') },
+                    el('span', { className: 'bowire-parallel-host-chip-name', textContent: h.host }),
+                    el('span', { className: 'bowire-parallel-host-chip-count',
+                        textContent: h.sessionCount + 's' })
+                ));
+            });
+            panel.appendChild(hostStrip);
+        } else if (st.distributed && Array.isArray(st.hosts) && st.status === 'running') {
+            // Pre-result placeholder — show the host list so the
+            // operator can confirm the dispatch went out.
+            var pending = el('div', { className: 'bowire-parallel-hosts-strip' });
+            st.hosts.forEach(function (host) {
+                pending.appendChild(el('div', { className: 'bowire-parallel-host-chip running',
+                        title: 'Dispatch in flight' },
+                    el('span', { className: 'bowire-parallel-host-chip-name', textContent: host })
+                ));
+            });
+            panel.appendChild(pending);
+        }
+
         var tiles = el('div', { className: 'bowire-parallel-tiles' });
         st.sessions.forEach(function (s) {
             var statusClass = s.status === 'done'
@@ -353,11 +672,23 @@
                     + (s.failCount > 0 ? ' / ' + s.failCount + ' fail' : '')
                     + ' · ' + Math.round(s.durationMs) + ' ms';
             }
+            // Distributed sessions surface their host + env slot
+            // inline so the operator can attribute a failed slot back
+            // to its executor without hunting through the host strip.
+            var hostBadge = s.host
+                ? el('span', { className: 'bowire-parallel-tile-host',
+                    title: s.host, textContent: _shortHost(s.host) })
+                : null;
+            var envBadge = s.envId
+                ? el('span', { className: 'bowire-parallel-tile-env', textContent: s.envId })
+                : null;
             var tile = el('div', { className: 'bowire-parallel-tile' + statusClass },
                 el('span', { className: 'bowire-parallel-tile-index',
                     textContent: '#' + (s.index + 1) }),
                 el('span', { className: 'bowire-parallel-tile-status',
                     textContent: s.status === 'done' ? (s.pass ? 'PASS' : 'FAIL') : 'RUNNING' }),
+                hostBadge,
+                envBadge,
                 el('span', { className: 'bowire-parallel-tile-progress', textContent: progressText }),
                 s.error ? el('span', { className: 'bowire-parallel-tile-error',
                     title: s.error, textContent: s.error.slice(0, 60) }) : null
@@ -367,6 +698,16 @@
         panel.appendChild(tiles);
 
         return panel;
+    }
+
+    // Compact host label for the per-session tile — strip scheme and
+    // trailing slashes so a 60-char URL doesn't blow out the tile
+    // width. The full URL stays in the tile's title attribute so the
+    // operator can still hover to see it.
+    function _shortHost(url) {
+        if (!url) return '';
+        var s = String(url).replace(/^https?:\/\//, '').replace(/\/+$/, '');
+        return s.length > 28 ? s.slice(0, 26) + '…' : s;
     }
 
     // ---- Collection Runner ----

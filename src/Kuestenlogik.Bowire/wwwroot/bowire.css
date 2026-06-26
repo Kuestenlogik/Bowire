@@ -16705,6 +16705,102 @@ the action toolbar {
     max-width: 200px;
 }
 
+/* #132 Phase 2 — Run-options modal grew distribution + policy
+   fields (Hosts, Ramp-up, Failure policy, Env pool). A small
+   section heading separates these from the bare session-count
+   picker above so the modal stays scannable in the common-case
+   local run too. */
+.bowire-parallel-section-label {
+    margin-top: 14px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bowire-text-tertiary, #6a6a82);
+}
+.bowire-parallel-field {
+    margin-top: 8px;
+}
+.bowire-parallel-field-label {
+    display: block;
+    font-size: 11px;
+    color: var(--bowire-text-secondary, #9898b0);
+    margin-bottom: 2px;
+}
+.bowire-parallel-field-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--bowire-border-subtle);
+    background: var(--bowire-bg);
+    color: var(--bowire-text);
+    border-radius: var(--bowire-radius-sm);
+    font-family: inherit;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+.bowire-parallel-field-hint {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary, #6a6a82);
+    line-height: 1.35;
+}
+
+/* #132 Phase 2 — per-host roll-up strip above the per-session
+   tiles. Shows host URL + sessionCount + a pass/fail tint so
+   the operator can spot a single failing executor in a fleet
+   without scanning every tile. */
+.bowire-parallel-hosts-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.bowire-parallel-host-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border: 1px solid var(--bowire-border-subtle);
+    border-left-width: 3px;
+    border-radius: var(--bowire-radius-sm);
+    font-size: 11px;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    background: var(--bowire-bg);
+}
+.bowire-parallel-host-chip.pass {
+    border-left-color: var(--bowire-success, #34d399);
+}
+.bowire-parallel-host-chip.fail {
+    border-left-color: var(--bowire-error, #f87171);
+}
+.bowire-parallel-host-chip.running {
+    border-left-color: var(--bowire-accent);
+}
+.bowire-parallel-host-chip-name {
+    color: var(--bowire-text);
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-parallel-host-chip-count {
+    color: var(--bowire-text-tertiary, #6a6a82);
+}
+
+.bowire-parallel-tile-host,
+.bowire-parallel-tile-env {
+    padding: 1px 6px;
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-bg-elevated, #14141f);
+    color: var(--bowire-text-secondary, #9898b0);
+    font-size: 10px;
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+}
+.bowire-parallel-tile-env {
+    color: var(--bowire-accent-text, #c2b5ff);
+}
+
 .bowire-recording-action-primary {
     border-color: var(--bowire-accent) !important;
     color: var(--bowire-accent) !important;
