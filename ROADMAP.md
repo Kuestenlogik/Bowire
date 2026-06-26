@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**40/59 done** · 19 backlog
+**42/59 done** · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -33,8 +33,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ⬜ Backlog |  |
 | [297](https://github.com/Kuestenlogik/Bowire/issues/297) | Bowire | [Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip](#issue-kuestenlogik-bowire-297) | ⬜ Backlog |  |
-| [298](https://github.com/Kuestenlogik/Bowire/issues/298) | Bowire | [Flows: protocol + service selection doesn't populate the request's dropdowns](#issue-kuestenlogik-bowire-298) | ⬜ Backlog |  |
-| [299](https://github.com/Kuestenlogik/Bowire/issues/299) | Bowire | [Embedded mode: Proxy rail surfaces 'Proxy not reachable' — proxy needs an embedded-mode story](#issue-kuestenlogik-bowire-299) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ✅ Done |  |
@@ -73,6 +71,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [289](https://github.com/Kuestenlogik/Bowire/issues/289) | Bowire | [Hoppscotch-style single-line request bar: method + URL + params + execute, no workspace required](#issue-kuestenlogik-bowire-289) | ✅ Done |  |
 | [293](https://github.com/Kuestenlogik/Bowire/issues/293) | Bowire | [New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover](#issue-kuestenlogik-bowire-293) | ✅ Done |  |
 | [296](https://github.com/Kuestenlogik/Bowire/issues/296) | Bowire | [Topbar: global Trash drawer + Undo / Redo buttons (aggregate across rails)](#issue-kuestenlogik-bowire-296) | ✅ Done |  |
+| [298](https://github.com/Kuestenlogik/Bowire/issues/298) | Bowire | [Flows: protocol + service selection doesn't populate the request's dropdowns](#issue-kuestenlogik-bowire-298) | ✅ Done |  |
+| [299](https://github.com/Kuestenlogik/Bowire/issues/299) | Bowire | [Embedded mode: Proxy rail surfaces 'Proxy not reachable' — proxy needs an embedded-mode story](#issue-kuestenlogik-bowire-299) | ✅ Done |  |
 | [300](https://github.com/Kuestenlogik/Bowire/issues/300) | Bowire | [Benchmark: switching mode works once, then becomes inert](#issue-kuestenlogik-bowire-300) | ✅ Done |  |
 | [301](https://github.com/Kuestenlogik/Bowire/issues/301) | Bowire | [Home/Welcome formatting inconsistency: Benchmarks + Workspaces rails differ from others](#issue-kuestenlogik-bowire-301) | ✅ Done |  |
 
@@ -298,14 +298,6 @@ The **Compose** rail (renamed from Design in commit `e52f7a9`) is now the home f
 
 Rails already collapse into an overflow `⋮` button when the vertical space runs out (`bowire-rail-overflow-btn` in `render-sidebar.js`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/297)
 
-#### <a id="issue-kuestenlogik-bowire-298"></a>⬜ Backlog · [#298](https://github.com/Kuestenlogik/Bowire/issues/298) Flows: protocol + service selection doesn't populate the request's dropdowns
-
-1. Open the Flows rail 2. Create / edit a flow step 3. Pick a protocol (e.g. REST) → pick a service from the discovered list 4. **Expected:** the request panel below the step inherits the picked protocol + service; method dropdown, URL, etc. fill in. 5. **Actual:** dropdowns stay empty / unchanged. [[more]](https://github.com/Kuestenlogik/Bowire/issues/298)
-
-#### <a id="issue-kuestenlogik-bowire-299"></a>⬜ Backlog · [#299](https://github.com/Kuestenlogik/Bowire/issues/299) Embedded mode: Proxy rail surfaces 'Proxy not reachable' — proxy needs an embedded-mode story
-
-1. Build the embedded sample (`samples/Kuestenlogik.Bowire.Sample.Embedded`) and run on port 5181 2. Visit `http://localhost:5181/bowire` 3. Open the Proxy rail 4. **Expected:** something usable — either run a proxy in-process OR a clear 'not available in embedded mode' state with a doc link 5. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/299)
-
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
 Real testing workflows have steps that are too dynamic for a static template: sign the body with a per-request HMAC, refresh an access token if it's about to expire, capture a value from one response into a header on the next, encode a binary blob, assert on a complex shape after send. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/126)
@@ -457,6 +449,14 @@ The request-builder (renamed from hopp-bar in commit 5d7b21a, multi-protocol sin
 #### <a id="issue-kuestenlogik-bowire-296"></a>✅ Done · [#296](https://github.com/Kuestenlogik/Bowire/issues/296) Topbar: global Trash drawer + Undo / Redo buttons (aggregate across rails)
 
 User feedback (Phase 2 walkthrough): "wo ist der Papierkorb und Undo/Redo übergeordnet erreichbar? das log kann ich im status erreichen. Papierkorb hätte ich in der Top bar oder Status bar erwartet." [[more]](https://github.com/Kuestenlogik/Bowire/issues/296)
+
+#### <a id="issue-kuestenlogik-bowire-298"></a>✅ Done · [#298](https://github.com/Kuestenlogik/Bowire/issues/298) Flows: protocol + service selection doesn't populate the request's dropdowns
+
+1. Open the Flows rail 2. Create / edit a flow step 3. Pick a protocol (e.g. REST) → pick a service from the discovered list 4. **Expected:** the request panel below the step inherits the picked protocol + service; method dropdown, URL, etc. fill in. 5. **Actual:** dropdowns stay empty / unchanged. [[more]](https://github.com/Kuestenlogik/Bowire/issues/298)
+
+#### <a id="issue-kuestenlogik-bowire-299"></a>✅ Done · [#299](https://github.com/Kuestenlogik/Bowire/issues/299) Embedded mode: Proxy rail surfaces 'Proxy not reachable' — proxy needs an embedded-mode story
+
+1. Build the embedded sample (`samples/Kuestenlogik.Bowire.Sample.Embedded`) and run on port 5181 2. Visit `http://localhost:5181/bowire` 3. Open the Proxy rail 4. **Expected:** something usable — either run a proxy in-process OR a clear 'not available in embedded mode' state with a doc link 5. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/299)
 
 #### <a id="issue-kuestenlogik-bowire-300"></a>✅ Done · [#300](https://github.com/Kuestenlogik/Bowire/issues/300) Benchmark: switching mode works once, then becomes inert
 
