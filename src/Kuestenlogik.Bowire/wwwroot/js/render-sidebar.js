@@ -845,7 +845,7 @@
         // Sidebar kind: 'none' (the strip lives in the main pane, not
         // the sidebar). #294 will fold this into the plugin-descriptor
         // model; for now it ships as another always-on entry.
-        { id: 'compose',       icon: 'pencilLarge', label: 'Compose',          group: 'work',      sidebar: { kind: 'none' } },
+        { id: 'compose',       icon: 'drill',     label: 'Compose',           group: 'work',      sidebar: { kind: 'none' } },
         // Collections rail mode kept in the catalogue (so the existing
         // sidebar + main-pane render paths still work when the
         // Workspaces tree dispatches to it), but hideFromRail removes
