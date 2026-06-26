@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**50/60 done** · 10 backlog
+**51/60 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -20,7 +20,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ⬜ Backlog |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Backlog |  |
 | [194](https://github.com/Kuestenlogik/Bowire/issues/194) | Bowire | [Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces](#issue-kuestenlogik-bowire-194) | ⬜ Backlog |  |
-| [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
@@ -32,6 +31,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ✅ Done |  |
 | [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
 | [231](https://github.com/Kuestenlogik/Bowire/issues/231) | Bowire | [Benchmarks: 'random' run shape — pick N random endpoints per iteration](#issue-kuestenlogik-bowire-231) | ✅ Done |  |
+| [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ✅ Done |  |
 | [242](https://github.com/Kuestenlogik/Bowire/issues/242) | Bowire | [User-defined workspace templates — save current workspace as a template, surface in create dialog](#issue-kuestenlogik-bowire-242) | ✅ Done |  |
 | [243](https://github.com/Kuestenlogik/Bowire/issues/243) | Bowire | [Failed REST / gRPC invocation logs show only 'Error' — surface status code + response body + exception message](#issue-kuestenlogik-bowire-243) | ✅ Done |  |
 | [244](https://github.com/Kuestenlogik/Bowire/issues/244) | Bowire | [Discover rail toolbar: drop the '+ New' button — ad-hoc requests don't belong on the discovered-tree surface](#issue-kuestenlogik-bowire-244) | ✅ Done |  |
@@ -247,10 +247,6 @@ Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benc
 
 Phase 1 shipped in e084bc3 — central `actionLog`, Statusbar pill, Activity drawer tab, Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z global shortcuts, `toast({undo, logAction})` helper. The first five mutation sites (collection-delete, flow-delete, env-delete, history-clear, favorites-clear) write to the log. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/194)
 
-#### <a id="issue-kuestenlogik-bowire-233"></a>⬜ Backlog · [#233](https://github.com/Kuestenlogik/Bowire/issues/233) Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)
-
-When the operator hits Run on a benchmark envelope that already has a previous run on file, surface a small diff banner: `p95 142 ms (-8 ms vs. previous · -5%)`, status histogram delta, throughput delta. So regressions jump out without reading two numbers side by side. [[more]](https://github.com/Kuestenlogik/Bowire/issues/233)
-
 #### <a id="issue-kuestenlogik-bowire-234"></a>⬜ Backlog · [#234](https://github.com/Kuestenlogik/Bowire/issues/234) Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics
 
 Round out the Benchmarks export surface so result data can leave Bowire in the formats the surrounding tooling actually consumes: [[more]](https://github.com/Kuestenlogik/Bowire/issues/234)
@@ -294,6 +290,10 @@ After #125 v1 landed, Bowire has two interpolation syntaxes that resolve identic
 #### <a id="issue-kuestenlogik-bowire-231"></a>✅ Done · [#231](https://github.com/Kuestenlogik/Bowire/issues/231) Benchmarks: 'random' run shape — pick N random endpoints per iteration
 
 Add the **random** run shape to the Benchmarks envelope — picks N random endpoints from the active workspace's discovered services on each iteration. Useful for chaos / fuzz-flavored load tests where the operator wants to hit "anything reachable" rather than a fixed list. [[more]](https://github.com/Kuestenlogik/Bowire/issues/231)
+
+#### <a id="issue-kuestenlogik-bowire-233"></a>✅ Done · [#233](https://github.com/Kuestenlogik/Bowire/issues/233) Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)
+
+When the operator hits Run on a benchmark envelope that already has a previous run on file, surface a small diff banner: `p95 142 ms (-8 ms vs. previous · -5%)`, status histogram delta, throughput delta. So regressions jump out without reading two numbers side by side. [[more]](https://github.com/Kuestenlogik/Bowire/issues/233)
 
 #### <a id="issue-kuestenlogik-bowire-242"></a>✅ Done · [#242](https://github.com/Kuestenlogik/Bowire/issues/242) User-defined workspace templates — save current workspace as a template, surface in create dialog
 
