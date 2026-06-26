@@ -30,7 +30,7 @@ namespace Kuestenlogik.Bowire.Tests.Interceptor;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5399:HttpClient created without enabling CheckCertificateRevocationList", Justification = "Loopback-only test traffic")]
 public sealed class BowireInterceptorMiddlewareTests
 {
-    private static async Task<(WebApplication app, HttpClient http, InterceptedFlowStore store, BowireRecordingSession session)> StartAsync(
+    private static async Task<(WebApplication app, HttpClient http, InterceptedFlowStore store, BowireRecordingSession session, InterceptorMockStore mocks)> StartAsync(
         CancellationToken ct,
         Action<BowireInterceptorOptions>? configure = null)
     {
@@ -62,14 +62,15 @@ public sealed class BowireInterceptorMiddlewareTests
         var http = new HttpClient { BaseAddress = new Uri(addr) };
         var store = app.Services.GetRequiredService<InterceptedFlowStore>();
         var session = app.Services.GetRequiredService<BowireRecordingSession>();
-        return (app, http, store, session);
+        var mocks = app.Services.GetRequiredService<InterceptorMockStore>();
+        return (app, http, store, session, mocks);
     }
 
     [Fact]
     public async Task GetRequest_IsRecordedWithMethodAndStatus()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (app, http, store, _) = await StartAsync(ct);
+        var (app, http, store, _, _) = await StartAsync(ct);
         await using var _app = app;
         using var _http = http;
 
@@ -91,7 +92,7 @@ public sealed class BowireInterceptorMiddlewareTests
     public async Task PostRequest_BodyIsCapturedAndRewoundForEndpoint()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (app, http, store, _) = await StartAsync(ct);
+        var (app, http, store, _, _) = await StartAsync(ct);
         await using var _app = app;
         using var _http = http;
 
@@ -113,7 +114,7 @@ public sealed class BowireInterceptorMiddlewareTests
     public async Task IgnoredPathPrefix_SkipsRecording()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (app, http, store, _) = await StartAsync(ct, opt =>
+        var (app, http, store, _, _) = await StartAsync(ct, opt =>
         {
             opt.IgnoredPathPrefixes.Add("/api/hello");
         });
@@ -129,7 +130,7 @@ public sealed class BowireInterceptorMiddlewareTests
     public async Task DisabledOption_BypassesInterceptor()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (app, http, store, _) = await StartAsync(ct, opt => opt.Enabled = false);
+        var (app, http, store, _, _) = await StartAsync(ct, opt => opt.Enabled = false);
         await using var _app = app;
         using var _http = http;
 
@@ -142,7 +143,7 @@ public sealed class BowireInterceptorMiddlewareTests
     public async Task StreamingResponse_IsFlaggedAndBodyNotBuffered()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (app, http, store, _) = await StartAsync(ct);
+        var (app, http, store, _, _) = await StartAsync(ct);
         await using var _app = app;
         using var _http = http;
 
@@ -160,7 +161,7 @@ public sealed class BowireInterceptorMiddlewareTests
     public async Task RecordingSessionActive_AutoAppendsInterceptedFlowAsStep()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (app, http, store, session) = await StartAsync(ct);
+        var (app, http, store, session, _) = await StartAsync(ct);
         await using var _app = app;
         using var _http = http;
 
@@ -194,7 +195,7 @@ public sealed class BowireInterceptorMiddlewareTests
         var baselineBody = await baselineResp.Content.ReadAsStringAsync(ct);
         await baseline.StopAsync(ct);
 
-        var (app, http, _, _) = await StartAsync(ct);
+        var (app, http, _, _, _) = await StartAsync(ct);
         await using var _app = app;
         using var _http = http;
         using var ireResp = await http.GetAsync(new Uri("/api/hello", UriKind.Relative), ct);
@@ -202,6 +203,82 @@ public sealed class BowireInterceptorMiddlewareTests
 
         Assert.Equal(baselineResp.StatusCode, ireResp.StatusCode);
         Assert.Equal(baselineBody, ireBody);
+    }
+
+    [Fact]
+    public async Task MockRule_ShortCircuitsPipeline_AndFlowsAreLabelledMocked()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (app, http, store, _, mocks) = await StartAsync(ct);
+        await using var _app = app;
+        using var _http = http;
+
+        // Seed a mock for /api/hello — the registered endpoint returns
+        // {"greeting":"hi"}, the rule overrides it with a different body
+        // + a non-200 status, which proves the endpoint never ran.
+        mocks.Add(new InterceptorMockRule
+        {
+            PathPattern = "/api/hello",
+            Method = "GET",
+            ResponseStatus = 418,
+            ResponseBody = "{\"greeting\":\"mocked\"}",
+        });
+
+        using var resp = await http.GetAsync(new Uri("/api/hello", UriKind.Relative), ct);
+        Assert.Equal((HttpStatusCode)418, resp.StatusCode);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        Assert.Equal("{\"greeting\":\"mocked\"}", body);
+
+        var flow = Assert.Single(store.Snapshot());
+        Assert.True(flow.Mocked);
+        Assert.Equal(418, flow.ResponseStatus);
+        Assert.Equal("{\"greeting\":\"mocked\"}", flow.ResponseBody);
+    }
+
+    [Fact]
+    public async Task MockRule_DisabledMocksOption_StillForwardsToEndpoint()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (app, http, store, _, mocks) = await StartAsync(ct, opt => opt.MocksEnabled = false);
+        await using var _app = app;
+        using var _http = http;
+
+        mocks.Add(new InterceptorMockRule
+        {
+            PathPattern = "/api/hello",
+            Method = "GET",
+            ResponseStatus = 418,
+            ResponseBody = "{\"greeting\":\"mocked\"}",
+        });
+
+        using var resp = await http.GetAsync(new Uri("/api/hello", UriKind.Relative), ct);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        Assert.Contains("hi", body, StringComparison.Ordinal);
+        Assert.False(Assert.Single(store.Snapshot()).Mocked);
+    }
+
+    [Fact]
+    public async Task MockRule_WithWildcard_MatchesSubpaths()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (app, http, store, _, mocks) = await StartAsync(ct);
+        await using var _app = app;
+        using var _http = http;
+
+        mocks.Add(new InterceptorMockRule
+        {
+            PathPattern = "/api/*",
+            Method = "*",
+            ResponseStatus = 200,
+            ResponseBody = "{\"source\":\"wildcard\"}",
+        });
+
+        using var resp = await http.GetAsync(new Uri("/api/hello", UriKind.Relative), ct);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        Assert.Contains("wildcard", body, StringComparison.Ordinal);
+        Assert.True(Assert.Single(store.Snapshot()).Mocked);
     }
 
     [Fact]

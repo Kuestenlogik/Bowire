@@ -104,4 +104,19 @@ public sealed class InterceptedFlow
 
     /// <summary>Error message when the downstream pipeline threw. Null on the happy path.</summary>
     public string? Error { get; init; }
+
+    /// <summary>
+    /// Phase D (#308): set when an <see cref="InterceptorMockStore"/>
+    /// rule served the response instead of the host's endpoint. The rail
+    /// labels the row with a "mocked" badge so the operator can see at a
+    /// glance which flows came from upstream vs. a mock-injection rule.
+    /// </summary>
+    public bool Mocked { get; init; }
+
+    /// <summary>
+    /// Phase D (#308): id of the <see cref="InterceptorMockRule"/> that
+    /// served the response, when <see cref="Mocked"/> is set. Null on a
+    /// normal pass-through flow.
+    /// </summary>
+    public string? MockRuleId { get; init; }
 }

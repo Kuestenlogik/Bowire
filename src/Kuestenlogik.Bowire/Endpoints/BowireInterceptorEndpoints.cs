@@ -110,7 +110,191 @@ internal static class BowireInterceptorEndpoints
             return Results.Json(recording, s_jsonOpts);
         }).ExcludeFromDescription();
 
+        // ----- Phase D — mock-injection rules (#308) -----
+
+        // GET /api/intercepted/mocks — list rules + master toggle for the rail UI.
+        endpoints.MapGet($"{basePath}/api/intercepted/mocks", (HttpContext ctx) =>
+        {
+            var store = ctx.RequestServices.GetService<InterceptorMockStore>();
+            var opts = ResolveOptions(ctx);
+            var rules = store?.Snapshot().Select(ProjectRule).ToArray() ?? Array.Empty<object>();
+            return Results.Json(new { enabled = opts?.MocksEnabled ?? true, rules }, s_jsonOpts);
+        }).ExcludeFromDescription();
+
+        // POST /api/intercepted/mocks — create a rule, or upsert when an id is supplied.
+        endpoints.MapPost($"{basePath}/api/intercepted/mocks", async (HttpContext ctx) =>
+        {
+            var store = ctx.RequestServices.GetService<InterceptorMockStore>();
+            if (store is null) return Results.StatusCode(503);
+
+            MockRuleDto? dto;
+            try
+            {
+                dto = await JsonSerializer.DeserializeAsync<MockRuleDto>(
+                    ctx.Request.Body, s_jsonOpts, ctx.RequestAborted).ConfigureAwait(false);
+            }
+            catch (JsonException) { return Results.BadRequest(new { error = "invalid JSON body" }); }
+            if (dto is null) return Results.BadRequest(new { error = "missing rule body" });
+
+            var rule = store.Add(dto.ToRule());
+            return Results.Json(ProjectRule(rule), s_jsonOpts);
+        }).ExcludeFromDescription();
+
+        // DELETE /api/intercepted/mocks/{id} — remove a rule by id.
+        endpoints.MapDelete($"{basePath}/api/intercepted/mocks/{{id}}", (string id, HttpContext ctx) =>
+        {
+            var store = ctx.RequestServices.GetService<InterceptorMockStore>();
+            if (store is null) return Results.NotFound();
+            return store.Remove(id) ? Results.NoContent() : Results.NotFound();
+        }).ExcludeFromDescription();
+
+        // DELETE /api/intercepted/mocks — drop every rule (workbench "Clear all" button).
+        endpoints.MapDelete($"{basePath}/api/intercepted/mocks", (HttpContext ctx) =>
+        {
+            ctx.RequestServices.GetService<InterceptorMockStore>()?.Clear();
+            return Results.NoContent();
+        }).ExcludeFromDescription();
+
+        // PUT /api/intercepted/mocks/enabled — master toggle for the
+        // mock-injection feature without touching individual rules.
+        // Body: { "enabled": true|false }
+        endpoints.MapPut($"{basePath}/api/intercepted/mocks/enabled", async (HttpContext ctx) =>
+        {
+            var opts = ResolveOptions(ctx);
+            if (opts is null) return Results.StatusCode(503);
+
+            EnabledDto? dto;
+            try
+            {
+                dto = await JsonSerializer.DeserializeAsync<EnabledDto>(
+                    ctx.Request.Body, s_jsonOpts, ctx.RequestAborted).ConfigureAwait(false);
+            }
+            catch (JsonException) { return Results.BadRequest(new { error = "invalid JSON body" }); }
+
+            opts.MocksEnabled = dto?.Enabled ?? false;
+            return Results.Json(new { enabled = opts.MocksEnabled }, s_jsonOpts);
+        }).ExcludeFromDescription();
+
+        // POST /api/intercepted/flows/{id}/mock — seed a mock rule from a captured flow.
+        // Body (optional): { "pathPattern": "...", "method": "..." } to override defaults.
+        endpoints.MapPost($"{basePath}/api/intercepted/flows/{{id:long}}/mock", async (long id, HttpContext ctx) =>
+        {
+            var flowStore = ctx.RequestServices.GetService<InterceptedFlowStore>();
+            var mockStore = ctx.RequestServices.GetService<InterceptorMockStore>();
+            if (flowStore is null || mockStore is null) return Results.NotFound();
+            var flow = flowStore.Get(id);
+            if (flow is null) return Results.NotFound();
+
+            MockSeedDto? overrides = null;
+            if (ctx.Request.ContentLength is null or > 0)
+            {
+                try
+                {
+                    overrides = await JsonSerializer.DeserializeAsync<MockSeedDto>(
+                        ctx.Request.Body, s_jsonOpts, ctx.RequestAborted).ConfigureAwait(false);
+                }
+                catch (JsonException) { /* tolerate empty / missing body */ }
+            }
+
+            var rule = mockStore.Add(SeedRuleFromFlow(flow, overrides));
+            return Results.Json(ProjectRule(rule), s_jsonOpts);
+        }).ExcludeFromDescription();
+
         return endpoints;
+    }
+
+    private static BowireInterceptorOptions? ResolveOptions(HttpContext ctx)
+    {
+        var opts = ctx.RequestServices.GetService<Microsoft.Extensions.Options.IOptions<BowireInterceptorOptions>>();
+        return opts?.Value;
+    }
+
+    private static object ProjectRule(InterceptorMockRule rule) => new
+    {
+        id = rule.Id,
+        name = rule.Name,
+        pathPattern = rule.PathPattern,
+        method = rule.Method,
+        responseStatus = rule.ResponseStatus,
+        responseHeaders = rule.ResponseHeaders,
+        responseBody = rule.ResponseBody,
+        responseBodyBase64 = rule.ResponseBodyBase64,
+        delayMs = rule.DelayMs,
+        enabled = rule.Enabled,
+    };
+
+    private static InterceptorMockRule SeedRuleFromFlow(InterceptedFlow flow, MockSeedDto? overrides)
+    {
+        var path = flow.Path ?? "/";
+        // Strip the query so a seeded rule matches the route, not the
+        // specific querystring the operator happened to capture.
+        var q = path.IndexOf('?', StringComparison.Ordinal);
+        if (q >= 0) path = path[..q];
+
+        var headers = flow.ResponseHeaders
+            .Where(static h => !string.Equals(h.Key, "Content-Length", StringComparison.OrdinalIgnoreCase)
+                            && !string.Equals(h.Key, "Transfer-Encoding", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        return new InterceptorMockRule
+        {
+            Name = overrides?.Name ?? $"mock-of-{flow.Id}",
+            PathPattern = string.IsNullOrEmpty(overrides?.PathPattern) ? path : overrides!.PathPattern!,
+            Method = string.IsNullOrEmpty(overrides?.Method) ? flow.Method : overrides!.Method!,
+            ResponseStatus = flow.ResponseStatus > 0 ? flow.ResponseStatus : 200,
+            ResponseHeaders = headers,
+            ResponseBody = flow.ResponseBody,
+            ResponseBodyBase64 = flow.ResponseBodyBase64,
+            Enabled = true,
+        };
+    }
+
+    private sealed class MockRuleDto
+    {
+        public string? Id { get; set; }
+        public string? Name { get; set; }
+        public string? PathPattern { get; set; }
+        public string? Method { get; set; }
+        public int ResponseStatus { get; set; } = 200;
+        public IList<HeaderDto>? ResponseHeaders { get; set; }
+        public string? ResponseBody { get; set; }
+        public string? ResponseBodyBase64 { get; set; }
+        public int DelayMs { get; set; }
+        public bool Enabled { get; set; } = true;
+
+        public InterceptorMockRule ToRule() => new()
+        {
+            Id = Id ?? "",
+            Name = Name ?? "",
+            PathPattern = string.IsNullOrEmpty(PathPattern) ? "*" : PathPattern,
+            Method = string.IsNullOrEmpty(Method) ? "*" : Method,
+            ResponseStatus = ResponseStatus,
+            ResponseHeaders = ResponseHeaders is null
+                ? Array.Empty<KeyValuePair<string, string>>()
+                : ResponseHeaders.Select(h => new KeyValuePair<string, string>(h.Key ?? "", h.Value ?? "")).ToArray(),
+            ResponseBody = ResponseBody,
+            ResponseBodyBase64 = ResponseBodyBase64,
+            DelayMs = DelayMs,
+            Enabled = Enabled,
+        };
+    }
+
+    private sealed class HeaderDto
+    {
+        public string? Key { get; set; }
+        public string? Value { get; set; }
+    }
+
+    private sealed class MockSeedDto
+    {
+        public string? Name { get; set; }
+        public string? PathPattern { get; set; }
+        public string? Method { get; set; }
+    }
+
+    private sealed class EnabledDto
+    {
+        public bool Enabled { get; set; }
     }
 
     private static object ProjectSummary(InterceptedFlow flow) => new
@@ -125,6 +309,8 @@ internal static class BowireInterceptorEndpoints
         latencyMs = flow.LatencyMs,
         error = flow.Error,
         streaming = flow.Streaming,
+        mocked = flow.Mocked,
+        mockRuleId = flow.MockRuleId,
         requestBodySize = (flow.RequestBody?.Length)
             ?? (flow.RequestBodyBase64 is null ? 0 : flow.RequestBodyBase64.Length * 3 / 4),
         responseBodySize = (flow.ResponseBody?.Length)
@@ -153,6 +339,8 @@ internal static class BowireInterceptorEndpoints
         streaming = flow.Streaming,
         latencyMs = flow.LatencyMs,
         error = flow.Error,
+        mocked = flow.Mocked,
+        mockRuleId = flow.MockRuleId,
     };
 
     /// <summary>

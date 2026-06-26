@@ -37,8 +37,16 @@ namespace Kuestenlogik.Bowire.Interceptor;
 /// recording fills.
 /// </para>
 /// <para>
-/// Phase C (standalone reverse-proxy mode) and Phase D (mock injection)
-/// are out of scope for this PR — tracked separately.
+/// Phase D (#308) — mock injection. <see cref="InterceptorMockStore"/>
+/// rules can short-circuit the pipeline before <c>_next</c> runs: the
+/// rule's response is served directly to the client. The Workbench's
+/// "Mocks" sub-tab in the Intercepted rail is the CRUD surface; rules
+/// can also be seeded from any captured flow via the rail's "Mock this
+/// route" affordance.
+/// </para>
+/// <para>
+/// Phase C (standalone reverse-proxy mode) remains out of scope —
+/// tracked separately.
 /// </para>
 /// </remarks>
 public static class BowireInterceptorApplicationBuilderExtensions
@@ -112,6 +120,10 @@ public static class BowireInterceptorApplicationBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         services.TryAddSingleton<InterceptedFlowStore>();
+        // Phase D (#308) — mock-injection rule store. Free when no
+        // rules are added; the middleware ref-equality-checks the store
+        // before forwarding so the per-request cost is one null compare.
+        services.TryAddSingleton<InterceptorMockStore>();
         services.AddOptions<BowireInterceptorOptions>();
         return services;
     }
