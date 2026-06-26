@@ -1,12 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- #306 Phase G — Mocks rail package. -->
-    <Description>Bowire Mocks rail — mock server / fixture surface. Adds the Mocks rail descriptor to the rail registry.</Description>
+    <!-- #306 Phase G — Mocks rail package.
+         #311 Phase G continuation — owns mocks.js fragment. -->
+    <Description>Bowire Mocks rail — mock server / fixture surface. Adds the Mocks rail descriptor + per-rail JS fragment to the workbench.</Description>
     <PackageId>Kuestenlogik.Bowire.Rail.Mocks</PackageId>
     <PackageTags>bowire;rail;mocks;workbench;plugin</PackageTags>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- #311 — per-rail JS fragment. See Rail.Recordings for the discovery contract. -->
+    <EmbeddedResource Include="wwwroot\js\mocks.js"
+                      LogicalName="Kuestenlogik.Bowire.Rail.Mocks.wwwroot.js.mocks.js" />
   </ItemGroup>
 </Project>

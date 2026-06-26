@@ -245,4 +245,39 @@ public class BowireHtmlGeneratorRenderTests
         Assert.Contains("<div id=\"bowire-app\">", html, StringComparison.Ordinal);
         Assert.Contains("window.__BOWIRE_CONFIG__", html, StringComparison.Ordinal);
     }
+
+    // #311 — rail JS fragment stitching contract. The bundle ships a
+    // pair of marker comments inside the IIFE; BowireHtmlGenerator
+    // replaces the slice between them with the concatenation of every
+    // embedded JS resource on every loaded `Kuestenlogik.Bowire.Rail.*`
+    // assembly. The Tests project sees Bowire core directly but the
+    // rail dlls only ride in via test-runtime probing — which still
+    // suffices because ForceLoadBowireAssemblies has not been called
+    // here, so we assert the negative shape: the markers MUST survive
+    // into the assembled JS so the runtime stitcher has somewhere to
+    // splice. The positive end-to-end shape (rail JS appearing in the
+    // bundle when the rail dll is loaded) is exercised by the
+    // integration tests where AddBowire() force-loads every Rail.*.
+
+    [Fact]
+    public void StitchRailFragments_LeavesBundle_When_Marker_Missing()
+    {
+        const string bundle = "var x = 1;";
+        var stitched = BowireHtmlGenerator.StitchRailFragments(bundle);
+        Assert.Equal(bundle, stitched);
+    }
+
+    [Fact]
+    public void StitchRailFragments_Preserves_Marker_Sentinels()
+    {
+        const string bundle = "(function(){ /*BOWIRE_RAIL_FRAGMENTS_BEGIN*/\n/*BOWIRE_RAIL_FRAGMENTS_END*/ })();";
+        var stitched = BowireHtmlGenerator.StitchRailFragments(bundle);
+        // Both sentinels survive — the begin marker stays for re-stitching;
+        // the end marker is the splice anchor.
+        Assert.Contains("/*BOWIRE_RAIL_FRAGMENTS_BEGIN*/", stitched, StringComparison.Ordinal);
+        Assert.Contains("/*BOWIRE_RAIL_FRAGMENTS_END*/", stitched, StringComparison.Ordinal);
+        // Sentinels still wrap the IIFE.
+        Assert.StartsWith("(function(){", stitched, StringComparison.Ordinal);
+        Assert.EndsWith(" })();", stitched, StringComparison.Ordinal);
+    }
 }

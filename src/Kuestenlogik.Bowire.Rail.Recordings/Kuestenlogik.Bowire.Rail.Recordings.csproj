@@ -1,12 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- #306 Phase G — Recordings rail package. -->
-    <Description>Bowire Recordings rail — capture + replay traffic. Adds the Recordings rail descriptor to the rail registry.</Description>
+    <!-- #306 Phase G — Recordings rail package.
+         #311 Phase G continuation — owns recording.js fragment. -->
+    <Description>Bowire Recordings rail — capture + replay traffic. Adds the Recordings rail descriptor + per-rail JS fragment to the workbench.</Description>
     <PackageId>Kuestenlogik.Bowire.Rail.Recordings</PackageId>
     <PackageTags>bowire;rail;recordings;workbench;plugin</PackageTags>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- #311 — per-rail JS fragment. The core HTML generator discovers
+         every embedded resource whose LogicalName matches
+         `Kuestenlogik.Bowire.Rail.*.wwwroot.js.*.js`, concatenates the
+         payloads, and stitches them into the workbench bundle's IIFE
+         right before init.js. Hosts that don't reference this package
+         don't ship the fragment — the byte-count win of #311. -->
+    <EmbeddedResource Include="wwwroot\js\recording.js"
+                      LogicalName="Kuestenlogik.Bowire.Rail.Recordings.wwwroot.js.recording.js" />
   </ItemGroup>
 </Project>
