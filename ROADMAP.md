@@ -19,7 +19,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ⬜ Backlog |  |
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ⬜ Backlog |  |
 | [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ⬜ Backlog |  |
-| [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | 🟦 In progress | Phase A + B shipped — engine in tour.js with SVG-mask spotlight + page-navigation + CTA / on-event / next-button advance; Getting-started 5-step tour. Phase C (per-rail empty-state tours) deferred. |
+| [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
@@ -227,6 +227,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [288](https://github.com/Kuestenlogik/Bowire/issues/288) | Bowire | [IInlineSseSubscriber is an orphaned seam — give it a consumer or remove it](#issue-kuestenlogik-bowire-288) | ⬜ Backlog |  |
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog |  |
 | [303](https://github.com/Kuestenlogik/Bowire/issues/303) | Bowire | [Guided tour: per-rail empty-state secondary tours](#issue-kuestenlogik-bowire-303) | ⬜ Backlog |  |
+| [304](https://github.com/Kuestenlogik/Bowire/issues/304) | Bowire | [Compose rail: hide standalone Collections rail tree node now that Compose hosts it](#issue-kuestenlogik-bowire-304) | ⬜ Backlog |  |
 
 ## Details
 
@@ -244,7 +245,7 @@ Today every Bowire instance maintains its own URL list — manually typed in the
 
 Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benchmarks** — the operator drives a call FROM Bowire's workbench and Bowire sees both sides. - **MITM Proxy view (#36)** — read-only inspection of traffic flowing through an external Bowire-as-proxy listener. [[more]](https://github.com/Kuestenlogik/Bowire/issues/153)
 
-#### <a id="issue-kuestenlogik-bowire-281"></a>🟦 In progress · [#281](https://github.com/Kuestenlogik/Bowire/issues/281) Guided tour: page-navigation + element spotlight + interactive flow
+#### <a id="issue-kuestenlogik-bowire-281"></a>⬜ Backlog · [#281](https://github.com/Kuestenlogik/Bowire/issues/281) Guided tour: page-navigation + element spotlight + interactive flow
 
 The existing guided tour reads more like inline help text than a tour. Operator's complaints: - Pages aren't navigated to — the tour says 'click X' but X isn't visible - Hints don't highlight the item being discussed - No spotlight / no darkening of the rest of the page so the eye lands on the right element [[more]](https://github.com/Kuestenlogik/Bowire/issues/281)
 
@@ -861,6 +862,10 @@ Followup to #291. Phases A+B+C+E shipped (REST / gRPC / MCP / MQTT / WebSocket /
 #### <a id="issue-kuestenlogik-bowire-303"></a>⬜ Backlog · [#303](https://github.com/Kuestenlogik/Bowire/issues/303) Guided tour: per-rail empty-state secondary tours
 
 Phase A (tour engine + spotlight + page-navigation) and Phase B (Getting-started tour) shipped in b899d7007e904ffec2b3be7fc1ebcfea4595137f. Phase C — per-rail empty-state secondary tours — remains. [[more]](https://github.com/Kuestenlogik/Bowire/issues/303)
+
+#### <a id="issue-kuestenlogik-bowire-304"></a>⬜ Backlog · [#304](https://github.com/Kuestenlogik/Bowire/issues/304) Compose rail: hide standalone Collections rail tree node now that Compose hosts it
+
+Phase A-F of #295 landed in 5160a3a — the Compose rail now hosts Collections + Presets in a side panel, and saves from any surface (Discover 'Add to', request-builder 'Save to collection', recording steps 'Open in Compose') land in the same buckets. [[more]](https://github.com/Kuestenlogik/Bowire/issues/304)
 
 ---
 
