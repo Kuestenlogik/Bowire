@@ -1342,17 +1342,24 @@
     // ---- Main: configure + run + show last result ----
 
     function renderBenchmarksDetailMain() {
-        var main = el('div', {
-            id: 'bowire-main-benchmarks',
-            className: 'bowire-main bowire-main-benchmarks bowire-main-pad',
-            style: 'overflow:auto'
-        });
         loadBenchmarks();
 
         var spec = getBenchmarkSpec(benchmarksSelectedId);
+        // #301 — Empty-state branch uses the canonical rail-empty
+        // pattern (main shell + bowire-main-pad wrap → renderEmptyCard)
+        // so Benchmarks reads identically to Collections / Recordings /
+        // Mocks / Flows. The populated branch keeps its own
+        // `bowire-main-pad` + `overflow:auto` because the inline editor
+        // needs the scroll container; for the empty card the wrapper
+        // pattern is what every other rail uses.
         if (!spec) {
+            var emptyMain = el('div', {
+                id: 'bowire-main-benchmarks',
+                className: 'bowire-main bowire-main-benchmarks'
+            });
+            var emptyWrap = el('div', { className: 'bowire-main-pad' });
             var hasAny = benchmarksList.length > 0;
-            main.appendChild(renderEmptyCard({
+            emptyWrap.appendChild(renderEmptyCard({
                 icon: 'chart',
                 headline: hasAny ? 'Pick a benchmark' : 'No benchmarks yet',
                 body: hasAny
@@ -1402,8 +1409,15 @@
                     }
                 ]
             }));
-            return main;
+            emptyMain.appendChild(emptyWrap);
+            return emptyMain;
         }
+
+        var main = el('div', {
+            id: 'bowire-main-benchmarks',
+            className: 'bowire-main bowire-main-benchmarks bowire-main-pad',
+            style: 'overflow:auto'
+        });
 
         // ---- Header: name + delete ----
         main.appendChild(el('div', { className: 'bowire-ws-detail-header' },

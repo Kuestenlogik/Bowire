@@ -1650,6 +1650,40 @@
     function _renderWorkspacesOverview() {
         var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
 
+        // #301 — Empty Workspaces overview now uses the canonical
+        // rail-empty-card pattern (icon + headline + body + primary
+        // CTA inside a bowire-main-pad wrap) so it reads identically
+        // to Recordings / Collections / Mocks / Flows / Benchmarks
+        // when no workspace exists. The custom bowire-ws-detail-header
+        // + section + paragraph hint is only kept for the populated
+        // branch where the title carries the workspace count and the
+        // list rows sit under it.
+        if (workspaces.length === 0) {
+            var emptyWrap = el('div', { className: 'bowire-main-pad' });
+            emptyWrap.appendChild(renderEmptyCard({
+                icon: 'layers',
+                headline: 'No workspaces yet',
+                body: 'A workspace is your project folder — it holds the URLs you discover, the environments + variables + secrets you reference, and the collections / recordings / benchmarks you build. Create one to start organising sources, environments and recordings.',
+                actions: [{
+                    label: 'New workspace…',
+                    primary: true,
+                    onClick: function () {
+                        if (typeof openCreateWorkspaceDialog === 'function') {
+                            openCreateWorkspaceDialog(function (created) {
+                                if (created && created.id) {
+                                    _goToWorkspaceSettings(created.id);
+                                } else {
+                                    render();
+                                }
+                            });
+                        }
+                    }
+                }]
+            }));
+            main.appendChild(emptyWrap);
+            return main;
+        }
+
         var headerGlyph = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">'
             + '<polygon points="12 2 2 7 12 12 22 7 12 2"/>'
             + '<polyline points="2 17 12 22 22 17"/>'
@@ -1663,100 +1697,88 @@
         ));
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
-        if (workspaces.length === 0) {
-            section.appendChild(el('p', {
-                className: 'bowire-ws-detail-stat-hint',
-                style: 'margin-top:8px',
-                textContent: 'No workspaces yet. Create one to start organising sources, environments and recordings.'
+        var list = el('div', { className: 'bowire-env-overview-list' });
+        // Cross-cutting workspace sort applies in the overview
+        // list too (same workspacesSortBy state as sidebar +
+        // dropdown). The overview will gain its own dedicated
+        // search bar separately; today no filter is applied here.
+        var overviewWorkspaces = (typeof getSortedWorkspaces === 'function')
+            ? getSortedWorkspaces() : workspaces;
+        overviewWorkspaces.forEach(function (w) {
+            var isActive = w.id === activeWorkspaceId;
+            var wsColor = w.color || 'var(--bowire-text-tertiary)';
+            // Same layers glyph idiom as the workspace settings
+            // header — top "feature" picks up the workspace colour,
+            // lower lines stay currentColor. Smaller (14px) to fit
+            // the row.
+            var rowGlyph = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">'
+                + '<polygon points="12 2 2 7 12 12 22 7 12 2" fill="' + wsColor + '" stroke="' + wsColor + '"/>'
+                + '<polyline points="2 17 12 22 22 17"/>'
+                + '<polyline points="2 12 12 17 22 12"/>'
+                + '</svg>';
+            var envN = (typeof readWorkspaceEnvironments === 'function')
+                ? readWorkspaceEnvironments(w.id).length
+                : 0;
+            var meta = envN + (envN === 1 ? ' env' : ' envs');
+            var row = el('div', { className: 'bowire-env-overview-row' });
+            row.appendChild(el('span', {
+                className: 'bowire-env-overview-glyph',
+                innerHTML: rowGlyph
             }));
-            // Empty-state CTA retired — the always-appended button
-            // below the if/else carries the create affordance for both
-            // empty and populated states, so a separate empty branch
-            // would just duplicate it.
-        } else {
-            var list = el('div', { className: 'bowire-env-overview-list' });
-            // Cross-cutting workspace sort applies in the overview
-            // list too (same workspacesSortBy state as sidebar +
-            // dropdown). The overview will gain its own dedicated
-            // search bar separately; today no filter is applied here.
-            var overviewWorkspaces = (typeof getSortedWorkspaces === 'function')
-                ? getSortedWorkspaces() : workspaces;
-            overviewWorkspaces.forEach(function (w) {
-                var isActive = w.id === activeWorkspaceId;
-                var wsColor = w.color || 'var(--bowire-text-tertiary)';
-                // Same layers glyph idiom as the workspace settings
-                // header — top "feature" picks up the workspace colour,
-                // lower lines stay currentColor. Smaller (14px) to fit
-                // the row.
-                var rowGlyph = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">'
-                    + '<polygon points="12 2 2 7 12 12 22 7 12 2" fill="' + wsColor + '" stroke="' + wsColor + '"/>'
-                    + '<polyline points="2 17 12 22 22 17"/>'
-                    + '<polyline points="2 12 12 17 22 12"/>'
-                    + '</svg>';
-                var envN = (typeof readWorkspaceEnvironments === 'function')
-                    ? readWorkspaceEnvironments(w.id).length
-                    : 0;
-                var meta = envN + (envN === 1 ? ' env' : ' envs');
-                var row = el('div', { className: 'bowire-env-overview-row' });
-                row.appendChild(el('span', {
-                    className: 'bowire-env-overview-glyph',
-                    innerHTML: rowGlyph
-                }));
-                row.appendChild(el('button', {
+            row.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-env-overview-name',
+                textContent: w.name || '(unnamed)',
+                title: 'Open workspace settings',
+                onClick: function () { _goToWorkspaceSettings(w.id); }
+            }));
+            row.appendChild(el('span', {
+                className: 'bowire-env-overview-meta',
+                textContent: meta
+            }));
+            // Click-to-activate checkmark — solid on the active
+            // workspace, ghosted-but-clickable on every other.
+            // Same idiom as the env overview's active toggle so
+            // the two listings share the affordance.
+            row.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-env-overview-check' + (isActive ? ' is-active' : ''),
+                title: isActive ? 'Active workspace' : 'Switch to this workspace',
+                'aria-label': isActive ? 'Active workspace' : 'Switch to this workspace',
+                'aria-pressed': isActive ? 'true' : 'false',
+                textContent: '✓',
+                onClick: function (ev) {
+                    ev.stopPropagation();
+                    if (typeof switchWorkspace === 'function') switchWorkspace(w.id);
+                    render();
+                }
+            }));
+            // #276 — Per-row tools sourced from the same
+            // _workspaceRowActionDefs the sidebar tree uses, so
+            // both surfaces share the actions, the labels, the
+            // dialog wording, and the confirmation copy. The
+            // overview wraps each definition in its own
+            // `bowire-env-overview-tool` button shape (different
+            // visual rhythm from the sidebar's compact tree-tool
+            // icons, but same outcome).
+            var tools = el('div', { className: 'bowire-env-overview-tools' });
+            var rowDefs = (typeof _workspaceRowActionDefs === 'function')
+                ? _workspaceRowActionDefs(w) : [];
+            rowDefs.forEach(function (def) {
+                tools.appendChild(el('button', {
                     type: 'button',
-                    className: 'bowire-env-overview-name',
-                    textContent: w.name || '(unnamed)',
-                    title: 'Open workspace settings',
-                    onClick: function () { _goToWorkspaceSettings(w.id); }
+                    className: 'bowire-env-overview-tool'
+                        + (def.danger ? ' bowire-env-overview-tool-danger' : ''),
+                    title: def.title || def.label,
+                    'aria-label': def.title || def.label,
+                    innerHTML: svgIcon(def.icon),
+                    onClick: def.onClick
                 }));
-                row.appendChild(el('span', {
-                    className: 'bowire-env-overview-meta',
-                    textContent: meta
-                }));
-                // Click-to-activate checkmark — solid on the active
-                // workspace, ghosted-but-clickable on every other.
-                // Same idiom as the env overview's active toggle so
-                // the two listings share the affordance.
-                row.appendChild(el('button', {
-                    type: 'button',
-                    className: 'bowire-env-overview-check' + (isActive ? ' is-active' : ''),
-                    title: isActive ? 'Active workspace' : 'Switch to this workspace',
-                    'aria-label': isActive ? 'Active workspace' : 'Switch to this workspace',
-                    'aria-pressed': isActive ? 'true' : 'false',
-                    textContent: '✓',
-                    onClick: function (ev) {
-                        ev.stopPropagation();
-                        if (typeof switchWorkspace === 'function') switchWorkspace(w.id);
-                        render();
-                    }
-                }));
-                // #276 — Per-row tools sourced from the same
-                // _workspaceRowActionDefs the sidebar tree uses, so
-                // both surfaces share the actions, the labels, the
-                // dialog wording, and the confirmation copy. The
-                // overview wraps each definition in its own
-                // `bowire-env-overview-tool` button shape (different
-                // visual rhythm from the sidebar's compact tree-tool
-                // icons, but same outcome).
-                var tools = el('div', { className: 'bowire-env-overview-tools' });
-                var rowDefs = (typeof _workspaceRowActionDefs === 'function')
-                    ? _workspaceRowActionDefs(w) : [];
-                rowDefs.forEach(function (def) {
-                    tools.appendChild(el('button', {
-                        type: 'button',
-                        className: 'bowire-env-overview-tool'
-                            + (def.danger ? ' bowire-env-overview-tool-danger' : ''),
-                        title: def.title || def.label,
-                        'aria-label': def.title || def.label,
-                        innerHTML: svgIcon(def.icon),
-                        onClick: def.onClick
-                    }));
-                });
-                row.appendChild(tools);
-                list.appendChild(row);
             });
-            section.appendChild(list);
-        }
+            row.appendChild(tools);
+            list.appendChild(row);
+        });
+        section.appendChild(list);
 
         // Create-workspace button at the bottom of the list. Primary-
         // button convention: just the verb-phrase 'New workspace…',
