@@ -231,6 +231,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [304](https://github.com/Kuestenlogik/Bowire/issues/304) | Bowire | [Compose rail: hide standalone Collections rail tree node now that Compose hosts it](#issue-kuestenlogik-bowire-304) | ⬜ Backlog |  |
 | [305](https://github.com/Kuestenlogik/Bowire/issues/305) | Bowire | [Source catalogue providers: kubernetes + agent (Phase D+E)](#issue-kuestenlogik-bowire-305) | ⬜ Backlog |  |
 | [307](https://github.com/Kuestenlogik/Bowire/issues/307) | Bowire | [Bowire interceptor: standalone reverse-proxy mode (Phase C)](#issue-kuestenlogik-bowire-307) | ⬜ Backlog |  |
+| [308](https://github.com/Kuestenlogik/Bowire/issues/308) | Bowire | [Bowire interceptor: mock injection (Phase D)](#issue-kuestenlogik-bowire-308) | ⬜ Backlog |  |
 
 ## Details
 
@@ -881,6 +882,10 @@ Follow-up to #136. The provider seam (`IBowireCatalogueProvider` + `BowireCatalo
 #### <a id="issue-kuestenlogik-bowire-307"></a>⬜ Backlog · [#307](https://github.com/Kuestenlogik/Bowire/issues/307) Bowire interceptor: standalone reverse-proxy mode (Phase C)
 
 Follow-up to #153 — Phases A + B (embedded middleware + record-session integration) shipped in commit b2b92483de079ef1f1701ce261ba1c9b1463e4b3. This issue tracks **Phase C — standalone reverse-proxy mode**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/307)
+
+#### <a id="issue-kuestenlogik-bowire-308"></a>⬜ Backlog · [#308](https://github.com/Kuestenlogik/Bowire/issues/308) Bowire interceptor: mock injection (Phase D)
+
+Follow-up to #153 — Phases A + B (embedded middleware + record-session integration) shipped in commit b2b92483de079ef1f1701ce261ba1c9b1463e4b3. This issue tracks **Phase D — mock injection** for both embedded and standalone modes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/308)
 
 ---
 
