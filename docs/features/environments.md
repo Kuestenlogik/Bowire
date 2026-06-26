@@ -1,26 +1,72 @@
 ---
-summary: 'Named environments with ${var} placeholder substitution.'
+summary: 'Named environments with {{var}} placeholder substitution.'
 ---
 
 # Environments & variables
 
-Named environments with `${var}` placeholder substitution. Define variables once, reuse them across requests, and switch between Dev / Staging / Prod with a single dropdown.
+Named environments with `{{var}}` placeholder substitution. Define variables once, reuse them across requests, and switch between Dev / Staging / Prod with a single dropdown.
 
 ## How it works
 
-Anywhere a request needs a value -- request body JSON, metadata values, the server URL field -- you can use `${name}` placeholders. Before the request fires, Bowire replaces them with values from the **active environment**, falling back to **global variables** when an environment doesn't define the key.
+Anywhere a request needs a value -- request body JSON, metadata values, the server URL field -- you can use `{{name}}` placeholders. Before the request fires, Bowire replaces them with values from the **active environment**, falling back to **global variables** when an environment doesn't define the key.
 
 ```json
 {
-  "userId": "${userId}",
-  "token": "${apiKey}",
-  "host": "${baseUrl}"
+  "userId": "{{userId}}",
+  "token": "{{apiKey}}",
+  "host": "{{baseUrl}}"
 }
 ```
 
-If a placeholder has no matching variable it is left untouched (`${userId}` stays as-is) so typos are visible instead of silently producing empty strings.
+If a placeholder has no matching variable it is left untouched (`{{userId}}` stays as-is) so typos are visible instead of silently producing empty strings.
 
-To emit a literal `${name}` without substitution, escape the leading dollar: `$${name}`.
+To emit a literal `{{name}}` without substitution, double the braces: `{{{{name}}}}`.
+
+### Source prefixes
+
+`{{name}}` resolves through environment variables and globals by default. Prefixes route the lookup to a specific source:
+
+| Prefix | Example | Source |
+|--------|---------|--------|
+| `env.` | `{{env.baseUrl}}` | Active environment + globals (same as bare) |
+| `prev.` | `{{prev.token}}` | Last response body (JSON path) |
+| `step<N>.` | `{{step1.id}}` | Response of step N in the active recording |
+| `runtime.` | `{{runtime.now}}`, `{{runtime.uuid}}` | Built-in system values (see below) |
+| `secret.` | `{{secret.apiKey}}` | Workspace-scoped secrets (in-memory) |
+| `captured.` | `{{captured.token}}` | Values written by a pre/post script |
+| `ai.` | `{{ai.subject}}` | Session-cached AI-suggested values |
+
+### System variables (`runtime.*`)
+
+These don't need to be defined anywhere -- they resolve at substitution time. Useful for JWT claims (iat/exp), correlation IDs, and any time-bound or random values in test requests.
+
+| Placeholder | Value |
+|-------------|-------|
+| `{{runtime.now}}` | Current Unix timestamp in seconds |
+| `{{runtime.now+N}}` / `{{runtime.now-N}}` | `runtime.now` + / - N seconds (e.g. `{{runtime.now+3600}}`) |
+| `{{runtime.nowMs}}` | Current Unix timestamp in milliseconds |
+| `{{runtime.timestamp}}` | Current ISO 8601 timestamp |
+| `{{runtime.uuid}}` | Random RFC 4122 v4 UUID |
+| `{{runtime.random}}` | Random integer in [0, 2^32) |
+
+### Legacy `${name}` syntax
+
+Bowire's original Bash-style placeholders (`${name}`, escape `$${name}`) still resolve through the same dispatch table for backwards compatibility, but they are **deprecated** ([#145](https://github.com/Kuestenlogik/Bowire/issues/145)). Every new surface (autocomplete, AI prompts, empty-state copy, examples in this doc) emits the canonical `{{name}}` form only.
+
+To convert a workspace in one go, open **Settings → Data → Migrate ${name} → {{name}}**. The migration walks every recording, collection, freeform request, flow, environment variable and global, rewrites in place, and persists the change immediately. It is idempotent: re-running on already-migrated data does nothing. The legacy mapping is:
+
+| From | To |
+|------|----|
+| `${name}` | `{{name}}` |
+| `${env.NAME}` | `{{env.NAME}}` |
+| `${response.path}` | `{{prev.path}}` |
+| `${response}` | `{{prev}}` |
+| `${now}` / `${nowMs}` / `${timestamp}` | `{{runtime.now}}` / `{{runtime.nowMs}}` / `{{runtime.timestamp}}` |
+| `${uuid}` / `${random}` | `{{runtime.uuid}}` / `{{runtime.random}}` |
+| `${now+N}` / `${now-N}` | `{{runtime.now+N}}` / `{{runtime.now-N}}` |
+| `$${name}` (literal-emit escape) | `{{{{name}}}}` (quadruple-brace escape) |
+
+A one-time toast surfaces on workspace load when legacy placeholders are detected; **Migrate now** runs the same conversion the Settings action does, **Snooze** dismisses it for this workspace.
 
 ## The environment selector
 
@@ -66,9 +112,9 @@ Substitution happens client-side, just before the request is sent. It applies to
 
 | Location | Example |
 |----------|---------|
-| Request body JSON | `{ "user": "${userId}" }` |
-| Metadata values | `Authorization: Bearer ${token}` |
-| Server URL field | `https://${baseUrl}` |
+| Request body JSON | `{ "user": "{{userId}}" }` |
+| Metadata values | `Authorization: Bearer {{token}}` |
+| Server URL field | `https://{{baseUrl}}` |
 | Channel send messages (duplex / client streaming) | Same as request body |
 
 Metadata **keys** are not substituted -- only values.
@@ -135,5 +181,5 @@ The browser uses these endpoints internally; you can call them yourself to seed 
 
 - Use globals for things that never change, environments for things that do.
 - Name your environments after your deployment targets (`Dev`, `Staging`, `Prod`) or per-customer (`Acme`, `Globex`).
-- Variables are great for **bearer tokens** -- store them once in an environment, reference as `Bearer ${token}` in metadata, and rotate them in one place.
+- Variables are great for **bearer tokens** -- store them once in an environment, reference as `Bearer {{token}}` in metadata, and rotate them in one place.
 - Combine with [Favorites](favorites-history.md) to quickly switch between environments while exercising the same set of starred methods.
