@@ -643,7 +643,14 @@
         render();
     }
 
-    function replaySingleStep(step) {
+    function replaySingleStep(step, opts) {
+        // opts.capturedBag — optional per-session captured-vars bag.
+        // Threaded by #132 parallel sessions so concurrent sessions
+        // don't race on the global window.__bowire_captured. When
+        // absent (single-session replay), falls back to the shared
+        // global bag to preserve the existing cross-step capture
+        // chain (token captured in step 1, used in step 2).
+        var sessionCapturedBag = opts && opts.capturedBag ? opts.capturedBag : null;
         // We only know how to replay unary calls server-side via /api/invoke.
         // Streaming and channel methods need their own dispatch and aren't
         // worth the wire complexity for a Postman-parity feature.
@@ -679,9 +686,12 @@
         // failure instead of silently shipping the un-modified
         // request — the original recording wouldn't have succeeded
         // either if the script had thrown.
-        var capturedBag = (typeof window !== 'undefined' && window.__bowire_captured)
-            ? window.__bowire_captured
-            : (window.__bowire_captured = {});
+        // #132 — prefer the per-session bag passed via opts when
+        // present; otherwise fall back to the shared global bag.
+        var capturedBag = sessionCapturedBag
+            || ((typeof window !== 'undefined' && window.__bowire_captured)
+                ? window.__bowire_captured
+                : (window.__bowire_captured = {}));
         if (step.scripts && step.scripts.preScript && step.scripts.preScript.trim()
             && typeof runPreRequestScript === 'function') {
             var shape = (typeof detectScriptProtocolShape === 'function')
@@ -757,9 +767,13 @@
                         try { parsedBody = JSON.parse(parsedBody); }
                         catch (_) { /* leave as text */ }
                     }
-                    var bag = (typeof window !== 'undefined' && window.__bowire_captured)
-                        ? window.__bowire_captured
-                        : (window.__bowire_captured = {});
+                    // #132 — same session-bag-over-global precedence as
+                    // the pre-script branch so a per-session run's
+                    // captured writes stay isolated.
+                    var bag = sessionCapturedBag
+                        || ((typeof window !== 'undefined' && window.__bowire_captured)
+                            ? window.__bowire_captured
+                            : (window.__bowire_captured = {}));
                     var postEnv = (typeof getMergedVars === 'function') ? getMergedVars() : {};
                     var postResult = runPostResponseScriptTyped({
                         source: step.scripts.postScript,
@@ -1524,6 +1538,15 @@
         toolbar.appendChild(exportGroup);
 
         pane.appendChild(toolbar);
+
+        // #132 — per-session tiles for an in-flight (or just-finished)
+        // parallel-sessions run on THIS recording. The helper lives
+        // in collections.js (shared between collection + recording
+        // parallel runs); returns null when no run targets this rec.
+        if (typeof renderParallelSessionsPanel === 'function') {
+            var parallelPanel = renderParallelSessionsPanel('recording', rec.id);
+            if (parallelPanel) pane.appendChild(parallelPanel);
+        }
 
         // Step list
         var stepsPane = el('div', { className: 'bowire-recording-steps' });
