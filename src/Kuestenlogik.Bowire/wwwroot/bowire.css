@@ -20092,8 +20092,8 @@ not as the
     border-color: #ef4444;
 }
 
-/* ---------- #293 Design Rail ---------- */
-/* Design rail's main pane carries the request-builder tab strip
+/* ---------- #293 Compose Rail ---------- */
+/* Compose rail's main pane carries the request-builder tab strip
    (`.bowire-request-tabs` shape, reused) plus a pinned '+ New Request'
    tab at the leftmost position. Cosmetics below distinguish the pinned
    tab (dashed border, '+ New Request' label) from the open builder
@@ -20112,7 +20112,7 @@ not as the
    accent-tinted hover so it pops without being shouty. No close
    affordance — the close button is omitted from the DOM entirely
    so there's nothing to misclick. */
-.bowire-design-tab-pinned {
+.bowire-compose-tab-pinned {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -20129,38 +20129,38 @@ not as the
     flex-shrink: 0;
     transition: color var(--bowire-transition), border-color var(--bowire-transition), background var(--bowire-transition);
 }
-.bowire-design-tab-pinned:hover {
+.bowire-compose-tab-pinned:hover {
     color: var(--bowire-text);
     border-color: var(--bowire-accent);
     background: var(--bowire-surface-hover);
 }
-.bowire-design-tab-pinned-icon {
+.bowire-compose-tab-pinned-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
 }
-.bowire-design-tab-pinned-icon svg {
+.bowire-compose-tab-pinned-icon svg {
     width: 14px;
     height: 14px;
 }
-.bowire-design-tab-pinned-label {
+.bowire-compose-tab-pinned-label {
     line-height: 1.4;
 }
 
 /* Open builder tabs reuse .bowire-request-tab cosmetics. The
-   `.bowire-design-tab` modifier exists for future per-design
+   `.bowire-compose-tab` modifier exists for future per-design
    overrides (today: same look as Discover's strip). */
-.bowire-design-tab {
+.bowire-compose-tab {
     /* Inherit `.bowire-request-tab`; no overrides yet. The modifier
        class is here so future tweaks (e.g. distinct active-tab tint
-       to reinforce 'this is Design, not Discover') can land without
+       to reinforce 'this is Compose, not Discover') can land without
        hunting through render-main.js's tab-strip block. */
 }
 
-/* Empty state for the Design rail's main pane — shows when no
+/* Empty state for the Compose rail's main pane — shows when no
    builder tabs are open (just the pinned '+'). Centred in the main
    pane so the operator's eye lands on the CTA. */
-.bowire-design-empty {
+.bowire-compose-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -20171,7 +20171,7 @@ not as the
     color: var(--bowire-text-secondary);
     text-align: center;
 }
-.bowire-design-empty-icon {
+.bowire-compose-empty-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -20182,22 +20182,22 @@ not as the
     color: var(--bowire-text-tertiary);
     margin-bottom: 4px;
 }
-.bowire-design-empty-icon svg {
+.bowire-compose-empty-icon svg {
     width: 22px;
     height: 22px;
 }
-.bowire-design-empty-headline {
+.bowire-compose-empty-headline {
     font-size: 15px;
     font-weight: 600;
     color: var(--bowire-text);
 }
-.bowire-design-empty-body {
+.bowire-compose-empty-body {
     font-size: 13px;
     line-height: 1.55;
     max-width: 480px;
     color: var(--bowire-text-secondary);
 }
-.bowire-design-empty-cta {
+.bowire-compose-empty-cta {
     margin-top: 6px;
     padding: 8px 16px;
     background: var(--bowire-accent);
@@ -20209,6 +20209,6 @@ not as the
     cursor: pointer;
     transition: background var(--bowire-transition);
 }
-.bowire-design-empty-cta:hover {
+.bowire-compose-empty-cta:hover {
     filter: brightness(1.08);
 }

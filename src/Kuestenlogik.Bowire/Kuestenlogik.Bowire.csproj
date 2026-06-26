@@ -149,8 +149,8 @@
          descriptors. Function declarations are hoisted inside the shared
          IIFE so the descriptors' callback references resolve at runtime. -->
     <BowireJsFragment Include="wwwroot\js\request-builder-protocols.js" />
-    <!-- #293 — Design rail (request-builder's new home). Owns the
-         designTabs state + tab strip + per-tab builder dispatch. Reuses
+    <!-- #293 — Compose rail (request-builder's new home). Owns the
+         composeTabs state + tab strip + per-tab builder dispatch. Reuses
          _appendRequestBuilderInto / _newHoppState / ensureHoppState /
          rbLayouts from request-builder.js + request-builder-protocols.js,
          so it must come AFTER both. Consumed by render-main.js's
@@ -158,7 +158,7 @@
          resolve through the IIFE's shared scope, so the order between
          this file and render-main.js / init.js doesn't matter at
          declaration time. -->
-    <BowireJsFragment Include="wwwroot\js\design-rail.js" />
+    <BowireJsFragment Include="wwwroot\js\compose-rail.js" />
     <BowireJsFragment Include="wwwroot\js\tests.js" />
     <BowireJsFragment Include="wwwroot\js\code-export.js" />
     <BowireJsFragment Include="wwwroot\js\perf-diff.js" />
