@@ -1564,29 +1564,37 @@ but
     color: var(--bowire-accent);
 }
 
-/* Collapsed: small flush-with-rail indicator strip. Sits almost
-   entirely overlapping the rail edge so the chevron tucks against
-   the activity rail (the user's eye finds it where the rail ends
-   instead of floating in empty space to the right). */
+/* Collapsed: full-height vertical 'show sidebar' bar that mirrors
+   the splitter's shape (same width, same hover affordance) so the
+   operator can click anywhere along the height instead of aiming
+   at a tiny floating chevron. Chevron centred, points right (→).
+   No resize cursor — there's nothing to resize when the sidebar is
+   0-wide. Pointer-cursor + click = expand. Operator feedback:
+   'klickbar überall, durchgehend von topbar bis statusbar wie der
+   splitter'. */
 .bowire-sidebar-edge-toggle-collapsed {
-    /* Sit flush with the rail's outer edge — the chevron's left edge
-       lines up with the rail's right edge, no overlap. The activity
-       rail is 48 px wide (.bowire-activity-rail), NOT 56 px — the
-       earlier fallback of 56 px floated the chevron 8 px out into
-       empty space; -12 px / -4 px were workarounds for the wrong
-       baseline. */
+    /* Full-height bar flush with the activity rail's right edge —
+       same shape as .bowire-sidebar-splitter (when sidebar is open).
+       The chevron stays vertically centred via the base
+       .bowire-sidebar-edge-toggle rule's translateY(-50%); the bar
+       itself fills 100% of the app-body height so the click target
+       runs the entire vertical span (topbar to statusbar). */
+    top: 0;
     left: var(--bowire-rail-width, 48px);
-    opacity: 0.6;
-    width: 14px;
-    height: 40px;
-    background: var(--bowire-surface);
-    border-right: 1px solid var(--bowire-border-subtle);
-    border-top-right-radius: var(--bowire-radius-sm);
-    border-bottom-right-radius: var(--bowire-radius-sm);
+    width: 10px;
+    height: 100%;
+    transform: none; /* override base translateY — the bar is 100% tall */
+    background: transparent;
+    border-left: 1px solid var(--bowire-border-subtle);
+    border-radius: 0;
+    /* Vertical-centre the chevron child (svg span). */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .bowire-sidebar-edge-toggle-collapsed:hover {
-    opacity: 1;
-    background: var(--bowire-surface-hover);
+    background: var(--bowire-surface);
+    border-left-color: var(--bowire-accent);
     color: var(--bowire-accent);
 }
 
