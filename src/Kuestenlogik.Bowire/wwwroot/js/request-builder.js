@@ -1508,6 +1508,12 @@
             try { output.innerHTML = highlightJsonInteractive(responseData); }
             catch (_) { output.textContent = String(responseData); }
             pane.appendChild(output);
+            // #254 — Offer auto-discovery once per URL after a 2xx
+            // response against a URL that isn't a Source yet. Rendered
+            // inline below the response body so it's discoverable
+            // without dominating the pane.
+            var hint = _renderAutoDiscoverHint(freeformRequest);
+            if (hint) pane.appendChild(hint);
         } else {
             pane.appendChild(el('div', {
                 className: 'bowire-response-empty',
@@ -1515,6 +1521,165 @@
             }));
         }
         return pane;
+    }
+
+    // ---- #254 — auto-discover prompt after a successful freeform invoke ----
+    //
+    // Acceptance gate (all must hold or the hint stays hidden):
+    //   - `fr` is a live request-builder request on the REST protocol
+    //     (other protocols handle discovery via their own flows; gRPC
+    //     uses reflection, MQTT scans the topic tree, …).
+    //   - `fr.serverUrl` is a non-empty URL (we need an endpoint to
+    //     offer discovery against).
+    //   - The URL isn't already in the workspace's Sources list. If
+    //     the operator already added it, schema-aware operations are
+    //     already on — no point asking again.
+    //   - `wasAutoDiscoverAsked(url)` returns false. Accept OR dismiss
+    //     marks the URL as asked; subsequent successful calls against
+    //     the same URL stay quiet.
+    //   - We're on a 2xx outcome. Right now `_renderHoppResponse`
+    //     only calls this when `responseData` is non-null (success path,
+    //     the error path runs renderProblem), so the caller's gate is
+    //     the 2xx filter.
+    //
+    // Returns null when any gate fails so the caller can fall through
+    // without an empty wrapper node mucking up the response pane.
+    function _renderAutoDiscoverHint(fr) {
+        if (!fr || !isHoppRequest(fr)) return null;
+        // Only REST: other protocols don't share the same "freeform
+        // URL → discover endpoint" pairing — gRPC reflection is its
+        // own dance, MQTT subscribes, &c.
+        var pid = (fr._requestBuilder && fr._requestBuilder.protocol) || 'rest';
+        if (pid !== 'rest') return null;
+        var url = (fr.serverUrl || '').trim();
+        if (!url) return null;
+        // Already a Source — operator opted in long ago, nothing to do.
+        try {
+            if (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) {
+                for (var i = 0; i < serverUrls.length; i++) {
+                    var existing = serverUrls[i] || '';
+                    if (existing === url) return null;
+                    // Strip the protocol prefix when comparing —
+                    // 'rest@https://api…' and 'https://api…' point at
+                    // the same endpoint as far as discovery cares.
+                    if (typeof _stripUrlPrefix === 'function'
+                        && _stripUrlPrefix(existing) === _stripUrlPrefix(url)) {
+                        return null;
+                    }
+                }
+            }
+        } catch (_) { /* hint stays available on lookup failure */ }
+        // Already asked this URL — accepted or dismissed; either way,
+        // we promised not to nag.
+        if (typeof wasAutoDiscoverAsked === 'function' && wasAutoDiscoverAsked(url)) {
+            return null;
+        }
+        var wrap = el('div', {
+            className: 'bowire-request-builder-discover-hint',
+            role: 'status',
+            'data-hint-id': 'request-builder-auto-discover'
+        });
+        wrap.appendChild(el('span', {
+            className: 'bowire-request-builder-discover-hint-icon',
+            innerHTML: svgIcon('spark')
+        }));
+        var msg = el('div', { className: 'bowire-request-builder-discover-hint-body' });
+        msg.appendChild(el('div', {
+            className: 'bowire-request-builder-discover-hint-title',
+            textContent: 'Discover the schema for this URL?'
+        }));
+        msg.appendChild(el('div', {
+            className: 'bowire-request-builder-discover-hint-sub',
+            textContent: 'Adds ' + url + ' as a Source and enables schema-aware operations (param hints, autocomplete, generated forms) on subsequent calls.'
+        }));
+        wrap.appendChild(msg);
+        // Action cluster — primary 'Auto-discover' button + the
+        // 'Don't ask again' link. Both flip the asked-flag; the
+        // difference is whether the URL also lands in serverUrls.
+        var actions = el('div', { className: 'bowire-request-builder-discover-hint-actions' });
+        actions.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-request-builder-discover-hint-btn',
+            textContent: 'Auto-discover',
+            title: 'Add this URL as a Source and run discovery',
+            onClick: function () { _runAutoDiscoverForUrl(url); }
+        }));
+        actions.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-request-builder-discover-hint-skip',
+            textContent: 'Don’t ask again',
+            title: 'Stop offering discovery for this URL in this workspace',
+            onClick: function () {
+                if (typeof markAutoDiscoverAsked === 'function') {
+                    markAutoDiscoverAsked(url, 'skip');
+                }
+                render();
+            }
+        }));
+        wrap.appendChild(actions);
+        return wrap;
+    }
+
+    // Fire the existing discovery flow for `url`: park the URL as a
+    // workspace Source, mark the hint as answered so we don't re-offer
+    // on the next response, then call `fetchServicesForUrl` and splice
+    // the returned services into the in-memory list. Reuses the same
+    // refresh path the Sources rail's plug button takes (#152) so the
+    // sidebar tree updates exactly as it would after a manual add.
+    function _runAutoDiscoverForUrl(url) {
+        if (!url) return;
+        // Mark FIRST so a flaky discovery (timeout, 401, …) doesn't
+        // re-trigger the prompt on the next paint — the operator
+        // already answered, and a second "we tried, want to try
+        // again?" prompt would feel broken.
+        if (typeof markAutoDiscoverAsked === 'function') {
+            markAutoDiscoverAsked(url, 'discover');
+        }
+        try {
+            if (typeof serverUrls !== 'undefined'
+                && Array.isArray(serverUrls)
+                && serverUrls.indexOf(url) < 0) {
+                serverUrls.push(url);
+                if (typeof connectionStatuses !== 'undefined') {
+                    connectionStatuses[url] = 'disconnected';
+                }
+                if (typeof ensureAliasForUrl === 'function') ensureAliasForUrl(url);
+                if (typeof persistServerUrls === 'function') persistServerUrls();
+            }
+        } catch (e) {
+            if (typeof toast === 'function') {
+                toast('Could not add ' + url + ' as a Source: ' + e.message, 'error');
+            }
+            render();
+            return;
+        }
+        // Kick off discovery. refreshSourceServices(url) is the same
+        // path the Sources rail's refresh button takes — surfaces a
+        // delta toast when the schema is non-empty, re-renders on
+        // success and on error.
+        if (typeof refreshSourceServices === 'function') {
+            try { refreshSourceServices(url); }
+            catch (e) {
+                if (typeof toast === 'function') {
+                    toast('Discovery kickoff failed: ' + e.message, 'error');
+                }
+            }
+        } else if (typeof fetchServicesForUrl === 'function') {
+            // Fallback if the refresh helper isn't present in this
+            // host build — splice raw results into `services` and
+            // re-render manually.
+            Promise.resolve(fetchServicesForUrl(url)).then(function (fresh) {
+                if (Array.isArray(fresh) && fresh.length
+                    && typeof services !== 'undefined') {
+                    services = services.concat(fresh);
+                }
+                render();
+            }).catch(function () { render(); });
+        }
+        if (typeof toast === 'function') {
+            toast('Discovering ' + url + '…', 'info');
+        }
+        render();
     }
 
     // ---- Top-level render entry — composes the bar + subtabs + body + response ----

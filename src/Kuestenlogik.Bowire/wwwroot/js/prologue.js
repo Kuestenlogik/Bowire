@@ -1103,6 +1103,71 @@
         return _stripUrlPrefix(svc.originUrl) === _stripUrlPrefix(url);
     }
 
+    // #254 — Per-URL "auto-discover prompt already offered" set.
+    //
+    // The Freeform request-builder offers a one-shot prompt after a
+    // successful 2xx invoke against a URL that ISN'T in the workspace's
+    // Sources list yet, asking the operator if they want to discover
+    // the schema for that URL. The prompt must appear only ONCE per
+    // URL — accepting OR dismissing it parks the URL here, so a
+    // subsequent successful call against the same URL stays quiet.
+    //
+    // Workspace-scoped: each workspace tracks its own asked set.
+    // Switching between workspaces ('staging' vs 'production' vs a
+    // throwaway scratch ws) gives each one its own first-time prompt.
+    // Storage shape is a plain { [normalisedUrl]: { at, action } }
+    // dict — the timestamp helps with debugging, `action` records
+    // whether the operator accepted ('discover') or dismissed ('skip').
+    //
+    // Normalisation: URLs are keyed by origin + pathname (no query,
+    // no fragment) so retrying the same endpoint with different
+    // query strings doesn't re-trigger the prompt. Malformed URLs
+    // fall back to the raw string so we never crash the response
+    // pane on a typo.
+    const AUTO_DISCOVER_ASKED_KEY = 'bowire_auto_discover_asked';
+    let autoDiscoverAsked = {};
+    try {
+        var rawADA = localStorage.getItem(wsKey(AUTO_DISCOVER_ASKED_KEY));
+        if (rawADA) {
+            var parsedADA = JSON.parse(rawADA);
+            if (parsedADA && typeof parsedADA === 'object') autoDiscoverAsked = parsedADA;
+        }
+    } catch { /* corrupt — start fresh */ }
+    function persistAutoDiscoverAsked() {
+        try {
+            localStorage.setItem(wsKey(AUTO_DISCOVER_ASKED_KEY),
+                JSON.stringify(autoDiscoverAsked));
+        } catch { /* quota / disabled — non-fatal */ }
+    }
+    function _autoDiscoverKey(url) {
+        if (!url) return '';
+        var raw = _stripUrlPrefix(String(url).trim());
+        if (!raw) return '';
+        try {
+            var u = new URL(raw);
+            // origin captures scheme + host + port; pathname captures
+            // the path. Query + hash are intentionally dropped so the
+            // 'asked' flag is keyed on the endpoint, not the args.
+            return u.origin + u.pathname;
+        } catch {
+            return raw;
+        }
+    }
+    function wasAutoDiscoverAsked(url) {
+        var k = _autoDiscoverKey(url);
+        if (!k) return false;
+        return !!autoDiscoverAsked[k];
+    }
+    function markAutoDiscoverAsked(url, action) {
+        var k = _autoDiscoverKey(url);
+        if (!k) return;
+        autoDiscoverAsked[k] = {
+            at: Date.now(),
+            action: action === 'discover' ? 'discover' : 'skip'
+        };
+        persistAutoDiscoverAsked();
+    }
+
     // #143 Phase 2 — Trash-store per list. localStorage-persisted
     // so a missed Undo toast isn't a permanent loss. Each entry
     // carries the original item + a deletedAt timestamp. The
