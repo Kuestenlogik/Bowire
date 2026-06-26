@@ -803,6 +803,19 @@
             if (shortcutNode) next.appendChild(shortcutNode);
         }
 
+        // #296 — Global Trash drawer. Modal-style overlay opened
+        // from the topbar trash icon; aggregates every soft-deleted
+        // bucket in the active workspace into one surface. Lives
+        // alongside the other modal overlays here (not inside the
+        // unified right drawer) so it can't visually collide with the
+        // Activity tab while the operator is rolling back across
+        // rails.
+        if (typeof globalTrashOpen !== 'undefined' && globalTrashOpen
+            && typeof renderGlobalTrashOverlay === 'function') {
+            var trashOverlay = renderGlobalTrashOverlay();
+            if (trashOverlay) next.appendChild(trashOverlay);
+        }
+
         // #138 — Statusbar at the very bottom of the app. Hosts the
         // connection pill (moved from topbar), env selector + watch
         // button, plus future ambient indicators (hint count, save
@@ -1200,6 +1213,366 @@
         if (diff < 60 * 60 * 1000) return Math.floor(diff / 60000) + 'm ago';
         if (diff < 24 * 60 * 60 * 1000) return Math.floor(diff / 3600000) + 'h ago';
         return Math.floor(diff / 86400000) + 'd ago';
+    }
+
+    // #296 — Global Trash drawer. Modal-style overlay aggregating
+    // every soft-deleted bucket in the active workspace: recordings
+    // trash, collections trash, recently-closed request tabs, and
+    // (placeholder until #194) workspaces. The per-rail trash
+    // sections in the sidebar stay untouched — this is an additional
+    // entry, not a replacement.
+    //
+    // TTL display per item is "Deleted N days/hours ago — will be
+    // purged in (30-N) days" so the operator sees both how recent
+    // the delete was and how much window remains. Aggregate
+    // actions (Empty trash / Restore all) sit at the footer and
+    // confirm before mutating.
+    function renderGlobalTrashOverlay() {
+        if (!globalTrashOpen) return null;
+
+        var rec = (typeof recordingsTrash !== 'undefined' && Array.isArray(recordingsTrash))
+            ? recordingsTrash : [];
+        var col = (typeof collectionsTrash !== 'undefined' && Array.isArray(collectionsTrash))
+            ? collectionsTrash : [];
+        var tabs = (typeof tabsTrash !== 'undefined' && Array.isArray(tabsTrash))
+            ? tabsTrash : [];
+        var totalCount = rec.length + col.length + tabs.length;
+
+        var backdrop = el('div', {
+            id: 'bowire-trash-backdrop',
+            className: 'bowire-trash-backdrop',
+            onClick: function (e) {
+                if (e.target === e.currentTarget) {
+                    globalTrashOpen = false;
+                    render();
+                }
+            }
+        });
+        var modal = el('div', {
+            className: 'bowire-trash-modal',
+            onClick: function (e) { e.stopPropagation(); }
+        });
+
+        // Header
+        var header = el('div', { className: 'bowire-trash-modal-header' });
+        header.appendChild(el('div', { className: 'bowire-trash-modal-title-row' },
+            el('span', {
+                className: 'bowire-trash-modal-title-icon',
+                innerHTML: svgIcon('trash'),
+                style: 'width:16px;height:16px;display:flex'
+            }),
+            el('span', {
+                className: 'bowire-trash-modal-title',
+                textContent: 'Trash — ' + totalCount + ' item' + (totalCount === 1 ? '' : 's')
+            })
+        ));
+        header.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-trash-modal-close',
+            title: 'Close (Esc)',
+            'aria-label': 'Close trash drawer',
+            innerHTML: svgIcon('close'),
+            onClick: function () {
+                globalTrashOpen = false;
+                render();
+            }
+        }));
+        modal.appendChild(header);
+
+        var body = el('div', { className: 'bowire-trash-modal-body' });
+
+        body.appendChild(_renderTrashBucketSection({
+            id: 'recordings',
+            label: 'Recordings',
+            entries: rec,
+            nameOf: function (e) { return e && e.name ? e.name : '(unnamed recording)'; },
+            onRestore: function (t) {
+                if (!t || !t.entry) return;
+                if (typeof recordingsList !== 'undefined' && Array.isArray(recordingsList)) {
+                    recordingsList.splice(Math.min(t.originalIdx || recordingsList.length,
+                        recordingsList.length), 0, t.entry);
+                    if (typeof persistRecordings === 'function') persistRecordings();
+                }
+                var idx = rec.indexOf(t);
+                if (idx >= 0) rec.splice(idx, 1);
+                if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
+            },
+            onDeleteForever: function (t) {
+                var idx = rec.indexOf(t);
+                if (idx >= 0) rec.splice(idx, 1);
+                if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
+            }
+        }));
+
+        body.appendChild(_renderTrashBucketSection({
+            id: 'collections',
+            label: 'Collections',
+            entries: col,
+            nameOf: function (e) { return e && e.name ? e.name : '(unnamed collection)'; },
+            onRestore: function (t) {
+                if (!t || !t.entry) return;
+                if (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) {
+                    collectionsList.splice(Math.min(t.originalIdx || collectionsList.length,
+                        collectionsList.length), 0, t.entry);
+                    if (typeof persistCollections === 'function') persistCollections();
+                }
+                var idx = col.indexOf(t);
+                if (idx >= 0) col.splice(idx, 1);
+                if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
+            },
+            onDeleteForever: function (t) {
+                var idx = col.indexOf(t);
+                if (idx >= 0) col.splice(idx, 1);
+                if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
+            }
+        }));
+
+        body.appendChild(_renderTrashBucketSection({
+            id: 'tabs',
+            label: 'Recently closed tabs',
+            entries: tabs,
+            nameOf: function (e) {
+                if (!e) return '(unknown tab)';
+                if (e.methodKey && e.serviceKey) return e.serviceKey + ' · ' + e.methodKey;
+                if (e.methodKey) return e.methodKey;
+                if (e.serviceKey) return e.serviceKey;
+                return '(unnamed tab)';
+            },
+            onRestore: function (t) {
+                if (typeof restoreClosedTab === 'function') {
+                    var ok = restoreClosedTab(t);
+                    if (ok) {
+                        var idx = tabs.indexOf(t);
+                        if (idx >= 0) tabs.splice(idx, 1);
+                        if (typeof persistTabsTrash === 'function') persistTabsTrash();
+                    }
+                }
+            },
+            onDeleteForever: function (t) {
+                var idx = tabs.indexOf(t);
+                if (idx >= 0) tabs.splice(idx, 1);
+                if (typeof persistTabsTrash === 'function') persistTabsTrash();
+            }
+        }));
+
+        // Workspaces section is a placeholder until #194 soft-delete
+        // ships. Render the row so the four-bucket aggregation is
+        // visible, but mark it as gated + non-interactive — clicking
+        // doesn't expand. Keeps the IA promise of "every bucket lives
+        // here" intact without pretending we already have the data.
+        body.appendChild(el('div', { className: 'bowire-trash-bucket bowire-trash-bucket-gated' },
+            el('div', { className: 'bowire-trash-bucket-header bowire-trash-bucket-header-gated' },
+                el('span', { className: 'bowire-trash-bucket-label', textContent: 'Workspaces' }),
+                el('span', { className: 'bowire-trash-bucket-count', textContent: '(0)' }),
+                el('span', {
+                    className: 'bowire-trash-bucket-gated-note',
+                    title: 'Workspaces become soft-deletable in #194; this section will populate then.',
+                    textContent: 'Soft-delete arrives with #194'
+                })
+            )
+        ));
+
+        modal.appendChild(body);
+
+        // Footer with aggregate actions.
+        var footer = el('div', { className: 'bowire-trash-modal-footer' });
+        var emptyDisabled = totalCount === 0;
+        var restoreDisabled = totalCount === 0;
+        footer.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-trash-modal-action bowire-trash-modal-action-danger',
+            disabled: emptyDisabled ? 'disabled' : null,
+            title: emptyDisabled ? 'Trash is already empty' : 'Permanently delete every trashed item',
+            textContent: 'Empty trash',
+            onClick: function () {
+                if (emptyDisabled) return;
+                if (typeof bowireConfirm === 'function') {
+                    bowireConfirm(
+                        'Permanently delete all ' + totalCount + ' trashed items? This cannot be undone.',
+                        function () {
+                            if (Array.isArray(recordingsTrash)) recordingsTrash.length = 0;
+                            if (Array.isArray(collectionsTrash)) collectionsTrash.length = 0;
+                            if (Array.isArray(tabsTrash)) tabsTrash.length = 0;
+                            if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
+                            if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
+                            if (typeof persistTabsTrash === 'function') persistTabsTrash();
+                            render();
+                        },
+                        { title: 'Empty trash', confirmText: 'Delete ' + totalCount, danger: true }
+                    );
+                }
+            }
+        }));
+        footer.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-trash-modal-action',
+            disabled: restoreDisabled ? 'disabled' : null,
+            title: restoreDisabled ? 'Trash is empty' : 'Restore every trashed item back to its original list',
+            textContent: 'Restore all',
+            onClick: function () {
+                if (restoreDisabled) return;
+                if (typeof bowireConfirm === 'function') {
+                    bowireConfirm(
+                        'Restore all ' + totalCount + ' trashed items?',
+                        function () {
+                            // Recordings
+                            if (Array.isArray(recordingsTrash)) {
+                                for (var i = recordingsTrash.length - 1; i >= 0; i--) {
+                                    var rt = recordingsTrash[i];
+                                    if (rt && rt.entry && Array.isArray(recordingsList)) {
+                                        recordingsList.splice(Math.min(rt.originalIdx || recordingsList.length,
+                                            recordingsList.length), 0, rt.entry);
+                                    }
+                                }
+                                recordingsTrash.length = 0;
+                                if (typeof persistRecordings === 'function') persistRecordings();
+                                if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
+                            }
+                            // Collections
+                            if (Array.isArray(collectionsTrash)) {
+                                for (var j = collectionsTrash.length - 1; j >= 0; j--) {
+                                    var ct = collectionsTrash[j];
+                                    if (ct && ct.entry && Array.isArray(collectionsList)) {
+                                        collectionsList.splice(Math.min(ct.originalIdx || collectionsList.length,
+                                            collectionsList.length), 0, ct.entry);
+                                    }
+                                }
+                                collectionsTrash.length = 0;
+                                if (typeof persistCollections === 'function') persistCollections();
+                                if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
+                            }
+                            // Tabs
+                            if (Array.isArray(tabsTrash)) {
+                                for (var k = tabsTrash.length - 1; k >= 0; k--) {
+                                    var tt = tabsTrash[k];
+                                    if (typeof restoreClosedTab === 'function') restoreClosedTab(tt);
+                                }
+                                tabsTrash.length = 0;
+                                if (typeof persistTabsTrash === 'function') persistTabsTrash();
+                            }
+                            render();
+                        },
+                        { title: 'Restore all', confirmText: 'Restore ' + totalCount }
+                    );
+                }
+            }
+        }));
+        footer.appendChild(el('span', { style: 'flex:1' }));
+        footer.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-trash-modal-action',
+            textContent: 'Cancel',
+            onClick: function () {
+                globalTrashOpen = false;
+                render();
+            }
+        }));
+        modal.appendChild(footer);
+
+        backdrop.appendChild(modal);
+        return backdrop;
+    }
+
+    // Per-bucket section inside the global trash overlay. Header row
+    // is always rendered (so the count is visible even when collapsed
+    // / empty); the item list only expands when the operator clicks
+    // through. Items show: name, "Deleted X days ago — will be
+    // purged in (30-X) days" TTL, and Restore + Delete-forever
+    // actions. The bucket header keeps its own expand/collapse state
+    // in globalTrashSectionOpen so a single render pass doesn't lose
+    // the operator's drilldown.
+    function _renderTrashBucketSection(opts) {
+        var section = el('div', { className: 'bowire-trash-bucket' });
+        var count = opts.entries.length;
+        var isOpen = !!(globalTrashSectionOpen && globalTrashSectionOpen[opts.id]);
+        var disabled = count === 0;
+
+        var header = el('div', {
+            className: 'bowire-trash-bucket-header'
+                + (disabled ? ' bowire-trash-bucket-header-disabled' : ''),
+            onClick: function () {
+                if (disabled) return;
+                globalTrashSectionOpen[opts.id] = !isOpen;
+                render();
+            }
+        });
+        header.appendChild(el('span', {
+            className: 'bowire-trash-bucket-label',
+            textContent: opts.label
+        }));
+        header.appendChild(el('span', {
+            className: 'bowire-trash-bucket-count',
+            textContent: '(' + count + ')'
+        }));
+        header.appendChild(el('span', { style: 'flex:1' }));
+        header.appendChild(el('span', {
+            className: 'bowire-trash-bucket-caret',
+            textContent: disabled ? '' : (isOpen ? 'Collapse ▴' : 'Expand ▾')
+        }));
+        section.appendChild(header);
+
+        if (isOpen && count > 0) {
+            var list = el('div', { className: 'bowire-trash-bucket-list' });
+            opts.entries.slice().forEach(function (t) {
+                if (!t) return;
+                var ageMs = Date.now() - (t.deletedAt || Date.now());
+                var ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+                var ageLabel;
+                if (ageMs < 60 * 60 * 1000) ageLabel = 'less than an hour ago';
+                else if (ageMs < 24 * 60 * 60 * 1000) ageLabel = Math.floor(ageMs / 3600000) + 'h ago';
+                else ageLabel = ageDays + ' day' + (ageDays === 1 ? '' : 's') + ' ago';
+                var purgeIn = Math.max(0, 30 - ageDays);
+                var ttlNote = 'Deleted ' + ageLabel
+                    + ' — will be purged in ' + purgeIn + ' day' + (purgeIn === 1 ? '' : 's');
+
+                var row = el('div', { className: 'bowire-trash-bucket-row' });
+                row.appendChild(el('div', { className: 'bowire-trash-bucket-row-meta' },
+                    el('div', {
+                        className: 'bowire-trash-bucket-row-name',
+                        textContent: opts.nameOf(t.entry)
+                    }),
+                    el('div', {
+                        className: 'bowire-trash-bucket-row-ttl',
+                        textContent: ttlNote
+                    })
+                ));
+                row.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-trash-bucket-row-action',
+                    title: 'Restore',
+                    textContent: 'Restore',
+                    onClick: function () {
+                        try { opts.onRestore(t); } catch (e) {
+                            console.warn('[trash] restore failed', opts.id, e);
+                        }
+                        render();
+                    }
+                }));
+                row.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-trash-bucket-row-action bowire-trash-bucket-row-action-danger',
+                    title: 'Delete forever',
+                    textContent: 'Delete forever',
+                    onClick: function () {
+                        if (typeof bowireConfirm === 'function') {
+                            bowireConfirm(
+                                'Permanently delete "' + opts.nameOf(t.entry) + '"? This cannot be undone.',
+                                function () {
+                                    try { opts.onDeleteForever(t); } catch (e) {
+                                        console.warn('[trash] delete-forever failed', opts.id, e);
+                                    }
+                                    render();
+                                },
+                                { title: 'Delete forever', confirmText: 'Delete', danger: true }
+                            );
+                        }
+                    }
+                }));
+                list.appendChild(row);
+            });
+            section.appendChild(list);
+        }
+        return section;
     }
 
     function renderUnifiedRightDrawer(open) {
@@ -2303,6 +2676,97 @@
         // current state.
         var themeBtn = (typeof renderThemeToggle === 'function') ? renderThemeToggle() : null;
 
+        // #296 — Topbar history group: Undo + Redo + Trash. Visible,
+        // discoverable equivalents of the existing Ctrl/Cmd+Z + Shift+Z
+        // shortcuts plus the aggregated Trash drawer that surfaces
+        // every soft-deleted bucket in the active workspace. The
+        // buttons reuse the existing undoLastAction / redoLastAction
+        // helpers from prologue.js so there's no parallel state
+        // machine.
+        var _undoLabel = (typeof nextUndoLabel === 'function') ? nextUndoLabel() : null;
+        var _redoLabel = (typeof nextRedoLabel === 'function') ? nextRedoLabel() : null;
+        var _undoDisabled = !_undoLabel;
+        var _redoDisabled = !_redoLabel;
+        var undoBtn = el('button', {
+            id: 'bowire-topbar-undo-btn',
+            type: 'button',
+            className: 'bowire-theme-toggle-btn bowire-topbar-history-btn'
+                + (_undoDisabled ? ' bowire-theme-toggle-btn-disabled' : ''),
+            disabled: _undoDisabled ? 'disabled' : null,
+            'aria-disabled': _undoDisabled ? 'true' : 'false',
+            title: _undoDisabled
+                ? 'Nothing to undo (Ctrl/Cmd+Z)'
+                : ('Undo: ' + _undoLabel + ' (Ctrl/Cmd+Z)'),
+            'aria-label': _undoDisabled ? 'Undo (nothing to undo)' : ('Undo: ' + _undoLabel),
+            onClick: function () {
+                if (_undoDisabled) return;
+                if (typeof undoLastAction === 'function') {
+                    var u = undoLastAction();
+                    if (u && typeof toast === 'function') toast('Undone: ' + u.title, 'info');
+                    render();
+                }
+            }
+        }, el('span', {
+            innerHTML: svgIcon('undo'),
+            style: 'width:16px;height:16px;display:flex'
+        }));
+        var redoBtn = el('button', {
+            id: 'bowire-topbar-redo-btn',
+            type: 'button',
+            className: 'bowire-theme-toggle-btn bowire-topbar-history-btn'
+                + (_redoDisabled ? ' bowire-theme-toggle-btn-disabled' : ''),
+            disabled: _redoDisabled ? 'disabled' : null,
+            'aria-disabled': _redoDisabled ? 'true' : 'false',
+            title: _redoDisabled
+                ? 'Nothing to redo (Ctrl/Cmd+Shift+Z)'
+                : ('Redo: ' + _redoLabel + ' (Ctrl/Cmd+Shift+Z)'),
+            'aria-label': _redoDisabled ? 'Redo (nothing to redo)' : ('Redo: ' + _redoLabel),
+            onClick: function () {
+                if (_redoDisabled) return;
+                if (typeof redoLastAction === 'function') {
+                    var r = redoLastAction();
+                    if (r && typeof toast === 'function') toast('Redone: ' + r.title, 'info');
+                    render();
+                }
+            }
+        }, el('span', {
+            innerHTML: svgIcon('redo'),
+            style: 'width:16px;height:16px;display:flex'
+        }));
+        // Aggregate trash count across every bucket in the active
+        // workspace. Workspaces section is a placeholder until #194
+        // soft-delete lands; it always contributes 0 today.
+        var _trashRec = (typeof recordingsTrash !== 'undefined' && Array.isArray(recordingsTrash)) ? recordingsTrash.length : 0;
+        var _trashCol = (typeof collectionsTrash !== 'undefined' && Array.isArray(collectionsTrash)) ? collectionsTrash.length : 0;
+        var _trashTabs = (typeof tabsTrash !== 'undefined' && Array.isArray(tabsTrash)) ? tabsTrash.length : 0;
+        var _trashTotal = _trashRec + _trashCol + _trashTabs;
+        var trashBtn = el('button', {
+            id: 'bowire-topbar-trash-btn',
+            type: 'button',
+            className: 'bowire-theme-toggle-btn bowire-topbar-history-btn'
+                + (globalTrashOpen ? ' active' : ''),
+            title: globalTrashOpen
+                ? 'Close trash drawer'
+                : ('Trash — ' + _trashTotal + ' item' + (_trashTotal === 1 ? '' : 's')
+                    + ' across recordings / collections / closed tabs'),
+            'aria-label': 'Toggle trash drawer',
+            onClick: function () {
+                globalTrashOpen = !globalTrashOpen;
+                render();
+            }
+        },
+            el('span', {
+                innerHTML: svgIcon('trash'),
+                style: 'width:16px;height:16px;display:flex'
+            }),
+            _trashTotal > 0
+                ? el('span', {
+                    className: 'bowire-topbar-trash-badge',
+                    textContent: String(_trashTotal)
+                })
+                : null
+        );
+
         // #116 Workspaces Phase 1 — workspace switcher chip.
         // Click opens a small menu with every workspace + a
         // 'New workspace…' action.
@@ -2543,6 +3007,17 @@
                     // duplicate bottom block would just be noise.
                 ) : null,
                 renderEnvSelector(),
+            ),
+            // #296 — history group: Undo / Redo / Trash. Sits between
+            // the editor-context group (workspace + env) and the
+            // drawers group so the affordances read as "global
+            // history affordances" — clearly tied to the action log
+            // foundation (#168) and the cross-rail trash buckets
+            // rather than the editor's current state.
+            el('div', { className: 'bowire-topbar-group bowire-topbar-history' },
+                undoBtn,
+                redoBtn,
+                trashBtn
             ),
             // Drawer + utility group. Security toggle retired in
             // #133 Phase 2 (Security is a rail mode now, not a

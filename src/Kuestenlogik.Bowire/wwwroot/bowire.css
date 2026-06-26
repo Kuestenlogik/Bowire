@@ -20212,3 +20212,258 @@ not as the
 .bowire-compose-empty-cta:hover {
     filter: brightness(1.08);
 }
+
+/* #296 — Topbar history group (Undo / Redo / Trash) + global Trash
+   drawer overlay. The history group reuses the .bowire-topbar-group
+   chrome from #129 (divider line between clusters); these rules add
+   the trash badge anchoring + the disabled state for Undo/Redo when
+   the stack is empty. */
+.bowire-topbar-history-btn {
+    position: relative;
+}
+.bowire-topbar-history-btn[disabled],
+.bowire-topbar-history-btn.bowire-theme-toggle-btn-disabled {
+    /* Disabled Undo / Redo — muted text + no hover affordance. The
+       button still occupies its slot (no width collapse) so the topbar
+       trio doesn't reflow as the action-log fills up. */
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.bowire-topbar-history-btn[disabled]:hover,
+.bowire-topbar-history-btn.bowire-theme-toggle-btn-disabled:hover {
+    background: transparent;
+    border-color: transparent;
+    color: var(--bowire-text-secondary);
+}
+.bowire-topbar-trash-badge {
+    /* Pill badge anchored to the top-right of the trash icon. Mirrors
+       the AI drawer's hint-count badge (.bowire-ai-drawer-badge) so
+       the visual language stays consistent across the topbar. */
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 4px;
+    background: var(--bowire-accent);
+    color: #fff;
+    border-radius: var(--bowire-radius-pill);
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 14px;
+    text-align: center;
+    box-shadow: 0 0 0 2px var(--bowire-bg);
+    pointer-events: none;
+}
+
+/* Modal-style backdrop + card. Same z-index lane as the omnibox
+   overlay (200) so the modal sits above the topbar / drawers but
+   below the toast layer. Click-on-backdrop closes via the onClick
+   handler on the renderGlobalTrashOverlay backdrop element. */
+.bowire-trash-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 220;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 64px;
+    backdrop-filter: blur(2px);
+}
+.bowire-trash-modal {
+    width: min(560px, calc(100vw - 32px));
+    max-height: calc(100vh - 128px);
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-lg);
+    box-shadow: var(--bowire-shadow-lg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.bowire-trash-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--bowire-border);
+}
+.bowire-trash-modal-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.bowire-trash-modal-title-icon {
+    color: var(--bowire-text-secondary);
+}
+.bowire-trash-modal-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--bowire-text);
+}
+.bowire-trash-modal-close {
+    background: transparent;
+    border: 0;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--bowire-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-trash-modal-close:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+.bowire-trash-modal-close > * {
+    width: 14px;
+    height: 14px;
+    display: flex;
+}
+.bowire-trash-modal-body {
+    padding: 8px 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.bowire-trash-modal-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border-top: 1px solid var(--bowire-border);
+    background: var(--bowire-surface);
+}
+.bowire-trash-modal-action {
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    color: var(--bowire-text);
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: var(--bowire-radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    transition: background var(--bowire-transition);
+}
+.bowire-trash-modal-action:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-trash-modal-action[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.bowire-trash-modal-action[disabled]:hover {
+    background: var(--bowire-bg);
+}
+.bowire-trash-modal-action-danger:hover {
+    background: var(--bowire-error-bg);
+    color: var(--bowire-error);
+    border-color: var(--bowire-error);
+}
+
+/* Per-bucket section inside the modal body. Header is always
+   rendered; the item list expands when the operator clicks through.
+   Disabled state (no items) mutes the colour + drops the caret. */
+.bowire-trash-bucket {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-surface);
+}
+.bowire-trash-bucket-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--bowire-text);
+    cursor: pointer;
+    user-select: none;
+}
+.bowire-trash-bucket-header:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-trash-bucket-header-disabled,
+.bowire-trash-bucket-header-disabled:hover {
+    color: var(--bowire-text-tertiary);
+    cursor: default;
+    background: transparent;
+}
+.bowire-trash-bucket-label {
+    font-weight: 600;
+}
+.bowire-trash-bucket-count {
+    color: var(--bowire-text-tertiary);
+    font-size: 11px;
+}
+.bowire-trash-bucket-caret {
+    color: var(--bowire-text-tertiary);
+    font-size: 11px;
+}
+.bowire-trash-bucket-gated {
+    opacity: 0.6;
+}
+.bowire-trash-bucket-gated-note {
+    margin-left: auto;
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+    font-style: italic;
+}
+.bowire-trash-bucket-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 8px 8px;
+    border-top: 1px solid var(--bowire-border-subtle);
+}
+.bowire-trash-bucket-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 6px;
+    border-radius: var(--bowire-radius-sm);
+}
+.bowire-trash-bucket-row:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-trash-bucket-row-meta {
+    min-width: 0;
+}
+.bowire-trash-bucket-row-name {
+    font-size: 12px;
+    color: var(--bowire-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-trash-bucket-row-ttl {
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+    margin-top: 2px;
+}
+.bowire-trash-bucket-row-action {
+    background: transparent;
+    border: 1px solid var(--bowire-border-subtle);
+    color: var(--bowire-text-secondary);
+    cursor: pointer;
+    padding: 3px 8px;
+    border-radius: var(--bowire-radius-sm);
+    font-size: 11px;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-trash-bucket-row-action:hover {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent);
+    border-color: var(--bowire-accent);
+}
+.bowire-trash-bucket-row-action-danger:hover {
+    background: var(--bowire-error-bg);
+    color: var(--bowire-error);
+    border-color: var(--bowire-error);
+}

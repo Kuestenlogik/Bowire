@@ -755,6 +755,24 @@
         }
         return n;
     }
+    // #296 — next-action labels for the topbar Undo / Redo button
+    // tooltips. Mirrors the same lookup undoLastAction does (first
+    // available entry from the head of the log) so the tooltip
+    // accurately previews the action a click will roll back.
+    function nextUndoLabel() {
+        for (var i = 0; i < actionLog.length; i++) {
+            if (actionLog[i].status === 'available'
+                && typeof actionLog[i].undoFn === 'function') {
+                return actionLog[i].title || actionLog[i].kind || null;
+            }
+        }
+        return null;
+    }
+    function nextRedoLabel() {
+        if (!Array.isArray(actionLogRedoStack) || actionLogRedoStack.length === 0) return null;
+        var head = actionLogRedoStack[0];
+        return head ? (head.title || head.kind || null) : null;
+    }
     function clearActionLog() {
         actionLog = [];
         actionLogRedoStack = [];
@@ -1113,6 +1131,41 @@
     // Trash-section open/closed per sidebar — session-only.
     let recordingsTrashOpen = false;
     let collectionsTrashOpen = false;
+
+    // #296 — recently-closed request-tabs ring. closeTab() used to
+    // hard-delete; now it captures the tab into this bucket so the
+    // global Trash drawer can surface "8 recently closed tabs" and
+    // restore one with a click. Same 30-day TTL as the other trash
+    // buckets; cap the ring to TABS_TRASH_MAX so a chatty user
+    // doesn't blow localStorage quota.
+    const TABS_TRASH_MAX = 50;
+    let tabsTrash = [];
+    try {
+        var rawTTrash = localStorage.getItem(wsKey('bowire_request_tabs_trash'));
+        if (rawTTrash) tabsTrash = JSON.parse(rawTTrash) || [];
+    } catch { /* ignore */ }
+    (function purgeOldTabsTrash() {
+        var cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+        tabsTrash = tabsTrash.filter(function (t) { return t.deletedAt > cutoff; });
+        if (tabsTrash.length > TABS_TRASH_MAX) tabsTrash.length = TABS_TRASH_MAX;
+    })();
+    function persistTabsTrash() {
+        try { localStorage.setItem(wsKey('bowire_request_tabs_trash'), JSON.stringify(tabsTrash)); }
+        catch { /* ignore */ }
+    }
+
+    // #296 — global trash drawer state. Modal-style overlay opened
+    // from the topbar trash icon. Per-section expand/collapse state
+    // lives here too so a render pass doesn't lose the operator's
+    // last drilldown. Session-only — opening the drawer on a fresh
+    // session always starts collapsed.
+    let globalTrashOpen = false;
+    let globalTrashSectionOpen = {
+        recordings: false,
+        collections: false,
+        tabs: false,
+        workspaces: false
+    };
 
     // #125 Phase 2 — vars-autocomplete dropdown state. Single
     // floating popover; only one active across the whole document
@@ -2322,7 +2375,12 @@
         // bowire_request_tabs: browser session state (which builders
         // I happened to have open), not project content. Wiped on
         // workspace delete, NOT round-tripped through .bww export.
-        'bowire_compose_tabs'
+        'bowire_compose_tabs',
+        // #296 — Recently-closed-tabs trash ring. Browser session
+        // history (which tabs I just closed), not project content,
+        // so wiped on workspace delete and not round-tripped through
+        // .bww export. Same lifecycle as bowire_request_tabs above.
+        'bowire_request_tabs_trash'
     ];
     // Modes that store per-method presets via the presets framework.
     // Each maps to a `bowire_presets_<mode>` key under wsKey().
@@ -3529,6 +3587,24 @@
         }
         if (idx < 0) return;
 
+        // #296 — capture the closed tab into the recently-closed-tabs
+        // ring so the global Trash drawer can surface + restore it.
+        // We snapshot the live tab object directly; tab objects are
+        // small (serviceKey / methodKey / freeform draft) and the ring
+        // is capped + TTL-purged at boot.
+        var closed = requestTabs[idx];
+        if (closed) {
+            try {
+                tabsTrash.unshift({
+                    entry: closed,
+                    deletedAt: Date.now(),
+                    originalIdx: idx
+                });
+                if (tabsTrash.length > TABS_TRASH_MAX) tabsTrash.length = TABS_TRASH_MAX;
+                persistTabsTrash();
+            } catch { /* ignore */ }
+        }
+
         requestTabs.splice(idx, 1);
         persistRequestTabs();
 
@@ -3580,6 +3656,46 @@
             }
         }
         render();
+    }
+
+    // #296 — restore a closed-tab trash entry. Rehydrates the
+    // service / method handles off the live services catalogue (a
+    // tab persisted from a previous session may carry stale refs)
+    // and re-inserts at the original position when possible, falling
+    // back to the end. Returns true if the restore succeeded so the
+    // caller can drop the trash row.
+    function restoreClosedTab(t) {
+        if (!t || !t.entry) return false;
+        var stub = t.entry;
+        var svc = null;
+        var meth = null;
+        if (Array.isArray(services)) {
+            svc = services.find(function (s) { return s.name === stub.serviceKey; }) || null;
+            if (svc) {
+                meth = (svc.methods || []).find(function (m) { return m.name === stub.methodKey; }) || null;
+            }
+        }
+        // Skip clashes with currently-open tab ids; mint a new one if
+        // the original id has been reused since.
+        var clash = false;
+        for (var i = 0; i < requestTabs.length; i++) {
+            if (requestTabs[i].id === stub.id) { clash = true; break; }
+        }
+        var newTab = {
+            id: clash && typeof nextTabId === 'function' ? nextTabId() : stub.id,
+            serviceKey: stub.serviceKey,
+            methodKey: stub.methodKey,
+            service: svc || stub.service || null,
+            method: meth || stub.method || null,
+            freeform: stub.freeform || null
+        };
+        var insertAt = Math.min(
+            typeof t.originalIdx === 'number' ? t.originalIdx : requestTabs.length,
+            requestTabs.length
+        );
+        requestTabs.splice(insertAt, 0, newTab);
+        persistRequestTabs();
+        return true;
     }
 
     // ---- Response Diff State ----
