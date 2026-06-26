@@ -802,6 +802,13 @@
     // only; not persisted to localStorage so a reload starts with the
     // menu closed. Closes on Esc / outside click via init.js handlers.
     let topbarOverflowOpen = false;
+    // #297 — responsive horizontal overflow for the topbar's right
+    // cluster. When the cluster doesn't fit, low-priority buttons
+    // (About → Help → Theme → AI → Trash → Redo → Undo, in collapse
+    // order) fold into a ⋮ menu opened with this flag. Session-only —
+    // reloads start closed, the layout pass re-decides what's hidden
+    // each render. Mirrors railOverflowOpen (#164 v3) one-for-one.
+    let topbarRightOverflowOpen = false;
     // #116 workspace switcher menu — open/closed.
     let workspaceMenuOpen = false;
     // #296 — "Add to…" menu in the method header. Anchored to the

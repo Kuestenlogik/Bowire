@@ -443,6 +443,14 @@
                     render();
                     return;
                 }
+                // #297 — Esc dismisses the responsive topbar overflow.
+                // Same ordering as the legacy ⋮ menu above so a single
+                // Esc reliably closes whichever overflow is open.
+                if (typeof topbarRightOverflowOpen !== 'undefined' && topbarRightOverflowOpen) {
+                    topbarRightOverflowOpen = false;
+                    render();
+                    return;
+                }
                 if (workspaceMenuOpen) {
                     workspaceMenuOpen = false;
                     render();
@@ -691,6 +699,20 @@
                     || (roPop && roPop.contains(e.target));
                 if (!roInside) {
                     railOverflowOpen = false;
+                    changed = true;
+                }
+            }
+            // #297 — Topbar right-cluster overflow popover. Closes on
+            // any outside click; the ⋮ button + popover are siblings
+            // inside bowire-topbar-right, both checked so clicking
+            // either keeps it open.
+            if (typeof topbarRightOverflowOpen !== 'undefined' && topbarRightOverflowOpen) {
+                var troBtn = document.getElementById('bowire-topbar-right-overflow-btn');
+                var troPop = document.getElementById('bowire-topbar-right-overflow-popover');
+                var troInside = (troBtn && troBtn.contains(e.target))
+                    || (troPop && troPop.contains(e.target));
+                if (!troInside) {
+                    topbarRightOverflowOpen = false;
                     changed = true;
                 }
             }
