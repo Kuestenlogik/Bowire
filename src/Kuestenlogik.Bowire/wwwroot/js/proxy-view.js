@@ -19,9 +19,24 @@
     // The Proxy view is intentionally optional — when the proxy isn't
     // running the connect-attempt fails fast and the view shows a
     // start-it-with-this-command hint instead of an empty list.
+    //
+    // #299 — Embedded mode story. When the workbench is mounted inside
+    // an ASP.NET host via MapBowire() there is no `bowire proxy`
+    // sidecar to default to: the loopback URL would always fail and
+    // the "start the proxy with `bowire proxy`" hint is meaningless
+    // because the operator isn't running the CLI. Two adjustments:
+    //   (1) Embedded + no workspace override ⇒ skip auto-connect and
+    //       render a "CLI-only or external URL" empty state with a
+    //       jump to docs/features/proxy.md.
+    //   (2) Workspace settings expose an "External proxy endpoint"
+    //       field that routes the rail at a remote `bowire proxy`
+    //       running on another host. When set, embedded mode behaves
+    //       like standalone — connect, stream, capture.
+    // Standalone behaviour is unchanged: no override ⇒ loopback
+    // default, error hint still says "start the proxy with `bowire
+    // proxy` in a terminal".
     // ------------------------------------------------------------------
 
-    const BOWIRE_PROXY_API_KEY = 'bowire_proxy_api_url';
     const BOWIRE_PROXY_DEFAULT_API_URL = 'http://127.0.0.1:8889';
 
     let proxyFlows = [];                 // newest-first snapshot
@@ -29,14 +44,33 @@
     let proxyConnectionState = 'idle';   // 'idle' | 'connecting' | 'connected' | 'error'
     let proxyConnectionError = null;
     let proxyEventSource = null;
-    let proxyApiUrl = (function () {
-        try { return localStorage.getItem(BOWIRE_PROXY_API_KEY) || BOWIRE_PROXY_DEFAULT_API_URL; }
-        catch { return BOWIRE_PROXY_DEFAULT_API_URL; }
-    })();
+
+    /**
+     * Effective Proxy-API base URL. Resolution order:
+     *   1. Per-workspace external endpoint (set in workspace settings).
+     *   2. CLI loopback default (standalone mode only).
+     *   3. Empty string in embedded mode with no override — signals
+     *      "no place to talk to" to the rest of the view, which then
+     *      renders the embedded-mode empty state instead of trying
+     *      to fetch.
+     */
+    function bowireProxyEffectiveApiUrl() {
+        var override = (typeof getWorkspaceProxyEndpoint === 'function')
+            ? getWorkspaceProxyEndpoint() : '';
+        if (override) return override;
+        var embedded = (typeof uiMode !== 'undefined' && uiMode === 'embedded');
+        if (embedded) return '';
+        return BOWIRE_PROXY_DEFAULT_API_URL;
+    }
+
+    function bowireProxyIsConfigured() {
+        return !!bowireProxyEffectiveApiUrl();
+    }
 
     function bowireProxySetApiUrl(url) {
-        proxyApiUrl = (url || '').trim() || BOWIRE_PROXY_DEFAULT_API_URL;
-        try { localStorage.setItem(BOWIRE_PROXY_API_KEY, proxyApiUrl); } catch {}
+        if (typeof setWorkspaceProxyEndpoint === 'function') {
+            setWorkspaceProxyEndpoint(null, (url || '').trim());
+        }
         bowireProxyDisconnect();
     }
 
@@ -56,12 +90,19 @@
      */
     async function bowireProxyConnect() {
         if (proxyConnectionState === 'connecting' || proxyConnectionState === 'connected') return;
+        // #299 — Nothing to connect to (embedded host, no external
+        // endpoint configured). Leave the state at 'idle' so the
+        // sidebar renders the embedded empty state rather than
+        // firing a doomed fetch against an empty base URL.
+        var apiUrl = bowireProxyEffectiveApiUrl();
+        if (!apiUrl) return;
+
         proxyConnectionState = 'connecting';
         proxyConnectionError = null;
         render();
 
         try {
-            const resp = await fetch(proxyApiUrl + '/api/proxy/flows');
+            const resp = await fetch(apiUrl + '/api/proxy/flows');
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
             const body = await resp.json();
             proxyFlows = Array.isArray(body.flows) ? body.flows : [];
@@ -74,7 +115,7 @@
         }
 
         try {
-            proxyEventSource = new EventSource(proxyApiUrl + '/api/proxy/stream');
+            proxyEventSource = new EventSource(apiUrl + '/api/proxy/stream');
             proxyEventSource.addEventListener('flow', function (e) {
                 try {
                     const summary = JSON.parse(e.data);
@@ -103,8 +144,10 @@
      * pane pulls the bigger payload only for the selected flow.
      */
     async function bowireProxyFetchFlowDetail(id) {
+        var apiUrl = bowireProxyEffectiveApiUrl();
+        if (!apiUrl) return null;
         try {
-            const resp = await fetch(proxyApiUrl + '/api/proxy/flows/' + encodeURIComponent(id));
+            const resp = await fetch(apiUrl + '/api/proxy/flows/' + encodeURIComponent(id));
             if (!resp.ok) return null;
             return await resp.json();
         } catch { return null; }
@@ -120,8 +163,10 @@
     }
 
     async function bowireProxyClearFlows() {
+        var apiUrl = bowireProxyEffectiveApiUrl();
+        if (!apiUrl) return;
         try {
-            const resp = await fetch(proxyApiUrl + '/api/proxy/flows', { method: 'DELETE' });
+            const resp = await fetch(apiUrl + '/api/proxy/flows', { method: 'DELETE' });
             if (resp.ok) {
                 proxyFlows = [];
                 proxyFlowDetailCache = {};
@@ -138,8 +183,10 @@
      * workbench's recording / fuzz / scan pipeline.
      */
     async function bowireProxySendToRecording(id) {
+        var apiUrl = bowireProxyEffectiveApiUrl();
+        if (!apiUrl) return;
         try {
-            const resp = await fetch(proxyApiUrl + '/api/proxy/flows/' + encodeURIComponent(id) + '/recording',
+            const resp = await fetch(apiUrl + '/api/proxy/flows/' + encodeURIComponent(id) + '/recording',
                 { method: 'POST' });
             if (!resp.ok) return;
             const recording = await resp.json();
@@ -157,8 +204,17 @@
     // ---- Sidebar list ----
 
     function renderProxyListInto(container) {
-        if (proxyConnectionState === 'idle') {
-            // Auto-connect on first paint of the proxy view.
+        // #299 — Resolve the effective API URL up-front: every empty-
+        // state / error branch below either prints it or decides
+        // whether the rail can connect at all.
+        var apiUrl = bowireProxyEffectiveApiUrl();
+        var embedded = (typeof uiMode !== 'undefined' && uiMode === 'embedded');
+
+        if (proxyConnectionState === 'idle' && apiUrl) {
+            // Auto-connect on first paint of the proxy view. Skipped
+            // when there's no place to talk to (embedded + no
+            // external endpoint configured) — the empty-state branch
+            // below handles that case.
             bowireProxyConnect();
         }
 
@@ -190,11 +246,11 @@
                         onClick: function () {
                             bowirePrompt('Proxy API URL', {
                                 title: 'Proxy connection',
-                                defaultValue: proxyApiUrl,
+                                defaultValue: apiUrl || '',
                                 placeholder: 'http://localhost:8889',
                                 confirmText: 'Save'
                             }).then(function (val) {
-                                if (!val) return;
+                                if (val === null || val === undefined) return;
                                 bowireProxySetApiUrl(String(val).trim());
                                 render();
                             });
@@ -202,6 +258,48 @@
                     }
                 ]
             }));
+        }
+
+        // #299 — Embedded host with no external endpoint configured.
+        // There's no in-host proxy listener (the standalone CLI's
+        // `bowire proxy` isn't applicable here), so the rail surfaces
+        // a doc-link + "set the URL" affordance instead of pointing
+        // the operator at a command they can't run.
+        if (embedded && !apiUrl) {
+            container.appendChild(renderEmptyCard({
+                icon: 'plug',
+                headline: 'Proxy runs outside this host',
+                body: 'Proxy mode runs in the standalone Bowire CLI or against an external proxy URL. '
+                    + 'This host (embedded MapBowire) doesn\'t expose a proxy listener.',
+                actions: [
+                    {
+                        label: 'Set external proxy URL…',
+                        primary: true,
+                        onClick: function () {
+                            bowirePrompt('External proxy endpoint', {
+                                title: 'Proxy connection',
+                                defaultValue: '',
+                                placeholder: 'http://proxy.example.internal:8889',
+                                confirmText: 'Save'
+                            }).then(function (val) {
+                                if (val === null || val === undefined) return;
+                                bowireProxySetApiUrl(String(val).trim());
+                                proxyConnectionState = 'idle';
+                                render();
+                            });
+                        }
+                    },
+                    {
+                        label: 'Read the docs',
+                        onClick: function () {
+                            if (typeof helpOpenDrawer === 'function') {
+                                helpOpenDrawer('features/proxy');
+                            }
+                        }
+                    }
+                ]
+            }));
+            return;
         }
 
         if (proxyConnectionState === 'connecting') {
@@ -213,11 +311,22 @@
         }
 
         if (proxyConnectionState === 'error') {
+            // Standalone: the CLI hint is the right next step.
+            // Embedded with an external URL set: the operator can't
+            // run `bowire proxy` here — point them at the URL field
+            // instead.
+            var errBody;
+            if (embedded) {
+                errBody = (proxyConnectionError || 'Could not connect to ' + apiUrl)
+                    + ' — check the external proxy URL is running and reachable from this host.';
+            } else {
+                errBody = (proxyConnectionError || 'Could not connect to ' + apiUrl)
+                    + ' — start the proxy with `bowire proxy` in a terminal, then retry.';
+            }
             container.appendChild(renderEmptyCard({
                 icon: 'plug',
                 headline: 'Proxy not reachable',
-                body: (proxyConnectionError || 'Could not connect to ' + proxyApiUrl)
-                    + ' — start the proxy with `bowire proxy` in a terminal, then retry.',
+                body: errBody,
                 actions: [{
                     label: 'Retry',
                     primary: true,
@@ -231,7 +340,7 @@
             container.appendChild(renderEmptyCard({
                 icon: 'globe',
                 headline: 'Waiting for traffic',
-                body: 'Point your browser / client at ' + proxyApiUrl.replace(/:\d+$/, ':8888') + ' to start capturing — captured flows land here in real time.'
+                body: 'Point your browser / client at ' + apiUrl.replace(/:\d+$/, ':8888') + ' to start capturing — captured flows land here in real time.'
             }));
             return;
         }
@@ -271,12 +380,34 @@
 
     function renderProxyMainPane() {
         const pane = el('div', { className: 'bowire-env-editor-main' });
+        var embedded = (typeof uiMode !== 'undefined' && uiMode === 'embedded');
+        var apiUrl = bowireProxyEffectiveApiUrl();
+
+        // #299 — Embedded + no external URL: mirror the sidebar's
+        // "CLI-only or external URL" message so an operator who clicks
+        // through to the main pane (e.g. from a deep-link) doesn't see
+        // a stale or misleading hint.
+        if (embedded && !apiUrl) {
+            pane.appendChild(renderEmptyCard({
+                icon: 'plug',
+                headline: 'Proxy runs outside this host',
+                body: 'Proxy mode runs in the standalone Bowire CLI or against an external proxy URL. '
+                    + 'Set an external proxy endpoint in Workspace Settings → General to wire this rail to a remote `bowire proxy`.'
+            }));
+            return pane;
+        }
 
         if (proxyConnectionState === 'error') {
+            // Embedded hosts can't run `bowire proxy` in-process — the
+            // hint that worked for the standalone CLI is meaningless
+            // here. Show a host-appropriate next step.
+            var mainErrBody = embedded
+                ? 'Check the external proxy URL in Workspace Settings, then click Retry in the sidebar.'
+                : 'Run `bowire proxy` in a terminal, then click Retry in the sidebar.';
             pane.appendChild(renderEmptyCard({
                 icon: 'plug',
                 headline: 'No proxy connection',
-                body: 'Run `bowire proxy` in a terminal, then click Retry in the sidebar.'
+                body: mainErrBody
             }));
             return pane;
         }
