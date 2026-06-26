@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**39/59 done** · 20 backlog
+**40/59 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -35,7 +35,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [297](https://github.com/Kuestenlogik/Bowire/issues/297) | Bowire | [Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip](#issue-kuestenlogik-bowire-297) | ⬜ Backlog |  |
 | [298](https://github.com/Kuestenlogik/Bowire/issues/298) | Bowire | [Flows: protocol + service selection doesn't populate the request's dropdowns](#issue-kuestenlogik-bowire-298) | ⬜ Backlog |  |
 | [299](https://github.com/Kuestenlogik/Bowire/issues/299) | Bowire | [Embedded mode: Proxy rail surfaces 'Proxy not reachable' — proxy needs an embedded-mode story](#issue-kuestenlogik-bowire-299) | ⬜ Backlog |  |
-| [301](https://github.com/Kuestenlogik/Bowire/issues/301) | Bowire | [Home/Welcome formatting inconsistency: Benchmarks + Workspaces rails differ from others](#issue-kuestenlogik-bowire-301) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ✅ Done |  |
@@ -75,6 +74,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [293](https://github.com/Kuestenlogik/Bowire/issues/293) | Bowire | [New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover](#issue-kuestenlogik-bowire-293) | ✅ Done |  |
 | [296](https://github.com/Kuestenlogik/Bowire/issues/296) | Bowire | [Topbar: global Trash drawer + Undo / Redo buttons (aggregate across rails)](#issue-kuestenlogik-bowire-296) | ✅ Done |  |
 | [300](https://github.com/Kuestenlogik/Bowire/issues/300) | Bowire | [Benchmark: switching mode works once, then becomes inert](#issue-kuestenlogik-bowire-300) | ✅ Done |  |
+| [301](https://github.com/Kuestenlogik/Bowire/issues/301) | Bowire | [Home/Welcome formatting inconsistency: Benchmarks + Workspaces rails differ from others](#issue-kuestenlogik-bowire-301) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -306,10 +306,6 @@ Rails already collapse into an overflow `⋮` button when the vertical space run
 
 1. Build the embedded sample (`samples/Kuestenlogik.Bowire.Sample.Embedded`) and run on port 5181 2. Visit `http://localhost:5181/bowire` 3. Open the Proxy rail 4. **Expected:** something usable — either run a proxy in-process OR a clear 'not available in embedded mode' state with a doc link 5. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/299)
 
-#### <a id="issue-kuestenlogik-bowire-301"></a>⬜ Backlog · [#301](https://github.com/Kuestenlogik/Bowire/issues/301) Home/Welcome formatting inconsistency: Benchmarks + Workspaces rails differ from others
-
-1. Open each rail in turn (Home → Discover → Compose → Recordings → Mocks → Flows → Proxy → Benchmarks → Security → Workspaces) 2. Compare the empty-state / welcome cards in the main pane 3. **Most rails** follow a consistent shape: glyph + headline + body + primary CTA button 4. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/301)
-
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
 Real testing workflows have steps that are too dynamic for a static template: sign the body with a per-request HMAC, refresh an access token if it's about to expire, capture a value from one response into a header on the next, encode a binary blob, assert on a complex shape after send. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/126)
@@ -465,6 +461,10 @@ User feedback (Phase 2 walkthrough): "wo ist der Papierkorb und Undo/Redo überg
 #### <a id="issue-kuestenlogik-bowire-300"></a>✅ Done · [#300](https://github.com/Kuestenlogik/Bowire/issues/300) Benchmark: switching mode works once, then becomes inert
 
 1. Open the Benchmarks rail 2. Pick a benchmark / create one 3. Switch the mode (e.g. constant-rate → ramp) — visual UI updates correctly 4. Try to switch again → nothing happens; the mode is stuck [[more]](https://github.com/Kuestenlogik/Bowire/issues/300)
+
+#### <a id="issue-kuestenlogik-bowire-301"></a>✅ Done · [#301](https://github.com/Kuestenlogik/Bowire/issues/301) Home/Welcome formatting inconsistency: Benchmarks + Workspaces rails differ from others
+
+1. Open each rail in turn (Home → Discover → Compose → Recordings → Mocks → Flows → Proxy → Benchmarks → Security → Workspaces) 2. Compare the empty-state / welcome cards in the main pane 3. **Most rails** follow a consistent shape: glyph + headline + body + primary CTA button 4. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/301)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
