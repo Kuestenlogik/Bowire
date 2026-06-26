@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire-agent catalogue provider — sources the workbench's URL/service catalogue from a Bowire Agent hub (#128). When an embedded Bowire instance registers with a central hub, the hub itself becomes a catalogue source: every registered agent's discoverable services surface in the hub's workbench UI under the IBowireCatalogueProvider seam (#136 / #305). Ships standalone so installs that don't run a Bowire Agent hub don't pay any transitive weight.</Description>
+    <PackageId>Kuestenlogik.Bowire.Catalogue.Agent</PackageId>
+    <PackageTags>bowire;catalogue;agent;hub;service-discovery</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Catalogue.Agent.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>

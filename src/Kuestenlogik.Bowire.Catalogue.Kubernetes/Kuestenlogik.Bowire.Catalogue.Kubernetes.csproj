@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Kubernetes catalogue provider for Bowire — reads Services from the Kubernetes API server (in-cluster service account or kubeconfig) and surfaces them through Bowire's IBowireCatalogueProvider seam (#136). Ships as a standalone NuGet so installs that don't run on Kubernetes don't pay any transitive weight: the provider talks to the API server over plain HTTP and pulls only Bowire core as a dependency.</Description>
+    <PackageId>Kuestenlogik.Bowire.Catalogue.Kubernetes</PackageId>
+    <PackageTags>bowire;catalogue;kubernetes;k8s;service-discovery</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Catalogue.Kubernetes.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>
