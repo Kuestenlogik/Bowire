@@ -16306,6 +16306,151 @@ the action toolbar {
     padding-right: 0;
     border-right: 0;
 }
+
+/* #132 — Parallel sessions Run-options modal + per-session live
+   panel. The modal reuses the bowire-confirm-overlay shape (same
+   wrapper class) so it picks up the centred-dialog backdrop +
+   focus-trap styling; the parallel-specific rules below tune the
+   preset row + custom-input. */
+.bowire-parallel-dialog {
+    min-width: 360px;
+}
+.bowire-parallel-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 4px;
+}
+.bowire-parallel-preset {
+    flex: 0 0 auto;
+    min-width: 48px;
+    padding: 6px 12px;
+    border: 1px solid var(--bowire-border-subtle);
+    background: transparent;
+    color: var(--bowire-text);
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+}
+.bowire-parallel-preset:hover {
+    border-color: var(--bowire-border);
+}
+.bowire-parallel-preset.selected {
+    border-color: var(--bowire-accent);
+    color: var(--bowire-accent);
+    background: rgba(120, 120, 255, 0.06);
+}
+.bowire-parallel-custom-input {
+    width: 100%;
+    margin-top: 4px;
+    padding: 6px 8px;
+    border: 1px solid var(--bowire-border-subtle);
+    background: var(--bowire-bg);
+    color: var(--bowire-text);
+    border-radius: var(--bowire-radius-sm);
+    font-family: inherit;
+    font-size: 13px;
+}
+.bowire-parallel-custom-input:disabled {
+    opacity: 0.5;
+}
+.bowire-parallel-hint {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--bowire-text-muted);
+    line-height: 1.4;
+}
+
+/* Per-session live panel — header strip with summary, then a flex
+   grid of small tiles, one per session. Sits between the toolbar
+   and the step list of the recording / collection detail pane. */
+.bowire-parallel-panel {
+    margin: 10px 20px;
+    padding: 10px 12px;
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-bg);
+}
+.bowire-parallel-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+.bowire-parallel-panel-summary {
+    color: var(--bowire-text-muted);
+    flex: 1;
+}
+.bowire-parallel-panel-dismiss {
+    background: transparent;
+    border: 0;
+    color: var(--bowire-text-muted);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 6px;
+}
+.bowire-parallel-panel-dismiss:hover {
+    color: var(--bowire-text);
+}
+.bowire-parallel-tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.bowire-parallel-tile {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border: 1px solid var(--bowire-border-subtle);
+    border-left-width: 3px;
+    border-radius: var(--bowire-radius-sm);
+    font-size: 11px;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    background: var(--bowire-bg);
+    min-width: 180px;
+}
+.bowire-parallel-tile.running {
+    border-left-color: var(--bowire-accent);
+}
+.bowire-parallel-tile.pass {
+    border-left-color: var(--bowire-success, #34d399);
+}
+.bowire-parallel-tile.fail {
+    border-left-color: var(--bowire-error, #f87171);
+}
+.bowire-parallel-tile-index {
+    color: var(--bowire-text-muted);
+    min-width: 26px;
+}
+.bowire-parallel-tile-status {
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+.bowire-parallel-tile.pass .bowire-parallel-tile-status {
+    color: var(--bowire-success, #34d399);
+}
+.bowire-parallel-tile.fail .bowire-parallel-tile-status {
+    color: var(--bowire-error, #f87171);
+}
+.bowire-parallel-tile.running .bowire-parallel-tile-status {
+    color: var(--bowire-accent);
+}
+.bowire-parallel-tile-progress {
+    color: var(--bowire-text);
+    flex: 1;
+}
+.bowire-parallel-tile-error {
+    color: var(--bowire-error, #f87171);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
 .bowire-recording-action-primary {
     border-color: var(--bowire-accent) !important;
     color: var(--bowire-accent) !important;

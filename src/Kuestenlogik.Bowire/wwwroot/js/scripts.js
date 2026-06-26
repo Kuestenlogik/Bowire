@@ -102,6 +102,14 @@
         };
     }
 
+    // `capturedRef.captured` is bound by reference, not by value — the
+    // script body mutates the same object that the caller hands in.
+    // #132 (parallel sessions) leans on this: each session passes its
+    // OWN captured-object so concurrent ctx.vars.captured.* writes
+    // stay isolated per session. The runner constructs one bag per
+    // session and threads it through replaySingleStep / runCollectionItem
+    // → here → ctx.vars.captured.* — no global window.__bowire_captured
+    // race when N sessions write the same key name.
     function _buildScriptVarsApi(capturedRef) {
         return { captured: capturedRef.captured };
     }

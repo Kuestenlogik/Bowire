@@ -1,59 +1,233 @@
-    // ---- Parallel Sessions (#132 minimal) ----
+    // ---- Parallel Sessions (#132 Phase 1 — local) ----
     //
     // Live state for the most recently launched parallel-sessions run.
-    // Surfaced as a toast at start + finish; per-session rows render
-    // under the source toolbar while a run is in flight. The state
+    // Per-session tiles render under the source toolbar while a run is
+    // in flight; the toast carries start + finish summary. The state
     // object is shared between collection + recording sessions because
     // the only fields that differ are `kind` ('collection'/'recording')
     // and `sourceName`; the per-session shape is identical.
+    //
+    // Phase 1 scope (#132):
+    //   - Sessions: 1 / 2 / 4 / 8 / custom (capped at 50 for browser sanity)
+    //   - Each session walks the source independently (collection split
+    //     round-robin, recording replayed in full per session)
+    //   - Each session owns an isolated `captured` namespace so concurrent
+    //     pre/post-script writes don't collide
+    //   - Per-session progress tile in the result UI (current step,
+    //     pass count, duration)
+    //
+    // Phase 2 (separate ticket): distributed across multiple Bowire
+    // hosts, stagger ramp-up, per-session env policy, failure policy,
+    // landing the saved run in the Benchmarks pane.
     var parallelSessionsState = null;
 
+    // Sessions sketch presets surfaced by the Run-options modal.
+    // 1 / 2 / 4 / 8 covers the day-to-day workflow; the custom slot
+    // is a free-form input for stress runs (50 cap to keep the
+    // browser responsive — beyond that the operator should move to a
+    // host-side runner anyway).
+    var PARALLEL_SESSION_PRESETS = [1, 2, 4, 8];
+    var PARALLEL_SESSION_CAP = 50;
+
+    // Modal-driven Run-options picker. Replaces the bare bowirePrompt
+    // so the operator gets the preset shortcuts + an inline preview of
+    // what the run will do (collection → round-robin / recording →
+    // independent). Resolves to a session count or null on cancel.
+    function _openRunOptionsModal(kind, sourceId, sourceName) {
+        return new Promise(function (resolve) {
+            var existing = document.querySelector('.bowire-confirm-overlay');
+            if (existing) existing.remove();
+
+            var selected = 2;
+            var customMode = false;
+
+            var presetRow = el('div', { className: 'bowire-parallel-presets' });
+            var customInput;
+            var confirmBtn;
+
+            function updateConfirmEnabled() {
+                if (!confirmBtn) return;
+                var n = customMode ? parseInt(String(customInput.value || '').trim(), 10) : selected;
+                confirmBtn.disabled = !(n && n >= 1);
+            }
+
+            function selectPreset(n) {
+                customMode = false;
+                selected = n;
+                Array.prototype.forEach.call(
+                    presetRow.querySelectorAll('.bowire-parallel-preset'),
+                    function (btn) {
+                        btn.classList.toggle('selected',
+                            !btn.dataset.custom && parseInt(btn.dataset.n, 10) === n);
+                    });
+                presetRow.querySelector('.bowire-parallel-preset[data-custom="1"]')
+                    .classList.remove('selected');
+                customInput.disabled = true;
+                updateConfirmEnabled();
+            }
+
+            PARALLEL_SESSION_PRESETS.forEach(function (n) {
+                presetRow.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-parallel-preset' + (n === selected ? ' selected' : ''),
+                    'data-n': String(n),
+                    textContent: String(n),
+                    onClick: function () { selectPreset(n); }
+                }));
+            });
+            var customBtn = el('button', {
+                type: 'button',
+                className: 'bowire-parallel-preset',
+                'data-custom': '1',
+                textContent: 'Custom',
+                onClick: function () {
+                    customMode = true;
+                    Array.prototype.forEach.call(
+                        presetRow.querySelectorAll('.bowire-parallel-preset'),
+                        function (btn) { btn.classList.remove('selected'); });
+                    customBtn.classList.add('selected');
+                    customInput.disabled = false;
+                    customInput.focus();
+                    customInput.select();
+                    updateConfirmEnabled();
+                }
+            });
+            presetRow.appendChild(customBtn);
+
+            customInput = el('input', {
+                type: 'number',
+                className: 'bowire-parallel-custom-input',
+                value: '16',
+                min: '1',
+                max: String(PARALLEL_SESSION_CAP),
+                disabled: true,
+                'aria-label': 'Custom session count',
+                onInput: updateConfirmEnabled
+            });
+
+            var hintText = (kind === 'collection')
+                ? 'Each session walks a round-robin slice of the collection items. Variable substitution and pre/post-scripts run per-session with an isolated captured namespace.'
+                : 'Each session replays the full recording independently. Variable substitution and pre/post-scripts run per-session with an isolated captured namespace.';
+
+            confirmBtn = el('button', {
+                className: 'bowire-confirm-btn',
+                textContent: 'Run',
+                onClick: function () {
+                    var n = customMode ? parseInt(String(customInput.value || '').trim(), 10) : selected;
+                    if (!n || n < 1) return;
+                    if (n > PARALLEL_SESSION_CAP) n = PARALLEL_SESSION_CAP;
+                    overlay.remove();
+                    resolve(n);
+                }
+            });
+            var cancelBtn = el('button', {
+                className: 'bowire-confirm-btn cancel',
+                textContent: 'Cancel',
+                onClick: function () { overlay.remove(); resolve(null); }
+            });
+
+            var dialog = el('div', {
+                className: 'bowire-confirm-dialog bowire-parallel-dialog',
+                role: 'dialog',
+                'aria-modal': 'true',
+                'aria-labelledby': 'bowire-parallel-title'
+            },
+                el('div', { id: 'bowire-parallel-title', className: 'bowire-confirm-title',
+                    textContent: 'Run options — ' + (sourceName || (kind === 'collection' ? 'collection' : 'recording')) }),
+                el('div', { className: 'bowire-confirm-message', textContent: 'How many parallel sessions?' }),
+                presetRow,
+                customInput,
+                el('div', { className: 'bowire-parallel-hint', textContent: hintText }),
+                el('div', { className: 'bowire-confirm-actions' }, cancelBtn, confirmBtn)
+            );
+
+            var overlay = el('div', {
+                className: 'bowire-confirm-overlay',
+                onClick: function (e) { if (e.target === overlay) { overlay.remove(); resolve(null); } }
+            }, dialog);
+            document.body.appendChild(overlay);
+            updateConfirmEnabled();
+        });
+    }
+
     function _promptAndRunParallel(kind, sourceId, sourceName) {
-        bowirePrompt('How many parallel sessions?', {
-            title: 'Run in parallel sessions',
-            placeholder: 'e.g. 5',
-            confirmText: 'Run'
-        }).then(function (raw) {
-            if (raw == null) return;
-            var n = parseInt(String(raw).trim(), 10);
-            if (!n || n < 1) return;
-            if (n > 50) n = 50; // safety cap for the browser-side runner
+        _openRunOptionsModal(kind, sourceId, sourceName).then(function (n) {
+            if (n == null) return;
             _runParallelSessions(kind, sourceId, sourceName, n);
         });
     }
 
     async function _runParallelSessions(kind, sourceId, sourceName, sessionCount) {
+        var source = (kind === 'collection')
+            ? collectionsList.find(function (c) { return c.id === sourceId; })
+            : recordingsList.find(function (r) { return r.id === sourceId; });
+        if (!source) {
+            toast('Source ' + kind + ' not found', 'error');
+            return;
+        }
+
+        var totalSteps = (kind === 'collection')
+            ? (Array.isArray(source.items) ? source.items.length : 0)
+            : (Array.isArray(source.steps) ? source.steps.length : 0);
+        if (totalSteps === 0) {
+            toast('Nothing to run — source is empty', 'error');
+            return;
+        }
+
+        // Per-session work distribution.
+        //   collection: round-robin (session k owns items where idx % N === k)
+        //               so a 10-item collection across 4 sessions gives
+        //               sessions {3,3,2,2} items — even load with N coprime.
+        //   recording:  every session replays every step (independent
+        //               sessions — the parallel-load shape, not a
+        //               sharded one).
         var sessions = [];
         for (var i = 0; i < sessionCount; i++) {
-            sessions.push({ index: i, status: 'running', pass: null, durationMs: 0, error: null });
+            var workIndices;
+            if (kind === 'collection') {
+                workIndices = [];
+                for (var j = i; j < totalSteps; j += sessionCount) workIndices.push(j);
+            } else {
+                workIndices = null; // recording — all steps
+            }
+            sessions.push({
+                index: i,
+                status: 'running',
+                pass: null,
+                durationMs: 0,
+                error: null,
+                // Per-session captured-vars bag — keeps concurrent
+                // ctx.vars.captured.* writes from colliding. Each
+                // session reads + writes its own object; render +
+                // post-run inspection can show the per-session
+                // capture set without a global-bag race.
+                captured: {},
+                stepIndex: -1,
+                stepTotal: kind === 'collection' ? workIndices.length : totalSteps,
+                workIndices: workIndices,
+                passCount: 0,
+                failCount: 0,
+                results: []
+            });
         }
         parallelSessionsState = {
             kind: kind,
             sourceId: sourceId,
             sourceName: sourceName,
             sessionCount: sessionCount,
+            totalSteps: totalSteps,
             sessions: sessions,
-            startedAt: 0,  // wallclock unavailable in the JS bundle's
-                           // sandbox; the toast carries 'just now' instead
-            status: 'running'
+            status: 'running',
+            startedAt: Date.now(),
+            durationMs: 0
         };
         render();
         toast('Starting ' + sessionCount + ' parallel sessions on ' + sourceName, 'info');
 
         var runner = (kind === 'collection') ? _runCollectionSession : _runRecordingSession;
-        var source = (kind === 'collection')
-            ? collectionsList.find(function (c) { return c.id === sourceId; })
-            : recordingsList.find(function (r) { return r.id === sourceId; });
-        if (!source) {
-            toast('Source ' + kind + ' not found', 'error');
-            parallelSessionsState = null;
-            render();
-            return;
-        }
-
         var startMs = performance.now();
         var promises = sessions.map(function (s) {
-            return runner(source).then(function (result) {
+            return runner(source, s).then(function (result) {
                 s.status = 'done';
                 s.pass = !!result.pass;
                 s.durationMs = result.durationMs;
@@ -82,41 +256,117 @@
         render();
     }
 
-    // One isolated collection session — sequential through its items.
-    // Stateless: takes the collection object, returns aggregate result.
-    async function _runCollectionSession(col) {
+    // One isolated collection session — sequential through its assigned
+    // item slice. `session.workIndices` holds the round-robin slice;
+    // `session.captured` is the per-session vars bag forwarded into
+    // pre/post-scripts so concurrent sessions don't write each other's
+    // capture state.
+    async function _runCollectionSession(col, session) {
         var startMs = performance.now();
         var results = [];
         var allPass = true;
-        for (var i = 0; i < col.items.length; i++) {
+        var indices = session.workIndices || col.items.map(function (_, i) { return i; });
+        for (var k = 0; k < indices.length; k++) {
+            session.stepIndex = k;
+            render();
+            var item = col.items[indices[k]];
             try {
-                var r = await runCollectionItem(col.items[i]);
+                var r = await runCollectionItem(item, { capturedBag: session.captured });
                 results.push(r);
-                if (!r.pass) allPass = false;
+                if (r.pass) session.passCount++; else { session.failCount++; allPass = false; }
             } catch (e) {
                 allPass = false;
+                session.failCount++;
                 results.push({ pass: false, status: 'NetworkError', error: e.message });
             }
         }
         return { pass: allPass, results: results, durationMs: performance.now() - startMs };
     }
 
-    // One isolated recording session — sequential through its steps.
-    async function _runRecordingSession(rec) {
+    // One isolated recording session — sequential through every step
+    // with the per-session captured bag forwarded into pre/post-scripts.
+    async function _runRecordingSession(rec, session) {
         var startMs = performance.now();
         var results = [];
         var allPass = true;
         for (var i = 0; i < rec.steps.length; i++) {
+            session.stepIndex = i;
+            render();
             try {
-                var r = await replaySingleStep(rec.steps[i]);
+                var r = await replaySingleStep(rec.steps[i], { capturedBag: session.captured });
                 results.push(r);
-                if (!r.pass) allPass = false;
+                if (r.pass) session.passCount++; else { session.failCount++; allPass = false; }
             } catch (e) {
                 allPass = false;
+                session.failCount++;
                 results.push({ pass: false, status: 'NetworkError', error: e.message });
             }
         }
         return { pass: allPass, results: results, durationMs: performance.now() - startMs };
+    }
+
+    // Per-session live tiles rendered under the source toolbar while a
+    // parallel run is in flight (and the post-run summary). Caller
+    // passes the (kind, sourceId) of the panel it's rendering — we
+    // bail when the active parallel-sessions run belongs to a
+    // different source so two recordings/collections can have their
+    // own panels without cross-contamination.
+    function renderParallelSessionsPanel(kind, sourceId) {
+        if (!parallelSessionsState) return null;
+        if (parallelSessionsState.kind !== kind) return null;
+        if (parallelSessionsState.sourceId !== sourceId) return null;
+
+        var st = parallelSessionsState;
+        var panel = el('div', { className: 'bowire-parallel-panel' });
+
+        var passed = st.sessions.filter(function (s) { return s.pass; }).length;
+        var failed = st.sessions.filter(function (s) { return s.status === 'done' && !s.pass; }).length;
+        var running = st.sessions.filter(function (s) { return s.status === 'running'; }).length;
+        var headerText = st.status === 'running'
+            ? running + ' running, ' + passed + ' passed, ' + failed + ' failed'
+            : passed + ' / ' + st.sessionCount + ' sessions passed'
+                + ' in ' + Math.round(st.durationMs) + ' ms';
+        panel.appendChild(el('div', { className: 'bowire-parallel-panel-header' },
+            el('strong', { textContent: 'Parallel sessions' }),
+            el('span', { className: 'bowire-parallel-panel-summary', textContent: headerText }),
+            st.status === 'done' ? el('button', {
+                type: 'button',
+                className: 'bowire-parallel-panel-dismiss',
+                title: 'Dismiss',
+                'aria-label': 'Dismiss parallel sessions panel',
+                textContent: '×',
+                onClick: function () { parallelSessionsState = null; render(); }
+            }) : null
+        ));
+
+        var tiles = el('div', { className: 'bowire-parallel-tiles' });
+        st.sessions.forEach(function (s) {
+            var statusClass = s.status === 'done'
+                ? (s.pass ? ' pass' : ' fail')
+                : ' running';
+            var progressText;
+            if (s.status === 'running') {
+                var nth = s.stepIndex >= 0 ? (s.stepIndex + 1) : 0;
+                progressText = 'step ' + nth + ' / ' + s.stepTotal;
+            } else {
+                progressText = s.passCount + ' pass'
+                    + (s.failCount > 0 ? ' / ' + s.failCount + ' fail' : '')
+                    + ' · ' + Math.round(s.durationMs) + ' ms';
+            }
+            var tile = el('div', { className: 'bowire-parallel-tile' + statusClass },
+                el('span', { className: 'bowire-parallel-tile-index',
+                    textContent: '#' + (s.index + 1) }),
+                el('span', { className: 'bowire-parallel-tile-status',
+                    textContent: s.status === 'done' ? (s.pass ? 'PASS' : 'FAIL') : 'RUNNING' }),
+                el('span', { className: 'bowire-parallel-tile-progress', textContent: progressText }),
+                s.error ? el('span', { className: 'bowire-parallel-tile-error',
+                    title: s.error, textContent: s.error.slice(0, 60) }) : null
+            );
+            tiles.appendChild(tile);
+        });
+        panel.appendChild(tiles);
+
+        return panel;
     }
 
     // ---- Collection Runner ----
@@ -171,7 +421,15 @@
         render();
     }
 
-    function runCollectionItem(item) {
+    function runCollectionItem(item, opts) {
+        // Optional opts.capturedBag — per-session captured-vars bag
+        // forwarded into pre/post-scripts (#132 parallel sessions).
+        // Collection items don't bind pre/post-scripts today, but the
+        // signature is forward-compatible so a future "scripts on
+        // collection items" patch can thread the bag through without
+        // touching every caller.
+        // eslint-disable-next-line no-unused-vars
+        var capturedBag = opts && opts.capturedBag ? opts.capturedBag : null;
         // Only unary items can be replayed — streaming would need
         // the SSE endpoint and is skipped (same as recording replay).
         if (item.methodType && item.methodType !== 'Unary') {
@@ -393,6 +651,12 @@
         ));
 
         pane.appendChild(toolbar);
+
+        // #132 — per-session tiles for an in-flight (or just-finished)
+        // parallel-sessions run on THIS collection. Returns null when
+        // there's no run targeting this source; cheap when present.
+        var parallelPanel = renderParallelSessionsPanel('collection', col.id);
+        if (parallelPanel) pane.appendChild(parallelPanel);
 
         // Item list
         var stepsPane = el('div', { className: 'bowire-recording-steps' });
