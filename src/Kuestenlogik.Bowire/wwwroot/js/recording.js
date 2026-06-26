@@ -212,6 +212,19 @@
     }
 
     function startRecording(name) {
+        // Recordings are workspace-scoped (wsKey() persists under
+        // bowire_ws_<id>_recordings). Without an active workspace
+        // wsKey() routes to an 'orphan' namespace that the operator
+        // has no UI to browse — the recording IS captured but lands
+        // somewhere invisible. Same gate-spirit as the env-create
+        // disable in the topbar dropdown: don't start a flow whose
+        // result has nowhere to land.
+        if (!activeWorkspaceId) {
+            if (typeof toast === 'function') {
+                toast('Activate a workspace first — recordings live inside a workspace.', 'error');
+            }
+            return;
+        }
         // If the most recent recording is empty (0 steps), reuse it
         // instead of piling another empty 'Recording <timestamp>'
         // entry onto the list. Operators who tap Start Recording

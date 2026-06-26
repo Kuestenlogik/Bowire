@@ -19843,12 +19843,17 @@ not as the
 .bowire-request-builder-grpc-free-input {
     flex: 1;
     height: 28px;
-    padding: 0 8px;
+    padding: 0 10px;
     background: var(--bowire-bg-elevated);
     border: 1px solid var(--bowire-border, #2a2a2a);
     border-radius: 4px;
     color: var(--bowire-text);
-    font: 400 12px/1 var(--bowire-font-mono, monospace);
+    /* line-height:1 sat the text against the top of the box; the
+       browser's input rendering wasn't using the flex centring of
+       the row. Use 'normal' so the text vertical-centres inside
+       the input itself. */
+    font: 400 12px var(--bowire-font-mono, monospace);
+    line-height: normal;
 }
 .bowire-request-builder-grpc-free-sep { color: var(--bowire-text-muted, #888); }
 .bowire-request-builder-grpc-svc {
