@@ -261,6 +261,113 @@
         return benchmarksList.find(function (s) { return s.id === id; }) || null;
     }
 
+    // ---- #231 'random' target shape ----
+    //
+    // A 'random' target carries a POOL spec + a per-iteration pick
+    // count. On each VU iteration the runner expands the pool into a
+    // concrete list of sub-targets (one of: discovered methods, items
+    // of a saved collection, or steps of a saved recording), shuffles
+    // the list, and picks the first N. The picked sub-targets are
+    // dispatched sequentially within the iteration; iteration-level
+    // pass = all sub-picks pass, durationMs = sum.
+    //
+    // Shape: { type: 'random', pool: 'workspace' | 'collection' | 'recording',
+    //          collectionId?, recordingId?, count }
+    //
+    // - pool === 'workspace': picks from every method on every
+    //   discovered service. Useful for fuzz / chaos load (#231 main
+    //   acceptance — "anything reachable").
+    // - pool === 'collection': picks from a saved collection's items.
+    //   Each item is treated as a method target.
+    // - pool === 'recording': picks from a saved recording's steps.
+    //   Each step is treated as a method target.
+    //
+    // The pool is recomputed each iteration so newly-discovered
+    // services / new collection items / new recording steps come in
+    // without a benchmark-restart. Count defaults to 1.
+
+    // Resolve a 'random' target into its concrete sub-target list.
+    // Returns method-shaped sub-targets (so _invokeBenchmarkTarget can
+    // re-enter without special-casing). Empty list ⇒ pool drained or
+    // pool source missing; caller surfaces NoPool / MissingPool.
+    function _expandRandomPool(target) {
+        if (!target) return [];
+        var pool = target.pool || 'workspace';
+        var out = [];
+        if (pool === 'workspace') {
+            var svcs = (typeof services !== 'undefined' ? services : []);
+            svcs.forEach(function (svc) {
+                var methods = (svc && Array.isArray(svc.methods)) ? svc.methods : [];
+                methods.forEach(function (m) {
+                    var body = '{}';
+                    if (typeof generateDefaultJson === 'function') {
+                        try { body = generateDefaultJson(m.inputType, 0); }
+                        catch { /* keep '{}' */ }
+                    }
+                    out.push({
+                        type: 'method',
+                        service: svc.name,
+                        method: m.name,
+                        protocol: svc.source || null,
+                        body: body,
+                        metadata: {},
+                        serverUrl: null
+                    });
+                });
+            });
+            return out;
+        }
+        if (pool === 'collection') {
+            var col = (typeof collectionsList !== 'undefined' ? collectionsList : [])
+                .find(function (c) { return c.id === target.collectionId; });
+            if (!col || !Array.isArray(col.items)) return [];
+            col.items.forEach(function (it) {
+                out.push({
+                    type: 'method',
+                    service: it.service || '',
+                    method: it.method || '',
+                    protocol: it.protocol || null,
+                    body: it.body || '{}',
+                    metadata: it.metadata || {},
+                    serverUrl: null
+                });
+            });
+            return out;
+        }
+        if (pool === 'recording') {
+            var rec = (typeof recordingsList !== 'undefined' ? recordingsList : [])
+                .find(function (r) { return r.id === target.recordingId; });
+            if (!rec || !Array.isArray(rec.steps)) return [];
+            rec.steps.forEach(function (st) {
+                out.push({
+                    type: 'method',
+                    service: st.service || '',
+                    method: st.method || '',
+                    protocol: st.protocol || null,
+                    body: st.request || '{}',
+                    metadata: st.metadata || {},
+                    serverUrl: null
+                });
+            });
+            return out;
+        }
+        return [];
+    }
+
+    // Fisher-Yates partial shuffle. Mutates `arr` in place and returns
+    // the first `k` elements as the picked slice. k > arr.length is
+    // clamped to the full array (no replacement — each iteration picks
+    // distinct endpoints per #231 acceptance).
+    function _pickRandomSubset(arr, k) {
+        if (!Array.isArray(arr) || arr.length === 0) return [];
+        var pick = Math.max(1, Math.min(k | 0 || 1, arr.length));
+        for (var i = 0; i < pick; i++) {
+            var j = i + Math.floor(Math.random() * (arr.length - i));
+            var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+        }
+        return arr.slice(0, pick);
+    }
+
     // Per-target invocation dispatch. Returns {pass, durationMs,
     // statusLabel} so the phase-loop can aggregate uniformly regardless
     // of target type.
@@ -363,43 +470,116 @@
             }
         }
 
+        if (target.type === 'random') {
+            // Expand the pool fresh each iteration so newly-discovered
+            // services / new collection items / new recording steps
+            // land in the rotation without a benchmark restart.
+            var poolItems = _expandRandomPool(target);
+            if (poolItems.length === 0) {
+                return { pass: false, durationMs: 0, statusLabel: 'EmptyPool' };
+            }
+            var picked = _pickRandomSubset(poolItems, target.count || 1);
+            // Aggregate per-sub-pick — pass = all pass, durationMs =
+            // sum (sequential), statusLabel = first-fail or 'OK'.
+            // Per-method status counts already accumulate naturally
+            // because each pick goes through the regular method
+            // dispatch which writes its own 'service/method' label
+            // into the iteration-targets array via the caller.
+            var totalMs = 0;
+            var firstFailLabel = null;
+            var allPass = true;
+            var pickedLabels = [];
+            for (var pi = 0; pi < picked.length; pi++) {
+                pickedLabels.push((picked[pi].service || '?') + '/' + (picked[pi].method || '?'));
+                var rs = await _invokeBenchmarkTarget(picked[pi]);
+                totalMs += rs.durationMs || 0;
+                if (!rs.pass) {
+                    allPass = false;
+                    if (!firstFailLabel) firstFailLabel = rs.statusLabel || 'Error';
+                }
+            }
+            return {
+                pass: allPass,
+                durationMs: totalMs,
+                statusLabel: allPass ? 'OK' : (firstFailLabel || 'Error'),
+                pickedLabels: pickedLabels
+            };
+        }
+
         return { pass: false, durationMs: 0, statusLabel: 'UnknownType' };
+    }
+
+    // Build a stable, compact label for a target — used in per-iteration
+    // tracking (#231 runResult.iterationTargets[]) so post-run UI can
+    // slice percentiles per endpoint. 'random' resolves to its own
+    // identity at this level; per-pick labels are captured separately
+    // by the dispatch and merged into the iteration entry by the caller.
+    function _targetTrackingLabel(target) {
+        if (!target) return '?';
+        if (target.type === 'method') {
+            return (target.service || '?') + '/' + (target.method || '?');
+        }
+        if (target.type === 'collection-ref') return 'collection:' + (target.collectionId || '?');
+        if (target.type === 'recording-ref') return 'recording:' + (target.recordingId || '?');
+        if (target.type === 'random') return 'random:' + (target.pool || 'workspace');
+        return target.type || '?';
     }
 
     // One VU iteration walks the spec's targets. mode === 'parallel'
     // fires them all concurrently; pass = ALL pass, durationMs =
     // max. mode === 'sequential' walks them one-by-one; pass = all
     // pass, durationMs = sum.
+    //
+    // Returns an extra `pickedLabels` array — the concrete endpoint
+    // labels actually invoked on this iteration. For 'method' /
+    // 'collection-ref' / 'recording-ref' targets this is just the
+    // target's own label; for 'random' targets it is whatever the
+    // shuffler picked. The caller (_runEnvelopePhase) folds these
+    // into benchmark.iterationTargets[] so the post-run UI can
+    // bucket percentiles per endpoint.
     async function _runEnvelopeIteration(spec) {
         var targets = Array.isArray(spec.targets) ? spec.targets : [];
         if (targets.length === 0) {
-            return { pass: false, durationMs: 0, statusLabel: 'NoTargets' };
+            return { pass: false, durationMs: 0, statusLabel: 'NoTargets', pickedLabels: [] };
         }
         if (spec.mode === 'parallel' && targets.length > 1) {
             var results = await Promise.all(targets.map(_invokeBenchmarkTarget));
             var pass = results.every(function (r) { return r && r.pass; });
             var maxMs = 0;
             var firstFailLabel = null;
-            results.forEach(function (r) {
+            var allPicked = [];
+            results.forEach(function (r, i) {
                 if (r.durationMs > maxMs) maxMs = r.durationMs;
                 if (!r.pass && !firstFailLabel) firstFailLabel = r.statusLabel;
+                if (Array.isArray(r.pickedLabels) && r.pickedLabels.length > 0) {
+                    allPicked.push.apply(allPicked, r.pickedLabels);
+                } else {
+                    allPicked.push(_targetTrackingLabel(targets[i]));
+                }
             });
             return {
                 pass: pass,
                 durationMs: maxMs,
-                statusLabel: pass ? 'OK' : (firstFailLabel || 'Error')
+                statusLabel: pass ? 'OK' : (firstFailLabel || 'Error'),
+                pickedLabels: allPicked
             };
         }
         // sequential — walk targets in order, abort on first fail
         var totalMs = 0;
+        var seqPicked = [];
         for (var i = 0; i < targets.length; i++) {
             var rs = await _invokeBenchmarkTarget(targets[i]);
             totalMs += rs.durationMs || 0;
+            if (Array.isArray(rs.pickedLabels) && rs.pickedLabels.length > 0) {
+                seqPicked.push.apply(seqPicked, rs.pickedLabels);
+            } else {
+                seqPicked.push(_targetTrackingLabel(targets[i]));
+            }
             if (!rs.pass) {
-                return { pass: false, durationMs: totalMs, statusLabel: rs.statusLabel };
+                return { pass: false, durationMs: totalMs, statusLabel: rs.statusLabel, pickedLabels: seqPicked };
             }
         }
-        return { pass: true, durationMs: totalMs, statusLabel: 'OK' };
+        return { pass: true, durationMs: totalMs, statusLabel: 'OK', pickedLabels: seqPicked };
     }
 
     // One phase: spawn `vus` workers; each pulls iterations until
@@ -435,6 +615,14 @@
                 }
                 var lbl = rs.statusLabel || (rs.pass ? 'OK' : 'Error');
                 benchmark.statusCounts[lbl] = (benchmark.statusCounts[lbl] || 0) + 1;
+                // #231 — Track the concrete endpoint labels actually
+                // invoked on this iteration so the post-run UI can slice
+                // percentiles per endpoint. Stored alongside durations
+                // by index — iterationTargets[i] is the picked labels
+                // for the i-th completed iteration.
+                if (Array.isArray(benchmark.iterationTargets)) {
+                    benchmark.iterationTargets.push(rs.pickedLabels || []);
+                }
                 benchmark.completed++;
 
                 if (typeof onProgress === 'function' && benchmark.total > 0
@@ -539,6 +727,12 @@
             ranAt: benchmark.startTime,
             durations: benchmark.durations.slice(),
             statusCounts: Object.assign({}, benchmark.statusCounts),
+            // #231 — Per-iteration picked endpoint labels. Stays empty
+            // for envelopes without a 'random' target since the other
+            // shapes always invoke the same fixed list; carrying the
+            // copy anyway keeps the lastRun shape stable for the
+            // post-run UI (it just renders zero distinct buckets).
+            iterationTargets: (benchmark.iterationTargets || []).slice(),
             success: benchmark.success,
             failure: benchmark.failure,
             total: benchmark.total,
@@ -567,6 +761,9 @@
             var rec = (typeof recordingsList !== 'undefined' ? recordingsList : [])
                 .find(function (r) { return r.id === target.recordingId; });
             return rec ? rec.name : ('recording:' + target.recordingId);
+        }
+        if (target.type === 'random') {
+            return 'Random[' + (target.pool || 'workspace') + '] × ' + (target.count || 1);
         }
         return target.type || '?';
     }
@@ -868,6 +1065,18 @@
             } else if (t.type === 'recording-ref') {
                 if (!(typeof recordingsList !== 'undefined'
                         ? recordingsList : []).find(function (r) { return r.id === t.recordingId; })) return false;
+            } else if (t.type === 'random') {
+                // The pool source must exist AND yield at least one
+                // sub-target — otherwise the first iteration would
+                // bail with EmptyPool / MissingPool.
+                if (t.pool === 'collection') {
+                    if (!(typeof collectionsList !== 'undefined'
+                            ? collectionsList : []).find(function (c) { return c.id === t.collectionId; })) return false;
+                } else if (t.pool === 'recording') {
+                    if (!(typeof recordingsList !== 'undefined'
+                            ? recordingsList : []).find(function (r) { return r.id === t.recordingId; })) return false;
+                }
+                if (_expandRandomPool(t).length === 0) return false;
             }
         }
         return true;
@@ -877,6 +1086,7 @@
         if (!target) return 'plug';
         if (target.type === 'collection-ref') return 'folder';
         if (target.type === 'recording-ref') return 'recording';
+        if (target.type === 'random') return 'lightning';
         return 'plug';
     }
 
@@ -897,6 +1107,23 @@
             var rec = (typeof recordingsList !== 'undefined' ? recordingsList : [])
                 .find(function (r) { return r.id === target.recordingId; });
             return rec ? rec.name : ('Missing recording · ' + target.recordingId);
+        }
+        if (target.type === 'random') {
+            var poolSize = _expandRandomPool(target).length;
+            var pickN = Math.max(1, target.count || 1);
+            var src;
+            if (target.pool === 'collection') {
+                var rc = (typeof collectionsList !== 'undefined' ? collectionsList : [])
+                    .find(function (c) { return c.id === target.collectionId; });
+                src = 'collection · ' + (rc ? rc.name : ('missing · ' + target.collectionId));
+            } else if (target.pool === 'recording') {
+                var rr = (typeof recordingsList !== 'undefined' ? recordingsList : [])
+                    .find(function (r) { return r.id === target.recordingId; });
+                src = 'recording · ' + (rr ? rr.name : ('missing · ' + target.recordingId));
+            } else {
+                src = 'workspace';
+            }
+            return 'Random · pick ' + pickN + ' of ' + poolSize + ' · ' + src;
         }
         return target.type || '?';
     }
@@ -952,6 +1179,21 @@
                         label: 'Recording replay',
                         onClick: function () {
                             spec.targets.push({ type: 'recording-ref', recordingId: null, stepIndex: null });
+                            persistBenchmarks(); render();
+                        }
+                    },
+                    {
+                        // #231 — Random pool. Pool defaults to 'workspace'
+                        // (every discovered method) so the seed is
+                        // immediately runnable when the workspace has
+                        // any services; operator narrows to a saved
+                        // collection or recording via the inline editor.
+                        label: 'Random pool',
+                        onClick: function () {
+                            spec.targets.push({
+                                type: 'random', pool: 'workspace',
+                                collectionId: null, recordingId: null, count: 1
+                            });
                             persistBenchmarks(); render();
                         }
                     }
@@ -1070,6 +1312,52 @@
             body.appendChild(_inlineSelectKeyed('Recording', target.recordingId, recList, 'id', 'name', function (v) {
                 target.recordingId = v; persistBenchmarks(); render();
             }));
+        } else if (target.type === 'random') {
+            // Pool source — workspace / collection / recording. Picking
+            // a different source clears the id of the previously-picked
+            // source so we don't end up with a stale collectionId on a
+            // 'workspace' pool.
+            body.appendChild(_inlineSelect('Pool source',
+                target.pool || 'workspace', ['workspace', 'collection', 'recording'],
+                function (v) {
+                    target.pool = v;
+                    if (v !== 'collection') target.collectionId = null;
+                    if (v !== 'recording') target.recordingId = null;
+                    persistBenchmarks(); render();
+                }));
+            if (target.pool === 'collection') {
+                var rCol = (typeof collectionsList !== 'undefined' ? collectionsList : []);
+                body.appendChild(_inlineSelectKeyed('Collection', target.collectionId, rCol, 'id', 'name', function (v) {
+                    target.collectionId = v; persistBenchmarks(); render();
+                }));
+            } else if (target.pool === 'recording') {
+                var rRec = (typeof recordingsList !== 'undefined' ? recordingsList : []);
+                body.appendChild(_inlineSelectKeyed('Recording', target.recordingId, rRec, 'id', 'name', function (v) {
+                    target.recordingId = v; persistBenchmarks(); render();
+                }));
+            }
+            // Pick-per-iteration. Bounded to the live pool size so the
+            // operator can't ask for 10 picks from a 3-endpoint pool —
+            // _pickRandomSubset would clamp anyway, but surfacing the
+            // ceiling makes the constraint visible.
+            var poolSize = _expandRandomPool(target).length;
+            var maxPick = Math.max(1, poolSize);
+            body.appendChild(_numberField('Pick per iteration',
+                Math.max(1, target.count || 1), 1, maxPick, function (v) {
+                    target.count = v; persistBenchmarks(); render();
+                }));
+            body.appendChild(el('div', {
+                className: 'bowire-envelope-field',
+                style: 'grid-column:1/-1'
+            },
+                el('div', {
+                    className: 'bowire-ws-detail-stat-hint',
+                    textContent: poolSize === 0
+                        ? 'Pool is empty — pick a discovered service / saved collection / recording with at least one entry.'
+                        : 'Pool size: ' + poolSize + ' endpoint' + (poolSize === 1 ? '' : 's')
+                            + '. Each iteration shuffles the pool and picks the first ' + Math.min(maxPick, target.count || 1) + '.'
+                })
+            ));
         }
         row.appendChild(body);
         return row;
@@ -1596,6 +1884,77 @@
                     el('div', {}, histRows)
                 ));
             }
+
+            // #231 — Per-endpoint breakdown. Only renders when the run
+            // hit more than one distinct endpoint (random-pool envelopes
+            // and multi-target sequential/parallel envelopes both
+            // qualify). For each label we report count + avg/p95 over
+            // its slice of durations (success rows only — failure rows
+            // didn't append to benchmark.durations). Skipped silently
+            // when iterationTargets is empty (legacy lastRun records).
+            var iterTargets = last.iterationTargets || [];
+            if (iterTargets.length > 0 && Array.isArray(last.durations)) {
+                var perEndpoint = {};
+                // iterationTargets[i] holds the labels invoked on
+                // iteration i; durations[i] holds the iteration's total
+                // ms when it passed. Bucket the duration into each
+                // contributing endpoint so a 'random' pick × 2 records
+                // a sample for both picked methods.
+                var di = 0;
+                for (var ii = 0; ii < iterTargets.length; ii++) {
+                    var labels = iterTargets[ii] || [];
+                    if (di < last.durations.length) {
+                        // Best-effort attribution — iterations are
+                        // pushed in completion order alongside durations
+                        // (failure iterations don't push a duration so
+                        // index walks at duration's pace). Empirically
+                        // good enough for the per-endpoint visualisation;
+                        // a stricter join would need ordered failure
+                        // markers which inflates the scratchpad.
+                        var ms = last.durations[di++];
+                        labels.forEach(function (lbl) {
+                            if (!perEndpoint[lbl]) perEndpoint[lbl] = { count: 0, sum: 0, samples: [] };
+                            perEndpoint[lbl].count++;
+                            perEndpoint[lbl].sum += ms;
+                            perEndpoint[lbl].samples.push(ms);
+                        });
+                    } else {
+                        labels.forEach(function (lbl) {
+                            if (!perEndpoint[lbl]) perEndpoint[lbl] = { count: 0, sum: 0, samples: [] };
+                            perEndpoint[lbl].count++;
+                        });
+                    }
+                }
+                var keys = Object.keys(perEndpoint);
+                if (keys.length > 1) {
+                    keys.sort(function (a, b) { return perEndpoint[b].count - perEndpoint[a].count; });
+                    var rows = keys.map(function (lbl) {
+                        var b = perEndpoint[lbl];
+                        var avg = b.samples.length > 0 ? b.sum / b.samples.length : 0;
+                        var sorted = b.samples.slice().sort(function (x, y) { return x - y; });
+                        var p95 = sorted.length > 0
+                            ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))]
+                            : 0;
+                        return el('div', { style: 'display:flex;align-items:center;gap:8px;margin:4px 0' },
+                            el('span', {
+                                style: 'flex:1;min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
+                                title: lbl,
+                                textContent: lbl
+                            }),
+                            el('span', { style: 'min-width:60px;text-align:right;font-size:12px',
+                                textContent: b.count + '×' }),
+                            el('span', { style: 'min-width:80px;text-align:right;font-size:12px;color:var(--bowire-muted)',
+                                textContent: 'avg ' + (Math.round(avg * 10) / 10) + ' ms' }),
+                            el('span', { style: 'min-width:80px;text-align:right;font-size:12px;color:var(--bowire-muted)',
+                                textContent: 'p95 ' + (Math.round(p95 * 10) / 10) + ' ms' })
+                        );
+                    });
+                    main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+                        el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Per-endpoint breakdown' }),
+                        el('div', {}, rows)
+                    ));
+                }
+            }
         } else if (!isThisRunning) {
             main.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
@@ -1725,6 +2084,23 @@
                         }));
                     });
                 }
+            } else if (t.type === 'random') {
+                // #231 — Artillery has no native random-pick; the
+                // closest fit is `requestFromList` which picks one step
+                // at random from an inline list per VU. We emit it
+                // `count` times so each Artillery iteration also fires
+                // `count` random picks. The pool resolves to concrete
+                // method steps via _expandRandomPool at export time —
+                // round-trip back to a 'random' target needs a
+                // dedicated Bowire-envelope export (the Bowire-native
+                // round-trip preserves the type natively).
+                var poolItems = _expandRandomPool(t);
+                if (poolItems.length > 0) {
+                    var randomSteps = poolItems.map(_envelopeMethodTargetToArtilleryStep);
+                    for (var rp = 0; rp < Math.max(1, t.count || 1); rp++) {
+                        flow.push({ requestFromList: randomSteps });
+                    }
+                }
             }
         });
 
@@ -1820,22 +2196,66 @@
         });
 
         // Build the default function — one fetch per method target.
+        // 'random' targets emit a small in-script shuffle-and-pick loop
+        // that picks `count` distinct entries from an inline pool array
+        // each VU iteration. We resolve the pool to concrete sub-targets
+        // at export time; round-tripping back to a 'random' target needs
+        // the native Bowire-envelope export.
         var targetCalls = [];
+        var randomPoolIdx = 0;
+        var randomPoolDecls = [];
         (spec.targets || []).forEach(function (t) {
-            if (t.type !== 'method') return;
-            targetCalls.push(
-                "    http.post(\n" +
-                "        baseUrl + '/api/invoke',\n" +
-                "        JSON.stringify({\n" +
-                "            service: '" + (t.service || '') + "',\n" +
-                "            method: '" + (t.method || '') + "',\n" +
-                "            protocol: " + (t.protocol ? "'" + t.protocol + "'" : 'null') + ",\n" +
-                "            messages: [" + JSON.stringify(t.body || '{}') + "],\n" +
-                "            metadata: " + JSON.stringify(t.metadata || null) + "\n" +
-                "        }),\n" +
-                "        { headers: { 'Content-Type': 'application/json' } }\n" +
-                "    );"
-            );
+            if (t.type === 'method') {
+                targetCalls.push(
+                    "    http.post(\n" +
+                    "        baseUrl + '/api/invoke',\n" +
+                    "        JSON.stringify({\n" +
+                    "            service: '" + (t.service || '') + "',\n" +
+                    "            method: '" + (t.method || '') + "',\n" +
+                    "            protocol: " + (t.protocol ? "'" + t.protocol + "'" : 'null') + ",\n" +
+                    "            messages: [" + JSON.stringify(t.body || '{}') + "],\n" +
+                    "            metadata: " + JSON.stringify(t.metadata || null) + "\n" +
+                    "        }),\n" +
+                    "        { headers: { 'Content-Type': 'application/json' } }\n" +
+                    "    );"
+                );
+            } else if (t.type === 'random') {
+                var poolItems = _expandRandomPool(t);
+                if (poolItems.length === 0) return;
+                var poolVar = '__bowirePool' + (randomPoolIdx++);
+                var poolPayloads = poolItems.map(function (sub) {
+                    return {
+                        service: sub.service || '',
+                        method: sub.method || '',
+                        protocol: sub.protocol || null,
+                        messages: [sub.body || '{}'],
+                        metadata: sub.metadata || null
+                    };
+                });
+                randomPoolDecls.push(
+                    "const " + poolVar + " = " + JSON.stringify(poolPayloads, null, 2)
+                        .replace(/\n/g, '\n') + ";"
+                );
+                var pickN = Math.max(1, t.count || 1);
+                targetCalls.push(
+                    "    // #231 random pool — shuffle in place, pick first " + pickN + "\n" +
+                    "    {\n" +
+                    "        const pool = " + poolVar + ".slice();\n" +
+                    "        const pick = Math.min(" + pickN + ", pool.length);\n" +
+                    "        for (let i = 0; i < pick; i++) {\n" +
+                    "            const j = i + Math.floor(Math.random() * (pool.length - i));\n" +
+                    "            [pool[i], pool[j]] = [pool[j], pool[i]];\n" +
+                    "        }\n" +
+                    "        for (let i = 0; i < pick; i++) {\n" +
+                    "            http.post(\n" +
+                    "                baseUrl + '/api/invoke',\n" +
+                    "                JSON.stringify(pool[i]),\n" +
+                    "                { headers: { 'Content-Type': 'application/json' } }\n" +
+                    "            );\n" +
+                    "        }\n" +
+                    "    }"
+                );
+            }
         });
 
         return "// Generated from Bowire envelope '" + (spec.name || '(unnamed)') + "'\n" +
@@ -1848,6 +2268,7 @@
             "};\n" +
             "\n" +
             "const baseUrl = '" + _envelopeArtilleryBaseUrl() + "';\n" +
+            (randomPoolDecls.length > 0 ? "\n" + randomPoolDecls.join('\n\n') + "\n" : "") +
             "\n" +
             "export default function () {\n" +
             (targetCalls.length > 0 ? targetCalls.join('\n') : "    // No method targets in envelope.") + "\n" +
