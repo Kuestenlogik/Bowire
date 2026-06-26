@@ -823,6 +823,19 @@
         spec.lastRun = thisRun;
 
         persistBenchmarks();
+        // #303 — advance the run-a-benchmark tour the moment a run
+        // settles (cancelled or not — the operator saw the result panel
+        // either way). Detail carries the run snapshot so a future tour
+        // step could read the percentile to underline a finding.
+        if (typeof window !== 'undefined'
+            && typeof window.bowireFireTourEvent === 'function') {
+            window.bowireFireTourEvent('benchmark-run-complete', {
+                specId: spec.id,
+                cancelled: !!benchmark.cancelled,
+                durationMs: Math.round(benchmark.endTime - benchmark.startTime),
+                stats: stats
+            });
+        }
         if (typeof onProgress === 'function') onProgress();
         return spec.lastRun;
     }
@@ -2091,6 +2104,7 @@
                     ? 'Pick one in the sidebar to see its config and last run, or start a new benchmark from a method, collection or recording.'
                     : 'A benchmark repeats N runs at K concurrency and reports latency percentiles + status distribution. Three shapes: single method (one unary call), collection (replay every item), recording (replay every step). Each source has a Benchmark button that prefills the right shape — start there, or create an empty spec.',
                 actions: hasAny ? [{
+                    id: 'bowire-bench-new-btn',
                     label: 'New benchmark',
                     primary: true,
                     onClick: function () {
@@ -2100,6 +2114,10 @@
                     }
                 }] : [
                     {
+                        // #303 — stable id consumed by the run-a-benchmark
+                        // tour to spotlight the New-benchmark CTA on the
+                        // empty card.
+                        id: 'bowire-bench-new-btn',
                         label: 'New benchmark',
                         primary: true,
                         onClick: function () {
@@ -2130,6 +2148,19 @@
                             railMode = 'recordings';
                             try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
                             render();
+                        }
+                    },
+                    // #303 — secondary tour for the Benchmarks rail.
+                    // Force-mode so the empty-card CTA re-triggers it
+                    // even after the saved-once flag is set.
+                    {
+                        id: 'bowire-bench-empty-tour-btn',
+                        label: 'Take a tour',
+                        onClick: function () {
+                            if (typeof window !== 'undefined'
+                                && typeof window.bowireStartRunBenchmarkTour === 'function') {
+                                window.bowireStartRunBenchmarkTour({ force: true });
+                            }
                         }
                     }
                 ]

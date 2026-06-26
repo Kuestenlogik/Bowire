@@ -3402,11 +3402,53 @@
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
         if (envs.length === 0) {
-            section.appendChild(el('p', {
-                className: 'bowire-ws-detail-stat-hint',
-                style: 'margin-top:8px',
-                textContent: 'No environments in this workspace yet. Create one to scope variables / auth per deployment stage.'
+            // #303 — empty state uses the canonical empty-card pattern
+            // so it can host a per-rail "Take a tour" CTA alongside the
+            // create affordance. Without this the section was a single
+            // hint sentence + the section's own "+ New environment"
+            // button at the bottom, which left no place to anchor the
+            // tour entry point.
+            var envEmptyWrap = el('div', { style: 'margin-top:8px' });
+            envEmptyWrap.appendChild(renderEmptyCard({
+                icon: 'globe',
+                headline: 'No environments yet',
+                body: 'Environments scope variables, auth tokens, and secrets per deployment stage. Create one for "staging", another for "prod", and toggle the active env from the topbar to re-point your requests.',
+                actions: [
+                    {
+                        label: 'New environment',
+                        primary: true,
+                        onClick: function () {
+                            if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
+                            if (typeof openCreateEnvironmentDialog !== 'function') return;
+                            openCreateEnvironmentDialog(function (env) {
+                                if (typeof envSidebarSelectedId !== 'undefined') {
+                                    envSidebarSelectedId = env.id;
+                                }
+                                workspaceTreeSelection = { wsId: ws.id, kind: 'env', value: env.id };
+                                render();
+                                if (typeof window !== 'undefined'
+                                    && typeof window.bowireFireTourEvent === 'function') {
+                                    window.bowireFireTourEvent('environment-created');
+                                }
+                            });
+                        }
+                    },
+                    {
+                        // #303 — secondary tour: create env → add vars →
+                        // reference {{var}} in a request. Force-mode so
+                        // the affordance re-runs after dismissal.
+                        id: 'bowire-envs-empty-tour-btn',
+                        label: 'Take a tour',
+                        onClick: function () {
+                            if (typeof window !== 'undefined'
+                                && typeof window.bowireStartSetupEnvironmentsTour === 'function') {
+                                window.bowireStartSetupEnvironmentsTour({ force: true });
+                            }
+                        }
+                    }
+                ]
             }));
+            section.appendChild(envEmptyWrap);
         } else {
             var activeEnvIdNow = (typeof getActiveEnvId === 'function') ? getActiveEnvId() : null;
             var list = el('div', { className: 'bowire-env-overview-list' });
@@ -3554,7 +3596,12 @@
             });
             section.appendChild(list);
         }
+        // #303 — stable id so the set-up-environments tour can spotlight
+        // the canonical "+ New environment" entry point on populated
+        // overviews (the empty-card variant carries its own create
+        // action with the same fire-event hook).
         section.appendChild(el('button', {
+            id: 'bowire-workspace-env-new-btn',
             className: 'bowire-ws-detail-action',
             style: 'margin-top:8px',
             textContent: '+ New environment',
@@ -3567,6 +3614,10 @@
                     }
                     workspaceTreeSelection = { wsId: ws.id, kind: 'env', value: env.id };
                     render();
+                    if (typeof window !== 'undefined'
+                        && typeof window.bowireFireTourEvent === 'function') {
+                        window.bowireFireTourEvent('environment-created');
+                    }
                 });
             }
         }));
@@ -4735,15 +4786,31 @@
                     body: (mocksList && mocksList.length > 0)
                         ? 'Pick a running mock from the sidebar to see its URL, live request log, and stop control.'
                         : 'Mocks are spun up from a recording — switch to the Recordings mode and use "Run as mock" on any session.',
-                    actions: (mocksList && mocksList.length > 0) ? [] : [{
-                        label: 'Go to Recordings',
-                        primary: true,
-                        onClick: function () {
-                            railMode = 'recordings';
-                            try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
-                            render();
+                    actions: (mocksList && mocksList.length > 0) ? [] : [
+                        {
+                            label: 'Go to Recordings',
+                            primary: true,
+                            onClick: function () {
+                                railMode = 'recordings';
+                                try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
+                                render();
+                            }
+                        },
+                        // #303 — secondary tour: walks Recordings → Use as
+                        // mock → Mocks rail. Force-mode so the operator
+                        // can re-trigger from the same empty card after
+                        // dismissing once.
+                        {
+                            id: 'bowire-mocks-empty-tour-btn',
+                            label: 'Take a tour',
+                            onClick: function () {
+                                if (typeof window !== 'undefined'
+                                    && typeof window.bowireStartBuildMockTour === 'function') {
+                                    window.bowireStartBuildMockTour({ force: true });
+                                }
+                            }
                         }
-                    }]
+                    ]
                 }));
             } else {
                 var url = 'http://127.0.0.1:' + selectedMock.port;
