@@ -1588,18 +1588,36 @@
     function isRailEnabled(id) {
         if (ALWAYS_ON_RAIL_MODES.indexOf(id) >= 0) return true;
         var pref = getEnabledRails();
-        if (pref === null) return true;     // no pref set → all-enabled default
+        if (pref === null) {
+            // No preference set → fall back to the descriptor's
+            // DefaultEnabled flag (#304 introduced default-off rails;
+            // Collections ships disabled, since the Compose rail's
+            // side panel is now the primary surface). Built lazily
+            // off _railModes so it stays in sync with whatever the
+            // host shipped.
+            if (typeof _railModes !== 'undefined' && Array.isArray(_railModes)) {
+                for (var ri = 0; ri < _railModes.length; ri++) {
+                    if (_railModes[ri].id === id) {
+                        return _railModes[ri].defaultEnabled !== false;
+                    }
+                }
+            }
+            return true;
+        }
         return pref.indexOf(id) >= 0;
     }
     function _allToggleableRailIds() {
         // Lazy-evaluated against the live _railModes catalogue
         // (declared in render-sidebar.js, hoisted into the IIFE
         // scope). Filter out hideFromRail entries and the always-on
-        // set — they're not user-toggleable.
+        // set — they're not user-toggleable. Default-off rails
+        // (#304) are excluded too so that the first seed of the
+        // enabled-rails list doesn't accidentally turn them on.
         if (typeof _railModes === 'undefined' || !Array.isArray(_railModes)) return [];
         return _railModes
             .filter(function (m) { return !m.hideFromRail; })
             .filter(function (m) { return ALWAYS_ON_RAIL_MODES.indexOf(m.id) < 0; })
+            .filter(function (m) { return m.defaultEnabled !== false; })
             .map(function (m) { return m.id; });
     }
     // App-drawer (MudBlazor-style responsive). Toggled by the B/burger

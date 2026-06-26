@@ -396,7 +396,12 @@
             );
             strip.appendChild(p);
         }
-        if (entry.collections) {
+        // #304 — only surface the 'C' pill when the standalone
+        // Collections rail is enabled. Otherwise the click target
+        // jumps the operator into a rail they've opted out of; the
+        // Compose-rail side panel is the canonical surface now.
+        if (entry.collections
+            && (typeof isRailEnabled !== 'function' || isRailEnabled('collections'))) {
             pill('C', entry.collections, 'collection',
                 entry.collections + ' collection' + (entry.collections === 1 ? '' : 's') + ' contain this method',
                 function () {
@@ -2473,7 +2478,16 @@
         // / Variables / Secrets). Single-table data fits a tab, not a
         // tree leaf (the leaves are for entity LISTS like
         // sources/envs/collections/recordings).
-        children.push(_buildCollectionsTreeNode(w));
+        // #304 — Collections tree node gated on the Collections rail
+        // being enabled. The Compose rail's side panel is now the
+        // primary surface for managing collections + presets, so the
+        // standalone tree node is opt-in via Settings → Rail modes.
+        // The dispatch path (railMode='collections') stays alive so
+        // embedded hosts that route there programmatically keep
+        // working unchanged.
+        if (typeof isRailEnabled !== 'function' || isRailEnabled('collections')) {
+            children.push(_buildCollectionsTreeNode(w));
+        }
         children.push(_buildRecordingsTreeNode(w));
 
         // Same Lucide 'layers' glyph as the topbar chip + dropdown rows

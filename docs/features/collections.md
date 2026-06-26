@@ -1,20 +1,38 @@
 ---
-summary: 'Named, ordered groups of saved requests.'
+summary: 'Named, ordered groups of saved requests, managed from the Compose rail side panel.'
 ---
 
 # Collections
 
 Named, ordered groups of saved requests. Each collection holds items that store the protocol, service, method, request body, metadata, and server URL &mdash; replay the whole collection, share it with teammates, or commit it to a repo.
 
+## Where collections live: the Compose rail side panel
+
+Collections + Presets are managed from the **Compose rail's side panel**. Open the Compose rail from the left strip, then expand the side panel from the gutter handle: the panel shows both buckets in tabs, the current collection's items in a draggable list, and per-item replay buttons inline.
+
+Every save flow lands in the same panel:
+
+- **Discover** &mdash; right-click a method and pick **Add to&hellip; &rarr; Collection**.
+- **Request builder** &mdash; click **Save to collection** in the action bar beneath any request editor.
+- **Recordings** &mdash; on any captured step, **Open in Compose** drops the step into the side panel as a new item.
+
+The Compose rail is the canonical surface for managing collections: editing items, running them in sequence, and importing Postman JSON all happen here.
+
+### Standalone Collections rail (optional)
+
+The dedicated full-pane Collections editor still ships, but it's **off by default** as of v2.0. Operators who want the dedicated editor back can re-enable it via **Settings &rarr; Rail modes** &rarr; check **Collections**. Once enabled, the rail-strip icon, the workspace-tree `Collections` node, and the per-method `C` pill all reappear.
+
+Re-enabling does not change the dispatch path: `railMode === 'collections'` keeps working for embedded hosts that route there programmatically (deep links, custom shells), regardless of the toggle.
+
 ## Saving a request to a collection
 
-From the action bar beneath any request editor, click **Save to Collection**. A dropdown appears listing your existing collections plus a "**+ New Collection**" option. Select a collection and the current request -- including its body, metadata, and server URL -- is appended as a new item.
+From the action bar beneath any request editor, click **Save to collection**. A dropdown appears listing your existing collections plus a "**+ New collection**" option. Select a collection and the current request -- including its body, metadata, and server URL -- is appended as a new item.
 
-If you have no collections yet, picking "**+ New Collection**" creates one and adds the request in a single step.
+If you have no collections yet, picking "**+ New collection**" creates one and adds the request in a single step.
 
-## Collection Manager
+## Collection Manager (standalone rail, when enabled)
 
-Open the Collection Manager from the sidebar. The modal has two panes:
+When the standalone Collections rail is enabled, the Collection Manager opens as a two-pane editor:
 
 - **Left pane** -- lists all collections with item counts. Click the **+** button to create a new empty collection.
 - **Right pane** -- shows the selected collection's detail: an editable name, a toolbar, and the item list.
