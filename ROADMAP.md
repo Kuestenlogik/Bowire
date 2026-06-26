@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**38/55 done** · 17 backlog
+**38/57 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -33,6 +33,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ⬜ Backlog |  |
 | [297](https://github.com/Kuestenlogik/Bowire/issues/297) | Bowire | [Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip](#issue-kuestenlogik-bowire-297) | ⬜ Backlog |  |
+| [298](https://github.com/Kuestenlogik/Bowire/issues/298) | Bowire | [Flows: protocol + service selection doesn't populate the request's dropdowns](#issue-kuestenlogik-bowire-298) | ⬜ Backlog |  |
+| [299](https://github.com/Kuestenlogik/Bowire/issues/299) | Bowire | [Embedded mode: Proxy rail surfaces 'Proxy not reachable' — proxy needs an embedded-mode story](#issue-kuestenlogik-bowire-299) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ✅ Done |  |
@@ -293,6 +295,14 @@ The **Compose** rail (renamed from Design in commit `e52f7a9`) is now the home f
 #### <a id="issue-kuestenlogik-bowire-297"></a>⬜ Backlog · [#297](https://github.com/Kuestenlogik/Bowire/issues/297) Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip
 
 Rails already collapse into an overflow `⋮` button when the vertical space runs out (`bowire-rail-overflow-btn` in `render-sidebar.js`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/297)
+
+#### <a id="issue-kuestenlogik-bowire-298"></a>⬜ Backlog · [#298](https://github.com/Kuestenlogik/Bowire/issues/298) Flows: protocol + service selection doesn't populate the request's dropdowns
+
+1. Open the Flows rail 2. Create / edit a flow step 3. Pick a protocol (e.g. REST) → pick a service from the discovered list 4. **Expected:** the request panel below the step inherits the picked protocol + service; method dropdown, URL, etc. fill in. 5. **Actual:** dropdowns stay empty / unchanged. [[more]](https://github.com/Kuestenlogik/Bowire/issues/298)
+
+#### <a id="issue-kuestenlogik-bowire-299"></a>⬜ Backlog · [#299](https://github.com/Kuestenlogik/Bowire/issues/299) Embedded mode: Proxy rail surfaces 'Proxy not reachable' — proxy needs an embedded-mode story
+
+1. Build the embedded sample (`samples/Kuestenlogik.Bowire.Sample.Embedded`) and run on port 5181 2. Visit `http://localhost:5181/bowire` 3. Open the Proxy rail 4. **Expected:** something usable — either run a proxy in-process OR a clear 'not available in embedded mode' state with a doc link 5. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/299)
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
