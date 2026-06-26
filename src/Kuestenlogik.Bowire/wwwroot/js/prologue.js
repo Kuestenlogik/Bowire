@@ -4674,6 +4674,15 @@
         // for the targets actually invoked on that iteration. Stays
         // empty for legacy (non-envelope) runBenchmark() runs.
         iterationTargets: [],
+        // #234 — Per-iteration trace for result-export (CSV / k6-summary
+        // / OTLP). Captures the minimum schema both successful and
+        // failed iterations need to round-trip into a spreadsheet or
+        // a k6 dashboard: when the iteration ran, which target it hit,
+        // and what came back. Kept in declaration order (the
+        // _runEnvelopePhase workers append as they finish), so the
+        // CSV row order is meaningful for time-series scrubbing.
+        iterations: [],         // [{ i, target, durationMs, status, pass, ranAt }]
+        targetStats: {},        // targetKey → { label, count, errors, durations[], statusCounts{} }
         startTime: 0,
         endTime: 0,
         config: { n: 100, concurrency: 1 }
@@ -4690,6 +4699,8 @@
             durations: [],
             statusCounts: {},
             iterationTargets: [],
+            iterations: [],
+            targetStats: {},
             startTime: 0,
             endTime: 0,
             config: config || benchmark.config

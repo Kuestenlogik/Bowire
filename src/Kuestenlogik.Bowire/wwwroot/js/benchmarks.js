@@ -547,17 +547,26 @@
     // max. mode === 'sequential' walks them one-by-one; pass = all
     // pass, durationMs = sum.
     //
-    // Returns an extra `pickedLabels` array — the concrete endpoint
-    // labels actually invoked on this iteration. For 'method' /
-    // 'collection-ref' / 'recording-ref' targets this is just the
-    // target's own label; for 'random' targets it is whatever the
-    // shuffler picked. The caller (_runEnvelopePhase) folds these
-    // into benchmark.iterationTargets[] so the post-run UI can
-    // bucket percentiles per endpoint.
+    // Returns BOTH a `pickedLabels` array (#231 — concrete endpoint
+    // labels invoked, used by the post-run per-endpoint bucketing UI)
+    // AND a `targetHits[]` array (#234 — full per-target trace
+    // {key,label,durationMs,statusLabel,pass} used by the CSV /
+    // k6 / OTLP exporters). Both views derive from the same call set;
+    // keeping them as separate fields avoids re-mapping at every
+    // consumer.
     async function _runEnvelopeIteration(spec) {
         var targets = Array.isArray(spec.targets) ? spec.targets : [];
         if (targets.length === 0) {
-            return { pass: false, durationMs: 0, statusLabel: 'NoTargets', pickedLabels: [] };
+            return { pass: false, durationMs: 0, statusLabel: 'NoTargets', pickedLabels: [], targetHits: [] };
+        }
+        function hitFromResult(target, r) {
+            return {
+                key: _benchmarkTargetKey(target),
+                label: _benchmarkTargetLabel(target),
+                durationMs: r && typeof r.durationMs === 'number' ? r.durationMs : 0,
+                statusLabel: r && r.statusLabel ? r.statusLabel : (r && r.pass ? 'OK' : 'Error'),
+                pass: !!(r && r.pass)
+            };
         }
         if (spec.mode === 'parallel' && targets.length > 1) {
             var results = await Promise.all(targets.map(_invokeBenchmarkTarget));
@@ -578,12 +587,14 @@
                 pass: pass,
                 durationMs: maxMs,
                 statusLabel: pass ? 'OK' : (firstFailLabel || 'Error'),
-                pickedLabels: allPicked
+                pickedLabels: allPicked,
+                targetHits: results.map(function (r, i) { return hitFromResult(targets[i], r); })
             };
         }
         // sequential — walk targets in order, abort on first fail
         var totalMs = 0;
         var seqPicked = [];
+        var hits = [];
         for (var i = 0; i < targets.length; i++) {
             var rs = await _invokeBenchmarkTarget(targets[i]);
             totalMs += rs.durationMs || 0;
@@ -592,11 +603,12 @@
             } else {
                 seqPicked.push(_targetTrackingLabel(targets[i]));
             }
+            hits.push(hitFromResult(targets[i], rs));
             if (!rs.pass) {
-                return { pass: false, durationMs: totalMs, statusLabel: rs.statusLabel, pickedLabels: seqPicked };
+                return { pass: false, durationMs: totalMs, statusLabel: rs.statusLabel, pickedLabels: seqPicked, targetHits: hits };
             }
         }
-        return { pass: true, durationMs: totalMs, statusLabel: 'OK', pickedLabels: seqPicked };
+        return { pass: true, durationMs: totalMs, statusLabel: 'OK', pickedLabels: seqPicked, targetHits: hits };
     }
 
     // One phase: spawn `vus` workers; each pulls iterations until
@@ -622,6 +634,7 @@
                     if (idx >= iterCap) return;
                 }
 
+                var ranAt = Date.now();
                 var rs = await _runEnvelopeIteration(spec);
 
                 if (rs.pass) {
@@ -641,6 +654,36 @@
                     benchmark.iterationTargets.push(rs.pickedLabels || []);
                 }
                 benchmark.completed++;
+
+                // #234 — per-iteration trace + per-target rollup.
+                // iteration row uses the first target's label as a
+                // human-friendly hint; the per-target accounting
+                // accrues every hit (sequential walks all on pass,
+                // parallel always returns every hit).
+                var hits = Array.isArray(rs.targetHits) ? rs.targetHits : [];
+                benchmark.iterations.push({
+                    i: benchmark.completed,
+                    target: hits.length > 0 ? hits[0].label : '',
+                    targetKey: hits.length > 0 ? hits[0].key : '',
+                    durationMs: rs.durationMs || 0,
+                    status: lbl,
+                    pass: !!rs.pass,
+                    ranAt: ranAt
+                });
+                hits.forEach(function (h) {
+                    var slot = benchmark.targetStats[h.key];
+                    if (!slot) {
+                        slot = benchmark.targetStats[h.key] = {
+                            key: h.key, label: h.label,
+                            count: 0, errors: 0,
+                            durations: [], statusCounts: {}
+                        };
+                    }
+                    slot.count++;
+                    if (h.pass) slot.durations.push(h.durationMs || 0);
+                    else slot.errors++;
+                    slot.statusCounts[h.statusLabel] = (slot.statusCounts[h.statusLabel] || 0) + 1;
+                });
 
                 if (typeof onProgress === 'function' && benchmark.total > 0
                     && (benchmark.completed % Math.max(1, Math.floor(benchmark.total / 50)) === 0
@@ -742,6 +785,7 @@
         var stats = computeBenchmarkStats();
         var thisRun = {
             ranAt: benchmark.startTime,
+            ranAtWallClock: Date.now() - Math.round(benchmark.endTime - benchmark.startTime),
             durations: benchmark.durations.slice(),
             statusCounts: Object.assign({}, benchmark.statusCounts),
             // #231 — Per-iteration picked endpoint labels. Stays empty
@@ -756,7 +800,10 @@
             startTimeMs: benchmark.startTime,
             endTimeMs: benchmark.endTime,
             cancelled: benchmark.cancelled,
-            stats: stats
+            stats: stats,
+            // #234 — Trace + per-target rollup for result-exports.
+            iterations: benchmark.iterations.slice(),
+            targetStats: _snapshotTargetStats(benchmark.targetStats)
         };
 
         // #233 — Keep a bounded ring of recent runs alongside lastRun.
@@ -1125,6 +1172,37 @@
             return 'Random[' + (target.pool || 'workspace') + '] × ' + (target.count || 1);
         }
         return target.type || '?';
+    }
+
+    // #234 — Freeze the live targetStats accounting onto the
+    // persisted lastRun. Sorts each target's durations once so
+    // every downstream export (CSV / k6 / OTLP) can derive
+    // percentiles from a single canonical sorted array.
+    function _snapshotTargetStats(live) {
+        var out = {};
+        var keys = Object.keys(live || {});
+        for (var i = 0; i < keys.length; i++) {
+            var s = live[keys[i]];
+            var sorted = (s.durations || []).slice().sort(function (a, b) { return a - b; });
+            out[s.key] = {
+                key: s.key,
+                label: s.label,
+                count: s.count,
+                errors: s.errors,
+                durations: sorted,
+                statusCounts: Object.assign({}, s.statusCounts || {})
+            };
+        }
+        return out;
+    }
+
+    // Percentile over an already-sorted array. Nearest-rank — same
+    // method computeBenchmarkStats() uses so per-target and overall
+    // percentiles line up byte-for-byte.
+    function _percentileSorted(sorted, p) {
+        if (!sorted || sorted.length === 0) return 0;
+        var idx = Math.ceil((p / 100) * sorted.length) - 1;
+        return sorted[Math.max(0, Math.min(idx, sorted.length - 1))];
     }
 
     // Envelope-aware sidebar meta. Shows total iterations across all
@@ -2217,6 +2295,58 @@
                 );
             }
             function ms(v) { return Math.round(v * 10) / 10 + ' ms'; }
+
+            // #234 — Export ▾ split-button at the top of the result
+            // pane. Primary action (the label area) is "Export as CSV"
+            // because the per-method CSV is the most common operator
+            // ask; the caret opens a context menu with the other three
+            // formats (CSV per-iteration, k6-summary JSON, OTLP JSON).
+            // Pattern mirrors _renderTargetsSection's "+ Add target"
+            // split-button so the visual vocabulary stays consistent.
+            var exportBar = el('div', {
+                className: 'bowire-ws-detail-section',
+                style: 'display:flex;align-items:center;justify-content:space-between;gap:8px'
+            },
+                el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Results' }),
+                el('div', { style: 'display:inline-flex;align-items:stretch' },
+                    el('button', {
+                        type: 'button',
+                        className: 'bowire-envelope-target-add-btn',
+                        title: 'Export per-method CSV (semicolon-separated, UTF-8 BOM)',
+                        style: 'border-top-right-radius:0;border-bottom-right-radius:0',
+                        onClick: function () { exportSelectedRunAs('csv'); }
+                    },
+                        el('span', { textContent: 'Export as CSV' })
+                    ),
+                    el('button', {
+                        type: 'button',
+                        className: 'bowire-envelope-target-add-btn',
+                        title: 'Pick another export format',
+                        style: 'border-top-left-radius:0;border-bottom-left-radius:0;border-left:none;padding-left:6px;padding-right:8px',
+                        onClick: function (ev) {
+                            if (typeof showContextMenu !== 'function') {
+                                exportSelectedRunAs('csv');
+                                return;
+                            }
+                            showContextMenu(ev.clientX, ev.clientY, [
+                                { label: 'Export as CSV (per method)', icon: 'send',
+                                    onClick: function () { exportSelectedRunAs('csv'); } },
+                                { label: 'Export as CSV (per iteration)', icon: 'send',
+                                    onClick: function () { exportSelectedRunAs('csv-iterations'); } },
+                                { separator: true },
+                                { label: 'Export as k6-summary JSON', icon: 'send',
+                                    onClick: function () { exportSelectedRunAs('k6-summary'); } },
+                                { label: 'Export as OTLP metrics JSON', icon: 'send',
+                                    onClick: function () { exportSelectedRunAs('otlp'); } }
+                            ]);
+                        }
+                    },
+                        el('span', { className: 'bowire-envelope-add-caret', innerHTML: svgIcon('chevronDown') })
+                    )
+                )
+            );
+            main.appendChild(exportBar);
+
             main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
                 el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Latency (last run)' }),
                 el('div', { className: 'bowire-ws-detail-stats' },
@@ -2774,6 +2904,507 @@
             _downloadEnvelopeArtifact(stem + '.bowire-envelope.json', 'application/json',
                 JSON.stringify(spec, null, 2));
             toast('Exported as Bowire envelope', 'success');
+        }
+    }
+
+    // ---------- #234 — Result exports (CSV / k6-summary / OTLP) ----------
+    //
+    // These operate on spec.lastRun, NOT on the envelope itself. They
+    // are the spreadsheet / dashboard / OTel-collector counterparts to
+    // the envelope-shape exports above. Each builder is a pure function
+    // (spec → string / object) so a future CLI sidecar can call them
+    // without dragging the workbench DOM along.
+    //
+    //  - exportRunAsCsv(spec, mode)  — 'per-method' (default) or
+    //                                  'per-iteration'. Semicolon
+    //                                  separator + LF, UTF-8 BOM
+    //                                  prefix so Excel honours UTF-8
+    //                                  out of the box.
+    //  - exportRunAsK6Summary(spec)  — Grafana k6's handleSummary()
+    //                                  shape. metrics.http_req_duration
+    //                                  carries p50/p90/p95/p99 + min /
+    //                                  max / avg; metrics.iterations
+    //                                  carries the count + rate;
+    //                                  metrics.checks carries the
+    //                                  pass / fail rollup. Empty
+    //                                  root_group so a k6 dashboard
+    //                                  parser sees the well-known
+    //                                  scaffold.
+    //  - exportRunAsOtlpJson(spec)   — OTLP/JSON metrics payload
+    //                                  (one ResourceMetrics with a
+    //                                  histogram + counter per target).
+    //                                  Downloaded as a file; an OTel
+    //                                  collector can replay it with
+    //                                  `curl --data-binary @… -H
+    //                                  Content-Type: application/json
+    //                                  http://collector:4318/v1/metrics`.
+    //                                  Direct push to an endpoint
+    //                                  is deferred — a file is the
+    //                                  safer scope for v1 because
+    //                                  it doesn't entangle workbench
+    //                                  CORS / auth with collector
+    //                                  configuration.
+
+    function _csvCell(v) {
+        if (v == null) return '';
+        var s = String(v);
+        if (s.indexOf(';') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0 || s.indexOf('\r') >= 0) {
+            return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+    }
+    function _csvRow(cells) { return cells.map(_csvCell).join(';'); }
+
+    // Stable status-key set across every target-row so columns line
+    // up. Drawn from both the overall histogram and every per-target
+    // histogram so an unusual status that only one target emitted
+    // still gets a column on every row (value 0 where absent).
+    function _collectStatusKeys(last) {
+        var seen = {};
+        Object.keys(last.statusCounts || {}).forEach(function (k) { seen[k] = true; });
+        var targetStats = last.targetStats || {};
+        Object.keys(targetStats).forEach(function (tk) {
+            var sc = targetStats[tk].statusCounts || {};
+            Object.keys(sc).forEach(function (k) { seen[k] = true; });
+        });
+        return Object.keys(seen).sort();
+    }
+
+    function exportRunAsCsv(spec, mode) {
+        var last = spec && spec.lastRun;
+        if (!last) return '';
+        var BOM = '﻿';
+        var statusKeys = _collectStatusKeys(last);
+
+        if (mode === 'per-iteration') {
+            var header = ['i', 'ranAt', 'target', 'targetKey', 'status', 'pass', 'durationMs'];
+            var lines = [_csvRow(header)];
+            (last.iterations || []).forEach(function (it) {
+                lines.push(_csvRow([
+                    it.i,
+                    new Date(it.ranAt || 0).toISOString(),
+                    it.target,
+                    it.targetKey,
+                    it.status,
+                    it.pass ? 'true' : 'false',
+                    Math.round((it.durationMs || 0) * 100) / 100
+                ]));
+            });
+            return BOM + lines.join('\n') + '\n';
+        }
+
+        // per-method (default) — one row per target. If the envelope
+        // had a single target the table degenerates to a single row,
+        // which still carries every aggregate the spec produced.
+        var header2 = ['method', 'count', 'errors',
+            'p50_ms', 'p95_ms', 'p99_ms', 'min_ms', 'max_ms', 'avg_ms',
+            'throughput_rps'];
+        statusKeys.forEach(function (k) { header2.push('status_' + k); });
+        var lines2 = [_csvRow(header2)];
+
+        var targetStats = last.targetStats || {};
+        var keys = Object.keys(targetStats);
+        var elapsedSec = (last.stats && last.stats.totalSeconds) || 0;
+        if (keys.length === 0) {
+            // No per-target accounting (legacy lastRun from before
+            // #234). Synthesise a single row from the overall stats
+            // so a CSV export still works against older runs.
+            var s = last.stats || {};
+            var row = ['(envelope)', last.total || 0, last.failure || 0,
+                Math.round((s.p50 || 0) * 100) / 100,
+                Math.round((s.p95 || 0) * 100) / 100,
+                Math.round((s.p99 || 0) * 100) / 100,
+                Math.round((s.min || 0) * 100) / 100,
+                Math.round((s.max || 0) * 100) / 100,
+                Math.round((s.avg || 0) * 100) / 100,
+                Math.round((s.throughput || 0) * 100) / 100];
+            statusKeys.forEach(function (k) { row.push((last.statusCounts || {})[k] || 0); });
+            lines2.push(_csvRow(row));
+        } else {
+            keys.forEach(function (k) {
+                var t = targetStats[k];
+                var ds = t.durations || [];
+                var sum = 0;
+                for (var i = 0; i < ds.length; i++) sum += ds[i];
+                var avg = ds.length > 0 ? sum / ds.length : 0;
+                var min = ds.length > 0 ? ds[0] : 0;
+                var max = ds.length > 0 ? ds[ds.length - 1] : 0;
+                var rps = elapsedSec > 0 ? (t.count / elapsedSec) : 0;
+                var row = [t.label, t.count, t.errors,
+                    Math.round(_percentileSorted(ds, 50) * 100) / 100,
+                    Math.round(_percentileSorted(ds, 95) * 100) / 100,
+                    Math.round(_percentileSorted(ds, 99) * 100) / 100,
+                    Math.round(min * 100) / 100,
+                    Math.round(max * 100) / 100,
+                    Math.round(avg * 100) / 100,
+                    Math.round(rps * 100) / 100];
+                statusKeys.forEach(function (sk) { row.push((t.statusCounts || {})[sk] || 0); });
+                lines2.push(_csvRow(row));
+            });
+        }
+        return BOM + lines2.join('\n') + '\n';
+    }
+
+    // k6 handleSummary() shape. See
+    // https://k6.io/docs/results-output/end-of-test/custom-summary/
+    // The key fields a dashboard consumes are metrics.* (with values
+    // / trend on the duration histograms) + root_group. Bowire doesn't
+    // run checks/groups so root_group is the empty skeleton k6 emits
+    // for tests that don't call group().
+    function exportRunAsK6Summary(spec) {
+        var last = spec && spec.lastRun;
+        if (!last) return null;
+        var s = last.stats || {};
+        var durations = last.durations || [];
+        var sum = 0;
+        for (var i = 0; i < durations.length; i++) sum += durations[i];
+        var elapsedSec = s.totalSeconds || 0;
+        var totalCount = last.total || 0;
+        var failCount = last.failure || 0;
+        var passCount = last.success || 0;
+        var passRate = totalCount > 0 ? passCount / totalCount : 0;
+        var iterRate = elapsedSec > 0 ? totalCount / elapsedSec : 0;
+
+        return {
+            // k6's default summary stamps the start; we surface the
+            // wall-clock approximation we recorded (ranAtWallClock is
+            // a Date.now() back-derived from performance.now() — close
+            // enough for a dashboard timestamp).
+            metrics: {
+                http_req_duration: {
+                    type: 'trend',
+                    contains: 'time',
+                    values: {
+                        'avg': s.avg || 0,
+                        'min': s.min || 0,
+                        'max': s.max || 0,
+                        'med': s.p50 || 0,
+                        'p(90)': s.p90 || 0,
+                        'p(95)': s.p95 || 0,
+                        'p(99)': s.p99 || 0,
+                        'count': durations.length
+                    }
+                },
+                http_reqs: {
+                    type: 'counter',
+                    contains: 'default',
+                    values: {
+                        'count': totalCount,
+                        'rate': iterRate
+                    }
+                },
+                iterations: {
+                    type: 'counter',
+                    contains: 'default',
+                    values: {
+                        'count': totalCount,
+                        'rate': iterRate
+                    }
+                },
+                iteration_duration: {
+                    type: 'trend',
+                    contains: 'time',
+                    values: {
+                        'avg': s.avg || 0,
+                        'min': s.min || 0,
+                        'max': s.max || 0,
+                        'med': s.p50 || 0,
+                        'p(90)': s.p90 || 0,
+                        'p(95)': s.p95 || 0,
+                        'p(99)': s.p99 || 0
+                    }
+                },
+                http_req_failed: {
+                    type: 'rate',
+                    contains: 'default',
+                    values: {
+                        'rate': totalCount > 0 ? failCount / totalCount : 0,
+                        'passes': failCount,
+                        'fails': passCount
+                    }
+                },
+                checks: {
+                    type: 'rate',
+                    contains: 'default',
+                    values: {
+                        'rate': passRate,
+                        'passes': passCount,
+                        'fails': failCount
+                    }
+                },
+                vus: {
+                    type: 'gauge',
+                    contains: 'default',
+                    values: {
+                        'value': (spec.phases && spec.phases[0] && spec.phases[0].vus) || spec.concurrency || 1,
+                        'min': 1,
+                        'max': (spec.phases || []).reduce(function (acc, p) {
+                            return Math.max(acc, parseInt(p.vus, 10) || 0);
+                        }, 0) || (spec.concurrency || 1)
+                    }
+                },
+                data_received: {
+                    type: 'counter',
+                    contains: 'data',
+                    values: { 'count': 0, 'rate': 0 }
+                },
+                data_sent: {
+                    type: 'counter',
+                    contains: 'data',
+                    values: { 'count': 0, 'rate': 0 }
+                }
+            },
+            root_group: {
+                name: '',
+                path: '',
+                id: 'd41d8cd98f00b204e9800998ecf8427e',
+                groups: [],
+                checks: []
+            },
+            // Non-k6 extension — Bowire-specific provenance + per-target
+            // rollup. k6 consumers ignore unknown top-level keys, so
+            // it's safe to carry. Lets a Bowire-aware downstream tool
+            // reconstruct the run without re-parsing CSV.
+            bowire: {
+                envelope: spec.name || spec.id,
+                ranAt: last.ranAtWallClock || (last.ranAt && Date.now()) || Date.now(),
+                durationSec: elapsedSec,
+                cancelled: !!last.cancelled,
+                statusCounts: last.statusCounts || {},
+                targets: Object.keys(last.targetStats || {}).map(function (k) {
+                    var t = last.targetStats[k];
+                    var ds = t.durations || [];
+                    return {
+                        key: t.key,
+                        label: t.label,
+                        count: t.count,
+                        errors: t.errors,
+                        p50: _percentileSorted(ds, 50),
+                        p95: _percentileSorted(ds, 95),
+                        p99: _percentileSorted(ds, 99),
+                        statusCounts: t.statusCounts || {}
+                    };
+                })
+            },
+            // Required by k6: the original options blob. We emit a
+            // stages-only descriptor mirroring the envelope phases so
+            // a dashboard parser sees the same shape `k6 run` would
+            // have produced.
+            options: {
+                stages: (spec.phases || []).map(function (p) {
+                    return {
+                        duration: (parseInt(p.durationMs, 10) || 0) + 'ms',
+                        target: parseInt(p.rampToVus || p.vus, 10) || 1
+                    };
+                })
+            }
+        };
+    }
+
+    // OTLP/JSON metrics. Shape from
+    // https://opentelemetry.io/docs/specs/otlp/ (ExportMetricsServiceRequest)
+    // — one ResourceMetrics, one ScopeMetrics (scope =
+    // Kuestenlogik.Bowire.Benchmarks), three Metrics:
+    //  - bowire_bench.iteration.duration_ms  (Histogram, ms)
+    //  - bowire_bench.iteration.count        (Sum / counter)
+    //  - bowire_bench.run.throughput         (Gauge, rps)
+    // Per-target metrics ride the same payload, attributes carry the
+    // target key + label so a collector can split by service/method
+    // without further hints.
+    function _otlpUnixNano(ms) {
+        // OTLP timestamps are nanoseconds since epoch. We multiply
+        // by 1e6 from millis; downstream collectors accept the string
+        // form just as readily as a number.
+        return String(Math.round(ms * 1e6));
+    }
+    function _otlpHistogramBuckets() {
+        // k6-aligned bucket boundaries (ms). Coarse enough for a
+        // dashboard scrub yet fine in the sub-second band where most
+        // RPC latency lives.
+        return [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
+    }
+    function _otlpBucketCounts(durations, bounds) {
+        var counts = new Array(bounds.length + 1).fill(0);
+        for (var i = 0; i < durations.length; i++) {
+            var v = durations[i];
+            var placed = false;
+            for (var b = 0; b < bounds.length; b++) {
+                if (v <= bounds[b]) { counts[b]++; placed = true; break; }
+            }
+            if (!placed) counts[counts.length - 1]++;
+        }
+        return counts;
+    }
+    function _otlpHistogramPoint(durations, startMs, endMs, attrs) {
+        var bounds = _otlpHistogramBuckets();
+        var counts = _otlpBucketCounts(durations || [], bounds);
+        var sum = 0;
+        var min = durations && durations.length > 0 ? durations[0] : 0;
+        var max = 0;
+        for (var i = 0; i < durations.length; i++) {
+            sum += durations[i];
+            if (durations[i] < min) min = durations[i];
+            if (durations[i] > max) max = durations[i];
+        }
+        return {
+            attributes: attrs || [],
+            startTimeUnixNano: _otlpUnixNano(startMs),
+            timeUnixNano: _otlpUnixNano(endMs),
+            count: String(durations ? durations.length : 0),
+            sum: sum,
+            min: min,
+            max: max,
+            bucketCounts: counts.map(String),
+            explicitBounds: bounds
+        };
+    }
+    function _otlpAttr(key, value) {
+        if (typeof value === 'number') return { key: key, value: { intValue: String(Math.round(value)) } };
+        if (typeof value === 'boolean') return { key: key, value: { boolValue: value } };
+        return { key: key, value: { stringValue: String(value == null ? '' : value) } };
+    }
+    function exportRunAsOtlpJson(spec) {
+        var last = spec && spec.lastRun;
+        if (!last) return null;
+        // Bowire runs on performance.now() — convert to wall-clock by
+        // anchoring on ranAtWallClock (the back-derived Date.now()
+        // captured at run end). Older lastRun entries that pre-date
+        // #234 fall back to "now - duration".
+        var elapsedSec = (last.stats && last.stats.totalSeconds) || 0;
+        var endMs = (last.ranAtWallClock || (Date.now() - Math.round(elapsedSec * 1000)))
+            + Math.round(elapsedSec * 1000);
+        var startMs = endMs - Math.round(elapsedSec * 1000);
+
+        var resourceAttrs = [
+            _otlpAttr('service.name', 'kuestenlogik.bowire'),
+            _otlpAttr('service.namespace', 'bowire.benchmarks'),
+            _otlpAttr('bowire.envelope.id', spec.id || ''),
+            _otlpAttr('bowire.envelope.name', spec.name || ''),
+            _otlpAttr('bowire.run.cancelled', !!last.cancelled)
+        ];
+
+        var dataPoints = [];
+        var counterPoints = [];
+        var throughputPoints = [];
+
+        // Per-target histogram + counter + throughput.
+        var keys = Object.keys(last.targetStats || {});
+        if (keys.length > 0) {
+            keys.forEach(function (k) {
+                var t = last.targetStats[k];
+                var attrs = [_otlpAttr('bowire.target.key', t.key), _otlpAttr('bowire.target.label', t.label)];
+                dataPoints.push(_otlpHistogramPoint(t.durations || [], startMs, endMs, attrs));
+                counterPoints.push({
+                    attributes: attrs,
+                    startTimeUnixNano: _otlpUnixNano(startMs),
+                    timeUnixNano: _otlpUnixNano(endMs),
+                    asInt: String(t.count || 0)
+                });
+                counterPoints.push({
+                    attributes: attrs.concat([_otlpAttr('outcome', 'error')]),
+                    startTimeUnixNano: _otlpUnixNano(startMs),
+                    timeUnixNano: _otlpUnixNano(endMs),
+                    asInt: String(t.errors || 0)
+                });
+                throughputPoints.push({
+                    attributes: attrs,
+                    startTimeUnixNano: _otlpUnixNano(startMs),
+                    timeUnixNano: _otlpUnixNano(endMs),
+                    asDouble: elapsedSec > 0 ? (t.count / elapsedSec) : 0
+                });
+            });
+        }
+        // Always emit an overall ("envelope") rollup so a dashboard
+        // can chart total throughput / latency without re-aggregating.
+        var overallAttrs = [_otlpAttr('bowire.target.key', 'envelope'), _otlpAttr('bowire.target.label', spec.name || 'envelope')];
+        dataPoints.push(_otlpHistogramPoint(last.durations || [], startMs, endMs, overallAttrs));
+        counterPoints.push({
+            attributes: overallAttrs,
+            startTimeUnixNano: _otlpUnixNano(startMs),
+            timeUnixNano: _otlpUnixNano(endMs),
+            asInt: String(last.total || 0)
+        });
+        counterPoints.push({
+            attributes: overallAttrs.concat([_otlpAttr('outcome', 'error')]),
+            startTimeUnixNano: _otlpUnixNano(startMs),
+            timeUnixNano: _otlpUnixNano(endMs),
+            asInt: String(last.failure || 0)
+        });
+        throughputPoints.push({
+            attributes: overallAttrs,
+            startTimeUnixNano: _otlpUnixNano(startMs),
+            timeUnixNano: _otlpUnixNano(endMs),
+            asDouble: (last.stats && last.stats.throughput) || 0
+        });
+
+        return {
+            resourceMetrics: [{
+                resource: { attributes: resourceAttrs },
+                scopeMetrics: [{
+                    scope: {
+                        name: 'Kuestenlogik.Bowire.Benchmarks',
+                        version: '1.0.0'
+                    },
+                    metrics: [
+                        {
+                            name: 'bowire_bench.iteration.duration_ms',
+                            description: 'Per-iteration latency for a Bowire benchmark envelope',
+                            unit: 'ms',
+                            histogram: {
+                                aggregationTemporality: 2, // CUMULATIVE
+                                dataPoints: dataPoints
+                            }
+                        },
+                        {
+                            name: 'bowire_bench.iteration.count',
+                            description: 'Iterations executed (split by outcome via the `outcome` attribute)',
+                            unit: '1',
+                            sum: {
+                                aggregationTemporality: 2,
+                                isMonotonic: true,
+                                dataPoints: counterPoints
+                            }
+                        },
+                        {
+                            name: 'bowire_bench.run.throughput',
+                            description: 'Iterations per second over the run duration',
+                            unit: '1/s',
+                            gauge: { dataPoints: throughputPoints }
+                        }
+                    ]
+                }]
+            }]
+        };
+    }
+
+    // Result-export dispatcher — pendant to exportSelectedEnvelopeAs.
+    // Picks the right builder, the right filename / MIME, and toasts
+    // the outcome. Errors when there is no completed run so the
+    // Export ▾ menu in the result pane stays visually consistent
+    // (button always present; click guarded).
+    function exportSelectedRunAs(format) {
+        var spec = getBenchmarkSpec(benchmarksSelectedId);
+        if (!spec) { toast('Pick an envelope to export', 'error'); return; }
+        if (!spec.lastRun) { toast('No run results yet — hit Run first', 'error'); return; }
+        var stem = (spec.name || 'run').replace(/[^\w\-]+/g, '_');
+        if (format === 'csv') {
+            var csv = exportRunAsCsv(spec, 'per-method');
+            _downloadEnvelopeArtifact(stem + '.results.csv', 'text/csv;charset=utf-8', csv);
+            toast('Exported results as CSV', 'success');
+        } else if (format === 'csv-iterations') {
+            var csvIter = exportRunAsCsv(spec, 'per-iteration');
+            _downloadEnvelopeArtifact(stem + '.iterations.csv', 'text/csv;charset=utf-8', csvIter);
+            toast('Exported per-iteration CSV', 'success');
+        } else if (format === 'k6-summary') {
+            var k6 = exportRunAsK6Summary(spec);
+            _downloadEnvelopeArtifact(stem + '.k6-summary.json', 'application/json',
+                JSON.stringify(k6, null, 2));
+            toast('Exported as k6-summary JSON', 'success');
+        } else if (format === 'otlp') {
+            var otlp = exportRunAsOtlpJson(spec);
+            _downloadEnvelopeArtifact(stem + '.otlp.json', 'application/json',
+                JSON.stringify(otlp, null, 2));
+            toast('Exported as OTLP metrics (file)', 'success');
         }
     }
 
