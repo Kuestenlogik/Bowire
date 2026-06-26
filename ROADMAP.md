@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**37/55 done** · 18 backlog
+**38/55 done** · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -32,7 +32,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [291](https://github.com/Kuestenlogik/Bowire/issues/291) | Bowire | [Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout](#issue-kuestenlogik-bowire-291) | ⬜ Backlog |  |
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ⬜ Backlog |  |
-| [296](https://github.com/Kuestenlogik/Bowire/issues/296) | Bowire | [Topbar: global Trash drawer + Undo / Redo buttons (aggregate across rails)](#issue-kuestenlogik-bowire-296) | ⬜ Backlog |  |
 | [297](https://github.com/Kuestenlogik/Bowire/issues/297) | Bowire | [Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip](#issue-kuestenlogik-bowire-297) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
@@ -71,6 +70,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [287](https://github.com/Kuestenlogik/Bowire/issues/287) | Bowire | [Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on](#issue-kuestenlogik-bowire-287) | ✅ Done |  |
 | [289](https://github.com/Kuestenlogik/Bowire/issues/289) | Bowire | [Hoppscotch-style single-line request bar: method + URL + params + execute, no workspace required](#issue-kuestenlogik-bowire-289) | ✅ Done |  |
 | [293](https://github.com/Kuestenlogik/Bowire/issues/293) | Bowire | [New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover](#issue-kuestenlogik-bowire-293) | ✅ Done |  |
+| [296](https://github.com/Kuestenlogik/Bowire/issues/296) | Bowire | [Topbar: global Trash drawer + Undo / Redo buttons (aggregate across rails)](#issue-kuestenlogik-bowire-296) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -290,10 +290,6 @@ Bowire today hardcodes: - An 'always-on' rail set (Home, Discover, Workspaces) �
 
 The **Compose** rail (renamed from Design in commit `e52f7a9`) is now the home for the request-builder — ad-hoc requests live there. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/295)
 
-#### <a id="issue-kuestenlogik-bowire-296"></a>⬜ Backlog · [#296](https://github.com/Kuestenlogik/Bowire/issues/296) Topbar: global Trash drawer + Undo / Redo buttons (aggregate across rails)
-
-User feedback (Phase 2 walkthrough): "wo ist der Papierkorb und Undo/Redo übergeordnet erreichbar? das log kann ich im status erreichen. Papierkorb hätte ich in der Top bar oder Status bar erwartet." [[more]](https://github.com/Kuestenlogik/Bowire/issues/296)
-
 #### <a id="issue-kuestenlogik-bowire-297"></a>⬜ Backlog · [#297](https://github.com/Kuestenlogik/Bowire/issues/297) Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip
 
 Rails already collapse into an overflow `⋮` button when the vertical space runs out (`bowire-rail-overflow-btn` in `render-sidebar.js`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/297)
@@ -445,6 +441,10 @@ Bowire's strength is the protocol-aware workbench — discover a schema, pick a 
 #### <a id="issue-kuestenlogik-bowire-293"></a>✅ Done · [#293](https://github.com/Kuestenlogik/Bowire/issues/293) New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover
 
 The request-builder (renamed from hopp-bar in commit 5d7b21a, multi-protocol since #291) currently piggy-backs on whatever tab is active in the Discover rail. Two consequences: 1. When no source/tab exists, the builder gets stuck off-frame. 2. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/293)
+
+#### <a id="issue-kuestenlogik-bowire-296"></a>✅ Done · [#296](https://github.com/Kuestenlogik/Bowire/issues/296) Topbar: global Trash drawer + Undo / Redo buttons (aggregate across rails)
+
+User feedback (Phase 2 walkthrough): "wo ist der Papierkorb und Undo/Redo übergeordnet erreichbar? das log kann ich im status erreichen. Papierkorb hätte ich in der Top bar oder Status bar erwartet." [[more]](https://github.com/Kuestenlogik/Bowire/issues/296)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
