@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**44/60 done** · 16 backlog
+**46/60 done** · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -24,13 +24,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [231](https://github.com/Kuestenlogik/Bowire/issues/231) | Bowire | [Benchmarks: 'random' run shape — pick N random endpoints per iteration](#issue-kuestenlogik-bowire-231) | ⬜ Backlog |  |
 | [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ⬜ Backlog |  |
 | [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ⬜ Backlog |  |
-| [254](https://github.com/Kuestenlogik/Bowire/issues/254) | Bowire | [Freeform builder: auto-discover prompt after first successful invoke](#issue-kuestenlogik-bowire-254) | ⬜ Backlog |  |
 | [279](https://github.com/Kuestenlogik/Bowire/issues/279) | Bowire | [Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview](#issue-kuestenlogik-bowire-279) | ⬜ Backlog |  |
 | [280](https://github.com/Kuestenlogik/Bowire/issues/280) | Bowire | [Assistant hints: actionable inline buttons / links (not just descriptive text)](#issue-kuestenlogik-bowire-280) | ⬜ Backlog |  |
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ⬜ Backlog |  |
-| [297](https://github.com/Kuestenlogik/Bowire/issues/297) | Bowire | [Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip](#issue-kuestenlogik-bowire-297) | ⬜ Backlog |  |
 | [302](https://github.com/Kuestenlogik/Bowire/issues/302) | Bowire | [Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)](#issue-kuestenlogik-bowire-302) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
@@ -43,6 +41,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [246](https://github.com/Kuestenlogik/Bowire/issues/246) | Bowire | [Ad-hoc requests — informal cousin of Presets, lives under Collections (not a new rail, not a Design surface)](#issue-kuestenlogik-bowire-246) | ✅ Done |  |
 | [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
 | [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
+| [254](https://github.com/Kuestenlogik/Bowire/issues/254) | Bowire | [Freeform builder: auto-discover prompt after first successful invoke](#issue-kuestenlogik-bowire-254) | ✅ Done |  |
 | [257](https://github.com/Kuestenlogik/Bowire/issues/257) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-257) | ✅ Done |  |
 | [259](https://github.com/Kuestenlogik/Bowire/issues/259) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-259) | ✅ Done |  |
 | [260](https://github.com/Kuestenlogik/Bowire/issues/260) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-260) | ✅ Done |  |
@@ -72,6 +71,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [291](https://github.com/Kuestenlogik/Bowire/issues/291) | Bowire | [Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout](#issue-kuestenlogik-bowire-291) | ✅ Done |  |
 | [293](https://github.com/Kuestenlogik/Bowire/issues/293) | Bowire | [New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover](#issue-kuestenlogik-bowire-293) | ✅ Done |  |
 | [296](https://github.com/Kuestenlogik/Bowire/issues/296) | Bowire | [Topbar: global Trash drawer + Undo / Redo buttons (aggregate across rails)](#issue-kuestenlogik-bowire-296) | ✅ Done |  |
+| [297](https://github.com/Kuestenlogik/Bowire/issues/297) | Bowire | [Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip](#issue-kuestenlogik-bowire-297) | ✅ Done |  |
 | [298](https://github.com/Kuestenlogik/Bowire/issues/298) | Bowire | [Flows: protocol + service selection doesn't populate the request's dropdowns](#issue-kuestenlogik-bowire-298) | ✅ Done |  |
 | [299](https://github.com/Kuestenlogik/Bowire/issues/299) | Bowire | [Embedded mode: Proxy rail surfaces 'Proxy not reachable' — proxy needs an embedded-mode story](#issue-kuestenlogik-bowire-299) | ✅ Done |  |
 | [300](https://github.com/Kuestenlogik/Bowire/issues/300) | Bowire | [Benchmark: switching mode works once, then becomes inert](#issue-kuestenlogik-bowire-300) | ✅ Done |  |
@@ -263,10 +263,6 @@ When the operator hits Run on a benchmark envelope that already has a previous r
 
 Round out the Benchmarks export surface so result data can leave Bowire in the formats the surrounding tooling actually consumes: [[more]](https://github.com/Kuestenlogik/Bowire/issues/234)
 
-#### <a id="issue-kuestenlogik-bowire-254"></a>⬜ Backlog · [#254](https://github.com/Kuestenlogik/Bowire/issues/254) Freeform builder: auto-discover prompt after first successful invoke
-
-Last unchecked acceptance item from the parent **#40** Freeform Request Builder ticket. After a freeform request hits a 2xx response, prompt the operator: [[more]](https://github.com/Kuestenlogik/Bowire/issues/254)
-
 #### <a id="issue-kuestenlogik-bowire-279"></a>⬜ Backlog · [#279](https://github.com/Kuestenlogik/Bowire/issues/279) Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview
 
 When a workspace is switched to active, it 'jumps to the top' of the list — currently the sidebar's sort uses 'Last used' (added in #276) which auto-promotes the active workspace. Operator finds this confusing — the list rearranges under them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/279)
@@ -286,10 +282,6 @@ Bowire today hardcodes: - An 'always-on' rail set (Home, Discover, Workspaces) �
 #### <a id="issue-kuestenlogik-bowire-295"></a>⬜ Backlog · [#295](https://github.com/Kuestenlogik/Bowire/issues/295) Compose rail: integrate Collections + Presets — three sources, one organized destination
 
 The **Compose** rail (renamed from Design in commit `e52f7a9`) is now the home for the request-builder — ad-hoc requests live there. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/295)
-
-#### <a id="issue-kuestenlogik-bowire-297"></a>⬜ Backlog · [#297](https://github.com/Kuestenlogik/Bowire/issues/297) Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip
-
-Rails already collapse into an overflow `⋮` button when the vertical space runs out (`bowire-rail-overflow-btn` in `render-sidebar.js`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/297)
 
 #### <a id="issue-kuestenlogik-bowire-302"></a>⬜ Backlog · [#302](https://github.com/Kuestenlogik/Bowire/issues/302) Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)
 
@@ -338,6 +330,10 @@ Bowire's rail catalogue (`_railModes` in `render-sidebar.js`) is fixed at compil
 #### <a id="issue-kuestenlogik-bowire-252"></a>✅ Done · [#252](https://github.com/Kuestenlogik/Bowire/issues/252) Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)
 
 After landing #244 (drop `+ New` from Discover toolbar) + #245 (As new request from Execute dropdown) + the #246 cleanup (ad-hoc → freeform builder + `+ Add to…` parity), two design gaps remain around **how an operator starts composing a new request**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/252)
+
+#### <a id="issue-kuestenlogik-bowire-254"></a>✅ Done · [#254](https://github.com/Kuestenlogik/Bowire/issues/254) Freeform builder: auto-discover prompt after first successful invoke
+
+Last unchecked acceptance item from the parent **#40** Freeform Request Builder ticket. After a freeform request hits a 2xx response, prompt the operator: [[more]](https://github.com/Kuestenlogik/Bowire/issues/254)
 
 #### <a id="issue-kuestenlogik-bowire-257"></a>✅ Done · [#257](https://github.com/Kuestenlogik/Bowire/issues/257) richErrorDetail picks up problem+json status / type / instance
 
@@ -454,6 +450,10 @@ The request-builder (renamed from hopp-bar in commit 5d7b21a, multi-protocol sin
 #### <a id="issue-kuestenlogik-bowire-296"></a>✅ Done · [#296](https://github.com/Kuestenlogik/Bowire/issues/296) Topbar: global Trash drawer + Undo / Redo buttons (aggregate across rails)
 
 User feedback (Phase 2 walkthrough): "wo ist der Papierkorb und Undo/Redo übergeordnet erreichbar? das log kann ich im status erreichen. Papierkorb hätte ich in der Top bar oder Status bar erwartet." [[more]](https://github.com/Kuestenlogik/Bowire/issues/296)
+
+#### <a id="issue-kuestenlogik-bowire-297"></a>✅ Done · [#297](https://github.com/Kuestenlogik/Bowire/issues/297) Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip
+
+Rails already collapse into an overflow `⋮` button when the vertical space runs out (`bowire-rail-overflow-btn` in `render-sidebar.js`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/297)
 
 #### <a id="issue-kuestenlogik-bowire-298"></a>✅ Done · [#298](https://github.com/Kuestenlogik/Bowire/issues/298) Flows: protocol + service selection doesn't populate the request's dropdowns
 
