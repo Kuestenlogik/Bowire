@@ -1,0 +1,24 @@
+// @generated
+// This file is a fragment of the assembled `wwwroot/bowire.js` bundle.
+//
+// #311 — per-rail JS fragments live on the Rail.* NuGets as embedded
+// resources. BowireHtmlGenerator scans every loaded assembly whose
+// name starts with `Kuestenlogik.Bowire.Rail.` (or
+// `Kuestenlogik.Bowire.Security.` — Security ships its descriptor +
+// future JS surface through the same channel), pulls the embedded
+// JS resource named `<asm>.wwwroot.js.*.js`, and replaces the marker
+// below with the concatenation. The replacement happens inside the
+// IIFE opened by prologue.js + closed by init.js, so the rail
+// fragments see every helper / state / closure declared in core.
+//
+// If no rail packages are referenced (e.g. Bundle.Minimal embedded
+// host without per-rail NuGets), the marker is replaced with the
+// empty string — the bundle stays valid JS, just smaller.
+//
+// Must come AFTER every core fragment that declares the symbols the
+// rail JS references (request-builder.js, request-builder-protocols.js,
+// proxy-view.js, render-sidebar.js, render-main.js, helpers.js,
+// presets.js, &c.) and BEFORE init.js so its DOMContentLoaded handler
+// runs after the rails have wired their globals.
+/*BOWIRE_RAIL_FRAGMENTS_BEGIN*/
+/*BOWIRE_RAIL_FRAGMENTS_END*/

@@ -14,7 +14,7 @@ namespace Kuestenlogik.Bowire;
 internal static class BowireHtmlGenerator
 {
     private static readonly Lazy<string> CssContent = new(() => ReadEmbeddedFile("bowire.css"));
-    private static readonly Lazy<string> JsContent = new(() => ReadEmbeddedFile("bowire.js"));
+    private static readonly Lazy<string> JsContent = new(() => StitchRailFragments(ReadEmbeddedFile("bowire.js")));
 
     // #294 — Rail + module catalogues populated by BowireApiEndpoints.Map
     // at host startup. Defaulting to empty registries means a test or
@@ -281,6 +281,91 @@ internal static class BowireHtmlGenerator
 
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
+    }
+
+    // #311 — per-package rail JS discovery. Each Rail.* (and
+    // Security.*) NuGet ships its JS render code as an embedded
+    // resource named `<asm>.wwwroot.js.<file>.js`. We scan every
+    // loaded assembly matching that prefix, pull the resources,
+    // and splice the concatenated payload into the placeholder
+    // emitted by core's `_rail-fragments-marker.js`. Hosts that
+    // don't reference a rail's package contribute zero bytes — the
+    // bundle stays valid JS even with no rails at all.
+    private const string RailFragmentMarkerBegin =
+        "/*BOWIRE_RAIL_FRAGMENTS_BEGIN*/";
+    private const string RailFragmentMarkerEnd =
+        "/*BOWIRE_RAIL_FRAGMENTS_END*/";
+
+    internal static string StitchRailFragments(string coreBundle)
+    {
+        var beginIdx = coreBundle.IndexOf(RailFragmentMarkerBegin, StringComparison.Ordinal);
+        var endIdx = coreBundle.IndexOf(RailFragmentMarkerEnd, StringComparison.Ordinal);
+        if (beginIdx < 0 || endIdx < 0 || endIdx < beginIdx)
+        {
+            // Marker missing (development bundle pre-#311 or someone
+            // re-minified the bundle and stripped block comments) —
+            // fall back to returning the core bundle as-is. The rail
+            // surfaces just won't render in that case, which is
+            // recoverable, whereas silently mangling the bundle would
+            // not be.
+            return coreBundle;
+        }
+        var insertAt = beginIdx + RailFragmentMarkerBegin.Length;
+        var payload = CollectRailJsPayload();
+        var sb = new System.Text.StringBuilder(coreBundle.Length + payload.Length + 2);
+        sb.Append(coreBundle, 0, insertAt);
+        sb.Append('\n');
+        sb.Append(payload);
+        sb.Append('\n');
+        sb.Append(coreBundle, endIdx, coreBundle.Length - endIdx);
+        return sb.ToString();
+    }
+
+    private static string CollectRailJsPayload()
+    {
+        var sb = new System.Text.StringBuilder();
+        // Sort by assembly name so the splice is deterministic across
+        // process restarts + machines. Within an assembly, sort by
+        // resource name so a Rail.* that ships more than one JS file
+        // also splices deterministically.
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => IsRailLikeAssembly(a.GetName().Name))
+            .OrderBy(a => a.GetName().Name, StringComparer.Ordinal))
+        {
+            string[] resources;
+            try { resources = assembly.GetManifestResourceNames(); }
+#pragma warning disable CA1031 // defensive — match BowireRailRegistry.Discover
+            catch { continue; }
+#pragma warning restore CA1031
+            foreach (var name in resources.OrderBy(n => n, StringComparer.Ordinal))
+            {
+                // Convention: `<asm>.wwwroot.js.<file>.js`. We accept any
+                // resource whose logical name contains `.wwwroot.js.`
+                // and ends with `.js` — that lets a rail ship multiple
+                // fragments (recordings + recordings-detail, &c.)
+                // without each one needing a per-file registration.
+                if (!name.Contains(".wwwroot.js.", StringComparison.Ordinal)) continue;
+                if (!name.EndsWith(".js", StringComparison.Ordinal)) continue;
+                using var stream = assembly.GetManifestResourceStream(name);
+                if (stream is null) continue;
+                using var reader = new StreamReader(stream);
+                sb.Append("\n/* --- ").Append(name).Append(" --- */\n");
+                sb.Append(reader.ReadToEnd());
+            }
+        }
+        return sb.ToString();
+    }
+
+    private static bool IsRailLikeAssembly(string? name)
+    {
+        if (string.IsNullOrEmpty(name)) return false;
+        // Rail.* is the primary surface. Security.* uses the same
+        // contract for the (future) JS slice that pairs with the
+        // security rail descriptor. Map ships its own asset endpoint
+        // and is intentionally excluded — its widget JS gets
+        // dynamic-loaded by extensions.js, not stitched.
+        return name.StartsWith("Kuestenlogik.Bowire.Rail.", StringComparison.Ordinal)
+            || name.StartsWith("Kuestenlogik.Bowire.Security.", StringComparison.Ordinal);
     }
 
     private static string EscapeJs(string value)

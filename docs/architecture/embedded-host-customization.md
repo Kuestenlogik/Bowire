@@ -111,17 +111,42 @@ them at runtime via Settings → Rail modes / Modules (persisted to
 `localStorage`). Always-on rails render greyed out with a "Built-in"
 badge.
 
-## Phase G continuation — JS fragment concat
+## Phase G continuation — per-package JS fragments (#311)
 
-The Phase G follow-up (tracked in a separate ticket) extracts the
-per-rail JS render code (sidebar template, main-pane rendering) out of
-core `wwwroot/js/` into each rail package's embedded resources, so a
-host without the rail package also doesn't ship the rail's JS to the
-browser. Today the descriptor moves are physical (drop the package,
-drop the rail from the catalogue) but the JS for every rail still
-ships in the core bundle. Functionally identical for the
-opt-in / opt-out experience — only the bundle byte-count is still
-core-sized.
+Five of the heaviest per-rail JS slices now live on their rail packages
+as embedded resources, not in core's `wwwroot/js/`. `BowireHtmlGenerator`
+scans every loaded `Kuestenlogik.Bowire.Rail.*` assembly at HTML-emit
+time, pulls the JS resources matching `*.wwwroot.js.*.js`, and stitches
+their content into the assembled `bowire.js` between the
+`/*BOWIRE_RAIL_FRAGMENTS_BEGIN*/` and `/*BOWIRE_RAIL_FRAGMENTS_END*/`
+markers core ships inside its IIFE. The stitched-in code therefore
+shares core's closure scope, so the existing bare-identifier references
+into helpers / state / renderers keep resolving without any
+window-namespace dance.
+
+Shipped in this phase:
+
+| Rail package | JS fragment | LOC moved |
+|--------------|-------------|----------:|
+| `Kuestenlogik.Bowire.Rail.Recordings` | `recording.js` | ~1700 |
+| `Kuestenlogik.Bowire.Rail.Mocks` | `mocks.js` | ~600 |
+| `Kuestenlogik.Bowire.Rail.Flows` | `flows.js` | ~1700 |
+| `Kuestenlogik.Bowire.Rail.Compose` | `compose-rail.js` | ~1200 |
+| `Kuestenlogik.Bowire.Rail.Intercepted` | `intercepted-view.js` | ~700 |
+
+Together, ~6,000 lines (≈200 KB pre-minify) drop out of every
+`Bundle.Minimal` bundle that doesn't opt into the matching rail.
+Hosts that DO reference the rail package see the same JS surface as
+today — the splice is byte-for-byte identical to the old monolithic
+concat, only the source-of-truth moved.
+
+Deferred to a follow-up ticket (Phase G remainder): the per-rail
+branches inside `render-sidebar.js` and `render-main.js`, plus
+`proxy-view.js`, `benchmarks.js`, `collections.js`. These have
+cross-rail dispatchers that need a small descriptor-driven hook
+(`IBowireRailContribution.RenderSidebar(state)` &c.) before they can
+cleanly leave core — out of scope for #311 but unblocked by the
+stitching machinery it lands.
 
 ## See also
 

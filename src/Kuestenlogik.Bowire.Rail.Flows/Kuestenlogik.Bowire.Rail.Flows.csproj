@@ -1,12 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- #306 Phase G — Flows rail package. -->
-    <Description>Bowire Flows rail — multi-step request flows. Adds the Flows rail descriptor to the rail registry.</Description>
+    <!-- #306 Phase G — Flows rail package.
+         #311 Phase G continuation — owns flows.js fragment. -->
+    <Description>Bowire Flows rail — multi-step request flows. Adds the Flows rail descriptor + per-rail JS fragment to the workbench.</Description>
     <PackageId>Kuestenlogik.Bowire.Rail.Flows</PackageId>
     <PackageTags>bowire;rail;flows;workbench;plugin</PackageTags>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- #311 — per-rail JS fragment. See Rail.Recordings for the discovery contract. -->
+    <EmbeddedResource Include="wwwroot\js\flows.js"
+                      LogicalName="Kuestenlogik.Bowire.Rail.Flows.wwwroot.js.flows.js" />
   </ItemGroup>
 </Project>

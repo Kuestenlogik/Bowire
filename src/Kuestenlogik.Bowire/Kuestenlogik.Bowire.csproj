@@ -97,17 +97,18 @@
     <BowireJsFragment Include="wwwroot\js\history-env.js" />
     <BowireJsFragment Include="wwwroot\js\auth.js" />
     <BowireJsFragment Include="wwwroot\js\schema-form.js" />
-    <BowireJsFragment Include="wwwroot\js\recording.js" />
-    <BowireJsFragment Include="wwwroot\js\mocks.js" />
+    <!-- #311 — recording.js / mocks.js / flows.js / intercepted-view.js
+         moved out of core into Kuestenlogik.Bowire.Rail.Recordings /
+         .Rail.Mocks / .Rail.Flows / .Rail.Intercepted as embedded JS
+         resources. BowireHtmlGenerator stitches them into the IIFE at
+         HTML-emit time via the marker injected by
+         _rail-fragments-marker.js (last fragment before init.js). The
+         rail fragments share the IIFE's closure scope so the existing
+         bare-identifier references into helpers.js / prologue.js / &c.
+         keep resolving. Hosts that don't reference a rail's NuGet
+         don't ship that rail's JS in the browser bundle. -->
     <BowireJsFragment Include="wwwroot\js\collections.js" />
-    <BowireJsFragment Include="wwwroot\js\flows.js" />
     <BowireJsFragment Include="wwwroot\js\proxy-view.js" />
-    <!-- #153 — twin of proxy-view.js for the in-process interceptor.
-         Reuses the proxy detail-pane renderer (renderHttpExchange) so
-         both rails look identical. Must come AFTER proxy-view.js so
-         that renderHttpExchange is hoisted into the IIFE scope before
-         the intercepted-view.js code references it. -->
-    <BowireJsFragment Include="wwwroot\js\intercepted-view.js" />
     <BowireJsFragment Include="wwwroot\js\api.js" />
     <BowireJsFragment Include="wwwroot\js\protocols.js" />
     <!-- #126 — protocol-typed pre/post-request script sandbox.
@@ -155,16 +156,9 @@
          descriptors. Function declarations are hoisted inside the shared
          IIFE so the descriptors' callback references resolve at runtime. -->
     <BowireJsFragment Include="wwwroot\js\request-builder-protocols.js" />
-    <!-- #293 — Compose rail (request-builder's new home). Owns the
-         composeTabs state + tab strip + per-tab builder dispatch. Reuses
-         _appendRequestBuilderInto / _newHoppState / ensureHoppState /
-         rbLayouts from request-builder.js + request-builder-protocols.js,
-         so it must come AFTER both. Consumed by render-main.js's
-         railMode dispatch and by init.js's Ctrl+L handler — both
-         resolve through the IIFE's shared scope, so the order between
-         this file and render-main.js / init.js doesn't matter at
-         declaration time. -->
-    <BowireJsFragment Include="wwwroot\js\compose-rail.js" />
+    <!-- #311 — compose-rail.js moved to Kuestenlogik.Bowire.Rail.Compose;
+         see the comment above the schema-form.js fragment and the
+         _rail-fragments-marker.js note below for the stitching contract. -->
     <BowireJsFragment Include="wwwroot\js\tests.js" />
     <BowireJsFragment Include="wwwroot\js\code-export.js" />
     <BowireJsFragment Include="wwwroot\js\perf-diff.js" />
@@ -240,6 +234,15 @@
          startTour symbol the legacy 'Take Tour' footer button calls;
          the shim in execute.js forwards to this engine). -->
     <BowireJsFragment Include="wwwroot\js\tour.js" />
+    <!-- #311 — empty marker payload (two sentinel comments). Lives
+         INSIDE the shared IIFE so BowireHtmlGenerator can splice in
+         per-package rail JS at HTML-emit time without forcing
+         consumers to re-link core. Must come AFTER every core
+         fragment that declares a symbol referenced by a rail (the
+         request-builder + render-sidebar + render-main suite) and
+         BEFORE init.js so the rail fragments wire their globals
+         before DOMContentLoaded fires. -->
+    <BowireJsFragment Include="wwwroot\js\_rail-fragments-marker.js" />
     <BowireJsFragment Include="wwwroot\js\init.js" />
     <Watch Include="wwwroot\js\**\*.js" />
   </ItemGroup>

@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- #306 Phase G — Intercepted rail package. In-process middleware
-         sister to the standalone Proxy rail (see #153). -->
+         sister to the standalone Proxy rail (see #153).
+         #311 Phase G continuation — owns intercepted-view.js fragment. -->
     <Description>Bowire Intercepted rail — in-process middleware sister to the standalone Proxy rail. Surfaces every request flowing through a host that opted in via app.UseBowireInterceptor().</Description>
     <PackageId>Kuestenlogik.Bowire.Rail.Intercepted</PackageId>
     <PackageTags>bowire;rail;intercepted;interceptor;workbench;plugin</PackageTags>
@@ -9,5 +10,15 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- #311 — per-rail JS fragment. intercepted-view.js depends on
+         renderHttpExchange from core's proxy-view.js; the HTML
+         generator stitches all rail fragments into the same IIFE as
+         core, so function-declaration hoisting + closure scope keep
+         the reference resolvable. See Rail.Recordings for the
+         discovery contract. -->
+    <EmbeddedResource Include="wwwroot\js\intercepted-view.js"
+                      LogicalName="Kuestenlogik.Bowire.Rail.Intercepted.wwwroot.js.intercepted-view.js" />
   </ItemGroup>
 </Project>
