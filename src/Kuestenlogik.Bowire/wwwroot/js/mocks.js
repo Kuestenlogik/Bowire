@@ -65,6 +65,13 @@
             mocksList = [summary].concat(mocksList.filter(function (m) { return m.mockId !== summary.mockId; }));
             toast('Mock running on port ' + summary.port, 'success');
             if (railMode === 'mocks') render();
+            // #303 — advance the build-a-mock tour when a mock host
+            // successfully boots. Fires regardless of which entry path
+            // ran the start (recording detail, sidebar context, &c.).
+            if (typeof window !== 'undefined'
+                && typeof window.bowireFireTourEvent === 'function') {
+                window.bowireFireTourEvent('mock-started', { mockId: summary.mockId, port: summary.port });
+            }
             return summary;
         }).catch(function (err) {
             toast(err.message || 'Mock start failed', 'error');

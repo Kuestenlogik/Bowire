@@ -1162,6 +1162,17 @@
                 status: 'Mock running on port ' + resp.body.port,
                 body: url,
             });
+            // #303 — advance the build-a-mock tour. Mirrors the same
+            // fire-site in mocks.js#startMockFromRecording so either
+            // start path drives the tour forward.
+            if (typeof window !== 'undefined'
+                && typeof window.bowireFireTourEvent === 'function') {
+                window.bowireFireTourEvent('mock-started', {
+                    mockId: resp.body.mockId,
+                    port: resp.body.port,
+                    url: url
+                });
+            }
         }).catch(function (err) {
             toast('Use as mock failed: ' + (err && err.message ? err.message : err), 'error');
         });

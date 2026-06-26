@@ -229,7 +229,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [237](https://github.com/Kuestenlogik/Bowire/issues/237) | Bowire | [WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+](#issue-kuestenlogik-bowire-237) | ⬜ Backlog |  |
 | [288](https://github.com/Kuestenlogik/Bowire/issues/288) | Bowire | [IInlineSseSubscriber is an orphaned seam — give it a consumer or remove it](#issue-kuestenlogik-bowire-288) | ⬜ Backlog |  |
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog |  |
-| [303](https://github.com/Kuestenlogik/Bowire/issues/303) | Bowire | [Guided tour: per-rail empty-state secondary tours](#issue-kuestenlogik-bowire-303) | ⬜ Backlog |  |
+| [303](https://github.com/Kuestenlogik/Bowire/issues/303) | Bowire | [Guided tour: per-rail empty-state secondary tours](#issue-kuestenlogik-bowire-303) | ✅ Done |  |
 | [304](https://github.com/Kuestenlogik/Bowire/issues/304) | Bowire | [Compose rail: hide standalone Collections rail tree node now that Compose hosts it](#issue-kuestenlogik-bowire-304) | ⬜ Backlog |  |
 | [305](https://github.com/Kuestenlogik/Bowire/issues/305) | Bowire | [Source catalogue providers: kubernetes + agent (Phase D+E)](#issue-kuestenlogik-bowire-305) | ⬜ Backlog |  |
 | [307](https://github.com/Kuestenlogik/Bowire/issues/307) | Bowire | [Bowire interceptor: standalone reverse-proxy mode (Phase C)](#issue-kuestenlogik-bowire-307) | ⬜ Backlog |  |
@@ -877,9 +877,9 @@ During the v2.0.0 release publish on 2026-06-21, the `winget` workflow failed at
 
 Followup to #291. Phases A+B+C+E shipped (REST / gRPC / MCP / MQTT / WebSocket / SSE + streaming response pane). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/292)
 
-#### <a id="issue-kuestenlogik-bowire-303"></a>⬜ Backlog · [#303](https://github.com/Kuestenlogik/Bowire/issues/303) Guided tour: per-rail empty-state secondary tours
+#### <a id="issue-kuestenlogik-bowire-303"></a>✅ Done · [#303](https://github.com/Kuestenlogik/Bowire/issues/303) Guided tour: per-rail empty-state secondary tours
 
-Phase A (tour engine + spotlight + page-navigation) and Phase B (Getting-started tour) shipped in b899d7007e904ffec2b3be7fc1ebcfea4595137f. Phase C — per-rail empty-state secondary tours — remains. [[more]](https://github.com/Kuestenlogik/Bowire/issues/303)
+Phase C shipped: three opt-in per-rail tours ('Build a mock', 'Set up environments', 'Run a benchmark') wired into the Mocks rail / Workspaces→Envs / Benchmarks rail empty cards. Each empty card now grows a 'Take a tour' CTA that launches the matching tour via `window.bowireStart*Tour`. Action sites in mocks.js / recording.js / auth.js / benchmarks.js fire `mock-started` / `environment-created` / `benchmark-run-complete` so on-event step advance keeps the tour in sync with the operator's progress. [[more]](https://github.com/Kuestenlogik/Bowire/issues/303)
 
 #### <a id="issue-kuestenlogik-bowire-304"></a>⬜ Backlog · [#304](https://github.com/Kuestenlogik/Bowire/issues/304) Compose rail: hide standalone Collections rail tree node now that Compose hosts it
 

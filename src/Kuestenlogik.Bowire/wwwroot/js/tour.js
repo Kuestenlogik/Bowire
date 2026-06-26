@@ -838,6 +838,205 @@
         });
     }
 
+    // ---- #303 — Per-rail empty-state secondary tours ------------------
+    //
+    // Three short tours, opt-in from the rail's empty card. Each one
+    // is force-runnable (the empty card's CTA passes force:true so the
+    // operator can re-trigger after dismissing) but still saved-once
+    // so the CTA stops feeling chatty after the first run.
+
+    // Shared helper — jump to a rail mode and persist the choice so a
+    // mid-tour render() doesn't snap back. Mirrors the inline pattern
+    // from _gettingStartedSteps but factored because the per-rail tours
+    // do this on most steps.
+    function _tourGoToRail(mode) {
+        if (typeof railMode !== 'undefined') {
+            railMode = mode;
+            try { localStorage.setItem('bowire_rail_mode', mode); } catch { /* ignore */ }
+        }
+        if (typeof render === 'function') render();
+    }
+
+    // 'Build a mock' — Recordings rail empty.
+    //
+    // The path is: pick (or capture) a recording → "Use as mock" →
+    // mock host appears on the Mocks rail with its URL. We can't
+    // guarantee a recording exists, so the tour stays narrative on the
+    // first step and switches to live targets once we're on the
+    // Recordings rail.
+    function _buildMockSteps() {
+        return [
+            {
+                id: 'mock-intro',
+                title: 'Build a mock from a recording',
+                body: 'Mocks let you replay a captured session as a local HTTP server — handy for offline development, demos, or wiring an integration test against a frozen response set.\n\nYou need a recording first. If you don\'t have one yet, capture a few calls from Discover; the tour points you there.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'mock-go-recordings',
+                title: 'Step 1 — Open the Recordings rail',
+                body: 'Switch to the Recordings rail. If you already have a saved recording it shows in the sidebar; otherwise the empty card walks you through capturing one from Discover.',
+                target: '[data-rail-mode-id="recordings"]',
+                navigate: function () { _tourGoToRail('recordings'); },
+                advance: 'next-button'
+            },
+            {
+                id: 'mock-use-as-mock',
+                title: 'Step 2 — Use as mock',
+                body: 'Pick a recording, then hit "Use as mock" in its detail toolbar. Bowire spins up a local MockServer on a free port and copies the URL to your clipboard.',
+                target: '#bowire-main-recordings',
+                cta: {
+                    label: 'Waiting for mock to start…'
+                },
+                advance: 'on-event:mock-started'
+            },
+            {
+                id: 'mock-switch-to-mocks',
+                title: 'Step 3 — Inspect the running mock',
+                body: 'The Mocks rail lists every mock host you\'ve started. Pick one to see its URL, copy it again, open the live request log, or stop the server.\n\nFire requests against the mock\'s port from your other tools and watch them stream in.',
+                target: '[data-rail-mode-id="mocks"]',
+                navigate: function () { _tourGoToRail('mocks'); },
+                advance: 'next-button'
+            },
+            {
+                id: 'mock-wrap-up',
+                title: 'That\'s the mock loop',
+                body: 'Recording → Use as mock → invoke against the mock port. From here you can chain it: benchmark the mock, share its URL with the team, or stop it from the Mocks rail when you\'re done.',
+                target: null,
+                advance: 'next-button'
+            }
+        ];
+    }
+
+    function tourStartBuildMock(opts) {
+        opts = opts || {};
+        tourStart(_buildMockSteps(), {
+            id: 'build-a-mock',
+            force: !!opts.force,
+            onFinish: opts.onFinish || null
+        });
+    }
+
+    // 'Set up environments' — Workspaces → Envs overview empty.
+    //
+    // The empty Envs overview is reached via the workspace tree, so
+    // step 1 routes there and pins the spotlight on the "+ New
+    // environment" button. Step 2 waits for the create-event the
+    // openCreateEnvironmentDialog flow now fires; step 3 nudges the
+    // operator toward {{var}} references in a request.
+    function _setupEnvironmentsSteps() {
+        return [
+            {
+                id: 'env-intro',
+                title: 'Set up environments',
+                body: 'Environments scope variables, auth tokens, and secrets per deployment stage — staging vs. prod vs. local — so you can re-point an entire workspace at a different backend by toggling the active env.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'env-new',
+                title: 'Step 1 — Create an environment',
+                body: 'Hit "+ New environment" on the workspace\'s envs overview. Give it a stage name like "staging" or "prod". The new env shows up in the workspace tree and in the topbar env dropdown.',
+                target: '#bowire-workspace-env-new-btn',
+                advance: 'on-event:environment-created'
+            },
+            {
+                id: 'env-add-vars',
+                title: 'Step 2 — Add variables',
+                body: 'Open the env editor (click the env name in the tree). Each row is a key=value pair — type a host, a token, a tenant id. Values are stored locally; mark a row as a secret to keep it out of exports.\n\nYou can paste a .env file in too — Bowire parses KEY=value lines.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'env-reference',
+                title: 'Step 3 — Reference vars in a request',
+                body: 'Anywhere a string field accepts input (URLs, headers, request body) you can write {{varName}} and Bowire substitutes the active env\'s value at send-time. Flip the active env from the topbar dropdown and the same request hits a different backend.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'env-wrap-up',
+                title: 'You\'re set',
+                body: 'That\'s envs: create → add vars → reference. Use the topbar env dropdown to switch active env on the fly; the workspace tree shows the env count next to each workspace so you can see the spread at a glance.',
+                target: null,
+                advance: 'next-button'
+            }
+        ];
+    }
+
+    function tourStartSetupEnvironments(opts) {
+        opts = opts || {};
+        tourStart(_setupEnvironmentsSteps(), {
+            id: 'set-up-environments',
+            force: !!opts.force,
+            onFinish: opts.onFinish || null
+        });
+    }
+
+    // 'Run a benchmark' — Benchmarks rail empty.
+    //
+    // The natural path is: pick a benchmark source (method, collection,
+    // or recording) → set N + concurrency → Run → read p95 / p99 in the
+    // results panel. We surface "New benchmark" as the first concrete
+    // action so the operator gets a spec to fiddle with.
+    function _runBenchmarkSteps() {
+        return [
+            {
+                id: 'bench-intro',
+                title: 'Benchmark a method',
+                body: 'A benchmark repeats N calls at K concurrency and reports latency percentiles (p50 / p95 / p99) plus the status distribution.\n\nThree shapes: single method (one unary call), collection (replay every item), or recording (replay every step). This tour walks the single-method shape.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'bench-go-rail',
+                title: 'Step 1 — Open the Benchmarks rail',
+                body: 'Switch to Benchmarks. The sidebar lists saved specs; the main pane shows the configurator for the selected one.',
+                target: '[data-rail-mode-id="benchmarks"]',
+                navigate: function () { _tourGoToRail('benchmarks'); },
+                advance: 'next-button'
+            },
+            {
+                id: 'bench-new',
+                title: 'Step 2 — New benchmark',
+                body: 'Hit "New benchmark" on the empty card to create a fresh spec, then pick a method from the target dropdown. Or kick the tour off from Discover with the "Benchmark" button on any method.',
+                target: '#bowire-bench-new-btn',
+                advance: 'next-button'
+            },
+            {
+                id: 'bench-configure',
+                title: 'Step 3 — Set N + concurrency',
+                body: 'Two knobs do most of the work: total iterations (N) and concurrent workers (VUs). Start small — 100 / 5 finishes in a few seconds and is enough to spot obvious regressions.\n\nFor sustained-load testing, switch the phase from iteration-bounded to duration-bounded (run for 60s @ 10 VUs) and read the steady-state RPS.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'bench-run',
+                title: 'Step 4 — Run it',
+                body: 'Click Run. The progress bar ticks up as iterations land; cancellation is one click away if something\'s wrong.\n\nWhen it finishes, the result panel below the configurator shows p50 / p95 / p99 latency, status-code distribution, and a sparkline of per-iteration durations. Re-run with tweaks; the last N runs stay in history so you can A/B them.',
+                target: null,
+                advance: 'on-event:benchmark-run-complete'
+            },
+            {
+                id: 'bench-wrap-up',
+                title: 'You\'re benchmarking',
+                body: 'That\'s the loop: pick a target → set N + concurrency → run → read percentiles. Benchmark history sticks around per spec so you can see if today\'s change made things faster.',
+                target: null,
+                advance: 'next-button'
+            }
+        ];
+    }
+
+    function tourStartRunBenchmark(opts) {
+        opts = opts || {};
+        tourStart(_runBenchmarkSteps(), {
+            id: 'run-a-benchmark',
+            force: !!opts.force,
+            onFinish: opts.onFinish || null
+        });
+    }
+
     // ---- Window exposure ----------------------------------------------
     // Other fragments + external scripts reach the engine through
     // these globals so they don't have to live inside the IIFE.
@@ -847,5 +1046,9 @@
         window.bowireTourIsRunning = tourIsRunning;
         window.bowireFireTourEvent = tourFireEvent;
         window.bowireStartGettingStartedTour = tourStartGettingStarted;
+        // #303 — Per-rail secondary tours, fired from empty-card CTAs.
+        window.bowireStartBuildMockTour = tourStartBuildMock;
+        window.bowireStartSetupEnvironmentsTour = tourStartSetupEnvironments;
+        window.bowireStartRunBenchmarkTour = tourStartRunBenchmark;
         window.bowireResetTours = tourResetSavedOnce;
     }
