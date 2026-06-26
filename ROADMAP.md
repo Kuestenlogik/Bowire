@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**54/61 done** · 7 backlog
+**54/62 done** · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -23,6 +23,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ⬜ Backlog |  |
 | [309](https://github.com/Kuestenlogik/Bowire/issues/309) | Bowire | [UI: configure URL catalogue providers from Settings (#136 follow-up)](#issue-kuestenlogik-bowire-309) | ⬜ Backlog |  |
+| [310](https://github.com/Kuestenlogik/Bowire/issues/310) | Bowire | [UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up](#issue-kuestenlogik-bowire-310) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ✅ Done |  |
@@ -265,6 +266,10 @@ The **Compose** rail (renamed from Design in commit `e52f7a9`) is now the home f
 #### <a id="issue-kuestenlogik-bowire-309"></a>⬜ Backlog · [#309](https://github.com/Kuestenlogik/Bowire/issues/309) UI: configure URL catalogue providers from Settings (#136 follow-up)
 
 #136 shipped the URL catalogue provider interface (local / http / consul). Provider selection + configuration goes through appsettings (Bowire:Discovery:Catalogue:*) today — there's NO UI affordance to pick + configure a provider from the workbench. [[more]](https://github.com/Kuestenlogik/Bowire/issues/309)
+
+#### <a id="issue-kuestenlogik-bowire-310"></a>⬜ Backlog · [#310](https://github.com/Kuestenlogik/Bowire/issues/310) UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up
+
+#294 introduced IBowireModuleContribution + BowireModuleRegistry — modules (AI, Assistant, Variable resolver, &c) are now contributable from external packages. But the Settings → Modules SECTION that would let an operator turn an installed module ON / OFF doesn't exist. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/310)
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
