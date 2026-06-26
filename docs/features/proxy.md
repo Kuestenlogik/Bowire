@@ -57,6 +57,24 @@ The auto-generated CA lives at `~/.bowire/proxy-ca.{pfx,crt}`. Install it once i
 
 The private key never leaves the local machine. If you commit the `.bwr` recording to a repo, the CA is **not** included — only the captured plaintext.
 
+## Embedded mode
+
+When Bowire is mounted inside an ASP.NET host via `MapBowire()` instead of the standalone CLI, **the proxy listener is not in-process** — there is no `bowire proxy` running alongside the workbench, and the embedded host has no opinion about how to spawn one.
+
+The workbench reflects this:
+
+* The Proxy rail's empty state reads "Proxy runs outside this host" and points at this page rather than at a `bowire proxy` shell command the operator can't invoke from inside their app.
+* Auto-connect to the loopback default (`http://127.0.0.1:8889`) is skipped — failing connections against a port nobody owns are noise.
+* The "start the proxy with `bowire proxy` in a terminal" hint never appears in embedded mode (issue [#299](https://github.com/Kuestenlogik/Bowire/issues/299)).
+
+If you want the rail in an embedded host, run `bowire proxy` on another machine and point the workbench at it:
+
+* Open **Workspace Settings → General → Proxy**.
+* Set **External proxy endpoint** to the URL of the remote proxy (e.g. `http://proxy.dev.internal:8889`).
+* The setting travels with the workspace (`.bww`), so every team member opening the workspace inherits the same target.
+
+Standalone CLI users are unaffected — leaving the field empty falls back to the loopback default that has worked since v1.x.
+
 ## Scope
 
 * **HTTP/1.1 and HTTP/2** are intercepted natively.

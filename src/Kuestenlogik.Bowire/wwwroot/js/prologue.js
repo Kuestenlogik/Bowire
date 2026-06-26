@@ -1908,6 +1908,39 @@
         persistWorkspaces();
     }
 
+    // #299 — Per-workspace external proxy endpoint. Optional URL of an
+    // externally-running `bowire proxy` instance that the workbench's
+    // Proxy rail should talk to. When unset:
+    //   - standalone: fall back to BOWIRE_PROXY_DEFAULT_API_URL (the
+    //     loopback the CLI binds to), preserving v1.x behaviour.
+    //   - embedded:   the rail renders a "CLI-only or external URL"
+    //     empty state instead of auto-connecting to loopback, since
+    //     there is no in-host proxy listener in embedded mode.
+    // Workspace-scoped so a project can pin its team's shared proxy
+    // host (e.g. http://proxy.dev.internal:8889) via the .bww file.
+    var PROXY_ENDPOINT_KEY = 'bowire_proxy_endpoint';
+    function getWorkspaceProxyEndpoint(wsId) {
+        var id = wsId || activeWorkspaceId;
+        if (!id) return '';
+        try {
+            var raw = localStorage.getItem(_wsKeyFor(id, PROXY_ENDPOINT_KEY));
+            return (typeof raw === 'string') ? raw.trim() : '';
+        } catch { return ''; }
+    }
+    function setWorkspaceProxyEndpoint(wsId, url) {
+        var id = wsId || activeWorkspaceId;
+        if (!id) return false;
+        var trimmed = (typeof url === 'string') ? url.trim() : '';
+        try {
+            if (trimmed.length === 0) {
+                localStorage.removeItem(_wsKeyFor(id, PROXY_ENDPOINT_KEY));
+            } else {
+                localStorage.setItem(_wsKeyFor(id, PROXY_ENDPOINT_KEY), trimmed);
+            }
+            return true;
+        } catch { return false; }
+    }
+
     // #193 Phase 2 — plugin pins (Dictionary<protocolId, semverString>)
     // declared in the .bww file's `pluginPins` field. Lives in
     // localStorage under wsKey('bowire_plugin_pins'), so the existing
@@ -2342,6 +2375,13 @@
         // "no such protocol" errors at first request. Empty / absent
         // means no requirement, current behaviour preserved.
         'bowire_plugin_pins',
+        // #299 — External proxy endpoint (string). When set the
+        // workbench's Proxy rail talks to this URL instead of the
+        // CLI's loopback default; required for embedded hosts that
+        // can't run `bowire proxy` in-process. Empty / absent ⇒
+        // current behaviour (loopback default in standalone, "no
+        // proxy here" empty state in embedded).
+        'bowire_proxy_endpoint',
         // #126 — pre/post-script source per method. Lives on the
         // method (so it travels with collections + recordings) and
         // is round-tripped through workspace export so a team

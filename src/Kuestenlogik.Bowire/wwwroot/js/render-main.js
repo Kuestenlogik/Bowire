@@ -2434,6 +2434,47 @@
 
         main.appendChild(storageSection);
 
+        // #299 — External proxy endpoint (per-workspace). Optional URL
+        // of an externally-running `bowire proxy` instance. Required
+        // for embedded hosts that can't run the proxy in-process and
+        // useful for teams that share a central capture host. Empty ⇒
+        // standalone falls back to loopback; embedded shows the
+        // "Proxy runs outside this host" empty state in the Proxy
+        // rail.
+        var currentProxyEndpoint = (typeof getWorkspaceProxyEndpoint === 'function')
+            ? getWorkspaceProxyEndpoint(ws.id) : '';
+        var proxySection = el('div', { className: 'bowire-ws-detail-section' },
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Proxy' }),
+            el('div', { className: 'bowire-ws-detail-storage-root' },
+                el('label', { className: 'bowire-ws-detail-storage-root-label',
+                    textContent: 'External proxy endpoint' }),
+                el('input', {
+                    type: 'text',
+                    className: 'bowire-ws-detail-storage-root-input',
+                    value: currentProxyEndpoint,
+                    placeholder: 'http://proxy.example.internal:8889',
+                    'aria-label': 'External proxy endpoint URL',
+                    onBlur: function (e) {
+                        var t = _liveWs();
+                        if (!t || typeof setWorkspaceProxyEndpoint !== 'function') return;
+                        var raw = String(e.target.value == null ? '' : e.target.value).trim();
+                        var prior = getWorkspaceProxyEndpoint(t.id) || '';
+                        if (raw === prior) return;
+                        setWorkspaceProxyEndpoint(t.id, raw);
+                        // Reset the rail state so the next visit
+                        // re-connects against the new endpoint.
+                        if (typeof proxyConnectionState !== 'undefined') {
+                            proxyConnectionState = 'idle';
+                        }
+                        render();
+                    }
+                }),
+                el('span', { className: 'bowire-ws-detail-storage-toggle-hint',
+                    textContent: 'URL of an externally-running `bowire proxy` the Proxy rail should talk to. Leave empty for standalone CLI default (loopback). Embedded hosts (MapBowire) need this set to use the rail.' })
+            )
+        );
+        main.appendChild(proxySection);
+
         // #193 Phase 2 item 3 — Required plugins (pluginPins) editor.
         // Lets the operator declare which protocols this workspace
         // expects so a team member opening it gets the pin-check
