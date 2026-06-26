@@ -1426,8 +1426,12 @@
             }),
             el('div', { className: 'bowire-settings-about-brand-text' },
                 el('div', { className: 'bowire-settings-about-brand-name', textContent: 'Bowire' }),
-                el('div', { className: 'bowire-settings-about-brand-version', textContent: 'Version ' + (config.version || 'unknown') }),
-                el('div', { className: 'bowire-settings-about-brand-tagline', textContent: 'The multi-protocol API workbench' })
+                // Order: name → tagline → version. User feedback: the
+                // version was visually separating the name from the
+                // tagline; reading it bottom-up communicates 'what is
+                // this thing' before 'which version is it'.
+                el('div', { className: 'bowire-settings-about-brand-tagline', textContent: 'The multi-protocol API workbench' }),
+                el('div', { className: 'bowire-settings-about-brand-version', textContent: 'Version ' + (config.version || 'unknown') })
             )
         ));
 
