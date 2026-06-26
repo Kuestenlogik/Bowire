@@ -865,7 +865,7 @@
         { id: 'recordings',   icon: 'recording', label: 'Recordings',        group: 'scenarios', sidebar: { kind: 'recordings' } },
         { id: 'mocks',        icon: 'mock',      label: 'Mocks',             group: 'scenarios', sidebar: { kind: 'mocks' } },
         { id: 'flows',        icon: 'flow',      label: 'Flows',             group: 'scenarios', sidebar: { kind: 'flows' } },
-        { id: 'proxy',        icon: 'masks',     label: 'Proxy / MITM',      group: 'quality',   sidebar: { kind: 'proxy' } },
+        { id: 'proxy',        icon: 'disconnect',label: 'Proxy / MITM',      group: 'quality',   sidebar: { kind: 'proxy' } },
         { id: 'benchmarks',   icon: 'chart',     label: 'Benchmarks',        group: 'quality',   sidebar: { kind: 'benchmarks' } },
         // Parallel sessions: launched directly from a recording or
         // collection toolbar (#132 minimal). No standalone rail mode —
