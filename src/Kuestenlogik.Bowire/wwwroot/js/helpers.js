@@ -2180,7 +2180,13 @@
             // the generic '+' add icon.
             rocket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
             feather: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" x2="2" y1="8" y2="22"/><line x1="17.5" x2="9" y1="15" y2="15"/></svg>',
-            flow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="3"/><circle cx="19" cy="18" r="3"/><path d="M8 6h6a4 4 0 0 1 4 4v5"/></svg>',
+            // Branching node tree — SVGRepo. Root circle on the left, two
+            // branches with terminal circles on the right; reads clearly
+            // as 'workflow / branch' at small sizes. Same key as before so
+            // the Flows rail, the env-list Flows entry, and render-main's
+            // graphql/jsonrpc protocol-icon fallbacks all pick up the
+            // refresh in one shot.
+            flow: '<svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 5C7 4.44772 7.44772 4 8 4C8.55228 4 9 4.44772 9 5C9 5.55228 8.55228 6 8 6C7.44772 6 7 5.55228 7 5ZM9 7.82929C10.1652 7.41746 11 6.30622 11 5C11 3.34315 9.65685 2 8 2C6.34315 2 5 3.34315 5 5C5 6.30622 5.83481 7.41746 7 7.82929V9V16C7 18.2091 8.79086 20 11 20H14.1707C14.5825 21.1652 15.6938 22 17 22C18.6569 22 20 20.6569 20 19C20 17.3431 18.6569 16 17 16C15.6938 16 14.5825 16.8348 14.1707 18H11C9.89543 18 9 17.1046 9 16V12.4649C9.58835 12.8052 10.2714 13 11 13H14.1707C14.5825 14.1652 15.6938 15 17 15C18.6569 15 20 13.6569 20 12C20 10.3431 18.6569 9 17 9C15.6938 9 14.5825 9.83481 14.1707 11H11C9.89543 11 9 10.1046 9 9V7.82929ZM16 12C16 12.5523 16.4477 13 17 13C17.5523 13 18 12.5523 18 12C18 11.4477 17.5523 11 17 11C16.4477 11 16 11.4477 16 12ZM16 19C16 19.5523 16.4477 20 17 20C17.5523 20 18 19.5523 18 19C18 18.4477 17.5523 18 17 18C16.4477 18 16 18.4477 16 19Z"/></svg>',
             repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>',
             lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
             // Curly-braces `{ }` — used as the Variables-tab glyph.
