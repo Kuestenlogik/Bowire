@@ -27,6 +27,54 @@
     let _designTabIdCounter = 0;
     let _composeTabsRehydrated = false;
 
+    // #295 — Side panel state. The Compose rail grows a collapsible
+    // panel on the right hosting Collections (top) + Presets (bottom).
+    // The panel is the same data as the standalone Collections rail —
+    // it's just hosted here so the operator doesn't have to rail-hop
+    // when composing requests that should land in a saved bucket.
+    //   composeSidePanelCollapsed — persisted under wsKey() so each
+    //     workspace remembers its own preference. Defaults to false
+    //     (panel visible) so first-time users discover the affordance.
+    //   composeSidePanelSection — which sub-section is open: 'collections'
+    //     | 'presets' | 'both'. 'both' is the default; clicking a
+    //     section header collapses it back to the other one.
+    //   composeCollectionsExpanded[id] — per-collection expand state.
+    let composeSidePanelCollapsed = false;
+    let composeCollectionsExpanded = Object.create(null);
+    let composePresetsExpanded = Object.create(null);
+    let _composeSidePanelRehydrated = false;
+
+    function _composeSidePanelKey() { return 'bowire_compose_panel_state'; }
+
+    function persistComposeSidePanel() {
+        try {
+            var data = {
+                collapsed: !!composeSidePanelCollapsed,
+                collections: composeCollectionsExpanded,
+                presets: composePresetsExpanded
+            };
+            localStorage.setItem(wsKey(_composeSidePanelKey()), JSON.stringify(data));
+        } catch (_) { /* non-fatal */ }
+    }
+
+    function rehydrateComposeSidePanel() {
+        if (_composeSidePanelRehydrated) return;
+        _composeSidePanelRehydrated = true;
+        try {
+            var raw = localStorage.getItem(wsKey(_composeSidePanelKey()));
+            if (!raw) return;
+            var data = JSON.parse(raw);
+            if (!data) return;
+            composeSidePanelCollapsed = !!data.collapsed;
+            if (data.collections && typeof data.collections === 'object') {
+                composeCollectionsExpanded = data.collections;
+            }
+            if (data.presets && typeof data.presets === 'object') {
+                composePresetsExpanded = data.presets;
+            }
+        } catch (_) { /* corrupt blob — keep defaults */ }
+    }
+
     function _nextDesignTabId() {
         for (;;) {
             var id = 'design_' + (++_designTabIdCounter);
@@ -52,7 +100,10 @@
                     var rbClone = Object.assign({}, rb);
                     rbClone._binaryRef = null;
                     var reqClone = Object.assign({}, req, { _requestBuilder: rbClone });
-                    return { id: t.id, request: reqClone };
+                    // #295 Phase D — origin persists with the tab so the
+                    // badge survives a reload. Defaults to 'fresh' for
+                    // legacy persisted tabs that pre-date the field.
+                    return { id: t.id, request: reqClone, origin: t.origin || { kind: 'fresh' } };
                 }),
                 active: activeDesignTabId,
             };
@@ -89,7 +140,11 @@
             try {
                 if (typeof ensureHoppState === 'function') ensureHoppState(t.request);
             } catch (_) { /* leave shape as-is */ }
-            composeTabs.push({ id: t.id, request: t.request });
+            composeTabs.push({
+                id: t.id,
+                request: t.request,
+                origin: t.origin || { kind: 'fresh' }
+            });
             var n = (t.id.match(/^design_(\d+)$/) || [])[1];
             if (n) {
                 var num = parseInt(n, 10);
@@ -139,7 +194,7 @@
                 if (tabs.length > 0) req._requestBuilder.activeTab = tabs[0].id;
             }
         } catch (_) { /* layout helpers may not be ready — non-fatal */ }
-        var tab = { id: _nextDesignTabId(), request: req };
+        var tab = { id: _nextDesignTabId(), request: req, origin: opts.origin || { kind: 'fresh' } };
         composeTabs.push(tab);
         activeDesignTabId = tab.id;
         // Swap the global freeformRequest so the rest of the workbench
@@ -247,11 +302,662 @@
         return pid.toUpperCase() + (url ? ' ' + url : (method ? ' ' + method : ''));
     }
 
+    // ---- #295 Phase B/D — spawn a Compose tab from a saved item ----
+    //
+    // Source for the request shape is a collection item OR a preset
+    // config blob (both share the same _snapshot shape that the
+    // freeform/discover "Add to…" menu produces — see _snapshotFreeform
+    // in render-main.js + saveCurrentRequestToCollection in prologue.js).
+    //
+    // Builds a freshly-shaped request-builder request seeded from the
+    // saved fields + stamps an `origin` marker so the tab badge can
+    // surface where this tab came from.
+    //
+    //   origin shape:
+    //     { kind: 'fresh' }                                    — default
+    //     { kind: 'collection', collectionId, itemId, name }   — from collection
+    //     { kind: 'preset', mode, presetId, name }             — from preset
+    //     { kind: 'discover', service, method }                — from Discover
+    //     { kind: 'recording', recordingId, stepIndex, name }  — from a recording
+    function spawnDesignTabFromItem(item, origin) {
+        if (!item) return null;
+        _snapshotActiveDesignTab();
+        var pid = item.protocol || 'rest';
+        var req = {
+            protocol: pid,
+            serverUrl: item.serverUrl || '',
+            urlMode: item.urlMode || 'inline',
+            service: item.service || '',
+            method: item.method || (pid === 'rest' ? 'GET' : ''),
+            body: item.body || (Array.isArray(item.messages) ? item.messages[0] : '') || '{}',
+            messages: Array.isArray(item.messages) ? item.messages.slice() : [item.body || '{}'],
+            metadata: item.metadata ? Object.assign({}, item.metadata) : {},
+            methodType: item.methodType || 'Unary',
+            mockResponse: '',
+            mockStatus: 'OK',
+            _requestBuilder: (typeof _newHoppState === 'function')
+                ? _newHoppState() : { protocol: pid, byProtocol: {} }
+        };
+        req._requestBuilder.protocol = pid;
+        // Carry KV-shaped state when the item carries it (request-builder-shape
+        // collections — `kind: 'request-builder'` snapshots from
+        // _snapshotHoppForCollection). Best-effort — older 'ad-hoc'
+        // shapes won't have these and just leave the bag empty.
+        try {
+            if (item.params && typeof item.params === 'object') {
+                req._requestBuilder.params = Object.keys(item.params).map(function (k) {
+                    return { key: k, value: item.params[k], description: '', enabled: true };
+                });
+            }
+            if (item.metadata && typeof item.metadata === 'object') {
+                req._requestBuilder.headers = Object.keys(item.metadata).map(function (k) {
+                    return { key: k, value: item.metadata[k], description: '', enabled: true };
+                });
+            }
+            if (item.authKind) req._requestBuilder.authKind = item.authKind;
+            if (item.authData) req._requestBuilder.authData = Object.assign({}, item.authData);
+            if (typeof item.preScript === 'string') req._requestBuilder.preScript = item.preScript;
+            if (typeof item.postScript === 'string') req._requestBuilder.postScript = item.postScript;
+        } catch (_) { /* shape-tolerant — leave defaults */ }
+        try {
+            var layout = (typeof rbLayouts !== 'undefined') ? rbLayouts[pid] : null;
+            if (layout && typeof layout.subTabs === 'function') {
+                var tabs = layout.subTabs(req);
+                if (tabs.length > 0) req._requestBuilder.activeTab = tabs[0].id;
+            }
+        } catch (_) { /* layout not ready */ }
+        var tab = { id: _nextDesignTabId(), request: req, origin: origin || { kind: 'fresh' } };
+        composeTabs.push(tab);
+        activeDesignTabId = tab.id;
+        freeformRequest = req;
+        persistDesignTabs();
+        return tab.id;
+    }
+
+    // Replace the currently-active tab's request with a saved-item
+    // snapshot. Used by drop-on-existing-tab semantics. Returns true
+    // if it could happen.
+    function replaceActiveDesignTabFromItem(item, origin) {
+        if (!activeDesignTabId || !item) return false;
+        var tab = composeTabs.find(function (t) { return t.id === activeDesignTabId; });
+        if (!tab) return false;
+        // Use spawn to build the canonical shape, then steal its
+        // request + origin and drop the freshly created tab.
+        var newId = spawnDesignTabFromItem(item, origin);
+        if (!newId) return false;
+        var newTab = composeTabs.find(function (t) { return t.id === newId; });
+        if (!newTab) return false;
+        tab.request = newTab.request;
+        tab.origin = newTab.origin;
+        // Drop the duplicate.
+        var idx = composeTabs.findIndex(function (t) { return t.id === newId; });
+        if (idx >= 0) composeTabs.splice(idx, 1);
+        activeDesignTabId = tab.id;
+        freeformRequest = tab.request;
+        persistDesignTabs();
+        return true;
+    }
+
+    // Subtle 1-character badge surfacing the tab's origin. Sits next
+    // to the title. Returns null when no origin or origin is 'fresh'
+    // so the strip stays scannable for the default case.
+    function _designTabOriginBadge(origin) {
+        if (!origin || !origin.kind || origin.kind === 'fresh') return null;
+        var iconName, title;
+        switch (origin.kind) {
+            case 'collection':
+                iconName = 'folder';
+                title = 'From collection' + (origin.name ? ' — ' + origin.name : '');
+                break;
+            case 'preset':
+                iconName = 'star';
+                title = 'From preset' + (origin.name ? ' — ' + origin.name : '');
+                break;
+            case 'discover':
+                iconName = 'search';
+                title = 'From Discover' + (origin.method ? ' — ' + (origin.service || '') + '/' + origin.method : '');
+                break;
+            case 'recording':
+                iconName = 'replay';
+                title = 'From recording' + (origin.name ? ' — ' + origin.name : '')
+                    + (typeof origin.stepIndex === 'number' ? ' (step ' + (origin.stepIndex + 1) + ')' : '');
+                break;
+            default:
+                return null;
+        }
+        return el('span', {
+            className: 'bowire-compose-tab-origin-badge bowire-compose-tab-origin-' + origin.kind,
+            title: title,
+            'aria-label': title,
+            innerHTML: (typeof svgIcon === 'function') ? svgIcon(iconName) : ''
+        });
+    }
+
+    // ---- #295 Phase A — Side panel renderer ----
+    function _renderComposeSidePanel() {
+        var panel = el('div', {
+            id: 'bowire-compose-side-panel',
+            className: 'bowire-compose-side-panel'
+                + (composeSidePanelCollapsed ? ' is-collapsed' : '')
+        });
+
+        // Header (collapse toggle + label)
+        var header = el('div', { className: 'bowire-compose-side-panel-header' });
+        header.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-compose-side-panel-toggle',
+            title: composeSidePanelCollapsed ? 'Expand panel' : 'Collapse panel',
+            'aria-label': composeSidePanelCollapsed ? 'Expand panel' : 'Collapse panel',
+            'aria-expanded': composeSidePanelCollapsed ? 'false' : 'true',
+            onClick: function () {
+                composeSidePanelCollapsed = !composeSidePanelCollapsed;
+                persistComposeSidePanel();
+                render();
+            },
+            innerHTML: svgIcon('sidebar')
+        }));
+        if (!composeSidePanelCollapsed) {
+            header.appendChild(el('span', {
+                className: 'bowire-compose-side-panel-title',
+                textContent: 'Library'
+            }));
+        }
+        panel.appendChild(header);
+
+        if (composeSidePanelCollapsed) return panel;
+
+        var body = el('div', { className: 'bowire-compose-side-panel-body' });
+
+        // ---- Collections section ----
+        body.appendChild(_renderComposeCollectionsSection());
+        // ---- Presets section ----
+        body.appendChild(_renderComposePresetsSection());
+
+        panel.appendChild(body);
+        return panel;
+    }
+
+    function _renderComposeCollectionsSection() {
+        var section = el('div', { className: 'bowire-compose-side-section bowire-compose-side-section-collections' });
+        var cols = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList))
+            ? collectionsList : [];
+        var sectionHead = el('div', { className: 'bowire-compose-side-section-header' });
+        sectionHead.appendChild(el('span', { className: 'bowire-compose-side-section-icon', innerHTML: svgIcon('folder') }));
+        sectionHead.appendChild(el('span', { className: 'bowire-compose-side-section-label', textContent: 'Collections' }));
+        sectionHead.appendChild(el('span', { className: 'bowire-compose-side-section-count', textContent: String(cols.length) }));
+        sectionHead.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-compose-side-section-add',
+            title: 'New collection',
+            'aria-label': 'New collection',
+            onClick: function () {
+                if (typeof bowirePrompt !== 'function') {
+                    if (typeof createCollection === 'function') {
+                        createCollection();
+                        render();
+                    }
+                    return;
+                }
+                bowirePrompt('Collection name', {
+                    title: 'New collection',
+                    placeholder: 'e.g. Smoke tests',
+                    confirmText: 'Create'
+                }).then(function (name) {
+                    if (name === null) return;
+                    var trimmed = String(name || '').trim();
+                    if (typeof createCollection === 'function') {
+                        createCollection(trimmed || undefined);
+                        render();
+                    }
+                });
+            },
+            innerHTML: svgIcon('plus')
+        }));
+        section.appendChild(sectionHead);
+
+        if (cols.length === 0) {
+            section.appendChild(el('div', {
+                className: 'bowire-compose-side-empty',
+                textContent: 'No collections yet. Save a request from any live tab via the "Save to collection" action.'
+            }));
+            return section;
+        }
+
+        var list = el('div', { className: 'bowire-compose-side-list' });
+        cols.forEach(function (col) {
+            list.appendChild(_renderComposeCollectionRow(col));
+        });
+        section.appendChild(list);
+        return section;
+    }
+
+    function _renderComposeCollectionRow(col) {
+        var open = !!composeCollectionsExpanded[col.id];
+        var row = el('div', { className: 'bowire-compose-side-collection' + (open ? ' is-open' : '') });
+        var head = el('div', {
+            className: 'bowire-compose-side-collection-head',
+            onClick: function () {
+                composeCollectionsExpanded[col.id] = !composeCollectionsExpanded[col.id];
+                persistComposeSidePanel();
+                render();
+            }
+        });
+        head.appendChild(el('span', {
+            className: 'bowire-compose-side-collection-caret',
+            innerHTML: svgIcon('chevron')
+        }));
+        head.appendChild(el('span', {
+            className: 'bowire-compose-side-collection-name',
+            textContent: col.name || 'Unnamed'
+        }));
+        head.appendChild(el('span', {
+            className: 'bowire-compose-side-collection-count',
+            textContent: String((col.items || []).length)
+        }));
+        row.appendChild(head);
+
+        if (open && col.items && col.items.length > 0) {
+            var itemList = el('div', { className: 'bowire-compose-side-collection-items' });
+            col.items.forEach(function (item) {
+                itemList.appendChild(_renderComposeCollectionItemRow(col, item));
+            });
+            row.appendChild(itemList);
+        }
+        return row;
+    }
+
+    function _renderComposeCollectionItemRow(col, item) {
+        var protoLabel = (item.protocol || 'rest').toUpperCase();
+        var methodLabel = item.method || '';
+        // Compact title: METHOD path-or-service-method.
+        var title;
+        if ((item.protocol || 'rest') === 'rest') {
+            var path = '';
+            try {
+                if (item.serverUrl && /^https?:\/\//i.test(item.serverUrl)) {
+                    var u = new URL(item.serverUrl);
+                    path = u.pathname + (u.search || '');
+                } else {
+                    path = item.serverUrl || '';
+                }
+            } catch (_) { path = item.serverUrl || ''; }
+            title = (methodLabel || 'GET').toUpperCase() + ' ' + (path || '/');
+        } else {
+            title = protoLabel + ' ' + (item.service ? item.service + '/' : '') + methodLabel;
+        }
+        var row = el('div', {
+            className: 'bowire-compose-side-item',
+            title: title + ' — click to open in a new tab',
+            draggable: 'true',
+            onClick: function () {
+                spawnDesignTabFromItem(item, {
+                    kind: 'collection',
+                    collectionId: col.id,
+                    itemId: item.id,
+                    name: col.name
+                });
+                render();
+                requestAnimationFrame(function () {
+                    var inp = document.getElementById('bowire-request-builder-url-input');
+                    if (inp) inp.focus();
+                });
+            },
+            onDragStart: function (e) {
+                try {
+                    var payload = {
+                        kind: 'collection-item',
+                        collectionId: col.id,
+                        itemId: item.id
+                    };
+                    e.dataTransfer.setData('application/x-bowire-compose', JSON.stringify(payload));
+                    e.dataTransfer.effectAllowed = 'copy';
+                } catch (_) { /* setData may throw in obscure browsers */ }
+            }
+        });
+        row.appendChild(el('span', {
+            className: 'bowire-compose-side-item-proto',
+            'data-protocol': item.protocol || 'rest',
+            textContent: protoLabel
+        }));
+        row.appendChild(el('span', {
+            className: 'bowire-compose-side-item-title',
+            textContent: title
+        }));
+        return row;
+    }
+
+    function _renderComposePresetsSection() {
+        var section = el('div', { className: 'bowire-compose-side-section bowire-compose-side-section-presets' });
+        var head = el('div', { className: 'bowire-compose-side-section-header' });
+        head.appendChild(el('span', { className: 'bowire-compose-side-section-icon', innerHTML: svgIcon('pin') }));
+        head.appendChild(el('span', { className: 'bowire-compose-side-section-label', textContent: 'Presets' }));
+        section.appendChild(head);
+
+        // Presets are per-mode. The Compose rail surfaces every mode
+        // that has at least one preset so the operator can drag
+        // saved-config blobs into a fresh Compose tab. Mode list is
+        // discovered lazily from loadPresets() — the framework caches
+        // per mode so this stays cheap.
+        var modes = ['discover', 'benchmark', 'mock', 'flow', 'security', 'proxy'];
+        var anyShown = false;
+        modes.forEach(function (mode) {
+            if (typeof loadPresets !== 'function') return;
+            var list;
+            try { list = loadPresets(mode) || []; } catch (_) { list = []; }
+            if (list.length === 0) return;
+            anyShown = true;
+            section.appendChild(_renderComposePresetGroup(mode, list));
+        });
+        if (!anyShown) {
+            section.appendChild(el('div', {
+                className: 'bowire-compose-side-empty',
+                textContent: 'No presets yet. Save a configuration from any mode (Discover, Mocks, Benchmarks…) to see it here.'
+            }));
+        }
+        return section;
+    }
+
+    function _renderComposePresetGroup(mode, list) {
+        var key = 'preset_' + mode;
+        var open = !!composePresetsExpanded[key];
+        var group = el('div', { className: 'bowire-compose-side-preset-group' + (open ? ' is-open' : '') });
+        var head = el('div', {
+            className: 'bowire-compose-side-collection-head',
+            onClick: function () {
+                composePresetsExpanded[key] = !composePresetsExpanded[key];
+                persistComposeSidePanel();
+                render();
+            }
+        });
+        head.appendChild(el('span', {
+            className: 'bowire-compose-side-collection-caret',
+            innerHTML: svgIcon('chevron')
+        }));
+        head.appendChild(el('span', {
+            className: 'bowire-compose-side-collection-name',
+            textContent: mode.charAt(0).toUpperCase() + mode.slice(1)
+        }));
+        head.appendChild(el('span', {
+            className: 'bowire-compose-side-collection-count',
+            textContent: String(list.length)
+        }));
+        group.appendChild(head);
+        if (!open) return group;
+
+        var items = el('div', { className: 'bowire-compose-side-collection-items' });
+        list.forEach(function (preset) {
+            items.appendChild(_renderComposePresetRow(mode, preset));
+        });
+        group.appendChild(items);
+        return group;
+    }
+
+    function _renderComposePresetRow(mode, preset) {
+        var cfg = preset.config || {};
+        var row = el('div', {
+            className: 'bowire-compose-side-item',
+            title: preset.name + ' — click to open in a new tab',
+            draggable: 'true',
+            onClick: function () {
+                spawnDesignTabFromItem(cfg, {
+                    kind: 'preset',
+                    mode: mode,
+                    presetId: preset.id,
+                    name: preset.name
+                });
+                render();
+            },
+            onDragStart: function (e) {
+                try {
+                    var payload = {
+                        kind: 'preset',
+                        mode: mode,
+                        presetId: preset.id
+                    };
+                    e.dataTransfer.setData('application/x-bowire-compose', JSON.stringify(payload));
+                    e.dataTransfer.effectAllowed = 'copy';
+                } catch (_) { /* ignore */ }
+            }
+        });
+        row.appendChild(el('span', {
+            className: 'bowire-compose-side-item-proto',
+            'data-protocol': cfg.protocol || 'rest',
+            textContent: (cfg.protocol || 'rest').toUpperCase()
+        }));
+        row.appendChild(el('span', {
+            className: 'bowire-compose-side-item-title',
+            textContent: preset.name || 'Unnamed preset'
+        }));
+        return row;
+    }
+
+    // ---- #295 Phase B — drop-target plumbing on the tab strip ----
+    //
+    // Accepts the application/x-bowire-compose payload emitted by
+    // collection items + preset rows. Drop on a blank strip area =
+    // new tab. Drop on an existing tab = replace its content (with
+    // confirm if the operator has typed-but-unsaved work).
+    function _resolveComposeDragPayload(dt) {
+        try {
+            var raw = dt.getData('application/x-bowire-compose');
+            if (!raw) return null;
+            var payload = JSON.parse(raw);
+            return payload || null;
+        } catch (_) { return null; }
+    }
+    function _findCollectionItem(collectionId, itemId) {
+        if (typeof collectionsList === 'undefined' || !Array.isArray(collectionsList)) return null;
+        var col = collectionsList.find(function (c) { return c.id === collectionId; });
+        if (!col || !Array.isArray(col.items)) return null;
+        var item = col.items.find(function (i) { return i.id === itemId; });
+        return { col: col, item: item };
+    }
+    function _findPreset(mode, presetId) {
+        if (typeof loadPresets !== 'function') return null;
+        try {
+            var list = loadPresets(mode) || [];
+            var preset = list.find(function (p) { return p.id === presetId; });
+            if (!preset) return null;
+            return { mode: mode, preset: preset };
+        } catch (_) { return null; }
+    }
+
+    function _handleComposeStripDrop(e) {
+        var payload = _resolveComposeDragPayload(e.dataTransfer);
+        if (!payload) return false;
+        e.preventDefault();
+        if (payload.kind === 'collection-item') {
+            var found = _findCollectionItem(payload.collectionId, payload.itemId);
+            if (!found || !found.item) return false;
+            spawnDesignTabFromItem(found.item, {
+                kind: 'collection',
+                collectionId: found.col.id,
+                itemId: found.item.id,
+                name: found.col.name
+            });
+            render();
+            return true;
+        }
+        if (payload.kind === 'preset') {
+            var fp = _findPreset(payload.mode, payload.presetId);
+            if (!fp) return false;
+            spawnDesignTabFromItem(fp.preset.config || {}, {
+                kind: 'preset',
+                mode: fp.mode,
+                presetId: fp.preset.id,
+                name: fp.preset.name
+            });
+            render();
+            return true;
+        }
+        return false;
+    }
+
+    function _handleComposeTabDrop(e, targetTabId) {
+        var payload = _resolveComposeDragPayload(e.dataTransfer);
+        if (!payload) return false;
+        e.preventDefault();
+        // Switch to the target tab so the operator sees what's about to
+        // change, then replace.
+        if (targetTabId && targetTabId !== activeDesignTabId) {
+            switchDesignTab(targetTabId);
+        }
+        if (payload.kind === 'collection-item') {
+            var found = _findCollectionItem(payload.collectionId, payload.itemId);
+            if (!found || !found.item) return false;
+            replaceActiveDesignTabFromItem(found.item, {
+                kind: 'collection',
+                collectionId: found.col.id,
+                itemId: found.item.id,
+                name: found.col.name
+            });
+            render();
+            return true;
+        }
+        if (payload.kind === 'preset') {
+            var fp = _findPreset(payload.mode, payload.presetId);
+            if (!fp) return false;
+            replaceActiveDesignTabFromItem(fp.preset.config || {}, {
+                kind: 'preset',
+                mode: fp.mode,
+                presetId: fp.preset.id,
+                name: fp.preset.name
+            });
+            render();
+            return true;
+        }
+        return false;
+    }
+
+    // ---- #295 Phase C — Save-to-Collection picker ----
+    //
+    // Pops a small dropdown anchored to an element that lists every
+    // workspace collection + a "+ New collection" footer. Reuses the
+    // request-builder bar's snapshot so the saved entry carries the
+    // full _requestBuilder state (params + headers + auth + scripts),
+    // not just the bare body/url. Falls back to a toast on failure.
+    function _composeSaveToCollectionPicker(fr, anchor) {
+        // Close any in-flight picker.
+        var existing = document.querySelector('.bowire-compose-save-picker');
+        if (existing) { existing.remove(); return; }
+        if (typeof addToCollection !== 'function'
+                || typeof createCollection !== 'function') return;
+
+        var picker = el('div', { className: 'bowire-compose-save-picker bowire-dropdown-menu visible' });
+
+        function _doSave(col) {
+            try {
+                var snap = (typeof _snapshotHoppForCollection === 'function')
+                    ? _snapshotHoppForCollection(fr)
+                    : {
+                        protocol: fr.protocol || 'rest',
+                        method: fr.method || 'GET',
+                        methodType: 'Unary',
+                        body: fr.body || '',
+                        messages: [fr.body || ''],
+                        metadata: fr.metadata || null,
+                        serverUrl: fr.serverUrl || '',
+                        urlMode: 'inline',
+                        kind: 'request-builder'
+                    };
+                addToCollection(col.id, snap);
+                if (typeof toast === 'function') toast('Saved to "' + col.name + '"', 'success');
+                // #295 Phase D — saving promotes the tab's origin to
+                // 'collection' so the badge surfaces where the next
+                // open of this tab came from logically. We don't
+                // overwrite an existing non-fresh origin (e.g. a
+                // tab opened from Discover stays that origin even
+                // after saving).
+                var t = composeTabs.find(function (tt) { return tt.id === activeDesignTabId; });
+                if (t && (!t.origin || t.origin.kind === 'fresh')) {
+                    t.origin = { kind: 'collection', collectionId: col.id, name: col.name };
+                    persistDesignTabs();
+                }
+            } catch (e) {
+                if (typeof toast === 'function') toast('Save failed: ' + e.message, 'error');
+            }
+        }
+
+        var cols = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList))
+            ? collectionsList : [];
+        if (cols.length === 0) {
+            picker.appendChild(el('div', {
+                className: 'bowire-dropdown-item-meta',
+                style: 'padding:8px 12px;color:var(--bowire-text-tertiary);font-size:11px',
+                textContent: 'No collections yet'
+            }));
+        } else {
+            cols.forEach(function (col) {
+                picker.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-dropdown-item',
+                    onClick: function () {
+                        _doSave(col);
+                        picker.remove();
+                        render();
+                    }
+                },
+                    el('span', { className: 'bowire-dropdown-item-icon', innerHTML: svgIcon('folder') }),
+                    el('span', { textContent: col.name }),
+                    el('span', {
+                        className: 'bowire-dropdown-item-meta',
+                        textContent: (col.items || []).length + ((col.items || []).length === 1 ? ' entry' : ' entries')
+                    })
+                ));
+            });
+        }
+        picker.appendChild(el('div', { className: 'bowire-dropdown-divider' }));
+        picker.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-dropdown-item bowire-dropdown-item-create',
+            onClick: function () {
+                if (typeof bowirePrompt !== 'function') {
+                    var col = createCollection();
+                    _doSave(col);
+                    picker.remove();
+                    render();
+                    return;
+                }
+                bowirePrompt('Collection name', {
+                    title: 'New collection',
+                    placeholder: 'e.g. Smoke tests',
+                    confirmText: 'Create'
+                }).then(function (name) {
+                    if (name === null) { picker.remove(); return; }
+                    var trimmed = String(name || '').trim();
+                    var col = createCollection(trimmed || undefined);
+                    _doSave(col);
+                    picker.remove();
+                    render();
+                });
+            }
+        },
+            el('span', { className: 'bowire-dropdown-item-icon', innerHTML: svgIcon('plus') }),
+            el('span', { textContent: 'New collection…' })
+        ));
+
+        // Anchor at the bottom-right of the source button. The picker
+        // floats absolutely; the parent positions via .bowire-compose-save-picker
+        // CSS rule. If the anchor is gone (race during morphdom), drop
+        // it on body to at least show.
+        var host = (anchor && anchor.parentElement) || document.body;
+        host.appendChild(picker);
+        setTimeout(function () {
+            function _close(e) {
+                if (e && picker.contains(e.target)) return;
+                picker.remove();
+                document.removeEventListener('click', _close);
+            }
+            document.addEventListener('click', _close);
+        }, 0);
+    }
+
     // ---- Renderer ----
     // Called from render-main.js when railMode === 'compose'.
     // Lays out: tab strip (pinned '+' + open tabs) → main builder body
     // for the active tab. Empty state when no tabs are open.
     function renderComposeMain() {
+        rehydrateComposeSidePanel();
         // Rehydrate-from-storage on first paint per session.
         rehydrateDesignTabs();
         // Drift guard — the active tab may have been closed by external
@@ -270,10 +976,30 @@
             if (freeformRequest && isHoppRequest(freeformRequest)) freeformRequest = null;
         }
 
+        // #295 — outer flex row hosts the tabs+builder column on the
+        // left and the side panel (Collections + Presets) on the right.
+        // The side panel is collapsible via persistComposeSidePanel().
         var main = el('div', { id: 'bowire-main-compose', className: 'bowire-main bowire-main-compose' });
+        var mainCol = el('div', { className: 'bowire-compose-main-col' });
 
         // ---- Tab strip ----
-        var tabBar = el('div', { id: 'bowire-compose-tabs', className: 'bowire-request-tabs bowire-compose-tabs' });
+        var tabBar = el('div', {
+            id: 'bowire-compose-tabs',
+            className: 'bowire-request-tabs bowire-compose-tabs',
+            onDragOver: function (e) {
+                if (e.dataTransfer && e.dataTransfer.types
+                        && e.dataTransfer.types.indexOf('application/x-bowire-compose') >= 0) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                    tabBar.classList.add('is-drop-target');
+                }
+            },
+            onDragLeave: function () { tabBar.classList.remove('is-drop-target'); },
+            onDrop: function (e) {
+                tabBar.classList.remove('is-drop-target');
+                _handleComposeStripDrop(e);
+            }
+        });
         var tabScroll = el('div', { className: 'bowire-request-tabs-scroll' });
 
         // Pinned '+' tab — matches Discover's pattern (just the plus
@@ -310,13 +1036,33 @@
                 var title = designTabTitle(tab);
                 var tabEl = el('div', {
                     id: 'bowire-compose-tab-' + tab.id,
-                    className: 'bowire-request-tab bowire-compose-tab' + (isActive ? ' active' : ''),
+                    className: 'bowire-request-tab bowire-compose-tab' + (isActive ? ' active' : '')
+                        + (tab.origin && tab.origin.kind && tab.origin.kind !== 'fresh'
+                            ? ' has-origin' : ''),
                     title: title,
                     'data-tab-id': tab.id,
                     'data-protocol': pid,
                     onClick: function (e) {
                         var id = e.currentTarget.dataset.tabId;
                         if (id) switchDesignTab(id);
+                    },
+                    onDragOver: function (e) {
+                        if (e.dataTransfer && e.dataTransfer.types
+                                && e.dataTransfer.types.indexOf('application/x-bowire-compose') >= 0) {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'copy';
+                            e.stopPropagation();
+                            e.currentTarget.classList.add('is-drop-replace');
+                        }
+                    },
+                    onDragLeave: function (e) {
+                        e.currentTarget.classList.remove('is-drop-replace');
+                    },
+                    onDrop: function (e) {
+                        e.currentTarget.classList.remove('is-drop-replace');
+                        e.stopPropagation();
+                        var id = e.currentTarget.dataset.tabId;
+                        _handleComposeTabDrop(e, id);
                     },
                     onContextMenu: function (e) {
                         e.preventDefault();
@@ -352,23 +1098,27 @@
                             }
                         ]);
                     }
-                },
-                    el('span', {
-                        className: 'bowire-request-tab-name',
-                        textContent: title
-                    }),
-                    el('button', {
-                        className: 'bowire-request-tab-close',
-                        innerHTML: svgIcon('close'),
-                        title: 'Close tab',
-                        onClick: function (e) {
-                            e.stopPropagation();
-                            var parent = e.currentTarget.closest('.bowire-compose-tab');
-                            var id = parent && parent.dataset.tabId;
-                            if (id) closeDesignTab(id);
-                        }
-                    })
-                );
+                });
+                // #295 Phase D — origin badge sits before the title so
+                // the eye lands on "where did this come from" before
+                // reading the URL. Hidden for fresh tabs (no badge).
+                var originBadge = _designTabOriginBadge(tab.origin);
+                if (originBadge) tabEl.appendChild(originBadge);
+                tabEl.appendChild(el('span', {
+                    className: 'bowire-request-tab-name',
+                    textContent: title
+                }));
+                tabEl.appendChild(el('button', {
+                    className: 'bowire-request-tab-close',
+                    innerHTML: svgIcon('close'),
+                    title: 'Close tab',
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        var parent = e.currentTarget.closest('.bowire-compose-tab');
+                        var id = parent && parent.dataset.tabId;
+                        if (id) closeDesignTab(id);
+                    }
+                }));
                 tabScroll.appendChild(tabEl);
             })(composeTabs[ti]);
         }
@@ -377,7 +1127,7 @@
         // + every modern browser / IDE).
         tabScroll.appendChild(pinned);
         tabBar.appendChild(tabScroll);
-        main.appendChild(tabBar);
+        mainCol.appendChild(tabBar);
 
         // ---- Body ----
         if (activeDesignTabId) {
@@ -387,7 +1137,7 @@
                 // active tab. _appendRequestBuilderInto reads
                 // freeformRequest directly, which we just refreshed.
                 if (typeof _appendRequestBuilderInto === 'function') {
-                    _appendRequestBuilderInto(main);
+                    _appendRequestBuilderInto(mainCol);
                 }
             }
         } else {
@@ -413,8 +1163,15 @@
                     }
                 }]
             }));
-            main.appendChild(padWrap);
+            mainCol.appendChild(padWrap);
         }
+
+        main.appendChild(mainCol);
+        // #295 — Side panel hosts Collections + Presets. Always
+        // appended; the panel's own header carries the collapse
+        // toggle so the layout stays a single flex row regardless
+        // of collapsed/expanded state.
+        main.appendChild(_renderComposeSidePanel());
         return main;
     }
 

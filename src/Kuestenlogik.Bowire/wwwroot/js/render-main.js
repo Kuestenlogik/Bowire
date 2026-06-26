@@ -5746,6 +5746,39 @@
                         el('span', { textContent: 'Save as preset' })
                     ));
 
+                    // #295 Phase E — "Open in Compose" promotes the
+                    // discovered method into a live Compose tab so the
+                    // operator can iterate freely without affecting the
+                    // schema-driven Discover view. The new tab carries
+                    // an origin:'discover' badge.
+                    if (typeof spawnDesignTabFromItem === 'function') {
+                        menu.appendChild(el('button', {
+                            className: 'bowire-header-addto-item',
+                            role: 'menuitem',
+                            onClick: function () {
+                                var snap = _snapshotRequest();
+                                if (!snap) return;
+                                _closeAddToMenu();
+                                if (typeof railMode !== 'undefined') {
+                                    railMode = 'compose';
+                                    try { localStorage.setItem('bowire_rail_mode', 'compose'); } catch { /* ignore */ }
+                                }
+                                spawnDesignTabFromItem(snap, {
+                                    kind: 'discover',
+                                    service: snap.service,
+                                    method: snap.method
+                                });
+                                if (typeof toast === 'function') {
+                                    toast('Opened in Compose', 'success');
+                                }
+                                render();
+                            }
+                        },
+                            el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('drill') }),
+                            el('span', { textContent: 'Open in Compose' })
+                        ));
+                    }
+
                     if (typeof addTargetToEnvelopePicker === 'function') {
                         // Benchmarking is only meaningful for a request
                         // shape the server actually accepts — otherwise
@@ -6047,7 +6080,7 @@
                     var alreadyOwned = composeTabs.some(function (t) { return t.request === freeformRequest; });
                     if (!alreadyOwned) {
                         var adoptedId = 'design_' + (++_designTabIdCounter);
-                        composeTabs.push({ id: adoptedId, request: freeformRequest });
+                        composeTabs.push({ id: adoptedId, request: freeformRequest, origin: { kind: 'fresh' } });
                         activeDesignTabId = adoptedId;
                         if (typeof persistDesignTabs === 'function') persistDesignTabs();
                     }
