@@ -804,6 +804,16 @@
         // Two-position segmented control — replaces the old pair of
         // bordered radio cards. Single bordered host with the active
         // option highlighted via accent tint.
+        //
+        // The onClick handler RE-READS spec.mode at click time —
+        // morphdom preserves these button nodes across renders, so
+        // capturing the render-time `active` flag in the closure would
+        // leave the no-op guard stuck on its first-render value.
+        // After the first mode switch every subsequent click on the
+        // previously-active button would bounce on `if (active) return;`
+        // because the stale closure still believes it's active —
+        // exactly the #300 repro ("can only switch once, then inert").
+        // See feedback-morphdom-stale-handler-pitfall.
         var current = spec.mode || 'sequential';
         function seg(value, label, title) {
             var active = current === value;
@@ -813,7 +823,12 @@
                 title: title,
                 'aria-pressed': active ? 'true' : 'false',
                 onClick: function () {
-                    if (active) return;
+                    // Re-read at click time, NOT the closure-captured
+                    // render-time value. `spec` is the live envelope
+                    // object reference so spec.mode reflects the actual
+                    // current selection even after morphdom preserves
+                    // this button across renders.
+                    if ((spec.mode || 'sequential') === value) return;
                     spec.mode = value;
                     persistBenchmarks();
                     render();
