@@ -836,6 +836,16 @@
         // prologue.js rewrites a stale railMode='sources' to
         // 'workspaces' so existing installs land on the new spot.
         { id: 'discover',     icon: 'discover',  label: 'Discover',          group: 'work',      sidebar: { kind: 'services' } },
+        // #293 — Design rail: home for the ad-hoc Request Builder.
+        // Conceptually orthogonal to Discover (schema-driven, pick a
+        // server-advertised method) — the operator drafts a freeform
+        // request here without picking a discovered method first. Main
+        // pane carries its own tab strip + pinned '+ New Request' tab;
+        // each tab owns an independent request-builder instance.
+        // Sidebar kind: 'none' (the strip lives in the main pane, not
+        // the sidebar). #294 will fold this into the plugin-descriptor
+        // model; for now it ships as another always-on entry.
+        { id: 'design',       icon: 'send',      label: 'Design',            group: 'work',      sidebar: { kind: 'none' } },
         // Collections rail mode kept in the catalogue (so the existing
         // sidebar + main-pane render paths still work when the
         // Workspaces tree dispatches to it), but hideFromRail removes

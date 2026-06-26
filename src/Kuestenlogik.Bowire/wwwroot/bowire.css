@@ -20091,3 +20091,124 @@ not as the
     color: #fff;
     border-color: #ef4444;
 }
+
+/* ---------- #293 Design Rail ---------- */
+/* Design rail's main pane carries the request-builder tab strip
+   (`.bowire-request-tabs` shape, reused) plus a pinned '+ New Request'
+   tab at the leftmost position. Cosmetics below distinguish the pinned
+   tab (dashed border, '+ New Request' label) from the open builder
+   tabs so the operator doesn't mistake it for one of their drafts and
+   accidentally try to close it. */
+.bowire-main-design {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* Pinned '+ New Request' tab — distinct from open builder tabs.
+   Dashed border so it reads as 'add', not 'remove'. Subtle
+   accent-tinted hover so it pops without being shouty. No close
+   affordance — the close button is omitted from the DOM entirely
+   so there's nothing to misclick. */
+.bowire-design-tab-pinned {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    margin: 4px 8px 4px 4px;
+    border: 1px dashed var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color var(--bowire-transition), border-color var(--bowire-transition), background var(--bowire-transition);
+}
+.bowire-design-tab-pinned:hover {
+    color: var(--bowire-text);
+    border-color: var(--bowire-accent);
+    background: var(--bowire-surface-hover);
+}
+.bowire-design-tab-pinned-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-design-tab-pinned-icon svg {
+    width: 14px;
+    height: 14px;
+}
+.bowire-design-tab-pinned-label {
+    line-height: 1.4;
+}
+
+/* Open builder tabs reuse .bowire-request-tab cosmetics. The
+   `.bowire-design-tab` modifier exists for future per-design
+   overrides (today: same look as Discover's strip). */
+.bowire-design-tab {
+    /* Inherit `.bowire-request-tab`; no overrides yet. The modifier
+       class is here so future tweaks (e.g. distinct active-tab tint
+       to reinforce 'this is Design, not Discover') can land without
+       hunting through render-main.js's tab-strip block. */
+}
+
+/* Empty state for the Design rail's main pane — shows when no
+   builder tabs are open (just the pinned '+'). Centred in the main
+   pane so the operator's eye lands on the CTA. */
+.bowire-design-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 48px 24px;
+    flex: 1;
+    color: var(--bowire-text-secondary);
+    text-align: center;
+}
+.bowire-design-empty-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text-tertiary);
+    margin-bottom: 4px;
+}
+.bowire-design-empty-icon svg {
+    width: 22px;
+    height: 22px;
+}
+.bowire-design-empty-headline {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-design-empty-body {
+    font-size: 13px;
+    line-height: 1.55;
+    max-width: 480px;
+    color: var(--bowire-text-secondary);
+}
+.bowire-design-empty-cta {
+    margin-top: 6px;
+    padding: 8px 16px;
+    background: var(--bowire-accent);
+    color: #fff;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--bowire-transition);
+}
+.bowire-design-empty-cta:hover {
+    filter: brightness(1.08);
+}

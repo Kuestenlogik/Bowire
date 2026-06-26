@@ -387,18 +387,23 @@
                 }
             }
 
-            // #289 — Ctrl/Cmd+L: open the Hoppscotch-style request bar
-            // from anywhere. Browsers normally bind Ctrl+L to focus the
-            // address bar; the preventDefault() keeps that from happening
-            // and routes the operator into the workbench's own URL bar
-            // instead. inText guard so a half-typed URL in another input
-            // isn't interrupted.
+            // #289 / #293 — Ctrl/Cmd+L: open the Design rail with a
+            // fresh request-builder tab. Browsers normally bind Ctrl+L
+            // to focus the address bar; the preventDefault() keeps that
+            // from happening and routes the operator into the
+            // workbench's own URL bar instead. inText guard so a half-
+            // typed URL in another input isn't interrupted.
+            //
+            // Pre-#293 this called startHoppRequest() which lived
+            // inside Discover; now it routes through the Design rail's
+            // own tab strip so the operator's discovered-method view
+            // isn't clobbered.
             if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey
                 && (e.key === 'l' || e.key === 'L')
                 && !inText
-                && typeof startHoppRequest === 'function') {
+                && typeof gotoDesignAndSpawn === 'function') {
                 e.preventDefault();
-                startHoppRequest();
+                gotoDesignAndSpawn();
                 // Defer focus to the next frame so the freshly-rendered
                 // input is in the DOM by the time we reach for it.
                 requestAnimationFrame(function () {

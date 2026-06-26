@@ -3832,9 +3832,14 @@
         // with the 7 sub-tabs (Parameter / Body / Header / Auth /
         // Pre-script / Post-script / Variables) underneath. No
         // workspace setup needed; binds to whatever env is active.
-        if (typeof startHoppRequest === 'function') {
+        // #293 — Routes to the Design rail + spawns a fresh request-
+        // builder tab. Pre-#293 this called startHoppRequest() which
+        // injected the builder into Discover; now the builder has its
+        // own rail with a per-tab strip, so the operator's discover
+        // view stays untouched.
+        if (typeof gotoDesignAndSpawn === 'function') {
             card('send', 'Just fire a request', 'Single-line bar (Ctrl+L)', function () {
-                startHoppRequest();
+                gotoDesignAndSpawn();
                 requestAnimationFrame(function () {
                     var inp = document.getElementById('bowire-request-builder-url-input');
                     if (inp) inp.focus();
@@ -4345,6 +4350,15 @@
 
             homeMain.appendChild(homeWrap);
             return homeMain;
+        }
+
+        // #293 — Design rail. Home for the ad-hoc request-builder
+        // (previously hosted inside Discover's per-method tabs, which
+        // overwrote the schema-driven view). The renderer lives in
+        // design-rail.js — owns its own tab strip + pinned '+ New
+        // Request' tab + per-tab builder instance.
+        if (railMode === 'design' && typeof renderDesignMain === 'function') {
+            return renderDesignMain();
         }
 
         // #131 Phase 1 — Benchmarks ships the single-method shape;
@@ -5740,13 +5754,32 @@
         // content / action-bar exactly like a discovered method's
         // render order.
         if (freeformRequest) {
-            // #289 — Hoppscotch-style layout dispatch. When the
-            // request carries a `_requestBuilder` marker we render the single-
-            // line bar + 7 sub-tab variant instead of the classic
-            // freeform builder. Both share the freeformRequest state
-            // container so request-tab switching, persistence, and the
-            // response capture pipeline don't need to branch.
+            // #293 — The Hoppscotch-style request-builder no longer
+            // piggy-backs on Discover. A freeformRequest carrying the
+            // `_requestBuilder` marker belongs in the Design rail's tab
+            // strip; if one shows up while Discover is active that's a
+            // stray (Ctrl+L mid-render, &c.) — punt back to Design and
+            // adopt it as a fresh tab there. Classic non-hopp freeform
+            // requests still render inline here via _appendFreeformInto.
             if (typeof isHoppRequest === 'function' && isHoppRequest(freeformRequest)) {
+                if (typeof designTabs !== 'undefined'
+                    && typeof activeDesignTabId !== 'undefined') {
+                    // Adopt the stray request into a Design tab so the
+                    // operator's in-flight edits aren't dropped.
+                    var alreadyOwned = designTabs.some(function (t) { return t.request === freeformRequest; });
+                    if (!alreadyOwned) {
+                        var adoptedId = 'design_' + (++_designTabIdCounter);
+                        designTabs.push({ id: adoptedId, request: freeformRequest });
+                        activeDesignTabId = adoptedId;
+                        if (typeof persistDesignTabs === 'function') persistDesignTabs();
+                    }
+                    railMode = 'design';
+                    try { localStorage.setItem('bowire_rail_mode', 'design'); } catch { /* ignore */ }
+                    return renderDesignMain();
+                }
+                // Defensive fallback — Design module not loaded for some
+                // reason; render the builder inline so the operator still
+                // sees something rather than a blank pane.
                 _appendRequestBuilderInto(main);
                 return main;
             }
