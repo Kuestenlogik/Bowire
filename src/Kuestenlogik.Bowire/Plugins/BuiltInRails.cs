@@ -57,9 +57,15 @@ public sealed class BowireComposeRailContribution : IBowireRailContribution
 }
 
 /// <summary>
-/// Collections rail — hidden from the rail strip (collections are
-/// managed inside their workspace) but kept in the catalogue so the
-/// workspace tree can dispatch into the existing collections UI.
+/// Collections rail — standalone surface for the dedicated full-pane
+/// editor. Default-off since #304: the Compose rail's side panel (#295)
+/// is now the primary surface for managing collections + presets, and
+/// every save flow (Discover "Add to", request-builder "Save to
+/// collection", recording steps "Open in Compose") routes there.
+/// Operators who want the dedicated full-pane editor back can re-enable
+/// it via Settings → Rail modes; the <c>railMode === 'collections'</c>
+/// dispatch path stays alive either way so embedded hosts that route
+/// there programmatically keep working unchanged.
 /// </summary>
 public sealed class BowireCollectionsRailContribution : IBowireRailContribution
 {
@@ -69,7 +75,11 @@ public sealed class BowireCollectionsRailContribution : IBowireRailContribution
     public int SortIndex => 400;
     public string Group => "work";
     public string SidebarKind => "collections";
-    public bool HideFromRail => true;
+    // #304 — default-off. When the operator hasn't opted in via
+    // Settings → Rail modes, the rail-strip icon, the workspace-tree
+    // 'Collections' node, and the per-method 'C' pill suppress
+    // themselves. Re-enabling restores all three surfaces.
+    public bool DefaultEnabled => false;
 }
 
 /// <summary>

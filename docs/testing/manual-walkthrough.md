@@ -325,16 +325,31 @@ Already partly covered in Phase 4 but expand:
 
 ## Phase 8 — Collections
 
-1. [ ] Collections rail → empty state when no collections.
-2. [ ] `+ New collection` → name → create.
-3. [ ] Add items via `+ Add to…` on a discovered method or freeform builder.
-4. [ ] Collection detail: list of items, per-item replay button, drag-to-reorder.
-5. [ ] Run-all → executes every item in order, shows pass/fail per row.
+Collections + Presets are managed from the **Compose rail's side panel**; the standalone Collections rail is **off by default** as of #304. Run the side-panel checks first, then opt into the standalone rail to exercise its surfaces.
+
+### Side panel (default surface)
+
+1. [ ] Compose rail → expand the side panel from the gutter handle → assert both `Collections` and `Presets` tabs render.
+2. [ ] Collections tab → empty state when no collections.
+3. [ ] `+ New collection` (inside the side panel) → name → create.
+4. [ ] Add items via `+ Add to…` on a discovered method, request-builder `Save to collection`, or recording-step `Open in Compose`.
+5. [ ] Collection detail (inline in the panel): list of items, per-item replay button, drag-to-reorder.
+6. [ ] Run-all → executes every item in order, shows pass/fail per row.
+
+### Standalone rail (opt-in)
+
+1. [ ] Settings → Rail modes → assert `Collections` row renders unchecked (default-off).
+2. [ ] No standalone Collections rail icon in the strip; workspace-tree `Collections` node hidden under each workspace; per-method `C` pill suppressed in the Discover tree.
+3. [ ] Toggle `Collections` on in Settings → rail-strip icon, workspace-tree node, and per-method `C` pill all reappear without reload.
+4. [ ] Standalone rail still works: Collections rail → empty state, `+ New collection`, run-all, drag-to-reorder.
+5. [ ] Toggle off again → tree node + strip icon disappear; existing collections data preserved (visible again via the Compose side panel).
 
 ### Playwright test outline
 
 - `phase8-collections.spec.ts`:
-  - Create collection, add 3 items, run-all, assert all-pass.
+  - Default render: Collections rail icon hidden, Compose side panel renders Collections tab.
+  - Create collection from side panel, add 3 items, run-all, assert all-pass.
+  - Toggle standalone rail on via Settings → re-assert strip icon + tree node visible.
 
 ---
 
