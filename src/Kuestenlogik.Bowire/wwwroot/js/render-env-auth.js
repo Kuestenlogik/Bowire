@@ -663,53 +663,42 @@
         // opt out.
         var modeHasSidebar = currentRailSidebarSpec().kind !== 'none';
         if (modeHasSidebar) {
+            // The splitter doubles as the 'show sidebar' affordance when
+            // collapsed — same DOM element, same hover behaviour, chevron
+            // rotation + click intent flipped via a class. Operator
+            // feedback: 'könnte man nicht einfach den splitter selbst
+            // nutzen?'. No drag-to-resize when collapsed (nothing to
+            // resize from a 0-width sidebar); layout.js's mousedown path
+            // short-circuits when the body carries .bowire-sidebar-is-
+            // collapsed and treats any down → up as a click.
             if (sidebarCollapsed) {
                 body.classList.add('bowire-sidebar-is-collapsed');
-                // Pattern A — when the sidebar is hidden the
-                // affordance to bring it back lives at the rail edge.
-                // Small chevron-button pointing right, vertically
-                // centred, full-height-hover for forgiving aim.
-                body.appendChild(el('button', {
-                    type: 'button',
-                    className: 'bowire-sidebar-edge-toggle bowire-sidebar-edge-toggle-collapsed',
-                    title: 'Show sidebar (Ctrl+B)',
-                    'aria-label': 'Show sidebar',
-                    onClick: function () { setSidebarCollapsed(false); render(); }
-                }, el('span', { innerHTML: svgIcon('chevron') })));
             } else {
                 body.appendChild(renderSidebar());
-                if (!isMobile()) {
-                    // Pattern A — chevron lives AS A CHILD of the splitter
-                    // so stacking/positioning is unambiguous. The
-                    // splitter's mousedown handler ignores events whose
-                    // target is the chevron (or the chevron's span),
-                    // so a click on the chevron fires its onClick
-                    // instead of starting a drag.
-                    var splitter = el('div', {
-                        className: 'bowire-sidebar-splitter',
-                        id: 'bowire-sidebar-splitter',
-                        title: 'Drag to resize the sidebar — drag past the minimum to collapse, or double-click to toggle'
-                    });
-                    splitter.appendChild(el('button', {
-                        type: 'button',
-                        className: 'bowire-sidebar-edge-toggle bowire-sidebar-edge-toggle-expanded',
-                        title: 'Hide sidebar (Ctrl+B) — drag to resize',
-                        'aria-label': 'Hide sidebar',
-                        // No stopPropagation on mousedown — the splitter
-                        // needs the event so the user can start a drag
-                        // FROM the chevron pixel. The splitter's
-                        // mousedown handler uses a movement threshold:
-                        // a wiggle-free click here still fires onClick
-                        // (browser default), a drag past threshold
-                        // becomes a resize.
-                        onClick: function (e) {
-                            e.stopPropagation();
-                            setSidebarCollapsed(true);
-                            render();
-                        }
-                    }, el('span', { innerHTML: svgIcon('chevron') })));
-                    body.appendChild(splitter);
-                }
+            }
+            if (!isMobile()) {
+                var splitterCls = 'bowire-sidebar-splitter';
+                if (sidebarCollapsed) splitterCls += ' bowire-sidebar-splitter-collapsed';
+                var splitter = el('div', {
+                    className: splitterCls,
+                    id: 'bowire-sidebar-splitter',
+                    title: sidebarCollapsed
+                        ? 'Show sidebar (Ctrl+B)'
+                        : 'Drag to resize the sidebar — drag past the minimum to collapse, or double-click to toggle'
+                });
+                splitter.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-sidebar-edge-toggle bowire-sidebar-edge-toggle-'
+                        + (sidebarCollapsed ? 'collapsed' : 'expanded'),
+                    title: sidebarCollapsed ? 'Show sidebar (Ctrl+B)' : 'Hide sidebar (Ctrl+B) — drag to resize',
+                    'aria-label': sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar',
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        setSidebarCollapsed(!sidebarCollapsed);
+                        render();
+                    }
+                }, el('span', { innerHTML: svgIcon('chevron') })));
+                body.appendChild(splitter);
             }
         }
         // #160 — Workspace-context breadcrumb at the top of the main
@@ -1121,7 +1110,28 @@
         var app = document.getElementById('bowire-app');
         if (!splitter || !app || splitter.dataset.dragHooked === '1') return;
         splitter.dataset.dragHooked = '1';
+        // When collapsed, ANY click on the splitter (not just on the
+        // chevron) should expand. We do this as a delegated CLICK
+        // listener — not via mousedown-toggle, because toggling on
+        // mousedown then re-rendering causes the trailing click to
+        // land on the new (now-expanded) chevron + collapse again.
+        // The click delegate forwards bar-clicks to the chevron so
+        // there is exactly ONE toggle path (no double-firing).
+        splitter.addEventListener('click', function (e) {
+            if (!document.body.classList.contains('bowire-sidebar-is-collapsed')) return;
+            // If the user clicked the chevron itself, the button's
+            // native onClick already fires. Don't double-trigger.
+            if (e.target.closest('.bowire-sidebar-edge-toggle')) return;
+            var chevron = splitter.querySelector('.bowire-sidebar-edge-toggle');
+            if (chevron) chevron.click();
+        });
         splitter.addEventListener('mousedown', function (e) {
+            // When the sidebar is collapsed: skip drag wiring — the
+            // click delegate above handles the expand. The splitter
+            // has cursor:pointer + no resize semantics.
+            if (document.body.classList.contains('bowire-sidebar-is-collapsed')) {
+                return;
+            }
             // Don't preventDefault yet — we don't know if this is a
             // drag or a click on a child (like the chevron-toggle).
             // The browser will dispatch the chevron's click event on

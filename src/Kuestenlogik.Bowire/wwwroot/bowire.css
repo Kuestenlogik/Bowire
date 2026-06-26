@@ -1564,37 +1564,17 @@ but
     color: var(--bowire-accent);
 }
 
-/* Collapsed: full-height vertical 'show sidebar' bar that mirrors
-   the splitter's shape (same width, same hover affordance) so the
-   operator can click anywhere along the height instead of aiming
-   at a tiny floating chevron. Chevron centred, points right (→).
-   No resize cursor — there's nothing to resize when the sidebar is
-   0-wide. Pointer-cursor + click = expand. Operator feedback:
-   'klickbar überall, durchgehend von topbar bis statusbar wie der
-   splitter'. */
+/* Collapsed: chevron sits centred inside the splitter — same shape
+   + position as the expanded variant, just NO 180deg rotation so
+   the arrow points right (→) as a 'show sidebar' affordance.
+   The splitter itself is the clickable bar; this rule only handles
+   the chevron's centring. Operator feedback: 'könnte man nicht
+   einfach den splitter selbst nutzen?'. */
 .bowire-sidebar-edge-toggle-collapsed {
-    /* Full-height bar flush with the activity rail's right edge —
-       same shape as .bowire-sidebar-splitter (when sidebar is open).
-       The chevron stays vertically centred via the base
-       .bowire-sidebar-edge-toggle rule's translateY(-50%); the bar
-       itself fills 100% of the app-body height so the click target
-       runs the entire vertical span (topbar to statusbar). */
-    top: 0;
-    left: var(--bowire-rail-width, 48px);
-    width: 10px;
-    height: 100%;
-    transform: none; /* override base translateY — the bar is 100% tall */
-    background: transparent;
-    border-left: 1px solid var(--bowire-border-subtle);
-    border-radius: 0;
-    /* Vertical-centre the chevron child (svg span). */
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
-.bowire-sidebar-edge-toggle-collapsed:hover {
-    background: var(--bowire-surface);
-    border-left-color: var(--bowire-accent);
+.bowire-sidebar-splitter:hover .bowire-sidebar-edge-toggle-collapsed {
     color: var(--bowire-accent);
 }
 
@@ -7784,10 +7764,15 @@ not through to the children of
     transition: none !important;
 }
 
-/* Hide the sidebar splitter in collapsed and mobile modes — nothing to
-   resize when the sidebar is 0-wide or rendered as an overlay. */
-.bowire-sidebar.collapsed + .bowire-sidebar-splitter {
-    display: none;
+/* When collapsed: the splitter STAYS visible (it's the 'show
+   sidebar' affordance) — but loses its resize cursor (nothing to
+   resize from a 0-width sidebar) and shows the right-pointing
+   chevron via .bowire-sidebar-splitter-collapsed. The mousedown
+   handler in layout.js still fires; it short-circuits the resize
+   path when the body carries .bowire-sidebar-is-collapsed and
+   defers to the chevron's onClick (which toggles the state). */
+.bowire-sidebar-splitter-collapsed {
+    cursor: pointer;
 }
 
 /* ---------- Stream Detail Pane ---------- */
