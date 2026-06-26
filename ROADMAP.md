@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**36/50 done** · 14 backlog
+**36/51 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [282](https://github.com/Kuestenlogik/Bowire/issues/282) | Bowire | [Unified .bww format: UI export + CLI export converge on one canonical schema](#issue-kuestenlogik-bowire-282) | ⬜ Backlog |  |
 | [291](https://github.com/Kuestenlogik/Bowire/issues/291) | Bowire | [Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout](#issue-kuestenlogik-bowire-291) | ⬜ Backlog |  |
+| [293](https://github.com/Kuestenlogik/Bowire/issues/293) | Bowire | [New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover](#issue-kuestenlogik-bowire-293) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
 | [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ✅ Done |  |
@@ -276,6 +277,10 @@ Two divergent .bww shapes shipped in v2.0: [[more]](https://github.com/Kuestenlo
 #### <a id="issue-kuestenlogik-bowire-291"></a>⬜ Backlog · [#291](https://github.com/Kuestenlogik/Bowire/issues/291) Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout
 
 The hopp-bar (#289 + #290) ships today as a REST-only experience: HTTP method dropdown + URL + Parameter/Body/Header/Auth/Scripts/Vars sub-tabs. Bowire's whole point is multi-protocol — the bar should expose every wire Bowire speaks, not just REST. [[more]](https://github.com/Kuestenlogik/Bowire/issues/291)
+
+#### <a id="issue-kuestenlogik-bowire-293"></a>⬜ Backlog · [#293](https://github.com/Kuestenlogik/Bowire/issues/293) New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover
+
+The request-builder (renamed from hopp-bar in commit 5d7b21a, multi-protocol since #291) currently piggy-backs on whatever tab is active in the Discover rail. Two consequences: 1. When no source/tab exists, the builder "erzeugt keinen Tab" — gets stuck somewhere off-frame. 2. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/293)
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
@@ -809,4 +814,4 @@ Followup to #291. Phases A+B+C+E shipped (REST / gRPC / MCP / MQTT / WebSocket /
 
 ---
 
-*Generated 2026-06-25 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-06-26 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
