@@ -1593,8 +1593,54 @@
                 textContent: step.durationMs + 'ms' }) : null
         );
 
-        var deleteBtn = el('button', {
-            className: 'bowire-recording-step-delete',
+        // Per-row hover-revealed tool cluster — Replay in Compose +
+        // Delete. Replay-in-Compose promotes the captured step into a
+        // live Compose tab so the operator can iterate without
+        // touching the recording itself; origin:'recording' on the
+        // tab carries the breadcrumb back.
+        var tools = el('div', { className: 'bowire-recording-step-tools' });
+        if (typeof spawnDesignTabFromItem === 'function') {
+            tools.appendChild(el('button', {
+                className: 'bowire-recording-step-tool',
+                title: 'Open this step in a new Compose tab',
+                'aria-label': 'Open this step in Compose',
+                innerHTML: svgIcon('drill'),
+                onClick: function (e) {
+                    e.stopPropagation();
+                    // Step shape mirrors collection-item: protocol +
+                    // service + method + body + metadata. spawnDesignTabFromItem
+                    // is tolerant of missing fields.
+                    var item = {
+                        protocol: step.protocol || 'grpc',
+                        service: step.service || '',
+                        method: step.method || '',
+                        methodType: step.methodType || 'Unary',
+                        body: step.body || step.request || '{}',
+                        messages: step.messages ? step.messages.slice()
+                            : (step.body ? [step.body] : [step.request || '{}']),
+                        metadata: step.metadata || null,
+                        serverUrl: step.serverUrl || null,
+                        urlMode: 'inline'
+                    };
+                    if (typeof railMode !== 'undefined') {
+                        railMode = 'compose';
+                        try { localStorage.setItem('bowire_rail_mode', 'compose'); } catch { /* ignore */ }
+                    }
+                    spawnDesignTabFromItem(item, {
+                        kind: 'recording',
+                        recordingId: rec.id,
+                        stepIndex: idx,
+                        name: rec.name
+                    });
+                    if (typeof toast === 'function') {
+                        toast('Replaying in Compose', 'success');
+                    }
+                    render();
+                }
+            }));
+        }
+        tools.appendChild(el('button', {
+            className: 'bowire-recording-step-tool bowire-recording-step-delete',
             innerHTML: svgIcon('trash'),
             title: 'Remove this step',
             'aria-label': 'Remove this step',
@@ -1602,9 +1648,9 @@
                 e.stopPropagation();
                 deleteRecordingStep(rec.id, step.id);
             }
-        });
+        }));
 
-        var row = el('div', { className: 'bowire-recording-step' }, label, deleteBtn);
+        var row = el('div', { className: 'bowire-recording-step' }, label, tools);
         return row;
     }
 

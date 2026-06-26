@@ -21709,3 +21709,370 @@ not as the
     color: var(--bowire-error);
     border-color: var(--bowire-error);
 }
+
+/* ---------- #295 Compose rail: Collections + Presets side panel ---------- */
+/* The Compose rail's main pane is now a flex row: the request-builder
+   column on the left (tab strip + builder) and a collapsible side
+   panel on the right hosting Collections + Presets. The panel reads
+   the same `collectionsList` + `loadPresets()` state the standalone
+   rails read, so saving from any surface lands in the same place. */
+.bowire-main-compose {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+.bowire-compose-main-col {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.bowire-compose-side-panel {
+    width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--bowire-border);
+    background: var(--bowire-surface);
+    overflow: hidden;
+    transition: width var(--bowire-transition);
+}
+.bowire-compose-side-panel.is-collapsed {
+    width: 36px;
+}
+
+.bowire-compose-side-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+    background: var(--bowire-surface-subtle);
+    min-height: 36px;
+    box-sizing: border-box;
+}
+.bowire-compose-side-panel-toggle {
+    background: transparent;
+    border: none;
+    color: var(--bowire-text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--bowire-radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-compose-side-panel-toggle:hover {
+    color: var(--bowire-text);
+    background: var(--bowire-surface-hover);
+}
+.bowire-compose-side-panel-toggle svg {
+    width: 14px;
+    height: 14px;
+}
+.bowire-compose-side-panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--bowire-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.bowire-compose-side-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px 0;
+}
+
+/* ---- Section (Collections / Presets) ---- */
+.bowire-compose-side-section {
+    padding: 6px 0 10px;
+}
+.bowire-compose-side-section + .bowire-compose-side-section {
+    border-top: 1px solid var(--bowire-border-subtle);
+    margin-top: 4px;
+}
+.bowire-compose-side-section-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    color: var(--bowire-text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.bowire-compose-side-section-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-compose-side-section-icon svg {
+    width: 12px;
+    height: 12px;
+}
+.bowire-compose-side-section-label {
+    flex: 1;
+}
+.bowire-compose-side-section-count {
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+    font-weight: 500;
+    padding: 1px 5px;
+    border-radius: 8px;
+    background: var(--bowire-surface-hover);
+}
+.bowire-compose-side-section-add {
+    background: transparent;
+    border: none;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: var(--bowire-radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-compose-side-section-add:hover {
+    color: var(--bowire-accent);
+    background: var(--bowire-accent-subtle);
+}
+.bowire-compose-side-section-add svg {
+    width: 12px;
+    height: 12px;
+}
+
+.bowire-compose-side-empty {
+    padding: 8px 12px;
+    color: var(--bowire-text-tertiary);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.bowire-compose-side-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+/* ---- Collection group + items ---- */
+.bowire-compose-side-collection,
+.bowire-compose-side-preset-group {
+    display: flex;
+    flex-direction: column;
+}
+.bowire-compose-side-collection-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px 4px 8px;
+    cursor: pointer;
+    color: var(--bowire-text);
+    font-size: 12px;
+    user-select: none;
+    transition: background var(--bowire-transition);
+}
+.bowire-compose-side-collection-head:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-compose-side-collection-caret {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bowire-text-tertiary);
+    transition: transform 0.12s ease;
+}
+.bowire-compose-side-collection-caret svg {
+    width: 10px;
+    height: 10px;
+}
+.bowire-compose-side-collection.is-open .bowire-compose-side-collection-caret,
+.bowire-compose-side-preset-group.is-open .bowire-compose-side-collection-caret {
+    transform: rotate(90deg);
+}
+.bowire-compose-side-collection-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+.bowire-compose-side-collection-count {
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 8px;
+    background: var(--bowire-surface-hover);
+}
+
+.bowire-compose-side-collection-items {
+    display: flex;
+    flex-direction: column;
+    padding-left: 8px;
+}
+
+/* ---- Individual saved item (collection item or preset row) ---- */
+.bowire-compose-side-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px 4px 22px;
+    cursor: grab;
+    color: var(--bowire-text);
+    font-size: 11px;
+    user-select: none;
+    border-radius: 0;
+    transition: background var(--bowire-transition);
+}
+.bowire-compose-side-item:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-compose-side-item:active {
+    cursor: grabbing;
+}
+.bowire-compose-side-item-proto {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: var(--bowire-text-secondary);
+    background: var(--bowire-surface-hover);
+    flex-shrink: 0;
+    letter-spacing: 0.04em;
+}
+.bowire-compose-side-item-proto[data-protocol="rest"] {
+    color: var(--bowire-success);
+    background: color-mix(in srgb, var(--bowire-success) 12%, transparent);
+}
+.bowire-compose-side-item-proto[data-protocol="grpc"] {
+    color: var(--bowire-accent);
+    background: var(--bowire-accent-subtle);
+}
+.bowire-compose-side-item-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---- Tab strip drop-target affordance ---- */
+.bowire-compose-tabs.is-drop-target {
+    background: color-mix(in srgb, var(--bowire-accent) 6%, transparent);
+    box-shadow: inset 0 0 0 1px var(--bowire-accent);
+}
+.bowire-compose-tab.is-drop-replace {
+    box-shadow: inset 0 0 0 2px var(--bowire-accent);
+}
+
+/* ---- Origin badge in tab title ---- */
+.bowire-compose-tab-origin-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bowire-text-tertiary);
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+.bowire-compose-tab-origin-badge svg {
+    width: 11px;
+    height: 11px;
+}
+.bowire-compose-tab.has-origin .bowire-compose-tab-origin-badge {
+    color: var(--bowire-accent);
+}
+.bowire-compose-tab-origin-collection { color: var(--bowire-accent); }
+.bowire-compose-tab-origin-preset     { color: var(--bowire-warning, #c98a00); }
+.bowire-compose-tab-origin-discover   { color: var(--bowire-success); }
+.bowire-compose-tab-origin-recording  { color: var(--bowire-streaming, #6e62ff); }
+
+/* ---- Save-to-collection picker (Compose bar) ---- */
+.bowire-compose-save-picker {
+    position: absolute;
+    z-index: 1000;
+    min-width: 220px;
+    max-width: 320px;
+    margin-top: 4px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    padding: 4px 0;
+    right: 0;
+}
+.bowire-compose-save-picker .bowire-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--bowire-text);
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+.bowire-compose-save-picker .bowire-dropdown-item:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-compose-save-picker .bowire-dropdown-item-meta {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-compose-save-picker .bowire-dropdown-item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-compose-save-picker .bowire-dropdown-item-icon svg {
+    width: 12px;
+    height: 12px;
+}
+.bowire-compose-save-picker .bowire-dropdown-divider {
+    border-top: 1px solid var(--bowire-border-subtle);
+    margin: 4px 0;
+}
+
+/* ---- Recording step tool cluster (hover-reveal) ---- */
+.bowire-recording-step {
+    position: relative;
+}
+.bowire-recording-step-tools {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+.bowire-recording-step .bowire-recording-step-tool {
+    background: transparent;
+    border: none;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--bowire-radius-sm);
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-recording-step:hover .bowire-recording-step-tool {
+    display: inline-flex;
+}
+.bowire-recording-step-tool:hover {
+    color: var(--bowire-text);
+    background: var(--bowire-surface-hover);
+}
+.bowire-recording-step-tool.bowire-recording-step-delete:hover {
+    color: var(--bowire-error);
+    background: var(--bowire-error-bg);
+}
+.bowire-recording-step-tool svg {
+    width: 13px;
+    height: 13px;
+}

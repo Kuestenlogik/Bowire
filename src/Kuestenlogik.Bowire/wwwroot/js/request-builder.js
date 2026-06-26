@@ -825,28 +825,51 @@
                 role: 'menuitem',
                 onClick: function () {
                     rbSendMenuOpen = false;
-                    // Save to collection — reuse the freeform save path.
-                    try {
-                        if (typeof collectionsList !== 'undefined'
-                            && typeof addToCollection === 'function'
-                            && typeof createCollection === 'function') {
-                            var col = (collectionsList && collectionsList.length > 0)
-                                ? collectionsList[0]
-                                : createCollection();
-                            addToCollection(col.id, _snapshotHoppForCollection(fr));
-                            if (typeof toast === 'function') {
-                                toast('Saved to "' + col.name + '"', 'success');
-                            }
-                        }
-                    } catch (e) {
-                        if (typeof toast === 'function') toast('Save failed: ' + e.message, 'error');
+                    // #295 Phase C — Save to collection picker.
+                    // Always opens the picker (no silent "first
+                    // collection wins" surprise); the operator can
+                    // pick a target collection or spawn a new one.
+                    var anchor = document.getElementById('bowire-request-builder-send-caret')
+                        || document.getElementById('bowire-request-builder-send-btn');
+                    if (typeof _composeSaveToCollectionPicker === 'function') {
+                        _composeSaveToCollectionPicker(fr, anchor);
                     }
                     render();
                 }
             },
                 el('span', { innerHTML: svgIcon('folder'), style: 'width:14px;height:14px;display:flex' }),
-                el('span', { textContent: 'Save to collection' })
+                el('span', { textContent: 'Save to collection…' })
             ));
+            // #295 Phase F — Save as preset on the request-builder
+            // bar. Mirrors the Discover header's affordance so a
+            // tab opened in Compose gets the same save-into-presets
+            // surface without having to round-trip through Discover.
+            if (typeof savePresetFromSnapshot === 'function') {
+                sendMenu.appendChild(el('button', {
+                    className: 'bowire-request-builder-send-menu-item',
+                    role: 'menuitem',
+                    onClick: function () {
+                        rbSendMenuOpen = false;
+                        if (typeof bowirePrompt !== 'function') return;
+                        bowirePrompt('Preset name', {
+                            title: 'Save as preset',
+                            placeholder: (fr.method || 'request') + ' preset',
+                            confirmText: 'Save'
+                        }).then(function (name) {
+                            if (!name) return;
+                            var snap = _snapshotHoppForCollection(fr);
+                            savePresetFromSnapshot('discover', String(name).trim(), snap);
+                            if (typeof toast === 'function') {
+                                toast('Preset saved', 'success');
+                            }
+                            render();
+                        });
+                    }
+                },
+                    el('span', { innerHTML: svgIcon('pin'), style: 'width:14px;height:14px;display:flex' }),
+                    el('span', { textContent: 'Save as preset…' })
+                ));
+            }
             // #290 — Benchmark variant. Wired to the existing
             // benchmarks-rail runner via createBenchmarkSpec + the
             // request-builder request snapshot as a single 'method'-style target.
