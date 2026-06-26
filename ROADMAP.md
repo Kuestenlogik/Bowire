@@ -79,7 +79,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**2/10 done** · 8 backlog
+**2/11 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -91,6 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [181](https://github.com/Kuestenlogik/Bowire/issues/181) | Bowire | [bowire test CLI runner with JUnit / SARIF / TTY output](#issue-kuestenlogik-bowire-181) | ⬜ Backlog |  |
 | [191](https://github.com/Kuestenlogik/Bowire/issues/191) | Bowire | [Contract testing — Pact-style publish / verify CLI](#issue-kuestenlogik-bowire-191) | ⬜ Backlog |  |
 | [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ⬜ Backlog |  |
+| [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | ⬜ Backlog |  |
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ✅ Done |  |
 | [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ✅ Done |  |
 
@@ -228,6 +229,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog |  |
 | [303](https://github.com/Kuestenlogik/Bowire/issues/303) | Bowire | [Guided tour: per-rail empty-state secondary tours](#issue-kuestenlogik-bowire-303) | ⬜ Backlog |  |
 | [304](https://github.com/Kuestenlogik/Bowire/issues/304) | Bowire | [Compose rail: hide standalone Collections rail tree node now that Compose hosts it](#issue-kuestenlogik-bowire-304) | ⬜ Backlog |  |
+| [305](https://github.com/Kuestenlogik/Bowire/issues/305) | Bowire | [Source catalogue providers: kubernetes + agent (Phase D+E)](#issue-kuestenlogik-bowire-305) | ⬜ Backlog |  |
 
 ## Details
 
@@ -508,6 +510,10 @@ Microservice teams break each other when one team changes an API without consult
 #### <a id="issue-kuestenlogik-bowire-208"></a>⬜ Backlog · [#208](https://github.com/Kuestenlogik/Bowire/issues/208) Variable resolver — Phase 5: OS keyring + AI re-roll + streaming
 
 @-
+
+#### <a id="issue-kuestenlogik-bowire-306"></a>⬜ Backlog · [#306](https://github.com/Kuestenlogik/Bowire/issues/306) Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)
+
+Follow-up to #294. Phases A-F shipped the descriptor architecture + extracted Security (rail) and AI (module) as proof. Phase G is the remaining package-mechanics work — no architectural decisions left to make, just `mv` + csproj wiring. [[more]](https://github.com/Kuestenlogik/Bowire/issues/306)
 
 #### <a id="issue-kuestenlogik-bowire-180"></a>✅ Done · [#180](https://github.com/Kuestenlogik/Bowire/issues/180) Assertion DSL for collection / recording replay
 
@@ -866,6 +872,10 @@ Phase A (tour engine + spotlight + page-navigation) and Phase B (Getting-started
 #### <a id="issue-kuestenlogik-bowire-304"></a>⬜ Backlog · [#304](https://github.com/Kuestenlogik/Bowire/issues/304) Compose rail: hide standalone Collections rail tree node now that Compose hosts it
 
 Phase A-F of #295 landed in 5160a3a — the Compose rail now hosts Collections + Presets in a side panel, and saves from any surface (Discover 'Add to', request-builder 'Save to collection', recording steps 'Open in Compose') land in the same buckets. [[more]](https://github.com/Kuestenlogik/Bowire/issues/304)
+
+#### <a id="issue-kuestenlogik-bowire-305"></a>⬜ Backlog · [#305](https://github.com/Kuestenlogik/Bowire/issues/305) Source catalogue providers: kubernetes + agent (Phase D+E)
+
+Follow-up to #136. The provider seam (`IBowireCatalogueProvider` + `BowireCatalogueProviderRegistry`) and the three built-in providers (`local`, `http`, `consul`) shipped in ab8042fbe92611ccb41926af3be48d2947339282. The remaining two providers each need extra weight that doesn't belong in core: [[more]](https://github.com/Kuestenlogik/Bowire/issues/305)
 
 ---
 
