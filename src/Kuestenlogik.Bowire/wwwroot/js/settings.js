@@ -1332,6 +1332,27 @@
         ));
 
         section.appendChild(renderSettingsAction(
+            'Migrate ${name} → {{name}}',
+            'Rewrite legacy ${name} placeholders to the canonical {{name}} syntax (#145)',
+            'Migrate',
+            function () {
+                bowireConfirm(
+                    'Rewrite every ${name} placeholder in this workspace to {{name}}?\n\nThis touches recordings, collections, freeform requests, flows, environment variables and globals. The change persists to disk immediately.',
+                    function () {
+                        try {
+                            if (typeof _runMigrationFromUi === 'function') _runMigrationFromUi();
+                            else if (typeof migrateLegacyVars === 'function') migrateLegacyVars();
+                        } catch (e) {
+                            console.error('[settings] vars migration failed', e);
+                            toast('Migration failed — see console.', 'error');
+                        }
+                    },
+                    { title: 'Migrate ${} → {{}}', confirmText: 'Migrate' }
+                );
+            }
+        ));
+
+        section.appendChild(renderSettingsAction(
             'Reset all settings',
             'Clear localStorage and reload — returns everything to initial state',
             'Reset All',
