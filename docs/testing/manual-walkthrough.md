@@ -20,7 +20,7 @@ Status convention per step: `[ ]` not yet verified · `[x]` passes · `[!]` know
 ### What should be visible
 
 - [ ] Topbar carries the **B**-logo + brand, env selector (says "Workspace defaults" or similar default), command palette, theme toggle, help, settings cog. **No** workspace chip (no workspace exists).
-- [ ] Left rail shows the always-on set: **Home** (active by default), Discover, **Design**, Workspaces. Disabled / optional rails (Recordings, Mocks, Flows, Proxy, Benchmarks, Security) MAY also appear unchecked-but-visible.
+- [ ] Left rail shows the always-on set: **Home** (active by default), Discover, **Compose**, Workspaces. Disabled / optional rails (Recordings, Mocks, Flows, Proxy, Benchmarks, Security) MAY also appear unchecked-but-visible.
 - [ ] Sidebar shows nothing rail-mode-specific (Home rail has `sidebar.kind: 'none'`).
 - [ ] Main pane renders the **"Create your first workspace"** empty card:
   - icon (layers)

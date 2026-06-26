@@ -3832,14 +3832,14 @@
         // with the 7 sub-tabs (Parameter / Body / Header / Auth /
         // Pre-script / Post-script / Variables) underneath. No
         // workspace setup needed; binds to whatever env is active.
-        // #293 — Routes to the Design rail + spawns a fresh request-
+        // #293 — Routes to the Compose rail + spawns a fresh request-
         // builder tab. Pre-#293 this called startHoppRequest() which
         // injected the builder into Discover; now the builder has its
         // own rail with a per-tab strip, so the operator's discover
         // view stays untouched.
-        if (typeof gotoDesignAndSpawn === 'function') {
+        if (typeof gotoComposeAndSpawn === 'function') {
             card('send', 'Just fire a request', 'Single-line bar (Ctrl+L)', function () {
-                gotoDesignAndSpawn();
+                gotoComposeAndSpawn();
                 requestAnimationFrame(function () {
                     var inp = document.getElementById('bowire-request-builder-url-input');
                     if (inp) inp.focus();
@@ -4352,13 +4352,13 @@
             return homeMain;
         }
 
-        // #293 — Design rail. Home for the ad-hoc request-builder
+        // #293 — Compose rail. Home for the ad-hoc request-builder
         // (previously hosted inside Discover's per-method tabs, which
         // overwrote the schema-driven view). The renderer lives in
-        // design-rail.js — owns its own tab strip + pinned '+ New
+        // compose-rail.js — owns its own tab strip + pinned '+ New
         // Request' tab + per-tab builder instance.
-        if (railMode === 'design' && typeof renderDesignMain === 'function') {
-            return renderDesignMain();
+        if (railMode === 'compose' && typeof renderComposeMain === 'function') {
+            return renderComposeMain();
         }
 
         // #131 Phase 1 — Benchmarks ships the single-method shape;
@@ -5756,28 +5756,28 @@
         if (freeformRequest) {
             // #293 — The Hoppscotch-style request-builder no longer
             // piggy-backs on Discover. A freeformRequest carrying the
-            // `_requestBuilder` marker belongs in the Design rail's tab
+            // `_requestBuilder` marker belongs in the Compose rail's tab
             // strip; if one shows up while Discover is active that's a
-            // stray (Ctrl+L mid-render, &c.) — punt back to Design and
+            // stray (Ctrl+L mid-render, &c.) — punt back to Compose and
             // adopt it as a fresh tab there. Classic non-hopp freeform
             // requests still render inline here via _appendFreeformInto.
             if (typeof isHoppRequest === 'function' && isHoppRequest(freeformRequest)) {
-                if (typeof designTabs !== 'undefined'
+                if (typeof composeTabs !== 'undefined'
                     && typeof activeDesignTabId !== 'undefined') {
-                    // Adopt the stray request into a Design tab so the
+                    // Adopt the stray request into a Compose tab so the
                     // operator's in-flight edits aren't dropped.
-                    var alreadyOwned = designTabs.some(function (t) { return t.request === freeformRequest; });
+                    var alreadyOwned = composeTabs.some(function (t) { return t.request === freeformRequest; });
                     if (!alreadyOwned) {
                         var adoptedId = 'design_' + (++_designTabIdCounter);
-                        designTabs.push({ id: adoptedId, request: freeformRequest });
+                        composeTabs.push({ id: adoptedId, request: freeformRequest });
                         activeDesignTabId = adoptedId;
                         if (typeof persistDesignTabs === 'function') persistDesignTabs();
                     }
-                    railMode = 'design';
-                    try { localStorage.setItem('bowire_rail_mode', 'design'); } catch { /* ignore */ }
-                    return renderDesignMain();
+                    railMode = 'compose';
+                    try { localStorage.setItem('bowire_rail_mode', 'compose'); } catch { /* ignore */ }
+                    return renderComposeMain();
                 }
-                // Defensive fallback — Design module not loaded for some
+                // Defensive fallback — Compose module not loaded for some
                 // reason; render the builder inline so the operator still
                 // sees something rather than a blank pane.
                 _appendRequestBuilderInto(main);

@@ -2286,7 +2286,7 @@
     // ---- Ctrl+L global shortcut (Phase F) ----
     //
     // Wired in init.js's keydown dispatcher — see the case for 'l'
-    // there. Post-#293 the handler calls gotoDesignAndSpawn() (in
-    // design-rail.js) which switches to the Design rail and spawns a
+    // there. Post-#293 the handler calls gotoComposeAndSpawn() (in
+    // compose-rail.js) which switches to the Compose rail and spawns a
     // fresh request-builder tab — replacing the pre-#293 path that
     // called startHoppRequest() and dumped the builder into Discover.
