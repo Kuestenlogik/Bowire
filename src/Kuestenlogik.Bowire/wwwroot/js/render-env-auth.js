@@ -2358,6 +2358,15 @@
         );
 
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
+            // Search trigger leads the right cluster (operator
+            // feedback: 'search tool sollte noch vor die auswahl des
+            // workspaces kommen'). Click or Cmd/Ctrl+K opens the
+            // omnibox modal. Hosted as a bare button — its own group
+            // with no neighbours — so it reads as the primary
+            // discovery affordance ahead of the editor-context group.
+            el('div', { className: 'bowire-topbar-group bowire-topbar-search' },
+                omniboxTriggerBtn
+            ),
             // #116 workspace + #138 env selector form the editor-
             // context group — both describe 'what state am I
             // editing right now'.
@@ -2538,13 +2547,12 @@
             // Drawer + utility group. Security toggle retired in
             // #133 Phase 2 (Security is a rail mode now, not a
             // drawer). Assistant stays as a drawer because it's
-            // cross-cutting. Omnibox search trigger sits at the front
-            // so the eye lands on 'search' before the drawers. Theme
-            // / Help / About promoted out of the old ⋮ overflow
-            // (#292) — Settings stays at the activity-rail bottom
-            // per VS Code / JetBrains convention.
+            // cross-cutting. Theme / Help / About promoted out of
+            // the old ⋮ overflow (#292) — Settings stays at the
+            // activity-rail bottom per VS Code / JetBrains convention.
+            // (Omnibox search trigger moved to its own group AHEAD
+            // of the editor-context group — leads the right cluster.)
             el('div', { className: 'bowire-topbar-group bowire-topbar-drawers' },
-                omniboxTriggerBtn,
                 aiToggleBtn,
                 themeBtn,
                 helpBtn,
