@@ -218,6 +218,16 @@
       handler against existing leaves.
     -->
     <BowireJsFragment Include="wwwroot\js\widgets\semantics-menu.js" />
+    <!-- #281 — Guided tour engine + Getting-started tour content.
+         Module-scope state, no dependencies on the IIFE scope beyond
+         what window.* exposes (render(), openCreateWorkspaceDialog,
+         railMode, …) — so order is flexible. Placed here so it's
+         loaded BEFORE init.js (which wires the Esc-to-stop-tour
+         keybind through window.bowireTourIsRunning / bowireStopTour)
+         and AFTER execute.js + render-main.js (which expose the old
+         startTour symbol the legacy 'Take Tour' footer button calls;
+         the shim in execute.js forwards to this engine). -->
+    <BowireJsFragment Include="wwwroot\js\tour.js" />
     <BowireJsFragment Include="wwwroot\js\init.js" />
     <Watch Include="wwwroot\js\**\*.js" />
   </ItemGroup>

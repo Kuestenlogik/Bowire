@@ -1492,12 +1492,17 @@
             var actionsRow = el('div', { className: 'bowire-empty-card-actions' });
             actions.forEach(function (a) {
                 if (!a) return;
-                actionsRow.appendChild(el('button', {
+                // #281 — actions can carry an optional stable id so
+                // the guided tour can target the button without
+                // resorting to brittle nth-child selectors.
+                var btnProps = {
                     type: 'button',
                     className: 'bowire-empty-card-action' + (a.primary ? ' bowire-empty-card-action-primary' : ''),
                     onClick: a.onClick,
                     textContent: a.label,
-                }));
+                };
+                if (a.id) btnProps.id = a.id;
+                actionsRow.appendChild(el('button', btnProps));
             });
             card.appendChild(actionsRow);
         }

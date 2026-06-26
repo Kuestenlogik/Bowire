@@ -4337,6 +4337,12 @@
                     body: 'A workspace is your project folder — it holds the URLs you discover, the environments + variables + secrets you reference, and the collections / recordings / benchmarks you build. Most operators name them after the project ("Petstore Staging", "Internal CMS"). You can switch + add more from the workspace chip in the topbar later.',
                     actions: [
                         {
+                            // #281 — stable id used as the
+                            // 'create-first-workspace' tour step
+                            // target. Don't rename without also
+                            // updating tour.js's getting-started
+                            // steps.
+                            id: 'bowire-welcome-create-btn',
                             label: 'New workspace…',
                             primary: true,
                             onClick: function () {
@@ -4344,6 +4350,16 @@
                                     openCreateWorkspaceDialog(function (ws) {
                                         if (ws) activeWorkspaceId = ws.id;
                                         render();
+                                        // #281 — wake the tour engine's
+                                        // 'workspace-created' advance
+                                        // signal so the Getting-started
+                                        // tour steps past step 1 without
+                                        // the operator having to click
+                                        // Next.
+                                        if (typeof window !== 'undefined'
+                                            && typeof window.bowireFireTourEvent === 'function') {
+                                            window.bowireFireTourEvent('workspace-created');
+                                        }
                                     });
                                 }
                             }
@@ -4361,6 +4377,20 @@
                                 try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
                                 workspaceTreeSelection = { kind: 'workspaces-overview' };
                                 render();
+                            }
+                        },
+                        // #281 — Take-a-tour CTA on the welcome card.
+                        // Same engine the sidebar 'Take Tour' footer
+                        // launches; force-mode so the operator can
+                        // re-run it after dismissing once.
+                        {
+                            id: 'bowire-welcome-tour-btn',
+                            label: 'Take a tour',
+                            onClick: function () {
+                                if (typeof window !== 'undefined'
+                                    && typeof window.bowireStartGettingStartedTour === 'function') {
+                                    window.bowireStartGettingStartedTour({ force: true });
+                                }
                             }
                         }
                     ]

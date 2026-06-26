@@ -924,6 +924,16 @@
         if (typeof _attachTopbarRightObserver === 'function') {
             _attachTopbarRightObserver();
         }
+
+        // #281 — Notify the guided-tour engine so it can re-resolve
+        // its current step's target + reposition the cutout + tooltip
+        // after the morphdom commit. Scroll / resize events don't
+        // fire on a morphdom rerender, so without this the tour's
+        // spotlight drifts off the target as soon as something else
+        // triggers a render.
+        try {
+            document.dispatchEvent(new CustomEvent('bowire-rendered'));
+        } catch { /* CustomEvent missing — pre-modern browser, no-op */ }
     }
 
     // #297 — Topbar right-cluster overflow state. _topbarRightOverflowHidden
