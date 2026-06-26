@@ -9219,8 +9219,18 @@ instead of having to
     margin-top: 1px;
 }
 .bowire-inline-hint-icon svg { width: 100%; height: 100%; }
-.bowire-inline-hint-text {
+/* #280 — body column stacks the hint text + optional action-chip row.
+   The wrapper carries the flex:1 so the icon stays left-aligned and
+   "Open Assistant" stays right-aligned, while chips tuck directly under
+   the text. */
+.bowire-inline-hint-body {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+.bowire-inline-hint-text {
     color: var(--bowire-text);
 }
 .bowire-inline-hint-open {
@@ -9239,6 +9249,57 @@ instead of having to
     background: var(--bowire-surface-hover);
     color: var(--bowire-accent);
     border-color: var(--bowire-accent);
+}
+
+/* #280 — actionable hint chips. Tight row of chip-style buttons that
+   sits under the hint body (in both the Assistant drawer's hint stack
+   and the inline-hint banners). Hint rules expose actions via the
+   { text, actions } render shape; each action becomes a chip. */
+.bowire-ai-hint-slot {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.bowire-hint-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 2px 0 0 0;
+}
+/* When the chips sit directly under an alert bar (Assistant drawer
+   hint stack), indent them to clear the bar's left dot + text padding
+   so the row reads as continuation of the bar, not a new column. */
+.bowire-ai-hint-slot .bowire-hint-actions {
+    padding-left: 12px;
+}
+.bowire-hint-action-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 10px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: 11px;
+    color: var(--bowire-text-secondary);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--bowire-transition),
+                border-color var(--bowire-transition),
+                color var(--bowire-transition);
+}
+.bowire-hint-action-chip:hover {
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-accent);
+    color: var(--bowire-accent);
+}
+.bowire-hint-action-chip:focus-visible {
+    outline: none;
+    border-color: var(--bowire-accent);
+    box-shadow: 0 0 0 2px var(--bowire-accent-subtle, rgba(56, 139, 253, 0.25));
 }
 
 /* #156 — favorites-only toggle in the Discover services toolbar.

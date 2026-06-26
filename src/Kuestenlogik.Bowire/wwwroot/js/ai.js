@@ -35,10 +35,112 @@
     //              list still shows every fired hint regardless of
     //              surface — that stays as the index / history view.
     //   match    — (ctx) -> bool. ctx is the snapshot built by collectContext().
-    //   render   — (ctx) -> string. Plain text, may include the method name.
+    //   render   — (ctx) -> string  OR  (ctx) -> { text, actions } (#280).
+    //              Bare string = legacy shape, still renders fine. Object
+    //              form lets the hint expose actionable chip buttons under
+    //              the text: each entry is { label, onClick } (run a fn)
+    //              or { label, navigate } (pure rail/sidebar nav). The
+    //              renderer below ducks on the return type so existing
+    //              hints keep working unchanged.
     //
     // Adding a new hint = appending one object. The rules read only what
     // collectContext() exposes -- so the contract for adding rules is one file.
+
+    // #280 — shared action handlers. Pulled out of the per-hint render
+    // closures so the actions read as one-liners (label + handler ref)
+    // and so two hints can share the same action without duplicating
+    // the navigation glue. Each function mirrors the steps an operator
+    // would take in the UI: flip rail / sidebar / response sub-tab,
+    // persist the choice where the workbench would, then re-render.
+    function _hintNavSources() {
+        if (typeof railMode !== 'undefined') {
+            railMode = 'sources';
+            try { localStorage.setItem('bowire_rail_mode', 'sources'); } catch { /* ignore */ }
+        }
+        if (typeof render === 'function') render();
+    }
+    function _hintNavDiscover() {
+        if (typeof railMode !== 'undefined') {
+            railMode = 'discover';
+            try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
+        }
+        if (typeof setSidebarView === 'function') setSidebarView('services');
+        if (typeof render === 'function') render();
+    }
+    function _hintNavBenchmarks() {
+        if (typeof railMode !== 'undefined') {
+            railMode = 'benchmarks';
+            try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
+        }
+        if (typeof render === 'function') render();
+    }
+    function _hintNavRecordings() {
+        if (typeof railMode !== 'undefined') {
+            railMode = 'recordings';
+            try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
+        }
+        if (typeof render === 'function') render();
+    }
+    function _hintNavMocks() {
+        if (typeof railMode !== 'undefined') {
+            railMode = 'mocks';
+            try { localStorage.setItem('bowire_rail_mode', 'mocks'); } catch { /* ignore */ }
+        }
+        if (typeof render === 'function') render();
+    }
+    function _hintOpenNewWorkspace() {
+        if (typeof openCreateWorkspaceDialog === 'function') {
+            openCreateWorkspaceDialog();
+        } else {
+            // Workspaces rail is the natural fallback when the dialog
+            // helper isn't loaded — the rail's empty state carries its
+            // own "New workspace" affordance.
+            if (typeof railMode !== 'undefined') {
+                railMode = 'workspaces';
+                try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+            }
+            if (typeof render === 'function') render();
+        }
+    }
+    function _hintFocusMethodSearch() {
+        // Routing first — the sidebar's search input only mounts when
+        // the Services view is active. Then a microtask focuses the
+        // field so it lands after morphdom's diff settles.
+        _hintNavDiscover();
+        setTimeout(function () {
+            var input = document.querySelector('.bowire-sidebar-filterbar-search-input');
+            if (input && typeof input.focus === 'function') {
+                input.focus();
+                try { input.select(); } catch { /* ignore */ }
+            }
+        }, 50);
+    }
+    function _hintOpenHistoryTab() {
+        // History lives as a request-pane sub-tab; flip the active tab
+        // there if the global is in scope. Falls back silently when
+        // the workbench hasn't selected a method yet.
+        try {
+            if (typeof activeRequestTab !== 'undefined') {
+                activeRequestTab = 'history';
+            }
+        } catch { /* ignore */ }
+        if (typeof render === 'function') render();
+    }
+    function _hintOpenResponseDiff() {
+        try {
+            if (typeof diffViewOpen !== 'undefined') diffViewOpen = true;
+            if (typeof activeResponseTab !== 'undefined') activeResponseTab = 'response';
+        } catch { /* ignore */ }
+        if (typeof render === 'function') render();
+    }
+    function _hintOpenSchemaTab() {
+        try {
+            if (typeof activeRequestTab !== 'undefined') {
+                activeRequestTab = 'schema';
+            }
+        } catch { /* ignore */ }
+        if (typeof render === 'function') render();
+    }
 
     var BOWIRE_AI_HINTS = [
         {
@@ -54,7 +156,12 @@
                     && workspaces.length === 0;
             },
             render: function () {
-                return 'No workspace yet. Create one to discover services and start invoking methods — once you do, this hint feed will surface context-aware tips here.';
+                return {
+                    text: 'No workspace yet. Create one to discover services and start invoking methods — once you do, this hint feed will surface context-aware tips here.',
+                    actions: [
+                        { label: 'New workspace…', onClick: _hintOpenNewWorkspace }
+                    ]
+                };
             }
         },
         {
@@ -72,7 +179,13 @@
                     && workspaces.length > 0;
             },
             render: function () {
-                return 'No services discovered yet. Add a URL or upload a schema in the Sources panel — the hint feed lights up once methods land in the Discover sidebar.';
+                return {
+                    text: 'No services discovered yet. Add a URL or upload a schema in the Sources panel — the hint feed lights up once methods land in the Discover sidebar.',
+                    actions: [
+                        { label: 'Open Sources', onClick: _hintNavSources },
+                        { label: 'Upload schema', onClick: _hintNavSources }
+                    ]
+                };
             }
         },
         {
@@ -87,7 +200,12 @@
                     && services.length > 0;
             },
             render: function () {
-                return 'Pick a method in the sidebar to see context-aware hints here.';
+                return {
+                    text: 'Pick a method in the sidebar to see context-aware hints here.',
+                    actions: [
+                        { label: 'Focus method search', onClick: _hintFocusMethodSearch }
+                    ]
+                };
             }
         },
         // ---- Phase 2 observation hints (#149) ----
@@ -99,9 +217,15 @@
             surface: 'response',
             match: function (c) { return !!c.method && c.responseDurationMs >= 2000; },
             render: function (c) {
-                return c.method.name + ' took '
-                    + (c.responseDurationMs / 1000).toFixed(1)
-                    + 's. Consider checking server load, network distance, or whether the request shape is forcing a full table scan.';
+                return {
+                    text: c.method.name + ' took '
+                        + (c.responseDurationMs / 1000).toFixed(1)
+                        + 's. Consider checking server load, network distance, or whether the request shape is forcing a full table scan.',
+                    actions: [
+                        { label: 'Open History', onClick: _hintOpenHistoryTab },
+                        { label: 'Run benchmark', onClick: _hintNavBenchmarks }
+                    ]
+                };
             }
         },
         {
@@ -135,9 +259,15 @@
                     && c.actualStatus !== 'Error' && c.actualStatus !== 'NetworkError';
             },
             render: function (c) {
-                return 'Schema declared HTTP ' + c.expectedStatus
-                    + ' but the server returned ' + c.actualStatus
-                    + '. Either the schema is stale (regenerate) or the server contract drifted.';
+                return {
+                    text: 'Schema declared HTTP ' + c.expectedStatus
+                        + ' but the server returned ' + c.actualStatus
+                        + '. Either the schema is stale (regenerate) or the server contract drifted.',
+                    actions: [
+                        { label: 'Open response diff', onClick: _hintOpenResponseDiff },
+                        { label: 'Open schema', onClick: _hintOpenSchemaTab }
+                    ]
+                };
             }
         },
         {
@@ -233,8 +363,13 @@
             level: 'tip',
             match: function (c) { return c.runningMockCount > 0; },
             render: function (c) {
-                return 'You have ' + c.runningMockCount + ' mock'
-                    + (c.runningMockCount === 1 ? '' : 's') + ' running — open the Mocks panel to point a second workbench at them and compare responses.';
+                return {
+                    text: 'You have ' + c.runningMockCount + ' mock'
+                        + (c.runningMockCount === 1 ? '' : 's') + ' running — open the Mocks panel to point a second workbench at them and compare responses.',
+                    actions: [
+                        { label: 'Open Mocks', onClick: _hintNavMocks }
+                    ]
+                };
             }
         },
         {
@@ -242,8 +377,13 @@
             level: 'tip',
             match: function (c) { return c.recordingsCount > 0 && c.runningMockCount === 0; },
             render: function (c) {
-                return 'You have ' + c.recordingsCount + ' recording'
-                    + (c.recordingsCount === 1 ? '' : 's') + ' captured — open the Recordings manager and click "Run as mock" to replay them as a live endpoint.';
+                return {
+                    text: 'You have ' + c.recordingsCount + ' recording'
+                        + (c.recordingsCount === 1 ? '' : 's') + ' captured — open the Recordings manager and click "Run as mock" to replay them as a live endpoint.',
+                    actions: [
+                        { label: 'Open Recordings', onClick: _hintNavRecordings }
+                    ]
+                };
             }
         },
         {
@@ -413,6 +553,21 @@
             var h = BOWIRE_AI_HINTS[i];
             try {
                 if (h.match(ctx)) {
+                    // #280 — duck on the render return value. Legacy
+                    // shape is a bare string; new shape is
+                    // { text, actions } where actions is an array of
+                    // { label, onClick } or { label, navigate }. Either
+                    // shape lands as { text, actions } in the fired
+                    // record so downstream renderers can stay uniform.
+                    var rendered = h.render(ctx);
+                    var text, actions;
+                    if (rendered && typeof rendered === 'object' && typeof rendered.text === 'string') {
+                        text = rendered.text;
+                        actions = Array.isArray(rendered.actions) ? rendered.actions : null;
+                    } else {
+                        text = String(rendered == null ? '' : rendered);
+                        actions = null;
+                    }
                     fired.push({
                         id: h.id,
                         level: h.level,
@@ -421,12 +576,46 @@
                         // chip — backwards-compatible with the Phase 1
                         // (#114) chip we shipped earlier.
                         surface: h.surface || 'header',
-                        text: h.render(ctx)
+                        text: text,
+                        actions: actions
                     });
                 }
             } catch { /* hint may throw on unexpected state shape — ignore */ }
         }
         return fired;
+    }
+
+    // #280 — shared action-chip row. Returns a div with one chip per
+    // action, or null when no actions. Used by both the Assistant
+    // drawer's hint stack and the inline-banner renderer so the chip
+    // chrome stays consistent. Each action is either { label, onClick }
+    // (run a fn) or { label, navigate } (pure rail / sidebar nav — the
+    // navigate field is currently treated the same as onClick; the
+    // distinction is reserved for future routing-aware behaviour).
+    function renderHintActions(actions) {
+        if (!Array.isArray(actions) || actions.length === 0) return null;
+        var row = el('div', { className: 'bowire-hint-actions' });
+        actions.forEach(function (a) {
+            if (!a || !a.label) return;
+            var handler = typeof a.onClick === 'function'
+                ? a.onClick
+                : (typeof a.navigate === 'function' ? a.navigate : null);
+            if (!handler) return;
+            row.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-hint-action-chip',
+                textContent: a.label,
+                onClick: function (e) {
+                    // Stop the click from bubbling — the alert bar's
+                    // ancestor surfaces don't have click handlers today,
+                    // but the chip sits inside an alert-bar wrapper that
+                    // may pick up a click-to-dismiss in future renders.
+                    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+                    try { handler(); } catch { /* hint actions are best-effort */ }
+                }
+            }));
+        });
+        return row.childNodes.length > 0 ? row : null;
     }
 
     // #114 Phase 2 — surface-filtered hint lookup. Per-surface
@@ -460,10 +649,20 @@
                 className: 'bowire-inline-hint-icon',
                 innerHTML: svgIcon('spark')
             }));
-            row.appendChild(el('span', {
+            // #280 — body column stacks text + (optional) action chips.
+            // Using a column wrapper instead of dropping the chips as a
+            // sibling of the row keeps the wider flex layout intact:
+            // icon stays left-aligned, "Open Assistant" stays right-
+            // aligned, chips tuck under the text so they don't push the
+            // banner taller than necessary when no actions exist.
+            var body = el('div', { className: 'bowire-inline-hint-body' });
+            body.appendChild(el('span', {
                 className: 'bowire-inline-hint-text',
                 textContent: h.text
             }));
+            var actions = renderHintActions(h.actions);
+            if (actions) body.appendChild(actions);
+            row.appendChild(body);
             row.appendChild(el('button', {
                 className: 'bowire-inline-hint-open',
                 title: 'Open the Assistant drawer',
@@ -1212,7 +1411,21 @@
                     permanentDismissKey: 'bowire_ai_hint_' + h.id + '_permanent',
                     dismissLabel: 'Assistant hint: ' + (h.id || 'context')
                 });
-                if (bar) hintStack.appendChild(bar);
+                if (!bar) return;
+                // #280 — when a hint exposes actions, wrap the alert bar
+                // in a column so the chip row tucks directly under it.
+                // Skipping the wrapper for action-less hints keeps the
+                // existing DOM identical (alert-bar as a direct child)
+                // so morphdom diffs don't churn.
+                var actionsRow = renderHintActions(h.actions);
+                if (actionsRow) {
+                    var slot = el('div', { className: 'bowire-ai-hint-slot' });
+                    slot.appendChild(bar);
+                    slot.appendChild(actionsRow);
+                    hintStack.appendChild(slot);
+                } else {
+                    hintStack.appendChild(bar);
+                }
             });
             panel.appendChild(hintStack);
         }
