@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**42/60 done** · 18 backlog
+**44/60 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -28,8 +28,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [279](https://github.com/Kuestenlogik/Bowire/issues/279) | Bowire | [Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview](#issue-kuestenlogik-bowire-279) | ⬜ Backlog |  |
 | [280](https://github.com/Kuestenlogik/Bowire/issues/280) | Bowire | [Assistant hints: actionable inline buttons / links (not just descriptive text)](#issue-kuestenlogik-bowire-280) | ⬜ Backlog |  |
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
-| [282](https://github.com/Kuestenlogik/Bowire/issues/282) | Bowire | [Unified .bww format: UI export + CLI export converge on one canonical schema](#issue-kuestenlogik-bowire-282) | ⬜ Backlog |  |
-| [291](https://github.com/Kuestenlogik/Bowire/issues/291) | Bowire | [Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout](#issue-kuestenlogik-bowire-291) | ⬜ Backlog |  |
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ⬜ Backlog |  |
 | [297](https://github.com/Kuestenlogik/Bowire/issues/297) | Bowire | [Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip](#issue-kuestenlogik-bowire-297) | ⬜ Backlog |  |
@@ -66,10 +64,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [276](https://github.com/Kuestenlogik/Bowire/issues/276) | Bowire | [Workspaces sidebar: tool parity with Recordings/Benchmarks rails (per-row + toolbar + context menu)](#issue-kuestenlogik-bowire-276) | ✅ Done |  |
 | [277](https://github.com/Kuestenlogik/Bowire/issues/277) | Bowire | [Workspace sidebar: 'Switch to active' button uses '+' icon instead of checkmark](#issue-kuestenlogik-bowire-277) | ✅ Done |  |
 | [278](https://github.com/Kuestenlogik/Bowire/issues/278) | Bowire | [Save-as-template button: floppy-disk icon reads as 'save current state', not 'snapshot as template'](#issue-kuestenlogik-bowire-278) | ✅ Done |  |
+| [282](https://github.com/Kuestenlogik/Bowire/issues/282) | Bowire | [Unified .bww format: UI export + CLI export converge on one canonical schema](#issue-kuestenlogik-bowire-282) | ✅ Done |  |
 | [285](https://github.com/Kuestenlogik/Bowire/issues/285) | Bowire | [Lift active recording state from browser localStorage into a server-side BowireRecordingSession](#issue-kuestenlogik-bowire-285) | ✅ Done |  |
 | [286](https://github.com/Kuestenlogik/Bowire/issues/286) | Bowire | [mcp serve --attach: MCP-over-MCP forwarder for connecting to a parent Bowire process](#issue-kuestenlogik-bowire-286) | ✅ Done |  |
 | [287](https://github.com/Kuestenlogik/Bowire/issues/287) | Bowire | [Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on](#issue-kuestenlogik-bowire-287) | ✅ Done |  |
 | [289](https://github.com/Kuestenlogik/Bowire/issues/289) | Bowire | [Hoppscotch-style single-line request bar: method + URL + params + execute, no workspace required](#issue-kuestenlogik-bowire-289) | ✅ Done |  |
+| [291](https://github.com/Kuestenlogik/Bowire/issues/291) | Bowire | [Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout](#issue-kuestenlogik-bowire-291) | ✅ Done |  |
 | [293](https://github.com/Kuestenlogik/Bowire/issues/293) | Bowire | [New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover](#issue-kuestenlogik-bowire-293) | ✅ Done |  |
 | [296](https://github.com/Kuestenlogik/Bowire/issues/296) | Bowire | [Topbar: global Trash drawer + Undo / Redo buttons (aggregate across rails)](#issue-kuestenlogik-bowire-296) | ✅ Done |  |
 | [298](https://github.com/Kuestenlogik/Bowire/issues/298) | Bowire | [Flows: protocol + service selection doesn't populate the request's dropdowns](#issue-kuestenlogik-bowire-298) | ✅ Done |  |
@@ -279,14 +279,6 @@ The Assistant drawer's context-aware hints describe what the operator should do 
 
 The existing guided tour reads more like inline help text than a tour. Operator's complaints: - Pages aren't navigated to — the tour says 'click X' but X isn't visible - Hints don't highlight the item being discussed - No spotlight / no darkening of the rest of the page so the eye lands on the right element [[more]](https://github.com/Kuestenlogik/Bowire/issues/281)
 
-#### <a id="issue-kuestenlogik-bowire-282"></a>⬜ Backlog · [#282](https://github.com/Kuestenlogik/Bowire/issues/282) Unified .bww format: UI export + CLI export converge on one canonical schema
-
-Two divergent .bww shapes shipped in v2.0: [[more]](https://github.com/Kuestenlogik/Bowire/issues/282)
-
-#### <a id="issue-kuestenlogik-bowire-291"></a>⬜ Backlog · [#291](https://github.com/Kuestenlogik/Bowire/issues/291) Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout
-
-The hopp-bar (#289 + #290) ships today as a REST-only experience: HTTP method dropdown + URL + Parameter/Body/Header/Auth/Scripts/Vars sub-tabs. Bowire's whole point is multi-protocol — the bar should expose every wire Bowire speaks, not just REST. [[more]](https://github.com/Kuestenlogik/Bowire/issues/291)
-
 #### <a id="issue-kuestenlogik-bowire-294"></a>⬜ Backlog · [#294](https://github.com/Kuestenlogik/Bowire/issues/294) Pluggable workbench: rails + modules as package contributions + meta-bundles
 
 Bowire today hardcodes: - An 'always-on' rail set (Home, Discover, Workspaces) — fixed in the rail-rendering code - A 'toggleable' rail set (Recordings, Mocks, Flows, Proxy, Benchmarks, Security) — toggleable in Settings, but the LIST itself is hardcoded - Cross-cutting modules (AI/Assistant, MCP, v … [[more]](https://github.com/Kuestenlogik/Bowire/issues/294)
@@ -431,6 +423,10 @@ When hovering a workspace row in the Workspaces sidebar, the activate/switch but
 
 The 'Save as template' button uses the floppy-disk SVG (added in commit 4f4f477). Operator's expectation when seeing a floppy: [[more]](https://github.com/Kuestenlogik/Bowire/issues/278)
 
+#### <a id="issue-kuestenlogik-bowire-282"></a>✅ Done · [#282](https://github.com/Kuestenlogik/Bowire/issues/282) Unified .bww format: UI export + CLI export converge on one canonical schema
+
+Two divergent .bww shapes shipped in v2.0: [[more]](https://github.com/Kuestenlogik/Bowire/issues/282)
+
 #### <a id="issue-kuestenlogik-bowire-285"></a>✅ Done · [#285](https://github.com/Kuestenlogik/Bowire/issues/285) Lift active recording state from browser localStorage into a server-side BowireRecordingSession
 
 #37 shipped four of seven planned MCP tools. The three remaining items — `bowire.record.start`, `bowire.record.stop`, `bowire.record.replay` — can't land cleanly today because the active-recording state lives in the **browser's** localStorage (`bowire_recording_active`, `bowire_recording_buffer`, &c … [[more]](https://github.com/Kuestenlogik/Bowire/issues/285)
@@ -446,6 +442,10 @@ Today `app.MapBowireMcp()` and `app.MapBowireMcpAdapter()` are mutually exclusiv
 #### <a id="issue-kuestenlogik-bowire-289"></a>✅ Done · [#289](https://github.com/Kuestenlogik/Bowire/issues/289) Hoppscotch-style single-line request bar: method + URL + params + execute, no workspace required
 
 Bowire's strength is the protocol-aware workbench — discover a schema, pick a method, execute. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/289)
+
+#### <a id="issue-kuestenlogik-bowire-291"></a>✅ Done · [#291](https://github.com/Kuestenlogik/Bowire/issues/291) Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout
+
+The hopp-bar (#289 + #290) ships today as a REST-only experience: HTTP method dropdown + URL + Parameter/Body/Header/Auth/Scripts/Vars sub-tabs. Bowire's whole point is multi-protocol — the bar should expose every wire Bowire speaks, not just REST. [[more]](https://github.com/Kuestenlogik/Bowire/issues/291)
 
 #### <a id="issue-kuestenlogik-bowire-293"></a>✅ Done · [#293](https://github.com/Kuestenlogik/Bowire/issues/293) New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover
 
