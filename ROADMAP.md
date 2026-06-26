@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**36/52 done** · 16 backlog
+**37/52 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -30,7 +30,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ⬜ Backlog |  |
 | [282](https://github.com/Kuestenlogik/Bowire/issues/282) | Bowire | [Unified .bww format: UI export + CLI export converge on one canonical schema](#issue-kuestenlogik-bowire-282) | ⬜ Backlog |  |
 | [291](https://github.com/Kuestenlogik/Bowire/issues/291) | Bowire | [Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout](#issue-kuestenlogik-bowire-291) | ⬜ Backlog |  |
-| [293](https://github.com/Kuestenlogik/Bowire/issues/293) | Bowire | [New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover](#issue-kuestenlogik-bowire-293) | ⬜ Backlog |  |
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
@@ -68,6 +67,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [286](https://github.com/Kuestenlogik/Bowire/issues/286) | Bowire | [mcp serve --attach: MCP-over-MCP forwarder for connecting to a parent Bowire process](#issue-kuestenlogik-bowire-286) | ✅ Done |  |
 | [287](https://github.com/Kuestenlogik/Bowire/issues/287) | Bowire | [Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on](#issue-kuestenlogik-bowire-287) | ✅ Done |  |
 | [289](https://github.com/Kuestenlogik/Bowire/issues/289) | Bowire | [Hoppscotch-style single-line request bar: method + URL + params + execute, no workspace required](#issue-kuestenlogik-bowire-289) | ✅ Done |  |
+| [293](https://github.com/Kuestenlogik/Bowire/issues/293) | Bowire | [New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover](#issue-kuestenlogik-bowire-293) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -279,10 +279,6 @@ Two divergent .bww shapes shipped in v2.0: [[more]](https://github.com/Kuestenlo
 
 The hopp-bar (#289 + #290) ships today as a REST-only experience: HTTP method dropdown + URL + Parameter/Body/Header/Auth/Scripts/Vars sub-tabs. Bowire's whole point is multi-protocol — the bar should expose every wire Bowire speaks, not just REST. [[more]](https://github.com/Kuestenlogik/Bowire/issues/291)
 
-#### <a id="issue-kuestenlogik-bowire-293"></a>⬜ Backlog · [#293](https://github.com/Kuestenlogik/Bowire/issues/293) New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover
-
-The request-builder (renamed from hopp-bar in commit 5d7b21a, multi-protocol since #291) currently piggy-backs on whatever tab is active in the Discover rail. Two consequences: 1. When no source/tab exists, the builder gets stuck off-frame. 2. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/293)
-
 #### <a id="issue-kuestenlogik-bowire-294"></a>⬜ Backlog · [#294](https://github.com/Kuestenlogik/Bowire/issues/294) Pluggable workbench: rails + modules as package contributions + meta-bundles
 
 Bowire today hardcodes: - An 'always-on' rail set (Home, Discover, Workspaces) — fixed in the rail-rendering code - A 'toggleable' rail set (Recordings, Mocks, Flows, Proxy, Benchmarks, Security) — toggleable in Settings, but the LIST itself is hardcoded - Cross-cutting modules (AI/Assistant, MCP, v … [[more]](https://github.com/Kuestenlogik/Bowire/issues/294)
@@ -430,6 +426,10 @@ Today `app.MapBowireMcp()` and `app.MapBowireMcpAdapter()` are mutually exclusiv
 #### <a id="issue-kuestenlogik-bowire-289"></a>✅ Done · [#289](https://github.com/Kuestenlogik/Bowire/issues/289) Hoppscotch-style single-line request bar: method + URL + params + execute, no workspace required
 
 Bowire's strength is the protocol-aware workbench — discover a schema, pick a method, execute. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/289)
+
+#### <a id="issue-kuestenlogik-bowire-293"></a>✅ Done · [#293](https://github.com/Kuestenlogik/Bowire/issues/293) New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover
+
+The request-builder (renamed from hopp-bar in commit 5d7b21a, multi-protocol since #291) currently piggy-backs on whatever tab is active in the Discover rail. Two consequences: 1. When no source/tab exists, the builder gets stuck off-frame. 2. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/293)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
