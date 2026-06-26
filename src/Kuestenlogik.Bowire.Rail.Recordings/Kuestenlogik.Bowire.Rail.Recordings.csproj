@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #306 Phase G — Recordings rail package. -->
+    <Description>Bowire Recordings rail — capture + replay traffic. Adds the Recordings rail descriptor to the rail registry.</Description>
+    <PackageId>Kuestenlogik.Bowire.Rail.Recordings</PackageId>
+    <PackageTags>bowire;rail;recordings;workbench;plugin</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>

@@ -90,59 +90,25 @@
     <PackageReference Include="NuGet.Protocol" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!--
+      #306 Phase G — Tool now depends on a single ProjectReference: the
+      Bundle.Workbench meta-package, which transitively pulls in every
+      Rail.* + Module.* + Protocol.* + Security + AI + Help + Telemetry
+      + Workspace.Git + Mock + Mcp + AsyncApi the standalone CLI used
+      to enumerate by hand. Adding a new built-in surface no longer
+      means editing this csproj; add the package to Bundle.Workbench
+      instead and the Tool picks it up automatically. Embedded hosts
+      that want the same out-of-the-box experience reference
+      Bundle.Workbench themselves; hosts that want a narrower surface
+      pick Bundle.Minimal or assemble a per-package list.
+    -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Bundle.Workbench\Kuestenlogik.Bowire.Bundle.Workbench.csproj" />
     <!-- Tool drives the CLI surface — needs the CLI contract package
-         (carries System.CommandLine, IBowireCliCommand, the registry). -->
+         (carries System.CommandLine, IBowireCliCommand, the registry).
+         Bundle.Workbench is silent on the CLI host because the CLI
+         contract is host-specific (a server-side host like an embedded
+         workbench doesn't need System.CommandLine). -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Cli\Kuestenlogik.Bowire.Cli.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Grpc\Kuestenlogik.Bowire.Protocol.Grpc.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.SignalR\Kuestenlogik.Bowire.Protocol.SignalR.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Mcp\Kuestenlogik.Bowire.Protocol.Mcp.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.JsonRpc\Kuestenlogik.Bowire.Protocol.JsonRpc.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Sse\Kuestenlogik.Bowire.Protocol.Sse.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.GraphQL\Kuestenlogik.Bowire.Protocol.GraphQL.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.WebSocket\Kuestenlogik.Bowire.Protocol.WebSocket.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Mqtt\Kuestenlogik.Bowire.Protocol.Mqtt.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.SocketIo\Kuestenlogik.Bowire.Protocol.SocketIo.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.OData\Kuestenlogik.Bowire.Protocol.OData.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.AsyncApi\Kuestenlogik.Bowire.AsyncApi.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Security.Scanner\Kuestenlogik.Bowire.Security.Scanner.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Mock\Kuestenlogik.Bowire.Mock.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
-    <!-- AI integration ships preloaded in the standalone CLI so
-         `bowire` users get every provider out of the box: Phase-2
-         Ollama / LM-Studio (core .Ai package), Phase-3 OpenAI /
-         OpenRouter / Anthropic (BYOK cloud), Phase-4 MCP-client
-         reversal. Embedded hosts opt in granularly — Bowire core +
-         every protocol plugin stay free of provider SDK weight; the
-         AI core package stays free of cloud-provider weight. -->
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai.OpenAi\Kuestenlogik.Bowire.Ai.OpenAi.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai.Anthropic\Kuestenlogik.Bowire.Ai.Anthropic.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai.Mcp\Kuestenlogik.Bowire.Ai.Mcp.csproj" />
-    <!-- #154 Phase 4 — Help package transitively shipped with the
-         standalone CLI + Docker image. CLI users expect in-app help;
-         no extra setup step. Embedded hosts opt in via
-         builder.AddBowireHelp() the same way they add AI. -->
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Help\Kuestenlogik.Bowire.Help.csproj" />
-    <!-- #29 v2 — OpenTelemetry exporter + SDK wiring extracted from
-         core into Kuestenlogik.Bowire.Telemetry. The standalone CLI
-         keeps the telemetry flag working out of the box by
-         transitively pulling the package; embedded hosts that want
-         self-observability add the package explicitly. -->
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Telemetry\Kuestenlogik.Bowire.Telemetry.csproj" />
-    <!-- OpenApi2 adapter — standalone bowire CLI bundles the .NET 10
-         ecosystem default (ASP.NET Core 10's AddOpenApi() pins
-         Microsoft.OpenApi 2.x). Embedded hosts that want the modern
-         3.x library can reference Kuestenlogik.Bowire.Protocol.Rest.OpenApi3
-         instead; the registry's auto-detect picks whichever is loaded. -->
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Rest.OpenApi2\Kuestenlogik.Bowire.Protocol.Rest.OpenApi2.csproj" />
-    <!-- #196 Phase 2.2 — Git-backed workspace runtime. Standalone CLI
-         needs the package for the `bowire workspace migrate-format`
-         subcommand (BowireGitWorkspaceMigrator). Embedded hosts opt in
-         by referencing Kuestenlogik.Bowire.Workspace.Git themselves +
-         calling AddBowireGitWorkspace(). -->
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Workspace.Git\Kuestenlogik.Bowire.Workspace.Git.csproj" />
     <PackageReference Include="System.CommandLine" />
   </ItemGroup>
 </Project>

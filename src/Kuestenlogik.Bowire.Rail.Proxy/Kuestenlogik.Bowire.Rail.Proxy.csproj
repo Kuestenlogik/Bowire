@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #306 Phase G — Proxy / MITM rail package. -->
+    <Description>Bowire Proxy / MITM rail — man-in-the-middle traffic capture. Adds the Proxy rail descriptor to the rail registry.</Description>
+    <PackageId>Kuestenlogik.Bowire.Rail.Proxy</PackageId>
+    <PackageTags>bowire;rail;proxy;mitm;workbench;plugin</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>

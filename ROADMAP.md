@@ -93,7 +93,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [181](https://github.com/Kuestenlogik/Bowire/issues/181) | Bowire | [bowire test CLI runner with JUnit / SARIF / TTY output](#issue-kuestenlogik-bowire-181) | ⬜ Backlog |  |
 | [191](https://github.com/Kuestenlogik/Bowire/issues/191) | Bowire | [Contract testing — Pact-style publish / verify CLI](#issue-kuestenlogik-bowire-191) | ⬜ Backlog |  |
 | [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ⬜ Backlog |  |
-| [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | ⬜ Backlog |  |
+| [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | 🚧 In progress |  |
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ✅ Done |  |
 | [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ✅ Done |  |
 

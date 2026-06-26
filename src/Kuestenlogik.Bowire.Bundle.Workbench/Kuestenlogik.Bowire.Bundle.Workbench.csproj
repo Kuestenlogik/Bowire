@@ -1,0 +1,84 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!--
+      #306 Phase G — Bundle.Workbench meta-package. The "everything-on"
+      superset: core + every Rail.* + every Module.* + every Protocol.*.
+      This is what Kuestenlogik.Bowire.Tool transitively references so the
+      standalone `bowire` CLI / Docker image always ship the full workbench
+      surface. Embedded hosts that want the same shape switch their
+      `<ProjectReference Include="...Kuestenlogik.Bowire.csproj"/>` to a
+      single `<PackageReference Include="Kuestenlogik.Bowire.Bundle.Workbench"/>`
+      and get the same out-of-the-box experience. Hosts that want a
+      narrower surface pick Bundle.Minimal or DIY per-package
+      references.
+    -->
+    <Description>Bowire bundle for the full workbench experience — core + every Rail.* + every Module.* + every Protocol.* + Security + Help + Telemetry. The everything-on superset; what Bowire.Tool ships. Pick Bundle.Minimal for a narrower request-execution-only surface or assemble your own per-package selection.</Description>
+    <PackageId>Kuestenlogik.Bowire.Bundle.Workbench</PackageId>
+    <PackageTags>bowire;bundle;workbench;meta-package;embedded</PackageTags>
+    <IsPackable>true</IsPackable>
+    <!--
+      Meta-package: no code lives here, only ProjectReferences. Keep
+      the assembly empty so downstream consumers don't get a stray
+      Kuestenlogik.Bowire.Bundle.Workbench.dll in their output that
+      contains nothing useful.
+    -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- NU5128: meta-package has no lib/ folder. CA1016: meta-package
+         has no code, so there's no assembly to version-stamp. -->
+    <NoWarn>$(NoWarn);NU5128;CA1016</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Core. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- Every built-in rail (#306 Phase G). -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Home\Kuestenlogik.Bowire.Rail.Home.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Discover\Kuestenlogik.Bowire.Rail.Discover.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Compose\Kuestenlogik.Bowire.Rail.Compose.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Collections\Kuestenlogik.Bowire.Rail.Collections.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Environments\Kuestenlogik.Bowire.Rail.Environments.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Recordings\Kuestenlogik.Bowire.Rail.Recordings.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Mocks\Kuestenlogik.Bowire.Rail.Mocks.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Flows\Kuestenlogik.Bowire.Rail.Flows.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Proxy\Kuestenlogik.Bowire.Rail.Proxy.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Intercepted\Kuestenlogik.Bowire.Rail.Intercepted.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Benchmarks\Kuestenlogik.Bowire.Rail.Benchmarks.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Workspaces\Kuestenlogik.Bowire.Rail.Workspaces.csproj" />
+    <!-- Security rail (#294 Phase D) — extracted into its own package
+         already; carries the Security rail descriptor + the Nuclei
+         scanner runtime. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Security.Scanner\Kuestenlogik.Bowire.Security.Scanner.csproj" />
+    <!-- AI module (#294 Phase E) + cloud-provider adapters. The bundle
+         carries every first-party AI plugin so `bowire` users get them
+         out of the box; embedded hosts can drop the bundle and pick per-
+         provider packages if they only want one of them. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai.OpenAi\Kuestenlogik.Bowire.Ai.OpenAi.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai.Anthropic\Kuestenlogik.Bowire.Ai.Anthropic.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Ai.Mcp\Kuestenlogik.Bowire.Ai.Mcp.csproj" />
+    <!-- Mock + MCP runtimes. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Mock\Kuestenlogik.Bowire.Mock.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
+    <!-- Help (#154 Phase 4) + Telemetry (#29 v2). -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Help\Kuestenlogik.Bowire.Help.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Telemetry\Kuestenlogik.Bowire.Telemetry.csproj" />
+    <!-- Workspace.Git runtime (#196 Phase 2.2). -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Workspace.Git\Kuestenlogik.Bowire.Workspace.Git.csproj" />
+    <!-- AsyncApi adapter. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.AsyncApi\Kuestenlogik.Bowire.AsyncApi.csproj" />
+    <!-- Every protocol plugin. Embedded hosts that want fewer protocols
+         pick Bundle.Minimal (REST + gRPC) or assemble their own list. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Rest.OpenApi2\Kuestenlogik.Bowire.Protocol.Rest.OpenApi2.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Grpc\Kuestenlogik.Bowire.Protocol.Grpc.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.SignalR\Kuestenlogik.Bowire.Protocol.SignalR.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Mcp\Kuestenlogik.Bowire.Protocol.Mcp.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.JsonRpc\Kuestenlogik.Bowire.Protocol.JsonRpc.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Sse\Kuestenlogik.Bowire.Protocol.Sse.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.GraphQL\Kuestenlogik.Bowire.Protocol.GraphQL.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.WebSocket\Kuestenlogik.Bowire.Protocol.WebSocket.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Mqtt\Kuestenlogik.Bowire.Protocol.Mqtt.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.SocketIo\Kuestenlogik.Bowire.Protocol.SocketIo.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.OData\Kuestenlogik.Bowire.Protocol.OData.csproj" />
+  </ItemGroup>
+</Project>

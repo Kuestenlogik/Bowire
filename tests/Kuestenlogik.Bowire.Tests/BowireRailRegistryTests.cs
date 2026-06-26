@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire.Plugins;
+using Kuestenlogik.Bowire.Rail.Compose;
+using Kuestenlogik.Bowire.Rail.Discover;
+using Kuestenlogik.Bowire.Rail.Home;
+using Kuestenlogik.Bowire.Rail.Workspaces;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -106,8 +110,15 @@ public class BowireRailRegistryTests
     [Fact]
     public void Discover_Picks_Up_BuiltIn_Rails_From_Loaded_Assembly()
     {
-        // Force the Plugins namespace types to load by touching one.
+        // Force each always-on rail's assembly into the AppDomain so the
+        // discovery scan picks them up. After #306 Phase G each rail lives
+        // in its own Kuestenlogik.Bowire.Rail.* assembly, so touching just
+        // Home wouldn't pull Discover / Compose / Workspaces with it the
+        // way it did when every descriptor sat in core's BuiltInRails.cs.
         _ = new BowireHomeRailContribution().Id;
+        _ = new BowireDiscoverRailContribution().Id;
+        _ = new BowireComposeRailContribution().Id;
+        _ = new BowireWorkspacesRailContribution().Id;
 
         var registry = BowireRailRegistry.Discover();
         // Every always-on rail must show up — this is the invariant the

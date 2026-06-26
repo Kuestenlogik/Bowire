@@ -8,6 +8,8 @@
   href: compatibility.md
 - name: Packages
   href: packages.md
+- name: Embedded host customization
+  href: embedded-host-customization.md
 - name: File Formats
   href: file-formats.md
 - name: Frame semantics framework (design)

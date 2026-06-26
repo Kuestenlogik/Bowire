@@ -51,6 +51,19 @@
     <Project Path="src/Kuestenlogik.Bowire.Catalogue.Agent/Kuestenlogik.Bowire.Catalogue.Agent.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Catalogue.Kubernetes.Tests/Kuestenlogik.Bowire.Catalogue.Kubernetes.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Catalogue.Agent.Tests/Kuestenlogik.Bowire.Catalogue.Agent.Tests.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Bundle.Workbench/Kuestenlogik.Bowire.Bundle.Workbench.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Rail.Home/Kuestenlogik.Bowire.Rail.Home.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Rail.Discover/Kuestenlogik.Bowire.Rail.Discover.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Rail.Compose/Kuestenlogik.Bowire.Rail.Compose.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Rail.Collections/Kuestenlogik.Bowire.Rail.Collections.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Rail.Environments/Kuestenlogik.Bowire.Rail.Environments.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Rail.Recordings/Kuestenlogik.Bowire.Rail.Recordings.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Rail.Mocks/Kuestenlogik.Bowire.Rail.Mocks.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Rail.Flows/Kuestenlogik.Bowire.Rail.Flows.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Rail.Proxy/Kuestenlogik.Bowire.Rail.Proxy.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Rail.Intercepted/Kuestenlogik.Bowire.Rail.Intercepted.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Rail.Benchmarks/Kuestenlogik.Bowire.Rail.Benchmarks.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Rail.Workspaces/Kuestenlogik.Bowire.Rail.Workspaces.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Kuestenlogik.Bowire.Testing/Kuestenlogik.Bowire.Testing.csproj" />
