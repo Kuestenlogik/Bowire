@@ -19483,17 +19483,31 @@ not as the
     padding: 6px 0;
 }
 .bowire-request-builder-kv-input {
+    /* box-sizing keeps the input width AT the grid cell — without it
+       width:100% + padding overflows the cell and the row shifts when
+       the input gets focused (user repro: 'die längen springen hin
+       und her'). */
+    box-sizing: border-box;
     width: 100%;
     height: 32px;
     padding: 0 10px;
     background: transparent;
     border: none;
     color: var(--bowire-text);
-    font: 400 13px/1 var(--bowire-font-mono, monospace);
+    /* line-height: 1 sat the text at the top of the box. Use 32px
+       (= input height) so the text vertical-centres. */
+    font: 400 13px var(--bowire-font-mono, monospace);
+    line-height: 32px;
     outline: none;
 }
+/* Focus: keep the bg unchanged (background-shift caused a visible
+   width 'jitter' on click since the highlight was offset from the
+   row). Use a subtle inset accent shadow as the focus indicator —
+   no layout impact. Explicit color stays var(--bowire-text) to
+   avoid the rare browser-default cascading dark-on-dark case. */
 .bowire-request-builder-kv-input:focus {
-    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text);
+    box-shadow: inset 0 -2px 0 0 var(--bowire-accent);
 }
 .bowire-request-builder-kv-enable {
     margin: 0 6px;
