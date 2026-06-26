@@ -1182,7 +1182,12 @@
     //
     // Per-workspace overrides are out of scope for Phase 1 — see
     // #249 for the v2.4 follow-up that builds on this mechanic.
-    const ALWAYS_ON_RAIL_MODES = ['home', 'discover', 'workspaces'];
+    // #293 — 'design' joins the always-on set: it's the home for the
+    // ad-hoc request-builder (Ctrl+L, Home 'Just fire a request →'
+    // CTA). Operators always have access to a quick-fire workbench
+    // regardless of which optional rails they have enabled. #294 will
+    // refactor this hardcoded list into the plugin-descriptor model.
+    const ALWAYS_ON_RAIL_MODES = ['home', 'discover', 'design', 'workspaces'];
     const ENABLED_RAILS_KEY = 'bowire_enabled_rails';
     let _enabledRailsCache = null;
     function getEnabledRails() {
@@ -2312,7 +2317,12 @@
     // by exportWorkspaceJson so a .bww file carries the project,
     // not the author's accidental UI state.
     var _WORKSPACE_BROWSER_STATE_KEYS = [
-        'bowire_request_tabs'
+        'bowire_request_tabs',
+        // #293 — Design rail open-tab list. Same convention as
+        // bowire_request_tabs: browser session state (which builders
+        // I happened to have open), not project content. Wiped on
+        // workspace delete, NOT round-tripped through .bww export.
+        'bowire_design_tabs'
     ];
     // Modes that store per-method presets via the presets framework.
     // Each maps to a `bowire_presets_<mode>` key under wsKey().

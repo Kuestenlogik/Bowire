@@ -18,6 +18,7 @@
         home:         'index',
         sources:      'ui-guide/sidebar',
         discover:     'features/auto-discovery',
+        design:       'features/auto-discovery',
         collections:  'features/collections',
         environments: 'features/environments',
         recordings:   'features/recording',
