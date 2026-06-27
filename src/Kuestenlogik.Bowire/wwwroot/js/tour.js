@@ -289,6 +289,13 @@
         cutoutRect.setAttribute('fill', 'black');
         cutoutRect.classList.add('bowire-tour-cutout');
         mask.appendChild(cutoutRect);
+        // Group for alternative-target cutouts — extra black rects appended
+        // here per resolved alternative so each alt punches through the dim
+        // layer alongside the primary spotlight. _paintOverlay pools the
+        // child rects to avoid churn on every reflow.
+        var altMaskGroup = document.createElementNS(svgNS, 'g');
+        altMaskGroup.classList.add('bowire-tour-mask-alts');
+        mask.appendChild(altMaskGroup);
         defs.appendChild(mask);
         svg.appendChild(defs);
 
@@ -320,6 +327,14 @@
         halo.setAttribute('stroke-width', '2');
         halo.classList.add('bowire-tour-halo');
         svg.appendChild(halo);
+
+        // Group for alternative-target halos — thinner / dashed strokes so
+        // the eye still lands on the primary halo first but secondary spots
+        // read as 'you can also click here'. Children pooled by
+        // _paintOverlay alongside the alt mask rects.
+        var altHaloGroup = document.createElementNS(svgNS, 'g');
+        altHaloGroup.classList.add('bowire-tour-halo-alts');
+        svg.appendChild(altHaloGroup);
 
         overlay.appendChild(svg);
 
@@ -469,7 +484,14 @@
 
         var cutout = overlay.querySelector('.bowire-tour-cutout');
         var halo = overlay.querySelector('.bowire-tour-halo');
+        var altMaskGroup = overlay.querySelector('.bowire-tour-mask-alts');
+        var altHaloGroup = overlay.querySelector('.bowire-tour-halo-alts');
         if (!cutout || !halo) return;
+
+        // Collect alternative-target elements that resolve right now AND
+        // sit inside the viewport — alts off-screen would punch a black
+        // rect into the dim layer at coords nobody can see.
+        var altRects = _collectAltRectsForCurrentStep(target);
 
         if (!target) {
             // No target → no cutout (the whole viewport stays dimmed,
@@ -482,6 +504,7 @@
             halo.setAttribute('y', '-9999');
             halo.setAttribute('width', '0');
             halo.setAttribute('height', '0');
+            _syncAltMaskAndHalo(altMaskGroup, altHaloGroup, altRects);
             return;
         }
 
@@ -500,12 +523,15 @@
                 if (!_tourState.running) return;
                 var r2 = target.getBoundingClientRect();
                 _paintCutoutFromRect(cutout, halo, r2);
+                _syncAltMaskAndHalo(altMaskGroup, altHaloGroup,
+                    _collectAltRectsForCurrentStep(target));
                 _paintTooltipFromTarget(target);
             });
             return;
         }
 
         _paintCutoutFromRect(cutout, halo, rect);
+        _syncAltMaskAndHalo(altMaskGroup, altHaloGroup, altRects);
         // Keep the target clickable through the dim layer. The overlay
         // has pointer-events:none on its dim svg layer (via CSS); we
         // also lift the target's stacking so any sibling that was
@@ -529,6 +555,90 @@
         halo.setAttribute('y', String(y));
         halo.setAttribute('width', String(w));
         halo.setAttribute('height', String(h));
+    }
+
+    // Resolve every alternative-path target for the current step and
+    // return its on-screen rect alongside the element (so the tooltip's
+    // hover-to-flash wiring can re-find the actual DOM node). Off-screen
+    // alts are dropped — punching a cutout where nothing is visible just
+    // dims-then-undims a random spot. Primary target is excluded because
+    // it gets the louder full halo via _paintCutoutFromRect.
+    function _collectAltRectsForCurrentStep(primaryTarget) {
+        var step = _tourState.steps[_tourState.index];
+        if (!step || !Array.isArray(step.alternatives)) return [];
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var out = [];
+        step.alternatives.forEach(function (alt) {
+            if (!alt || !alt.target) return;
+            var el = _resolveStepTarget(alt.target);
+            if (!el || el === primaryTarget) return;
+            var r = el.getBoundingClientRect();
+            // Skip zero-size / fully-offscreen alts so we don't paint a
+            // cutout the operator can't see anyway.
+            if (r.width <= 0 || r.height <= 0) return;
+            if (r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw) return;
+            out.push({ el: el, rect: r });
+        });
+        return out;
+    }
+
+    // Pool child <rect> elements inside the mask group (extra black
+    // cutouts) and the halo group (thinner alt strokes) so alt count
+    // changes across steps don't leak orphan SVG nodes.
+    function _syncAltMaskAndHalo(maskGroup, haloGroup, altRects) {
+        if (!maskGroup || !haloGroup) return;
+        var svgNS = 'http://www.w3.org/2000/svg';
+        var pad = 6;
+
+        // Grow / shrink mask cutouts.
+        while (maskGroup.childNodes.length < altRects.length) {
+            var mr = document.createElementNS(svgNS, 'rect');
+            mr.setAttribute('rx', '8');
+            mr.setAttribute('ry', '8');
+            mr.setAttribute('fill', 'black');
+            mr.classList.add('bowire-tour-cutout-alt');
+            maskGroup.appendChild(mr);
+        }
+        while (maskGroup.childNodes.length > altRects.length) {
+            maskGroup.removeChild(maskGroup.lastChild);
+        }
+
+        // Grow / shrink halo rings.
+        while (haloGroup.childNodes.length < altRects.length) {
+            var hr = document.createElementNS(svgNS, 'rect');
+            hr.setAttribute('rx', '8');
+            hr.setAttribute('ry', '8');
+            hr.setAttribute('fill', 'none');
+            hr.setAttribute('stroke-width', '1.5');
+            hr.classList.add('bowire-tour-halo-alt');
+            haloGroup.appendChild(hr);
+        }
+        while (haloGroup.childNodes.length > altRects.length) {
+            haloGroup.removeChild(haloGroup.lastChild);
+        }
+
+        // Position both layers off the same rect.
+        for (var i = 0; i < altRects.length; i++) {
+            var r = altRects[i].rect;
+            var x = Math.max(0, r.left - pad);
+            var y = Math.max(0, r.top - pad);
+            var w = r.width + pad * 2;
+            var h = r.height + pad * 2;
+            var cm = maskGroup.childNodes[i];
+            var ch = haloGroup.childNodes[i];
+            cm.setAttribute('x', String(x));
+            cm.setAttribute('y', String(y));
+            cm.setAttribute('width', String(w));
+            cm.setAttribute('height', String(h));
+            ch.setAttribute('x', String(x));
+            ch.setAttribute('y', String(y));
+            ch.setAttribute('width', String(w));
+            ch.setAttribute('height', String(h));
+            // Index attribute lets the alt tooltip line wire hover-flash
+            // against the right halo if we ever want to flash the ring
+            // itself; for now we flash the underlying DOM element.
+            ch.setAttribute('data-alt-index', String(i));
+        }
     }
 
     function _ensureTargetClickable(target) {
@@ -642,6 +752,35 @@
                     text.className = 'bowire-tour-alt-text';
                     text.textContent = ' ' + alt.label;
                     line.appendChild(text);
+                    // Hover-link the tooltip line to the spotlit alt — the
+                    // operator hovers the 'Tip:' line and the corresponding
+                    // affordance flashes, so they can map the prose to the
+                    // exact button on the page. Re-resolve at hover-time
+                    // because morphdom can swap the underlying node between
+                    // renders (see feedback_morphdom_stale_handler_pitfall).
+                    line.onmouseenter = function () {
+                        var el = _resolveStepTarget(alt.target);
+                        if (!el) return;
+                        el.classList.add('bowire-tour-target-flash');
+                    };
+                    line.onmouseleave = function () {
+                        var el = _resolveStepTarget(alt.target);
+                        if (!el) return;
+                        el.classList.remove('bowire-tour-target-flash');
+                    };
+                    // Clicking the Tip: line itself forwards to the alt —
+                    // convenient when the alt is far across the viewport
+                    // and the operator already has the pointer on the
+                    // tooltip. Advance still fires off the awaited event
+                    // (workflow is identical to a direct click on the alt).
+                    line.onclick = function (e) {
+                        e.stopPropagation();
+                        var el = _resolveStepTarget(alt.target);
+                        if (el && typeof el.click === 'function') {
+                            try { el.click(); }
+                            catch (err) { console.warn('[tour] alt forward-click failed', err); }
+                        }
+                    };
                     altWrap.appendChild(line);
                 });
                 tip.appendChild(altWrap);
