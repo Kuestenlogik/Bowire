@@ -1112,6 +1112,18 @@
                         if (typeof toast === 'function') {
                             toast('Create a workspace first to use ' + m.label + '.', 'info', { duration: 4000 });
                         }
+                        // Kick off the reusable create-workspace tour
+                        // fragment so the operator gets a guided path
+                        // out of the prerequisite instead of just a
+                        // toast. force:true so a previously-dismissed
+                        // Getting Started doesn't suppress this short
+                        // sub-tour. The fragment lives in tour.js
+                        // (_createWorkspaceSteps) and is the same one
+                        // Getting Started composes — no copy-paste.
+                        if (typeof window !== 'undefined'
+                            && typeof window.bowireStartCreateWorkspaceTour === 'function') {
+                            window.bowireStartCreateWorkspaceTour({ force: true });
+                        }
                         render();
                         return;
                     }
@@ -1227,6 +1239,14 @@
                             try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
                             if (typeof toast === 'function') {
                                 toast('Create a workspace first to use ' + m.label + '.', 'info', { duration: 4000 });
+                            }
+                            // Same prereq-tour kickoff as the rail-strip
+                            // onClick above — overflow popover surfaces
+                            // the same rails when the strip is full, so
+                            // the redirect + tour have to live here too.
+                            if (typeof window !== 'undefined'
+                                && typeof window.bowireStartCreateWorkspaceTour === 'function') {
+                                window.bowireStartCreateWorkspaceTour({ force: true });
                             }
                             render();
                             return;

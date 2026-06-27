@@ -644,6 +644,18 @@
                 });
             }
             if (typeof onCreated === 'function') onCreated(ws, selectedTemplateId);
+            // Universal tour signal — fire workspace-created here so any
+            // tour waiting on it advances regardless of which affordance
+            // opened the dialog (Home welcome CTA wraps onCreated to
+            // also fire it; the topbar chip's "+ New workspace…" item
+            // calls openCreateWorkspaceDialog() without a callback;
+            // alternative-path tours from the prerequisite redirect can
+            // see the chip-driven path complete). Idempotent — listeners
+            // detach after one fire, and the wrapped onCreated above
+            // dispatches the same event before us.
+            if (typeof tourFireEvent === 'function') {
+                tourFireEvent('workspace-created', { workspaceId: ws.id });
+            }
             // Templates write directly to localStorage under the new
             // workspace's wsKey prefix; an in-place render() wouldn't
             // pick them up because serverUrls / collectionsList /
