@@ -61,34 +61,12 @@
             bowireInterceptedLoadMocks();
         }
 
-        if (typeof renderSidebarToolbar === 'function') {
-            container.appendChild(renderSidebarToolbar({
-                title: 'Traffic',
-                actions: [
-                    {
-                        icon: 'replay',
-                        title: 'Reconnect to the traffic source',
-                        onClick: function () {
-                            if (typeof interceptedConnectionState !== 'undefined') {
-                                interceptedConnectionState = 'idle';
-                            }
-                            render();
-                        }
-                    }
-                ],
-                overflow: [
-                    {
-                        label: 'Clear all flows',
-                        danger: true,
-                        onClick: function () {
-                            if (typeof bowireInterceptedClearFlows === 'function') {
-                                bowireInterceptedClearFlows();
-                            }
-                        }
-                    }
-                ]
-            }));
-        }
+        // Top toolbar with the 'Traffic' title retired — read as an
+        // inconsistent extra header next to Home (no header at all).
+        // Operator feedback: 'warum hat traffic so eine überschrift?
+        // home sieht anders aus.' The Reconnect + Clear-all-flows
+        // actions move into the right-aligned action group on the
+        // sub-tab strip below so they stay one click away.
 
         // Mode banner retired — no other rail carries a sub-headline
         // above its sub-tab strip, and the operator preference was
@@ -120,7 +98,49 @@
                 onClick: function () { trafficSubView = 'settings'; render(); }
             }, el('span', { textContent: 'Settings' }))
         );
-        container.appendChild(tabStrip);
+        // Right-aligned action group on its own row container. The
+        // Reconnect + more-actions buttons replace the dropped top
+        // toolbar (operator: 'warum hat traffic so eine überschrift?
+        // home sieht anders aus.'). Wrapping the tab strip + actions
+        // in a flex row puts them on the same horizontal line without
+        // fighting the .bowire-rail-subtab flex:1 sizing.
+        var actionsBar = el('div', { className: 'bowire-rail-subtabs-actions' },
+            el('button', {
+                type: 'button',
+                className: 'bowire-rail-subtabs-action',
+                title: 'Reconnect to the traffic source',
+                'aria-label': 'Reconnect',
+                onClick: function () {
+                    if (typeof interceptedConnectionState !== 'undefined') {
+                        interceptedConnectionState = 'idle';
+                    }
+                    render();
+                }
+            }, el('span', { innerHTML: svgIcon('replay') })),
+            el('button', {
+                type: 'button',
+                className: 'bowire-rail-subtabs-action',
+                title: 'More actions…',
+                'aria-label': 'More actions',
+                onClick: function (e) {
+                    e.stopPropagation();
+                    if (typeof showContextMenu !== 'function') return;
+                    var r = e.currentTarget.getBoundingClientRect();
+                    showContextMenu(r.left, r.bottom + 4, [{
+                        label: 'Clear all flows',
+                        icon: 'trash',
+                        danger: true,
+                        onClick: function () {
+                            if (typeof bowireInterceptedClearFlows === 'function') {
+                                bowireInterceptedClearFlows();
+                            }
+                        }
+                    }]);
+                }
+            }, el('span', { innerHTML: svgIcon('dots') }))
+        );
+        var stripRow = el('div', { className: 'bowire-rail-subtabs-row' }, tabStrip, actionsBar);
+        container.appendChild(stripRow);
 
         if (trafficSubView === 'mocks') {
             if (typeof renderInterceptedMocksListInto === 'function') {

@@ -22834,7 +22834,48 @@ not as the
     flex-shrink: 0;
     border-bottom: 1px solid var(--bowire-border);
     margin: 0;
+    align-items: center;
 }
+/* Right-aligned action group on the sub-tab strip. Used by Traffic
+   (Reconnect + more-actions overflow) since its top toolbar was
+   retired for header consistency with Home. The wrapper row holds
+   the tab strip (flex:1) on the left and the action group on the
+   right. */
+.bowire-rail-subtabs-row {
+    display: flex;
+    align-items: stretch;
+    background: var(--bowire-tab-strip-bg);
+    border-bottom: 1px solid var(--bowire-border);
+    flex-shrink: 0;
+}
+.bowire-rail-subtabs-row > .bowire-rail-subtabs {
+    flex: 1;
+    border-bottom: none;
+    background: transparent;
+}
+.bowire-rail-subtabs-actions {
+    display: flex;
+    align-items: center;
+    padding: 0 6px;
+    gap: 2px;
+}
+.bowire-rail-subtabs-action {
+    background: transparent;
+    border: none;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: var(--bowire-radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-rail-subtabs-action:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+.bowire-rail-subtabs-action svg { width: 14px; height: 14px; }
 .bowire-rail-subtab {
     flex: 1;
     background: transparent;
