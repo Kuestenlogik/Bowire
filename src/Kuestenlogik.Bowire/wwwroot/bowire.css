@@ -12895,8 +12895,29 @@ duplicate) */
     position: fixed;
     inset: 0;
     z-index: 10001;
-    pointer-events: none;
+    /* Catch clicks across the full viewport so the tour engine can
+       gate them: forward target-rect clicks to the underlying
+       affordance, let tooltip clicks bubble naturally, swallow
+       everything else + flash the spotlight. Operator feedback:
+       'only the buttons/interactions that i should be able to click
+       during the tour should be clickable/doable. otherwise i get
+       off the track.' */
+    pointer-events: auto;
     animation: bowire-fade-in 200ms ease-out;
+}
+
+/* Off-target click feedback: a quick double-pulse on the spotlit
+   affordance so the operator's eye snaps back to the target. */
+@keyframes bowire-tour-target-flash {
+    0%   { box-shadow: 0 0 0 0 var(--bowire-accent); }
+    40%  { box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.55); }
+    60%  { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.0); }
+    80%  { box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.45); }
+    100% { box-shadow: 0 0 0 0 var(--bowire-accent); }
+}
+.bowire-tour-target-flash {
+    animation: bowire-tour-target-flash 420ms ease-out;
+    border-radius: var(--bowire-radius-sm);
 }
 
 .bowire-tour-svg {

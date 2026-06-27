@@ -335,6 +335,79 @@
 
         _tourState.overlayEl = overlay;
         _tourState.tooltipEl = tooltip;
+
+        // Click-gate: while the tour is running, the operator should
+        // ONLY be able to interact with the spotlit target + the
+        // tooltip (Next/Back/Skip/Close/CTA). A click off-target on
+        // the dim layer would route the operator off the tour. To
+        // gate this, the overlay captures pointer events (CSS:
+        // pointer-events: auto). The handler below classifies each
+        // click and either forwards it to the underlying target, lets
+        // the tooltip's own handler fire, or swallows it + flashes
+        // the spotlight so the operator's eye snaps back. Operator
+        // feedback: 'only the buttons/interactions that i should be
+        // able to click during the tour should be clickable/doable.
+        // otherwise i get off the track.'
+        function _gateClick(e) {
+            if (!_tourState.running) return;
+            // Tooltip (X close, Skip, Back, CTA, Next) — let the
+            // child elements' own onclick run naturally. The handler
+            // is registered with bubble phase so the tooltip's
+            // descendants have already had their handlers fire by the
+            // time we get here for a tooltip click — nothing to do.
+            if (_tourState.tooltipEl && _tourState.tooltipEl.contains(e.target)) {
+                return;
+            }
+            // Target rect — forward the click. The overlay sits on
+            // top of the page so the original click landed on the
+            // overlay, not the target. We temporarily disable
+            // pointer-events on the overlay so elementFromPoint
+            // returns the underlying element, then dispatch a
+            // synthetic click on it.
+            if (_tourState.targetEl) {
+                var rect = _tourState.targetEl.getBoundingClientRect();
+                if (e.clientX >= rect.left && e.clientX <= rect.right
+                    && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                    var was = overlay.style.pointerEvents;
+                    overlay.style.pointerEvents = 'none';
+                    var hit = document.elementFromPoint(e.clientX, e.clientY);
+                    overlay.style.pointerEvents = was;
+                    if (hit && typeof hit.click === 'function') {
+                        try { hit.click(); }
+                        catch (err) { console.warn('[tour] target click forward failed', err); }
+                    }
+                    return;
+                }
+            }
+            // Off-target click — swallow it + flash the spotlight so
+            // the operator's eye snaps back to the highlighted
+            // affordance.
+            e.preventDefault();
+            e.stopPropagation();
+            if (_tourState.targetEl) {
+                _tourState.targetEl.classList.add('bowire-tour-target-flash');
+                setTimeout(function () {
+                    if (_tourState.targetEl) {
+                        _tourState.targetEl.classList.remove('bowire-tour-target-flash');
+                    }
+                }, 420);
+            }
+        }
+        overlay.addEventListener('click', _gateClick);
+        // Also gate mousedown so a drag-start on off-target chrome
+        // doesn't start a text selection or trigger any pre-click
+        // handler bound on mousedown elsewhere.
+        overlay.addEventListener('mousedown', function (e) {
+            if (!_tourState.running) return;
+            if (_tourState.tooltipEl && _tourState.tooltipEl.contains(e.target)) return;
+            if (_tourState.targetEl) {
+                var r = _tourState.targetEl.getBoundingClientRect();
+                if (e.clientX >= r.left && e.clientX <= r.right
+                    && e.clientY >= r.top && e.clientY <= r.bottom) return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+        });
     }
 
     function _unmountTourOverlay() {
