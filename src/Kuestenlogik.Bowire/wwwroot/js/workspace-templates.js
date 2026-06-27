@@ -591,6 +591,19 @@
             var tpl = getWorkspaceTemplate(selectedTemplateId);
             _persistLastTemplate(selectedTemplateId);
             try { tpl.apply(ws.id); } catch { /* template seed should never crash creation */ }
+            // #194 — symmetric to workspace-delete: record the create
+            // so Ctrl/Cmd+Z lifts the workspace into trash, and Redo
+            // restores it. Done after the template seed so the trash
+            // snapshot captured on undo includes the template-seeded
+            // buckets too — undo→redo round-trips don't lose them.
+            if (typeof recordAction === 'function') {
+                recordAction({
+                    kind: 'workspace-create',
+                    rail: 'workspaces',
+                    title: 'Created workspace "' + ws.name + '"',
+                    undoSpec: { workspaceId: ws.id }
+                });
+            }
             if (typeof onCreated === 'function') onCreated(ws, selectedTemplateId);
             // Templates write directly to localStorage under the new
             // workspace's wsKey prefix; an in-place render() wouldn't

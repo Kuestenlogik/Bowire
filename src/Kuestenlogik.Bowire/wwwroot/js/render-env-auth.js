@@ -393,7 +393,23 @@
                         confirmText: 'Create'
                     }).then(function (name) {
                         if (!name) return;
-                        try { createWorkspace(String(name).trim()); } catch (e) {
+                        try {
+                            var ws = createWorkspace(String(name).trim());
+                            // #194 — record so Ctrl/Cmd+Z soft-deletes
+                            // the workspace into trash + Redo brings it
+                            // back. createWorkspace returns null when
+                            // the name was already taken (it already
+                            // toasted the reason), so skip logging
+                            // a no-op create.
+                            if (ws && typeof recordAction === 'function') {
+                                recordAction({
+                                    kind: 'workspace-create',
+                                    rail: 'workspaces',
+                                    title: 'Created workspace "' + ws.name + '"',
+                                    undoSpec: { workspaceId: ws.id }
+                                });
+                            }
+                        } catch (e) {
                             if (typeof toast === 'function') toast('Failed: ' + e.message, 'error');
                         }
                     });
