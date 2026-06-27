@@ -350,6 +350,18 @@
         // otherwise i get off the track.'
         function _gateClick(e) {
             if (!_tourState.running) return;
+            // When a modal dialog (.bowire-confirm-overlay /
+            // .bowire-prompt-overlay) is on screen, it sits at
+            // z-index 10003 — ABOVE the tour overlay (10001) — and
+            // captures its own clicks + focus + keyboard. The gate
+            // here should yield entirely so the dialog's input
+            // fields work. Operator feedback: 'ich kann im popup für
+            // einen neuen workspace nichts eingeben.' The tooltip
+            // (10004) still floats above the dialog for skip / next
+            // / X-close affordances.
+            if (document.querySelector('.bowire-confirm-overlay, .bowire-prompt-overlay')) {
+                return;
+            }
             // Tooltip (X close, Skip, Back, CTA, Next) — let the
             // child elements' own onclick run naturally. The handler
             // is registered with bubble phase so the tooltip's
@@ -409,6 +421,8 @@
         // any equivalent affordance without it getting swallowed.
         overlay.addEventListener('mousedown', function (e) {
             if (!_tourState.running) return;
+            // Yield to active modal dialogs (see _gateClick).
+            if (document.querySelector('.bowire-confirm-overlay, .bowire-prompt-overlay')) return;
             if (_tourState.tooltipEl && _tourState.tooltipEl.contains(e.target)) return;
             var hits = _allClickableTargetsForStep();
             for (var i = 0; i < hits.length; i++) {
