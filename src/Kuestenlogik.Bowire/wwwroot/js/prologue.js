@@ -1434,17 +1434,51 @@
     }
 
     // #296 — global trash drawer state. Modal-style overlay opened
-    // from the topbar trash icon. Per-section expand/collapse state
-    // lives here too so a render pass doesn't lose the operator's
-    // last drilldown. Session-only — opening the drawer on a fresh
-    // session always starts collapsed.
+    // from the topbar trash icon. The list itself is a unified,
+    // searchable + filter-chipped view (no per-section
+    // expand/collapse anymore — see globalTrashFilterState below).
     let globalTrashOpen = false;
-    let globalTrashSectionOpen = {
-        recordings: false,
-        collections: false,
-        tabs: false,
-        workspaces: false
-    };
+
+    // Refactor: the per-bucket sections are now a unified, searchable
+    // + filter-chipped list. The chip toggles + the search query
+    // persist across sessions so the operator's last filter is still
+    // applied next time the drawer opens. Storage failures are
+    // swallowed (storage full / disabled) — the drawer just falls
+    // back to the default (all chips ON, empty query).
+    let globalTrashFilterState = (function () {
+        var dflt = {
+            query: '',
+            kinds: { recordings: true, collections: true, tabs: true, workspaces: true }
+        };
+        try {
+            var raw = localStorage.getItem('bowire_trash_filter_state');
+            if (!raw) return dflt;
+            var parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object') return dflt;
+            return {
+                query: typeof parsed.query === 'string' ? parsed.query : '',
+                kinds: {
+                    recordings: parsed.kinds && parsed.kinds.recordings !== false,
+                    collections: parsed.kinds && parsed.kinds.collections !== false,
+                    tabs: parsed.kinds && parsed.kinds.tabs !== false,
+                    workspaces: parsed.kinds && parsed.kinds.workspaces !== false
+                }
+            };
+        } catch { return dflt; }
+    })();
+    function persistGlobalTrashFilterState() {
+        try {
+            localStorage.setItem(
+                'bowire_trash_filter_state',
+                JSON.stringify(globalTrashFilterState)
+            );
+        } catch { /* storage full / disabled — fail gracefully */ }
+    }
+    // Debounce handle for the search input so we don't re-render the
+    // overlay on every keystroke. Module-scope (not closure) so a
+    // subsequent render-pass cancels a pending timer from the
+    // previous one.
+    let _globalTrashSearchTimer = null;
 
     // #125 Phase 2 — vars-autocomplete dropdown state. Single
     // floating popover; only one active across the whole document
