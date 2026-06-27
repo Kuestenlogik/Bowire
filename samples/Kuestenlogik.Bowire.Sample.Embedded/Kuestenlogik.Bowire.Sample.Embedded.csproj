@@ -12,6 +12,12 @@
     <!-- Embedded Bowire — full workbench mounted at /bowire on this host. -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
+    <!-- Map widget — MapLibre GL JS viewer for the coordinate.wgs84
+         semantic kind. The [BowireExtension]-attributed
+         MapLibreExtension class registers itself on assembly load, so
+         the workbench picks it up automatically once this reference
+         is present. Drives the /api/locations sample endpoint. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Map\Kuestenlogik.Bowire.Map.csproj" />
   </ItemGroup>
 
 </Project>

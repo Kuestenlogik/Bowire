@@ -63,6 +63,37 @@ app.MapGet("/api/products", () => new[]
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok", server = "embedded-sample" }))
     .WithName("Health").WithTags("Ops");
 
+// Geo data — the coordinate field on each entry is { lat, lon }, which
+// is the exact shape Bowire's built-in Wgs84CoordinateDetector picks up.
+// First time the operator invokes either of these endpoints from the
+// workbench, the frame prober tags the lat/lon paths as
+// coordinate.latitude / coordinate.longitude; the workbench's extension
+// router then asks Kuestenlogik.Bowire.Map (referenced from this csproj)
+// for a coordinate.wgs84 widget and mounts the MapLibre viewer over the
+// response — no OpenAPI extension or x-bowire-* hint required.
+var locations = new[]
+{
+    new Location("fra-airport",   "Frankfurt Airport",        "airport", new GeoPoint(50.0379, 8.5622)),
+    new Location("munich-hbf",    "München Hauptbahnhof", "station", new GeoPoint(48.1402, 11.5582)),
+    new Location("kiel-port",     "Hafen Kiel",               "port",    new GeoPoint(54.3233, 10.1396)),
+    new Location("hamburg-hbf",   "Hamburg Hauptbahnhof",     "station", new GeoPoint(53.5527, 10.0067)),
+    new Location("berlin-tegel",  "Berlin Tegel (THF)",       "airport", new GeoPoint(52.5597, 13.2877)),
+    new Location("vienna-hbf",    "Wien Hauptbahnhof",        "station", new GeoPoint(48.1851, 16.3754)),
+    new Location("zurich-hb",     "Zürich Hauptbahnhof", "station", new GeoPoint(47.3779, 8.5403)),
+    new Location("rotterdam-port","Port of Rotterdam",        "port",    new GeoPoint(51.9496, 4.1453)),
+};
+
+app.MapGet("/api/locations", () => locations)
+    .WithName("ListLocations").WithTags("Locations");
+
+app.MapGet("/api/locations/{id}", (string id) =>
+{
+    var match = Array.Find(locations, l => string.Equals(l.Id, id, StringComparison.OrdinalIgnoreCase));
+    return match is null
+        ? Results.NotFound(new { error = $"location '{id}' not found" })
+        : Results.Ok(match);
+}).WithName("GetLocation").WithTags("Locations");
+
 // Bowire workbench mounted at /bowire — embedded mode convention.
 app.MapBowire("/bowire");
 
@@ -72,3 +103,10 @@ app.MapGet("/", () => Results.Redirect("/bowire"));
 app.Run();
 
 internal sealed record UserCreate(string Name, string Role);
+
+// Geo records used by the /api/locations endpoints. The Coordinate
+// member's { lat, lon } shape is what triggers Bowire's WGS84 auto-
+// detection — the names are anchored, case-insensitive, and bounded
+// by the [-90,90] / [-180,180] ranges the detector enforces.
+internal sealed record Location(string Id, string Name, string Kind, GeoPoint Coordinate);
+internal sealed record GeoPoint(double Lat, double Lon);
