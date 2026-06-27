@@ -1674,8 +1674,6 @@
     // variants of one shape. Sits one level above workspace settings;
     // the trail in every nested header links back here.
     function _renderWorkspacesOverview() {
-        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
-
         // #301 — Empty Workspaces overview now uses the canonical
         // rail-empty-card pattern (icon + headline + body + primary
         // CTA inside a bowire-main-pad wrap) so it reads identically
@@ -1684,7 +1682,17 @@
         // + section + paragraph hint is only kept for the populated
         // branch where the title carries the workspace count and the
         // list rows sit under it.
+        //
+        // #301 followup — empty branch builds its main WITHOUT the
+        // bowire-main-workspaces class because that class ships its own
+        // var(--bowire-main-gutter) padding, which would double up
+        // against the inner bowire-main-pad's matching padding and
+        // shift the welcome card 24px farther from the left edge than
+        // every other rail's empty card. Populated branch keeps the
+        // workspaces class (its padding + flex-column + gap layout
+        // are still right for the list view below).
         if (workspaces.length === 0) {
+            var emptyMain = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main' });
             var emptyWrap = el('div', { className: 'bowire-main-pad' });
             emptyWrap.appendChild(renderEmptyCard({
                 icon: 'layers',
@@ -1706,9 +1714,11 @@
                     }
                 }]
             }));
-            main.appendChild(emptyWrap);
-            return main;
+            emptyMain.appendChild(emptyWrap);
+            return emptyMain;
         }
+
+        var main = el('div', { id: 'bowire-main-workspaces', className: 'bowire-main bowire-main-workspaces' });
 
         var headerGlyph = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">'
             + '<polygon points="12 2 2 7 12 12 22 7 12 2"/>'
@@ -4420,8 +4430,17 @@
             // Once they create one, the regular home bands take over on
             // the next render.
             if (typeof workspaces !== 'undefined' && Array.isArray(workspaces) && workspaces.length === 0) {
-                var noWsBand = el('div', { className: 'bowire-home-band bowire-home-band-firstrun' });
-                noWsBand.appendChild(renderEmptyCard({
+                // #301 followup — no-workspace welcome uses the canonical
+                // rail-empty shape (bowire-main-pad > renderEmptyCard as
+                // sole child) so the :has() centring rule kicks in. The
+                // previous bowire-home-wrap + bowire-home-band wrapping
+                // left the card pinned top-left with the home-wrap's own
+                // padding, which read inconsistent next to Mocks /
+                // Recordings / Flows / Compose (all centred). Operator
+                // feedback: every rail's welcome should sit in the same
+                // spot regardless of which rail is active.
+                var noWsPad = el('div', { className: 'bowire-main-pad' });
+                noWsPad.appendChild(renderEmptyCard({
                     icon: 'layers',
                     headline: 'Create your first workspace',
                     body: 'A workspace is your project folder — it holds the URLs you discover, the environments + variables + secrets you reference, and the collections / recordings / benchmarks you build. Most operators name them after the project ("Petstore Staging", "Internal CMS"). You can switch + add more from the workspace chip in the topbar later.',
@@ -4485,8 +4504,12 @@
                         }
                     ]
                 }));
-                homeWrap.appendChild(noWsBand);
-                homeMain.appendChild(homeWrap);
+                // Skip homeWrap (bowire-home-wrap) entirely so the
+                // bowire-main-pad sits directly under bowire-main-home —
+                // its :has(> .bowire-empty-card:only-child) rule then
+                // centres the welcome card both axes, identical to
+                // Recordings / Mocks / Flows / Compose / Collections.
+                homeMain.appendChild(noWsPad);
                 return homeMain;
             }
 

@@ -1193,7 +1193,15 @@
                 headline: 'No request open',
                 body: 'Start with a new request — type a URL, pick a method, hit Execute. Ctrl+L opens a new request from anywhere.',
                 actions: [{
-                    label: '+ New request',
+                    // Label intentionally drops the '+' that the tab-strip
+                    // pinned-new chip carries — in the welcome the card
+                    // itself is the action surface, and renderEmptyCard's
+                    // convention is "the label IS the verb". The plus made
+                    // the welcome read as a noisy duplicate of the strip
+                    // chip. Operator feedback unified all rails' welcome
+                    // labels to plain verbs ("New workspace", "New
+                    // collection", etc.).
+                    label: 'New request',
                     primary: true,
                     onClick: function () {
                         spawnDesignTab();

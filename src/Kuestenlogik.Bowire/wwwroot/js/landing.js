@@ -83,8 +83,18 @@
     }
 
     function renderLandingPage(parent) {
-        var landing = el('div', { className: 'bowire-landing' });
         var state = detectLandingState();
+        // #301 followup — for genuinely empty states (no list, no tips,
+        // just one empty-card) we host the card in a bowire-main-pad so
+        // the shared :has(> .bowire-empty-card:only-child) centring rule
+        // kicks in. Discover's welcome then matches Recordings / Mocks /
+        // Compose / Flows / Home no-workspace instead of floating
+        // left-aligned. Populated states (ready with tips + history,
+        // multi-url-partial with status list, &c) keep the bowire-landing
+        // shell so their multi-child layout reads as a portal column.
+        var emptyOnlyStates = { 'first-run': true };
+        var wrapperClass = emptyOnlyStates[state] ? 'bowire-main-pad' : 'bowire-landing';
+        var landing = el('div', { className: wrapperClass });
         switch (state) {
             case 'wrong-protocol-tab':   renderStateWrongProtocolTab(landing); break;
             case 'multi-url-partial':    renderStateMultiUrlPartial(landing); break;
@@ -158,8 +168,14 @@
         // stays consolidated on one surface. Same shape as every other
         // rail's empty state (icon + headline + body + actions) so
         // first impressions across rails read consistently.
-        var card = el('div', { className: 'bowire-landing-card' });
-        card.appendChild(renderEmptyCard({
+        //
+        // #301 followup — empty-card is appended directly to parent
+        // (which is the bowire-main-pad wrapper chosen by
+        // renderLandingPage for purely empty states) so the shared
+        // :has(> .bowire-empty-card:only-child) centring rule fires.
+        // The previous bowire-landing-card wrapper would have broken
+        // the direct-child selector and left the welcome top-left.
+        parent.appendChild(renderEmptyCard({
             icon: 'compass',
             headline: 'Discover is empty',
             body: 'Pick a workspace and add a URL or schema file from there.',
@@ -181,7 +197,6 @@
                 }
             }]
         }));
-        parent.appendChild(card);
     }
 
     // #291 — Welcome hero rendered inside the Home rail mode when no
