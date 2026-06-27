@@ -459,6 +459,27 @@
         // Clear + rebuild — easier than diffing.
         while (tip.firstChild) tip.removeChild(tip.firstChild);
 
+        // Top-right (x) cancel — operator-requested escape hatch from
+        // any step, sitting in the standard 'close this dialog' slot
+        // so it's findable without thinking. The Skip button at the
+        // footer still works the same; this just gives the operator
+        // a second affordance in the place dialog-closes usually live.
+        // Operator feedback: 'man sollte auch immer eine möglichkeit
+        // haben die tour abzubrechen, z.B. (x)-button oben im tour
+        // dialog?'.
+        var closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'bowire-tour-close';
+        closeBtn.title = 'Close tour';
+        closeBtn.setAttribute('aria-label', 'Close tour');
+        if (typeof svgIcon === 'function') {
+            closeBtn.innerHTML = svgIcon('close');
+        } else {
+            closeBtn.textContent = '×';
+        }
+        closeBtn.onclick = function () { tourStop(); };
+        tip.appendChild(closeBtn);
+
         if (step.title) {
             var h = document.createElement('div');
             h.className = 'bowire-tour-title';
