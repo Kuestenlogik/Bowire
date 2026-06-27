@@ -44,7 +44,12 @@
     // Start a mock from a recording shape (matching wwwroot's recordingsList
     // item: { id, name, steps, sourceSchema?, ... }). Wraps it into the
     // BowireRecording document shape the backend / MockServer expect.
-    function startMockFromRecording(rec, port) {
+    // The optional `silent` flag suppresses the action-log entry when
+    // the call originates from a resolver (undo/redo applying its
+    // own inverse). Same pattern favorite-remove uses with
+    // _toggleFavoriteRaw — prevents the redo of mock-create / undo of
+    // mock-delete from re-recording a fresh entry of the same kind.
+    function startMockFromRecording(rec, port, silent) {
         if (!rec) return Promise.reject(new Error('No recording'));
         var doc = JSON.stringify({ recordings: [rec] });
         return fetch(config.prefix + '/api/mocks', {
@@ -71,6 +76,26 @@
             if (typeof window !== 'undefined'
                 && typeof window.bowireFireTourEvent === 'function') {
                 window.bowireFireTourEvent('mock-started', { mockId: summary.mockId, port: summary.port });
+            }
+            // Record a mock-create entry so Ctrl/Cmd+Z stops the just-
+            // started mock host. undoSpec carries the mockId + the
+            // recording payload + chosen port so the resolver can
+            // rehydrate both directions after reload (stop = DELETE
+            // /api/mocks/{id}; restart = re-POST the same body).
+            // The undo/redo closures pass silent=true so the inverse
+            // calls don't append a fresh entry of their own.
+            if (!silent && typeof recordAction === 'function') {
+                var recSnapshot = JSON.parse(JSON.stringify(rec));
+                var summaryId = summary.mockId;
+                var summaryPort = port || 0;
+                recordAction({
+                    kind: 'mock-create',
+                    rail: 'mocks',
+                    title: 'Started mock "' + (rec.name || ('recording-' + rec.id)) + '"',
+                    undoSpec: { mockId: summaryId, recording: recSnapshot, port: summaryPort },
+                    undo: function () { stopMock(summaryId); },
+                    redo: function () { startMockFromRecording(recSnapshot, summaryPort, true); }
+                });
             }
             return summary;
         }).catch(function (err) {

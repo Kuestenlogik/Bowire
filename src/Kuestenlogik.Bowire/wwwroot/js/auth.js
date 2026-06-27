@@ -769,7 +769,12 @@
     // already taken. Callers passing a user-typed name should toast on
     // null; callers passing the default ('New Environment') will land
     // on '... 2' / '... 3' instead.
-    function createEnvironment(name) {
+    //
+    // The optional second arg lets callers opt INTO the action log so
+    // explicit user-driven creates ("New environment…" prompt) become
+    // reversible via Ctrl/Cmd+Z while implicit seeds (request-builder's
+    // 'scratch' fallback when no env exists) stay silent.
+    function createEnvironment(name, opts) {
         var trimmed = String(name || '').trim();
         var isDefault = !trimmed || trimmed === 'New Environment';
         if (!isDefault && _isEnvironmentNameTaken(trimmed)) {
@@ -796,6 +801,29 @@
         // curated workspace see it immediately; the env is also
         // available to other workspaces via their include toggles.
         saveEnvironments(envs);
+        // Mirror the env-delete undo path — record an environment-create
+        // entry so the create can be rolled back via Ctrl/Cmd+Z and the
+        // Activity drawer. Opt-in via `opts.logAction` so the implicit
+        // 'scratch' seed (request-builder's no-env fallback) stays out
+        // of the operator's undo timeline.
+        if (opts && opts.logAction && typeof recordAction === 'function') {
+            var snapshot = JSON.parse(JSON.stringify(env));
+            recordAction({
+                kind: 'environment-create',
+                rail: 'environments',
+                title: 'Created environment "' + (env.name || 'unnamed') + '"',
+                undoSpec: { env: snapshot },
+                undo: function () {
+                    deleteEnvironment(snapshot.id);
+                    render();
+                },
+                redo: function () {
+                    if (getEnvironments().find(function (e) { return e.id === snapshot.id; })) return;
+                    restoreEnvironment(JSON.parse(JSON.stringify(snapshot)));
+                    render();
+                }
+            });
+        }
         return env;
     }
 
@@ -827,7 +855,9 @@
             }
         }).then(function (name) {
             if (!name) return;
-            var env = createEnvironment(name);
+            // logAction:true — explicit user-driven create, log it so
+            // Ctrl/Cmd+Z rolls back the new environment.
+            var env = createEnvironment(name, { logAction: true });
             if (env && typeof onCreated === 'function') onCreated(env);
         });
     }

@@ -69,6 +69,30 @@
         };
         flowsList.push(flow);
         persistFlows();
+        // Mirror the recording-create / collection-create undo pattern —
+        // record a flow-create entry so Ctrl/Cmd+Z / the Activity drawer
+        // can roll the creation back. undoSpec stores the full flow doc
+        // so the resolver can re-create it after reload (the in-session
+        // closure resolves to the same delete-from-list).
+        if (typeof recordAction === 'function') {
+            var snapshot = JSON.parse(JSON.stringify(flow));
+            recordAction({
+                kind: 'flow-create',
+                rail: 'flows',
+                title: 'Created flow "' + (flow.name || 'unnamed') + '"',
+                undoSpec: { flow: snapshot },
+                undo: function () {
+                    deleteFlow(snapshot.id);
+                    render();
+                },
+                redo: function () {
+                    if (flowsList.find(function (f) { return f.id === snapshot.id; })) return;
+                    flowsList.push(JSON.parse(JSON.stringify(snapshot)));
+                    persistFlows();
+                    render();
+                }
+            });
+        }
         return flow;
     }
 
@@ -824,7 +848,8 @@
                     toast('Flow deleted', 'success', {
                         undo: function () { flowsList.push(backup); persistFlows(); flowEditorSelectedId = backup.id; render(); },
                         logAction: { kind: 'flow-delete',
-                            title: 'Deleted flow "' + (backup.name || 'unnamed') + '"' }
+                            title: 'Deleted flow "' + (backup.name || 'unnamed') + '"',
+                            undoSpec: { flow: backup } }
                     });
                 }, { title: 'Delete Flow', danger: true, confirmText: 'Delete' });
             }
