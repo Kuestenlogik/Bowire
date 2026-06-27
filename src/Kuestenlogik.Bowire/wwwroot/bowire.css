@@ -22058,6 +22058,182 @@ not as the
     border-color: var(--bowire-error);
 }
 
+/* Unified trash list (refactor of the per-bucket sections). Operator
+   feedback: "die gruppen bei den trash items sollten eher über search
+   und vordefinierte filter chips gelöst sein, die man einfach zum
+   filter hinzufügen kann." Search box on top, filter-chip row below,
+   then the flat list (sorted newest deletedAt first). Chips use the
+   workbench's pill convention via --bowire-radius-pill. */
+.bowire-trash-unified {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.bowire-trash-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    padding: 4px 8px;
+    gap: 6px;
+}
+.bowire-trash-search:focus-within {
+    border-color: var(--bowire-accent);
+}
+.bowire-trash-search-icon {
+    color: var(--bowire-text-tertiary);
+    width: 14px;
+    height: 14px;
+    display: flex;
+    flex-shrink: 0;
+}
+.bowire-trash-search-icon > svg {
+    width: 14px;
+    height: 14px;
+}
+.bowire-trash-search-input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    color: var(--bowire-text);
+    font-size: 12px;
+    padding: 4px 0;
+    min-width: 0;
+}
+.bowire-trash-search-input::placeholder {
+    color: var(--bowire-text-tertiary);
+}
+.bowire-trash-search-clear {
+    background: transparent;
+    border: 0;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: var(--bowire-radius-sm);
+}
+.bowire-trash-search-clear:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+.bowire-trash-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0 4px;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+}
+.bowire-trash-filter-chips-label {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-right: 4px;
+}
+.bowire-trash-chip {
+    background: var(--bowire-accent-subtle);
+    border: 1px solid var(--bowire-accent);
+    color: var(--bowire-accent);
+    cursor: pointer;
+    padding: 3px 10px;
+    border-radius: var(--bowire-radius-pill);
+    font-size: 11px;
+    font-weight: 500;
+    transition: background var(--bowire-transition),
+                color var(--bowire-transition),
+                border-color var(--bowire-transition),
+                opacity var(--bowire-transition);
+    user-select: none;
+}
+.bowire-trash-chip:hover {
+    filter: brightness(1.05);
+}
+.bowire-trash-chip[data-state="off"] {
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    border-color: var(--bowire-border);
+}
+.bowire-trash-chip[data-state="off"]:hover {
+    color: var(--bowire-text);
+    border-color: var(--bowire-text-tertiary);
+}
+.bowire-trash-chip[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    border-color: var(--bowire-border-subtle);
+}
+.bowire-trash-chip[disabled]:hover {
+    filter: none;
+}
+.bowire-trash-unified-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 0;
+}
+.bowire-trash-unified-row {
+    /* Reuses bowire-trash-bucket-row chrome; just lets the badge
+       sit inline with the name without extra padding. */
+    padding: 8px 8px;
+}
+.bowire-trash-unified-row-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.bowire-trash-unified-row-name-row .bowire-trash-bucket-row-name {
+    flex: 1;
+    min-width: 0;
+}
+.bowire-trash-unified-badge {
+    flex-shrink: 0;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: var(--bowire-radius-pill);
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text-tertiary);
+    border: 1px solid var(--bowire-border-subtle);
+    line-height: 1.2;
+}
+.bowire-trash-unified-badge[data-kind="recording"] {
+    background: rgba(220, 38, 38, 0.12);
+    color: #dc2626;
+    border-color: rgba(220, 38, 38, 0.25);
+}
+.bowire-trash-unified-badge[data-kind="collection"] {
+    background: rgba(37, 99, 235, 0.12);
+    color: #2563eb;
+    border-color: rgba(37, 99, 235, 0.25);
+}
+.bowire-trash-unified-badge[data-kind="tab"] {
+    background: rgba(217, 119, 6, 0.12);
+    color: #d97706;
+    border-color: rgba(217, 119, 6, 0.25);
+}
+.bowire-trash-unified-badge[data-kind="workspace"] {
+    background: rgba(124, 58, 237, 0.12);
+    color: #7c3aed;
+    border-color: rgba(124, 58, 237, 0.25);
+}
+.bowire-trash-unified-empty {
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+    padding: 24px 12px;
+    text-align: center;
+    font-style: italic;
+}
+
 /* ---------- #295 Compose rail: Collections + Presets side panel ---------- */
 /* The Compose rail's main pane is now a flex row: the request-builder
    column on the left (tab strip + builder) and a collapsible side

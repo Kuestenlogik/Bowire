@@ -1627,212 +1627,253 @@
 
         var body = el('div', { className: 'bowire-trash-modal-body' });
 
-        body.appendChild(_renderTrashBucketSection({
-            id: 'recordings',
-            label: 'Recordings',
-            entries: rec,
-            nameOf: function (e) { return e && e.name ? e.name : '(unnamed recording)'; },
-            onRestore: function (t) {
-                if (!t || !t.entry) return;
-                if (typeof recordingsList !== 'undefined' && Array.isArray(recordingsList)) {
-                    recordingsList.splice(Math.min(t.originalIdx || recordingsList.length,
-                        recordingsList.length), 0, t.entry);
-                    if (typeof persistRecordings === 'function') persistRecordings();
-                }
-                var idx = rec.indexOf(t);
-                if (idx >= 0) rec.splice(idx, 1);
-                if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
-            },
-            onDeleteForever: function (t) {
-                var idx = rec.indexOf(t);
-                if (idx >= 0) rec.splice(idx, 1);
-                if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
-            }
-        }));
-
-        body.appendChild(_renderTrashBucketSection({
-            id: 'collections',
-            label: 'Collections',
-            entries: col,
-            nameOf: function (e) { return e && e.name ? e.name : '(unnamed collection)'; },
-            onRestore: function (t) {
-                if (!t || !t.entry) return;
-                if (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) {
-                    collectionsList.splice(Math.min(t.originalIdx || collectionsList.length,
-                        collectionsList.length), 0, t.entry);
-                    if (typeof persistCollections === 'function') persistCollections();
-                }
-                var idx = col.indexOf(t);
-                if (idx >= 0) col.splice(idx, 1);
-                if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
-            },
-            onDeleteForever: function (t) {
-                var idx = col.indexOf(t);
-                if (idx >= 0) col.splice(idx, 1);
-                if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
-            }
-        }));
-
-        body.appendChild(_renderTrashBucketSection({
-            id: 'tabs',
-            label: 'Recently closed tabs',
-            entries: tabs,
-            nameOf: function (e) {
-                if (!e) return '(unknown tab)';
-                if (e.methodKey && e.serviceKey) return e.serviceKey + ' · ' + e.methodKey;
-                if (e.methodKey) return e.methodKey;
-                if (e.serviceKey) return e.serviceKey;
-                return '(unnamed tab)';
-            },
-            onRestore: function (t) {
-                if (typeof restoreClosedTab === 'function') {
-                    var ok = restoreClosedTab(t);
-                    if (ok) {
-                        var idx = tabs.indexOf(t);
-                        if (idx >= 0) tabs.splice(idx, 1);
-                        if (typeof persistTabsTrash === 'function') persistTabsTrash();
-                    }
-                }
-            },
-            onDeleteForever: function (t) {
-                var idx = tabs.indexOf(t);
-                if (idx >= 0) tabs.splice(idx, 1);
-                if (typeof persistTabsTrash === 'function') persistTabsTrash();
-            }
-        }));
-
-        // #194 — Workspaces bucket is now live. Soft-deleted via
-        // deleteWorkspace → workspacesTrash; restore re-creates the
-        // workspace + every per-workspace bucket from the snapshot.
+        // Refactor: the four buckets are now a unified, searchable
+        // + filter-chipped list. Per-kind config (label, name
+        // accessor, restore + delete-forever handlers) lives in this
+        // map; the unified renderer fans each row's actions out via
+        // its `_kind` discriminator. Kept inline to keep the four
+        // closures sharing the same `rec` / `col` / `tabs` / `ws`
+        // bindings captured above.
         var ws = (typeof workspacesTrash !== 'undefined' && Array.isArray(workspacesTrash))
             ? workspacesTrash : [];
-        body.appendChild(_renderTrashBucketSection({
-            id: 'workspaces',
-            label: 'Workspaces',
-            entries: ws,
-            nameOf: function (e) {
-                if (!e || !e.workspace) return '(unnamed workspace)';
-                return e.workspace.name || '(unnamed workspace)';
-            },
-            onRestore: function (t) {
-                if (typeof restoreWorkspaceFromTrash === 'function') {
-                    restoreWorkspaceFromTrash(t);
+        var kindConfig = {
+            recordings: {
+                label: 'Recordings',
+                badge: 'recording',
+                entries: rec,
+                nameOf: function (e) { return e && e.name ? e.name : '(unnamed recording)'; },
+                onRestore: function (t) {
+                    if (!t || !t.entry) return;
+                    if (typeof recordingsList !== 'undefined' && Array.isArray(recordingsList)) {
+                        recordingsList.splice(Math.min(t.originalIdx || recordingsList.length,
+                            recordingsList.length), 0, t.entry);
+                        if (typeof persistRecordings === 'function') persistRecordings();
+                    }
+                    var idx = rec.indexOf(t);
+                    if (idx >= 0) rec.splice(idx, 1);
+                    if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
+                },
+                onDeleteForever: function (t) {
+                    var idx = rec.indexOf(t);
+                    if (idx >= 0) rec.splice(idx, 1);
+                    if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
                 }
             },
-            onDeleteForever: function (t) {
-                if (typeof purgeWorkspaceFromTrash === 'function') {
-                    purgeWorkspaceFromTrash(t);
+            collections: {
+                label: 'Collections',
+                badge: 'collection',
+                entries: col,
+                nameOf: function (e) { return e && e.name ? e.name : '(unnamed collection)'; },
+                onRestore: function (t) {
+                    if (!t || !t.entry) return;
+                    if (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) {
+                        collectionsList.splice(Math.min(t.originalIdx || collectionsList.length,
+                            collectionsList.length), 0, t.entry);
+                        if (typeof persistCollections === 'function') persistCollections();
+                    }
+                    var idx = col.indexOf(t);
+                    if (idx >= 0) col.splice(idx, 1);
+                    if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
+                },
+                onDeleteForever: function (t) {
+                    var idx = col.indexOf(t);
+                    if (idx >= 0) col.splice(idx, 1);
+                    if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
+                }
+            },
+            tabs: {
+                label: 'Tabs',
+                badge: 'tab',
+                entries: tabs,
+                nameOf: function (e) {
+                    if (!e) return '(unknown tab)';
+                    if (e.methodKey && e.serviceKey) return e.serviceKey + ' · ' + e.methodKey;
+                    if (e.methodKey) return e.methodKey;
+                    if (e.serviceKey) return e.serviceKey;
+                    return '(unnamed tab)';
+                },
+                onRestore: function (t) {
+                    if (typeof restoreClosedTab === 'function') {
+                        var ok = restoreClosedTab(t);
+                        if (ok) {
+                            var idx = tabs.indexOf(t);
+                            if (idx >= 0) tabs.splice(idx, 1);
+                            if (typeof persistTabsTrash === 'function') persistTabsTrash();
+                        }
+                    }
+                },
+                onDeleteForever: function (t) {
+                    var idx = tabs.indexOf(t);
+                    if (idx >= 0) tabs.splice(idx, 1);
+                    if (typeof persistTabsTrash === 'function') persistTabsTrash();
+                }
+            },
+            workspaces: {
+                label: 'Workspaces',
+                badge: 'workspace',
+                entries: ws,
+                nameOf: function (e) {
+                    if (!e || !e.workspace) return '(unnamed workspace)';
+                    return e.workspace.name || '(unnamed workspace)';
+                },
+                onRestore: function (t) {
+                    if (typeof restoreWorkspaceFromTrash === 'function') {
+                        restoreWorkspaceFromTrash(t);
+                    }
+                },
+                onDeleteForever: function (t) {
+                    if (typeof purgeWorkspaceFromTrash === 'function') {
+                        purgeWorkspaceFromTrash(t);
+                    }
                 }
             }
-        }));
+        };
+
+        // Build the flat, kind-tagged entry list. Each entry gets a
+        // synthetic `_kind` discriminator so the row renderer can
+        // dispatch into the right kindConfig entry.
+        var flat = [];
+        ['recordings', 'collections', 'tabs', 'workspaces'].forEach(function (k) {
+            kindConfig[k].entries.forEach(function (t) {
+                if (t) flat.push({ _kind: k, _trash: t });
+            });
+        });
+
+        // Visible subset after applying chip filters + search.
+        // Sorted newest-first by deletedAt so the most-recently
+        // trashed item is always at the top of the list.
+        var query = (globalTrashFilterState.query || '').trim().toLowerCase();
+        var visible = flat.filter(function (row) {
+            if (!globalTrashFilterState.kinds[row._kind]) return false;
+            if (!query) return true;
+            var name = kindConfig[row._kind].nameOf(row._trash.entry);
+            return (name || '').toLowerCase().indexOf(query) >= 0;
+        }).sort(function (a, b) {
+            return (b._trash.deletedAt || 0) - (a._trash.deletedAt || 0);
+        });
+
+        if (totalCount > 0) {
+            body.appendChild(_renderTrashUnifiedList({
+                kindConfig: kindConfig,
+                flat: flat,
+                visible: visible
+            }));
+        } else {
+            // Empty trash everywhere — skip the search box + filter
+            // chips (nothing to search or toggle) and just show the
+            // empty-state hint.
+            body.appendChild(el('div', {
+                className: 'bowire-trash-unified-empty',
+                textContent: 'Trash is empty.'
+            }));
+        }
 
         modal.appendChild(body);
 
-        // Footer with aggregate actions.
+        // Footer with aggregate actions. Operates on the FILTERED
+        // view: when chips exclude a kind or the search box narrows
+        // the list, the button label flips to "Empty filtered (N)" /
+        // "Restore filtered (N)" so the operator can see the scope
+        // before clicking. With no filter applied the labels stay
+        // "Empty trash" / "Restore all" — matching the original
+        // language for the no-filter common case.
         var footer = el('div', { className: 'bowire-trash-modal-footer' });
-        var emptyDisabled = totalCount === 0;
-        var restoreDisabled = totalCount === 0;
+        var visibleCount = visible.length;
+        var filterActive = visibleCount !== totalCount;
+        var emptyDisabled = visibleCount === 0;
+        var restoreDisabled = visibleCount === 0;
+        var emptyLabel = filterActive
+            ? 'Empty filtered (' + visibleCount + ')'
+            : 'Empty trash';
+        var restoreLabel = filterActive
+            ? 'Restore filtered (' + visibleCount + ')'
+            : 'Restore all';
+        var emptyTitle;
+        if (emptyDisabled) {
+            emptyTitle = filterActive ? 'No items match the current filter' : 'Trash is already empty';
+        } else {
+            emptyTitle = filterActive
+                ? 'Permanently delete only the ' + visibleCount + ' currently visible item' + (visibleCount === 1 ? '' : 's')
+                + ' — filtered-out items stay in the trash'
+                : 'Permanently delete every trashed item';
+        }
+        var restoreTitle;
+        if (restoreDisabled) {
+            restoreTitle = filterActive ? 'No items match the current filter' : 'Trash is empty';
+        } else {
+            restoreTitle = filterActive
+                ? 'Restore only the ' + visibleCount + ' currently visible item' + (visibleCount === 1 ? '' : 's')
+                + ' — filtered-out items stay in the trash'
+                : 'Restore every trashed item back to its original list';
+        }
         footer.appendChild(el('button', {
             type: 'button',
             className: 'bowire-trash-modal-action bowire-trash-modal-action-danger',
             disabled: emptyDisabled ? 'disabled' : null,
-            title: emptyDisabled ? 'Trash is already empty' : 'Permanently delete every trashed item',
-            textContent: 'Empty trash',
+            title: emptyTitle,
+            textContent: emptyLabel,
             onClick: function () {
                 if (emptyDisabled) return;
-                if (typeof bowireConfirm === 'function') {
-                    bowireConfirm(
-                        'Permanently delete all ' + totalCount + ' trashed items? This cannot be undone.',
-                        function () {
-                            if (Array.isArray(recordingsTrash)) recordingsTrash.length = 0;
-                            if (Array.isArray(collectionsTrash)) collectionsTrash.length = 0;
-                            if (Array.isArray(tabsTrash)) tabsTrash.length = 0;
-                            // #194 — workspaces bucket: a real purge
-                            // also wipes the per-workspace localStorage
-                            // namespace via purgeWorkspaceFromTrash so
-                            // the entries don't leave orphans behind.
-                            if (Array.isArray(workspacesTrash)) {
-                                while (workspacesTrash.length > 0) {
-                                    if (typeof purgeWorkspaceFromTrash === 'function') {
-                                        purgeWorkspaceFromTrash(workspacesTrash[0]);
-                                    } else {
-                                        workspacesTrash.shift();
-                                    }
-                                }
-                                if (typeof persistWorkspacesTrash === 'function') persistWorkspacesTrash();
-                            }
-                            if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
-                            if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
-                            if (typeof persistTabsTrash === 'function') persistTabsTrash();
-                            render();
-                        },
-                        { title: 'Empty trash', confirmText: 'Delete ' + totalCount, danger: true }
-                    );
-                }
+                if (typeof bowireConfirm !== 'function') return;
+                var prompt = filterActive
+                    ? 'Permanently delete the ' + visibleCount + ' currently visible item'
+                        + (visibleCount === 1 ? '' : 's')
+                        + '? Filtered-out items stay in the trash. This cannot be undone.'
+                    : 'Permanently delete all ' + visibleCount + ' trashed items? This cannot be undone.';
+                bowireConfirm(
+                    prompt,
+                    function () {
+                        // Walk the visible set newest-first so splice
+                        // indices stay stable. Workspaces use the
+                        // purge helper to clean their per-workspace
+                        // localStorage namespace; the other buckets
+                        // just splice + persist.
+                        visible.forEach(function (row) {
+                            try { kindConfig[row._kind].onDeleteForever(row._trash); }
+                            catch (e) { console.warn('[trash] empty-filtered failed', row._kind, e); }
+                        });
+                        if (typeof persistWorkspacesTrash === 'function'
+                            && globalTrashFilterState.kinds.workspaces) {
+                            persistWorkspacesTrash();
+                        }
+                        render();
+                    },
+                    {
+                        title: filterActive ? 'Empty filtered trash' : 'Empty trash',
+                        confirmText: 'Delete ' + visibleCount,
+                        danger: true
+                    }
+                );
             }
         }));
         footer.appendChild(el('button', {
             type: 'button',
             className: 'bowire-trash-modal-action',
             disabled: restoreDisabled ? 'disabled' : null,
-            title: restoreDisabled ? 'Trash is empty' : 'Restore every trashed item back to its original list',
-            textContent: 'Restore all',
+            title: restoreTitle,
+            textContent: restoreLabel,
             onClick: function () {
                 if (restoreDisabled) return;
-                if (typeof bowireConfirm === 'function') {
-                    bowireConfirm(
-                        'Restore all ' + totalCount + ' trashed items?',
-                        function () {
-                            // Recordings
-                            if (Array.isArray(recordingsTrash)) {
-                                for (var i = recordingsTrash.length - 1; i >= 0; i--) {
-                                    var rt = recordingsTrash[i];
-                                    if (rt && rt.entry && Array.isArray(recordingsList)) {
-                                        recordingsList.splice(Math.min(rt.originalIdx || recordingsList.length,
-                                            recordingsList.length), 0, rt.entry);
-                                    }
-                                }
-                                recordingsTrash.length = 0;
-                                if (typeof persistRecordings === 'function') persistRecordings();
-                                if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
-                            }
-                            // Collections
-                            if (Array.isArray(collectionsTrash)) {
-                                for (var j = collectionsTrash.length - 1; j >= 0; j--) {
-                                    var ct = collectionsTrash[j];
-                                    if (ct && ct.entry && Array.isArray(collectionsList)) {
-                                        collectionsList.splice(Math.min(ct.originalIdx || collectionsList.length,
-                                            collectionsList.length), 0, ct.entry);
-                                    }
-                                }
-                                collectionsTrash.length = 0;
-                                if (typeof persistCollections === 'function') persistCollections();
-                                if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
-                            }
-                            // Tabs
-                            if (Array.isArray(tabsTrash)) {
-                                for (var k = tabsTrash.length - 1; k >= 0; k--) {
-                                    var tt = tabsTrash[k];
-                                    if (typeof restoreClosedTab === 'function') restoreClosedTab(tt);
-                                }
-                                tabsTrash.length = 0;
-                                if (typeof persistTabsTrash === 'function') persistTabsTrash();
-                            }
-                            // #194 — Workspaces. Walk newest-first
-                            // (matches the other buckets) so the
-                            // original order is preserved.
-                            if (Array.isArray(workspacesTrash)) {
-                                for (var w = workspacesTrash.length - 1; w >= 0; w--) {
-                                    if (typeof restoreWorkspaceFromTrash === 'function') {
-                                        restoreWorkspaceFromTrash(workspacesTrash[w]);
-                                    }
-                                }
-                            }
-                            render();
-                        },
-                        { title: 'Restore all', confirmText: 'Restore ' + totalCount }
-                    );
-                }
+                if (typeof bowireConfirm !== 'function') return;
+                var prompt = filterActive
+                    ? 'Restore the ' + visibleCount + ' currently visible item'
+                        + (visibleCount === 1 ? '' : 's')
+                        + '? Filtered-out items stay in the trash.'
+                    : 'Restore all ' + visibleCount + ' trashed items?';
+                bowireConfirm(
+                    prompt,
+                    function () {
+                        visible.forEach(function (row) {
+                            try { kindConfig[row._kind].onRestore(row._trash); }
+                            catch (e) { console.warn('[trash] restore-filtered failed', row._kind, e); }
+                        });
+                        render();
+                    },
+                    {
+                        title: filterActive ? 'Restore filtered' : 'Restore all',
+                        confirmText: 'Restore ' + visibleCount
+                    }
+                );
             }
         }));
         footer.appendChild(el('span', { style: 'flex:1' }));
@@ -1851,48 +1892,128 @@
         return backdrop;
     }
 
-    // Per-bucket section inside the global trash overlay. Header row
-    // is always rendered (so the count is visible even when collapsed
-    // / empty); the item list only expands when the operator clicks
-    // through. Items show: name, "Deleted X days ago — will be
-    // purged in (30-X) days" TTL, and Restore + Delete-forever
-    // actions. The bucket header keeps its own expand/collapse state
-    // in globalTrashSectionOpen so a single render pass doesn't lose
-    // the operator's drilldown.
-    function _renderTrashBucketSection(opts) {
-        var section = el('div', { className: 'bowire-trash-bucket' });
-        var count = opts.entries.length;
-        var isOpen = !!(globalTrashSectionOpen && globalTrashSectionOpen[opts.id]);
-        var disabled = count === 0;
+    // Unified searchable + filter-chipped list inside the global
+    // trash overlay. Replaces the previous per-bucket sections after
+    // operator feedback: "die gruppen bei den trash items sollten
+    // eher über search und vordefinierte filter chips gelöst sein".
+    // Header: search input (debounced 100ms) + filter-chip row, one
+    // chip per kind with its count. Body: filtered, sorted (newest
+    // deletedAt first) list of rows. Each row carries a small
+    // type badge before the name + a Restore / Delete-forever pair,
+    // dispatched into the right kindConfig entry via row._kind.
+    function _renderTrashUnifiedList(opts) {
+        var kindConfig = opts.kindConfig;
+        var flat = opts.flat;
+        var visible = opts.visible;
 
-        var header = el('div', {
-            className: 'bowire-trash-bucket-header'
-                + (disabled ? ' bowire-trash-bucket-header-disabled' : ''),
-            onClick: function () {
-                if (disabled) return;
-                globalTrashSectionOpen[opts.id] = !isOpen;
-                render();
+        var section = el('div', { className: 'bowire-trash-unified' });
+
+        // ---- Search box ----
+        var searchWrap = el('div', { className: 'bowire-trash-search' });
+        searchWrap.appendChild(el('span', {
+            className: 'bowire-trash-search-icon',
+            innerHTML: (typeof svgIcon === 'function' ? svgIcon('search') : ''),
+            'aria-hidden': 'true'
+        }));
+        var searchInput = el('input', {
+            type: 'text',
+            className: 'bowire-trash-search-input',
+            placeholder: 'Search trashed items…',
+            value: globalTrashFilterState.query || '',
+            'aria-label': 'Search trashed items',
+            onInput: function (e) {
+                var v = e.target.value || '';
+                // Debounce the re-render so typing doesn't churn
+                // the modal on every keystroke. Module-scope timer
+                // so successive renders share the cancel handle.
+                if (_globalTrashSearchTimer) {
+                    clearTimeout(_globalTrashSearchTimer);
+                    _globalTrashSearchTimer = null;
+                }
+                _globalTrashSearchTimer = setTimeout(function () {
+                    globalTrashFilterState.query = v;
+                    persistGlobalTrashFilterState();
+                    render();
+                }, 100);
             }
         });
-        header.appendChild(el('span', {
-            className: 'bowire-trash-bucket-label',
-            textContent: opts.label
-        }));
-        header.appendChild(el('span', {
-            className: 'bowire-trash-bucket-count',
-            textContent: '(' + count + ')'
-        }));
-        header.appendChild(el('span', { style: 'flex:1' }));
-        header.appendChild(el('span', {
-            className: 'bowire-trash-bucket-caret',
-            textContent: disabled ? '' : (isOpen ? 'Collapse ▴' : 'Expand ▾')
-        }));
-        section.appendChild(header);
+        searchWrap.appendChild(searchInput);
+        if (globalTrashFilterState.query) {
+            searchWrap.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-trash-search-clear',
+                title: 'Clear search',
+                'aria-label': 'Clear search',
+                textContent: '×',
+                onClick: function () {
+                    globalTrashFilterState.query = '';
+                    persistGlobalTrashFilterState();
+                    render();
+                }
+            }));
+        }
+        section.appendChild(searchWrap);
 
-        if (isOpen && count > 0) {
-            var list = el('div', { className: 'bowire-trash-bucket-list' });
-            opts.entries.slice().forEach(function (t) {
-                if (!t) return;
+        // ---- Filter chips ----
+        var chipsRow = el('div', { className: 'bowire-trash-filter-chips' });
+        chipsRow.appendChild(el('span', {
+            className: 'bowire-trash-filter-chips-label',
+            textContent: 'Filter:'
+        }));
+        ['recordings', 'collections', 'tabs', 'workspaces'].forEach(function (kind) {
+            var cfg = kindConfig[kind];
+            var count = cfg.entries.length;
+            var on = !!globalTrashFilterState.kinds[kind];
+            var disabled = count === 0;
+            var label = cfg.label + ' (' + count + ')';
+            var title;
+            if (disabled) title = 'No ' + cfg.label.toLowerCase() + ' in trash';
+            else if (on) title = 'Click to hide ' + cfg.label.toLowerCase();
+            else title = 'Click to show ' + cfg.label.toLowerCase();
+            chipsRow.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-trash-chip',
+                'data-state': on ? 'on' : 'off',
+                'data-kind': kind,
+                'aria-pressed': on ? 'true' : 'false',
+                disabled: disabled ? 'disabled' : null,
+                title: title,
+                textContent: label,
+                onClick: function () {
+                    if (disabled) return;
+                    globalTrashFilterState.kinds[kind] = !on;
+                    persistGlobalTrashFilterState();
+                    render();
+                }
+            }));
+        });
+        section.appendChild(chipsRow);
+
+        // ---- Unified list ----
+        var list = el('div', { className: 'bowire-trash-unified-list' });
+        if (visible.length === 0) {
+            // Either everything is filtered out, or the search query
+            // didn't match. Either way: give the operator a hint they
+            // can fix it.
+            var hint;
+            if (flat.length === 0) {
+                hint = 'Trash is empty.';
+            } else if (globalTrashFilterState.query) {
+                hint = 'No items match "' + globalTrashFilterState.query + '". '
+                    + 'Adjust the search or filter chips.';
+            } else {
+                hint = 'No items match the current filter. '
+                    + 'Click a chip to include that type.';
+            }
+            list.appendChild(el('div', {
+                className: 'bowire-trash-unified-empty',
+                textContent: hint
+            }));
+        } else {
+            visible.forEach(function (row) {
+                var cfg = kindConfig[row._kind];
+                var t = row._trash;
+                var name = cfg.nameOf(t.entry);
                 var ageMs = Date.now() - (t.deletedAt || Date.now());
                 var ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
                 var ageLabel;
@@ -1903,53 +2024,62 @@
                 var ttlNote = 'Deleted ' + ageLabel
                     + ' — will be purged in ' + purgeIn + ' day' + (purgeIn === 1 ? '' : 's');
 
-                var row = el('div', { className: 'bowire-trash-bucket-row' });
-                row.appendChild(el('div', { className: 'bowire-trash-bucket-row-meta' },
-                    el('div', {
-                        className: 'bowire-trash-bucket-row-name',
-                        textContent: opts.nameOf(t.entry)
-                    }),
-                    el('div', {
-                        className: 'bowire-trash-bucket-row-ttl',
-                        textContent: ttlNote
-                    })
-                ));
-                row.appendChild(el('button', {
+                var rowEl = el('div', {
+                    className: 'bowire-trash-bucket-row bowire-trash-unified-row',
+                    'data-kind': row._kind
+                });
+                var meta = el('div', { className: 'bowire-trash-bucket-row-meta' });
+                var nameRow = el('div', { className: 'bowire-trash-unified-row-name-row' });
+                nameRow.appendChild(el('span', {
+                    className: 'bowire-trash-unified-badge',
+                    'data-kind': row._kind,
+                    textContent: cfg.badge
+                }));
+                nameRow.appendChild(el('span', {
+                    className: 'bowire-trash-bucket-row-name',
+                    textContent: name
+                }));
+                meta.appendChild(nameRow);
+                meta.appendChild(el('div', {
+                    className: 'bowire-trash-bucket-row-ttl',
+                    textContent: ttlNote
+                }));
+                rowEl.appendChild(meta);
+
+                rowEl.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-trash-bucket-row-action',
                     title: 'Restore',
                     textContent: 'Restore',
                     onClick: function () {
-                        try { opts.onRestore(t); } catch (e) {
-                            console.warn('[trash] restore failed', opts.id, e);
-                        }
+                        try { cfg.onRestore(t); }
+                        catch (e) { console.warn('[trash] restore failed', row._kind, e); }
                         render();
                     }
                 }));
-                row.appendChild(el('button', {
+                rowEl.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-trash-bucket-row-action bowire-trash-bucket-row-action-danger',
                     title: 'Delete forever',
                     textContent: 'Delete forever',
                     onClick: function () {
-                        if (typeof bowireConfirm === 'function') {
-                            bowireConfirm(
-                                'Permanently delete "' + opts.nameOf(t.entry) + '"? This cannot be undone.',
-                                function () {
-                                    try { opts.onDeleteForever(t); } catch (e) {
-                                        console.warn('[trash] delete-forever failed', opts.id, e);
-                                    }
-                                    render();
-                                },
-                                { title: 'Delete forever', confirmText: 'Delete', danger: true }
-                            );
-                        }
+                        if (typeof bowireConfirm !== 'function') return;
+                        bowireConfirm(
+                            'Permanently delete "' + name + '"? This cannot be undone.',
+                            function () {
+                                try { cfg.onDeleteForever(t); }
+                                catch (e) { console.warn('[trash] delete-forever failed', row._kind, e); }
+                                render();
+                            },
+                            { title: 'Delete forever', confirmText: 'Delete', danger: true }
+                        );
                     }
                 }));
-                list.appendChild(row);
+
+                list.appendChild(rowEl);
             });
-            section.appendChild(list);
         }
+        section.appendChild(list);
         return section;
     }
 
