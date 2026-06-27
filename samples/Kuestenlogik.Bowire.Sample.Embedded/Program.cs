@@ -17,6 +17,13 @@ var builder = WebApplication.CreateBuilder(args);
 // their own AddBowire*Protocol() extensions in their assemblies.
 builder.Services.AddBowire();
 builder.Services.AddEndpointsApiExplorer();
+// .NET 10 native OpenAPI document. Without this, Bowire's REST plugin
+// can't find a discovery surface on this host and the SSE/MCP plugin
+// claims the URL by accident (the workbench's own MCP adapter on the
+// Tool host leaks through). With it, Bowire reads /openapi/v1.json and
+// the operator sees the actual Users / Products / Locations / Health
+// services.
+builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
@@ -29,6 +36,11 @@ var app = builder.Build();
 // recording steps. The Bowire workbench's own /bowire/* surface is
 // excluded by default so the rail doesn't observe itself.
 app.UseBowireInterceptor();
+
+// Expose the OpenAPI document at /openapi/v1.json. Bowire's REST
+// plugin probes the host for this exact path and turns the spec into
+// the services tree the operator sees in Discover.
+app.MapOpenApi();
 
 // Sample host routes — these are what the operator wants to see
 // discovered automatically by the embedded Bowire.
