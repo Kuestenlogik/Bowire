@@ -7,8 +7,8 @@ on:
       - 'docs/**'
       - 'site/**'
       - 'src/**'
-      - 'scripts/build-activity-snapshot.mjs'
-      - 'scripts/optimize-images.mjs'
+      - 'scripts/site/build-activity-snapshot.mjs'
+      - 'scripts/site/optimize-images.mjs'
       - '.github/workflows/docs.yml'
   # Refresh on every published release so the community-page "Activity on deck"
   # pane picks up new release names + cadence the moment they ship.
@@ -100,7 +100,7 @@ jobs:
       - name: Refresh activity snapshot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/build-activity-snapshot.mjs
+        run: node scripts/site/build-activity-snapshot.mjs
 
       # Image transcodes (AVIF + WebP responsive variants) are committed
       # alongside their .png/.jpg sources. CI runs --check to fail the
@@ -110,7 +110,7 @@ jobs:
       - name: Install sharp
         run: npm install --no-audit --no-fund
       - name: Check image transcodes are up to date
-        run: node scripts/optimize-images.mjs --check
+        run: node scripts/site/optimize-images.mjs --check
 
       # Build Jekyll landing page
       - name: Setup Ruby

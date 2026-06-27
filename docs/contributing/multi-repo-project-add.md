@@ -68,7 +68,7 @@ Run once per repo. Idempotent — items already on the board are silently skippe
 
 ## What the generated `ROADMAP.md` shows
 
-`scripts/generate-roadmap.mjs` already renders multi-repo entries with the repo prefix:
+`scripts/ci/generate-roadmap.mjs` already renders multi-repo entries with the repo prefix:
 
 - Local repo issues appear as `#42`
 - Sibling-repo issues appear as `Kuestenlogik/Bowire.Bootcamp#42`

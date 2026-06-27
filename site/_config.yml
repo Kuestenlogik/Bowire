@@ -15,3 +15,16 @@ theme: null
 plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
+
+# --- Search Console / sitemap hygiene --------------------------------
+# jekyll-sitemap lists every output .html by default. The Google
+# verification token is an infrastructure file, not a page — it must stay
+# reachable and byte-identical for verification, but listing it in the
+# sitemap just adds a non-page URL to the "Pages" report. Keep it out.
+# (Per-page noindex/sitemap opt-outs, e.g. search.html, live in each
+# page's own front matter.)
+defaults:
+  - scope:
+      path: "google844ded396fe38a5e.html"
+    values:
+      sitemap: false

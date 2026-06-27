@@ -3,8 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  {%- comment -%}
+    Title is owned here (controlled, no "Bowire | Bowire" doubling); the
+    description + all OpenGraph/Twitter/JSON-LD metadata is owned by
+    jekyll-seo-tag below via `{% seo title=false %}`. Emitting a manual
+    <meta name="description"> here as well produced TWO description tags
+    (and, with a plain `{% seo %}`, two <title> tags) on every page —
+    a duplicate-metadata signal that hurts how Google scores the page.
+  {%- endcomment -%}
   <title>{{ page.title | default: site.title }}</title>
-  <meta name="description" content="{{ page.description | default: site.description }}">
 
   <!-- Apply the stored (or default: auto) theme synchronously before the
        body renders, so the page never flashes a different theme for the
@@ -68,7 +75,24 @@
     })();
   </script>
 
-  {% seo %}
+  {%- comment -%}
+    title=false: keep the controlled <title> emitted above and let
+    jekyll-seo-tag own only the description + og:/twitter:/canonical/
+    JSON-LD. Without this flag seo-tag emits a SECOND <title>.
+  {%- endcomment -%}
+  {% seo title=false %}
+
+  {%- comment -%}
+    Per-page opt-out of indexing for utility pages with no standalone
+    search value (internal search results, etc.). Set `noindex: true`
+    in the page front matter; pair it with `sitemap: false` so the URL
+    is never submitted in the sitemap (a noindexed URL in the sitemap
+    triggers a Search Console "Submitted URL marked noindex" warning).
+    `follow` keeps link equity flowing to the real pages.
+  {%- endcomment -%}
+  {%- if page.noindex -%}
+  <meta name="robots" content="noindex, follow">
+  {%- endif -%}
 
   {%- comment -%}
   Override jekyll-seo-tag's defaults: it emits twitter:card=summary
@@ -87,12 +111,14 @@
   {%- comment -%}
   schema.org JSON-LD — gives Google / Bing / DuckDuckGo / AI crawlers a
   structured-data view of the page so they can render rich results
-  (app card, sitelinks, FAQ snippets) instead of guessing from the HTML.
+  (app card, FAQ snippets) instead of guessing from the HTML.
 
   - Organization on every page, so both .com (Küstenlogik) and the
     Bowire product surface their canonical entity link.
-  - WebSite on every page so search engines know about the in-page
-    Pagefind search and can surface a sitelinks searchbox.
+  - WebSite is emitted by jekyll-seo-tag itself (homepage), so we do NOT
+    add our own — a second WebSite node with the same URL was duplicate
+    structured data. (The sitelinks-searchbox SearchAction it used to
+    carry is a retired Google feature, so nothing is lost by dropping it.)
   - SoftwareApplication ONLY on pages that opt in via
     `schema_type: SoftwareApplication` in front matter (currently the
     homepage). Adding it to every page would dilute the signal.
@@ -107,22 +133,6 @@
     "sameAs": [
       "https://github.com/Kuestenlogik"
     ]
-  }
-  </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Bowire",
-    "url": "{{ '/' | absolute_url }}",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": "{{ '/search.html' | absolute_url }}?q={search_term_string}"
-      },
-      "query-input": "required name=search_term_string"
-    }
   }
   </script>
   {%- if page.schema_type == 'SoftwareApplication' -%}

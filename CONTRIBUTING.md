@@ -68,7 +68,7 @@ To test the NuGet package locally:
 Or on Linux/macOS:
 
 ```bash
-./scripts/pack-local.sh
+./scripts/ci/pack-local.sh
 ```
 
 ## License

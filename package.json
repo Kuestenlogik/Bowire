@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "optimize-images": "node scripts/optimize-images.mjs"
+    "optimize-images": "node scripts/site/optimize-images.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",

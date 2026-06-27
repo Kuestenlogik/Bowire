@@ -89,7 +89,7 @@ builder. **No Dockerfile, no docker daemon, no multi-stage build is
 required**:
 
 ```bash
-scripts/publish-container.sh 1.0.12 linux-x64
+scripts/ci/publish-container.sh 1.0.12 linux-x64
 docker load < artifacts/containers/bowire-1.0.12-linux-x64.tar.gz
 docker run --rm -p 5080:5080 kuestenlogik/bowire:1.0.12 \
     --url https://my-grpc-server:443
@@ -98,7 +98,7 @@ docker run --rm -p 5080:5080 kuestenlogik/bowire:1.0.12 \
 The PowerShell variant works the same way:
 
 ```powershell
-scripts\publish-container.ps1 -Version 1.0.12 -Arch linux-x64
+scripts\ci\publish-container.ps1 -Version 1.0.12 -Arch linux-x64
 ```
 
 ## How it works
@@ -193,8 +193,8 @@ three advantages:
 Build a separate tarball per architecture:
 
 ```bash
-scripts/publish-container.sh 1.0.12 linux-x64
-scripts/publish-container.sh 1.0.12 linux-arm64
+scripts/ci/publish-container.sh 1.0.12 linux-x64
+scripts/ci/publish-container.sh 1.0.12 linux-arm64
 ```
 
 You'll get `bowire-1.0.12-linux-x64.tar.gz` and `bowire-1.0.12-linux-arm64.tar.gz`.
