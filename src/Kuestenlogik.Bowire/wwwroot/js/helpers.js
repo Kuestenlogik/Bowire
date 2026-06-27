@@ -2556,7 +2556,13 @@
             // (vertical bar + dot). Lighter / cleaner than the prior
             // filled-disc variant — reads better at 14 px next to the
             // help glyph it sits beside in the topbar.
-            info: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 17V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="1" cy="1" r="1" transform="matrix(1 0 0 -1 11 9)" fill="currentColor"/></svg>',
+            // Stroke width bumped 1.5 → 2 + circle radius 10 → 11 so
+            // the info glyph fills the viewbox to roughly the same
+            // optical density as the filled help life-ring next to it.
+            // Operator feedback: 'der info button hat ein kleineres
+            // symbol als die anderen in der top bar (info i mit kreis
+            // wirkt kleiner als zum beispiel hilfe-symbol).'
+            info: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" stroke="currentColor" stroke-width="2"/><path d="M12 17V11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="1" cy="1" r="1.25" transform="matrix(1 0 0 -1 11 9)" fill="currentColor"/></svg>',
             // Life-ring (SVGRepo) — topbar help button. Operator picked
             // the rescue-ring shape over the question-mark; reads as
             // 'help / rescue' rather than 'unclear'. The old

@@ -1587,6 +1587,23 @@ plus future hint / save indicators. */
     align-items: center;
     gap: 8px;
 }
+/* Pill clusters inside the statusbar — same shape as
+   .bowire-topbar-group: each group reads as one cohesive bucket and
+   the second-and-later groups draw a subtle vertical divider on
+   their left edge. Operator feedback: 'die status-leiste sollte
+   auch optische/räumliche trenner haben so wie in der top bar.' */
+.bowire-statusbar-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    position: relative;
+}
+.bowire-statusbar-group + .bowire-statusbar-group {
+    margin-left: 4px;
+    padding-left: 12px;
+    border-left: 1px solid var(--bowire-border-subtle);
+}
 .bowire-statusbar-centre {
     flex: 1;
     justify-content: center;
@@ -12967,6 +12984,39 @@ duplicate) */
     color: var(--bowire-text);
     margin-bottom: 6px;
     letter-spacing: -0.01em;
+    /* Reserve room for the absolute top-right close button so a long
+       title can't slide underneath it. */
+    padding-right: 24px;
+}
+
+/* Top-right close (x) — operator-requested 'always-on escape hatch'.
+   Sits in the conventional dialog-close slot regardless of step
+   shape. Subtle tertiary tint until hovered so it doesn't steal
+   attention from the call-out itself. */
+.bowire-tour-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    transition: color var(--bowire-transition), background var(--bowire-transition);
+}
+.bowire-tour-close:hover {
+    color: var(--bowire-text);
+    background: var(--bowire-surface-hover);
+}
+.bowire-tour-close svg {
+    width: 12px;
+    height: 12px;
 }
 
 .bowire-tour-body {
@@ -13009,8 +13059,16 @@ duplicate) */
    line-wrap on the cramped spotlight. Primary CTA / Next / Finish
    keep their text. Operator feedback: 'in der tour sind die buttons
    unten manchmal sehr gedrängt und umgebrochen … statt dem text für
-   die buttons diesen lieber als symbol mit tooltip anzeigen'. */
-.bowire-tour-btn-iconic {
+   die buttons diesen lieber als symbol mit tooltip anzeigen'.
+   The selector compounds .bowire-tour-btn-iconic with the
+   skip/secondary base classes so the icon-button reset wins over the
+   later text-button padding (5px 12px) — without this the box-sizing:
+   border-box reset shrinks the 28×28 content area to 4×18 and clips
+   the SVG entirely. Operator feedback: 'die icon-buttons unten in der
+   tour zeigen leere kästen ohne icon'. */
+.bowire-tour-btn-iconic,
+.bowire-tour-btn-skip.bowire-tour-btn-iconic,
+.bowire-tour-btn-secondary.bowire-tour-btn-iconic {
     width: 28px;
     height: 28px;
     padding: 0;
@@ -13018,6 +13076,7 @@ duplicate) */
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    color: var(--bowire-text-secondary);
 }
 .bowire-tour-btn-iconic svg {
     width: 14px;

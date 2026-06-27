@@ -2610,6 +2610,12 @@
         // toggle). Connection anchors to the rightmost edge per
         // maintainer call; env selector moved back to the topbar
         // so the editor-context switch lives next to navigation.
+        // Pills are bucketed into .bowire-statusbar-group containers
+        // so the divider-between-groups CSS rule paints subtle
+        // separators between logical clusters, matching the topbar's
+        // grouping pattern. Operator feedback: 'die status-leiste
+        // sollte auch optische/räumliche trenner haben so wie in
+        // der top bar.'
         var right = el('div', { className: 'bowire-statusbar-right' });
         // Console toggle — promoted to the statusbar so the activity
         // log is reachable from any rail (Discover / Home / Recordings
@@ -2618,7 +2624,7 @@
         // toggles consoleOpen + (re-)renders the floating panel
         // directly; the panel writes into document.body, not the
         // render tree, so no full render() is needed.
-        right.appendChild(el('button', {
+        var consoleBtn = el('button', {
             id: 'bowire-statusbar-console-btn',
             className: 'bowire-theme-toggle-btn' + (consoleOpen ? ' active' : ''),
             title: consoleOpen
@@ -2640,7 +2646,7 @@
             consoleLog.length > 0
                 ? el('span', { className: 'bowire-statusbar-console-count', textContent: String(consoleLog.length) })
                 : null
-        ));
+        );
         // #168 — Activity pill. Always visible (matches the Console
         // + Tests pills next to it) so operators can find the action
         // log without first creating an entry — toast deletes / creates
@@ -2652,7 +2658,7 @@
         // closes it.
         var availCount = (typeof availableActionCount === 'function')
             ? availableActionCount() : 0;
-        right.appendChild(el('button', {
+        var activityBtn = el('button', {
             id: 'bowire-statusbar-activity-btn',
             className: 'bowire-theme-toggle-btn' + (activityDrawerOpen ? ' active' : ''),
             title: activityDrawerOpen
@@ -2681,12 +2687,12 @@
                 ? el('span', { className: 'bowire-statusbar-console-count',
                     textContent: String(availCount) })
                 : null
-        ));
+        );
         // #164 — Tests drawer toggle. Peer of the Console button —
         // shows / hides the Tests tab in the unified right drawer.
         // Accessory dot inherits pass/fail color from the active
         // method's last run when present.
-        right.appendChild(el('button', {
+        var testsBtn = el('button', {
             id: 'bowire-statusbar-tests-btn',
             className: 'bowire-theme-toggle-btn' + (testsDrawerOpen ? ' active' : ''),
             title: testsDrawerOpen
@@ -2709,12 +2715,12 @@
                 innerHTML: svgIcon('beaker'),
                 style: 'width:14px;height:14px;display:flex'
             })
-        ));
+        );
         // #135 split-toggle. Cycles horizontal ↔ vertical. Icon
         // shows the CURRENT layout (state-pattern, matches how
         // browser-engine toggles work) — click flips. Reflowing the
         // content + persisting happens in the onClick.
-        right.appendChild(el('button', {
+        var splitBtn = el('button', {
             id: 'bowire-split-toggle-btn',
             className: 'bowire-theme-toggle-btn',
             title: splitMode === 'vertical'
@@ -2729,12 +2735,26 @@
         }, el('span', {
             innerHTML: svgIcon(splitMode === 'vertical' ? 'splitVertical' : 'splitHorizontal'),
             style: 'width:14px;height:14px;display:flex'
-        })));
+        }));
+        // Group 1 — drawer/log toggles (Console, Activity, Tests). All
+        // three open a panel or drawer, sharing the same 'show me what
+        // happened' semantic.
+        right.appendChild(el('div', { className: 'bowire-statusbar-group' },
+            consoleBtn, activityBtn, testsBtn));
+        // Group 2 — layout (split toggle). Single pill but isolated so
+        // it doesn't read as a fourth drawer button.
+        right.appendChild(el('div', { className: 'bowire-statusbar-group' },
+            splitBtn));
+        // Group 3 — system (watch + connection). Watch + connection
+        // pill describe the live link to the server, distinct from the
+        // local-state drawers and layout switches to their left.
+        var systemGroup = el('div', { className: 'bowire-statusbar-group' });
         if (typeof renderWatchButton === 'function') {
             var wb = renderWatchButton();
-            if (wb) right.appendChild(wb);
+            if (wb) systemGroup.appendChild(wb);
         }
-        right.appendChild(renderConnectionPill());
+        systemGroup.appendChild(renderConnectionPill());
+        right.appendChild(systemGroup);
         bar.appendChild(right);
 
         return bar;
