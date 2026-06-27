@@ -68,7 +68,6 @@
             return r.json();
         }).then(function (summary) {
             mocksList = [summary].concat(mocksList.filter(function (m) { return m.mockId !== summary.mockId; }));
-            toast('Mock running on port ' + summary.port, 'success');
             if (railMode === 'mocks') render();
             // #303 — advance the build-a-mock tour when a mock host
             // successfully boots. Fires regardless of which entry path
@@ -77,25 +76,34 @@
                 && typeof window.bowireFireTourEvent === 'function') {
                 window.bowireFireTourEvent('mock-started', { mockId: summary.mockId, port: summary.port });
             }
-            // Record a mock-create entry so Ctrl/Cmd+Z stops the just-
-            // started mock host. undoSpec carries the mockId + the
-            // recording payload + chosen port so the resolver can
-            // rehydrate both directions after reload (stop = DELETE
-            // /api/mocks/{id}; restart = re-POST the same body).
-            // The undo/redo closures pass silent=true so the inverse
-            // calls don't append a fresh entry of their own.
-            if (!silent && typeof recordAction === 'function') {
+            // Toast the mock-create so Ctrl/Cmd+Z stops the just-
+            // started mock host and the operator gets an inline Undo.
+            // undoSpec carries the mockId + the recording payload +
+            // chosen port so the resolver can rehydrate both directions
+            // after reload (stop = DELETE /api/mocks/{id}; restart =
+            // re-POST the same body). The undo/redo closures pass
+            // silent=true so the inverse calls don't append a fresh
+            // entry of their own. Silent restarts (resolver-driven
+            // redo) fall back to a quiet toast — no Undo button, no
+            // action-log entry — so the operator still sees the port
+            // confirmation.
+            var _mockName = rec.name || ('recording-' + rec.id);
+            if (!silent && typeof toast === 'function') {
                 var recSnapshot = JSON.parse(JSON.stringify(rec));
                 var summaryId = summary.mockId;
                 var summaryPort = port || 0;
-                recordAction({
-                    kind: 'mock-create',
-                    rail: 'mocks',
-                    title: 'Started mock "' + (rec.name || ('recording-' + rec.id)) + '"',
-                    undoSpec: { mockId: summaryId, recording: recSnapshot, port: summaryPort },
+                toast('Created mock "' + _mockName + '" on port ' + summary.port, 'success', {
                     undo: function () { stopMock(summaryId); },
-                    redo: function () { startMockFromRecording(recSnapshot, summaryPort, true); }
+                    logAction: {
+                        kind: 'mock-create',
+                        rail: 'mocks',
+                        title: 'Created mock "' + _mockName + '"',
+                        undoSpec: { mockId: summaryId, recording: recSnapshot, port: summaryPort },
+                        redo: function () { startMockFromRecording(recSnapshot, summaryPort, true); }
+                    }
                 });
+            } else if (typeof toast === 'function') {
+                toast('Mock running on port ' + summary.port, 'success');
             }
             return summary;
         }).catch(function (err) {

@@ -70,26 +70,31 @@
         flowsList.push(flow);
         persistFlows();
         // Mirror the recording-create / collection-create undo pattern —
-        // record a flow-create entry so Ctrl/Cmd+Z / the Activity drawer
-        // can roll the creation back. undoSpec stores the full flow doc
-        // so the resolver can re-create it after reload (the in-session
-        // closure resolves to the same delete-from-list).
-        if (typeof recordAction === 'function') {
+        // toast the create so the operator gets immediate confirmation
+        // + a 4 s Undo button. logAction joins the workbench-wide action
+        // log so Ctrl/Cmd+Z / the Activity drawer surface 'Created flow
+        // "<name>"' after the toast expires. undoSpec stores the full
+        // flow doc so the resolver can re-create it after reload (the
+        // in-session closure resolves to the same delete-from-list).
+        if (typeof toast === 'function') {
             var snapshot = JSON.parse(JSON.stringify(flow));
-            recordAction({
-                kind: 'flow-create',
-                rail: 'flows',
-                title: 'Created flow "' + (flow.name || 'unnamed') + '"',
-                undoSpec: { flow: snapshot },
+            var _flowName = flow.name || 'unnamed';
+            toast('Created flow "' + _flowName + '"', 'info', {
                 undo: function () {
                     deleteFlow(snapshot.id);
                     render();
                 },
-                redo: function () {
-                    if (flowsList.find(function (f) { return f.id === snapshot.id; })) return;
-                    flowsList.push(JSON.parse(JSON.stringify(snapshot)));
-                    persistFlows();
-                    render();
+                logAction: {
+                    kind: 'flow-create',
+                    rail: 'flows',
+                    title: 'Created flow "' + _flowName + '"',
+                    undoSpec: { flow: snapshot },
+                    redo: function () {
+                        if (flowsList.find(function (f) { return f.id === snapshot.id; })) return;
+                        flowsList.push(JSON.parse(JSON.stringify(snapshot)));
+                        persistFlows();
+                        render();
+                    }
                 }
             });
         }
@@ -845,7 +850,7 @@
                     var backup = JSON.parse(JSON.stringify(flow));
                     deleteFlow(flow.id);
                     render();
-                    toast('Flow deleted', 'success', {
+                    toast('Deleted flow "' + (backup.name || 'unnamed') + '"', 'info', {
                         undo: function () { flowsList.push(backup); persistFlows(); flowEditorSelectedId = backup.id; render(); },
                         logAction: { kind: 'flow-delete',
                             title: 'Deleted flow "' + (backup.name || 'unnamed') + '"',

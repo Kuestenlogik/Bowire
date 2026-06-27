@@ -1074,69 +1074,6 @@ no decoration. */
     filter: brightness(1.05);
     color: #fff;
 }
-/* #194 — Per-rail undo trail. Thin strip rendered at the top of a
-   rail (recordings, workspaces, collections, environments, flows)
-   when the most-recent reversible action targets that rail; gives
-   the operator an inline "you just deleted X" affordance closer to
-   the deletion than the global Activity drawer / toast. */
-.bowire-rail-trail {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    margin: 0;
-    background: var(--bowire-surface-hover);
-    border-bottom: 1px solid var(--bowire-border-subtle);
-    border-left: 2px solid var(--bowire-accent);
-    flex-shrink: 0;
-}
-.bowire-rail-trail-label {
-    flex: 1;
-    min-width: 0;
-    font-size: 11px;
-    color: var(--bowire-text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.bowire-rail-trail-undo {
-    flex-shrink: 0;
-    height: 20px;
-    padding: 0 8px;
-    background: transparent;
-    border: 1px solid var(--bowire-accent);
-    border-radius: var(--bowire-radius-sm);
-    color: var(--bowire-accent);
-    cursor: pointer;
-    font: inherit;
-    font-size: 11px;
-}
-.bowire-rail-trail-undo:hover {
-    background: var(--bowire-accent);
-    color: #fff;
-}
-.bowire-rail-trail-dismiss {
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
-    padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: 0;
-    color: var(--bowire-text-tertiary);
-    cursor: pointer;
-    border-radius: var(--bowire-radius-sm);
-}
-.bowire-rail-trail-dismiss:hover {
-    color: var(--bowire-text);
-    background: var(--bowire-surface);
-}
-.bowire-rail-trail-dismiss svg {
-    width: 12px;
-    height: 12px;
-}
 /* #164 — Tests drawer-tab accessory. Same shape as the help-topic
    count chip; pass/fail variants tint the chip green / red so the
    operator can see the last run's outcome without switching to the
