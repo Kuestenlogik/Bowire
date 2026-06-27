@@ -2995,6 +2995,43 @@
         };
     });
 
+    registerActionResolver('recording-create', function (spec) {
+        if (!spec || !spec.recordingId) return null;
+        return {
+            undo: function () {
+                // Soft-delete via the same path the trash-bin uses so
+                // redo can restore from recordingsTrash. deleteRecording
+                // doesn't call recordAction itself, so the undo path
+                // can't loop back into the action log.
+                if (typeof deleteRecording === 'function') deleteRecording(spec.recordingId);
+                if (typeof render === 'function') render();
+            },
+            redo: function () {
+                // Restore from trash — mirror the recording-delete
+                // resolver's undo branch. Walk recordingsTrash for the
+                // matching entry, splice it back into recordingsList,
+                // and drop the trash entry so the recording doesn't
+                // end up in two places.
+                if (!Array.isArray(recordingsList)) return;
+                if (recordingsList.find(function (r) { return r.id === spec.recordingId; })) return;
+                if (!Array.isArray(recordingsTrash)) return;
+                for (var i = 0; i < recordingsTrash.length; i++) {
+                    var t = recordingsTrash[i];
+                    if (!t || !t.entry || t.entry.id !== spec.recordingId) continue;
+                    var idx = (typeof t.originalIdx === 'number')
+                        ? Math.min(t.originalIdx, recordingsList.length)
+                        : recordingsList.length;
+                    recordingsList.splice(idx, 0, t.entry);
+                    recordingsTrash.splice(i, 1);
+                    if (typeof persistRecordings === 'function') persistRecordings();
+                    if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
+                    break;
+                }
+                if (typeof render === 'function') render();
+            }
+        };
+    });
+
     registerActionResolver('recording-delete', function (spec) {
         if (!spec || !spec.entry) return null;
         return {
