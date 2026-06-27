@@ -1669,6 +1669,17 @@
 
             if (!hasDiscovered && typeof renderEmptyCard === 'function') {
                 var emptyWrap = el('div', { className: 'bowire-ai-threat-section' });
+                // 'Add a source' is workspace-scoped — the sources rail
+                // adds URLs / schemas to the ACTIVE workspace, so
+                // without one there's nowhere to land. Operator
+                // feedback: 'add a source würde aber doch workspace
+                // erfordern, oder?' Gate the CTA + carry a tooltip
+                // that says why, mirroring the rail-strip disabled
+                // pattern from commit 327fbe8. 'Open Discover' stays
+                // enabled — Discover is workspace-independent (you
+                // can browse uploaded schemas or live URLs without a
+                // workspace context).
+                var hasActiveWorkspace = (typeof activeWorkspaceId !== 'undefined') && !!activeWorkspaceId;
                 emptyWrap.appendChild(renderEmptyCard({
                     icon: 'shield',
                     headline: 'Threat model needs discovered endpoints',
@@ -1688,12 +1699,31 @@
                         },
                         {
                             label: 'Add a source',
+                            disabled: !hasActiveWorkspace,
+                            title: hasActiveWorkspace
+                                ? null
+                                : 'Create a workspace first to add a source.',
                             onClick: function () {
                                 if (typeof railMode !== 'undefined') {
                                     railMode = 'sources';
                                     try { localStorage.setItem('bowire_rail_mode', 'sources'); } catch { /* ignore */ }
                                 }
                                 if (typeof render === 'function') render();
+                            }
+                        },
+                        // Per-rail welcome tour: walks the threat-model
+                        // loop (need endpoints → tier toggle → Run →
+                        // read ranked surface). Force-mode so the
+                        // empty-card CTA re-triggers the tour even
+                        // after the saved-once flag is set.
+                        {
+                            id: 'bowire-security-empty-tour-btn',
+                            label: 'Take a tour',
+                            onClick: function () {
+                                if (typeof window !== 'undefined'
+                                    && typeof window.bowireStartSecurityScanTour === 'function') {
+                                    window.bowireStartSecurityScanTour({ force: true });
+                                }
                             }
                         }
                     ]

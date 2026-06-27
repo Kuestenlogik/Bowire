@@ -195,6 +195,21 @@
                     if (typeof workspacesSelectedId !== 'undefined') workspacesSelectedId = activeWorkspaceId;
                     render();
                 }
+            }, {
+                // Discover first-run is the same state Home shows
+                // when no URLs / uploads / services exist, so we
+                // route the tour CTA through the canonical getting-
+                // started walkthrough (workspace → URL → discover →
+                // execute) instead of duplicating those steps in a
+                // Discover-only variant.
+                id: 'bowire-discover-empty-tour-btn',
+                label: 'Take a tour',
+                onClick: function () {
+                    if (typeof window !== 'undefined'
+                        && typeof window.bowireStartGettingStartedTour === 'function') {
+                        window.bowireStartGettingStartedTour({ force: true });
+                    }
+                }
             }]
         }));
     }

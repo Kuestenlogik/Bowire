@@ -1495,13 +1495,25 @@
                 // #281 — actions can carry an optional stable id so
                 // the guided tour can target the button without
                 // resorting to brittle nth-child selectors.
+                // Disabled actions mirror the rail-strip disabled
+                // pattern from commit 327fbe8: greyed + cursor:not-
+                // allowed + tooltip surfaces the reason. onClick is
+                // suppressed so keyboard / pointer / programmatic
+                // activation all no-op consistently.
                 var btnProps = {
                     type: 'button',
-                    className: 'bowire-empty-card-action' + (a.primary ? ' bowire-empty-card-action-primary' : ''),
-                    onClick: a.onClick,
+                    className: 'bowire-empty-card-action'
+                        + (a.primary ? ' bowire-empty-card-action-primary' : '')
+                        + (a.disabled ? ' bowire-empty-card-action-disabled' : ''),
+                    onClick: a.disabled ? null : a.onClick,
                     textContent: a.label,
                 };
                 if (a.id) btnProps.id = a.id;
+                if (a.disabled) {
+                    btnProps.disabled = 'disabled';
+                    btnProps['aria-disabled'] = 'true';
+                }
+                if (a.title) btnProps.title = a.title;
                 actionsRow.appendChild(el('button', btnProps));
             });
             card.appendChild(actionsRow);

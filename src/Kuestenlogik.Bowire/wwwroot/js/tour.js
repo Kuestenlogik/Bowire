@@ -1460,6 +1460,340 @@
         });
     }
 
+    // 'Capture a recording' — Recordings rail empty.
+    //
+    // The path is: open Recordings → Start recording → switch to Discover
+    // and invoke methods → stop → see steps populate the recording
+    // detail. We anchor step 1 on the rail-strip glyph (always present)
+    // and the rest narrate the loop since the empty-card's primary CTA
+    // (Start recording) already exists and lands the operator in
+    // Discover with capture armed.
+    function _captureRecordingSteps() {
+        return [
+            {
+                id: 'rec-intro',
+                title: 'Capture a recording',
+                body: 'A recording is an ordered sequence of live calls Bowire captures while you drive the API. You can replay it later, spin it up as a mock host, or run it as a benchmark.\n\nThis tour walks the capture loop: arm → invoke → stop → save.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'rec-go-rail',
+                title: 'Step 1 — Open the Recordings rail',
+                body: 'Switch to the Recordings rail. The sidebar lists saved recordings; the main pane shows the selected one or — when empty — the Start CTA you\'ll use next.',
+                target: '[data-rail-mode-id="recordings"]',
+                navigate: function () { _tourGoToRail('recordings'); },
+                advance: 'next-button'
+            },
+            {
+                id: 'rec-start',
+                title: 'Step 2 — Start recording',
+                body: 'Hit "Start recording" on the empty card. Bowire arms the capture pipeline and jumps you into Discover so the next thing you click can be recorded. A red dot in the topbar shows recording is live.',
+                target: '#bowire-main-recordings',
+                advance: 'next-button'
+            },
+            {
+                id: 'rec-invoke',
+                title: 'Step 3 — Invoke a few methods',
+                body: 'From Discover, pick a method, fill the request, hit Execute. Each Execute is appended to the recording as one step. Chain a few calls together — that\'s your captured session.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'rec-wrap-up',
+                title: 'Step 4 — Stop and reuse',
+                body: 'Click the red dot (or hit "Stop recording" on the Recordings rail) when you\'re done. The captured session lands in the sidebar with its steps.\n\nFrom the detail toolbar you can rename it, replay it, "Use as mock" to spin up a fake host on the captured responses, or feed it to a benchmark.',
+                target: null,
+                advance: 'next-button'
+            }
+        ];
+    }
+
+    function tourStartCaptureRecording(opts) {
+        opts = opts || {};
+        tourStart(_captureRecordingSteps(), {
+            id: 'capture-a-recording',
+            force: !!opts.force,
+            onFinish: opts.onFinish || null
+        });
+    }
+
+    // 'Build a collection' — Collections rail empty.
+    //
+    // Collections group saved requests so they can be replayed as a
+    // set (Postman-style runner). The path is: New collection → add
+    // requests (manually, or from Discover / Compose via Save) → run.
+    function _buildCollectionSteps() {
+        return [
+            {
+                id: 'col-intro',
+                title: 'Build a collection',
+                body: 'A collection is a folder of saved requests you can replay as a set — think Postman runner. Useful for smoke tests, demo scripts, or a personal "things I run every Monday" stash.\n\nThis tour walks the build loop: create → add requests → run.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'col-go-rail',
+                title: 'Step 1 — Open the Collections rail',
+                body: 'Switch to the Collections rail. The sidebar lists every collection in the active workspace; the main pane shows the selected collection\'s items.',
+                target: '[data-rail-mode-id="collections"]',
+                navigate: function () { _tourGoToRail('collections'); },
+                advance: 'next-button'
+            },
+            {
+                id: 'col-new',
+                title: 'Step 2 — New collection',
+                body: 'Hit "New collection" on the empty card. A fresh, empty collection lands in the sidebar with the focus on its name — type a label like "petstore-smoke" or "auth-flows".\n\nOr import a Postman collection / OpenAPI spec to seed one from existing material.',
+                target: '#bowire-main-collections',
+                advance: 'next-button'
+            },
+            {
+                id: 'col-add-items',
+                title: 'Step 3 — Add requests',
+                body: 'Two ways to fill a collection: from Discover, right-click any method → "Save to collection"; or from Compose, the request builder\'s "Save" button lets you pick the target collection. Items show up in order in the detail pane.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'col-wrap-up',
+                title: 'Step 4 — Run as a set',
+                body: 'When the collection has items, the detail pane\'s Run button replays them top-to-bottom and reports pass/fail per item. Hit it on every code change to catch regressions; export it as a .json to share with the team.',
+                target: null,
+                advance: 'next-button'
+            }
+        ];
+    }
+
+    function tourStartBuildCollection(opts) {
+        opts = opts || {};
+        tourStart(_buildCollectionSteps(), {
+            id: 'build-a-collection',
+            force: !!opts.force,
+            onFinish: opts.onFinish || null
+        });
+    }
+
+    // 'Build a flow' — Flows rail empty.
+    //
+    // Flows chain multiple requests + pass response data from one
+    // step into the next. The path is: New flow → drop a request node
+    // → add a second, reference {{step1.response.body.id}} → Run.
+    function _buildFlowSteps() {
+        return [
+            {
+                id: 'flow-intro',
+                title: 'Build a flow',
+                body: 'Flows chain API calls together: the response of one step becomes the input of the next. Use them for login → fetch → mutate sequences, smoke pipelines that need response-derived ids, or any "I always run these three in a row" workflow.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'flow-go-rail',
+                title: 'Step 1 — Open the Flows rail',
+                body: 'Switch to the Flows rail. The sidebar lists saved flows; the canvas in the main pane is where you wire the nodes once a flow is selected.',
+                target: '[data-rail-mode-id="flows"]',
+                navigate: function () { _tourGoToRail('flows'); },
+                advance: 'next-button'
+            },
+            {
+                id: 'flow-new',
+                title: 'Step 2 — New flow',
+                body: 'Hit "New flow" on the empty card. The canvas opens with a single start node. From the node palette (left edge of the canvas) drag a Request node onto it — that\'s your first call.',
+                target: '#bowire-flow-canvas-empty',
+                advance: 'next-button'
+            },
+            {
+                id: 'flow-chain',
+                title: 'Step 3 — Chain steps',
+                body: 'Add a second Request node and wire the start node\'s output into it. Inside the second request\'s URL or body, reference the first step\'s response with {{step1.response.body.<field>}}. Bowire substitutes the value at run-time.\n\nCondition, Loop, Delay, and Variable nodes let you branch / iterate / wait / capture intermediate values.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'flow-wrap-up',
+                title: 'Step 4 — Run + export',
+                body: 'The Run button in the canvas header executes the flow top-to-bottom and shows per-step results. Export as .bwf to share, or "Export as collection" to lift the request nodes into a Collection that runs in CI.',
+                target: null,
+                advance: 'next-button'
+            }
+        ];
+    }
+
+    function tourStartBuildFlow(opts) {
+        opts = opts || {};
+        tourStart(_buildFlowSteps(), {
+            id: 'build-a-flow',
+            force: !!opts.force,
+            onFinish: opts.onFinish || null
+        });
+    }
+
+    // 'Compose a request' — Compose rail empty.
+    //
+    // The simplest of the per-rail tours — Compose is just the
+    // request builder. Path: New request → type URL → pick method →
+    // Execute.
+    function _composeRequestSteps() {
+        return [
+            {
+                id: 'compose-intro',
+                title: 'Compose a request',
+                body: 'Compose is the freeform request builder — type a URL, pick a method, fire. Useful when you don\'t want to (or can\'t) discover a schema first, when you\'re probing an unknown endpoint, or when you need a one-off call outside any collection.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'compose-go-rail',
+                title: 'Step 1 — Open the Compose rail',
+                body: 'Switch to the Compose rail. Each request opens as its own tab in the strip across the top — Ctrl+L from anywhere opens a fresh one.',
+                target: '[data-rail-mode-id="compose"]',
+                navigate: function () { _tourGoToRail('compose'); },
+                advance: 'next-button'
+            },
+            {
+                id: 'compose-new',
+                title: 'Step 2 — New request',
+                body: 'Hit "New request" on the empty card. A fresh request tab opens with the cursor on the URL field. Type any URL — Bowire infers the protocol (REST / GraphQL / WebSocket / SSE / MQTT) from the scheme.',
+                target: '#bowire-main-compose',
+                advance: 'next-button'
+            },
+            {
+                id: 'compose-fill',
+                title: 'Step 3 — Method + body',
+                body: 'Pick the HTTP method from the dropdown, switch to the Body tab if you need a payload (JSON / form / raw — Bowire renders the right editor). Headers, params, auth, env-variable references all sit in their own tabs alongside Body.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'compose-wrap-up',
+                title: 'Step 4 — Execute',
+                body: 'Hit Execute (Ctrl+Enter from anywhere in the request pane). The response lands below with status, timing, headers, and a syntax-highlighted body. Save the request into a Collection from the same toolbar for replay later.',
+                target: '.bowire-execute-btn',
+                advance: 'next-button'
+            }
+        ];
+    }
+
+    function tourStartComposeRequest(opts) {
+        opts = opts || {};
+        tourStart(_composeRequestSteps(), {
+            id: 'compose-a-request',
+            force: !!opts.force,
+            onFinish: opts.onFinish || null
+        });
+    }
+
+    // 'Capture traffic' — Traffic rail empty.
+    //
+    // The empty state is reached when no flows have arrived yet —
+    // either embedded (UseBowireInterceptor not wired) or standalone
+    // (no sidecar driving traffic). Tour walks both paths.
+    function _captureTrafficSteps() {
+        return [
+            {
+                id: 'traffic-intro',
+                title: 'Capture traffic',
+                body: 'The Traffic rail shows live HTTP flows intercepted by Bowire — every request that hits the host, with timing, status, request + response bodies. Useful when you\'re debugging a misbehaving client or learning how an app actually talks to its backend.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'traffic-go-rail',
+                title: 'Step 1 — Open the Traffic rail',
+                body: 'Switch to the Traffic rail. The sidebar streams captured flows in real time; the main pane shows the selected flow\'s request + response detail.',
+                target: '[data-rail-mode-id="traffic"]',
+                navigate: function () { _tourGoToRail('traffic'); },
+                advance: 'next-button'
+            },
+            {
+                id: 'traffic-source',
+                title: 'Step 2 — Point a traffic source at Bowire',
+                body: 'Two deployment shapes:\n\n• Embedded — Bowire is mounted via MapBowire() in your ASP.NET host. Add app.UseBowireInterceptor() to the pipeline. Every request through that host shows up here.\n\n• Standalone — run "bowire proxy" or "bowire interceptor" in a terminal as a sidecar and point your client at its URL. Bowire intercepts and forwards while capturing.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'traffic-invoke',
+                title: 'Step 3 — Drive some traffic',
+                body: 'Hit the wired-up endpoint from your client (browser, curl, your app). Each flow lands in the sidebar as it happens — status code coloured by class (2xx green / 4xx amber / 5xx red), method + path on each row.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'traffic-wrap-up',
+                title: 'Step 4 — Reuse the capture',
+                body: 'Pick a row to inspect the request + response in the main pane. "Send to recording" lifts the flow into a Bowire recording for replay / fuzzing; "Mock this route" generates a mock rule that intercepts the next matching call. The flows pane is a ring buffer — older entries roll off as new ones arrive.',
+                target: null,
+                advance: 'next-button'
+            }
+        ];
+    }
+
+    function tourStartCaptureTraffic(opts) {
+        opts = opts || {};
+        tourStart(_captureTrafficSteps(), {
+            id: 'capture-traffic',
+            force: !!opts.force,
+            onFinish: opts.onFinish || null
+        });
+    }
+
+    // 'Scan for risks' — Security rail empty.
+    //
+    // The Security rail's empty state expects discovered endpoints
+    // (via Discover) before the threat-model can rank them. Tour
+    // walks: get endpoints into Discover → switch to Security → pick
+    // tier (heuristic / AI-assisted) → Run → read ranked surface.
+    function _securityScanSteps() {
+        return [
+            {
+                id: 'sec-intro',
+                title: 'Scan for security risks',
+                body: 'The Security rail runs threat-modelling over the API surface Bowire discovered: ranks endpoints by attack-surface risk, surfaces unauth\'d mutations, mass-assignment shapes, weak auth signals.\n\nHeuristic mode is on by default — sub-millisecond rules engine, no AI required. Flip the tier if you have an AI configured for semantic scoring on top.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'sec-need-endpoints',
+                title: 'Step 1 — Get endpoints into Discover',
+                body: 'The threat-model reads from the same service tree Discover shows. You need at least one URL added (or a schema uploaded) so there are endpoints to rank. If Discover is empty, do that first — the empty-card on Security walks you there with "Open Discover".',
+                target: '[data-rail-mode-id="discover"]',
+                advance: 'next-button'
+            },
+            {
+                id: 'sec-go-rail',
+                title: 'Step 2 — Open the Security rail',
+                body: 'Switch back to Security. With endpoints present, the threat-model surface shows the tier toggle (Heuristic / AI-assisted) and a Run button.',
+                target: '[data-rail-mode-id="security"]',
+                navigate: function () { _tourGoToRail('security'); },
+                advance: 'next-button'
+            },
+            {
+                id: 'sec-run',
+                title: 'Step 3 — Run the scan',
+                body: 'Pick a tier — start with Heuristic, it\'s instant and gives you a baseline. Hit Run. The endpoints get ranked by risk score with one-line rationale per row: "POST mutates state, no auth required", "DELETE on path with id parameter", &c.',
+                target: null,
+                advance: 'next-button'
+            },
+            {
+                id: 'sec-wrap-up',
+                title: 'You\'re scanning',
+                body: 'Click any ranked row to drill into the rule hits + remediation hint. Use the per-row "Generate test" button to spin up a security regression test against that endpoint.\n\nThe right-side Security drawer keeps the panel reachable from any rail so a scan-finding can stay open while you investigate in Discover or Compose.',
+                target: null,
+                advance: 'next-button'
+            }
+        ];
+    }
+
+    function tourStartSecurityScan(opts) {
+        opts = opts || {};
+        tourStart(_securityScanSteps(), {
+            id: 'scan-for-risks',
+            force: !!opts.force,
+            onFinish: opts.onFinish || null
+        });
+    }
+
     // ---- Window exposure ----------------------------------------------
     // Other fragments + external scripts reach the engine through
     // these globals so they don't have to live inside the IIFE.
@@ -1480,5 +1814,16 @@
         window.bowireStartBuildMockTour = tourStartBuildMock;
         window.bowireStartSetupEnvironmentsTour = tourStartSetupEnvironments;
         window.bowireStartRunBenchmarkTour = tourStartRunBenchmark;
+        // Per-rail welcome tours for every remaining rail that has a
+        // welcome / empty-state card — Recordings, Collections, Flows,
+        // Compose, Traffic, Security. Operator feedback: every rail with
+        // a usable first action should let the new user opt into a short
+        // tour of it from the same place the primary CTA sits.
+        window.bowireStartCaptureRecordingTour = tourStartCaptureRecording;
+        window.bowireStartBuildCollectionTour = tourStartBuildCollection;
+        window.bowireStartBuildFlowTour = tourStartBuildFlow;
+        window.bowireStartComposeRequestTour = tourStartComposeRequest;
+        window.bowireStartCaptureTrafficTour = tourStartCaptureTraffic;
+        window.bowireStartSecurityScanTour = tourStartSecurityScan;
         window.bowireResetTours = tourResetSavedOnce;
     }

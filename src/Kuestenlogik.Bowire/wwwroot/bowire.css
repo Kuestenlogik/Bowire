@@ -6494,6 +6494,25 @@ lives at the right of the
     background: var(--bowire-accent);
     color: var(--bowire-text-inverse);
 }
+/* Disabled empty-card action — mirrors the rail-strip disabled
+   pattern (commit 327fbe8): 0.35 opacity + cursor:not-allowed +
+   hover lift suppressed so the affordance reads as 'not now'.
+   Tooltip surfaces the reason. Used today by the Security rail's
+   'Add a source' CTA when there's no active workspace to scope
+   the source to; reusable by any rail empty-card with a
+   conditionally-unavailable action. */
+.bowire-empty-card-action-disabled,
+.bowire-empty-card-action[disabled] {
+    opacity: 0.35;
+    cursor: not-allowed;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-empty-card-action-disabled:hover,
+.bowire-empty-card-action[disabled]:hover {
+    background: var(--bowire-surface);
+    border-color: var(--bowire-border);
+    color: var(--bowire-text-tertiary);
+}
 
 .bowire-empty-icon {
     font-size: 28px;
