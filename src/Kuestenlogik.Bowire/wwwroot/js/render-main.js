@@ -1547,11 +1547,28 @@
         render();
     }
     function _goToWorkspaceSettings(wsId) {
+        // Flip railMode like _goToWorkspacesOverview above. Without
+        // this, calling the function from the topbar workspace
+        // dropdown's gear button (or anywhere outside the Workspaces
+        // rail) updates the tree selection but renderMain dispatches
+        // to the current rail and never reaches
+        // renderWorkspaceDetailMain — the click appears to do
+        // nothing. Operator feedback: 'der hover settings button für
+        // den workspace dropdown funktioniert nicht (settings seite
+        // für workspace öffnet sich nicht). rename und löschen bei
+        // hover im workspace dropdown gehen aber.' (Rename + delete
+        // open in-place dialogs, so they didn't need the rail flip.)
+        railMode = 'workspaces';
+        try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
         workspacesSelectedId = wsId;
         workspaceTreeSelection = { wsId: wsId, kind: 'workspace' };
         render();
     }
     function _goToEnvironmentsOverview(wsId) {
+        // Same rail-flip rationale as _goToWorkspaceSettings — env
+        // overview lives under the Workspaces rail dispatch arm.
+        railMode = 'workspaces';
+        try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
         workspacesSelectedId = wsId;
         workspaceTreeSelection = { wsId: wsId, kind: 'environments' };
         render();
