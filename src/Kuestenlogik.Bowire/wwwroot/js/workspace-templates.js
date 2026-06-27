@@ -398,6 +398,13 @@
     function openCreateWorkspaceDialog(onCreated) {
         var existing = document.querySelector('.bowire-confirm-overlay');
         if (existing) existing.remove();
+        // Announce the dialog opening so the Getting Started tour can
+        // advance to the in-dialog walkthrough regardless of which
+        // affordance opened it (tour's own 'Create workspace…' CTA OR
+        // the welcome card's 'New workspace…' button OR the topbar
+        // dropdown). Operator feedback: 'both should be in the same
+        // path.' Fire AFTER appending the dialog at the end of this
+        // function — defer via setTimeout below.
 
         var nameInput = el('input', {
             type: 'text',
@@ -689,4 +696,14 @@
         }, dialog);
         document.body.appendChild(overlay);
         setTimeout(function () { nameInput.focus(); }, 0);
+        // Tour signal — see top of fn. Fire after the dialog is in
+        // the DOM so any 'on-event:ws-dialog-open' listener that
+        // re-resolves the target by querySelector picks up the live
+        // node. Defer until the next tick so the same task can
+        // finish appending.
+        setTimeout(function () {
+            if (typeof tourFireEvent === 'function') {
+                tourFireEvent('ws-dialog-open');
+            }
+        }, 50);
     }
