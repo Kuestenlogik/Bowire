@@ -12977,6 +12977,21 @@ duplicate) */
     transition: x 180ms ease, y 180ms ease, width 180ms ease, height 180ms ease;
 }
 
+/* Alternative-target halos — thinner + dashed + lower opacity so the
+   eye still lands on the primary halo first while secondary affordances
+   read as 'you can also click here'. No SVG glow filter (vs. the primary
+   halo) so the contrast between primary and alt is unmistakable. */
+.bowire-tour-halo-alt {
+    stroke: var(--bowire-accent);
+    stroke-dasharray: 5 4;
+    opacity: 0.55;
+    transition: x 180ms ease, y 180ms ease, width 180ms ease, height 180ms ease;
+}
+
+.bowire-tour-cutout-alt {
+    transition: x 180ms ease, y 180ms ease, width 180ms ease, height 180ms ease;
+}
+
 .bowire-tour-tooltip {
     position: absolute;
     pointer-events: auto;
@@ -13120,6 +13135,19 @@ duplicate) */
     border-left: 2px solid var(--bowire-border);
     background: var(--bowire-bg-subtle, transparent);
     border-radius: 0 var(--bowire-radius-sm) var(--bowire-radius-sm) 0;
+    /* Hovering the alt line flashes the corresponding affordance via
+       JS — surface this affordance with a pointer + border-bump so the
+       operator can map the text to the spot on the page. */
+    cursor: pointer;
+    transition: border-left-color var(--bowire-transition),
+                background var(--bowire-transition),
+                color var(--bowire-transition);
+}
+
+.bowire-tour-alt:hover {
+    color: var(--bowire-text-secondary);
+    border-left-color: var(--bowire-accent);
+    background: var(--bowire-surface-hover, var(--bowire-bg-subtle, transparent));
 }
 
 .bowire-tour-alt-prefix {
@@ -13230,7 +13258,9 @@ duplicate) */
         animation: none;
     }
     .bowire-tour-halo,
-    .bowire-tour-cutout {
+    .bowire-tour-cutout,
+    .bowire-tour-halo-alt,
+    .bowire-tour-cutout-alt {
         transition: none;
     }
 }
