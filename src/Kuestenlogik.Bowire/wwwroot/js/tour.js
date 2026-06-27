@@ -774,9 +774,47 @@
                                 if (typeof render === 'function') render();
                                 tourFireEvent('workspace-created');
                             });
+                            // Once the dialog is in the DOM, advance the
+                            // tour to the in-dialog walkthrough.
+                            setTimeout(function () {
+                                if (document.querySelector('.bowire-ws-create-dialog')) {
+                                    tourFireEvent('ws-dialog-open');
+                                }
+                            }, 50);
                         }
                     }
                 },
+                advance: 'on-event:ws-dialog-open'
+            },
+            {
+                // In-dialog walkthrough A: name the workspace.
+                // Operator feedback: 'in der tour um einen workspace
+                // anzulegen, da fehlt im bzw. nach schritt 2/6, dass er
+                // den popup dialog auch highlighted nach dem klick auf
+                // new workspace und dann durch den popup dialog führt
+                // (eingabe name des workspaces, auswahl des templates)'.
+                id: 'ws-dialog-name',
+                title: 'Name your workspace',
+                body: 'Type a name. Most operators name after the project ("Petstore Staging", "Internal CMS").\n\nClick Next once you have a name.',
+                target: '#bowire-ws-create-name',
+                advance: 'next-button'
+            },
+            {
+                // In-dialog walkthrough B: template selection.
+                id: 'ws-dialog-template',
+                title: 'Start from scratch or a template',
+                body: 'A template seeds the workspace with example URLs, environments, and collections so you can explore immediately. Try the REST or gRPC template — or stay on "Empty" to start clean.\n\nClick Next once you pick.',
+                target: '#bowire-ws-create-templates',
+                advance: 'next-button'
+            },
+            {
+                // In-dialog walkthrough C: hit Create. Advances on the
+                // workspace-created event the dialog\'s commit() fires
+                // once the workspace is persisted.
+                id: 'ws-dialog-submit',
+                title: 'Create it',
+                body: 'Click Create. Bowire will set up the workspace, seed any chosen template, and switch the workbench to it.',
+                target: '#bowire-ws-create-submit',
                 advance: 'on-event:workspace-created'
             },
             {

@@ -401,6 +401,7 @@
 
         var nameInput = el('input', {
             type: 'text',
+            id: 'bowire-ws-create-name',
             className: 'bowire-prompt-input',
             placeholder: 'e.g. Payments — staging',
             'aria-label': 'Workspace name',
@@ -473,7 +474,7 @@
         });
         templatesHeader.appendChild(filterInput);
 
-        var templateList = el('div', { className: 'bowire-ws-template-list', role: 'radiogroup', 'aria-label': 'Start from template' });
+        var templateList = el('div', { id: 'bowire-ws-create-templates', className: 'bowire-ws-template-list', role: 'radiogroup', 'aria-label': 'Start from template' });
 
         function _syncSelectionClasses() {
             var rows = document.querySelectorAll('.bowire-ws-template-row, .bowire-ws-template-scratch');
@@ -606,6 +607,7 @@
         }
 
         var confirmBtn = el('button', {
+            id: 'bowire-ws-create-submit',
             className: 'bowire-confirm-btn',
             textContent: 'Create',
             onClick: commit
