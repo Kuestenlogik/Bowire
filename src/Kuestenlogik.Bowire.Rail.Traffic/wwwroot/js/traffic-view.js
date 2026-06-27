@@ -90,20 +90,12 @@
             }));
         }
 
-        // Mode banner — operator instantly knows which deployment this
-        // rail is wired to. Subtle chip rather than a full headline so
-        // it doesn't fight the sub-tab strip for visual weight.
-        container.appendChild(el('div', {
-            className: 'bowire-rail-subtab-toggle bowire-traffic-mode-banner',
-            title: bowireTrafficIsEmbedded()
-                ? 'This Bowire instance runs inside an ASP.NET host. UseBowireInterceptor() captures every request flowing through the pipeline.'
-                : 'This Bowire instance runs as a standalone proxy. Captured flows come from the bowire proxy / bowire interceptor CLI sidecar.'
-        },
-            el('span', {
-                className: 'bowire-rail-subtab-toggle-label',
-                textContent: bowireTrafficModeLabel()
-            })
-        ));
+        // Mode banner retired — no other rail carries a sub-headline
+        // above its sub-tab strip, and the operator preference was
+        // 'entweder alle mit headline oder keiner'. Mode information
+        // (Standalone vs Embedded) now lives ONLY in the Settings
+        // sub-tab, where it sits alongside the listen-port / upstream
+        // / middleware-status config that already adapts per mode.
 
         // Sub-tab strip: Flows | Mock Rules | Settings. Same recessed-
         // strip pattern the other rails use.
@@ -181,7 +173,12 @@
                 ? 'Add app.UseBowireInterceptor() to this host\'s pipeline, then drive any request through it from any client. Captured flows land here in real time.'
                 : 'Point your client at the bowire proxy / bowire interceptor CLI sidecar to start capturing. Captured flows land here in real time.';
             container.appendChild(renderEmptyCard({
-                icon: 'globe',
+                // Match the rail-strip glyph (Traffic uses
+                // trafficLight, not the older 'globe' the
+                // Intercepted rail inherited). Operator feedback:
+                // 'welcome bei traffic hat anderes symbol (globus?
+                // es müsste traffic light sein wie auf dem rail)'.
+                icon: 'trafficLight',
                 headline: 'No traffic yet',
                 body: emptyBody
             }));
