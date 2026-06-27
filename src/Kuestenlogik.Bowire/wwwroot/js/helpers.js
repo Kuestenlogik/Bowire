@@ -2242,7 +2242,26 @@
             });
             document.body.appendChild(container);
         }
-        var t = el('div', { className: 'bowire-toast ' + (type || 'info') });
+        var resolvedType = type || 'info';
+        var t = el('div', {
+            className: 'bowire-toast ' + resolvedType,
+            role: (resolvedType === 'error' || resolvedType === 'warning') ? 'alert' : 'status'
+        });
+        // Leading type-icon so info / success / warning / error read
+        // at a glance, not just by border tint. Operator feedback:
+        // 'es wäre gut, wenn man bei den toast infos von warnungen
+        // und fehlern gut unterscheiden kann.'
+        var typeIconKey = {
+            info: 'info',
+            success: 'checkCircle',
+            warning: 'warning',
+            error: 'errorCircle'
+        }[resolvedType] || 'info';
+        t.appendChild(el('span', {
+            className: 'bowire-toast-icon',
+            'aria-hidden': 'true',
+            innerHTML: (typeof svgIcon === 'function') ? svgIcon(typeIconKey) : ''
+        }));
         t.appendChild(el('span', { className: 'bowire-toast-message', textContent: message }));
 
         if (opts.undo && typeof opts.undo === 'function') {
@@ -2600,6 +2619,13 @@
             // (#277). The previous '+' read as 'add' and confused
             // the operator about what gets added.
             check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+            // Toast type leading-icons. Operator feedback: 'es wäre
+            // gut, wenn man bei den toast infos von warnungen und
+            // fehlern gut unterscheiden kann.' Each toast type now
+            // gets a colour-coded glyph in front of its message.
+            warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+            errorCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+            checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
             // Bookmark glyph — used by 'Save as template' (#278) to
             // replace the floppy-disk save icon. Floppy reads as
             // 'force-flush current state' (operator already has a
