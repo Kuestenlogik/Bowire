@@ -20,4 +20,14 @@
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Map\Kuestenlogik.Bowire.Map.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- .NET 10 native OpenAPI generation. Without this the sample's
+         REST endpoints don't get a discoverable spec, so Bowire's REST
+         plugin falls back to whatever other protocol plugin claims the
+         URL (in practice the SSE / MCP plugin picks it up by accident
+         when the operator points the workbench at /api/locations).
+         Exposed at /openapi/v1.json by app.MapOpenApi(). -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+
 </Project>
