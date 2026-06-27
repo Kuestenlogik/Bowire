@@ -881,12 +881,14 @@
                 alwaysOn: !!r.alwaysOn,
                 defaultEnabled: r.defaultEnabled !== false,
                 // Workspace-dependent rails (Recordings, Mocks,
-                // Collections, Flows, Benchmarks, Compose) redirect to
-                // Home + fire a toast when clicked with no active
-                // workspace — see the rail-button onClick below. Read
-                // from the registry instead of hardcoding the id set so
-                // hosts that contribute new workspace-bound rails get
-                // the same UX without having to patch core JS.
+                // Collections, Flows, Benchmarks, Compose). The flag
+                // is still emitted into the rail descriptor because
+                // (a) third-party hosts can read it for their own
+                // affordances and (b) tour / settings code branches
+                // off it. The current UX is pattern B: the rail still
+                // opens on click; its main pane renders the shared
+                // `renderWorkspacePrereqEmpty` card when there's no
+                // active workspace. No redirect, no toast.
                 requiresWorkspace: !!r.requiresWorkspace,
                 // #314 — per-rail renderer keys. Lookup ids on
                 // window.__bowireRailRenderers when set; falls through
@@ -1094,45 +1096,17 @@
                 'aria-label': m.label + (hasCount ? ', ' + count + ' items' : ''),
                 onClick: function () {
                     if (railMode === m.id) return;
-                    // No-workspace guard. Workspace-dependent rails
-                    // (Recordings / Mocks / Collections / Flows /
-                    // Benchmarks / Compose — flagged via
-                    // IBowireRailContribution.RequiresWorkspace and
-                    // emitted into __BOWIRE_CONFIG__.rails) would
-                    // otherwise paint an empty surface with no hint
-                    // about why. Redirect to Home (which carries the
-                    // 'Create your first workspace' CTA) + fire an
-                    // explanatory toast. The rail button itself stays
-                    // enabled so the rail strip's tab semantics + tour
-                    // spotlighting keep working; the redirect is the
-                    // behaviour, not the affordance.
-                    if (m.requiresWorkspace && !activeWorkspaceId) {
-                        railMode = 'home';
-                        try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
-                        // Surface the redirect AND offer an opt-in
-                        // tour from the toast — auto-starting the
-                        // tour on every rail click was too invasive
-                        // (operator could just want to navigate Home
-                        // and back). Operator feedback: 'die tour
-                        // startet ja schon direkt, wenn ich auf den
-                        // recording rail klicke. das sollte nicht
-                        // so sein, oder?'. The Home welcome card's
-                        // own 'Take a tour' CTA stays as the second
-                        // entry point.
-                        if (typeof toast === 'function') {
-                            var startTourFromToast = (typeof window !== 'undefined'
-                                && typeof window.bowireStartCreateWorkspaceTour === 'function')
-                                ? function () { window.bowireStartCreateWorkspaceTour({ force: true }); }
-                                : null;
-                            toast('Create a workspace first to use ' + m.label + '.',
-                                  'info',
-                                  startTourFromToast
-                                      ? { duration: 6000, action: { label: 'Take a tour', onClick: startTourFromToast } }
-                                      : { duration: 4000 });
-                        }
-                        render();
-                        return;
-                    }
+                    // No-workspace pattern B (operator feedback): the
+                    // previous redirect-to-Home + toast bounced the
+                    // operator out of the rail they just chose, and
+                    // the rail strip felt inconsistent (clickable
+                    // hover state, but the click was undone before
+                    // the next paint). Now the click resolves to the
+                    // requested rail; the rail's own main pane
+                    // detects `!activeWorkspaceId` and renders the
+                    // shared `renderWorkspacePrereqEmpty` card with
+                    // the Create-workspace CTA. The rail's own empty
+                    // state IS the message.
                     railMode = m.id;
                     try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
                     // Modes that piggyback on the legacy
@@ -1236,27 +1210,11 @@
                     className: 'bowire-rail-overflow-popover-item' + (isActive ? ' active' : ''),
                     onClick: function () {
                         railOverflowOpen = false;
-                        // Same no-workspace guard as the rail-button
-                        // onClick above — the overflow popover surfaces
-                        // the same rails when the strip can't fit them,
-                        // so the guard has to live in both spots.
-                        if (m.requiresWorkspace && !activeWorkspaceId) {
-                            railMode = 'home';
-                            try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
-                            if (typeof toast === 'function') {
-                                toast('Create a workspace first to use ' + m.label + '.', 'info', { duration: 4000 });
-                            }
-                            // Same prereq-tour kickoff as the rail-strip
-                            // onClick above — overflow popover surfaces
-                            // the same rails when the strip is full, so
-                            // the redirect + tour have to live here too.
-                            if (typeof window !== 'undefined'
-                                && typeof window.bowireStartCreateWorkspaceTour === 'function') {
-                                window.bowireStartCreateWorkspaceTour({ force: true });
-                            }
-                            render();
-                            return;
-                        }
+                        // Same pattern-B handling as the rail-strip
+                        // onClick above — let the click switch railMode
+                        // unconditionally; the rail's main render
+                        // detects `!activeWorkspaceId` and shows the
+                        // shared workspace-prereq empty state.
                         railMode = m.id;
                         try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
                         if (m.id === 'environments') sidebarView = 'environments';

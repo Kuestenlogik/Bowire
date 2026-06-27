@@ -723,6 +723,23 @@
 
     // ---- Flow Canvas (Main Pane) ----
     function renderFlowCanvas() {
+        // Pattern B: workspace-prereq branch first. Flows are
+        // workspace-scoped (the sidebar list is filtered by the active
+        // workspace) so a no-workspace render would otherwise paint
+        // stale-looking emptiness. Operator clicked the rail on
+        // purpose — the pane explains the prereq instead of bouncing.
+        if (typeof activeWorkspaceId !== 'undefined'
+                && !activeWorkspaceId
+                && typeof renderWorkspacePrereqEmpty === 'function') {
+            var prereqWrap = el('div', { id: 'bowire-flow-canvas-prereq', className: 'bowire-flow-canvas' });
+            prereqWrap.appendChild(renderWorkspacePrereqEmpty({
+                icon: 'flow',
+                railLabel: 'Flows',
+                railBody: 'Flows chain multiple API calls and pass response data from one step into the next.'
+            }));
+            return prereqWrap;
+        }
+
         var flow = flowsList.find(function (f) { return f.id === flowEditorSelectedId; });
 
         if (!flow) {
