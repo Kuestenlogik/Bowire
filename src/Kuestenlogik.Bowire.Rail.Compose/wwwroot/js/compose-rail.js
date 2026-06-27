@@ -991,6 +991,26 @@
     // Lays out: tab strip (pinned '+' + open tabs) → main builder body
     // for the active tab. Empty state when no tabs are open.
     function renderComposeMain() {
+        // Pattern B: workspace-prereq branch first. Compose tabs +
+        // collections side panel are workspace-scoped, so without a
+        // workspace there's nothing to rehydrate against. The
+        // operator clicked Compose on purpose — show the prereq card
+        // in the main pane area (skip the tab strip entirely, since
+        // there's no Workspace to spawn tabs into yet).
+        if (typeof activeWorkspaceId !== 'undefined'
+                && !activeWorkspaceId
+                && typeof renderWorkspacePrereqEmpty === 'function') {
+            var prereqMain = el('div', { id: 'bowire-main-compose', className: 'bowire-main bowire-main-compose' });
+            var prereqCol = el('div', { className: 'bowire-compose-main-col' });
+            prereqCol.appendChild(renderWorkspacePrereqEmpty({
+                icon: 'compose',
+                railLabel: 'Compose',
+                railBody: 'Compose is the ad-hoc request builder — type a URL, pick a method, hit Execute.'
+            }));
+            prereqMain.appendChild(prereqCol);
+            return prereqMain;
+        }
+
         rehydrateComposeSidePanel();
         // Rehydrate-from-storage on first paint per session.
         rehydrateDesignTabs();

@@ -1510,6 +1510,92 @@
         return card;
     }
 
+    // Shared workspace-prerequisite empty state. Every workspace-dependent
+    // rail (Recordings / Mocks / Collections / Flows / Benchmarks /
+    // Compose) renders THIS when the operator clicks the rail without an
+    // active workspace, instead of being silently redirected to Home.
+    // Operator feedback: the previous toast-and-redirect bounced the
+    // operator out of the rail they just chose. Pattern B keeps them in
+    // the rail and lets the rail's own pane explain the prereq + offer
+    // the create-CTA.
+    //
+    // Each rail passes its own icon + label + a one-sentence body
+    // describing what the rail does so the prereq card still reads
+    // rail-specific (not a generic blank "create workspace" screen the
+    // operator can't tell apart from one rail to the next).
+    //
+    // Signature:
+    //   renderWorkspacePrereqEmpty({
+    //     icon:     svg-icon id (recording / mock / folder / flow /
+    //               chart / compose) — matches the rail strip glyph.
+    //     railLabel: 'Recordings' / 'Mocks' / etc — same string the
+    //                rail strip uses. Goes into the headline.
+    //     railBody: one-sentence rail summary. e.g. "Recordings capture
+    //               sequences of live calls you can replay or convert
+    //               to mocks." Why-a-workspace text is appended by this
+    //               helper so callers stay terse.
+    //   })
+    //
+    // Wraps in a `bowire-main-pad` so the card centres via the
+    // `:has(> .bowire-empty-card:only-child)` rule, same shape as every
+    // other rail's empty state. Returns the wrapper element; callers
+    // appendChild into the rail's main shell.
+    function renderWorkspacePrereqEmpty(opts) {
+        opts = opts || {};
+        var pad = el('div', { className: 'bowire-main-pad' });
+        var bodyPrefix = opts.railBody ? (opts.railBody + ' ') : '';
+        pad.appendChild(renderEmptyCard({
+            icon: opts.icon || 'workspace',
+            headline: 'You need a workspace to use ' + (opts.railLabel || 'this rail') + '.',
+            body: bodyPrefix
+                + 'A workspace scopes the URLs, environments, secrets, and saved items you build here, so two projects don’t bleed into each other. Create one to unlock '
+                + (opts.railLabel || 'this rail') + '.',
+            actions: [
+                {
+                    id: 'bowire-prereq-create-ws-btn',
+                    label: 'Create workspace…',
+                    primary: true,
+                    onClick: function () {
+                        if (typeof openCreateWorkspaceDialog === 'function') {
+                            openCreateWorkspaceDialog(function (ws) {
+                                if (ws && typeof activeWorkspaceId !== 'undefined') {
+                                    activeWorkspaceId = ws.id;
+                                }
+                                if (typeof render === 'function') render();
+                                if (typeof window !== 'undefined'
+                                    && typeof window.bowireFireTourEvent === 'function') {
+                                    window.bowireFireTourEvent('workspace-created');
+                                }
+                            });
+                        }
+                    }
+                },
+                {
+                    id: 'bowire-prereq-tour-btn',
+                    label: 'Take a tour',
+                    onClick: function () {
+                        if (typeof window !== 'undefined'
+                            && typeof window.bowireStartCreateWorkspaceTour === 'function') {
+                            window.bowireStartCreateWorkspaceTour({ force: true });
+                        }
+                    }
+                },
+                {
+                    label: 'Manage workspaces',
+                    onClick: function () {
+                        railMode = 'workspaces';
+                        try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+                        if (typeof workspaceTreeSelection !== 'undefined') {
+                            workspaceTreeSelection = { kind: 'workspaces-overview' };
+                        }
+                        if (typeof render === 'function') render();
+                    }
+                }
+            ]
+        }));
+        return pad;
+    }
+
     /**
      * Render a tree (#192) — MudBlazor TreeView / NavMenu shape. Used
      * for the Workspaces rail (and later Settings) so navigation reads

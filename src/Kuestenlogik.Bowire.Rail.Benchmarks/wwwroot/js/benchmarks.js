@@ -2082,6 +2082,24 @@
     function renderBenchmarksDetailMain() {
         loadBenchmarks();
 
+        // Pattern B: workspace-prereq branch first. The operator
+        // clicked Benchmarks on purpose; the pane explains the prereq
+        // and offers the create-CTA instead of bouncing them away.
+        if (typeof activeWorkspaceId !== 'undefined'
+                && !activeWorkspaceId
+                && typeof renderWorkspacePrereqEmpty === 'function') {
+            var prereqMain = el('div', {
+                id: 'bowire-main-benchmarks',
+                className: 'bowire-main bowire-main-benchmarks'
+            });
+            prereqMain.appendChild(renderWorkspacePrereqEmpty({
+                icon: 'chart',
+                railLabel: 'Benchmarks',
+                railBody: 'Benchmarks repeat N runs at K concurrency and report latency percentiles plus status distribution.'
+            }));
+            return prereqMain;
+        }
+
         var spec = getBenchmarkSpec(benchmarksSelectedId);
         // #301 — Empty-state branch uses the canonical rail-empty
         // pattern (main shell + bowire-main-pad wrap → renderEmptyCard)

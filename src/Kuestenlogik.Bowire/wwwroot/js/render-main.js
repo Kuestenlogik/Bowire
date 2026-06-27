@@ -4777,6 +4777,17 @@
         // muscle-trained on the old modal flow.
         if (railMode === 'collections') {
             var colMain = el('div', { id: 'bowire-main-collections', className: 'bowire-main bowire-main-collections' });
+            // Pattern B: workspace prereq comes BEFORE list/selection
+            // logic. The operator clicked Collections on purpose; the
+            // pane explains the prereq instead of bouncing them out.
+            if (!activeWorkspaceId && typeof renderWorkspacePrereqEmpty === 'function') {
+                colMain.appendChild(renderWorkspacePrereqEmpty({
+                    icon: 'folder',
+                    railLabel: 'Collections',
+                    railBody: 'Collections group saved requests so you can replay them as a set or import a Postman / OpenAPI suite.'
+                }));
+                return colMain;
+            }
             var selectedCol = (collectionsList || []).find(function (c) { return c.id === collectionManagerSelectedId; });
             if (selectedCol && typeof renderCollectionDetail === 'function') {
                 colMain.appendChild(renderCollectionDetail(selectedCol));
@@ -4843,6 +4854,17 @@
         // of a popup.
         if (railMode === 'mocks') {
             var mockMain = el('div', { id: 'bowire-main-mocks', className: 'bowire-main bowire-main-mocks' });
+            // Pattern B: workspace-prereq branches first; mock list +
+            // detail panes are workspace-scoped so a no-workspace render
+            // would otherwise paint stale-looking emptiness.
+            if (!activeWorkspaceId && typeof renderWorkspacePrereqEmpty === 'function') {
+                mockMain.appendChild(renderWorkspacePrereqEmpty({
+                    icon: 'mock',
+                    railLabel: 'Mocks',
+                    railBody: 'Mocks spin up a fake host from a recording so your client can hit a stable URL instead of the real service.'
+                }));
+                return mockMain;
+            }
             var mockMainWrap = el('div', { className: 'bowire-mocks-wrap bowire-main-pad' });
 
             var selectedMock = (mocksList || []).find(function (m) { return m.mockId === mockSelectedId; });
@@ -4978,6 +5000,17 @@
         // an empty card guides the operator toward the next step.
         if (railMode === 'recordings') {
             var recMain = el('div', { id: 'bowire-main-recordings', className: 'bowire-main bowire-main-recordings' });
+            // Pattern B: workspace prereq comes before the
+            // selected-recording lookup; without a workspace there's
+            // no scoped recording list to pick from anyway.
+            if (!activeWorkspaceId && typeof renderWorkspacePrereqEmpty === 'function') {
+                recMain.appendChild(renderWorkspacePrereqEmpty({
+                    icon: 'recording',
+                    railLabel: 'Recordings',
+                    railBody: 'Recordings capture a sequence of live calls you can replay, build mocks from, or run as benchmarks.'
+                }));
+                return recMain;
+            }
             var selectedRec = recordingsList.find(function (r) { return r.id === recordingManagerSelectedId; });
             if (selectedRec && typeof renderRecordingDetail === 'function') {
                 // Chunked recording storage (#144 Phase 1) — hydrate

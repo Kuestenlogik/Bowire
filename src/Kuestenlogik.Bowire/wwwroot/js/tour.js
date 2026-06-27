@@ -1033,12 +1033,11 @@
         ];
     }
 
-    // Standalone entry point for the create-workspace fragment. Used by
-    // the workspace-prereq redirect in render-sidebar.js (and exposed
-    // via window.bowireStartCreateWorkspaceTour) — when an operator
-    // clicks a workspace-dependent rail without a workspace, Home picks
-    // up the redirect AND this short tour kicks in so they understand
-    // why + how to fix it.
+    // Standalone entry point for the create-workspace fragment. Exposed
+    // via window.bowireStartCreateWorkspaceTour and called from the
+    // shared workspace-prereq empty card (renderWorkspacePrereqEmpty in
+    // helpers.js) so the operator can opt into a short tour explaining
+    // why a workspace is required + how to create one.
     function tourStartCreateWorkspace(opts) {
         opts = opts || {};
         tourStart(_createWorkspaceSteps(), {
