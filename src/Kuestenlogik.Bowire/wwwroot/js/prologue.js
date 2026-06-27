@@ -3283,6 +3283,118 @@
         };
     });
 
+    // flow-create — undo deletes the flow that was just created; redo
+    // re-pushes the snapshot back onto flowsList. Counterpart to
+    // flow-delete below so both create + delete are reversible across
+    // reload (in-session is already covered by the closures wired up
+    // in flows.js).
+    registerActionResolver('flow-create', function (spec) {
+        if (!spec || !spec.flow || !spec.flow.id) return null;
+        return {
+            undo: function () {
+                if (typeof flowsList === 'undefined' || !Array.isArray(flowsList)) return;
+                if (typeof deleteFlow === 'function') deleteFlow(spec.flow.id);
+                else flowsList = flowsList.filter(function (f) { return f.id !== spec.flow.id; });
+                if (typeof persistFlows === 'function') persistFlows();
+                if (typeof render === 'function') render();
+            },
+            redo: function () {
+                if (typeof flowsList === 'undefined' || !Array.isArray(flowsList)) return;
+                if (flowsList.find(function (f) { return f.id === spec.flow.id; })) return;
+                flowsList.push(JSON.parse(JSON.stringify(spec.flow)));
+                if (typeof persistFlows === 'function') persistFlows();
+                if (typeof render === 'function') render();
+            }
+        };
+    });
+
+    // flow-delete — undo re-pushes the deleted flow onto flowsList;
+    // redo deletes it again. Mirrors recording-delete's restore-from-
+    // snapshot path (flows don't have a soft-delete trash array; the
+    // toast carries the only copy until the entry expires).
+    registerActionResolver('flow-delete', function (spec) {
+        if (!spec || !spec.flow || !spec.flow.id) return null;
+        return {
+            undo: function () {
+                if (typeof flowsList === 'undefined' || !Array.isArray(flowsList)) return;
+                if (flowsList.find(function (f) { return f.id === spec.flow.id; })) return;
+                flowsList.push(JSON.parse(JSON.stringify(spec.flow)));
+                if (typeof persistFlows === 'function') persistFlows();
+                if (typeof render === 'function') render();
+            },
+            redo: function () {
+                if (typeof flowsList === 'undefined' || !Array.isArray(flowsList)) return;
+                if (typeof deleteFlow === 'function') deleteFlow(spec.flow.id);
+                else flowsList = flowsList.filter(function (f) { return f.id !== spec.flow.id; });
+                if (typeof persistFlows === 'function') persistFlows();
+                if (typeof render === 'function') render();
+            }
+        };
+    });
+
+    // environment-create — undo removes the env; redo restores via
+    // restoreEnvironment (the same helper env-delete's in-session
+    // closure uses) so colour + vars + name round-trip exactly.
+    registerActionResolver('environment-create', function (spec) {
+        if (!spec || !spec.env || !spec.env.id) return null;
+        return {
+            undo: function () {
+                if (typeof deleteEnvironment === 'function') deleteEnvironment(spec.env.id);
+                if (typeof render === 'function') render();
+            },
+            redo: function () {
+                if (typeof getEnvironments === 'function'
+                    && getEnvironments().find(function (e) { return e.id === spec.env.id; })) return;
+                if (typeof restoreEnvironment === 'function') {
+                    restoreEnvironment(JSON.parse(JSON.stringify(spec.env)));
+                }
+                if (typeof render === 'function') render();
+            }
+        };
+    });
+
+    // env-delete — undo re-adds the env via restoreEnvironment; redo
+    // removes it again. Counterpart to environment-create above so
+    // both directions survive a reload.
+    registerActionResolver('env-delete', function (spec) {
+        if (!spec || !spec.env || !spec.env.id) return null;
+        return {
+            undo: function () {
+                if (typeof getEnvironments === 'function'
+                    && getEnvironments().find(function (e) { return e.id === spec.env.id; })) return;
+                if (typeof restoreEnvironment === 'function') {
+                    restoreEnvironment(JSON.parse(JSON.stringify(spec.env)));
+                }
+                if (typeof render === 'function') render();
+            },
+            redo: function () {
+                if (typeof deleteEnvironment === 'function') deleteEnvironment(spec.env.id);
+                if (typeof render === 'function') render();
+            }
+        };
+    });
+
+    // mock-create — undo stops the server-side mock host (DELETE
+    // /api/mocks/{id}); redo re-POSTs the captured recording so the
+    // host comes back. The recording payload is held inline in
+    // undoSpec because there's no trash array for mocks (the host
+    // lives in the backend, not in workspace localStorage).
+    registerActionResolver('mock-create', function (spec) {
+        if (!spec || !spec.mockId || !spec.recording) return null;
+        return {
+            undo: function () {
+                if (typeof stopMock === 'function') stopMock(spec.mockId);
+            },
+            redo: function () {
+                if (typeof startMockFromRecording === 'function') {
+                    // silent=true so the redo doesn't append a fresh
+                    // mock-create entry of its own.
+                    startMockFromRecording(JSON.parse(JSON.stringify(spec.recording)), spec.port || 0, true);
+                }
+            }
+        };
+    });
+
     // ---- Workspace Export / Import (A1) ----
     //
     // A workspace is the project folder; export turns it into a

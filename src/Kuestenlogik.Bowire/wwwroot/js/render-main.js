@@ -1023,7 +1023,8 @@
                         toast('Environment deleted', 'success', {
                             undo: function () { restoreEnvironment(backup); envSidebarSelectedId = backup.id; render(); },
                             logAction: { kind: 'env-delete',
-                                title: 'Deleted environment "' + (backup.name || 'unnamed') + '"' }
+                                title: 'Deleted environment "' + (backup.name || 'unnamed') + '"',
+                                undoSpec: { env: backup } }
                         });
                     }, { title: 'Delete Environment', danger: true, confirmText: 'Delete' });
                 }
