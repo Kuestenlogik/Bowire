@@ -24,11 +24,16 @@ internal static class WebSocketEndpointDiscovery
 {
     public static List<BowireServiceInfo> Discover(
         IReadOnlyList<WebSocketEndpointInfo> registered,
-        IServiceProvider? serviceProvider)
+        IServiceProvider? serviceProvider,
+        string? serverUrl = null)
     {
         var endpoints = new List<WebSocketEndpointInfo>(registered);
 
-        if (serviceProvider is not null)
+        // Self-origin gate — see SelfOriginCheck. Without it the
+        // workbench host's own [WebSocketEndpoint] routes leak into
+        // every external serverUrl the operator adds.
+        if (serviceProvider is not null
+            && Kuestenlogik.Bowire.Helpers.SelfOriginCheck.IsSelfOrigin(serverUrl, serviceProvider))
         {
             try
             {

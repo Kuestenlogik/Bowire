@@ -77,7 +77,10 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
     public Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
     {
-        var services = SseEndpointDiscovery.Discover(s_registeredEndpoints, _serviceProvider);
+        // serverUrl threaded into Discover so the self-origin gate inside
+        // can decide whether to scan the local EndpointDataSource — see
+        // the comment block on SseEndpointDiscovery.Discover.
+        var services = SseEndpointDiscovery.Discover(s_registeredEndpoints, _serviceProvider, serverUrl);
         return Task.FromResult(services);
     }
 
@@ -145,7 +148,10 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
         // auto-discovered endpoints. Fall back to the legacy fullName parse
         // for callers that still pass the synthesised 'SSE/...' shape.
         string path;
-        var match = SseEndpointDiscovery.Discover(s_registeredEndpoints, _serviceProvider)
+        // Resolve serverUrl too so the self-origin gate matches the
+        // DiscoverAsync path (only return local-scanned endpoints when
+        // the streaming target is the workbench host itself).
+        var match = SseEndpointDiscovery.Discover(s_registeredEndpoints, _serviceProvider, serverUrl)
             .SelectMany(s => s.Methods)
             .FirstOrDefault(m =>
                 string.Equals(m.Name, method, StringComparison.Ordinal) ||
