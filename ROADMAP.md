@@ -899,4 +899,4 @@ Found by coverage-wave-2 (#312) while wiring up node-tests for history-env.js. [
 
 ---
 
-*Generated 2026-06-26 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-06-27 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
