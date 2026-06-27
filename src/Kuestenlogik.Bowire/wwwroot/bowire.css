@@ -13055,6 +13055,36 @@ duplicate) */
     margin-bottom: 0;
 }
 
+/* Alternative-path hints — when a step lists `alternatives`, the
+   tooltip grows a stack of small dashed-bordered tip lines under the
+   body. Spotlight + cutout still focus the primary target so the eye
+   has one anchor; the alt line tells the operator there's a second
+   way to drive the same workflow (e.g. topbar workspace chip vs. Home
+   welcome CTA). Click-gate forwards clicks through any of the listed
+   targets so the operator can use whichever path they prefer. */
+.bowire-tour-alts {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.bowire-tour-alt {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--bowire-text-tertiary);
+    padding: 6px 10px;
+    border-left: 2px solid var(--bowire-border);
+    background: var(--bowire-bg-subtle, transparent);
+    border-radius: 0 var(--bowire-radius-sm) var(--bowire-radius-sm) 0;
+}
+
+.bowire-tour-alt-prefix {
+    font-weight: 600;
+    color: var(--bowire-accent);
+    margin-right: 2px;
+}
+
 .bowire-tour-footer {
     display: flex;
     align-items: center;

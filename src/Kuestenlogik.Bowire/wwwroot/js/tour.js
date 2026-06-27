@@ -358,14 +358,22 @@
             if (_tourState.tooltipEl && _tourState.tooltipEl.contains(e.target)) {
                 return;
             }
-            // Target rect — forward the click. The overlay sits on
-            // top of the page so the original click landed on the
-            // overlay, not the target. We temporarily disable
-            // pointer-events on the overlay so elementFromPoint
-            // returns the underlying element, then dispatch a
-            // synthetic click on it.
-            if (_tourState.targetEl) {
-                var rect = _tourState.targetEl.getBoundingClientRect();
+            // Target rect (primary OR any alternative target) — forward
+            // the click. The overlay sits on top of the page so the
+            // original click landed on the overlay, not the target. We
+            // temporarily disable pointer-events on the overlay so
+            // elementFromPoint returns the underlying element, then
+            // dispatch a synthetic click on it.
+            //
+            // Alternatives let the operator drive the workflow via any
+            // of several equivalent affordances (e.g. Home-rail welcome
+            // CTA OR the topbar workspace dropdown). The advance still
+            // fires on whatever the step's `advance` says — typically
+            // an 'on-event:' signal both paths emit.
+            var hitTargets = _allClickableTargetsForStep();
+            for (var i = 0; i < hitTargets.length; i++) {
+                var t = hitTargets[i];
+                var rect = t.getBoundingClientRect();
                 if (e.clientX >= rect.left && e.clientX <= rect.right
                     && e.clientY >= rect.top && e.clientY <= rect.bottom) {
                     var was = overlay.style.pointerEvents;
@@ -396,18 +404,39 @@
         overlay.addEventListener('click', _gateClick);
         // Also gate mousedown so a drag-start on off-target chrome
         // doesn't start a text selection or trigger any pre-click
-        // handler bound on mousedown elsewhere.
+        // handler bound on mousedown elsewhere. Mirrors the click-gate's
+        // alternatives-aware hit test so the operator can mousedown on
+        // any equivalent affordance without it getting swallowed.
         overlay.addEventListener('mousedown', function (e) {
             if (!_tourState.running) return;
             if (_tourState.tooltipEl && _tourState.tooltipEl.contains(e.target)) return;
-            if (_tourState.targetEl) {
-                var r = _tourState.targetEl.getBoundingClientRect();
+            var hits = _allClickableTargetsForStep();
+            for (var i = 0; i < hits.length; i++) {
+                var r = hits[i].getBoundingClientRect();
                 if (e.clientX >= r.left && e.clientX <= r.right
                     && e.clientY >= r.top && e.clientY <= r.bottom) return;
             }
             e.preventDefault();
             e.stopPropagation();
         });
+    }
+
+    // Return every element a click should pass through on the current
+    // step — the primary target plus any alternative-path targets the
+    // step descriptor listed. Resolved fresh each event because morphdom
+    // can replace the node between renders.
+    function _allClickableTargetsForStep() {
+        var out = [];
+        if (_tourState.targetEl) out.push(_tourState.targetEl);
+        var step = _tourState.steps[_tourState.index];
+        if (step && Array.isArray(step.alternatives)) {
+            step.alternatives.forEach(function (alt) {
+                if (!alt || !alt.target) return;
+                var el = _resolveStepTarget(alt.target);
+                if (el && out.indexOf(el) === -1) out.push(el);
+            });
+        }
+        return out;
     }
 
     function _unmountTourOverlay() {
@@ -570,6 +599,39 @@
                 b.appendChild(pe);
             });
             tip.appendChild(b);
+        }
+
+        // Alternative-path hints — each step may name secondary
+        // affordances that lead to the same advance. The spotlight stays
+        // on the primary target (single eye anchor) but the operator
+        // sees a small "Tip:" line for each alternative, and the
+        // click-gate forwards clicks through every named element so the
+        // operator can drive the workflow via whichever path they prefer.
+        // Only render alternatives that actually resolve right now —
+        // an alt pointing at a closed dropdown shouldn't taunt the
+        // operator with a path they can't take from this surface.
+        if (Array.isArray(step.alternatives) && step.alternatives.length > 0) {
+            var altsResolved = step.alternatives.filter(function (alt) {
+                return alt && alt.label && _resolveStepTarget(alt.target);
+            });
+            if (altsResolved.length > 0) {
+                var altWrap = document.createElement('div');
+                altWrap.className = 'bowire-tour-alts';
+                altsResolved.forEach(function (alt) {
+                    var line = document.createElement('div');
+                    line.className = 'bowire-tour-alt';
+                    var prefix = document.createElement('span');
+                    prefix.className = 'bowire-tour-alt-prefix';
+                    prefix.textContent = 'Tip:';
+                    line.appendChild(prefix);
+                    var text = document.createElement('span');
+                    text.className = 'bowire-tour-alt-text';
+                    text.textContent = ' ' + alt.label;
+                    line.appendChild(text);
+                    altWrap.appendChild(line);
+                });
+                tip.appendChild(altWrap);
+            }
         }
 
         var foot = document.createElement('div');
@@ -868,24 +930,31 @@
 
     // ---- Built-in tours ------------------------------------------------
 
-    // Getting started — 5 steps that walk a brand-new operator from
-    // 'I just launched bowire' to 'I see a response in the console'.
-    // Selectors target stable DOM ids (preferred) or class hooks that
-    // exist regardless of which protocol the operator points Bowire at.
-    function _gettingStartedSteps() {
+    // Reusable workspace-create fragment — extracted from
+    // _gettingStartedSteps() so per-rail prerequisite tours can run the
+    // same four-step walk-through (welcome CTA → name → template →
+    // submit) without copy-pasting. Operator: 'try to reuse tours (not
+    // create a "create workspace tour" for every rail as a copy).'
+    //
+    // Step 1 lists the topbar workspace chip as an alternative entry
+    // point so the operator can drive the dialog from either the Home
+    // welcome card OR the chip dropdown's "+ New workspace" item — both
+    // surfaces end up firing the same ws-dialog-open event that
+    // advances the tour. Operator: 'sometimes there are alternative
+    // paths, e.g. for the workspace you can use the dropdown, too.'
+    function _createWorkspaceSteps() {
         return [
             {
-                id: 'welcome',
-                title: 'Welcome to Bowire',
-                body: 'A multi-protocol API workbench — gRPC, REST, GraphQL, WebSocket, SSE, MQTT, all in one place.\n\nThis quick tour walks you from a blank workbench to your first response in five steps. You can skip anytime; we won\'t bring it up again.',
-                target: null,
-                advance: 'next-button'
-            },
-            {
                 id: 'create-first-workspace',
-                title: 'Step 1 — Create a workspace',
-                body: 'A workspace is your project folder. It holds the URLs you discover, the environments + secrets you reference, and the collections / recordings / benchmarks you build.\n\nMost operators name them after the project ("Petstore Staging", "Internal CMS"). You can switch + add more from the workspace chip in the topbar later.',
+                title: 'Create a workspace',
+                body: 'A workspace is your project folder. It holds the URLs you discover, the environments + secrets you reference, and the collections / recordings / benchmarks you build.\n\nMost operators name them after the project ("Petstore Staging", "Internal CMS").',
                 target: '#bowire-welcome-create-btn',
+                alternatives: [
+                    {
+                        target: '#bowire-workspace-chip',
+                        label: 'You can also open the workspace chip in the topbar and pick "+ New workspace".'
+                    }
+                ],
                 navigate: function () {
                     if (typeof railMode !== 'undefined') {
                         railMode = 'home';
@@ -946,7 +1015,40 @@
                 body: 'Click Create. Bowire will set up the workspace, seed any chosen template, and switch the workbench to it.',
                 target: '#bowire-ws-create-submit',
                 advance: 'on-event:workspace-created'
-            },
+            }
+        ];
+    }
+
+    // Standalone entry point for the create-workspace fragment. Used by
+    // the workspace-prereq redirect in render-sidebar.js (and exposed
+    // via window.bowireStartCreateWorkspaceTour) — when an operator
+    // clicks a workspace-dependent rail without a workspace, Home picks
+    // up the redirect AND this short tour kicks in so they understand
+    // why + how to fix it.
+    function tourStartCreateWorkspace(opts) {
+        opts = opts || {};
+        tourStart(_createWorkspaceSteps(), {
+            id: 'create-workspace-fragment',
+            force: !!opts.force,
+            onFinish: opts.onFinish || null
+        });
+    }
+
+    // Getting started — walks a brand-new operator from 'I just launched
+    // bowire' to 'I see a response in the console'. Composes
+    // _createWorkspaceSteps() in the middle so the workspace-create
+    // affordance stays in sync across every entry point that teaches it.
+    // Selectors target stable DOM ids (preferred) or class hooks that
+    // exist regardless of which protocol the operator points Bowire at.
+    function _gettingStartedSteps() {
+        var welcomeStep = {
+            id: 'welcome',
+            title: 'Welcome to Bowire',
+            body: 'A multi-protocol API workbench — gRPC, REST, GraphQL, WebSocket, SSE, MQTT, all in one place.\n\nThis quick tour walks you from a blank workbench to your first response in five steps. You can skip anytime; we won\'t bring it up again.',
+            target: null,
+            advance: 'next-button'
+        };
+        var laterSteps = [
             {
                 id: 'add-url',
                 title: 'Step 2 — Point at your API',
@@ -995,6 +1097,7 @@
                 advance: 'next-button'
             }
         ];
+        return [welcomeStep].concat(_createWorkspaceSteps()).concat(laterSteps);
     }
 
     function tourStartGettingStarted(opts) {
@@ -1214,6 +1317,13 @@
         window.bowireTourIsRunning = tourIsRunning;
         window.bowireFireTourEvent = tourFireEvent;
         window.bowireStartGettingStartedTour = tourStartGettingStarted;
+        // Workspace-prereq tour — fired from the no-workspace redirect
+        // when an operator clicks a workspace-dependent rail (Recordings,
+        // Mocks, Collections, Flows, Benchmarks, Compose). Runs the
+        // reusable create-workspace fragment so the operator gets the
+        // same dialog walk-through as in Getting Started, without us
+        // copying the steps per rail.
+        window.bowireStartCreateWorkspaceTour = tourStartCreateWorkspace;
         // #303 — Per-rail secondary tours, fired from empty-card CTAs.
         window.bowireStartBuildMockTour = tourStartBuildMock;
         window.bowireStartSetupEnvironmentsTour = tourStartSetupEnvironments;
