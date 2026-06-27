@@ -105,6 +105,20 @@ public interface IBowireRailContribution
     bool HideFromRail => false;
 
     /// <summary>
+    /// When <c>true</c>, the rail's view only makes sense inside an active
+    /// workspace (Recordings / Mocks / Collections / Flows / Benchmarks /
+    /// Compose — anything that persists artefacts to a workspace folder).
+    /// The rail button stays clickable (so tour spotlighting + the rail
+    /// strip's tab semantics keep working) but a click without an active
+    /// workspace redirects the operator to the Home rail, where the
+    /// "Create your first workspace" CTA lives, and fires an explanatory
+    /// toast. Defaults to <c>false</c> — rails that work standalone
+    /// (Home, Discover, Traffic, Workspaces, Security, Settings) stay
+    /// reachable at all times.
+    /// </summary>
+    bool RequiresWorkspace => false;
+
+    /// <summary>
     /// Identifier of a JS-side function the rail package's JS fragment
     /// registers on <c>window.__bowireRailRenderers</c> at load time.
     /// The core <c>renderSidebar</c> dispatcher looks up the renderer by

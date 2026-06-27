@@ -22,4 +22,8 @@ public sealed class BowireBenchmarksRailContribution : IBowireRailContribution
     public string Group => "quality";
     /// <inheritdoc />
     public string SidebarKind => "benchmarks";
+    /// <inheritdoc />
+    // Benchmark specs persist per-workspace; without one the rail can't
+    // list or save anything.
+    public bool RequiresWorkspace => true;
 }

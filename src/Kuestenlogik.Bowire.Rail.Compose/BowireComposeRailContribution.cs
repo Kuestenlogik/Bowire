@@ -24,4 +24,10 @@ public sealed class BowireComposeRailContribution : IBowireRailContribution
     public string SidebarKind => "none";
     /// <inheritdoc />
     public bool AlwaysOn => true;
+    /// <inheritdoc />
+    // Compose's request-builder tabs persist per workspace — without
+    // one, the tab strip is empty and saving a new tab has nowhere to
+    // land. Orthogonal to AlwaysOn: the rail can't be disabled at all,
+    // but its view still needs a workspace to be useful.
+    public bool RequiresWorkspace => true;
 }

@@ -131,7 +131,13 @@ public sealed class BowireRailRegistry
             sb.Append("\"sidebar\":{\"kind\":\"").Append(EscapeJson(rail.SidebarKind)).Append("\"},");
             sb.Append("\"hideFromRail\":").Append(rail.HideFromRail ? "true" : "false").Append(',');
             sb.Append("\"alwaysOn\":").Append(rail.AlwaysOn ? "true" : "false").Append(',');
-            sb.Append("\"defaultEnabled\":").Append(rail.DefaultEnabled ? "true" : "false");
+            sb.Append("\"defaultEnabled\":").Append(rail.DefaultEnabled ? "true" : "false").Append(',');
+            // The JS bundle reads this from __BOWIRE_CONFIG__.rails on
+            // every rail click — when set + no active workspace, the
+            // click redirects to Home and fires a "create a workspace
+            // first" toast instead of switching into the rail's
+            // (necessarily-empty) view.
+            sb.Append("\"requiresWorkspace\":").Append(rail.RequiresWorkspace ? "true" : "false");
             // #314 — per-rail renderer keys. Emitted only when set so
             // the JSON stays terse for the (still common) case where a
             // rail relies on core's hardcoded dispatcher arm. The JS

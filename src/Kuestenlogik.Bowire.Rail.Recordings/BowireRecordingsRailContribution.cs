@@ -22,4 +22,8 @@ public sealed class BowireRecordingsRailContribution : IBowireRailContribution
     public string Group => "scenarios";
     /// <inheritdoc />
     public string SidebarKind => "recordings";
+    /// <inheritdoc />
+    // Recordings persist into the active workspace; without one the
+    // rail has nowhere to store its artefacts.
+    public bool RequiresWorkspace => true;
 }

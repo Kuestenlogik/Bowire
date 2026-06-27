@@ -22,4 +22,9 @@ public sealed class BowireFlowsRailContribution : IBowireRailContribution
     public string Group => "scenarios";
     /// <inheritdoc />
     public string SidebarKind => "flows";
+    /// <inheritdoc />
+    // Flow specs are stored under the active workspace; without one the
+    // sidebar list has nothing to render and "New flow" has nowhere to
+    // save to.
+    public bool RequiresWorkspace => true;
 }
