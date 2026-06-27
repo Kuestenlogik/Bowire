@@ -591,12 +591,44 @@
             var tpl = getWorkspaceTemplate(selectedTemplateId);
             _persistLastTemplate(selectedTemplateId);
             try { tpl.apply(ws.id); } catch { /* template seed should never crash creation */ }
-            // #194 — symmetric to workspace-delete: record the create
-            // so Ctrl/Cmd+Z lifts the workspace into trash, and Redo
-            // restores it. Done after the template seed so the trash
-            // snapshot captured on undo includes the template-seeded
-            // buckets too — undo→redo round-trips don't lose them.
-            if (typeof recordAction === 'function') {
+            // #194 — symmetric to workspace-delete: toast the create
+            // so Ctrl/Cmd+Z + the inline Undo button lift the workspace
+            // into trash, and Redo restores it. Done after the template
+            // seed so the trash snapshot captured on undo includes the
+            // template-seeded buckets too — undo→redo round-trips don't
+            // lose them. The success toast is suppressed when the page
+            // is about to reload (non-empty template seeds rehydrate via
+            // window.location.reload below) so the operator doesn't see
+            // a toast they have no chance to act on; logAction still
+            // joins the action log so the Activity drawer surfaces it
+            // after the reload settles.
+            if (typeof toast === 'function' && selectedTemplateId === 'empty') {
+                var _wsId = ws.id;
+                var _wsName = ws.name;
+                toast('Created workspace "' + _wsName + '"', 'info', {
+                    undo: function () {
+                        if (typeof deleteWorkspace === 'function') deleteWorkspace(_wsId);
+                        if (typeof render === 'function') render();
+                    },
+                    logAction: {
+                        kind: 'workspace-create',
+                        rail: 'workspaces',
+                        title: 'Created workspace "' + _wsName + '"',
+                        undoSpec: { workspaceId: _wsId },
+                        redo: function () {
+                            if (typeof workspacesTrash === 'undefined' || !Array.isArray(workspacesTrash)) return;
+                            var t = workspacesTrash.find(function (x) { return x && x.workspace && x.workspace.id === _wsId; });
+                            if (t && typeof restoreWorkspaceFromTrash === 'function') {
+                                restoreWorkspaceFromTrash(t);
+                                if (typeof render === 'function') render();
+                            }
+                        }
+                    }
+                });
+            } else if (typeof recordAction === 'function') {
+                // Page reload imminent — skip the toast (operator won't
+                // see it) but keep the action-log entry so the workspace
+                // still shows up in the Activity drawer after reload.
                 recordAction({
                     kind: 'workspace-create',
                     rail: 'workspaces',

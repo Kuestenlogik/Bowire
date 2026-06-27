@@ -1459,7 +1459,7 @@
                     var backup = JSON.parse(JSON.stringify(col));
                     deleteCollection(col.id);
                     render();
-                    toast('Collection deleted', 'success', {
+                    toast('Deleted collection "' + (backup.name || 'unnamed') + '"', 'info', {
                         undo: function () { collectionsList.push(backup); persistCollections(); render(); },
                         logAction: { kind: 'collection-delete',
                             title: 'Deleted collection "' + (backup.name || 'unnamed') + '"' }

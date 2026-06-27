@@ -1363,73 +1363,18 @@
     // main pane to its detail (steps + actions toolbar). Replaces
     // the manager-modal entry path for users on the recordings
     // mode. The legacy modal still works for users still on
-    // #194 — Per-rail undo trail. Renders a thin strip at the top of
-    // a rail when its most recent reversible action is still
-    // available. Reads from the workbench-wide action log via
-    // recentActionByRail; click → invoke the entry's undoFn + render.
-    // Dismiss × button hides the strip for the current entry without
-    // un-doing it (the entry stays in the Activity drawer).
+    // the legacy Discover surface.
     //
-    // Returns null when there's no current action for the rail —
-    // call sites can just append the return value unconditionally
-    // since el() ignores null children.
-    var _railTrailDismissed = {};
-    function renderRailTrail(rail) {
-        if (typeof recentActionByRail !== 'function') return null;
-        var entry = recentActionByRail(rail);
-        if (!entry) return null;
-        if (_railTrailDismissed[entry.id]) return null;
-        var strip = el('div', { className: 'bowire-rail-trail' });
-        strip.appendChild(el('span', {
-            className: 'bowire-rail-trail-label',
-            textContent: entry.title
-        }));
-        strip.appendChild(el('button', {
-            type: 'button',
-            className: 'bowire-rail-trail-undo',
-            title: 'Undo this action (Ctrl/Cmd+Z)',
-            textContent: 'Undo',
-            onClick: function (e) {
-                e.stopPropagation();
-                try {
-                    entry.undoFn();
-                    entry.status = 'undone';
-                    if (entry.redoFn && typeof actionLogRedoStack !== 'undefined') {
-                        actionLogRedoStack.unshift(entry);
-                    }
-                    if (typeof _persistActionLog === 'function') _persistActionLog();
-                    if (typeof toast === 'function') toast('Undone: ' + entry.title, 'info');
-                    render();
-                } catch (err) {
-                    console.warn('[rail-trail] undo failed', entry.kind, err);
-                    if (typeof toast === 'function') toast('Undo failed', 'error');
-                }
-            }
-        }));
-        strip.appendChild(el('button', {
-            type: 'button',
-            className: 'bowire-rail-trail-dismiss',
-            title: 'Dismiss (the entry stays in the Activity drawer)',
-            'aria-label': 'Dismiss',
-            innerHTML: svgIcon('close'),
-            onClick: function (e) {
-                e.stopPropagation();
-                _railTrailDismissed[entry.id] = true;
-                render();
-            }
-        }));
-        return strip;
-    }
+    // Operator UX note: the per-rail undo trail (renderRailTrail)
+    // was removed — toast() + the Activity drawer now own the
+    // recently-deleted-X affordance (matches VS Code / Figma /
+    // Notion). The trail strip stole sidebar real-estate and was
+    // duplicating what the toast already showed.
 
     // Discover (#56 — kept for backward muscle memory; deprecated
     // in Phase 3).
     function renderRecordingsSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
-        // #194 — per-rail undo trail (e.g. 'Deleted recording "X"' →
-        // Undo). Renders only when there's a still-reversible action
-        // for this rail; otherwise the helper returns null.
-        var _trail = renderRailTrail('recordings');
-        if (_trail) sidebar.appendChild(_trail);
 
         // Per-row context menu = same actions the hover-reveal
         // exposes, in the same order. Both surfaces wired against
@@ -2189,7 +2134,6 @@
     // that node's editor. Expansion state is persisted per node so
     // collapse survives a reload.
     function renderWorkspacesSidebar() {
-        var _wsTrail = (typeof renderRailTrail === 'function') ? renderRailTrail('workspaces') : null;
         var sidebar = el('div', {
             id: 'bowire-sidebar',
             className: 'bowire-sidebar bowire-sidebar-mode',
@@ -2205,7 +2149,6 @@
                 }
             }
         });
-        if (_wsTrail) sidebar.appendChild(_wsTrail);
 
         // Both the clickable sidebar title and the overflow entry
         // route through _goToWorkspacesOverview so the railMode +
@@ -2498,7 +2441,7 @@
                         // the operator can undo straight from the
                         // toast, Ctrl/Cmd+Z, or the trash drawer.
                         if (typeof toast === 'function') {
-                            toast('Workspace "' + snapshotName + '" moved to trash', 'success', {
+                            toast('Deleted workspace "' + snapshotName + '"', 'info', {
                                 undo: function () {
                                     var t = (typeof workspacesTrash !== 'undefined'
                                         && Array.isArray(workspacesTrash))
@@ -3222,8 +3165,6 @@
     // control + protocol filter chrome doesn't render on top.
     function renderEnvironmentsSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
-        var _envTrail = (typeof renderRailTrail === 'function') ? renderRailTrail('environments') : null;
-        if (_envTrail) sidebar.appendChild(_envTrail);
         var list = el('div', { className: 'bowire-env-sidebar-list' });
         if (typeof renderEnvironmentsListInto === 'function') {
             renderEnvironmentsListInto(list);
@@ -3239,8 +3180,6 @@
     // collections-manager modal exposed.
     function renderCollectionsSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
-        var _colTrail = (typeof renderRailTrail === 'function') ? renderRailTrail('collections') : null;
-        if (_colTrail) sidebar.appendChild(_colTrail);
 
         function _bulkDeleteCollections(ids) {
             var removed = [];
@@ -3739,8 +3678,6 @@
     // "Discover" with a list of flows tacked on).
     function renderFlowsSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
-        var _flowsTrail = (typeof renderRailTrail === 'function') ? renderRailTrail('flows') : null;
-        if (_flowsTrail) sidebar.appendChild(_flowsTrail);
         var list = el('div', {
             id: 'bowire-sidebar-list-flows',
             className: 'bowire-service-list'

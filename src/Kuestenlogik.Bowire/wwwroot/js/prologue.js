@@ -872,20 +872,6 @@
         }
         return n;
     }
-    // #194 — Find the most recent reversible entry for a given rail
-    // so the rail header can show its inline 'Just deleted X — Undo'
-    // trail. Returns null when no entry matches (no trail rendered).
-    function recentActionByRail(rail) {
-        if (!rail) return null;
-        for (var i = 0; i < actionLog.length; i++) {
-            var e = actionLog[i];
-            if (e.status !== 'available') continue;
-            if (e.rail !== rail) continue;
-            if (typeof e.undoFn !== 'function') continue;
-            return e;
-        }
-        return null;
-    }
     // #296 — next-action labels for the topbar Undo / Redo button
     // tooltips. Mirrors the same lookup undoLastAction does (first
     // available entry from the head of the log) so the tooltip
@@ -5379,19 +5365,50 @@
         };
         collectionsList.push(col);
         persistCollections();
-        // #194 — make the create undoable. Mirrors the collection-delete
-        // record at the detail-toolbar Delete button: a single
-        // recordAction with an undoSpec keyed on the durable id, so the
-        // resolver can rebuild undo/redo after a reload. We log every
-        // entry path (sidebar New, Save-to-Collection, Postman import,
-        // flow→collection) because they're all user-initiated; only
-        // resolver-driven rehydrate paths flip the suppress flag.
-        if (!_suppressCollectionCreateLog && typeof recordAction === 'function') {
-            recordAction({
-                kind: 'collection-create',
-                rail: 'collections',
-                title: 'Created collection "' + (col.name || 'unnamed') + '"',
-                undoSpec: { collectionId: col.id }
+        // #194 — toast the create so the operator gets an immediate
+        // confirmation + a 4 s Undo affordance. Mirrors the
+        // collection-delete toast at the detail-toolbar Delete button:
+        // logAction joins the workbench-wide action log so Ctrl/Cmd+Z
+        // works after the toast expires + the Activity drawer surfaces
+        // it. We log every entry path (sidebar New, Save-to-Collection,
+        // Postman import, flow→collection) because they're all
+        // user-initiated; only resolver-driven rehydrate paths flip the
+        // suppress flag.
+        if (!_suppressCollectionCreateLog && typeof toast === 'function') {
+            var _colId = col.id;
+            var _colName = col.name || 'unnamed';
+            toast('Created collection "' + _colName + '"', 'info', {
+                undo: function () {
+                    if (typeof deleteCollection === 'function') deleteCollection(_colId);
+                    if (typeof render === 'function') render();
+                },
+                logAction: {
+                    kind: 'collection-create',
+                    rail: 'collections',
+                    title: 'Created collection "' + _colName + '"',
+                    undoSpec: { collectionId: _colId },
+                    // Mirror the collection-create resolver so in-session
+                    // Ctrl+Shift+Z restores the collection from
+                    // collectionsTrash (where undo just dropped it) right
+                    // away instead of waiting for a reload.
+                    redo: function () {
+                        if (!Array.isArray(collectionsTrash)) return;
+                        for (var i = 0; i < collectionsTrash.length; i++) {
+                            var t = collectionsTrash[i];
+                            if (!t || !t.entry || t.entry.id !== _colId) continue;
+                            if (Array.isArray(collectionsList)
+                                && !collectionsList.find(function (c) { return c.id === _colId; })) {
+                                var idx = Math.min(t.originalIdx || collectionsList.length, collectionsList.length);
+                                collectionsList.splice(idx, 0, t.entry);
+                                if (typeof persistCollections === 'function') persistCollections();
+                            }
+                            collectionsTrash.splice(i, 1);
+                            if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
+                            break;
+                        }
+                        if (typeof render === 'function') render();
+                    }
+                }
             });
         }
         return col;

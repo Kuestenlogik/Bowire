@@ -1020,7 +1020,7 @@
                         deleteEnvironment(envSidebarSelectedId);
                         envSidebarSelectedId = activeId || '__globals__';
                         render();
-                        toast('Environment deleted', 'success', {
+                        toast('Deleted environment "' + (backup.name || 'unnamed') + '"', 'info', {
                             undo: function () { restoreEnvironment(backup); envSidebarSelectedId = backup.id; render(); },
                             logAction: { kind: 'env-delete',
                                 title: 'Deleted environment "' + (backup.name || 'unnamed') + '"',
@@ -2885,7 +2885,7 @@
                             // or the global trash drawer's Workspaces
                             // bucket.
                             if (typeof toast === 'function') {
-                                toast('Workspace "' + snapshotName + '" moved to trash', 'success', {
+                                toast('Deleted workspace "' + snapshotName + '"', 'info', {
                                     undo: function () {
                                         var t = (typeof workspacesTrash !== 'undefined'
                                             && Array.isArray(workspacesTrash))

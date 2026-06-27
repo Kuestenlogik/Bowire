@@ -271,20 +271,50 @@
         recordingActiveId = rec.id;
         persistRecordings();
         addConsoleEntry({ type: 'response', method: rec.name, status: 'Recording started' });
-        // #194 — log the create so Ctrl/Cmd+Z + Activity drawer can
-        // surface 'Created recording "<name>"' alongside the existing
-        // recording-delete entry. Mirrors the soft-delete-to-trash
-        // pattern: undo routes through deleteRecording() (which moves
-        // the entry to recordingsTrash) and redo restores via the
-        // same path the recording-delete resolver uses. deleteRecording
-        // does not itself call recordAction so the undo path can't
-        // loop back into the log.
-        if (typeof recordAction === 'function') {
-            recordAction({
-                kind: 'recording-create',
-                rail: 'recordings',
-                title: 'Created recording "' + rec.name + '"',
-                undoSpec: { recordingId: rec.id }
+        // #194 — toast the create so the operator gets immediate
+        // confirmation + a 4 s Undo affordance. logAction joins the
+        // workbench-wide action log so Ctrl/Cmd+Z + the Activity drawer
+        // also surface 'Created recording "<name>"'. Mirrors the
+        // soft-delete-to-trash pattern: undo routes through deleteRecording()
+        // (which moves the entry to recordingsTrash) and redo restores
+        // via the same path the recording-delete resolver uses.
+        // deleteRecording does not itself call recordAction so the undo
+        // path can't loop back into the log.
+        if (typeof toast === 'function') {
+            var _recId = rec.id;
+            var _recName = rec.name;
+            toast('Created recording "' + _recName + '"', 'info', {
+                undo: function () {
+                    if (typeof deleteRecording === 'function') deleteRecording(_recId);
+                    if (typeof render === 'function') render();
+                },
+                logAction: {
+                    kind: 'recording-create',
+                    rail: 'recordings',
+                    title: 'Created recording "' + _recName + '"',
+                    undoSpec: { recordingId: _recId },
+                    // Mirror the recording-create resolver (prologue.js)
+                    // so in-session Ctrl+Shift+Z restores from trash
+                    // without having to wait for a reload to wire it.
+                    redo: function () {
+                        if (!Array.isArray(recordingsList)) return;
+                        if (recordingsList.find(function (r) { return r.id === _recId; })) return;
+                        if (!Array.isArray(recordingsTrash)) return;
+                        for (var i = 0; i < recordingsTrash.length; i++) {
+                            var t = recordingsTrash[i];
+                            if (!t || !t.entry || t.entry.id !== _recId) continue;
+                            var idx = (typeof t.originalIdx === 'number')
+                                ? Math.min(t.originalIdx, recordingsList.length)
+                                : recordingsList.length;
+                            recordingsList.splice(idx, 0, t.entry);
+                            recordingsTrash.splice(i, 1);
+                            if (typeof persistRecordings === 'function') persistRecordings();
+                            if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
+                            break;
+                        }
+                        if (typeof render === 'function') render();
+                    }
+                }
             });
         }
         render();
@@ -1348,9 +1378,9 @@
                         var originalIdx = recordingsList.findIndex(function (r) { return r.id === rec.id; });
                         deleteRecording(rec.id);
                         // #194 — wire through the action log so
-                        // Ctrl/Cmd+Z + the Activity drawer + the
-                        // rail trail all surface the inverse.
-                        toast('Recording deleted', 'success', {
+                        // Ctrl/Cmd+Z + the Activity drawer surface the
+                        // inverse after the toast Undo button expires.
+                        toast('Deleted recording "' + (snapshot.name || 'unnamed') + '"', 'info', {
                             undo: function () {
                                 if (!recordingsList.find(function (r) { return r.id === snapshot.id; })) {
                                     var idx = Math.min(originalIdx < 0 ? recordingsList.length : originalIdx,

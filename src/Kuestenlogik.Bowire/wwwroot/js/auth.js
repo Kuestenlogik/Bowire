@@ -801,26 +801,30 @@
         // curated workspace see it immediately; the env is also
         // available to other workspaces via their include toggles.
         saveEnvironments(envs);
-        // Mirror the env-delete undo path — record an environment-create
-        // entry so the create can be rolled back via Ctrl/Cmd+Z and the
-        // Activity drawer. Opt-in via `opts.logAction` so the implicit
-        // 'scratch' seed (request-builder's no-env fallback) stays out
-        // of the operator's undo timeline.
-        if (opts && opts.logAction && typeof recordAction === 'function') {
+        // Mirror the env-delete toast — surface the create with an
+        // inline Undo button + a logAction entry so Ctrl/Cmd+Z and the
+        // Activity drawer can roll it back after the toast expires.
+        // Opt-in via `opts.logAction` so the implicit 'scratch' seed
+        // (request-builder's no-env fallback) stays out of the
+        // operator's timeline and doesn't fire a toast.
+        if (opts && opts.logAction && typeof toast === 'function') {
             var snapshot = JSON.parse(JSON.stringify(env));
-            recordAction({
-                kind: 'environment-create',
-                rail: 'environments',
-                title: 'Created environment "' + (env.name || 'unnamed') + '"',
-                undoSpec: { env: snapshot },
+            var _envName = env.name || 'unnamed';
+            toast('Created environment "' + _envName + '"', 'info', {
                 undo: function () {
                     deleteEnvironment(snapshot.id);
                     render();
                 },
-                redo: function () {
-                    if (getEnvironments().find(function (e) { return e.id === snapshot.id; })) return;
-                    restoreEnvironment(JSON.parse(JSON.stringify(snapshot)));
-                    render();
+                logAction: {
+                    kind: 'environment-create',
+                    rail: 'environments',
+                    title: 'Created environment "' + _envName + '"',
+                    undoSpec: { env: snapshot },
+                    redo: function () {
+                        if (getEnvironments().find(function (e) { return e.id === snapshot.id; })) return;
+                        restoreEnvironment(JSON.parse(JSON.stringify(snapshot)));
+                        render();
+                    }
                 }
             });
         }

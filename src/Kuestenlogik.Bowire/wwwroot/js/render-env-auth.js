@@ -395,18 +395,42 @@
                         if (!name) return;
                         try {
                             var ws = createWorkspace(String(name).trim());
-                            // #194 — record so Ctrl/Cmd+Z soft-deletes
-                            // the workspace into trash + Redo brings it
-                            // back. createWorkspace returns null when
-                            // the name was already taken (it already
-                            // toasted the reason), so skip logging
-                            // a no-op create.
-                            if (ws && typeof recordAction === 'function') {
-                                recordAction({
-                                    kind: 'workspace-create',
-                                    rail: 'workspaces',
-                                    title: 'Created workspace "' + ws.name + '"',
-                                    undoSpec: { workspaceId: ws.id }
+                            // #194 — surface the create as a toast so the
+                            // operator gets immediate confirmation + a
+                            // 4 s Undo affordance (mirrors VS Code /
+                            // Figma / Notion). logAction also joins the
+                            // workbench-wide action log so Ctrl/Cmd+Z
+                            // works after the toast expires. createWorkspace
+                            // returns null when the name was already
+                            // taken (it already toasted the reason), so
+                            // skip the success toast for a no-op create.
+                            if (ws && typeof toast === 'function') {
+                                var _wsId = ws.id;
+                                var _wsName = ws.name;
+                                toast('Created workspace "' + _wsName + '"', 'info', {
+                                    undo: function () {
+                                        if (typeof deleteWorkspace === 'function') deleteWorkspace(_wsId);
+                                        if (typeof render === 'function') render();
+                                    },
+                                    logAction: {
+                                        kind: 'workspace-create',
+                                        rail: 'workspaces',
+                                        title: 'Created workspace "' + _wsName + '"',
+                                        undoSpec: { workspaceId: _wsId },
+                                        // Redo restores from the trash bucket that
+                                        // undo just dropped the workspace into —
+                                        // mirrors the workspace-create resolver
+                                        // (prologue.js) so in-session Ctrl+Shift+Z
+                                        // works without waiting for a reload.
+                                        redo: function () {
+                                            if (typeof workspacesTrash === 'undefined' || !Array.isArray(workspacesTrash)) return;
+                                            var t = workspacesTrash.find(function (x) { return x && x.workspace && x.workspace.id === _wsId; });
+                                            if (t && typeof restoreWorkspaceFromTrash === 'function') {
+                                                restoreWorkspaceFromTrash(t);
+                                                if (typeof render === 'function') render();
+                                            }
+                                        }
+                                    }
                                 });
                             }
                         } catch (e) {
@@ -2487,42 +2511,47 @@
                 ? el('span', { className: 'bowire-statusbar-console-count', textContent: String(consoleLog.length) })
                 : null
         ));
-        // #168 — Activity pill. Count of recent reversible actions
-        // (status === 'available'); click toggles the Activity drawer
-        // tab. Hides entirely when the log is empty so the statusbar
-        // stays calm during low-activity sessions.
+        // #168 — Activity pill. Always visible (matches the Console
+        // + Tests pills next to it) so operators can find the action
+        // log without first creating an entry — toast deletes / creates
+        // are now the primary surfacing affordance and the per-rail
+        // trail strip is gone, leaving this pill + Ctrl+Shift+A as the
+        // only persistent entry points. Count badge shows the number
+        // of still-reversible actions; tooltip flips with the drawer
+        // state so the operator can tell whether a click opens or
+        // closes it.
         var availCount = (typeof availableActionCount === 'function')
             ? availableActionCount() : 0;
-        if (availCount > 0 || activityDrawerOpen) {
-            right.appendChild(el('button', {
-                id: 'bowire-statusbar-activity-btn',
-                className: 'bowire-theme-toggle-btn' + (activityDrawerOpen ? ' active' : ''),
-                title: activityDrawerOpen
-                    ? 'Hide activity drawer'
-                    : ('Activity log — ' + availCount + ' reversible action'
-                        + (availCount === 1 ? '' : 's') + ' (Ctrl/Cmd+Z to undo)'),
-                'aria-label': 'Toggle activity log',
-                onClick: function () {
-                    activityDrawerOpen = !activityDrawerOpen;
-                    try { localStorage.setItem('bowire_activity_drawer_open',
-                        activityDrawerOpen ? '1' : '0'); }
+        right.appendChild(el('button', {
+            id: 'bowire-statusbar-activity-btn',
+            className: 'bowire-theme-toggle-btn' + (activityDrawerOpen ? ' active' : ''),
+            title: activityDrawerOpen
+                ? 'Hide activity drawer'
+                : (availCount > 0
+                    ? ('Activity log — ' + availCount + ' reversible action'
+                        + (availCount === 1 ? '' : 's') + ' (Ctrl/Cmd+Shift+A)')
+                    : 'Activity log — recent actions (Ctrl/Cmd+Shift+A)'),
+            'aria-label': 'Toggle activity log',
+            onClick: function () {
+                activityDrawerOpen = !activityDrawerOpen;
+                try { localStorage.setItem('bowire_activity_drawer_open',
+                    activityDrawerOpen ? '1' : '0'); }
+                catch { /* ignore */ }
+                if (activityDrawerOpen) {
+                    rightDrawerActiveTab = 'activity';
+                    try { localStorage.setItem('bowire_right_drawer_active_tab', 'activity'); }
                     catch { /* ignore */ }
-                    if (activityDrawerOpen) {
-                        rightDrawerActiveTab = 'activity';
-                        try { localStorage.setItem('bowire_right_drawer_active_tab', 'activity'); }
-                        catch { /* ignore */ }
-                    }
-                    render();
                 }
-            },
-                el('span', { innerHTML: svgIcon('history'),
-                    style: 'width:14px;height:14px;display:flex' }),
-                availCount > 0
-                    ? el('span', { className: 'bowire-statusbar-console-count',
-                        textContent: String(availCount) })
-                    : null
-            ));
-        }
+                render();
+            }
+        },
+            el('span', { innerHTML: svgIcon('history'),
+                style: 'width:14px;height:14px;display:flex' }),
+            availCount > 0
+                ? el('span', { className: 'bowire-statusbar-console-count',
+                    textContent: String(availCount) })
+                : null
+        ));
         // #164 — Tests drawer toggle. Peer of the Console button —
         // shows / hides the Tests tab in the unified right drawer.
         // Accessory dot inherits pass/fail color from the active
