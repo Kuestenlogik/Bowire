@@ -160,6 +160,40 @@
     // Spawn a fresh Compose tab + activate it. opts mirrors
     // startHoppRequest's opts: { protocol, url, method }.
     // Returns the new tab id.
+    // Duplicate a Compose tab — deep-clones the request state of the
+    // source tab into a new tab inserted immediately after it, then
+    // switches to the clone. Used by the tab context menu's
+    // 'Duplicate tab' action. Operator feedback: 'auf dem tab context
+    // (rechtsklick) im compose rail … den tab mit seinem aktuellen
+    // inhalt/zustand kopieren.'
+    function _duplicateDesignTab(srcId) {
+        if (!srcId) return null;
+        // Snapshot the currently-active tab first so any unsaved edits
+        // in freeformRequest land back on the source's tab.request
+        // before we clone.
+        _snapshotActiveDesignTab();
+        var srcIdx = composeTabs.findIndex(function (t) { return t.id === srcId; });
+        if (srcIdx < 0) return null;
+        var src = composeTabs[srcIdx];
+        var clonedRequest;
+        try { clonedRequest = JSON.parse(JSON.stringify(src.request)); }
+        catch { return null; /* circular structure — shouldn't happen for plain request state */ }
+        var clonedOrigin;
+        try { clonedOrigin = JSON.parse(JSON.stringify(src.origin || { kind: 'fresh' })); }
+        catch { clonedOrigin = { kind: 'fresh' }; }
+        var newTab = {
+            id: _nextDesignTabId(),
+            request: clonedRequest,
+            origin: clonedOrigin
+        };
+        composeTabs.splice(srcIdx + 1, 0, newTab);
+        activeDesignTabId = newTab.id;
+        freeformRequest = clonedRequest;
+        persistDesignTabs();
+        if (typeof render === 'function') render();
+        return newTab.id;
+    }
+
     function spawnDesignTab(opts) {
         opts = opts || {};
         // Park the currently-active tab's request before swapping.
@@ -1074,6 +1108,14 @@
                         var hasOthers = composeTabs.length > 1;
                         var hasRight = idx >= 0 && idx < composeTabs.length - 1;
                         showContextMenu(e.clientX, e.clientY, [
+                            // Operator feedback: 'auf dem tab context
+                            // (rechtsklick) im compose rail geht aktuell
+                            // nur verschiedene varianten von schließen,
+                            // aber dort könnte man auch den tab kopieren
+                            // bzw. clonen anbieten. also den tab mit
+                            // seinem aktuellen inhalt/zustand kopieren.'
+                            { label: 'Duplicate tab', icon: 'copy', onClick: function () { _duplicateDesignTab(id); } },
+                            { separator: true },
                             { label: 'Close', icon: 'close', onClick: function () { closeDesignTab(id); } },
                             {
                                 label: 'Close others',

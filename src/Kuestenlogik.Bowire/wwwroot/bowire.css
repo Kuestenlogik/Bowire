@@ -1591,7 +1591,14 @@ plus future hint / save indicators. */
     font-size: 11px;
 }
 .bowire-statusbar .bowire-theme-toggle-btn {
-    padding: 0 6px;
+    padding: 0 8px;
+    /* Statusbar buttons read as pills, matching the GET/POST method
+       badges + conn-pill + env-bar that sit on the same row. The
+       topbar theme-toggle-btn keeps its default rounding (toolbar
+       chrome, not a pill row). Operator feedback: 'die activity pill
+       ist eckig. für die pills verwenden wir eigentlich runde pills,
+       oder? siehe z.b. get/post usw.' */
+    border-radius: var(--bowire-radius-pill);
 }
 
 /* #124 v2 — Omnibox modal. Centered overlay with backdrop,
