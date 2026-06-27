@@ -124,7 +124,7 @@
             : connectLine + (summary ? ' — ' + summary + '.' : '.');
 
         card.appendChild(renderEmptyCard({
-            icon: 'compass',
+            icon: 'discover',
             headline: 'Discover',
             body: bodyText
         }));
@@ -176,7 +176,7 @@
         // The previous bowire-landing-card wrapper would have broken
         // the direct-child selector and left the welcome top-left.
         parent.appendChild(renderEmptyCard({
-            icon: 'compass',
+            icon: 'discover',
             headline: 'Discover is empty',
             body: 'Pick a workspace and add a URL or schema file from there.',
             actions: [{

@@ -4441,7 +4441,13 @@
                 // spot regardless of which rail is active.
                 var noWsPad = el('div', { className: 'bowire-main-pad' });
                 noWsPad.appendChild(renderEmptyCard({
-                    icon: 'layers',
+                    // Match the rail-strip glyph: this empty card is
+                    // the Home rail's no-workspace state, so it should
+                    // show the rail's house icon — NOT the Workspaces
+                    // rail's layers icon. Operator feedback: 'im home
+                    // welcome sehe ich das workspace icon, ich müsste
+                    // aber doch das haus des rails sehen.'
+                    icon: 'house',
                     headline: 'Create your first workspace',
                     body: 'A workspace is your project folder — it holds the URLs you discover, the environments + variables + secrets you reference, and the collections / recordings / benchmarks you build. Most operators name them after the project ("Petstore Staging", "Internal CMS"). You can switch + add more from the workspace chip in the topbar later.',
                     actions: [
@@ -4843,7 +4849,10 @@
 
             if (!selectedMock) {
                 mockMainWrap.appendChild(renderEmptyCard({
-                    icon: 'server',
+                    // Mocks rail glyph (matches the rail strip).
+                    // Operator feedback: 'mocks zeigt auch noch das
+                    // alte symbol im welcome'.
+                    icon: 'mock',
                     headline: (mocksList && mocksList.length > 0) ? 'Pick a mock' : 'No mocks running',
                     body: (mocksList && mocksList.length > 0)
                         ? 'Pick a running mock from the sidebar to see its URL, live request log, and stop control.'

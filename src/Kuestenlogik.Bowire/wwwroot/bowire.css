@@ -1300,10 +1300,17 @@ but
     overflow: hidden;
 }
 .bowire-rail-divider {
-    width: 100%;
+    /* Visible group separator between rail-strip clusters. The
+       previous 1px border-subtle stripe was below visual threshold
+       and read as 'no divider at all' — operator feedback: 'die
+       rails sind nur die reihenfolge. eine trennung sollte sich in
+       der railbar generieren, wenn eine neue gruppe beginnt'. Wider
+       gutter + a slightly more pronounced colour token. */
+    width: calc(100% - 16px);
+    margin: 6px 8px;
     height: 1px;
-    margin: 0;
-    background: var(--bowire-border-subtle);
+    background: var(--bowire-border);
+    flex-shrink: 0;
 }
 .bowire-rail-btn {
     position: relative;
@@ -3043,16 +3050,17 @@ not just
     padding: var(--bowire-main-gutter);
     box-sizing: border-box;
 }
-/* Centre the empty-card when it's the only thing in the pad — both
-   axes. Operator feedback: empty states were left-aligned + Compose
-   / home welcome jumped vertically vs Recordings. The :has() selector
-   keeps populated panes (multi-child) untouched. */
+/* Left-top anchor for the empty-card when it's the only thing in the
+   pad. Keeps every rail's welcome at the SAME visual position (top-
+   left of the pane) instead of letting some rails read as full-page
+   splash. Operator preference: 'ich finde links oben ausgerichtet für
+   die inhalte der Rail welcomes/startseiten besser.' The :has()
+   selector keeps populated panes (multi-child) untouched. */
 .bowire-main-pad:has(> .bowire-empty-card:only-child) {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100%;
+    align-items: flex-start;
+    justify-content: flex-start;
 }
 /* In a flex parent the card horizontal-centres on its content width.
    Cap so long body text doesn't span the whole pane. */
