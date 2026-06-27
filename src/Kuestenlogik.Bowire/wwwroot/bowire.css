@@ -7688,6 +7688,20 @@ not through to the children of
    integral part of the splitter, not an overlay. The grip-pattern
    (3 horizontal dots) flanks the chevron above + below on hover so
    it reads as a control with both 'resize' and 'collapse' semantics. */
+
+/* Reserve the splitter's 10 px slot on rails that opt out of the
+   sidebar (sidebar.kind === 'none') so flipping between sidebar-
+   bearing and no-sidebar rails doesn't shift the main pane left/
+   right. Same width + flex shape as the live splitter; no border,
+   no cursor, no interaction. Operator feedback: 'dort wo kein
+   sidepanel links ist, sollte der platz für den splitter
+   dazuberechnet werden.' */
+.bowire-sidebar-splitter-placeholder {
+    flex: 0 0 10px;
+    width: 10px;
+    flex-shrink: 0;
+    pointer-events: none;
+}
 .bowire-sidebar-splitter {
     flex: 0 0 10px;
     background: transparent;

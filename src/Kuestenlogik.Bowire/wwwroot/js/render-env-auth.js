@@ -702,6 +702,25 @@
         // modes only need to set sidebar: { kind: 'none' } to
         // opt out.
         var modeHasSidebar = currentRailSidebarSpec().kind !== 'none';
+        if (!modeHasSidebar && !isMobile()) {
+            // Rails that opt out of the sidebar (Home / Compose /
+            // sometimes Benchmarks) used to start the main pane
+            // immediately after the activity rail — so flipping
+            // between a sidebar-bearing rail and a no-sidebar rail
+            // shifted the main content left/right by the splitter
+            // width (10 px). Reads as jumpy when the operator clicks
+            // through the rail strip. Reserve the splitter's slot
+            // here so main starts at the same x in both layouts.
+            // Operator feedback: 'wenn man die rails durchklickt,
+            // wirkt das unruhig, weil der abstand nach oben und
+            // links nicht gleich ist. dort wo kein sidepanel ist,
+            // sollte der platz für den splitter dazuberechnet
+            // werden.'
+            body.appendChild(el('div', {
+                className: 'bowire-sidebar-splitter-placeholder',
+                'aria-hidden': 'true'
+            }));
+        }
         if (modeHasSidebar) {
             // The splitter doubles as the 'show sidebar' affordance when
             // collapsed — same DOM element, same hover behaviour, chevron
