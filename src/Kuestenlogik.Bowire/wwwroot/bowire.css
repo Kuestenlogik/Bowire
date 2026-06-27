@@ -12993,6 +12993,28 @@ duplicate) */
     display: flex;
     gap: 6px;
     align-items: center;
+    flex-wrap: nowrap;
+}
+
+/* Icon-only tour buttons — Skip / Back / Skip-step show as 28×28
+   square buttons with a tooltip instead of text labels so they don't
+   line-wrap on the cramped spotlight. Primary CTA / Next / Finish
+   keep their text. Operator feedback: 'in der tour sind die buttons
+   unten manchmal sehr gedrängt und umgebrochen … statt dem text für
+   die buttons diesen lieber als symbol mit tooltip anzeigen'. */
+.bowire-tour-btn-iconic {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.bowire-tour-btn-iconic svg {
+    width: 14px;
+    height: 14px;
+    transition: transform var(--bowire-transition);
 }
 
 .bowire-tour-btn-primary {

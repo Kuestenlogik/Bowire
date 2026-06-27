@@ -489,25 +489,43 @@
         var actions = document.createElement('div');
         actions.className = 'bowire-tour-actions';
 
-        // Skip — always present so the operator can bail anywhere.
-        var skipBtn = document.createElement('button');
-        skipBtn.type = 'button';
-        skipBtn.className = 'bowire-tour-btn-skip';
-        skipBtn.textContent = 'Skip tour';
-        skipBtn.onclick = function () { tourStop(); };
-        actions.appendChild(skipBtn);
+        // Helper: build an icon-only button with a tooltip. The text
+        // labels for Skip/Back/Skip-step on a 4-button row used to
+        // wrap onto two lines on narrower spotlights — operator
+        // feedback: 'in der tour sind die buttons unten manchmal sehr
+        // gedrängt und umgebrochen. es würde auch helfen, wenn man
+        // statt dem text für die buttons diesen lieber als symbol mit
+        // tooltip anzeigen würde.' Primary CTA / Next / Finish stay
+        // text-labelled because their wording is meaningful per-step.
+        function _iconBtn(cls, iconKey, tooltip, onClick, iconStyle) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = cls + ' bowire-tour-btn-iconic';
+            b.title = tooltip;
+            b.setAttribute('aria-label', tooltip);
+            // svgIcon is on window inside the IIFE bundle; reach in
+            // safely (tour.js compiles into the same closure).
+            if (typeof svgIcon === 'function') {
+                b.innerHTML = svgIcon(iconKey);
+                if (iconStyle) b.firstChild && b.firstChild.setAttribute
+                    && b.firstChild.setAttribute('style', iconStyle);
+            } else {
+                b.textContent = tooltip; // SSR / failure fallback
+            }
+            b.onclick = onClick;
+            return b;
+        }
 
-        // Back — present from step 2 onwards.
+        // Skip — always present so the operator can bail anywhere.
+        actions.appendChild(_iconBtn('bowire-tour-btn-skip', 'close',
+            'Skip tour', function () { tourStop(); }));
+
+        // Back — present from step 2 onwards. Chevron flipped left
+        // via inline transform on the svg.
         if (_tourState.index > 0) {
-            var backBtn = document.createElement('button');
-            backBtn.type = 'button';
-            backBtn.className = 'bowire-tour-btn-secondary';
-            backBtn.textContent = 'Back';
-            backBtn.onclick = function () {
-                _tourState.index--;
-                _renderTourStep();
-            };
-            actions.appendChild(backBtn);
+            actions.appendChild(_iconBtn('bowire-tour-btn-secondary', 'chevron',
+                'Back', function () { _tourState.index--; _renderTourStep(); },
+                'transform: rotate(180deg)'));
         }
 
         var isLast = _tourState.index === _tourState.steps.length - 1;
@@ -529,23 +547,41 @@
             };
             actions.appendChild(ctaBtn);
         } else if (advance && advance.indexOf('on-event:') === 0) {
-            // Waiting for an external signal — show a passive 'Waiting…'
-            // pill so the operator knows the tour hasn't frozen. The
-            // event listener was wired in _wireAdvanceMode.
-            var waiting = document.createElement('span');
-            waiting.className = 'bowire-tour-waiting';
-            waiting.textContent = step.cta && step.cta.label ? step.cta.label : 'Waiting…';
-            actions.appendChild(waiting);
-            // If the step also defines a CTA the operator can click to
-            // self-advance (e.g. a 'Show me' button), expose it as a
-            // secondary action.
+            // Waiting for an external signal. If the step defines a
+            // CTA with an onClick (e.g. 'Create workspace…'), expose
+            // it as a real clickable primary button so the operator
+            // can drive the workflow from the tour itself — the
+            // previous render used a passive italic span that LOOKED
+            // like a link but had no handler. Operator feedback:
+            // '"Create workspace…" button link aus der tour heraus
+            // geht auch nicht. warum?'.
             if (step.cta && typeof step.cta.onClick === 'function') {
-                var helpBtn = document.createElement('button');
-                helpBtn.type = 'button';
-                helpBtn.className = 'bowire-tour-btn-secondary';
-                helpBtn.textContent = 'Skip step';
-                helpBtn.onclick = function () { _advanceOrFinish(); };
-                actions.appendChild(helpBtn);
+                var ctaBtnE = document.createElement('button');
+                ctaBtnE.type = 'button';
+                ctaBtnE.className = 'bowire-tour-btn-primary';
+                ctaBtnE.textContent = step.cta.label || 'Continue';
+                ctaBtnE.onclick = function () {
+                    try { step.cta.onClick(); }
+                    catch (e) { console.warn('[tour] cta.onClick failed', e); }
+                    // No _advanceOrFinish here — the tour advances
+                    // when the awaited event fires (wired in
+                    // _wireAdvanceMode), so the CTA only kicks off
+                    // the workflow.
+                };
+                actions.appendChild(ctaBtnE);
+                actions.appendChild(_iconBtn('bowire-tour-btn-secondary', 'chevron',
+                    'Skip this step', function () { _advanceOrFinish(); }));
+            } else if (step.cta && step.cta.label) {
+                // No onClick — purely declarative 'Waiting for …' hint.
+                var waiting = document.createElement('span');
+                waiting.className = 'bowire-tour-waiting';
+                waiting.textContent = step.cta.label;
+                actions.appendChild(waiting);
+            } else {
+                var waiting2 = document.createElement('span');
+                waiting2.className = 'bowire-tour-waiting';
+                waiting2.textContent = 'Waiting…';
+                actions.appendChild(waiting2);
             }
         } else {
             // 'next-button' / default — manual advance.
