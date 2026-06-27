@@ -103,7 +103,7 @@ Current milestones (as of v2.0 RC prep):
 
 **Mechanical consequences:**
 - `release.yml` parses the matching milestone's title when creating the GitHub Release and uses the `<theme>` tail as `vX.Y.Z — <theme>`. No hand-editing of the release title required.
-- `scripts/generate-roadmap.mjs` renders the full title as the section heading in `ROADMAP.md` so the offline view matches the Project board.
+- `scripts/ci/generate-roadmap.mjs` renders the full title as the section heading in `ROADMAP.md` so the offline view matches the Project board.
 - The milestone description stays free-form for slip context, stakeholder hints, &c. — no machinery parses it.
 - If the milestone title is bare (`v2.0` with no ` — <theme>` tail), the release falls back to a bare `vX.Y.Z` title and the roadmap section shows no theme — so missing themes are visible by their absence rather than crashing the pipeline.
 

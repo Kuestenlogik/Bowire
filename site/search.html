@@ -3,6 +3,11 @@ layout: page
 title: Search
 description: Search the Bowire documentation and marketing site.
 permalink: /search.html
+# Internal search-results page — Google explicitly recommends keeping
+# these out of the index (no standalone value, infinite query variants).
+# noindex (via the layout) + sitemap:false keep it usable but unindexed.
+noindex: true
+sitemap: false
 ---
 
 <section class="search-page">

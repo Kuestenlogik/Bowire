@@ -27,7 +27,7 @@ on:
   pull_request:
     paths:
       - 'ROADMAP.md'
-      - 'scripts/generate-roadmap.mjs'
+      - 'scripts/ci/generate-roadmap.mjs'
       - '.github/workflows/roadmap-sync.yml'
   schedule:
     - cron: '23 5 * * *'
@@ -58,7 +58,7 @@ jobs:
       - name: Regenerate ROADMAP.md
         env:
           GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
-        run: node scripts/generate-roadmap.mjs
+        run: node scripts/ci/generate-roadmap.mjs
       - name: Commit if changed
         run: |
           if git diff --quiet ROADMAP.md; then
@@ -83,4 +83,4 @@ jobs:
       - name: Verify ROADMAP.md is up to date
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/generate-roadmap.mjs --check
+        run: node scripts/ci/generate-roadmap.mjs --check

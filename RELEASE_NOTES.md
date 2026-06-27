@@ -3,7 +3,7 @@
 **This file is generated.** Edit the release body on GitHub instead:
 https://github.com/Kuestenlogik/Bowire/releases
 
-The script `scripts/generate-release-notes.mjs` pulls every published
+The script `scripts/ci/generate-release-notes.mjs` pulls every published
 release (and optionally drafts via `--include-drafts`) and writes
 the body out here so the notes are readable offline. Use the
 GitHub Release UI or `gh release edit <tag>` to change the editorial
@@ -914,7 +914,7 @@ along the way:
   needs both RIDs in the assets file before it iterates them — fix is an
   explicit multi-RID `dotnet restore` ahead of the container publish.
 - DocFX's `pdf` command relies on a Playwright browser auto-install that
-  races on CI. Replaced with a custom `scripts/build-docs-pdf.js` that
+  races on CI. Replaced with a custom `scripts/site/build-docs-pdf.js` that
   walks the rendered HTML tree and merges per-page PDFs via `pdf-lib`.
 
 ### Test stability

@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - 'site/**'
-      - 'scripts/optimize-images.mjs'
+      - 'scripts/site/optimize-images.mjs'
       - 'package.json'
       - '.lighthouserc.json'
       - '.github/workflows/lighthouse.yml'
@@ -26,7 +26,7 @@ jobs:
       - name: npm install (sharp)
         run: npm install --no-audit --no-fund
       - name: Verify image transcodes are fresh
-        run: node scripts/optimize-images.mjs --check
+        run: node scripts/site/optimize-images.mjs --check
 
   lighthouse:
     name: Lighthouse PR audit
