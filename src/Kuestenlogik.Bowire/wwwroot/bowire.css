@@ -1412,6 +1412,22 @@ but
     background: var(--bowire-surface-hover);
     color: var(--bowire-text);
 }
+/* Pattern A — workspace-prerequisite disabled state. Greyed out +
+   blocks hover lift, but keeps the tooltip so hovering still
+   surfaces 'create a workspace first to use this rail.' Operator
+   feedback: 'typisch würde man einen nicht klickbaren (deaktivierten)
+   rail button zeigen (ggf. mit einem hint bei hover warum).' */
+.bowire-rail-btn-disabled,
+.bowire-rail-btn[disabled] {
+    opacity: 0.35;
+    cursor: not-allowed;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-rail-btn-disabled:hover,
+.bowire-rail-btn[disabled]:hover {
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+}
 .bowire-rail-btn.active {
     background: var(--bowire-accent-subtle);
     color: var(--bowire-accent);

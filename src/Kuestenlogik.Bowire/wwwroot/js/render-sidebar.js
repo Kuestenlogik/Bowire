@@ -1079,34 +1079,46 @@
             var modeHasSidebar = m.sidebar && m.sidebar.kind !== 'none';
             var count = _railModeCount(m.id);
             var hasCount = typeof count === 'number' && count > 0;
+            // Workspace prerequisite — pattern A: visually disable
+            // the rail button when the rail needs a workspace and
+            // none is active. Operator feedback (revised after
+            // pattern B's toast / inline empty state shipped):
+            // 'irgendwie fühlt sich das merkwürdig an, dass der rail
+            // wählbar aussieht, aber wenn man den anklickt, … typisch
+            // würde man einen nicht klickbaren (deaktivierten) rail
+            // button zeigen (ggf. mit einem hint bei hover warum).
+            // dann bleibt home aktiv und nur zu rails mit im zustand
+            // der app ausführbaren funktionen im rail kann gewechselt
+            // werden.' The inline empty state stays for the case
+            // where railMode is restored from localStorage but the
+            // last workspace was meanwhile deleted.
+            var isDisabled = !!m.requiresWorkspace && !activeWorkspaceId;
             rail.appendChild(el('button', {
                 type: 'button',
                 'data-rail-mode-id': m.id,
-                className: 'bowire-rail-btn' + (isActive ? ' active' : ''),
+                disabled: isDisabled ? 'disabled' : null,
+                'aria-disabled': isDisabled ? 'true' : 'false',
+                className: 'bowire-rail-btn'
+                    + (isActive ? ' active' : '')
+                    + (isDisabled ? ' bowire-rail-btn-disabled' : ''),
                 // Pattern B — double-click on the ACTIVE mode toggles
                 // the sidebar. Tooltip-suffix only shows the hint on
                 // the active button so non-active modes don't lie
                 // ('Double-click to collapse' would do nothing on a
                 // mode the user isn't in).
-                title: m.label
-                    + (hasCount ? ' (' + count + ')' : '')
-                    + (isActive && modeHasSidebar
-                        ? '\n(double-click to ' + (sidebarCollapsed ? 'expand' : 'collapse') + ' the sidebar)'
-                        : ''),
-                'aria-label': m.label + (hasCount ? ', ' + count + ' items' : ''),
+                title: isDisabled
+                    ? (m.label + ' — create a workspace first to use this rail')
+                    : (m.label
+                        + (hasCount ? ' (' + count + ')' : '')
+                        + (isActive && modeHasSidebar
+                            ? '\n(double-click to ' + (sidebarCollapsed ? 'expand' : 'collapse') + ' the sidebar)'
+                            : '')),
+                'aria-label': isDisabled
+                    ? (m.label + ' (disabled — no active workspace)')
+                    : (m.label + (hasCount ? ', ' + count + ' items' : '')),
                 onClick: function () {
+                    if (isDisabled) return; // pattern A — disabled rails do nothing on click.
                     if (railMode === m.id) return;
-                    // No-workspace pattern B (operator feedback): the
-                    // previous redirect-to-Home + toast bounced the
-                    // operator out of the rail they just chose, and
-                    // the rail strip felt inconsistent (clickable
-                    // hover state, but the click was undone before
-                    // the next paint). Now the click resolves to the
-                    // requested rail; the rail's own main pane
-                    // detects `!activeWorkspaceId` and renders the
-                    // shared `renderWorkspacePrereqEmpty` card with
-                    // the Create-workspace CTA. The rail's own empty
-                    // state IS the message.
                     railMode = m.id;
                     try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
                     // Modes that piggyback on the legacy
@@ -1204,17 +1216,21 @@
                 var count = _railModeCount(m.id);
                 var hasCount = typeof count === 'number' && count > 0;
                 var isActive = railMode === m.id;
+                // Mirror the rail-strip's pattern-A disabled state
+                // so overflow-popover items behave identically.
+                var poDisabled = !!m.requiresWorkspace && !activeWorkspaceId;
                 popover.appendChild(el('button', {
                     type: 'button',
                     role: 'menuitem',
-                    className: 'bowire-rail-overflow-popover-item' + (isActive ? ' active' : ''),
+                    disabled: poDisabled ? 'disabled' : null,
+                    'aria-disabled': poDisabled ? 'true' : 'false',
+                    title: poDisabled ? 'Create a workspace first to use this rail' : undefined,
+                    className: 'bowire-rail-overflow-popover-item'
+                        + (isActive ? ' active' : '')
+                        + (poDisabled ? ' bowire-rail-btn-disabled' : ''),
                     onClick: function () {
+                        if (poDisabled) return;
                         railOverflowOpen = false;
-                        // Same pattern-B handling as the rail-strip
-                        // onClick above — let the click switch railMode
-                        // unconditionally; the rail's main render
-                        // detects `!activeWorkspaceId` and shows the
-                        // shared workspace-prereq empty state.
                         railMode = m.id;
                         try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
                         if (m.id === 'environments') sidebarView = 'environments';
