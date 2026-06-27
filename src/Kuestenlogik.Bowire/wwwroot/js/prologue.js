@@ -2805,6 +2805,20 @@
         if (ti >= 0) workspacesTrash.splice(ti, 1);
         persistWorkspacesTrash();
         persistWorkspaces();
+        // If there's no active workspace (because the deletion of the
+        // last workspace cleared activeWorkspaceId), auto-activate the
+        // restored one — the operator's mental model is 'I restored
+        // it, why is the UI still saying No workspace?'. switchWorkspace
+        // does the full state rehydration via a page reload so the
+        // in-memory caches (serverUrls / recordings / collections / …)
+        // get refilled from the restored per-workspace localStorage
+        // namespace. Without it, the topbar chip + every rail keeps
+        // pointing at the empty fallback state. Operator feedback:
+        // 'wiederhergestellter workspace müsste eigentlich automatisch
+        // aktiviert werden, weil er der einzige ist'.
+        if (!activeWorkspaceId && typeof switchWorkspace === 'function') {
+            switchWorkspace(ws.id);
+        }
         return true;
     }
 
