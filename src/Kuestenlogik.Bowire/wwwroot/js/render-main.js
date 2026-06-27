@@ -4838,6 +4838,20 @@
                                 sidebarView = 'services';
                                 render();
                             }
+                        },
+                        // Per-rail welcome tour: walks create → add
+                        // items → run. Force-mode so the operator can
+                        // re-trigger from the same empty card after
+                        // dismissal.
+                        {
+                            id: 'bowire-collections-empty-tour-btn',
+                            label: 'Take a tour',
+                            onClick: function () {
+                                if (typeof window !== 'undefined'
+                                    && typeof window.bowireStartBuildCollectionTour === 'function') {
+                                    window.bowireStartBuildCollectionTour({ force: true });
+                                }
+                            }
                         }
                     ] : []
                 }));
@@ -5050,6 +5064,20 @@
                                 railMode = 'discover';
                                 try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
                                 render();
+                            }
+                        },
+                        // Per-rail welcome tour: explains the
+                        // capture loop (arm → invoke → stop → save).
+                        // Force-mode so the operator can re-trigger
+                        // from the same empty card after dismissal.
+                        {
+                            id: 'bowire-recordings-empty-tour-btn',
+                            label: 'Take a tour',
+                            onClick: function () {
+                                if (typeof window !== 'undefined'
+                                    && typeof window.bowireStartCaptureRecordingTour === 'function') {
+                                    window.bowireStartCaptureRecordingTour({ force: true });
+                                }
                             }
                         }
                     ] : []

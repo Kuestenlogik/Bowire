@@ -1231,6 +1231,19 @@
                             if (inp) inp.focus();
                         });
                     }
+                }, {
+                    // Per-rail welcome tour: explains the freeform
+                    // builder loop (URL → method → body → Execute).
+                    // Force-mode so the operator can re-trigger from
+                    // the same empty card after dismissal.
+                    id: 'bowire-compose-empty-tour-btn',
+                    label: 'Take a tour',
+                    onClick: function () {
+                        if (typeof window !== 'undefined'
+                            && typeof window.bowireStartComposeRequestTour === 'function') {
+                            window.bowireStartComposeRequestTour({ force: true });
+                        }
+                    }
                 }]
             }));
             mainCol.appendChild(padWrap);

@@ -200,7 +200,25 @@
                 // es müsste traffic light sein wie auf dem rail)'.
                 icon: 'trafficLight',
                 headline: 'No traffic yet',
-                body: emptyBody
+                body: emptyBody,
+                actions: [
+                    // Per-rail welcome tour: explains the two
+                    // deployment shapes (embedded / standalone) and
+                    // the capture loop. There's no primary CTA on
+                    // this card because the operator's action is
+                    // outside Bowire (wire up the interceptor + drive
+                    // traffic), so the tour CTA stands alone.
+                    {
+                        id: 'bowire-traffic-empty-tour-btn',
+                        label: 'Take a tour',
+                        onClick: function () {
+                            if (typeof window !== 'undefined'
+                                && typeof window.bowireStartCaptureTrafficTour === 'function') {
+                                window.bowireStartCaptureTrafficTour({ force: true });
+                            }
+                        }
+                    }
+                ]
             }));
             return;
         }

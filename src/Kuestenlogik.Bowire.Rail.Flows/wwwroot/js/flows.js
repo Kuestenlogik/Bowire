@@ -768,6 +768,20 @@
                             try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
                             render();
                         }
+                    },
+                    // Per-rail welcome tour: walks New flow → add
+                    // nodes → reference {{stepN.response}} → Run.
+                    // Force-mode so the empty-card CTA re-triggers it
+                    // even after the saved-once flag is set.
+                    {
+                        id: 'bowire-flows-empty-tour-btn',
+                        label: 'Take a tour',
+                        onClick: function () {
+                            if (typeof window !== 'undefined'
+                                && typeof window.bowireStartBuildFlowTour === 'function') {
+                                window.bowireStartBuildFlowTour({ force: true });
+                            }
+                        }
                     }
                 ]
             }));
