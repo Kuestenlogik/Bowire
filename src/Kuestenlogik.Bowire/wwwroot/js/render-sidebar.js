@@ -1109,20 +1109,26 @@
                     if (m.requiresWorkspace && !activeWorkspaceId) {
                         railMode = 'home';
                         try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
+                        // Surface the redirect AND offer an opt-in
+                        // tour from the toast — auto-starting the
+                        // tour on every rail click was too invasive
+                        // (operator could just want to navigate Home
+                        // and back). Operator feedback: 'die tour
+                        // startet ja schon direkt, wenn ich auf den
+                        // recording rail klicke. das sollte nicht
+                        // so sein, oder?'. The Home welcome card's
+                        // own 'Take a tour' CTA stays as the second
+                        // entry point.
                         if (typeof toast === 'function') {
-                            toast('Create a workspace first to use ' + m.label + '.', 'info', { duration: 4000 });
-                        }
-                        // Kick off the reusable create-workspace tour
-                        // fragment so the operator gets a guided path
-                        // out of the prerequisite instead of just a
-                        // toast. force:true so a previously-dismissed
-                        // Getting Started doesn't suppress this short
-                        // sub-tour. The fragment lives in tour.js
-                        // (_createWorkspaceSteps) and is the same one
-                        // Getting Started composes — no copy-paste.
-                        if (typeof window !== 'undefined'
-                            && typeof window.bowireStartCreateWorkspaceTour === 'function') {
-                            window.bowireStartCreateWorkspaceTour({ force: true });
+                            var startTourFromToast = (typeof window !== 'undefined'
+                                && typeof window.bowireStartCreateWorkspaceTour === 'function')
+                                ? function () { window.bowireStartCreateWorkspaceTour({ force: true }); }
+                                : null;
+                            toast('Create a workspace first to use ' + m.label + '.',
+                                  'info',
+                                  startTourFromToast
+                                      ? { duration: 6000, action: { label: 'Take a tour', onClick: startTourFromToast } }
+                                      : { duration: 4000 });
                         }
                         render();
                         return;
