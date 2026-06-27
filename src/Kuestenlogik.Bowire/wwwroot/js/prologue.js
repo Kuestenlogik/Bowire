@@ -3214,6 +3214,47 @@
         };
     });
 
+    // #194 — collection-create undo. Soft-deletes the just-created
+    // collection (hand-off to collectionsTrash so the 30-day TTL
+    // affordance still applies, matching the manual Delete path).
+    // Redo restores from trash. Neither branch records a fresh
+    // action: deleteCollection() in prologue doesn't auto-log, and
+    // redo splices directly into collectionsList instead of going
+    // through createCollection (which would re-record).
+    registerActionResolver('collection-create', function (spec) {
+        if (!spec || !spec.collectionId) return null;
+        return {
+            undo: function () {
+                // deleteCollection() already moves into collectionsTrash
+                // and persists; no logging side-effect (the manual
+                // Delete UI is where collection-delete is recorded).
+                if (typeof deleteCollection === 'function') {
+                    deleteCollection(spec.collectionId);
+                }
+                if (typeof render === 'function') render();
+            },
+            redo: function () {
+                if (!Array.isArray(collectionsTrash)) return;
+                // Walk newest-first so the most recent trash entry for
+                // this id wins (the undo we just performed).
+                for (var i = 0; i < collectionsTrash.length; i++) {
+                    var t = collectionsTrash[i];
+                    if (!t || !t.entry || t.entry.id !== spec.collectionId) continue;
+                    if (Array.isArray(collectionsList)
+                        && !collectionsList.find(function (c) { return c.id === spec.collectionId; })) {
+                        var idx = Math.min(t.originalIdx || collectionsList.length, collectionsList.length);
+                        collectionsList.splice(idx, 0, t.entry);
+                        if (typeof persistCollections === 'function') persistCollections();
+                    }
+                    collectionsTrash.splice(i, 1);
+                    if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
+                    break;
+                }
+                if (typeof render === 'function') render();
+            }
+        };
+    });
+
     registerActionResolver('collections-clear', function (spec) {
         if (!spec || !Array.isArray(spec.entries)) return null;
         return {
@@ -5210,6 +5251,13 @@
         return 'ci_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     }
 
+    // #194 — internal flag: when true, createCollection still mutates
+    // state but skips the action-log record. Used by undo/redo
+    // resolvers (so re-running the inverse doesn't pollute the log)
+    // and by any future code that needs to spawn a collection without
+    // surfacing it as a user-initiated 'collection-create'.
+    var _suppressCollectionCreateLog = false;
+
     function createCollection(name) {
         var col = {
             id: nextCollectionId(),
@@ -5219,6 +5267,21 @@
         };
         collectionsList.push(col);
         persistCollections();
+        // #194 — make the create undoable. Mirrors the collection-delete
+        // record at the detail-toolbar Delete button: a single
+        // recordAction with an undoSpec keyed on the durable id, so the
+        // resolver can rebuild undo/redo after a reload. We log every
+        // entry path (sidebar New, Save-to-Collection, Postman import,
+        // flow→collection) because they're all user-initiated; only
+        // resolver-driven rehydrate paths flip the suppress flag.
+        if (!_suppressCollectionCreateLog && typeof recordAction === 'function') {
+            recordAction({
+                kind: 'collection-create',
+                rail: 'collections',
+                title: 'Created collection "' + (col.name || 'unnamed') + '"',
+                undoSpec: { collectionId: col.id }
+            });
+        }
         return col;
     }
 
