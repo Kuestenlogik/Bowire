@@ -2955,6 +2955,32 @@
         };
     });
 
+    // workspace-create — symmetric to workspace-delete. Undo soft-
+    // deletes the freshly-created workspace (routes through
+    // deleteWorkspace so the data snapshot lands in workspacesTrash),
+    // redo restores it from that trash entry. deleteWorkspace itself
+    // doesn't recordAction, so there's no risk of an undo/redo loop
+    // re-logging entries on the way back through.
+    registerActionResolver('workspace-create', function (spec) {
+        if (!spec || !spec.workspaceId) return null;
+        return {
+            undo: function () {
+                if (typeof deleteWorkspace === 'function') deleteWorkspace(spec.workspaceId);
+                if (typeof render === 'function') render();
+            },
+            redo: function () {
+                var t = _findTrashEntryByWorkspaceId(spec.workspaceId);
+                if (t && restoreWorkspaceFromTrash(t)) {
+                    if (typeof render === 'function') render();
+                    return;
+                }
+                if (typeof toast === 'function') {
+                    toast('Could not restore workspace — trash entry purged.', 'error');
+                }
+            }
+        };
+    });
+
     registerActionResolver('workspace-rename', function (spec) {
         if (!spec || !spec.workspaceId) return null;
         return {
