@@ -271,6 +271,22 @@
         recordingActiveId = rec.id;
         persistRecordings();
         addConsoleEntry({ type: 'response', method: rec.name, status: 'Recording started' });
+        // #194 — log the create so Ctrl/Cmd+Z + Activity drawer can
+        // surface 'Created recording "<name>"' alongside the existing
+        // recording-delete entry. Mirrors the soft-delete-to-trash
+        // pattern: undo routes through deleteRecording() (which moves
+        // the entry to recordingsTrash) and redo restores via the
+        // same path the recording-delete resolver uses. deleteRecording
+        // does not itself call recordAction so the undo path can't
+        // loop back into the log.
+        if (typeof recordAction === 'function') {
+            recordAction({
+                kind: 'recording-create',
+                rail: 'recordings',
+                title: 'Created recording "' + rec.name + '"',
+                undoSpec: { recordingId: rec.id }
+            });
+        }
         render();
     }
 
