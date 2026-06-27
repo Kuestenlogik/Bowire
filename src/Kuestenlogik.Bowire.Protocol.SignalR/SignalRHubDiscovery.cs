@@ -18,11 +18,15 @@ namespace Kuestenlogik.Bowire;
 internal static class SignalRHubDiscovery
 {
     /// <summary>
-    /// Discovers SignalR hubs from the application's endpoint data sources.
+    /// Discovers SignalR hubs from the application&apos;s endpoint data sources —
+    /// gated on <see cref="Kuestenlogik.Bowire.Helpers.SelfOriginCheck.IsSelfOrigin"/>
+    /// so the workbench host&apos;s own hubs don&apos;t leak into every external
+    /// serverUrl the operator adds.
     /// </summary>
-    public static List<BowireServiceInfo> DiscoverHubs(IServiceProvider? serviceProvider)
+    public static List<BowireServiceInfo> DiscoverHubs(IServiceProvider? serviceProvider, string? serverUrl = null)
     {
         if (serviceProvider is null) return [];
+        if (!Kuestenlogik.Bowire.Helpers.SelfOriginCheck.IsSelfOrigin(serverUrl, serviceProvider)) return [];
 
         var endpointSources = serviceProvider.GetService<IEnumerable<EndpointDataSource>>();
         if (endpointSources is null) return [];

@@ -71,7 +71,7 @@ public sealed class BowireWebSocketProtocol : IBowireProtocol, IInlineWebSocketC
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
     {
         var registered = _registry?.Snapshot() ?? [];
-        var services = WebSocketEndpointDiscovery.Discover(registered, _serviceProvider);
+        var services = WebSocketEndpointDiscovery.Discover(registered, _serviceProvider, serverUrl);
 
         // Standalone mode: when the user supplied a ws:// or wss:// URL, also
         // expose a synthetic "connect" method so they can open a channel against

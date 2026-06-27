@@ -47,7 +47,7 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
     public Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct)
     {
-        var services = SignalRHubDiscovery.DiscoverHubs(_serviceProvider);
+        var services = SignalRHubDiscovery.DiscoverHubs(_serviceProvider, serverUrl);
 
         if (services.Count == 0)
         {
@@ -101,7 +101,7 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         var hubUrl = ResolveHubUrl(serverUrl, service);
 
         // Look up method info to determine streaming direction
-        var services = SignalRHubDiscovery.DiscoverHubs(_serviceProvider);
+        var services = SignalRHubDiscovery.DiscoverHubs(_serviceProvider, serverUrl);
         var svc = services.FirstOrDefault(s => s.Name == service || s.Package == service);
         var methodInfo = svc?.Methods.FirstOrDefault(m => m.Name == method);
 
@@ -128,7 +128,7 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
     /// </summary>
     private string ResolveHubUrl(string serverUrl, string service)
     {
-        var services = SignalRHubDiscovery.DiscoverHubs(_serviceProvider);
+        var services = SignalRHubDiscovery.DiscoverHubs(_serviceProvider, serverUrl);
         var svc = services.FirstOrDefault(s => s.Name == service || s.Package == service);
         var raw = !string.IsNullOrEmpty(svc?.Package) ? svc.Package : service;
         var path = raw.StartsWith('/') ? raw : $"/{raw}";

@@ -22,12 +22,22 @@ internal static class SseEndpointDiscovery
     /// </summary>
     public static List<BowireServiceInfo> Discover(
         IReadOnlyList<SseEndpointInfo> configuredEndpoints,
-        IServiceProvider? serviceProvider)
+        IServiceProvider? serviceProvider,
+        string? serverUrl = null)
     {
         var endpoints = new List<SseEndpointInfo>(configuredEndpoints);
 
-        // Scan endpoint data sources for auto-discoverable SSE endpoints
-        if (serviceProvider is not null)
+        // Scan endpoint data sources for auto-discoverable SSE endpoints —
+        // but ONLY when the discover request targets this very workbench
+        // host. Without the self-origin gate the workbench's own routes
+        // (e.g. /mcp from --enable-mcp-adapter) leaked into every external
+        // serverUrl the operator added, showing up as a phantom 'SSE
+        // Endpoints' service whose invoke landed nowhere. Operator
+        // feedback: 'unter der source http://localhost:5181/api/locations
+        // sehe ich 1 service (SSE ENDPOINTS), … beim aufruf nur: Stream
+        // error occurred.'
+        if (serviceProvider is not null
+            && Helpers.SelfOriginCheck.IsSelfOrigin(serverUrl, serviceProvider))
         {
             var dataSources = serviceProvider.GetService<IEnumerable<EndpointDataSource>>();
             if (dataSources is not null)
