@@ -22,4 +22,8 @@ public sealed class BowireMocksRailContribution : IBowireRailContribution
     public string Group => "scenarios";
     /// <inheritdoc />
     public string SidebarKind => "mocks";
+    /// <inheritdoc />
+    // Mocks bind to the active workspace's mock catalogue; without one
+    // there's nowhere to read from or save to.
+    public bool RequiresWorkspace => true;
 }

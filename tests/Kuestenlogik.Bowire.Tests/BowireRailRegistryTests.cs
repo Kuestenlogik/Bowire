@@ -18,7 +18,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// </summary>
 public class BowireRailRegistryTests
 {
-    private sealed class StubRail(string id, int sort = 100, bool alwaysOn = false, bool hideFromRail = false) : IBowireRailContribution
+    private sealed class StubRail(string id, int sort = 100, bool alwaysOn = false, bool hideFromRail = false, bool requiresWorkspace = false) : IBowireRailContribution
     {
         public string Id { get; } = id;
         public string DisplayName => $"{Id[..1].ToUpperInvariant()}{Id[1..]}";
@@ -28,6 +28,7 @@ public class BowireRailRegistryTests
         public string SidebarKind => "none";
         public bool AlwaysOn { get; } = alwaysOn;
         public bool HideFromRail { get; } = hideFromRail;
+        public bool RequiresWorkspace { get; } = requiresWorkspace;
     }
 
     private sealed class StubModule(string id) : IBowireModuleContribution
@@ -105,6 +106,29 @@ public class BowireRailRegistryTests
         Assert.Contains("\"id\":\"home\"", json, StringComparison.Ordinal);
         Assert.Contains("\"alwaysOn\":true", json, StringComparison.Ordinal);
         Assert.Contains("\"hideFromRail\":true", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ToJson_Carries_RequiresWorkspace_Flag()
+    {
+        // render-sidebar.js reads __BOWIRE_CONFIG__.rails[i].requiresWorkspace
+        // on every rail click to decide whether to redirect to Home + fire
+        // a 'create a workspace first' toast. If this key disappears from
+        // the JSON, the guard silently degrades and the no-workspace UX
+        // regression returns — operators get dropped into an empty rail
+        // surface with no hint about why.
+        var registry = new BowireRailRegistry();
+        registry.Register(new StubRail("recordings", requiresWorkspace: true));
+        registry.Register(new StubRail("home"));
+
+        var json = registry.ToJson();
+        Assert.Contains("\"id\":\"recordings\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"requiresWorkspace\":true", json, StringComparison.Ordinal);
+        // Default for non-workspace-bound rails is false so the JS guard
+        // sees an explicit "no, this works standalone" signal rather than
+        // a missing key (which would also fail !!r.requiresWorkspace, but
+        // being explicit makes the contract debuggable from devtools).
+        Assert.Contains("\"requiresWorkspace\":false", json, StringComparison.Ordinal);
     }
 
     private sealed class StubRailWithRenderers : IBowireRailContribution

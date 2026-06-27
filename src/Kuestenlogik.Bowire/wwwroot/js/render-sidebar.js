@@ -880,6 +880,14 @@
                 hideFromRail: !!r.hideFromRail,
                 alwaysOn: !!r.alwaysOn,
                 defaultEnabled: r.defaultEnabled !== false,
+                // Workspace-dependent rails (Recordings, Mocks,
+                // Collections, Flows, Benchmarks, Compose) redirect to
+                // Home + fire a toast when clicked with no active
+                // workspace — see the rail-button onClick below. Read
+                // from the registry instead of hardcoding the id set so
+                // hosts that contribute new workspace-bound rails get
+                // the same UX without having to patch core JS.
+                requiresWorkspace: !!r.requiresWorkspace,
                 // #314 — per-rail renderer keys. Lookup ids on
                 // window.__bowireRailRenderers when set; falls through
                 // to core's hardcoded switch arm when null/undefined.
@@ -1086,6 +1094,27 @@
                 'aria-label': m.label + (hasCount ? ', ' + count + ' items' : ''),
                 onClick: function () {
                     if (railMode === m.id) return;
+                    // No-workspace guard. Workspace-dependent rails
+                    // (Recordings / Mocks / Collections / Flows /
+                    // Benchmarks / Compose — flagged via
+                    // IBowireRailContribution.RequiresWorkspace and
+                    // emitted into __BOWIRE_CONFIG__.rails) would
+                    // otherwise paint an empty surface with no hint
+                    // about why. Redirect to Home (which carries the
+                    // 'Create your first workspace' CTA) + fire an
+                    // explanatory toast. The rail button itself stays
+                    // enabled so the rail strip's tab semantics + tour
+                    // spotlighting keep working; the redirect is the
+                    // behaviour, not the affordance.
+                    if (m.requiresWorkspace && !activeWorkspaceId) {
+                        railMode = 'home';
+                        try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
+                        if (typeof toast === 'function') {
+                            toast('Create a workspace first to use ' + m.label + '.', 'info', { duration: 4000 });
+                        }
+                        render();
+                        return;
+                    }
                     railMode = m.id;
                     try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
                     // Modes that piggyback on the legacy
@@ -1189,6 +1218,19 @@
                     className: 'bowire-rail-overflow-popover-item' + (isActive ? ' active' : ''),
                     onClick: function () {
                         railOverflowOpen = false;
+                        // Same no-workspace guard as the rail-button
+                        // onClick above — the overflow popover surfaces
+                        // the same rails when the strip can't fit them,
+                        // so the guard has to live in both spots.
+                        if (m.requiresWorkspace && !activeWorkspaceId) {
+                            railMode = 'home';
+                            try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
+                            if (typeof toast === 'function') {
+                                toast('Create a workspace first to use ' + m.label + '.', 'info', { duration: 4000 });
+                            }
+                            render();
+                            return;
+                        }
                         railMode = m.id;
                         try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
                         if (m.id === 'environments') sidebarView = 'environments';

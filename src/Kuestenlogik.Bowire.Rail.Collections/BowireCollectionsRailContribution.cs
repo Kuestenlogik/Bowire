@@ -39,4 +39,9 @@ public sealed class BowireCollectionsRailContribution : IBowireRailContribution
     // 'Collections' node, and the per-method 'C' pill suppress
     // themselves. Re-enabling restores all three surfaces.
     public bool DefaultEnabled => false;
+    /// <inheritdoc />
+    // Collections live inside the active workspace; clicking the rail
+    // with no workspace would just paint an empty list and confuse the
+    // first-run operator.
+    public bool RequiresWorkspace => true;
 }
