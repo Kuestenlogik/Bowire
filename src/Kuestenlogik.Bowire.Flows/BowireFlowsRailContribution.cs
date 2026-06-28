@@ -3,7 +3,7 @@
 
 using Kuestenlogik.Bowire.Plugins;
 
-namespace Kuestenlogik.Bowire.Rail.Flows;
+namespace Kuestenlogik.Bowire.Flows;
 
 /// <summary>
 /// Flows rail contribution (#306 Phase G).
