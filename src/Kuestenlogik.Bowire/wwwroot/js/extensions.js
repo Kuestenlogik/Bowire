@@ -1162,6 +1162,12 @@
         code.style.borderRadius = '4px';
         code.style.background = 'var(--bowire-bg-code, rgba(0, 0, 0, 0.08))';
         code.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+        // Operator feedback — without a small inline margin the chip
+        // butted straight up against the Copy button (reading as
+        // "Kuestenlogik.Bowire.MapCopy"). 6 px is the minimum that
+        // lets the eye separate the package id from the affordance.
+        code.style.marginLeft = '6px';
+        code.style.marginRight = '6px';
         card.appendChild(code);
 
         var copyBtn = document.createElement('button');

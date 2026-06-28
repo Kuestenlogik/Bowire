@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Plugins;
+using Kuestenlogik.Bowire.Semantics.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -184,7 +185,36 @@ internal static class BowirePluginEndpoints
                 });
             }
 
-            return Results.Ok(new { plugins });
+            // Extensions list. The Settings → Plugins page renders
+            // protocols above and UI extensions below; piggybacking on the
+            // same /api/plugins round-trip keeps the page responsive
+            // without bolting on a second fetch. The extension registry
+            // is the same cached snapshot the /api/ui/extensions endpoint
+            // serves, so no extra assembly sweep here.
+            //
+            // Each row carries id + the kinds it claims + capability
+            // strings the JS side can render straight into pills. We
+            // intentionally pick a flat shape rather than nesting under
+            // the plugin row — extensions and protocol plugins are
+            // orthogonal (a single nupkg can ship both), and the
+            // operator-facing page treats them as two stacked sections.
+            var extensionRegistry = BowireSemanticsEndpoints.GetExtensionRegistry();
+            var extensionRows = new List<object>(extensionRegistry.UiExtensions.Count);
+            foreach (var ext in extensionRegistry.UiExtensions)
+            {
+                var asm = extensionRegistry.GetDeclaringAssembly(ext.Id);
+                var packageId = asm?.GetName().Name ?? "";
+                extensionRows.Add(new
+                {
+                    id = ext.Id,
+                    packageId,
+                    bowireApi = ext.BowireApiRange,
+                    kinds = ext.Kinds,
+                    capabilities = BowireSemanticsEndpoints.CapabilitiesToStrings(ext.Capabilities),
+                });
+            }
+
+            return Results.Ok(new { plugins, extensions = extensionRows });
         }).ExcludeFromDescription();
 
         // Search NuGet for Bowire plugins

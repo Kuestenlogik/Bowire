@@ -2446,6 +2446,11 @@
     // when the Plugins tab opens; renderManagePluginsSection() reads
     // from the cached snapshot so re-renders are instant.
     var installedPlugins = [];
+    // Installed UI extensions — surfaced alongside protocols in the
+    // Plugins page so the operator can see whether the Map / Chart /
+    // Table widget is loaded. Same /api/plugins fetch hydrates both
+    // arrays (single round-trip).
+    var installedExtensions = [];
     var latestVersions = {};
     var pluginPrereleaseToggle = false;
     var pluginActionInFlight = null;
@@ -2502,48 +2507,250 @@
                 className: 'bowire-settings-empty',
                 textContent: 'No protocol plugins loaded.'
             }));
+        } else {
+            var list = el('div', { className: 'bowire-settings-plugin-list' });
+            for (var pi = 0; pi < protocols.length; pi++) {
+                (function (p) {
+                    var row = el('label', { className: 'bowire-settings-plugin-row' });
+
+                    if (p.icon) {
+                        row.appendChild(el('span', {
+                            className: 'bowire-settings-plugin-icon',
+                            innerHTML: p.icon
+                        }));
+                    }
+                    var textBox = el('div', { className: 'bowire-settings-plugin-text' },
+                        el('div', { className: 'bowire-settings-plugin-name', textContent: p.name }),
+                        el('div', { className: 'bowire-settings-plugin-id', textContent: p.id })
+                    );
+                    row.appendChild(textBox);
+
+                    var cb = el('input', {
+                        type: 'checkbox',
+                        className: 'bowire-settings-plugin-toggle',
+                        checked: isProtocolEnabled(p.id),
+                        onChange: function (e) {
+                            setProtocolEnabled(p.id, e.target.checked);
+                            // Drop the plugin from the active protocol filter
+                            // so a disabled plugin doesn't keep services hidden
+                            // when it's re-enabled later.
+                            if (!e.target.checked && typeof protocolFilter !== 'undefined') {
+                                protocolFilter.delete(p.id);
+                                if (typeof persistProtocolFilter === 'function') persistProtocolFilter();
+                            }
+                            render();
+                        }
+                    });
+                    row.appendChild(cb);
+                    list.appendChild(row);
+                })(protocols[pi]);
+            }
+            section.appendChild(list);
+        }
+
+        // UI extensions — the map widget, future chart / table viewers,
+        // 3rd-party MIL-symbol renderers. Operator feedback: they
+        // expected to see the Map plugin in this page (it's their main
+        // entry point for "is the map installed?"), but the protocols
+        // list above never included it because Map ships as a
+        // [BowireExtension] rather than an [BowirePlugin] protocol. We
+        // append a dedicated section that lists every loaded
+        // IBowireUiExtension + any not-yet-installed packages the
+        // suggestion table knows about, so both halves are visible.
+        section.appendChild(renderInstalledExtensionsSection());
+
+        return section;
+    }
+
+    /**
+     * Render the "Installed UI extensions" section beneath the
+     * protocols list. Each row carries the extension's display name,
+     * its declaring package id, the semantic kinds it claims, the
+     * Viewer / Editor capability pills, and an "Installed" status
+     * pill. Packages from the bowirePackageSuggestions table that
+     * aren't currently loaded get a grey "Suggested" row so the
+     * operator discovers extensions before they ever hit an
+     * un-rendered coordinate annotation.
+     */
+    function renderInstalledExtensionsSection() {
+        var section = el('div', { className: 'bowire-settings-section bowire-settings-plugin-extensions' });
+        section.appendChild(el('h3', {
+            className: 'bowire-settings-section-title',
+            textContent: 'Installed UI extensions'
+        }));
+        section.appendChild(el('div', {
+            className: 'bowire-settings-section-desc',
+            textContent: 'Widgets that render semantic annotations — coordinates on a map, time-series in a chart, &c. Suggested rows are extensions Bowire knows a package for but hasn\'t loaded yet.'
+        }));
+
+        var rows = [];
+
+        // Installed half — straight from the /api/plugins extensions
+        // array. Sort by id so the order is stable across refreshes.
+        var sortedExt = (installedExtensions || []).slice().sort(function (a, b) {
+            var ai = (a.id || '').toLowerCase();
+            var bi = (b.id || '').toLowerCase();
+            return ai < bi ? -1 : ai > bi ? 1 : 0;
+        });
+        var loadedPackageIds = {};
+        for (var ei = 0; ei < sortedExt.length; ei++) {
+            (function (ext) {
+                var pkgId = ext.packageId || ext.PackageId || '';
+                if (pkgId) loadedPackageIds[pkgId.toLowerCase()] = true;
+                rows.push(renderExtensionRow({
+                    id: ext.id || ext.Id || '',
+                    packageId: pkgId,
+                    displayName: extensionDisplayName(ext.id || ext.Id || ''),
+                    kinds: ext.kinds || ext.Kinds || [],
+                    capabilities: ext.capabilities || ext.Capabilities || [],
+                    status: 'installed',
+                }));
+            })(sortedExt[ei]);
+        }
+
+        // Suggested half — every distinct package id in the
+        // suggestion table that didn't appear in the loaded set.
+        // The suggestion table is also surfaced cross-cutting in
+        // extensions.js (mountWidgetsForMethod renders a placeholder
+        // when a kind has no viewer); listing them here gives the
+        // operator a "what could I install" overview without waiting
+        // for an unannotated payload to trigger the placeholder.
+        var suggestionEntries = collectSuggestionEntries();
+        for (var si = 0; si < suggestionEntries.length; si++) {
+            var sug = suggestionEntries[si];
+            if (loadedPackageIds[sug.packageId.toLowerCase()]) continue;
+            rows.push(renderExtensionRow({
+                id: '',
+                packageId: sug.packageId,
+                displayName: sug.packageId,
+                kinds: sug.kinds,
+                capabilities: [],
+                status: 'suggested',
+            }));
+        }
+
+        if (rows.length === 0) {
+            section.appendChild(el('p', {
+                className: 'bowire-settings-empty',
+                textContent: 'No UI extensions loaded.'
+            }));
             return section;
         }
 
         var list = el('div', { className: 'bowire-settings-plugin-list' });
-        for (var pi = 0; pi < protocols.length; pi++) {
-            (function (p) {
-                var row = el('label', { className: 'bowire-settings-plugin-row' });
-
-                if (p.icon) {
-                    row.appendChild(el('span', {
-                        className: 'bowire-settings-plugin-icon',
-                        innerHTML: p.icon
-                    }));
-                }
-                var textBox = el('div', { className: 'bowire-settings-plugin-text' },
-                    el('div', { className: 'bowire-settings-plugin-name', textContent: p.name }),
-                    el('div', { className: 'bowire-settings-plugin-id', textContent: p.id })
-                );
-                row.appendChild(textBox);
-
-                var cb = el('input', {
-                    type: 'checkbox',
-                    className: 'bowire-settings-plugin-toggle',
-                    checked: isProtocolEnabled(p.id),
-                    onChange: function (e) {
-                        setProtocolEnabled(p.id, e.target.checked);
-                        // Drop the plugin from the active protocol filter
-                        // so a disabled plugin doesn't keep services hidden
-                        // when it's re-enabled later.
-                        if (!e.target.checked && typeof protocolFilter !== 'undefined') {
-                            protocolFilter.delete(p.id);
-                            if (typeof persistProtocolFilter === 'function') persistProtocolFilter();
-                        }
-                        render();
-                    }
-                });
-                row.appendChild(cb);
-                list.appendChild(row);
-            })(protocols[pi]);
-        }
+        for (var ri = 0; ri < rows.length; ri++) list.appendChild(rows[ri]);
         section.appendChild(list);
         return section;
+    }
+
+    /**
+     * Render one extension row — matches the protocol-row chrome
+     * (name + id + meta line on the left, pill on the right). Status
+     * "installed" → green pill; "suggested" → grey pill.
+     */
+    function renderExtensionRow(meta) {
+        var row = el('div', { className: 'bowire-settings-plugin-row bowire-settings-extension-row' });
+
+        var textBox = el('div', { className: 'bowire-settings-plugin-text' });
+        textBox.appendChild(el('div', {
+            className: 'bowire-settings-plugin-name',
+            textContent: meta.displayName || meta.id || meta.packageId
+        }));
+
+        // Secondary identity line — the extension id (when loaded) or
+        // the package id (when only suggested). Mirrors the protocol
+        // row's "p.id" mono line.
+        var subLine = el('div', { className: 'bowire-settings-plugin-id' });
+        var subParts = [];
+        if (meta.id) subParts.push(meta.id);
+        if (meta.packageId && meta.packageId !== meta.id) subParts.push(meta.packageId);
+        subLine.textContent = subParts.join(' · ');
+        textBox.appendChild(subLine);
+
+        // Kinds + capabilities — small chip line so the operator can
+        // tell at a glance whether the extension handles their data
+        // shape, and whether it's a viewer / editor / both.
+        var chips = el('div', { className: 'bowire-settings-extension-chips' });
+        var kinds = meta.kinds || [];
+        for (var ki = 0; ki < kinds.length; ki++) {
+            chips.appendChild(el('span', {
+                className: 'bowire-settings-extension-chip is-kind',
+                textContent: kinds[ki]
+            }));
+        }
+        var caps = meta.capabilities || [];
+        for (var ci = 0; ci < caps.length; ci++) {
+            chips.appendChild(el('span', {
+                className: 'bowire-settings-extension-chip is-capability',
+                textContent: caps[ci]
+            }));
+        }
+        if (chips.children.length > 0) textBox.appendChild(chips);
+
+        row.appendChild(textBox);
+
+        // Status pill — Installed / Suggested. Same right-aligned
+        // slot the protocol row uses for its checkbox.
+        var pill = el('span', {
+            className: 'bowire-settings-extension-status is-' + meta.status,
+            textContent: meta.status === 'installed' ? 'Installed' : 'Suggested'
+        });
+        row.appendChild(pill);
+        return row;
+    }
+
+    /**
+     * Walk the bowirePackageSuggestions table (declared in
+     * extensions.js) and roll up entries by package id so we can
+     * render a single row per package even when several kinds map to
+     * the same package (coordinate.wgs84 / .latitude / .longitude all
+     * point at Kuestenlogik.Bowire.Map).
+     *
+     * Returns [] when the framework isn't loaded yet — the section
+     * renders just the installed half, which is still useful.
+     */
+    function collectSuggestionEntries() {
+        var out = [];
+        // The framework exposes a getter rather than the raw table,
+        // so we probe with the known kinds Bowire ships with. The
+        // list is small (3 today); if the framework grows new kinds
+        // they can be added here without a server-side round-trip.
+        var probes = [
+            'coordinate.wgs84',
+            'coordinate.latitude',
+            'coordinate.longitude',
+        ];
+        var seen = {};
+        var fw = window.__bowireExtFramework;
+        if (!fw || typeof fw.packageSuggestionFor !== 'function') {
+            return out;
+        }
+        for (var i = 0; i < probes.length; i++) {
+            var kind = probes[i];
+            var pkg = fw.packageSuggestionFor(kind);
+            if (!pkg) continue;
+            if (!seen[pkg]) {
+                seen[pkg] = { packageId: pkg, kinds: [] };
+                out.push(seen[pkg]);
+            }
+            seen[pkg].kinds.push(kind);
+        }
+        return out;
+    }
+
+    /**
+     * Derive a friendly display name from an extension id. Ids follow
+     * `{vendor}.{name}` (e.g. "kuestenlogik.maplibre"), so the trailing
+     * segment with the first letter upper-cased reads cleanly as a
+     * label. Falls back to the id unchanged when the heuristic can't
+     * find a separator.
+     */
+    function extensionDisplayName(id) {
+        if (!id) return '';
+        var idx = id.lastIndexOf('.');
+        if (idx < 0 || idx === id.length - 1) return id;
+        var leaf = id.substring(idx + 1);
+        return leaf.charAt(0).toUpperCase() + leaf.substring(1);
     }
 
     /**
@@ -2976,6 +3183,14 @@
                 .then(function (body) {
                     if (!body || !Array.isArray(body.plugins)) return;
                     installedPlugins = body.plugins;
+                    // `extensions` is the parallel UI-extension list
+                    // surfaced alongside protocol plugins. Empty array
+                    // when none are loaded — the suggestion rows fill
+                    // the section so the operator still sees what's
+                    // available for install.
+                    installedExtensions = Array.isArray(body.extensions)
+                        ? body.extensions
+                        : [];
                     if (settingsOpen && settingsTab === 'plugins') {
                         renderSettingsDialog();
                     }

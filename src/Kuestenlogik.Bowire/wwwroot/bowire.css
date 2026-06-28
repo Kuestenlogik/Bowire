@@ -19234,7 +19234,63 @@ full accent for user-pinned
     border: 1px solid var(--bowire-border);
     border-radius: 999px;
     cursor: help;
-}.bowire-ai-panel {
+}
+
+/* Installed UI extensions — the second section under Settings → Plugins.
+   Reuses the protocol-row chrome (display: flex on the row, text
+   stack on the left) and adds an inline chip line for kinds /
+   capabilities plus a status pill on the right (Installed / Suggested).
+   The chip + pill set is local to the extensions section so the
+   protocols list above stays visually unchanged. */
+.bowire-settings-plugin-extensions { margin-top: 18px; }
+.bowire-settings-extension-row {
+    cursor: default;
+}
+.bowire-settings-extension-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+.bowire-settings-extension-chip {
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 500;
+    border-radius: 999px;
+    border: 1px solid var(--bowire-border-subtle, rgba(120, 120, 120, 0.25));
+    color: var(--bowire-text-tertiary);
+    background: var(--bowire-bg-elevated, rgba(255, 255, 255, 0.04));
+    line-height: 1.6;
+}
+.bowire-settings-extension-chip.is-kind {
+    font-family: var(--bowire-font-mono, monospace);
+}
+.bowire-settings-extension-chip.is-capability {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.bowire-settings-extension-status {
+    flex-shrink: 0;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: 999px;
+    border: 1px solid transparent;
+}
+.bowire-settings-extension-status.is-installed {
+    color: var(--bowire-success, #4ade80);
+    background: rgba(74, 222, 128, 0.12);
+    border-color: rgba(74, 222, 128, 0.35);
+}
+.bowire-settings-extension-status.is-suggested {
+    color: var(--bowire-text-tertiary);
+    background: var(--bowire-bg-elevated, rgba(255, 255, 255, 0.05));
+    border-color: var(--bowire-border-subtle, rgba(120, 120, 120, 0.25));
+}
+
+.bowire-ai-panel {
     display: flex;
     flex-direction: column;
     gap: 14px;
