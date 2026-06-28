@@ -24,18 +24,18 @@ using Rheinmetall.TacticalApi.V0;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// HTTP/2 + HTTP/1.1 on every listener. Without this Kestrel defaults
-// to HTTP/1.1-only on http://localhost:5182 so any gRPC client probing
-// the server gets back HTTP/2 error HTTP_1_1_REQUIRED, and Bowire's
-// generic gRPC discovery fails before reaching server reflection. The
-// landing page on `/` still works because it falls back to HTTP/1.1
-// transparently. Operator: 'http://localhost:5182 sagt mir als source
-// 0 services. fehlt grpc reflection im sample?'
+// HTTP/2 cleartext only on every listener. Plain http:// gRPC requires
+// the client to start with HTTP/2 prior-knowledge — Kestrel's
+// Http1AndHttp2 default only upgrades to HTTP/2 via TLS + ALPN, so a
+// fresh HTTP/1.1 connection never negotiates h2c and the gRPC handshake
+// fails. Going Http2 only kills the HTML landing page on `/` (browsers
+// don't speak h2c without TLS) but unblocks Bowire's generic gRPC
+// discovery from a plain `grpc@http://localhost:5182` URL.
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.ConfigureEndpointDefaults(lo =>
     {
-        lo.Protocols = HttpProtocols.Http1AndHttp2;
+        lo.Protocols = HttpProtocols.Http2;
     });
 });
 
