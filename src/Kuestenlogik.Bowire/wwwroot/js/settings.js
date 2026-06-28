@@ -522,6 +522,73 @@
             }
         ));
 
+        // #286 — MCP forwarder mode (bowire mcp serve --attach …).
+        // Mirrors the adapter card above but explains the inverse
+        // pairing: a lightweight Bowire on this machine relays every
+        // incoming MCP tool call to a heavier upstream Bowire. The
+        // upstream-host field pre-fills the command an operator
+        // copy-pastes; the field is also remembered in localStorage so
+        // a repeat visit doesn't force a re-type. No backend probe —
+        // forwarder mode is a CLI feature, not a runtime toggle.
+        section.appendChild(renderSettingsRow(
+            'MCP forwarder',
+            'Relay every incoming MCP tool call to a heavier Bowire on another host. Useful when an AI agent runs on a laptop but the schemas + recordings live on a build server.',
+            function () {
+                var wrap = el('div', {
+                    id: 'bowire-settings-mcp-forwarder',
+                    style: 'display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:280px'
+                });
+                var savedUpstream = '';
+                try { savedUpstream = localStorage.getItem('bowire_mcp_forwarder_upstream') || ''; }
+                catch { /* private window — defaults to empty */ }
+                var upstreamInput = el('input', {
+                    type: 'url',
+                    className: 'bowire-settings-input',
+                    placeholder: 'https://bowire.internal:5080',
+                    value: savedUpstream,
+                    style: 'min-width:240px;font-size:12px',
+                    'aria-label': 'Upstream Bowire URL'
+                });
+                function buildCommand() {
+                    var upstream = (upstreamInput.value || '').trim();
+                    return 'bowire mcp serve --attach '
+                        + (upstream || '<upstream>') + ' --port 5199';
+                }
+                var cmdCode = el('code', {
+                    style: 'font-size:11px;color:var(--bowire-text-secondary);background:var(--bowire-bg-elevated);padding:2px 6px;border-radius:3px;word-break:break-all;text-align:left;max-width:280px',
+                    textContent: buildCommand()
+                });
+                upstreamInput.oninput = function () {
+                    try { localStorage.setItem('bowire_mcp_forwarder_upstream', upstreamInput.value || ''); }
+                    catch { /* ignore */ }
+                    cmdCode.textContent = buildCommand();
+                };
+                wrap.appendChild(upstreamInput);
+                var cmdRow = el('div', { style: 'display:flex;align-items:center;gap:4px' });
+                var copyBtn = el('button', {
+                    type: 'button',
+                    className: 'bowire-settings-copy-mini',
+                    style: 'background:none;border:none;cursor:pointer;color:var(--bowire-text-tertiary);padding:2px;font-size:11px',
+                    title: 'Copy command',
+                    textContent: '⧉',
+                    onClick: function () {
+                        navigator.clipboard.writeText(buildCommand()).then(function () {
+                            copyBtn.textContent = '✓';
+                            setTimeout(function () { copyBtn.textContent = '⧉'; }, 1200);
+                        });
+                    }
+                });
+                cmdRow.appendChild(cmdCode);
+                cmdRow.appendChild(copyBtn);
+                wrap.appendChild(cmdRow);
+                wrap.appendChild(el('span', {
+                    style: 'font-size:11px;color:var(--bowire-text-tertiary);text-align:right;max-width:280px',
+                    textContent: 'Add --token <secret> if the parent Bowire requires bearer auth.'
+                }));
+                return wrap;
+            }
+        ));
+
         // #169 — Hints and warnings. Lists every banner / empty-card
         // hint the operator has dismissed so they can bring any of
         // them back. The state is read live from the central
