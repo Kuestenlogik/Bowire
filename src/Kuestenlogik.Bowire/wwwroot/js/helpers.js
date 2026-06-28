@@ -1260,20 +1260,37 @@
         // --- Maximize state — persisted per orientation. The pane CSS
         // classes (.is-leading-maxed / .is-trailing-maxed) collapse the
         // opposite pane to 0 + clear the inline flex on the panes so
-        // the CSS !important rules can take over. ---
+        // the CSS !important rules can take over.
+        //
+        // Each helper re-reads the parent at call time rather than using
+        // the closure-captured `parent`. Morphdom can preserve the
+        // divider DOM node but re-mount it under a fresh parent — the
+        // captured reference then points at a detached element and the
+        // class toggle has no visual effect. Operator: 'split movement
+        // mit click klappt auch nur beim ersten mal, beim zweiten mal
+        // nachdem man die größe wiederhergestellt hat passiert nichts
+        // bei click auf den chevron.' Fresh-read fixes the third-click
+        // dead state. ---
+        function _liveParent() {
+            return divider && divider.parentElement;
+        }
         function _isLeadingMaxed() {
-            return !!(parent && parent.classList.contains('is-leading-maxed'));
+            var p = _liveParent();
+            return !!(p && p.classList.contains('is-leading-maxed'));
         }
         function _isTrailingMaxed() {
-            return !!(parent && parent.classList.contains('is-trailing-maxed'));
+            var p = _liveParent();
+            return !!(p && p.classList.contains('is-trailing-maxed'));
         }
         function _clearMaxed() {
-            if (!parent) return;
-            parent.classList.remove('is-leading-maxed', 'is-trailing-maxed');
+            var p = _liveParent();
+            if (!p) return;
+            p.classList.remove('is-leading-maxed', 'is-trailing-maxed');
             try { localStorage.removeItem(_storageKey() + ':maxed'); } catch { /* ignore */ }
         }
         function _setMaxed(which) {
-            if (!parent) return;
+            var p = _liveParent();
+            if (!p) return;
             // Clear inline pane sizes so the CSS class rules win.
             leadingPane.style.flex = '';
             leadingPane.style.width = '';
@@ -1281,9 +1298,9 @@
             trailingPane.style.flex = '';
             trailingPane.style.width = '';
             trailingPane.style.height = '';
-            parent.classList.remove('is-leading-maxed', 'is-trailing-maxed');
-            if (which === 'leading') parent.classList.add('is-leading-maxed');
-            else if (which === 'trailing') parent.classList.add('is-trailing-maxed');
+            p.classList.remove('is-leading-maxed', 'is-trailing-maxed');
+            if (which === 'leading') p.classList.add('is-leading-maxed');
+            else if (which === 'trailing') p.classList.add('is-trailing-maxed');
             try { localStorage.setItem(_storageKey() + ':maxed', which); } catch { /* ignore */ }
         }
 
