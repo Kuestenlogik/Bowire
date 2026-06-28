@@ -99,16 +99,20 @@
             (function (ext) {
                 var extId = ext.id || ext.Id || '';
                 if (!extId) return;
+                var extTabId = 'extension-' + extId;
                 pluginChildren.push({
-                    id: 'settings:extension-' + extId,
+                    id: 'settings:' + extTabId,
                     label: extensionDisplayName(extId),
                     icon: 'layers',
-                    selected: false,
+                    selected: settingsTab === extTabId,
                     onClick: function () {
-                        if (settingsTab !== 'plugins') {
-                            pluginsTabFetchedThisOpen = false;
-                            settingsTab = 'plugins';
-                        }
+                        // Operator: 'klick auf maplibre settings switched
+                        // zurück auf plugins root im settings tree'.
+                        // Routing to a dedicated `extension-<id>` tab keeps
+                        // the row selected and shows the extension's own
+                        // detail page instead of bouncing back to the
+                        // protocols overview.
+                        settingsTab = extTabId;
                         renderSettingsDialog();
                     }
                 });
@@ -121,7 +125,9 @@
         // already on a plugin tab so the active row is visible
         // without an extra click.
         var pluginsKey = 'plugins';
-        var pluginsActive = settingsTab === 'plugins' || settingsTab.indexOf('plugin-') === 0;
+        var pluginsActive = settingsTab === 'plugins'
+            || settingsTab.indexOf('plugin-') === 0
+            || settingsTab.indexOf('extension-') === 0;
         var pluginsExpanded = isSettingsTreeNodeExpanded(pluginsKey, pluginsActive);
         nodes.push({
             id: 'settings:plugins',
@@ -272,6 +278,11 @@
             var pluginId = settingsTab.substring(7);
             var plugin = protocols.find(function (p) { return p.id === pluginId; });
             if (plugin) rightPanel.appendChild(renderPluginSettings(plugin));
+        } else if (settingsTab.indexOf('extension-') === 0) {
+            var extId = settingsTab.substring(10);
+            var ext = (installedExtensions || []).find(function (e) { return (e.id || e.Id) === extId; });
+            if (ext) rightPanel.appendChild(renderExtensionSettings(ext));
+            else rightPanel.appendChild(renderSettingsPlugins());
         }
 
         // ---- Modal frame ----
@@ -3329,6 +3340,45 @@
                 };
                 renderSettingsDialog();
             });
+    }
+
+    /**
+     * Right-pane render for an installed UI extension (Map, Chart, …).
+     * Surfaces what the operator wants to see when they click the
+     * extension row in the Plugins tree: the package id, semantic kinds
+     * it claims, capabilities (Viewer / Editor), and an Installed pill.
+     * No enable/disable toggle yet — extensions ship enabled by their
+     * mere presence; making them runtime-disableable is a separate
+     * scope.
+     */
+    function renderExtensionSettings(ext) {
+        var section = el('div', { className: 'bowire-settings-section' });
+        var name = extensionDisplayName(ext.id || ext.Id || '');
+        section.appendChild(el('h3', {
+            className: 'bowire-settings-section-title',
+            textContent: name + ' (UI extension)'
+        }));
+        section.appendChild(el('div', {
+            className: 'bowire-settings-section-desc',
+            textContent: 'Widget that renders semantic annotations on response payloads. Loaded into the workbench as part of the bundle that ships this extension.'
+        }));
+
+        function row(label, value) {
+            return el('div', { className: 'bowire-settings-extension-meta-row' },
+                el('span', { className: 'bowire-settings-extension-meta-label', textContent: label }),
+                el('span', { className: 'bowire-settings-extension-meta-value', textContent: value }));
+        }
+        section.appendChild(row('Extension id', ext.id || ext.Id || '—'));
+        var pkg = ext.packageId || ext.PackageId || '';
+        if (pkg) section.appendChild(row('Package', pkg));
+        var kinds = ext.kinds || ext.Kinds || [];
+        if (kinds.length) section.appendChild(row('Semantic kinds', kinds.join(', ')));
+        var caps = ext.capabilities || ext.Capabilities || [];
+        if (caps.length) section.appendChild(row('Capabilities', caps.join(', ').toUpperCase()));
+        var api = ext.bowireApi || ext.BowireApi || '';
+        if (api) section.appendChild(row('Bowire API', api));
+
+        return section;
     }
 
     function renderPluginSettings(plugin) {
