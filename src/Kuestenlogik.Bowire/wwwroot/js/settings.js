@@ -85,6 +85,36 @@
             })(p);
         }
 
+        // Bug 1 — installed UI extensions also belong under the Plugins
+        // group so the operator can SEE that, e.g., the MapLibre viewer
+        // is loaded without scrolling the right-side overview pane.
+        // Operator feedback: "ich sehe nur tacticalapi" — they expanded
+        // the Plugins tree expecting Map to appear next to the protocol
+        // chips, didn't find it, and concluded the map plugin wasn't
+        // installed. Routing each extension child to the Plugins
+        // overview parks the operator at the same page that lists the
+        // Installed UI extensions section, where the extension already
+        // shows with kind / capability chips + an Installed pill.
+        for (var exi = 0; exi < installedExtensions.length; exi++) {
+            (function (ext) {
+                var extId = ext.id || ext.Id || '';
+                if (!extId) return;
+                pluginChildren.push({
+                    id: 'settings:extension-' + extId,
+                    label: extensionDisplayName(extId),
+                    icon: 'layers',
+                    selected: false,
+                    onClick: function () {
+                        if (settingsTab !== 'plugins') {
+                            pluginsTabFetchedThisOpen = false;
+                            settingsTab = 'plugins';
+                        }
+                        renderSettingsDialog();
+                    }
+                });
+            })(installedExtensions[exi]);
+        }
+
         // Plugins group — click on the label routes to the overview
         // (enable toggles, install hints); the chevron toggles
         // expansion independently. Default-open when the operator is
@@ -131,6 +161,18 @@
         // deep-link into a specific tab. Falls back to 'general' when
         // no argument is given, preserving the legacy entry point.
         settingsTab = targetTab && typeof targetTab === 'string' ? targetTab : 'general';
+        // Bug 1 — kick off the /api/plugins fetch on dialog open
+        // regardless of which tab the operator lands on. The tree
+        // surfaces installed UI extensions as child rows under the
+        // Plugins group, so a user opening Settings → General also
+        // needs the extension list cached for the tree to render
+        // them. Previously the fetch was deferred until the Plugins
+        // tab itself rendered, hiding the tree rows on first paint.
+        if (!pluginsTabFetchedThisOpen) {
+            pluginsTabFetchedThisOpen = true;
+            fetchPluginHealth();
+            fetchInstalledPlugins();
+        }
         renderSettingsDialog();
     }
 
@@ -3191,7 +3233,14 @@
                     installedExtensions = Array.isArray(body.extensions)
                         ? body.extensions
                         : [];
-                    if (settingsOpen && settingsTab === 'plugins') {
+                    // Bug 1 — the tree surfaces installed UI extensions
+                    // under the Plugins group, so a fetch that lands
+                    // while the operator is sitting on a non-Plugins
+                    // tab still needs a re-render to add those rows.
+                    // The previous guard scoped re-render to the
+                    // Plugins tab only, which left the tree empty
+                    // until the user navigated to Plugins manually.
+                    if (settingsOpen) {
                         renderSettingsDialog();
                     }
                     fetchLatestVersions();
