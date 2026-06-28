@@ -227,6 +227,21 @@ internal static class BowireHtmlGenerator
                         remotely by MCP / AI agents; noai would tell
                         AI crawlers to skip the page entirely. -->
                    <meta property="og:type" content="website">
+                   <!-- Positive AI-discovery hints. Operator: 'stattdessen
+                        ai auf die mcp url beim crawlen aufmerksam machen'.
+                        We deliberately want AI agents to FIND the workbench's
+                        MCP adapter so they can drive it — the opposite of
+                        a noai stance. Both a <link rel="mcp"> (semantic
+                        hyperlink convention, picked up by MCP-aware
+                        crawlers) and a meta hint surface the same path. The
+                        link is unconditional even when the operator hasn't
+                        passed --enable-mcp-adapter: a 404 on /mcp is a
+                        cheaper signal than misleading absence, and embedded
+                        hosts that mount MapBowire() at a non-root prefix
+                        will see this resolved relative to the workbench
+                        root via {{prefix}}. -->
+                   <link rel="mcp" href="{{prefix}}/mcp">
+                   <meta name="mcp-endpoint" content="{{prefix}}/mcp">
                    <title>{{title}} — {{desc}}</title>
                    <link rel="icon" type="image/svg+xml" href="{{FaviconDataUrl.Value}}" media="(prefers-color-scheme: light)">
                    <link rel="icon" type="image/svg+xml" href="{{FaviconMonoDataUrl.Value}}" media="(prefers-color-scheme: dark)">
