@@ -25,6 +25,16 @@
             return;
         }
 
+        // Server-streaming + active subscription for THIS method →
+        // Ctrl+Enter stops the subscription. The registry survives
+        // across tab switches even when `sseSource` is the wrong
+        // tab's slot, so the check above doesn't fire.
+        if (selectedMethod && selectedMethod.serverStreaming
+            && findSubscription(selectedService.name, selectedMethod.name)) {
+            stopSubscriptionFor(selectedService.name, selectedMethod.name);
+            return;
+        }
+
         // Collect all message editor values into requestMessages
         if (requestInputMode === 'form' && selectedMethod && selectedMethod.inputType) {
             // Validate the form before serialising — required fields, numeric

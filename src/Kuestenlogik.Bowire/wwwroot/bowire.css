@@ -23377,3 +23377,259 @@ not as the
     color: var(--bowire-text);
     line-height: 1.5;
 }
+
+/* ---------- Subscription state badge (response pane) ----------
+   Replaces the binary "Streaming" / "Stream ended" toolbar label
+   with a richer pill that flips between Subscribed / Receiving /
+   Idle / Closed / Error. Lives in the existing
+   .bowire-stream-toolbar so the dot + label sit next to the filter
+   toggle on the same row. */
+.bowire-stream-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px 2px 6px;
+    border-radius: 999px;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    font-size: 11px;
+    line-height: 1.4;
+}
+.bowire-stream-status-pill .bowire-stream-status-count {
+    color: var(--bowire-text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+.bowire-stream-status-dot.error {
+    background: var(--bowire-error);
+    animation: none;
+    box-shadow: none;
+}
+/* State-specific tinting on the pill border + text so the badge
+   reads at a glance without relying solely on the dot. */
+.bowire-stream-state-receiving { border-color: color-mix(in srgb, var(--bowire-accent) 35%, var(--bowire-border)); }
+.bowire-stream-state-receiving .bowire-stream-status-text { color: var(--bowire-accent); }
+.bowire-stream-state-subscribed .bowire-stream-status-text { color: var(--bowire-accent); }
+.bowire-stream-state-idle { opacity: 0.78; }
+.bowire-stream-state-closed { opacity: 0.7; }
+.bowire-stream-state-error {
+    border-color: color-mix(in srgb, var(--bowire-error) 50%, var(--bowire-border));
+}
+.bowire-stream-state-error .bowire-stream-status-text { color: var(--bowire-error); }
+
+/* ---------- Subscribe action button ----------
+   Server-streaming methods adopt a subscribe-shaped primary button
+   (rss glyph + "Subscribe" label). Uses the accent gradient so it
+   reads as a CTA but distinct from the standard Execute play
+   triangle. */
+.bowire-subscribe-btn {
+    /* Lean on the existing execute styles; just shift the icon
+       colour to the accent so the glyph reads at a glance. */
+}
+.bowire-subscribe-btn svg { color: currentColor; }
+
+/* ---------- Subscriptions statusbar pill ---------- */
+.bowire-subscriptions-pill-host {
+    display: inline-flex;
+    align-items: center;
+}
+.bowire-subscriptions-pill-host:empty {
+    display: none;
+}
+.bowire-subscriptions-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    color: var(--bowire-text);
+    font-size: 11px;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease;
+    font-family: var(--bowire-font-sans);
+}
+.bowire-subscriptions-pill:hover {
+    background: color-mix(in srgb, var(--bowire-bg-elevated) 80%, var(--bowire-accent) 20%);
+    border-color: var(--bowire-accent);
+}
+.bowire-subscriptions-pill-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bowire-text-tertiary);
+    flex-shrink: 0;
+}
+.bowire-subscriptions-pill-dot-receiving {
+    background: var(--bowire-accent);
+    box-shadow: 0 0 0 0 rgba(64, 158, 255, 0.6);
+    animation: bowire-stream-live-pulse 1.4s ease-out infinite;
+}
+.bowire-subscriptions-pill-dot-idle { background: #c8a64a; }
+.bowire-subscriptions-pill-dot-error { background: var(--bowire-error); }
+.bowire-subscriptions-pill-count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+/* ---------- Subscriptions dropdown ---------- */
+.bowire-subscriptions-dropdown {
+    position: fixed;
+    z-index: 12000;
+    min-width: 360px;
+    max-width: 560px;
+    max-height: 60vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    font-family: var(--bowire-font-sans);
+    font-size: 12px;
+}
+.bowire-subscriptions-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid var(--bowire-border);
+    color: var(--bowire-text);
+    font-weight: 600;
+}
+.bowire-subscriptions-dropdown-count {
+    color: var(--bowire-text-tertiary);
+    font-weight: 400;
+}
+.bowire-subscriptions-dropdown-empty {
+    padding: 14px;
+    color: var(--bowire-text-tertiary);
+    font-style: italic;
+}
+.bowire-subscriptions-dropdown-list {
+    overflow-y: auto;
+    padding: 4px 0;
+    flex: 1;
+}
+.bowire-subscriptions-row {
+    display: grid;
+    grid-template-columns: 16px 1fr auto auto;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 100ms ease;
+}
+.bowire-subscriptions-row:hover {
+    background: color-mix(in srgb, var(--bowire-bg-elevated) 80%, var(--bowire-accent) 12%);
+}
+.bowire-subscriptions-row-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bowire-text-tertiary);
+    justify-self: center;
+}
+.bowire-subscriptions-row-dot-receiving {
+    background: var(--bowire-accent);
+    box-shadow: 0 0 0 0 rgba(64, 158, 255, 0.6);
+    animation: bowire-stream-live-pulse 1.4s ease-out infinite;
+}
+.bowire-subscriptions-row-dot-subscribed {
+    background: var(--bowire-accent);
+}
+.bowire-subscriptions-row-dot-idle { background: #c8a64a; }
+.bowire-subscriptions-row-dot-closed { background: var(--bowire-text-tertiary); }
+.bowire-subscriptions-row-dot-error { background: var(--bowire-error); }
+.bowire-subscriptions-row-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-subscriptions-row-service { color: var(--bowire-text-secondary); }
+.bowire-subscriptions-row-sep { color: var(--bowire-text-tertiary); }
+.bowire-subscriptions-row-method { color: var(--bowire-text); font-weight: 500; }
+.bowire-subscriptions-row-meta {
+    color: var(--bowire-text-tertiary);
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.bowire-subscriptions-row-stop {
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 100ms ease, color 100ms ease, border-color 100ms ease;
+}
+.bowire-subscriptions-row-stop:hover {
+    background: color-mix(in srgb, var(--bowire-error) 18%, transparent);
+    color: var(--bowire-error);
+    border-color: color-mix(in srgb, var(--bowire-error) 50%, var(--bowire-border));
+}
+.bowire-subscriptions-dropdown-footer {
+    padding: 8px 12px;
+    border-top: 1px solid var(--bowire-border);
+    display: flex;
+    justify-content: flex-end;
+}
+.bowire-subscriptions-dropdown-stop-all {
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    border: 1px solid var(--bowire-border);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 100ms ease, color 100ms ease, border-color 100ms ease;
+}
+.bowire-subscriptions-dropdown-stop-all:hover {
+    color: var(--bowire-error);
+    border-color: color-mix(in srgb, var(--bowire-error) 50%, var(--bowire-border));
+    background: color-mix(in srgb, var(--bowire-error) 8%, transparent);
+}
+
+/* The streaming-pre-frame variant of the response loader — drops the
+   spinner, leans on the subscription state pill so the operator sees
+   exactly what's happening (connection is open, no frame yet). */
+.bowire-loading-subscribed {
+    flex-direction: column;
+    gap: 10px;
+    padding: 36px 12px;
+    color: var(--bowire-text-secondary);
+}
+
+/* ---------- Subscriptions row context menu ---------- */
+.bowire-subscriptions-row-context-menu {
+    position: fixed;
+    z-index: 12100;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: 6px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+    padding: 4px 0;
+    min-width: 180px;
+    font-family: var(--bowire-font-sans);
+    font-size: 12px;
+}
+.bowire-subscriptions-row-context-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    padding: 6px 12px;
+    color: var(--bowire-text);
+    cursor: pointer;
+}
+.bowire-subscriptions-row-context-item:hover {
+    background: color-mix(in srgb, var(--bowire-bg-elevated) 80%, var(--bowire-accent) 16%);
+}

@@ -3062,6 +3062,11 @@
             connect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 7h3a5 5 0 010 10h-3M9 17H6a5 5 0 010-10h3"/><line x1="8" y1="12" x2="16" y2="12"/></svg>',
             disconnect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 7h3a5 5 0 010 10h-3M9 17H6a5 5 0 010-10h3"/><line x1="8" y1="12" x2="16" y2="12" stroke-dasharray="2 2"/></svg>',
             send: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
+            // RSS / broadcast / signal — used on Subscribe buttons so
+            // the operator sees a glyph that says "I'm opening a
+            // long-lived feed" instead of the unary Play triangle.
+            // Two arcs + dot, the canonical RSS waveform.
+            subscribe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1.5" fill="currentColor"/></svg>',
             replay: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>',
             // Recording rail-mode icon — film camera (svgrepo 513400).
             // Used by the activity rail + any "go to Recordings" entry

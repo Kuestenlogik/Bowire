@@ -2535,6 +2535,274 @@
     // Schema Watch toggle button — extracted in #138 so both
     // topbar (legacy) and statusbar mount it from the same
     // helper.
+    // ---- Active-subscriptions statusbar pill ----
+    // Renders a small "● 3 subs" chip when there is at least one
+    // active subscription in the registry. Click → opens the
+    // subscriptions dropdown. The pill listens to subscription
+    // changes so the count flips live without touching the rest of
+    // the statusbar (the registry's notify fires once per state
+    // transition + once per second from the idle ticker).
+    var _subscriptionsPillListenerInstalled = false;
+    function renderSubscriptionsPill() {
+        var pill = el('span', {
+            id: 'bowire-subscriptions-pill-host',
+            className: 'bowire-subscriptions-pill-host'
+        });
+        rebuildSubscriptionsPillInto(pill);
+        if (!_subscriptionsPillListenerInstalled) {
+            _subscriptionsPillListenerInstalled = true;
+            onSubscriptionsChanged(function () {
+                var host = document.getElementById('bowire-subscriptions-pill-host');
+                if (host) rebuildSubscriptionsPillInto(host);
+                // Drop the dropdown when no subs remain — otherwise
+                // the operator stares at an empty popover for the
+                // next stream they open.
+                var subs = getActiveSubscriptions();
+                if (subs.length === 0) {
+                    var dd = document.getElementById('bowire-subscriptions-dropdown');
+                    if (dd) dd.remove();
+                } else {
+                    var dd2 = document.getElementById('bowire-subscriptions-dropdown');
+                    if (dd2) rebuildSubscriptionsDropdownInto(dd2);
+                }
+            });
+        }
+        return pill;
+    }
+    function rebuildSubscriptionsPillInto(host) {
+        host.innerHTML = '';
+        var subs = getActiveSubscriptions();
+        if (subs.length === 0) return;
+        // Aggregate: any error → red dot; any receiving → green dot;
+        // otherwise idle / subscribed → amber/grey.
+        var anyError = false;
+        var anyReceiving = false;
+        var anyIdle = false;
+        for (var i = 0; i < subs.length; i++) {
+            var st = subscriptionState(subs[i]);
+            if (st === 'error') anyError = true;
+            else if (st === 'receiving' || st === 'subscribed') anyReceiving = true;
+            else if (st === 'idle') anyIdle = true;
+        }
+        var aggState = anyError ? 'error' : (anyReceiving ? 'receiving' : (anyIdle ? 'idle' : 'closed'));
+        var pill = el('button', {
+            type: 'button',
+            className: 'bowire-subscriptions-pill bowire-subscriptions-pill-' + aggState,
+            id: 'bowire-subscriptions-pill',
+            title: subs.length + ' active subscription' + (subs.length === 1 ? '' : 's') + ' — click for details',
+            onClick: function (e) {
+                e.stopPropagation();
+                toggleSubscriptionsDropdown();
+            }
+        });
+        pill.appendChild(el('span', {
+            className: 'bowire-subscriptions-pill-dot bowire-subscriptions-pill-dot-' + aggState
+        }));
+        pill.appendChild(el('span', {
+            className: 'bowire-subscriptions-pill-count',
+            textContent: subs.length + ' subscription' + (subs.length === 1 ? '' : 's')
+        }));
+        host.appendChild(pill);
+    }
+    function toggleSubscriptionsDropdown() {
+        var existing = document.getElementById('bowire-subscriptions-dropdown');
+        if (existing) { existing.remove(); return; }
+        var anchor = document.getElementById('bowire-subscriptions-pill');
+        if (!anchor) return;
+        var dd = el('div', {
+            id: 'bowire-subscriptions-dropdown',
+            className: 'bowire-subscriptions-dropdown'
+        });
+        rebuildSubscriptionsDropdownInto(dd);
+        document.body.appendChild(dd);
+        // Position the dropdown above the pill (statusbar lives at
+        // the bottom). Anchored to the pill's bounding rect so the
+        // popover follows when the statusbar reflows.
+        var rect = anchor.getBoundingClientRect();
+        dd.style.left = rect.left + 'px';
+        dd.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+        // Dismiss on outside click.
+        var outside = function (e) {
+            if (dd.contains(e.target) || anchor.contains(e.target)) return;
+            dd.remove();
+            document.removeEventListener('mousedown', outside, true);
+        };
+        setTimeout(function () {
+            document.addEventListener('mousedown', outside, true);
+        }, 0);
+    }
+    function rebuildSubscriptionsDropdownInto(dd) {
+        dd.innerHTML = '';
+        var subs = getActiveSubscriptions();
+        // Sort by start time ascending so older subs surface first —
+        // matches the operator's mental model of "this one's been
+        // running the longest".
+        subs.sort(function (a, b) { return a.startedAt - b.startedAt; });
+
+        var header = el('div', { className: 'bowire-subscriptions-dropdown-header' },
+            el('span', { textContent: 'Active subscriptions' }),
+            el('span', {
+                className: 'bowire-subscriptions-dropdown-count',
+                textContent: '(' + subs.length + ')'
+            })
+        );
+        dd.appendChild(header);
+
+        if (subs.length === 0) {
+            dd.appendChild(el('div', {
+                className: 'bowire-subscriptions-dropdown-empty',
+                textContent: 'No active subscriptions.'
+            }));
+            return;
+        }
+
+        var list = el('div', { className: 'bowire-subscriptions-dropdown-list' });
+        for (var i = 0; i < subs.length; i++) {
+            (function (sub) {
+                var st = subscriptionState(sub);
+                var ageSec = Math.max(0, Math.round((Date.now() - sub.startedAt) / 1000));
+                var ageText;
+                if (st === 'idle') ageText = 'IDLE';
+                else if (ageSec < 60) ageText = ageSec + 's';
+                else if (ageSec < 3600) ageText = Math.floor(ageSec / 60) + 'm';
+                else ageText = Math.floor(ageSec / 3600) + 'h';
+
+                var row = el('div', {
+                    className: 'bowire-subscriptions-row bowire-subscriptions-row-' + st,
+                    title: sub.service + '.' + sub.method
+                        + (sub.channelError ? ('\nError: ' + sub.channelError) : ''),
+                    onClick: function () {
+                        // Switch to the row's method via openTab so
+                        // the operator can inspect its frames in the
+                        // main pane.
+                        if (typeof openTabByServiceMethod === 'function') {
+                            openTabByServiceMethod(sub.service, sub.method);
+                        } else {
+                            switchToServiceMethod(sub.service, sub.method);
+                        }
+                        var d = document.getElementById('bowire-subscriptions-dropdown');
+                        if (d) d.remove();
+                    },
+                    oncontextmenu: function (e) {
+                        e.preventDefault();
+                        openSubscriptionRowContextMenu(e, sub);
+                    }
+                });
+                row.appendChild(el('span', {
+                    className: 'bowire-subscriptions-row-dot bowire-subscriptions-row-dot-' + st
+                }));
+                var label = el('span', { className: 'bowire-subscriptions-row-label' });
+                label.appendChild(el('span', {
+                    className: 'bowire-subscriptions-row-service',
+                    textContent: truncateMiddle(sub.service, 30)
+                }));
+                label.appendChild(el('span', {
+                    className: 'bowire-subscriptions-row-sep',
+                    textContent: ' · '
+                }));
+                label.appendChild(el('span', {
+                    className: 'bowire-subscriptions-row-method',
+                    textContent: sub.method
+                }));
+                row.appendChild(label);
+                row.appendChild(el('span', {
+                    className: 'bowire-subscriptions-row-meta',
+                    textContent: sub.receivedCount + ' msg' + (sub.receivedCount === 1 ? '' : 's')
+                        + ' · ' + ageText
+                }));
+                var stopBtn = el('button', {
+                    type: 'button',
+                    className: 'bowire-subscriptions-row-stop',
+                    title: 'Stop this subscription',
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        stopSubscriptionFor(sub.service, sub.method);
+                    }
+                }, el('span', { innerHTML: svgIcon('stop'), style: 'width:11px;height:11px;display:flex' }));
+                row.appendChild(stopBtn);
+                list.appendChild(row);
+            })(subs[i]);
+        }
+        dd.appendChild(list);
+
+        var footer = el('div', { className: 'bowire-subscriptions-dropdown-footer' });
+        footer.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-subscriptions-dropdown-stop-all',
+            textContent: 'Stop all',
+            onClick: function () {
+                var all = getActiveSubscriptions();
+                for (var i = 0; i < all.length; i++) {
+                    stopSubscriptionFor(all[i].service, all[i].method);
+                }
+            }
+        }));
+        dd.appendChild(footer);
+    }
+    function openSubscriptionRowContextMenu(e, sub) {
+        // Strip any existing context menu first.
+        var prev = document.querySelector('.bowire-subscriptions-row-context-menu');
+        if (prev) prev.remove();
+        var menu = el('div', { className: 'bowire-subscriptions-row-context-menu' });
+        menu.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-subscriptions-row-context-item',
+            textContent: 'Stop subscription',
+            onClick: function () {
+                stopSubscriptionFor(sub.service, sub.method);
+                menu.remove();
+            }
+        }));
+        menu.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-subscriptions-row-context-item',
+            textContent: 'Switch to method',
+            onClick: function () {
+                if (typeof openTabByServiceMethod === 'function') {
+                    openTabByServiceMethod(sub.service, sub.method);
+                } else {
+                    switchToServiceMethod(sub.service, sub.method);
+                }
+                var d = document.getElementById('bowire-subscriptions-dropdown');
+                if (d) d.remove();
+                menu.remove();
+            }
+        }));
+        menu.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-subscriptions-row-context-item',
+            textContent: 'Copy method path',
+            onClick: function () {
+                try {
+                    navigator.clipboard.writeText(sub.service + '/' + sub.method);
+                    if (typeof toast === 'function') toast('Copied ' + sub.service + '/' + sub.method, 'success');
+                } catch { /* clipboard unavailable */ }
+                menu.remove();
+            }
+        }));
+        document.body.appendChild(menu);
+        menu.style.left = e.clientX + 'px';
+        menu.style.top = e.clientY + 'px';
+        var dismiss = function () { menu.remove(); document.removeEventListener('mousedown', dismiss, true); };
+        setTimeout(function () { document.addEventListener('mousedown', dismiss, true); }, 0);
+    }
+    // Fallback switcher used when openTabByServiceMethod isn't in
+    // scope. Walks the discovered services + invokes openTab — works
+    // for both Discover-rail and freeform contexts.
+    function switchToServiceMethod(svcName, methodName) {
+        if (typeof services === 'undefined' || !Array.isArray(services)) return;
+        for (var i = 0; i < services.length; i++) {
+            if (services[i].name !== svcName) continue;
+            var methods = services[i].methods || [];
+            for (var j = 0; j < methods.length; j++) {
+                if (methods[j].name === methodName) {
+                    if (typeof openTab === 'function') openTab(services[i], methods[j]);
+                    return;
+                }
+            }
+        }
+    }
+
     function renderWatchButton() {
         return el('button', {
             id: 'bowire-schema-watch-btn',
@@ -2620,6 +2888,12 @@
                 el('span', { textContent: 'Save failed: ' + saveState.target })
             ));
         }
+        // Active-subscriptions pill — leftmost on the statusbar so
+        // running streams stay in peripheral view even when the
+        // operator's focus is on the response pane. Mounts a single
+        // <span id> we can surgically refresh via the registry
+        // listener (no full statusbar re-render per second).
+        left.appendChild(renderSubscriptionsPill());
         bar.appendChild(left);
 
         var centre = el('div', { className: 'bowire-statusbar-centre' });
@@ -2757,7 +3031,11 @@
         }));
         // Group 1 — drawer/log toggles (Console, Activity, Tests). All
         // three open a panel or drawer, sharing the same 'show me what
-        // happened' semantic.
+        // happened' semantic. The Subscriptions pill sits on the LEFT
+        // cluster (only when there's at least one active sub) — see
+        // the build below; it's a leading pill that flags "you have
+        // live streams running" before the operator scans the right-
+        // hand chrome.
         right.appendChild(el('div', { className: 'bowire-statusbar-group' },
             consoleBtn, activityBtn, testsBtn));
         // Group 2 — layout (split toggle). Single pill but isolated so

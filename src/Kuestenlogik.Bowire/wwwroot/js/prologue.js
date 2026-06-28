@@ -4352,6 +4352,125 @@
             try { saved.sseSource.close(); } catch {}
         }
         delete openChannels[key];
+        // The duplex/client-streaming twin entry in the subscription
+        // registry — keep both views in sync so the statusbar pill
+        // count doesn't outlive the channel.
+        delete subscriptionRegistry[key];
+        notifySubscriptionsChanged();
+    }
+
+    // ---- Active Subscription Registry ----
+    // Single source of truth for "what streams are open right now",
+    // keyed by service::method just like openChannels. Server-streaming
+    // SSE sources land here too — openChannels only ever tracked duplex
+    // / client-streaming channels, so the statusbar pill + per-pane
+    // state badge needed a registry that spans BOTH families. Entries:
+    //   { kind, service, method, sseSource, startedAt, lastFrameAt,
+    //     receivedCount, sentCount, connected, channelError }
+    var subscriptionRegistry = {};
+    // Per-pill change listeners — keeps the statusbar pill in sync
+    // without a full render() per frame. The streaming pane state
+    // badge listens separately via a direct DOM update.
+    var subscriptionListeners = [];
+    function notifySubscriptionsChanged() {
+        for (var i = 0; i < subscriptionListeners.length; i++) {
+            try { subscriptionListeners[i](); } catch (e) { /* swallow */ }
+        }
+    }
+    function onSubscriptionsChanged(cb) {
+        if (typeof cb === 'function') subscriptionListeners.push(cb);
+    }
+    function registerSubscription(svcName, methodName, kind, sseSource) {
+        if (!svcName || !methodName) return;
+        var key = channelStoreKey(svcName, methodName);
+        var now = Date.now();
+        subscriptionRegistry[key] = {
+            kind: kind || 'server',
+            service: svcName,
+            method: methodName,
+            sseSource: sseSource || null,
+            startedAt: now,
+            lastFrameAt: now,
+            receivedCount: 0,
+            sentCount: 0,
+            connected: true,
+            channelError: null
+        };
+        notifySubscriptionsChanged();
+    }
+    function markSubscriptionFrame(svcName, methodName, direction) {
+        if (!svcName || !methodName) return;
+        var entry = subscriptionRegistry[channelStoreKey(svcName, methodName)];
+        if (!entry) return;
+        entry.lastFrameAt = Date.now();
+        if (direction === 'sent') entry.sentCount++;
+        else entry.receivedCount++;
+        notifySubscriptionsChanged();
+    }
+    function markSubscriptionError(svcName, methodName, message) {
+        if (!svcName || !methodName) return;
+        var entry = subscriptionRegistry[channelStoreKey(svcName, methodName)];
+        if (!entry) return;
+        entry.channelError = message || 'Error';
+        entry.connected = false;
+        notifySubscriptionsChanged();
+    }
+    function markSubscriptionClosed(svcName, methodName) {
+        if (!svcName || !methodName) return;
+        var entry = subscriptionRegistry[channelStoreKey(svcName, methodName)];
+        if (!entry) return;
+        entry.connected = false;
+        notifySubscriptionsChanged();
+    }
+    function unregisterSubscription(svcName, methodName) {
+        if (!svcName || !methodName) return;
+        var key = channelStoreKey(svcName, methodName);
+        var entry = subscriptionRegistry[key];
+        if (entry && entry.sseSource) {
+            try { entry.sseSource.close(); } catch {}
+        }
+        delete subscriptionRegistry[key];
+        notifySubscriptionsChanged();
+    }
+    function findSubscription(svcName, methodName) {
+        if (!svcName || !methodName) return null;
+        return subscriptionRegistry[channelStoreKey(svcName, methodName)] || null;
+    }
+    function getActiveSubscriptions() {
+        var out = [];
+        for (var k in subscriptionRegistry) {
+            if (Object.prototype.hasOwnProperty.call(subscriptionRegistry, k)) {
+                out.push(subscriptionRegistry[k]);
+            }
+        }
+        return out;
+    }
+    // Idle is a visual hint only — does not close the stream. Tunable
+    // for tests; the canonical value matches the operator's spec.
+    var SUBSCRIPTION_IDLE_MS = 5000;
+    function subscriptionState(entry) {
+        if (!entry) return 'closed';
+        if (entry.channelError) return 'error';
+        if (!entry.connected) return 'closed';
+        if (entry.receivedCount === 0) return 'subscribed';
+        if ((Date.now() - entry.lastFrameAt) > SUBSCRIPTION_IDLE_MS) return 'idle';
+        return 'receiving';
+    }
+    // Tick once per second so the per-row age + idle state on the
+    // pill / dropdown stays fresh. The interval is cheap (no DOM
+    // when nothing's subscribed) and only triggers listeners that
+    // already debounce their own updates.
+    var _subscriptionTicker = null;
+    function ensureSubscriptionTicker() {
+        if (_subscriptionTicker) return;
+        _subscriptionTicker = setInterval(function () {
+            // Skip the notify when there are no active subs — saves
+            // the listener walk on every idle tick.
+            for (var _ in subscriptionRegistry) {
+                notifySubscriptionsChanged();
+                return;
+            }
+        }, 1000);
     }
 
     // ---- GraphQL State ----
