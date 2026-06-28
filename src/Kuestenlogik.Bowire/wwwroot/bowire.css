@@ -6559,11 +6559,10 @@ response below.
     border-left: 0;
     border-top: 1px solid var(--bowire-border);
 }
-.bowire-content[data-split="vertical"] .bowire-pane-divider {
-    width: 100%;
-    height: 6px;
-    cursor: row-resize;
-}
+/* Vertical-split divider geometry lives in the unified
+   .bowire-pane-divider block further down (10 px footprint, ns-resize
+   cursor, hover-intent gate, grip-dot clusters, edge maximize toggles).
+   The old 6 px row-resize override here is gone. */
 
 .bowire-pane-header {
     display: flex;
@@ -12456,18 +12455,241 @@ duplicate) */
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ---------- Resizable Panes ---------- */
+/* ---------- Resizable Panes ----------
+   Pane divider between request + response panes. Mirrors the sidebar
+   splitter's design language: 10 px footprint, transparent background,
+   accent border on the leading edge, 250 ms hover-intent gate before
+   the highlight appears, grip-dot clusters centred along the bar, and
+   two edge-toggle buttons that maximize the leading or trailing pane.
+   Works in both orientations — horizontal (request | response) and
+   vertical (request stacked over response) — switched via the parent
+   .bowire-content[data-split] attribute. */
 .bowire-pane-divider {
-    width: 5px;
-    cursor: col-resize;
-    background: var(--bowire-border);
-    transition: background var(--bowire-transition);
+    flex: 0 0 10px;
+    background: transparent;
+    cursor: ew-resize;
     flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+    /* Leading-edge border so the bar reads as a hairline against the
+       request pane — matches the sidebar-splitter's left border. */
+    border-left: 1px solid var(--bowire-border-subtle);
+    /* 150 ms transition with no delay on hover-OUT (snap back). The
+       hover rule below adds a delay so the highlight only appears if
+       the cursor dwells on the bar. */
+    transition: background 150ms ease, border-color 150ms ease;
+}
+.bowire-pane-divider:hover,
+.bowire-pane-divider.dragging,
+.bowire-pane-divider:active {
+    background: var(--bowire-surface);
+    border-left-color: var(--bowire-accent);
+    /* Hover-intent gate — 250 ms dwell before the accent appears. */
+    transition-delay: 250ms;
+}
+.bowire-pane-divider.dragging,
+.bowire-pane-divider:active {
+    /* During a real drag the user has already committed; skip the gate. */
+    transition-delay: 0ms;
 }
 
-.bowire-pane-divider:hover,
-.bowire-pane-divider.dragging {
-    background: var(--bowire-accent);
+/* Top + bottom grip-dot clusters: subtle three-dot run above + below
+   the centre of the bar. */
+.bowire-pane-divider::before,
+.bowire-pane-divider::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 14px;
+    background-image: radial-gradient(circle, var(--bowire-text-tertiary) 1px, transparent 1.5px);
+    background-size: 2px 5px;
+    background-repeat: repeat-y;
+    opacity: 0;
+    transition: opacity var(--bowire-transition);
+    pointer-events: none;
+}
+.bowire-pane-divider::before { top: calc(50% - 32px); }
+.bowire-pane-divider::after  { top: calc(50% + 18px); }
+.bowire-pane-divider:hover::before,
+.bowire-pane-divider:hover::after,
+.bowire-pane-divider.dragging::before,
+.bowire-pane-divider.dragging::after {
+    opacity: 0.7;
+    transition-delay: 250ms;
+}
+.bowire-pane-divider.dragging::before,
+.bowire-pane-divider.dragging::after {
+    transition-delay: 0ms;
+}
+
+/* Vertical split — flip the bar's axis. Leading edge becomes the
+   top border; grip dots stack horizontally instead of vertically. */
+.bowire-content[data-split="vertical"] .bowire-pane-divider {
+    flex: 0 0 10px;
+    width: 100%;
+    height: 10px;
+    cursor: ns-resize;
+    border-left: 0;
+    border-top: 1px solid var(--bowire-border-subtle);
+}
+.bowire-content[data-split="vertical"] .bowire-pane-divider:hover,
+.bowire-content[data-split="vertical"] .bowire-pane-divider.dragging,
+.bowire-content[data-split="vertical"] .bowire-pane-divider:active {
+    border-top-color: var(--bowire-accent);
+}
+.bowire-content[data-split="vertical"] .bowire-pane-divider::before,
+.bowire-content[data-split="vertical"] .bowire-pane-divider::after {
+    top: 50%;
+    left: auto;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 2px;
+    background-image: radial-gradient(circle, var(--bowire-text-tertiary) 1px, transparent 1.5px);
+    background-size: 5px 2px;
+    background-repeat: repeat-x;
+}
+.bowire-content[data-split="vertical"] .bowire-pane-divider::before {
+    left: calc(50% - 32px);
+}
+.bowire-content[data-split="vertical"] .bowire-pane-divider::after {
+    left: calc(50% + 18px);
+}
+
+/* Suppress the flex-basis transition on the panes while the divider
+   is being dragged — otherwise pane widths animate on every mousemove
+   and the drag feels laggy. */
+.bowire-content.is-resizing .bowire-pane {
+    transition: none !important;
+}
+
+/* Edge maximize toggles — two chevron buttons hidden inside the
+   divider, one near each end. Click leading → maximize request pane,
+   click trailing → maximize response pane. Same visual family as the
+   sidebar's edge-toggle: transparent button, tertiary-text glyph
+   that deepens to accent on splitter hover. */
+.bowire-pane-divider-edge-toggle {
+    position: absolute;
+    width: 18px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-pane-divider-edge-toggle svg {
+    width: 12px;
+    height: 12px;
+    transition: transform var(--bowire-transition);
+}
+.bowire-pane-divider:hover .bowire-pane-divider-edge-toggle {
+    opacity: 1;
+    color: var(--bowire-accent);
+    transition-delay: 250ms;
+}
+/* Horizontal split — leading toggle sits in the top quarter,
+   trailing toggle in the bottom quarter. Both centred on the bar. */
+.bowire-pane-divider-edge-toggle-leading {
+    left: 50%;
+    transform: translate(-50%, 0);
+    top: 18px;
+}
+.bowire-pane-divider-edge-toggle-trailing {
+    left: 50%;
+    transform: translate(-50%, 0);
+    bottom: 18px;
+}
+/* Horizontal: leading toggle's chevron points LEFT (= 'maximize the
+   request pane toward me'); trailing points RIGHT. */
+.bowire-pane-divider-edge-toggle-leading svg {
+    transform: rotate(180deg);
+}
+/* Vertical split — toggles sit at the left + right edges of the
+   horizontal bar; leading points UP, trailing points DOWN. */
+.bowire-content[data-split="vertical"] .bowire-pane-divider-edge-toggle-leading,
+.bowire-content[data-split="vertical"] .bowire-pane-divider-edge-toggle-trailing {
+    top: 50%;
+    transform: translate(0, -50%);
+    bottom: auto;
+}
+.bowire-content[data-split="vertical"] .bowire-pane-divider-edge-toggle-leading {
+    left: 18px;
+}
+.bowire-content[data-split="vertical"] .bowire-pane-divider-edge-toggle-trailing {
+    right: 18px;
+    left: auto;
+}
+.bowire-content[data-split="vertical"] .bowire-pane-divider-edge-toggle-leading svg {
+    transform: rotate(-90deg);
+}
+.bowire-content[data-split="vertical"] .bowire-pane-divider-edge-toggle-trailing svg {
+    transform: rotate(90deg);
+}
+
+/* Maximized states — when leading is maxed the request pane fills the
+   row + the response pane collapses to zero (and vice versa). The
+   resizer JS sets these classes on the parent .bowire-content. The
+   panes need min-width: 0 / min-height: 0 to actually collapse —
+   their content has implicit min sizes otherwise. */
+.bowire-content.is-leading-maxed > .bowire-pane:first-of-type {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 0;
+    min-height: 0;
+}
+.bowire-content.is-leading-maxed > .bowire-pane:last-of-type {
+    flex: 0 0 0 !important;
+    width: 0 !important;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+.bowire-content.is-trailing-maxed > .bowire-pane:first-of-type {
+    flex: 0 0 0 !important;
+    width: 0 !important;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+.bowire-content.is-trailing-maxed > .bowire-pane:last-of-type {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 0;
+    min-height: 0;
+}
+/* Vertical split — same idea, but on the height axis. */
+.bowire-content[data-split="vertical"].is-leading-maxed > .bowire-pane:first-of-type,
+.bowire-content[data-split="vertical"].is-trailing-maxed > .bowire-pane:last-of-type {
+    width: auto !important;
+    height: 100% !important;
+}
+.bowire-content[data-split="vertical"].is-leading-maxed > .bowire-pane:last-of-type,
+.bowire-content[data-split="vertical"].is-trailing-maxed > .bowire-pane:first-of-type {
+    width: auto !important;
+    height: 0 !important;
+}
+/* When a pane is maxed, flip the matching toggle's icon direction so
+   it reads as 'collapse back' instead of 'expand toward me'. */
+.bowire-content.is-leading-maxed .bowire-pane-divider-edge-toggle-leading svg {
+    transform: rotate(0deg);
+}
+.bowire-content.is-trailing-maxed .bowire-pane-divider-edge-toggle-trailing svg {
+    transform: rotate(180deg);
+}
+.bowire-content[data-split="vertical"].is-leading-maxed .bowire-pane-divider-edge-toggle-leading svg {
+    transform: rotate(90deg);
+}
+.bowire-content[data-split="vertical"].is-trailing-maxed .bowire-pane-divider-edge-toggle-trailing svg {
+    transform: rotate(-90deg);
 }
 
 /* ---------- Streaming Animation ---------- */

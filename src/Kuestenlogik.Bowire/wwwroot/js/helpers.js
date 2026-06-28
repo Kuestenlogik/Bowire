@@ -1181,45 +1181,335 @@
         return phrases[n] || '';
     }
 
-    function initResizer(divider, leftPane, rightPane) {
-        var startX, startLeftWidth, startRightWidth;
-        var isDragging = false;
+    /**
+     * initResizer — orientation-aware request|response pane resizer.
+     *
+     * Reads the parent .bowire-content's [data-split] attribute to
+     * decide whether the divider is horizontal (request|response,
+     * vertical bar, ew-resize) or vertical (request over response,
+     * horizontal bar, ns-resize).
+     *
+     * Wires:
+     *   - drag-to-resize with min-pane size 200 px / 120 px (h/v),
+     *   - two edge maximize toggles (leading + trailing chevrons),
+     *   - localStorage persistence per orientation under
+     *     bowire_pane_ratio:<orientation> (a 0..1 leading-fraction),
+     *   - a ResizeObserver on the parent so re-renders that change
+     *     [data-split] re-read the axis,
+     *   - ARIA: role="separator" + aria-orientation + aria-valuemin/
+     *     max/now on the divider for keyboard / AT consumers.
+     *
+     * Idempotent — calling initResizer on the same divider twice is a
+     * no-op (the divider carries a dataset.resizerInit marker).
+     */
+    function initResizer(divider, leadingPane, trailingPane) {
+        if (!divider || !leadingPane || !trailingPane) return;
+        if (divider.dataset.resizerInit === '1') return;
+        divider.dataset.resizerInit = '1';
 
-        function onMouseDown(e) {
+        var parent = divider.parentElement;
+
+        // --- Lazily add the two edge maximize toggles + ARIA chrome ---
+        // The chevron icon source matches the sidebar splitter's
+        // edge-toggle (>) so the family reads as one design.
+        var CHEVRON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>';
+        function _ensureToggles() {
+            if (divider.querySelector('.bowire-pane-divider-edge-toggle-leading')) return;
+            var leading = document.createElement('button');
+            leading.type = 'button';
+            leading.className = 'bowire-pane-divider-edge-toggle bowire-pane-divider-edge-toggle-leading';
+            leading.setAttribute('data-action', 'max-leading');
+            leading.setAttribute('aria-label', 'Maximize request pane');
+            leading.title = 'Maximize request pane (click again to restore)';
+            leading.innerHTML = '<span>' + CHEVRON_SVG + '</span>';
+            var trailing = document.createElement('button');
+            trailing.type = 'button';
+            trailing.className = 'bowire-pane-divider-edge-toggle bowire-pane-divider-edge-toggle-trailing';
+            trailing.setAttribute('data-action', 'max-trailing');
+            trailing.setAttribute('aria-label', 'Maximize response pane');
+            trailing.title = 'Maximize response pane (click again to restore)';
+            trailing.innerHTML = '<span>' + CHEVRON_SVG + '</span>';
+            divider.appendChild(leading);
+            divider.appendChild(trailing);
+        }
+        _ensureToggles();
+
+        // --- Orientation helpers (re-read on resize / re-render) ----
+        function _orientation() {
+            var p = divider.parentElement;
+            return (p && p.getAttribute('data-split') === 'vertical')
+                ? 'vertical' : 'horizontal';
+        }
+        function _storageKey() {
+            return 'bowire_pane_ratio:' + _orientation();
+        }
+        function _minSize() {
+            return _orientation() === 'vertical' ? 120 : 200;
+        }
+        function _applyAria() {
+            divider.setAttribute('role', 'separator');
+            divider.setAttribute('aria-orientation',
+                _orientation() === 'vertical' ? 'horizontal' : 'vertical');
+            divider.setAttribute('aria-valuemin', '0');
+            divider.setAttribute('aria-valuemax', '100');
+        }
+        function _setAriaValue(ratio) {
+            divider.setAttribute('aria-valuenow', String(Math.round(ratio * 100)));
+        }
+
+        // --- Maximize state — persisted per orientation. The pane CSS
+        // classes (.is-leading-maxed / .is-trailing-maxed) collapse the
+        // opposite pane to 0 + clear the inline flex on the panes so
+        // the CSS !important rules can take over. ---
+        function _isLeadingMaxed() {
+            return !!(parent && parent.classList.contains('is-leading-maxed'));
+        }
+        function _isTrailingMaxed() {
+            return !!(parent && parent.classList.contains('is-trailing-maxed'));
+        }
+        function _clearMaxed() {
+            if (!parent) return;
+            parent.classList.remove('is-leading-maxed', 'is-trailing-maxed');
+            try { localStorage.removeItem(_storageKey() + ':maxed'); } catch { /* ignore */ }
+        }
+        function _setMaxed(which) {
+            if (!parent) return;
+            // Clear inline pane sizes so the CSS class rules win.
+            leadingPane.style.flex = '';
+            leadingPane.style.width = '';
+            leadingPane.style.height = '';
+            trailingPane.style.flex = '';
+            trailingPane.style.width = '';
+            trailingPane.style.height = '';
+            parent.classList.remove('is-leading-maxed', 'is-trailing-maxed');
+            if (which === 'leading') parent.classList.add('is-leading-maxed');
+            else if (which === 'trailing') parent.classList.add('is-trailing-maxed');
+            try { localStorage.setItem(_storageKey() + ':maxed', which); } catch { /* ignore */ }
+        }
+
+        // --- Ratio persistence + apply. Ratio is the leading pane's
+        // share (0..1). Falls back to 0.5 on first load. ---
+        function _loadRatio() {
+            try {
+                var raw = localStorage.getItem(_storageKey());
+                if (raw == null) return 0.5;
+                var v = parseFloat(raw);
+                if (!isFinite(v) || v <= 0 || v >= 1) return 0.5;
+                return v;
+            } catch { return 0.5; }
+        }
+        function _saveRatio(ratio) {
+            try { localStorage.setItem(_storageKey(), String(ratio)); } catch { /* ignore */ }
+        }
+        function _applyRatio(ratio) {
+            var orientation = _orientation();
+            // Inline px-based widths drive the actual size; the CSS
+            // grows / shrinks the panes inside the flex row.
+            if (orientation === 'horizontal') {
+                var totalW = leadingPane.offsetWidth + trailingPane.offsetWidth;
+                if (totalW <= 0) {
+                    // Layout not measurable yet — fall back to flex-basis percentages.
+                    leadingPane.style.flex = ratio + ' 1 0';
+                    trailingPane.style.flex = (1 - ratio) + ' 1 0';
+                    leadingPane.style.width = '';
+                    trailingPane.style.width = '';
+                } else {
+                    var newL = Math.max(_minSize(), Math.min(totalW - _minSize(), ratio * totalW));
+                    leadingPane.style.flex = 'none';
+                    leadingPane.style.width = newL + 'px';
+                    trailingPane.style.flex = 'none';
+                    trailingPane.style.width = (totalW - newL) + 'px';
+                }
+            } else {
+                var totalH = leadingPane.offsetHeight + trailingPane.offsetHeight;
+                if (totalH <= 0) {
+                    leadingPane.style.flex = ratio + ' 1 0';
+                    trailingPane.style.flex = (1 - ratio) + ' 1 0';
+                    leadingPane.style.height = '';
+                    trailingPane.style.height = '';
+                } else {
+                    var newT = Math.max(_minSize(), Math.min(totalH - _minSize(), ratio * totalH));
+                    leadingPane.style.flex = 'none';
+                    leadingPane.style.height = newT + 'px';
+                    trailingPane.style.flex = 'none';
+                    trailingPane.style.height = (totalH - newT) + 'px';
+                }
+            }
+            _setAriaValue(ratio);
+        }
+        function _clearInlineSizes() {
+            leadingPane.style.flex = '';
+            leadingPane.style.width = '';
+            leadingPane.style.height = '';
+            trailingPane.style.flex = '';
+            trailingPane.style.width = '';
+            trailingPane.style.height = '';
+        }
+
+        // --- Drag handlers ---
+        var startCoord = 0;
+        var startLeading = 0;
+        var startTrailing = 0;
+        var isDragging = false;
+        var dragAxis = 'horizontal';
+
+        function onPointerDown(e) {
+            // Don't start a drag from the edge-toggle buttons.
+            if (e.target && e.target.closest && e.target.closest('.bowire-pane-divider-edge-toggle')) {
+                return;
+            }
+            // Clicking the bar while a pane is maxed should restore
+            // before allowing a fresh drag from a known geometry.
+            if (_isLeadingMaxed() || _isTrailingMaxed()) {
+                _clearMaxed();
+                _applyRatio(_loadRatio());
+            }
             isDragging = true;
-            startX = e.clientX;
-            startLeftWidth = leftPane.offsetWidth;
-            startRightWidth = rightPane.offsetWidth;
+            dragAxis = _orientation();
+            if (dragAxis === 'horizontal') {
+                startCoord = e.clientX;
+                startLeading = leadingPane.offsetWidth;
+                startTrailing = trailingPane.offsetWidth;
+                document.body.style.cursor = 'ew-resize';
+            } else {
+                startCoord = e.clientY;
+                startLeading = leadingPane.offsetHeight;
+                startTrailing = trailingPane.offsetHeight;
+                document.body.style.cursor = 'ns-resize';
+            }
             divider.classList.add('dragging');
-            document.body.style.cursor = 'col-resize';
+            if (parent) parent.classList.add('is-resizing');
             document.body.style.userSelect = 'none';
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
+            document.addEventListener('mousemove', onPointerMove);
+            document.addEventListener('mouseup', onPointerUp);
             e.preventDefault();
         }
 
-        function onMouseMove(e) {
+        function onPointerMove(e) {
             if (!isDragging) return;
-            var dx = e.clientX - startX;
-            var totalWidth = startLeftWidth + startRightWidth;
-            var newLeftWidth = Math.max(200, Math.min(totalWidth - 200, startLeftWidth + dx));
-            var newRightWidth = totalWidth - newLeftWidth;
-            leftPane.style.flex = 'none';
-            leftPane.style.width = newLeftWidth + 'px';
-            rightPane.style.flex = 'none';
-            rightPane.style.width = newRightWidth + 'px';
+            var total = startLeading + startTrailing;
+            if (total <= 0) return;
+            var min = _minSize();
+            if (dragAxis === 'horizontal') {
+                var dx = e.clientX - startCoord;
+                var newL = Math.max(min, Math.min(total - min, startLeading + dx));
+                leadingPane.style.flex = 'none';
+                leadingPane.style.width = newL + 'px';
+                trailingPane.style.flex = 'none';
+                trailingPane.style.width = (total - newL) + 'px';
+                _setAriaValue(newL / total);
+            } else {
+                var dy = e.clientY - startCoord;
+                var newT = Math.max(min, Math.min(total - min, startLeading + dy));
+                leadingPane.style.flex = 'none';
+                leadingPane.style.height = newT + 'px';
+                trailingPane.style.flex = 'none';
+                trailingPane.style.height = (total - newT) + 'px';
+                _setAriaValue(newT / total);
+            }
         }
 
-        function onMouseUp() {
+        function onPointerUp() {
+            if (!isDragging) return;
             isDragging = false;
             divider.classList.remove('dragging');
+            if (parent) parent.classList.remove('is-resizing');
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
+            document.removeEventListener('mousemove', onPointerMove);
+            document.removeEventListener('mouseup', onPointerUp);
+            // Persist the new ratio.
+            var ratio;
+            if (dragAxis === 'horizontal') {
+                var tot = leadingPane.offsetWidth + trailingPane.offsetWidth;
+                ratio = tot > 0 ? leadingPane.offsetWidth / tot : 0.5;
+            } else {
+                var tot2 = leadingPane.offsetHeight + trailingPane.offsetHeight;
+                ratio = tot2 > 0 ? leadingPane.offsetHeight / tot2 : 0.5;
+            }
+            _saveRatio(ratio);
         }
 
-        divider.addEventListener('mousedown', onMouseDown);
+        // --- Edge-toggle clicks ---
+        function onToggleClick(e) {
+            var btn = e.target && e.target.closest && e.target.closest('.bowire-pane-divider-edge-toggle');
+            if (!btn) return;
+            e.stopPropagation();
+            e.preventDefault();
+            var action = btn.getAttribute('data-action');
+            // Toggle behaviour — if the requested side is already maxed
+            // we restore the saved ratio instead.
+            if (action === 'max-leading') {
+                if (_isLeadingMaxed()) {
+                    _clearMaxed();
+                    _applyRatio(_loadRatio());
+                } else {
+                    _setMaxed('leading');
+                }
+            } else if (action === 'max-trailing') {
+                if (_isTrailingMaxed()) {
+                    _clearMaxed();
+                    _applyRatio(_loadRatio());
+                } else {
+                    _setMaxed('trailing');
+                }
+            }
+        }
+
+        divider.addEventListener('mousedown', onPointerDown);
+        divider.addEventListener('click', onToggleClick);
+
+        // --- Initial state — apply persisted ratio + maxed-side ---
+        _applyAria();
+        var ratio = _loadRatio();
+        _applyRatio(ratio);
+        try {
+            var maxed = localStorage.getItem(_storageKey() + ':maxed');
+            if (maxed === 'leading' || maxed === 'trailing') {
+                _setMaxed(maxed);
+            }
+        } catch { /* ignore */ }
+
+        // --- React to orientation flips at runtime. The workbench
+        // toggle stores splitMode in localStorage + calls render(); the
+        // new content node has [data-split] set inline but our inline
+        // px-widths are stale (they're in the old axis). On every
+        // observed parent size change, if the data-split differs from
+        // what we last applied for, clear inline sizes + re-apply the
+        // saved ratio for the new axis. ---
+        var lastOrientation = _orientation();
+        function _reapplyForOrientation() {
+            var cur = _orientation();
+            if (cur !== lastOrientation) {
+                lastOrientation = cur;
+                _clearInlineSizes();
+                _applyAria();
+                _applyRatio(_loadRatio());
+                // Re-pick the per-orientation maxed-side too.
+                try {
+                    parent.classList.remove('is-leading-maxed', 'is-trailing-maxed');
+                    var maxed2 = localStorage.getItem(_storageKey() + ':maxed');
+                    if (maxed2 === 'leading' || maxed2 === 'trailing') {
+                        _setMaxed(maxed2);
+                    }
+                } catch { /* ignore */ }
+            }
+        }
+        if (parent && typeof ResizeObserver !== 'undefined') {
+            try {
+                var ro = new ResizeObserver(function () { _reapplyForOrientation(); });
+                ro.observe(parent);
+            } catch { /* ignore */ }
+        }
+        // Mutation observer catches the data-split flip even when the
+        // parent's size doesn't change (e.g. the toggle happens but the
+        // container box is identical because the panes just rotate).
+        if (parent && typeof MutationObserver !== 'undefined') {
+            try {
+                var mo = new MutationObserver(function () { _reapplyForOrientation(); });
+                mo.observe(parent, { attributes: true, attributeFilter: ['data-split'] });
+            } catch { /* ignore */ }
+        }
     }
 
     function shortType(type) {
