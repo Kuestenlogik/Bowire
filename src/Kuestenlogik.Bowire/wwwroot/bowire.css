@@ -21341,9 +21341,8 @@ not as the
 }
 .bowire-json-viewer-gutter {
     flex: 0 0 auto;
-    width: 48px;
-    padding: 0 8px 0 12px;
-    text-align: right;
+    width: 56px;
+    padding: 0 4px 0 12px;
     color: var(--bowire-text-tertiary, #6a6a82);
     user-select: none;
     font-variant-numeric: tabular-nums;
@@ -21351,10 +21350,45 @@ not as the
     left: 0;
     background: var(--bowire-bg, #0a0a0a);
     border-right: 1px solid var(--bowire-border, #1a1a1a);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.bowire-json-viewer-gutter-no {
+    flex: 1 1 auto;
+    text-align: right;
+}
+/* Chevron in the gutter — Hoppscotch parity. Every opener-line's
+   toggle aligns on the same vertical column; empty slot keeps the
+   line numbers anchored so non-opener lines don't shift. */
+.bowire-json-viewer-gutter-chev {
+    flex: 0 0 12px;
+    width: 12px;
+    text-align: center;
+    font-size: 10px;
+    line-height: 1;
+    cursor: default;
+    color: var(--bowire-text-tertiary, #6a6a82);
+    transition: color 0.12s ease;
+}
+.bowire-json-viewer-gutter-chev[data-collapse-path] {
+    cursor: pointer;
+}
+.bowire-json-viewer-gutter-chev[data-collapse-path]:hover {
+    color: var(--bowire-accent, #6366f1);
 }
 .bowire-json-viewer-line:hover .bowire-json-viewer-gutter {
     color: var(--bowire-text-secondary, #aaa);
     background: var(--bowire-bg-elevated, #131320);
+}
+/* Whole-line click on opener lines toggles too — render a subtle
+   cursor hint so the operator knows the line body is interactive. */
+.bowire-json-viewer-line[data-collapse-line-path] {
+    cursor: pointer;
+}
+.bowire-json-viewer-line[data-collapse-line-path]:hover
+.bowire-json-viewer-gutter-chev[data-collapse-path] {
+    color: var(--bowire-accent, #6366f1);
 }
 .bowire-json-viewer-code {
     flex: 1 1 auto;

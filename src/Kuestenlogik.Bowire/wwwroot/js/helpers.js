@@ -467,19 +467,35 @@
         _jsonViewerWalk(state, parsed, '', /*indent*/ 0, /*labelPrefix*/ '', /*trailingComma*/ false);
         for (var i = 0; i < state.lines.length; i++) {
             var ln = state.lines[i];
-            viewer.appendChild(_jsonViewerLineEl(ln.lineNo, ln.html, ln.path || '', opts));
+            viewer.appendChild(_jsonViewerLineEl(
+                ln.lineNo, ln.html, ln.path || '', opts,
+                ln.collapsePath, ln.collapsed));
         }
-        // Click-to-collapse: chevrons carry data-collapse-path. We
-        // delegate at the viewer level so re-renders don't need to
-        // rewire per-row handlers.
+        // Click-to-collapse: the chevron (now in the gutter, Hoppscotch
+        // style) AND any opener-line body click both toggle. The viewer
+        // delegates at the root so morphdom re-renders don't drop the
+        // handler. The chevron and the line carry the same
+        // data-collapse-path / data-collapse-line-path attribute; we
+        // sniff in priority order so a click in the gutter is read as
+        // chevron-click first.
         viewer.addEventListener('click', function (e) {
-            var chev = e.target.closest && e.target.closest('.bowire-json-viewer-chev');
-            if (chev) {
-                var p = chev.getAttribute('data-collapse-path') || '';
+            var chev = e.target.closest && e.target.closest('.bowire-json-viewer-gutter-chev[data-collapse-path]');
+            var lineToggle = !chev && e.target.closest
+                && e.target.closest('.bowire-json-viewer-line[data-collapse-line-path]');
+            // Suppress line-body toggle when the click was on the
+            // line-number itself — the gutter belongs to the chevron
+            // contract; selecting a line number for copy/inspect
+            // shouldn't collapse the node.
+            if (lineToggle && e.target.closest('.bowire-json-viewer-gutter-no')) {
+                return;
+            }
+            if (chev || lineToggle) {
+                var p = (chev || lineToggle).getAttribute(
+                    chev ? 'data-collapse-path' : 'data-collapse-line-path') || '';
                 if (state.togglesByPath.has(p)) state.togglesByPath.delete(p);
                 else state.togglesByPath.add(p);
                 if (state.onToggle) state.onToggle(p, state.togglesByPath.has(p));
-                return;  // selection handler runs only when the chevron itself wasn't hit
+                return;  // selection handler runs only when neither toggle target was hit
             }
             // Otherwise let the caller resolve which JSON node was clicked
             // so it can update its breadcrumb. We pass the deepest line
@@ -513,14 +529,46 @@
         return viewer;
     }
 
-    function _jsonViewerLineEl(lineNo, html, path, opts) {
+    function _jsonViewerLineEl(lineNo, html, path, opts, collapsePath, collapsed) {
         var row = document.createElement('div');
         row.className = 'bowire-json-viewer-line';
         row.setAttribute('data-line-no', String(lineNo));
         if (path !== undefined && path !== null) row.setAttribute('data-line-path', path);
+        // Lines that ARE collapsible (object/array opener lines) carry
+        // the toggle path on the row too so a click on the JSON body
+        // toggles in addition to the gutter chevron — Hoppscotch
+        // parity. Operator feedback: 'das man auch alternativ einfach
+        // auf den knoten klicken kann zum öffnen soll aber beibehalten
+        // werden, nur das öffnen/schließen symbol in das vertikale
+        // band verschieben.'
+        if (collapsePath) row.setAttribute('data-collapse-line-path', collapsePath);
+
         var gutter = document.createElement('span');
         gutter.className = 'bowire-json-viewer-gutter';
-        gutter.textContent = String(lineNo);
+
+        // Line number — right-aligned inside its own slot so the chevron
+        // sits flush at the gutter's right edge regardless of how wide
+        // the line number is.
+        var lineNoEl = document.createElement('span');
+        lineNoEl.className = 'bowire-json-viewer-gutter-no';
+        lineNoEl.textContent = String(lineNo);
+        gutter.appendChild(lineNoEl);
+
+        // Chevron slot — always present so the gutter column width
+        // stays stable across lines, but only rendered as an
+        // interactive chevron on opener lines. Hoppscotch puts the
+        // collapse toggle in the gutter so every node's chevron lines
+        // up on the same vertical column.
+        var chevSlot = document.createElement('span');
+        chevSlot.className = 'bowire-json-viewer-gutter-chev';
+        if (collapsePath) {
+            chevSlot.classList.add(collapsed ? 'is-collapsed' : 'is-open');
+            chevSlot.setAttribute('data-collapse-path', collapsePath);
+            chevSlot.setAttribute('title', collapsed ? 'Expand' : 'Collapse');
+            chevSlot.textContent = collapsed ? '▶' : '▼';
+        }
+        gutter.appendChild(chevSlot);
+
         var code = document.createElement('span');
         code.className = 'bowire-json-viewer-code';
         code.innerHTML = html;
@@ -578,29 +626,28 @@
 
         var collapsed = state.togglesByPath.has(path || '__root__');
         var chevPath = path || '__root__';
-        var chev = '<span class="bowire-json-viewer-chev '
-            + (collapsed ? 'is-collapsed' : 'is-open')
-            + '" data-collapse-path="' + _jsonViewerEscape(chevPath)
-            + '" title="Toggle">'
-            + (collapsed ? '▶' : '▼') + '</span>';
 
+        // Chevron moved into the gutter (Hoppscotch parity) — line
+        // builder now reads collapsePath + collapsed off the line
+        // entry and renders the icon in a fixed gutter slot. The
+        // opener bracket no longer carries the inline chev span.
         if (collapsed) {
             // Single-line preview replaces the children + closing bracket.
-            var preview = pad + labelPrefix + chev
+            var preview = pad + labelPrefix
                 + '<span class="bowire-json-viewer-bracket">' + openBracket + '</span>'
                 + '<span class="bowire-json-viewer-collapsed-preview"> … '
                 + len + ' ' + noun + ' </span>'
                 + '<span class="bowire-json-viewer-bracket">' + closeBracket + '</span>'
                 + comma;
-            _pushJsonLine(state, preview, path);
+            _pushJsonLine(state, preview, path, chevPath, true);
             return;
         }
 
         // Expanded — opener line, recursive children, closer line.
         _pushJsonLine(state,
-            pad + labelPrefix + chev
+            pad + labelPrefix
             + '<span class="bowire-json-viewer-bracket">' + openBracket + '</span>',
-            path);
+            path, chevPath, false);
         if (isArr) {
             for (var i = 0; i < len; i++) {
                 var childPath = path ? path + '.' + i : String(i);
@@ -641,9 +688,18 @@
         return _jsonViewerEscape(String(value));
     }
 
-    function _pushJsonLine(state, html, path) {
+    function _pushJsonLine(state, html, path, collapsePath, collapsed) {
         state.lineNo += 1;
-        state.lines.push({ lineNo: state.lineNo, html: html, path: path || '' });
+        state.lines.push({
+            lineNo: state.lineNo,
+            html: html,
+            path: path || '',
+            // Opener lines (object / array) carry a collapsePath +
+            // collapsed flag so the line renderer can emit a chevron
+            // in the gutter (Hoppscotch parity, operator request).
+            collapsePath: collapsePath || null,
+            collapsed: !!collapsed
+        });
     }
 
     // Render an object dictionary as a `Key: value` list — used by the
