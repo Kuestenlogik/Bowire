@@ -8728,7 +8728,16 @@
         // dispose() runs on every cleanup pass via disposeWidgetMounts.
         disposeWidgetMounts();
 
-        var host = el('div', { className: 'bowire-widget-split-host' });
+        // Stable id so morphdom matches by key when re-rendering. The
+        // tab-mode counterpart uses `bowire-response-widget-host`;
+        // distinct ids force morphdom to replace the wrapper subtree
+        // wholesale on a Tab ↔ Split transition rather than trying to
+        // merge a leftSlot div with a tab strip and stranding live
+        // onClick listeners on the wrong nodes (Bug 2).
+        var host = el('div', {
+            id: 'bowire-response-widget-host-split',
+            className: 'bowire-widget-split-host'
+        });
         var pane = layout.createSplitPane(host, {
             orientation: saved.mode === 'split-vertical' ? 'vertical' : 'horizontal',
             initialRatio: typeof saved.ratio === 'number' ? saved.ratio : 0.5,
@@ -8892,7 +8901,16 @@
         // the maximize toggle and layout cycle work the same way
         // they do in streaming mode.
         disposeWidgetMounts();
-        var host = el('div', { className: 'bowire-widget-split-host' });
+        // Stable id so morphdom matches by key when re-rendering. The
+        // tab-mode counterpart uses `bowire-response-widget-host`;
+        // distinct ids force morphdom to replace the wrapper subtree
+        // wholesale on a Tab ↔ Split transition rather than trying to
+        // merge a leftSlot div with a tab strip and stranding live
+        // onClick listeners on the wrong nodes (Bug 2).
+        var host = el('div', {
+            id: 'bowire-response-widget-host-split',
+            className: 'bowire-widget-split-host'
+        });
         var pane = layout.createSplitPane(host, {
             orientation: saved.mode === 'split-vertical' ? 'vertical' : 'horizontal',
             initialRatio: typeof saved.ratio === 'number' ? saved.ratio : 0.5,
@@ -8979,8 +8997,28 @@
         var layout = window.__bowireLayout;
         var widgetLabel = (splitKindExt.viewer && splitKindExt.viewer.label)
             || splitKindExt.kind;
+        // Bug 2 — defensive guard against a corrupted `widgetActiveTab`.
+        // If the operator round-trips Tab → Split → Tab the module
+        // state survives the render(s), but the tab-body display
+        // flips below silently strand the user when the value is
+        // neither 'json' nor 'widget' (both bodies inline-styled to
+        // `display: none`, no clickable tab strip — operator reports
+        // "JSON disappears AND can't switch back"). Coerce to the
+        // canonical default before any DOM is built.
+        if (widgetActiveTab !== 'json' && widgetActiveTab !== 'widget') {
+            widgetActiveTab = 'json';
+        }
 
-        var host = el('div', { className: 'bowire-widget-tabbed' });
+        // Stable id on the host so morphdom replaces the split-pane
+        // wrapper instead of trying to merge its slot subtree into
+        // the tab strip. Without this the operator's Split → Unsplit
+        // round-trip occasionally left dead onClick closures attached
+        // to position-matched nodes (split's leftSlot div repurposed
+        // as the tab strip), and tab clicks went nowhere.
+        var host = el('div', {
+            id: 'bowire-response-widget-host',
+            className: 'bowire-widget-tabbed'
+        });
 
         // ---- Tab strip ----
         var strip = el('div', { className: 'bowire-widget-tab-strip' });

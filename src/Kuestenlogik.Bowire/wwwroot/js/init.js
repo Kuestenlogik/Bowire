@@ -770,7 +770,34 @@
         // ships work without them.
         if (window.__bowireExtFramework
             && typeof window.__bowireExtFramework.loadExternalExtensions === 'function') {
-            try { window.__bowireExtFramework.loadExternalExtensions(); }
+            try {
+                var extLoad = window.__bowireExtFramework.loadExternalExtensions();
+                // Bug 2 — re-render after the async extension bundles land
+                // so any response pane that rendered while
+                // `bowireExtensions.byId` was still empty (race: user
+                // invoked a method before maplibre.js finished
+                // dynamic-loading) picks up the now-registered viewer on
+                // the next pass. Without this, `preferredSplitExtensionForMethod`
+                // returned null at first render → fell through to the
+                // legacy placeholder branch (no tab strip, no widget),
+                // and the response pane stayed in that broken state
+                // until some unrelated render() happened to fire later.
+                // Also refresh the Settings dialog when it's already
+                // open on the Plugins tab so the "Installed UI extensions"
+                // section flips from "Suggested" to "Installed" the
+                // moment the framework finishes its bootstrap fetch.
+                if (extLoad && typeof extLoad.then === 'function') {
+                    extLoad.then(function () {
+                        try { if (typeof render === 'function') render(); } catch { /* render is defined later in bundle on cold boot */ }
+                        try {
+                            if (typeof settingsOpen !== 'undefined' && settingsOpen
+                                && typeof renderSettingsDialog === 'function') {
+                                renderSettingsDialog();
+                            }
+                        } catch { /* settings IIFE not in scope on cold boot */ }
+                    });
+                }
+            }
             catch (e) { console.warn('[bowire-ext] bootstrap failed', e); }
         }
 
