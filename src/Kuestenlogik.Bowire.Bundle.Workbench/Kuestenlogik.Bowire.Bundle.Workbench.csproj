@@ -31,9 +31,12 @@
   <ItemGroup>
     <!-- Core. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
-    <!-- Every built-in rail (#306 Phase G). -->
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Home\Kuestenlogik.Bowire.Rail.Home.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Discover\Kuestenlogik.Bowire.Rail.Discover.csproj" />
+    <!-- Every built-in rail (#306 Phase G).
+         v2.1 (#325): the foundational Home + Discover rails were folded
+         into Core — both are descriptor-only (no per-rail JS fragment) so
+         a separate NuGet for each was over-decomposition. The standalone
+         Kuestenlogik.Bowire.Rail.Home / Kuestenlogik.Bowire.Rail.Discover
+         packages have been retired. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Compose\Kuestenlogik.Bowire.Rail.Compose.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Environments\Kuestenlogik.Bowire.Rail.Environments.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Recordings\Kuestenlogik.Bowire.Rail.Recordings.csproj" />

@@ -3,16 +3,20 @@
 
 using Kuestenlogik.Bowire.Plugins;
 
-namespace Kuestenlogik.Bowire.Rail.Home;
+namespace Kuestenlogik.Bowire.Rails;
 
 /// <summary>
-/// Home rail contribution — cross-workflow landing surface (#306 Phase G).
+/// Home rail contribution — cross-workflow landing surface (#306 Phase G;
+/// folded into Core in v2.1, #325).
 /// </summary>
 /// <remarks>
-/// Moved out of <c>Kuestenlogik.Bowire/Plugins/BuiltInRails.cs</c> into its
-/// own NuGet package. Embedded hosts that don't reference
-/// <c>Kuestenlogik.Bowire.Rail.Home</c> don't get the Home rail in the
-/// catalogue and don't pay for the rail strip slot.
+/// The Home rail is descriptor-only — no per-rail JS fragment, no wwwroot
+/// resources. Folded into <c>Kuestenlogik.Bowire</c> (Core) in v2.1 so
+/// every workbench host gets the rail without an extra package reference;
+/// the previous standalone <c>Kuestenlogik.Bowire.Rail.Home</c> package
+/// has been retired. The <see cref="Id"/> string remains
+/// <c>"home"</c> verbatim so operator-saved <c>railMode</c> +
+/// <c>bowire_enabled_rails</c> values continue to dispatch correctly.
 /// </remarks>
 public sealed class BowireHomeRailContribution : IBowireRailContribution
 {
