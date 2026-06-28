@@ -528,6 +528,58 @@
         // dismissed-hint store (prologue.js).
         section.appendChild(renderHintsAndWarnings());
 
+        // #281 — Re-fire the Getting-started tour. The tour is
+        // saved-once per browser via the bowire_tour_done_* localStorage
+        // flags so it doesn't resurface on every reload; this button
+        // clears the flag + routes to home so the first-time-tour
+        // trigger picks it up. Operators that dismissed the tour can
+        // bring it back without hand-editing localStorage.
+        section.appendChild(renderSettingsRow(
+            'Guided tour',
+            'Replay the Getting-started tour that walks new operators through workspaces / Discover / Compose / Recordings.',
+            function () {
+                return el('button', {
+                    type: 'button',
+                    className: 'bowire-settings-action-btn',
+                    textContent: 'Replay getting-started tour',
+                    onClick: function () {
+                        // Clear EVERY saved-once tour flag — same
+                        // bowireResetTours surface the legacy operator-
+                        // run-once-only escape hatch already exposed.
+                        // Reset → route to home → close Settings so
+                        // the trigger in landing.js (the home renderer)
+                        // picks it up on the next render.
+                        if (typeof window !== 'undefined' && typeof window.bowireResetTours === 'function') {
+                            window.bowireResetTours();
+                        }
+                        // Route to home so landing.js's first-time
+                        // trigger has a surface to attach to. Different
+                        // builds expose home routing as either railMode
+                        // = 'home' or as a dedicated function — try
+                        // both and fall back to a force-start of the
+                        // tour itself when neither path resolves.
+                        try {
+                            if (typeof railMode !== 'undefined') {
+                                railMode = 'home';
+                                try { localStorage.setItem('bowire_rail_mode', 'home'); }
+                                catch { /* ignore */ }
+                            }
+                        } catch { /* ignore */ }
+                        closeSettings();
+                        if (typeof render === 'function') render();
+                        if (typeof window !== 'undefined'
+                            && typeof window.bowireStartGettingStartedTour === 'function') {
+                            // Force-mode so the saved-once short-
+                            // circuit can't gate it even when reset
+                            // races landed late (private window with
+                            // localStorage disabled).
+                            window.bowireStartGettingStartedTour({ force: true });
+                        }
+                    }
+                });
+            }
+        ));
+
         return section;
     }
 
