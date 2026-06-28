@@ -37,7 +37,9 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Compose\Kuestenlogik.Bowire.Rail.Compose.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Environments\Kuestenlogik.Bowire.Rail.Environments.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Recordings\Kuestenlogik.Bowire.Rail.Recordings.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Mocks\Kuestenlogik.Bowire.Rail.Mocks.csproj" />
+    <!-- #311 — Mocks rail descriptor + mocks.js fragment ship inside
+         Kuestenlogik.Bowire.Mock (see below). The provisional
+         Kuestenlogik.Bowire.Rail.Mocks package was folded in for v2.1. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Flows\Kuestenlogik.Bowire.Rail.Flows.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Proxy\Kuestenlogik.Bowire.Rail.Proxy.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Intercepted\Kuestenlogik.Bowire.Rail.Intercepted.csproj" />

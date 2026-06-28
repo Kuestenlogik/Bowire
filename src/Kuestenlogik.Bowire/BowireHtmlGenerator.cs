@@ -394,8 +394,14 @@ internal static class BowireHtmlGenerator
         // security rail descriptor. Map ships its own asset endpoint
         // and is intentionally excluded — its widget JS gets
         // dynamic-loaded by extensions.js, not stitched.
+        // Kuestenlogik.Bowire.Mock is included because v2.1 folded the
+        // provisional Kuestenlogik.Bowire.Rail.Mocks package (which
+        // carried the BowireMocksRailContribution + mocks.js fragment)
+        // into the existing Mock package — same plugin pattern, one
+        // fewer NuGet to ship.
         return name.StartsWith("Kuestenlogik.Bowire.Rail.", StringComparison.Ordinal)
-            || name.StartsWith("Kuestenlogik.Bowire.Security.", StringComparison.Ordinal);
+            || name.StartsWith("Kuestenlogik.Bowire.Security.", StringComparison.Ordinal)
+            || string.Equals(name, "Kuestenlogik.Bowire.Mock", StringComparison.Ordinal);
     }
 
     private static string EscapeJs(string value)
