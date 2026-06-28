@@ -74,6 +74,27 @@ jobs:
       - name: Build DocFX documentation
         run: docfx docs/docfx.json
 
+      # Mark the auto-generated API reference noindex. These pages (one
+      # thin page per type) render from .yml that lives outside the docfx
+      # base dir, so neither fileMetadata nor a layout flag can target
+      # them — inject the directive into the built HTML instead. They stay
+      # crawlable (canonical + links intact) but out of Google's index, so
+      # crawl + quality signal concentrate on the hand-written guides.
+      # Idempotent: skips files that already carry a robots meta.
+      - name: Mark API reference noindex
+        run: |
+          # Anchor to the FIRST <head> only — the docfx page also contains
+          # the literal "<head>" inside inline-script comments further down,
+          # and an unanchored substitution would inject the meta into those
+          # too (corrupting the JS). `0,/<head>/` limits the replace to the
+          # document head. Skip files that already carry a robots meta so a
+          # re-run can't stack duplicates.
+          find artifacts/docs/api -name '*.html' -type f | while IFS= read -r f; do
+            if grep -q '<head>' "$f" && ! grep -q 'name="robots"' "$f"; then
+              sed -i '0,/<head>/s//<head>\n    <meta name="robots" content="noindex, follow">/' "$f"
+            fi
+          done
+
       # Bowire.Bootcamp lives in its own repo so the lesson catalogue can
       # version independently. We clone the latest main, build its DocFX
       # alongside ours, and mount the output under /bootcamp/ in the
