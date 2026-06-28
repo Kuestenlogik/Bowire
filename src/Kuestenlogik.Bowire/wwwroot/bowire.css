@@ -859,8 +859,19 @@ no decoration. */
     gap: 0;
     margin: -12px -16px; /* cancel renderDrawer's content padding */
 }
+/* Help-specific drawer width. The baseline .bowire-drawer is 360 px —
+   that gives the nav column ~200 px and leaves almost nothing for the
+   markdown body. Help carries a two-column layout AND rendered prose,
+   so we widen it to a responsive band: half the viewport, bounded by
+   480–960 px so it stays usable on laptop AND doesn't take over a 4K
+   panel. Scoped to the help-active modifier so the Assistant /
+   Activity / Tests drawers keep their tighter chrome. */
+.bowire-drawer.bowire-drawer-help-active {
+    width: clamp(480px, 50vw, 960px);
+    max-width: 70vw;
+}
 .bowire-help-nav {
-    width: 200px;
+    width: 240px;
     flex-shrink: 0;
     border-right: 1px solid var(--bowire-border-subtle);
     background: var(--bowire-surface);
@@ -894,10 +905,12 @@ no decoration. */
     padding: 8px 8px 2px;
 }
 .bowire-help-topic-row {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     width: 100%;
     text-align: left;
-    padding: 5px 8px;
+    padding: 6px 8px;
     background: transparent;
     border: none;
     border-radius: var(--bowire-radius-sm);
@@ -910,6 +923,25 @@ no decoration. */
 .bowire-help-topic-row.selected {
     background: var(--bowire-accent-subtle);
     color: var(--bowire-accent);
+}
+.bowire-help-topic-row-title {
+    font-weight: 500;
+    line-height: 1.3;
+}
+.bowire-help-topic-row-excerpt {
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+    line-height: 1.35;
+    /* Clamp to two lines so a long DocFX summary doesn't push every
+       nav row down a full paragraph. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.bowire-help-topic-row.selected .bowire-help-topic-row-excerpt {
+    color: var(--bowire-accent);
+    opacity: 0.85;
 }
 .bowire-help-hit-list {
     display: flex;
@@ -1164,6 +1196,101 @@ no decoration. */
     border: none;
     border-top: 1px solid var(--bowire-border-subtle);
     margin: 14px 0;
+}
+
+/* Help body — fallback styling for raw HTML the server-rendered
+   Markdig pipeline emits (h1..h6, p, ul, ol, code, pre, blockquote,
+   hr, plus the DocFX picture/img/dl islands embedded in the docs/
+   tree). The mini-renderer used to wrap everything in scoped
+   .bowire-help-md-* classes; the pipeline emits plain tags. Scope
+   the styles to the content pane so they don't leak into the rest
+   of the workbench. */
+.bowire-help-content h1 { font-size: 20px; font-weight: 600; margin: 0 0 12px; }
+.bowire-help-content h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 18px 0 8px;
+    padding-top: 4px;
+    border-top: 1px solid var(--bowire-border-subtle);
+}
+.bowire-help-content h3 { font-size: 14px; font-weight: 600; margin: 14px 0 6px; }
+.bowire-help-content h4,
+.bowire-help-content h5,
+.bowire-help-content h6 { font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+.bowire-help-content p { margin: 0 0 10px; }
+.bowire-help-content ul,
+.bowire-help-content ol { margin: 0 0 10px 18px; padding: 0; }
+.bowire-help-content li { margin: 2px 0; }
+.bowire-help-content code {
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-family: var(--bowire-mono);
+    font-size: 12px;
+}
+.bowire-help-content pre {
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    padding: 10px 12px;
+    margin: 0 0 10px;
+    overflow-x: auto;
+    font-family: var(--bowire-mono);
+    font-size: 12px;
+    line-height: 1.5;
+}
+.bowire-help-content pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+}
+.bowire-help-content blockquote {
+    margin: 0 0 10px;
+    padding: 4px 10px;
+    border-left: 3px solid var(--bowire-accent);
+    color: var(--bowire-text-secondary);
+    background: var(--bowire-surface);
+}
+.bowire-help-content hr {
+    border: none;
+    border-top: 1px solid var(--bowire-border-subtle);
+    margin: 14px 0;
+}
+.bowire-help-content a {
+    color: var(--bowire-accent);
+    text-decoration: none;
+}
+.bowire-help-content a:hover { text-decoration: underline; }
+.bowire-help-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0 0 12px;
+    font-size: 12px;
+}
+.bowire-help-content th,
+.bowire-help-content td {
+    border: 1px solid var(--bowire-border-subtle);
+    padding: 4px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.bowire-help-content th {
+    background: var(--bowire-surface);
+    font-weight: 600;
+}
+.bowire-help-content dl { margin: 0 0 10px; }
+.bowire-help-content dt {
+    font-weight: 600;
+    margin-top: 6px;
+}
+.bowire-help-content dd { margin: 0 0 4px 16px; }
+.bowire-help-content img,
+.bowire-help-content picture img,
+.bowire-help-content svg {
+    max-width: 100%;
+    height: auto;
 }
 
 /* #154 Phase 1 — Help affordance when the Bowire.Help package isn't

@@ -2243,6 +2243,15 @@
         }
         var activeTab = tabs.find(function (t) { return t.id === activeId; });
 
+        // The Help tab carries a two-column layout (topic tree + rendered
+        // markdown body) so the baseline 360 px drawer width chokes the
+        // content column to almost zero. Widen the drawer whenever Help
+        // is the active tab — the modifier scopes via CSS so the
+        // Assistant / Activity / Tests panels keep their familiar
+        // narrow chrome.
+        var widenForHelp = activeTab && activeTab.id === 'help'
+            ? ' bowire-drawer-help-active' : '';
+
         // Single-tab path: delegate the whole shape to the renderDrawer
         // primitive (#115). A single open tab is visually identical to
         // a standalone drawer (title + accessory + close + content), so
@@ -2260,7 +2269,7 @@
             }
             return renderDrawer({
                 id: 'bowire-right-drawer',
-                className: 'bowire-right-drawer',
+                className: 'bowire-right-drawer' + widenForHelp,
                 title: activeTab.label,
                 titleAccessory: activeTab.accessory,
                 closeTitle: activeTab.closeTitle,
@@ -2273,7 +2282,7 @@
 
         var drawer = el('div', {
             id: 'bowire-right-drawer',
-            className: 'bowire-drawer bowire-right-drawer bowire-right-drawer-tabbed',
+            className: 'bowire-drawer bowire-right-drawer bowire-right-drawer-tabbed' + widenForHelp,
             role: 'complementary',
             'aria-label': activeTab ? activeTab.label : 'Drawer'
         });
