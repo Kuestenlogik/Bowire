@@ -12,11 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**62/63 done** · 1 backlog
+**62/64 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [324](https://github.com/Kuestenlogik/Bowire/issues/324) | Bowire | [Help: convert from drawer-tab to its own rail (plugin-contributed)](#issue-kuestenlogik-bowire-324) | ⬜ Backlog |  |
+| [325](https://github.com/Kuestenlogik/Bowire/issues/325) | Bowire | [refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)](#issue-kuestenlogik-bowire-325) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ✅ Done |  |
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ✅ Done |  |
@@ -236,7 +237,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog |  |
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ⬜ Backlog |  |
 | [316](https://github.com/Kuestenlogik/Bowire/issues/316) | Bowire | [substituteMessages([...]) passes Array.map index as cycle-guard set, crashes on 2nd+ entry](#issue-kuestenlogik-bowire-316) | ⬜ Backlog |  |
-| [325](https://github.com/Kuestenlogik/Bowire/issues/325) | Bowire | [refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)](#issue-kuestenlogik-bowire-325) | ⬜ Backlog |  |
 
 ## Details
 
@@ -245,6 +245,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 #### <a id="issue-kuestenlogik-bowire-324"></a>⬜ Backlog · [#324](https://github.com/Kuestenlogik/Bowire/issues/324) Help: convert from drawer-tab to its own rail (plugin-contributed)
 
 Help moves out of the right-side drawer into a full rail with the standard left-sidebar + main-pane shape every other rail uses. Browsing + searching topics gets the workbench's room to breathe; the Assistant drawer stops width-jumping every time the operator switches tabs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/324)
+
+#### <a id="issue-kuestenlogik-bowire-325"></a>⬜ Backlog · [#325](https://github.com/Kuestenlogik/Bowire/issues/325) refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)
+
+Welle 2 of the v2.1 pre-release cleanup. Welle 1 already folded the Mock + Help rail-fragments into their topic packages (#311 follow-up + #324). This issue tracks the remaining eleven `Rail.*` packages. [[more]](https://github.com/Kuestenlogik/Bowire/issues/325)
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
@@ -907,10 +911,6 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 #### <a id="issue-kuestenlogik-bowire-316"></a>⬜ Backlog · [#316](https://github.com/Kuestenlogik/Bowire/issues/316) substituteMessages([...]) passes Array.map index as cycle-guard set, crashes on 2nd+ entry
 
 Found by coverage-wave-2 (#312) while wiring up node-tests for history-env.js. [[more]](https://github.com/Kuestenlogik/Bowire/issues/316)
-
-#### <a id="issue-kuestenlogik-bowire-325"></a>⬜ Backlog · [#325](https://github.com/Kuestenlogik/Bowire/issues/325) refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)
-
-Welle 2 of the v2.1 pre-release cleanup. Welle 1 already folded the Mock + Help rail-fragments into their topic packages (#311 follow-up + #324). This issue tracks the remaining eleven `Rail.*` packages. [[more]](https://github.com/Kuestenlogik/Bowire/issues/325)
 
 ---
 
