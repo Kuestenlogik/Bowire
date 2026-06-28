@@ -8353,6 +8353,10 @@
             id: 'bowire-stream-detail-body'
         });
         body.innerHTML = renderJsonTree(raw);
+        // Same gesture wiring the unary response output gets — click
+        // toggles via native <details>, dblclick copies the JSONPath,
+        // right-click opens the unified context menu.
+        bowireWireResponseTreeGestures(body);
         if (typeof bowireDecorateResponseTreeForSemantics === 'function'
             && selectedService && selectedMethod) {
             try {
@@ -8362,14 +8366,16 @@
         }
         if (selectedService && selectedMethod) {
             try {
-                // Per-frame body so the "Center on map" entry resolves
-                // against THIS message's lat/lon, not whatever the
-                // last unary response left behind in `responseData`.
+                // Per-frame body so any extension that resolves
+                // values from the JSON (e.g. the map widget's
+                // "Center on map" entry) sees THIS message's
+                // payload, not whatever the last unary response
+                // left behind in `responseData`.
                 var parsedFrame = null;
                 try { parsedFrame = JSON.parse(raw); } catch { parsedFrame = null; }
-                bowireDecorateResponseTreeForCoordPairs(
+                bowireDecorateResponseTreeViaExtensions(
                     body, selectedService.name, selectedMethod.name, parsedFrame);
-            } catch (e) { console.error('[bowire-coord-sync] decorate stream-detail', e); }
+            } catch (e) { console.error('[bowire-resp-tree] decorate stream-detail', e); }
         }
 
         return { header: header, body: body };
@@ -9129,382 +9135,170 @@
     }
 
     // -------------------------------------------------------------------
-    // Response-JSON ↔ map widget coord-pair sync
+    // Response-tree extension hooks (Phase 4.1)
     //
-    // The map widget (Kuestenlogik.Bowire.Map) registers itself in
-    // `window.__bowireMapWidgets`. The functions below decorate the
-    // response-JSON tree with:
-    //   - a `data-bowire-coord-path` attribute on every lat/lon/parent
-    //     span the framework's `coordinate.wgs84` pairing matched;
-    //   - a `contextmenu` handler that surfaces "Center on map" when a
-    //     map widget is mounted AND the operator clicks inside an
-    //     annotated lat/lon block;
-    //   - bidirectional mouseenter/mouseleave hover sync between the
-    //     JSON spans and the matching map pin's halo.
+    // The core workbench owns the JSON-tree DOM but defers per-kind
+    // decoration + context-menu items to extensions. The map widget
+    // registers a decorator that stamps data-bowire-coord-path on
+    // lat/lon spans + wires hover sync, and a menu contributor that
+    // returns a "Center on map" entry when the right-clicked span
+    // belongs to a resolved coord pair. Image/chart/audio viewers
+    // would plug in the same way without core ever importing
+    // kind-specific code.
     //
-    // Annotation lookup goes through the existing
-    // `/api/semantics/effective` cache (the extensions framework already
-    // primes it via `mountWidgetsForMethod`). The map-side reverse
-    // direction listens on the document for the `bowire:map-coord-hover`
-    // event the map widget dispatches.
+    // What this fragment owns:
+    //   - bowireWireResponseTreeGestures(treeRoot)
+    //       click toggle via native <details>, dblclick = Copy path,
+    //       right-click = unified menu
+    //   - bowireOpenResponseTreeContextMenu(x, y, ctx)
+    //       builds Copy ${response.X} + Copy path (the kind-agnostic
+    //       essentials) then appends each entry the extension hooks
+    //       return
+    //   - bowireDecorateResponseTreeViaExtensions(treeRoot, service,
+    //       method, explicitRoot)
+    //       fans the decorator hook out for every registered extension
     //
-    // Everything is gated on `__bowireExtFramework.preferredExtension`
-    // returning a registered viewer for `coordinate.wgs84` — without the
-    // plugin loaded the context-menu entry doesn't surface and the
-    // hover handlers no-op so the operator never sees an inert menu
-    // entry that points at nothing.
+    // What lives in extensions (Kuestenlogik.Bowire.Map et al.):
+    //   - per-kind data-attribute stamping
+    //   - per-kind hover sync
+    //   - per-kind menu items (label + action + meta)
     // -------------------------------------------------------------------
 
     /**
-     * True when the workbench has a `coordinate.wgs84` viewer
-     * registered. Gates every coord-pair feature so the right-click
-     * menu doesn't list "Center on map" when the map plugin isn't
-     * loaded (operator request — "nur wenn karte als plugin verfügbar
-     * ist"). Cheap to re-evaluate; called at event time, not at
-     * decorator time, so a plugin loaded after first render lights up
-     * the menu without a full re-render.
+     * Fan out the response-tree decorator hook to every extension
+     * that registered one. Each registered callback runs against the
+     * same `(treeRoot, service, method, explicitRoot)` context and
+     * is free to query `/api/semantics/effective` (cached or fetched)
+     * to find the kinds it cares about. Failures are isolated by
+     * the framework's try/catch so one misbehaving extension
+     * doesn't break the rest of the response tree.
      */
-    function bowireCoordSyncMapAvailable() {
+    function bowireDecorateResponseTreeViaExtensions(treeRoot, service, method, explicitRoot) {
+        if (!treeRoot) return;
         var fw = window.__bowireExtFramework;
-        if (!fw || typeof fw.preferredExtension !== 'function') return false;
-        return !!fw.preferredExtension('coordinate.wgs84');
+        if (!fw || typeof fw.runResponseTreeDecorators !== 'function') return;
+        fw.runResponseTreeDecorators({
+            treeRoot: treeRoot,
+            service: service,
+            method: method,
+            explicitRoot: explicitRoot
+        });
     }
 
-    /**
-     * Strip the leading `$.` off a JSONPath so it matches the
-     * chain-variable form (`position.lat`) the JSON tree's
-     * `data-json-path` attribute uses. `$` alone normalises to the
-     * empty string (root scope).
-     */
-    function bowireCoordSyncNormalisePath(p) {
-        if (typeof p !== 'string') return '';
-        if (p.indexOf('$.') === 0) return p.substring(2);
-        if (p === '$') return '';
-        return p;
-    }
+    // -------------------------------------------------------------------
+    // Unified response-tree gestures (click / dblclick / contextmenu)
+    //
+    // Replaces the legacy "click = copy ${response.X}, dblclick on a
+    // key = copy path" overlay with the operator-expected shape:
+    //   - Click on a `<details>` summary toggles the node (native
+    //     <details> contract). No JS overlay needed.
+    //   - Double-click on any `[data-json-path]` span copies the
+    //     bare JSONPath of that node.
+    //   - Right-click opens a unified menu:
+    //         Copy ${response.X}
+    //         Copy path
+    //         ── Center on map  (only when the map plugin is loaded
+    //                            AND the span participates in a
+    //                            resolved coord pair)
+    //
+    // The semantics-menu (Reinterpret as ▸ / Suppress / Fuzz / etc.)
+    // attaches a per-label contextmenu listener via
+    // bowireMountSemanticsContextMenu — its handler calls
+    // e.stopPropagation() so the unified menu doesn't double-fire
+    // on label spans. Operator gets the semantics menu on keys, the
+    // unified menu on values.
+    // -------------------------------------------------------------------
 
     /**
-     * Walk the cached effective annotations for (service, method) and
-     * group lat/lon companions by parent path. Returns an array of
-     * `{ parentPath, latPath, lonPath }` records — one per pair. Each
-     * path is in the chain-variable form so the lookup against the
-     * JSON tree's `data-json-path` attributes is direct.
+     * Attach the universal dblclick + contextmenu handlers to a
+     * response-tree root. Idempotent: re-running on the same node
+     * is a no-op so a render() pass that re-uses the DOM doesn't
+     * stack listeners.
+     *
+     * The handlers read the active service/method off the module
+     * state at event-time — that's correct because morphdom can
+     * preserve a tree node across method switches; binding the
+     * service/method at attach-time would let stale closures
+     * resolve against the wrong method's annotation set. Same
+     * shape extension decorators use for hover delegation.
      */
-    function bowireCoordSyncPairsForMethod(service, method) {
-        var fw = window.__bowireExtFramework;
-        if (!fw || typeof fw.effectiveCacheFor !== 'function') return [];
-        var anns = fw.effectiveCacheFor(service, method);
-        if (!Array.isArray(anns) || anns.length === 0) return [];
-        // Bucket annotations by parent path so a pair is "lat + lon
-        // under the same parent" — same scope rule the framework's
-        // pairing matcher uses, just running on the workbench side
-        // for hover-sync wiring.
-        var groups = {};
-        for (var i = 0; i < anns.length; i++) {
-            var a = anns[i];
-            if (a.semantic !== 'coordinate.latitude'
-                && a.semantic !== 'coordinate.longitude') continue;
-            var raw = a.jsonPath || '';
-            var dotIdx = raw.lastIndexOf('.');
-            var parent = dotIdx > 0 ? raw.substring(0, dotIdx) : raw;
-            if (!groups[parent]) groups[parent] = {};
-            groups[parent][a.semantic] = raw;
-        }
-        var out = [];
-        for (var key in groups) {
-            if (!Object.prototype.hasOwnProperty.call(groups, key)) continue;
-            var lat = groups[key]['coordinate.latitude'];
-            var lon = groups[key]['coordinate.longitude'];
-            if (!lat || !lon) continue;
-            out.push({
-                parentPath: bowireCoordSyncNormalisePath(key),
-                latPath: bowireCoordSyncNormalisePath(lat),
-                lonPath: bowireCoordSyncNormalisePath(lon)
-            });
-        }
-        return out;
-    }
+    function bowireWireResponseTreeGestures(treeRoot) {
+        if (!treeRoot || treeRoot.__bowireRespTreeGesturesMounted) return;
+        treeRoot.__bowireRespTreeGesturesMounted = true;
 
-    /**
-     * Resolve a JSONPath-ish chain ("position.lat", "items.0.lat")
-     * against a parsed JSON value. The path convention here is the
-     * dot-separated chain-variable form the JSON tree emits — numeric
-     * segments are array indices, anything else is an object key.
-     * Matches the convention `bowireResolveJsonPath` in the map
-     * widget uses for the raw `$.foo.bar` shape, normalised down.
-     */
-    function bowireCoordSyncResolvePath(root, path) {
-        if (!path) return root;
-        var tokens = String(path).split('.');
-        var cur = root;
-        for (var t = 0; t < tokens.length; t++) {
-            if (cur == null) return undefined;
-            var key = tokens[t];
-            if (/^\d+$/.test(key) && Array.isArray(cur)) {
-                cur = cur[parseInt(key, 10)];
-            } else if (typeof cur === 'object') {
-                cur = cur[key];
-            } else {
-                return undefined;
-            }
-        }
-        return cur;
-    }
-
-    /**
-     * Resolve a (lat, lon) pair from the live response data. Tries
-     * the explicit root supplied by the caller first (streaming
-     * detail panes hand the current frame's parsed body), then the
-     * `responseData` global (unary path), then peels back any
-     * `data` / `frame` envelope wrapper — same shape extractCoords
-     * in map.js handles. Returns `null` when the pair doesn't
-     * resolve to a valid WGS84 coordinate, in which case the caller
-     * suppresses the "Center on map" entry.
-     */
-    function bowireCoordSyncResolveLatLon(pair, explicitRoot) {
-        if (!pair) return null;
-        var roots = [];
-        if (explicitRoot != null) {
-            roots.push(explicitRoot);
-            if (typeof explicitRoot === 'object') {
-                if (explicitRoot.data !== undefined) roots.push(explicitRoot.data);
-                if (explicitRoot.frame !== undefined) roots.push(explicitRoot.frame);
-            }
-        }
-        if (typeof responseData !== 'undefined' && responseData != null) {
-            roots.push(responseData);
-            if (typeof responseData === 'object') {
-                if (responseData.data !== undefined) roots.push(responseData.data);
-                if (responseData.frame !== undefined) roots.push(responseData.frame);
-            }
-        }
-        for (var i = 0; i < roots.length; i++) {
-            var lat = bowireCoordSyncResolvePath(roots[i], pair.latPath);
-            var lon = bowireCoordSyncResolvePath(roots[i], pair.lonPath);
-            lat = typeof lat === 'number' ? lat : parseFloat(lat);
-            lon = typeof lon === 'number' ? lon : parseFloat(lon);
-            if (isFinite(lat) && isFinite(lon)
-                && lat >= -90 && lat <= 90
-                && lon >= -180 && lon <= 180) {
-                return { lat: lat, lon: lon };
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Decorate every annotated lat/lon span in the response tree with
-     * `data-bowire-coord-path` so the context-menu + hover handlers
-     * can identify the click target. Idempotent — re-running over a
-     * partially-decorated tree leaves the previous attributes in
-     * place and just re-applies. The attribute carries the lat-path
-     * (the more specific of the pair) so the map-side highlight
-     * lookup never has to disambiguate two coord blocks sharing the
-     * same parent.
-     */
-    function bowireCoordSyncDecorateTree(treeRoot, pairs) {
-        if (!treeRoot || !pairs || pairs.length === 0) return;
-        // Build an index: chain-var path → which pair it belongs to.
-        // A coord pair contributes three lookup keys — latPath,
-        // lonPath, parentPath — all pointing at the same pair record
-        // so a hover on any of them lights up the same pin.
-        var index = {};
-        for (var i = 0; i < pairs.length; i++) {
-            index[pairs[i].latPath] = pairs[i];
-            index[pairs[i].lonPath] = pairs[i];
-            if (pairs[i].parentPath) index[pairs[i].parentPath] = pairs[i];
-        }
-        var picks = treeRoot.querySelectorAll('[data-json-path]');
-        for (var p = 0; p < picks.length; p++) {
-            var raw = picks[p].getAttribute('data-json-path') || '';
-            var hit = index[raw];
-            if (!hit) continue;
-            // Use the lat-path as the canonical pair id — the map
-            // widget's `highlightByPath` accepts any of the three
-            // forms but consistently using the lat-path keeps the
-            // attribute readable in the DOM inspector.
-            picks[p].setAttribute('data-bowire-coord-path', hit.latPath);
-        }
-    }
-
-    /**
-     * Attach hover + context-menu handlers to the response tree.
-     * Bound at the tree root with delegation so morphdom re-renders
-     * the children without dropping the handlers. The handler reads
-     * `data-bowire-coord-path` at event time, so the lookup survives
-     * any node reuse the diff does — same pattern semantics-menu.js
-     * uses for its right-click handler.
-     */
-    function bowireCoordSyncAttachHandlers(treeRoot, service, method, explicitRoot) {
-        if (!treeRoot || treeRoot.__bowireCoordSyncMounted) return;
-        treeRoot.__bowireCoordSyncMounted = true;
-        // Stash the explicit root on the tree node so the contextmenu
-        // handler can find the per-frame body even when the global
-        // `responseData` lags (streaming-detail flow). morphdom
-        // preserves the node across renders → handler stays bound,
-        // explicit root stays accessible. Updated on every decorate
-        // pass so a re-render with a fresh frame body picks it up.
-        treeRoot.__bowireCoordSyncRoot = explicitRoot;
-
-        function closestCoord(target) {
-            return target && target.closest
-                ? target.closest('[data-bowire-coord-path]')
+        // Double-click → Copy path.
+        treeRoot.addEventListener('dblclick', function (e) {
+            var target = e.target && e.target.closest
+                ? e.target.closest('[data-json-path]')
                 : null;
-        }
-
-        // Hover JSON → highlight map pin. Delegated mouseover /
-        // mouseout (rather than mouseenter/leave on each span) so
-        // we install ONE listener pair regardless of how many coord
-        // blocks the response carries.
-        treeRoot.addEventListener('mouseover', function (e) {
-            var coord = closestCoord(e.target);
-            if (!coord) return;
-            var path = coord.getAttribute('data-bowire-coord-path') || '';
-            if (!path) return;
-            var widgets = window.__bowireMapWidgets || [];
-            for (var i = 0; i < widgets.length; i++) {
-                try { widgets[i].highlightByPath(path); } catch {}
-            }
-            coord.classList.add('bowire-coord-hover-source');
-        });
-        treeRoot.addEventListener('mouseout', function (e) {
-            var coord = closestCoord(e.target);
-            if (!coord) return;
-            // Avoid spurious clear-flicker when the cursor moves
-            // between two child spans of the same coord block —
-            // relatedTarget still resolves under the same coord
-            // ancestor so we treat it as the same hover.
-            var related = e.relatedTarget;
-            if (related && related.closest
-                && related.closest('[data-bowire-coord-path]') === coord) return;
-            coord.classList.remove('bowire-coord-hover-source');
-            var widgets = window.__bowireMapWidgets || [];
-            for (var i = 0; i < widgets.length; i++) {
-                try { widgets[i].clearHighlight(); } catch {}
-            }
-        });
-
-        // Right-click → unified context menu. Always surfaces "Copy as
-        // ${response.X}" + "Copy path" for any [data-json-path] target;
-        // additionally surfaces "Center on map" when (a) the map plugin
-        // is loaded and (b) the target resolves to a lat/lon pair the
-        // semantics layer recognised. Operator: 'rechtsklick = menü
-        // mit ${response.X} + path + (wenn map plugin geladen) center
-        // on map'.
-        treeRoot.addEventListener('contextmenu', function (e) {
-            var pathTarget = e.target.closest && e.target.closest('[data-json-path]');
-            var coord = closestCoord(e.target);
-            // Resolve "Center on map" eligibility — coord-span + plugin
-            // + a known coordinate pair.
-            var loc = null;
-            var coordPath = null;
-            if (coord && bowireCoordSyncMapAvailable()) {
-                coordPath = coord.getAttribute('data-bowire-coord-path') || '';
-                if (coordPath) {
-                    var pairs = bowireCoordSyncPairsForMethod(service, method);
-                    var pair = null;
-                    for (var i = 0; i < pairs.length; i++) {
-                        if (pairs[i].latPath === coordPath
-                            || pairs[i].lonPath === coordPath
-                            || pairs[i].parentPath === coordPath) {
-                            pair = pairs[i];
-                            break;
-                        }
-                    }
-                    if (pair) {
-                        loc = bowireCoordSyncResolveLatLon(
-                            pair, treeRoot.__bowireCoordSyncRoot);
-                    }
-                }
-            }
-            // No path AND no coord → let the browser show its native menu.
-            if (!pathTarget && !loc) return;
-            var jsonPath = pathTarget
-                ? (pathTarget.getAttribute('data-json-path') || '')
-                : '';
+            if (!target) return;
             e.preventDefault();
             e.stopPropagation();
-            bowireCoordSyncOpenMenu(e.clientX, e.clientY, loc, coordPath, jsonPath);
+            var raw = target.getAttribute('data-json-path') || '';
+            if (!raw) return;
+            try {
+                navigator.clipboard.writeText(raw).then(
+                    function () { toast('Copied path: ' + raw, 'success'); },
+                    function () { toast('Copy failed', 'error'); }
+                );
+            } catch { /* clipboard API unavailable — silent */ }
+        });
+
+        // Right-click → unified menu.
+        treeRoot.addEventListener('contextmenu', function (e) {
+            var target = e.target && e.target.closest
+                ? e.target.closest('[data-json-path]')
+                : null;
+            if (!target) return;
+            // Skip when the right-click landed on a label span —
+            // semantics-menu attaches its own contextmenu listener
+            // per label and calls stopPropagation, so we wouldn't
+            // reach this branch normally. The guard is belt-and-
+            // braces for the case where semantics-menu hasn't
+            // mounted yet (decorate-async race).
+            if (target.classList
+                && target.classList.contains('bowire-json-tree-label')) {
+                return;
+            }
+            // Reading service/method off module state at event time
+            // (rather than capturing in the closure) keeps the menu
+            // honest across method switches — see comment on
+            // bowireWireResponseTreeGestures.
+            var svc = (typeof selectedService !== 'undefined' && selectedService)
+                ? selectedService.name : null;
+            var mth = (typeof selectedMethod !== 'undefined' && selectedMethod)
+                ? selectedMethod.name : null;
+            e.preventDefault();
+            e.stopPropagation();
+            bowireOpenResponseTreeContextMenu(e.clientX, e.clientY, {
+                target: target,
+                treeRoot: treeRoot,
+                jsonPath: target.getAttribute('data-json-path') || '',
+                service: svc,
+                method: mth
+            });
         });
     }
 
     /**
-     * Render and position the right-click menu. Same DOM shape as
-     * the semantics-menu so the workbench's existing CSS rules
-     * cover it without bespoke styling. Closes on outside click +
-     * Escape; clamps inside the viewport.
+     * Build and position the unified context menu. Same DOM shape
+     * as semantics-menu so the workbench's existing CSS rules
+     * cover it without bespoke styling — only the menu-meta line
+     * (under "Center on map") adds a small footer.
      */
-    function bowireCoordSyncOpenMenu(x, y, loc, coordPath, jsonPath) {
-        // Tear down any previous coord menu so rapid right-clicks
+    function bowireOpenResponseTreeContextMenu(x, y, ctx) {
+        // Tear down any previous instance so rapid right-clicks
         // don't pile up popups.
-        var existing = document.querySelector('.bowire-coord-sync-menu');
+        var existing = document.querySelector('.bowire-response-tree-menu');
         if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
 
         var menu = document.createElement('div');
-        menu.className = 'bowire-semantics-menu bowire-coord-sync-menu';
+        menu.className = 'bowire-semantics-menu bowire-response-tree-menu';
         menu.setAttribute('role', 'menu');
         menu.style.position = 'fixed';
         menu.style.left = x + 'px';
         menu.style.top = y + 'px';
         menu.style.zIndex = '10000';
-
-        function makeItem(label, onClick) {
-            var btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'bowire-semantics-menu-item';
-            btn.setAttribute('role', 'menuitem');
-            btn.textContent = label;
-            btn.addEventListener('click', function () { try { onClick(); } catch {} close(); });
-            return btn;
-        }
-        function copy(text, hint) {
-            if (!text) return;
-            navigator.clipboard.writeText(text).then(
-                function () { if (typeof toast === 'function') toast(hint + ': ' + text, 'success'); },
-                function () { if (typeof toast === 'function') toast('Copy failed', 'error'); }
-            );
-        }
-
-        // Copy entries — always present when the right-clicked target
-        // carries a JSON path. The chain-var shape (${response.X}) +
-        // the raw path are the two copy actions the operator typed by
-        // hand before; surfacing them in the menu lets click stay free
-        // for the toggle gesture (operator request).
-        if (jsonPath) {
-            var chainVar = '${response.' + jsonPath + '}';
-            menu.appendChild(makeItem('Copy as ' + chainVar,
-                function () { copy(chainVar, 'Copied'); }));
-            menu.appendChild(makeItem('Copy path',
-                function () { copy(jsonPath, 'Copied path'); }));
-        }
-
-        // "Center on map" — only when a real lat/lon resolved.
-        if (loc) {
-            if (jsonPath) {
-                var sep = document.createElement('div');
-                sep.className = 'bowire-context-menu-separator';
-                menu.appendChild(sep);
-            }
-            menu.appendChild(makeItem('Center on map', function () {
-                var widgets = window.__bowireMapWidgets || [];
-                for (var i = 0; i < widgets.length; i++) {
-                    try { widgets[i].flyTo({ center: [loc.lon, loc.lat] }); } catch {}
-                }
-            }));
-
-            var meta = document.createElement('div');
-            meta.className = 'bowire-semantics-menu-meta';
-            meta.textContent = loc.lat.toFixed(5) + ', ' + loc.lon.toFixed(5);
-            menu.appendChild(meta);
-        }
-
-        document.body.appendChild(menu);
-
-        // Viewport clamp — identical math to semantics-menu.
-        var vw = window.innerWidth, vh = window.innerHeight;
-        var rect = menu.getBoundingClientRect();
-        if (rect.right > vw) menu.style.left = Math.max(8, vw - rect.width - 8) + 'px';
-        if (rect.bottom > vh) menu.style.top = Math.max(8, vh - rect.height - 8) + 'px';
 
         function close() {
             document.removeEventListener('keydown', onKey);
@@ -9513,105 +9307,102 @@
         }
         function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }
         function onClick(e) { if (!menu.contains(e.target)) close(); }
-        document.addEventListener('keydown', onKey);
-        // Defer the click listener install by one tick so the click
-        // that triggered the contextmenu's button doesn't immediately
-        // close the menu.
-        setTimeout(function () { document.addEventListener('click', onClick); }, 0);
-    }
 
-    /**
-     * Map → JSON direction. The map widget dispatches
-     * `bowire:map-coord-hover` carrying parentPath / latPath /
-     * lonPath whenever the operator hovers a pin. We light up the
-     * corresponding coord block in the JSON tree by adding the
-     * `bowire-coord-hover-target` class to the matching span(s).
-     *
-     * Installed once at module load; finds the live response trees
-     * at event time so a re-render that swapped the DOM doesn't
-     * orphan the listener. Cheap — the lookup is one querySelector
-     * call per event.
-     */
-    function bowireCoordSyncInstallReverseListener() {
-        if (window.__bowireCoordSyncReverseInstalled) return;
-        window.__bowireCoordSyncReverseInstalled = true;
-        document.addEventListener('bowire:map-coord-hover', function (e) {
-            // Clear any prior highlight regardless of incoming path —
-            // the map widget dispatches an empty-path event on
-            // mouseleave so the JSON tree clears too.
-            var prior = document.querySelectorAll('.bowire-coord-hover-target');
-            for (var p = 0; p < prior.length; p++) {
-                prior[p].classList.remove('bowire-coord-hover-target');
-            }
-            var detail = e && e.detail;
-            if (!detail) return;
-            var paths = [];
-            if (detail.parentPath) paths.push(bowireCoordSyncNormalisePath(detail.parentPath));
-            if (detail.latPath) paths.push(bowireCoordSyncNormalisePath(detail.latPath));
-            if (detail.lonPath) paths.push(bowireCoordSyncNormalisePath(detail.lonPath));
-            if (paths.length === 0) return;
-            // Build a single CSS selector that matches every span
-            // carrying a coord-path attribute for the hovered pin.
-            // Escape only what `CSS.escape` does — quote-character
-            // injection isn't possible because the path comes from a
-            // server-side annotation, not user input, but a defensive
-            // escape keeps the selector safe.
-            var parts = [];
-            for (var i = 0; i < paths.length; i++) {
-                var safe = (typeof CSS !== 'undefined' && CSS.escape)
-                    ? CSS.escape(paths[i]) : paths[i].replace(/"/g, '\\"');
-                parts.push('[data-bowire-coord-path="' + safe + '"]');
-                // Also light up spans that ONLY carry the matching
-                // data-json-path (the JSON viewer's chevron lines,
-                // the bracket spans) so the surrounding block
-                // visibly highlights.
-                parts.push('[data-line-path="' + safe + '"]');
-            }
-            var matches = document.querySelectorAll(parts.join(','));
-            for (var m = 0; m < matches.length; m++) {
-                matches[m].classList.add('bowire-coord-hover-target');
-            }
-        });
-    }
-
-    /**
-     * Public entry point — call after `renderJsonTree(...)` lands
-     * in the DOM. Resolves the effective annotations (cached or
-     * fetched), decorates lat/lon spans with
-     * `data-bowire-coord-path`, and attaches hover + contextmenu
-     * handlers. Silent failure on a missing extension framework
-     * keeps the response tree usable when the workbench is
-     * misconfigured.
-     */
-    function bowireDecorateResponseTreeForCoordPairs(treeRoot, service, method, explicitRoot) {
-        if (!treeRoot || !service || !method) return;
-        bowireCoordSyncInstallReverseListener();
-        var fw = window.__bowireExtFramework;
-        if (!fw) return;
-        var loader;
-        if (typeof fw.effectiveCacheFor === 'function'
-            && fw.effectiveCacheFor(service, method)) {
-            loader = Promise.resolve({
-                annotations: fw.effectiveCacheFor(service, method)
+        function addItem(label, onActivate) {
+            var item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'bowire-semantics-menu-item';
+            item.setAttribute('role', 'menuitem');
+            item.textContent = label;
+            item.addEventListener('click', function () {
+                try { onActivate(); } catch (err) { console.error('[bowire-resp-menu]', err); }
+                close();
             });
-        } else if (typeof fw.fetchEffective === 'function') {
-            loader = fw.fetchEffective(service, method);
-        } else {
-            return;
+            menu.appendChild(item);
+            return item;
         }
-        loader.then(function () {
-            var pairs = bowireCoordSyncPairsForMethod(service, method);
-            if (pairs.length === 0) return;
-            bowireCoordSyncDecorateTree(treeRoot, pairs);
-            bowireCoordSyncAttachHandlers(treeRoot, service, method, explicitRoot);
-            // Re-stash the root even when the handlers were already
-            // mounted — a previous render() may have left a stale
-            // root attached, and the new frame's body is what the
-            // context-menu should resolve against.
-            treeRoot.__bowireCoordSyncRoot = explicitRoot;
-        }).catch(function (err) {
-            console.error('[bowire-coord-sync] decorate failed', err);
+
+        // Item 1 — Copy ${response.X}
+        var chainVar = ctx.jsonPath
+            ? '${response.' + ctx.jsonPath + '}'
+            : '${response}';
+        addItem('Copy ' + chainVar, function () {
+            navigator.clipboard.writeText(chainVar).then(
+                function () { toast('Copied: ' + chainVar, 'success'); },
+                function () { toast('Copy failed', 'error'); }
+            );
         });
+
+        // Item 2 — Copy path
+        if (ctx.jsonPath) {
+            addItem('Copy path (' + ctx.jsonPath + ')', function () {
+                navigator.clipboard.writeText(ctx.jsonPath).then(
+                    function () { toast('Copied path: ' + ctx.jsonPath, 'success'); },
+                    function () { toast('Copy failed', 'error'); }
+                );
+            });
+        }
+
+        // Extension-contributed items — every registered
+        // contributor returns an array of `{ label, action, meta?,
+        // divider? }` entries. A `divider: true` entry inserts a
+        // visual rule between groups. `meta` (a short footer line
+        // like "50.0123, 8.5621") renders directly under the most
+        // recently appended item. The core never names a specific
+        // extension here — Kuestenlogik.Bowire.Map registers the
+        // "Center on map" entry from inside its own bundle.
+        var fw = window.__bowireExtFramework;
+        var contributed = (fw && typeof fw.collectResponseTreeMenuItems === 'function')
+            ? fw.collectResponseTreeMenuItems({
+                target: ctx.target,
+                treeRoot: ctx.treeRoot,
+                jsonPath: ctx.jsonPath,
+                service: ctx.service,
+                method: ctx.method
+            })
+            : [];
+        // Only emit a leading divider when the contributed batch
+        // actually has at least one renderable item — otherwise the
+        // menu ends with an orphan rule.
+        var rendered = 0;
+        for (var i = 0; i < contributed.length; i++) {
+            var entry = contributed[i];
+            if (!entry) continue;
+            if (entry.divider) {
+                var hr = document.createElement('div');
+                hr.className = 'bowire-semantics-menu-divider';
+                menu.appendChild(hr);
+                continue;
+            }
+            if (!entry.label || typeof entry.action !== 'function') continue;
+            if (rendered === 0) {
+                var leadHr = document.createElement('div');
+                leadHr.className = 'bowire-semantics-menu-divider';
+                menu.appendChild(leadHr);
+            }
+            addItem(entry.label, entry.action);
+            if (entry.meta) {
+                var metaEl = document.createElement('div');
+                metaEl.className = 'bowire-semantics-menu-meta';
+                metaEl.textContent = String(entry.meta);
+                menu.appendChild(metaEl);
+            }
+            rendered++;
+        }
+
+        document.body.appendChild(menu);
+
+        // Viewport clamp — same math as semantics-menu.
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var rect = menu.getBoundingClientRect();
+        if (rect.right > vw) menu.style.left = Math.max(8, vw - rect.width - 8) + 'px';
+        if (rect.bottom > vh) menu.style.top = Math.max(8, vh - rect.height - 8) + 'px';
+
+        document.addEventListener('keydown', onKey);
+        // Defer the click-out listener by one tick so the same
+        // mouse-up that triggered the menu's items doesn't close
+        // it immediately.
+        setTimeout(function () { document.addEventListener('click', onClick); }, 0);
     }
 
     function appendStreamMessage(parsed) {
@@ -10292,42 +10083,24 @@
                     );
                     respBody.appendChild(el('div', { className: 'bowire-mcp-content' }, rawHeader));
                 }
-                // Interactive collapsible JSON tree. Click a value
-                // copies `${response.X}` (chaining variable) into
-                // the clipboard; double-click a key copies the bare
-                // path so it lands cleanly in a test-assertion
-                // expected-field. The Tree/JSON toggle was retired —
-                // every container is now ent/foldable in place via
-                // the native <details> markup the tree renderer
-                // emits.
+                // Interactive collapsible JSON tree. Click on a
+                // container's summary toggles via the native
+                // <details>/<summary> contract — no JS overlay
+                // needed. Double-click copies the JSONPath of the
+                // clicked node ("position.lat"); right-click opens
+                // a unified context menu with Copy ${response.X} /
+                // Copy path / Center on map (when a map plugin is
+                // mounted on the coord pair). The old click-to-
+                // copy-${} action was demoted to right-click +
+                // dblclick because primary-click on a JSON node is
+                // operator-expected to do the obvious "open/close"
+                // — same shape as <details>, the IDE tree views
+                // and every Hoppscotch-style viewer ship.
                 const output = el('div', {
                     className: 'bowire-response-output is-interactive is-tree',
-                    title: 'Click any value to copy as ${response.X} — double-click a key to copy the path',
-                    onClick: function (e) {
-                        var target = e.target.closest('[data-json-path]');
-                        if (!target) return;
-                        var raw = target.getAttribute('data-json-path') || '';
-                        var chainVar = raw ? '${response.' + raw + '}' : '${response}';
-                        navigator.clipboard.writeText(chainVar).then(
-                            function () { toast('Copied: ' + chainVar, 'success'); },
-                            function () { toast('Copy failed', 'error'); }
-                        );
-                    },
-                    onDblClick: function (e) {
-                        var keyEl = e.target.closest('.bowire-json-tree-label');
-                        if (!keyEl) return;
-                        e.preventDefault();
-                        // Suppress the click-to-copy-${} that would
-                        // otherwise also fire on the second click.
-                        e.stopPropagation();
-                        var raw = keyEl.getAttribute('data-json-path') || '';
-                        if (!raw) return;
-                        navigator.clipboard.writeText(raw).then(
-                            function () { toast('Copied path: ' + raw, 'success'); },
-                            function () { toast('Copy failed', 'error'); }
-                        );
-                    }
+                    title: 'Click to expand/collapse — double-click to copy path — right-click for more actions'
                 });
+                bowireWireResponseTreeGestures(output);
                 output.innerHTML = renderJsonTree(responseData);
                 // Wrap the response output in a split-pane host when a
                 // registered viewer claims the active method's kind
@@ -10357,9 +10130,14 @@
                 }
                 if (selectedService && selectedMethod) {
                     try {
-                        bowireDecorateResponseTreeForCoordPairs(
+                        // Fan out the per-kind decoration hooks. The
+                        // map widget registers a decorator that
+                        // stamps data-bowire-coord-path + wires
+                        // hover sync; other extensions plug in the
+                        // same way without touching core.
+                        bowireDecorateResponseTreeViaExtensions(
                             output, selectedService.name, selectedMethod.name);
-                    } catch (e) { console.error('[bowire-coord-sync] decorate', e); }
+                    } catch (e) { console.error('[bowire-resp-tree] decorate', e); }
                 }
             }
         } else {

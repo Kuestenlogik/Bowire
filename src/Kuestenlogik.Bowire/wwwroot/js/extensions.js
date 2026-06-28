@@ -201,12 +201,48 @@
         register: function (reg) {
             bowireRegisterExtension(reg);
         },
+        // ---- Response-tree decoration hooks (Phase 4.1) ----
+        //
+        // The core workbench owns the response-tree DOM (JSON tree
+        // for unary, streaming-detail body for streams) but does NOT
+        // know about specific semantic kinds (coordinate.wgs84,
+        // image.bytes, &c.). Extensions register callbacks to:
+        //
+        //   - decorate the tree post-render (stamp data-attributes,
+        //     bind hover listeners) — `registerResponseTreeDecorator`
+        //   - contribute entries to the unified right-click context
+        //     menu — `registerResponseTreeMenuContributor`
+        //
+        // Both are extension-agnostic from the core's side: the map
+        // widget's "Center on map" lives in Kuestenlogik.Bowire.Map,
+        // a hypothetical image previewer's "Open viewer" would live
+        // in Kuestenlogik.Bowire.ImagePreview, &c. Core just
+        // multiplexes the hooks.
+        //
+        // The decorator callback gets `({ treeRoot, service, method,
+        // explicitRoot })`. The menu-contributor callback gets
+        // `({ target, treeRoot, jsonPath, service, method })` and
+        // returns an array of `{ label, action, meta?, divider? }`
+        // entries to surface; returns `[]` when nothing applies.
+        registerResponseTreeDecorator: function (fn) {
+            if (typeof fn === 'function') bowireResponseTreeDecorators.push(fn);
+        },
+        registerResponseTreeMenuContributor: function (fn) {
+            if (typeof fn === 'function') bowireResponseTreeMenuContributors.push(fn);
+        },
         // Inspection surface used by /tests + by hot-reload code.
         _internal: {
             byId: function (id) { return bowireExtensions.byId[id] || null; },
             byKind: function (kind) { return (bowireExtensions.byKind[kind] || []).slice(); }
         }
     };
+
+    // Extension-registered response-tree hooks. Mutated by the
+    // public-surface methods above; consumed by render-main.js's
+    // bowireWireResponseTreeGestures / bowireOpenResponseTreeContextMenu
+    // via the `__bowireExtFramework` handle below.
+    var bowireResponseTreeDecorators = [];
+    var bowireResponseTreeMenuContributors = [];
 
     // ---------------------------------------------------------------
     // Pairing checks
@@ -1232,6 +1268,28 @@
         // when an unregistered kind shows up in the annotations.
         packageSuggestionFor: function (kind) {
             return bowirePackageSuggestions[kind] || null;
+        },
+        // Phase 4.1 — response-tree extension hooks. The workbench
+        // owns the JSON-tree DOM but defers per-kind decoration +
+        // context-menu items to whichever extension registered
+        // them. Core never imports kind-specific knowledge.
+        runResponseTreeDecorators: function (opts) {
+            for (var i = 0; i < bowireResponseTreeDecorators.length; i++) {
+                try { bowireResponseTreeDecorators[i](opts); }
+                catch (e) { console.error('[bowire-ext] tree decorator threw', e); }
+            }
+        },
+        collectResponseTreeMenuItems: function (ctx) {
+            var out = [];
+            for (var i = 0; i < bowireResponseTreeMenuContributors.length; i++) {
+                try {
+                    var batch = bowireResponseTreeMenuContributors[i](ctx);
+                    if (Array.isArray(batch)) {
+                        for (var j = 0; j < batch.length; j++) out.push(batch[j]);
+                    }
+                } catch (e) { console.error('[bowire-ext] tree menu contributor threw', e); }
+            }
+            return out;
         },
         // Test seams
         _findPairingMatches: bowireFindPairingMatches,

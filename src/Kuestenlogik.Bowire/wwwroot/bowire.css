@@ -7728,44 +7728,19 @@ so no
     min-height: 0;
 }
 
-/* ---------- JSON ↔ map widget coord hover-sync ----------
-   The response-JSON viewer (render-main.js →
-   bowireDecorateResponseTreeForCoordPairs) stamps
-   `data-bowire-coord-path` on every span the framework's
-   `coordinate.wgs84` pairing matched. Hover on either side adds a
-   marker class that this stylesheet tints — keeps the hover sync
-   purely declarative so the JS handlers don't have to inline
-   colours. */
-[data-bowire-coord-path] {
-    /* Subtle indicator that this span participates in hover-sync
-       even when no hover is active — without it the operator has no
-       hint that the map widget will react. Uses a 1 px dotted under-
-       line in the muted text colour so it doesn't fight the JSON
-       syntax highlighting. */
-    text-decoration: underline dotted var(--bowire-text-tertiary);
-    text-decoration-thickness: 1px;
-    text-underline-offset: 2px;
-    cursor: pointer;
-}
-.bowire-coord-hover-source,
-.bowire-coord-hover-target {
-    /* Pale accent-coloured background tint — same colour as the map
-       widget's halo so the two sides read as a pair. The two
-       classes share the same paint so a self-hover (JSON span lights
-       up its own block) and a remote-hover (map pin lights up the
-       JSON block) are visually indistinguishable. */
-    background: color-mix(in srgb, var(--bowire-accent, #4f46e5) 18%, transparent);
-    border-radius: 3px;
-    transition: background 80ms ease-out;
-}
+/* ---------- Unified response-tree context menu meta line ----------
+   The generic right-click menu (Copy ${response.X} / Copy path /
+   extension-contributed entries) emits an optional small meta line
+   under any item whose contributor returned `meta`. Used today by
+   the map extension's "Center on map" entry to surface the
+   resolved lat/lon; the rule is kind-agnostic so other extensions
+   plug in the same way. Reuses the semantics-menu shell colours.
 
-/* ---------- Coord-sync context menu meta line ----------
-   The "Center on map" menu surfaces a small lat/lon meta line under
-   the menu item so the operator can confirm the coordinates before
-   clicking. Reuses the semantics-menu shell colours. */
-.bowire-coord-sync-menu {
-    min-width: 180px;
-}
+   Kind-specific styles (e.g. the `data-bowire-coord-path` hover
+   tint the map widget uses) live in the extension that owns them —
+   they're injected from `wwwroot/js/widgets/map.js` at registration
+   time so the Kuestenlogik.Bowire.Map → Kuestenlogik.Bowire
+   dependency direction stays one-way. */
 .bowire-semantics-menu-meta {
     padding: 4px 12px 6px;
     font-size: 11px;
