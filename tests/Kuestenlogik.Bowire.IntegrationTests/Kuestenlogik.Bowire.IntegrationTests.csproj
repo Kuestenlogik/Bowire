@@ -38,6 +38,12 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- v2.1 (#325): the interceptor surface (middleware, reverse-proxy
+         host, /api/intercepted endpoints, flow / mock stores) moved to
+         this dedicated package. The integration suite touches the
+         types directly (BowireInterceptorEndpointTests fixtures), so
+         pull the package in explicitly. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Interceptor\Kuestenlogik.Bowire.Interceptor.csproj" />
     <!-- Reference the MapLibre extension so the asset-endpoint tests
          (BowireSemanticsEndpointsTests, SemanticsEndpointIntegrationTests)
          find the embedded bundle + vendor assets via the registry's

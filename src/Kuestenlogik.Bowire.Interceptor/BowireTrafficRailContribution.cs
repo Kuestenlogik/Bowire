@@ -3,13 +3,14 @@
 
 using Kuestenlogik.Bowire.Plugins;
 
-namespace Kuestenlogik.Bowire.Rail.Traffic;
+namespace Kuestenlogik.Bowire.Interceptor;
 
 /// <summary>
-/// Traffic rail contribution (#315). Unifies the previous Proxy rail
-/// (standalone <c>bowire proxy</c> sidecar) and Intercepted rail
-/// (in-process <c>UseBowireInterceptor()</c> middleware) into one
-/// activity-rail descriptor.
+/// Traffic rail contribution (#315; consolidated into the
+/// Kuestenlogik.Bowire.Interceptor package in v2.1, #325). Unifies the
+/// previous Proxy rail (standalone <c>bowire proxy</c> sidecar) and
+/// Intercepted rail (in-process <c>UseBowireInterceptor()</c>
+/// middleware) into one activity-rail descriptor.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -27,8 +28,8 @@ namespace Kuestenlogik.Bowire.Rail.Traffic;
 /// </list>
 /// <para>
 /// The Flows + Mock Rules sub-tabs render identically across deployments —
-/// both read from the same in-process <c>InterceptedFlowStore</c> +
-/// <c>InterceptorMockStore</c> backing the
+/// both read from the same in-process <see cref="InterceptedFlowStore"/> +
+/// <see cref="InterceptorMockStore"/> backing the
 /// <c>/api/intercepted/*</c> (alias <c>/api/traffic/*</c>) endpoints.
 /// </para>
 /// <para>

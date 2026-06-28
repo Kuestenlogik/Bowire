@@ -4,7 +4,6 @@
 using System.Globalization;
 using System.Net;
 using Kuestenlogik.Bowire.App.Cli;
-using Kuestenlogik.Bowire.Endpoints;
 using Kuestenlogik.Bowire.Interceptor;
 using Kuestenlogik.Bowire.Proxy;
 using Microsoft.AspNetCore.Builder;

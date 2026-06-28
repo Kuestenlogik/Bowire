@@ -28,13 +28,13 @@
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Compose\Kuestenlogik.Bowire.Compose.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Workspaces\Kuestenlogik.Bowire.Workspaces.csproj" />
     <!-- #315 — Traffic + deprecated Proxy / Intercepted descriptors
-         touched directly by BowireTrafficRailContributionTests. Pulled
-         in explicitly so the discovery scan finds the legacy assemblies
-         even after they were marked [Obsolete] and removed from the
-         normal Bundle.Workbench transitive close. -->
-    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Rail.Traffic\Kuestenlogik.Bowire.Rail.Traffic.csproj" />
-    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Rail.Proxy\Kuestenlogik.Bowire.Rail.Proxy.csproj" />
-    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Rail.Intercepted\Kuestenlogik.Bowire.Rail.Intercepted.csproj" />
+         touched directly by BowireTrafficRailContributionTests. v2.1
+         (#325): all three descriptors live in the consolidated
+         Kuestenlogik.Bowire.Interceptor package, which also carries
+         the interceptor middleware + reverse-proxy host + /api/intercepted
+         endpoints (so the legacy Tests/Interceptor/* tests resolve their
+         types from there too). -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Interceptor\Kuestenlogik.Bowire.Interceptor.csproj" />
     <!-- Tool brings in BowireConfiguration (bootstrap IConfiguration +
          CLI-flag / legacy-env-var mappings) that the Bowire executable
          uses before WebApplication.CreateBuilder runs. Tested here

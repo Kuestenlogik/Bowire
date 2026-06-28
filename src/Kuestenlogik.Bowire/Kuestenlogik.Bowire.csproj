@@ -12,6 +12,15 @@
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Mcp" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Sse" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Ai" />
+    <!-- #325 (v2.1) — the interceptor surface (middleware,
+         reverse-proxy host, /api/intercepted/* + /api/tools/reverse-
+         proxy/* endpoints, three rail contributions) moved out of Core
+         into Kuestenlogik.Bowire.Interceptor. BowireToolsEndpoints +
+         BowireInterceptorEndpoints both call BowireEndpointHelpers, so
+         the new package needs `internal` access to read JsonOptions /
+         Problem(). Same pattern Core uses for the Protocol.* plugins
+         that lean on the helpers. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Interceptor" />
     <InternalsVisibleTo Include="bowire" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Grpc.Tests" />

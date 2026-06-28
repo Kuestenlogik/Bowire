@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #325 v2.1 — unified Interceptor package. Consolidates the
+         previous Rail.Proxy / Rail.Intercepted / Rail.Traffic NuGets
+         (three descriptors for what is functionally one feature) AND
+         absorbs the interceptor middleware runtime that used to live
+         in Core under src/Kuestenlogik.Bowire/Interceptor/ +
+         src/Kuestenlogik.Bowire/Tools/ReverseProxyRegistry.cs +
+         src/Kuestenlogik.Bowire/Endpoints/BowireInterceptorEndpoints.cs.
+         Embedded hosts that don't reference this package lose the
+         interceptor entirely — no middleware, no rails, no
+         /api/intercepted endpoints. The standalone Bowire.Tool pulls
+         the package in via Bundle.Workbench so the CLI shape stays
+         unchanged for end users. -->
+    <Description>Bowire Interceptor — unified Traffic rail (replaces the deprecated Proxy + Intercepted rails) + the in-process UseBowireInterceptor() middleware that captures HTTP flows into a singleton InterceptedFlowStore + the InterceptorMockStore that lets workbench-defined rules short-circuit the pipeline + the BowireReverseProxyHost / ReverseProxyRegistry the Tools surface uses to drive standalone reverse-proxy hosts. Adds the three rail descriptors (Proxy / Intercepted / Traffic) AND mounts /api/intercepted/* (+ /api/traffic/* alias) endpoints.</Description>
+    <PackageId>Kuestenlogik.Bowire.Interceptor</PackageId>
+    <PackageTags>bowire;interceptor;proxy;mitm;traffic;mock;reverse-proxy;middleware;workbench;plugin</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Per-rail JS fragments. Stitched into the workbench bundle by
+         BowireHtmlGenerator.CollectRailJsPayload (which discovers any
+         Kuestenlogik.Bowire.* embedded resource whose LogicalName
+         matches `.wwwroot.js.*.js`). -->
+    <EmbeddedResource Include="wwwroot\js\proxy-view.js"
+                      LogicalName="Kuestenlogik.Bowire.Interceptor.wwwroot.js.proxy-view.js" />
+    <EmbeddedResource Include="wwwroot\js\intercepted-view.js"
+                      LogicalName="Kuestenlogik.Bowire.Interceptor.wwwroot.js.intercepted-view.js" />
+    <EmbeddedResource Include="wwwroot\js\traffic-view.js"
+                      LogicalName="Kuestenlogik.Bowire.Interceptor.wwwroot.js.traffic-view.js" />
+  </ItemGroup>
+</Project>

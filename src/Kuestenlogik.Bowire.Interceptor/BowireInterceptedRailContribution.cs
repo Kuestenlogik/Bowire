@@ -3,18 +3,19 @@
 
 using Kuestenlogik.Bowire.Plugins;
 
-namespace Kuestenlogik.Bowire.Rail.Intercepted;
+namespace Kuestenlogik.Bowire.Interceptor;
 
 /// <summary>
-/// Intercepted rail contribution (#153 Phase A+B; extracted in #306 Phase G).
+/// Intercepted rail contribution (#153 Phase A+B; extracted in #306
+/// Phase G; consolidated into the Kuestenlogik.Bowire.Interceptor
+/// package in v2.1, #325).
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>Deprecated in #315.</b> Folded into the unified
-/// <c>BowireTrafficRailContribution</c> in
-/// <c>Kuestenlogik.Bowire.Rail.Traffic</c>, which adapts to the active
-/// deployment (Standalone proxy mode vs Embedded middleware mode) from
-/// <c>BowireOptions.Mode</c>. The boot-migration block in
+/// <see cref="BowireTrafficRailContribution"/>, which adapts to the
+/// active deployment (Standalone proxy mode vs Embedded middleware mode)
+/// from <c>BowireOptions.Mode</c>. The boot-migration block in
 /// <c>prologue.js</c> rewrites
 /// <c>localStorage.bowire_rail_mode='intercepted'</c> to <c>'traffic'</c>
 /// on first paint.
@@ -26,7 +27,7 @@ namespace Kuestenlogik.Bowire.Rail.Intercepted;
 /// deprecation window expires.
 /// </para>
 /// </remarks>
-[Obsolete("Use BowireTrafficRailContribution (Kuestenlogik.Bowire.Rail.Traffic) instead. The Traffic rail unifies Proxy + Intercepted and adapts to BowireOptions.Mode at render time. See #315.")]
+[Obsolete("Use BowireTrafficRailContribution instead. The Traffic rail unifies Proxy + Intercepted and adapts to BowireOptions.Mode at render time. See #315.")]
 public sealed class BowireInterceptedRailContribution : IBowireRailContribution
 {
     /// <inheritdoc />

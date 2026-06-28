@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Collections.Concurrent;
-using Kuestenlogik.Bowire.Interceptor;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Kuestenlogik.Bowire.Tools;
+namespace Kuestenlogik.Bowire.Interceptor;
 
 /// <summary>
 /// Process-wide registry of <see cref="BowireReverseProxyHost"/>
