@@ -38,7 +38,6 @@
          Kuestenlogik.Bowire.Rail.Home / Kuestenlogik.Bowire.Rail.Discover
          packages have been retired. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Compose\Kuestenlogik.Bowire.Rail.Compose.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Environments\Kuestenlogik.Bowire.Rail.Environments.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Recordings\Kuestenlogik.Bowire.Rail.Recordings.csproj" />
     <!-- #311 — Mocks rail descriptor + mocks.js fragment ship inside
          Kuestenlogik.Bowire.Mock (see below). The provisional
@@ -51,7 +50,10 @@
          HideFromRail for one release window. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Traffic\Kuestenlogik.Bowire.Rail.Traffic.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Benchmarks\Kuestenlogik.Bowire.Rail.Benchmarks.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Workspaces\Kuestenlogik.Bowire.Rail.Workspaces.csproj" />
+    <!-- v2.1 (#325): Workspaces + Environments collapsed into a single
+         Kuestenlogik.Bowire.Workspaces package (env vars are workspace-
+         scoped). The Rail. prefix was dropped at the same time. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Workspaces\Kuestenlogik.Bowire.Workspaces.csproj" />
     <!-- Security rail (#294 Phase D) — extracted into its own package
          already; carries the Security rail descriptor + the Nuclei
          scanner runtime. -->

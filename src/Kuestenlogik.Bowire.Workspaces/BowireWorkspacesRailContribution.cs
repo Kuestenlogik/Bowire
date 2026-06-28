@@ -3,7 +3,7 @@
 
 using Kuestenlogik.Bowire.Plugins;
 
-namespace Kuestenlogik.Bowire.Rail.Workspaces;
+namespace Kuestenlogik.Bowire.Workspaces;
 
 /// <summary>
 /// Workspaces rail contribution (#306 Phase G). Always-on — the workspace
