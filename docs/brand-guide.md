@@ -93,28 +93,21 @@ below its minimum.
 
 ## Colour
 
-Indigo is the single accent — it carries every call-to-action, link, and
-highlight. The logo itself is monochrome (ink or white). Everything else is
-built from near-black and off-white. These are the exact design tokens the
-product and site use.
+You barely need colour to reference Bowire: the logo is monochrome — **ink**
+(`#0F0F17`) on light backgrounds, **white** (`#FFFFFF`) on dark. The one brand
+colour is **Bowire Indigo** — use it for an accent *around* the logo (a "works
+with Bowire" badge, a button, a link), never to recolour the logo itself.
 
-| Token | Dark theme | Light theme | Role |
-| --- | --- | --- | --- |
-| **Indigo** (accent) | `#6366F1` | `#4F46E5` | Primary accent, buttons, focus |
-| Indigo hover | `#818CF8` | `#6366F1` | Hover / active accent |
-| Indigo light | `#A5B4FC` | `#3730A3` | Inline links in body text |
-| **Ink** | `#0F0F17` | — | Dark background; the dark logo |
-| Surface | `#1A1A2E` | `#EEEEF0` | Cards / panels |
-| Border | `#2A2A3D` | `#E1E1EE` | Hairlines, dividers |
-| Text | `#E8E8F0` | `#1A1A2E` | Body text |
-| Muted | `#9898B0` | `#5A5A72` | Secondary text |
-| **Off-white** | `#FAFAFF` | `#FAFAFF` | Light background; the light logo |
-| Success | `#34D399` | `#34D399` | Positive state / "do" |
-| Warning | `#FBBF24` | `#FBBF24` | Caution state |
+| Colour | Hex | Use |
+| --- | --- | --- |
+| **Bowire Indigo** | `#6366F1` | The signature brand accent |
+| Indigo · on light | `#4F46E5` | The same accent where `#6366F1` would miss WCAG AA contrast on a white background |
+| **Ink** | `#0F0F17` | The dark logo; dark backgrounds |
+| **White** | `#FFFFFF` | The light logo |
+| Off-white | `#FAFAFF` | Light backgrounds |
 
-Two accents exist for a reason: on a **light** UI, `#4F46E5` clears WCAG AA
-contrast where `#6366F1` would not; on a **dark** UI, use `#6366F1` for fills and
-`#A5B4FC` for inline links (the latter reaches ≥ 6:1 on the dark background).
+The product's wider UI palette (surfaces, borders, state colours) isn't part of
+the logo, so it isn't needed to reference Bowire.
 
 ## Typography
 
@@ -143,10 +136,27 @@ conference badge):
 
 ## Backgrounds
 
-- Best on a **solid Ink (`#0F0F17`)** or **Off-white (`#FAFAFF`)** field.
-- On a photo or gradient, drop the logo onto a **solid or scrimmed panel** so it
+Use the version that contrasts with the surface — the dark logo on light, the
+light logo on dark. Indigo is the brand colour; on it, use the white logo.
+
+<div style="display:flex;gap:14px;flex-wrap:wrap;margin:18px 0">
+  <figure style="margin:0;flex:1;min-width:180px;border:1px solid #e1e1ee;border-radius:10px;overflow:hidden">
+    <div style="background:#fafaff;padding:30px 20px;text-align:center"><img src="images/brand/bowire-lockup-dark.svg" alt="Bowire dark logo on a light background" style="max-height:36px"></div>
+    <figcaption style="padding:9px 12px;font-size:13px;color:#5a5a72;border-top:1px solid #e1e1ee">Light <code>#FAFAFF</code> &rarr; dark logo</figcaption>
+  </figure>
+  <figure style="margin:0;flex:1;min-width:180px;border:1px solid #e1e1ee;border-radius:10px;overflow:hidden">
+    <div style="background:#0f0f17;padding:30px 20px;text-align:center"><img src="images/brand/bowire-lockup-light.svg" alt="Bowire light logo on a dark background" style="max-height:36px"></div>
+    <figcaption style="padding:9px 12px;font-size:13px;color:#5a5a72;border-top:1px solid #e1e1ee">Dark <code>#0F0F17</code> &rarr; light logo</figcaption>
+  </figure>
+  <figure style="margin:0;flex:1;min-width:180px;border:1px solid #e1e1ee;border-radius:10px;overflow:hidden">
+    <div style="background:#6366f1;padding:30px 20px;text-align:center"><img src="images/brand/bowire-lockup-light.svg" alt="Bowire light logo on the brand indigo background" style="max-height:36px"></div>
+    <figcaption style="padding:9px 12px;font-size:13px;color:#5a5a72;border-top:1px solid #e1e1ee">Indigo <code>#6366F1</code> &rarr; light logo</figcaption>
+  </figure>
+</div>
+
+- On a photo or gradient, set the logo on a **solid or scrimmed panel** so it
   keeps its clear space and contrast — don't float it directly over busy imagery.
-- Never place the dark logo on a dark field or the light logo on a light field.
+- Never place the dark logo on a dark field, or the light logo on a light field.
 
 ## File formats
 
