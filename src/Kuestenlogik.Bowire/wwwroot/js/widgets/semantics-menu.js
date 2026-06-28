@@ -840,10 +840,70 @@
                         });
                     })(labels[j], badge, opts);
                 }
+                // Row-level hover hint (right gutter). Operator request:
+                // 'rechts beim hover sehen, was für ein gemappter typ
+                // das ist'. The hint sits on the containing row /
+                // summary so leaves AND container openers both surface
+                // it. CSS hides the span by default and unhides on
+                // .bowire-json-tree-row:hover so the gutter stays clean
+                // unless the operator's cursor is on the row.
+                if (currentTag && currentTag !== 'none') {
+                    var row = labels[j].closest('.bowire-json-tree-summary')
+                        || labels[j].closest('.bowire-json-tree-row');
+                    if (row && !row.querySelector(':scope > .bowire-json-tree-meta')) {
+                        var meta = document.createElement('span');
+                        meta.className = 'bowire-json-tree-meta'
+                            + ' bowire-json-tree-meta-' + (currentSource || 'auto');
+                        meta.textContent = bowireSemanticsHumaniseKind(currentTag);
+                        meta.title = currentTag + ' (' + (currentSource || 'auto') + ')';
+                        row.appendChild(meta);
+                    }
+                }
+            }
+            // Leaf-value spans (numbers / strings / booleans) carry a
+            // data-json-path too. Walk them so a leaf annotated via the
+            // auto-detector (e.g. coordinate.latitude on `lat: 50.0`)
+            // also shows the hover hint — the badge attaches to the
+            // key, but the value lives in the same row so the meta
+            // span we placed above is already in the right spot. The
+            // pass below covers the array-root case where a leaf has
+            // no label (no key) and the badge loop above skipped it.
+            var picks = output.querySelectorAll('.bowire-json-pickable[data-json-path]');
+            for (var pp = 0; pp < picks.length; pp++) {
+                if (picks[pp].classList.contains('bowire-json-tree-label')) continue;
+                var leafPath = picks[pp].getAttribute('data-json-path') || '';
+                if (!leafPath) continue;
+                var leafAnn = byPath[leafPath];
+                if (!leafAnn) continue;
+                var leafRow = picks[pp].closest('.bowire-json-tree-row');
+                if (!leafRow) continue;
+                if (leafRow.querySelector(':scope > .bowire-json-tree-meta')) continue;
+                var leafMeta = document.createElement('span');
+                leafMeta.className = 'bowire-json-tree-meta'
+                    + ' bowire-json-tree-meta-' + (leafAnn.source || 'auto');
+                leafMeta.textContent = bowireSemanticsHumaniseKind(leafAnn.semantic);
+                leafMeta.title = leafAnn.semantic + ' (' + (leafAnn.source || 'auto') + ')';
+                leafRow.appendChild(leafMeta);
             }
         }).catch(function (err) {
             console.error('[bowire-semantics] decorate failed', err);
         });
+    }
+
+    /**
+     * Friendly-shape transform of a kind for the right-gutter hover
+     * hint. `coordinate.wgs84` → "wgs84 coordinate"; `image.bytes`
+     * → "bytes image"; reads the way an operator would say it. The
+     * full machine name still lives on the span's `title` so the
+     * power-user can copy the raw kind from the tooltip.
+     */
+    function bowireSemanticsHumaniseKind(kind) {
+        if (!kind || typeof kind !== 'string') return '';
+        var parts = kind.split('.');
+        if (parts.length < 2) return kind;
+        // Reverse so the specifier comes first, e.g.
+        // `coordinate.wgs84` → "wgs84 coordinate".
+        return parts.slice(1).concat([parts[0]]).join(' ');
     }
 
     /**
