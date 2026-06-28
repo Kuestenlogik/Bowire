@@ -55,7 +55,7 @@ bottom — they are not the primary risk surface for v2.2.
 | **#302** Response viewer: line numbers + collapsible JSON + breadcrumb + raw + download | JS | `wwwroot/js/render-main.js` (9.7k LOC) | partial via render-main data-attr tests | gap | medium |
 | **#289** Hopp-bar single-line request: method + URL + params + execute | JS | `wwwroot/js/request-builder.js` (3k LOC), `request-builder-protocols.js` (1.1k) | JS **0 %** | gap | medium |
 | **#291** Hopp-bar: protocol picker (REST / gRPC / MQTT / WS / SSE / GraphQL / MCP) | JS | `wwwroot/js/request-builder-protocols.js` | JS **0 %** | gap | small-medium |
-| **#293** New 'Design' rail for ad-hoc requests | C#+JS | `src/Kuestenlogik.Bowire.Rail.Compose/BowireComposeRailContribution.cs`; `wwwroot/js/compose-rail.js`, `request-builder.js` | rail 100 % (trivial), JS **0 %** | gap | medium |
+| **#293** New 'Design' rail for ad-hoc requests | C#+JS | `src/Kuestenlogik.Bowire.Compose/BowireComposeRailContribution.cs` (renamed from `Rail.Compose` in v2.1 #325); `wwwroot/js/compose-rail.js`, `request-builder.js` | rail 100 % (trivial), JS **0 %** | gap | medium |
 | **#266–#268** Postman-style URL+verb+body / freeform validate / URL is call URL | JS | `wwwroot/js/request-builder.js`, `compose-rail.js` | JS **0 %** | gap | small-medium |
 | **#280** Assistant hints: actionable inline buttons | JS | `wwwroot/js/render-main.js` | n/a — UI snippet emit, low-risk | partial | small |
 | **#281** Guided tour: page-navigation + spotlight | JS | `wwwroot/js/tour.js` (1.0k LOC) | JS **0 %** | gap | medium |

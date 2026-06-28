@@ -48,20 +48,20 @@ same shape — adding a `PackageReference` to the rail package makes the
 rail appear in `__BOWIRE_CONFIG__.rails`; dropping it makes the rail
 disappear (no UI surface, no settings checkbox, no JS bundle bloat).
 
-Available rail packages:
+Available rail / activity packages (v2.1 #325 dropped the
+`Rail.` prefix from every package id; foundational Home + Discover
+rails were folded into Core):
 
-- `Kuestenlogik.Bowire.Rail.Home`
-- `Kuestenlogik.Bowire.Rail.Discover`
-- `Kuestenlogik.Bowire.Rail.Compose` _(hosts the canonical Collections + Presets side panel; the standalone `Rail.Collections` package was retired in v2.1)_
-- `Kuestenlogik.Bowire.Rail.Environments` _(hidden from rail strip)_
-- `Kuestenlogik.Bowire.Rail.Recordings`
+- `Kuestenlogik.Bowire` — carries the descriptor-only Home + Discover rails (folded into Core in v2.1)
+- `Kuestenlogik.Bowire.Compose` — hosts the canonical Collections + Presets side panel; the standalone `Rail.Collections` package was retired in v2.1
+- `Kuestenlogik.Bowire.Workspaces` — workspace switcher AND the workspace-scoped Environments rail (the `Rail.Environments` package was folded into Workspaces in v2.1)
+- `Kuestenlogik.Bowire.Recordings`
 - `Kuestenlogik.Bowire.Mock` _(carries both the mock-host runtime AND the Mocks rail descriptor + fragment; the provisional standalone `Rail.Mocks` package was folded in for v2.1)_
-- `Kuestenlogik.Bowire.Rail.Flows`
-- `Kuestenlogik.Bowire.Rail.Proxy`
-- `Kuestenlogik.Bowire.Rail.Intercepted`
-- `Kuestenlogik.Bowire.Rail.Benchmarks`
-- `Kuestenlogik.Bowire.Rail.Workspaces`
+- `Kuestenlogik.Bowire.Flows`
+- `Kuestenlogik.Bowire.Interceptor` — the unified Proxy + Intercepted + Traffic rails AND the interceptor middleware, reverse-proxy host, /api/intercepted endpoints (the `Rail.Proxy` + `Rail.Intercepted` + `Rail.Traffic` packages were consolidated in v2.1; embedded hosts that drop this package lose the interceptor stack entirely — no middleware, no rails, no admin endpoints)
+- `Kuestenlogik.Bowire.Benchmarking` _(was `Rail.Benchmarks` until v2.1; the gerund matches the activity-rail naming pattern)_
 - `Kuestenlogik.Bowire.Security.Scanner` _(carries the Security rail descriptor + the Nuclei scanner runtime)_
+- `Kuestenlogik.Bowire.Help` _(carries the Help rail descriptor + the in-app docs renderer)_
 
 Available module packages:
 
@@ -75,8 +75,9 @@ Security:
 
 ```xml
 <ItemGroup>
+  <!-- Discover ships inside Core since v2.1 (#325); no extra package
+       reference needed. -->
   <PackageReference Include="Kuestenlogik.Bowire" />
-  <PackageReference Include="Kuestenlogik.Bowire.Rail.Discover" />
   <PackageReference Include="Kuestenlogik.Bowire.Security.Scanner" />
   <!-- Pick the protocols this host needs to probe. -->
   <PackageReference Include="Kuestenlogik.Bowire.Protocol.Rest" />
@@ -114,24 +115,26 @@ badge.
 
 Five of the heaviest per-rail JS slices now live on their rail packages
 as embedded resources, not in core's `wwwroot/js/`. `BowireHtmlGenerator`
-scans every loaded `Kuestenlogik.Bowire.Rail.*` assembly at HTML-emit
-time, pulls the JS resources matching `*.wwwroot.js.*.js`, and stitches
-their content into the assembled `bowire.js` between the
-`/*BOWIRE_RAIL_FRAGMENTS_BEGIN*/` and `/*BOWIRE_RAIL_FRAGMENTS_END*/`
-markers core ships inside its IIFE. The stitched-in code therefore
-shares core's closure scope, so the existing bare-identifier references
-into helpers / state / renderers keep resolving without any
-window-namespace dance.
+scans every loaded `Kuestenlogik.Bowire.*` assembly at HTML-emit
+time (the v2.1 #325 cleanup dropped the `Rail.` prefix from every
+package id; the discovery filter widened to match every Bowire-
+namespaced sibling), pulls the JS resources matching
+`*.wwwroot.js.*.js`, and stitches their content into the assembled
+`bowire.js` between the `/*BOWIRE_RAIL_FRAGMENTS_BEGIN*/` and
+`/*BOWIRE_RAIL_FRAGMENTS_END*/` markers core ships inside its IIFE.
+The stitched-in code therefore shares core's closure scope, so the
+existing bare-identifier references into helpers / state / renderers
+keep resolving without any window-namespace dance.
 
-Shipped in this phase:
+Shipped in this phase (package ids reflect the v2.1 #325 rename):
 
-| Rail package | JS fragment | LOC moved |
+| Package | JS fragment | LOC moved |
 |--------------|-------------|----------:|
-| `Kuestenlogik.Bowire.Rail.Recordings` | `recording.js` | ~1700 |
+| `Kuestenlogik.Bowire.Recordings` | `recording.js` | ~1700 |
 | `Kuestenlogik.Bowire.Mock` _(was `Rail.Mocks` pre-v2.1)_ | `mocks.js` | ~600 |
-| `Kuestenlogik.Bowire.Rail.Flows` | `flows.js` | ~1700 |
-| `Kuestenlogik.Bowire.Rail.Compose` | `compose-rail.js` | ~1200 |
-| `Kuestenlogik.Bowire.Rail.Intercepted` | `intercepted-view.js` | ~700 |
+| `Kuestenlogik.Bowire.Flows` | `flows.js` | ~1700 |
+| `Kuestenlogik.Bowire.Compose` | `compose-rail.js` | ~1200 |
+| `Kuestenlogik.Bowire.Interceptor` _(was `Rail.Intercepted` pre-v2.1)_ | `intercepted-view.js` + `proxy-view.js` + `traffic-view.js` | ~1500 |
 
 Together, ~6,000 lines (≈200 KB pre-minify) drop out of every
 `Bundle.Minimal` bundle that doesn't opt into the matching rail.
