@@ -612,12 +612,27 @@
                 textContent: 'Execute the request to see the response here.'
             }));
         }
-        var divider = el('div', { className: 'bowire-pane-divider' });
+        // Stable id so the rAF callback below can re-resolve the live
+        // divider after morphdom merges the new tree in (the local
+        // `divider` reference can become detached if morphdom preserved
+        // an older sibling). initResizer is idempotent — re-runs on the
+        // already-initialised live node are no-ops.
+        reqPane.id = 'bowire-freeform-req-pane';
+        resPane.id = 'bowire-freeform-res-pane';
+        var divider = el('div', {
+            id: 'bowire-freeform-pane-divider',
+            className: 'bowire-pane-divider'
+        });
         splitContent.appendChild(reqPane);
         splitContent.appendChild(divider);
         splitContent.appendChild(resPane);
         pane.appendChild(splitContent);
-        requestAnimationFrame(function () { initResizer(divider, reqPane, resPane); });
+        requestAnimationFrame(function () {
+            var d = document.getElementById('bowire-freeform-pane-divider');
+            var l = document.getElementById('bowire-freeform-req-pane');
+            var r = document.getElementById('bowire-freeform-res-pane');
+            if (d && l && r) initResizer(d, l, r);
+        });
 
         // ----- 4. Action bar (.bowire-action-bar) at the bottom -----
         var actionBar = el('div', { className: 'bowire-action-bar bowire-freeform-action-bar' });
@@ -6334,21 +6349,46 @@
         // Content area: request + response panes. #135 split-mode
         // attribute drives whether the two panes sit side-by-side
         // (horizontal) or stacked (vertical) — CSS rules below the
-        // attribute selector flip the flex-direction.
+        // attribute selector flip the flex-direction. Resolve 'auto'
+        // here so both the CSS attribute selector and the resizer
+        // read the same literal axis ('horizontal' | 'vertical').
+        var resolvedSplit = (typeof resolveSplitMode === 'function')
+            ? resolveSplitMode(splitMode) : (splitMode || 'horizontal');
         const content = el('div', {
+            id: 'bowire-content',
             className: 'bowire-content bowire-content-enter',
-            'data-split': splitMode,
+            'data-split': resolvedSplit,
         });
         var reqPane = renderRequestPane();
         var resPane = renderResponsePane();
-        var divider = el('div', { className: 'bowire-pane-divider' });
+        // Divider id includes the method key so morphdom fully
+        // replaces the bar when switching methods — that drops the
+        // stale initResizer closure (which captured the OLD reqPane /
+        // resPane refs) and the rAF below installs a fresh one against
+        // the new panes.
+        var dividerMethodKey = (selectedService ? selectedService.name : '')
+            + '-' + (selectedMethod ? selectedMethod.name : '');
+        var dividerId = 'bowire-pane-divider-' + dividerMethodKey;
+        var divider = el('div', {
+            id: dividerId,
+            className: 'bowire-pane-divider'
+        });
         content.appendChild(reqPane);
         content.appendChild(divider);
         content.appendChild(resPane);
         main.appendChild(content);
 
-        // Initialize resizable pane divider after DOM attachment
-        requestAnimationFrame(function () { initResizer(divider, reqPane, resPane); });
+        // Initialize resizable pane divider after DOM attachment. Re-
+        // resolve via getElementById so morphdom node-preservation
+        // doesn't leave us holding a detached reference.
+        var reqPaneId = reqPane.id;
+        var resPaneId = resPane.id;
+        requestAnimationFrame(function () {
+            var d = document.getElementById(dividerId);
+            var l = document.getElementById(reqPaneId);
+            var r = document.getElementById(resPaneId);
+            if (d && l && r) initResizer(d, l, r);
+        });
 
         // Action bar
         main.appendChild(renderActionBar());
