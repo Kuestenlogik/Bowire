@@ -126,27 +126,42 @@ internal sealed class SeededSituationService : Situation.SituationBase
     }
 
     /// <summary>
-    /// Server-streaming variant — emits the same seeded list as a
-    /// single frame, then closes. Bowire's gRPC plugin treats this as a
-    /// one-shot stream which is exactly enough to drive the map widget
-    /// from the response JSON.
+    /// Server-streaming variant — emits one frame per seeded situation
+    /// object, spaced ~400 ms apart, so the operator sees the streaming
+    /// path actually iterate in the workbench (pins land on the map
+    /// one-by-one). Loops until the caller cancels the stream so the
+    /// "Subscribe" semantics are real: re-emits the same eight objects
+    /// every cycle with the seed shifted by one position, simulating
+    /// a continuously updating tactical situation. Operator: 'bei
+    /// subscribe situationobjects in der tacticalapi bekomme ich im
+    /// test bei execute nur eine message zurück.'
     /// </summary>
     public override async Task SubscribeSituationObjectEvents(
         SubscribeSituationObjectEventsRequest request,
         IServerStreamWriter<SubscribeSituationObjectEventsResponse> responseStream,
         ServerCallContext context)
     {
-        var frame = new SubscribeSituationObjectEventsResponse
+        var offset = 0;
+        while (!context.CancellationToken.IsCancellationRequested)
         {
-            Header = new ResponseHeader { Success = true },
-        };
-
-        foreach (var (uuid, name, lat, lon) in Seed)
-        {
-            frame.SituationObjects.Add(BuildSymbol(uuid, name, lat, lon));
+            for (var i = 0; i < Seed.Length; i++)
+            {
+                if (context.CancellationToken.IsCancellationRequested) break;
+                var (uuid, name, lat, lon) = Seed[(i + offset) % Seed.Length];
+                var frame = new SubscribeSituationObjectEventsResponse
+                {
+                    Header = new ResponseHeader { Success = true },
+                };
+                frame.SituationObjects.Add(BuildSymbol(uuid, name, lat, lon));
+                await responseStream.WriteAsync(frame, context.CancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await Task.Delay(400, context.CancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) { return; }
+            }
+            offset++;
         }
-
-        await responseStream.WriteAsync(frame, context.CancellationToken).ConfigureAwait(false);
     }
 
     // Symbol → DataPropertyLocation → SymbolLocation { point } → Point →
