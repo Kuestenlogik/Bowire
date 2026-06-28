@@ -3458,18 +3458,19 @@
             )
             : null;
 
-        // Help button — opens the in-app docs drawer (F1). Greyed out
+        // Help button — switches to the Help rail (#324). Greyed out
         // with an install hint when the Kuestenlogik.Bowire.Help
         // package isn't installed (capability probe at boot returned
         // available:false); click in that branch falls back to
         // opening bowire.io/docs externally.
+        var helpActive = helpAvailable && railMode === 'help';
         var helpBtn = el('button', {
             id: 'bowire-help-btn',
             className: 'bowire-theme-toggle-btn'
-                + (helpAvailable && helpDrawerOpen ? ' active' : '')
+                + (helpActive ? ' active' : '')
                 + (helpAvailable ? '' : ' bowire-theme-toggle-btn-disabled'),
             title: helpAvailable
-                ? (helpDrawerOpen ? 'Close Help (F1)' : 'Help (F1)')
+                ? (helpActive ? 'Leave Help (F1)' : 'Help (F1)')
                 : 'Install Kuestenlogik.Bowire.Help for in-app docs (or visit bowire.io/docs)',
             'aria-label': 'Help',
             // #297 — overflow priority tag (see aboutBtn).
@@ -3479,12 +3480,14 @@
             'data-topbar-group': 'info',
             onClick: function () {
                 if (helpAvailable) {
-                    // #299 — toggle: closing on second click matches the
-                    // Assistant button next to it and keeps F1 as a
-                    // dedicated 'force open' shortcut (still calls
-                    // helpOpenDrawer regardless of state).
-                    if (helpDrawerOpen) {
+                    // #324 — toggle into / out of the Help rail. F1
+                    // still acts as 'force open' (openHelpRail
+                    // re-pins the contextual topic regardless of
+                    // current state).
+                    if (helpActive) {
                         helpCloseDrawer();
+                    } else if (typeof openHelpRail === 'function') {
+                        openHelpRail();
                     } else {
                         helpOpenDrawer();
                     }
