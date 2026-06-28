@@ -62,14 +62,26 @@
             .catch(function () { /* leave whatever was loaded */ });
     }
 
-    function helpOpenDrawer(targetId) {
+    // #324 — Help moved out of the right-side drawer into a full rail
+    // (see BowireHelpRailContribution). openHelpRail() is the canonical
+    // entry point: switch rails to 'help', ensure topics are loaded,
+    // and pin the requested (or contextual) topic. The legacy drawer
+    // state + helpOpenDrawer alias are kept so callers that still
+    // reference them (palette suggestions, landing CTA, rail-internal
+    // 'Help on this rail' buttons) don't break — they now route into
+    // the rail instead of opening the drawer.
+    function openHelpRail(targetId) {
         if (!helpAvailable) return;
-        helpDrawerOpen = true;
-        try { localStorage.setItem('bowire_help_drawer_open', '1'); } catch { /* ignore */ }
-        // #299 — opening Help makes it the active tab in the unified
-        // right-side drawer.
-        rightDrawerActiveTab = 'help';
-        try { localStorage.setItem('bowire_right_drawer_active_tab', 'help'); } catch { /* ignore */ }
+        // Remember the rail the operator came from so the rail-internal
+        // "Back" affordance + the standalone-page-template "Back to
+        // Bowire" anchor have somewhere to return to. Recorded only
+        // when the operator wasn't already on Help so a topic-from-
+        // topic navigation keeps the original origin pinned.
+        if (typeof railMode === 'string' && railMode !== 'help') {
+            helpRailReturnTo = railMode;
+        }
+        railMode = 'help';
+        try { localStorage.setItem('bowire_rail_mode', 'help'); } catch { /* ignore */ }
         helpEnsureTopicsLoaded().then(function () {
             var wanted = targetId || helpSelectedId || helpResolveContextualTopicId();
             if (wanted !== helpSelectedId || !helpSelectedTopic) {
@@ -80,9 +92,26 @@
         });
     }
 
+    // Thin alias preserved for callers that still reference the old
+    // drawer entry point (Rail.Proxy, Rail.Traffic, landing.js, the
+    // command palette). All forwards into the rail dispatch above —
+    // there is no separate drawer surface anymore.
+    function helpOpenDrawer(targetId) {
+        openHelpRail(targetId);
+    }
+
     function helpCloseDrawer() {
+        // #324 — closing 'Help' now means leaving the rail (back to
+        // the rail the operator came from, or Home as the safe
+        // default). The legacy helpDrawerOpen flag is kept at false
+        // so any straggling drawer-shape check that survives the
+        // refactor stays quiet.
         helpDrawerOpen = false;
         try { localStorage.setItem('bowire_help_drawer_open', '0'); } catch { /* ignore */ }
+        if (railMode === 'help') {
+            railMode = helpRailReturnTo || 'home';
+            try { localStorage.setItem('bowire_rail_mode', railMode); } catch { /* ignore */ }
+        }
         render();
     }
 
@@ -250,11 +279,12 @@
         return out.join('\n');
     }
 
-    function _renderHelpDrawerContent() {
-        var wrap = el('div', { className: 'bowire-help-body' });
-
-        // Left column — search + topic list.
-        var nav = el('div', { className: 'bowire-help-nav' });
+    // #324 — Help-rail sidebar. Search box at top + topic-tree nav
+    // (or search-hit list when a query is active). Re-used by the
+    // legacy drawer compatibility shim AND the rail dispatcher's
+    // sidebar arm in render-sidebar.js.
+    function renderHelpSidebar() {
+        var nav = el('div', { id: 'bowire-help-sidebar', className: 'bowire-help-nav bowire-help-nav-rail' });
         nav.appendChild(el('input', {
             type: 'search',
             className: 'bowire-help-search',
@@ -279,6 +309,11 @@
                         className: 'bowire-help-hit'
                             + (h.id === helpSelectedId ? ' selected' : ''),
                         'data-help-topic-id': h.id,
+                        // Re-resolve target id from the live element at
+                        // click time so morphdom-preserved nodes don't
+                        // fire the OLD closure's hit. Same fix as the
+                        // topic-row click handler below — see commit
+                        // a6a0b95 for the original bug report.
                         onClick: function () {
                             var id = this.getAttribute('data-help-topic-id');
                             if (id) helpLoadTopic(id);
@@ -313,7 +348,8 @@
                     // this morphdom preserved nodes across re-renders
                     // and the OLD closure fired — operator: 'help klappt
                     // nur beim ersten mal eine topic-auswahl. zweites
-                    // mahl wird selektion ignoriert.'
+                    // mahl wird selektion ignoriert.' Preserved across
+                    // the #324 rail refactor.
                     var row = el('button', {
                         className: 'bowire-help-topic-row'
                             + (t.id === helpSelectedId ? ' selected' : ''),
@@ -337,17 +373,22 @@
                 });
             });
         }
-        wrap.appendChild(nav);
+        return nav;
+    }
 
-        // Right column — rendered topic. Server-side Markdig pipeline
-        // emits sanitised HTML in `bodyHtml` so the workbench can
-        // innerHTML it directly. Old clients (or providers that
-        // haven't rolled the new shape) fall back to the mini-renderer
-        // over `markdown`. The mini-renderer escapes HTML entities,
-        // which is wrong for DocFX-shaped topics carrying intentional
-        // markup (picture, svg, dl) — the server path is the working
-        // one going forward.
-        var content = el('div', { className: 'bowire-help-content' });
+    // #324 — Help-rail main pane. Full-width topic body. The
+    // "Open in new tab" undock affordance + matching standalone
+    // /help/topic/{id} endpoint land in the follow-up commit; this
+    // commit ships the bare main-pane shape so the rail is usable
+    // immediately.
+    function renderHelpMain() {
+        var main = el('div', {
+            id: 'bowire-main-help',
+            className: 'bowire-main bowire-main-help'
+        });
+        var pad = el('div', { className: 'bowire-main-pad bowire-help-main-pad' });
+
+        var content = el('div', { className: 'bowire-help-content bowire-help-content-rail' });
         if (helpSelectedTopic) {
             if (helpSelectedTopic.bodyHtml) {
                 content.innerHTML = helpSelectedTopic.bodyHtml;
@@ -365,8 +406,20 @@
                 textContent: 'Pick a topic on the left.'
             }));
         }
-        wrap.appendChild(content);
+        pad.appendChild(content);
+        main.appendChild(pad);
+        return main;
+    }
 
+    // #324 — back-compat shim. The unified right-side drawer
+    // (render-env-auth.js) still calls this during the rail rollout
+    // so an in-flight bundle (rail + drawer both active) doesn't
+    // break. The follow-up commit retires the drawer's Help tab + the
+    // helper.
+    function _renderHelpDrawerContent() {
+        var wrap = el('div', { className: 'bowire-help-body' });
+        wrap.appendChild(renderHelpSidebar());
+        wrap.appendChild(renderHelpMain());
         return wrap;
     }
 

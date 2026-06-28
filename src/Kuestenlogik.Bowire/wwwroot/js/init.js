@@ -126,23 +126,17 @@
                 render();
                 return;
             }
-            if (e.key === 'Escape' && helpDrawerOpen
+            // #324 — Esc leaves the Help rail (back to the rail the
+            // operator came from, or Home as the safe default). Esc
+            // is still spammable for the omnibox / streaming-stop
+            // when Help isn't the active surface, so the guard is
+            // narrowed to the rail-active case.
+            if (e.key === 'Escape' && railMode === 'help'
                 && typeof helpCloseDrawer === 'function'
                 && !searchSuggestionsOpen) {
-                // #299 — Esc closes Help only when Help is the visible
-                // active tab in the unified right-side drawer. If the
-                // user is looking at the Assistant tab (Help is sitting
-                // in the background), Esc shouldn't reach across and
-                // dismiss the off-screen Help.
-                if (aiDrawerOpen && rightDrawerActiveTab !== 'help') {
-                    // Help is open but inactive — let Esc fall through
-                    // to the next handler (which closes the omnibox /
-                    // stops streaming).
-                } else {
-                    e.preventDefault();
-                    helpCloseDrawer();
-                    return;
-                }
+                e.preventDefault();
+                helpCloseDrawer();
+                return;
             }
 
             // #127 — Cmd/Ctrl+S Force-Flush. Writes every persist*()

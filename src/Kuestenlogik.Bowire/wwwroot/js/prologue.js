@@ -3904,6 +3904,12 @@
     let helpSelectedTopic = null;
     let helpSearchQuery = '';
     let helpSearchHits = [];
+    // #324 — remember the rail the operator was on when they opened
+    // Help, so closing Help (or clicking 'Back to Bowire' on the
+    // standalone /help/topic/{id} page) returns there. Defaults to
+    // 'home' when the operator boots straight into Help via a deep
+    // link or a saved rail-mode.
+    let helpRailReturnTo = null;
 
     // #127 — Cmd+S Force-Flush. Calls every top-level persist*()
     // function in sequence so a Cmd+S press writes EVERY known slot,

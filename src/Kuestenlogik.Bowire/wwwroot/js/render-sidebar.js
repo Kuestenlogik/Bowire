@@ -3677,6 +3677,10 @@
             case 'proxy':        sidebar = renderProxySidebar(); break;
             case 'intercepted':  sidebar = renderInterceptedSidebar(); break;
             case 'traffic':      sidebar = renderTrafficSidebar(); break;
+            // #324 — Help rail. Sidebar = search box + topic-tree
+            // nav (re-uses the existing topic-row + search-hit code
+            // hoisted out of the legacy drawer renderer).
+            case 'help':         sidebar = renderHelpSidebar(); break;
         }
         if (sidebar) return sidebar;
         // Only 'services' falls through to the legacy Discover

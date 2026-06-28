@@ -5097,6 +5097,14 @@
             return renderSourcesDetailMain();
         }
 
+        // #324 — Help rail owns the main pane. Renders the topic body
+        // full-width (no drawer chrome competing for horizontal real
+        // estate) with the standard rail-pad gutter so the prose
+        // aligns with every other rail's left/right inset.
+        if (railMode === 'help') {
+            return renderHelpMain();
+        }
+
         if (railMode === 'security') {
             var secMain = el('div', { id: 'bowire-main-security', className: 'bowire-main bowire-main-security' });
             if (window.__bowireAi && typeof window.__bowireAi.renderSecurityPanel === 'function') {
