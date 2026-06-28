@@ -8340,19 +8340,20 @@
             return { header: header, body: body };
         }
 
-        // Switch from highlightJson() to renderJsonTree() so the body
-        // carries the .bowire-json-tree-label[data-json-path] markers
-        // that the Phase 4 semantics decorator anchors badges onto.
-        // The previous <pre> + highlightJson path produced a monospace
-        // block with no per-key anchors, so badges never appeared on
-        // streaming-frame detail panes. The visual difference is
-        // minimal — renderJsonTree wraps each row in a .bowire-json-tree
-        // row that the existing response-pane uses too.
+        // renderJsonViewer (Hoppscotch-style line-numbered viewer with
+        // gutter chevron) is the consistent body shape across response
+        // panes — gives the streaming detail the same line numbers +
+        // gutter toggle column as the unary response output. Carries
+        // the same [data-json-path] markers the semantics decorator
+        // anchors badges onto. Operator feedback: 'nach dem refactor
+        // funktioniert das aufklappen noch per click, aber die
+        // zeilennummern fehlen und die symbole zum auf/zuklappen sind
+        // nicht in einer extra reihe.'
         var body = el('div', {
             className: 'bowire-stream-detail-body',
             id: 'bowire-stream-detail-body'
         });
-        body.innerHTML = renderJsonTree(raw);
+        body.appendChild(renderJsonViewer(raw, { wrap: false }));
         // Same gesture wiring the unary response output gets — click
         // toggles via native <details>, dblclick copies the JSONPath,
         // right-click opens the unified context menu.
@@ -10121,7 +10122,7 @@
                     title: 'Click to expand/collapse — double-click to copy path — right-click for more actions'
                 });
                 bowireWireResponseTreeGestures(output);
-                output.innerHTML = renderJsonTree(responseData);
+                output.appendChild(renderJsonViewer(responseData, { wrap: false }));
                 // Wrap the response output in a split-pane host when a
                 // registered viewer claims the active method's kind
                 // (e.g. MapLibre on coordinate.wgs84). For unary RPCs
