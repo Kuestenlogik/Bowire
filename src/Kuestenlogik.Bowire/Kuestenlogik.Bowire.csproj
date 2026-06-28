@@ -99,8 +99,11 @@
     <BowireJsFragment Include="wwwroot\js\schema-form.js" />
     <!-- #311 — recording.js / mocks.js / flows.js / intercepted-view.js
          moved out of core into Kuestenlogik.Bowire.Rail.Recordings /
-         .Rail.Mocks / .Rail.Flows / .Rail.Intercepted as embedded JS
-         resources. BowireHtmlGenerator stitches them into the IIFE at
+         .Mock / .Rail.Flows / .Rail.Intercepted as embedded JS
+         resources (mocks.js lives on Kuestenlogik.Bowire.Mock since
+         v2.1 — the provisional Rail.Mocks package was folded into the
+         Mock package before its first NuGet release).
+         BowireHtmlGenerator stitches them into the IIFE at
          HTML-emit time via the marker injected by
          _rail-fragments-marker.js (last fragment before init.js). The
          rail fragments share the IIFE's closure scope so the existing

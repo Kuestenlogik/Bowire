@@ -57,7 +57,6 @@
     <Project Path="src/Kuestenlogik.Bowire.Rail.Compose/Kuestenlogik.Bowire.Rail.Compose.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Rail.Environments/Kuestenlogik.Bowire.Rail.Environments.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Rail.Recordings/Kuestenlogik.Bowire.Rail.Recordings.csproj" />
-    <Project Path="src/Kuestenlogik.Bowire.Rail.Mocks/Kuestenlogik.Bowire.Rail.Mocks.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Rail.Flows/Kuestenlogik.Bowire.Rail.Flows.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Rail.Proxy/Kuestenlogik.Bowire.Rail.Proxy.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Rail.Intercepted/Kuestenlogik.Bowire.Rail.Intercepted.csproj" />

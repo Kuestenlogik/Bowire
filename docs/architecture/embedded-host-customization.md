@@ -55,7 +55,7 @@ Available rail packages:
 - `Kuestenlogik.Bowire.Rail.Compose` _(hosts the canonical Collections + Presets side panel; the standalone `Rail.Collections` package was retired in v2.1)_
 - `Kuestenlogik.Bowire.Rail.Environments` _(hidden from rail strip)_
 - `Kuestenlogik.Bowire.Rail.Recordings`
-- `Kuestenlogik.Bowire.Rail.Mocks`
+- `Kuestenlogik.Bowire.Mock` _(carries both the mock-host runtime AND the Mocks rail descriptor + fragment; the provisional standalone `Rail.Mocks` package was folded in for v2.1)_
 - `Kuestenlogik.Bowire.Rail.Flows`
 - `Kuestenlogik.Bowire.Rail.Proxy`
 - `Kuestenlogik.Bowire.Rail.Intercepted`
@@ -128,7 +128,7 @@ Shipped in this phase:
 | Rail package | JS fragment | LOC moved |
 |--------------|-------------|----------:|
 | `Kuestenlogik.Bowire.Rail.Recordings` | `recording.js` | ~1700 |
-| `Kuestenlogik.Bowire.Rail.Mocks` | `mocks.js` | ~600 |
+| `Kuestenlogik.Bowire.Mock` _(was `Rail.Mocks` pre-v2.1)_ | `mocks.js` | ~600 |
 | `Kuestenlogik.Bowire.Rail.Flows` | `flows.js` | ~1700 |
 | `Kuestenlogik.Bowire.Rail.Compose` | `compose-rail.js` | ~1200 |
 | `Kuestenlogik.Bowire.Rail.Intercepted` | `intercepted-view.js` | ~700 |

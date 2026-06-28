@@ -3,11 +3,17 @@
 
 using Kuestenlogik.Bowire.Plugins;
 
-namespace Kuestenlogik.Bowire.Rail.Mocks;
+namespace Kuestenlogik.Bowire.Mock;
 
 /// <summary>
 /// Mocks rail contribution (#306 Phase G).
 /// </summary>
+/// <remarks>
+/// Lives on <c>Kuestenlogik.Bowire.Mock</c> alongside the mock-host
+/// runtime — the provisional standalone <c>Kuestenlogik.Bowire.Rail.Mocks</c>
+/// package was folded in for v2.1 so embedded hosts that want the
+/// Mocks rail simply reference <c>Kuestenlogik.Bowire.Mock</c>.
+/// </remarks>
 public sealed class BowireMocksRailContribution : IBowireRailContribution
 {
     /// <inheritdoc />
