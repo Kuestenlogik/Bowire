@@ -429,6 +429,12 @@
             // Start SSE listener for responses
             var sseUrl = config.prefix + '/api/channel/' + duplexChannelId + '/responses';
             duplexSseSource = new EventSource(sseUrl);
+            // Mirror into the cross-method subscription registry so the
+            // statusbar pill counts duplex / client-streaming channels
+            // alongside server-streaming SSE subscriptions.
+            registerSubscription(selectedService.name, selectedMethod.name,
+                selectedMethod.methodType === 'Duplex' ? 'duplex' : 'client',
+                duplexSseSource);
 
             duplexSseSource.onmessage = function (event) {
                 try {
@@ -447,6 +453,9 @@
                     if (parsed && parsed.data !== undefined) captureResponse(parsed.data);
                     addConsoleEntry({ type: 'stream', method: fullName, body: parsed.data || event.data });
                     receivedCount++;
+                    if (selectedService && selectedMethod) {
+                        markSubscriptionFrame(selectedService.name, selectedMethod.name);
+                    }
                     if (window.__bowireExtFramework) {
                         window.__bowireExtFramework.dispatchStreamMessage(parsed);
                     }
@@ -492,6 +501,9 @@
                 duplexConnected = false;
                 duplexSseSource.close();
                 duplexSseSource = null;
+                if (selectedService && selectedMethod) {
+                    unregisterSubscription(selectedService.name, selectedMethod.name);
+                }
                 addConsoleEntry({ type: 'channel', method: fullName, status: 'Completed', durationMs: doneData.durationMs || 0, body: '(' + sentCount + ' sent, ' + receivedCount + ' received)' });
 
                 addHistory({
@@ -541,9 +553,15 @@
                 channelError = 'Channel stream error.';
                 statusInfo = { status: 'Error', durationMs: 0 };
                 duplexConnected = false;
+                if (selectedService && selectedMethod) {
+                    markSubscriptionError(selectedService.name, selectedMethod.name, 'Channel stream error');
+                }
                 if (duplexSseSource) {
                     duplexSseSource.close();
                     duplexSseSource = null;
+                }
+                if (selectedService && selectedMethod) {
+                    unregisterSubscription(selectedService.name, selectedMethod.name);
                 }
                 addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: 'Channel stream error' });
                 render();
@@ -629,6 +647,9 @@
 
             sentCount = result.sequence;
             sentMessages.push({ index: sentCount - 1, timestampMs: offsetMs, body: message });
+            if (selectedService && selectedMethod) {
+                markSubscriptionFrame(selectedService.name, selectedMethod.name, 'sent');
+            }
             render();
 
             // Flash sent counter
@@ -672,6 +693,7 @@
         if (selectedService && selectedMethod) {
             markJobDone(selectedService.name, selectedMethod.name);
             removeChannelFor(selectedService.name, selectedMethod.name);
+            unregisterSubscription(selectedService.name, selectedMethod.name);
         }
         duplexChannelId = null;
         if (!statusInfo || statusInfo.status === 'Connected') {

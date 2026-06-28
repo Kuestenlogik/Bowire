@@ -510,6 +510,12 @@
         addConsoleEntry({ type: 'request', method: fullName, status: 'Streaming', body: messages[0] || '{}' });
 
         sseSource = new EventSource(url);
+        // Track the SSE subscription so the statusbar pill + per-pane
+        // state badge can answer "is this method still live?" without
+        // poking at the legacy globals. The registry replaces nothing —
+        // it's a parallel view that survives tab switching, which the
+        // global `sseSource` does not (every tab share the same slot).
+        registerSubscription(service, method, 'server', sseSource);
 
         sseSource.onmessage = function (event) {
             // Record wall-clock arrival so recordings persist the real
@@ -532,6 +538,7 @@
                 var frameIndex = (typeof parsed.index === 'number') ? parsed.index : streamMessages.length;
                 if (parsed.id === undefined) parsed.id = service + '/' + method + '#' + frameIndex;
                 streamMessages.push(parsed);
+                markSubscriptionFrame(service, method);
                 // Chaining: capture the inner data payload (last message wins)
                 if (parsed && parsed.data !== undefined) captureResponse(parsed.data);
                 addConsoleEntry({ type: 'stream', method: fullName, body: parsed.data || event.data });
@@ -573,6 +580,7 @@
                     _clientReceivedAtMs: receivedAt
                 };
                 streamMessages.push(fallback);
+                markSubscriptionFrame(service, method);
                 addConsoleEntry({ type: 'stream', method: fullName, body: event.data });
                 // Same render-before-dispatch ordering as the JSON path
                 // above — see the long comment there.
@@ -592,6 +600,7 @@
             markJobDone(service, method);
             sseSource.close();
             sseSource = null;
+            unregisterSubscription(service, method);
 
             addConsoleEntry({ type: 'response', method: fullName, status: 'Completed', durationMs: elapsed });
 
@@ -668,8 +677,10 @@
             statusInfo = { status: 'Error', durationMs: elapsed };
             isExecuting = false;
             markJobDone(service, method);
+            markSubscriptionError(service, method, 'Stream error');
             sseSource.close();
             sseSource = null;
+            unregisterSubscription(service, method);
             addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: 'Stream error occurred', durationMs: elapsed });
             render();
         });
@@ -683,8 +694,44 @@
         isExecuting = false;
         if (selectedService && selectedMethod) {
             markJobDone(selectedService.name, selectedMethod.name);
+            unregisterSubscription(selectedService.name, selectedMethod.name);
         }
         if (statusInfo) statusInfo.status = 'Cancelled';
+        render();
+    }
+
+    // ---- Cross-method subscription stop ----
+    // Closes the SSE for an arbitrary (service, method) — does NOT have
+    // to be the active method. The active-subscriptions dropdown calls
+    // this when the operator clicks "Stop" on a non-active row; the
+    // streaming pane's own Stop button + the action bar both route
+    // through here so the close path is uniform.
+    function stopSubscriptionFor(svcName, methodName) {
+        if (!svcName || !methodName) return;
+        var entry = findSubscription(svcName, methodName);
+        if (!entry) return;
+        // If this is the active method's stream, also clear the legacy
+        // globals so re-render doesn't pick up a stale "isExecuting".
+        if (selectedService && selectedMethod
+            && selectedService.name === svcName
+            && selectedMethod.name === methodName) {
+            if (sseSource) { try { sseSource.close(); } catch {} sseSource = null; }
+            if (entry.kind === 'duplex' || entry.kind === 'client') {
+                if (duplexSseSource) { try { duplexSseSource.close(); } catch {} duplexSseSource = null; }
+                duplexConnected = false;
+            }
+            isExecuting = false;
+            if (statusInfo) statusInfo.status = 'Cancelled';
+        } else if (entry.sseSource) {
+            try { entry.sseSource.close(); } catch {}
+        }
+        markJobDone(svcName, methodName);
+        unregisterSubscription(svcName, methodName);
+        // Duplex/client streams keep their own state in openChannels —
+        // wipe that too so a future tab switch doesn't try to restore
+        // a SSE source we just closed.
+        var key = channelStoreKey(svcName, methodName);
+        if (openChannels[key]) delete openChannels[key];
         render();
     }
 

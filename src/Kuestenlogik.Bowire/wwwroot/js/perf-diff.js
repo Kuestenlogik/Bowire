@@ -343,9 +343,19 @@
         // ID encodes the method identity + channel-mode so morphdom fully
         // replaces the bar when switching between channel and standard
         // methods instead of reusing stale DOM with wrong closures.
+        // The sub-state suffix forces a clean morphdom replace when the
+        // server-streaming subscription flips between subscribed and
+        // not — without it the old Subscribe button's closure handler
+        // would survive across the change to "Stop".
+        var _subStateKey = '';
+        if (selectedService && selectedMethod && selectedMethod.serverStreaming) {
+            var _entry = findSubscription(selectedService.name, selectedMethod.name);
+            _subStateKey = '-' + (_entry && _entry.connected ? 'live' : 'idle');
+        }
         var actionBarKey = (selectedService ? selectedService.name : '') + '-'
             + (selectedMethod ? selectedMethod.name : '') + '-'
-            + (isChannelMethod() ? 'channel' : 'standard');
+            + (isChannelMethod() ? 'channel' : 'standard')
+            + _subStateKey;
         const bar = el('div', { id: 'bowire-action-bar-' + actionBarKey, className: 'bowire-action-bar' });
 
         if (isChannelMethod()) {
@@ -457,9 +467,31 @@
 
         // ---- Standard Action Bar (Unary / Server Streaming) ----
         const isStreaming = selectedMethod && selectedMethod.serverStreaming;
-        const btnText = isExecuting && isStreaming ? 'Stop' : 'Execute';
-        const btnIcon = isExecuting && isStreaming ? svgIcon('stop') : svgIcon('play');
-        const btnClass = isExecuting && isStreaming ? 'bowire-execute-btn streaming-active' : 'bowire-execute-btn';
+        // Server-streaming methods get subscribe-shaped labels — the
+        // operator feedback was that "Execute" hid the fact that this
+        // is a long-lived subscription. The registry answers "is there
+        // a live SSE for THIS method?" — that decides Subscribe vs Stop,
+        // not the global `isExecuting` (which lies after a tab switch).
+        var streamSub = (isStreaming && selectedService && selectedMethod)
+            ? findSubscription(selectedService.name, selectedMethod.name)
+            : null;
+        var streamSubLive = !!(streamSub && streamSub.connected);
+        var btnText, btnIcon, btnClass;
+        if (isStreaming) {
+            if (streamSubLive) {
+                btnText = 'Stop';
+                btnIcon = svgIcon('stop');
+                btnClass = 'bowire-execute-btn streaming-active';
+            } else {
+                btnText = 'Subscribe';
+                btnIcon = svgIcon('subscribe');
+                btnClass = 'bowire-execute-btn bowire-subscribe-btn';
+            }
+        } else {
+            btnText = (isExecuting) ? 'Stop' : 'Execute';
+            btnIcon = (isExecuting) ? svgIcon('stop') : svgIcon('play');
+            btnClass = (isExecuting) ? 'bowire-execute-btn streaming-active' : 'bowire-execute-btn';
+        }
 
         // Execute as a split button: primary = Execute (or Stop
         // when a stream is mid-flight); caret = a small menu with
@@ -472,11 +504,26 @@
             return h.service === selectedService?.name && h.method === selectedMethod?.name;
         });
         const splitWrap = el('div', { className: 'bowire-split-btn-wrap bowire-action-execute-split' });
+        // Subscribed → Stop short-circuits handleExecute and routes
+        // through the registry-aware close path so tab switches don't
+        // leave orphan SSEs (the legacy `stopStreaming` only knew about
+        // the global sseSource, which is the slot of whichever tab is
+        // currently focused — not necessarily the one whose Stop
+        // button the user clicked).
+        var btnOnClick = (isStreaming && streamSubLive)
+            ? function () {
+                if (!selectedService || !selectedMethod) return;
+                stopSubscriptionFor(selectedService.name, selectedMethod.name);
+            }
+            : handleExecute;
         const btn = el('button', {
-            id: isExecuting && isStreaming ? 'bowire-action-stop-btn' : 'bowire-action-execute-btn',
+            id: (isStreaming && streamSubLive) ? 'bowire-action-stop-btn'
+                : (isExecuting && isStreaming ? 'bowire-action-stop-btn' : 'bowire-action-execute-btn'),
             className: btnClass + ' bowire-split-btn-main',
-            title: btnText + ' (Ctrl+Enter)',
-            onClick: handleExecute
+            title: (isStreaming && !streamSubLive)
+                ? 'Subscribe (Ctrl+Enter) — opens a server-streaming subscription'
+                : btnText + ' (Ctrl+Enter)',
+            onClick: btnOnClick
         },
             el('span', { innerHTML: btnIcon, style: 'width:14px;height:14px;display:flex' }),
             el('span', { textContent: btnText })

@@ -8429,6 +8429,67 @@
         return out.join('\n');
     }
 
+    // ---- Subscription state badge ----
+    // Reads the active subscription registry + the in-memory frame count
+    // (the registry's receivedCount lags slightly because frames push
+    // before notify) and renders a pill with one of the five states:
+    //   ● Subscribed  — connection up, no frame yet
+    //   ● Receiving   — connection up, frame within idle window
+    //   ○ Idle        — connection up, no frame in last N seconds
+    //   ○ Closed      — connection ended (stream completed or stopped)
+    //   × Error       — channel reported an error
+    function renderSubscriptionBadge(svcName, methodName, frameCount) {
+        var entry = (svcName && methodName)
+            ? findSubscription(svcName, methodName) : null;
+        var state;
+        var label;
+        var count = (typeof frameCount === 'number')
+            ? frameCount
+            : (entry ? entry.receivedCount : 0);
+        if (entry) {
+            state = subscriptionState(entry);
+            switch (state) {
+                case 'subscribed': label = 'Subscribed'; break;
+                case 'receiving': label = 'Receiving'; break;
+                case 'idle':      label = 'Idle'; break;
+                case 'error':     label = 'Error'; break;
+                default:          label = 'Closed';
+            }
+        } else if (frameCount > 0) {
+            state = 'closed';
+            label = 'Closed';
+        } else if (isExecuting) {
+            // Active unary streaming (no registry entry — should be
+            // rare now) or pre-registry init.
+            state = 'subscribed';
+            label = 'Subscribed';
+        } else {
+            state = 'idle-empty';
+            label = 'Stream ended';
+        }
+        var pill = el('div', {
+            className: 'bowire-stream-status-pill bowire-stream-state-' + state,
+            id: 'bowire-stream-state-badge',
+            'data-bowire-state': state,
+            title: entry && entry.channelError
+                ? ('Error: ' + entry.channelError)
+                : (label + ' · ' + count + ' message' + (count === 1 ? '' : 's'))
+        });
+        pill.appendChild(el('span', {
+            className: 'bowire-stream-status-dot' + ((state === 'receiving' || state === 'subscribed') ? ' live' : '')
+                + ((state === 'error') ? ' error' : '')
+        }));
+        pill.appendChild(el('span', {
+            className: 'bowire-stream-status-text',
+            textContent: label
+        }));
+        pill.appendChild(el('span', {
+            className: 'bowire-stream-status-count',
+            textContent: '· ' + count + ' msg' + (count === 1 ? '' : 's')
+        }));
+        return pill;
+    }
+
     function renderStreamingOutput() {
         // Outer container — referenced by appendStreamMessage / selectStreamMessage
         // / updateStreamDetail to find the live DOM nodes.
@@ -8440,14 +8501,17 @@
 
         // ---- Toolbar ----
         var toolbar = el('div', { className: 'bowire-stream-toolbar' });
-        var statusDot = el('span', {
-            className: 'bowire-stream-status-dot' + (isExecuting ? ' live' : '')
-        });
-        toolbar.appendChild(statusDot);
-        toolbar.appendChild(el('span', {
-            className: 'bowire-stream-status-text',
-            textContent: isExecuting ? 'Streaming' : 'Stream ended'
-        }));
+        // Compose the rich state badge. Pulls the live entry from the
+        // subscription registry so a subscription that's open on the
+        // active method but not yet emitting a frame surfaces as
+        // "Subscribed" instead of the old binary "Streaming" / "Stream
+        // ended" pair. The pill is built by the shared helper so the
+        // statusbar dropdown can re-use the same layout primitives.
+        var badge = renderSubscriptionBadge(
+            selectedService && selectedService.name,
+            selectedMethod && selectedMethod.name,
+            streamMessages.length);
+        toolbar.appendChild(badge);
         var hasFilter = (streamFilterQuery || '').trim().length > 0;
 
         toolbar.appendChild(el('span', { className: 'bowire-stream-toolbar-spacer' }));
@@ -9550,6 +9614,15 @@
                 count.textContent = streamMessages.length + (streamMessages.length === 1 ? ' message' : ' messages');
             }
         }
+        // Refresh the state badge so the operator sees "Receiving" /
+        // "N msgs" climb without waiting for the 1 s ticker. Surgical
+        // replace keeps the streaming pane DOM otherwise intact.
+        var badge = document.getElementById('bowire-stream-state-badge');
+        if (badge && selectedService && selectedMethod) {
+            var fresh = renderSubscriptionBadge(
+                selectedService.name, selectedMethod.name, streamMessages.length);
+            badge.replaceWith(fresh);
+        }
 
         if (streamAutoScroll) {
             // Follow latest: shift selection forward and refresh the detail pane.
@@ -9796,6 +9869,20 @@
     // Expose the append fast-path so api.js / protocols.js can call it from
     // their respective onmessage handlers without going through render().
     window.bowireAppendStreamMessage = appendStreamMessage;
+
+    // Idle-tick re-render: every second the subscription registry
+    // notifies listeners so the state badge can flip from Receiving →
+    // Idle without waiting on a frame. We only touch the badge in
+    // place — the rest of the streaming pane is left alone.
+    onSubscriptionsChanged(function () {
+        if (!selectedService || !selectedMethod) return;
+        var badge = document.getElementById('bowire-stream-state-badge');
+        if (!badge) return;
+        var fresh = renderSubscriptionBadge(
+            selectedService.name, selectedMethod.name, streamMessages.length);
+        badge.replaceWith(fresh);
+    });
+    ensureSubscriptionTicker();
 
     function renderResponsePane() {
         // ID includes the selected method so morphdom fully replaces the
@@ -10105,10 +10192,29 @@
         const respBody = el('div', { className: 'bowire-pane-body' });
 
         if (isExecuting && streamMessages.length === 0) {
-            respBody.appendChild(el('div', { className: 'bowire-loading' },
-                el('div', { className: 'bowire-spinner' }),
-                el('span', { className: 'bowire-loading-text', textContent: 'Executing...' })
-            ));
+            // Server-streaming methods that haven't yet emitted a frame
+            // get the subscription-shaped loader so the operator sees
+            // "Subscribed — 0 msgs" instead of the generic "Executing…"
+            // spinner. The badge re-uses the same state pill the
+            // streaming pane uses once frames start arriving.
+            var isStreamingMethodLoading = selectedMethod && selectedMethod.serverStreaming;
+            if (isStreamingMethodLoading) {
+                var loadingPane = el('div', { className: 'bowire-loading bowire-loading-subscribed' });
+                loadingPane.appendChild(renderSubscriptionBadge(
+                    selectedService && selectedService.name,
+                    selectedMethod && selectedMethod.name,
+                    0));
+                loadingPane.appendChild(el('span', {
+                    className: 'bowire-loading-text',
+                    textContent: 'Waiting for first message…'
+                }));
+                respBody.appendChild(loadingPane);
+            } else {
+                respBody.appendChild(el('div', { className: 'bowire-loading' },
+                    el('div', { className: 'bowire-spinner' }),
+                    el('span', { className: 'bowire-loading-text', textContent: 'Executing...' })
+                ));
+            }
         } else if (responseError) {
             // #91 — render structured problem+json when the upstream
             // returned one; fall back to plain text for legacy
