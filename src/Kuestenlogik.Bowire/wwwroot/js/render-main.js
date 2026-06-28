@@ -6914,8 +6914,17 @@
             bodyContent.appendChild(body);
         } else {
             // Single-message mode: JSON editor (Unary / Server Streaming)
+            // JSON validation pill — used to live UNDER the editor where
+            // a long payload pushed it below the fold. Now sits in the
+            // pane header so the status is always visible while editing.
+            // Operator: 'Valid JSON müsste eigentlich eine pill weiter
+            // oben in der payload toolbar sein, nicht unten nach dem
+            // json, wo man durch scroll das ergebnis eventuell nicht
+            // sieht.'
+            const jsonStatus = el('div', { className: 'bowire-json-status bowire-json-status-pill empty' });
             const paneHeader = el('div', { className: 'bowire-pane-header' },
                 el('span', { className: 'bowire-pane-title', textContent: 'JSON' }),
+                jsonStatus,
                 el('div', { className: 'bowire-pane-actions' },
                     el('button', {
                         id: 'bowire-json-format-btn',
@@ -7043,12 +7052,10 @@
             if (selectedMethod && selectedMethod.inputType) {
                 attachBodyAutocomplete(editor, selectedMethod.inputType);
             }
-            // Inline JSON validation status. Lives directly under the
-            // editor and flips green/red as the user types so syntax
-            // errors surface before they hit Execute and round-trip a
-            // 4xx/5xx through the wire.
-            const jsonStatus = el('div', { className: 'bowire-json-status empty' });
-            body.appendChild(jsonStatus);
+            // jsonStatus pill already mounted in the pane header above —
+            // attach the validator now that the editor exists. Keeping
+            // it in the header means a tall payload doesn't push the
+            // status off-screen.
             attachJsonValidator(editor, jsonStatus);
             bodyContent.appendChild(body);
         }
