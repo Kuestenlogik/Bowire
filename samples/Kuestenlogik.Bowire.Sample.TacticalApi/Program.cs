@@ -19,9 +19,25 @@
 // any per-field configuration.
 
 using Grpc.Core;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Rheinmetall.TacticalApi.V0;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// HTTP/2 + HTTP/1.1 on every listener. Without this Kestrel defaults
+// to HTTP/1.1-only on http://localhost:5182 so any gRPC client probing
+// the server gets back HTTP/2 error HTTP_1_1_REQUIRED, and Bowire's
+// generic gRPC discovery fails before reaching server reflection. The
+// landing page on `/` still works because it falls back to HTTP/1.1
+// transparently. Operator: 'http://localhost:5182 sagt mir als source
+// 0 services. fehlt grpc reflection im sample?'
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ConfigureEndpointDefaults(lo =>
+    {
+        lo.Protocols = HttpProtocols.Http1AndHttp2;
+    });
+});
 
 // AddGrpc registers the routing / serialization stack the
 // MapGrpcService<T>() call needs. The hosted service is plain
