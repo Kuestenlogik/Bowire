@@ -12,10 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**62/62 done**
+**62/63 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [324](https://github.com/Kuestenlogik/Bowire/issues/324) | Bowire | [Help: convert from drawer-tab to its own rail (plugin-contributed)](#issue-kuestenlogik-bowire-324) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ✅ Done |  |
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ✅ Done |  |
@@ -239,6 +240,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ## Details
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
+
+#### <a id="issue-kuestenlogik-bowire-324"></a>⬜ Backlog · [#324](https://github.com/Kuestenlogik/Bowire/issues/324) Help: convert from drawer-tab to its own rail (plugin-contributed)
+
+Help moves out of the right-side drawer into a full rail with the standard left-sidebar + main-pane shape every other rail uses. Browsing + searching topics gets the workbench's room to breathe; the Assistant drawer stops width-jumping every time the operator switches tabs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/324)
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
