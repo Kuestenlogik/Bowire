@@ -72,6 +72,37 @@ internal static class BowireHelpEndpoints
             return Results.Ok(new { hits });
         }).ExcludeFromDescription();
 
+        // #324 — Standalone HTML endpoint. The Help rail's main pane
+        // carries a small "Open in new tab" affordance that points at
+        // this route so a multi-monitor operator can pop the docs out
+        // to a separate window while keeping the workbench live. The
+        // returned page is intentionally minimal: workbench CSS link
+        // for typography parity, a "Back to Bowire" anchor at the top,
+        // and the server-rendered topic body. No drawer chrome, no
+        // sidebar, no rail strip — just the prose.
+        endpoints.MapGet($"{basePath}/help/topic/{{id}}",
+            (HttpContext ctx, string id) =>
+        {
+            var provider = ctx.RequestServices.GetService<IBowireHelpProvider>();
+            if (provider is null)
+            {
+                return Results.Content(
+                    StandaloneHelpHtml.NotInstalled(basePath),
+                    "text/html; charset=utf-8");
+            }
+            var topic = provider.GetTopic(id);
+            if (topic is null)
+            {
+                return Results.Content(
+                    StandaloneHelpHtml.NotFound(basePath, id),
+                    "text/html; charset=utf-8",
+                    statusCode: 404);
+            }
+            return Results.Content(
+                StandaloneHelpHtml.Topic(basePath, topic),
+                "text/html; charset=utf-8");
+        }).ExcludeFromDescription();
+
         return endpoints;
     }
 

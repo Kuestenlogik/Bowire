@@ -859,16 +859,59 @@ no decoration. */
     gap: 0;
     margin: -12px -16px; /* cancel renderDrawer's content padding */
 }
-/* Help-specific drawer width. The baseline .bowire-drawer is 360 px —
-   that gives the nav column ~200 px and leaves almost nothing for the
-   markdown body. Help carries a two-column layout AND rendered prose,
-   so we widen it to a responsive band: half the viewport, bounded by
-   480–960 px so it stays usable on laptop AND doesn't take over a 4K
-   panel. Scoped to the help-active modifier so the Assistant /
-   Activity / Tests drawers keep their tighter chrome. */
-.bowire-drawer.bowire-drawer-help-active {
-    width: clamp(480px, 50vw, 960px);
-    max-width: 70vw;
+/* #324 — Help moved out of the drawer into its own rail with full
+   left-sidebar + main-pane chrome, so the drawer keeps its standard
+   360 px width for the remaining tabs (Assistant / Activity / Tests).
+   The bowire-drawer-help-active widening modifier is retired. */
+/* #324 — rail-mode sidebar nav. Stretches to fill the rail's left
+   pane (no fixed 240 px any more) and drops the right border the
+   drawer's two-column layout used to need. */
+.bowire-help-nav-rail {
+    width: 100%;
+    border-right: none;
+    padding: 8px 10px;
+}
+/* #324 — rail-mode main pane. Constrains the prose column to a
+   comfortable reading width (matches the Settings / Workspaces rails)
+   while letting the toolbar + undock button stretch to the gutter. */
+.bowire-help-main-pad {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.bowire-help-main-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0 8px;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+}
+.bowire-help-main-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-help-undock-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    text-decoration: none;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+.bowire-help-undock-btn:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+.bowire-help-undock-btn svg {
+    width: 14px;
+    height: 14px;
+}
+.bowire-help-content-rail {
+    max-width: 880px;
 }
 .bowire-help-nav {
     width: 240px;

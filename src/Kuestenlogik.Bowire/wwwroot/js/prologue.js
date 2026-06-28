@@ -611,11 +611,12 @@
     let rightDrawerActiveTab = 'assistant';
     try {
         var _rd = localStorage.getItem('bowire_right_drawer_active_tab');
-        // #164 — Tests joined Assistant + Help as right-drawer tabs.
-        // (Console lives as a bottom-attached drawer per #164 v2 and
-        // is NOT a valid right-drawer tab — a stale 'console' value
-        // falls back to 'assistant'.) Whitelist the valid ids.
-        if (_rd === 'assistant' || _rd === 'help' || _rd === 'tests' || _rd === 'activity') rightDrawerActiveTab = _rd;
+        // #324 — Help moved out of the drawer into its own rail;
+        // 'help' is no longer a valid right-drawer tab id, so a stale
+        // value falls back to 'assistant'. Console lives as a bottom-
+        // attached drawer per #164 v2 and was never a right-drawer
+        // tab. Tests + Activity stay valid.
+        if (_rd === 'assistant' || _rd === 'tests' || _rd === 'activity') rightDrawerActiveTab = _rd;
     } catch { /* ignore */ }
     // #164 — Tests drawer state. Mirrors aiDrawerOpen / helpDrawerOpen;
     // when on, Tests joins the unified right-drawer tab strip with its
