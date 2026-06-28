@@ -1230,6 +1230,350 @@
     }
 
     // ---------------------------------------------------------------
+    // Response-tree integration — Phase 4.1
+    //
+    // The core workbench owns the JSON-tree DOM but doesn't import
+    // any coordinate-specific knowledge. The map widget plugs in
+    // through three extension hooks:
+    //
+    //   1) registerResponseTreeDecorator — stamps
+    //      data-bowire-coord-path on lat / lon / parent spans the
+    //      auto-detector marked, and binds mouseover/mouseout for
+    //      the JSON → map hover sync.
+    //   2) registerResponseTreeMenuContributor — returns
+    //      [{label: 'Center on map', action, meta}] when the
+    //      right-clicked span belongs to a resolved coord pair.
+    //   3) Document listener for `bowire:map-coord-hover` — the
+    //      map → JSON reverse direction. Pin mouseenter dispatches
+    //      the event; the listener installed below tints the
+    //      matching JSON-tree spans.
+    //
+    // All three live inside this bundle so the
+    // Kuestenlogik.Bowire.Map → Kuestenlogik.Bowire dependency
+    // direction stays one-way. Core ships zero coordinate-specific
+    // strings.
+    // ---------------------------------------------------------------
+
+    /**
+     * Strip the leading `$.` off a JSONPath so it matches the
+     * chain-variable form (`position.lat`) the response JSON tree's
+     * `data-json-path` attributes use. `$` alone normalises to the
+     * empty string (root scope).
+     */
+    function bowireMapNormalisePath(p) {
+        if (typeof p !== 'string') return '';
+        if (p.indexOf('$.') === 0) return p.substring(2);
+        if (p === '$') return '';
+        return p;
+    }
+
+    /**
+     * Walk the cached effective annotations for (service, method)
+     * and group lat/lon companions by parent path. Returns an
+     * array of `{ parentPath, latPath, lonPath }` records (paths
+     * in the chain-variable form) — one per pair.
+     */
+    function bowireMapPairsForMethod(service, method) {
+        var fw = window.__bowireExtFramework;
+        if (!fw || typeof fw.effectiveCacheFor !== 'function') return [];
+        var anns = fw.effectiveCacheFor(service, method);
+        if (!Array.isArray(anns) || anns.length === 0) return [];
+        var groups = {};
+        for (var i = 0; i < anns.length; i++) {
+            var a = anns[i];
+            if (a.semantic !== 'coordinate.latitude'
+                && a.semantic !== 'coordinate.longitude') continue;
+            var raw = a.jsonPath || '';
+            var dotIdx = raw.lastIndexOf('.');
+            var parent = dotIdx > 0 ? raw.substring(0, dotIdx) : raw;
+            if (!groups[parent]) groups[parent] = {};
+            groups[parent][a.semantic] = raw;
+        }
+        var out = [];
+        for (var key in groups) {
+            if (!Object.prototype.hasOwnProperty.call(groups, key)) continue;
+            var lat = groups[key]['coordinate.latitude'];
+            var lon = groups[key]['coordinate.longitude'];
+            if (!lat || !lon) continue;
+            out.push({
+                parentPath: bowireMapNormalisePath(key),
+                latPath: bowireMapNormalisePath(lat),
+                lonPath: bowireMapNormalisePath(lon)
+            });
+        }
+        return out;
+    }
+
+    /**
+     * Resolve a chain-variable path against a parsed JSON value.
+     * Tokens are dot-separated; numeric tokens are array indices.
+     * Same convention the response-JSON tree's data-json-path
+     * attributes use.
+     */
+    function bowireMapResolveChainPath(root, path) {
+        if (!path) return root;
+        var tokens = String(path).split('.');
+        var cur = root;
+        for (var t = 0; t < tokens.length; t++) {
+            if (cur == null) return undefined;
+            var key = tokens[t];
+            if (/^\d+$/.test(key) && Array.isArray(cur)) {
+                cur = cur[parseInt(key, 10)];
+            } else if (typeof cur === 'object') {
+                cur = cur[key];
+            } else {
+                return undefined;
+            }
+        }
+        return cur;
+    }
+
+    /**
+     * Resolve a (lat, lon) pair against the active response. Tries
+     * the per-tree explicit root first (streaming-detail body),
+     * then the unary `responseData` global, peeling back a `data`
+     * / `frame` envelope wrapper if present. Returns null when no
+     * candidate root yields a valid WGS84 coord — the caller
+     * suppresses the "Center on map" item in that case.
+     */
+    function bowireMapResolveLatLon(pair, explicitRoot) {
+        if (!pair) return null;
+        var roots = [];
+        if (explicitRoot != null) {
+            roots.push(explicitRoot);
+            if (typeof explicitRoot === 'object') {
+                if (explicitRoot.data !== undefined) roots.push(explicitRoot.data);
+                if (explicitRoot.frame !== undefined) roots.push(explicitRoot.frame);
+            }
+        }
+        if (typeof window !== 'undefined'
+            && typeof window.responseData !== 'undefined'
+            && window.responseData != null) {
+            roots.push(window.responseData);
+        }
+        for (var i = 0; i < roots.length; i++) {
+            var lat = bowireMapResolveChainPath(roots[i], pair.latPath);
+            var lon = bowireMapResolveChainPath(roots[i], pair.lonPath);
+            lat = typeof lat === 'number' ? lat : parseFloat(lat);
+            lon = typeof lon === 'number' ? lon : parseFloat(lon);
+            if (isFinite(lat) && isFinite(lon)
+                && lat >= -90 && lat <= 90
+                && lon >= -180 && lon <= 180) {
+                return { lat: lat, lon: lon };
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Decorator hook — stamps data-bowire-coord-path on every
+     * lat/lon/parent span, then binds delegated mouseover/mouseout
+     * for the JSON → map hover sync.
+     *
+     * The hook also caches the (treeRoot, explicitRoot) pair on
+     * the tree node itself so the menu-contributor below can find
+     * the per-frame body the operator's pointing at when the
+     * unary `responseData` global lags.
+     */
+    function bowireMapDecorateResponseTree(opts) {
+        if (!opts || !opts.treeRoot || !opts.service || !opts.method) return;
+        var fw = window.__bowireExtFramework;
+        if (!fw) return;
+        var treeRoot = opts.treeRoot;
+        // Stash the explicit root so the menu contributor can find
+        // it at event-time (morphdom preserves the tree across
+        // method switches, so the cached pointer must be the most
+        // recent decorate-pass's root).
+        treeRoot.__bowireMapExplicitRoot = opts.explicitRoot;
+
+        var loader;
+        if (typeof fw.effectiveCacheFor === 'function'
+            && fw.effectiveCacheFor(opts.service, opts.method)) {
+            loader = Promise.resolve();
+        } else if (typeof fw.fetchEffective === 'function') {
+            loader = fw.fetchEffective(opts.service, opts.method);
+        } else {
+            return;
+        }
+        loader.then(function () {
+            var pairs = bowireMapPairsForMethod(opts.service, opts.method);
+            if (pairs.length === 0) return;
+            // Index: chain-var path → pair record. lat / lon /
+            // parent all map to the same record so a hover on any
+            // of them lights the same pin.
+            var index = {};
+            for (var i = 0; i < pairs.length; i++) {
+                index[pairs[i].latPath] = pairs[i];
+                index[pairs[i].lonPath] = pairs[i];
+                if (pairs[i].parentPath) index[pairs[i].parentPath] = pairs[i];
+            }
+            var picks = treeRoot.querySelectorAll('[data-json-path]');
+            for (var p = 0; p < picks.length; p++) {
+                var raw = picks[p].getAttribute('data-json-path') || '';
+                if (!index[raw]) continue;
+                // Use the lat-path as the canonical pair id —
+                // highlightByPath accepts any of the three forms
+                // but consistency keeps the DOM inspector readable.
+                picks[p].setAttribute(
+                    'data-bowire-coord-path', index[raw].latPath);
+            }
+            bowireMapAttachTreeHover(treeRoot);
+        }).catch(function (err) {
+            console.error('[bowire-map] tree decorator failed', err);
+        });
+    }
+
+    /**
+     * Bind the JSON → map hover handlers to the tree root. One
+     * pair per tree; re-running is a no-op because morphdom
+     * preserves the marked element across renders.
+     */
+    function bowireMapAttachTreeHover(treeRoot) {
+        if (treeRoot.__bowireMapHoverMounted) return;
+        treeRoot.__bowireMapHoverMounted = true;
+        function closestCoord(target) {
+            return target && target.closest
+                ? target.closest('[data-bowire-coord-path]')
+                : null;
+        }
+        treeRoot.addEventListener('mouseover', function (e) {
+            var coord = closestCoord(e.target);
+            if (!coord) return;
+            var path = coord.getAttribute('data-bowire-coord-path') || '';
+            if (!path) return;
+            var widgets = window.__bowireMapWidgets || [];
+            for (var i = 0; i < widgets.length; i++) {
+                try { widgets[i].highlightByPath(path); } catch {}
+            }
+            coord.classList.add('bowire-coord-hover-source');
+        });
+        treeRoot.addEventListener('mouseout', function (e) {
+            var coord = closestCoord(e.target);
+            if (!coord) return;
+            var related = e.relatedTarget;
+            if (related && related.closest
+                && related.closest('[data-bowire-coord-path]') === coord) return;
+            coord.classList.remove('bowire-coord-hover-source');
+            var widgets = window.__bowireMapWidgets || [];
+            for (var i = 0; i < widgets.length; i++) {
+                try { widgets[i].clearHighlight(); } catch {}
+            }
+        });
+    }
+
+    /**
+     * Menu contributor hook — returns the "Center on map" entry
+     * when the right-clicked span belongs to a resolved coord
+     * pair. Returns `[]` (no items) when:
+     *   - no map viewer is registered (paranoid; the contributor
+     *     itself is only registered from this bundle, but a future
+     *     "register but skip mounting" pattern could leave it
+     *     dangling),
+     *   - the target span has no data-bowire-coord-path,
+     *   - the path doesn't resolve to a valid WGS84 coord.
+     */
+    function bowireMapMenuContributor(ctx) {
+        if (!ctx || !ctx.target || !ctx.service || !ctx.method) return [];
+        var coord = ctx.target.closest
+            ? ctx.target.closest('[data-bowire-coord-path]')
+            : null;
+        if (!coord) return [];
+        var path = coord.getAttribute('data-bowire-coord-path') || '';
+        if (!path) return [];
+        var pairs = bowireMapPairsForMethod(ctx.service, ctx.method);
+        var pair = null;
+        for (var i = 0; i < pairs.length; i++) {
+            if (pairs[i].latPath === path
+                || pairs[i].lonPath === path
+                || pairs[i].parentPath === path) {
+                pair = pairs[i];
+                break;
+            }
+        }
+        if (!pair) return [];
+        var explicit = ctx.treeRoot && ctx.treeRoot.__bowireMapExplicitRoot;
+        var loc = bowireMapResolveLatLon(pair, explicit);
+        if (!loc) return [];
+        return [{
+            label: 'Center on map',
+            // 5-decimal lat/lon ≈ 1 m precision — same shape most
+            // GIS tools print and what the operator expects on the
+            // status bar of a desktop map app.
+            meta: loc.lat.toFixed(5) + ', ' + loc.lon.toFixed(5),
+            action: function () {
+                var widgets = window.__bowireMapWidgets || [];
+                for (var i = 0; i < widgets.length; i++) {
+                    try { widgets[i].flyTo({ center: [loc.lon, loc.lat] }); } catch {}
+                }
+            }
+        }];
+    }
+
+    /**
+     * Inject the small CSS the JSON ↔ map hover-sync needs. Stays
+     * inside the map bundle so the core workbench doesn't carry
+     * coordinate-specific class names. Idempotent — re-running on a
+     * page that already loaded the bundle is a no-op. Same shape
+     * the MapLibre CSS injection uses (one-shot, <link>-style).
+     */
+    function bowireMapInjectCoordSyncStyles() {
+        var styleId = 'bowire-map-coord-sync-styles';
+        if (document.getElementById(styleId)) return;
+        var css =
+            '[data-bowire-coord-path]{'
+            + 'text-decoration:underline dotted var(--bowire-text-tertiary, rgba(127,127,127,0.6));'
+            + 'text-decoration-thickness:1px;'
+            + 'text-underline-offset:2px;'
+            + 'cursor:pointer;'
+            + '}'
+            + '.bowire-coord-hover-source,'
+            + '.bowire-coord-hover-target{'
+            + 'background:color-mix(in srgb, var(--bowire-accent, #4f46e5) 18%, transparent);'
+            + 'border-radius:3px;'
+            + 'transition:background 80ms ease-out;'
+            + '}';
+        var tag = document.createElement('style');
+        tag.id = styleId;
+        tag.textContent = css;
+        document.head.appendChild(tag);
+    }
+
+    /**
+     * Reverse-direction hover. The map widget dispatches
+     * `bowire:map-coord-hover` on pin mouseenter/mouseleave; this
+     * listener tints the matching JSON spans by adding the
+     * `bowire-coord-hover-target` class.
+     */
+    function bowireMapInstallReverseHover() {
+        if (window.__bowireMapReverseHoverInstalled) return;
+        window.__bowireMapReverseHoverInstalled = true;
+        document.addEventListener('bowire:map-coord-hover', function (e) {
+            var prior = document.querySelectorAll('.bowire-coord-hover-target');
+            for (var p = 0; p < prior.length; p++) {
+                prior[p].classList.remove('bowire-coord-hover-target');
+            }
+            var detail = e && e.detail;
+            if (!detail) return;
+            var paths = [];
+            if (detail.parentPath) paths.push(bowireMapNormalisePath(detail.parentPath));
+            if (detail.latPath) paths.push(bowireMapNormalisePath(detail.latPath));
+            if (detail.lonPath) paths.push(bowireMapNormalisePath(detail.lonPath));
+            if (paths.length === 0) return;
+            var parts = [];
+            for (var i = 0; i < paths.length; i++) {
+                var safe = (typeof CSS !== 'undefined' && CSS.escape)
+                    ? CSS.escape(paths[i]) : paths[i].replace(/"/g, '\\"');
+                parts.push('[data-bowire-coord-path="' + safe + '"]');
+                parts.push('[data-line-path="' + safe + '"]');
+            }
+            var matches = document.querySelectorAll(parts.join(','));
+            for (var m = 0; m < matches.length; m++) {
+                matches[m].classList.add('bowire-coord-hover-target');
+            }
+        });
+    }
+
+    // ---------------------------------------------------------------
     // Register against the framework. Calls the internal register so
     // the framework can flag this as a built-in (built-ins win
     // tie-breaks against same-kind third-party extensions).
@@ -1271,4 +1615,26 @@
             }
         });
         framework.markBuiltIn('kuestenlogik.maplibre');
+
+        // Phase 4.1 — response-tree integration. Wired here (not
+        // inside the per-mount path) because the JSON tree exists
+        // regardless of whether a map viewer is currently mounted:
+        // the operator can right-click a coord field, see the
+        // "Center on map" entry, and trigger a flyTo against
+        // whichever map widgets ARE mounted at that moment. When
+        // none are mounted the menu entry still surfaces but the
+        // flyTo loop just no-ops — preferable to the alternative
+        // of "menu entry disappears when the map tab is hidden".
+        if (typeof window.BowireExtensions === 'object'
+            && typeof window.BowireExtensions.registerResponseTreeDecorator === 'function') {
+            window.BowireExtensions.registerResponseTreeDecorator(
+                bowireMapDecorateResponseTree);
+        }
+        if (typeof window.BowireExtensions === 'object'
+            && typeof window.BowireExtensions.registerResponseTreeMenuContributor === 'function') {
+            window.BowireExtensions.registerResponseTreeMenuContributor(
+                bowireMapMenuContributor);
+        }
+        bowireMapInjectCoordSyncStyles();
+        bowireMapInstallReverseHover();
     })();
