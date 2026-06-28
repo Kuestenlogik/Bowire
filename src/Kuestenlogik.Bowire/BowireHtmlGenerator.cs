@@ -212,19 +212,21 @@ internal static class BowireHtmlGenerator
                <head>
                    <meta charset="UTF-8">
                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                   <!-- Reader-Mode hints. Bowire is an interactive
+                   <!-- Reader-Mode hint. Bowire is an interactive
                         workbench, not a document; Edge's Reader Mode
                         otherwise picks up stale JSON snippets and
                         renders them as "the article". Operator: 'die
                         bowire ui hat keinen lese-modus, ist viel zu
                         interaktiv. aktuell im edge führt der lese-
                         modus dazu, dass man nur alte oder teil-inhalte
-                        liest.' og:type=website (not article) +
-                        application role on the body root keeps the
-                        Reader-Mode heuristic from triggering on
-                        Chromium-based browsers. -->
+                        liest.' og:type=website (not 'article') +
+                        role=application on the workbench root suppress
+                        the Reader-Mode heuristic on Chromium-based
+                        browsers. We deliberately DO NOT set
+                        robots=noai — Bowire is meant to be controlled
+                        remotely by MCP / AI agents; noai would tell
+                        AI crawlers to skip the page entirely. -->
                    <meta property="og:type" content="website">
-                   <meta name="robots" content="noai, noimageai">
                    <title>{{title}} — {{desc}}</title>
                    <link rel="icon" type="image/svg+xml" href="{{FaviconDataUrl.Value}}" media="(prefers-color-scheme: light)">
                    <link rel="icon" type="image/svg+xml" href="{{FaviconMonoDataUrl.Value}}" media="(prefers-color-scheme: dark)">
