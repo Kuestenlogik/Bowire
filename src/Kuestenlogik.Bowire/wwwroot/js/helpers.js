@@ -2415,21 +2415,48 @@
     // Custom confirm dialog — replaces native confirm().
     // message: string, onConfirm: function, options: { title, danger, confirmText, cancelText }
     function bowireConfirm(message, onConfirm, options) {
+        // Polymorphic shape:
+        //   bowireConfirm(msg, fn, opts)              — legacy callback style.
+        //   bowireConfirm(msg, opts) → Promise<bool>  — modern style; arg2
+        //                                                is the options
+        //                                                object + caller
+        //                                                .then()s the result.
+        // Detect by sniffing arg2 — function means callback path; object
+        // means options-only Promise path. Operator-reported bug: 'delete
+        // einer source (im test eine url) geht nicht.' Root cause was a
+        // caller in render-main.js using the Promise shape against the
+        // callback API — clicking Remove silently TypeError'd inside
+        // .then() because the return value was undefined.
+        if (onConfirm && typeof onConfirm === 'object' && options === undefined) {
+            options = onConfirm;
+            onConfirm = null;
+        }
         var opts = options || {};
         var existing = document.querySelector('.bowire-confirm-overlay');
         if (existing) existing.remove();
+
+        var resolveFn = null;
+        var promise = new Promise(function (resolve) { resolveFn = resolve; });
+
+        function settle(ok) {
+            overlay.remove();
+            try {
+                if (ok && typeof onConfirm === 'function') onConfirm();
+            } catch (e) { console.warn('[bowireConfirm] onConfirm failed', e); }
+            if (resolveFn) resolveFn(!!ok);
+        }
 
         var confirmBtn = el('button', {
             className: 'bowire-confirm-btn' + (opts.danger ? ' danger' : ''),
             textContent: opts.confirmText || 'Confirm',
             'aria-label': opts.confirmText || 'Confirm',
-            onClick: function () { overlay.remove(); if (onConfirm) onConfirm(); }
+            onClick: function () { settle(true); }
         });
         var cancelBtn = el('button', {
             className: 'bowire-confirm-btn cancel',
             textContent: opts.cancelText || 'Cancel',
             'aria-label': 'Cancel',
-            onClick: function () { overlay.remove(); }
+            onClick: function () { settle(false); }
         });
 
         var dialog = el('div', {
@@ -2445,7 +2472,7 @@
 
         var overlay = el('div', {
             className: 'bowire-confirm-overlay',
-            onClick: function (e) { if (e.target === overlay) overlay.remove(); }
+            onClick: function (e) { if (e.target === overlay) settle(false); }
         }, dialog);
 
         document.body.appendChild(overlay);
@@ -2453,8 +2480,9 @@
         confirmBtn.focus();
         // Esc to close
         overlay.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') { overlay.remove(); }
+            if (e.key === 'Escape') { settle(false); }
         });
+        return promise;
     }
 
     // In-app prompt dialog — mirrors bowireConfirm's shape + theme
