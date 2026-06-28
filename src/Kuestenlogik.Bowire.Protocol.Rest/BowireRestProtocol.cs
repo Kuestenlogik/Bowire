@@ -181,6 +181,7 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
             {
                 var result = CommitDiscovery(cachedUrl, fromCache);
                 RetagOriginUrl(result, docUrl);
+                AliasSchemaCache(cachedUrl, docUrl);
                 return result;
             }
             // Cached URL stopped responding — fall through to the regular path.
@@ -208,6 +209,7 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
                         $"REST discovery resolved {origin} via well-known path {probedUrl}");
                     var probed = CommitDiscovery(probedUrl, probedResult);
                     RetagOriginUrl(probed, docUrl);
+                    AliasSchemaCache(probedUrl, docUrl);
                     return probed;
                 }
 
@@ -233,6 +235,28 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
         foreach (var svc in services)
         {
             svc.OriginUrl = originUrl;
+        }
+    }
+
+    /// <summary>
+    /// Add a second key into <see cref="_cache"/> that resolves to the same
+    /// <see cref="RestSchemaCache"/> entry. Called from the probe paths so
+    /// <see cref="InvokeAsync"/> finds the schema when it looks up by the
+    /// operator-supplied URL (alias) — the original key is the probed
+    /// spec URL the probe actually fetched from. Without this, invoke fell
+    /// through to a cold discover that re-resolved to the spec URL and
+    /// stored under that key only, never under the operator URL — so the
+    /// second lookup also missed and the call surfaced 'No OpenAPI
+    /// document found at &lt;serverUrl&gt;' on every Execute. Operator
+    /// feedback: 'ListLocations -&gt; Error … No OpenAPI document found
+    /// at http://localhost:5181 wenn ich execute aufrufe.'
+    /// </summary>
+    private void AliasSchemaCache(string realUrl, string aliasUrl)
+    {
+        if (string.Equals(realUrl, aliasUrl, StringComparison.Ordinal)) return;
+        if (_cache.TryGetValue(realUrl, out var cache))
+        {
+            _cache[aliasUrl] = cache;
         }
     }
 
