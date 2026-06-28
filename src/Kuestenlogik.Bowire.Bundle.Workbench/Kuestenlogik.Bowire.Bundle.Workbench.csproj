@@ -49,7 +49,7 @@
          the visible rail; the old two stay shipped with [Obsolete] +
          HideFromRail for one release window. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Traffic\Kuestenlogik.Bowire.Rail.Traffic.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Benchmarks\Kuestenlogik.Bowire.Rail.Benchmarks.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Benchmarking\Kuestenlogik.Bowire.Benchmarking.csproj" />
     <!-- v2.1 (#325): Workspaces + Environments collapsed into a single
          Kuestenlogik.Bowire.Workspaces package (env vars are workspace-
          scoped). The Rail. prefix was dropped at the same time. -->
