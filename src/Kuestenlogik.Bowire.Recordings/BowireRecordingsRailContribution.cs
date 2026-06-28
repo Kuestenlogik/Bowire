@@ -3,7 +3,7 @@
 
 using Kuestenlogik.Bowire.Plugins;
 
-namespace Kuestenlogik.Bowire.Rail.Recordings;
+namespace Kuestenlogik.Bowire.Recordings;
 
 /// <summary>
 /// Recordings rail contribution (#306 Phase G).
