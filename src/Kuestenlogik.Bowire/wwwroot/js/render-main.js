@@ -8360,6 +8360,17 @@
                     body, selectedService.name, selectedMethod.name);
             } catch (e) { console.error('[bowire-semantics] decorate stream-detail', e); }
         }
+        if (selectedService && selectedMethod) {
+            try {
+                // Per-frame body so the "Center on map" entry resolves
+                // against THIS message's lat/lon, not whatever the
+                // last unary response left behind in `responseData`.
+                var parsedFrame = null;
+                try { parsedFrame = JSON.parse(raw); } catch { parsedFrame = null; }
+                bowireDecorateResponseTreeForCoordPairs(
+                    body, selectedService.name, selectedMethod.name, parsedFrame);
+            } catch (e) { console.error('[bowire-coord-sync] decorate stream-detail', e); }
+        }
 
         return { header: header, body: body };
     }
@@ -8668,25 +8679,29 @@
 
         if (!splitActive) {
             disposeWidgetMounts();
-            // Even when no extension is registered for a split-default
-            // kind, the framework may still have placeholder cards to
-            // mount — annotations exist for an unregistered kind and
-            // the workbench wants to invite the user to install the
-            // matching package (Phase 3-R). Append a thin slot AFTER
-            // the streaming output and call mountWidgetsForMethod
-            // against it; if there's nothing to mount the slot stays
-            // empty and folds away.
             var streamingOut = renderStreamingOutput();
-            var wrapper = el('div', { className: 'bowire-streaming-with-placeholders' });
-            wrapper.appendChild(streamingOut);
-            var placeholderSlot = el('div', { className: 'bowire-placeholder-slot' });
-            wrapper.appendChild(placeholderSlot);
-            var cleanup = fw.mountWidgetsForMethod(
-                selectedService.name, selectedMethod.name, placeholderSlot);
-            if (typeof cleanup === 'function') {
-                bowireWidgetUnmounts.push(cleanup);
+            // No registered viewer for a split-default kind → keep
+            // the legacy "stream + placeholder card for Phase 3-R
+            // install-discovery" wrapper. The placeholder slot folds
+            // away if there's no suggested package.
+            if (!splitKindExt) {
+                var wrapper = el('div', { className: 'bowire-streaming-with-placeholders' });
+                wrapper.appendChild(streamingOut);
+                var placeholderSlot = el('div', { className: 'bowire-placeholder-slot' });
+                wrapper.appendChild(placeholderSlot);
+                var cleanup = fw.mountWidgetsForMethod(
+                    selectedService.name, selectedMethod.name, placeholderSlot);
+                if (typeof cleanup === 'function') {
+                    bowireWidgetUnmounts.push(cleanup);
+                }
+                return wrapper;
             }
-            return wrapper;
+            // Registered viewer + tab mode → Stream / Map tab-strip.
+            // Without this branch the Toggle (Split → Tab) used to
+            // strand the map widget without a slot, so the user lost
+            // the map entirely (Issue 1).
+            return renderResponseTabbedWithWidget(
+                streamingOut, splitKindExt, saved);
         }
 
         // Build the split-pane host. We re-create the wrapper on every
@@ -8818,22 +8833,34 @@
             && (saved.mode === 'split-horizontal' || saved.mode === 'split-vertical'));
 
         if (!splitActive) {
-            // Single-pane: the response output keeps its full width.
-            // Append a placeholder slot AFTER the output so the
-            // framework can mount placeholder cards for unregistered
-            // kinds (Phase 3-R extension-discovery hint). If nothing
-            // mounts the slot folds away.
+            // Tab mode — TWO sub-tabs inside the response pane: a
+            // JSON tab (default) and one Map tab per registered
+            // split-eligible viewer. The viewer mounts INSIDE its tab
+            // body, not into a placeholder slot — without this wiring
+            // the toggle "Split → Tab" would make the map vanish
+            // entirely (Issue 1).
+            //
+            // When no registered viewer claims the kind we still need
+            // the placeholder-card path for the Phase 3-R discovery
+            // hint, so the absence of a `splitKindExt` falls through
+            // to the legacy single-pane wrapper.
             disposeWidgetMounts();
-            var wrapper = el('div', { className: 'bowire-unary-with-placeholders' });
-            wrapper.appendChild(outputElement);
-            var placeholderSlot = el('div', { className: 'bowire-placeholder-slot' });
-            wrapper.appendChild(placeholderSlot);
-            var cleanup = fw.mountWidgetsForMethod(
-                selectedService.name, selectedMethod.name, placeholderSlot);
-            if (typeof cleanup === 'function') {
-                bowireWidgetUnmounts.push(cleanup);
+
+            if (!splitKindExt) {
+                var wrapper = el('div', { className: 'bowire-unary-with-placeholders' });
+                wrapper.appendChild(outputElement);
+                var placeholderSlot = el('div', { className: 'bowire-placeholder-slot' });
+                wrapper.appendChild(placeholderSlot);
+                var cleanup = fw.mountWidgetsForMethod(
+                    selectedService.name, selectedMethod.name, placeholderSlot);
+                if (typeof cleanup === 'function') {
+                    bowireWidgetUnmounts.push(cleanup);
+                }
+                return wrapper;
             }
-            return wrapper;
+
+            return renderResponseTabbedWithWidget(
+                outputElement, splitKindExt, saved);
         }
 
         // Split mode — same construction as the streaming pane: JSON
@@ -8894,6 +8921,134 @@
         widgetPane.appendChild(widgetHeader);
         widgetPane.appendChild(widgetBody);
         pane.secondSlot.appendChild(widgetPane);
+
+        var widgetCleanup = fw.mountWidgetsForMethod(
+            selectedService.name, selectedMethod.name, widgetBody);
+        if (typeof widgetCleanup === 'function') {
+            bowireWidgetUnmounts.push(widgetCleanup);
+        }
+
+        return host;
+    }
+
+    /**
+     * Tab mode for the response pane. Builds a strip of sub-tabs
+     * (JSON / Map) on top of the response body and switches between
+     * them via the `widgetActiveTab` module state. The Map tab
+     * mounts the registered viewer via `mountWidgetsForMethod` so
+     * the same code path that produces map pins in split mode runs
+     * here too — the only difference is the tab strip + body
+     * swap.
+     *
+     * Both tab bodies stay mounted simultaneously, with the inactive
+     * one hidden via `display: none`. That preserves the MapLibre
+     * WebGL canvas + camera state across tab switches (re-mounting
+     * the viewer on every switch would tear down + rebuild MapLibre
+     * — defeats the point of a live widget).
+     *
+     * `outputElement` is the primary content (JSON tree for unary,
+     * Wireshark-style streaming pane for streams). It always lands
+     * in the first tab. The widget viewer mounts into the second
+     * tab's body.
+     */
+    function renderResponseTabbedWithWidget(outputElement, splitKindExt, saved) {
+        var fw = window.__bowireExtFramework;
+        var layout = window.__bowireLayout;
+        var widgetLabel = (splitKindExt.viewer && splitKindExt.viewer.label)
+            || splitKindExt.kind;
+
+        var host = el('div', { className: 'bowire-widget-tabbed' });
+
+        // ---- Tab strip ----
+        var strip = el('div', { className: 'bowire-widget-tab-strip' });
+
+        function makeTabBtn(name, label) {
+            return el('button', {
+                type: 'button',
+                className: 'bowire-widget-tab'
+                    + (widgetActiveTab === name ? ' is-active' : ''),
+                'data-widget-tab': name,
+                onClick: function () {
+                    if (widgetActiveTab === name) return;
+                    widgetActiveTab = name;
+                    // Direct DOM swap rather than render() so the
+                    // MapLibre canvas keeps its WebGL context and
+                    // camera state across tab switches. A full
+                    // render() would tear down + re-mount the
+                    // viewer, defeating the whole point of holding
+                    // both bodies in the DOM at once.
+                    var allBodies = host.querySelectorAll('.bowire-widget-tab-body');
+                    var allTabs = host.querySelectorAll('.bowire-widget-tab');
+                    for (var i = 0; i < allBodies.length; i++) {
+                        var bn = allBodies[i].getAttribute('data-widget-tab') || '';
+                        allBodies[i].style.display = bn === name ? '' : 'none';
+                    }
+                    for (var j = 0; j < allTabs.length; j++) {
+                        var tn = allTabs[j].getAttribute('data-widget-tab') || '';
+                        allTabs[j].classList.toggle('is-active', tn === name);
+                    }
+                    // The map widget's ResizeObserver fires on the
+                    // first visibility flip (display:none → '') and
+                    // calls map.resize() automatically — same path
+                    // the split-pane drag relies on. No explicit
+                    // resize call needed here.
+                }
+            }, label);
+        }
+        strip.appendChild(makeTabBtn('json', 'JSON'));
+        strip.appendChild(makeTabBtn('widget', widgetLabel));
+
+        // Spacer pushes the layout-toggle to the far right of the
+        // strip — visual parity with the split-pane header.
+        strip.appendChild(el('span', { className: 'bowire-widget-tab-strip-spacer' }));
+
+        // Layout-toggle button — same shape as the one on the
+        // split-pane header. Without this affordance the user has
+        // no way back to split mode once they're on the tab layout
+        // (Issue 1 + Issue 3 — the toggle stayed reachable through
+        // the streaming-toolbar shortcut, but the unary path had no
+        // toolbar so the user was stuck).
+        strip.appendChild(el('button', {
+            className: 'bowire-widget-layout-toggle',
+            title: 'Toggle layout (Tab ↔ Split)',
+            onClick: function () {
+                var nextMode = layout.cycleLayoutMode(
+                    saved.mode, splitKindExt.kind);
+                layout.saveWidgetLayout(
+                    selectedService.name, selectedMethod.name,
+                    splitKindExt.id, {
+                        mode: nextMode,
+                        ratio: typeof saved.ratio === 'number' ? saved.ratio : 0.5
+                    });
+                render();
+            },
+            innerHTML: bowireLayoutIcon('layout-split')
+        }));
+
+        host.appendChild(strip);
+
+        // ---- Tab bodies ----
+        // JSON body — the caller's outputElement (JSON tree for
+        // unary, streaming pane for streams) goes here verbatim.
+        var jsonBody = el('div', {
+            className: 'bowire-widget-tab-body',
+            'data-widget-tab': 'json'
+        });
+        jsonBody.style.display = widgetActiveTab === 'json' ? '' : 'none';
+        jsonBody.appendChild(outputElement);
+        host.appendChild(jsonBody);
+
+        // Widget body — the viewer mounts here. We always create the
+        // slot (even on the JSON tab) so the widget starts streaming
+        // frames immediately and is hot the moment the user clicks
+        // the Map tab. Otherwise the operator would get a 200ms
+        // basemap-load delay every time they switch tabs.
+        var widgetBody = el('div', {
+            className: 'bowire-widget-tab-body bowire-widget-pane-body',
+            'data-widget-tab': 'widget'
+        });
+        widgetBody.style.display = widgetActiveTab === 'widget' ? '' : 'none';
+        host.appendChild(widgetBody);
 
         var widgetCleanup = fw.mountWidgetsForMethod(
             selectedService.name, selectedMethod.name, widgetBody);
@@ -8971,6 +9126,449 @@
                     + '<line x1="12" y1="5" x2="12" y2="19"/>'
                     + '</svg>';
         }
+    }
+
+    // -------------------------------------------------------------------
+    // Response-JSON ↔ map widget coord-pair sync
+    //
+    // The map widget (Kuestenlogik.Bowire.Map) registers itself in
+    // `window.__bowireMapWidgets`. The functions below decorate the
+    // response-JSON tree with:
+    //   - a `data-bowire-coord-path` attribute on every lat/lon/parent
+    //     span the framework's `coordinate.wgs84` pairing matched;
+    //   - a `contextmenu` handler that surfaces "Center on map" when a
+    //     map widget is mounted AND the operator clicks inside an
+    //     annotated lat/lon block;
+    //   - bidirectional mouseenter/mouseleave hover sync between the
+    //     JSON spans and the matching map pin's halo.
+    //
+    // Annotation lookup goes through the existing
+    // `/api/semantics/effective` cache (the extensions framework already
+    // primes it via `mountWidgetsForMethod`). The map-side reverse
+    // direction listens on the document for the `bowire:map-coord-hover`
+    // event the map widget dispatches.
+    //
+    // Everything is gated on `__bowireExtFramework.preferredExtension`
+    // returning a registered viewer for `coordinate.wgs84` — without the
+    // plugin loaded the context-menu entry doesn't surface and the
+    // hover handlers no-op so the operator never sees an inert menu
+    // entry that points at nothing.
+    // -------------------------------------------------------------------
+
+    /**
+     * True when the workbench has a `coordinate.wgs84` viewer
+     * registered. Gates every coord-pair feature so the right-click
+     * menu doesn't list "Center on map" when the map plugin isn't
+     * loaded (operator request — "nur wenn karte als plugin verfügbar
+     * ist"). Cheap to re-evaluate; called at event time, not at
+     * decorator time, so a plugin loaded after first render lights up
+     * the menu without a full re-render.
+     */
+    function bowireCoordSyncMapAvailable() {
+        var fw = window.__bowireExtFramework;
+        if (!fw || typeof fw.preferredExtension !== 'function') return false;
+        return !!fw.preferredExtension('coordinate.wgs84');
+    }
+
+    /**
+     * Strip the leading `$.` off a JSONPath so it matches the
+     * chain-variable form (`position.lat`) the JSON tree's
+     * `data-json-path` attribute uses. `$` alone normalises to the
+     * empty string (root scope).
+     */
+    function bowireCoordSyncNormalisePath(p) {
+        if (typeof p !== 'string') return '';
+        if (p.indexOf('$.') === 0) return p.substring(2);
+        if (p === '$') return '';
+        return p;
+    }
+
+    /**
+     * Walk the cached effective annotations for (service, method) and
+     * group lat/lon companions by parent path. Returns an array of
+     * `{ parentPath, latPath, lonPath }` records — one per pair. Each
+     * path is in the chain-variable form so the lookup against the
+     * JSON tree's `data-json-path` attributes is direct.
+     */
+    function bowireCoordSyncPairsForMethod(service, method) {
+        var fw = window.__bowireExtFramework;
+        if (!fw || typeof fw.effectiveCacheFor !== 'function') return [];
+        var anns = fw.effectiveCacheFor(service, method);
+        if (!Array.isArray(anns) || anns.length === 0) return [];
+        // Bucket annotations by parent path so a pair is "lat + lon
+        // under the same parent" — same scope rule the framework's
+        // pairing matcher uses, just running on the workbench side
+        // for hover-sync wiring.
+        var groups = {};
+        for (var i = 0; i < anns.length; i++) {
+            var a = anns[i];
+            if (a.semantic !== 'coordinate.latitude'
+                && a.semantic !== 'coordinate.longitude') continue;
+            var raw = a.jsonPath || '';
+            var dotIdx = raw.lastIndexOf('.');
+            var parent = dotIdx > 0 ? raw.substring(0, dotIdx) : raw;
+            if (!groups[parent]) groups[parent] = {};
+            groups[parent][a.semantic] = raw;
+        }
+        var out = [];
+        for (var key in groups) {
+            if (!Object.prototype.hasOwnProperty.call(groups, key)) continue;
+            var lat = groups[key]['coordinate.latitude'];
+            var lon = groups[key]['coordinate.longitude'];
+            if (!lat || !lon) continue;
+            out.push({
+                parentPath: bowireCoordSyncNormalisePath(key),
+                latPath: bowireCoordSyncNormalisePath(lat),
+                lonPath: bowireCoordSyncNormalisePath(lon)
+            });
+        }
+        return out;
+    }
+
+    /**
+     * Resolve a JSONPath-ish chain ("position.lat", "items.0.lat")
+     * against a parsed JSON value. The path convention here is the
+     * dot-separated chain-variable form the JSON tree emits — numeric
+     * segments are array indices, anything else is an object key.
+     * Matches the convention `bowireResolveJsonPath` in the map
+     * widget uses for the raw `$.foo.bar` shape, normalised down.
+     */
+    function bowireCoordSyncResolvePath(root, path) {
+        if (!path) return root;
+        var tokens = String(path).split('.');
+        var cur = root;
+        for (var t = 0; t < tokens.length; t++) {
+            if (cur == null) return undefined;
+            var key = tokens[t];
+            if (/^\d+$/.test(key) && Array.isArray(cur)) {
+                cur = cur[parseInt(key, 10)];
+            } else if (typeof cur === 'object') {
+                cur = cur[key];
+            } else {
+                return undefined;
+            }
+        }
+        return cur;
+    }
+
+    /**
+     * Resolve a (lat, lon) pair from the live response data. Tries
+     * the explicit root supplied by the caller first (streaming
+     * detail panes hand the current frame's parsed body), then the
+     * `responseData` global (unary path), then peels back any
+     * `data` / `frame` envelope wrapper — same shape extractCoords
+     * in map.js handles. Returns `null` when the pair doesn't
+     * resolve to a valid WGS84 coordinate, in which case the caller
+     * suppresses the "Center on map" entry.
+     */
+    function bowireCoordSyncResolveLatLon(pair, explicitRoot) {
+        if (!pair) return null;
+        var roots = [];
+        if (explicitRoot != null) {
+            roots.push(explicitRoot);
+            if (typeof explicitRoot === 'object') {
+                if (explicitRoot.data !== undefined) roots.push(explicitRoot.data);
+                if (explicitRoot.frame !== undefined) roots.push(explicitRoot.frame);
+            }
+        }
+        if (typeof responseData !== 'undefined' && responseData != null) {
+            roots.push(responseData);
+            if (typeof responseData === 'object') {
+                if (responseData.data !== undefined) roots.push(responseData.data);
+                if (responseData.frame !== undefined) roots.push(responseData.frame);
+            }
+        }
+        for (var i = 0; i < roots.length; i++) {
+            var lat = bowireCoordSyncResolvePath(roots[i], pair.latPath);
+            var lon = bowireCoordSyncResolvePath(roots[i], pair.lonPath);
+            lat = typeof lat === 'number' ? lat : parseFloat(lat);
+            lon = typeof lon === 'number' ? lon : parseFloat(lon);
+            if (isFinite(lat) && isFinite(lon)
+                && lat >= -90 && lat <= 90
+                && lon >= -180 && lon <= 180) {
+                return { lat: lat, lon: lon };
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Decorate every annotated lat/lon span in the response tree with
+     * `data-bowire-coord-path` so the context-menu + hover handlers
+     * can identify the click target. Idempotent — re-running over a
+     * partially-decorated tree leaves the previous attributes in
+     * place and just re-applies. The attribute carries the lat-path
+     * (the more specific of the pair) so the map-side highlight
+     * lookup never has to disambiguate two coord blocks sharing the
+     * same parent.
+     */
+    function bowireCoordSyncDecorateTree(treeRoot, pairs) {
+        if (!treeRoot || !pairs || pairs.length === 0) return;
+        // Build an index: chain-var path → which pair it belongs to.
+        // A coord pair contributes three lookup keys — latPath,
+        // lonPath, parentPath — all pointing at the same pair record
+        // so a hover on any of them lights up the same pin.
+        var index = {};
+        for (var i = 0; i < pairs.length; i++) {
+            index[pairs[i].latPath] = pairs[i];
+            index[pairs[i].lonPath] = pairs[i];
+            if (pairs[i].parentPath) index[pairs[i].parentPath] = pairs[i];
+        }
+        var picks = treeRoot.querySelectorAll('[data-json-path]');
+        for (var p = 0; p < picks.length; p++) {
+            var raw = picks[p].getAttribute('data-json-path') || '';
+            var hit = index[raw];
+            if (!hit) continue;
+            // Use the lat-path as the canonical pair id — the map
+            // widget's `highlightByPath` accepts any of the three
+            // forms but consistently using the lat-path keeps the
+            // attribute readable in the DOM inspector.
+            picks[p].setAttribute('data-bowire-coord-path', hit.latPath);
+        }
+    }
+
+    /**
+     * Attach hover + context-menu handlers to the response tree.
+     * Bound at the tree root with delegation so morphdom re-renders
+     * the children without dropping the handlers. The handler reads
+     * `data-bowire-coord-path` at event time, so the lookup survives
+     * any node reuse the diff does — same pattern semantics-menu.js
+     * uses for its right-click handler.
+     */
+    function bowireCoordSyncAttachHandlers(treeRoot, service, method, explicitRoot) {
+        if (!treeRoot || treeRoot.__bowireCoordSyncMounted) return;
+        treeRoot.__bowireCoordSyncMounted = true;
+        // Stash the explicit root on the tree node so the contextmenu
+        // handler can find the per-frame body even when the global
+        // `responseData` lags (streaming-detail flow). morphdom
+        // preserves the node across renders → handler stays bound,
+        // explicit root stays accessible. Updated on every decorate
+        // pass so a re-render with a fresh frame body picks it up.
+        treeRoot.__bowireCoordSyncRoot = explicitRoot;
+
+        function closestCoord(target) {
+            return target && target.closest
+                ? target.closest('[data-bowire-coord-path]')
+                : null;
+        }
+
+        // Hover JSON → highlight map pin. Delegated mouseover /
+        // mouseout (rather than mouseenter/leave on each span) so
+        // we install ONE listener pair regardless of how many coord
+        // blocks the response carries.
+        treeRoot.addEventListener('mouseover', function (e) {
+            var coord = closestCoord(e.target);
+            if (!coord) return;
+            var path = coord.getAttribute('data-bowire-coord-path') || '';
+            if (!path) return;
+            var widgets = window.__bowireMapWidgets || [];
+            for (var i = 0; i < widgets.length; i++) {
+                try { widgets[i].highlightByPath(path); } catch {}
+            }
+            coord.classList.add('bowire-coord-hover-source');
+        });
+        treeRoot.addEventListener('mouseout', function (e) {
+            var coord = closestCoord(e.target);
+            if (!coord) return;
+            // Avoid spurious clear-flicker when the cursor moves
+            // between two child spans of the same coord block —
+            // relatedTarget still resolves under the same coord
+            // ancestor so we treat it as the same hover.
+            var related = e.relatedTarget;
+            if (related && related.closest
+                && related.closest('[data-bowire-coord-path]') === coord) return;
+            coord.classList.remove('bowire-coord-hover-source');
+            var widgets = window.__bowireMapWidgets || [];
+            for (var i = 0; i < widgets.length; i++) {
+                try { widgets[i].clearHighlight(); } catch {}
+            }
+        });
+
+        // Right-click → "Center on map" context menu, gated on a
+        // registered viewer + a successful lat/lon resolve. When the
+        // operator right-clicks anywhere else in the tree we let the
+        // browser surface its native menu (or another decorator's
+        // menu — semantics-menu wins for the .label spans).
+        treeRoot.addEventListener('contextmenu', function (e) {
+            var coord = closestCoord(e.target);
+            if (!coord) return;
+            if (!bowireCoordSyncMapAvailable()) return;
+            var path = coord.getAttribute('data-bowire-coord-path') || '';
+            if (!path) return;
+            var pairs = bowireCoordSyncPairsForMethod(service, method);
+            var pair = null;
+            for (var i = 0; i < pairs.length; i++) {
+                if (pairs[i].latPath === path || pairs[i].lonPath === path
+                    || pairs[i].parentPath === path) {
+                    pair = pairs[i];
+                    break;
+                }
+            }
+            if (!pair) return;
+            var loc = bowireCoordSyncResolveLatLon(
+                pair, treeRoot.__bowireCoordSyncRoot);
+            if (!loc) return;
+            e.preventDefault();
+            e.stopPropagation();
+            bowireCoordSyncOpenMenu(e.clientX, e.clientY, loc, path);
+        });
+    }
+
+    /**
+     * Render and position the right-click menu. Same DOM shape as
+     * the semantics-menu so the workbench's existing CSS rules
+     * cover it without bespoke styling. Closes on outside click +
+     * Escape; clamps inside the viewport.
+     */
+    function bowireCoordSyncOpenMenu(x, y, loc, path) {
+        // Tear down any previous coord menu so rapid right-clicks
+        // don't pile up popups.
+        var existing = document.querySelector('.bowire-coord-sync-menu');
+        if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+        var menu = document.createElement('div');
+        menu.className = 'bowire-semantics-menu bowire-coord-sync-menu';
+        menu.setAttribute('role', 'menu');
+        menu.style.position = 'fixed';
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        menu.style.zIndex = '10000';
+
+        var item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'bowire-semantics-menu-item';
+        item.setAttribute('role', 'menuitem');
+        item.textContent = 'Center on map';
+        item.addEventListener('click', function () {
+            var widgets = window.__bowireMapWidgets || [];
+            for (var i = 0; i < widgets.length; i++) {
+                try { widgets[i].flyTo({ center: [loc.lon, loc.lat] }); } catch {}
+            }
+            close();
+        });
+        menu.appendChild(item);
+
+        var meta = document.createElement('div');
+        meta.className = 'bowire-semantics-menu-meta';
+        // Display lat / lon with 5 decimals — ~1 m precision, lines
+        // up with what most GIS tools print.
+        meta.textContent = loc.lat.toFixed(5) + ', ' + loc.lon.toFixed(5);
+        menu.appendChild(meta);
+
+        document.body.appendChild(menu);
+
+        // Viewport clamp — identical math to semantics-menu.
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var rect = menu.getBoundingClientRect();
+        if (rect.right > vw) menu.style.left = Math.max(8, vw - rect.width - 8) + 'px';
+        if (rect.bottom > vh) menu.style.top = Math.max(8, vh - rect.height - 8) + 'px';
+
+        function close() {
+            document.removeEventListener('keydown', onKey);
+            document.removeEventListener('click', onClick);
+            if (menu.parentNode) menu.parentNode.removeChild(menu);
+        }
+        function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }
+        function onClick(e) { if (!menu.contains(e.target)) close(); }
+        document.addEventListener('keydown', onKey);
+        // Defer the click listener install by one tick so the click
+        // that triggered the contextmenu's button doesn't immediately
+        // close the menu.
+        setTimeout(function () { document.addEventListener('click', onClick); }, 0);
+    }
+
+    /**
+     * Map → JSON direction. The map widget dispatches
+     * `bowire:map-coord-hover` carrying parentPath / latPath /
+     * lonPath whenever the operator hovers a pin. We light up the
+     * corresponding coord block in the JSON tree by adding the
+     * `bowire-coord-hover-target` class to the matching span(s).
+     *
+     * Installed once at module load; finds the live response trees
+     * at event time so a re-render that swapped the DOM doesn't
+     * orphan the listener. Cheap — the lookup is one querySelector
+     * call per event.
+     */
+    function bowireCoordSyncInstallReverseListener() {
+        if (window.__bowireCoordSyncReverseInstalled) return;
+        window.__bowireCoordSyncReverseInstalled = true;
+        document.addEventListener('bowire:map-coord-hover', function (e) {
+            // Clear any prior highlight regardless of incoming path —
+            // the map widget dispatches an empty-path event on
+            // mouseleave so the JSON tree clears too.
+            var prior = document.querySelectorAll('.bowire-coord-hover-target');
+            for (var p = 0; p < prior.length; p++) {
+                prior[p].classList.remove('bowire-coord-hover-target');
+            }
+            var detail = e && e.detail;
+            if (!detail) return;
+            var paths = [];
+            if (detail.parentPath) paths.push(bowireCoordSyncNormalisePath(detail.parentPath));
+            if (detail.latPath) paths.push(bowireCoordSyncNormalisePath(detail.latPath));
+            if (detail.lonPath) paths.push(bowireCoordSyncNormalisePath(detail.lonPath));
+            if (paths.length === 0) return;
+            // Build a single CSS selector that matches every span
+            // carrying a coord-path attribute for the hovered pin.
+            // Escape only what `CSS.escape` does — quote-character
+            // injection isn't possible because the path comes from a
+            // server-side annotation, not user input, but a defensive
+            // escape keeps the selector safe.
+            var parts = [];
+            for (var i = 0; i < paths.length; i++) {
+                var safe = (typeof CSS !== 'undefined' && CSS.escape)
+                    ? CSS.escape(paths[i]) : paths[i].replace(/"/g, '\\"');
+                parts.push('[data-bowire-coord-path="' + safe + '"]');
+                // Also light up spans that ONLY carry the matching
+                // data-json-path (the JSON viewer's chevron lines,
+                // the bracket spans) so the surrounding block
+                // visibly highlights.
+                parts.push('[data-line-path="' + safe + '"]');
+            }
+            var matches = document.querySelectorAll(parts.join(','));
+            for (var m = 0; m < matches.length; m++) {
+                matches[m].classList.add('bowire-coord-hover-target');
+            }
+        });
+    }
+
+    /**
+     * Public entry point — call after `renderJsonTree(...)` lands
+     * in the DOM. Resolves the effective annotations (cached or
+     * fetched), decorates lat/lon spans with
+     * `data-bowire-coord-path`, and attaches hover + contextmenu
+     * handlers. Silent failure on a missing extension framework
+     * keeps the response tree usable when the workbench is
+     * misconfigured.
+     */
+    function bowireDecorateResponseTreeForCoordPairs(treeRoot, service, method, explicitRoot) {
+        if (!treeRoot || !service || !method) return;
+        bowireCoordSyncInstallReverseListener();
+        var fw = window.__bowireExtFramework;
+        if (!fw) return;
+        var loader;
+        if (typeof fw.effectiveCacheFor === 'function'
+            && fw.effectiveCacheFor(service, method)) {
+            loader = Promise.resolve({
+                annotations: fw.effectiveCacheFor(service, method)
+            });
+        } else if (typeof fw.fetchEffective === 'function') {
+            loader = fw.fetchEffective(service, method);
+        } else {
+            return;
+        }
+        loader.then(function () {
+            var pairs = bowireCoordSyncPairsForMethod(service, method);
+            if (pairs.length === 0) return;
+            bowireCoordSyncDecorateTree(treeRoot, pairs);
+            bowireCoordSyncAttachHandlers(treeRoot, service, method, explicitRoot);
+            // Re-stash the root even when the handlers were already
+            // mounted — a previous render() may have left a stale
+            // root attached, and the new frame's body is what the
+            // context-menu should resolve against.
+            treeRoot.__bowireCoordSyncRoot = explicitRoot;
+        }).catch(function (err) {
+            console.error('[bowire-coord-sync] decorate failed', err);
+        });
     }
 
     function appendStreamMessage(parsed) {
@@ -9713,6 +10311,12 @@
                         bowireDecorateResponseTreeForSemantics(
                             output, selectedService.name, selectedMethod.name);
                     } catch (e) { console.error('[bowire-semantics] decorate', e); }
+                }
+                if (selectedService && selectedMethod) {
+                    try {
+                        bowireDecorateResponseTreeForCoordPairs(
+                            output, selectedService.name, selectedMethod.name);
+                    } catch (e) { console.error('[bowire-coord-sync] decorate', e); }
                 }
             }
         } else {

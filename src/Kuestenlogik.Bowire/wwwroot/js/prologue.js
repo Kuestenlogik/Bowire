@@ -4129,6 +4129,15 @@
     let streamFilterQuery = '';         // Substring or key:value filter applied to the visible stream list
     let streamFilterPanelOpen = false;  // Whether the collapsible filter panel above the list is expanded
     let widgetPaneMaximized = false;    // When true, the split-pane widget slot (map, future viewers) fills the viewport
+    // Active sub-tab inside the response pane when the widget's layout
+    // is `tab` instead of `split-horizontal`. 'json' is the default
+    // landing — the JSON tree stays in the slot it has always occupied,
+    // and the user opts into the Map (or future viewer) tab via the
+    // strip. Persisted in module state so a re-render (invoke, F5,
+    // morphdom diff) keeps the operator on whichever tab they last
+    // had open; reset to 'json' on method switch via the same path
+    // `widgetPaneMaximized` resets.
+    let widgetActiveTab = 'json';
     // Phase 3.1 — multi-select selection set for the Streaming-Frames
     // pane. Ctrl/Cmd-click toggles membership, Shift-click extends a
     // range from the last anchor, plain click replaces with a single-
@@ -4603,6 +4612,7 @@
         streamAutoScroll = true;
         streamDetailMaximized = false;
         widgetPaneMaximized = false;
+        widgetActiveTab = 'json';
         formValidationErrors = {};
         diffViewOpen = false;
         diffSnapshotA = null;
@@ -4698,6 +4708,7 @@
         streamAutoScroll = true;
         streamDetailMaximized = false;
         widgetPaneMaximized = false;
+        widgetActiveTab = 'json';
         formValidationErrors = {};
         diffViewOpen = false;
         diffSnapshotA = null;

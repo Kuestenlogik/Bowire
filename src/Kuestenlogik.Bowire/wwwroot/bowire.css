@@ -7658,6 +7658,123 @@ so no
     font-size: 13px;
 }
 
+/* ---------- Tab-mode wrapper for the response widget ----------
+   When the per-(service, method) widget layout is `tab` instead of
+   `split-horizontal`, the response pane wraps the JSON output AND
+   the widget viewer in a strip-and-body shell so the operator can
+   toggle between them without losing the live WebGL canvas. Both
+   bodies stay mounted at once; the inactive one is hidden via
+   display:none so the MapLibre canvas keeps its camera + tiles.
+   Built in render-main.js → renderResponseTabbedWithWidget. */
+.bowire-widget-tabbed {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 360px;
+}
+.bowire-widget-tab-strip {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 6px 0;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+    background: var(--bowire-surface);
+    flex: 0 0 auto;
+}
+.bowire-widget-tab-strip-spacer {
+    flex: 1;
+}
+.bowire-widget-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    margin: 0;
+    border: 1px solid transparent;
+    border-bottom: none;
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: var(--bowire-radius-md) var(--bowire-radius-md) 0 0;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-widget-tab:hover {
+    color: var(--bowire-text);
+    background: var(--bowire-surface-hover);
+}
+.bowire-widget-tab.is-active {
+    color: var(--bowire-text);
+    background: var(--bowire-bg);
+    border-color: var(--bowire-border-subtle);
+    /* Paint over the strip's bottom border so the active tab visually
+       merges with the body below — same recessed look the workbench
+       tab-strip pattern uses elsewhere. */
+    margin-bottom: -1px;
+    padding-bottom: 7px;
+    font-weight: 600;
+}
+.bowire-widget-tab-body {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+}
+.bowire-widget-tab-body > * {
+    flex: 1;
+    min-height: 0;
+}
+
+/* ---------- JSON ↔ map widget coord hover-sync ----------
+   The response-JSON viewer (render-main.js →
+   bowireDecorateResponseTreeForCoordPairs) stamps
+   `data-bowire-coord-path` on every span the framework's
+   `coordinate.wgs84` pairing matched. Hover on either side adds a
+   marker class that this stylesheet tints — keeps the hover sync
+   purely declarative so the JS handlers don't have to inline
+   colours. */
+[data-bowire-coord-path] {
+    /* Subtle indicator that this span participates in hover-sync
+       even when no hover is active — without it the operator has no
+       hint that the map widget will react. Uses a 1 px dotted under-
+       line in the muted text colour so it doesn't fight the JSON
+       syntax highlighting. */
+    text-decoration: underline dotted var(--bowire-text-tertiary);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+.bowire-coord-hover-source,
+.bowire-coord-hover-target {
+    /* Pale accent-coloured background tint — same colour as the map
+       widget's halo so the two sides read as a pair. The two
+       classes share the same paint so a self-hover (JSON span lights
+       up its own block) and a remote-hover (map pin lights up the
+       JSON block) are visually indistinguishable. */
+    background: color-mix(in srgb, var(--bowire-accent, #4f46e5) 18%, transparent);
+    border-radius: 3px;
+    transition: background 80ms ease-out;
+}
+
+/* ---------- Coord-sync context menu meta line ----------
+   The "Center on map" menu surfaces a small lat/lon meta line under
+   the menu item so the operator can confirm the coordinates before
+   clicking. Reuses the semantics-menu shell colours. */
+.bowire-coord-sync-menu {
+    min-width: 180px;
+}
+.bowire-semantics-menu-meta {
+    padding: 4px 12px 6px;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    font-variant-numeric: tabular-nums;
+    border-top: 1px solid var(--bowire-border-subtle);
+    margin-top: 4px;
+}
+
 .bowire-stream-list-idx {
     flex-shrink: 0;
     color: var(--bowire-text-tertiary);
