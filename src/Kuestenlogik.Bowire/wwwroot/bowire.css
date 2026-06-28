@@ -9402,6 +9402,59 @@ details.bowire-json-tree-node[open]::after {
 .bowire-json-tree-row {
     padding-left: 0;
 }
+
+/* ---------- Hover-revealed semantic-kind hint (right gutter) ----------
+   Operator request: 'rechts beim hover sehen, was für ein gemappter typ
+   das ist'. The decorator in widgets/semantics-menu.js appends a
+   `<span class="bowire-json-tree-meta">` to every annotated row /
+   summary; the rule below pins it to the row's right edge and hides
+   it until the row is hovered. Mirrors the line-number gutter on the
+   left so the operator's eye reads symmetrically: line number left,
+   semantic kind right, both quiet until the cursor lands on the row.
+
+   `position: relative` lifts to the closest row + summary so the
+   absolute right-edge anchor works on container openers and leaf
+   rows alike. `pointer-events: none` keeps the hint inert — the
+   operator's cursor passing under it doesn't fire mouseover noise
+   on the underlying JSON-tree gestures. */
+.bowire-json-tree-row,
+.bowire-json-tree-summary {
+    position: relative;
+}
+.bowire-json-tree-meta {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--bowire-text-tertiary);
+    background: var(--bowire-surface-subtle, rgba(127, 127, 127, 0.08));
+    padding: 1px 6px;
+    border-radius: 3px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 80ms ease-out;
+    /* Quiet hint — no border by default. Source-tier nuance comes
+       through the colour variants below. */
+}
+.bowire-json-tree-row:hover > .bowire-json-tree-meta,
+.bowire-json-tree-summary:hover > .bowire-json-tree-meta {
+    opacity: 1;
+}
+/* Source tiers — same colour family the badge variants use so the
+   semantics decoration reads as one system across the two surfaces.
+   `user` (operator-confirmed) is the most authoritative → accent
+   tint; `plugin` (declared by a kind plugin) sits between; `auto`
+   (heuristic guess) stays muted. */
+.bowire-json-tree-meta-user {
+    color: var(--bowire-accent, #6366f1);
+    background: color-mix(in srgb, var(--bowire-accent, #6366f1) 14%, transparent);
+}
+.bowire-json-tree-meta-plugin {
+    color: var(--bowire-text-secondary);
+}
 .bowire-json-tree-label {
     color: #a78bfa;
 }
