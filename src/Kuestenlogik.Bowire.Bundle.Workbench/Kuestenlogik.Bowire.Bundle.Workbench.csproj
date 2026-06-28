@@ -38,7 +38,7 @@
          Kuestenlogik.Bowire.Rail.Home / Kuestenlogik.Bowire.Rail.Discover
          packages have been retired. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Compose\Kuestenlogik.Bowire.Compose.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Recordings\Kuestenlogik.Bowire.Rail.Recordings.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Recordings\Kuestenlogik.Bowire.Recordings.csproj" />
     <!-- #311 — Mocks rail descriptor + mocks.js fragment ship inside
          Kuestenlogik.Bowire.Mock (see below). The provisional
          Kuestenlogik.Bowire.Rail.Mocks package was folded in for v2.1. -->
