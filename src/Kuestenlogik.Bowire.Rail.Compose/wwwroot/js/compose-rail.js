@@ -1249,12 +1249,17 @@
             mainCol.appendChild(padWrap);
         }
 
-        main.appendChild(mainCol);
-        // #295 — Side panel hosts Collections + Presets. Always
-        // appended; the panel's own header carries the collapse
-        // toggle so the layout stays a single flex row regardless
-        // of collapsed/expanded state.
+        // #295 — Side panel hosts Collections + Presets. Mounted on
+        // the LEFT to match the workbench convention (Discover,
+        // Recordings, Workspaces, Mocks, &c. all put the items-list
+        // on the left + the active-item editor on the right).
+        // Operator: 'warum ist die library rechts beim compose und
+        // nicht auf die gleiche art gelöst wie beim discover oder
+        // recordings (links eine sidebar)?' The panel's own header
+        // carries the collapse toggle so the layout stays a single
+        // flex row regardless of collapsed/expanded state.
         main.appendChild(_renderComposeSidePanel());
+        main.appendChild(mainCol);
         return main;
     }
 
