@@ -187,8 +187,8 @@ public sealed class BowireHelpEndpointTests
     {
         private static readonly HelpTopic[] _topics =
         [
-            new("quickstart", "Quickstart", "# Quickstart\n\nPick a method.", null),
-            new("recordings", "Recordings", "# Recordings\n\nRecord a session.", "features"),
+            new("quickstart", "Quickstart", null, "# Quickstart\n\nPick a method.", "<h1>Quickstart</h1><p>Pick a method.</p>", null),
+            new("recordings", "Recordings", null, "# Recordings\n\nRecord a session.", "<h1>Recordings</h1><p>Record a session.</p>", "features"),
         ];
 
         public HelpTopic? GetTopic(string id) =>
@@ -206,7 +206,7 @@ public sealed class BowireHelpEndpointTests
         }
 
         public IReadOnlyList<HelpTopicSummary> ListTopics() =>
-            _topics.Select(t => new HelpTopicSummary(t.Id, t.Title, t.CategoryId)).ToList();
+            _topics.Select(t => new HelpTopicSummary(t.Id, t.Title, t.Summary, t.CategoryId)).ToList();
     }
 
     private sealed record AvailableResponse(bool Available);

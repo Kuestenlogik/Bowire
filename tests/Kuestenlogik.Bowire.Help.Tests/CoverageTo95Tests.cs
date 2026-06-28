@@ -102,11 +102,14 @@ public sealed class CoverageTo95Tests
     {
         // Title contains the term so the topic ranks; body doesn't, so
         // ExtractExcerpt's "first term occurrence" loop drops through to
-        // the leading-paragraph fallback.
+        // the leading-paragraph fallback. `title:` is the front-matter
+        // field the provider keys on as of the help-drawer-titles fix —
+        // `summary:` is the nav-row excerpt and is no longer used as a
+        // search-indexed title.
         var sut = BuildWith(new Dictionary<string, string>
         {
             ["bowire-help-docs/title-only.md"] =
-                "---\nsummary: 'Recording titles win'\n---\nShort body.\n",
+                "---\ntitle: 'Recording titles win'\n---\nShort body.\n",
         });
 
         var hits = sut.Search("titles");
