@@ -18,6 +18,10 @@
          the workbench picks it up automatically once this reference
          is present. Drives the /api/locations sample endpoint. -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Map\Kuestenlogik.Bowire.Map.csproj" />
+    <!-- Interceptor moved out of Core in v2.1 Welle 2 — now its own
+         package (Kuestenlogik.Bowire.Interceptor). Embedded hosts that
+         want app.UseBowireInterceptor() must reference it explicitly. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Interceptor\Kuestenlogik.Bowire.Interceptor.csproj" />
   </ItemGroup>
 
   <ItemGroup>
