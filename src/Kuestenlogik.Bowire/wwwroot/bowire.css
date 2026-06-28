@@ -8007,6 +8007,14 @@ detail fills 100% ---------- */
 .bowire-execute-btn {
     height: 36px;
     padding: 0 20px;
+    /* min-width matches the widest label across method types
+       (Disconnect, Subscribe, Execute, Connect, Stop) so the action
+       button doesn't jitter when the operator switches between unary
+       and streaming methods. Operator: 'aktuell springt es bei der
+       breite von execute und subscribe etwas hin und her, wenn man
+       die methoden wechselt.' */
+    min-width: 132px;
+    justify-content: center;
     background: var(--bowire-accent);
     border: none;
     border-radius: var(--bowire-radius-md);
