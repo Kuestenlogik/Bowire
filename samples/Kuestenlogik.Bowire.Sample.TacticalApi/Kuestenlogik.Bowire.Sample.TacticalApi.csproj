@@ -25,6 +25,14 @@
          client-side dependencies (Grpc.Net.Client + Google.Protobuf), so
          the server-side hosting stack lands here in the sample. -->
     <PackageReference Include="Grpc.AspNetCore" />
+    <!-- gRPC Server Reflection so Bowire's generic gRPC plugin can
+         discover the Situation service over a plain `grpc@http://...`
+         URL — without it, the operator has to add the URL with the
+         transport hint `tacticalapi@http://...` to skip the reflection
+         probe and use the plugin's bundled descriptors. Both paths
+         now work; reflection is the canonical one for any third-party
+         tool. -->
+    <PackageReference Include="Grpc.AspNetCore.Server.Reflection" />
   </ItemGroup>
 
 </Project>

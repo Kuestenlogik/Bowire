@@ -30,9 +30,16 @@ var builder = WebApplication.CreateBuilder(args);
 // MAGENTA / national PKI; this sample stays minimal so the operator
 // can run it with a single `dotnet run`.
 builder.Services.AddGrpc();
+// Server Reflection — lets the operator dial the sample with a plain
+// `grpc@http://localhost:5182` URL in Bowire and have the generic gRPC
+// plugin auto-discover the Situation service. Without it, only the
+// `tacticalapi@...` hint works (the TacticalApi plugin uses bundled
+// descriptors instead of probing the server).
+builder.Services.AddGrpcReflection();
 
 var app = builder.Build();
 app.MapGrpcService<SeededSituationService>();
+app.MapGrpcReflectionService();
 
 // Tiny landing page on `/` so a curious operator hitting the URL in a
 // browser sees something useful rather than the "this server only
