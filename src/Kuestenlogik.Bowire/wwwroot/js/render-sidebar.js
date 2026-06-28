@@ -2649,7 +2649,25 @@
                                     'Remove URL "' + u + '" from this workspace? Stored headers + cached schema for this source are dropped.',
                                     function () {
                                         if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+                                        // removeServerUrl was never defined as
+                                        // a function — the inline remove button
+                                        // at line ~1898 carries the same
+                                        // fallback (splice + persist) so the
+                                        // tree's right-click flow now matches.
+                                        // Operator: 'remove url per rechtsklick
+                                        // context-menü in der sidebar
+                                        // funktioniert nicht.'
                                         if (typeof removeServerUrl === 'function') removeServerUrl(u);
+                                        else {
+                                            var ri = serverUrls.indexOf(u);
+                                            if (ri >= 0) serverUrls.splice(ri, 1);
+                                            if (typeof persistServerUrls === 'function') persistServerUrls();
+                                        }
+                                        if (typeof removeUrlMeta === 'function') removeUrlMeta(u);
+                                        if (typeof sourcesSelectedUrl !== 'undefined' && sourcesSelectedUrl === u) {
+                                            sourcesSelectedUrl = serverUrls[0] || null;
+                                        }
+                                        if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
                                         render();
                                     },
                                     { title: 'Remove URL', confirmText: 'Remove', danger: true }
