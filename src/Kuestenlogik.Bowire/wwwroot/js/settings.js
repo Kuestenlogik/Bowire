@@ -40,15 +40,13 @@
         var nodes = [
             header('My preferences'),
             leaf('general', 'General', 'settings'),
-            leaf('rails', 'Rail modes', 'layers'),
-            leaf('modules', 'Modules', 'plug'),
+            // #325 — label was 'Rail modes' until v2.1; renamed to
+            // 'Rails' because the rail strip is now the primary
+            // navigation primitive (operators talk about 'rails', not
+            // 'rail modes'). Internal tab id stays 'rails' so existing
+            // deep links + saved settings keep working.
+            leaf('rails', 'Rails', 'layers'),
             leaf('shortcuts', 'Shortcuts', 'list'),
-            leaf('data', 'Data', 'trash'),
-            leaf('ai', 'Assistant', 'spark'),
-            // #309 — Catalogue provider picker. Sits next to Assistant
-            // because both are "what backend talks to Bowire": Assistant
-            // is the AI backend, Discovery is the URL catalogue backend.
-            leaf('discovery', 'Discovery', 'search'),
             // #153 UI phase — Tools surface lists running reverse-proxy
             // hosts started via the topbar Tools menu. Stays empty for
             // installs that never start one (no rows + a hint), so the
@@ -56,10 +54,20 @@
             leaf('tools', 'Tools', 'plug')
         ];
 
-        // Per-plugin children. The Plugins group node itself routes to
-        // the overview page on click — no separate "All plugins" entry
-        // (cleaner tree shape, matches MudBlazor NavMenu where the
-        // parent is the destination + chevron handles expansion).
+        // #325 — Unified Extensions group. Replaces the v2.0 layout
+        // where Modules / Plugins / Tools / standalone Assistant lived
+        // as separate top-level entries — those four categories were
+        // actually one axis ("things plugged into the workbench") split
+        // into four UI silos. The new group has sub-sections:
+        //   - Protocols  (every IBowireProtocol plugin)
+        //   - Modules    (cross-cutting modules: AI, Assistant, …)
+        //   - UI extensions (the right-rail widget extensions: Map, …)
+        //   - Tools      (reverse-proxy launcher and friends)
+        //   - Discovery providers (the catalogue picker)
+        // Per-plugin children. The Extensions group node itself routes
+        // to the overview page on click — no separate "All plugins"
+        // entry (cleaner tree shape, matches MudBlazor NavMenu where
+        // the parent is the destination + chevron handles expansion).
         var pluginChildren = [];
         for (var pi = 0; pi < protocols.length; pi++) {
             var p = protocols[pi];
@@ -124,33 +132,58 @@
             })(installedExtensions[exi]);
         }
 
-        // Plugins group — click on the label routes to the overview
+        // #325 — Compose the unified Extensions sub-tree. The previous
+        // top-level Modules / Assistant / Discovery rows are pulled in
+        // here as siblings of the per-protocol + per-extension rows
+        // beneath the Extensions group. Modules / Assistant /
+        // Discovery keep their internal tab ids ('modules' / 'ai' /
+        // 'discovery') verbatim so existing deep links survive.
+        var extensionsChildren = [
+            // Sub-section heads — non-clickable rows that route to a
+            // dedicated settings panel (Modules, AI assistant, Discovery
+            // provider picker). They land FIRST in the tree so the
+            // operator sees the cross-cutting modules before scrolling
+            // past every protocol plugin.
+            leaf('modules', 'Modules', 'plug'),
+            leaf('ai', 'Assistant', 'spark'),
+            leaf('discovery', 'Discovery providers', 'search'),
+        ];
+        // Append the per-protocol + per-UI-extension rows the loops
+        // above prepared (was the old Plugins group's body).
+        for (var pcI = 0; pcI < pluginChildren.length; pcI++) {
+            extensionsChildren.push(pluginChildren[pcI]);
+        }
+
+        // Extensions group — click on the label routes to the overview
         // (enable toggles, install hints); the chevron toggles
         // expansion independently. Default-open when the operator is
-        // already on a plugin tab so the active row is visible
+        // already on a child tab so the active row is visible
         // without an extra click.
-        var pluginsKey = 'plugins';
-        var pluginsActive = settingsTab === 'plugins'
+        var extensionsKey = 'extensions';
+        var extensionsActive = settingsTab === 'plugins'
+            || settingsTab === 'modules'
+            || settingsTab === 'ai'
+            || settingsTab === 'discovery'
             || settingsTab.indexOf('plugin-') === 0
             || settingsTab.indexOf('extension-') === 0;
-        var pluginsExpanded = isSettingsTreeNodeExpanded(pluginsKey, pluginsActive);
+        var extensionsExpanded = isSettingsTreeNodeExpanded(extensionsKey, extensionsActive);
         nodes.push({
             id: 'settings:plugins',
-            label: 'Plugins',
+            label: 'Extensions',
             icon: 'plug',
             badge: pluginChildren.length > 0 ? pluginChildren.length : null,
-            expandable: pluginChildren.length > 0,
-            expanded: pluginsExpanded,
+            expandable: extensionsChildren.length > 0,
+            expanded: extensionsExpanded,
             selected: settingsTab === 'plugins',
             onClick: function () {
                 settingsTab = 'plugins';
                 renderSettingsDialog();
             },
             onToggle: function () {
-                toggleSettingsTreeNode(pluginsKey, pluginsActive);
+                toggleSettingsTreeNode(extensionsKey, extensionsActive);
                 renderSettingsDialog();
             },
-            children: pluginChildren
+            children: extensionsChildren
         });
 
         // #193 Phase 2 item 4 — second group for workspace-scope
@@ -160,8 +193,14 @@
         // makes the split discoverable: an operator who opens
         // Settings looking for "URL list" or "plugin pins" sees the
         // category exists + a one-click jump to the right surface.
+        // #325 — 'Data' was a top-level row in v2.0; moved under
+        // 'This project' because every datum it deals with (recordings,
+        // collections, presets, secrets cache, history) is workspace-
+        // scoped and round-trips through .bww. Internal tab id stays
+        // 'data' verbatim.
         nodes.push(header('This project'));
         nodes.push(leaf('workspace', 'Workspace…', 'layers'));
+        nodes.push(leaf('data', 'Data', 'trash'));
 
         return nodes;
     }
