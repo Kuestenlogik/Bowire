@@ -22,6 +22,13 @@
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.9" />
     <PackageVersion Include="Grpc.AspNetCore" Version="2.80.0" />
     <PackageVersion Include="Grpc.Tools" Version="2.81.1" />
+    <!-- Kuestenlogik.Bowire.Protocol.TacticalApi — Rheinmetall TacticalAPI
+         gRPC plugin. Lives in the sibling repo Bowire.Protocol.TacticalApi
+         and is consumed here as a published NuGet package. Bundle.Workbench
+         pulls it in so the standalone Tool ships TacticalAPI support out of
+         the box for DACH operators dialling Rheinmetall situation services.
+         Pinned to 1.0.1 — the locked target for the v2.1 milestone. -->
+    <PackageVersion Include="Kuestenlogik.Bowire.Protocol.TacticalApi" Version="1.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Identity.Web" Version="4.10.0" />
     <PackageVersion Include="Microsoft.OpenApi" Version="3.7.0" />
