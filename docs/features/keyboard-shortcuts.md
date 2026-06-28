@@ -1,4 +1,5 @@
 ---
+title: Keyboard shortcuts
 summary: 'Bowire supports keyboard shortcuts for fast navigation and invocation without reaching for the mouse.'
 ---
 

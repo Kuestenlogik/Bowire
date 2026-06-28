@@ -1,4 +1,6 @@
 ---
+title: Features
+title: Features
 summary: 'Workflow-level reference for every feature Bowire ships.'
 ---
 

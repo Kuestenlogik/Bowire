@@ -1,4 +1,5 @@
 ---
+title: Standalone
 summary: 'Run Bowire as a standalone .NET global tool to browse and invoke'
 ---
 

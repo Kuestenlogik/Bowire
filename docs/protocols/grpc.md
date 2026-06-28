@@ -1,4 +1,5 @@
 ---
+title: gRPC
 summary: 'The gRPC plugin discovers services via gRPC Server Reflection and supports all four gRPC call types.'
 ---
 

@@ -1,4 +1,5 @@
 ---
+title: JSON-RPC
 summary: 'Generic JSON-RPC 2.0 client. Discovery via OpenRPC `rpc.discover`, freeform fallback for servers that do not advertise it. In-tree plugin, no separate install.'
 ---
 

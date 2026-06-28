@@ -1,4 +1,5 @@
 ---
+title: UI Guide
 summary: "Bowire's browser UI is a single-page application built with pure HTML, CSS, and JavaScript."
 ---
 

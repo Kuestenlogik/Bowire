@@ -1,4 +1,5 @@
 ---
+title: Recording
 summary: 'Capture a sequence of API calls and replay them as a regression test or a live mock.'
 ---
 

@@ -1,4 +1,5 @@
 ---
+title: OData
 summary: 'Bowire discovers OData services by fetching the $metadata endpoint and parsing the EDMX/CSDL document.'
 ---
 

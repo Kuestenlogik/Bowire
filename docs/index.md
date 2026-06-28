@@ -1,4 +1,5 @@
 ---
+title: Documentation
 _layout: landing
 summary: 'The reference manual for the multi-protocol API workbench: how to install it, how every pane of the UI works, how each protocol plugin behaves, and how to extend Bowire with your'
 ---

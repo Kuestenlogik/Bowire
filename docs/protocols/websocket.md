@@ -1,4 +1,5 @@
 ---
+title: WebSocket
 summary: 'The WebSocket plugin opens an interactive bidirectional channel against any WebSocket endpoint and lets the user send raw text or binary frames and watch responses arrive in real t'
 ---
 

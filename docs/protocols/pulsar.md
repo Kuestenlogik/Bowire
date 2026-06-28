@@ -1,4 +1,5 @@
 ---
+title: Pulsar
 summary: 'In-tree Apache Pulsar plugin on the Apache-maintained DotPulsar 3.5.x client. Topic discovery via HTTP admin, produce + subscribe over the binary protocol.'
 ---
 

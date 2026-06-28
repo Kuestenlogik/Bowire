@@ -1,4 +1,5 @@
 ---
+title: Auto-discovery
 summary: 'Bowire automatically discovers available services and methods without manual configuration.'
 ---
 

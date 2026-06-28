@@ -1,4 +1,5 @@
 ---
+title: Sidecar
 summary: 'Run Bowire as a sidecar container next to your service — same pod, same network namespace, no schema files to keep in sync. Docker, docker-compose, and Kubernetes setups, plus the `--url-file` pattern for dynamic discovery.'
 ---
 

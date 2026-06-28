@@ -1,4 +1,5 @@
 ---
+title: Empty state
 summary: 'When no method is selected in the sidebar, Bowire renders a context-sensitive landing page.'
 ---
 

@@ -1,4 +1,5 @@
 ---
+title: Console
 summary: 'The Console is a chronological slide-up panel that logs every request, response, stream message, and channel event in the order they happen.'
 ---
 

@@ -1,4 +1,5 @@
 ---
+title: Updating
 summary: 'How to update Bowire and its plugins — the tool side (dotnet tool update / winget / choco / MSI / standalone) and the sibling-plugin side (CLI or workbench UI, with --prerelease opt-in for RCs).'
 ---
 

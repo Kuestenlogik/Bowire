@@ -1,4 +1,5 @@
 ---
+title: Kafka
 summary: 'The Kafka plugin browses topics, consumes live traffic, produces test messages, and replays recorded streams against any Confluent.Kafka-compatible cluster — including Confluent Schema Registry decode and mTLS / SASL auth.'
 ---
 

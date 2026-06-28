@@ -1,4 +1,5 @@
 ---
+title: Akka.NET
 summary: 'The Akka.NET plugin streams every message landing in a tap-mailboxed actor''s inbox into the Bowire workbench — observe a live actor system the same way you watch gRPC streams or MQTT topics.'
 ---
 

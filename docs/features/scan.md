@@ -1,4 +1,5 @@
 ---
+title: Scan
 summary: 'Run vulnerability templates against any HTTP-class target with `bowire scan`. Three template sources, one engine, SARIF 2.1.0 to GitHub Code Scanning / GitLab / Azure DevOps.'
 ---
 

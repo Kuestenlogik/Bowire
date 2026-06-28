@@ -1,4 +1,5 @@
 ---
+title: Request pane
 summary: 'The request pane is where you compose and edit requests before sending them to the target service.'
 ---
 

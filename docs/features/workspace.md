@@ -1,4 +1,5 @@
 ---
+title: Workspace
 summary: "A workspace is your project folder — URLs, environments, collections, recordings, scripts. It can live in localStorage (browser-only mode), in a git-friendly directory (Workspace.Git), or as a portable single-file `.bww` export bundle you commit / share / round-trip between machines."
 ---
 

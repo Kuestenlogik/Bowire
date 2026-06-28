@@ -1,4 +1,5 @@
 ---
+title: Collections
 summary: 'Named, ordered groups of saved requests, managed from the Compose rail side panel.'
 ---
 

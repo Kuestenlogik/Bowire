@@ -1,4 +1,5 @@
 ---
+title: CLI mode
 summary: 'A command-line interface for scripting, automation, and quick exploration without opening the browser UI.'
 ---
 

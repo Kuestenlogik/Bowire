@@ -1,4 +1,5 @@
 ---
+title: REST
 summary: 'The Kuestenlogik.Bowire.Protocol.Rest plugin lets Bowire browse and exercise REST APIs alongside gRPC, SignalR, SSE, and MCP.'
 ---
 

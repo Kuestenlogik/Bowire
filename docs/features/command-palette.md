@@ -1,4 +1,5 @@
 ---
+title: Command palette
 summary: 'Press <kbd>/</kbd> from anywhere in Bowire to open the command palette — a fuzzy-search launcher for methods, environments, and protocol filters.'
 ---
 

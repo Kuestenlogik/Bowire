@@ -1,4 +1,5 @@
 ---
+title: NATS
 summary: 'In-tree NATS plugin on the official NATS.Net 2.x client. Three discovery sources from one shared connection: subject sampling, JetStream streams, Services API.'
 ---
 

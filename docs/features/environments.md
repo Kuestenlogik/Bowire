@@ -1,4 +1,5 @@
 ---
+title: Environments
 summary: 'Named environments with {{var}} placeholder substitution.'
 ---
 

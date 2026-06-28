@@ -1,4 +1,6 @@
 ---
+title: Performance
+title: Performance
 summary: 'Bowire ships a built-in micro-benchmarker for any unary method.'
 ---
 

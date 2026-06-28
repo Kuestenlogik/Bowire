@@ -1,4 +1,5 @@
 ---
+title: Mock server
 summary: 'Turn any Bowire recording into a standalone HTTP mock server that replays the captured responses — no live backend required.'
 ---
 

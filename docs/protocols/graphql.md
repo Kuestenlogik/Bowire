@@ -1,4 +1,5 @@
 ---
+title: GraphQL
 summary: 'The GraphQL plugin connects to any GraphQL endpoint that supports the standard introspection query, surfaces every root operation as a Bowire service, and lets the user invoke que'
 ---
 

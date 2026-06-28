@@ -1,4 +1,5 @@
 ---
+title: Multi-user
 summary: 'Multi-user / multi-tenant Bowire — the plan and the seam. Single-user is shipped today; per-user storage + SCIM provisioning land alongside the auth-provider extension SPI (roadmap Phase B).'
 ---
 

@@ -1,4 +1,5 @@
 ---
+title: Proxy
 summary: 'Observing + manipulating real client / server traffic. Unified Traffic rail surfaces the standalone MITM proxy CLI and the in-process middleware behind one workbench rail that adapts to the active deployment.'
 ---
 

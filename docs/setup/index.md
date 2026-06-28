@@ -1,4 +1,5 @@
 ---
+title: Deployment modes
 summary: 'Bowire runs in three deployment modes.'
 ---
 

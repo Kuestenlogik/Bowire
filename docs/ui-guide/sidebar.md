@@ -1,4 +1,5 @@
 ---
+title: Sidebar
 summary: 'The sidebar is the per-rail-mode list panel on the left. Discover lists services by protocol; other rails list workspaces / collections / recordings / mocks / benchmarks / flows / proxy captures / sources / security findings.'
 ---
 

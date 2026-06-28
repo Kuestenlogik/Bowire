@@ -1,4 +1,5 @@
 ---
+title: Flows
 summary: 'Flows are a sequential multi-step editor for composing API interactions into repeatable pipelines.'
 ---
 

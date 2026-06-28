@@ -1,4 +1,5 @@
 ---
+title: TacticalAPI
 summary: 'TacticalAPI is a Bowire sibling plugin that wraps Rheinmetall''s situational-awareness gRPC interface with a bundled schema so the Situation service tree renders even without Server Reflection. Discovery, typed unary CRUD, server-streaming pump, mTLS via the shared __bowireMtls__ marker, IBowireMockEmitter for recording replay.'
 ---
 

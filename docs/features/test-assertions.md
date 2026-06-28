@@ -1,4 +1,5 @@
 ---
+title: Test assertions
 summary: 'Bowire ships with a built-in assertion runner so you can verify response shapes without leaving the request flow.'
 ---
 

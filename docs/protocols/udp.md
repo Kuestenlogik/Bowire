@@ -1,4 +1,5 @@
 ---
+title: UDP
 summary: 'The UDP plugin binds to any UDP endpoint — multicast, broadcast, or unicast — and streams every received datagram into the workbench as a JSON envelope.'
 ---
 

@@ -1,4 +1,5 @@
 ---
+title: Response pane
 summary: 'The response pane displays the result of a method invocation with syntax highlighting, status information, and action buttons.'
 ---
 

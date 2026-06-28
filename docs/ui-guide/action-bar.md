@@ -1,4 +1,5 @@
 ---
+title: Action bar
 summary: 'The action bar sits between the request and response panes.'
 ---
 

@@ -1,4 +1,5 @@
 ---
+title: AMQP
 summary: 'AMQP 0.9.1 + 1.0 in one sibling plugin. RabbitMQ via RabbitMQ.Client, ActiveMQ / Solace / Azure Service Bus via AMQPNetLite. Wire picked by URL scheme.'
 ---
 

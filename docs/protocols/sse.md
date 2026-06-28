@@ -1,4 +1,5 @@
 ---
+title: SSE
 summary: 'The SSE plugin discovers and subscribes to Server-Sent Events endpoints in your ASP.NET application.'
 ---
 
