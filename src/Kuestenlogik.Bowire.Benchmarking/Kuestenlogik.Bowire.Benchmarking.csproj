@@ -1,13 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- #306 Phase G — Benchmarks rail package.
+    <!-- #306 Phase G — Benchmarking rail package (was Rail.Benchmarks).
          #314 — owns benchmarks.js fragment (~3,500 LOC: envelope model,
          phase runner, presets bar, charts). Stitched into the workbench
          bundle via the #311 BowireHtmlGenerator.StitchRailFragments
-         pipeline. -->
-    <Description>Bowire Benchmarks rail — performance + load measurement surface. Adds the Benchmarks rail descriptor + per-rail JS fragment to the workbench.</Description>
-    <PackageId>Kuestenlogik.Bowire.Rail.Benchmarks</PackageId>
-    <PackageTags>bowire;rail;benchmarks;performance;workbench;plugin</PackageTags>
+         pipeline.
+         v2.1 (#325): renamed from Kuestenlogik.Bowire.Rail.Benchmarks to
+         Kuestenlogik.Bowire.Benchmarking. The gerund matches the
+         activity-rail naming pattern (Compose / Mock / Discover / Help
+         / Telemetry) — operator quote: 'ist Benchmarks als name gut?
+         Kuestenlogik.Bowire.Benchmarks klingt so als ob dort Bowire
+         gemessen wird. es sollte eher das "tun" ausdrücken'. -->
+    <Description>Bowire Benchmarking rail — performance + load measurement surface. Adds the Benchmarks rail descriptor + per-rail JS fragment to the workbench.</Description>
+    <PackageId>Kuestenlogik.Bowire.Benchmarking</PackageId>
+    <PackageTags>bowire;rail;benchmarking;performance;workbench;plugin</PackageTags>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
@@ -23,6 +29,6 @@
          available because the rail-fragment splice happens AFTER every
          core fragment in the IIFE. -->
     <EmbeddedResource Include="wwwroot\js\benchmarks.js"
-                      LogicalName="Kuestenlogik.Bowire.Rail.Benchmarks.wwwroot.js.benchmarks.js" />
+                      LogicalName="Kuestenlogik.Bowire.Benchmarking.wwwroot.js.benchmarks.js" />
   </ItemGroup>
 </Project>
