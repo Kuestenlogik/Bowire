@@ -144,7 +144,13 @@ internal static class BowireApiEndpoints
             // endpoints always mount: when no host opted the middleware in,
             // the store stays empty and the rail surfaces an empty state
             // rather than a 404. The "Intercepted" rail talks to /api/intercepted/*.
-            .MapBowireInterceptorEndpoints(basePath);
+            .MapBowireInterceptorEndpoints(basePath)
+            // #153 UI phase — Tools surface (reverse-proxy launcher).
+            // Lives inside the auth-gated group so the admin endpoints
+            // inherit --token / IBowireAuthProvider; proxied upstream
+            // traffic flows verbatim through the started host and is
+            // NOT auth-gated.
+            .MapBowireToolsEndpoints(basePath);
 
         // Apply the auth gate exactly once when an IBowireAuthProvider
         // is registered (AddBowireAuth resolved it from the

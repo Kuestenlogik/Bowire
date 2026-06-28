@@ -163,6 +163,15 @@ public static class BowireServiceCollectionExtensions
         // the per-request path; this registration is free.
         services.AddBowireInterceptorCore();
 
+        // #153 — Reverse-proxy registry. Singleton lifetime so
+        // BowireToolsEndpoints (start/stop/list) and the
+        // ApplicationStopping hook share one source of truth across
+        // the host process. The registry's ctor hooks
+        // IHostApplicationLifetime so every reverse-proxy host
+        // started from the workbench dies when bowire.exe exits —
+        // operators that need a daemon use `bowire proxy` instead.
+        services.TryAddSingleton<Tools.ReverseProxyRegistry>();
+
         // PluginUpdateCheckService is always registered so the manual
         // GET /api/plugins/check-updates endpoint can resolve it; the
         // hosted background loop short-circuits when
