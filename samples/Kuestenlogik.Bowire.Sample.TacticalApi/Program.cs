@@ -75,29 +75,33 @@ app.Run();
 
 /// <summary>
 /// In-process implementation of Rheinmetall's <c>Situation</c> service.
-/// Seeds a handful of real DACH airfields, harbours, and stations so
-/// the operator sees recognisable pins on the map widget. The shape
-/// mirrors the test-fixture seed in
-/// <c>Kuestenlogik.Bowire.Protocol.TacticalApi.Tests/Integration/InProcessSituationServerFixture.cs</c>,
-/// extended with <see cref="GeoPoint"/> positions on every symbol so
-/// Bowire's <c>Wgs84CoordinateDetector</c> has lat/lon pairs to grab.
+/// Seeds eight fictional tactical entities — NATO-phonetic callsigns
+/// over the DACH region — so the map widget shows a recognisable
+/// tactical situation: friendly air picture, surface units, an air
+/// defence battery, a maritime patrol vessel, and a reconnaissance
+/// UAV. Operator: 'das beispiel ist für tactical vermutlich auch
+/// nicht so gut mit hamburg-hbf usw.' and 'uuidIdentity ist auch
+/// keine uuid in den messages.' Both fixed here.
 /// </summary>
 internal sealed class SeededSituationService : Situation.SituationBase
 {
-    // Eight DACH points spanning Germany / Austria / Switzerland. Tuple
-    // shape keeps the seed table compact: (uuid, display name, lat,
-    // lon). Coordinates are real WGS84 positions so the map widget zooms
-    // onto a recognisable area when the operator invokes the method.
+    // Eight fictional tactical entities spanning the DACH airspace /
+    // landspace. Tuple shape keeps the seed table compact: (uuid,
+    // callsign + role, lat, lon). UUIDs are real Guids (stable across
+    // cycles so each callsign keeps its identity as it drifts), and
+    // callsigns follow the NATO phonetic family with a role suffix so
+    // the operator immediately reads them as tactical objects rather
+    // than civilian transport hubs.
     private static readonly (string Uuid, string Name, double Lat, double Lon)[] Seed =
     [
-        ("frankfurt-airport", "Frankfurt Airport (EDDF)",   50.0379,  8.5622),
-        ("munich-hbf",        "Munchen Hauptbahnhof",       48.1402, 11.5582),
-        ("kiel-port",         "Hafen Kiel",                 54.3233, 10.1396),
-        ("hamburg-hbf",       "Hamburg Hauptbahnhof",       53.5527, 10.0067),
-        ("berlin-tegel",      "Berlin Tegel (EDDT)",        52.5597, 13.2877),
-        ("vienna-hbf",        "Wien Hauptbahnhof",          48.1851, 16.3754),
-        ("zurich-hb",         "Zurich Hauptbahnhof",        47.3779,  8.5403),
-        ("stuttgart-airport", "Stuttgart Airport (EDDS)",   48.6898,  9.2220),
+        ("c5b3b5b6-1a2d-4e9b-8c0a-1f7a2d9c1a01", "Alpha-1 — Recon UAV",          50.0379,  8.5622),
+        ("c5b3b5b6-1a2d-4e9b-8c0a-1f7a2d9c1a02", "Bravo-2 — Air Defence Btry",   48.1402, 11.5582),
+        ("c5b3b5b6-1a2d-4e9b-8c0a-1f7a2d9c1a03", "Charlie-3 — Patrol Vessel",    54.3233, 10.1396),
+        ("c5b3b5b6-1a2d-4e9b-8c0a-1f7a2d9c1a04", "Delta-4 — Mobile HQ",          53.5527, 10.0067),
+        ("c5b3b5b6-1a2d-4e9b-8c0a-1f7a2d9c1a05", "Echo-5 — Fwd Observation",     52.5597, 13.2877),
+        ("c5b3b5b6-1a2d-4e9b-8c0a-1f7a2d9c1a06", "Foxtrot-6 — Logistics Conv",   48.1851, 16.3754),
+        ("c5b3b5b6-1a2d-4e9b-8c0a-1f7a2d9c1a07", "Golf-7 — AWACS Track",         47.3779,  8.5403),
+        ("c5b3b5b6-1a2d-4e9b-8c0a-1f7a2d9c1a08", "Hotel-8 — Engineering Det",    48.6898,  9.2220),
     ];
 
     /// <summary>
