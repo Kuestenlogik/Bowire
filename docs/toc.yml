@@ -17,3 +17,5 @@ items:
   href: architecture/
 - name: API Reference
   href: api/index.md
+- name: Brand guide
+  href: brand-guide.md

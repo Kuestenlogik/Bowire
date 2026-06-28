@@ -1,0 +1,328 @@
+---
+layout: page
+title: Brand & logos — Bowire
+description: Bowire brand guidelines — download the logo, mark, and wordmark lockups (light & dark SVG), the colour palette, typography, and the rules for referencing Bowire correctly. Marks © Küstenlogik.
+---
+
+{%- comment -%}
+  Self-contained brand-guidelines page, modelled on the Küstenlogik
+  guidelines + the Petabridge press page. All visual components are
+  scoped under .brand-* and reuse the site design tokens (--accent,
+  --surface, --border, …) so light/dark themes both work. The logo
+  assets it links live in /assets/brand/ and are generated from the
+  source SVGs (favicon.svg = the Circle-B mark, bowire-logo.svg = the
+  bowline logo) with the "Bowire" wordmark outlined from Inter Bold.
+{%- endcomment -%}
+
+<style>
+  .brand-hero { padding: 64px 0 8px; }
+  .brand-hero h1 { font-size: clamp(2.2rem, 6vw, 3.2rem); font-weight: 800; letter-spacing: -0.03em; margin: 0 0 14px; }
+  .brand-hero-tagline { font-size: 1.15rem; color: var(--text-secondary); max-width: 60ch; line-height: 1.6; }
+  .brand-hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+
+  .brand-section { padding: 44px 0; border-top: 1px solid var(--border); }
+  .brand-section > h2 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 8px; }
+  .brand-section > .brand-lede { color: var(--text-secondary); max-width: 68ch; line-height: 1.6; margin: 0 0 26px; }
+
+  /* Logo tiles -------------------------------------------------------- */
+  .brand-logo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+  .brand-logo-card { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--bg-elevated); }
+  .brand-logo-stage { display: flex; align-items: center; justify-content: center; padding: 38px 28px; min-height: 132px; }
+  .brand-logo-stage img { max-width: 100%; max-height: 84px; height: auto; }
+  .brand-logo-stage.is-light { background: #fafaff; }
+  .brand-logo-stage.is-dark { background: #0f0f17; }
+  .brand-logo-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); }
+  .brand-logo-meta .brand-logo-name { font-size: 0.82rem; font-weight: 600; }
+  .brand-logo-meta .brand-logo-sub { display: block; font-size: 0.72rem; font-weight: 400; color: var(--text-secondary); margin-top: 2px; }
+  .brand-dl { display: inline-flex; align-items: center; gap: 6px; font-size: 0.76rem; font-weight: 600; color: var(--accent-light); text-decoration: none; white-space: nowrap; padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; }
+  .brand-dl:hover { border-color: var(--accent); color: var(--accent); }
+  .brand-dl svg { width: 13px; height: 13px; }
+
+  /* Spacing / minimum-size diagram ----------------------------------- */
+  .brand-rules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+  .brand-card { border: 1px solid var(--border); border-radius: 14px; padding: 22px; background: var(--bg-elevated); }
+  .brand-card h3 { font-size: 1rem; font-weight: 700; margin: 0 0 8px; }
+  .brand-card p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.55; margin: 0; }
+  .brand-clearspace { position: relative; display: inline-flex; padding: 18px; border: 1px dashed var(--accent); border-radius: 10px; margin-top: 14px; background: #fafaff; }
+  .brand-clearspace img { height: 56px; }
+
+  /* Colour swatches --------------------------------------------------- */
+  .brand-swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+  .brand-swatch { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .brand-swatch-chip { height: 84px; }
+  .brand-swatch-body { padding: 12px 14px; }
+  .brand-swatch-name { font-weight: 600; font-size: 0.86rem; }
+  .brand-swatch-role { color: var(--text-secondary); font-size: 0.74rem; margin-top: 1px; }
+  .brand-swatch-hex { font-family: var(--font-mono); font-size: 0.78rem; margin-top: 8px; color: var(--text-secondary); }
+
+  /* Do / Don't -------------------------------------------------------- */
+  .brand-dd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 640px) { .brand-dd-grid { grid-template-columns: 1fr; } }
+  .brand-dd { border: 1px solid var(--border); border-radius: 14px; padding: 22px; background: var(--bg-elevated); }
+  .brand-dd h3 { display: flex; align-items: center; gap: 8px; font-size: 1rem; margin: 0 0 14px; }
+  .brand-dd ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .brand-dd li { display: flex; gap: 10px; font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary); }
+  .brand-dd li svg { flex: 0 0 auto; width: 16px; height: 16px; margin-top: 2px; }
+  .brand-do h3, .brand-do li svg { color: var(--success); }
+  .brand-dont h3, .brand-dont li svg { color: #f87171; }
+
+  /* Copy-boilerplate -------------------------------------------------- */
+  .brand-boiler { position: relative; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 18px 20px; }
+  .brand-boiler p { margin: 0; line-height: 1.6; font-size: 0.92rem; }
+  .brand-copy-btn { position: absolute; top: 12px; right: 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.74rem; font-weight: 600; padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); color: var(--text-secondary); cursor: pointer; }
+  .brand-copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .brand-name-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+  .brand-name-list li { font-size: 0.9rem; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; }
+  .brand-name-yes { color: var(--text); } .brand-name-yes b { color: var(--success); }
+  .brand-name-no { color: var(--text-secondary); } .brand-name-no b { color: #f87171; text-decoration: line-through; }
+
+  .brand-perms { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 640px) { .brand-perms { grid-template-columns: 1fr; } }
+
+  /* Print — this page IS the downloadable PDF styleguide. Strip the site
+     chrome + interactive-only affordances, keep sections from splitting
+     across pages, and let swatch / stage backgrounds print. Rendered in
+     light theme by scripts so paper stays white. */
+  @media print {
+    .site-header, .site-footer, #bowire-loading,
+    .bowire-search-overlay, .bowire-page-overlay, .bowire-feature-modal, .bowire-image-lightbox,
+    .brand-hero-actions, .brand-dl, .brand-copy-btn { display: none !important; }
+    body, main { background: #fff !important; }
+    .brand-hero { padding-top: 12px; }
+    .brand-section { border-top: 1px solid #e1e1ee; padding: 26px 0; break-inside: avoid; }
+    .brand-logo-card, .brand-card, .brand-swatch, .brand-dd, .brand-boiler, .brand-rules-grid > * { break-inside: avoid; }
+    a { color: inherit !important; }
+  }
+</style>
+
+<section class="brand-hero">
+  <div class="container">
+    <h1>Brand &amp; logos</h1>
+    <p class="brand-hero-tagline">Grab the Bowire logo in every form and see how to use it. Reach for the dark version on light backgrounds, the light version on dark. Need the exact spec — clear-space construction, minimum sizes, the full colour tokens, co-branding, file formats, accessibility? That lives in the <a href="{{ '/docs/brand-guide.html' | relative_url }}">detailed brand guide</a>.</p>
+    <div class="brand-hero-actions">
+      <a class="btn btn-primary" href="{{ '/assets/brand/bowire-brand-kit.zip' | relative_url }}" download>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Brand kit (ZIP)
+      </a>
+      <a class="btn btn-secondary" href="{{ '/assets/brand/bowire-brand-guidelines.pdf' | relative_url }}">Brand sheet (PDF)</a>
+      <a class="btn btn-secondary" href="{{ '/docs/brand-guide.html' | relative_url }}">Full brand guide</a>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LOGO ================= -->
+<section class="brand-section" id="logo">
+  <div class="container">
+    <h2>The logo</h2>
+    <p class="brand-lede">Bowire comes in three forms. Use the <strong>full logo</strong> as the default. Drop to the <strong>mark</strong> when space is tight or the context already says &ldquo;Bowire&rdquo;. Use the <strong>lockup</strong> when you want the name spelled out beside the mark. All files are scalable SVG.</p>
+
+    <div class="brand-logo-grid">
+
+      <!-- Full logo (bowline) -->
+      <div class="brand-logo-card">
+        <div class="brand-logo-stage is-light"><img src="{{ '/assets/brand/bowire-logo-dark.svg' | relative_url }}" alt="Bowire full logo — bowline loop around the Circle-B mark, dark version"></div>
+        <div class="brand-logo-meta">
+          <span class="brand-logo-name">Full logo<span class="brand-logo-sub">The bowline &amp; mark — primary</span></span>
+          <a class="brand-dl" href="{{ '/assets/brand/bowire-logo-dark.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
+        </div>
+      </div>
+      <div class="brand-logo-card">
+        <div class="brand-logo-stage is-dark"><img src="{{ '/assets/brand/bowire-logo-light.svg' | relative_url }}" alt="Bowire full logo, light version on a dark background"></div>
+        <div class="brand-logo-meta">
+          <span class="brand-logo-name">Full logo — light<span class="brand-logo-sub">For dark backgrounds</span></span>
+          <a class="brand-dl" href="{{ '/assets/brand/bowire-logo-light.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
+        </div>
+      </div>
+
+      <!-- Lockup -->
+      <div class="brand-logo-card">
+        <div class="brand-logo-stage is-light"><img src="{{ '/assets/brand/bowire-lockup-dark.svg' | relative_url }}" alt="Bowire lockup — Circle-B mark with the Bowire wordmark, dark version"></div>
+        <div class="brand-logo-meta">
+          <span class="brand-logo-name">Lockup<span class="brand-logo-sub">Mark + &ldquo;Bowire&rdquo; wordmark</span></span>
+          <a class="brand-dl" href="{{ '/assets/brand/bowire-lockup-dark.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
+        </div>
+      </div>
+      <div class="brand-logo-card">
+        <div class="brand-logo-stage is-dark"><img src="{{ '/assets/brand/bowire-lockup-light.svg' | relative_url }}" alt="Bowire lockup, light version on a dark background"></div>
+        <div class="brand-logo-meta">
+          <span class="brand-logo-name">Lockup — light<span class="brand-logo-sub">For dark backgrounds</span></span>
+          <a class="brand-dl" href="{{ '/assets/brand/bowire-lockup-light.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
+        </div>
+      </div>
+
+      <!-- Mark -->
+      <div class="brand-logo-card">
+        <div class="brand-logo-stage is-light"><img src="{{ '/assets/brand/bowire-mark-dark.svg' | relative_url }}" alt="Bowire mark — the Circle-B, dark version" style="max-height:72px"></div>
+        <div class="brand-logo-meta">
+          <span class="brand-logo-name">Mark<span class="brand-logo-sub">The Circle-B — for tight spaces</span></span>
+          <a class="brand-dl" href="{{ '/assets/brand/bowire-mark-dark.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
+        </div>
+      </div>
+      <div class="brand-logo-card">
+        <div class="brand-logo-stage is-dark"><img src="{{ '/assets/brand/bowire-mark-light.svg' | relative_url }}" alt="Bowire mark, light version on a dark background" style="max-height:72px"></div>
+        <div class="brand-logo-meta">
+          <span class="brand-logo-name">Mark — light<span class="brand-logo-sub">For dark backgrounds</span></span>
+          <a class="brand-dl" href="{{ '/assets/brand/bowire-mark-light.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================= CLEAR SPACE / MIN SIZE ================= -->
+<section class="brand-section">
+  <div class="container">
+    <h2>Clear space &amp; minimum size</h2>
+    <p class="brand-lede">Give the logo room to breathe and don&rsquo;t shrink it past legibility. For the exact construction, co-branding spacing, and per-medium minimums, see the <a href="{{ '/docs/brand-guide.html' | relative_url }}">detailed brand guide</a>.</p>
+    <div class="brand-rules-grid">
+      <div class="brand-card">
+        <h3>Clear space</h3>
+        <p>Keep free space around the logo equal to the height of the Circle-B mark on every side. Nothing — text, edges, other logos — should intrude into that margin.</p>
+        <div class="brand-clearspace"><img src="{{ '/assets/brand/bowire-lockup-dark.svg' | relative_url }}" alt="Clear-space example around the Bowire lockup"></div>
+      </div>
+      <div class="brand-card">
+        <h3>Minimum size</h3>
+        <p>For the screen, don&rsquo;t render the mark below <strong>24&nbsp;px</strong> tall, or the full logo / lockup below <strong>20&nbsp;px</strong> tall. In print, keep the mark at <strong>8&nbsp;mm</strong> or larger. Below that the bowline and the B counter start to fill in.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= COLOUR ================= -->
+<section class="brand-section">
+  <div class="container">
+    <h2>Colour</h2>
+    <p class="brand-lede">Indigo is the one accent — it carries every call-to-action, link, and highlight. The logo itself is monochrome: ink on light, white on dark. Everything else is built from near-black and off-white.</p>
+    <div class="brand-swatches">
+      <div class="brand-swatch">
+        <div class="brand-swatch-chip" style="background:#6366f1"></div>
+        <div class="brand-swatch-body"><div class="brand-swatch-name">Indigo</div><div class="brand-swatch-role">Primary accent (dark UI)</div><div class="brand-swatch-hex">#6366F1</div></div>
+      </div>
+      <div class="brand-swatch">
+        <div class="brand-swatch-chip" style="background:#4f46e5"></div>
+        <div class="brand-swatch-body"><div class="brand-swatch-name">Indigo Deep</div><div class="brand-swatch-role">Accent on light UI</div><div class="brand-swatch-hex">#4F46E5</div></div>
+      </div>
+      <div class="brand-swatch">
+        <div class="brand-swatch-chip" style="background:#a5b4fc"></div>
+        <div class="brand-swatch-body"><div class="brand-swatch-name">Indigo Light</div><div class="brand-swatch-role">Inline links / hover</div><div class="brand-swatch-hex">#A5B4FC</div></div>
+      </div>
+      <div class="brand-swatch">
+        <div class="brand-swatch-chip" style="background:#0f0f17"></div>
+        <div class="brand-swatch-body"><div class="brand-swatch-name">Ink</div><div class="brand-swatch-role">Dark background / dark logo</div><div class="brand-swatch-hex">#0F0F17</div></div>
+      </div>
+      <div class="brand-swatch">
+        <div class="brand-swatch-chip" style="background:#1a1a2e"></div>
+        <div class="brand-swatch-body"><div class="brand-swatch-name">Surface</div><div class="brand-swatch-role">Cards / panels (dark)</div><div class="brand-swatch-hex">#1A1A2E</div></div>
+      </div>
+      <div class="brand-swatch">
+        <div class="brand-swatch-chip" style="background:#fafaff; border-bottom:1px solid var(--border)"></div>
+        <div class="brand-swatch-body"><div class="brand-swatch-name">Off-white</div><div class="brand-swatch-role">Light background / light logo</div><div class="brand-swatch-hex">#FAFAFF</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TYPOGRAPHY ================= -->
+<section class="brand-section">
+  <div class="container">
+    <h2>Typography</h2>
+    <p class="brand-lede">Two typefaces, both open-source, both free to install.</p>
+    <div class="brand-rules-grid">
+      <div class="brand-card">
+        <h3 style="font-weight:800; letter-spacing:-0.02em; font-size:1.6rem;">Inter</h3>
+        <p>Headings, UI, and the &ldquo;Bowire&rdquo; wordmark (Bold&nbsp;700&ndash;ExtraBold&nbsp;800, tracking&nbsp;&minus;0.03em). The wordmark in the lockup is Inter outlined, so you never need the font installed to use the logo. <a href="https://rsms.me/inter/" target="_blank" rel="noopener">rsms.me/inter</a></p>
+      </div>
+      <div class="brand-card">
+        <h3 style="font-family:var(--font-mono); font-size:1.3rem;">JetBrains&nbsp;Mono</h3>
+        <p>Code, terminals, payloads, and anything monospaced. Regular&nbsp;400 / Medium&nbsp;500. <a href="https://www.jetbrains.com/lp/mono/" target="_blank" rel="noopener">jetbrains.com/mono</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DO / DON'T ================= -->
+<section class="brand-section">
+  <div class="container">
+    <h2>Do &amp; don&rsquo;t</h2>
+    <div class="brand-dd-grid">
+      <div class="brand-dd brand-do">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Do</h3>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Use the supplied SVGs at their native proportions.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Pick the light logo on dark backgrounds, the dark logo on light.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Keep the clear space and minimum sizes above.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Drop to the mark alone when the full logo won&rsquo;t fit.</li>
+        </ul>
+      </div>
+      <div class="brand-dd brand-dont">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Don&rsquo;t</h3>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Recolour, add gradients, shadows, or outlines to the logo.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Stretch, squash, rotate, or distort it.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Re-set the &ldquo;Bowire&rdquo; wordmark in another typeface.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Place it on a busy or low-contrast background.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= NAMING ================= -->
+<section class="brand-section">
+  <div class="container">
+    <h2>Writing &ldquo;Bowire&rdquo;</h2>
+    <p class="brand-lede">One word, capital B, lowercase rest — always. It&rsquo;s &ldquo;the multi-protocol API workbench,&rdquo; built by Küstenlogik.</p>
+    <ul class="brand-name-list">
+      <li class="brand-name-yes"><b>Bowire</b> — correct</li>
+      <li class="brand-name-no"><b>BoWire</b> — no camel-case</li>
+      <li class="brand-name-no"><b>bowire</b> — not all-lowercase in prose</li>
+      <li class="brand-name-no"><b>BOWIRE</b> — not all-caps</li>
+      <li class="brand-name-no"><b>Bow Wire</b> — never two words</li>
+    </ul>
+
+    <p class="brand-lede" style="margin-top:30px;">Need a one-liner for an article, talk, or README? Copy this:</p>
+    <div class="brand-boiler">
+      <button type="button" class="brand-copy-btn" id="brand-copy-boiler"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button>
+      <p id="brand-boiler-text">Bowire is the multi-protocol API workbench by Küstenlogik — auto-discover, invoke, stream, mock, record, and replay gRPC, REST, GraphQL, MQTT, SignalR, WebSocket, SSE, MCP, OData and more from one UI, embedded in your app or as a standalone CLI. Open source, Apache-2.0. https://bowire.io</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= USAGE / PERMISSIONS ================= -->
+<section class="brand-section" id="usage">
+  <div class="container">
+    <h2>Usage &amp; permissions</h2>
+    <p class="brand-lede">The Bowire <em>software</em> is open source under Apache-2.0. The Bowire <em>name and logos</em> are trademarks of Küstenlogik — the licence covers the code, not the brand. These guidelines grant the everyday uses below; anything that implies endorsement needs a quick email first.</p>
+    <div class="brand-perms">
+      <div class="brand-card">
+        <h3 style="color:var(--success)">Fine without asking</h3>
+        <p style="margin-bottom:10px;">Referring to Bowire in articles, talks, tutorials, and comparisons. Linking to bowire.io with the logo. Stating that your project &ldquo;works with Bowire&rdquo; or &ldquo;supports Bowire.&rdquo; Unmodified use of the assets on this page.</p>
+      </div>
+      <div class="brand-card">
+        <h3 style="color:#f87171">Ask first</h3>
+        <p>Using the marks in your own product name, logo, domain, or app icon. Anything suggesting an official partnership, sponsorship, or endorsement. Merchandise. Modified or redrawn versions of the logo.</p>
+      </div>
+    </div>
+    <p class="brand-lede" style="margin-top:26px;">Questions, or want sign-off on something? <a href="mailto:info@kuestenlogik.com">info@kuestenlogik.com</a>. Bowire is part of the Küstenlogik family — see the <a href="https://kuestenlogik.com" target="_blank" rel="noopener">Küstenlogik brand</a> for the parent identity.</p>
+  </div>
+</section>
+
+<script>
+  // Copy-to-clipboard for the boilerplate blurb. Inline because this page
+  // is its only consumer; mirrors the .copy-btn pattern used elsewhere.
+  (function () {
+    var btn = document.getElementById('brand-copy-boiler');
+    var src = document.getElementById('brand-boiler-text');
+    if (!btn || !src) return;
+    btn.addEventListener('click', function () {
+      var text = src.textContent.trim();
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(text).then(function () {
+        var prev = btn.innerHTML;
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Copied';
+        setTimeout(function () { btn.innerHTML = prev; }, 1600);
+      }).catch(function () {});
+    });
+  })();
+</script>
