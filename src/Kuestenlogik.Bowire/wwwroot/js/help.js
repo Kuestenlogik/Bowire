@@ -278,7 +278,11 @@
                     var hitRow = el('button', {
                         className: 'bowire-help-hit'
                             + (h.id === helpSelectedId ? ' selected' : ''),
-                        onClick: function () { helpLoadTopic(h.id); }
+                        'data-help-topic-id': h.id,
+                        onClick: function () {
+                            var id = this.getAttribute('data-help-topic-id');
+                            if (id) helpLoadTopic(id);
+                        }
                     },
                         el('span', { className: 'bowire-help-hit-title', textContent: h.title }),
                         el('span', { className: 'bowire-help-hit-excerpt', textContent: h.excerpt || '' })
@@ -304,10 +308,20 @@
                     }));
                 }
                 group.topics.forEach(function (t) {
+                    // Topic id rides as a data-attribute + the click
+                    // handler reads it back via the live element. Without
+                    // this morphdom preserved nodes across re-renders
+                    // and the OLD closure fired — operator: 'help klappt
+                    // nur beim ersten mal eine topic-auswahl. zweites
+                    // mahl wird selektion ignoriert.'
                     var row = el('button', {
                         className: 'bowire-help-topic-row'
                             + (t.id === helpSelectedId ? ' selected' : ''),
-                        onClick: function () { helpLoadTopic(t.id); }
+                        'data-help-topic-id': t.id,
+                        onClick: function () {
+                            var id = this.getAttribute('data-help-topic-id');
+                            if (id) helpLoadTopic(id);
+                        }
                     });
                     row.appendChild(el('span', {
                         className: 'bowire-help-topic-row-title',
