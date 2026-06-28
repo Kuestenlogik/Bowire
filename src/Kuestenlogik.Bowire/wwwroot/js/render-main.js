@@ -489,6 +489,15 @@
         reqTabs.appendChild(_ffTab('metadata', 'Metadata'));
         reqTabs.appendChild(_ffTab('mock', 'Mock'));
         reqPane.appendChild(reqTabs);
+        // Overflow popover — three tabs rarely overflow today, but the
+        // request pane gets narrowed via the splitter and we want the
+        // same affordance everywhere a horizontal tab strip lives.
+        requestAnimationFrame(function () {
+            var live = document.getElementById('bowire-freeform-request-tabs');
+            if (live && typeof bowireWireTabOverflow === 'function') {
+                bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: 'More tabs' });
+            }
+        });
 
         // Payload tab — body editor.
         var bodyTabContent = el('div', {
@@ -6312,6 +6321,21 @@
             }));
             tabBar.appendChild(tabScroll);
             main.appendChild(tabBar);
+            // Overflow popover — replaces the horizontal scrollbar on the
+            // open-methods strip. The trailing "+" button stays visible at
+            // the right edge as a fixed sibling, the chevron sits just
+            // BEFORE it so the spawn-new-tab affordance is never tucked
+            // away.
+            requestAnimationFrame(function () {
+                var live = document.querySelector('#bowire-request-tabs .bowire-request-tabs-scroll');
+                if (live && typeof bowireWireTabOverflow === 'function') {
+                    bowireWireTabOverflow(live, {
+                        tabSelector: '.bowire-request-tab',
+                        fixedSelector: '.bowire-request-tab-new',
+                        label: 'More tabs'
+                    });
+                }
+            });
         }
 
         // Header lives BELOW the tab strip now — see the comment
@@ -6547,6 +6571,16 @@
         tabs.appendChild(testsTab);
         tabs.appendChild(historyTab);
         pane.appendChild(tabs);
+        // Overflow-popover wiring — when the request pane is narrowed
+        // and the seven tabs no longer fit, trailing tabs collapse into
+        // a "▾ N" chevron rather than getting clipped off. Deferred so
+        // morphdom has mounted the strip into the live tree.
+        requestAnimationFrame(function () {
+            var live = document.getElementById('bowire-request-tabs');
+            if (live && typeof bowireWireTabOverflow === 'function') {
+                bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: 'More tabs' });
+            }
+        });
 
         // Channel status bar (Duplex / Client Streaming)
         if (isChannelMethod()) {
@@ -6654,7 +6688,7 @@
 
         // Render the sub-tab strip when ≥ 2 sub-tabs apply.
         if (bodySubTabs.length >= 2) {
-            var subTabBar = el('div', { className: 'bowire-sub-tabs', role: 'tablist' });
+            var subTabBar = el('div', { id: 'bowire-body-subtabs', className: 'bowire-sub-tabs', role: 'tablist' });
             for (var sti = 0; sti < bodySubTabs.length; sti++) {
                 (function (t) {
                     subTabBar.appendChild(el('button', {
@@ -6682,6 +6716,15 @@
                 })(bodySubTabs[sti]);
             }
             bodyContent.appendChild(subTabBar);
+            // Overflow popover — body sub-tab strip (Form / JSON /
+            // Selection set / Query / Variables / Headers / …). Mounted
+            // on each render; helper is idempotent.
+            requestAnimationFrame(function () {
+                var live = document.getElementById('bowire-body-subtabs');
+                if (live && typeof bowireWireTabOverflow === 'function') {
+                    bowireWireTabOverflow(live, { tabSelector: '.bowire-sub-tab', label: 'More' });
+                }
+            });
         }
 
         // showSurface(name) is the gate for every surface block below.
@@ -9986,7 +10029,7 @@
         pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Response' }));
 
         // Tabs
-        const tabs = el('div', { className: 'bowire-tabs' });
+        const tabs = el('div', { id: 'bowire-response-tabs', className: 'bowire-tabs' });
         tabs.appendChild(el('div', {
             id: 'bowire-response-tab-response',
             className: `bowire-tab ${activeResponseTab === 'response' ? 'active' : ''}`,
@@ -10037,6 +10080,14 @@
         // body, not under the response tabs — see renderUnifiedRightDrawer
         // in render-env-auth.js. Toggle button lives in the topbar.
         pane.appendChild(tabs);
+        // Overflow popover — Response / Response Metadata / Test results
+        // crowd a narrow pane. Same affordance as the request side.
+        requestAnimationFrame(function () {
+            var live = document.getElementById('bowire-response-tabs');
+            if (live && typeof bowireWireTabOverflow === 'function') {
+                bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: 'More tabs' });
+            }
+        });
 
         // #114 Phase 2 — inline hint banners at the response surface.
         // Hints flagged with surface='response' (slow-response,

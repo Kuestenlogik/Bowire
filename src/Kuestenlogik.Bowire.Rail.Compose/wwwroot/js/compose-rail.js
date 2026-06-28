@@ -1190,6 +1190,22 @@
         tabScroll.appendChild(pinned);
         tabBar.appendChild(tabScroll);
         mainCol.appendChild(tabBar);
+        // Overflow popover — re-use the same helper as Discover's
+        // open-methods strip. Pinned '+' stays right-most as a fixed
+        // sibling; the chevron sits just before it. Right-click on the
+        // overflow popover rows is NOT supported — operators reach
+        // Duplicate / Close-others via the inline tab's right-click,
+        // which still works for visible tabs.
+        requestAnimationFrame(function () {
+            var live = document.querySelector('#bowire-compose-tabs .bowire-request-tabs-scroll');
+            if (live && typeof bowireWireTabOverflow === 'function') {
+                bowireWireTabOverflow(live, {
+                    tabSelector: '.bowire-compose-tab',
+                    fixedSelector: '.bowire-compose-tab-pinned',
+                    label: 'More tabs'
+                });
+            }
+        });
 
         // ---- Body ----
         if (activeDesignTabId) {
