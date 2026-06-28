@@ -4,14 +4,13 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Kuestenlogik.Bowire.Interceptor;
 using Kuestenlogik.Bowire.Mocking;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kuestenlogik.Bowire.Endpoints;
+namespace Kuestenlogik.Bowire.Interceptor;
 
 /// <summary>
 /// Workbench-facing endpoints for the in-process interceptor (#153).
@@ -21,15 +20,15 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// — listing, live SSE stream, detail fetch, send-to-recording.
 /// </summary>
 /// <remarks>
-/// The shape intentionally mirrors
-/// <see cref="BowireProxyEndpoints"/>: the workbench shares the same
+/// The shape intentionally mirrors <c>BowireProxyEndpoints</c> in
+/// <c>Kuestenlogik.Bowire.Tool</c>: the workbench shares the same
 /// detail-pane renderer between the proxy rail (standalone CLI) and
 /// the intercepted rail (embedded middleware). Field names match —
 /// <c>method</c>, <c>url</c>, <c>scheme</c>, <c>responseStatus</c>,
 /// <c>latencyMs</c>, <c>requestHeaders</c>, &amp;c — so the renderer
 /// doesn't need to branch on the source.
 /// </remarks>
-internal static class BowireInterceptorEndpoints
+public static class BowireInterceptorEndpoints
 {
     private static readonly JsonSerializerOptions s_jsonOpts = new()
     {

@@ -138,19 +138,16 @@ internal static class BowireApiEndpoints
             .MapBowireSemanticsEndpoints(basePath)
             .MapBowireSecurityEndpoints(basePath)
             .MapBowireHelpEndpoints(basePath)
-            .MapBowireCatalogueEndpoints(basePath)
-            // #153 — in-process interceptor (UseBowireInterceptor) writes
-            // intercepted flows into a singleton InterceptedFlowStore. The
-            // endpoints always mount: when no host opted the middleware in,
-            // the store stays empty and the rail surfaces an empty state
-            // rather than a 404. The "Intercepted" rail talks to /api/intercepted/*.
-            .MapBowireInterceptorEndpoints(basePath)
-            // #153 UI phase — Tools surface (reverse-proxy launcher).
-            // Lives inside the auth-gated group so the admin endpoints
-            // inherit --token / IBowireAuthProvider; proxied upstream
-            // traffic flows verbatim through the started host and is
-            // NOT auth-gated.
-            .MapBowireToolsEndpoints(basePath);
+            .MapBowireCatalogueEndpoints(basePath);
+
+        // #325 (v2.1) — Endpoint contributions discovered from sibling
+        // packages. The Kuestenlogik.Bowire.Interceptor package
+        // contributes /api/intercepted/* (+ /api/traffic/* alias) and
+        // /api/tools/reverse-proxy/* via this seam; Core no longer
+        // references the interceptor endpoint types directly. The
+        // contributions land inside the auth-gated bowireGroup so
+        // --token / IBowireAuthProvider gates them automatically.
+        DiscoverAndMapEndpointContributions(bowireGroup, basePath, startupLogger);
 
         // Apply the auth gate exactly once when an IBowireAuthProvider
         // is registered (AddBowireAuth resolved it from the
@@ -162,6 +159,63 @@ internal static class BowireApiEndpoints
         {
             bowireGroup.RequireAuthorization(BowireAuthPolicies.Default);
             AuthGateLog.GateActive(startupLogger, authProvider.Name, authProvider.Id);
+        }
+    }
+
+    /// <summary>
+    /// #325 — Walk every loaded Kuestenlogik.Bowire.* assembly for
+    /// public concrete <see cref="IBowireEndpointContribution"/>
+    /// implementations, instantiate each via its parameterless ctor,
+    /// and call <see cref="IBowireEndpointContribution.MapEndpoints"/>.
+    /// Mirrors the rail / module / protocol-services discovery shape so
+    /// sibling packages can splice endpoints into the workbench's auth-
+    /// gated group without Core taking a compile-time reference on
+    /// their types (the interceptor surface lives in
+    /// <c>Kuestenlogik.Bowire.Interceptor</c> since v2.1; Core doesn't
+    /// even see those types at build time).
+    /// </summary>
+    private static void DiscoverAndMapEndpointContributions(
+        IEndpointRouteBuilder bowireGroup, string basePath, ILogger startupLogger)
+    {
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => a.FullName?.Contains("Bowire", StringComparison.Ordinal) == true))
+        {
+            Type[] types;
+            try { types = assembly.GetTypes(); }
+#pragma warning disable CA1031 // Do not catch general exception types
+            catch (Exception ex)
+#pragma warning restore CA1031
+            {
+                // Cheap guard for CA1873: only build the FullName string
+                // when the debug level is actually enabled.
+                if (startupLogger.IsEnabled(LogLevel.Debug))
+                {
+                    startupLogger.LogDebug(ex,
+                        "Skipped Bowire assembly during endpoint-contribution scan: {Assembly}",
+                        assembly.FullName);
+                }
+                continue;
+            }
+
+            foreach (var type in types)
+            {
+                if (type.IsAbstract || type.IsInterface) continue;
+                if (!typeof(IBowireEndpointContribution).IsAssignableFrom(type)) continue;
+                try
+                {
+                    if (Activator.CreateInstance(type) is IBowireEndpointContribution contribution)
+                    {
+                        contribution.MapEndpoints(bowireGroup, basePath);
+                    }
+                }
+#pragma warning disable CA1031 // Do not catch general exception types
+                catch (Exception ex)
+#pragma warning restore CA1031
+                {
+                    startupLogger.LogWarning(ex,
+                        "Endpoint contribution {Type} failed to map", type.FullName);
+                }
+            }
         }
     }
 }

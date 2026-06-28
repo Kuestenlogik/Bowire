@@ -43,12 +43,17 @@
          Kuestenlogik.Bowire.Mock (see below). The provisional
          Kuestenlogik.Bowire.Rail.Mocks package was folded in for v2.1. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Flows\Kuestenlogik.Bowire.Flows.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Proxy\Kuestenlogik.Bowire.Rail.Proxy.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Intercepted\Kuestenlogik.Bowire.Rail.Intercepted.csproj" />
-    <!-- #315 — unified Traffic rail. Supersedes Proxy + Intercepted as
-         the visible rail; the old two stay shipped with [Obsolete] +
-         HideFromRail for one release window. -->
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Traffic\Kuestenlogik.Bowire.Rail.Traffic.csproj" />
+    <!-- v2.1 (#325): the Proxy + Intercepted + Traffic rails AND the
+         interceptor middleware + reverse-proxy host + /api/intercepted
+         endpoints were lifted into a single Kuestenlogik.Bowire.Interceptor
+         package. The old Rail.Proxy / Rail.Intercepted / Rail.Traffic
+         packages were retired; embedded hosts that don't reference the
+         consolidated package lose the entire interceptor surface
+         (middleware, three rails, /api/intercepted, /api/tools/reverse-
+         proxy). #315's deprecated Proxy + Intercepted descriptors still
+         ship inside the unified package for the one-release-window
+         deprecation against existing DI lookups. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Interceptor\Kuestenlogik.Bowire.Interceptor.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Benchmarking\Kuestenlogik.Bowire.Benchmarking.csproj" />
     <!-- v2.1 (#325): Workspaces + Environments collapsed into a single
          Kuestenlogik.Bowire.Workspaces package (env vars are workspace-

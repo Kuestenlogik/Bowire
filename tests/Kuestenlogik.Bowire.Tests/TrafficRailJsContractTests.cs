@@ -120,8 +120,8 @@ public sealed class TrafficRailJsContractTests
 
     private static string LoadTrafficFragment()
     {
-        var assembly = typeof(global::Kuestenlogik.Bowire.Rail.Traffic.BowireTrafficRailContribution).Assembly;
-        const string resourceName = "Kuestenlogik.Bowire.Rail.Traffic.wwwroot.js.traffic-view.js";
+        var assembly = typeof(global::Kuestenlogik.Bowire.Interceptor.BowireTrafficRailContribution).Assembly;
+        const string resourceName = "Kuestenlogik.Bowire.Interceptor.wwwroot.js.traffic-view.js";
         using var stream = assembly.GetManifestResourceStream(resourceName)
             ?? throw new InvalidOperationException(
                 $"Embedded resource not found: {resourceName}.");

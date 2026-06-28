@@ -3,14 +3,13 @@
 
 using System.Net;
 using System.Text.Json.Serialization;
-using Kuestenlogik.Bowire.Interceptor;
-using Kuestenlogik.Bowire.Tools;
+using Kuestenlogik.Bowire.Endpoints;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kuestenlogik.Bowire.Endpoints;
+namespace Kuestenlogik.Bowire.Interceptor;
 
 /// <summary>
 /// Workbench Tools surface — endpoints that drive the UI affordances
@@ -40,7 +39,7 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// <c>bowire proxy</c>.
 /// </para>
 /// </remarks>
-internal static class BowireToolsEndpoints
+public static class BowireToolsEndpoints
 {
     public static IEndpointRouteBuilder MapBowireToolsEndpoints(
         this IEndpointRouteBuilder endpoints, string basePath)

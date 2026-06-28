@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma warning disable CS0618 // Legacy descriptors are intentionally referenced here
+using Kuestenlogik.Bowire.Interceptor;
 using Kuestenlogik.Bowire.Plugins;
-using Kuestenlogik.Bowire.Rail.Intercepted;
-using Kuestenlogik.Bowire.Rail.Proxy;
-using Kuestenlogik.Bowire.Rail.Traffic;
 
 namespace Kuestenlogik.Bowire.Tests;
 

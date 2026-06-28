@@ -3,7 +3,6 @@
 
 using System.Reflection;
 using Kuestenlogik.Bowire.Auth;
-using Kuestenlogik.Bowire.Interceptor;
 using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Plugins;
@@ -155,22 +154,16 @@ public static class BowireServiceCollectionExtensions
         // state was browser localStorage-only; MCP couldn't reach it.
         services.TryAddSingleton<BowireRecordingSession>();
 
-        // #153 — Bowire-as-transparent-interceptor. The flow store +
-        // options always register so the workbench's "Intercepted" rail
-        // can resolve them (and surface an empty state if the host
-        // never opted in). Hosts opt the middleware on with
-        // app.UseBowireInterceptor() — that's what costs anything on
-        // the per-request path; this registration is free.
-        services.AddBowireInterceptorCore();
-
-        // #153 — Reverse-proxy registry. Singleton lifetime so
-        // BowireToolsEndpoints (start/stop/list) and the
-        // ApplicationStopping hook share one source of truth across
-        // the host process. The registry's ctor hooks
-        // IHostApplicationLifetime so every reverse-proxy host
-        // started from the workbench dies when bowire.exe exits —
-        // operators that need a daemon use `bowire proxy` instead.
-        services.TryAddSingleton<Tools.ReverseProxyRegistry>();
+        // #153 — Bowire-as-transparent-interceptor (flow store +
+        // mock store + reverse-proxy registry) moved out of Core into
+        // Kuestenlogik.Bowire.Interceptor (v2.1, #325). The package's
+        // own contribution surface (IBowireServiceContribution +
+        // IBowireEndpointContribution implementations) registers its
+        // services through the auto-discovery pass at the bottom of
+        // this method — Core doesn't take a compile-time reference on
+        // the interceptor types any more, so embedded hosts that don't
+        // depend on the package lose the entire interceptor stack
+        // (rails, middleware, endpoints).
 
         // PluginUpdateCheckService is always registered so the manual
         // GET /api/plugins/check-updates endpoint can resolve it; the
@@ -219,6 +212,20 @@ public static class BowireServiceCollectionExtensions
                     if (Activator.CreateInstance(type) is IBowireProtocolServices setup)
                     {
                         setup.ConfigureServices(services);
+                    }
+                }
+
+                // #325 — Service contributions from sibling packages
+                // (Kuestenlogik.Bowire.Interceptor since v2.1). Same
+                // auto-discovery shape as the IBowireProtocolServices
+                // sweep above; failures are silently swallowed because
+                // we don't have a logger at the AddServices stage.
+                foreach (var type in assembly.GetTypes()
+                    .Where(t => !t.IsAbstract && !t.IsInterface && typeof(IBowireServiceContribution).IsAssignableFrom(t)))
+                {
+                    if (Activator.CreateInstance(type) is IBowireServiceContribution contribution)
+                    {
+                        contribution.ConfigureServices(services);
                     }
                 }
             }
