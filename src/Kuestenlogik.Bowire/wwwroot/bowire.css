@@ -23095,7 +23095,11 @@ not as the
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    border-left: 1px solid var(--bowire-border);
+    /* Moved from right to left to match the workbench's items-list
+       convention. Border now sits on the right edge of the panel
+       (instead of left) so the seam between panel + main pane reads
+       the same way as Discover's sidebar→main boundary. */
+    border-right: 1px solid var(--bowire-border);
     background: var(--bowire-surface);
     overflow: hidden;
     transition: width var(--bowire-transition);
