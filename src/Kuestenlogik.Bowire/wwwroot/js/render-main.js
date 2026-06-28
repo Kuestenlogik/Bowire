@@ -4222,8 +4222,16 @@
             });
         }
         card('list', 'Import collection', 'Postman / OpenAPI', function () {
-            railMode = 'collections';
-            try { localStorage.setItem('bowire_rail_mode', 'collections'); } catch { /* ignore */ }
+            // Collections rail retired (v2.1) — route to Compose;
+            // the operator opens the side panel's Collections section
+            // and uses 'Import Postman' on a fresh row, or runs the
+            // import via the renderCollectionDetail toolbar from the
+            // Workspaces-rail collection-detail leaf.
+            railMode = 'compose';
+            try { localStorage.setItem('bowire_rail_mode', 'compose'); } catch { /* ignore */ }
+            if (typeof window !== 'undefined' && typeof window.focusComposeOnCollection === 'function') {
+                window.focusComposeOnCollection(null);
+            }
             render();
         });
         // 'Record session' captures live traffic against discovered
@@ -4605,9 +4613,15 @@
                             'list', 'Last collection', col.name,
                             (col.items && col.items.length) + ' item' + (col.items && col.items.length === 1 ? '' : 's'),
                             function () {
+                                // Collections rail retired (v2.1) — open Compose
+                                // with the Collections side panel focused on
+                                // this collection (#295).
                                 if (typeof collectionManagerSelectedId !== 'undefined') collectionManagerSelectedId = col.id;
-                                railMode = 'collections';
-                                try { localStorage.setItem('bowire_rail_mode', 'collections'); } catch { /* ignore */ }
+                                railMode = 'compose';
+                                try { localStorage.setItem('bowire_rail_mode', 'compose'); } catch { /* ignore */ }
+                                if (typeof window !== 'undefined' && typeof window.focusComposeOnCollection === 'function') {
+                                    window.focusComposeOnCollection(col.id);
+                                }
                                 render();
                             }));
                     }
@@ -4793,96 +4807,11 @@
         // Recording / Collection detail toolbars; the result lands
         // inline under the source. No standalone rail mode any more.
 
-        // #133 Phase 2 — Collections rail mode. Sidebar lists every
-        // saved collection; main pane shows the selected collection's
-        // detail (renderCollectionDetail handles items + actions).
-        // Same shape as Recordings; reuses the legacy modal's right-
-        // pane renderer so the visual feels familiar to operators
-        // muscle-trained on the old modal flow.
-        if (railMode === 'collections') {
-            var colMain = el('div', { id: 'bowire-main-collections', className: 'bowire-main bowire-main-collections' });
-            // Pattern B: workspace prereq comes BEFORE list/selection
-            // logic. The operator clicked Collections on purpose; the
-            // pane explains the prereq instead of bouncing them out.
-            if (!activeWorkspaceId && typeof renderWorkspacePrereqEmpty === 'function') {
-                colMain.appendChild(renderWorkspacePrereqEmpty({
-                    icon: 'folder',
-                    railLabel: 'Collections',
-                    railBody: 'Collections group saved requests so you can replay them as a set or import a Postman / OpenAPI suite.'
-                }));
-                return colMain;
-            }
-            var selectedCol = (collectionsList || []).find(function (c) { return c.id === collectionManagerSelectedId; });
-            if (selectedCol && typeof renderCollectionDetail === 'function') {
-                colMain.appendChild(renderCollectionDetail(selectedCol));
-            } else {
-                var emptyWrap = el('div', { className: 'bowire-main-pad' });
-                var noCols = !(collectionsList && collectionsList.length > 0);
-                emptyWrap.appendChild(renderEmptyCard({
-                    icon: 'folder',
-                    headline: noCols ? 'No collections yet' : 'Pick a collection',
-                    body: noCols
-                        ? 'Collections group saved requests so you can replay them as a set. Start fresh, or import a Postman collection / OpenAPI spec.'
-                        : 'Pick a collection from the sidebar to see its items and actions.',
-                    actions: noCols ? [
-                        {
-                            label: 'New collection',
-                            primary: true,
-                            onClick: function () {
-                                var col = createCollection();
-                                collectionManagerSelectedId = col.id;
-                                render();
-                            }
-                        },
-                        {
-                            label: 'Import Postman / OpenAPI',
-                            onClick: function () {
-                                var input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = '.json,application/json';
-                                input.onchange = function () {
-                                    if (!input.files || input.files.length === 0) return;
-                                    var reader = new FileReader();
-                                    reader.onload = function () {
-                                        if (typeof importPostmanCollection === 'function') {
-                                            importPostmanCollection(reader.result);
-                                            render();
-                                        }
-                                    };
-                                    reader.readAsText(input.files[0]);
-                                };
-                                input.click();
-                            }
-                        },
-                        {
-                            label: 'Browse Discover',
-                            onClick: function () {
-                                railMode = 'discover';
-                                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
-                                sidebarView = 'services';
-                                render();
-                            }
-                        },
-                        // Per-rail welcome tour: walks create → add
-                        // items → run. Force-mode so the operator can
-                        // re-trigger from the same empty card after
-                        // dismissal.
-                        {
-                            id: 'bowire-collections-empty-tour-btn',
-                            label: 'Take a tour',
-                            onClick: function () {
-                                if (typeof window !== 'undefined'
-                                    && typeof window.bowireStartBuildCollectionTour === 'function') {
-                                    window.bowireStartBuildCollectionTour({ force: true });
-                                }
-                            }
-                        }
-                    ] : []
-                }));
-                colMain.appendChild(emptyWrap);
-            }
-            return colMain;
-        }
+        // Collections rail retired (v2.1) — the standalone main-pane
+        // dispatch is gone; the Compose rail (#295) is the canonical
+        // surface for Collections + Presets. The Workspaces rail's
+        // collection-detail leaf still renders renderCollectionDetail
+        // (defined in collections.js, in core).
 
         // #133 Phase 2 — Mocks rail mode owns the main pane. Sidebar
         // lists running mock hosts; main pane shows the selected

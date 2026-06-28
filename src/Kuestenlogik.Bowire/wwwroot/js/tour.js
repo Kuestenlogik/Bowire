@@ -1534,17 +1534,17 @@
             },
             {
                 id: 'col-go-rail',
-                title: 'Step 1 — Open the Collections rail',
-                body: 'Switch to the Collections rail. The sidebar lists every collection in the active workspace; the main pane shows the selected collection\'s items.',
-                target: '[data-rail-mode-id="collections"]',
-                navigate: function () { _tourGoToRail('collections'); },
+                title: 'Step 1 — Open Compose',
+                body: 'The Compose rail hosts the canonical Collections + Presets surface (the standalone Collections rail was retired in v2.1). Switch to Compose; the side panel on the right lists every collection in the active workspace.',
+                target: '[data-rail-mode-id="compose"]',
+                navigate: function () { _tourGoToRail('compose'); },
                 advance: 'next-button'
             },
             {
                 id: 'col-new',
                 title: 'Step 2 — New collection',
-                body: 'Hit "New collection" on the empty card. A fresh, empty collection lands in the sidebar with the focus on its name — type a label like "petstore-smoke" or "auth-flows".\n\nOr import a Postman collection / OpenAPI spec to seed one from existing material.',
-                target: '#bowire-main-collections',
+                body: 'Hit the + icon on the Collections section header in the side panel. A fresh, empty collection lands in the list with the focus on its name — type a label like "petstore-smoke" or "auth-flows".\n\nOr import a Postman collection / OpenAPI spec via the Workspaces rail to seed one from existing material.',
+                target: '.bowire-compose-side-section-collections',
                 advance: 'next-button'
             },
             {

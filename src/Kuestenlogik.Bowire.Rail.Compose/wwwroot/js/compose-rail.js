@@ -86,6 +86,24 @@
         }
     }
 
+    // Public entry-point used by the discover-pill / workspace-tree
+    // routes that previously jumped into the standalone Collections
+    // rail. Opens the Compose side panel with the Collections section
+    // visible, expands the requested collection (when supplied), and
+    // expects the caller to invoke render() — keeps the click handler
+    // owning the visible repaint.
+    function focusComposeOnCollection(collectionId) {
+        rehydrateComposeSidePanel();
+        composeSidePanelCollapsed = false;
+        if (collectionId) {
+            composeCollectionsExpanded[collectionId] = true;
+        }
+        persistComposeSidePanel();
+    }
+    if (typeof window !== 'undefined') {
+        window.focusComposeOnCollection = focusComposeOnCollection;
+    }
+
     // Persist open Compose tabs + active id. Strips the live File ref
     // off binary bodies (browser File objects don't survive
     // JSON.stringify) — the on-disk filename stays in binaryName so
