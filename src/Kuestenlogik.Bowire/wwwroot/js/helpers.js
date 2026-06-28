@@ -759,6 +759,35 @@
     }
 
     /**
+     * Convert a JSONPath-with-brackets (`$.foo[0].bar` or `foo[0].bar`)
+     * to the dot-only chain form (`foo.0.bar`) the JSON viewer's
+     * `data-line-path` / `data-json-path` attributes use. Idempotent
+     * on already-chain-form input. Stripping a leading `$.` is part
+     * of the contract because every JSONPath the framework hands the
+     * viewer side carries the root marker, while the viewer itself
+     * never emits it.
+     *
+     * Without this conversion the map → JSON reverse hover never
+     * matched on responses with arrays (situationObjects[N]) — the
+     * dispatched parentPath retained `[0]` and the selector
+     * `[data-line-path="foo[0].bar"]` missed the actual viewer rows
+     * (which carry `foo.0.bar`).
+     */
+    function bowireJsonPathToChainPath(p) {
+        if (typeof p !== 'string' || !p) return '';
+        var s = p;
+        if (s.indexOf('$.') === 0) s = s.substring(2);
+        else if (s === '$') return '';
+        // foo[0] → foo.0; foo[0][1] → foo.0.1.
+        s = s.replace(/\[(\d+)\]/g, '.$1');
+        // Drop accidental leading '.' that the substitution can
+        // introduce when the path was '$[0]' rather than '$.[0]'
+        // (rare, but the detector is allowed to emit it).
+        if (s.charAt(0) === '.') s = s.substring(1);
+        return s;
+    }
+
+    /**
      * Build a JSON-viewer toolbar (Expand-all / Collapse-all / Wrap /
      * Search / Copy / Download) for the standalone-Tool response
      * panes. Pairs with the viewer built by `renderJsonViewer`.
@@ -1022,6 +1051,56 @@
         } catch (_) {
             if (typeof toast === 'function') toast('Download failed', 'error');
         }
+    }
+
+    /**
+     * Smooth-scroll the JSON viewer to the row whose chain-form path
+     * matches `chainPath`. Auto-expands every collapsed ancestor on
+     * the path so the target line is actually rendered before the
+     * scroll. Returns true when a row was found, false otherwise so
+     * callers can fall back / toast on miss.
+     *
+     * The viewer must have been built by renderJsonViewer (carries
+     * `__bowireRebuildViewerLines` + `__bowireTogglesByPath`).
+     * Designed for the map widget's "click pin → centre JSON" path
+     * but kept kind-agnostic — image / chart / audio viewers can
+     * reuse it the same way without core importing them.
+     */
+    function bowireScrollJsonViewerToPath(viewer, chainPath) {
+        if (!viewer || !chainPath) return false;
+        var toggles = viewer.__bowireTogglesByPath;
+        var rebuild = viewer.__bowireRebuildViewerLines;
+        if (toggles instanceof Set && typeof rebuild === 'function') {
+            // Walk every prefix of the target path and unhide any
+            // ancestor that was collapsed. The walker's '__root__'
+            // sentinel covers the case where the root itself is the
+            // collapsed container.
+            var prefixes = ['__root__'];
+            var segs = chainPath.split('.');
+            for (var i = 0; i < segs.length - 1; i++) {
+                prefixes.push(segs.slice(0, i + 1).join('.'));
+            }
+            var dirty = false;
+            for (var p = 0; p < prefixes.length; p++) {
+                if (toggles.has(prefixes[p])) {
+                    toggles.delete(prefixes[p]);
+                    dirty = true;
+                }
+            }
+            if (dirty) rebuild();
+        }
+        var safe = (typeof CSS !== 'undefined' && CSS.escape)
+            ? CSS.escape(chainPath) : chainPath.replace(/"/g, '\\"');
+        var row = viewer.querySelector('[data-line-path="' + safe + '"]');
+        if (!row) return false;
+        try { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        catch { row.scrollIntoView(); }
+        // Brief amber flash so the eye lands on the target line.
+        row.classList.add('is-coord-scroll-flash');
+        setTimeout(function () {
+            row.classList.remove('is-coord-scroll-flash');
+        }, 1400);
+        return true;
     }
 
     // Render an object dictionary as a `Key: value` list — used by the

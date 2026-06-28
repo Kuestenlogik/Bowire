@@ -9255,6 +9255,48 @@
         });
     }
 
+    /**
+     * One-shot install — listen for `bowire:map-coord-click` (the
+     * map widget dispatches this on pin click), find the matching
+     * row in whichever JSON viewer is currently visible, auto-expand
+     * collapsed ancestors, and scroll the row into view.
+     *
+     * Lives in core (not the map bundle) so the same listener
+     * services future image/chart viewers that might want the same
+     * "click → centre JSON" gesture without each bundle re-implementing
+     * the path walk + scroll. The event payload only carries chain-form
+     * paths — the map widget converts JSONPath → chain form before
+     * dispatching, see `bowireJsonPathToChainPath`.
+     */
+    (function bowireInstallMapCoordClickListener() {
+        if (window.__bowireMapCoordClickInstalled) return;
+        window.__bowireMapCoordClickInstalled = true;
+        document.addEventListener('bowire:map-coord-click', function (e) {
+            var detail = e && e.detail;
+            if (!detail) return;
+            // Prefer the parent container path so the viewer scrolls
+            // to the coordinate object opener line (not just lat OR
+            // lon). Falls back to lat path when parent is missing.
+            var target = detail.parentPath
+                || detail.latPath
+                || detail.lonPath
+                || '';
+            if (!target) return;
+            // Find every JSON viewer currently mounted — there might
+            // be more than one when split mode shows both streaming
+            // detail + an extension pane on the same page. Try each
+            // until one of them resolves the path.
+            var viewers = document.querySelectorAll('.bowire-json-viewer');
+            for (var i = 0; i < viewers.length; i++) {
+                // Only consider viewers that are actually visible —
+                // tab-mode hides the inactive body via display:none.
+                var v = viewers[i];
+                if (v.offsetParent === null) continue;
+                if (bowireScrollJsonViewerToPath(v, target)) return;
+            }
+        });
+    })();
+
     // -------------------------------------------------------------------
     // Unified response-tree gestures (click / dblclick / contextmenu)
     //
