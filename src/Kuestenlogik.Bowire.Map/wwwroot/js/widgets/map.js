@@ -1150,6 +1150,78 @@
             } catch {}
         });
 
+        // Pin click → dispatch `bowire:map-coord-click`, the core
+        // workbench listens and scrolls the JSON viewer to the
+        // matching row (auto-expanding any collapsed ancestors).
+        // We don't scroll from here directly because the JSON viewer
+        // implementation lives in core — keeping the navigation
+        // logic on that side means future extensions (image / chart
+        // / audio) can reuse the same listener without duplicating
+        // the auto-expand walk per bundle.
+        map.on('click', 'bowire-points-layer', function (e) {
+            if (!e || !e.features || e.features.length === 0) return;
+            var props = e.features[0].properties || {};
+            // Suppress the map's own click handler — without this
+            // the underlying `map.on('click', ...)` (editor mode)
+            // and any future "click empty to pan" affordances
+            // would fire alongside the pin tap.
+            try {
+                if (e.originalEvent) {
+                    e.originalEvent.stopPropagation();
+                    e.originalEvent.preventDefault();
+                }
+            } catch {}
+            try {
+                document.dispatchEvent(new CustomEvent('bowire:map-coord-click', {
+                    detail: {
+                        parentPath: props.parentPath || '',
+                        latPath: props.latPath || '',
+                        lonPath: props.lonPath || ''
+                    }
+                }));
+            } catch {}
+        });
+
+        // Pin double-click → copy the parent path to the clipboard.
+        // Same gesture the JSON viewer's dblclick gives the operator
+        // ("Copy path"), now reachable from the map side too. We
+        // suppress MapLibre's default doubleclick-to-zoom on the pin
+        // (not globally — empty-map double-click still zooms). The
+        // user's feedback explicitly preferred copy over zoom here.
+        map.on('dblclick', 'bowire-points-layer', function (e) {
+            if (!e || !e.features || e.features.length === 0) return;
+            var props = e.features[0].properties || {};
+            try {
+                if (e.originalEvent) {
+                    e.originalEvent.stopPropagation();
+                    e.originalEvent.preventDefault();
+                }
+            } catch {}
+            // Prefer the parent (e.g. `coordinate`) — same shape the
+            // JSON viewer's dblclick copies. Falls back to the lat
+            // path when parent is empty (single-coord at root).
+            var raw = props.parentPath || props.latPath || '';
+            if (!raw) return;
+            var chain = bowireMapJsonPathToChainPath(raw);
+            if (!chain) return;
+            try {
+                navigator.clipboard.writeText(chain).then(
+                    function () {
+                        var toast = (window.bowireToast || window.toast);
+                        if (typeof toast === 'function') {
+                            toast('Copied path: ' + chain, 'success');
+                        }
+                    },
+                    function () {
+                        var toast = (window.bowireToast || window.toast);
+                        if (typeof toast === 'function') {
+                            toast('Copy failed', 'error');
+                        }
+                    }
+                );
+            } catch {}
+        });
+
         // Publish the widget handle into the workbench-global
         // registry. The JSON viewer iterates this list to dispatch
         // hover / flyTo calls — works cleanly across morphdom
@@ -1265,6 +1337,30 @@
         if (p.indexOf('$.') === 0) return p.substring(2);
         if (p === '$') return '';
         return p;
+    }
+
+    /**
+     * Convert a JSONPath-with-brackets (`$.foo[0].bar`) into the
+     * dot-only chain form (`foo.0.bar`) the workbench's JSON viewer
+     * uses for its `data-line-path` / `data-json-path` attributes.
+     *
+     * Without this conversion the reverse-hover selector
+     * `[data-line-path="situationObjects[0].point.geoPoint"]` missed
+     * actual viewer rows (which carry `situationObjects.0.point.geoPoint`)
+     * and the cursor changed on pin-enter but the JSON tint never
+     * fired. Same shape the core `bowireJsonPathToChainPath` helper
+     * does — duplicated here because the map bundle loads as a
+     * separate IIFE outside the core's closure, and pulling another
+     * dependency for a 5-line regex didn't seem worth it.
+     */
+    function bowireMapJsonPathToChainPath(p) {
+        if (typeof p !== 'string' || !p) return '';
+        var s = p;
+        if (s.indexOf('$.') === 0) s = s.substring(2);
+        else if (s === '$') return '';
+        s = s.replace(/\[(\d+)\]/g, '.$1');
+        if (s.charAt(0) === '.') s = s.substring(1);
+        return s;
     }
 
     /**
@@ -1554,18 +1650,27 @@
             }
             var detail = e && e.detail;
             if (!detail) return;
+            // The map dispatches paths in JSONPath form (`$.foo[0].bar`).
+            // The JSON viewer's row attributes are in chain form
+            // (`foo.0.bar`). Convert both ends to the same shape
+            // before building selectors — without the bracket→dot
+            // step the hover never matched on responses with arrays
+            // (situationObjects[N]), which is the most common shape
+            // in practice.
             var paths = [];
-            if (detail.parentPath) paths.push(bowireMapNormalisePath(detail.parentPath));
-            if (detail.latPath) paths.push(bowireMapNormalisePath(detail.latPath));
-            if (detail.lonPath) paths.push(bowireMapNormalisePath(detail.lonPath));
+            if (detail.parentPath) paths.push(bowireMapJsonPathToChainPath(detail.parentPath));
+            if (detail.latPath) paths.push(bowireMapJsonPathToChainPath(detail.latPath));
+            if (detail.lonPath) paths.push(bowireMapJsonPathToChainPath(detail.lonPath));
             if (paths.length === 0) return;
             var parts = [];
             for (var i = 0; i < paths.length; i++) {
+                if (!paths[i]) continue;
                 var safe = (typeof CSS !== 'undefined' && CSS.escape)
                     ? CSS.escape(paths[i]) : paths[i].replace(/"/g, '\\"');
                 parts.push('[data-bowire-coord-path="' + safe + '"]');
                 parts.push('[data-line-path="' + safe + '"]');
             }
+            if (parts.length === 0) return;
             var matches = document.querySelectorAll(parts.join(','));
             for (var m = 0; m < matches.length; m++) {
                 matches[m].classList.add('bowire-coord-hover-target');

@@ -21667,6 +21667,19 @@ not as the
     color: var(--bowire-text, #e5e5e5);
 }
 
+/* Brief flash on the row the map widget's "click pin → centre JSON"
+   action scrolled to, so the eye lands on the target line even when
+   the scroll only nudged a few rows. Fades back to base after the
+   animation; same warm hue the search-match uses but distinct enough
+   to read as "freshly arrived" rather than "matches my search". */
+@keyframes bowire-coord-scroll-flash {
+    0%   { background: rgba(250, 204, 21, 0.32); }
+    100% { background: transparent; }
+}
+.bowire-json-viewer-line.is-coord-scroll-flash {
+    animation: bowire-coord-scroll-flash 1.4s ease-out;
+}
+
 /* ---- Raw tab body ---- */
 .bowire-response-raw {
     margin: 0;
