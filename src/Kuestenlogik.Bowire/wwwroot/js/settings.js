@@ -1484,7 +1484,23 @@
             consulTokenSet: false,
             consulDatacenter: '',
             consulTag: '',
-            consulScheme: 'http'
+            consulScheme: 'http',
+            // k8s — three coords sources + secrets
+            k8sApiServerUrl: '',
+            k8sToken: '',
+            k8sTokenSet: false,
+            k8sKubeconfigPath: '',
+            k8sNamespace: '',
+            k8sLabelSelector: '',
+            k8sScheme: 'http',
+            k8sCaCertificatePem: '',
+            k8sCaCertificatePemSet: false,
+            k8sSkipTlsVerification: false,
+            // agent — hub URL + bootstrap token + optional stub
+            agentHubUrl: '',
+            agentBootstrapToken: '',
+            agentBootstrapTokenSet: false,
+            agentStubResponse: ''
         };
         if (override && override.hasOverride) {
             draft.providerId = override.provider || '';
@@ -1501,6 +1517,26 @@
                 draft.consulDatacenter = override.consul.datacenter || override.consul.Datacenter || '';
                 draft.consulTag = override.consul.tag || override.consul.Tag || '';
                 draft.consulScheme = override.consul.scheme || override.consul.Scheme || 'http';
+            }
+            if (override.kubernetes) {
+                var k = override.kubernetes;
+                draft.k8sApiServerUrl = k.apiServerUrl || k.ApiServerUrl || '';
+                var k8sTok = k.token || k.Token || '';
+                draft.k8sTokenSet = k8sTok === '__set__';
+                draft.k8sKubeconfigPath = k.kubeconfigPath || k.KubeconfigPath || '';
+                draft.k8sNamespace = k.namespace || k.Namespace || '';
+                draft.k8sLabelSelector = k.labelSelector || k.LabelSelector || '';
+                draft.k8sScheme = k.scheme || k.Scheme || 'http';
+                var k8sCa = k.caCertificatePem || k.CaCertificatePem || '';
+                draft.k8sCaCertificatePemSet = k8sCa === '__set__';
+                draft.k8sSkipTlsVerification = !!(k.skipTlsVerification || k.SkipTlsVerification);
+            }
+            if (override.agent) {
+                var a = override.agent;
+                draft.agentHubUrl = a.hubUrl || a.HubUrl || '';
+                var agentTok = a.bootstrapToken || a.BootstrapToken || '';
+                draft.agentBootstrapTokenSet = agentTok === '__set__';
+                draft.agentStubResponse = a.stubResponse || a.StubResponse || '';
             }
         }
         return draft;
@@ -1575,7 +1611,17 @@
             { id: '', label: 'None', desc: 'No UI override — fall back to appsettings.json (or empty when neither is set).' },
             { id: 'local', label: 'Local file', desc: 'Read entries from a JSON file on disk. Defaults to ~/.bowire/catalogue.json when no path is set.' },
             { id: 'http', label: 'HTTP endpoint', desc: 'Fetch a catalogue document over HTTP(S). Optional Authorization header for token-gated endpoints.' },
-            { id: 'consul', label: 'Consul', desc: 'Query a Consul agent for service entries. Optional ACL token, DC, and tag filter.' }
+            { id: 'consul', label: 'Consul', desc: 'Query a Consul agent for service entries. Optional ACL token, DC, and tag filter.' },
+            // #136 — k8s + agent providers ship in sibling packages
+            // (Kuestenlogik.Bowire.Catalogue.Kubernetes / .Agent).
+            // The provider registry's assembly-scan picks them up
+            // automatically; we list them here unconditionally so the
+            // picker reads as a complete vocabulary — saving a row
+            // with a missing package surfaces as a clear "provider
+            // not loaded" message when the registry tries to resolve
+            // it, instead of silently being unavailable.
+            { id: 'kubernetes', label: 'Kubernetes', desc: 'Query a Kubernetes API server for Service objects. Auto-picks in-cluster service-account / kubeconfig credentials when fields are blank. Requires the Kuestenlogik.Bowire.Catalogue.Kubernetes package.' },
+            { id: 'agent', label: 'Bowire Agent hub', desc: 'Aggregate entries from a Bowire Agent hub (depends on #128). Requires the Kuestenlogik.Bowire.Catalogue.Agent package.' }
         ];
         providers.forEach(function (p) {
             var row = el('label', {
@@ -1733,6 +1779,192 @@
                     select.onchange = function () { draft.consulScheme = select.value; _persistDiscoveryDraft(); };
                     return select;
                 }));
+        } else if (draft.providerId === 'kubernetes') {
+            // Every field is optional — the k8s provider auto-detects
+            // in-cluster service-account / kubeconfig credentials when
+            // these are blank. The intent here is to override the
+            // defaults for hosts that need explicit coords (sidecar
+            // installs, tests, dev laptops with multiple clusters).
+            section.appendChild(renderSettingsRow('API server URL',
+                'Explicit Kubernetes API server URL (e.g. https://kubernetes.default.svc). Leave blank to auto-detect in-cluster env vars or kubeconfig.',
+                function () {
+                    var input = el('input', {
+                        type: 'url',
+                        className: 'bowire-settings-input',
+                        value: draft.k8sApiServerUrl || '',
+                        placeholder: 'https://kubernetes.default.svc'
+                    });
+                    input.oninput = function () { draft.k8sApiServerUrl = input.value; _persistDiscoveryDraft(); };
+                    return input;
+                }));
+            section.appendChild(renderSettingsRow('Bearer token',
+                'Service-account / kubeconfig token. Leave blank to keep the existing stored value (or to fall back to in-cluster / kubeconfig auto-detection).',
+                function () {
+                    var wrap = el('div', { className: 'bowire-settings-apikey-wrap' });
+                    var input = el('input', {
+                        type: 'password',
+                        className: 'bowire-settings-input bowire-settings-apikey-input',
+                        value: '',
+                        placeholder: draft.k8sTokenSet ? '••••••••••• (leave blank to keep)' : 'Bearer token',
+                        autocomplete: 'off',
+                        spellcheck: false
+                    });
+                    input.oninput = function () { draft.k8sToken = input.value; };
+                    wrap.appendChild(input);
+                    if (draft.k8sTokenSet) {
+                        wrap.appendChild(el('button', {
+                            type: 'button',
+                            className: 'bowire-settings-apikey-clear',
+                            textContent: 'Clear stored token',
+                            onClick: function () {
+                                draft.k8sToken = '__clear__';
+                                draft.k8sTokenSet = false;
+                                renderSettingsDialog();
+                            }
+                        }));
+                    }
+                    return wrap;
+                }));
+            section.appendChild(renderSettingsRow('Kubeconfig path',
+                'Path to a kubeconfig file. Leave blank to fall back to $KUBECONFIG / ~/.kube/config.',
+                function () {
+                    var input = el('input', {
+                        type: 'text',
+                        className: 'bowire-settings-input',
+                        value: draft.k8sKubeconfigPath || '',
+                        placeholder: '~/.kube/config'
+                    });
+                    input.oninput = function () { draft.k8sKubeconfigPath = input.value; _persistDiscoveryDraft(); };
+                    return input;
+                }));
+            section.appendChild(renderSettingsRow('Namespace',
+                'Namespace to query. Defaults to "default" outside a pod; the pod\'s own namespace when running in-cluster.',
+                function () {
+                    var input = el('input', {
+                        type: 'text',
+                        className: 'bowire-settings-input',
+                        value: draft.k8sNamespace || '',
+                        placeholder: 'default'
+                    });
+                    input.oninput = function () { draft.k8sNamespace = input.value; _persistDiscoveryDraft(); };
+                    return input;
+                }));
+            section.appendChild(renderSettingsRow('Label selector (optional)',
+                'Standard k8s label selector — e.g. "bowire/discoverable=true". Forwarded verbatim as the labelSelector query param.',
+                function () {
+                    var input = el('input', {
+                        type: 'text',
+                        className: 'bowire-settings-input',
+                        value: draft.k8sLabelSelector || '',
+                        placeholder: 'bowire/discoverable=true'
+                    });
+                    input.oninput = function () { draft.k8sLabelSelector = input.value; _persistDiscoveryDraft(); };
+                    return input;
+                }));
+            section.appendChild(renderSettingsRow('Service URL scheme',
+                'k8s Services don\'t carry the scheme intrinsically; pick http or https for the materialised service URLs.',
+                function () {
+                    var select = el('select', { className: 'bowire-settings-select' });
+                    ['http', 'https'].forEach(function (s) {
+                        var opt = el('option', { value: s, textContent: s });
+                        if (s === draft.k8sScheme) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+                    select.onchange = function () { draft.k8sScheme = select.value; _persistDiscoveryDraft(); };
+                    return select;
+                }));
+            section.appendChild(renderSettingsRow('CA certificate (PEM)',
+                'PEM-encoded CA bundle for the API server\'s TLS cert. Leave blank for the in-cluster CA / OS trust store.',
+                function () {
+                    var wrap = el('div', { className: 'bowire-settings-apikey-wrap' });
+                    var input = el('textarea', {
+                        className: 'bowire-settings-input',
+                        rows: '3',
+                        placeholder: draft.k8sCaCertificatePemSet
+                            ? '••••••••••• (leave blank to keep)'
+                            : '-----BEGIN CERTIFICATE-----\n…',
+                        spellcheck: false,
+                        style: 'font-family:var(--bowire-font-mono);font-size:11px'
+                    });
+                    input.value = '';
+                    input.oninput = function () { draft.k8sCaCertificatePem = input.value; };
+                    wrap.appendChild(input);
+                    if (draft.k8sCaCertificatePemSet) {
+                        wrap.appendChild(el('button', {
+                            type: 'button',
+                            className: 'bowire-settings-apikey-clear',
+                            textContent: 'Clear stored CA',
+                            onClick: function () {
+                                draft.k8sCaCertificatePem = '__clear__';
+                                draft.k8sCaCertificatePemSet = false;
+                                renderSettingsDialog();
+                            }
+                        }));
+                    }
+                    return wrap;
+                }));
+            section.appendChild(renderSettingsToggle('Skip TLS verification',
+                'Local test clusters only (kind / k3d / minikube with self-signed certs). NEVER enable for production clusters.',
+                draft.k8sSkipTlsVerification,
+                function (val) {
+                    draft.k8sSkipTlsVerification = !!val;
+                    _persistDiscoveryDraft();
+                }));
+        } else if (draft.providerId === 'agent') {
+            section.appendChild(renderSettingsRow('Hub URL',
+                'URL of the Bowire Agent hub (#128). The provider GETs {HubUrl}/hub/agents/catalogue on every refresh.',
+                function () {
+                    var input = el('input', {
+                        type: 'url',
+                        className: 'bowire-settings-input',
+                        value: draft.agentHubUrl || '',
+                        placeholder: 'https://hub.bowire.internal'
+                    });
+                    input.oninput = function () { draft.agentHubUrl = input.value; _persistDiscoveryDraft(); };
+                    return input;
+                }));
+            section.appendChild(renderSettingsRow('Bootstrap token',
+                'Sent verbatim as the Authorization request header. Leave blank to keep the existing stored value.',
+                function () {
+                    var wrap = el('div', { className: 'bowire-settings-apikey-wrap' });
+                    var input = el('input', {
+                        type: 'password',
+                        className: 'bowire-settings-input bowire-settings-apikey-input',
+                        value: '',
+                        placeholder: draft.agentBootstrapTokenSet ? '••••••••••• (leave blank to keep)' : 'Bearer …',
+                        autocomplete: 'off',
+                        spellcheck: false
+                    });
+                    input.oninput = function () { draft.agentBootstrapToken = input.value; };
+                    wrap.appendChild(input);
+                    if (draft.agentBootstrapTokenSet) {
+                        wrap.appendChild(el('button', {
+                            type: 'button',
+                            className: 'bowire-settings-apikey-clear',
+                            textContent: 'Clear stored token',
+                            onClick: function () {
+                                draft.agentBootstrapToken = '__clear__';
+                                draft.agentBootstrapTokenSet = false;
+                                renderSettingsDialog();
+                            }
+                        }));
+                    }
+                    return wrap;
+                }));
+            section.appendChild(renderSettingsRow('Stub response (optional)',
+                'JSON snapshot to feed the parser with instead of hitting the hub. Useful for validating the wire-shape contract before #128 ships.',
+                function () {
+                    var input = el('textarea', {
+                        className: 'bowire-settings-input',
+                        rows: '4',
+                        placeholder: '{"version":1,"agents":[…]}',
+                        spellcheck: false,
+                        style: 'font-family:var(--bowire-font-mono);font-size:11px'
+                    });
+                    input.value = draft.agentStubResponse || '';
+                    input.oninput = function () { draft.agentStubResponse = input.value; _persistDiscoveryDraft(); };
+                    return input;
+                }));
         }
 
         // Action row — Save / Test connection / Refresh now / Clear.
@@ -1820,6 +2052,23 @@
                 datacenter: d.consulDatacenter || null,
                 tag: d.consulTag || null,
                 scheme: d.consulScheme || 'http'
+            };
+        } else if (d.providerId === 'kubernetes') {
+            payload.kubernetes = {
+                apiServerUrl: d.k8sApiServerUrl || null,
+                token: (d.k8sToken === '' || d.k8sToken === undefined) ? '__keep__' : d.k8sToken,
+                kubeconfigPath: d.k8sKubeconfigPath || null,
+                namespace: d.k8sNamespace || null,
+                labelSelector: d.k8sLabelSelector || null,
+                scheme: d.k8sScheme || 'http',
+                caCertificatePem: (d.k8sCaCertificatePem === '' || d.k8sCaCertificatePem === undefined) ? '__keep__' : d.k8sCaCertificatePem,
+                skipTlsVerification: !!d.k8sSkipTlsVerification
+            };
+        } else if (d.providerId === 'agent') {
+            payload.agent = {
+                hubUrl: d.agentHubUrl || null,
+                bootstrapToken: (d.agentBootstrapToken === '' || d.agentBootstrapToken === undefined) ? '__keep__' : d.agentBootstrapToken,
+                stubResponse: d.agentStubResponse || null
             };
         }
         return payload;

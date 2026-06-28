@@ -102,6 +102,8 @@ internal static class BowireCatalogueEndpoints
                 local = current?.Local,
                 http = MaskHttp(current?.Http),
                 consul = MaskConsul(current?.Consul),
+                kubernetes = MaskKubernetes(current?.Kubernetes),
+                agent = MaskAgent(current?.Agent),
             }, BowireEndpointHelpers.JsonOptions);
         }).ExcludeFromDescription();
 
@@ -205,6 +207,39 @@ internal static class BowireCatalogueEndpoints
         };
     }
 
+    private static BowireKubernetesCatalogueOverrideOptions? MaskKubernetes(BowireKubernetesCatalogueOverrideOptions? opts)
+    {
+        if (opts is null) return null;
+        return new BowireKubernetesCatalogueOverrideOptions
+        {
+            ApiServerUrl = opts.ApiServerUrl,
+            // Token + CA pem are the secret-sized fields; mask the
+            // same way Consul masks its ACL token. Everything else is
+            // a path / namespace / boolean — non-secret, surfaces as
+            // typed.
+            Token = string.IsNullOrEmpty(opts.Token) ? null : "__set__",
+            KubeconfigPath = opts.KubeconfigPath,
+            Namespace = opts.Namespace,
+            LabelSelector = opts.LabelSelector,
+            Scheme = opts.Scheme,
+            CaCertificatePem = string.IsNullOrEmpty(opts.CaCertificatePem) ? null : "__set__",
+            SkipTlsVerification = opts.SkipTlsVerification,
+        };
+    }
+
+    private static BowireAgentCatalogueOverrideOptions? MaskAgent(BowireAgentCatalogueOverrideOptions? opts)
+    {
+        if (opts is null) return null;
+        return new BowireAgentCatalogueOverrideOptions
+        {
+            HubUrl = opts.HubUrl,
+            BootstrapToken = string.IsNullOrEmpty(opts.BootstrapToken) ? null : "__set__",
+            // StubResponse is wire-shape sample data, not a secret —
+            // surfaces verbatim.
+            StubResponse = opts.StubResponse,
+        };
+    }
+
     private static BowireCatalogueOverride MergeSecrets(
         BowireCatalogueOverride incoming, BowireCatalogueOverride? existing)
     {
@@ -227,6 +262,17 @@ internal static class BowireCatalogueEndpoints
         if (incoming.Consul is not null)
         {
             incoming.Consul.Token = Reconcile(incoming.Consul.Token, existing.Consul?.Token);
+        }
+        if (incoming.Kubernetes is not null)
+        {
+            incoming.Kubernetes.Token = Reconcile(incoming.Kubernetes.Token, existing.Kubernetes?.Token);
+            incoming.Kubernetes.CaCertificatePem = Reconcile(
+                incoming.Kubernetes.CaCertificatePem, existing.Kubernetes?.CaCertificatePem);
+        }
+        if (incoming.Agent is not null)
+        {
+            incoming.Agent.BootstrapToken = Reconcile(
+                incoming.Agent.BootstrapToken, existing.Agent?.BootstrapToken);
         }
         return incoming;
     }
