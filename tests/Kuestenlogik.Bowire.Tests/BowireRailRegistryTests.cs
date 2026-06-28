@@ -3,9 +3,8 @@
 
 using Kuestenlogik.Bowire.Plugins;
 using Kuestenlogik.Bowire.Rail.Compose;
-using Kuestenlogik.Bowire.Rail.Discover;
-using Kuestenlogik.Bowire.Rail.Home;
 using Kuestenlogik.Bowire.Rail.Workspaces;
+using Kuestenlogik.Bowire.Rails;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -176,10 +175,14 @@ public class BowireRailRegistryTests
     public void Discover_Picks_Up_BuiltIn_Rails_From_Loaded_Assembly()
     {
         // Force each always-on rail's assembly into the AppDomain so the
-        // discovery scan picks them up. After #306 Phase G each rail lives
+        // discovery scan picks them up. After #306 Phase G each rail lived
         // in its own Kuestenlogik.Bowire.Rail.* assembly, so touching just
         // Home wouldn't pull Discover / Compose / Workspaces with it the
         // way it did when every descriptor sat in core's BuiltInRails.cs.
+        // v2.1 (#325): Home + Discover folded back into Core under the
+        // Kuestenlogik.Bowire.Rails namespace — descriptor-only rails
+        // didn't earn their own NuGet. Compose + Workspaces still live in
+        // their own packages so the touch keeps the discovery scan honest.
         _ = new BowireHomeRailContribution().Id;
         _ = new BowireDiscoverRailContribution().Id;
         _ = new BowireComposeRailContribution().Id;

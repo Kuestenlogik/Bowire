@@ -19,12 +19,12 @@
          BowireRailRegistryTests.Discover_Picks_Up_BuiltIn_Rails_From_Loaded_Assembly
          touches each of the four always-on rails (Home, Discover, Compose,
          Workspaces) so the assemblies are forced into the AppDomain before
-         the discovery scan runs. After #306 Phase G each rail lives in its
+         the discovery scan runs. After #306 Phase G each rail lived in its
          own assembly, so a touch on Home alone wouldn't pull the others in.
-         The remaining rail packages come transitively via Bundle.Workbench
-         (referenced by Tool above). -->
-    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Rail.Home\Kuestenlogik.Bowire.Rail.Home.csproj" />
-    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Rail.Discover\Kuestenlogik.Bowire.Rail.Discover.csproj" />
+         v2.1 (#325): Home + Discover folded into Core, so the touch happens
+         via the existing Kuestenlogik.Bowire reference above. The remaining
+         rail packages come transitively via Bundle.Workbench (referenced
+         by Tool above). -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Rail.Compose\Kuestenlogik.Bowire.Rail.Compose.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Rail.Workspaces\Kuestenlogik.Bowire.Rail.Workspaces.csproj" />
     <!-- #315 — Traffic + deprecated Proxy / Intercepted descriptors

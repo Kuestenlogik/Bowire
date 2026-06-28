@@ -3,14 +3,18 @@
 
 using Kuestenlogik.Bowire.Plugins;
 
-namespace Kuestenlogik.Bowire.Rail.Discover;
+namespace Kuestenlogik.Bowire.Rails;
 
 /// <summary>
-/// Discover rail contribution — schema-driven services tree (#306 Phase G).
+/// Discover rail contribution — schema-driven services tree (#306 Phase G;
+/// folded into Core in v2.1, #325).
 /// </summary>
 /// <remarks>
-/// Moved out of <c>Kuestenlogik.Bowire/Plugins/BuiltInRails.cs</c> into its
-/// own NuGet package.
+/// Descriptor-only — no per-rail JS fragment, no wwwroot resources. The
+/// previous standalone <c>Kuestenlogik.Bowire.Rail.Discover</c> package
+/// has been retired; <see cref="Id"/> remains <c>"discover"</c> verbatim
+/// so saved <c>railMode</c> + <c>bowire_enabled_rails</c> values keep
+/// dispatching correctly.
 /// </remarks>
 public sealed class BowireDiscoverRailContribution : IBowireRailContribution
 {
