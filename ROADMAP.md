@@ -236,6 +236,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog |  |
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ⬜ Backlog |  |
 | [316](https://github.com/Kuestenlogik/Bowire/issues/316) | Bowire | [substituteMessages([...]) passes Array.map index as cycle-guard set, crashes on 2nd+ entry](#issue-kuestenlogik-bowire-316) | ⬜ Backlog |  |
+| [325](https://github.com/Kuestenlogik/Bowire/issues/325) | Bowire | [refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)](#issue-kuestenlogik-bowire-325) | ⬜ Backlog |  |
 
 ## Details
 
@@ -906,6 +907,10 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 #### <a id="issue-kuestenlogik-bowire-316"></a>⬜ Backlog · [#316](https://github.com/Kuestenlogik/Bowire/issues/316) substituteMessages([...]) passes Array.map index as cycle-guard set, crashes on 2nd+ entry
 
 Found by coverage-wave-2 (#312) while wiring up node-tests for history-env.js. [[more]](https://github.com/Kuestenlogik/Bowire/issues/316)
+
+#### <a id="issue-kuestenlogik-bowire-325"></a>⬜ Backlog · [#325](https://github.com/Kuestenlogik/Bowire/issues/325) refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)
+
+Welle 2 of the v2.1 pre-release cleanup. Welle 1 already folded the Mock + Help rail-fragments into their topic packages (#311 follow-up + #324). This issue tracks the remaining eleven `Rail.*` packages. [[more]](https://github.com/Kuestenlogik/Bowire/issues/325)
 
 ---
 
