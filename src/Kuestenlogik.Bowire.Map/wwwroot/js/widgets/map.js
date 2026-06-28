@@ -623,15 +623,33 @@
             type: 'circle',
             source: 'bowire-points',
             paint: {
-                'circle-radius': 14,
+                // Halo grows for hover-highlight so the operator's
+                // eye snaps to it from across the canvas; selected
+                // pins keep the smaller ring so they don't fight
+                // the hover signal.
+                'circle-radius': [
+                    'match', ['get', 'highlighted'],
+                    'yes', 18,
+                    /* default */ 14
+                ],
                 'circle-color': 'rgba(0,0,0,0)',
-                'circle-stroke-width': 3,
+                'circle-stroke-width': [
+                    'match', ['get', 'highlighted'],
+                    'yes', 4,
+                    /* default */ 3
+                ],
                 'circle-stroke-color': (ctx.theme && ctx.theme.accent) || '#4f46e5',
                 'circle-opacity': 1,
+                // Both `selected === 'yes'` and `highlighted === 'yes'`
+                // light the halo. Highlight wins on tie (same colour
+                // anyway). Resolved through a single `case` so a
+                // pin selected AND hover-highlighted reads as the
+                // brighter hover state.
                 'circle-stroke-opacity': [
-                    'match', ['get', 'selected'],
-                    'yes', 0.95,
-                    /* default */ 0.0
+                    'case',
+                    ['==', ['get', 'highlighted'], 'yes'], 1.0,
+                    ['==', ['get', 'selected'], 'yes'], 0.95,
+                    0.0
                 ]
             }
         });
@@ -755,10 +773,22 @@
                         // circle icon so the pin remains visible.
                         var sidc = bowireFindSidcForPair(
                             parsedRoots[i], pair.lat, pair.lon);
+                        // Common path prefix of (lat, lon) — used by the
+                        // JSON↔map hover-sync to look up a pin from a
+                        // path that the JSON viewer's mouseenter
+                        // handler resolved. Stable across re-renders;
+                        // doesn't change unless the response schema
+                        // does. Single source of truth for the
+                        // `parent` of a coord pair.
+                        var parentPath = bowireCommonPathPrefix(
+                            pair.lat, pair.lon);
                         out.push({
                             lat: lat, lon: lon,
                             sidc: sidc,
-                            affinity: bowireSidcAffinity(sidc)
+                            affinity: bowireSidcAffinity(sidc),
+                            latPath: pair.lat,
+                            lonPath: pair.lon,
+                            parentPath: parentPath
                         });
                         break; // one root match per pair is enough
                     }
@@ -829,13 +859,29 @@
                         discriminator: discriminator,
                         frameId: frameId,
                         selected: selectedTag,
+                        // Highlight tristate driven by the JSON↔map
+                        // hover-sync. 'yes' lights up the halo, 'no'
+                        // hides it. Independent of selection so
+                        // hovering doesn't fight a Wireshark
+                        // multi-select.
+                        highlighted: 'no',
                         // affinity drives the symbol-layer's
                         // icon-image expression (friend/hostile/neutral/
                         // unknown → matching sprite). sidc is stashed
                         // for future per-pin tooltips and downstream
                         // detectors that key off the full identifier.
                         affinity: coord.affinity || 'unknown',
-                        sidc: coord.sidc || ''
+                        sidc: coord.sidc || '',
+                        // JSON-source paths for hover-sync lookup. The
+                        // JSON viewer stamps the matching
+                        // `data-bowire-coord-path` on lat/lon spans;
+                        // mouseenter passes the path through
+                        // `highlightByPath(path)` which scans for a
+                        // feature whose latPath / lonPath /
+                        // parentPath matches.
+                        latPath: coord.latPath || '',
+                        lonPath: coord.lonPath || '',
+                        parentPath: coord.parentPath || ''
                     }
                 });
                 // Extend the bounds for EVERY coord in this frame —
@@ -962,8 +1008,167 @@
             })();
         }
 
+        // -----------------------------------------------------------
+        // JSON ↔ map hover-sync API
+        // -----------------------------------------------------------
+        //
+        // The widget publishes a small remote-control surface so the
+        // response-JSON viewer can:
+        //   - flyTo(lon, lat)              — context menu's "Center
+        //                                    on map" action
+        //   - highlightByPath(path)        — mouseenter on a coord
+        //                                    span in the JSON
+        //   - clearHighlight()             — mouseleave
+        //
+        // Reverse direction (map → JSON) is handled here too: pin
+        // mouseenter dispatches `bowire:map-coord-hover` carrying
+        // the pin's parentPath; the JSON viewer listens for it and
+        // tints the matching coord block.
+        //
+        // Registry pattern: every mount pushes its handle into
+        // `window.__bowireMapWidgets`, unmount removes it. JSON
+        // handlers iterate the registry rather than holding a
+        // closure reference — works cleanly across morphdom diff
+        // passes that drop / re-create the widget pane.
+
+        /**
+         * Re-flag every feature's `highlighted` property and push the
+         * collection back to the source in a single `setData(...)`.
+         * Cheap because MapLibre's data-driven `case` expressions on
+         * the paint properties resolve the new value without a
+         * layer rebuild. Same pattern as `applySelectionRestyle`.
+         */
+        function applyHighlightRestyle() {
+            var src = map.getSource('bowire-points');
+            if (src) src.setData(pointsSource);
+        }
+
+        /**
+         * Mark every feature whose JSON path (lat / lon / parent)
+         * matches `path` as highlighted. Path may be a JSONPath like
+         * `$.position.lat` or the chain-variable form `position.lat`;
+         * both are accepted so the JSON viewer can hand over whatever
+         * shape its data-attribute carries without the caller having
+         * to normalise.
+         */
+        function highlightByPath(path) {
+            if (!path) { clearHighlight(); return; }
+            var normalised = path;
+            // Normalise both sides to the same shape — strip the
+            // leading `$.` so a chain-variable `position.lat` matches
+            // a JSONPath `$.position.lat` and vice versa.
+            if (normalised.indexOf('$.') === 0) normalised = normalised.substring(2);
+            else if (normalised === '$') normalised = '';
+            var any = false;
+            for (var i = 0; i < pointsSource.features.length; i++) {
+                var props = pointsSource.features[i].properties || {};
+                var matches = pathsMatch(props.latPath, normalised)
+                    || pathsMatch(props.lonPath, normalised)
+                    || pathsMatch(props.parentPath, normalised);
+                props.highlighted = matches ? 'yes' : 'no';
+                if (matches) any = true;
+            }
+            applyHighlightRestyle();
+            return any;
+        }
+
+        /**
+         * Clear every highlight flag. Called on mouseleave so the
+         * halo goes dark when the operator moves the cursor off
+         * the JSON viewer entirely.
+         */
+        function clearHighlight() {
+            var dirty = false;
+            for (var i = 0; i < pointsSource.features.length; i++) {
+                var props = pointsSource.features[i].properties || {};
+                if (props.highlighted === 'yes') {
+                    props.highlighted = 'no';
+                    dirty = true;
+                }
+            }
+            if (dirty) applyHighlightRestyle();
+        }
+
+        /**
+         * Tolerant path equality — accepts both the JSONPath
+         * (`$.foo.bar`) and chain-variable (`foo.bar`) conventions
+         * on either side. Both register-time and viewer-time paths
+         * get normalised down by stripping the leading `$.` before
+         * comparison.
+         */
+        function pathsMatch(a, b) {
+            if (!a || !b) return false;
+            var na = a.indexOf('$.') === 0 ? a.substring(2) : (a === '$' ? '' : a);
+            var nb = b.indexOf('$.') === 0 ? b.substring(2) : (b === '$' ? '' : b);
+            return na === nb;
+        }
+
+        /**
+         * Camera move. Called by the JSON-viewer's "Center on map"
+         * context-menu entry. Same `flyTo` MapLibre exposes, with a
+         * safe default zoom when the caller doesn't supply one.
+         */
+        function flyTo(opts) {
+            if (!opts || !opts.center) return;
+            // Mark the move as programmatic so the
+            // dragstart/zoomstart heuristics don't latch
+            // `userMovedCamera` and disable auto-fit.
+            try {
+                map.flyTo({
+                    center: opts.center,
+                    zoom: typeof opts.zoom === 'number' ? opts.zoom : 12,
+                    duration: typeof opts.duration === 'number' ? opts.duration : 600
+                });
+            } catch {}
+        }
+
+        // Map → JSON direction: pin mouseenter / mouseleave dispatches
+        // a `bowire:map-coord-hover` document event carrying the
+        // parentPath; the JSON viewer listens and tints the matching
+        // coord block. Listener installed on the canvas so the
+        // workbench doesn't need to wire each pin individually.
+        map.on('mouseenter', 'bowire-points-layer', function (e) {
+            map.getCanvas().style.cursor = 'pointer';
+            if (!e.features || e.features.length === 0) return;
+            var props = e.features[0].properties || {};
+            try {
+                document.dispatchEvent(new CustomEvent('bowire:map-coord-hover', {
+                    detail: {
+                        parentPath: props.parentPath || '',
+                        latPath: props.latPath || '',
+                        lonPath: props.lonPath || ''
+                    }
+                }));
+            } catch {}
+        });
+        map.on('mouseleave', 'bowire-points-layer', function () {
+            map.getCanvas().style.cursor = '';
+            try {
+                document.dispatchEvent(new CustomEvent('bowire:map-coord-hover', {
+                    detail: { parentPath: '', latPath: '', lonPath: '' }
+                }));
+            } catch {}
+        });
+
+        // Publish the widget handle into the workbench-global
+        // registry. The JSON viewer iterates this list to dispatch
+        // hover / flyTo calls — works cleanly across morphdom
+        // re-renders because the JSON side never holds a stale
+        // closure reference; it just reads window.__bowireMapWidgets
+        // at event time.
+        var registry = (window.__bowireMapWidgets = window.__bowireMapWidgets || []);
+        var handle = {
+            container: container,
+            flyTo: flyTo,
+            highlightByPath: highlightByPath,
+            clearHighlight: clearHighlight
+        };
+        registry.push(handle);
+
         return function unmount() {
             disposed = true;
+            var idx = registry.indexOf(handle);
+            if (idx >= 0) registry.splice(idx, 1);
             try { map.remove(); } catch {}
         };
     }
