@@ -67,6 +67,23 @@ async function main() {
     await page.goto(`http://localhost:${port}/brand.html`, { waitUntil: 'networkidle' });
     await page.emulateMedia({ media: 'print' });
     await page.waitForTimeout(400);
+
+    // The page is served from localhost, so its relative links resolve to
+    // the localhost origin — dead once the PDF is downloaded. Rewrite every
+    // same-origin link to the production domain before printing.
+    const rewritten = await page.evaluate(() => {
+      let n = 0;
+      for (const a of document.querySelectorAll('a[href]')) {
+        let u;
+        try { u = new URL(a.getAttribute('href'), location.href); } catch { continue; }
+        if (u.origin === location.origin) {
+          a.setAttribute('href', 'https://bowire.io' + u.pathname + u.search + u.hash);
+          n++;
+        }
+      }
+      return n;
+    });
+    console.log(`Rewrote ${rewritten} same-origin link(s) to https://bowire.io`);
     fs.mkdirSync(path.dirname(OUT), { recursive: true });
     await page.pdf({
       path: OUT,

@@ -65,16 +65,34 @@ description: Bowire brand guidelines — download the logo, mark, and wordmark l
   .brand-dd li svg { flex: 0 0 auto; width: 16px; height: 16px; margin-top: 2px; }
   .brand-do h3, .brand-do li svg { color: var(--success); }
   .brand-dont h3, .brand-dont li svg { color: #f87171; }
+  /* Heading icons carry no width/height attribute — size them here so
+     they sit at ~20px next to the 1rem heading instead of ballooning. */
+  .brand-dd h3 svg { width: 20px; height: 20px; flex: 0 0 auto; }
+
+  /* Logo-on-background usage examples */
+  .brand-bg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+  .brand-bg { margin: 0; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .brand-bg-stage { display: flex; align-items: center; justify-content: center; padding: 42px 24px; min-height: 118px; }
+  .brand-bg-stage img { max-width: 100%; max-height: 44px; height: auto; }
+  .brand-bg figcaption { padding: 11px 15px; font-size: 0.8rem; border-top: 1px solid var(--border); color: var(--text-secondary); }
+  .brand-bg figcaption code, .brand-bg-note code { font-family: var(--font-mono); color: var(--text); }
+  .brand-bg-note { margin-top: 18px; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; }
 
   /* Copy-boilerplate -------------------------------------------------- */
   .brand-boiler { position: relative; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 18px 20px; }
   .brand-boiler p { margin: 0; line-height: 1.6; font-size: 0.92rem; }
   .brand-copy-btn { position: absolute; top: 12px; right: 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.74rem; font-weight: 600; padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); color: var(--text-secondary); cursor: pointer; }
   .brand-copy-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .brand-name-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
-  .brand-name-list li { font-size: 0.9rem; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; }
-  .brand-name-yes { color: var(--text); } .brand-name-yes b { color: var(--success); }
-  .brand-name-no { color: var(--text-secondary); } .brand-name-no b { color: #f87171; text-decoration: line-through; }
+  .brand-name-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+  .brand-name-list li { display: flex; align-items: center; gap: 9px; font-size: 0.9rem; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; }
+  /* The status is carried by the icon only — the "Bowire" word itself
+     stays in the normal text colour. Tinting the word green/red would
+     break the very "one colour" rule this section is teaching. */
+  .brand-name-list li svg { width: 16px; height: 16px; flex: 0 0 auto; }
+  .brand-name-list b { font-weight: 700; color: var(--text); }
+  .brand-name-list .brand-name-reason { color: var(--text-secondary); }
+  .brand-name-yes svg { color: var(--success); }
+  .brand-name-no svg { color: #f87171; }
 
   .brand-perms { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   @media (max-width: 640px) { .brand-perms { grid-template-columns: 1fr; } }
@@ -189,37 +207,26 @@ description: Bowire brand guidelines — download the logo, mark, and wordmark l
   </div>
 </section>
 
-<!-- ================= COLOUR ================= -->
+<!-- ================= BACKGROUNDS ================= -->
 <section class="brand-section">
   <div class="container">
-    <h2>Colour</h2>
-    <p class="brand-lede">Indigo is the one accent — it carries every call-to-action, link, and highlight. The logo itself is monochrome: ink on light, white on dark. Everything else is built from near-black and off-white.</p>
-    <div class="brand-swatches">
-      <div class="brand-swatch">
-        <div class="brand-swatch-chip" style="background:#6366f1"></div>
-        <div class="brand-swatch-body"><div class="brand-swatch-name">Indigo</div><div class="brand-swatch-role">Primary accent (dark UI)</div><div class="brand-swatch-hex">#6366F1</div></div>
-      </div>
-      <div class="brand-swatch">
-        <div class="brand-swatch-chip" style="background:#4f46e5"></div>
-        <div class="brand-swatch-body"><div class="brand-swatch-name">Indigo Deep</div><div class="brand-swatch-role">Accent on light UI</div><div class="brand-swatch-hex">#4F46E5</div></div>
-      </div>
-      <div class="brand-swatch">
-        <div class="brand-swatch-chip" style="background:#a5b4fc"></div>
-        <div class="brand-swatch-body"><div class="brand-swatch-name">Indigo Light</div><div class="brand-swatch-role">Inline links / hover</div><div class="brand-swatch-hex">#A5B4FC</div></div>
-      </div>
-      <div class="brand-swatch">
-        <div class="brand-swatch-chip" style="background:#0f0f17"></div>
-        <div class="brand-swatch-body"><div class="brand-swatch-name">Ink</div><div class="brand-swatch-role">Dark background / dark logo</div><div class="brand-swatch-hex">#0F0F17</div></div>
-      </div>
-      <div class="brand-swatch">
-        <div class="brand-swatch-chip" style="background:#1a1a2e"></div>
-        <div class="brand-swatch-body"><div class="brand-swatch-name">Surface</div><div class="brand-swatch-role">Cards / panels (dark)</div><div class="brand-swatch-hex">#1A1A2E</div></div>
-      </div>
-      <div class="brand-swatch">
-        <div class="brand-swatch-chip" style="background:#fafaff; border-bottom:1px solid var(--border)"></div>
-        <div class="brand-swatch-body"><div class="brand-swatch-name">Off-white</div><div class="brand-swatch-role">Light background / light logo</div><div class="brand-swatch-hex">#FAFAFF</div></div>
-      </div>
+    <h2>On light &amp; dark backgrounds</h2>
+    <p class="brand-lede">The logo is monochrome, so placing it is mostly about contrast: use the <strong>dark</strong> logo on light surfaces and the <strong>light</strong> logo on dark ones. The one brand colour is <strong>Indigo</strong> — when it&rsquo;s the backdrop, put the white logo on it.</p>
+    <div class="brand-bg-grid">
+      <figure class="brand-bg">
+        <div class="brand-bg-stage" style="background:#fafaff"><img src="{{ '/assets/brand/bowire-lockup-dark.svg' | relative_url }}" alt="Bowire dark logo on a light background"></div>
+        <figcaption>Light surface <code>#FAFAFF</code> &rarr; dark logo</figcaption>
+      </figure>
+      <figure class="brand-bg">
+        <div class="brand-bg-stage" style="background:#0f0f17"><img src="{{ '/assets/brand/bowire-lockup-light.svg' | relative_url }}" alt="Bowire light logo on a dark background"></div>
+        <figcaption>Dark surface <code>#0F0F17</code> &rarr; light logo</figcaption>
+      </figure>
+      <figure class="brand-bg">
+        <div class="brand-bg-stage" style="background:#6366f1"><img src="{{ '/assets/brand/bowire-lockup-light.svg' | relative_url }}" alt="Bowire light logo on the brand indigo background"></div>
+        <figcaption>Brand Indigo <code>#6366F1</code> &rarr; light logo</figcaption>
+      </figure>
     </div>
+    <p class="brand-bg-note">That&rsquo;s the whole palette you need to place the logo: Indigo <code>#6366F1</code>, Ink <code>#0F0F17</code>, White <code>#FFFFFF</code>, Off-white <code>#FAFAFF</code>. Keep clear contrast (aim for 3:1 or more); on a photo or busy background, set the logo on a solid panel first.</p>
   </div>
 </section>
 
@@ -274,11 +281,11 @@ description: Bowire brand guidelines — download the logo, mark, and wordmark l
     <h2>Writing &ldquo;Bowire&rdquo;</h2>
     <p class="brand-lede">One word, capital B, lowercase rest — always. It&rsquo;s &ldquo;the multi-protocol API workbench,&rdquo; built by Küstenlogik.</p>
     <ul class="brand-name-list">
-      <li class="brand-name-yes"><b>Bowire</b> — correct</li>
-      <li class="brand-name-no"><b>BoWire</b> — no camel-case</li>
-      <li class="brand-name-no"><b>bowire</b> — not all-lowercase in prose</li>
-      <li class="brand-name-no"><b>BOWIRE</b> — not all-caps</li>
-      <li class="brand-name-no"><b>Bow Wire</b> — never two words</li>
+      <li class="brand-name-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg><b>Bowire</b> <span class="brand-name-reason">— correct</span></li>
+      <li class="brand-name-no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><b>BoWire</b> <span class="brand-name-reason">— no camel-case</span></li>
+      <li class="brand-name-no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><b>bowire</b> <span class="brand-name-reason">— not all-lowercase in prose</span></li>
+      <li class="brand-name-no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><b>BOWIRE</b> <span class="brand-name-reason">— not all-caps</span></li>
+      <li class="brand-name-no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><b>Bow Wire</b> <span class="brand-name-reason">— never two words</span></li>
     </ul>
 
     <p class="brand-lede" style="margin-top:30px;">Need a one-liner for an article, talk, or README? Copy this:</p>
