@@ -464,13 +464,19 @@
             onToggle: typeof opts.onToggle === 'function' ? opts.onToggle : null,
             lines: []  // accumulator of {lineNo, html, path}
         };
-        _jsonViewerWalk(state, parsed, '', /*indent*/ 0, /*labelPrefix*/ '', /*trailingComma*/ false);
-        for (var i = 0; i < state.lines.length; i++) {
-            var ln = state.lines[i];
-            viewer.appendChild(_jsonViewerLineEl(
-                ln.lineNo, ln.html, ln.path || '', opts,
-                ln.collapsePath, ln.collapsed));
+        function _rebuildViewerLines() {
+            state.lineNo = 0;
+            state.lines = [];
+            _jsonViewerWalk(state, parsed, '', /*indent*/ 0, /*labelPrefix*/ '', /*trailingComma*/ false);
+            viewer.textContent = '';
+            for (var i = 0; i < state.lines.length; i++) {
+                var ln = state.lines[i];
+                viewer.appendChild(_jsonViewerLineEl(
+                    ln.lineNo, ln.html, ln.path || '', opts,
+                    ln.collapsePath, ln.collapsed));
+            }
         }
+        _rebuildViewerLines();
         // Click-to-collapse: the chevron (now in the gutter, Hoppscotch
         // style) AND any opener-line body click both toggle. The viewer
         // delegates at the root so morphdom re-renders don't drop the
@@ -494,6 +500,12 @@
                     chev ? 'data-collapse-path' : 'data-collapse-line-path') || '';
                 if (state.togglesByPath.has(p)) state.togglesByPath.delete(p);
                 else state.togglesByPath.add(p);
+                // Rebuild in-place so the viewer is self-contained — no
+                // upstream render() needed. The optional onToggle callback
+                // still fires for callers that want to persist the open
+                // state across full re-renders (request-builder.js does
+                // this via rv.togglesByPath).
+                _rebuildViewerLines();
                 if (state.onToggle) state.onToggle(p, state.togglesByPath.has(p));
                 return;  // selection handler runs only when neither toggle target was hit
             }
