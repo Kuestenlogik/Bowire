@@ -384,7 +384,15 @@ internal static class BowireSemanticsEndpoints
             requestName,
             StringComparison.Ordinal);
 
-    private static BowireExtensionRegistry GetExtensionRegistry()
+    /// <summary>
+    /// Shared, lazily-initialised extension registry — same instance
+    /// the UI-extensions catalogue endpoint uses. Exposed as
+    /// <c>internal</c> so sibling endpoints (e.g. the plugin
+    /// list endpoint that surfaces installed extensions alongside
+    /// protocol plugins) can reuse the cached snapshot without
+    /// re-running the assembly sweep.
+    /// </summary>
+    internal static BowireExtensionRegistry GetExtensionRegistry()
     {
         var cached = s_extensionRegistry;
         if (cached is not null) return cached;
@@ -422,7 +430,7 @@ internal static class BowireSemanticsEndpoints
         _ => "none",
     };
 
-    private static List<string> CapabilitiesToStrings(ExtensionCapabilities caps)
+    internal static List<string> CapabilitiesToStrings(ExtensionCapabilities caps)
     {
         var list = new List<string>(2);
         if (caps.HasFlag(ExtensionCapabilities.Viewer)) list.Add("viewer");
