@@ -167,7 +167,22 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
             && !string.Equals(cachedUrl, docUrl, StringComparison.Ordinal))
         {
             var fromCache = await TryDiscoverAtAsync(adapter, cachedUrl, ct).ConfigureAwait(false);
-            if (fromCache is not null) return CommitDiscovery(cachedUrl, fromCache);
+            // CommitDiscovery uses cachedUrl as the cache key + base for
+            // apiBaseUrl resolution, but the SERVICES' OriginUrl must
+            // carry the operator-supplied docUrl so the workbench groups
+            // them under the URL the operator actually typed — not the
+            // well-known path the probe found. Operator feedback: 'wenn
+            // ich http://localhost:5181 habe ich nach discover 2 einträge:
+            // http://localhost:5181 → 0 services und
+            // http://localhost:5181/openapi/v1.json → 5 services. das ist
+            // merkwürdig, ich hätte die unter http://localhost:5181
+            // erwartet und nur einen eintrag.'
+            if (fromCache is not null)
+            {
+                var result = CommitDiscovery(cachedUrl, fromCache);
+                RetagOriginUrl(result, docUrl);
+                return result;
+            }
             // Cached URL stopped responding — fall through to the regular path.
             _probeResolved.TryRemove(fastOrigin, out _);
         }
@@ -191,7 +206,9 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
                     _probeResolved[origin] = probedUrl;
                     RestProbeLog.Info(
                         $"REST discovery resolved {origin} via well-known path {probedUrl}");
-                    return CommitDiscovery(probedUrl, probedResult);
+                    var probed = CommitDiscovery(probedUrl, probedResult);
+                    RetagOriginUrl(probed, docUrl);
+                    return probed;
                 }
 
                 RestProbeLog.Debug($"no OpenAPI document found at {origin}");
@@ -202,6 +219,21 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
         }
 
         return CommitDiscovery(docUrl, discovered);
+    }
+
+    /// <summary>
+    /// Overwrite the <see cref="BowireServiceInfo.OriginUrl"/> on every
+    /// service so the workbench groups them under the operator-supplied URL
+    /// rather than the well-known spec path the probe resolved. CommitDiscovery
+    /// always tags services with whatever doc URL it cached against; this
+    /// helper retags the result for the auto-probe paths.
+    /// </summary>
+    private static void RetagOriginUrl(List<BowireServiceInfo> services, string originUrl)
+    {
+        foreach (var svc in services)
+        {
+            svc.OriginUrl = originUrl;
+        }
     }
 
     /// <summary>
