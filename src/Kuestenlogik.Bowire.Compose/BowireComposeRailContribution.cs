@@ -3,7 +3,7 @@
 
 using Kuestenlogik.Bowire.Plugins;
 
-namespace Kuestenlogik.Bowire.Rail.Compose;
+namespace Kuestenlogik.Bowire.Compose;
 
 /// <summary>
 /// Compose rail contribution — home for the ad-hoc Request Builder (#306 Phase G).
