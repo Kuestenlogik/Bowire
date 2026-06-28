@@ -376,17 +376,41 @@
         return nav;
     }
 
-    // #324 — Help-rail main pane. Full-width topic body. The
-    // "Open in new tab" undock affordance + matching standalone
-    // /help/topic/{id} endpoint land in the follow-up commit; this
-    // commit ships the bare main-pane shape so the rail is usable
-    // immediately.
+    // #324 — Help-rail main pane. Full-width topic body with a small
+    // "Open in new tab" anchor in the top-right corner so a multi-
+    // monitor operator can pop the docs out to a separate window
+    // without losing the workbench view. The undock link points at
+    // the standalone /help/topic/{id} endpoint contributed by core's
+    // BowireHelpEndpoints — a minimal HTML page (no JS, no rail
+    // chrome) so a tab the operator left open survives a workbench
+    // process restart.
     function renderHelpMain() {
         var main = el('div', {
             id: 'bowire-main-help',
             className: 'bowire-main bowire-main-help'
         });
         var pad = el('div', { className: 'bowire-main-pad bowire-help-main-pad' });
+
+        if (helpSelectedTopic && helpSelectedId) {
+            var bar = el('div', { className: 'bowire-help-main-toolbar' });
+            bar.appendChild(el('span', {
+                className: 'bowire-help-main-title',
+                textContent: helpSelectedTopic.title || helpSelectedId
+            }));
+            bar.appendChild(el('span', { style: 'flex:1' }));
+            var prefix = (typeof config === 'object' && config && config.prefix) ? config.prefix : '';
+            var undockHref = prefix + '/help/topic/' + encodeURIComponent(helpSelectedId);
+            bar.appendChild(el('a', {
+                href: undockHref,
+                target: '_blank',
+                rel: 'noopener',
+                className: 'bowire-help-undock-btn',
+                title: 'Open this topic in a new tab',
+                'aria-label': 'Open this topic in a new tab',
+                innerHTML: svgIcon('externalLink')
+            }));
+            pad.appendChild(bar);
+        }
 
         var content = el('div', { className: 'bowire-help-content bowire-help-content-rail' });
         if (helpSelectedTopic) {
@@ -409,18 +433,6 @@
         pad.appendChild(content);
         main.appendChild(pad);
         return main;
-    }
-
-    // #324 — back-compat shim. The unified right-side drawer
-    // (render-env-auth.js) still calls this during the rail rollout
-    // so an in-flight bundle (rail + drawer both active) doesn't
-    // break. The follow-up commit retires the drawer's Help tab + the
-    // helper.
-    function _renderHelpDrawerContent() {
-        var wrap = el('div', { className: 'bowire-help-body' });
-        wrap.appendChild(renderHelpSidebar());
-        wrap.appendChild(renderHelpMain());
-        return wrap;
     }
 
     function _helpGroupTopics(topics) {

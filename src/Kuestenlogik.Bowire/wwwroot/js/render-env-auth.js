@@ -772,22 +772,17 @@
         var mainNode = renderMain();
         body.appendChild(mainNode);
 
-        // #299 — Unified right-side drawer. Assistant (#90) and Help
-        // (#154 Phase 3) share one drawer chrome on the right edge of
-        // the body. When both are open, a tab strip lets the operator
-        // switch; the active tab persists across renders. When only
-        // one is open, the chrome renders without tabs. This replaces
-        // the old "newest open wins, the other is silently hidden"
-        // behavior — both can now coexist without competing.
-        var helpUsable = helpDrawerOpen && helpAvailable
-            && typeof _renderHelpDrawerContent === 'function';
+        // #299 / #324 — Unified right-side drawer. Originally hosted
+        // Assistant + Help; with #324 Help moved out into its own
+        // rail so the drawer now only carries Assistant + Activity +
+        // Tests. The tab-strip code still works for the multi-tab
+        // case (Assistant + Activity open at once, &c.).
         var testsUsable = (typeof testsDrawerOpen !== 'undefined') && testsDrawerOpen;
         var activityUsable = (typeof activityDrawerOpen !== 'undefined') && activityDrawerOpen;
-        if (aiDrawerOpen || helpUsable || testsUsable || activityUsable) {
+        if (aiDrawerOpen || testsUsable || activityUsable) {
             body.classList.add('bowire-with-ai-drawer');
             body.appendChild(renderUnifiedRightDrawer({
                 assistant: aiDrawerOpen,
-                help: helpUsable,
                 tests: testsUsable,
                 activity: activityUsable
             }));
@@ -2147,26 +2142,12 @@
                 }
             });
         }
-        if (open.help) {
-            var topicCount = (typeof helpTopics !== 'undefined' && helpTopics)
-                ? helpTopics.length : 0;
-            tabs.push({
-                id: 'help',
-                label: 'Help',
-                accessory: topicCount > 0 ? el('span', {
-                    className: 'bowire-help-topic-count',
-                    title: topicCount + ' topic' + (topicCount === 1 ? '' : 's') + ' loaded',
-                    textContent: String(topicCount)
-                }) : null,
-                closeTitle: 'Close Help (Esc)',
-                onClose: function () {
-                    if (typeof helpCloseDrawer === 'function') helpCloseDrawer();
-                },
-                renderContent: function () {
-                    return _renderHelpDrawerContent();
-                }
-            });
-        }
+        // #324 — Help retired from the right-side drawer. It now lives
+        // in its own rail (BowireHelpRailContribution + the dispatch
+        // arms in render-sidebar.js / render-main.js) so the drawer
+        // keeps its standard 360 px chrome and doesn't compete with
+        // Assistant / Activity / Tests for horizontal real estate.
+
         // #164 v2 — Console moved out of the right-drawer tabs into a
         // bottom-attached panel (renderConsoleBottomDrawer) so it
         // behaves like an IDE terminal panel (full-width, resizable
@@ -2243,14 +2224,9 @@
         }
         var activeTab = tabs.find(function (t) { return t.id === activeId; });
 
-        // The Help tab carries a two-column layout (topic tree + rendered
-        // markdown body) so the baseline 360 px drawer width chokes the
-        // content column to almost zero. Widen the drawer whenever Help
-        // is the active tab — the modifier scopes via CSS so the
-        // Assistant / Activity / Tests panels keep their familiar
-        // narrow chrome.
-        var widenForHelp = activeTab && activeTab.id === 'help'
-            ? ' bowire-drawer-help-active' : '';
+        // #324 — Help retired from the drawer; the drawer falls back to
+        // its standard 360 px chrome for the remaining tabs (Assistant,
+        // Activity, Tests). The widening hack is gone.
 
         // Single-tab path: delegate the whole shape to the renderDrawer
         // primitive (#115). A single open tab is visually identical to
@@ -2269,7 +2245,7 @@
             }
             return renderDrawer({
                 id: 'bowire-right-drawer',
-                className: 'bowire-right-drawer' + widenForHelp,
+                className: 'bowire-right-drawer',
                 title: activeTab.label,
                 titleAccessory: activeTab.accessory,
                 closeTitle: activeTab.closeTitle,
@@ -2282,7 +2258,7 @@
 
         var drawer = el('div', {
             id: 'bowire-right-drawer',
-            className: 'bowire-drawer bowire-right-drawer bowire-right-drawer-tabbed' + widenForHelp,
+            className: 'bowire-drawer bowire-right-drawer bowire-right-drawer-tabbed',
             role: 'complementary',
             'aria-label': activeTab ? activeTab.label : 'Drawer'
         });
