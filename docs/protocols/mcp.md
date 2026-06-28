@@ -1,4 +1,5 @@
 ---
+title: MCP
 summary: 'Bowire and MCP intersect in four distinct roles — pick the one that matches what you want to build.'
 ---
 

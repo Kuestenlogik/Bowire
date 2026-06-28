@@ -1,4 +1,5 @@
 ---
+title: Fuzz
 summary: 'Schema-aware field-level fuzzing with `bowire fuzz`. Knows what each field expects, so a `lat` (latitude) doesn''t see SQL-injection and an `image.bytes` gets magic-byte mutation instead of XSS strings. Baseline-diff oracle flags responses that look materially different from clean runs.'
 ---
 

@@ -1,4 +1,5 @@
 ---
+title: Duplex channels
 summary: 'Bowire provides interactive bidirectional channels for duplex and client-streaming methods.'
 ---
 

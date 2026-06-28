@@ -1,4 +1,5 @@
 ---
+title: Favorites & history
 summary: 'Bowire tracks your request history and lets you star frequently-used methods for quick access.'
 ---
 

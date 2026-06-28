@@ -1,4 +1,5 @@
 ---
+title: Topbar
 summary: "The topbar runs across the top of the workbench: brand, command palette, and the right-side cluster of session controls."
 ---
 

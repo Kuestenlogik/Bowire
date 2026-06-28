@@ -1,4 +1,5 @@
 ---
+title: SOAP
 summary: 'In-tree SOAP plugin. WSDL 1.1 discovery, SOAP 1.1 / 1.2 invocation, automatic Fault detection. No WCF / SoapCore dependency.'
 ---
 

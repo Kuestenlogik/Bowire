@@ -1,4 +1,5 @@
 ---
+title: Responsive & mobile
 summary: "Bowire's UI is fully responsive and works on mobile devices, tablets, and desktops."
 ---
 

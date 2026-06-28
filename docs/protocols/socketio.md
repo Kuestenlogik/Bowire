@@ -1,4 +1,5 @@
 ---
+title: Socket.IO
 summary: 'Bowire connects to Socket.IO 4.x servers, discovers events during a short listen window, and provides emit (unary) and listen (streaming) methods.'
 ---
 

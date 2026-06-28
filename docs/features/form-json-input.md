@@ -1,4 +1,5 @@
 ---
+title: Form & JSON
 summary: 'Bowire provides two input modes for composing requests: a structured form view and a raw JSON editor.'
 ---
 

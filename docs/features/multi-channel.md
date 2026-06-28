@@ -1,4 +1,5 @@
 ---
+title: Multi-channel
 summary: 'The multi-channel manager lets you keep multiple persistent connections (WebSocket, SignalR, MQTT, duplex gRPC, etc.) open simultaneously and switch between them without losing sta'
 ---
 

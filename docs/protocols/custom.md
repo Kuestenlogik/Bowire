@@ -1,4 +1,5 @@
 ---
+title: Custom protocols
 summary: 'You can extend Bowire with your own protocol plugins by implementing IBowireProtocol.'
 ---
 

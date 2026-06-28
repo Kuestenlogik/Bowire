@@ -1,4 +1,5 @@
 ---
+title: Streaming
 summary: 'Bowire supports all streaming patterns for gRPC and SignalR, with real-time response display powered by Server-Sent Events (SSE).'
 ---
 

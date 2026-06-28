@@ -1,4 +1,5 @@
 ---
+title: AsyncAPI
 summary: 'AsyncAPI 2.x and 3.0 as a discovery source — Bowire reads `asyncapi.yaml` / `.json`, surfaces channels + operations + per-message overloads in the sidebar, and dispatches calls through the wire plugin the doc''s `bindings:` declare.'
 ---
 

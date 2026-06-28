@@ -1,4 +1,5 @@
 ---
+title: SignalR
 summary: 'The SignalR plugin auto-discovers mapped hubs and their methods via endpoint metadata scanning.'
 ---
 

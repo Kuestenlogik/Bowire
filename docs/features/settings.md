@@ -1,4 +1,5 @@
 ---
+title: Settings
 summary: "The Settings dialog provides a centralized place to configure Bowire's behavior, review keyboard shortcuts, manage stored data, and adjust plugin-specific options."
 ---
 

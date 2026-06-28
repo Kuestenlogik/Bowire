@@ -1,4 +1,5 @@
 ---
+title: Protocol guides
 summary: 'Bowire ships with fourteen first-party protocol plugins plus seven sibling plugins (AMQP, Kafka, TacticalAPI, Akka.NET, DIS, UDP, Surgewave) that install via the CLI.'
 ---
 

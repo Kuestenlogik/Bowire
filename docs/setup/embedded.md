@@ -1,4 +1,5 @@
 ---
+title: Embedded
 summary: 'Embedded mode adds Bowire directly to your ASP.NET application —'
 ---
 

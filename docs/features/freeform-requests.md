@@ -1,4 +1,5 @@
 ---
+title: Freeform requests
 summary: 'The freeform request builder lets you craft and execute API requests manually, without relying on service discovery.'
 ---
 

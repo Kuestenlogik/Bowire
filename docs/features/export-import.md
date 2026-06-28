@@ -1,4 +1,5 @@
 ---
+title: Export / Import
 summary: 'Bowire supports exporting requests as grpcurl commands and importing/downloading response data.'
 ---
 

@@ -1,4 +1,5 @@
 ---
+title: Surgewave
 summary: 'The Surgewave plugin browses topics and produces / consumes messages against a Küstenlogik Surgewave broker over the native Surgewave wire or a Kafka-compatible wire on the same broker.'
 ---
 

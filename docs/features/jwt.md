@@ -1,4 +1,5 @@
 ---
+title: JWT
 summary: 'Inspect, validate, and tamper with JSON Web Tokens via `bowire jwt`. Decodes header / payload / signature, checks `exp` / `nbf` / `iat`, probes `alg: none` acceptance, re-signs with a chosen secret, overrides individual claims.'
 ---
 

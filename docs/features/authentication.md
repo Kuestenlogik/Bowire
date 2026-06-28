@@ -1,4 +1,5 @@
 ---
+title: Authentication
 summary: "Bowire ships with built-in auth helpers so you don't have to hand-craft Authorization headers for every request."
 ---
 

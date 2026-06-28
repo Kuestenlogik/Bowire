@@ -1,4 +1,5 @@
 ---
+title: DIS
 summary: 'The DIS plugin discovers entities on an IEEE 1278 multicast group, streams typed PDU envelopes per entity (or for the whole exercise feed), and replays captured PDU sequences via the mock server.'
 ---
 

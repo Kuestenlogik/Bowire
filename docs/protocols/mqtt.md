@@ -1,4 +1,5 @@
 ---
+title: MQTT
 summary: 'Bowire discovers MQTT topics by connecting to a broker, subscribing to # for a short window (~3 seconds), and collecting every topic that publishes at least one message.'
 ---
 
