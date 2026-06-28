@@ -212,6 +212,19 @@ internal static class BowireHtmlGenerator
                <head>
                    <meta charset="UTF-8">
                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                   <!-- Reader-Mode hints. Bowire is an interactive
+                        workbench, not a document; Edge's Reader Mode
+                        otherwise picks up stale JSON snippets and
+                        renders them as "the article". Operator: 'die
+                        bowire ui hat keinen lese-modus, ist viel zu
+                        interaktiv. aktuell im edge führt der lese-
+                        modus dazu, dass man nur alte oder teil-inhalte
+                        liest.' og:type=website (not article) +
+                        application role on the body root keeps the
+                        Reader-Mode heuristic from triggering on
+                        Chromium-based browsers. -->
+                   <meta property="og:type" content="website">
+                   <meta name="robots" content="noai, noimageai">
                    <title>{{title}} — {{desc}}</title>
                    <link rel="icon" type="image/svg+xml" href="{{FaviconDataUrl.Value}}" media="(prefers-color-scheme: light)">
                    <link rel="icon" type="image/svg+xml" href="{{FaviconMonoDataUrl.Value}}" media="(prefers-color-scheme: dark)">
@@ -226,7 +239,7 @@ internal static class BowireHtmlGenerator
                        </div>
                    </div>
                    <style>@keyframes bowire-spin { to { transform:rotate(360deg) } } #bowire-loading { background:#0f0f17 } [data-theme="light"] #bowire-loading { background:#f8f9fc } @media (prefers-color-scheme:light) { html:not([data-theme="dark"]) #bowire-loading { background:#f8f9fc } } .bowire-loading-stage { position:relative;width:80px;height:80px } .bowire-loading-logo-ring { position:absolute;inset:0;border:3px solid #2a2a3d;border-top-color:#6366f1;border-radius:50%;animation:bowire-spin .8s linear infinite } [data-theme="light"] .bowire-loading-logo-ring { border-color:#d8dae5;border-top-color:#4f46e5 } @media (prefers-color-scheme:light) { html:not([data-theme="dark"]) .bowire-loading-logo-ring { border-color:#d8dae5;border-top-color:#4f46e5 } } .bowire-loading-logo { position:absolute;width:40px;height:40px;top:50%;left:50%;transform:translate(-50%,-50%) } .bowire-loading-logo-dark { display:block } .bowire-loading-logo-light { display:none } [data-theme="light"] .bowire-loading-logo-dark { display:none } [data-theme="light"] .bowire-loading-logo-light { display:block } @media (prefers-color-scheme:light) { html:not([data-theme="dark"]) .bowire-loading-logo-dark { display:none } html:not([data-theme="dark"]) .bowire-loading-logo-light { display:block } } #bowire-app { opacity:0;transition:opacity .2s ease } .bowire-app-ready { opacity:1!important }</style>
-                   <div id="bowire-app"></div>
+                   <div id="bowire-app" role="application" aria-label="Bowire workbench"></div>
                    <script>
                        window.__BOWIRE_CONFIG__ = {
                            title: "{{title}}",
