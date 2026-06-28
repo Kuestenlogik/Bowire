@@ -3,11 +3,13 @@
 
 using Kuestenlogik.Bowire.Plugins;
 
-namespace Kuestenlogik.Bowire.Rail.Environments;
+namespace Kuestenlogik.Bowire.Workspaces;
 
 /// <summary>
 /// Environments rail contribution — hidden from the rail strip; surfaces
-/// inside its workspace (#306 Phase G).
+/// inside its workspace (#306 Phase G; folded into the Workspaces package
+/// in v2.1, #325 — environment variables are workspace-scoped so they
+/// belong with the workspace switcher).
 /// </summary>
 public sealed class BowireEnvironmentsRailContribution : IBowireRailContribution
 {

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #306 Phase G — Workspaces rail package.
+         v2.1 (#325): renamed from Kuestenlogik.Bowire.Rail.Workspaces to
+         drop the Rail. prefix + absorbed the standalone
+         Kuestenlogik.Bowire.Rail.Environments package. Environment
+         variables are workspace-scoped so the Environments contribution
+         lives naturally with the workspace switcher. The rail is
+         descriptor-only — no per-rail JS fragment ships from this
+         package; the workspace switcher + env-pane UI live in core
+         wwwroot/js. -->
+    <Description>Bowire Workspaces rail — workspace switcher (the closest thing to a file tree in Bowire) plus the workspace-scoped Environments rail. Descriptor-only; embedded hosts that don't reference this package don't get either rail in the strip / catalogue.</Description>
+    <PackageId>Kuestenlogik.Bowire.Workspaces</PackageId>
+    <PackageTags>bowire;rail;workspaces;environments;workbench;plugin</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>

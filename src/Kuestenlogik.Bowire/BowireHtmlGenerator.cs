@@ -389,19 +389,31 @@ internal static class BowireHtmlGenerator
     private static bool IsRailLikeAssembly(string? name)
     {
         if (string.IsNullOrEmpty(name)) return false;
-        // Rail.* is the primary surface. Security.* uses the same
-        // contract for the (future) JS slice that pairs with the
-        // security rail descriptor. Map ships its own asset endpoint
-        // and is intentionally excluded — its widget JS gets
-        // dynamic-loaded by extensions.js, not stitched.
-        // Kuestenlogik.Bowire.Mock is included because v2.1 folded the
-        // provisional Kuestenlogik.Bowire.Rail.Mocks package (which
-        // carried the BowireMocksRailContribution + mocks.js fragment)
-        // into the existing Mock package — same plugin pattern, one
-        // fewer NuGet to ship.
-        return name.StartsWith("Kuestenlogik.Bowire.Rail.", StringComparison.Ordinal)
-            || name.StartsWith("Kuestenlogik.Bowire.Security.", StringComparison.Ordinal)
-            || string.Equals(name, "Kuestenlogik.Bowire.Mock", StringComparison.Ordinal);
+        // Cheap up-front filter so we don't reflect over every loaded
+        // assembly: only Bowire-namespaced ones are candidates. Core
+        // (Kuestenlogik.Bowire) is excluded because its rail fragments
+        // are NOT splice candidates — they ship inline in the core
+        // bundle already. Same for Tool (no rail fragments at all).
+        if (!name.StartsWith("Kuestenlogik.Bowire", StringComparison.Ordinal)) return false;
+        if (string.Equals(name, "Kuestenlogik.Bowire", StringComparison.Ordinal)) return false;
+        if (string.Equals(name, "Kuestenlogik.Bowire.Tool", StringComparison.Ordinal)) return false;
+        // Map ships its own asset endpoint — its widget JS gets
+        // dynamic-loaded by extensions.js, not stitched into the IIFE.
+        if (string.Equals(name, "Kuestenlogik.Bowire.Map", StringComparison.Ordinal)) return false;
+        // Beyond the filter above we accept any Bowire-namespaced
+        // assembly. The CollectRailJsPayload caller checks for
+        // resource names matching `.wwwroot.js.*.js` per assembly,
+        // so an assembly without a JS fragment contributes nothing
+        // and incurs only the manifest-read cost.
+        //
+        // v2.1 (#325): the Rail. prefix was dropped from every Bowire
+        // package id (Compose / Recordings / Flows / Workspaces /
+        // Benchmarking / Interceptor) so the previous
+        // `Kuestenlogik.Bowire.Rail.*` startsWith check would have
+        // missed the renamed assemblies. The wider Bowire-namespace
+        // filter covers every shape, present and future, without
+        // requiring a per-package whitelist update.
+        return true;
     }
 
     private static string EscapeJs(string value)
