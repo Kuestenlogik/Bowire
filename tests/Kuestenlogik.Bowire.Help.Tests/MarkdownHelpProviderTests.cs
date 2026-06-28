@@ -105,12 +105,14 @@ public sealed class MarkdownHelpProviderTests
     }
 
     [Fact]
-    public void BuildTopic_FrontmatterSummary_WinsOverH1()
+    public void BuildTopic_FrontmatterTitle_WinsOverH1()
     {
-        // Front-matter `summary:` is the strongest title source — used
-        // when authors want the topic-tree label to differ from the
-        // first heading.
-        var content = "---\nsummary: Friendly title\nother: foo\n---\n# Heading body\n\nbody";
+        // Front-matter `title:` is the strongest title source — used
+        // when authors want a short topic-tree label distinct from the
+        // body's first heading. Distinct from `summary:` which carries
+        // the longer description shown UNDER the title in nav rows
+        // (DocFX convention).
+        var content = "---\ntitle: Short title\nsummary: longer description here\n---\n# Heading body\n\nbody";
         var sut = BuildWith(new()
         {
             ["bowire-help-docs/x.md"] = content,
@@ -118,17 +120,18 @@ public sealed class MarkdownHelpProviderTests
 
         var t = sut.GetTopic("x");
         Assert.NotNull(t);
-        Assert.Equal("Friendly title", t!.Title);
+        Assert.Equal("Short title", t!.Title);
+        Assert.Equal("longer description here", t.Summary);
     }
 
     [Fact]
-    public void BuildTopic_QuotedFrontmatterSummary_IsUnquoted()
+    public void BuildTopic_QuotedFrontmatterTitle_IsUnquoted()
     {
-        // Authors sometimes wrap the summary in single/double quotes —
-        // the helper strips them so the displayed title doesn't
-        // include the punctuation.
-        var doubleQuoted = "---\nsummary: \"Quoted title\"\n---\n# H\n";
-        var singleQuoted = "---\nsummary: 'Quoted title'\n---\n# H\n";
+        // Authors sometimes wrap front-matter values in single/double
+        // quotes — the parser strips them so the displayed title
+        // doesn't include the punctuation.
+        var doubleQuoted = "---\ntitle: \"Quoted title\"\n---\n# H\n";
+        var singleQuoted = "---\ntitle: 'Quoted title'\n---\n# H\n";
         var sut = BuildWith(new()
         {
             ["bowire-help-docs/d.md"] = doubleQuoted,
@@ -140,7 +143,27 @@ public sealed class MarkdownHelpProviderTests
     }
 
     [Fact]
-    public void BuildTopic_NoSummary_FallsBackToFirstH1()
+    public void BuildTopic_FrontmatterSummary_DoesNotOverrideH1Title()
+    {
+        // Summary is for the nav-row excerpt only — when no `title:` is
+        // present the body H1 still wins as the display title. This is
+        // the behaviour fix for #help-drawer-titles: long DocFX
+        // `summary:` sentences used to land in the title slot and made
+        // the nav unreadable.
+        var content = "---\nsummary: Long DocFX summary that runs on and on\n---\n# Short Heading\n\nbody";
+        var sut = BuildWith(new()
+        {
+            ["bowire-help-docs/x.md"] = content,
+        });
+
+        var t = sut.GetTopic("x");
+        Assert.NotNull(t);
+        Assert.Equal("Short Heading", t!.Title);
+        Assert.Equal("Long DocFX summary that runs on and on", t.Summary);
+    }
+
+    [Fact]
+    public void BuildTopic_NoTitle_FallsBackToFirstH1()
     {
         var sut = BuildWith(new()
         {
@@ -151,7 +174,7 @@ public sealed class MarkdownHelpProviderTests
     }
 
     [Fact]
-    public void BuildTopic_NoSummaryNoH1_FallsBackToFileStem()
+    public void BuildTopic_NoTitleNoH1_FallsBackToFileStem()
     {
         // The stem fallback Title-cases the file name and replaces
         // dashes with spaces — covers docs files that never quite
@@ -165,10 +188,10 @@ public sealed class MarkdownHelpProviderTests
     }
 
     [Fact]
-    public void BuildTopic_FrontmatterWithoutSummary_FallsBackToH1()
+    public void BuildTopic_FrontmatterWithoutTitle_FallsBackToH1()
     {
-        // Front-matter exists but doesn't carry a summary key —
-        // SummaryFromFrontmatter returns null, the body H1 wins.
+        // Front-matter exists but doesn't carry a title key —
+        // the body H1 wins.
         var content = "---\nauthor: someone\n---\n# Real Title\n";
         var sut = BuildWith(new()
         {
@@ -176,14 +199,15 @@ public sealed class MarkdownHelpProviderTests
         });
 
         Assert.Equal("Real Title", sut.GetTopic("x")!.Title);
+        Assert.Null(sut.GetTopic("x")!.Summary);
     }
 
     [Fact]
-    public void BuildTopic_EmptySummary_FallsBackToH1()
+    public void BuildTopic_EmptyTitle_FallsBackToH1()
     {
-        // summary: with no value (or just whitespace) shouldn't trump
+        // title: with no value (or just whitespace) shouldn't trump
         // the body H1.
-        var content = "---\nsummary:\n---\n# Heading\n";
+        var content = "---\ntitle:\n---\n# Heading\n";
         var sut = BuildWith(new()
         {
             ["bowire-help-docs/x.md"] = content,
@@ -193,12 +217,50 @@ public sealed class MarkdownHelpProviderTests
     }
 
     [Fact]
+    public void BuildTopic_RendersBodyHtmlFromMarkdown()
+    {
+        // Server-side Markdig render lands in BodyHtml so the workbench
+        // can innerHTML it directly — the old client mini-renderer
+        // escaped intentional HTML islands (DocFX picture-elements,
+        // inline SVG hero, definition lists) and shipped them as
+        // literal text.
+        var sut = BuildWith(new()
+        {
+            ["bowire-help-docs/x.md"] = "# Heading\n\nA **bold** word.",
+        });
+
+        var t = sut.GetTopic("x");
+        Assert.NotNull(t);
+        Assert.Contains("<h1", t!.BodyHtml, StringComparison.Ordinal);
+        Assert.Contains("<strong>bold</strong>", t.BodyHtml, StringComparison.Ordinal);
+        // Raw markdown still rides along for back-compat / tools that
+        // want the source.
+        Assert.Contains("**bold**", t.Markdown, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BuildTopic_PreservesInlineHtmlInBodyHtml()
+    {
+        // DocFX picture-elements + inline SVG show up in the embedded
+        // docs/ tree — Markdig must pass them through verbatim so the
+        // drawer can render theme-aware images / hero logos correctly.
+        var sut = BuildWith(new()
+        {
+            ["bowire-help-docs/x.md"] = "# H\n\n<picture><img src=\"x.svg\" alt=\"x\"></picture>\n",
+        });
+
+        var html = sut.GetTopic("x")!.BodyHtml;
+        Assert.Contains("<picture>", html, StringComparison.Ordinal);
+        Assert.Contains("<img src=\"x.svg\"", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BuildTopic_UnclosedFrontmatter_BodyKeptAsIs()
     {
         // No closing '---' fence — ExtractFrontmatter must treat the
         // whole raw text as body so the user still sees their topic.
         // No H1 in the body either, so the FileStemFallback wins.
-        var content = "---\nsummary: stray\nno close fence and no heading";
+        var content = "---\ntitle: stray\nno close fence and no heading";
         var sut = BuildWith(new()
         {
             ["bowire-help-docs/x.md"] = content,

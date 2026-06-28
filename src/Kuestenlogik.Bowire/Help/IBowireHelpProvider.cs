@@ -47,22 +47,38 @@ public interface IBowireHelpProvider
 }
 
 /// <summary>
-/// A single help topic in its full form. Markdown is the on-the-wire
-/// shape; the workbench renders it client-side so the package
-/// doesn't have to ship an HTML pipeline.
+/// A single help topic in its full form. The body ships in two shapes:
+/// the raw <see cref="Markdown"/> source (kept for back-compat + tools
+/// that want the original) and <see cref="BodyHtml"/> — sanitised HTML
+/// the provider produced so the workbench can <c>innerHTML</c> it
+/// without re-parsing markdown in the browser. The mini-renderer the
+/// drawer used to ship choked on embedded HTML (DocFX <c>&lt;dl&gt;</c>,
+/// <c>&lt;picture&gt;</c>, theme-aware SVG hero) and showed it as
+/// escaped text. Pipeline rendering on the server side keeps the UI
+/// thin and lets DocFX-shaped pages render correctly.
 /// </summary>
 /// <param name="Id">Stable identifier — used in URLs + cross-references.</param>
-/// <param name="Title">Display title shown in the drawer header + topic tree.</param>
+/// <param name="Title">Short display title for the topic tree (one to three words).</param>
+/// <param name="Summary">Optional longer description shown under the title in nav rows. Sourced from front-matter <c>summary:</c>. <c>null</c> when not provided.</param>
 /// <param name="Markdown">Raw markdown body. May include relative links to other topics by id.</param>
+/// <param name="BodyHtml">Server-rendered HTML body. Workbench prefers this when present.</param>
 /// <param name="CategoryId">Optional grouping key for the topic tree. <c>null</c> = top level.</param>
-public sealed record HelpTopic(string Id, string Title, string Markdown, string? CategoryId);
+public sealed record HelpTopic(
+    string Id,
+    string Title,
+    string? Summary,
+    string Markdown,
+    string BodyHtml,
+    string? CategoryId);
 
 /// <summary>
 /// Lightweight projection of <see cref="HelpTopic"/> for list views.
 /// The body is omitted so a Topics call doesn't pull the whole markdown
-/// set into the browser when the user only wants to scan titles.
+/// set into the browser when the user only wants to scan titles. The
+/// <see cref="Summary"/> rides along so the topic-tree nav can render
+/// a one-line excerpt under the short title.
 /// </summary>
-public sealed record HelpTopicSummary(string Id, string Title, string? CategoryId);
+public sealed record HelpTopicSummary(string Id, string Title, string? Summary, string? CategoryId);
 
 /// <summary>
 /// One result from <see cref="IBowireHelpProvider.Search"/>. Carries

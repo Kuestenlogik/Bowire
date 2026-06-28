@@ -38,6 +38,16 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
     // interface via ListTopics()/Search().
     private readonly Dictionary<string, IReadOnlyList<string>> _index;
 
+    // Single Markdig pipeline shared across every topic — advanced
+    // extensions cover the tables / DL-blocks / pipe-tables / GFM
+    // niceties the docs/ tree actually uses. UseSoftlineBreakAsHardlineBreak
+    // is deliberately NOT enabled — markdown paragraphs that wrap across
+    // multiple source lines should still render as a single paragraph.
+    private static readonly MarkdownPipeline _renderPipeline =
+        new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .Build();
+
     public MarkdownHelpProvider() : this(typeof(MarkdownHelpProvider).Assembly) { }
 
     internal MarkdownHelpProvider(Assembly source)
@@ -52,8 +62,8 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
             using var reader = new StreamReader(stream, Encoding.UTF8);
             var raw = reader.ReadToEnd();
 
-            var (frontmatterSummary, body) = ExtractFrontmatter(raw);
-            var topic = BuildTopic(name, frontmatterSummary, body);
+            var (frontmatter, body) = ExtractFrontmatter(raw);
+            var topic = BuildTopic(name, frontmatter, body);
             topics[topic.Id] = topic;
 
             foreach (var word in Tokenise(topic.Title))
@@ -127,7 +137,7 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
         _topics.Values
             .OrderBy(t => t.CategoryId, StringComparer.Ordinal)
             .ThenBy(t => t.Title, StringComparer.Ordinal)
-            .Select(t => new HelpTopicSummary(t.Id, t.Title, t.CategoryId))
+            .Select(t => new HelpTopicSummary(t.Id, t.Title, t.Summary, t.CategoryId))
             .ToList();
 
     /// <summary>
@@ -135,10 +145,14 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
     /// <see cref="HelpTopic"/>. The id is the resource name minus the
     /// prefix and <c>.md</c> extension; category is the first path
     /// segment (or null for the root <c>index.md</c>); title comes
-    /// from the front-matter <c>summary:</c>, then the first H1, then
-    /// the file stem as a fallback.
+    /// from front-matter <c>title:</c>, then the first H1, then the
+    /// file stem as a fallback. Front-matter <c>summary:</c> rides
+    /// separately as the nav-row excerpt (DocFX convention). The body
+    /// is rendered to sanitised HTML once at build time so the
+    /// workbench can inject it directly without re-parsing markdown
+    /// in the browser.
     /// </summary>
-    private static HelpTopic BuildTopic(string resourceName, string? summary, string body)
+    private static HelpTopic BuildTopic(string resourceName, Frontmatter frontmatter, string body)
     {
         var relative = resourceName[ResourcePrefix.Length..];
         if (relative.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
@@ -146,37 +160,69 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
 
         var slash = relative.IndexOf('/');
         var categoryId = slash >= 0 ? relative[..slash] : null;
-        var title = !string.IsNullOrWhiteSpace(summary) ? summary! : FirstHeading(body) ?? FileStemFallback(relative);
-        return new HelpTopic(relative, title, body, categoryId);
+        var title = !string.IsNullOrWhiteSpace(frontmatter.Title)
+            ? frontmatter.Title!
+            : FirstHeading(body) ?? FileStemFallback(relative);
+        var summary = string.IsNullOrWhiteSpace(frontmatter.Summary) ? null : frontmatter.Summary;
+        var html = RenderBody(body);
+        return new HelpTopic(relative, title, summary, body, html, categoryId);
     }
 
     /// <summary>
-    /// Pulls the leading YAML front-matter (between two <c>---</c>
-    /// fences) off the markdown body and returns the
-    /// <c>summary:</c> field if present, alongside the body without
-    /// the front-matter. Front-matter is the docfx convention used
-    /// throughout the docs/ tree.
+    /// Render markdown to HTML with the shared Markdig pipeline. The
+    /// docs/ tree mixes plain markdown with intentional HTML islands
+    /// (DocFX picture-elements for theme variants, inline SVG hero
+    /// logos, definition lists, pipe tables) — Markdig passes those
+    /// through verbatim, which is what the workbench wants. Source
+    /// trust: every byte we render comes from the assembly's own
+    /// embedded resources, so we don't gate on a sanitiser here.
     /// </summary>
-    private static (string? Summary, string Body) ExtractFrontmatter(string raw)
+    private static string RenderBody(string markdown) =>
+        string.IsNullOrEmpty(markdown) ? string.Empty : Markdown.ToHtml(markdown, _renderPipeline);
+
+    /// <summary>
+    /// Parsed YAML-ish front-matter the provider cares about. Keeps
+    /// the call sites tidy now that <c>title:</c> and <c>summary:</c>
+    /// are read separately.
+    /// </summary>
+    private readonly record struct Frontmatter(string? Title, string? Summary);
+
+    /// <summary>
+    /// Pulls the leading YAML front-matter (between two <c>---</c>
+    /// fences) off the markdown body and returns the recognised
+    /// fields (<c>title:</c>, <c>summary:</c>) alongside the body
+    /// without the front-matter. Front-matter is the docfx convention
+    /// used throughout the docs/ tree.
+    /// </summary>
+    private static (Frontmatter Front, string Body) ExtractFrontmatter(string raw)
     {
-        if (!raw.StartsWith("---", StringComparison.Ordinal)) return (null, raw);
+        if (!raw.StartsWith("---", StringComparison.Ordinal)) return (default, raw);
         var end = raw.IndexOf("\n---", 3, StringComparison.Ordinal);
-        if (end < 0) return (null, raw);
+        if (end < 0) return (default, raw);
         var fm = raw.Substring(3, end - 3);
         var body = raw[(end + 4)..].TrimStart('\r', '\n');
-        var summary = SummaryFromFrontmatter(fm);
-        return (summary, body);
+        return (ParseFrontmatter(fm), body);
     }
 
-    private static string? SummaryFromFrontmatter(string fm)
+    private static Frontmatter ParseFrontmatter(string fm)
     {
+        string? title = null;
+        string? summary = null;
         foreach (var trimmed in fm.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => line.TrimStart()))
         {
-            if (!trimmed.StartsWith("summary:", StringComparison.OrdinalIgnoreCase)) continue;
-            var v = trimmed["summary:".Length..].Trim().Trim('\'', '"');
-            return v.Length > 0 ? v : null;
+            if (title is null && trimmed.StartsWith("title:", StringComparison.OrdinalIgnoreCase))
+            {
+                var v = trimmed["title:".Length..].Trim().Trim('\'', '"');
+                if (v.Length > 0) title = v;
+            }
+            else if (summary is null && trimmed.StartsWith("summary:", StringComparison.OrdinalIgnoreCase))
+            {
+                var v = trimmed["summary:".Length..].Trim().Trim('\'', '"');
+                if (v.Length > 0) summary = v;
+            }
+            if (title is not null && summary is not null) break;
         }
-        return null;
+        return new Frontmatter(title, summary);
     }
 
     /// <summary>First markdown H1 (line starting with <c># </c>), or null.</summary>
