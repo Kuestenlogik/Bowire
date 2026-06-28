@@ -3,7 +3,7 @@
     "optimize-images": "node scripts/site/optimize-images.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.0",
+    "@playwright/test": "^1.61.1",
     "pdf-lib": "^1.17.1",
     "sharp": "^0.35.2"
   }
