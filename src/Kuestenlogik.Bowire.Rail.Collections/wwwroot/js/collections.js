@@ -207,6 +207,66 @@
                 onClick: function () { overlay.remove(); resolve(null); }
             });
 
+            // #140 — Presets bar at the top of the Run-options modal.
+            // Saves the entire opts shape (sessions count + hosts +
+            // ramp-up + failure policy + env pool) as a named preset.
+            // Apply re-seeds every form field; the next run-options
+            // modal open then pre-fills from the preset's snapshot via
+            // the regular _loadParallelDefaults path because Apply also
+            // persists the same defaults. Mirrors the renderPresetsBar
+            // call shape benchmarks.js uses.
+            var presetsBarSlot = null;
+            if (typeof renderPresetsBar === 'function') {
+                try {
+                    presetsBarSlot = renderPresetsBar({
+                        mode: 'parallel',
+                        snapshot: function () {
+                            var n = customMode ? parseInt(String(customInput.value || '').trim(), 10) : selected;
+                            return {
+                                sessions: n,
+                                hosts: hostsInput ? hostsInput.value : '',
+                                rampUpSeconds: rampUpInput ? parseFloat(rampUpInput.value) || 0 : 0,
+                                continueOnError: failureSelect ? failureSelect.value !== 'abort' : true,
+                                envPool: envPoolInput ? envPoolInput.value : ''
+                            };
+                        },
+                        apply: function (cfg) {
+                            if (!cfg) return;
+                            if (typeof cfg.sessions === 'number' && cfg.sessions >= 1) {
+                                if (PARALLEL_SESSION_PRESETS.indexOf(cfg.sessions) >= 0) {
+                                    selectPreset(cfg.sessions);
+                                } else {
+                                    customMode = true;
+                                    Array.prototype.forEach.call(
+                                        presetRow.querySelectorAll('.bowire-parallel-preset'),
+                                        function (btn) { btn.classList.remove('selected'); });
+                                    var cb = presetRow.querySelector('.bowire-parallel-preset[data-custom="1"]');
+                                    if (cb) cb.classList.add('selected');
+                                    customInput.disabled = false;
+                                    customInput.value = String(cfg.sessions);
+                                    updateConfirmEnabled();
+                                }
+                            }
+                            if (typeof cfg.hosts === 'string') hostsInput.value = cfg.hosts;
+                            if (cfg.rampUpSeconds !== undefined) rampUpInput.value = String(cfg.rampUpSeconds);
+                            if (cfg.continueOnError !== undefined) {
+                                failureSelect.value = cfg.continueOnError === false ? 'abort' : 'continue';
+                            }
+                            if (typeof cfg.envPool === 'string') envPoolInput.value = cfg.envPool;
+                            // Mirror the live form into the persisted
+                            // defaults so the next plain modal-open path
+                            // (no preset apply) sees the same shape.
+                            _persistParallelDefaults({
+                                hosts: hostsInput.value,
+                                rampUpSeconds: parseFloat(rampUpInput.value) || 0,
+                                continueOnError: failureSelect.value !== 'abort',
+                                envPool: envPoolInput.value
+                            });
+                        }
+                    });
+                } catch (e) { /* presets.js not loaded — skip the bar */ }
+            }
+
             var dialog = el('div', {
                 className: 'bowire-confirm-dialog bowire-parallel-dialog',
                 role: 'dialog',
@@ -215,6 +275,7 @@
             },
                 el('div', { id: 'bowire-parallel-title', className: 'bowire-confirm-title',
                     textContent: 'Run options — ' + (sourceName || (kind === 'collection' ? 'collection' : 'recording')) }),
+                presetsBarSlot,
                 el('div', { className: 'bowire-confirm-message', textContent: 'How many parallel sessions?' }),
                 presetRow,
                 customInput,

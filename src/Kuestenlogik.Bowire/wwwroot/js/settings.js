@@ -1565,6 +1565,39 @@
             textContent: 'Pick where Bowire reads its URL catalogue from. Local file, a remote JSON document, or a Consul agent. Saving from this UI overrides whatever Bowire:Discovery:Catalogue in appsettings.json sets; clearing the override falls back to appsettings.'
         }));
 
+        // #140 — Presets bar for catalogue-source configs. Snapshots
+        // the live draft (every provider field, scrubbed of secrets
+        // by _persistDiscoveryDraft's sanitiser semantics — the
+        // secrets stay on the server) so an operator switching
+        // between staging-Consul and prod-k8s flips between two named
+        // presets instead of retyping each side from scratch.
+        if (discoveryState.loaded && typeof renderPresetsBar === 'function') {
+            try {
+                section.appendChild(renderPresetsBar({
+                    mode: 'catalogue',
+                    snapshot: function () {
+                        var d = discoveryState.draft || {};
+                        var snap = Object.assign({}, d);
+                        // Drop secret-cleartext fields from the
+                        // snapshot — secrets stay server-side; the
+                        // preset only remembers which fields the
+                        // operator filled in, matching _persistDiscoveryDraft.
+                        snap.httpAuthorization = '';
+                        snap.consulToken = '';
+                        snap.k8sToken = '';
+                        snap.k8sCaCertificatePem = '';
+                        snap.agentBootstrapToken = '';
+                        return snap;
+                    },
+                    apply: function (cfg) {
+                        if (!cfg || typeof cfg !== 'object') return;
+                        discoveryState.draft = Object.assign(_seedDiscoveryDraft(null), cfg);
+                        _persistDiscoveryDraft();
+                    }
+                }));
+            } catch (e) { /* presets.js not loaded — skip */ }
+        }
+
         if (!discoveryState.loaded) {
             section.appendChild(el('p', {
                 className: 'bowire-settings-help',

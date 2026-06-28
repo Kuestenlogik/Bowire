@@ -4895,6 +4895,48 @@
                 return mockMain;
             }
             var mockMainWrap = el('div', { className: 'bowire-mocks-wrap bowire-main-pad' });
+            // #140 — Presets bar at the top of the Mocks pane. The
+            // saved config carries the currently-selected mock's
+            // recording-id + port + log-polling state so an operator
+            // who flips between "the JWT mock" and "the orders mock"
+            // bookmarks each pick instead of re-finding it by hand.
+            if (typeof renderPresetsBar === 'function') {
+                try {
+                    mockMainWrap.appendChild(renderPresetsBar({
+                        mode: 'mocks',
+                        snapshot: function () {
+                            var sel = (mocksList || []).find(function (m) { return m.mockId === mockSelectedId; });
+                            return {
+                                mockId: sel ? sel.mockId : null,
+                                port: sel ? sel.port : null,
+                                recordingId: sel ? sel.recordingId : null,
+                                recordingName: sel ? sel.recordingName : null,
+                                logPolling: mockLogOpenFor === (sel && sel.mockId)
+                            };
+                        },
+                        apply: function (cfg) {
+                            if (!cfg) return;
+                            // Re-select the mock by id when it's still
+                            // in the list; the recording-id is the
+                            // backup match for "the same mock spun up
+                            // again under a new mockId".
+                            if (cfg.mockId
+                                && (mocksList || []).some(function (m) { return m.mockId === cfg.mockId; })) {
+                                mockSelectedId = cfg.mockId;
+                            } else if (cfg.recordingId) {
+                                var byRec = (mocksList || []).find(function (m) {
+                                    return m.recordingId === cfg.recordingId;
+                                });
+                                if (byRec) mockSelectedId = byRec.mockId;
+                            }
+                            if (cfg.logPolling && typeof startMockLogPolling === 'function' && mockSelectedId) {
+                                mockLogOpenFor = mockSelectedId;
+                                startMockLogPolling(mockSelectedId);
+                            }
+                        }
+                    }));
+                } catch (e) { /* presets.js not loaded — skip */ }
+            }
 
             var selectedMock = (mocksList || []).find(function (m) { return m.mockId === mockSelectedId; });
 
