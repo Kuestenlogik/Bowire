@@ -28,6 +28,12 @@ defaults:
       path: "google844ded396fe38a5e.html"
     values:
       sitemap: false
+  # Brand downloads (PDF guidelines + ZIP kit) are binary assets, not
+  # pages — jekyll-sitemap otherwise lists the .pdf. Keep them out.
+  - scope:
+      path: "assets/brand"
+    values:
+      sitemap: false
   # Hand jekyll-seo-tag the brand OG/Twitter card image as a per-page
   # default (it does NOT auto-read the top-level `image:` key). With an
   # image present AND twitter.card=summary_large_image set above, seo-tag
