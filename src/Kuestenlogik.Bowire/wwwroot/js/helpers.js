@@ -2763,6 +2763,342 @@
         }, 0);
     }
 
+    // ---- Tab-strip overflow (More popover) ----
+    // Generic horizontal-overflow handler for tab strips. When tabs no
+    // longer fit, the trailing items move into a "▾ N" popover button.
+    // Visible tabs stay inline-clickable; overflow tabs preserve their
+    // ENTIRE DOM (icons, close-X, active state, badges) — the popover
+    // just re-parents them into a stacked surface and forwards clicks
+    // through the original tab.click() so existing handlers fire
+    // unmodified.
+    //
+    // Usage:
+    //   bowireWireTabOverflow(stripEl, {
+    //       tabSelector: '.my-tab',      // required — what to consider a tab
+    //       fixedSelector: '.my-spawn',  // optional — children kept ALWAYS visible
+    //       label: 'More'                // optional — chevron-button title prefix
+    //   });
+    //
+    // The helper is idempotent: it marks the strip via dataset.overflowWired
+    // and disconnects its ResizeObserver when the strip detaches from the
+    // DOM. Safe to call from every render() pass — re-running the layout
+    // pass is cheap and self-resetting.
+    //
+    // Visual contract:
+    //   - The "▾ N" chevron sits flex:0 0 auto at the right end (before any
+    //     `fixedSelector` siblings, so a "+" spawn-new-tab button stays the
+    //     right-most affordance).
+    //   - When the active tab is hidden, the chevron carries
+    //     .has-active-overflow so the operator sees their selection is
+    //     tucked away.
+    //   - Clicking the chevron opens a popover under it; rows are real
+    //     `<button>`s that forward the click to the original tab.
+    //   - Esc + outside-click close the popover.
+    var _bowireOpenOverflowPopover = null;
+    function _bowireCloseOverflowPopover() {
+        if (_bowireOpenOverflowPopover) {
+            try { _bowireOpenOverflowPopover.remove(); } catch { /* detached */ }
+            _bowireOpenOverflowPopover = null;
+            document.removeEventListener('click', _bowireOnOverflowDocClick, true);
+            document.removeEventListener('keydown', _bowireOnOverflowKey, true);
+            window.removeEventListener('resize', _bowireCloseOverflowPopover);
+        }
+    }
+    function _bowireOnOverflowDocClick(e) {
+        if (!_bowireOpenOverflowPopover) return;
+        if (_bowireOpenOverflowPopover.contains(e.target)) return;
+        var trigger = _bowireOpenOverflowPopover._trigger;
+        if (trigger && trigger.contains(e.target)) return;
+        _bowireCloseOverflowPopover();
+    }
+    function _bowireOnOverflowKey(e) {
+        if (e.key === 'Escape') _bowireCloseOverflowPopover();
+    }
+
+    function bowireWireTabOverflow(stripEl, opts) {
+        if (!stripEl) return;
+        opts = opts || {};
+        var tabSelector = opts.tabSelector;
+        if (!tabSelector) return;
+        var fixedSelector = opts.fixedSelector || null;
+        var labelPrefix = opts.label || 'More';
+
+        // Idempotency marker — re-running is a cheap relayout, not a re-wire.
+        if (stripEl.dataset.overflowWired === '1') {
+            _bowireOverflowRelayout(stripEl);
+            return;
+        }
+        stripEl.dataset.overflowWired = '1';
+        stripEl.classList.add('bowire-has-overflow-wired');
+
+        // Chevron trigger — a real button so keyboard focus + a11y come for
+        // free. Carries the count badge inside; CSS hides it when empty.
+        var chevron = document.createElement('button');
+        chevron.type = 'button';
+        chevron.className = 'bowire-tab-overflow-trigger';
+        chevron.setAttribute('aria-label', labelPrefix);
+        chevron.title = labelPrefix;
+        chevron.dataset.overflowTrigger = '1';
+        chevron.innerHTML =
+            '<span class="bowire-tab-overflow-chevron">'
+            + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'
+            + '</span>'
+            + '<span class="bowire-tab-overflow-count" data-overflow-count></span>';
+        chevron.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (_bowireOpenOverflowPopover && _bowireOpenOverflowPopover._trigger === chevron) {
+                _bowireCloseOverflowPopover();
+                return;
+            }
+            _bowireOpenOverflowPopoverFor(stripEl, chevron, tabSelector);
+        });
+        // Hidden by default — _bowireOverflowRelayout reveals it when needed.
+        chevron.style.display = 'none';
+
+        // Insert BEFORE any fixed siblings (e.g. the "+" spawn-new-tab button)
+        // so they stay right-most. Walk forward through the fixed selector if
+        // provided, else just append.
+        if (fixedSelector) {
+            var firstFixed = stripEl.querySelector(fixedSelector);
+            if (firstFixed && firstFixed.parentNode === stripEl) {
+                stripEl.insertBefore(chevron, firstFixed);
+            } else {
+                stripEl.appendChild(chevron);
+            }
+        } else {
+            stripEl.appendChild(chevron);
+        }
+
+        // Stash the config on the strip so the relayout pass + the
+        // MutationObserver (children added by re-render) can read it
+        // without a closure roundtrip.
+        stripEl._bowireOverflowConfig = {
+            tabSelector: tabSelector,
+            fixedSelector: fixedSelector,
+            chevron: chevron
+        };
+
+        // ResizeObserver on the strip + its parent — width changes from
+        // pane-splitter drags, sidebar collapse, &c. all bounce through
+        // here. MutationObserver picks up render-time child swaps.
+        if (typeof ResizeObserver !== 'undefined') {
+            var ro = new ResizeObserver(function () {
+                _bowireOverflowRelayout(stripEl);
+            });
+            ro.observe(stripEl);
+            if (stripEl.parentElement) ro.observe(stripEl.parentElement);
+            stripEl._bowireOverflowRO = ro;
+        }
+        if (typeof MutationObserver !== 'undefined') {
+            var mo = new MutationObserver(function () {
+                // Re-insert chevron before any newly-rendered fixed sibling
+                // if morphdom moved children around.
+                var cfg = stripEl._bowireOverflowConfig;
+                if (cfg && cfg.chevron && cfg.chevron.parentNode !== stripEl) {
+                    if (cfg.fixedSelector) {
+                        var firstFixed = stripEl.querySelector(cfg.fixedSelector);
+                        if (firstFixed) stripEl.insertBefore(cfg.chevron, firstFixed);
+                        else stripEl.appendChild(cfg.chevron);
+                    } else {
+                        stripEl.appendChild(cfg.chevron);
+                    }
+                }
+                _bowireOverflowRelayout(stripEl);
+            });
+            mo.observe(stripEl, { childList: true });
+            stripEl._bowireOverflowMO = mo;
+        }
+
+        // Initial layout pass on the next frame so the strip has settled
+        // into its flex slot.
+        requestAnimationFrame(function () { _bowireOverflowRelayout(stripEl); });
+    }
+
+    // Layout pass — measures, hides tabs that don't fit, updates the
+    // chevron's count + active-overflow accent. Pure DOM mutation, no
+    // state callbacks, so calling from a ResizeObserver doesn't loop.
+    function _bowireOverflowRelayout(stripEl) {
+        var cfg = stripEl && stripEl._bowireOverflowConfig;
+        if (!cfg) return;
+        var chevron = cfg.chevron;
+        var tabSelector = cfg.tabSelector;
+        var fixedSelector = cfg.fixedSelector;
+
+        // Reset visibility on every tab so we measure from a clean slate.
+        var allTabs = stripEl.querySelectorAll(tabSelector);
+        for (var i = 0; i < allTabs.length; i++) {
+            allTabs[i].style.display = '';
+            allTabs[i].classList.remove('is-in-overflow');
+        }
+        chevron.style.display = 'none';
+        chevron.classList.remove('has-active-overflow');
+
+        // Force a layout sync before measuring (reading offsetWidth flushes).
+        // eslint-disable-next-line no-unused-vars
+        var _flush = stripEl.offsetWidth;
+
+        var stripRect = stripEl.getBoundingClientRect();
+        var available = stripEl.clientWidth;
+        if (available <= 0) return;
+
+        // Reserve space for the chevron itself (we only know its width once
+        // it's visible at least once — fall back to a conservative 40 px).
+        // And for any always-visible fixed siblings to the right of where
+        // the chevron sits.
+        chevron.style.display = '';
+        var chevronWidth = chevron.getBoundingClientRect().width || 36;
+        chevron.style.display = 'none';
+        var fixedWidth = 0;
+        if (fixedSelector) {
+            var fixed = stripEl.querySelectorAll(fixedSelector);
+            for (var f = 0; f < fixed.length; f++) {
+                fixedWidth += fixed[f].getBoundingClientRect().width;
+            }
+        }
+
+        // First pass — does everything fit WITHOUT the chevron? Sum the
+        // widths of every tab + fixed sibling. If it fits, we're done.
+        var totalTabsWidth = 0;
+        for (var t = 0; t < allTabs.length; t++) {
+            totalTabsWidth += allTabs[t].getBoundingClientRect().width;
+        }
+        // Account for any styled gap between flex children.
+        var styles = window.getComputedStyle(stripEl);
+        var gap = parseFloat(styles.columnGap || styles.gap || '0') || 0;
+        var gapTotal = gap * Math.max(0, allTabs.length + (fixedSelector ? 1 : 0) - 1);
+
+        if (totalTabsWidth + fixedWidth + gapTotal <= available + 0.5) {
+            // Everything fits — chevron stays hidden.
+            return;
+        }
+
+        // Doesn't fit — reserve chevron + fixed space, walk tabs L→R, hide
+        // tabs past the budget. The first hidden tab AND every later tab
+        // get .is-in-overflow + display: none. Walking left-to-right
+        // preserves the natural reading order in the popover.
+        var budget = available - chevronWidth - fixedWidth - gapTotal;
+        var consumed = 0;
+        var overflowCount = 0;
+        var activeHidden = false;
+        for (var v = 0; v < allTabs.length; v++) {
+            var tab = allTabs[v];
+            var tw = tab.getBoundingClientRect().width;
+            if (consumed + tw > budget) {
+                tab.style.display = 'none';
+                tab.classList.add('is-in-overflow');
+                overflowCount++;
+                if (tab.classList.contains('active')) activeHidden = true;
+                continue;
+            }
+            consumed += tw;
+        }
+
+        if (overflowCount > 0) {
+            chevron.style.display = '';
+            var countEl = chevron.querySelector('[data-overflow-count]');
+            if (countEl) countEl.textContent = String(overflowCount);
+            if (activeHidden) chevron.classList.add('has-active-overflow');
+        }
+    }
+
+    // Build + position the popover next to the chevron. Rows mirror the
+    // hidden tabs' inline content (cloned so the operator sees the same
+    // icon/badge/close-X), and clicking a row forwards through the
+    // ORIGINAL tab's click event so existing handlers fire — no need to
+    // re-resolve state, no need to fork the click logic per strip.
+    function _bowireOpenOverflowPopoverFor(stripEl, chevron, tabSelector) {
+        _bowireCloseOverflowPopover();
+        var hidden = stripEl.querySelectorAll(tabSelector + '.is-in-overflow');
+        if (hidden.length === 0) return;
+
+        var pop = document.createElement('div');
+        pop.className = 'bowire-tab-overflow-popover';
+        pop._trigger = chevron;
+
+        for (var i = 0; i < hidden.length; i++) {
+            (function (origTab) {
+                var row = document.createElement('button');
+                row.type = 'button';
+                row.className = 'bowire-tab-overflow-row'
+                    + (origTab.classList.contains('active') ? ' is-active' : '');
+                // Mirror the tab's title so hovering the row gives the
+                // same tooltip as the inline tab.
+                if (origTab.title) row.title = origTab.title;
+
+                // Clone the visible content of the tab. We DON'T clone the
+                // close button — overflow popover rows get their own
+                // close affordance because the cloned button's listener
+                // would be dead (cloneNode loses event listeners).
+                var clone = origTab.cloneNode(true);
+                clone.removeAttribute('id');
+                clone.style.display = '';
+                clone.style.pointerEvents = 'none';
+                clone.classList.remove('is-in-overflow');
+                // Strip the cloned close button — we re-attach a live one
+                // below that's wired to the ORIGINAL tab's close handler.
+                var clonedClose = clone.querySelector('.bowire-request-tab-close, .bowire-tab-close');
+                if (clonedClose) clonedClose.remove();
+                row.appendChild(clone);
+
+                // Live close button — forwards to the original tab's close,
+                // looked up at click time.
+                var origClose = origTab.querySelector('.bowire-request-tab-close, .bowire-tab-close');
+                if (origClose) {
+                    var closeBtn = document.createElement('button');
+                    closeBtn.type = 'button';
+                    closeBtn.className = 'bowire-tab-overflow-row-close';
+                    closeBtn.setAttribute('aria-label', 'Close');
+                    closeBtn.title = origClose.title || 'Close';
+                    closeBtn.innerHTML = origClose.innerHTML;
+                    closeBtn.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        _bowireCloseOverflowPopover();
+                        try { origClose.click(); } catch { /* detached */ }
+                    });
+                    row.appendChild(closeBtn);
+                }
+
+                row.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    _bowireCloseOverflowPopover();
+                    // Forward the click to the original tab so its existing
+                    // handler fires — keeps switch logic in one place.
+                    try { origTab.click(); } catch { /* detached */ }
+                });
+                pop.appendChild(row);
+            })(hidden[i]);
+        }
+
+        document.body.appendChild(pop);
+
+        // Position below the chevron, viewport-clamped. fixed-position so
+        // it survives the strip's overflow:hidden.
+        var rect = chevron.getBoundingClientRect();
+        var popRect = pop.getBoundingClientRect();
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+        var left = Math.min(rect.right - popRect.width, vw - popRect.width - 4);
+        if (left < 4) left = 4;
+        var top = rect.bottom + 4;
+        if (top + popRect.height > vh - 4) {
+            // Flip above if it'd clip below.
+            top = rect.top - popRect.height - 4;
+            if (top < 4) top = 4;
+        }
+        pop.style.position = 'fixed';
+        pop.style.left = left + 'px';
+        pop.style.top = top + 'px';
+
+        _bowireOpenOverflowPopover = pop;
+        // Defer listener install by one tick so the very click that
+        // opened the popover doesn't immediately close it.
+        setTimeout(function () {
+            document.addEventListener('click', _bowireOnOverflowDocClick, true);
+            document.addEventListener('keydown', _bowireOnOverflowKey, true);
+            window.addEventListener('resize', _bowireCloseOverflowPopover);
+        }, 0);
+    }
+
     function renderSidebarListItem(opts) {
         opts = opts || {};
         var rowAttrs = {

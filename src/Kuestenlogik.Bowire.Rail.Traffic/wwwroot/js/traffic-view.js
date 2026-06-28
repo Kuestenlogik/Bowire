@@ -82,7 +82,7 @@
         var mockCount = (typeof interceptedMockRules !== 'undefined'
             && Array.isArray(interceptedMockRules)) ? interceptedMockRules.length : 0;
 
-        var tabStrip = el('div', { className: 'bowire-rail-subtabs' },
+        var tabStrip = el('div', { id: 'bowire-traffic-subtabs', className: 'bowire-rail-subtabs' },
             el('button', {
                 className: 'bowire-rail-subtab' + (trafficSubView === 'flows' ? ' active' : ''),
                 onClick: function () { trafficSubView = 'flows'; render(); }
@@ -141,6 +141,20 @@
         );
         var stripRow = el('div', { className: 'bowire-rail-subtabs-row' }, tabStrip, actionsBar);
         container.appendChild(stripRow);
+        // Overflow popover — three subtabs rarely overflow but the
+        // helper makes the strip behave consistently when the rail
+        // is narrowed below ~360 px. Look up the LIVE strip after
+        // morphdom commits, not the JS-tree `tabStrip` reference
+        // which can become detached.
+        requestAnimationFrame(function () {
+            var live = document.getElementById('bowire-traffic-subtabs');
+            if (live && typeof bowireWireTabOverflow === 'function') {
+                bowireWireTabOverflow(live, {
+                    tabSelector: '.bowire-rail-subtab',
+                    label: 'More tabs'
+                });
+            }
+        });
 
         if (trafficSubView === 'mocks') {
             if (typeof renderInterceptedMocksListInto === 'function') {

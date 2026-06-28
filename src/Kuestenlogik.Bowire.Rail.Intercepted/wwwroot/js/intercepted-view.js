@@ -279,7 +279,7 @@
 
         // Sub-tab strip: Flows | Mocks. Same recessed-strip pattern the
         // Workbench's other rails use for sub-tabs.
-        var tabStrip = el('div', { className: 'bowire-rail-subtabs' },
+        var tabStrip = el('div', { id: 'bowire-intercepted-subtabs', className: 'bowire-rail-subtabs' },
             el('button', {
                 className: 'bowire-rail-subtab' + (interceptedSubView === 'flows' ? ' active' : ''),
                 onClick: function () { interceptedSubView = 'flows'; render(); }
@@ -292,6 +292,17 @@
                 el('span', { className: 'bowire-rail-subtab-meta', textContent: interceptedMockRules.length ? String(interceptedMockRules.length) : '' }))
         );
         container.appendChild(tabStrip);
+        // Overflow popover — same affordance as Traffic's twin strip.
+        // Look up the LIVE element after morphdom commits.
+        requestAnimationFrame(function () {
+            var live = document.getElementById('bowire-intercepted-subtabs');
+            if (live && typeof bowireWireTabOverflow === 'function') {
+                bowireWireTabOverflow(live, {
+                    tabSelector: '.bowire-rail-subtab',
+                    label: 'More tabs'
+                });
+            }
+        });
 
         if (interceptedSubView === 'mocks') {
             renderInterceptedMocksListInto(container);

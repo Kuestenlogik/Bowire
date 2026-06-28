@@ -5987,10 +5987,13 @@ only an accent-coloured underline under the active tab. The whole
 
 .bowire-request-tabs-scroll {
     display: flex;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: var(--bowire-border) transparent;
+    /* Overflow-x: hidden + the JS-driven More-popover replaces the
+       horizontal scrollbar — operators reach hidden tabs through the
+       chevron trigger, not by scrolling a hidden scrollbar with no
+       indicator. overflow-y stays hidden so the bottom-separator
+       pseudo never triggers a vertical scrollbar. */
+    overflow: hidden;
+    min-width: 0;
     /* Flush-left so the first tab's accent stripe aligns with the
        sidebar edge below it. Right side keeps its 8 px so the trailing
        "+" button has a margin from the pane's right wall. */
@@ -6022,14 +6025,11 @@ only an accent-coloured underline under the active tab. The whole
     pointer-events: none;
 }
 
-.bowire-request-tabs-scroll::-webkit-scrollbar {
-    height: 3px;
-}
-
-.bowire-request-tabs-scroll::-webkit-scrollbar-thumb {
-    background: var(--bowire-border);
-    border-radius: 2px;
-}
+/* The webkit-scrollbar rules were retired alongside the overflow-x:
+   auto layout — the strip no longer scrolls horizontally; the JS-driven
+   More-popover handles overflow tabs instead. Kept the slot in case a
+   future rail wants a scrollable variant; restore .scrollbar rules
+   underneath a more-specific class then. */
 
 .bowire-request-tab {
     display: flex;
@@ -6171,6 +6171,156 @@ lives at the right of the
 }
 
 .bowire-request-tab-close:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+
+/* ---------- Tab strip overflow popover ---------- */
+/* Trigger chevron — sits at the right end of a strip when one or more
+   tabs don't fit. Carries a small count badge next to the chevron so the
+   operator sees at a glance how many tabs are tucked away.
+
+   .has-active-overflow paints the chevron in the accent colour so the
+   operator notices when their active tab is hidden — same convention as
+   browser tab strips, IDEs, &c. */
+.bowire-tab-overflow-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex: 0 0 auto;
+    height: 32px;
+    margin: 4px;
+    padding: 0 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    transition: color var(--bowire-transition), border-color var(--bowire-transition), background var(--bowire-transition);
+}
+.bowire-tab-overflow-trigger:hover {
+    color: var(--bowire-text);
+    background: var(--bowire-surface-hover);
+    border-color: var(--bowire-border);
+}
+.bowire-tab-overflow-trigger.has-active-overflow {
+    color: var(--bowire-accent);
+    border-color: var(--bowire-accent);
+}
+.bowire-tab-overflow-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.bowire-tab-overflow-chevron svg {
+    width: 12px;
+    height: 12px;
+}
+.bowire-tab-overflow-count {
+    font-variant-numeric: tabular-nums;
+    /* Reserved-width slot so the chevron doesn't reflow when the count
+       toggles between 1- and 2-digit. CSS hides it via :empty for the
+       edge case where the helper hides the chevron entirely. */
+    min-width: 10px;
+    text-align: left;
+}
+.bowire-tab-overflow-count:empty {
+    display: none;
+}
+/* Inside the smaller .bowire-tabs sub-tab strips the chevron should
+   match that strip's tighter rhythm — no border, less padding so it
+   slots between 8-px-tall tabs without bulking the row. */
+.bowire-tabs > .bowire-tab-overflow-trigger,
+.bowire-rail-subtabs > .bowire-tab-overflow-trigger,
+.bowire-sub-tabs > .bowire-tab-overflow-trigger {
+    height: auto;
+    margin: 0;
+    padding: 8px 10px;
+    border: 0;
+    border-top: 2px solid transparent;
+    border-radius: 0;
+}
+.bowire-tabs > .bowire-tab-overflow-trigger.has-active-overflow,
+.bowire-rail-subtabs > .bowire-tab-overflow-trigger.has-active-overflow,
+.bowire-sub-tabs > .bowire-tab-overflow-trigger.has-active-overflow {
+    border-top-color: var(--bowire-accent);
+    background: var(--bowire-bg-elevated);
+}
+
+/* The popover itself — fixed-position so it survives the strip's
+   overflow:hidden. Mirrors the bowire-context-menu surface so the
+   visual language matches every other in-app popover. */
+.bowire-tab-overflow-popover {
+    z-index: 9999;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: var(--bowire-shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.18));
+    padding: 4px;
+    min-width: 200px;
+    max-width: 320px;
+    max-height: 60vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.bowire-tab-overflow-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 6px 8px;
+    background: transparent;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    text-align: left;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background var(--bowire-transition);
+}
+.bowire-tab-overflow-row:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-tab-overflow-row.is-active {
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent);
+}
+.bowire-tab-overflow-row > :first-child {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-tab-overflow-row-close {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: 0;
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    padding: 0;
+    transition: color var(--bowire-transition), background var(--bowire-transition);
+}
+.bowire-tab-overflow-row-close svg {
+    width: 10px;
+    height: 10px;
+}
+.bowire-tab-overflow-row-close:hover {
     background: var(--bowire-surface-hover);
     color: var(--bowire-text);
 }
@@ -8134,6 +8284,12 @@ so the active tab's underline is the only horizontal
     gap: 0;
     background: var(--bowire-tab-strip-bg);
     flex-shrink: 0;
+    /* min-width: 0 + overflow: hidden cooperate with the
+       bowireWireTabOverflow helper — without them the strip refuses
+       to shrink below its content's natural width and tabs spill out
+       past the pane edge instead of triggering the More-popover. */
+    min-width: 0;
+    overflow: hidden;
     position: relative;
 }
 .bowire-tabs::after {
@@ -8207,6 +8363,11 @@ they're a way
     border-bottom: 1px solid var(--bowire-border);
     background: var(--bowire-bg);
     flex-shrink: 0;
+    /* Co-operate with bowireWireTabOverflow — the sub-tab strip needs
+       to be allowed to shrink below its content's natural width so
+       the More-popover triggers on narrow panes. */
+    min-width: 0;
+    overflow: hidden;
 }
 
 .bowire-sub-tab {
@@ -23453,6 +23614,11 @@ not as the
     border-bottom: 1px solid var(--bowire-border);
     margin: 0;
     align-items: center;
+    /* Co-operate with bowireWireTabOverflow — without min-width:0 the
+       flex row stretches to its content's natural width and the
+       More-popover never triggers when the rail is narrowed. */
+    min-width: 0;
+    overflow: hidden;
 }
 /* Right-aligned action group on the sub-tab strip. Used by Traffic
    (Reconnect + more-actions overflow) since its top toolbar was
