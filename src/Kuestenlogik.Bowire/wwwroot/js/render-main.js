@@ -8619,10 +8619,12 @@
     // ---- Phase 3.1: streaming pane composed with split-mode widgets ----
     //
     // When the active method has annotations that match a widget whose
-    // default layout is `split-horizontal` (the map widget on
-    // coordinate.wgs84 is the only one in v1.3.1), wrap the streaming
-    // pane and the widget pane in a split-pane primitive so the user
-    // can multi-select frames AND watch the map react in real time.
+    // default layout is `split-horizontal` (resolved by the framework's
+    // preferredSplitExtensionForMethod helper — extensions own which
+    // kinds default to split via layout.js → defaultLayoutForKind),
+    // wrap the streaming pane and the widget pane in a split-pane
+    // primitive so the user can multi-select frames AND watch the
+    // widget react in real time.
     //
     // Falls back to the plain streaming output when:
     //   - no extension is registered
@@ -8665,17 +8667,25 @@
         }
 
         // Synchronously decide whether the active method is split-
-        // eligible. The decision is based on the extension's default
-        // layout per kind PLUS the per-(service, method, widget) user
-        // override stored in localStorage. We don't actually know
-        // which extensions are mountable until /api/semantics/effective
-        // resolves — but the split decision is per-kind, so a single
-        // "is any registered extension's default split-horizontal?"
-        // check is enough.
+        // eligible. Core delegates the lookup to the extension
+        // framework — `preferredSplitExtensionForMethod` walks the
+        // cached effective annotations for (service, method),
+        // matches each present kind against registered viewers,
+        // and returns the first whose default layout is `split-*`
+        // (per layout.js → defaultLayoutForKind). When the cache
+        // is empty (first render before /api/semantics/effective
+        // resolves) it falls back to "any registered split-default
+        // viewer" so the wrapper doesn't flicker from tab to split
+        // when the cache lands.
         //
-        // For v1.3.1 the only split-default kind is `coordinate.wgs84`.
-        // Future kinds extend this set in layout.js → defaultLayoutForKind.
-        var splitKindExt = fw.preferredExtension('coordinate.wgs84');
+        // Core hardcodes no kind here — extensions own the split
+        // decision via their kind registration + the framework
+        // owns the lookup. Adding a future image / chart / audio
+        // viewer with a split default is purely additive.
+        var splitKindExt = (typeof fw.preferredSplitExtensionForMethod === 'function')
+            ? fw.preferredSplitExtensionForMethod(
+                selectedService.name, selectedMethod.name)
+            : null;
         var saved = splitKindExt
             ? layout.loadWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, splitKindExt.kind)
             : null;
@@ -8830,7 +8840,13 @@
             return outputElement;
         }
 
-        var splitKindExt = fw.preferredExtension('coordinate.wgs84');
+        // Extension-driven lookup (no hardcoded kind in core) —
+        // see renderStreamingPaneWithWidgets above for the
+        // framework helper's contract.
+        var splitKindExt = (typeof fw.preferredSplitExtensionForMethod === 'function')
+            ? fw.preferredSplitExtensionForMethod(
+                selectedService.name, selectedMethod.name)
+            : null;
         var saved = splitKindExt
             ? layout.loadWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, splitKindExt.kind)
             : null;
@@ -9077,7 +9093,10 @@
         var fw = window.__bowireExtFramework;
         var layout = window.__bowireLayout;
         if (!fw || !layout || !selectedService || !selectedMethod) return null;
-        var splitKindExt = fw.preferredExtension('coordinate.wgs84');
+        var splitKindExt = (typeof fw.preferredSplitExtensionForMethod === 'function')
+            ? fw.preferredSplitExtensionForMethod(
+                selectedService.name, selectedMethod.name)
+            : null;
         if (!splitKindExt) return null;
         var saved = layout.loadWidgetLayout(
             selectedService.name, selectedMethod.name, splitKindExt.id, splitKindExt.kind);
@@ -10020,11 +10039,12 @@
             // and never trigger a sidebar/main re-render.
             //
             // Phase 3.1: when the active method carries annotations
-            // that mount a widget defaulting to split-horizontal (the
-            // map widget on coordinate.wgs84 is the only consumer in
-            // v1.3.1), the streaming list and the widget share the
-            // pane via the split-pane primitive instead of competing
-            // for the same tab slot. Falls through to the original
+            // that mount a widget whose default layout is split-*
+            // (resolved through the framework — core hardcodes no
+            // kind here), the streaming list and the widget share
+            // the pane via the split-pane primitive instead of
+            // competing for the same tab slot. Falls through to
+            // the original
             // single-pane render when no such widget is mountable —
             // identical behaviour for every other method.
             respBody.appendChild(renderStreamingPaneWithWidgets());
