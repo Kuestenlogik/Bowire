@@ -288,7 +288,13 @@
                 nav.appendChild(hitList);
             }
         } else {
-            // Default tree view — grouped by category.
+            // Default tree view — grouped by category. Each row shows
+            // the short title (front-matter `title:` / first H1 / file
+            // stem) and an optional one-line excerpt under it sourced
+            // from front-matter `summary:` — same shape as the search
+            // hit list (.bowire-help-hit-*) so the operator gets keyword
+            // + context without scrolling. Excerpt collapses when the
+            // topic has no summary.
             var grouped = _helpGroupTopics(helpTopics);
             grouped.forEach(function (group) {
                 if (group.category) {
@@ -302,19 +308,38 @@
                         className: 'bowire-help-topic-row'
                             + (t.id === helpSelectedId ? ' selected' : ''),
                         onClick: function () { helpLoadTopic(t.id); }
-                    },
-                        el('span', { textContent: t.title })
-                    );
+                    });
+                    row.appendChild(el('span', {
+                        className: 'bowire-help-topic-row-title',
+                        textContent: t.title
+                    }));
+                    if (t.summary) {
+                        row.appendChild(el('span', {
+                            className: 'bowire-help-topic-row-excerpt',
+                            textContent: t.summary
+                        }));
+                    }
                     nav.appendChild(row);
                 });
             });
         }
         wrap.appendChild(nav);
 
-        // Right column — rendered topic.
+        // Right column — rendered topic. Server-side Markdig pipeline
+        // emits sanitised HTML in `bodyHtml` so the workbench can
+        // innerHTML it directly. Old clients (or providers that
+        // haven't rolled the new shape) fall back to the mini-renderer
+        // over `markdown`. The mini-renderer escapes HTML entities,
+        // which is wrong for DocFX-shaped topics carrying intentional
+        // markup (picture, svg, dl) — the server path is the working
+        // one going forward.
         var content = el('div', { className: 'bowire-help-content' });
         if (helpSelectedTopic) {
-            content.innerHTML = helpRenderMarkdown(helpSelectedTopic.markdown);
+            if (helpSelectedTopic.bodyHtml) {
+                content.innerHTML = helpSelectedTopic.bodyHtml;
+            } else {
+                content.innerHTML = helpRenderMarkdown(helpSelectedTopic.markdown);
+            }
         } else if (!helpTopicsLoaded) {
             content.appendChild(el('div', {
                 className: 'bowire-help-empty',
