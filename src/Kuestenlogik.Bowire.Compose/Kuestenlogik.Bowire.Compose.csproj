@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- #306 Phase G — Compose rail package.
-         #311 Phase G continuation — owns compose-rail.js fragment. -->
+         #311 Phase G continuation — owns compose-rail.js fragment.
+         v2.1 (#325): renamed from Kuestenlogik.Bowire.Rail.Compose to
+         drop the Rail. prefix. -->
     <Description>Bowire Compose rail — home for the ad-hoc Request Builder. Adds the Compose rail descriptor + per-rail JS fragment to the workbench.</Description>
-    <PackageId>Kuestenlogik.Bowire.Rail.Compose</PackageId>
+    <PackageId>Kuestenlogik.Bowire.Compose</PackageId>
     <PackageTags>bowire;rail;compose;request-builder;workbench;plugin</PackageTags>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
@@ -17,9 +19,9 @@
          request-builder-protocols.js). The HTML generator stitches
          rail fragments into the SAME IIFE as core, so those
          bare-identifier references resolve through the shared
-         closure scope. See Rail.Recordings for the discovery
+         closure scope. See Bowire.Recordings for the discovery
          contract. -->
     <EmbeddedResource Include="wwwroot\js\compose-rail.js"
-                      LogicalName="Kuestenlogik.Bowire.Rail.Compose.wwwroot.js.compose-rail.js" />
+                      LogicalName="Kuestenlogik.Bowire.Compose.wwwroot.js.compose-rail.js" />
   </ItemGroup>
 </Project>

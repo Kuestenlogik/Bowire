@@ -1,8 +1,8 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Compose;
 using Kuestenlogik.Bowire.Plugins;
-using Kuestenlogik.Bowire.Rail.Compose;
 using Kuestenlogik.Bowire.Rails;
 using Kuestenlogik.Bowire.Workspaces;
 
