@@ -48,7 +48,12 @@
             // #309 — Catalogue provider picker. Sits next to Assistant
             // because both are "what backend talks to Bowire": Assistant
             // is the AI backend, Discovery is the URL catalogue backend.
-            leaf('discovery', 'Discovery', 'search')
+            leaf('discovery', 'Discovery', 'search'),
+            // #153 UI phase — Tools surface lists running reverse-proxy
+            // hosts started via the topbar Tools menu. Stays empty for
+            // installs that never start one (no rows + a hint), so the
+            // entry doesn't lie about activity that isn't there.
+            leaf('tools', 'Tools', 'plug')
         ];
 
         // Per-plugin children. The Plugins group node itself routes to
@@ -270,6 +275,8 @@
             rightPanel.appendChild(renderSettingsAi());
         } else if (settingsTab === 'discovery') {
             rightPanel.appendChild(renderSettingsDiscovery());
+        } else if (settingsTab === 'tools') {
+            rightPanel.appendChild(renderSettingsTools());
         } else if (settingsTab === 'plugins') {
             rightPanel.appendChild(renderSettingsPlugins());
         } else if (settingsTab === 'workspace') {
@@ -1947,6 +1954,110 @@
                 discoveryState.refreshResult = { kind: 'err', text: 'Network error: ' + (err && err.message ? err.message : err) };
                 renderSettingsDialog();
             });
+    }
+
+    // ---- #153 UI phase — Tools (running reverse-proxies) ----
+    //
+    // Lists every reverse-proxy host the operator started via the
+    // topbar Tools menu. Backed by GET /api/tools/reverse-proxy. Each
+    // row carries a Stop button; a global "Stop all" handles the
+    // multi-row case. The list also calls out that hosts die with
+    // bowire.exe so an operator who expects daemons reads the right
+    // story before they file an issue.
+    function renderSettingsTools() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        section.appendChild(el('h3', { className: 'bowire-settings-section-title',
+            textContent: 'Tools' }));
+        section.appendChild(el('div', { className: 'bowire-settings-section-hint',
+            textContent: 'In-process tools you started from the workbench. Stops when Bowire shuts down — use `bowire proxy` for a long-running daemon.' }));
+
+        // Reverse-proxy sub-section
+        section.appendChild(el('h4', {
+            className: 'bowire-settings-section-subtitle',
+            style: 'margin-top:18px;font-size:13px;color:var(--bowire-text-secondary);text-transform:uppercase;letter-spacing:0.05em',
+            textContent: 'Reverse proxy'
+        }));
+
+        if (!(typeof window !== 'undefined' && typeof window.bowireRefreshReverseProxies === 'function')) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-section-empty',
+                textContent: 'Reverse-proxy launcher not loaded — check that the Bowire bundle is up to date.'
+            }));
+            return section;
+        }
+
+        // First open of this tab kicks the fetch. After that the
+        // module-scope state cache is consulted directly so toggling
+        // tabs doesn't refire HTTP for every render.
+        if (!window.bowireReverseProxyState.loaded && !window.bowireReverseProxyState.loading) {
+            window.bowireRefreshReverseProxies({ rerender: true });
+        }
+        var running = (window.bowireReverseProxyState.running) || [];
+
+        var actionRow = el('div', { style: 'display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap' });
+        actionRow.appendChild(el('button', {
+            className: 'bowire-settings-action-btn',
+            textContent: 'Start a reverse proxy…',
+            onClick: function () { window.bowireOpenReverseProxyModal(); }
+        }));
+        if (running.length > 0) {
+            actionRow.appendChild(el('button', {
+                className: 'bowire-settings-action-btn',
+                textContent: 'Stop all',
+                onClick: function () { window.bowireStopAllReverseProxies(); }
+            }));
+        }
+        actionRow.appendChild(el('button', {
+            className: 'bowire-settings-action-btn',
+            style: 'background:none;color:var(--bowire-text-tertiary)',
+            textContent: 'Refresh',
+            onClick: function () { window.bowireRefreshReverseProxies({ rerender: true }); }
+        }));
+        section.appendChild(actionRow);
+
+        if (running.length === 0) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-section-empty',
+                textContent: 'No reverse proxies running. Start one from the topbar Tools menu or the button above.'
+            }));
+            return section;
+        }
+
+        var list = el('div', { className: 'bowire-settings-tools-list',
+            style: 'display:flex;flex-direction:column;gap:6px' });
+        running.forEach(function (entry) {
+            var row = el('div', {
+                className: 'bowire-settings-tools-row',
+                style: 'display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bowire-bg-elevated);border:1px solid var(--bowire-border-subtle);border-radius:6px'
+            });
+            row.appendChild(el('code', {
+                style: 'font-size:12px;color:var(--bowire-text);font-weight:500',
+                textContent: ':' + entry.port
+            }));
+            row.appendChild(el('span', {
+                style: 'color:var(--bowire-text-tertiary);font-size:12px',
+                textContent: '→'
+            }));
+            row.appendChild(el('code', {
+                style: 'font-size:12px;color:var(--bowire-text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+                textContent: entry.upstream
+            }));
+            row.appendChild(el('button', {
+                className: 'bowire-settings-action-btn',
+                textContent: 'Stop',
+                onClick: function () { window.bowireStopReverseProxy(entry.port); }
+            }));
+            list.appendChild(row);
+        });
+        section.appendChild(list);
+
+        section.appendChild(el('p', {
+            className: 'bowire-settings-help',
+            style: 'margin-top:12px',
+            textContent: 'Stops when Bowire shuts down.'
+        }));
+
+        return section;
     }
 
     // ---- Workspace pointer (#193 Phase 2 item 4) ----

@@ -3396,6 +3396,59 @@
             style: 'width:14px;height:14px;display:flex'
         }));
 
+        // #153 UI phase — Tools menu. Single-item popover today
+        // ("Reverse proxy…") so an operator who needs the launcher
+        // doesn't have to dig into Settings for it. Sits in the
+        // drawers group ahead of help / about so the cluster stays
+        // ordered "action affordances → info affordances".
+        var toolsMenuOpen = !!window._bowireToolsMenuOpen;
+        var toolsBtn = el('button', {
+            id: 'bowire-tools-btn',
+            className: 'bowire-theme-toggle-btn' + (toolsMenuOpen ? ' active' : ''),
+            title: 'Tools',
+            'aria-label': 'Tools',
+            'aria-haspopup': 'menu',
+            'aria-expanded': toolsMenuOpen ? 'true' : 'false',
+            'data-topbar-priority': '4',
+            'data-topbar-label': 'Tools',
+            'data-topbar-icon': 'plug',
+            'data-topbar-group': 'info',
+            onClick: function (e) {
+                e.stopPropagation();
+                window._bowireToolsMenuOpen = !window._bowireToolsMenuOpen;
+                render();
+            }
+        }, el('span', {
+            innerHTML: svgIcon('plug'),
+            style: 'width:14px;height:14px;display:flex'
+        }));
+        var toolsMenu = toolsMenuOpen
+            ? el('div', {
+                className: 'bowire-tools-menu',
+                role: 'menu',
+                style: 'position:absolute;top:42px;right:10px;background:var(--bowire-bg-elevated);border:1px solid var(--bowire-border-subtle);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.2);min-width:220px;padding:4px;z-index:100',
+                onClick: function (e) { e.stopPropagation(); }
+            },
+                el('button', {
+                    type: 'button',
+                    role: 'menuitem',
+                    style: 'display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 10px;background:none;border:none;color:var(--bowire-text);cursor:pointer;border-radius:4px;font-size:13px',
+                    onMouseEnter: function (ev) { ev.currentTarget.style.background = 'var(--bowire-bg-hover, rgba(255,255,255,0.04))'; },
+                    onMouseLeave: function (ev) { ev.currentTarget.style.background = 'none'; },
+                    onClick: function () {
+                        window._bowireToolsMenuOpen = false;
+                        if (typeof window.bowireOpenReverseProxyModal === 'function') {
+                            window.bowireOpenReverseProxyModal();
+                        }
+                        render();
+                    }
+                },
+                    el('span', { innerHTML: svgIcon('connect'), style: 'width:14px;height:14px;display:flex' }),
+                    el('span', { textContent: 'Reverse proxy…' })
+                )
+            )
+            : null;
+
         // Help button — opens the in-app docs drawer (F1). Greyed out
         // with an install hint when the Kuestenlogik.Bowire.Help
         // package isn't installed (capability probe at boot returned
@@ -4008,9 +4061,12 @@
             // activity-rail bottom per VS Code / JetBrains convention.
             // (Omnibox search trigger moved to its own group AHEAD
             // of the editor-context group — leads the right cluster.)
-            el('div', { className: 'bowire-topbar-group bowire-topbar-drawers' },
+            el('div', { className: 'bowire-topbar-group bowire-topbar-drawers',
+                style: 'position:relative' },
                 aiToggleBtn,
                 themeBtn,
+                toolsBtn,
+                toolsMenu,
                 helpBtn,
                 aboutBtn
             ),

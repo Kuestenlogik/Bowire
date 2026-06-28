@@ -175,6 +175,10 @@
     <BowireJsFragment Include="wwwroot\js\perf-diff.js" />
     <BowireJsFragment Include="wwwroot\js\response-diff.js" />
     <BowireJsFragment Include="wwwroot\js\settings.js" />
+    <!-- #153 UI phase — reverse-proxy launcher (Tools menu + Settings list).
+         Must come BEFORE settings.js's renderSettingsTools call site (window.bowire*
+         globals are read via typeof at click time) but ordering otherwise free. -->
+    <BowireJsFragment Include="wwwroot\js\tools-reverse-proxy.js" />
     <BowireJsFragment Include="wwwroot\js\plugin-update-badge.js" />
     <BowireJsFragment Include="wwwroot\js\ai.js" />
     <!-- #125 Phase 2 — vars resolver UX. Must come before init.js
