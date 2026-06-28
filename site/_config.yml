@@ -28,3 +28,17 @@ defaults:
       path: "google844ded396fe38a5e.html"
     values:
       sitemap: false
+  # Hand jekyll-seo-tag the brand OG/Twitter card image as a per-page
+  # default (it does NOT auto-read the top-level `image:` key). With an
+  # image present AND twitter.card=summary_large_image set above, seo-tag
+  # now emits og:image + twitter:image + the large card itself — so the
+  # manual override block in _layouts/default.html could be removed,
+  # killing the previously duplicated twitter:card / og:image tags.
+  - scope:
+      path: ""
+    values:
+      image:
+        path: /assets/images/og-image.png
+        width: 1200
+        height: 630
+        alt: "Bowire — the multi-protocol API workbench. By Küstenlogik."

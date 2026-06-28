@@ -95,18 +95,12 @@
   {%- endif -%}
 
   {%- comment -%}
-  Override jekyll-seo-tag's defaults: it emits twitter:card=summary
-  with no image. Force the larger card + brand-card image so
-  X / LinkedIn / Discord / Slack previews render the 1200×630 OG
-  card instead of a 1:1 favicon thumbnail.
+  og:image / twitter:image / the large summary card are emitted by
+  jekyll-seo-tag itself now (it reads the brand image from the
+  site-wide `image:` front-matter default in _config.yml). The manual
+  override block that used to live here was removed because it produced
+  duplicate twitter:card + og:image tags on every page.
   {%- endcomment -%}
-  <meta property="og:image" content="{{ '/assets/images/og-image.png' | absolute_url }}">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Bowire — the multi-protocol API workbench. By Küstenlogik.">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="{{ '/assets/images/og-image.png' | absolute_url }}">
-  <meta name="twitter:image:alt" content="Bowire — the multi-protocol API workbench. By Küstenlogik.">
 
   {%- comment -%}
   schema.org JSON-LD — gives Google / Bing / DuckDuckGo / AI crawlers a

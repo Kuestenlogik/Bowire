@@ -19,6 +19,22 @@
       {{#_description}}<meta name="description" content="{{_description}}">{{/_description}}
       {{#description}}<meta name="description" content="{{description}}">{{/description}}
 
+      {{!--- Canonical URL. The upstream `modern` master we override
+            here emits a canonical only when _baseUrl is set; dropping it
+            left every docs page without one, so Google had to guess the
+            canonical URL (a common "Duplicate / alternate canonical"
+            cause). _baseUrl (docfx.json globalMetadata) + _path (this
+            page's output path relative to the docs root) compose the
+            absolute public URL.
+
+            noindex for the auto-generated API reference is NOT set here:
+            those pages render from .yml outside the docfx base dir, so
+            neither fileMetadata nor a layout flag can target them. The
+            docs CI workflow injects the noindex meta into api/*.html
+            post-build instead; the headless toc.html fragments are kept
+            out of the index via robots.txt. ----------------------}}
+      {{#_baseUrl}}<link rel="canonical" href="{{_baseUrl}}{{_path}}">{{/_baseUrl}}
+
       {{!--- Favicon — same Bowire indigo-tile + white-B mark used on
             the marketing site, app icon, and browser tab. ----------}}
       <link rel="icon" type="image/svg+xml" href="{{_rel}}public/favicon.svg">

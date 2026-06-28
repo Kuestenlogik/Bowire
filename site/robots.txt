@@ -8,4 +8,10 @@ Allow: /
 # in-page search widget, not to crawlers.
 Disallow: /pagefind/
 
+# DocFX table-of-contents pages are headless HTML fragments (no <head>,
+# just a nav list) loaded into the docs sidebar at runtime. They carry no
+# standalone content and can't take a noindex meta, so block crawling.
+Disallow: /docs/toc.html
+Disallow: /docs/*/toc.html
+
 Sitemap: {{ site.url }}{{ site.baseurl }}/sitemap.xml
