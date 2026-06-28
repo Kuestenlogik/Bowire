@@ -52,6 +52,15 @@
          already; carries the Security rail descriptor + the Nuclei
          scanner runtime. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Security.Scanner\Kuestenlogik.Bowire.Security.Scanner.csproj" />
+    <!-- Map UI extension — MapLibre GL JS widget that mounts on the
+         coordinate.wgs84 semantic kind. Shipping it inside the
+         workbench bundle means the standalone Tool can render maps
+         without the operator having to opt-in via a sibling package
+         install. Embedded hosts that don't want the ~870 KB JS/CSS
+         payload should NOT depend on the bundle — pick per-package
+         project references instead. Operator feedback: 'map plugin
+         scheint nicht installiert zu sein.' -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Map\Kuestenlogik.Bowire.Map.csproj" />
     <!-- AI module (#294 Phase E) + cloud-provider adapters. The bundle
          carries every first-party AI plugin so `bowire` users get them
          out of the box; embedded hosts can drop the bundle and pick per-
