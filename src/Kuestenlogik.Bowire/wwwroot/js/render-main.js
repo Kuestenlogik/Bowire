@@ -9384,33 +9384,47 @@
             }
         });
 
-        // Right-click → "Center on map" context menu, gated on a
-        // registered viewer + a successful lat/lon resolve. When the
-        // operator right-clicks anywhere else in the tree we let the
-        // browser surface its native menu (or another decorator's
-        // menu — semantics-menu wins for the .label spans).
+        // Right-click → unified context menu. Always surfaces "Copy as
+        // ${response.X}" + "Copy path" for any [data-json-path] target;
+        // additionally surfaces "Center on map" when (a) the map plugin
+        // is loaded and (b) the target resolves to a lat/lon pair the
+        // semantics layer recognised. Operator: 'rechtsklick = menü
+        // mit ${response.X} + path + (wenn map plugin geladen) center
+        // on map'.
         treeRoot.addEventListener('contextmenu', function (e) {
+            var pathTarget = e.target.closest && e.target.closest('[data-json-path]');
             var coord = closestCoord(e.target);
-            if (!coord) return;
-            if (!bowireCoordSyncMapAvailable()) return;
-            var path = coord.getAttribute('data-bowire-coord-path') || '';
-            if (!path) return;
-            var pairs = bowireCoordSyncPairsForMethod(service, method);
-            var pair = null;
-            for (var i = 0; i < pairs.length; i++) {
-                if (pairs[i].latPath === path || pairs[i].lonPath === path
-                    || pairs[i].parentPath === path) {
-                    pair = pairs[i];
-                    break;
+            // Resolve "Center on map" eligibility — coord-span + plugin
+            // + a known coordinate pair.
+            var loc = null;
+            var coordPath = null;
+            if (coord && bowireCoordSyncMapAvailable()) {
+                coordPath = coord.getAttribute('data-bowire-coord-path') || '';
+                if (coordPath) {
+                    var pairs = bowireCoordSyncPairsForMethod(service, method);
+                    var pair = null;
+                    for (var i = 0; i < pairs.length; i++) {
+                        if (pairs[i].latPath === coordPath
+                            || pairs[i].lonPath === coordPath
+                            || pairs[i].parentPath === coordPath) {
+                            pair = pairs[i];
+                            break;
+                        }
+                    }
+                    if (pair) {
+                        loc = bowireCoordSyncResolveLatLon(
+                            pair, treeRoot.__bowireCoordSyncRoot);
+                    }
                 }
             }
-            if (!pair) return;
-            var loc = bowireCoordSyncResolveLatLon(
-                pair, treeRoot.__bowireCoordSyncRoot);
-            if (!loc) return;
+            // No path AND no coord → let the browser show its native menu.
+            if (!pathTarget && !loc) return;
+            var jsonPath = pathTarget
+                ? (pathTarget.getAttribute('data-json-path') || '')
+                : '';
             e.preventDefault();
             e.stopPropagation();
-            bowireCoordSyncOpenMenu(e.clientX, e.clientY, loc, path);
+            bowireCoordSyncOpenMenu(e.clientX, e.clientY, loc, coordPath, jsonPath);
         });
     }
 
@@ -9420,7 +9434,7 @@
      * cover it without bespoke styling. Closes on outside click +
      * Escape; clamps inside the viewport.
      */
-    function bowireCoordSyncOpenMenu(x, y, loc, path) {
+    function bowireCoordSyncOpenMenu(x, y, loc, coordPath, jsonPath) {
         // Tear down any previous coord menu so rapid right-clicks
         // don't pile up popups.
         var existing = document.querySelector('.bowire-coord-sync-menu');
@@ -9434,26 +9448,55 @@
         menu.style.top = y + 'px';
         menu.style.zIndex = '10000';
 
-        var item = document.createElement('button');
-        item.type = 'button';
-        item.className = 'bowire-semantics-menu-item';
-        item.setAttribute('role', 'menuitem');
-        item.textContent = 'Center on map';
-        item.addEventListener('click', function () {
-            var widgets = window.__bowireMapWidgets || [];
-            for (var i = 0; i < widgets.length; i++) {
-                try { widgets[i].flyTo({ center: [loc.lon, loc.lat] }); } catch {}
-            }
-            close();
-        });
-        menu.appendChild(item);
+        function makeItem(label, onClick) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'bowire-semantics-menu-item';
+            btn.setAttribute('role', 'menuitem');
+            btn.textContent = label;
+            btn.addEventListener('click', function () { try { onClick(); } catch {} close(); });
+            return btn;
+        }
+        function copy(text, hint) {
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(
+                function () { if (typeof toast === 'function') toast(hint + ': ' + text, 'success'); },
+                function () { if (typeof toast === 'function') toast('Copy failed', 'error'); }
+            );
+        }
 
-        var meta = document.createElement('div');
-        meta.className = 'bowire-semantics-menu-meta';
-        // Display lat / lon with 5 decimals — ~1 m precision, lines
-        // up with what most GIS tools print.
-        meta.textContent = loc.lat.toFixed(5) + ', ' + loc.lon.toFixed(5);
-        menu.appendChild(meta);
+        // Copy entries — always present when the right-clicked target
+        // carries a JSON path. The chain-var shape (${response.X}) +
+        // the raw path are the two copy actions the operator typed by
+        // hand before; surfacing them in the menu lets click stay free
+        // for the toggle gesture (operator request).
+        if (jsonPath) {
+            var chainVar = '${response.' + jsonPath + '}';
+            menu.appendChild(makeItem('Copy as ' + chainVar,
+                function () { copy(chainVar, 'Copied'); }));
+            menu.appendChild(makeItem('Copy path',
+                function () { copy(jsonPath, 'Copied path'); }));
+        }
+
+        // "Center on map" — only when a real lat/lon resolved.
+        if (loc) {
+            if (jsonPath) {
+                var sep = document.createElement('div');
+                sep.className = 'bowire-context-menu-separator';
+                menu.appendChild(sep);
+            }
+            menu.appendChild(makeItem('Center on map', function () {
+                var widgets = window.__bowireMapWidgets || [];
+                for (var i = 0; i < widgets.length; i++) {
+                    try { widgets[i].flyTo({ center: [loc.lon, loc.lat] }); } catch {}
+                }
+            }));
+
+            var meta = document.createElement('div');
+            meta.className = 'bowire-semantics-menu-meta';
+            meta.textContent = loc.lat.toFixed(5) + ', ' + loc.lon.toFixed(5);
+            menu.appendChild(meta);
+        }
 
         document.body.appendChild(menu);
 

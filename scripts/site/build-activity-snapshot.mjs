@@ -25,7 +25,12 @@ const FETCH = 10;                               // releases pulled for cadence m
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const OUT_PATH = join(__dirname, '..', 'site', '_data', 'activity.json');
+// __dirname is scripts/site/. Two .. hops land at the repo root; one
+// hop short used to write scripts/site/site/_data/activity.json (a
+// nested ghost path the workflow created on every run but Jekyll
+// never read), so bowire.io's "Recently shipped" stayed frozen on
+// the committed activity.json from May.
+const OUT_PATH = join(__dirname, '..', '..', 'site', '_data', 'activity.json');
 
 const headers = { 'Accept': 'application/vnd.github+json', 'User-Agent': 'bowire-activity-snapshot' };
 if (process.env.GITHUB_TOKEN) headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;

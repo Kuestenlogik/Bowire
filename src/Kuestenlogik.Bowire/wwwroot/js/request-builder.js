@@ -1786,28 +1786,28 @@
             }
         });
         viewer.classList.add('is-interactive');
-        // Double-click on a key copies the path; click-on-value copies the
-        // ${response.X} chaining variable. Same gestures as the existing
-        // `is-interactive` response output, so muscle memory carries over.
-        viewer.addEventListener('click', function (e) {
+        // Gesture contract (operator-decided):
+        //   click       → toggle collapse (handled inside renderJsonViewer
+        //                 on opener lines + gutter chevron)
+        //   dblclick    → copy raw JSON path
+        //   contextmenu → unified menu (Copy as ${response.X}, Copy path,
+        //                 + Center on map when the map plugin resolves)
+        // Single-click on a value used to copy ${response.X} silently —
+        // dropped here because it collided with the opener-line toggle
+        // and surprised operators who expected the click to expand the
+        // node. The chain-var copy now lives in the right-click menu
+        // (render-main.js bowireCoordSyncOpenMenu).
+        viewer.addEventListener('dblclick', function (e) {
+            // Dblclick copies the JSON path of whichever node the
+            // operator landed on — key OR value. Was key-only before;
+            // widened so the right-clickable surface and the
+            // double-clickable surface line up (operator request:
+            // 'doppelklick = copy path').
             var target = e.target.closest && e.target.closest('[data-json-path]');
             if (!target) return;
-            // Suppress when the click went into a chevron — that's the
-            // viewer's own handler.
-            if (e.target.closest && e.target.closest('.bowire-json-viewer-chev')) return;
-            var raw = target.getAttribute('data-json-path') || '';
-            var chainVar = raw ? '${response.' + raw + '}' : '${response}';
-            navigator.clipboard.writeText(chainVar).then(
-                function () { if (typeof toast === 'function') toast('Copied: ' + chainVar, 'success'); },
-                function () { if (typeof toast === 'function') toast('Copy failed', 'error'); }
-            );
-        });
-        viewer.addEventListener('dblclick', function (e) {
-            var keyEl = e.target.closest && e.target.closest('.bowire-json-key');
-            if (!keyEl) return;
             e.preventDefault();
             e.stopPropagation();
-            var raw = keyEl.getAttribute('data-json-path') || '';
+            var raw = target.getAttribute('data-json-path') || '';
             if (!raw) return;
             navigator.clipboard.writeText(raw).then(
                 function () { if (typeof toast === 'function') toast('Copied path: ' + raw, 'success'); },
