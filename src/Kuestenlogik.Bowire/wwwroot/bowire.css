@@ -9333,6 +9333,21 @@ they're a way
 .bowire-json-status.empty {
     display: none;
 }
+/* Pill variant — sits inside the JSON pane header instead of below
+   the editor so a tall payload doesn't push it off-screen. Slimmer
+   chrome to share the row with title + action buttons. */
+.bowire-json-status-pill {
+    margin: 0 8px 0 12px;
+    padding: 2px 8px;
+    font-size: 10.5px;
+    min-height: 0;
+    border-radius: var(--bowire-radius-pill);
+    align-self: center;
+    white-space: nowrap;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 .bowire-json-status.ok {
     color: #34d399;
     background-color: rgba(52, 211, 153, 0.08);

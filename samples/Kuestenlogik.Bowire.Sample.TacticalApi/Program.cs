@@ -127,32 +127,40 @@ internal sealed class SeededSituationService : Situation.SituationBase
 
     /// <summary>
     /// Server-streaming variant — emits one frame per seeded situation
-    /// object, spaced ~400 ms apart, so the operator sees the streaming
-    /// path actually iterate in the workbench (pins land on the map
-    /// one-by-one). Loops until the caller cancels the stream so the
-    /// "Subscribe" semantics are real: re-emits the same eight objects
-    /// every cycle with the seed shifted by one position, simulating
-    /// a continuously updating tactical situation. Operator: 'bei
-    /// subscribe situationobjects in der tacticalapi bekomme ich im
-    /// test bei execute nur eine message zurück.'
+    /// object, spaced ~400 ms apart. Each object's coordinate drifts
+    /// by a small per-cycle delta so the operator sees actual movement
+    /// on the map (pins reposition over time rather than restating the
+    /// same coords). Loops until the caller cancels.
+    /// Operator: 'wenn ich subscribe sehe ich in der karte keine
+    /// änderungen. die positionen scheinen immer die gleichen zu
+    /// bleiben, richtig?' — yes, the previous version re-emitted
+    /// identical coords on every cycle.
     /// </summary>
     public override async Task SubscribeSituationObjectEvents(
         SubscribeSituationObjectEventsRequest request,
         IServerStreamWriter<SubscribeSituationObjectEventsResponse> responseStream,
         ServerCallContext context)
     {
-        var offset = 0;
+        var tick = 0;
         while (!context.CancellationToken.IsCancellationRequested)
         {
             for (var i = 0; i < Seed.Length; i++)
             {
                 if (context.CancellationToken.IsCancellationRequested) break;
-                var (uuid, name, lat, lon) = Seed[(i + offset) % Seed.Length];
+                var (uuid, name, baseLat, baseLon) = Seed[i];
+                // Sine-wave drift around the seed coordinate. The phase
+                // is per-object (offset by index) so the eight pins
+                // each follow their own little loop. Amplitude ~0.02
+                // degrees ≈ 2 km at DACH latitudes — visible on the
+                // map without flying off the seed point.
+                var phase = (tick + i * 7) * Math.PI / 18.0;
+                var dLat = 0.02 * Math.Sin(phase);
+                var dLon = 0.02 * Math.Cos(phase);
                 var frame = new SubscribeSituationObjectEventsResponse
                 {
                     Header = new ResponseHeader { Success = true },
                 };
-                frame.SituationObjects.Add(BuildSymbol(uuid, name, lat, lon));
+                frame.SituationObjects.Add(BuildSymbol(uuid, name, baseLat + dLat, baseLon + dLon));
                 await responseStream.WriteAsync(frame, context.CancellationToken).ConfigureAwait(false);
                 try
                 {
@@ -160,7 +168,7 @@ internal sealed class SeededSituationService : Situation.SituationBase
                 }
                 catch (OperationCanceledException) { return; }
             }
-            offset++;
+            tick++;
         }
     }
 
