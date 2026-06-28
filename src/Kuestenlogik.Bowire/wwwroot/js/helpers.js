@@ -477,6 +477,16 @@
             }
         }
         _rebuildViewerLines();
+        // Expose a rebuild hook + the live togglesByPath Set on the
+        // viewer node itself so toolbar/Expand-all/Collapse-all and the
+        // map widget's "click pin → expand parents + scroll" path can
+        // mutate state and re-render in-place without going through a
+        // full workbench render() (which would tear down the map's
+        // WebGL canvas). Both viewers in the standalone Tool need this
+        // because the streaming detail body is recreated on every
+        // frame switch and the lookup must resolve at event-time.
+        viewer.__bowireRebuildViewerLines = _rebuildViewerLines;
+        viewer.__bowireTogglesByPath = state.togglesByPath;
         // Click-to-collapse: the chevron (now in the gutter, Hoppscotch
         // style) AND any opener-line body click both toggle. The viewer
         // delegates at the root so morphdom re-renders don't drop the
@@ -712,6 +722,306 @@
             collapsePath: collapsePath || null,
             collapsed: !!collapsed
         });
+    }
+
+    /**
+     * Walk a parsed value and return a Set of every container path so
+     * a Collapse-all action can fill togglesByPath in one shot. Empty
+     * path is represented via the '__root__' sentinel matching the
+     * walker in renderJsonViewer. Used by every JSON-viewer toolbar
+     * (standalone Tool + embedded request-builder); request-builder.js
+     * still keeps its own `_allContainerPaths` shim that delegates to
+     * this util.
+     */
+    function bowireAllContainerPaths(raw) {
+        var paths = new Set();
+        var parsed;
+        try { parsed = typeof raw === 'string' ? JSON.parse(raw) : raw; }
+        catch (_) { return paths; }
+        if (parsed && typeof parsed === 'object') paths.add('__root__');
+        function walk(val, path) {
+            if (val && typeof val === 'object') {
+                if (path) paths.add(path);
+                if (Array.isArray(val)) {
+                    for (var i = 0; i < val.length; i++) {
+                        walk(val[i], path ? path + '.' + i : String(i));
+                    }
+                } else {
+                    var ks = Object.keys(val);
+                    for (var k = 0; k < ks.length; k++) {
+                        walk(val[ks[k]], path ? path + '.' + ks[k] : ks[k]);
+                    }
+                }
+            }
+        }
+        walk(parsed, '');
+        return paths;
+    }
+
+    /**
+     * Build a JSON-viewer toolbar (Expand-all / Collapse-all / Wrap /
+     * Search / Copy / Download) for the standalone-Tool response
+     * panes. Pairs with the viewer built by `renderJsonViewer`.
+     *
+     * Wrap and search mutate per-viewer state stashed on the wrapper
+     * itself — local to each instance so the streaming-detail body
+     * (recreated per frame) doesn't leak state into the unary body
+     * and vice-versa. Expand / Collapse mutate the live togglesByPath
+     * Set the viewer published on `viewer.__bowireTogglesByPath`,
+     * then call `viewer.__bowireRebuildViewerLines()` so the viewer
+     * re-renders in place — no workbench render() call, the map's
+     * WebGL canvas survives intact.
+     *
+     * Returns a wrapper element containing the toolbar + the viewer.
+     * Caller appends this wrapper exactly where it would have appended
+     * the viewer; the toolbar is keyed on the same morphdom node.
+     *
+     * opts:
+     *   raw        — original raw text / parsed object — used for
+     *                Copy + Download + Collapse-all walker.
+     *   downloadName — base filename (no extension) for the Download
+     *                  action. Defaults to 'response'.
+     *   contentType — optional Content-Type string; picks the
+     *                 download extension when present (json / xml /
+     *                 html / bin) — falls back to .json on
+     *                 looks-like-JSON sniff.
+     */
+    function bowireRenderJsonViewerWithToolbar(viewer, opts) {
+        opts = opts || {};
+        var raw = opts.raw;
+        var wrapper = el('div', { className: 'bowire-json-viewer-wrap' });
+
+        // Per-instance state — survives in-place mutations because we
+        // hand the actual viewer + toolbar around the same wrapper.
+        var local = {
+            wrap: !!viewer.classList.contains('is-wrap'),
+            searchOpen: false,
+            search: ''
+        };
+
+        var toolbar = el('div', { className: 'bowire-json-toolbar' });
+
+        // Search bar — collapsed by default, expands inline when
+        // the Search button toggles or Ctrl/Cmd+F is pressed inside
+        // the viewer. The input keeps focus across keystrokes
+        // because no render() runs.
+        var searchBar = el('div', {
+            className: 'bowire-json-toolbar-search-bar'
+        });
+        searchBar.style.display = 'none';
+        var searchInput = el('input', {
+            type: 'text',
+            placeholder: 'Find in JSON…  Enter / Shift+Enter to navigate',
+            className: 'bowire-json-toolbar-search-input',
+            onInput: function (e) {
+                local.search = e.target.value;
+                _applyJsonSearch(viewer, local.search);
+                _resetJsonSearchCursor(viewer);
+            },
+            onKeyDown: function (e) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeSearch();
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    _stepJsonSearch(viewer, e.shiftKey ? -1 : 1);
+                }
+            }
+        });
+        searchBar.appendChild(searchInput);
+        searchBar.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-json-toolbar-search-close',
+            title: 'Close search (Esc)',
+            textContent: '×',
+            onClick: function () { closeSearch(); }
+        }));
+
+        function openSearch() {
+            local.searchOpen = true;
+            searchBar.style.display = '';
+            searchBtn.classList.add('is-on');
+            try { searchInput.focus(); searchInput.select(); } catch {}
+        }
+        function closeSearch() {
+            local.searchOpen = false;
+            local.search = '';
+            searchInput.value = '';
+            searchBar.style.display = 'none';
+            searchBtn.classList.remove('is-on');
+            _applyJsonSearch(viewer, '');
+            _resetJsonSearchCursor(viewer);
+        }
+
+        // Capture Ctrl/Cmd+F from the viewer so the toolbar's search
+        // beats the browser's native find-in-page when the operator's
+        // focus is on the JSON tree.
+        viewer.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F')) {
+                e.preventDefault();
+                openSearch();
+            }
+        });
+
+        // ---- buttons ----
+        var expandBtn = _jsonToolbarBtn('⤢', 'Expand all', false, function () {
+            var t = viewer.__bowireTogglesByPath;
+            if (!(t instanceof Set)) return;
+            t.clear();
+            if (typeof viewer.__bowireRebuildViewerLines === 'function') {
+                viewer.__bowireRebuildViewerLines();
+            }
+            if (local.search) _applyJsonSearch(viewer, local.search);
+        });
+        var collapseBtn = _jsonToolbarBtn('⊟', 'Collapse all', false, function () {
+            var t = viewer.__bowireTogglesByPath;
+            if (!(t instanceof Set)) return;
+            var all = bowireAllContainerPaths(raw);
+            t.clear();
+            all.forEach(function (p) { t.add(p); });
+            if (typeof viewer.__bowireRebuildViewerLines === 'function') {
+                viewer.__bowireRebuildViewerLines();
+            }
+            if (local.search) _applyJsonSearch(viewer, local.search);
+        });
+        var wrapBtn = _jsonToolbarBtn('↩', 'Wrap long lines', local.wrap, function () {
+            local.wrap = !local.wrap;
+            viewer.classList.toggle('is-wrap', local.wrap);
+            wrapBtn.classList.toggle('is-on', local.wrap);
+        });
+        var searchBtn = _jsonToolbarBtn('⌕', 'Search (Ctrl/Cmd+F)', false, function () {
+            if (local.searchOpen) closeSearch();
+            else openSearch();
+        });
+        var copyBtn = _jsonToolbarBtn('⧉', 'Copy response body', false, function () {
+            try {
+                var txt = typeof raw === 'string'
+                    ? raw
+                    : JSON.stringify(raw, null, 2);
+                navigator.clipboard.writeText(txt).then(
+                    function () {
+                        if (typeof toast === 'function') {
+                            toast('Response copied', 'success');
+                        }
+                    },
+                    function () {
+                        if (typeof toast === 'function') {
+                            toast('Copy failed', 'error');
+                        }
+                    }
+                );
+            } catch (_) { /* clipboard errors get swallowed */ }
+        });
+        var downloadBtn = _jsonToolbarBtn('⬇', 'Download response', false, function () {
+            _downloadJsonViewerBody(raw, opts);
+        });
+
+        toolbar.appendChild(expandBtn);
+        toolbar.appendChild(collapseBtn);
+        toolbar.appendChild(wrapBtn);
+        toolbar.appendChild(searchBtn);
+        toolbar.appendChild(el('span', {
+            className: 'bowire-json-toolbar-spacer'
+        }));
+        toolbar.appendChild(copyBtn);
+        toolbar.appendChild(downloadBtn);
+
+        wrapper.appendChild(toolbar);
+        wrapper.appendChild(searchBar);
+        wrapper.appendChild(viewer);
+        return wrapper;
+    }
+
+    function _jsonToolbarBtn(glyph, title, on, onClick) {
+        return el('button', {
+            type: 'button',
+            className: 'bowire-json-toolbar-btn' + (on ? ' is-on' : ''),
+            title: title,
+            'aria-label': title,
+            textContent: glyph,
+            onClick: onClick
+        });
+    }
+
+    /**
+     * Apply case-insensitive search highlights to the viewer rows
+     * matching `needle`. Empty needle clears all highlights.
+     */
+    function _applyJsonSearch(viewer, needle) {
+        var n = (needle || '').toLowerCase();
+        var rows = viewer.querySelectorAll('.bowire-json-viewer-line');
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var text = (row.textContent || '').toLowerCase();
+            if (n && text.indexOf(n) >= 0) row.classList.add('is-search-match');
+            else row.classList.remove('is-search-match');
+        }
+    }
+
+    function _resetJsonSearchCursor(viewer) {
+        viewer.__bowireSearchCursor = -1;
+    }
+
+    /**
+     * Step to the next / previous search-match row and scroll it into
+     * view. Wraps around at the ends so the operator can cycle without
+     * thinking about bounds.
+     */
+    function _stepJsonSearch(viewer, dir) {
+        var rows = viewer.querySelectorAll('.bowire-json-viewer-line.is-search-match');
+        if (rows.length === 0) return;
+        var cur = typeof viewer.__bowireSearchCursor === 'number'
+            ? viewer.__bowireSearchCursor : -1;
+        cur = cur + dir;
+        if (cur < 0) cur = rows.length - 1;
+        if (cur >= rows.length) cur = 0;
+        viewer.__bowireSearchCursor = cur;
+        try { rows[cur].scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        catch { rows[cur].scrollIntoView(); }
+    }
+
+    /**
+     * Trigger a browser download of the response body. Caller may
+     * pass a base filename + content-type hint; otherwise we sniff
+     * for JSON shape and fall back to .txt.
+     */
+    function _downloadJsonViewerBody(raw, opts) {
+        if (raw == null) {
+            if (typeof toast === 'function') toast('Nothing to download', 'info');
+            return;
+        }
+        var contentType = (opts && opts.contentType) ? String(opts.contentType).toLowerCase() : '';
+        var ext = 'txt', mime = 'text/plain';
+        if (contentType.indexOf('json') >= 0)      { ext = 'json'; mime = 'application/json'; }
+        else if (contentType.indexOf('xml') >= 0)  { ext = 'xml';  mime = 'application/xml'; }
+        else if (contentType.indexOf('html') >= 0) { ext = 'html'; mime = 'text/html'; }
+        else {
+            var s = typeof raw === 'string' ? raw : '';
+            if (s && (s.charAt(0) === '{' || s.charAt(0) === '[')) {
+                ext = 'json'; mime = 'application/json';
+            } else if (typeof raw === 'object') {
+                ext = 'json'; mime = 'application/json';
+            }
+        }
+        var body = typeof raw === 'string' ? raw : (function () {
+            try { return JSON.stringify(raw, null, 2); }
+            catch (_) { return String(raw); }
+        })();
+        var name = ((opts && opts.downloadName) || 'response') + '.' + ext;
+        try {
+            var blob = new Blob([body], { type: mime + ';charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function () {
+                try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch {}
+            }, 0);
+        } catch (_) {
+            if (typeof toast === 'function') toast('Download failed', 'error');
+        }
     }
 
     // Render an object dictionary as a `Key: value` list — used by the
@@ -2470,6 +2780,15 @@
             t._timeout = setTimeout(function () { dismissToast(t); }, duration);
         }
         return t;
+    }
+
+    // Expose the toast helper to extension bundles that load outside
+    // the core IIFE (Kuestenlogik.Bowire.Map et al.). Without this
+    // the map widget's "Copy path" dblclick has no way to surface
+    // success/failure feedback to the operator — and we want the
+    // same friendly shape every in-core dblclick already gives.
+    if (typeof window !== 'undefined' && !window.bowireToast) {
+        window.bowireToast = toast;
     }
 
     function dismissToast(t) {

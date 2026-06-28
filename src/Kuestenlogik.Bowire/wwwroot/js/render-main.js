@@ -8353,7 +8353,19 @@
             className: 'bowire-stream-detail-body',
             id: 'bowire-stream-detail-body'
         });
-        body.appendChild(renderJsonViewer(raw, { wrap: false }));
+        // JSON viewer + per-pane toolbar (Expand-all / Collapse-all /
+        // Wrap / Search / Copy / Download). Toolbar is part of the
+        // JSON pane so it hides naturally when tab mode switches to
+        // the widget tab (the widget tab body never contains a JSON
+        // viewer), and stays put in split mode where the JSON pane
+        // is always visible. Same wrapper shape goes onto the unary
+        // path below.
+        var streamViewer = renderJsonViewer(raw, { wrap: false });
+        body.appendChild(bowireRenderJsonViewerWithToolbar(streamViewer, {
+            raw: raw,
+            downloadName: 'stream-message',
+            contentType: 'application/json'
+        }));
         // Same gesture wiring the unary response output gets — click
         // toggles via native <details>, dblclick copies the JSONPath,
         // right-click opens the unified context menu.
@@ -10160,7 +10172,26 @@
                     title: 'Click to expand/collapse — double-click to copy path — right-click for more actions'
                 });
                 bowireWireResponseTreeGestures(output);
-                output.appendChild(renderJsonViewer(responseData, { wrap: false }));
+                // JSON viewer + per-pane toolbar (Expand-all /
+                // Collapse-all / Wrap / Search / Copy / Download).
+                // Wrapping the viewer inside the output keeps the
+                // gesture wiring + extension decorators (semantics
+                // badges, map coord-path) anchored on the same node;
+                // the toolbar lives at the top of the output and
+                // moves with it through the split/tab/single-pane
+                // wrapping `renderResponseWithWidgets` does below.
+                var unaryViewer = renderJsonViewer(responseData, { wrap: false });
+                var ctMeta = (selectedService && selectedMethod && responseData)
+                    ? 'application/json'
+                    : '';
+                var methodName = (selectedMethod && selectedMethod.name)
+                    ? selectedMethod.name.replace(/[^A-Za-z0-9_-]+/g, '-')
+                    : 'response';
+                output.appendChild(bowireRenderJsonViewerWithToolbar(unaryViewer, {
+                    raw: responseData,
+                    downloadName: methodName,
+                    contentType: ctMeta
+                }));
                 // Wrap the response output in a split-pane host when a
                 // registered viewer claims the active method's kind
                 // (e.g. MapLibre on coordinate.wgs84). For unary RPCs
