@@ -107,20 +107,18 @@
     <BowireJsFragment Include="wwwroot\js\auth.js" />
     <BowireJsFragment Include="wwwroot\js\schema-form.js" />
     <!-- #311 — recording.js / mocks.js / flows.js / intercepted-view.js
-         moved out of core into Kuestenlogik.Bowire.Rail.Recordings /
-         .Mock / .Rail.Flows / .Rail.Intercepted as embedded JS
-         resources (mocks.js lives on Kuestenlogik.Bowire.Mock since
-         v2.1 — the provisional Rail.Mocks package was folded into the
-         Mock package before its first NuGet release).
-         BowireHtmlGenerator stitches them into the IIFE at
-         HTML-emit time via the marker injected by
+         moved out of core into per-feature NuGets as embedded JS
+         resources (v2.1 #325 dropped the Rail. prefix from every
+         package id: Kuestenlogik.Bowire.Recordings / .Mock / .Flows /
+         .Interceptor). BowireHtmlGenerator stitches them into the
+         IIFE at HTML-emit time via the marker injected by
          _rail-fragments-marker.js (last fragment before init.js). The
          rail fragments share the IIFE's closure scope so the existing
          bare-identifier references into helpers.js / prologue.js / &c.
          keep resolving. Hosts that don't reference a rail's NuGet
          don't ship that rail's JS in the browser bundle.
          #314 — proxy-view.js / benchmarks.js moved out of core into
-         Kuestenlogik.Bowire.Rail.Proxy / .Rail.Benchmarks (same #311
+         Kuestenlogik.Bowire.Interceptor / .Benchmarking (same #311
          pattern). collections.js moved out the same way then moved
          BACK into core when the standalone Collections rail was
          retired (Compose rail's side panel #295 became canonical) —
@@ -157,9 +155,10 @@
          Catalogue layer on the same API. Must come before benchmarks.js
          so benchmarks.js can call renderPresetsBar. -->
     <BowireJsFragment Include="wwwroot\js\presets.js" />
-    <!-- #314 — benchmarks.js moved to Kuestenlogik.Bowire.Rail.Benchmarks
-         (see the comment above the api.js fragment for the stitching
-         contract). The presets.js dependency ordering is now enforced
+    <!-- #314 — benchmarks.js moved to Kuestenlogik.Bowire.Benchmarking
+         (renamed from Kuestenlogik.Bowire.Rail.Benchmarks in v2.1 #325).
+         See the comment above the api.js fragment for the stitching
+         contract. The presets.js dependency ordering is now enforced
          by the embedded-resource splice: rail fragments always come
          after every core fragment (including presets.js) because the
          splice happens at _rail-fragments-marker.js's slot. -->
@@ -198,7 +197,8 @@
          descriptors. Function declarations are hoisted inside the shared
          IIFE so the descriptors' callback references resolve at runtime. -->
     <BowireJsFragment Include="wwwroot\js\request-builder-protocols.js" />
-    <!-- #311 — compose-rail.js moved to Kuestenlogik.Bowire.Rail.Compose;
+    <!-- #311 — compose-rail.js moved to Kuestenlogik.Bowire.Compose
+         (renamed from Kuestenlogik.Bowire.Rail.Compose in v2.1 #325);
          see the comment above the schema-form.js fragment and the
          _rail-fragments-marker.js note below for the stitching contract. -->
     <BowireJsFragment Include="wwwroot\js\tests.js" />
