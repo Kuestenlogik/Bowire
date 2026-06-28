@@ -42,7 +42,7 @@
     <!-- #311 — Mocks rail descriptor + mocks.js fragment ship inside
          Kuestenlogik.Bowire.Mock (see below). The provisional
          Kuestenlogik.Bowire.Rail.Mocks package was folded in for v2.1. -->
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Flows\Kuestenlogik.Bowire.Rail.Flows.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Flows\Kuestenlogik.Bowire.Flows.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Proxy\Kuestenlogik.Bowire.Rail.Proxy.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Intercepted\Kuestenlogik.Bowire.Rail.Intercepted.csproj" />
     <!-- #315 — unified Traffic rail. Supersedes Proxy + Intercepted as
