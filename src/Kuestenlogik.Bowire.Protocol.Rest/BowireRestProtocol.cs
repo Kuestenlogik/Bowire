@@ -29,10 +29,36 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
     // Key: serverUrl. Value: discovered services + lookup index.
     private readonly ConcurrentDictionary<string, RestSchemaCache> _cache = new(StringComparer.Ordinal);
 
+    // Cache resolved OpenAPI doc URLs per origin, so the next DiscoverInternal
+    // pass against the same origin hits the right URL on the first try
+    // instead of replaying the 8-probe sweep. Key: origin (scheme://host:port).
+    // Value: the well-known doc URL that won the probe.
+    private readonly ConcurrentDictionary<string, string> _probeResolved = new(StringComparer.Ordinal);
+
     // Captured during Initialize() in embedded mode so DiscoverAsync can read
     // the host's API descriptions directly instead of fetching an OpenAPI doc
     // over HTTP.
     private IServiceProvider? _serviceProvider;
+
+    // Well-known OpenAPI document paths, ordered most-common-first.
+    // Probed only when the supplied URL doesn't itself look like a spec URL
+    // AND the initial fetch returned non-OpenAPI content. See
+    // ProbeWellKnownPathsAsync.
+    private static readonly string[] WellKnownOpenApiPaths =
+    [
+        "/openapi.json",          // .NET 10 minimal-API, Springdoc default
+        "/openapi/v1.json",       // .NET 10 native AddOpenApi / MapOpenApi
+        "/swagger/v1/swagger.json", // Swashbuckle ASP.NET default
+        "/swagger.json",          // older Swashbuckle / Swagger UI default
+        "/v3/api-docs",           // Springdoc OpenAPI 3 default
+        "/v3/api-docs.yaml",
+        "/api-docs",              // older Springfox
+        "/openapi.yaml",          // common YAML alternative
+    ];
+
+    // Per-probe timeout — short so the 8-probe sweep doesn't block discovery
+    // when the origin is unreachable.
+    private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(3);
 
     public string Name => "REST";
     public string Description => "OpenAPI / Swagger — discover + invoke HTTP services described by an OpenAPI document.";
@@ -133,15 +159,58 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
         var adapter = BowireOpenApiAdapterRegistry.TryGet();
         if (adapter is null) return [];
 
+        // Fast path: the operator already supplied a well-known path on a
+        // previous call against this origin — fetch from the resolved URL
+        // directly so we don't re-run the probe sweep.
+        if (TryGetOrigin(docUrl, out var fastOrigin)
+            && _probeResolved.TryGetValue(fastOrigin, out var cachedUrl)
+            && !string.Equals(cachedUrl, docUrl, StringComparison.Ordinal))
+        {
+            var fromCache = await TryDiscoverAtAsync(adapter, cachedUrl, ct).ConfigureAwait(false);
+            if (fromCache is not null) return CommitDiscovery(cachedUrl, fromCache);
+            // Cached URL stopped responding — fall through to the regular path.
+            _probeResolved.TryRemove(fastOrigin, out _);
+        }
+
         var discovered = await adapter.FetchAndDiscoverAsync(docUrl, _http, ct).ConfigureAwait(false);
         if (discovered is null)
         {
-            // The URL is not an OpenAPI document — drop any cache entry and let
-            // other protocol plugins try this URL.
+            // The URL is not an OpenAPI document — drop any cache entry, then
+            // try the well-known OpenAPI doc paths against the same origin
+            // before giving up. Skips when the supplied URL itself already
+            // looks like a spec URL (e.g. `/foo.json` that returned non-OpenAPI
+            // — probing then is noise).
             _cache.TryRemove(docUrl, out _);
+
+            if (!LooksLikeSpecUrl(docUrl) && TryGetOrigin(docUrl, out var origin))
+            {
+                var (probedUrl, probedResult) = await ProbeWellKnownPathsAsync(
+                    adapter, origin, ct).ConfigureAwait(false);
+                if (probedResult is not null)
+                {
+                    _probeResolved[origin] = probedUrl;
+                    RestProbeLog.Info(
+                        $"REST discovery resolved {origin} via well-known path {probedUrl}");
+                    return CommitDiscovery(probedUrl, probedResult);
+                }
+
+                RestProbeLog.Debug($"no OpenAPI document found at {origin}");
+            }
+
+            // Let other protocol plugins try this URL.
             return [];
         }
 
+        return CommitDiscovery(docUrl, discovered);
+    }
+
+    /// <summary>
+    /// Stamp a successful discovery into the schema cache, tag each service
+    /// with its origin doc URL, and return the service list. Shared by the
+    /// direct-fetch path and the probe-resolved path.
+    /// </summary>
+    private List<BowireServiceInfo> CommitDiscovery(string docUrl, BowireOpenApiDiscoveryResult discovered)
+    {
         // Compute the actual API base URL — preferred source is OpenAPI's
         // servers[0]. When that's missing or relative, fall back to the doc
         // URL's origin (scheme + host + port).
@@ -164,6 +233,92 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
         _cache[docUrl] = new RestSchemaCache(services, index, apiBaseUrl);
 
         return services;
+    }
+
+    /// <summary>
+    /// Sweep the well-known OpenAPI doc paths against <paramref name="origin"/>
+    /// until one of them returns a parseable spec. Each probe gets its own
+    /// short timeout so the sweep can't stall discovery on an unreachable
+    /// host. Defensive — a 5xx or DNS failure on one probe doesn't kill the
+    /// loop; that path just gets logged at debug-level.
+    /// </summary>
+    private async Task<(string ProbeUrl, BowireOpenApiDiscoveryResult? Result)> ProbeWellKnownPathsAsync(
+        IBowireOpenApiAdapter adapter, string origin, CancellationToken ct)
+    {
+        foreach (var path in WellKnownOpenApiPaths)
+        {
+            var probeUrl = origin + path;
+            var result = await TryDiscoverAtAsync(adapter, probeUrl, ct).ConfigureAwait(false);
+            if (result is not null) return (probeUrl, result);
+        }
+        return (string.Empty, null);
+    }
+
+    /// <summary>
+    /// One attempt at the adapter's FetchAndDiscoverAsync wrapped in a
+    /// per-probe timeout + try/catch so a single misbehaving probe URL
+    /// (timeout, DNS failure, 500…) can't take down the rest of the sweep.
+    /// </summary>
+    private async Task<BowireOpenApiDiscoveryResult?> TryDiscoverAtAsync(
+        IBowireOpenApiAdapter adapter, string probeUrl, CancellationToken ct)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(ProbeTimeout);
+        try
+        {
+            return await adapter.FetchAndDiscoverAsync(probeUrl, _http, cts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // Per-probe timeout fired — try the next candidate.
+            RestProbeLog.Debug($"probe timeout: {probeUrl}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            // HttpRequestException (network unreachable, DNS, refused),
+            // 5xx that the adapter surfaces as a throw, JSON / YAML parse
+            // crash — record at debug level so the sweep keeps going.
+            RestProbeLog.Debug($"probe failed: {probeUrl} ({ex.GetType().Name})");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// True when <paramref name="url"/> already looks like an OpenAPI / Swagger
+    /// document URL — by path suffix (<c>.json / .yaml / .yml</c>) or by a
+    /// substring marker (<c>swagger / openapi / api-docs</c>). Skips the
+    /// probe sweep so a user-supplied <c>/foo.json</c> that came back as
+    /// non-OpenAPI doesn't trigger 8 superfluous round-trips against the
+    /// origin.
+    /// </summary>
+    private static bool LooksLikeSpecUrl(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return false;
+        var path = uri.AbsolutePath;
+        if (path.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) return true;
+        if (path.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase)) return true;
+        if (path.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)) return true;
+        if (path.Contains("swagger", StringComparison.OrdinalIgnoreCase)) return true;
+        if (path.Contains("openapi", StringComparison.OrdinalIgnoreCase)) return true;
+        if (path.Contains("api-docs", StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Extract the scheme+authority origin from <paramref name="url"/>.
+    /// Returns false when the input isn't a usable absolute URL — probing
+    /// only makes sense when we have a real origin to swap paths against.
+    /// </summary>
+    private static bool TryGetOrigin(string url, out string origin)
+    {
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            origin = $"{uri.Scheme}://{uri.Authority}";
+            return true;
+        }
+        origin = string.Empty;
+        return false;
     }
 
     /// <summary>
