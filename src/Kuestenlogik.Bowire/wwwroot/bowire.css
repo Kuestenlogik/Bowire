@@ -12608,9 +12608,15 @@ duplicate) */
     transform: translate(-50%, 0);
     bottom: 18px;
 }
-/* Horizontal: leading toggle's chevron points LEFT (= 'maximize the
-   request pane toward me'); trailing points RIGHT. */
-.bowire-pane-divider-edge-toggle-leading svg {
+/* Horizontal: chevron points in the direction the SPLITTER MOVES
+   when clicked, not toward the pane that fills. Operator: 'die pfeile
+   müssten im splitpane bei der beschreibung anders herum sein
+   (splitter bewegt sich ja in andere richtung als der pfeil).'
+   Click leading → request pane fills, splitter moves trailing/right
+   → leading chevron points RIGHT (default, no rotation).
+   Click trailing → response pane fills, splitter moves leading/left
+   → trailing chevron points LEFT (180deg). */
+.bowire-pane-divider-edge-toggle-trailing svg {
     transform: rotate(180deg);
 }
 /* Vertical split — toggles sit at the left + right edges of the
@@ -12628,11 +12634,15 @@ duplicate) */
     right: 18px;
     left: auto;
 }
+/* Vertical: same rule — chevron follows the splitter, not the
+   pane. Click leading → top pane fills, splitter moves DOWN → leading
+   chevron points DOWN (90deg). Click trailing → bottom pane fills,
+   splitter moves UP → trailing chevron points UP (-90deg). */
 .bowire-content[data-split="vertical"] .bowire-pane-divider-edge-toggle-leading svg {
-    transform: rotate(-90deg);
+    transform: rotate(90deg);
 }
 .bowire-content[data-split="vertical"] .bowire-pane-divider-edge-toggle-trailing svg {
-    transform: rotate(90deg);
+    transform: rotate(-90deg);
 }
 
 /* Maximized states — when leading is maxed the request pane fills the
