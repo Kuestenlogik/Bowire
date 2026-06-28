@@ -43,7 +43,8 @@ description: Bowire brand guidelines — download the logo, mark, and wordmark l
   .brand-card { border: 1px solid var(--border); border-radius: 14px; padding: 22px; background: var(--bg-elevated); }
   .brand-card h3 { font-size: 1rem; font-weight: 700; margin: 0 0 8px; }
   .brand-card p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.55; margin: 0; }
-  .brand-clearspace { position: relative; display: inline-flex; padding: 18px; border: 1px dashed var(--accent); border-radius: 10px; margin-top: 14px; background: #fafaff; }
+  /* Dashed margin = half the logo height (½ X), matching the spec text. */
+  .brand-clearspace { position: relative; display: inline-flex; padding: 28px; border: 1px dashed var(--accent); border-radius: 10px; margin-top: 14px; background: #fafaff; }
   .brand-clearspace img { height: 56px; }
 
   /* Colour swatches --------------------------------------------------- */
@@ -58,13 +59,17 @@ description: Bowire brand guidelines — download the logo, mark, and wordmark l
   /* Do / Don't -------------------------------------------------------- */
   .brand-dd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   @media (max-width: 640px) { .brand-dd-grid { grid-template-columns: 1fr; } }
-  .brand-dd { border: 1px solid var(--border); border-radius: 14px; padding: 22px; background: var(--bg-elevated); }
-  .brand-dd h3 { display: flex; align-items: center; gap: 8px; font-size: 1rem; margin: 0 0 14px; }
+  .brand-dd { border: 1px solid var(--border); border-radius: 14px; padding: 0 22px 22px; background: var(--bg-elevated); overflow: hidden; }
+  /* Heading is a full-width tinted strip (negative side margins pull it to
+     the card edges) so "Do" / "Don't" reads clearly as the card's header. */
+  .brand-dd h3 { display: flex; align-items: center; gap: 9px; font-size: 1.02rem; font-weight: 700; margin: 0 -22px 18px; padding: 13px 22px; border-bottom: 1px solid var(--border); }
   .brand-dd ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
   .brand-dd li { display: flex; gap: 10px; font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary); }
   .brand-dd li svg { flex: 0 0 auto; width: 16px; height: 16px; margin-top: 2px; }
-  .brand-do h3, .brand-do li svg { color: var(--success); }
-  .brand-dont h3, .brand-dont li svg { color: #f87171; }
+  .brand-do h3 { color: var(--success); background: rgba(52, 211, 153, 0.10); border-bottom-color: rgba(52, 211, 153, 0.38); }
+  .brand-dont h3 { color: #f87171; background: rgba(248, 113, 113, 0.10); border-bottom-color: rgba(248, 113, 113, 0.38); }
+  .brand-do li svg { color: var(--success); }
+  .brand-dont li svg { color: #f87171; }
   /* Heading icons carry no width/height attribute — size them here so
      they sit at ~20px next to the 1rem heading instead of ballooning. */
   .brand-dd h3 svg { width: 20px; height: 20px; flex: 0 0 auto; }
@@ -196,7 +201,7 @@ description: Bowire brand guidelines — download the logo, mark, and wordmark l
     <div class="brand-rules-grid">
       <div class="brand-card">
         <h3>Clear space</h3>
-        <p>Keep free space around the logo equal to the height of the Circle-B mark on every side. Nothing — text, edges, other logos — should intrude into that margin.</p>
+        <p>Keep free space around the logo equal to <strong>half the height of the Circle-B mark</strong> (½&nbsp;X) on every side. Nothing — text, edges, other logos — should intrude into that margin.</p>
         <div class="brand-clearspace"><img src="{{ '/assets/brand/bowire-lockup-dark.svg' | relative_url }}" alt="Clear-space example around the Bowire lockup"></div>
       </div>
       <div class="brand-card">
