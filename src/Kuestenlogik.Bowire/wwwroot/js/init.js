@@ -311,30 +311,10 @@
                         return;
                     }
                 }
-                if (railMode === 'collections' && typeof collectionsSelected !== 'undefined') {
-                    var cIds = collectionsSelected.size > 0
-                        ? Array.from(collectionsSelected)
-                        : (collectionManagerSelectedId ? [collectionManagerSelectedId] : []);
-                    if (cIds.length > 0) {
-                        e.preventDefault();
-                        var cRemoved = [];
-                        cIds.forEach(function (id) {
-                            var idx = collectionsList.findIndex(function (c) { return c.id === id; });
-                            if (idx < 0) return;
-                            cRemoved.push({ entry: collectionsList[idx], originalIdx: idx, deletedAt: Date.now() });
-                            collectionsList.splice(idx, 1);
-                            if (collectionManagerSelectedId === id) collectionManagerSelectedId = null;
-                        });
-                        for (var ck = cRemoved.length - 1; ck >= 0; ck--) collectionsTrash.unshift(cRemoved[ck]);
-                        collectionsSelected.clear();
-                        collectionsSelectionAnchor = null;
-                        persistCollections();
-                        persistCollectionsTrash();
-                        toast(cRemoved.length + ' collection' + (cRemoved.length === 1 ? '' : 's') + ' moved to trash', 'success');
-                        render();
-                        return;
-                    }
-                }
+                // Collections rail retired (v2.1) — Delete/Backspace on
+                // the standalone Collections sidebar is gone. The
+                // Workspaces-rail collection leaf has its own per-row
+                // delete affordance via the tree's context menu.
             }
 
             // Ctrl/Cmd+Shift+S — toggle the Security drawer (#111).

@@ -1749,15 +1749,21 @@
     // selecting a mode.
     let appDrawerOpen = false;
     try { railMode = localStorage.getItem('bowire_rail_mode') || 'home'; } catch { /* ignore */ }
-    // Boot migration — rail modes retired in favour of the Workspace-
-    // detail pane (workspaces own their sources / collections /
-    // environments now). Stale localStorage entries map to
-    // 'workspaces' so existing installs land where the new
-    // management lives instead of on a button-less mode.
-    if (railMode === 'sources' || railMode === 'collections'
-        || railMode === 'environments' || railMode === 'recordings') {
+    // Boot migration — the legacy 'sources' rail was retired in favour
+    // of the Workspace-detail pane (workspaces own their sources now).
+    // 'recordings' / 'environments' are still standalone rails, so they
+    // stay untouched.
+    if (railMode === 'sources') {
         railMode = 'workspaces';
         try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+    }
+    // Collections rail retired in v2.1 — Compose rail's side panel
+    // (#295) is the canonical Collections + Presets surface. Operators
+    // who had explicitly selected the standalone Collections rail land
+    // on Compose after upgrade instead of an empty 'home' fallback.
+    if (railMode === 'collections') {
+        railMode = 'compose';
+        try { localStorage.setItem('bowire_rail_mode', 'compose'); } catch { /* ignore */ }
     }
     // #315 — Proxy + Intercepted unified into 'traffic'. Both old ids
     // rewrite to the new one so existing installs land on the same

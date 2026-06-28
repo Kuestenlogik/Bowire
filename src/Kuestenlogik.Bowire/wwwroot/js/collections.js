@@ -1394,9 +1394,12 @@
         });
     }
 
-    // ---- Collection Manager (modal) ----
+    // ---- Collection Manager ----
     // renderCollectionManager modal retired in #133 Phase 3.
-    // Every entry path now jumps to railMode = 'collections'.
+    // Standalone Collections rail retired in v2.1 (#295) — every
+    // entry path jumps to railMode = 'compose' and opens the Compose
+    // side panel; the Workspaces-rail collection-detail leaf renders
+    // renderCollectionDetail (below) directly.
 
     function renderCollectionDetail(col) {
         var pane = el('div', { className: 'bowire-recording-detail' });

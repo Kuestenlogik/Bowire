@@ -52,8 +52,7 @@ Available rail packages:
 
 - `Kuestenlogik.Bowire.Rail.Home`
 - `Kuestenlogik.Bowire.Rail.Discover`
-- `Kuestenlogik.Bowire.Rail.Compose`
-- `Kuestenlogik.Bowire.Rail.Collections` _(default-off; the standalone full-pane editor — Compose rail's side panel is the primary surface)_
+- `Kuestenlogik.Bowire.Rail.Compose` _(hosts the canonical Collections + Presets side panel; the standalone `Rail.Collections` package was retired in v2.1)_
 - `Kuestenlogik.Bowire.Rail.Environments` _(hidden from rail strip)_
 - `Kuestenlogik.Bowire.Rail.Recordings`
 - `Kuestenlogik.Bowire.Rail.Mocks`

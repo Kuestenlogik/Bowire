@@ -396,17 +396,37 @@
             );
             strip.appendChild(p);
         }
-        // #304 — only surface the 'C' pill when the standalone
-        // Collections rail is enabled. Otherwise the click target
-        // jumps the operator into a rail they've opted out of; the
-        // Compose-rail side panel is the canonical surface now.
-        if (entry.collections
-            && (typeof isRailEnabled !== 'function' || isRailEnabled('collections'))) {
+        // Collections rail retired (v2.1) — the 'C' pill keeps surfacing
+        // the count (it's useful workspace context regardless) but
+        // clicks now route into the Compose rail's side panel, which
+        // hosts the canonical Collections + Presets surface (#295).
+        // When we can identify the first collection that contains the
+        // method, expand it inside the side panel so the operator
+        // lands in the right place instead of a generic list.
+        if (entry.collections) {
             pill('C', entry.collections, 'collection',
-                entry.collections + ' collection' + (entry.collections === 1 ? '' : 's') + ' contain this method',
+                entry.collections + ' collection' + (entry.collections === 1 ? '' : 's') + ' contain this method — open in Compose',
                 function () {
-                    railMode = 'collections';
-                    try { localStorage.setItem('bowire_rail_mode', 'collections'); } catch { /* ignore */ }
+                    railMode = 'compose';
+                    try { localStorage.setItem('bowire_rail_mode', 'compose'); } catch { /* ignore */ }
+                    // Best-effort: find the first collection that contains
+                    // this svc/method pair so the panel pre-expands the
+                    // matching row. Cheap linear scan — collections list
+                    // is workspace-scoped and rarely exceeds a few dozen.
+                    var targetColId = null;
+                    if (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) {
+                        for (var ci = 0; ci < collectionsList.length; ci++) {
+                            var c = collectionsList[ci];
+                            if (!c || !Array.isArray(c.items)) continue;
+                            var hit = c.items.some(function (it) {
+                                return it && it.service === svcName && it.method === methodName;
+                            });
+                            if (hit) { targetColId = c.id; break; }
+                        }
+                    }
+                    if (typeof window !== 'undefined' && typeof window.focusComposeOnCollection === 'function') {
+                        window.focusComposeOnCollection(targetColId);
+                    }
                     render();
                 });
         }
@@ -2533,16 +2553,15 @@
         // / Variables / Secrets). Single-table data fits a tab, not a
         // tree leaf (the leaves are for entity LISTS like
         // sources/envs/collections/recordings).
-        // #304 — Collections tree node gated on the Collections rail
-        // being enabled. The Compose rail's side panel is now the
-        // primary surface for managing collections + presets, so the
-        // standalone tree node is opt-in via Settings → Rail modes.
-        // The dispatch path (railMode='collections') stays alive so
-        // embedded hosts that route there programmatically keep
-        // working unchanged.
-        if (typeof isRailEnabled !== 'function' || isRailEnabled('collections')) {
-            children.push(_buildCollectionsTreeNode(w));
-        }
+        // Collections tree node — collections live inside the
+        // workspace (they're part of its content, alongside sources
+        // / envs / recordings), so the tree leaf is always shown.
+        // The standalone Collections rail itself was retired in v2.1
+        // (#295 — Compose rail's side panel is canonical), but the
+        // workspace's contained collections still need a navigation
+        // affordance here so the operator can drill into one from
+        // the Workspaces rail.
+        children.push(_buildCollectionsTreeNode(w));
         children.push(_buildRecordingsTreeNode(w));
 
         // Same Lucide 'layers' glyph as the topbar chip + dropdown rows
@@ -3233,189 +3252,12 @@
         return sidebar;
     }
 
-    // #133 Phase 2 — Collections rail mode sidebar. Lists every
-    // saved collection as a clickable row with the standard
-    // active-state. Header carries a 'New collection' button and
-    // a Postman-import affordance — same actions the legacy
-    // collections-manager modal exposed.
-    function renderCollectionsSidebar() {
-        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
-
-        function _bulkDeleteCollections(ids) {
-            var removed = [];
-            ids.forEach(function (cid) {
-                var idx = collectionsList.findIndex(function (c) { return c.id === cid; });
-                if (idx < 0) return;
-                removed.push({ entry: collectionsList[idx], originalIdx: idx, deletedAt: Date.now() });
-                collectionsList.splice(idx, 1);
-                if (collectionManagerSelectedId === cid) collectionManagerSelectedId = null;
-            });
-            for (var k = removed.length - 1; k >= 0; k--) collectionsTrash.unshift(removed[k]);
-            collectionsSelected.clear();
-            collectionsSelectionAnchor = null;
-            persistCollections();
-            persistCollectionsTrash();
-            toast(removed.length + ' collection' + (removed.length === 1 ? '' : 's') + ' moved to trash', 'success', {
-                undo: function () {
-                    for (var u = 0; u < removed.length; u++) {
-                        var t = removed[u];
-                        collectionsList.splice(Math.min(t.originalIdx, collectionsList.length), 0, t.entry);
-                        var tIdx = collectionsTrash.findIndex(function (x) { return x.entry && x.entry.id === t.entry.id; });
-                        if (tIdx >= 0) collectionsTrash.splice(tIdx, 1);
-                    }
-                    persistCollections();
-                    persistCollectionsTrash();
-                    render();
-                }
-            });
-            render();
-        }
-
-        sidebar.appendChild(renderSidebarToolbar({
-            title: 'Collections',
-            primary: {
-                icon: 'plus',
-                title: 'Create new collection',
-                onClick: function () {
-                    var col = createCollection();
-                    collectionManagerSelectedId = col.id;
-                    render();
-                }
-            },
-            overflow: (collectionsList && collectionsList.length > 0) ? [
-                {
-                    label: 'Move all to trash',
-                    danger: true,
-                    onClick: function () {
-                        var n = collectionsList.length;
-                        bowireConfirm(
-                            'Move all ' + n + ' collections to trash?',
-                            function () {
-                                var removed = collectionsList.map(function (c, idx) {
-                                    return { entry: c, originalIdx: idx, deletedAt: Date.now() };
-                                });
-                                collectionsList.length = 0;
-                                collectionManagerSelectedId = null;
-                                for (var k = removed.length - 1; k >= 0; k--) collectionsTrash.unshift(removed[k]);
-                                persistCollections();
-                                persistCollectionsTrash();
-                                toast(removed.length + ' collections moved to trash', 'success');
-                                render();
-                            },
-                            { title: 'Move all to trash', confirmText: 'Move ' + n, danger: true }
-                        );
-                    }
-                }
-            ] : null,
-            selection: collectionsSelected.size > 0 ? {
-                count: collectionsSelected.size,
-                actions: [
-                    {
-                        icon: 'trash',
-                        danger: true,
-                        title: 'Move selected to trash',
-                        onClick: function () {
-                            _bulkDeleteCollections(Array.from(collectionsSelected));
-                        }
-                    }
-                ],
-                onClear: function () {
-                    collectionsSelected.clear();
-                    collectionsSelectionAnchor = null;
-                    render();
-                }
-            } : null
-        }));
-
-        if (!collectionsList || collectionsList.length === 0) {
-            sidebar.appendChild(el('div', {
-                className: 'bowire-pane-empty',
-                style: 'padding:12px 14px',
-                textContent: 'No collections yet.'
-            }));
-        } else {
-            var list = el('div', { id: 'bowire-collections-list', className: 'bowire-env-list' });
-            var colIds = collectionsList.map(function (c) { return c.id; });
-            collectionsList.forEach(function (col, idx) {
-                var itemCount = (col.items ? col.items.length : 0);
-                list.appendChild(renderSidebarListItem({
-                    id: 'bowire-col-row-' + col.id,
-                    name: col.name,
-                    meta: itemCount + ' item' + (itemCount === 1 ? '' : 's'),
-                    active: collectionManagerSelectedId === col.id,
-                    selected: collectionsSelected.has(col.id),
-                    onClick: function (e) {
-                        var isMod = applyListSelectionClick(collectionsSelected, collectionsSelectionAnchor, colIds, idx, e);
-                        if (isMod) {
-                            collectionsSelectionAnchor = idx;
-                        } else {
-                            collectionsSelected.clear();
-                            collectionsSelectionAnchor = idx;
-                            collectionManagerSelectedId = col.id;
-                        }
-                        render();
-                    },
-                    deleteTitle: 'Delete collection',
-                    onDelete: function () {
-                        var dIdx = collectionsList.indexOf(col);
-                        if (dIdx < 0) return;
-                        var backup = collectionsList[dIdx];
-                        collectionsList.splice(dIdx, 1);
-                        if (collectionManagerSelectedId === col.id) collectionManagerSelectedId = null;
-                        collectionsTrash.unshift({ entry: backup, deletedAt: Date.now(), originalIdx: dIdx });
-                        persistCollections();
-                        persistCollectionsTrash();
-                        toast('Collection moved to trash', 'success', {
-                            undo: function () {
-                                var t = collectionsTrash.shift();
-                                if (t) {
-                                    collectionsList.splice(Math.min(dIdx, collectionsList.length), 0, t.entry);
-                                    persistCollections();
-                                    persistCollectionsTrash();
-                                    render();
-                                }
-                            }
-                        });
-                        render();
-                    }
-                }));
-            });
-            sidebar.appendChild(list);
-        }
-
-        // #143 Phase 2 — Recently deleted collections (30-day TTL).
-        sidebar.appendChild(renderTrashSection({
-            trashArray: collectionsTrash,
-            isOpen: collectionsTrashOpen,
-            setOpen: function (v) { collectionsTrashOpen = v; },
-            restoreAt: function (t) {
-                collectionsList.splice(Math.min(t.originalIdx || collectionsList.length, collectionsList.length), 0, t.entry);
-                persistCollections();
-            },
-            persist: function () { persistCollectionsTrash(); },
-            nameOf: function (e) { return e && e.name ? e.name : '(unnamed collection)'; }
-        }));
-
-        // #246 — The dedicated 'Ad-hoc Requests' section was retired
-        // after operator feedback: ad-hoc requests aren't collections,
-        // and mixing them into the Collections rail conflated two
-        // different mental models. The persistence + save flow now
-        // rides on the existing '+ Add to…' menu (parity with
-        // discovered methods), so any freeform request the operator
-        // wants to keep lands in a NAMED collection of their choice
-        // rather than a silent scratchpad pile. The compose entry-
-        // point design (where '+ Compose new request' lives + the
-        // 'New from source…' variant for centrally-managed URLs) is
-        // tracked in a follow-up issue; for now the only entry to
-        // the freeform builder is via the Execute-dropdown's 'As new
-        // request' on a discovered method.
-        //
-        // _renderAdHocRequestsSection kept in code (unused) so the
-        // workspace-tree integration in the follow-up can reuse the
-        // row-rendering shape without re-implementing it.
-
-        return sidebar;
-    }
+    // Collections rail retired (v2.1). The standalone sidebar listing
+    // collections is gone — operators reach collections via the
+    // Compose rail's side panel (#295) and the Workspaces rail tree.
+    // The detail-pane renderer (renderCollectionDetail) + helpers
+    // moved into core (collections.js) so the Workspaces-rail
+    // collection-detail sub-pane still works.
 
     // #246 — Render the Ad-hoc Requests section. Pure function — reads
     // adHocRequests state from prologue scope, writes via the helper
@@ -3824,7 +3666,6 @@
         var spec = currentRailSidebarSpec();
         var sidebar = null;
         switch (spec.kind) {
-            case 'collections':  sidebar = renderCollectionsSidebar(); break;
             case 'environments': sidebar = renderEnvironmentsSidebar(); break;
             case 'recordings':   sidebar = renderRecordingsSidebar(); break;
             case 'mocks':        sidebar = renderMocksSidebar(); break;
@@ -3988,15 +3829,21 @@
                 // Divider
                 dropdown.appendChild(el('div', { className: 'bowire-new-dropdown-divider' }));
 
-                // Collection — switches to the Collections rail
-                // mode and selects the freshly-created entry.
+                // Collection — Collections rail retired (v2.1); the
+                // Compose rail's side panel hosts the canonical
+                // Collections + Presets surface (#295). Create the
+                // collection, route to Compose, and pre-expand the
+                // fresh row so the operator lands on it.
                 dropdown.appendChild(el('div', {
                     className: 'bowire-new-dropdown-item',
                     onClick: function () {
                         var col = createCollection();
                         collectionManagerSelectedId = col.id;
-                        railMode = 'collections';
-                        try { localStorage.setItem('bowire_rail_mode', 'collections'); } catch { /* ignore */ }
+                        railMode = 'compose';
+                        try { localStorage.setItem('bowire_rail_mode', 'compose'); } catch { /* ignore */ }
+                        if (typeof window !== 'undefined' && typeof window.focusComposeOnCollection === 'function') {
+                            window.focusComposeOnCollection(col.id);
+                        }
                         dropdown.remove();
                         render();
                     }

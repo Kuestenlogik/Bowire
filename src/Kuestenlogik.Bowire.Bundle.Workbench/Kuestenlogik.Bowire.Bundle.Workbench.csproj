@@ -35,7 +35,6 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Home\Kuestenlogik.Bowire.Rail.Home.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Discover\Kuestenlogik.Bowire.Rail.Discover.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Compose\Kuestenlogik.Bowire.Rail.Compose.csproj" />
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Collections\Kuestenlogik.Bowire.Rail.Collections.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Environments\Kuestenlogik.Bowire.Rail.Environments.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Recordings\Kuestenlogik.Bowire.Rail.Recordings.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Rail.Mocks\Kuestenlogik.Bowire.Rail.Mocks.csproj" />
