@@ -867,6 +867,11 @@
     //   'traffic'      → unified Traffic rail (#315) — adapts to
     //                     BowireOptions.Mode at render time and supersedes
     //                     'proxy' + 'intercepted' for new installs
+    //   'library'      → Compose Library (Collections + Presets) —
+    //                     dispatcher delegates to
+    //                     window.renderComposeLibrarySidebar (installed
+    //                     by the Kuestenlogik.Bowire.Compose package's
+    //                     compose-rail.js fragment).
     //
     // #314 — sidebarRendererKey / mainPaneRendererKey: when a rail
     // descriptor sets either key, the dispatchers in renderSidebar +
@@ -3677,6 +3682,20 @@
             case 'proxy':        sidebar = renderProxySidebar(); break;
             case 'intercepted':  sidebar = renderInterceptedSidebar(); break;
             case 'traffic':      sidebar = renderTrafficSidebar(); break;
+            // Compose Library (Collections + Presets) — owned by the
+            // Kuestenlogik.Bowire.Compose package's compose-rail.js
+            // fragment, which exposes the renderer on window so this
+            // dispatcher stays loosely coupled (the Compose package may
+            // not even be loaded in an embedded host). When the host
+            // ships Compose, the rail descriptor sets SidebarKind =>
+            // "library" and the fragment installs the renderer; when
+            // it doesn't, this arm degrades to no sidebar (the rail
+            // itself won't appear in that case either).
+            case 'library':
+                sidebar = (typeof window !== 'undefined'
+                    && typeof window.renderComposeLibrarySidebar === 'function')
+                    ? window.renderComposeLibrarySidebar() : null;
+                break;
             // #324 — Help rail. Sidebar = search box + topic-tree
             // nav (re-uses the existing topic-row + search-hit code
             // hoisted out of the legacy drawer renderer).

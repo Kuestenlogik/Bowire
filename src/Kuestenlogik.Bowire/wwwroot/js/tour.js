@@ -1543,7 +1543,7 @@
             {
                 id: 'col-new',
                 title: 'Step 2 — New collection',
-                body: 'Hit the + icon on the Collections section header in the side panel. A fresh, empty collection lands in the list with the focus on its name — type a label like "petstore-smoke" or "auth-flows".\n\nOr import a Postman collection / OpenAPI spec via the Workspaces rail to seed one from existing material.',
+                body: 'Hit the + icon in the Library sidebar toolbar. A fresh, empty collection lands in the list with the focus on its name — type a label like "petstore-smoke" or "auth-flows".\n\nOr import a Postman collection / OpenAPI spec via the Workspaces rail to seed one from existing material.',
                 target: '.bowire-compose-side-section-collections',
                 advance: 'next-button'
             },

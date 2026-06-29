@@ -74,9 +74,10 @@ public interface IBowireRailContribution
     /// <c>"services"</c>, <c>"collections"</c>, <c>"environments"</c>,
     /// <c>"recordings"</c>, <c>"mocks"</c>, <c>"workspaces"</c>,
     /// <c>"sources"</c>, <c>"benchmarks"</c>, <c>"flows"</c>,
-    /// <c>"proxy"</c>, <c>"security"</c>. Adding a new value requires
-    /// a matching arm in render-sidebar.js's dispatcher — see the
-    /// <c>sidebar.kind</c> comment block in that file.
+    /// <c>"proxy"</c>, <c>"security"</c>, <c>"library"</c>. Adding a
+    /// new value requires a matching arm in render-sidebar.js's
+    /// dispatcher — see the <c>sidebar.kind</c> comment block in that
+    /// file.
     /// </summary>
     string SidebarKind { get; }
 

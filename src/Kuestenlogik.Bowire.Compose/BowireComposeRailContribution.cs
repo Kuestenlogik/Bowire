@@ -21,7 +21,17 @@ public sealed class BowireComposeRailContribution : IBowireRailContribution
     /// <inheritdoc />
     public string Group => "work";
     /// <inheritdoc />
-    public string SidebarKind => "none";
+    // The Library (Collections + Presets) lives in the standard
+    // workbench sidebar slot — same chrome, splitter, edge-toggle,
+    // and hover-intent as Discover / Recordings / Workspaces /
+    // Mocks. Operator: 'compose library drawer sollte stattdessen
+    // als sidebar analog zu discover und recordings sein. momentan
+    // wirkt er eher wie ein fremdkörper. außerdem kann dann auch
+    // der splitter analog wie bei discover usw. verwendet werden.'
+    // Dispatched by the case 'library' arm in render-sidebar.js's
+    // renderSidebar() switch, which delegates to
+    // window.renderComposeLibrarySidebar() exposed by compose-rail.js.
+    public string SidebarKind => "library";
     /// <inheritdoc />
     public bool AlwaysOn => true;
     /// <inheritdoc />
