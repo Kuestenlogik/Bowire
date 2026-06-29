@@ -50,7 +50,15 @@ public static class SelfOriginCheck
         var server = serviceProvider.GetService<IServer>();
         var feature = server?.Features.Get<IServerAddressesFeature>();
         var addresses = feature?.Addresses;
-        if (addresses is null || addresses.Count == 0) return false;
+        // No IServer / no listening addresses → can't make a positive
+        // determination. Return TRUE (permissive) so the embedded /
+        // test scenarios where IServerAddressesFeature isn't populated
+        // (Tool not started, in-process DI without a hosted server)
+        // still get their local EndpointDataSource scanned. The gate's
+        // real protection kicks in when a workbench WITH listening
+        // addresses encounters an EXTERNAL serverUrl — then this
+        // branch is skipped and the host comparison below decides.
+        if (addresses is null || addresses.Count == 0) return true;
 
         var candidateHost = candidate.Host;
         var candidatePort = candidate.Port;

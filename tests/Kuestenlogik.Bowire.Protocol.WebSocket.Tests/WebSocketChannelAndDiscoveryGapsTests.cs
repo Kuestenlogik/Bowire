@@ -310,10 +310,14 @@ public sealed class WebSocketChannelAndDiscoveryGapsTests
 
     private static List<Kuestenlogik.Bowire.Models.BowireServiceInfo> InvokeDiscover(
         IReadOnlyList<WebSocketEndpointInfo> registered, IServiceProvider? sp) =>
+        // serverUrl param added by the self-origin-gate fix (#322); null
+        // skips the gate so the local EndpointDataSource scan still runs
+        // (embedded-mode contract). Reflection needs explicit args even
+        // for optional defaults.
         (List<Kuestenlogik.Bowire.Models.BowireServiceInfo>)typeof(BowireWebSocketProtocol).Assembly
             .GetType("Kuestenlogik.Bowire.Protocol.WebSocket.WebSocketEndpointDiscovery")!
             .GetMethod("Discover", BindingFlags.Public | BindingFlags.Static)!
-            .Invoke(null, [registered, sp])!;
+            .Invoke(null, [registered, sp, null])!;
 
     private sealed class InMemoryEndpointDataSource(IReadOnlyList<Endpoint> endpoints) : EndpointDataSource
     {

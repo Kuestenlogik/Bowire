@@ -439,8 +439,10 @@ public sealed class WebSocketHelperTests
 
     private static List<BowireServiceInfo> InvokeDiscover(
         IReadOnlyList<WebSocketEndpointInfo> registered, IServiceProvider? sp) =>
+        // serverUrl param added by the self-origin-gate fix (#322); null
+        // skips the gate (embedded-mode contract).
         (List<BowireServiceInfo>)typeof(BowireWebSocketProtocol).Assembly
             .GetType("Kuestenlogik.Bowire.Protocol.WebSocket.WebSocketEndpointDiscovery")!
             .GetMethod("Discover", BindingFlags.Public | BindingFlags.Static)!
-            .Invoke(null, [registered, sp])!;
+            .Invoke(null, [registered, sp, null])!;
 }
