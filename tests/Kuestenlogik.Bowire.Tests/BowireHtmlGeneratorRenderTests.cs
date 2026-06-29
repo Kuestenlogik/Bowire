@@ -242,7 +242,10 @@ public class BowireHtmlGeneratorRenderTests
         // build to populate the contents.
         Assert.Contains("<!DOCTYPE html>", html, StringComparison.Ordinal);
         Assert.Contains("<style>", html, StringComparison.Ordinal);
-        Assert.Contains("<div id=\"bowire-app\">", html, StringComparison.Ordinal);
+        // App root carries role + aria-label since the Edge Reader Mode
+        // suppression fix (#8ba5683); match the id attribute alone so
+        // future markup additions don't break this assertion.
+        Assert.Contains("id=\"bowire-app\"", html, StringComparison.Ordinal);
         Assert.Contains("window.__BOWIRE_CONFIG__", html, StringComparison.Ordinal);
     }
 
