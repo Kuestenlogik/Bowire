@@ -23401,15 +23401,21 @@ not as the
     font-style: italic;
 }
 
-/* ---------- #295 Compose rail: Collections + Presets side panel ---------- */
-/* The Compose rail's main pane is now a flex row: the request-builder
-   column on the left (tab strip + builder) and a collapsible side
-   panel on the right hosting Collections + Presets. The panel reads
-   the same `collectionsList` + `loadPresets()` state the standalone
-   rails read, so saving from any surface lands in the same place. */
+/* ---------- Compose rail: Library sidebar (Collections + Presets) ---------- */
+/* The Library moved out of a custom side panel in the main pane into
+   the standard workbench sidebar slot (SidebarKind => "library" on
+   BowireComposeRailContribution + the case 'library' arm in
+   render-sidebar.js's renderSidebar() switch). The Compose main pane
+   is now a single column — the tab strip + request builder — wrapped
+   in .bowire-main-compose / .bowire-compose-main-col below so the
+   shared workbench shell (rail + sidebar + splitter) sits to the
+   left. Visual treatment for collection rows / preset items / per-
+   row styling lives below this block — the panel-chrome rules
+   (.bowire-compose-side-panel*) are retired since the standard
+   sidebar shell now owns the header, splitter, and collapse. */
 .bowire-main-compose {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     flex: 1;
     overflow: hidden;
     min-height: 0;
@@ -23422,68 +23428,7 @@ not as the
     overflow: hidden;
 }
 
-.bowire-compose-side-panel {
-    width: 280px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    /* Moved from right to left to match the workbench's items-list
-       convention. Border now sits on the right edge of the panel
-       (instead of left) so the seam between panel + main pane reads
-       the same way as Discover's sidebar→main boundary. */
-    border-right: 1px solid var(--bowire-border);
-    background: var(--bowire-surface);
-    overflow: hidden;
-    transition: width var(--bowire-transition);
-}
-.bowire-compose-side-panel.is-collapsed {
-    width: 36px;
-}
-
-.bowire-compose-side-panel-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--bowire-border-subtle);
-    background: var(--bowire-surface-subtle);
-    min-height: 36px;
-    box-sizing: border-box;
-}
-.bowire-compose-side-panel-toggle {
-    background: transparent;
-    border: none;
-    color: var(--bowire-text-secondary);
-    cursor: pointer;
-    padding: 4px;
-    border-radius: var(--bowire-radius-sm);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-.bowire-compose-side-panel-toggle:hover {
-    color: var(--bowire-text);
-    background: var(--bowire-surface-hover);
-}
-.bowire-compose-side-panel-toggle svg {
-    width: 14px;
-    height: 14px;
-}
-.bowire-compose-side-panel-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--bowire-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-.bowire-compose-side-panel-body {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 4px 0;
-}
-
-/* ---- Section (Collections / Presets) ---- */
+/* ---- Section (Collections / Presets) inside the Library sidebar ---- */
 .bowire-compose-side-section {
     padding: 6px 0 10px;
 }
@@ -23523,25 +23468,10 @@ not as the
     border-radius: 8px;
     background: var(--bowire-surface-hover);
 }
-.bowire-compose-side-section-add {
-    background: transparent;
-    border: none;
-    color: var(--bowire-text-tertiary);
-    cursor: pointer;
-    padding: 2px;
-    border-radius: var(--bowire-radius-sm);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-.bowire-compose-side-section-add:hover {
-    color: var(--bowire-accent);
-    background: var(--bowire-accent-subtle);
-}
-.bowire-compose-side-section-add svg {
-    width: 12px;
-    height: 12px;
-}
+/* .bowire-compose-side-section-add — retired. The "+ new collection"
+   primary action now lives in the standard sidebar toolbar
+   (renderSidebarToolbar's `primary` slot) and inherits the
+   .bowire-sidebar-toolbar-primary accent styling. */
 
 .bowire-compose-side-empty {
     padding: 8px 12px;

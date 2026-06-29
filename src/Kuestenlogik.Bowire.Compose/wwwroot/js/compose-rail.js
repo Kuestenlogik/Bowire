@@ -27,18 +27,20 @@
     let _designTabIdCounter = 0;
     let _composeTabsRehydrated = false;
 
-    // #295 — Side panel state. The Compose rail grows a collapsible
-    // panel on the right hosting Collections (top) + Presets (bottom).
-    // The panel is the same data as the standalone Collections rail —
-    // it's just hosted here so the operator doesn't have to rail-hop
-    // when composing requests that should land in a saved bucket.
-    //   composeSidePanelCollapsed — persisted under wsKey() so each
-    //     workspace remembers its own preference. Defaults to false
-    //     (panel visible) so first-time users discover the affordance.
-    //   composeSidePanelSection — which sub-section is open: 'collections'
-    //     | 'presets' | 'both'. 'both' is the default; clicking a
-    //     section header collapses it back to the other one.
+    // Library state. The Compose rail's Library (Collections + Presets)
+    // used to live in a custom panel mounted in the main pane; it now
+    // lives in the standard workbench sidebar slot (SidebarKind =>
+    // "library" on BowireComposeRailContribution + the case 'library'
+    // arm in render-sidebar.js's renderSidebar() switch). The collapse
+    // affordance is the standard sidebar-splitter edge-toggle now —
+    // see prologue.js's setSidebarCollapsed / toggleSidebarCollapsed.
+    //   composeSidePanelCollapsed — legacy key kept for backwards-
+    //     compatible localStorage round-tripping. The active collapse
+    //     state lives in bowire_sidebar_collapsed (per workspace via
+    //     the standard sidebar splitter). focusComposeOnCollection
+    //     still flips this so any old persisted blob stays consistent.
     //   composeCollectionsExpanded[id] — per-collection expand state.
+    //   composePresetsExpanded[key] — per-preset-mode expand state.
     let composeSidePanelCollapsed = false;
     let composeCollectionsExpanded = Object.create(null);
     let composePresetsExpanded = Object.create(null);
@@ -88,13 +90,16 @@
 
     // Public entry-point used by the discover-pill / workspace-tree
     // routes that previously jumped into the standalone Collections
-    // rail. Opens the Compose side panel with the Collections section
-    // visible, expands the requested collection (when supplied), and
-    // expects the caller to invoke render() — keeps the click handler
-    // owning the visible repaint.
+    // rail. With the Library now in the standard sidebar slot we also
+    // un-collapse the sidebar itself via setSidebarCollapsed so the
+    // user actually sees the expanded collection — the operator might
+    // have stowed the sidebar via the splitter's edge-toggle.
     function focusComposeOnCollection(collectionId) {
         rehydrateComposeSidePanel();
         composeSidePanelCollapsed = false;
+        if (typeof setSidebarCollapsed === 'function') {
+            setSidebarCollapsed(false);
+        }
         if (collectionId) {
             composeCollectionsExpanded[collectionId] = true;
         }
@@ -485,87 +490,87 @@
         });
     }
 
-    // ---- #295 Phase A — Side panel renderer ----
-    function _renderComposeSidePanel() {
-        var panel = el('div', {
-            id: 'bowire-compose-side-panel',
-            className: 'bowire-compose-side-panel'
-                + (composeSidePanelCollapsed ? ' is-collapsed' : '')
+    // ---- Compose Library sidebar ----
+    //
+    // The Library (Collections + Presets) lives in the standard
+    // workbench sidebar slot — same chrome (toolbar header, sidebar
+    // splitter, edge-toggle, hover-intent, grip dots) as Discover /
+    // Recordings / Workspaces / Mocks / &c. Dispatched by the
+    // `case 'library':` arm in render-sidebar.js's renderSidebar()
+    // switch, which calls window.renderComposeLibrarySidebar() when
+    // the Compose package's compose-rail.js fragment is loaded.
+    //
+    // Layout (top → bottom):
+    //   1. Standard sidebar toolbar — "Library" title + accent
+    //      "+ New collection" primary button.
+    //   2. Collections list — collection rows + per-collection items
+    //      tree (existing row markup re-used).
+    //   3. Presets section — per-mode preset groups.
+    //
+    // The render() call from any per-row interaction (expand, focus a
+    // collection, drop into a tab) re-paints through the standard
+    // sidebar pass; collapsing the sidebar via Ctrl+B / the splitter
+    // edge-toggle / drag-to-min behaves exactly like every other rail.
+    function renderComposeLibrarySidebar() {
+        rehydrateComposeSidePanel();
+        var sidebar = el('div', {
+            id: 'bowire-sidebar',
+            className: 'bowire-sidebar bowire-sidebar-mode bowire-sidebar-compose-library'
         });
 
-        // Header (collapse toggle + label)
-        var header = el('div', { className: 'bowire-compose-side-panel-header' });
-        header.appendChild(el('button', {
-            type: 'button',
-            className: 'bowire-compose-side-panel-toggle',
-            title: composeSidePanelCollapsed ? 'Expand panel' : 'Collapse panel',
-            'aria-label': composeSidePanelCollapsed ? 'Expand panel' : 'Collapse panel',
-            'aria-expanded': composeSidePanelCollapsed ? 'false' : 'true',
-            onClick: function () {
-                composeSidePanelCollapsed = !composeSidePanelCollapsed;
-                persistComposeSidePanel();
-                render();
-            },
-            innerHTML: svgIcon('sidebar')
+        // Toolbar header — title + primary "+ new collection" button.
+        // Same renderSidebarToolbar() helper every other rail uses, so
+        // the title typography, primary-button colour, and overflow
+        // affordance stay consistent with Discover / Recordings / &c.
+        sidebar.appendChild(renderSidebarToolbar({
+            title: 'Library',
+            primary: {
+                icon: 'plus',
+                title: 'New collection',
+                onClick: function () {
+                    if (typeof bowirePrompt !== 'function') {
+                        if (typeof createCollection === 'function') {
+                            createCollection();
+                            render();
+                        }
+                        return;
+                    }
+                    bowirePrompt('Collection name', {
+                        title: 'New collection',
+                        placeholder: 'e.g. Smoke tests',
+                        confirmText: 'Create'
+                    }).then(function (name) {
+                        if (name === null) return;
+                        var trimmed = String(name || '').trim();
+                        if (typeof createCollection === 'function') {
+                            createCollection(trimmed || undefined);
+                            render();
+                        }
+                    });
+                }
+            }
         }));
-        if (!composeSidePanelCollapsed) {
-            header.appendChild(el('span', {
-                className: 'bowire-compose-side-panel-title',
-                textContent: 'Library'
-            }));
-        }
-        panel.appendChild(header);
 
-        if (composeSidePanelCollapsed) return panel;
+        // Collections list (no per-section header — the toolbar above
+        // already says "Library" and the only top-level grouping in
+        // here is Collections vs Presets, which the Presets section
+        // header below makes explicit).
+        sidebar.appendChild(_renderComposeCollectionsSection());
 
-        var body = el('div', { className: 'bowire-compose-side-panel-body' });
+        // Presets section — sub-divider header so the operator sees
+        // where the per-mode preset list starts.
+        sidebar.appendChild(_renderComposePresetsSection());
 
-        // ---- Collections section ----
-        body.appendChild(_renderComposeCollectionsSection());
-        // ---- Presets section ----
-        body.appendChild(_renderComposePresetsSection());
-
-        panel.appendChild(body);
-        return panel;
+        return sidebar;
+    }
+    if (typeof window !== 'undefined') {
+        window.renderComposeLibrarySidebar = renderComposeLibrarySidebar;
     }
 
     function _renderComposeCollectionsSection() {
         var section = el('div', { className: 'bowire-compose-side-section bowire-compose-side-section-collections' });
         var cols = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList))
             ? collectionsList : [];
-        var sectionHead = el('div', { className: 'bowire-compose-side-section-header' });
-        sectionHead.appendChild(el('span', { className: 'bowire-compose-side-section-icon', innerHTML: svgIcon('folder') }));
-        sectionHead.appendChild(el('span', { className: 'bowire-compose-side-section-label', textContent: 'Collections' }));
-        sectionHead.appendChild(el('span', { className: 'bowire-compose-side-section-count', textContent: String(cols.length) }));
-        sectionHead.appendChild(el('button', {
-            type: 'button',
-            className: 'bowire-compose-side-section-add',
-            title: 'New collection',
-            'aria-label': 'New collection',
-            onClick: function () {
-                if (typeof bowirePrompt !== 'function') {
-                    if (typeof createCollection === 'function') {
-                        createCollection();
-                        render();
-                    }
-                    return;
-                }
-                bowirePrompt('Collection name', {
-                    title: 'New collection',
-                    placeholder: 'e.g. Smoke tests',
-                    confirmText: 'Create'
-                }).then(function (name) {
-                    if (name === null) return;
-                    var trimmed = String(name || '').trim();
-                    if (typeof createCollection === 'function') {
-                        createCollection(trimmed || undefined);
-                        render();
-                    }
-                });
-            },
-            innerHTML: svgIcon('plus')
-        }));
-        section.appendChild(sectionHead);
 
         if (cols.length === 0) {
             section.appendChild(el('div', {
@@ -1048,9 +1053,11 @@
             if (freeformRequest && isHoppRequest(freeformRequest)) freeformRequest = null;
         }
 
-        // #295 — outer flex row hosts the tabs+builder column on the
-        // left and the side panel (Collections + Presets) on the right.
-        // The side panel is collapsible via persistComposeSidePanel().
+        // The Library (Collections + Presets) moved out of the main
+        // pane into the standard workbench sidebar slot — see
+        // renderComposeLibrarySidebar() above and BowireComposeRail-
+        // Contribution.SidebarKind ("library"). The main pane now
+        // collapses to a single column: tab strip + request builder.
         var main = el('div', { id: 'bowire-main-compose', className: 'bowire-main bowire-main-compose' });
         var mainCol = el('div', { className: 'bowire-compose-main-col' });
 
@@ -1283,16 +1290,12 @@
             mainCol.appendChild(padWrap);
         }
 
-        // #295 — Side panel hosts Collections + Presets. Mounted on
-        // the LEFT to match the workbench convention (Discover,
-        // Recordings, Workspaces, Mocks, &c. all put the items-list
-        // on the left + the active-item editor on the right).
-        // Operator: 'warum ist die library rechts beim compose und
-        // nicht auf die gleiche art gelöst wie beim discover oder
-        // recordings (links eine sidebar)?' The panel's own header
-        // carries the collapse toggle so the layout stays a single
-        // flex row regardless of collapsed/expanded state.
-        main.appendChild(_renderComposeSidePanel());
+        // Library moved to the standard sidebar slot — the main pane
+        // is now a single column. The activity rail + sidebar +
+        // sidebar splitter sit to the left of `main` as part of the
+        // standard workbench shell (see render-env-auth.js's body
+        // layout); the Compose tab strip + request builder fill the
+        // entire main pane.
         main.appendChild(mainCol);
         return main;
     }
