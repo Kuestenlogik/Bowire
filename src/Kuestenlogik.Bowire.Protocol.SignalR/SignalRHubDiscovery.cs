@@ -26,7 +26,17 @@ internal static class SignalRHubDiscovery
     public static List<BowireServiceInfo> DiscoverHubs(IServiceProvider? serviceProvider, string? serverUrl = null)
     {
         if (serviceProvider is null) return [];
-        if (!Kuestenlogik.Bowire.Helpers.SelfOriginCheck.IsSelfOrigin(serverUrl, serviceProvider)) return [];
+        // Self-origin gate only kicks in when an EXPLICIT external
+        // serverUrl is supplied. Null / empty means "embedded mode,
+        // no specific URL context" — scan the local endpoint sources
+        // unconditionally (the original pre-gate behaviour). The gate
+        // exists to prevent the workbench's own hubs from leaking
+        // into an OPERATOR-supplied external URL.
+        if (!string.IsNullOrWhiteSpace(serverUrl)
+            && !Kuestenlogik.Bowire.Helpers.SelfOriginCheck.IsSelfOrigin(serverUrl, serviceProvider))
+        {
+            return [];
+        }
 
         var endpointSources = serviceProvider.GetService<IEnumerable<EndpointDataSource>>();
         if (endpointSources is null) return [];
