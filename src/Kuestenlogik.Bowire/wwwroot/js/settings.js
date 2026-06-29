@@ -6,50 +6,46 @@
     var settingsOpen = false;
     var settingsTab = 'general';
 
-    // #325 (revisited) — Settings tree organized by extension point.
+    // #325 (revisited²) — Settings tree organized by scope.
     //
-    // The previous v2.1 wave (commit 2954044b) collapsed Modules +
-    // Plugins + Assistant + Tools into a single "Extensions" group and
-    // moved Data under Workspace. Operator review caught two real
-    // problems:
+    // Operator review of the v2.1 layout caught two problems:
     //
-    //  1. Data is app-wide, not workspace-scoped. localStorage holds
-    //     theme, rail preferences, the workspace LIST itself, action
-    //     log, last-active workspace. Moving Data under Workspace hid
-    //     it when no workspace was active + lost the workspace-
-    //     management entry.
+    //  1. "Configure" + "Plugins" were two nodes for the same activity.
+    //     Configure held per-extension-point settings, Plugins held
+    //     lifecycle (install / update / uninstall + the v2.2 stubs).
+    //     Same plugin, two surfaces — artificial split. They are now
+    //     merged into a single Plugins node whose sub-pages each list
+    //     the plugins contributing at that extension point with both
+    //     the inline per-plugin settings AND the lifecycle button
+    //     cluster on the right.
     //
-    //  2. "Extensions" was too coarse. Bowire has clear extension
-    //     points (IBowireProtocol, IBowireUiExtension,
-    //     IBowireModuleContribution, IBowireRailContribution,
-    //     IBowireServiceContribution, IBowireEndpointContribution,
-    //     IBowireFieldDetector, IBowireHelpProvider,
-    //     IBowireCatalogueProvider). Operator-facing Settings should
-    //     organize by extension point so a plugin contributing at
-    //     multiple points shows up under each with its specific
-    //     settings.
+    //  2. Per-page disclaimers like "These settings stay on this
+    //     machine — they don't travel with the workspace file (.bww)."
+    //     repeated everywhere. The parent-node name now carries that
+    //     scope information: "This machine" vs "Workspace…", so the
+    //     per-page banner is gone.
     //
     // New tree shape:
-    //   My preferences
+    //   This machine                           ← localStorage / install-scoped
     //     ├── General   (theme, language, defaults)
     //     ├── Rails     (rail-mode toggles)
     //     ├── Shortcuts (read-only today)
-    //     └── Data      (app-wide cleanup, history, reset)
-    //   Workspace…      (per-workspace pointer)
-    //   Configure       (extension-point-driven sub-tree)
-    //     ├── Protocols          (IBowireProtocol — REST, gRPC, …)
-    //     ├── UI Widgets         (IBowireUiExtension — Map, …)
-    //     ├── Modules            (IBowireModuleContribution — AI, …)
-    //     ├── Formats            (IBowireFieldDetector — Wgs84, …)
-    //     ├── Tools              (Reverse-Proxy launcher & friends)
-    //     └── Discovery providers (IBowireCatalogueProvider — local /
-    //                              http / consul / k8s / agent)
-    //   Plugins         (lifecycle: install / load / unload / restart /
-    //                    reset storage; v2.2 stubs render disabled)
+    //     ├── Data      (app-wide cleanup, history, reset)
+    //     └── Plugins   (configure + lifecycle merged)
+    //         ├── Protocols          (IBowireProtocol — REST, gRPC, …)
+    //         ├── UI Widgets         (IBowireUiExtension — Map, …)
+    //         ├── Modules            (IBowireModuleContribution — AI, …)
+    //         ├── Formats            (IBowireFieldDetector — Wgs84, …)
+    //         ├── Tools              (Reverse-Proxy launcher & friends)
+    //         └── Discovery providers (IBowireCatalogueProvider — local /
+    //                                  http / consul / k8s / agent)
+    //   Workspace…                             ← .bww-scoped, travels
+    //     └── Per-Workspace overrides
     //
-    // A plugin contributing to multiple points shows up under each —
-    // the Plugins section is lifecycle/discovery only, not per-axis
-    // configuration.
+    // The User scope (Multi-Tenancy, v2.6) is deferred. The standalone
+    // 'plugins' lifecycle leaf is gone — every sub-page is BOTH the
+    // configure surface AND the lifecycle surface for its extension
+    // point, with the lifecycle button cluster appearing per-row.
     function _buildSettingsTreeNodes() {
         function leaf(id, label, icon) {
             return {
@@ -58,23 +54,20 @@
                 icon: icon,
                 selected: settingsTab === id,
                 onClick: function () {
-                    if (settingsTab === 'plugins' && id !== 'plugins') {
-                        pluginsTabFetchedThisOpen = false;
-                    }
                     settingsTab = id;
                     renderSettingsDialog();
                 }
             };
         }
         // Non-clickable group header — visually segments the tree into
-        // "My preferences" vs the rest. helpers.js renderTree honours
+        // "This machine" vs "Workspace…". helpers.js renderTree honours
         // .header by rendering the row without click bindings.
         function header(label) {
             return { id: 'settings-group:' + label, label: label, header: true };
         }
 
         var nodes = [
-            header('My preferences'),
+            header('This machine'),
             leaf('general', 'General', 'settings'),
             // Label was 'Rail modes' until v2.1; renamed to 'Rails'
             // because the rail strip is now the primary navigation
@@ -85,22 +78,19 @@
             leaf('shortcuts', 'Shortcuts', 'list'),
             // Data is app-wide, NOT workspace-scoped: theme, rail
             // preferences, the workspace LIST itself, action log,
-            // last-active workspace all live in localStorage. Stays at
-            // the top level so it's reachable even with no workspace
-            // active.
+            // last-active workspace all live in localStorage. Stays
+            // under This machine where the scope is unambiguous.
             leaf('data', 'Data', 'trash')
         ];
 
-        // Workspace pointer — per-workspace settings (URLs, env vars,
-        // sources) round-trip through .bww. The pointer page jumps to
-        // the Workspaces rail detail panel.
-        nodes.push(leaf('workspace', 'Workspace…', 'layers'));
-
-        // Configure group — one child per extension point. A plugin
-        // contributing at multiple points shows up under each. The
-        // group node routes to the Protocols overview on click (most
-        // common entry) and the chevron toggles expansion.
-        var configureChildren = [
+        // Plugins group — one child per extension point. Each sub-page
+        // lists the plugins contributing at that point with inline
+        // settings AND lifecycle buttons (Restart / Unload / Reset
+        // storage, plus an Install button at the top of Protocols).
+        // A plugin contributing at multiple points shows up under each.
+        // Tab ids keep the 'configure-' prefix because operators with
+        // deep links from v2.1 should keep landing on the same page.
+        var pluginsChildren = [
             leaf('configure-protocols', 'Protocols', 'plug'),
             leaf('configure-widgets', 'UI Widgets', 'layers'),
             leaf('configure-modules', 'Modules', 'spark'),
@@ -108,58 +98,56 @@
             leaf('configure-tools', 'Tools', 'plug'),
             leaf('configure-discovery', 'Discovery providers', 'search')
         ];
-        var configureKey = 'configure';
-        var configureActive = settingsTab.indexOf('configure-') === 0
+        var pluginsKey = 'plugins';
+        var pluginsActive = settingsTab.indexOf('configure-') === 0
             || settingsTab.indexOf('plugin-') === 0
             || settingsTab.indexOf('extension-') === 0;
-        var configureExpanded = isSettingsTreeNodeExpanded(configureKey, configureActive);
-        nodes.push({
-            id: 'settings:configure',
-            label: 'Configure',
-            icon: 'settings',
-            expandable: true,
-            expanded: configureExpanded,
-            selected: settingsTab === 'configure-protocols',
-            onClick: function () {
-                settingsTab = 'configure-protocols';
-                renderSettingsDialog();
-            },
-            onToggle: function () {
-                toggleSettingsTreeNode(configureKey, configureActive);
-                renderSettingsDialog();
-            },
-            children: configureChildren
-        });
-
-        // Plugins lifecycle — install / load / unload / restart /
-        // reset storage. v2.1 surfaces the installed list + the
-        // existing install/update/uninstall actions; the new
-        // load/unload/restart/reset-storage verbs land in v2.2 and
-        // currently render as disabled buttons with a "Available in
-        // v2.2" tooltip + a 501 from the backend if pressed.
+        var pluginsExpanded = isSettingsTreeNodeExpanded(pluginsKey, pluginsActive);
         var pluginCount = (installedPlugins || []).length
             + (installedExtensions || []).length;
         nodes.push({
             id: 'settings:plugins',
             label: 'Plugins',
             icon: 'plug',
+            expandable: true,
+            expanded: pluginsExpanded,
             badge: pluginCount > 0 ? pluginCount : null,
-            selected: settingsTab === 'plugins',
+            selected: settingsTab === 'configure-protocols',
             onClick: function () {
-                settingsTab = 'plugins';
+                // Clicking the parent lands on Protocols — the most
+                // common entry. Sub-pages handle their own selection.
+                settingsTab = 'configure-protocols';
                 renderSettingsDialog();
-            }
+            },
+            onToggle: function () {
+                toggleSettingsTreeNode(pluginsKey, pluginsActive);
+                renderSettingsDialog();
+            },
+            children: pluginsChildren
         });
+
+        // Workspace group — .bww-scoped settings that travel with the
+        // workspace file. The pointer leaf jumps to the Workspaces rail
+        // detail panel. Per-Workspace overrides is an empty-state leaf
+        // today — no machine-scoped setting currently flips to a
+        // workspace override programmatically, so the page renders an
+        // empty-state card explaining the model.
+        nodes.push(header('Workspace…'));
+        nodes.push(leaf('workspace', 'Workspace settings', 'layers'));
+        nodes.push(leaf('workspace-overrides', 'Per-Workspace overrides', 'settings'));
 
         return nodes;
     }
 
-    // Map old tab ids to their post-#325-revisit equivalents. Operators
-    // with a saved `settingsTab` value from the v2.0 layout (or the
-    // short-lived v2.1 collapse) get migrated to the new shape on
-    // dialog open. Unknown values fall back to 'general'. We keep
-    // 'plugin-<id>' and 'extension-<id>' verbatim because those still
-    // resolve.
+    // Map old tab ids to their post-#325-revisit² equivalents. Operators
+    // with a saved `settingsTab` value from the v2.0 / short-lived v2.1
+    // layouts get migrated to the new shape on dialog open. Unknown
+    // values fall back to 'general'. We keep 'plugin-<id>' and
+    // 'extension-<id>' verbatim because those still resolve.
+    //
+    // The 'plugins' lifecycle leaf is gone — every sub-page IS the
+    // list for its extension point, so a saved 'plugins' value lands
+    // on Protocols (the merged surface's default).
     function _migrateLegacySettingsTab(tabId) {
         if (!tabId || typeof tabId !== 'string') return 'general';
         if (tabId.indexOf('plugin-') === 0) return tabId;
@@ -170,7 +158,7 @@
             case 'shortcuts':
             case 'data':
             case 'workspace':
-            case 'plugins':
+            case 'workspace-overrides':
                 return tabId;
             case 'configure-protocols':
             case 'configure-widgets':
@@ -180,6 +168,9 @@
             case 'configure-discovery':
                 return tabId;
             // Legacy ids → new locations.
+            case 'plugins':
+            case 'configure':
+                return 'configure-protocols';
             case 'modules':
             case 'ai':
                 return 'configure-modules';
@@ -223,7 +214,7 @@
         settingsOpen = false;
         // Reset the per-open one-shot guard so reopening the dialog
         // re-fetches plugin data. See pluginsTabFetchedThisOpen in
-        // renderSettingsPlugins() for the loop-prevention story.
+        // openSettings() for the loop-prevention story.
         pluginsTabFetchedThisOpen = false;
         // #309 — drop the per-open transient result strips so the
         // operator doesn't see a stale "Saved" / "Test failed" line
@@ -278,20 +269,11 @@
         // panel when switching categories instead of reusing stale DOM.
         var rightPanel = el('div', { id: 'bowire-settings-right-' + settingsTab, className: 'bowire-settings-right' });
 
-        // #193 Phase 2 item 4 — scope banner at the top of every
-        // section. The Settings dialog itself only houses user-scope
-        // preferences (theme, AI, shortcuts, data-cleanup), so a
-        // single sticky banner spelling that out is enough to make
-        // the split discoverable for an operator opening a workspace
-        // for the first time. The workspace pointer page suppresses
-        // the banner because it has its own scope copy.
-        if (settingsTab !== 'workspace') {
-            rightPanel.appendChild(el('div', {
-                className: 'bowire-settings-scope-banner',
-                role: 'note',
-                textContent: 'These settings stay on this machine — they don\'t travel with the workspace file (.bww).'
-            }));
-        }
+        // #325 (revisited²) — the per-page scope banner is gone. The
+        // parent-node names ('This machine' vs 'Workspace…') in the
+        // sidebar tree now carry that scope information unambiguously,
+        // so every sub-page used to repeat the same disclaimer for no
+        // signal. The banner is dropped across the board.
 
         // Migrate every render call too — defensive against any caller
         // (deep link, legacy code path) that pokes settingsTab to a
@@ -309,8 +291,8 @@
             rightPanel.appendChild(renderSettingsData());
         } else if (settingsTab === 'workspace') {
             rightPanel.appendChild(renderSettingsWorkspacePointer());
-        } else if (settingsTab === 'plugins') {
-            rightPanel.appendChild(renderSettingsPlugins());
+        } else if (settingsTab === 'workspace-overrides') {
+            rightPanel.appendChild(renderSettingsWorkspaceOverrides());
         } else if (settingsTab === 'configure-protocols') {
             rightPanel.appendChild(renderSettingsConfigureProtocols());
         } else if (settingsTab === 'configure-widgets') {
@@ -983,31 +965,22 @@
             style: 'font-weight:500;margin-bottom:6px',
             textContent: 'No ' + kindLabel + ' installed.'
         }));
-        var link = el('button', {
-            type: 'button',
-            className: 'bowire-settings-action-btn',
-            style: 'margin-top:8px',
-            textContent: 'Open Plugins',
-            onClick: function () {
-                settingsTab = 'plugins';
-                renderSettingsDialog();
-            }
-        });
         card.appendChild(el('div', {
             style: 'font-size:12px;color:var(--bowire-text-tertiary);margin-bottom:8px',
-            textContent: 'Manage plugin installation and lifecycle from the Plugins section.'
+            textContent: 'Install a plugin contributing at this extension point to see entries here. Use the Install button at the top of the Protocols sub-page, or `bowire plugin install <packageId>`.'
         }));
-        card.appendChild(link);
         return card;
     }
 
-    // Configure → Protocols. Lists every IBowireProtocol plugin (one
-    // section per protocol) with its per-plugin enable toggle +
-    // settings rendered inline. The existing renderPluginSettings
-    // already knows how to draw enable + the settings array, so we
-    // call it once per protocol and let it build the per-protocol
-    // sub-panel. A leading "Installed protocol plugins" overview row
-    // gives operators a hint that this page IS configure, not lifecycle.
+    // Plugins → Protocols. Merged configure + lifecycle surface for
+    // every IBowireProtocol plugin. Each row carries:
+    //   - the protocol name + identity
+    //   - per-plugin enable toggle + settings inline
+    //   - lifecycle button cluster on the right (Restart / Unload /
+    //     Reset storage)
+    // Page-level: plugin-health banner at top, Install + Check-now
+    // actions in an action bar, then a divider per protocol with the
+    // full configure + lifecycle row.
     function renderSettingsConfigureProtocols() {
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', {
@@ -1016,20 +989,33 @@
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-hint',
-            textContent: 'Per-protocol configuration for every IBowireProtocol plugin (REST, gRPC, GraphQL, MCP, MQTT, WebSocket, …). Disable a protocol to hide its chips, services, and switcher entry — the plugin stays loaded for instant re-enable. Plugin install / uninstall lives under Plugins.'
+            textContent: 'Per-protocol configuration and lifecycle for every IBowireProtocol plugin (REST, gRPC, GraphQL, MCP, MQTT, WebSocket, …). Disable a protocol to hide its chips, services, and switcher entry — the plugin stays loaded for instant re-enable. Use the lifecycle buttons on the right to restart, unload, or reset a plugin’s storage.'
         }));
+
+        // Plugin health banner + install/check action bar at the page
+        // top. The data fetches kick off once per dialog open from
+        // openSettings(), so we just consume the cache here.
+        section.appendChild(renderPluginHealthBanner());
+        section.appendChild(_renderPluginsActionBar('protocols'));
+        if (pluginActionResult) {
+            section.appendChild(renderPluginActionBanner(pluginActionResult));
+        }
 
         if (!protocols || protocols.length === 0) {
             section.appendChild(_renderEmptyExtensionPointCard('protocol plugins'));
+            // Still surface the installed-sibling list so the operator
+            // sees what's on disk even when no protocol descriptors
+            // have come back yet (e.g. plugin load failed — health
+            // banner already explains it).
+            section.appendChild(_renderInstalledSiblingsForProtocols());
             return section;
         }
 
-        // One sub-panel per protocol, separated by a faint rule so the
-        // operator reads the page top-to-bottom as "every protocol's
-        // settings" instead of one mash of rows. We piggyback on
-        // renderPluginSettings — it draws the enable toggle + the
-        // per-plugin settings array (when present) + the
-        // "no configurable settings" notice.
+        // One sub-panel per protocol with the lifecycle button cluster
+        // anchored top-right. renderPluginSettings draws the enable
+        // toggle + the per-plugin settings array (when present) + the
+        // "no configurable settings" notice; _wrapWithLifecycleCluster
+        // anchors the lifecycle buttons next to it.
         for (var pi = 0; pi < protocols.length; pi++) {
             (function (plugin, isFirst) {
                 if (!isFirst) {
@@ -1038,16 +1024,130 @@
                         style: 'border-top:1px solid var(--bowire-border-subtle);margin:18px 0 0'
                     }));
                 }
-                section.appendChild(renderPluginSettings(plugin));
+                section.appendChild(_wrapWithLifecycleCluster(
+                    renderPluginSettings(plugin),
+                    plugin.id
+                ));
             })(protocols[pi], pi === 0);
         }
+
+        // Manage installed sibling plugins (update / uninstall +
+        // pre-release toggle + update-check banner). Lives below the
+        // configure rows so per-protocol settings stay the operator's
+        // first read; the install lifecycle stays one scroll away.
+        section.appendChild(_renderInstalledSiblingsForProtocols());
         return section;
     }
 
-    // Configure → UI Widgets. Surfaces every loaded IBowireUiExtension
+    // Render the "Install / Check for updates" action bar that sits at
+    // the top of the Protocols sub-page. Wires the existing
+    // install/check-updates UX into the new merged surface so plugin
+    // discovery happens right next to the configure rows.
+    function _renderPluginsActionBar(_subPageId) {
+        var bar = el('div', {
+            className: 'bowire-settings-plugins-action-bar',
+            style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px'
+        });
+        bar.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-settings-action-btn',
+            textContent: 'Install plugin…',
+            onClick: function () { _openInstallPluginModal(); }
+        }));
+        bar.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-settings-action-btn',
+            style: 'background:none;color:var(--bowire-text-tertiary)',
+            textContent: 'Check for updates',
+            onClick: function () {
+                var qs = pluginPrereleaseToggle ? '?prerelease=true' : '';
+                fetch(config.prefix + '/api/plugins/check-updates' + qs)
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (snapshot) {
+                        if (snapshot) {
+                            pluginUpdateCheckStatus = Object.assign(
+                                {}, pluginUpdateCheckStatus || {}, { cached: snapshot });
+                        }
+                        renderSettingsDialog();
+                        if (typeof render === 'function') render();
+                    })
+                    .catch(function () { /* offline / NuGet down */ });
+            }
+        }));
+        return bar;
+    }
+
+    // Lightweight install-plugin prompt — same /api/plugins/install
+    // surface the previous Plugins page targeted, just driven from
+    // an inline prompt so the operator stays inside the Plugins sub-
+    // tree. The backend handles validation; we just relay the package
+    // id.
+    function _openInstallPluginModal() {
+        var pkg = window.prompt('Package id to install (e.g. Kuestenlogik.Bowire.Plugin.Foo):', '');
+        if (!pkg) return;
+        pkg = pkg.trim();
+        if (!pkg) return;
+        pluginActionInFlight = pkg;
+        pluginActionResult = null;
+        renderSettingsDialog();
+        fetch(config.prefix + '/api/plugins/install', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ packageId: pkg, prerelease: pluginPrereleaseToggle })
+        })
+            .then(function (resp) {
+                return resp.json().then(function (data) { return { ok: resp.ok, data: data }; });
+            })
+            .then(function (result) {
+                pluginActionInFlight = null;
+                pluginActionResult = result.ok
+                    ? { ok: true, summary: 'Installed ' + pkg, detail: (result.data && result.data.output) || '' }
+                    : { ok: false, summary: 'Failed to install ' + pkg, detail: (result.data && (result.data.detail || result.data.stdout || result.data.output)) || '' };
+                fetchInstalledPlugins();
+            })
+            .catch(function (err) {
+                pluginActionInFlight = null;
+                pluginActionResult = { ok: false, summary: 'Failed to install ' + pkg, detail: String(err) };
+                renderSettingsDialog();
+            });
+    }
+
+    // Wrap a renderPluginSettings / renderExtensionSettings sub-panel
+    // with the lifecycle button cluster anchored to its right. The
+    // panel keeps its existing layout; the cluster floats next to it
+    // via a flex container so the operator sees "configure here,
+    // lifecycle there" without two stacked rows per plugin.
+    function _wrapWithLifecycleCluster(panel, pluginId) {
+        var wrap = el('div', {
+            className: 'bowire-settings-plugin-row-with-lifecycle',
+            style: 'display:flex;gap:12px;align-items:flex-start;justify-content:space-between'
+        });
+        var left = el('div', {
+            style: 'flex:1;min-width:0'
+        });
+        left.appendChild(panel);
+        wrap.appendChild(left);
+        var right = el('div', {
+            style: 'flex:0 0 auto;padding-top:8px'
+        });
+        right.appendChild(_renderPluginLifecycleButtons(pluginId));
+        wrap.appendChild(right);
+        return wrap;
+    }
+
+    // Pluck the installed-sibling list out of the now-merged Plugins
+    // page so the Protocols sub-page shows it under the configure
+    // rows. Re-uses renderManagePluginsSection's row renderer +
+    // pre-release toggle + update-check banner verbatim.
+    function _renderInstalledSiblingsForProtocols() {
+        return renderManagePluginsSection();
+    }
+
+    // Plugins → UI Widgets. Surfaces every loaded IBowireUiExtension
     // (the right-rail viewer/editor widgets — Map today; future Chart,
     // Table, MIL-symbol renderers). Each row renders the extension's
-    // metadata card via the existing renderExtensionSettings.
+    // metadata card via the existing renderExtensionSettings, with the
+    // lifecycle button cluster anchored on the right.
     function renderSettingsConfigureWidgets() {
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', {
@@ -1056,7 +1156,7 @@
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-hint',
-            textContent: 'Widgets that render semantic annotations on response payloads — coordinates on a map, time-series in a chart, &c. One IBowireUiExtension per row; settings the widget exposes appear inline.'
+            textContent: 'Widgets that render semantic annotations on response payloads — coordinates on a map, time-series in a chart, &c. One IBowireUiExtension per row; settings the widget exposes appear inline; lifecycle (restart / unload / reset storage) on the right.'
         }));
 
         var extensions = (installedExtensions || []).slice().sort(function (a, b) {
@@ -1066,6 +1166,9 @@
         });
         if (extensions.length === 0) {
             section.appendChild(_renderEmptyExtensionPointCard('UI widgets'));
+            // Surface the suggestion table so the operator sees which
+            // widget packages exist even when none are installed yet.
+            section.appendChild(_renderSuggestedExtensionsCard());
             return section;
         }
         for (var ei = 0; ei < extensions.length; ei++) {
@@ -1075,19 +1178,65 @@
                         style: 'border-top:1px solid var(--bowire-border-subtle);margin:18px 0 0'
                     }));
                 }
-                section.appendChild(renderExtensionSettings(ext));
+                var extId = ext.id || ext.Id || '';
+                section.appendChild(_wrapWithLifecycleCluster(
+                    renderExtensionSettings(ext),
+                    extId
+                ));
             })(extensions[ei], ei === 0);
         }
+        // Suggested-but-not-installed widgets below the loaded list.
+        section.appendChild(_renderSuggestedExtensionsCard());
         return section;
     }
 
-    // Configure → Modules. Lists IBowireModuleContribution descriptors
+    // Suggested-extensions card — same Suggested rows the legacy
+    // Plugins page surfaced, just packaged so the UI Widgets sub-page
+    // can show them without depending on the dropped Plugins leaf.
+    function _renderSuggestedExtensionsCard() {
+        var card = el('div', { style: 'margin-top:18px' });
+        var suggestions = collectSuggestionEntries();
+        if (suggestions.length === 0) return card;
+        var loadedPackageIds = {};
+        for (var ei = 0; ei < (installedExtensions || []).length; ei++) {
+            var pkg = installedExtensions[ei].packageId || installedExtensions[ei].PackageId || '';
+            if (pkg) loadedPackageIds[pkg.toLowerCase()] = true;
+        }
+        var pending = suggestions.filter(function (s) {
+            return !loadedPackageIds[s.packageId.toLowerCase()];
+        });
+        if (pending.length === 0) return card;
+        card.appendChild(el('h3', {
+            className: 'bowire-settings-section-title',
+            style: 'margin-top:0',
+            textContent: 'Suggested widget packages'
+        }));
+        card.appendChild(el('div', {
+            className: 'bowire-settings-section-desc',
+            textContent: 'Bowire knows a package for these semantic kinds but no widget is loaded. Install the package to see annotated payloads render.'
+        }));
+        var list = el('div', { className: 'bowire-settings-plugin-list' });
+        pending.forEach(function (s) {
+            list.appendChild(renderExtensionRow({
+                id: '',
+                packageId: s.packageId,
+                displayName: s.packageId,
+                kinds: s.kinds,
+                capabilities: [],
+                status: 'suggested',
+            }));
+        });
+        card.appendChild(list);
+        return card;
+    }
+
+    // Plugins → Modules. Lists IBowireModuleContribution descriptors
     // (AI Assistant today; future variable-resolver, …) with the
-    // existing per-module enable toggle, then renders the AI assistant
-    // configuration panel inline beneath the module list because AI
-    // is currently the only module that exposes settings beyond
-    // enable/disable. When more modules grow settings panels they
-    // slot in here under their own sub-heading.
+    // existing per-module enable toggle. Renders the AI assistant
+    // configuration panel inline beneath the module list with the
+    // lifecycle button cluster anchored on the right of the assistant
+    // sub-panel (the assistant IS a module plugin; restart / unload /
+    // reset-storage all apply).
     function renderSettingsConfigureModules() {
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(renderSettingsModules());
@@ -1102,7 +1251,10 @@
             section.appendChild(el('div', {
                 style: 'border-top:1px solid var(--bowire-border-subtle);margin:18px 0 0'
             }));
-            section.appendChild(renderSettingsAi());
+            section.appendChild(_wrapWithLifecycleCluster(
+                renderSettingsAi(),
+                'ai'
+            ));
         }
         return section;
     }
@@ -1360,7 +1512,11 @@
                     autoDetectLocal: !!aiSettingsState.status.autoDetectLocal
                 };
             }
-            if (settingsOpen && settingsTab === 'ai') renderSettingsDialog();
+            // The legacy 'ai' tab id was retired when AI moved under
+            // configure-modules; the migrator rewrites stored values,
+            // and live re-render on this fetch is gated on either id
+            // so a deep-link still picks up the refreshed status.
+            if (settingsOpen && (settingsTab === 'ai' || settingsTab === 'configure-modules' || settingsTab === 'workspace-overrides')) renderSettingsDialog();
         });
     }
 
@@ -1824,7 +1980,11 @@
                     }
                 }
             } catch { /* ignore */ }
-            if (settingsOpen && settingsTab === 'discovery') renderSettingsDialog();
+            // Legacy 'discovery' id stayed in the migrator; the new
+            // tab is 'configure-discovery'. Live re-render on either
+            // so a fetch landing while the operator sits on the page
+            // still updates the form.
+            if (settingsOpen && (settingsTab === 'discovery' || settingsTab === 'configure-discovery')) renderSettingsDialog();
         });
     }
 
@@ -2759,6 +2919,105 @@
         return section;
     }
 
+    // ---- Per-Workspace overrides (#325 revisited²) ----
+    //
+    // Some machine-scoped settings can be overridden per-workspace —
+    // the canonical example today is the AI provider config, which
+    // round-trips through /api/ai/config?workspaceId=<id>. This page
+    // is the discoverability surface for those overrides: it lists
+    // every override currently in force for the active workspace, so
+    // the operator can see at a glance which machine-scoped defaults
+    // the workspace is replacing.
+    //
+    // Today only AI surfaces this pattern through the UI, and that
+    // surface ALREADY lives on the assistant page (Settings → Plugins
+    // → Modules → Assistant) with its own "Workspace override / Use
+    // global instead" controls. So this page renders:
+    //   - the active workspace name
+    //   - the AI override row when the workspace has its own ai-config
+    //   - an empty-state card otherwise
+    // No invention of overrides that don't exist; no duplicate editor.
+    function renderSettingsWorkspaceOverrides() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        section.appendChild(el('h3', {
+            className: 'bowire-settings-section-title',
+            textContent: 'Per-Workspace overrides'
+        }));
+        section.appendChild(el('div', {
+            className: 'bowire-settings-section-hint',
+            textContent: 'Machine-scoped settings that this workspace replaces with its own value. The override travels with the workspace (.bww); the machine-scoped default applies in every other workspace.'
+        }));
+
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        if (!ws) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-section-empty',
+                textContent: 'No workspace selected. Pick one in the activity rail to see its overrides.'
+            }));
+            return section;
+        }
+
+        var rows = [];
+
+        // AI override — surfaced when the cached ai-status reports
+        // hasOverride for the active workspace. Kicks the cache fetch
+        // if cold; on hit, render a row with a jump to the assistant
+        // editor.
+        if (!aiSettingsState.loaded) {
+            loadAiSettings(false);
+        }
+        var aiStatus = aiSettingsState.status;
+        if (aiStatus && aiStatus.hasOverride) {
+            var row = el('div', { className: 'bowire-settings-row' });
+            row.appendChild(el('div', { className: 'bowire-settings-row-info' },
+                el('div', { className: 'bowire-settings-row-label', textContent: 'Assistant (AI) configuration' },
+                    el('span', {
+                        className: 'bowire-ai-scope-tag bowire-ai-scope-tag-override',
+                        style: 'margin-left:8px',
+                        textContent: 'workspace override'
+                    })
+                ),
+                el('div', {
+                    className: 'bowire-settings-row-desc',
+                    textContent: 'This workspace uses ' + (aiStatus.providerId || '(unknown)')
+                        + ' · ' + (aiStatus.model || '(default model)')
+                        + '. The global default applies in every other workspace.'
+                })
+            ));
+            row.appendChild(el('div', { className: 'bowire-settings-row-control' },
+                el('button', {
+                    type: 'button',
+                    className: 'bowire-settings-action-btn',
+                    textContent: 'Edit assistant override',
+                    onClick: function () {
+                        settingsTab = 'configure-modules';
+                        renderSettingsDialog();
+                    }
+                })
+            ));
+            rows.push(row);
+        }
+
+        if (rows.length === 0) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-section-empty'
+            },
+                el('div', {
+                    style: 'font-weight:500;margin-bottom:6px',
+                    textContent: 'No workspace overrides set.'
+                }),
+                el('div', {
+                    style: 'font-size:12px;color:var(--bowire-text-tertiary)',
+                    textContent: 'Active workspace: ' + ws.name + '. When you save a machine-scoped setting "for this workspace only" — e.g. an alternate AI provider on the assistant page — the override appears here so the deviation from the machine-scoped default stays discoverable.'
+                })
+            ));
+            return section;
+        }
+
+        for (var ri = 0; ri < rows.length; ri++) section.appendChild(rows[ri]);
+        return section;
+    }
+
     // ---- Data ----
     function renderSettingsData() {
         var section = el('div', { className: 'bowire-settings-section' });
@@ -3266,113 +3525,28 @@
     // infinite render loop (#66).
     var pluginsTabFetchedThisOpen = false;
 
-    // #325 (revisited) — Plugins lifecycle page.
-    //
-    // No per-protocol enable toggles here — those live under
-    // Configure → Protocols. This page is the LIFECYCLE surface:
-    //
-    //   - Plugin health banner (load failures)
-    //   - Installed (sibling) plugins with Update / Uninstall +
-    //     stubbed Load / Unload / Restart / Reset storage actions
-    //   - Installed UI extensions with the same lifecycle row shape
-    //   - Install button → existing /api/plugins/install flow
-    //
-    // The four stubbed lifecycle verbs (Load, Unload, Restart, Reset
-    // storage) all wire to POST /api/plugins/{id}/lifecycle/{action},
-    // which returns 501 with a problem-details body announcing the
-    // verb is v2.2 scope. The frontend renders the 501 inline as a
-    // banner — no fake success, no silent no-op.
-    function renderSettingsPlugins() {
-        var section = el('div', { className: 'bowire-settings-section' });
+    // #325 (revisited²) — the standalone 'Plugins' lifecycle leaf
+    // is gone. The per-row lifecycle buttons now live INSIDE every
+    // sub-page under Plugins (Protocols, UI Widgets, Modules, …) via
+    // _wrapWithLifecycleCluster. _renderPluginLifecycleButtons below
+    // still wires to the same 501-stub backend endpoint.
 
-        // Page header — sets the operator expectation that this is
-        // lifecycle, not per-plugin configuration.
-        section.appendChild(el('h3', {
-            className: 'bowire-settings-section-title',
-            textContent: 'Plugins'
-        }));
-        section.appendChild(el('div', {
-            className: 'bowire-settings-section-hint',
-            textContent: 'Install / load / unload / restart loaded plugins and reset their storage. Per-plugin configuration (protocol options, widget options, module options, …) lives under Configure, grouped by extension point.'
-        }));
-
-        // Plugin health banner — surfaces every plugin whose load
-        // didn't reach the Loaded / AlreadyLoaded state. Empty when
-        // every install is healthy so the section stays quiet.
-        section.appendChild(renderPluginHealthBanner());
-
-        // "Manage installed plugins" — list every sibling-installed
-        // plugin under ~/.bowire/plugins/ with its version and per-row
-        // Update / Uninstall buttons (renderManagedPluginRow drives
-        // the row layout; the new lifecycle buttons are appended
-        // there).
-        section.appendChild(renderManagePluginsSection());
-
-        // Fire the refresh fetches exactly once per "tab opened" event.
-        if (!pluginsTabFetchedThisOpen) {
-            pluginsTabFetchedThisOpen = true;
-            fetchPluginHealth();
-            fetchInstalledPlugins();
-        }
-
-        // Loaded protocols — read-only inventory by id + name +
-        // package. The Configure → Protocols page owns the
-        // enable/disable + per-protocol settings. Here we just show
-        // what's in-process so the operator can confirm a plugin
-        // they expect IS loaded before they hunt for missing services.
-        section.appendChild(_renderLoadedProtocolsInventory());
-
-        // UI extensions inventory + suggestions. Same renderer the
-        // previous Plugins page used.
-        section.appendChild(renderInstalledExtensionsSection());
-
-        return section;
-    }
-
-    // Read-only inventory of loaded protocol plugins. Each row carries
-    // a Load / Unload / Restart / Reset-storage button group; the
-    // backend currently returns 501 for every action, so the buttons
-    // render as disabled with a "Available in v2.2" tooltip.
-    function _renderLoadedProtocolsInventory() {
-        var section = el('div', { className: 'bowire-settings-section bowire-settings-plugin-loaded' });
-        section.appendChild(el('h3', {
-            className: 'bowire-settings-section-title',
-            textContent: 'Loaded protocol plugins'
-        }));
-        section.appendChild(el('div', {
-            className: 'bowire-settings-section-desc',
-            textContent: 'Plugins currently in-process. Use Configure → Protocols to enable / disable a protocol; use the lifecycle buttons here to load, unload, restart, or reset a plugin’s storage.'
-        }));
-
-        if (!protocols || protocols.length === 0) {
-            section.appendChild(el('p', {
-                className: 'bowire-settings-empty',
-                textContent: 'No protocol plugins loaded.'
-            }));
-            return section;
-        }
-
-        var list = el('div', { className: 'bowire-settings-plugin-list' });
-        for (var pi = 0; pi < protocols.length; pi++) {
-            (function (p) {
-                var row = el('div', { className: 'bowire-settings-plugin-row' });
-                if (p.icon) {
-                    row.appendChild(el('span', {
-                        className: 'bowire-settings-plugin-icon',
-                        innerHTML: p.icon
-                    }));
-                }
-                var textBox = el('div', { className: 'bowire-settings-plugin-text' },
-                    el('div', { className: 'bowire-settings-plugin-name', textContent: p.name }),
-                    el('div', { className: 'bowire-settings-plugin-id', textContent: p.id })
-                );
-                row.appendChild(textBox);
-                row.appendChild(_renderPluginLifecycleButtons(p.id));
-                list.appendChild(row);
-            })(protocols[pi]);
-        }
-        section.appendChild(list);
-        return section;
+    // True when the currently-selected settings tab surfaces the
+    // installed-plugin inventory (so live data fetches should kick a
+    // re-render). Protocols owns the health banner + installed-sibling
+    // list; the other configure-* sub-pages surface only their own
+    // extension-point's plugins, which still benefit from a re-render
+    // when /api/plugins lands fresh data.
+    function _settingsTabShowsPluginInventory() {
+        return settingsTab === 'configure-protocols'
+            || settingsTab === 'configure-widgets'
+            || settingsTab === 'configure-modules'
+            || settingsTab === 'configure-formats'
+            || settingsTab === 'configure-tools'
+            || settingsTab === 'configure-discovery'
+            || settingsTab === 'workspace-overrides'
+            || settingsTab.indexOf('plugin-') === 0
+            || settingsTab.indexOf('extension-') === 0;
     }
 
     // Track which (pluginId, action) call is in flight and the last
@@ -3468,86 +3642,12 @@
             });
     }
 
-    /**
-     * Render the "Installed UI extensions" section beneath the
-     * protocols list. Each row carries the extension's display name,
-     * its declaring package id, the semantic kinds it claims, the
-     * Viewer / Editor capability pills, and an "Installed" status
-     * pill. Packages from the bowirePackageSuggestions table that
-     * aren't currently loaded get a grey "Suggested" row so the
-     * operator discovers extensions before they ever hit an
-     * un-rendered coordinate annotation.
-     */
-    function renderInstalledExtensionsSection() {
-        var section = el('div', { className: 'bowire-settings-section bowire-settings-plugin-extensions' });
-        section.appendChild(el('h3', {
-            className: 'bowire-settings-section-title',
-            textContent: 'Installed UI extensions'
-        }));
-        section.appendChild(el('div', {
-            className: 'bowire-settings-section-desc',
-            textContent: 'Widgets that render semantic annotations — coordinates on a map, time-series in a chart, &c. Suggested rows are extensions Bowire knows a package for but hasn\'t loaded yet.'
-        }));
-
-        var rows = [];
-
-        // Installed half — straight from the /api/plugins extensions
-        // array. Sort by id so the order is stable across refreshes.
-        var sortedExt = (installedExtensions || []).slice().sort(function (a, b) {
-            var ai = (a.id || '').toLowerCase();
-            var bi = (b.id || '').toLowerCase();
-            return ai < bi ? -1 : ai > bi ? 1 : 0;
-        });
-        var loadedPackageIds = {};
-        for (var ei = 0; ei < sortedExt.length; ei++) {
-            (function (ext) {
-                var pkgId = ext.packageId || ext.PackageId || '';
-                if (pkgId) loadedPackageIds[pkgId.toLowerCase()] = true;
-                rows.push(renderExtensionRow({
-                    id: ext.id || ext.Id || '',
-                    packageId: pkgId,
-                    displayName: extensionDisplayName(ext.id || ext.Id || ''),
-                    kinds: ext.kinds || ext.Kinds || [],
-                    capabilities: ext.capabilities || ext.Capabilities || [],
-                    status: 'installed',
-                }));
-            })(sortedExt[ei]);
-        }
-
-        // Suggested half — every distinct package id in the
-        // suggestion table that didn't appear in the loaded set.
-        // The suggestion table is also surfaced cross-cutting in
-        // extensions.js (mountWidgetsForMethod renders a placeholder
-        // when a kind has no viewer); listing them here gives the
-        // operator a "what could I install" overview without waiting
-        // for an unannotated payload to trigger the placeholder.
-        var suggestionEntries = collectSuggestionEntries();
-        for (var si = 0; si < suggestionEntries.length; si++) {
-            var sug = suggestionEntries[si];
-            if (loadedPackageIds[sug.packageId.toLowerCase()]) continue;
-            rows.push(renderExtensionRow({
-                id: '',
-                packageId: sug.packageId,
-                displayName: sug.packageId,
-                kinds: sug.kinds,
-                capabilities: [],
-                status: 'suggested',
-            }));
-        }
-
-        if (rows.length === 0) {
-            section.appendChild(el('p', {
-                className: 'bowire-settings-empty',
-                textContent: 'No UI extensions loaded.'
-            }));
-            return section;
-        }
-
-        var list = el('div', { className: 'bowire-settings-plugin-list' });
-        for (var ri = 0; ri < rows.length; ri++) list.appendChild(rows[ri]);
-        section.appendChild(list);
-        return section;
-    }
+    // The legacy renderInstalledExtensionsSection used to live here.
+    // It's been replaced by the inline rows + _renderSuggestedExtensionsCard
+    // in renderSettingsConfigureWidgets — every loaded extension renders
+    // with its inline settings + lifecycle buttons, and suggested
+    // packages render below as a card. renderExtensionRow is still
+    // used by the suggested card.
 
     /**
      * Render one extension row — matches the protocol-row chrome
@@ -3675,10 +3775,9 @@
                     if (!body || !Array.isArray(body.plugins)) return;
                     pluginHealth = body.plugins;
                     // Re-render only when the dialog is still open and
-                    // sitting on the Plugins tab — anything else means
-                    // the user has navigated away and a re-render would
-                    // be wasted work.
-                    if (settingsOpen && settingsTab === 'plugins') {
+                    // sitting on a sub-page that surfaces the health
+                    // banner (Protocols carries it post-#325 revisit²).
+                    if (settingsOpen && _settingsTabShowsPluginInventory()) {
                         renderSettingsDialog();
                     }
                 })
@@ -4130,7 +4229,7 @@
                     .then(function (body) {
                         if (!body || !body.latest) return;
                         latestVersions[id] = body.latest;
-                        if (settingsOpen && settingsTab === 'plugins') {
+                        if (settingsOpen && _settingsTabShowsPluginInventory()) {
                             renderSettingsDialog();
                         }
                     })
@@ -4256,7 +4355,11 @@
                     if (typeof persistProtocolFilter === 'function') persistProtocolFilter();
                 }
                 if (!v) {
-                    settingsTab = 'plugins';
+                    // The standalone 'plugins' lifecycle leaf is gone
+                    // post-#325 revisit²; bounce to the merged Protocols
+                    // sub-page (where the operator just toggled) so the
+                    // row they touched stays visible.
+                    settingsTab = 'configure-protocols';
                     renderSettingsDialog();
                 }
                 render();
