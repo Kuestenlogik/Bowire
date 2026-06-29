@@ -6,11 +6,50 @@
     var settingsOpen = false;
     var settingsTab = 'general';
 
-    // #192 — Build the settings nav tree. Top level: General /
-    // Shortcuts / Data / Assistant / Plugins. Plugins expands to one
-    // child per enabled-plugin-with-settings, plus a leading "All
-    // plugins" entry that lands on the legacy overview page (enable
-    // toggles + install hints).
+    // #325 (revisited) — Settings tree organized by extension point.
+    //
+    // The previous v2.1 wave (commit 2954044b) collapsed Modules +
+    // Plugins + Assistant + Tools into a single "Extensions" group and
+    // moved Data under Workspace. Operator review caught two real
+    // problems:
+    //
+    //  1. Data is app-wide, not workspace-scoped. localStorage holds
+    //     theme, rail preferences, the workspace LIST itself, action
+    //     log, last-active workspace. Moving Data under Workspace hid
+    //     it when no workspace was active + lost the workspace-
+    //     management entry.
+    //
+    //  2. "Extensions" was too coarse. Bowire has clear extension
+    //     points (IBowireProtocol, IBowireUiExtension,
+    //     IBowireModuleContribution, IBowireRailContribution,
+    //     IBowireServiceContribution, IBowireEndpointContribution,
+    //     IBowireFieldDetector, IBowireHelpProvider,
+    //     IBowireCatalogueProvider). Operator-facing Settings should
+    //     organize by extension point so a plugin contributing at
+    //     multiple points shows up under each with its specific
+    //     settings.
+    //
+    // New tree shape:
+    //   My preferences
+    //     ├── General   (theme, language, defaults)
+    //     ├── Rails     (rail-mode toggles)
+    //     ├── Shortcuts (read-only today)
+    //     └── Data      (app-wide cleanup, history, reset)
+    //   Workspace…      (per-workspace pointer)
+    //   Configure       (extension-point-driven sub-tree)
+    //     ├── Protocols          (IBowireProtocol — REST, gRPC, …)
+    //     ├── UI Widgets         (IBowireUiExtension — Map, …)
+    //     ├── Modules            (IBowireModuleContribution — AI, …)
+    //     ├── Formats            (IBowireFieldDetector — Wgs84, …)
+    //     ├── Tools              (Reverse-Proxy launcher & friends)
+    //     └── Discovery providers (IBowireCatalogueProvider — local /
+    //                              http / consul / k8s / agent)
+    //   Plugins         (lifecycle: install / load / unload / restart /
+    //                    reset storage; v2.2 stubs render disabled)
+    //
+    // A plugin contributing to multiple points shows up under each —
+    // the Plugins section is lifecycle/discovery only, not per-axis
+    // configuration.
     function _buildSettingsTreeNodes() {
         function leaf(id, label, icon) {
             return {
@@ -27,12 +66,9 @@
                 }
             };
         }
-        // #193 Phase 2 item 4 — non-clickable group header. Used to
-        // visually segment the tree into "My preferences" (this
-        // dialog) vs "This project" (the Workspace Settings detail
-        // panel, reachable via the workspace-pointer leaf below). The
-        // helpers.js renderTree honours .header by rendering the row
-        // without click bindings.
+        // Non-clickable group header — visually segments the tree into
+        // "My preferences" vs the rest. helpers.js renderTree honours
+        // .header by rendering the row without click bindings.
         function header(label) {
             return { id: 'settings-group:' + label, label: label, header: true };
         }
@@ -40,169 +76,122 @@
         var nodes = [
             header('My preferences'),
             leaf('general', 'General', 'settings'),
-            // #325 — label was 'Rail modes' until v2.1; renamed to
-            // 'Rails' because the rail strip is now the primary
-            // navigation primitive (operators talk about 'rails', not
-            // 'rail modes'). Internal tab id stays 'rails' so existing
-            // deep links + saved settings keep working.
+            // Label was 'Rail modes' until v2.1; renamed to 'Rails'
+            // because the rail strip is now the primary navigation
+            // primitive (operators talk about 'rails', not 'rail
+            // modes'). Internal tab id stays 'rails' so existing deep
+            // links + saved settings keep working.
             leaf('rails', 'Rails', 'layers'),
             leaf('shortcuts', 'Shortcuts', 'list'),
-            // #153 UI phase — Tools surface lists running reverse-proxy
-            // hosts started via the topbar Tools menu. Stays empty for
-            // installs that never start one (no rows + a hint), so the
-            // entry doesn't lie about activity that isn't there.
-            leaf('tools', 'Tools', 'plug')
+            // Data is app-wide, NOT workspace-scoped: theme, rail
+            // preferences, the workspace LIST itself, action log,
+            // last-active workspace all live in localStorage. Stays at
+            // the top level so it's reachable even with no workspace
+            // active.
+            leaf('data', 'Data', 'trash')
         ];
 
-        // #325 — Unified Extensions group. Replaces the v2.0 layout
-        // where Modules / Plugins / Tools / standalone Assistant lived
-        // as separate top-level entries — those four categories were
-        // actually one axis ("things plugged into the workbench") split
-        // into four UI silos. The new group has sub-sections:
-        //   - Protocols  (every IBowireProtocol plugin)
-        //   - Modules    (cross-cutting modules: AI, Assistant, …)
-        //   - UI extensions (the right-rail widget extensions: Map, …)
-        //   - Tools      (reverse-proxy launcher and friends)
-        //   - Discovery providers (the catalogue picker)
-        // Per-plugin children. The Extensions group node itself routes
-        // to the overview page on click — no separate "All plugins"
-        // entry (cleaner tree shape, matches MudBlazor NavMenu where
-        // the parent is the destination + chevron handles expansion).
-        var pluginChildren = [];
-        for (var pi = 0; pi < protocols.length; pi++) {
-            var p = protocols[pi];
-            if (!isProtocolEnabled(p.id)) continue;
-            // The previous filter dropped plugins without a
-            // p.settings array, which hid REST / gRPC / MCP / GraphQL
-            // / etc. from the tree entirely — even though those
-            // plugins still benefit from a dedicated detail page
-            // (enable/disable toggle, "no configurable settings"
-            // notice, plugin description). renderPluginSettings
-            // already handles the empty case, so the filter just
-            // suppressed a useful navigation row.
-            (function (pp) {
-                var tabId = 'plugin-' + pp.id;
-                pluginChildren.push({
-                    id: 'settings:' + tabId,
-                    label: pp.name,
-                    iconHtml: pp.icon || null,
-                    selected: settingsTab === tabId,
-                    onClick: function () {
-                        if (settingsTab === 'plugins') {
-                            pluginsTabFetchedThisOpen = false;
-                        }
-                        settingsTab = tabId;
-                        renderSettingsDialog();
-                    }
-                });
-            })(p);
-        }
+        // Workspace pointer — per-workspace settings (URLs, env vars,
+        // sources) round-trip through .bww. The pointer page jumps to
+        // the Workspaces rail detail panel.
+        nodes.push(leaf('workspace', 'Workspace…', 'layers'));
 
-        // Bug 1 — installed UI extensions also belong under the Plugins
-        // group so the operator can SEE that, e.g., the MapLibre viewer
-        // is loaded without scrolling the right-side overview pane.
-        // Operator feedback: "ich sehe nur tacticalapi" — they expanded
-        // the Plugins tree expecting Map to appear next to the protocol
-        // chips, didn't find it, and concluded the map plugin wasn't
-        // installed. Routing each extension child to the Plugins
-        // overview parks the operator at the same page that lists the
-        // Installed UI extensions section, where the extension already
-        // shows with kind / capability chips + an Installed pill.
-        for (var exi = 0; exi < installedExtensions.length; exi++) {
-            (function (ext) {
-                var extId = ext.id || ext.Id || '';
-                if (!extId) return;
-                var extTabId = 'extension-' + extId;
-                pluginChildren.push({
-                    id: 'settings:' + extTabId,
-                    label: extensionDisplayName(extId),
-                    icon: 'layers',
-                    selected: settingsTab === extTabId,
-                    onClick: function () {
-                        // Operator: 'klick auf maplibre settings switched
-                        // zurück auf plugins root im settings tree'.
-                        // Routing to a dedicated `extension-<id>` tab keeps
-                        // the row selected and shows the extension's own
-                        // detail page instead of bouncing back to the
-                        // protocols overview.
-                        settingsTab = extTabId;
-                        renderSettingsDialog();
-                    }
-                });
-            })(installedExtensions[exi]);
-        }
-
-        // #325 — Compose the unified Extensions sub-tree. The previous
-        // top-level Modules / Assistant / Discovery rows are pulled in
-        // here as siblings of the per-protocol + per-extension rows
-        // beneath the Extensions group. Modules / Assistant /
-        // Discovery keep their internal tab ids ('modules' / 'ai' /
-        // 'discovery') verbatim so existing deep links survive.
-        var extensionsChildren = [
-            // Sub-section heads — non-clickable rows that route to a
-            // dedicated settings panel (Modules, AI assistant, Discovery
-            // provider picker). They land FIRST in the tree so the
-            // operator sees the cross-cutting modules before scrolling
-            // past every protocol plugin.
-            leaf('modules', 'Modules', 'plug'),
-            leaf('ai', 'Assistant', 'spark'),
-            leaf('discovery', 'Discovery providers', 'search'),
+        // Configure group — one child per extension point. A plugin
+        // contributing at multiple points shows up under each. The
+        // group node routes to the Protocols overview on click (most
+        // common entry) and the chevron toggles expansion.
+        var configureChildren = [
+            leaf('configure-protocols', 'Protocols', 'plug'),
+            leaf('configure-widgets', 'UI Widgets', 'layers'),
+            leaf('configure-modules', 'Modules', 'spark'),
+            leaf('configure-formats', 'Formats', 'list'),
+            leaf('configure-tools', 'Tools', 'plug'),
+            leaf('configure-discovery', 'Discovery providers', 'search')
         ];
-        // Append the per-protocol + per-UI-extension rows the loops
-        // above prepared (was the old Plugins group's body).
-        for (var pcI = 0; pcI < pluginChildren.length; pcI++) {
-            extensionsChildren.push(pluginChildren[pcI]);
-        }
-
-        // Extensions group — click on the label routes to the overview
-        // (enable toggles, install hints); the chevron toggles
-        // expansion independently. Default-open when the operator is
-        // already on a child tab so the active row is visible
-        // without an extra click.
-        var extensionsKey = 'extensions';
-        var extensionsActive = settingsTab === 'plugins'
-            || settingsTab === 'modules'
-            || settingsTab === 'ai'
-            || settingsTab === 'discovery'
+        var configureKey = 'configure';
+        var configureActive = settingsTab.indexOf('configure-') === 0
             || settingsTab.indexOf('plugin-') === 0
             || settingsTab.indexOf('extension-') === 0;
-        var extensionsExpanded = isSettingsTreeNodeExpanded(extensionsKey, extensionsActive);
+        var configureExpanded = isSettingsTreeNodeExpanded(configureKey, configureActive);
+        nodes.push({
+            id: 'settings:configure',
+            label: 'Configure',
+            icon: 'settings',
+            expandable: true,
+            expanded: configureExpanded,
+            selected: settingsTab === 'configure-protocols',
+            onClick: function () {
+                settingsTab = 'configure-protocols';
+                renderSettingsDialog();
+            },
+            onToggle: function () {
+                toggleSettingsTreeNode(configureKey, configureActive);
+                renderSettingsDialog();
+            },
+            children: configureChildren
+        });
+
+        // Plugins lifecycle — install / load / unload / restart /
+        // reset storage. v2.1 surfaces the installed list + the
+        // existing install/update/uninstall actions; the new
+        // load/unload/restart/reset-storage verbs land in v2.2 and
+        // currently render as disabled buttons with a "Available in
+        // v2.2" tooltip + a 501 from the backend if pressed.
+        var pluginCount = (installedPlugins || []).length
+            + (installedExtensions || []).length;
         nodes.push({
             id: 'settings:plugins',
-            label: 'Extensions',
+            label: 'Plugins',
             icon: 'plug',
-            badge: pluginChildren.length > 0 ? pluginChildren.length : null,
-            expandable: extensionsChildren.length > 0,
-            expanded: extensionsExpanded,
+            badge: pluginCount > 0 ? pluginCount : null,
             selected: settingsTab === 'plugins',
             onClick: function () {
                 settingsTab = 'plugins';
                 renderSettingsDialog();
-            },
-            onToggle: function () {
-                toggleSettingsTreeNode(extensionsKey, extensionsActive);
-                renderSettingsDialog();
-            },
-            children: extensionsChildren
+            }
         });
 
-        // #193 Phase 2 item 4 — second group for workspace-scope
-        // settings. The Settings dialog itself doesn't own them (they
-        // live in the Workspace tree → Settings node so they round-
-        // trip through .bww with the workspace), but a pointer here
-        // makes the split discoverable: an operator who opens
-        // Settings looking for "URL list" or "plugin pins" sees the
-        // category exists + a one-click jump to the right surface.
-        // #325 — 'Data' was a top-level row in v2.0; moved under
-        // 'This project' because every datum it deals with (recordings,
-        // collections, presets, secrets cache, history) is workspace-
-        // scoped and round-trips through .bww. Internal tab id stays
-        // 'data' verbatim.
-        nodes.push(header('This project'));
-        nodes.push(leaf('workspace', 'Workspace…', 'layers'));
-        nodes.push(leaf('data', 'Data', 'trash'));
-
         return nodes;
+    }
+
+    // Map old tab ids to their post-#325-revisit equivalents. Operators
+    // with a saved `settingsTab` value from the v2.0 layout (or the
+    // short-lived v2.1 collapse) get migrated to the new shape on
+    // dialog open. Unknown values fall back to 'general'. We keep
+    // 'plugin-<id>' and 'extension-<id>' verbatim because those still
+    // resolve.
+    function _migrateLegacySettingsTab(tabId) {
+        if (!tabId || typeof tabId !== 'string') return 'general';
+        if (tabId.indexOf('plugin-') === 0) return tabId;
+        if (tabId.indexOf('extension-') === 0) return tabId;
+        switch (tabId) {
+            case 'general':
+            case 'rails':
+            case 'shortcuts':
+            case 'data':
+            case 'workspace':
+            case 'plugins':
+                return tabId;
+            case 'configure-protocols':
+            case 'configure-widgets':
+            case 'configure-modules':
+            case 'configure-formats':
+            case 'configure-tools':
+            case 'configure-discovery':
+                return tabId;
+            // Legacy ids → new locations.
+            case 'modules':
+            case 'ai':
+                return 'configure-modules';
+            case 'discovery':
+                return 'configure-discovery';
+            case 'tools':
+                return 'configure-tools';
+            case 'extensions':
+                return 'configure-protocols';
+            default:
+                return 'general';
+        }
     }
 
     function openSettings(targetTab) {
@@ -210,14 +199,18 @@
         // Allow callers (e.g. the chat-pane invocation-status pill) to
         // deep-link into a specific tab. Falls back to 'general' when
         // no argument is given, preserving the legacy entry point.
-        settingsTab = targetTab && typeof targetTab === 'string' ? targetTab : 'general';
-        // Bug 1 — kick off the /api/plugins fetch on dialog open
-        // regardless of which tab the operator lands on. The tree
-        // surfaces installed UI extensions as child rows under the
-        // Plugins group, so a user opening Settings → General also
-        // needs the extension list cached for the tree to render
-        // them. Previously the fetch was deferred until the Plugins
-        // tab itself rendered, hiding the tree rows on first paint.
+        // Run every entry value through the legacy migration so saved
+        // `settingsTab` values from the v2.0 layout (or the short-lived
+        // v2.1 'extensions' collapse) get rewritten to the new shape
+        // instead of landing on an unhandled branch.
+        settingsTab = _migrateLegacySettingsTab(
+            targetTab && typeof targetTab === 'string' ? targetTab : 'general'
+        );
+        // Kick off the /api/plugins fetch on dialog open regardless
+        // of which tab the operator lands on. Every configure-*
+        // sub-page reads `installedPlugins` / `installedExtensions`
+        // for the badge count + the per-page per-plugin list, so the
+        // data needs to be cached before the first paint of any tab.
         if (!pluginsTabFetchedThisOpen) {
             pluginsTabFetchedThisOpen = true;
             fetchPluginHealth();
@@ -300,35 +293,46 @@
             }));
         }
 
+        // Migrate every render call too — defensive against any caller
+        // (deep link, legacy code path) that pokes settingsTab to a
+        // stale value without going through openSettings(). Normalising
+        // here means the dispatch below never sees an unknown tab id.
+        settingsTab = _migrateLegacySettingsTab(settingsTab);
+
         if (settingsTab === 'general') {
             rightPanel.appendChild(renderSettingsGeneral());
         } else if (settingsTab === 'rails') {
             rightPanel.appendChild(renderSettingsRails());
-        } else if (settingsTab === 'modules') {
-            rightPanel.appendChild(renderSettingsModules());
         } else if (settingsTab === 'shortcuts') {
             rightPanel.appendChild(renderSettingsShortcuts());
         } else if (settingsTab === 'data') {
             rightPanel.appendChild(renderSettingsData());
-        } else if (settingsTab === 'ai') {
-            rightPanel.appendChild(renderSettingsAi());
-        } else if (settingsTab === 'discovery') {
-            rightPanel.appendChild(renderSettingsDiscovery());
-        } else if (settingsTab === 'tools') {
-            rightPanel.appendChild(renderSettingsTools());
-        } else if (settingsTab === 'plugins') {
-            rightPanel.appendChild(renderSettingsPlugins());
         } else if (settingsTab === 'workspace') {
             rightPanel.appendChild(renderSettingsWorkspacePointer());
+        } else if (settingsTab === 'plugins') {
+            rightPanel.appendChild(renderSettingsPlugins());
+        } else if (settingsTab === 'configure-protocols') {
+            rightPanel.appendChild(renderSettingsConfigureProtocols());
+        } else if (settingsTab === 'configure-widgets') {
+            rightPanel.appendChild(renderSettingsConfigureWidgets());
+        } else if (settingsTab === 'configure-modules') {
+            rightPanel.appendChild(renderSettingsConfigureModules());
+        } else if (settingsTab === 'configure-formats') {
+            rightPanel.appendChild(renderSettingsConfigureFormats());
+        } else if (settingsTab === 'configure-tools') {
+            rightPanel.appendChild(renderSettingsTools());
+        } else if (settingsTab === 'configure-discovery') {
+            rightPanel.appendChild(renderSettingsDiscovery());
         } else if (settingsTab.indexOf('plugin-') === 0) {
             var pluginId = settingsTab.substring(7);
             var plugin = protocols.find(function (p) { return p.id === pluginId; });
             if (plugin) rightPanel.appendChild(renderPluginSettings(plugin));
+            else rightPanel.appendChild(renderSettingsConfigureProtocols());
         } else if (settingsTab.indexOf('extension-') === 0) {
             var extId = settingsTab.substring(10);
             var ext = (installedExtensions || []).find(function (e) { return (e.id || e.Id) === extId; });
             if (ext) rightPanel.appendChild(renderExtensionSettings(ext));
-            else rightPanel.appendChild(renderSettingsPlugins());
+            else rightPanel.appendChild(renderSettingsConfigureWidgets());
         }
 
         // ---- Modal frame ----
@@ -956,6 +960,200 @@
                     textContent: mod.description
                 }));
             }
+            row.appendChild(info);
+            list.appendChild(row);
+        });
+        section.appendChild(list);
+        return section;
+    }
+
+    // ---- #325 (revisited) — Configure → extension-point pages ----
+    //
+    // One render function per extension point listed under Configure.
+    // Each page lists the plugins / extensions contributing at that
+    // point, with the per-plugin settings rendered INLINE (via the
+    // existing renderPluginSettings / renderExtensionSettings) so the
+    // operator sees the full configuration surface without a second
+    // click. Empty-state cards link to the Plugins lifecycle section
+    // because that's where new plugins are installed today.
+
+    function _renderEmptyExtensionPointCard(kindLabel) {
+        var card = el('div', { className: 'bowire-settings-section-empty' });
+        card.appendChild(el('div', {
+            style: 'font-weight:500;margin-bottom:6px',
+            textContent: 'No ' + kindLabel + ' installed.'
+        }));
+        var link = el('button', {
+            type: 'button',
+            className: 'bowire-settings-action-btn',
+            style: 'margin-top:8px',
+            textContent: 'Open Plugins',
+            onClick: function () {
+                settingsTab = 'plugins';
+                renderSettingsDialog();
+            }
+        });
+        card.appendChild(el('div', {
+            style: 'font-size:12px;color:var(--bowire-text-tertiary);margin-bottom:8px',
+            textContent: 'Manage plugin installation and lifecycle from the Plugins section.'
+        }));
+        card.appendChild(link);
+        return card;
+    }
+
+    // Configure → Protocols. Lists every IBowireProtocol plugin (one
+    // section per protocol) with its per-plugin enable toggle +
+    // settings rendered inline. The existing renderPluginSettings
+    // already knows how to draw enable + the settings array, so we
+    // call it once per protocol and let it build the per-protocol
+    // sub-panel. A leading "Installed protocol plugins" overview row
+    // gives operators a hint that this page IS configure, not lifecycle.
+    function renderSettingsConfigureProtocols() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        section.appendChild(el('h3', {
+            className: 'bowire-settings-section-title',
+            textContent: 'Protocols'
+        }));
+        section.appendChild(el('div', {
+            className: 'bowire-settings-section-hint',
+            textContent: 'Per-protocol configuration for every IBowireProtocol plugin (REST, gRPC, GraphQL, MCP, MQTT, WebSocket, …). Disable a protocol to hide its chips, services, and switcher entry — the plugin stays loaded for instant re-enable. Plugin install / uninstall lives under Plugins.'
+        }));
+
+        if (!protocols || protocols.length === 0) {
+            section.appendChild(_renderEmptyExtensionPointCard('protocol plugins'));
+            return section;
+        }
+
+        // One sub-panel per protocol, separated by a faint rule so the
+        // operator reads the page top-to-bottom as "every protocol's
+        // settings" instead of one mash of rows. We piggyback on
+        // renderPluginSettings — it draws the enable toggle + the
+        // per-plugin settings array (when present) + the
+        // "no configurable settings" notice.
+        for (var pi = 0; pi < protocols.length; pi++) {
+            (function (plugin, isFirst) {
+                if (!isFirst) {
+                    section.appendChild(el('div', {
+                        className: 'bowire-settings-protocol-divider',
+                        style: 'border-top:1px solid var(--bowire-border-subtle);margin:18px 0 0'
+                    }));
+                }
+                section.appendChild(renderPluginSettings(plugin));
+            })(protocols[pi], pi === 0);
+        }
+        return section;
+    }
+
+    // Configure → UI Widgets. Surfaces every loaded IBowireUiExtension
+    // (the right-rail viewer/editor widgets — Map today; future Chart,
+    // Table, MIL-symbol renderers). Each row renders the extension's
+    // metadata card via the existing renderExtensionSettings.
+    function renderSettingsConfigureWidgets() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        section.appendChild(el('h3', {
+            className: 'bowire-settings-section-title',
+            textContent: 'UI Widgets'
+        }));
+        section.appendChild(el('div', {
+            className: 'bowire-settings-section-hint',
+            textContent: 'Widgets that render semantic annotations on response payloads — coordinates on a map, time-series in a chart, &c. One IBowireUiExtension per row; settings the widget exposes appear inline.'
+        }));
+
+        var extensions = (installedExtensions || []).slice().sort(function (a, b) {
+            var ai = (a.id || a.Id || '').toLowerCase();
+            var bi = (b.id || b.Id || '').toLowerCase();
+            return ai < bi ? -1 : ai > bi ? 1 : 0;
+        });
+        if (extensions.length === 0) {
+            section.appendChild(_renderEmptyExtensionPointCard('UI widgets'));
+            return section;
+        }
+        for (var ei = 0; ei < extensions.length; ei++) {
+            (function (ext, isFirst) {
+                if (!isFirst) {
+                    section.appendChild(el('div', {
+                        style: 'border-top:1px solid var(--bowire-border-subtle);margin:18px 0 0'
+                    }));
+                }
+                section.appendChild(renderExtensionSettings(ext));
+            })(extensions[ei], ei === 0);
+        }
+        return section;
+    }
+
+    // Configure → Modules. Lists IBowireModuleContribution descriptors
+    // (AI Assistant today; future variable-resolver, …) with the
+    // existing per-module enable toggle, then renders the AI assistant
+    // configuration panel inline beneath the module list because AI
+    // is currently the only module that exposes settings beyond
+    // enable/disable. When more modules grow settings panels they
+    // slot in here under their own sub-heading.
+    function renderSettingsConfigureModules() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        section.appendChild(renderSettingsModules());
+
+        // Inline AI configuration — same renderer the dedicated 'ai'
+        // tab used. The legacy tab id 'ai' migrates here via the
+        // legacy-tab migrator above, so old deep links still resolve.
+        var cfg = (typeof config !== 'undefined' && config) ? config : {};
+        var modules = Array.isArray(cfg.modules) ? cfg.modules : [];
+        var hasAi = modules.some(function (m) { return m && (m.id === 'ai' || m.id === 'assistant'); });
+        if (hasAi || aiSettingsState.loaded || aiSettingsState.status) {
+            section.appendChild(el('div', {
+                style: 'border-top:1px solid var(--bowire-border-subtle);margin:18px 0 0'
+            }));
+            section.appendChild(renderSettingsAi());
+        }
+        return section;
+    }
+
+    // Configure → Formats. Surfaces IBowireFieldDetector contributions
+    // (Wgs84CoordinateDetector, GeoJsonPointDetector,
+    // ImageBytesDetector, AudioBytesDetector, TimestampDetector,
+    // future third-party detectors). The runtime registers them but
+    // doesn't currently expose per-detector toggles — this page is the
+    // discoverability surface. When the framework grows enable/disable
+    // and per-detector settings, they slot in here.
+    function renderSettingsConfigureFormats() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        section.appendChild(el('h3', {
+            className: 'bowire-settings-section-title',
+            textContent: 'Formats'
+        }));
+        section.appendChild(el('div', {
+            className: 'bowire-settings-section-hint',
+            textContent: 'Detectors that recognise data shapes in response payloads (WGS84 coordinates, GeoJSON points, image bytes, timestamps, …) and tag them with a semantic kind. UI Widgets above render those kinds. Per-detector toggles + settings land in v2.2.'
+        }));
+
+        // Today the framework doesn't expose a JS-side list of loaded
+        // detectors, so the page enumerates the built-in detectors as
+        // a read-only inventory. Plugins shipping additional detectors
+        // appear under Plugins; once they declare per-detector
+        // settings the list here will be sourced from a runtime API.
+        var builtins = [
+            { id: 'kuestenlogik.wgs84-coordinate', label: 'WGS84 coordinates', desc: '{lat, lon}, {latitude, longitude}, {latitudeCoordinate, longitudeCoordinate} (TacticalAPI naming).' },
+            { id: 'kuestenlogik.geojson-point', label: 'GeoJSON points', desc: 'RFC 7946 Point geometries.' },
+            { id: 'kuestenlogik.image-bytes', label: 'Image bytes', desc: 'PNG / JPEG / GIF byte arrays surface as inline previews.' },
+            { id: 'kuestenlogik.audio-bytes', label: 'Audio bytes', desc: 'WAV / MP3 / OGG byte arrays surface as inline players.' },
+            { id: 'kuestenlogik.timestamp', label: 'Timestamps', desc: 'ISO-8601 + Unix epoch seconds / millis.' }
+        ];
+        var list = el('div', { className: 'bowire-settings-module-list' });
+        builtins.forEach(function (det) {
+            var row = el('div', { className: 'bowire-settings-module-row', style: 'opacity:0.95' });
+            var info = el('div', { className: 'bowire-settings-module-info' });
+            info.appendChild(el('div', {
+                className: 'bowire-settings-module-label',
+                textContent: det.label
+            }));
+            info.appendChild(el('div', {
+                className: 'bowire-settings-module-desc',
+                textContent: det.desc
+            }));
+            info.appendChild(el('div', {
+                className: 'bowire-settings-module-desc',
+                style: 'font-family:var(--bowire-font-mono);font-size:11px;color:var(--bowire-text-tertiary);margin-top:2px',
+                textContent: det.id
+            }));
             row.appendChild(info);
             list.appendChild(row);
         });
@@ -3068,42 +3266,82 @@
     // infinite render loop (#66).
     var pluginsTabFetchedThisOpen = false;
 
+    // #325 (revisited) — Plugins lifecycle page.
+    //
+    // No per-protocol enable toggles here — those live under
+    // Configure → Protocols. This page is the LIFECYCLE surface:
+    //
+    //   - Plugin health banner (load failures)
+    //   - Installed (sibling) plugins with Update / Uninstall +
+    //     stubbed Load / Unload / Restart / Reset storage actions
+    //   - Installed UI extensions with the same lifecycle row shape
+    //   - Install button → existing /api/plugins/install flow
+    //
+    // The four stubbed lifecycle verbs (Load, Unload, Restart, Reset
+    // storage) all wire to POST /api/plugins/{id}/lifecycle/{action},
+    // which returns 501 with a problem-details body announcing the
+    // verb is v2.2 scope. The frontend renders the 501 inline as a
+    // banner — no fake success, no silent no-op.
     function renderSettingsPlugins() {
         var section = el('div', { className: 'bowire-settings-section' });
 
-        // Plugin health banner — surfaces every plugin in the
-        // configured plugin-dir whose load didn't reach the Loaded /
-        // AlreadyLoaded state. Fetch is fire-and-forget; the banner
-        // appears once the response lands and a re-render runs. Empty
-        // when every install is healthy so the section stays quiet
-        // for the common case.
+        // Page header — sets the operator expectation that this is
+        // lifecycle, not per-plugin configuration.
+        section.appendChild(el('h3', {
+            className: 'bowire-settings-section-title',
+            textContent: 'Plugins'
+        }));
+        section.appendChild(el('div', {
+            className: 'bowire-settings-section-hint',
+            textContent: 'Install / load / unload / restart loaded plugins and reset their storage. Per-plugin configuration (protocol options, widget options, module options, …) lives under Configure, grouped by extension point.'
+        }));
+
+        // Plugin health banner — surfaces every plugin whose load
+        // didn't reach the Loaded / AlreadyLoaded state. Empty when
+        // every install is healthy so the section stays quiet.
         section.appendChild(renderPluginHealthBanner());
 
         // "Manage installed plugins" — list every sibling-installed
         // plugin under ~/.bowire/plugins/ with its version and per-row
-        // Update / Uninstall buttons. The protocol-toggle list below
-        // covers the bundled + sibling protocols indiscriminately and
-        // stays focused on enable/disable; this section is the
-        // lifecycle counterpart.
+        // Update / Uninstall buttons (renderManagedPluginRow drives
+        // the row layout; the new lifecycle buttons are appended
+        // there).
         section.appendChild(renderManagePluginsSection());
 
-        // Fire the refresh fetches exactly once per "tab opened" event,
-        // not on every render. Each fetch's success handler calls
-        // renderSettingsDialog() again to surface the new data — if we
-        // fetched on every render, we'd be in a loop.
+        // Fire the refresh fetches exactly once per "tab opened" event.
         if (!pluginsTabFetchedThisOpen) {
             pluginsTabFetchedThisOpen = true;
             fetchPluginHealth();
             fetchInstalledPlugins();
         }
 
+        // Loaded protocols — read-only inventory by id + name +
+        // package. The Configure → Protocols page owns the
+        // enable/disable + per-protocol settings. Here we just show
+        // what's in-process so the operator can confirm a plugin
+        // they expect IS loaded before they hunt for missing services.
+        section.appendChild(_renderLoadedProtocolsInventory());
+
+        // UI extensions inventory + suggestions. Same renderer the
+        // previous Plugins page used.
+        section.appendChild(renderInstalledExtensionsSection());
+
+        return section;
+    }
+
+    // Read-only inventory of loaded protocol plugins. Each row carries
+    // a Load / Unload / Restart / Reset-storage button group; the
+    // backend currently returns 501 for every action, so the buttons
+    // render as disabled with a "Available in v2.2" tooltip.
+    function _renderLoadedProtocolsInventory() {
+        var section = el('div', { className: 'bowire-settings-section bowire-settings-plugin-loaded' });
         section.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
-            textContent: 'Installed protocol plugins'
+            textContent: 'Loaded protocol plugins'
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-desc',
-            textContent: 'Disable a plugin to hide its protocol chips, landing card, and discovered services. Plugins stay loaded so toggling is instant.'
+            textContent: 'Plugins currently in-process. Use Configure → Protocols to enable / disable a protocol; use the lifecycle buttons here to load, unload, restart, or reset a plugin’s storage.'
         }));
 
         if (!protocols || protocols.length === 0) {
@@ -3111,59 +3349,123 @@
                 className: 'bowire-settings-empty',
                 textContent: 'No protocol plugins loaded.'
             }));
-        } else {
-            var list = el('div', { className: 'bowire-settings-plugin-list' });
-            for (var pi = 0; pi < protocols.length; pi++) {
-                (function (p) {
-                    var row = el('label', { className: 'bowire-settings-plugin-row' });
-
-                    if (p.icon) {
-                        row.appendChild(el('span', {
-                            className: 'bowire-settings-plugin-icon',
-                            innerHTML: p.icon
-                        }));
-                    }
-                    var textBox = el('div', { className: 'bowire-settings-plugin-text' },
-                        el('div', { className: 'bowire-settings-plugin-name', textContent: p.name }),
-                        el('div', { className: 'bowire-settings-plugin-id', textContent: p.id })
-                    );
-                    row.appendChild(textBox);
-
-                    var cb = el('input', {
-                        type: 'checkbox',
-                        className: 'bowire-settings-plugin-toggle',
-                        checked: isProtocolEnabled(p.id),
-                        onChange: function (e) {
-                            setProtocolEnabled(p.id, e.target.checked);
-                            // Drop the plugin from the active protocol filter
-                            // so a disabled plugin doesn't keep services hidden
-                            // when it's re-enabled later.
-                            if (!e.target.checked && typeof protocolFilter !== 'undefined') {
-                                protocolFilter.delete(p.id);
-                                if (typeof persistProtocolFilter === 'function') persistProtocolFilter();
-                            }
-                            render();
-                        }
-                    });
-                    row.appendChild(cb);
-                    list.appendChild(row);
-                })(protocols[pi]);
-            }
-            section.appendChild(list);
+            return section;
         }
 
-        // UI extensions — the map widget, future chart / table viewers,
-        // 3rd-party MIL-symbol renderers. Operator feedback: they
-        // expected to see the Map plugin in this page (it's their main
-        // entry point for "is the map installed?"), but the protocols
-        // list above never included it because Map ships as a
-        // [BowireExtension] rather than an [BowirePlugin] protocol. We
-        // append a dedicated section that lists every loaded
-        // IBowireUiExtension + any not-yet-installed packages the
-        // suggestion table knows about, so both halves are visible.
-        section.appendChild(renderInstalledExtensionsSection());
-
+        var list = el('div', { className: 'bowire-settings-plugin-list' });
+        for (var pi = 0; pi < protocols.length; pi++) {
+            (function (p) {
+                var row = el('div', { className: 'bowire-settings-plugin-row' });
+                if (p.icon) {
+                    row.appendChild(el('span', {
+                        className: 'bowire-settings-plugin-icon',
+                        innerHTML: p.icon
+                    }));
+                }
+                var textBox = el('div', { className: 'bowire-settings-plugin-text' },
+                    el('div', { className: 'bowire-settings-plugin-name', textContent: p.name }),
+                    el('div', { className: 'bowire-settings-plugin-id', textContent: p.id })
+                );
+                row.appendChild(textBox);
+                row.appendChild(_renderPluginLifecycleButtons(p.id));
+                list.appendChild(row);
+            })(protocols[pi]);
+        }
+        section.appendChild(list);
         return section;
+    }
+
+    // Track which (pluginId, action) call is in flight and the last
+    // result per plugin — same shape pluginActionInFlight /
+    // pluginActionResult above use for install/update/uninstall.
+    // Distinct module-level vars because the lifecycle actions are
+    // expected to race against an install/update completing.
+    var pluginLifecycleInFlight = null; // 'pluginId::action' or null
+    var pluginLifecycleResult = null;   // { pluginId, action, ok, text }
+
+    function _renderPluginLifecycleButtons(pluginId) {
+        var group = el('div', { className: 'bowire-settings-plugin-lifecycle' });
+        // Four lifecycle actions. Backend returns 501 for each one
+        // today; the frontend surfaces the 501 inline so the operator
+        // sees the version gate clearly rather than a fake "Loaded".
+        var actions = [
+            { key: 'load', label: 'Load' },
+            { key: 'unload', label: 'Unload' },
+            { key: 'restart', label: 'Restart' },
+            { key: 'reset-storage', label: 'Reset storage' }
+        ];
+        actions.forEach(function (a) {
+            var key = pluginId + '::' + a.key;
+            var busy = pluginLifecycleInFlight === key;
+            // Buttons stay clickable (not disabled) so the operator
+            // sees the 501 surface — "disabled with title" is
+            // discoverable but harder to debug when the backend later
+            // changes behaviour. The `title` still names the v2.2
+            // scope so a hover reveals the version gate without a
+            // click.
+            var btn = el('button', {
+                type: 'button',
+                className: 'bowire-settings-plugin-btn',
+                disabled: busy ? true : undefined,
+                title: a.label + ' — backend returns 501 today; available in v2.2.',
+                textContent: busy ? 'Working…' : a.label,
+                onClick: function () { _runPluginLifecycleAction(pluginId, a.key); }
+            });
+            group.appendChild(btn);
+        });
+        // Inline result — same banner shape the install/update flow
+        // uses; scoped to this plugin so it doesn't bleed into other
+        // rows.
+        if (pluginLifecycleResult && pluginLifecycleResult.pluginId === pluginId) {
+            group.appendChild(el('div', {
+                className: 'bowire-settings-plugin-lifecycle-result'
+                    + (pluginLifecycleResult.ok ? ' is-ok' : ' is-error'),
+                style: 'font-size:12px;margin-top:6px;color:'
+                    + (pluginLifecycleResult.ok
+                        ? 'var(--bowire-success,#10b981)'
+                        : 'var(--bowire-text-tertiary)'),
+                textContent: pluginLifecycleResult.text
+            }));
+        }
+        return group;
+    }
+
+    function _runPluginLifecycleAction(pluginId, action) {
+        var key = pluginId + '::' + action;
+        pluginLifecycleInFlight = key;
+        pluginLifecycleResult = null;
+        renderSettingsDialog();
+        var prefix = (typeof config !== 'undefined' && config && config.prefix) ? config.prefix : '';
+        var url = prefix + '/api/plugins/' + encodeURIComponent(pluginId) + '/lifecycle/' + encodeURIComponent(action);
+        fetch(url, { method: 'POST' })
+            .then(function (resp) {
+                return resp.json()
+                    .then(function (b) { return { ok: resp.ok, status: resp.status, body: b }; })
+                    .catch(function () { return { ok: resp.ok, status: resp.status, body: null }; });
+            })
+            .then(function (resp) {
+                pluginLifecycleInFlight = null;
+                var problemTitle = resp.body && (resp.body.title || resp.body.detail);
+                pluginLifecycleResult = {
+                    pluginId: pluginId,
+                    action: action,
+                    ok: resp.ok,
+                    text: resp.ok
+                        ? (problemTitle || (action + ' OK'))
+                        : ('HTTP ' + resp.status + (problemTitle ? ' — ' + problemTitle : ''))
+                };
+                renderSettingsDialog();
+            })
+            .catch(function (err) {
+                pluginLifecycleInFlight = null;
+                pluginLifecycleResult = {
+                    pluginId: pluginId,
+                    action: action,
+                    ok: false,
+                    text: 'Network error: ' + (err && err.message ? err.message : String(err))
+                };
+                renderSettingsDialog();
+            });
     }
 
     /**
