@@ -68,7 +68,7 @@ public sealed class SseEndpointDiscoveryTests : IDisposable
         protocol.Initialize(app.Services);
 
         var services = await protocol.DiscoverAsync(
-            "http://localhost:5000",
+            "",
             showInternalServices: false,
             TestContext.Current.CancellationToken);
 
@@ -93,7 +93,7 @@ public sealed class SseEndpointDiscoveryTests : IDisposable
         protocol.Initialize(app.Services);
 
         var services = await protocol.DiscoverAsync(
-            "http://localhost:5000",
+            "",
             showInternalServices: false,
             TestContext.Current.CancellationToken);
 
@@ -115,7 +115,7 @@ public sealed class SseEndpointDiscoveryTests : IDisposable
         protocol.Initialize(app.Services);
 
         var services = await protocol.DiscoverAsync(
-            "http://localhost:5000",
+            "",
             showInternalServices: false,
             TestContext.Current.CancellationToken);
 
@@ -141,7 +141,7 @@ public sealed class SseEndpointDiscoveryTests : IDisposable
         protocol.Initialize(app.Services);
 
         var services = await protocol.DiscoverAsync(
-            "http://localhost:5000",
+            "",
             showInternalServices: false,
             TestContext.Current.CancellationToken);
 
