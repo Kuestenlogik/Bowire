@@ -25,7 +25,14 @@ const fs = require('fs');
 const path = require('path');
 const { PDFDocument, PDFName, PDFNumber, PDFHexString, PDFArray, PDFDict } = require('pdf-lib');
 
-const ROOT = path.resolve(__dirname, '..');
+// __dirname is scripts/site. Two .. hops land at the repo root; one
+// hop short was the activity-snapshot bug (#fad5da4-era) — same
+// pattern bit the PDF builder when the scripts reorg moved this file
+// from scripts/ down to scripts/site/. The Release workflow's
+// 'Build documentation PDF' step started failing with
+// `expected DocFX standalone output at .../scripts/artifacts/docs-standalone`
+// because ROOT resolved to scripts/ instead of the repo root.
+const ROOT = path.resolve(__dirname, '..', '..');
 const SRC = path.join(ROOT, 'artifacts', 'docs-standalone');
 const OUT_DIR = path.join(ROOT, 'publish', 'archives');
 const OUT_PATH = path.join(OUT_DIR, 'bowire-docs.pdf');
