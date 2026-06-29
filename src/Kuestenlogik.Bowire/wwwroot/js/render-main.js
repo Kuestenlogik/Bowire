@@ -4838,7 +4838,18 @@
             // recording-id + port + log-polling state so an operator
             // who flips between "the JWT mock" and "the orders mock"
             // bookmarks each pick instead of re-finding it by hand.
-            if (typeof renderPresetsBar === 'function') {
+            //
+            // Skip the bar entirely on the no-mocks empty state —
+            // there's nothing to snapshot AND no presets to load on
+            // a fresh workspace, so the bar is just noise on the
+            // welcome screen. Operator: 'warum sehe ich diese bar
+            // mit save preset, wenn "no mocks running" status? das
+            // ist doch nur der welcome screen.'
+            var _mocksHasAny = Array.isArray(mocksList) && mocksList.length > 0;
+            var _mocksHasPresets = typeof loadPresets === 'function'
+                && (loadPresets('mocks') || []).length > 0;
+            if (typeof renderPresetsBar === 'function'
+                && (_mocksHasAny || _mocksHasPresets)) {
                 try {
                     mockMainWrap.appendChild(renderPresetsBar({
                         mode: 'mocks',
