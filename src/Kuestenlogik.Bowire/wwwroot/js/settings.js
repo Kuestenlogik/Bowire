@@ -67,7 +67,12 @@
         }
 
         var nodes = [
-            header('This machine'),
+            // 'System settings' picked over 'This machine' (operator
+            // call, post-cherry-pick) because the convention is
+            // familiar from every desktop OS — kept the scope-clear
+            // sibling ('Workspace…') so the contrast still does the
+            // disclaimer work.
+            header('System settings'),
             leaf('general', 'General', 'settings'),
             // Label was 'Rail modes' until v2.1; renamed to 'Rails'
             // because the rail strip is now the primary navigation
