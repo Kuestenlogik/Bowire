@@ -298,12 +298,14 @@
     function renderTrafficMainPane() {
         const pane = el('div', { className: 'bowire-env-editor-main' });
 
-        // Header always reads the active deployment mode so the operator
-        // never has to wonder which back-end the rail talks to.
-        const header = el('div', { className: 'bowire-env-editor-header' },
-            el('h2', { className: 'bowire-env-editor-title', textContent: 'Traffic — ' + bowireTrafficModeLabel() })
-        );
-        pane.appendChild(header);
+        // Headline retired. Operator: 'traffic rail: Traffic —
+        // Standalone proxy mode überschrift wird nicht benötigt.
+        // ist auch anders als bei den anderen rail welcome pages
+        // […] bei den anderen rails ist dort keine headline.'
+        // Deployment-mode signalling moves into the empty-card body
+        // copy (or a small chip in the sub-tabs strip) when actually
+        // needed; the rail title in the rail strip + the workbench
+        // tab strip are enough to identify the surface.
 
         if (trafficSubView === 'settings') {
             return renderTrafficSettingsMainPane(pane);
