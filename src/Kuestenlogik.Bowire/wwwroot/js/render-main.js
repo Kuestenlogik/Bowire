@@ -6130,10 +6130,14 @@
         // Putting tabs first lets the user switch contexts without
         // their eye crossing the entire header column.
         //
-        // Request tab bar — visible whenever there's at least one
-        // open tab, plus a "+" button so the operator can spawn a
-        // fresh blank tab without going through the sidebar.
-        if (requestTabs.length >= 1) {
+        // Request tab bar — always visible whenever there's a
+        // selected method context so the "+" button stays reachable
+        // even after the operator closes the last tab. Operator:
+        // 'beim schließen eines method tabs in discovery verschwindet
+        // der tab button [+] zum erzeugen eines neuen tabs.' The
+        // strip used to gate on requestTabs.length >= 1 which hid
+        // the "+" together with the tabs.
+        if (selectedService && selectedMethod) {
             var tabBar = el('div', { id: 'bowire-request-tabs', className: 'bowire-request-tabs' });
             var tabScroll = el('div', { className: 'bowire-request-tabs-scroll' });
             for (var ti = 0; ti < requestTabs.length; ti++) {
