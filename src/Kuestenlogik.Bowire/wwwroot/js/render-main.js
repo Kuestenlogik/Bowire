@@ -4842,6 +4842,8 @@
                 try {
                     mockMainWrap.appendChild(renderPresetsBar({
                         mode: 'mocks',
+                        canSave: function () { return !!mockSelectedId; },
+                        canSaveHint: 'Select a mock first',
                         snapshot: function () {
                             var sel = (mocksList || []).find(function (m) { return m.mockId === mockSelectedId; });
                             return {
