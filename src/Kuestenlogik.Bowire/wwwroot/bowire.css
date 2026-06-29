@@ -1425,18 +1425,19 @@ no decoration. */
 }
 
 /* ---------- Topbar responsive collapse ---------- */
-@media (max-width: 900px) {
-    .bowire-topbar {
-        grid-template-columns: auto auto;
-        grid-template-areas:
-            "brand right"
-            "palette palette";
-        row-gap: 10px;
-    }
-    .bowire-topbar-brand { grid-area: brand; }
-    .bowire-topbar-right { grid-area: right; justify-self: end; }
-    .bowire-topbar-palette { grid-area: palette; max-width: none; }
-}
+/* The right cluster's per-item overflow ladder lives in JS
+   (_layoutTopbarRight in render-env-auth.js: items get hidden in
+   priority order until the cluster fits, with the ⋮ button collapsing
+   the leftovers into a popover). A CSS-driven grid reflow at narrow
+   widths used to live here too — it switched the topbar into a 2-row
+   "brand right / palette palette" layout below 900 px, which gave the
+   right cluster suddenly-much-more horizontal room and made the JS
+   ladder yo-yo: items would collapse smoothly down to 901 px, pop back
+   out across the 900 px breakpoint, then collapse again per-item as
+   the viewport kept shrinking. Two reduction strategies fighting each
+   other. The JS ladder is the canonical path now; below this point we
+   only keep brand-cluster tweaks that don't change the topbar's grid
+   topology. */
 
 @media (max-width: 600px) {
     .bowire-topbar-brand .bowire-subtitle { display: none; }

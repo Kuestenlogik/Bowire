@@ -986,6 +986,12 @@
     var _topbarRightOverflowHidden = [];
     var _topbarRightObserver = null;
     var _topbarRightObservedEl = null;
+    // Signature of the most recent layout decision (priority IDs that
+    // are currently hidden, joined). _layoutTopbarRight short-circuits
+    // its render-side bookkeeping when the new decision matches the
+    // old one — keeps the ResizeObserver callback from re-firing a
+    // no-op render storm during a smooth drag-resize.
+    var _topbarRightLastHiddenSig = null;
 
     function _attachTopbarRightObserver() {
         if (typeof ResizeObserver === 'undefined') return;
@@ -1014,6 +1020,16 @@
     // the popover from the same list. The pass itself does NOT call
     // render(), it just mutates display + the hidden-list — so calling
     // it from a ResizeObserver doesn't loop.
+    //
+    // Hysteresis: when we hide an item we leave it hidden until the
+    // cluster has at least HIDE_BACK_MARGIN px of slack — otherwise a
+    // drag that crosses an item's exact boundary would unhide it on
+    // the resize tick, then immediately re-hide it on the next tick
+    // because the just-revealed item makes the cluster overflow again.
+    // The visible result of that bounce was the "items pop in and back
+    // out" thrash operators reported.
+    var _TOPBAR_HIDE_BACK_MARGIN_PX = 8;
+
     function _layoutTopbarRight() {
         var rightEl = document.getElementById('bowire-topbar-right');
         var bar = document.getElementById('bowire-topbar');
@@ -1044,75 +1060,98 @@
             });
         }
 
-        // Reset display + the trailing overflow-group so we measure
-        // the natural (un-collapsed) width. Subsequent passes build
-        // up the hidden set from a clean slate.
-        for (var k = 0; k < catalogue.length; k++) catalogue[k].node.style.display = '';
-        overflowGroup.style.display = 'none';
-        // Force a layout sync so the measurements below reflect
-        // the reset display values.
-        // (Reading offsetWidth flushes pending layout.)
-        // eslint-disable-next-line no-unused-vars
-        var _flush = rightEl.offsetWidth;
-
-        var available = bar.clientWidth;
-        // Right cluster's natural width when nothing is hidden. If it
-        // already fits, drop the overflow group + clear the hidden
-        // list. We compare the right cluster's scrollWidth — when it
-        // exceeds available we know flex-shrink has already squeezed
-        // it (or the bar is letting it overflow).
-        var natural = _measureTopbarRightFootprint(bar, rightEl);
-        if (natural.fits) {
-            _topbarRightOverflowHidden = [];
-            overflowGroup.style.display = 'none';
-            overflowBtn.classList.remove('has-overflow');
-            return;
-        }
-
-        // Doesn't fit — show the overflow group and walk the
-        // collapsible buttons low-priority-first (descending), hiding
-        // until we fit. Within a priority bucket we collapse in the
-        // visual order they appear (so e.g. About hides before Help
-        // even though both are priority 5 — About is the right-most).
-        overflowGroup.style.display = '';
-        overflowBtn.classList.add('has-overflow');
-
-        // Sort: highest priority number (= lowest importance) first;
-        // tie-break by DOM order from right to left so the rightmost
-        // sibling in a bucket collapses first.
-        var domOrder = Array.prototype.indexOf;
+        // Sort once. Highest priority number (= lowest importance)
+        // collapses first; within a bucket the right-most sibling in
+        // the catalogue collapses first (so e.g. About hides before
+        // Help even though both are priority 5).
         var sorted = catalogue.slice().sort(function (a, b) {
             if (a.priority !== b.priority) return b.priority - a.priority;
-            // Right-to-left: later in the catalogue (= further right)
-            // collapses first.
             return catalogue.indexOf(b) - catalogue.indexOf(a);
         });
 
+        // The overflow ⋮ button only takes width when there's actually
+        // something hidden — so the natural-fit probe must run WITHOUT
+        // the group's width counting. We measure both "fits with
+        // everything visible + no ⋮" first; if that fits we're done.
+        for (var k = 0; k < catalogue.length; k++) catalogue[k].node.style.display = '';
+        overflowGroup.style.display = 'none';
+        // Force a layout sync so the measurements below reflect
+        // the reset display values. (Reading offsetWidth flushes
+        // pending layout.)
+        // eslint-disable-next-line no-unused-vars
+        var _flush = rightEl.offsetWidth;
+
+        var natural = _measureTopbarRightFootprint(bar, rightEl);
+        if (natural.fits) {
+            _commitTopbarRightHidden([], overflowGroup, overflowBtn);
+            return;
+        }
+
+        // Doesn't fit — show the overflow group (now its width counts)
+        // and walk the collapsible buttons low-priority-first, hiding
+        // until we fit with a small slack margin. The slack margin
+        // gives us hysteresis on the next resize tick: a hidden item
+        // won't pop back out the moment the cluster JUST barely fits
+        // without it.
+        overflowGroup.style.display = '';
+        overflowBtn.classList.add('has-overflow');
+
         var hidden = [];
         for (var s = 0; s < sorted.length; s++) {
-            // Re-measure after each hide. clientWidth/scrollWidth on
-            // the cluster is the source of truth — the cluster is a
-            // flex row, so hiding a child immediately shrinks it.
             var probe = _measureTopbarRightFootprint(bar, rightEl);
-            if (probe.fits) break;
+            // Slack margin ONLY applies once we've already hidden at
+            // least one item — the first probe runs against the
+            // natural width and accepts a tight fit. Subsequent
+            // probes require HIDE_BACK_MARGIN px headroom so that
+            // restoring the most recently hidden item wouldn't push
+            // us back into overflow on the next resize tick.
+            var needed = hidden.length > 0 ? _TOPBAR_HIDE_BACK_MARGIN_PX : 0;
+            if (probe.actual <= probe.available - needed + 0.5) break;
             sorted[s].node.style.display = 'none';
             hidden.push(sorted[s]);
         }
 
-        // Final fit check + commit. Hidden order matches sort order
-        // (lowest priority first); reverse to display the highest-
-        // priority hidden item at the TOP of the popover so the
-        // operator's eye lands on it first.
+        // Hidden order matches sort order (lowest priority first);
+        // reverse to display the highest-priority hidden item at the
+        // TOP of the popover so the operator's eye lands on it first.
         hidden.reverse();
-        _topbarRightOverflowHidden = hidden.map(function (h) {
+        _commitTopbarRightHidden(hidden.map(function (h) {
             return { id: h.id, label: h.label, icon: h.icon, group: h.group, disabled: h.disabled };
-        });
+        }), overflowGroup, overflowBtn);
+    }
 
-        // If the hidden list changed since the last render, refresh
-        // the overflow button's aria-label + title so screen readers
-        // get the up-to-date "More: …" list without waiting for the
-        // next render. Cheap textContent update.
-        var labels = _topbarRightOverflowHidden.map(function (h) { return h.label; });
+    // Commit helper. Updates module state, the ⋮ button's
+    // aria-label/title, and toggles .has-overflow. Short-circuits the
+    // book-keeping when the hidden set matches the last layout pass —
+    // no need to touch attributes that are already correct, and the
+    // signature check is the idempotence guarantee the ResizeObserver
+    // loop needs.
+    function _commitTopbarRightHidden(hidden, overflowGroup, overflowBtn) {
+        var sig = hidden.map(function (h) { return h.id; }).join('|');
+        if (sig === _topbarRightLastHiddenSig) {
+            // Same decision as last time. Still make sure the
+            // overflow group's display is in sync (a render may have
+            // reset it) — but skip the attribute writes.
+            if (hidden.length === 0) {
+                overflowGroup.style.display = 'none';
+                overflowBtn.classList.remove('has-overflow');
+            } else {
+                overflowGroup.style.display = '';
+                overflowBtn.classList.add('has-overflow');
+            }
+            _topbarRightOverflowHidden = hidden;
+            return;
+        }
+        _topbarRightLastHiddenSig = sig;
+        _topbarRightOverflowHidden = hidden;
+        if (hidden.length === 0) {
+            overflowGroup.style.display = 'none';
+            overflowBtn.classList.remove('has-overflow');
+        } else {
+            overflowGroup.style.display = '';
+            overflowBtn.classList.add('has-overflow');
+        }
+        var labels = hidden.map(function (h) { return h.label; });
         var ariaText = labels.length > 0 ? ('More: ' + labels.join(', ')) : 'More';
         overflowBtn.setAttribute('aria-label', ariaText);
         overflowBtn.setAttribute('title', ariaText);
