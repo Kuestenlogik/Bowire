@@ -446,7 +446,12 @@ public sealed class SignalRHubDiscoveryTests
         var type = asm.GetType("Kuestenlogik.Bowire.SignalRHubDiscovery", throwOnError: true)!;
         var method = type.GetMethod("DiscoverHubs", BindingFlags.Public | BindingFlags.Static);
         Assert.NotNull(method);
-        var result = method!.Invoke(null, new object?[] { sp });
+        // serverUrl param added by the self-origin-gate fix (#322).
+        // The tests run with an in-process provider; passing null
+        // skips the gate and the discovery scans EndpointDataSource as
+        // before. Reflection needs explicit args even for optional
+        // defaults — pass null for serverUrl.
+        var result = method!.Invoke(null, new object?[] { sp, null });
         return Assert.IsType<List<BowireServiceInfo>>(result);
     }
 

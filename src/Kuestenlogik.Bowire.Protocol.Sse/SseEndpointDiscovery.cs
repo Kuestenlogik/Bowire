@@ -36,8 +36,12 @@ internal static class SseEndpointDiscovery
         // feedback: 'unter der source http://localhost:5181/api/locations
         // sehe ich 1 service (SSE ENDPOINTS), … beim aufruf nur: Stream
         // error occurred.'
-        if (serviceProvider is not null
-            && Helpers.SelfOriginCheck.IsSelfOrigin(serverUrl, serviceProvider))
+        // Self-origin gate only when an explicit external serverUrl
+        // is supplied. Null / empty means embedded-mode with no URL
+        // context — scan unconditionally (pre-gate behaviour).
+        var selfOrigin = string.IsNullOrWhiteSpace(serverUrl)
+            || Helpers.SelfOriginCheck.IsSelfOrigin(serverUrl, serviceProvider);
+        if (serviceProvider is not null && selfOrigin)
         {
             var dataSources = serviceProvider.GetService<IEnumerable<EndpointDataSource>>();
             if (dataSources is not null)

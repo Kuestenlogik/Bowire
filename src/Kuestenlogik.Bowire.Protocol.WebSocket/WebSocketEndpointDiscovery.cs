@@ -31,9 +31,13 @@ internal static class WebSocketEndpointDiscovery
 
         // Self-origin gate — see SelfOriginCheck. Without it the
         // workbench host's own [WebSocketEndpoint] routes leak into
-        // every external serverUrl the operator adds.
-        if (serviceProvider is not null
-            && Kuestenlogik.Bowire.Helpers.SelfOriginCheck.IsSelfOrigin(serverUrl, serviceProvider))
+        // every external serverUrl the operator adds. Empty / null
+        // serverUrl means embedded-mode (no URL context) — scan
+        // unconditionally, matching the original pre-gate behaviour
+        // unit tests assert on.
+        var selfOriginWs = string.IsNullOrWhiteSpace(serverUrl)
+            || Kuestenlogik.Bowire.Helpers.SelfOriginCheck.IsSelfOrigin(serverUrl, serviceProvider);
+        if (serviceProvider is not null && selfOriginWs)
         {
             try
             {
