@@ -67,15 +67,33 @@ unit is **X = the height of the Circle-B mark** (the circular badge).
 - Nothing — text, photo edges, page margins, or another logo — may enter that
   margin. When in doubt, give it more.
 
-```text
-   ┌───────────────────────────┐
-   │        ½X (clear)         │
-   │   ┌───────────────────┐   │
-   │½X │   ●  B o w i r e   │½X │   X = height of the Circle-B mark
-   │   └───────────────────┘   │
-   │        ½X (clear)         │
-   └───────────────────────────┘
-```
+<figure style="margin:18px 0;background:#fafaff;border:1px solid #e1e1ee;border-radius:10px;padding:18px;display:flex;justify-content:center">
+<svg width="340" height="190" viewBox="0 0 340 190" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Clear-space diagram: keep half the Circle-B mark height of free space around the logo on every side" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif">
+  <!-- logo bounding box -->
+  <rect x="142" y="40" width="56" height="56" fill="none" stroke="#d0d0dc" stroke-width="1"/>
+  <!-- the Circle-B mark -->
+  <image href="images/brand/bowire-mark-dark.svg" x="142" y="40" width="56" height="56"/>
+  <!-- clear-space boundary: 28 = half of the 56 mark height (½ X) on every side -->
+  <rect x="114" y="12" width="112" height="112" rx="3" fill="none" stroke="#6366f1" stroke-width="1.6" stroke-dasharray="6 4"/>
+  <!-- X = mark height (left dimension) -->
+  <g stroke="#5a5a72" stroke-width="1">
+    <line x1="128" y1="40" x2="128" y2="96"/>
+    <line x1="124" y1="40" x2="132" y2="40"/>
+    <line x1="124" y1="96" x2="132" y2="96"/>
+  </g>
+  <text x="120" y="72" text-anchor="end" font-size="13" font-weight="600" fill="#1a1a2e">X</text>
+  <!-- ½ X = clear space (top gap dimension) -->
+  <g stroke="#5a5a72" stroke-width="1">
+    <line x1="170" y1="12" x2="170" y2="40"/>
+    <line x1="166" y1="12" x2="174" y2="12"/>
+    <line x1="166" y1="40" x2="174" y2="40"/>
+  </g>
+  <text x="178" y="30" text-anchor="start" font-size="13" font-weight="600" fill="#1a1a2e">½ X</text>
+  <!-- captions -->
+  <text x="170" y="150" text-anchor="middle" font-size="12.5" fill="#5a5a72">Dashed margin = ½ X on every side</text>
+  <text x="170" y="168" text-anchor="middle" font-size="12.5" fill="#5a5a72">X = the height of the Circle-B mark</text>
+</svg>
+</figure>
 
 ## Minimum size
 
