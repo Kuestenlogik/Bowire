@@ -456,6 +456,35 @@ internal static class BowirePluginEndpoints
             }
         }).ExcludeFromDescription();
 
+        // #325 (revisited) — per-plugin lifecycle stub.
+        //
+        // Settings → Plugins surfaces Load / Unload / Restart / Reset-
+        // storage buttons per loaded plugin. The runtime side of those
+        // verbs (assembly hot-unload, IBowirePlugin lifecycle hooks,
+        // per-plugin storage reset) is v2.2 scope; v2.1 just needs a
+        // stable endpoint shape so the UI can render the version gate
+        // inline without sprinkling 'TODO' hardcoded into the frontend.
+        //
+        // Returns 501 with a problem-details body announcing the verb
+        // is v2.2 scope. The frontend reads the `title` field and
+        // surfaces it as a banner under the action button row.
+        endpoints.MapPost($"{basePath}/api/plugins/{{pluginId}}/lifecycle/{{action}}",
+            (string pluginId, string action, HttpContext ctx) =>
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:plugin:lifecycle-stub",
+                    title: $"Plugin lifecycle action '{action}' is available in v2.2",
+                    status: 501,
+                    detail: "v2.1 lists installed plugins and supports install / update / uninstall via dotnet tool. Runtime load / unload / restart / reset-storage land in v2.2 alongside the IBowirePlugin lifecycle contract.",
+                    instance: ctx.Request.Path,
+                    extensions: new Dictionary<string, object?>
+                    {
+                        ["pluginId"] = pluginId,
+                        ["action"] = action,
+                        ["availableIn"] = "v2.2",
+                    });
+            }).ExcludeFromDescription();
+
         // Read the last persisted snapshot + whether the background
         // checker is enabled. Used by the sidebar badge to render
         // "N updates available" without hitting the network on every
