@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**62/64 done** · 2 backlog
+**63/65 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -80,6 +80,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [302](https://github.com/Kuestenlogik/Bowire/issues/302) | Bowire | [Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)](#issue-kuestenlogik-bowire-302) | ✅ Done |  |
 | [309](https://github.com/Kuestenlogik/Bowire/issues/309) | Bowire | [UI: configure URL catalogue providers from Settings (#136 follow-up)](#issue-kuestenlogik-bowire-309) | ✅ Done |  |
 | [310](https://github.com/Kuestenlogik/Bowire/issues/310) | Bowire | [UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up](#issue-kuestenlogik-bowire-310) | ✅ Done |  |
+| [327](https://github.com/Kuestenlogik/Bowire/issues/327) | Bowire | [fix(registry): BowireProtocolRegistry.Discover thread-safety race under parallel xUnit](#issue-kuestenlogik-bowire-327) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -497,6 +498,10 @@ User feedback (Phase 2 walkthrough): "response darstellung auf und einklappen so
 #### <a id="issue-kuestenlogik-bowire-310"></a>✅ Done · [#310](https://github.com/Kuestenlogik/Bowire/issues/310) UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up
 
 #294 introduced IBowireModuleContribution + BowireModuleRegistry — modules (AI, Assistant, Variable resolver, &c) are now contributable from external packages. But the Settings → Modules SECTION that would let an operator turn an installed module ON / OFF doesn't exist. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/310)
+
+#### <a id="issue-kuestenlogik-bowire-327"></a>✅ Done · [#327](https://github.com/Kuestenlogik/Bowire/issues/327) fix(registry): BowireProtocolRegistry.Discover thread-safety race under parallel xUnit
+
+`MockCommandTests.RunAsync_RecordingWithUnknownProtocol_ReturnsErrorExit` failed CI with `Collection was modified; enumeration operation may not execute` instead of the expected 'Recording references' diagnostic. [[more]](https://github.com/Kuestenlogik/Bowire/issues/327)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
