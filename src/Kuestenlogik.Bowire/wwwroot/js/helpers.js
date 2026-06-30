@@ -600,10 +600,18 @@
     }
 
     function _jsonViewerEscape(s) {
+        // Escape the five HTML special chars. The viewer interpolates
+        // this output BOTH into text bodies AND into double-quoted
+        // attribute values (data-json-path="…"), so leaving out " + '
+        // — as v1 did — opened a CodeQL js/incomplete-html-attribute-
+        // sanitization warning (alerts #1762, #1763) where a JSON
+        // key containing " could break out of the attribute.
         return String(s == null ? '' : s)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     // Walk the parsed JSON, accumulating one line entry per source line in
@@ -1089,8 +1097,14 @@
             }
             if (dirty) rebuild();
         }
+        // CSS.escape is universally available in every browser we
+        // target (Chromium 46+, Firefox 31+, Safari 10+). The fallback
+        // is defence-in-depth for synthetic test environments + escapes
+        // every char CSS attribute selectors actually treat as special,
+        // not just " — CodeQL alert #1778 (js/incomplete-sanitization).
         var safe = (typeof CSS !== 'undefined' && CSS.escape)
-            ? CSS.escape(chainPath) : chainPath.replace(/"/g, '\\"');
+            ? CSS.escape(chainPath)
+            : chainPath.replace(/[!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~]/g, '\\$&');
         var row = viewer.querySelector('[data-line-path="' + safe + '"]');
         if (!row) return false;
         try { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); }

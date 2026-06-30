@@ -1665,8 +1665,13 @@
             var parts = [];
             for (var i = 0; i < paths.length; i++) {
                 if (!paths[i]) continue;
+                // Match helpers.js CSS-escape fallback so the same
+                // set of attribute-selector specials is escaped when
+                // CSS.escape isn't available — CodeQL alert #1777
+                // (js/incomplete-sanitization).
                 var safe = (typeof CSS !== 'undefined' && CSS.escape)
-                    ? CSS.escape(paths[i]) : paths[i].replace(/"/g, '\\"');
+                    ? CSS.escape(paths[i])
+                    : paths[i].replace(/[!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~]/g, '\\$&');
                 parts.push('[data-bowire-coord-path="' + safe + '"]');
                 parts.push('[data-line-path="' + safe + '"]');
             }
