@@ -556,6 +556,46 @@
         return flow.id;
     }
 
+    /**
+     * R3a — Compose Library row → Flows transition. Walks a collection's
+     * saved request items, lifts each into a Request node on a fresh
+     * flow, and returns the new flow's id. Mirrors
+     * convertRecordingToFlow above so the operator's mental model is
+     * consistent: "this saved set of requests can become an editable
+     * + replayable flow with one click". The collection's
+     * expectedStatus / assertions ride through onto the node so a
+     * replay surfaces drift the same way Recordings → Flows does.
+     */
+    function convertCollectionToFlow(collectionId) {
+        if (typeof collectionsList === 'undefined' || !Array.isArray(collectionsList)) return null;
+        var col = collectionsList.find(function (c) { return c.id === collectionId; });
+        if (!col || !Array.isArray(col.items) || col.items.length === 0) return null;
+
+        var flow = createFlow(col.name + ' (flow)');
+        for (var i = 0; i < col.items.length; i++) {
+            var item = col.items[i];
+            if (!item) continue;
+            var asserts = Array.isArray(item.assertions) ? item.assertions.slice() : [];
+            if (item.expectedStatus && !asserts.some(function (a) { return a && a.path === 'status' && a.op === 'eq'; })) {
+                asserts.push({ path: 'status', op: 'eq', value: String(item.expectedStatus) });
+            }
+            var node = {
+                type: 'request',
+                protocol: item.protocol || (typeof protocols !== 'undefined' && protocols.length > 0 ? protocols[0].id : 'rest'),
+                service: item.service || '',
+                method: item.method || '',
+                methodType: item.methodType || 'Unary',
+                serverUrl: item.serverUrl || '',
+                body: item.body || '{}',
+                metadata: item.metadata || {},
+                serviceMethodMode: 'custom',
+                assertions: asserts,
+            };
+            addNodeToFlow(flow.id, node);
+        }
+        return flow.id;
+    }
+
     function tryParseAsJson(value) {
         if (value == null) return null;
         if (typeof value !== 'string') return value;

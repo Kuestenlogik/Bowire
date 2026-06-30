@@ -1510,6 +1510,39 @@
                 el('span', { textContent: 'Benchmark' })
             ));
         }
+        // R3a — Recordings detail → Benchmarking transition. Skips the
+        // Add-to-envelope picker for the common "I want to load-test
+        // exactly this recording" path: spawn a fresh spec wired to the
+        // whole recording (stepIndex null = walk every step per VU
+        // iteration) and jump to the Benchmarking rail with it
+        // selected. createBenchmarkSpec lives in Bowire.Benchmarking;
+        // guard the call so a host that doesn't reference the package
+        // still gets a graceful no-op instead of a ReferenceError.
+        if (typeof createBenchmarkSpec === 'function') {
+            buildGroup.appendChild(el('button', {
+                className: 'bowire-recording-action-btn',
+                disabled: !_hasSteps,
+                title: 'Create a benchmark spec wired to this recording and open the Benchmarking rail',
+                onClick: function () {
+                    var spec = createBenchmarkSpec({
+                        kind: 'recording',
+                        sourceId: rec.id,
+                        name: 'Re-run with load: ' + (rec.name || 'recording')
+                    });
+                    if (!spec) return;
+                    railMode = 'benchmarks';
+                    try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch (_) { /* ignore */ }
+                    if (typeof benchmarksSelectedId !== 'undefined') benchmarksSelectedId = spec.id;
+                    render();
+                    if (typeof toast === 'function') {
+                        toast('Benchmark spec "' + spec.name + '" — open on Benchmarking rail', 'success');
+                    }
+                }
+            },
+                el('span', { innerHTML: svgIcon('lightning') }),
+                el('span', { textContent: 'Re-run with load' })
+            ));
+        }
         buildGroup.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: !_hasSteps,

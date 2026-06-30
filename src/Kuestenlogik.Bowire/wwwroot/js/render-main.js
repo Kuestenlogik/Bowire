@@ -2100,6 +2100,23 @@
             title: 'Show the list of every workspace',
             onClick: _goToWorkspacesOverview
         }));
+        // R3a — Workspaces detail → Settings transition. Deep-link
+        // into the Settings modal's per-workspace overrides page.
+        // openSettings('workspace-overrides') routes through the
+        // legacy-tab migration and lands on the right tab; the
+        // Settings tree node ('Workspace…' → 'Per-Workspace overrides')
+        // highlights automatically because settingsTab is the only
+        // selection source.
+        headerActions.appendChild(el('button', {
+            className: 'bowire-ws-detail-action-btn',
+            textContent: 'Per-workspace overrides…',
+            title: 'Edit per-workspace setting overrides in the Settings panel',
+            onClick: function () {
+                if (typeof openSettings === 'function') {
+                    openSettings('workspace-overrides');
+                }
+            }
+        }));
         if (isActive) {
             // Save-now button greys out when nothing has been
             // autosaved since the last force-flush — pressing it then
@@ -5320,6 +5337,31 @@
                         }
                     });
                     header.appendChild(protoBtn);
+                    // R3a — Discover method meta → Help transition. The
+                    // protocol id always maps to a topic in the Help
+                    // package's docs/protocols/<id>.md set, so render a
+                    // small "?" alongside the protocol glyph. helpAvailable
+                    // gates the click in openHelpRail so a host without
+                    // the Help package referenced gets a no-op (and we
+                    // hide the icon altogether) instead of a dead link.
+                    // No icon for method-meta labels that don't have a
+                    // dedicated topic (HTTP status / content-type) — the
+                    // brief explicitly forbids fake-wired CTAs.
+                    if (typeof helpAvailable !== 'undefined' && helpAvailable
+                        && typeof openHelpRail === 'function') {
+                        var helpProtoSlug = 'protocols/' + protoSource;
+                        header.appendChild(el('button', {
+                            type: 'button',
+                            className: 'bowire-header-meta-help',
+                            title: 'Open the ' + headerProto.name + ' protocol docs in the Help rail',
+                            'aria-label': 'Help on ' + headerProto.name,
+                            textContent: '?',
+                            onClick: function (e) {
+                                e.stopPropagation();
+                                openHelpRail(helpProtoSlug);
+                            }
+                        }));
+                    }
                 }
             }
             header.appendChild(el('span', {
@@ -5327,6 +5369,32 @@
                 dataset: { type: methodBadgeType(selectedMethod) },
                 textContent: selectedMethod.httpMethod || methodBadgeLabel(selectedMethod.methodType)
             }));
+            // R3a — Discover method meta → Help transition (method-type).
+            // Streaming method types map to features/streaming; Duplex
+            // maps to features/duplex-channels. Unary has no special
+            // topic, so the icon stays hidden — that's the intentional
+            // "no topic, no icon" path from the brief.
+            if (typeof helpAvailable !== 'undefined' && helpAvailable
+                && typeof openHelpRail === 'function') {
+                var mt = (selectedMethod && selectedMethod.methodType) || '';
+                var typeTopic = null;
+                if (mt === 'ServerStreaming' || mt === 'ClientStreaming') typeTopic = 'features/streaming';
+                else if (mt === 'Duplex') typeTopic = 'features/duplex-channels';
+                if (typeTopic) {
+                    var typeTopicSlug = typeTopic;
+                    header.appendChild(el('button', {
+                        type: 'button',
+                        className: 'bowire-header-meta-help',
+                        title: 'Open ' + mt + ' docs in the Help rail',
+                        'aria-label': 'Help on ' + mt,
+                        textContent: '?',
+                        onClick: function (e) {
+                            e.stopPropagation();
+                            openHelpRail(typeTopicSlug);
+                        }
+                    }));
+                }
+            }
             // Path right next to the verb chip — "PUT /pet" reads
             // as one address. The title tooltip + double-click copy
             // use the FULLY qualified URL (origin + path) so the

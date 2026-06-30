@@ -605,6 +605,41 @@
                 composeCollectionsExpanded[col.id] = !composeCollectionsExpanded[col.id];
                 persistComposeSidePanel();
                 render();
+            },
+            // R3a — Compose Library row → Flows transition. Right-click
+            // the collection head to surface "Build flow from collection",
+            // mirroring the Recordings-detail "Convert to Flow" affordance
+            // so the operator's cross-rail jumps are uniform regardless of
+            // which side of the workspace they're starting from. Lands
+            // them on the Flows rail with the new flow open + selected.
+            onContextMenu: function (e) {
+                if (typeof showContextMenu !== 'function') return;
+                e.preventDefault();
+                e.stopPropagation();
+                var itemCount = (col.items || []).length;
+                showContextMenu(e.clientX, e.clientY, [
+                    {
+                        label: 'Build flow from collection',
+                        icon: 'flow',
+                        disabled: itemCount === 0,
+                        title: itemCount === 0
+                            ? 'This collection has no saved requests yet'
+                            : 'Project each saved request as a Request node on a fresh flow, then jump to the Flows rail',
+                        onClick: function () {
+                            if (typeof convertCollectionToFlow !== 'function') return;
+                            var flowId = convertCollectionToFlow(col.id);
+                            if (!flowId) return;
+                            railMode = 'flows';
+                            try { localStorage.setItem('bowire_rail_mode', 'flows'); } catch (_) { /* ignore */ }
+                            if (typeof setSidebarView === 'function') setSidebarView('flows');
+                            if (typeof flowEditorSelectedId !== 'undefined') flowEditorSelectedId = flowId;
+                            render();
+                            if (typeof toast === 'function') {
+                                toast('Flow created from "' + (col.name || 'collection') + '" — open on Flows rail', 'success');
+                            }
+                        }
+                    }
+                ]);
             }
         });
         head.appendChild(el('span', {
