@@ -27,7 +27,12 @@ const path = require('path');
 const fs = require('fs');
 
 const BOWIRE_URL = 'https://localhost:5101/bowire';
-const OUTPUT_DIR = path.resolve(__dirname, '..', 'site', 'assets', 'videos');
+// __dirname is scripts/screenshots. Two .. hops land at the repo
+// root; one hop short used to land in scripts/site/assets/videos
+// (a nested ghost path) after the scripts reorg moved this file
+// out of scripts/. Same bug pattern that hit build-activity-snapshot
+// and build-docs-pdf.
+const OUTPUT_DIR = path.resolve(__dirname, '..', '..', 'site', 'assets', 'videos');
 const WIDTH  = 1280;
 const HEIGHT = 720;
 const THEME  = (process.env.THEME || 'dark').toLowerCase();
@@ -67,14 +72,49 @@ async function waitForAny(page, selectors, timeoutMs) {
     try {
         log(`Navigating to Bowire UI (theme=${THEME})…`);
         await page.goto(BOWIRE_URL, { waitUntil: 'domcontentloaded' });
-        await page.evaluate((t) => {
+        // v2.1 makes workspaces a hard prerequisite — the sidebar
+        // tree, rail badges, and the in-this-method "C/R/B" pills all
+        // gate on activeWorkspaceId. Without a workspace + a source
+        // URL bound to it, embedded discovery surfaces zero methods
+        // and the demo dies at the first waitForSelector below.
+        //
+        // Seeding via localStorage before the workbench JS boots is
+        // the most reliable way to get the headless browser into a
+        // realistic "operator just opened the sample" state. We
+        // create a workspace named 'Harbor demo', bind the
+        // Combined-sample host (https://localhost:5101/) as the only
+        // source URL, and let embedded discovery do the rest.
+        await page.evaluate(({ t, sampleUrl }) => {
             try { localStorage.setItem('bowire_theme_pref', t); } catch {}
-        }, THEME);
+            try {
+                const id = 'harbor';
+                const ws = [{
+                    id,
+                    name: 'Harbor demo',
+                    color: 'sky',
+                    createdAt: 1_700_000_000_000,
+                }];
+                localStorage.setItem('bowire_workspaces', JSON.stringify(ws));
+                localStorage.setItem('bowire_active_workspace_id', id);
+                // wsKey contract: bowire_ws_<id>_<key-without-bowire-prefix>
+                localStorage.setItem(
+                    'bowire_ws_' + id + '_server_urls',
+                    JSON.stringify([sampleUrl])
+                );
+                // Land directly on Discover — Home is the default after
+                // workspace creation but the demo beats all live on the
+                // discovered-method surface. Without this the script
+                // would need an extra rail-strip click + wait.
+                localStorage.setItem('bowire_rail_mode', 'discover');
+            } catch {}
+        }, { t: THEME, sampleUrl: BOWIRE_URL.replace(/\/bowire\/?$/, '/') });
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
         // Wait for method items to be ATTACHED (services may render
         // collapsed by default so no item is visible until we expand).
-        await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 30000 });
+        // Bumped timeout to 45s since discovery now also walks the
+        // operator-supplied URL on first paint.
+        await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 45000 });
         await page.waitForTimeout(1500);
         log('Services discovered.');
 
