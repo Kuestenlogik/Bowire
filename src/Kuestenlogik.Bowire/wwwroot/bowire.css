@@ -19704,19 +19704,32 @@ full accent for user-pinned
     padding: 4px 0;
 }
 .bowire-flow-assertion-row {
-    display: grid;
-    grid-template-columns: 1fr 90px 1fr 28px;
+    /* v2.2 — Kind / Target / Op / Expected / × layout. Kind cell is
+       fixed-width; Target + Expected share the remaining horizontal
+       space. The row uses flex (not grid) so kinds that don't have a
+       Target field (status / body-text / latency) collapse cleanly
+       without leaving an empty column. */
+    display: flex;
+    align-items: center;
     gap: 6px;
     margin-bottom: 4px;
-    align-items: center;
 }
 .bowire-flow-assertion-row .bowire-flow-field-input {
     font-family: var(--bowire-font-mono, monospace);
     font-size: 12px;
     padding: 3px 6px;
+    min-width: 0;
+}
+.bowire-flow-assertion-row .bowire-flow-assertion-kind {
+    flex: 0 0 110px;
 }
 .bowire-flow-assertion-row .bowire-flow-assertion-op {
+    flex: 0 0 96px;
     text-align: center;
+}
+.bowire-flow-assertion-row .bowire-flow-assertion-path,
+.bowire-flow-assertion-row .bowire-flow-assertion-value {
+    flex: 1 1 0;
 }
 
 .bowire-flow-assertion-results {

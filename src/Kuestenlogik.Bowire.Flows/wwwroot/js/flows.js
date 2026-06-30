@@ -417,11 +417,16 @@
                 var baseStatus = json.status || (resp.ok ? 'OK' : 'Error');
                 var baseOk = resp.ok && !json.title;
                 var errorTitle = json.title || null;
+                // v2.2 — response headers come back on json.metadata (server-
+                // side IBowireProtocol convention). Surface them on the
+                // envelope so kind=header expectations can resolve.
+                var headerMap = (json.metadata && typeof json.metadata === 'object') ? json.metadata : {};
                 var envelope = {
                     status: baseStatus,
                     durationMs: json.duration_ms || 0,
                     error: errorTitle,
                     response: tryParseAsJson(json.response),
+                    headers: headerMap,
                 };
                 var assertionResults = evaluateAssertions(node.assertions || [], envelope);
                 var allAssertionsPassed = assertionResults.every(function (a) { return a.pass; });
@@ -441,17 +446,33 @@
 
     /**
      * Resolve an assertion path against the request-envelope
-     * { status, durationMs, error, response }. Three forms:
+     * { status, durationMs, error, response, headers }. Forms:
      *   `$.field` or `$` — alias for `response.field` / response root.
      *                       90% of assertions target the body, so this
      *                       is the ergonomic shortcut.
      *   `response.foo` / `status` / `durationMs` — explicit envelope key.
+     *   `header:content-type` — case-insensitive response-header lookup.
+     *                            v2.2 (#test-pillar foundation) added.
      *   `field` — plain dotted path against the body (no $-anchor).
      */
     function resolveAssertionPath(envelope, path) {
         if (envelope == null) return undefined;
         var trimmed = path == null ? '' : String(path).trim();
         if (trimmed === '' || trimmed === '$') return envelope.response;
+        // v2.2 header lookup. Case-insensitive — the wire spec lets
+        // servers respond with arbitrary casing.
+        if (trimmed.toLowerCase().indexOf('header:') === 0) {
+            var headerName = trimmed.substring('header:'.length).toLowerCase();
+            if (envelope.headers && typeof envelope.headers === 'object') {
+                for (var hk in envelope.headers) {
+                    if (Object.prototype.hasOwnProperty.call(envelope.headers, hk)
+                        && hk.toLowerCase() === headerName) {
+                        return envelope.headers[hk];
+                    }
+                }
+            }
+            return undefined;
+        }
         if (trimmed.indexOf('$.') === 0) {
             return walkJsonPath(envelope.response, trimmed.substring(2));
         }
@@ -473,29 +494,79 @@
      * pass/fail + a human-readable detail string for the result
      * viewer. The op vocabulary matches Condition-nodes so users
      * don't have to learn a second predicate language.
+     *
+     * v2.2 (#test-pillar foundation) — `kind`-aware: when a `kind`
+     * field is present on the assertion, it overrides path resolution
+     * (kind=status → status; kind=header → header:<target>; kind=
+     * body-path → $.<target>; kind=body-text → response; kind=latency
+     * → durationMs). Also adds gte/lte/regex operators so the v2.2 C#
+     * evaluator (FlowExpectationEvaluator) and the in-browser runner
+     * stay in lock-step.
      */
     function evaluateAssertions(assertions, envelope) {
         if (!Array.isArray(assertions) || assertions.length === 0) return [];
         return assertions.map(function (a) {
-            var actual = resolveAssertionPath(envelope, a.path || '');
-            var pass = false;
+            var resolved = resolveExpectation(a, envelope);
+            var actual = resolved.actual;
             var op = a.op || 'eq';
             var expected = a.value;
-            if (op === 'eq') pass = String(actual) === String(expected);
-            else if (op === 'neq') pass = String(actual) !== String(expected);
-            else if (op === 'gt') pass = Number(actual) > Number(expected);
-            else if (op === 'lt') pass = Number(actual) < Number(expected);
-            else if (op === 'contains') pass = String(actual).indexOf(String(expected)) !== -1;
-            else if (op === 'exists') pass = actual !== undefined && actual !== null;
-            else if (op === 'missing') pass = actual === undefined || actual === null;
+            var pass = applyOperator(op, actual, expected);
             return {
-                path: a.path || '$',
+                path: resolved.displayPath,
                 op: op,
+                kind: a.kind || null,
                 expected: expected,
                 actual: actual === undefined ? null : (typeof actual === 'object' ? JSON.stringify(actual) : String(actual)),
                 pass: pass,
             };
         });
+    }
+
+    /**
+     * Resolve a v2.2 expectation (kind-aware) OR a v2.1 tuple
+     * ({path, op, value}) against the envelope. Returns
+     * { actual, displayPath } so the result viewer can show the
+     * effective path (e.g. "header:Content-Type") even when the
+     * editor stored only a kind+target pair.
+     */
+    function resolveExpectation(a, envelope) {
+        if (a && a.kind) {
+            switch (a.kind) {
+                case 'status':
+                    return { actual: envelope.status, displayPath: 'status' };
+                case 'latency':
+                    return { actual: envelope.durationMs, displayPath: 'durationMs' };
+                case 'header':
+                    var hpath = 'header:' + (a.target || '');
+                    return { actual: resolveAssertionPath(envelope, hpath), displayPath: hpath };
+                case 'body-text':
+                    return { actual: envelope.response, displayPath: 'response' };
+                case 'body-path':
+                default:
+                    var bpath = a.target || a.path || '$';
+                    return { actual: resolveAssertionPath(envelope, bpath), displayPath: bpath };
+            }
+        }
+        var legacyPath = a.path || '$';
+        return { actual: resolveAssertionPath(envelope, legacyPath), displayPath: legacyPath };
+    }
+
+    function applyOperator(op, actual, expected) {
+        if (op === 'exists') return actual !== undefined && actual !== null;
+        if (op === 'missing' || op === 'not-exists') return actual === undefined || actual === null;
+        if (op === 'eq' || op === 'equals') return String(actual) === String(expected);
+        if (op === 'neq' || op === 'not-equals' || op === 'ne') return String(actual) !== String(expected);
+        if (op === 'gt') return Number(actual) > Number(expected);
+        if (op === 'gte') return Number(actual) >= Number(expected);
+        if (op === 'lt') return Number(actual) < Number(expected);
+        if (op === 'lte') return Number(actual) <= Number(expected);
+        if (op === 'contains') return String(actual == null ? '' : actual).indexOf(String(expected == null ? '' : expected)) !== -1;
+        if (op === 'regex' || op === 'matches') {
+            try {
+                return new RegExp(String(expected == null ? '' : expected)).test(String(actual == null ? '' : actual));
+            } catch { return false; }
+        }
+        return false;
     }
 
     /**
@@ -1395,7 +1466,16 @@
     }
 
     function opLabel(op) {
-        var labels = { eq: '==', neq: '!=', gt: '>', lt: '<', contains: '\u2283', exists: '\u2203', missing: '\u2204' };
+        var labels = {
+            eq: '==', equals: '==',
+            neq: '!=', 'not-equals': '!=', ne: '!=',
+            gt: '>', gte: '>=',
+            lt: '<', lte: '<=',
+            contains: '\u2283',
+            regex: '~', matches: '~',
+            exists: '\u2203',
+            missing: '\u2204', 'not-exists': '\u2204',
+        };
         return labels[op] || op || '==';
     }
 
@@ -1691,24 +1771,52 @@
 
     /**
      * Inline-assertion editor — rendered inside the expanded
-     * Request-Node editor. Each row is a (path, op, value) tuple
-     * exercising the same predicate vocabulary as Condition-nodes.
-     * The Add-row button appends a fresh empty entry; per-row × removes.
+     * Request-Node editor. Each row carries Kind / Target / Operator /
+     * Expected so the operator can build "status equals 200",
+     * "$.user.id equals 42", "header[content-type] contains json",
+     * or "latency <= 500" without learning the underlying path syntax.
+     *
+     * Persisted shape mixes v2.2 (kind+target) with v2.1 ({path}). The
+     * runner's resolveExpectation handles both, so existing saved flows
+     * keep validating after the upgrade. The Add-row button appends a
+     * fresh entry seeded with the most-common shape (status equals OK);
+     * per-row × removes. Kind selection re-seeds Target / Operator so
+     * a kind switch lands on a coherent default instead of a half-set
+     * row.
      */
     function renderAssertionsEditor(node) {
         if (!Array.isArray(node.assertions)) node.assertions = [];
+        // Lazy upgrade — surface a `kind` on rows that pre-date v2.2 so
+        // the editor's kind-dropdown reflects what the row actually
+        // targets. Persisted on the next persistFlows() call.
+        for (var li = 0; li < node.assertions.length; li++) {
+            var lr = node.assertions[li];
+            if (lr && !lr.kind) {
+                if (lr.path === 'status') lr.kind = 'status';
+                else if (lr.path === 'durationMs') lr.kind = 'latency';
+                else if (lr.path === 'response' || !lr.path) lr.kind = 'body-text';
+                else if (typeof lr.path === 'string' && lr.path.toLowerCase().indexOf('header:') === 0) {
+                    lr.kind = 'header';
+                    lr.target = lr.path.substring('header:'.length);
+                } else {
+                    lr.kind = 'body-path';
+                    lr.target = lr.path;
+                }
+            }
+        }
+
         var wrap = el('div', { className: 'bowire-flow-assertions' });
 
         var header = el('div', { className: 'bowire-flow-assertions-header' },
-            el('span', { className: 'bowire-flow-assertions-title', textContent: 'Assertions' }),
+            el('span', { className: 'bowire-flow-assertions-title', textContent: 'Expect' }),
             el('button', {
                 className: 'bowire-flow-card-action-btn',
-                title: 'Add assertion',
-                'aria-label': 'Add assertion',
+                title: 'Add expectation',
+                'aria-label': 'Add expectation',
                 innerHTML: svgIcon('plus'),
                 onClick: function (e) {
                     e.stopPropagation();
-                    node.assertions.push({ path: 'status', op: 'eq', value: 'OK' });
+                    node.assertions.push({ kind: 'status', op: 'eq', value: 'OK' });
                     persistFlows();
                     render();
                 },
@@ -1718,65 +1826,179 @@
 
         if (node.assertions.length === 0) {
             wrap.appendChild(el('div', { className: 'bowire-flow-assertions-empty',
-                textContent: 'No assertions — request passes whenever the call returns OK.' }));
+                textContent: 'No expectations — step passes whenever the call returns OK.' }));
             return wrap;
         }
 
         for (var ai = 0; ai < node.assertions.length; ai++) {
-            (function (assertion, idx) {
-                var row = el('div', { className: 'bowire-flow-assertion-row' });
-                row.appendChild(el('input', {
-                    type: 'text', className: 'bowire-flow-field-input bowire-flow-assertion-path',
-                    placeholder: '$.id',
-                    value: assertion.path || '',
-                    spellcheck: 'false',
-                    onInput: function (e) { node.assertions[idx].path = e.target.value; persistFlows(); },
-                }));
-                var opSel = el('select', {
-                    className: 'bowire-flow-field-input bowire-flow-assertion-op',
-                    onChange: function (e) { node.assertions[idx].op = e.target.value; persistFlows(); render(); },
-                });
-                var opEntries = [
-                    { value: 'eq', label: '==' },
-                    { value: 'neq', label: '!=' },
-                    { value: 'gt', label: '>' },
-                    { value: 'lt', label: '<' },
-                    { value: 'contains', label: 'contains' },
-                    { value: 'exists', label: 'exists' },
-                    { value: 'missing', label: 'missing' },
-                ];
-                for (var oi = 0; oi < opEntries.length; oi++) {
-                    var opt = el('option', { value: opEntries[oi].value, textContent: opEntries[oi].label });
-                    if (opEntries[oi].value === (assertion.op || 'eq')) opt.selected = true;
-                    opSel.appendChild(opt);
-                }
-                row.appendChild(opSel);
-                // exists/missing operators don't need a value field.
-                if (assertion.op !== 'exists' && assertion.op !== 'missing') {
-                    row.appendChild(el('input', {
-                        type: 'text', className: 'bowire-flow-field-input bowire-flow-assertion-value',
-                        placeholder: 'expected',
-                        value: assertion.value == null ? '' : String(assertion.value),
-                        spellcheck: 'false',
-                        onInput: function (e) { node.assertions[idx].value = e.target.value; persistFlows(); },
-                    }));
-                }
-                row.appendChild(el('button', {
-                    className: 'bowire-flow-card-action-btn danger',
-                    title: 'Remove assertion',
-                    'aria-label': 'Remove assertion',
-                    innerHTML: svgIcon('trash'),
-                    onClick: function (e) {
-                        e.stopPropagation();
-                        node.assertions.splice(idx, 1);
-                        persistFlows();
-                        render();
-                    },
-                }));
-                wrap.appendChild(row);
-            })(node.assertions[ai], ai);
+            wrap.appendChild(renderAssertionRow(node, node.assertions[ai], ai));
         }
         return wrap;
+    }
+
+    function renderAssertionRow(node, assertion, idx) {
+        var row = el('div', { className: 'bowire-flow-assertion-row' });
+
+        var kindSel = el('select', {
+            className: 'bowire-flow-field-input bowire-flow-assertion-kind',
+            title: 'What to check',
+            onChange: function (e) {
+                var newKind = e.target.value;
+                node.assertions[idx].kind = newKind;
+                // Reseed target + op so the row stays coherent. Without
+                // this the user lands on (kind=latency, target=$.id,
+                // op=contains) which can't pass on any envelope.
+                if (newKind === 'status') {
+                    node.assertions[idx].target = null;
+                    node.assertions[idx].path = 'status';
+                    if (!isStringOp(node.assertions[idx].op)) node.assertions[idx].op = 'eq';
+                } else if (newKind === 'latency') {
+                    node.assertions[idx].target = null;
+                    node.assertions[idx].path = 'durationMs';
+                    if (!isNumericOp(node.assertions[idx].op)) node.assertions[idx].op = 'lt';
+                    if (!node.assertions[idx].value) node.assertions[idx].value = '500';
+                } else if (newKind === 'header') {
+                    if (!node.assertions[idx].target) node.assertions[idx].target = 'content-type';
+                    node.assertions[idx].path = 'header:' + node.assertions[idx].target;
+                    if (!isStringOp(node.assertions[idx].op)) node.assertions[idx].op = 'contains';
+                } else if (newKind === 'body-text') {
+                    node.assertions[idx].target = null;
+                    node.assertions[idx].path = 'response';
+                    if (!isStringOp(node.assertions[idx].op)) node.assertions[idx].op = 'contains';
+                } else { // body-path
+                    if (!node.assertions[idx].target) node.assertions[idx].target = '$.id';
+                    node.assertions[idx].path = node.assertions[idx].target;
+                    if (!node.assertions[idx].op) node.assertions[idx].op = 'eq';
+                }
+                persistFlows();
+                render();
+            },
+        });
+        var kindEntries = [
+            { value: 'status',    label: 'Status' },
+            { value: 'header',    label: 'Header' },
+            { value: 'body-path', label: 'Body path' },
+            { value: 'body-text', label: 'Body text' },
+            { value: 'latency',   label: 'Latency' },
+        ];
+        var currentKind = assertion.kind || 'body-path';
+        for (var ki = 0; ki < kindEntries.length; ki++) {
+            var kopt = el('option', { value: kindEntries[ki].value, textContent: kindEntries[ki].label });
+            if (kindEntries[ki].value === currentKind) kopt.selected = true;
+            kindSel.appendChild(kopt);
+        }
+        row.appendChild(kindSel);
+
+        // Target field — meaningful only for header + body-path. Hidden
+        // for status / body-text / latency so the row stays compact.
+        if (currentKind === 'header' || currentKind === 'body-path') {
+            row.appendChild(el('input', {
+                type: 'text', className: 'bowire-flow-field-input bowire-flow-assertion-path',
+                placeholder: currentKind === 'header' ? 'content-type' : '$.user.id',
+                value: assertion.target || '',
+                spellcheck: 'false',
+                onInput: function (e) {
+                    node.assertions[idx].target = e.target.value;
+                    // Keep .path in sync so legacy code paths still resolve.
+                    node.assertions[idx].path = currentKind === 'header'
+                        ? 'header:' + e.target.value
+                        : e.target.value;
+                    persistFlows();
+                },
+            }));
+        }
+
+        var opSel = el('select', {
+            className: 'bowire-flow-field-input bowire-flow-assertion-op',
+            onChange: function (e) { node.assertions[idx].op = e.target.value; persistFlows(); render(); },
+        });
+        var opEntries = operatorEntriesForKind(currentKind);
+        var currentOp = assertion.op || 'eq';
+        for (var oi = 0; oi < opEntries.length; oi++) {
+            var opt = el('option', { value: opEntries[oi].value, textContent: opEntries[oi].label });
+            if (opEntries[oi].value === currentOp) opt.selected = true;
+            opSel.appendChild(opt);
+        }
+        row.appendChild(opSel);
+
+        // exists / not-exists / missing don't take a right-hand side.
+        if (currentOp !== 'exists' && currentOp !== 'missing' && currentOp !== 'not-exists') {
+            row.appendChild(el('input', {
+                type: 'text', className: 'bowire-flow-field-input bowire-flow-assertion-value',
+                placeholder: currentOp === 'regex' ? '^\\d+$' : 'expected',
+                value: assertion.value == null ? '' : String(assertion.value),
+                spellcheck: 'false',
+                onInput: function (e) { node.assertions[idx].value = e.target.value; persistFlows(); },
+            }));
+        }
+
+        row.appendChild(el('button', {
+            className: 'bowire-flow-card-action-btn danger',
+            title: 'Remove expectation',
+            'aria-label': 'Remove expectation',
+            innerHTML: svgIcon('trash'),
+            onClick: function (e) {
+                e.stopPropagation();
+                node.assertions.splice(idx, 1);
+                persistFlows();
+                render();
+            },
+        }));
+        return row;
+    }
+
+    function operatorEntriesForKind(kind) {
+        // Pin the operator menu to what makes sense per kind so users
+        // don't generate "header > 500" rows that can't pass.
+        if (kind === 'latency') {
+            return [
+                { value: 'lt',  label: '<' },
+                { value: 'lte', label: '<=' },
+                { value: 'gt',  label: '>' },
+                { value: 'gte', label: '>=' },
+                { value: 'eq',  label: '==' },
+            ];
+        }
+        if (kind === 'body-text') {
+            return [
+                { value: 'contains', label: 'contains' },
+                { value: 'regex',    label: 'matches' },
+                { value: 'eq',       label: '==' },
+                { value: 'neq',      label: '!=' },
+                { value: 'exists',   label: 'exists' },
+                { value: 'missing',  label: 'missing' },
+            ];
+        }
+        if (kind === 'header') {
+            return [
+                { value: 'eq',       label: '==' },
+                { value: 'neq',      label: '!=' },
+                { value: 'contains', label: 'contains' },
+                { value: 'regex',    label: 'matches' },
+                { value: 'exists',   label: 'exists' },
+                { value: 'missing',  label: 'missing' },
+            ];
+        }
+        // status / body-path get the full mixed menu.
+        return [
+            { value: 'eq',       label: '==' },
+            { value: 'neq',      label: '!=' },
+            { value: 'gt',       label: '>' },
+            { value: 'gte',      label: '>=' },
+            { value: 'lt',       label: '<' },
+            { value: 'lte',      label: '<=' },
+            { value: 'contains', label: 'contains' },
+            { value: 'regex',    label: 'matches' },
+            { value: 'exists',   label: 'exists' },
+            { value: 'missing',  label: 'missing' },
+        ];
+    }
+
+    function isStringOp(op) {
+        return op === 'eq' || op === 'neq' || op === 'contains' || op === 'regex' || op === 'exists' || op === 'missing';
+    }
+    function isNumericOp(op) {
+        return op === 'lt' || op === 'lte' || op === 'gt' || op === 'gte' || op === 'eq';
     }
 
     function createSvgConnector() {
