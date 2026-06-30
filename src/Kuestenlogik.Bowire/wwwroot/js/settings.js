@@ -3024,9 +3024,101 @@
     }
 
     // ---- Data ----
+    // v2.2 W2 — workspace-deletion controls.
+    //
+    // Two app-wide settings drive what happens when the operator deletes
+    // a workspace:
+    //
+    //   bowire_workspace_delete_mode   — 'soft' (default) | 'hard'
+    //   bowire_trash_retention_days    — number (7/14/30) | 'never'  (default 30)
+    //
+    // Both keys are deliberately NOT in _WORKSPACE_DATA_KEYS — they are
+    // a property of THIS install / browser, not a property of any one
+    // workspace. The retention setting drives the trash-auto-purge sweep
+    // wired in prologue.js; the mode setting flips the deleteWorkspace
+    // branch (skip trash entry, write undo snapshot only).
+    var DELETE_MODE_KEY = 'bowire_workspace_delete_mode';
+    var TRASH_RETENTION_KEY = 'bowire_trash_retention_days';
+    function _readDeleteMode() {
+        try {
+            var v = localStorage.getItem(DELETE_MODE_KEY);
+            return v === 'hard' ? 'hard' : 'soft';
+        } catch { return 'soft'; }
+    }
+    function _writeDeleteMode(v) {
+        try { localStorage.setItem(DELETE_MODE_KEY, v === 'hard' ? 'hard' : 'soft'); }
+        catch { /* quota — non-fatal */ }
+    }
+    function _readTrashRetention() {
+        try {
+            var v = localStorage.getItem(TRASH_RETENTION_KEY);
+            if (v === 'never') return 'never';
+            var n = parseInt(v, 10);
+            if (n === 7 || n === 14 || n === 30) return n;
+            return 30;
+        } catch { return 30; }
+    }
+    function _writeTrashRetention(v) {
+        try { localStorage.setItem(TRASH_RETENTION_KEY, String(v)); }
+        catch { /* quota — non-fatal */ }
+    }
+
     function renderSettingsData() {
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: 'Data Management' }));
+
+        // ---- v2.2 W2 — Workspace deletion mode + Trash retention ----
+        section.appendChild(renderSettingsRow(
+            'Workspace deletion',
+            'Soft moves the workspace to Trash so it can be restored within the retention window. Hard deletes immediately; Undo still works briefly via the action log, but the entry won’t be in the Trash.',
+            function () {
+                var current = _readDeleteMode();
+                var select = el('select', {
+                    className: 'bowire-settings-select',
+                    onChange: function (e) {
+                        _writeDeleteMode(e.target.value);
+                        renderSettingsDialog();
+                    }
+                });
+                var opts = [
+                    { value: 'soft', label: 'Soft — move to Trash, recover within retention period' },
+                    { value: 'hard', label: 'Hard — delete immediately, no recovery via Trash' }
+                ];
+                for (var i = 0; i < opts.length; i++) {
+                    var opt = el('option', { value: opts[i].value, textContent: opts[i].label });
+                    if (opts[i].value === current) opt.selected = true;
+                    select.appendChild(opt);
+                }
+                return select;
+            }
+        ));
+
+        section.appendChild(renderSettingsRow(
+            'Trash retention',
+            'How long soft-deleted workspaces (and other trashed entries) stay in the Trash before auto-purge. Ignored when deletion mode is Hard.',
+            function () {
+                var current = _readTrashRetention();
+                var select = el('select', {
+                    className: 'bowire-settings-select',
+                    onChange: function (e) {
+                        var v = e.target.value === 'never' ? 'never' : parseInt(e.target.value, 10);
+                        _writeTrashRetention(v);
+                    }
+                });
+                var opts = [
+                    { value: '7',     label: '7 days' },
+                    { value: '14',    label: '14 days' },
+                    { value: '30',    label: '30 days' },
+                    { value: 'never', label: 'Never auto-purge' }
+                ];
+                for (var j = 0; j < opts.length; j++) {
+                    var opt = el('option', { value: opts[j].value, textContent: opts[j].label });
+                    if (String(current) === opts[j].value) opt.selected = true;
+                    select.appendChild(opt);
+                }
+                return select;
+            }
+        ));
 
         section.appendChild(renderSettingsAction(
             'Clear call history',

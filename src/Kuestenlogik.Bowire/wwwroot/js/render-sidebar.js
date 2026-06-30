@@ -2495,9 +2495,16 @@
                 var target = workspaces.find(function (x) { return x.id === wsId; });
                 if (!target) return;
                 var isLast = workspaces.length === 1;
-                var msg = isLast
+                // v2.2 W2 — Hard-delete branch gets its own warning
+                // copy so the operator can't miss what they're about
+                // to do. Soft-delete keeps the v2.1 copy verbatim.
+                var mode = (typeof getWorkspaceDeleteMode === 'function')
+                    ? getWorkspaceDeleteMode() : 'soft';
+                var hardMsg = 'This workspace will be deleted IMMEDIATELY. Undo will work for the next ~200 actions, but it won’t be in the Trash. Continue?';
+                var softMsg = isLast
                     ? 'Delete the last workspace "' + target.name + '"? You will return to the empty no-workspace state — the underlying URLs / envs / recordings for this workspace are removed.'
                     : 'Delete workspace "' + target.name + '"? The underlying URLs / envs / recordings for this workspace are removed.';
+                var msg = mode === 'hard' ? hardMsg : softMsg;
                 bowireConfirm(
                     msg,
                     function () {
@@ -2528,7 +2535,11 @@
                             });
                         }
                     },
-                    { title: 'Delete workspace', confirmText: 'Delete', danger: true }
+                    {
+                        title: mode === 'hard' ? 'Hard-delete workspace' : 'Delete workspace',
+                        confirmText: mode === 'hard' ? 'Delete forever' : 'Delete',
+                        danger: true
+                    }
                 );
             }
         });

@@ -3024,33 +3024,56 @@
         persistWorkspacesTrash();
     }
 
+    // v2.2 W2 — read the operator's Soft/Hard workspace-delete preference
+    // from localStorage. Defaults to 'soft' so installs that never opt
+    // in see the v2.1 behaviour. Centralised here so deleteWorkspace +
+    // the call sites + the confirm-dialog copy all read from the same
+    // source of truth.
+    function getWorkspaceDeleteMode() {
+        try {
+            var v = localStorage.getItem('bowire_workspace_delete_mode');
+            return v === 'hard' ? 'hard' : 'soft';
+        } catch { return 'soft'; }
+    }
+
     function deleteWorkspace(id) {
         var idx = workspaces.findIndex(function (w) { return w.id === id; });
         if (idx < 0) return false;
         var removed = workspaces[idx];
-        // #194 — soft-delete. Snapshot the workspace metadata + every
-        // per-workspace bucket BEFORE clearing storage so a restore
-        // can re-populate the namespace exactly as it was. The trash
-        // entry shape mirrors recordingsTrash / collectionsTrash so
-        // the global Trash drawer can render it with the same
-        // chrome.
+        // #194 / v2.2 W2 — Snapshot ALWAYS taken. In soft mode it lands
+        // in the trash bucket (for the Trash drawer surface). In hard
+        // mode we skip the trash bucket entirely — no recovery via
+        // the Trash drawer (Undo via the action log still works for
+        // the brief window before the entry times out).
         var snapshot = _snapshotWorkspaceData(id);
-        workspacesTrash.unshift({
-            workspace: JSON.parse(JSON.stringify(removed)),
-            data: snapshot,
-            originalIdx: idx,
-            deletedAt: Date.now()
-        });
-        persistWorkspacesTrash();
+        var mode = getWorkspaceDeleteMode();
+        if (mode !== 'hard') {
+            workspacesTrash.unshift({
+                workspace: JSON.parse(JSON.stringify(removed)),
+                data: snapshot,
+                originalIdx: idx,
+                deletedAt: Date.now()
+            });
+            persistWorkspacesTrash();
+        }
         workspaces.splice(idx, 1);
 
         // Workspace = project folder (#155): per-workspace localStorage
         // namespace gets purged on delete so a leftover wsKeyFor(id, ...)
         // entry doesn't haunt the next workspace that happens to share
-        // a key. The trash entry holds the data snapshot for restore;
-        // here we drop the live namespace so a freshly-created
-        // workspace can claim the same id without colliding.
+        // a key. The trash entry (soft mode) holds the data snapshot
+        // for restore; here we drop the live namespace so a freshly-
+        // created workspace can claim the same id without colliding.
         _purgeWorkspaceData(id);
+        // v2.2 W1 — hard-delete: also wipe disk-side storage so per-
+        // workspace recording chunks don't leak. In soft mode the disk
+        // wipe is deferred to purgeWorkspaceFromTrash (the operator
+        // may still restore from Trash, in which case the disk bytes
+        // are still useful as the soft-delete snapshot can't recreate
+        // them — the chunks are too large for the data snapshot).
+        if (mode === 'hard') {
+            _purgeWorkspaceDiskStorage(id);
+        }
 
         if (activeWorkspaceId === id) {
             if (workspaces.length === 0) {
