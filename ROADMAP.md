@@ -90,7 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**13/23 done** · 10 backlog
+**14/24 done** · 10 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -104,7 +104,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ⬜ Backlog |  |
 | [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | ⬜ Backlog |  |
 | [312](https://github.com/Kuestenlogik/Bowire/issues/312) | Bowire | [Test coverage gap report — v2.1 audit kickoff](#issue-kuestenlogik-bowire-312) | ⬜ Backlog |  |
-| [343](https://github.com/Kuestenlogik/Bowire/issues/343) | Bowire | [feat(v2.2): Regression Coverage surface — per-method run history + Discover sidebar chips (T3)](#issue-kuestenlogik-bowire-343) | ✅ Done |  |
+| [344](https://github.com/Kuestenlogik/Bowire/issues/344) | Bowire | [feat(v2.2): bowire test CLI — flow runner + JUnit XML + HTML report (T2)](#issue-kuestenlogik-bowire-344) | ✅ Done |  |
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ✅ Done |  |
 | [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ✅ Done |  |
 | [315](https://github.com/Kuestenlogik/Bowire/issues/315) | Bowire | [Unify Proxy + Intercepted into 'Traffic' rail (Standalone / Embedded sub-modes); Mocks stays separate](#issue-kuestenlogik-bowire-315) | ✅ Done |  |
@@ -117,6 +117,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [340](https://github.com/Kuestenlogik/Bowire/issues/340) | Bowire | [feat(v2.2): plugin lifecycle backend — Restart / Unload / Load / Reset-storage / Health](#issue-kuestenlogik-bowire-340) | ✅ Done |  |
 | [341](https://github.com/Kuestenlogik/Bowire/issues/341) | Bowire | [feat(v2.2): swap reverse-proxy forwarding to YARP IHttpForwarder](#issue-kuestenlogik-bowire-341) | ✅ Done |  |
 | [342](https://github.com/Kuestenlogik/Bowire/issues/342) | Bowire | [feat(v2.2): Flow Assertions — expectations schema + runtime evaluator + UI editor (T1 — Test Pillar foundation)](#issue-kuestenlogik-bowire-342) | ✅ Done |  |
+| [343](https://github.com/Kuestenlogik/Bowire/issues/343) | Bowire | [feat(v2.2): Regression Coverage surface — per-method run history + Discover sidebar chips (T3)](#issue-kuestenlogik-bowire-343) | ✅ Done |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
@@ -587,9 +588,9 @@ Follow-up to #294. Phases A-F shipped the descriptor architecture + extracted Se
 
 Recon report for the v2.2 test pillar lands at [`docs/testing/coverage-gaps-v2.1.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/testing/coverage-gaps-v2.1.md). This issue tracks the kickoff; per-gap follow-ups should reference back to this one. [[more]](https://github.com/Kuestenlogik/Bowire/issues/312)
 
-#### <a id="issue-kuestenlogik-bowire-343"></a>✅ Done · [#343](https://github.com/Kuestenlogik/Bowire/issues/343) feat(v2.2): Regression Coverage surface — per-method run history + Discover sidebar chips (T3)
+#### <a id="issue-kuestenlogik-bowire-344"></a>✅ Done · [#344](https://github.com/Kuestenlogik/Bowire/issues/344) feat(v2.2): bowire test CLI — flow runner + JUnit XML + HTML report (T2)
 
-Independent Test Pillar stream. Per-method run-history aggregation surface: every direct invoke / Compose request / flow execution / benchmark / recording-replay logs a run; Discover sidebar method-items pick up a coverage chip; Settings → Data carries the full history view. [[more]](https://github.com/Kuestenlogik/Bowire/issues/343)
+v2.2 Test Pillar middle stream — depends on T1 (#342) for the assertion model. Sits on top of the existing in-process `TestRunner` so the CLI is self-contained (no sidecar Bowire UI required). [[more]](https://github.com/Kuestenlogik/Bowire/issues/344)
 
 #### <a id="issue-kuestenlogik-bowire-180"></a>✅ Done · [#180](https://github.com/Kuestenlogik/Bowire/issues/180) Assertion DSL for collection / recording replay
 
@@ -638,6 +639,10 @@ Migrates Bowire's reverse-proxy host from raw `HttpClient` to YARP's `IHttpForwa
 #### <a id="issue-kuestenlogik-bowire-342"></a>✅ Done · [#342](https://github.com/Kuestenlogik/Bowire/issues/342) feat(v2.2): Flow Assertions — expectations schema + runtime evaluator + UI editor (T1 — Test Pillar foundation)
 
 Foundation of the v2.2 Test Pillar milestone. Each Flow step gains an optional `expectations` array; runtime evaluates after each step's request; UI editor inline with per-kind operator menus. [[more]](https://github.com/Kuestenlogik/Bowire/issues/342)
+
+#### <a id="issue-kuestenlogik-bowire-343"></a>✅ Done · [#343](https://github.com/Kuestenlogik/Bowire/issues/343) feat(v2.2): Regression Coverage surface — per-method run history + Discover sidebar chips (T3)
+
+Independent Test Pillar stream. Per-method run-history aggregation surface: every direct invoke / Compose request / flow execution / benchmark / recording-replay logs a run; Discover sidebar method-items pick up a coverage chip; Settings → Data carries the full history view. [[more]](https://github.com/Kuestenlogik/Bowire/issues/343)
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
