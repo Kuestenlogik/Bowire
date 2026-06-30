@@ -21,7 +21,7 @@ The Compose rail is the canonical surface for managing collections: editing item
 
 ### Standalone Collections rail (optional)
 
-The dedicated full-pane Collections editor still ships, but it's **off by default** as of v2.0. Operators who want the dedicated editor back can re-enable it via **Settings &rarr; Rail modes** &rarr; check **Collections**. Once enabled, the rail-strip icon, the workspace-tree `Collections` node, and the per-method `C` pill all reappear.
+The dedicated full-pane Collections editor still ships, but it's **off by default** as of v2.0 and retired as a standalone package in v2.1 ([release notes — Breaking changes](../release-notes/v2.1.0.md#breaking-changes)). Operators who want the dedicated editor back can re-enable it via **Settings &rarr; Rails** &rarr; check **Collections**. Once enabled, the rail-strip icon, the workspace-tree `Collections` node, and the per-method `C` pill all reappear.
 
 Re-enabling does not change the dispatch path: `railMode === 'collections'` keeps working for embedded hosts that route there programmatically (deep links, custom shells), regardless of the toggle.
 
@@ -140,4 +140,4 @@ Share `.bwc` files with teammates or commit them to version control.
 - Import Postman collections to **migrate existing API test suites** into Bowire without recreating every request manually.
 - Combine with [Flows](flows.md) when you need conditions, delays, or variable capture between steps.
 
-See also: [Flows](flows.md), [Request Chaining](response-chaining.md), [Environments & Variables](environments.md), [Export & Import](export-import.md)
+See also: [Compose](compose.md), [Flows](flows.md), [Request Chaining](response-chaining.md), [Workspaces](workspaces.md), [Export & Import](export-import.md)

@@ -10,7 +10,7 @@ summary: 'Inspect, validate, and tamper with JSON Web Tokens via `bowire jwt`. D
 * **`bowire jwt decode`** — split header / payload / signature, validate temporal claims, list every present claim.
 * **`bowire jwt tamper`** — probe `alg: none` acceptance, re-sign with a chosen secret, override individual claims.
 
-It ships in the same binary as [`bowire scan`](scan.md), [`bowire fuzz`](fuzz.md), and [`bowire proxy`](proxy.md). Authentication for live API calls is a separate concern — see [Authentication](authentication.md) for the workbench's auth-helper panel.
+It ships in the same binary as [`bowire scan`](scan.md), [`bowire fuzz`](fuzz.md), and [`bowire proxy`](interceptor.md). Authentication for live API calls is a separate concern — see [Authentication](authentication.md) for the workbench's auth-helper panel.
 
 ## Decode — inspect a token
 

@@ -64,6 +64,6 @@ Same as [`bowire scan`](scan.md) — exits 0 whenever the fuzz ran end-to-end. F
 ## Related
 
 * [`bowire scan`](scan.md) — vulnerability templates against a target
-* [`bowire proxy`](proxy.md) — capture real sessions as templates for the fuzzer
+* [Interceptor / `bowire proxy`](interceptor.md) — capture real sessions as templates for the fuzzer
 * [Recording](recording.md) — `.bwr` format the fuzzer reads as its baseline
 * [Security-testing ADR](../architecture/security-testing.md)

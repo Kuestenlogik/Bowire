@@ -1,7 +1,6 @@
 ---
 title: Performance
-title: Performance
-summary: 'Bowire ships a built-in micro-benchmarker for any unary method.'
+summary: 'Bowire ships a built-in micro-benchmarker for any unary method. v2.1 ships the rail as `Kuestenlogik.Bowire.Benchmarking` (renamed from `Rail.Benchmarks`).'
 ---
 
 # Performance Graphs
@@ -105,5 +104,5 @@ The benchmark state is **in memory only** and is reset whenever you start a new 
 - **Use small N first** -- start with 100 calls to spot configuration mistakes before running 5000.
 - **Watch the Console** -- the [Console / Log View](console.md) gets a single REQ entry at the start of the benchmark and a RES entry at the end with the totals. Individual calls are not logged (they would flood the buffer).
 - **Bump concurrency carefully** -- the browser fetches go out simultaneously up to the concurrency limit. With high concurrency you're benchmarking your network stack and the server's ability to handle parallel requests, not single-call latency.
-- **Combine with [Environments](environments.md)** -- benchmark the same call against Dev, then Staging, then Prod by switching environments. The results are not retained across switches, so screenshot or copy the stats first.
+- **Combine with [Workspaces](workspaces.md)** -- benchmark the same call against Dev, then Staging, then Prod by switching workspaces. The results are not retained across switches, so screenshot or copy the stats first.
 - **Compare percentiles, not averages** -- the average can hide a long tail. p99 is the number that matters for user-facing latency.

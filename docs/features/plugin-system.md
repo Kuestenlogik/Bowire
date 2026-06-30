@@ -1,6 +1,6 @@
 ---
 title: Plugin system
-summary: 'Bowire uses a plugin architecture with four extension points — protocol plugins, CLI subcommands, mock-replay emitters, and UI widgets — all discovered via assembly scanning at startup.'
+summary: 'Bowire uses a plugin architecture with four extension points — protocol plugins, CLI subcommands, mock-replay emitters, and UI widgets — all discovered via assembly scanning at startup. v2.1 organises Settings by extension point under a top-level Plugins parent.'
 ---
 
 # Plugin System

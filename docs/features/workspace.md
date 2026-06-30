@@ -230,4 +230,4 @@ Collections stored in the workspace are loaded alongside any user-level collecti
 - For one-off sharing (sending a workspace to a teammate, archiving a snapshot before a big change), use `.bww` export — single file, easy to attach.
 - For open-source projects, include a `workspace.example.json` (or a `.bww` with placeholder tokens) so contributors can get started quickly.
 
-See also: [Environments & Variables](environments.md), [Collections](collections.md)
+See also: [Workspaces (rail + env vars)](workspaces.md), [Collections](collections.md)

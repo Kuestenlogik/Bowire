@@ -3,13 +3,64 @@ title: Environments
 summary: 'Named environments with {{var}} placeholder substitution.'
 ---
 
-# Environments & variables
+# Workspaces
 
-Named environments with `{{var}}` placeholder substitution. Define variables once, reuse them across requests, and switch between Dev / Staging / Prod with a single dropdown.
+A **workspace** is Bowire's project-folder abstraction. Every URL you discover, every collection, every recording, every benchmark, every flow, every `{{var}}` you reference lives inside one. The workbench always has exactly one active workspace; switching workspaces switches every list, every URL binding, and the variable resolution table all at once.
 
-## How it works
+Workspaces replace the v1.x **Environments** concept. Where v1.x had a separate Environments rail and a separate Workspaces rail, v2.1 folds both into one: env vars are now **workspace-scoped** and ship in the same `Kuestenlogik.Bowire.Workspaces` package as the rail itself ([release notes — Welle 2](../release-notes/v2.1.0.md#welle-2--rail-prefix-dropped-interceptor-consolidated-325)). The `Kuestenlogik.Bowire.Rail.Environments` package was retired in v2.1.
 
-Anywhere a request needs a value -- request body JSON, metadata values, the server URL field -- you can use `{{name}}` placeholders. Before the request fires, Bowire replaces them with values from the **active environment**, falling back to **global variables** when an environment doesn't define the key.
+> **ASP.NET environments are unchanged.** This page is about Bowire workspaces. ASP.NET's `Development` / `Staging` / `Production` environments (`appsettings.Development.json`, `IHostEnvironment`, etc.) are a separate concept and are not affected by anything described here.
+
+## The Workspace switcher
+
+The topbar's left cluster shows the active workspace's name, color chip, and a chevron. Click the chevron to open the switcher dropdown.
+
+The dropdown lists every workspace with:
+
+- A color chip (the same swatch shown in the topbar)
+- The workspace name
+- A last-used timestamp
+- Hover-revealed `…` menu — Rename, Duplicate, Export to `.bww`, Delete
+
+Below the list:
+
+- **+ New workspace** — opens the create dialog (name, color picker, optional URL seed)
+- **Import workspace…** — accepts a `.bww` file
+- **Manage workspaces…** — opens the Workspaces rail full-pane editor
+
+Pick a workspace and the workbench swaps every sidebar list in-place: URLs, collections, recordings, benchmarks, flows, env vars. The change is animation-free so the operator never loses orientation.
+
+## Color picker
+
+Each workspace carries a color from Bowire's tasteful palette (sky / emerald / amber / violet / rose / slate). The color shows up in:
+
+- The topbar workspace chip
+- The switcher dropdown
+- The browser favicon while the workspace is active (the Bowire mark is tinted with the workspace color)
+- Recording / collection / flow row decorations when surfacing cross-workspace lists
+
+Pick a color when creating the workspace; change it later via **Rename… → Color**. Color is purely visual — no behaviour hangs off it.
+
+## URL bindings are per workspace
+
+When you add a source URL in the Discover rail, the binding is stored against the **active workspace**, not against the Bowire install. Switch to another workspace and the URL list switches with it.
+
+This is the v2.1 fix for the v1.x complaint "I added `http://localhost:5001` in my Petstore project and now it shows up in my Acme project too". URLs live in `bowire_ws_<id>_server_urls` in localStorage (or in the workspace's on-disk directory if you're using `Workspace.Git`); the legacy install-wide `bowire_server_urls` key migrates into the first workspace on first boot of v2.1.
+
+## Machine scope vs. workspace scope
+
+Bowire stores two kinds of state:
+
+| Scope | Lives in | Examples |
+|---|---|---|
+| **Workspace** | `bowire_ws_<id>_*` keys + the workspace's `.bww` / directory | URLs, collections, recordings, benchmarks, flows, env vars, secrets, presets |
+| **Machine** | Bowire's app storage (`~/.bowire/app.json`) | The list of workspaces itself, the active workspace id, theme preference, plugin install state, rail enable/disable, settings.json |
+
+The line is deliberately drawn around "things that should travel with a `.bww`" vs. "things that describe this Bowire install". The Workspaces rail (workspace list itself) lives in machine scope — the operator's list of projects describes the operator's machine, not any one project.
+
+## Environment variables (`{{var}}`)
+
+Variable substitution is per-workspace. Anywhere a request needs a value — body JSON, metadata, the URL field — you can use `{{name}}` placeholders. Before the request fires, Bowire substitutes them from the workspace's env-var table.
 
 ```json
 {
@@ -25,11 +76,11 @@ To emit a literal `{{name}}` without substitution, double the braces: `{{{{name}
 
 ### Source prefixes
 
-`{{name}}` resolves through environment variables and globals by default. Prefixes route the lookup to a specific source:
+`{{name}}` resolves through workspace variables and globals by default. Prefixes route the lookup to a specific source:
 
 | Prefix | Example | Source |
 |--------|---------|--------|
-| `env.` | `{{env.baseUrl}}` | Active environment + globals (same as bare) |
+| `env.` | `{{env.baseUrl}}` | Active workspace + globals (same as bare) |
 | `prev.` | `{{prev.token}}` | Last response body (JSON path) |
 | `step<N>.` | `{{step1.id}}` | Response of step N in the active recording |
 | `runtime.` | `{{runtime.now}}`, `{{runtime.uuid}}` | Built-in system values (see below) |
@@ -39,7 +90,7 @@ To emit a literal `{{name}}` without substitution, double the braces: `{{{{name}
 
 ### System variables (`runtime.*`)
 
-These don't need to be defined anywhere -- they resolve at substitution time. Useful for JWT claims (iat/exp), correlation IDs, and any time-bound or random values in test requests.
+These don't need to be defined anywhere — they resolve at substitution time. Useful for JWT claims (iat/exp), correlation IDs, and any time-bound or random values in test requests.
 
 | Placeholder | Value |
 |-------------|-------|
@@ -54,58 +105,9 @@ These don't need to be defined anywhere -- they resolve at substitution time. Us
 
 Bowire's original Bash-style placeholders (`${name}`, escape `$${name}`) still resolve through the same dispatch table for backwards compatibility, but they are **deprecated** ([#145](https://github.com/Kuestenlogik/Bowire/issues/145)). Every new surface (autocomplete, AI prompts, empty-state copy, examples in this doc) emits the canonical `{{name}}` form only.
 
-To convert a workspace in one go, open **Settings → Data → Migrate ${name} → {{name}}**. The migration walks every recording, collection, freeform request, flow, environment variable and global, rewrites in place, and persists the change immediately. It is idempotent: re-running on already-migrated data does nothing. The legacy mapping is:
-
-| From | To |
-|------|----|
-| `${name}` | `{{name}}` |
-| `${env.NAME}` | `{{env.NAME}}` |
-| `${response.path}` | `{{prev.path}}` |
-| `${response}` | `{{prev}}` |
-| `${now}` / `${nowMs}` / `${timestamp}` | `{{runtime.now}}` / `{{runtime.nowMs}}` / `{{runtime.timestamp}}` |
-| `${uuid}` / `${random}` | `{{runtime.uuid}}` / `{{runtime.random}}` |
-| `${now+N}` / `${now-N}` | `{{runtime.now+N}}` / `{{runtime.now-N}}` |
-| `$${name}` (literal-emit escape) | `{{{{name}}}}` (quadruple-brace escape) |
+To convert a workspace in one go, open **Settings → Data → Migrate ${name} → {{name}}**. The migration walks every recording, collection, freeform request, flow, env var and global, rewrites in place, and persists the change immediately. It is idempotent: re-running on already-migrated data does nothing.
 
 A one-time toast surfaces on workspace load when legacy placeholders are detected; **Migrate now** runs the same conversion the Settings action does, **Snooze** dismisses it for this workspace.
-
-## The environment selector
-
-The sidebar shows a globe icon followed by the environment dropdown. The badge next to it counts how many variables are currently available (globals + active environment). Click the gear icon to open the manager.
-
-| Element | Purpose |
-|---------|---------|
-| Globe icon | Visual marker for the environment row |
-| Dropdown | Switch active environment (or "No environment") |
-| Count badge | Total variables resolvable right now |
-| Gear button | Open the environments manager |
-
-## The manager modal
-
-The manager has two panes:
-
-- **Left pane** -- list of environments with a `+` button to create new ones, plus a separate **Globals** entry at the bottom and Import / Export / Clear all buttons.
-- **Right pane** -- variable editor for whatever is selected on the left.
-
-For each environment you can:
-
-- Rename it (the input at the top of the right pane)
-- Add and remove key/value pairs
-- Delete the entire environment with the trash icon
-
-Variables are stored as plain strings. To pass numbers, booleans or JSON objects through a placeholder, just write the value -- the substitution is textual and the result is interpreted by the request body parser.
-
-## Globals vs. environment variables
-
-| Scope | Defined in | Overridden by |
-|-------|-----------|---------------|
-| **Globals** | The "Globals" entry in the manager | Active environment with the same key |
-| **Environment** | Per-environment variable list | -- |
-
-A typical setup:
-
-- Globals: `apiVersion`, `userAgent`, things that never change
-- Each environment: `baseUrl`, `apiKey`, `token`, things that differ per stage
 
 ## Where variables are substituted
 
@@ -117,54 +119,34 @@ Substitution happens client-side, just before the request is sent. It applies to
 | Metadata values | `Authorization: Bearer {{token}}` |
 | Server URL field | `https://{{baseUrl}}` |
 | Channel send messages (duplex / client streaming) | Same as request body |
+| Compose rail URL / body / headers | Same dispatch table |
 
-Metadata **keys** are not substituted -- only values.
+Metadata **keys** are not substituted — only values.
+
+## The `.bww` file format
+
+A workspace is portable. The Workspaces rail's per-row **Export to `.bww`** action writes a single JSON file containing the full workspace state: URLs, collections, recordings, benchmarks, flows, env vars, globals, presets. Import via the switcher's **Import workspace…** entry or by passing a `.bww` path to the create dialog.
+
+The full schema reference lives at [docs/features/workspace.md](workspace.md) — same canonical v2 envelope produced by both the workbench's Save-as flow and the `bowire workspace export` CLI.
+
+## The Workspaces rail
+
+Open the Workspaces rail from the rail strip for the full-pane editor. It surfaces:
+
+- The workspace list with manual ordering (drag-handle on each row) and a sort dropdown (last-used / created / alphabetical / manual) (#279)
+- A workspace detail pane showing URLs, collections, recordings, env vars, secrets
+- Per-row trash icon (soft delete; restorable from the topbar's aggregated Trash drawer)
+
+Operator-saved sort preference + manual ordering persist in `bowire_workspaces_sort` and survive a rebuild of the underlying workspace list.
 
 ## Persistence
 
-Bowire stores environments in two places, kept in sync automatically:
+Workspace state is stored in two places, kept in sync:
 
-1. **Browser localStorage** (`bowire_environments`, `bowire_global_vars`, `bowire_active_env`) -- instant updates, no server roundtrip.
-2. **Disk** at `~/.bowire/environments.json` -- survives browser changes, profile switches, and CLI runs. Same folder used for plugins.
+1. **Browser localStorage** (`bowire_ws_<id>_*`, `bowire_workspaces`, `bowire_active_workspace_id`) — instant updates, no server roundtrip.
+2. **Disk** at `~/.bowire/` — survives browser changes, profile switches, and CLI runs. The same folder used for plugins.
 
-On startup, Bowire loads from disk first, so opening Bowire in a fresh browser still shows your environments. Every change in the manager is debounced (400 ms) and pushed back to disk.
-
-The disk file is plain JSON and human-readable -- you can edit it in any text editor when Bowire is closed:
-
-```json
-{
-  "globals": {
-    "apiVersion": "v2"
-  },
-  "environments": [
-    {
-      "id": "env_abc123",
-      "name": "Dev",
-      "vars": {
-        "baseUrl": "localhost:5001",
-        "token": "dev-token-xyz"
-      }
-    },
-    {
-      "id": "env_def456",
-      "name": "Prod",
-      "vars": {
-        "baseUrl": "api.example.com",
-        "token": "prod-token-secret"
-      }
-    }
-  ],
-  "activeEnvId": "env_abc123"
-}
-```
-
-## Import / Export / Clear all
-
-The manager footer has three buttons:
-
-- **Export** downloads `bowire-environments.bwe` containing all environments, globals and the active id.
-- **Import** loads a previously exported file, replacing the current state.
-- **Clear all** wipes everything -- both the localStorage cache and `~/.bowire/environments.json` on disk. This is irreversible and prompts for confirmation.
+On startup, Bowire loads from disk first, so opening Bowire in a fresh browser still shows your workspaces. Every change is debounced (400 ms) and pushed back to disk.
 
 ## REST API
 
@@ -172,15 +154,28 @@ The disk store is also exposed as a tiny REST API for tooling and CI scenarios:
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
-| `/bowire/api/environments` | `GET` | Returns the current document |
-| `/bowire/api/environments` | `PUT` | Replaces the document (validates JSON) |
-| `/bowire/api/environments` | `DELETE` | Resets to an empty document |
+| `/bowire/api/workspaces` | `GET` | Returns the workspace list |
+| `/bowire/api/workspaces/<id>` | `GET` | Returns one workspace's full document |
+| `/bowire/api/workspaces/<id>` | `PUT` | Replaces the document (validates JSON) |
+| `/bowire/api/workspaces/<id>` | `DELETE` | Soft-deletes the workspace |
 
-The browser uses these endpoints internally; you can call them yourself to seed environments from a script.
+The browser uses these endpoints internally; you can call them yourself to seed workspaces from a script.
+
+The legacy `/bowire/api/environments` endpoints stay mounted for one release window so existing CI scripts keep working — they now route to the active workspace's env-var table.
 
 ## Tips
 
-- Use globals for things that never change, environments for things that do.
-- Name your environments after your deployment targets (`Dev`, `Staging`, `Prod`) or per-customer (`Acme`, `Globex`).
-- Variables are great for **bearer tokens** -- store them once in an environment, reference as `Bearer {{token}}` in metadata, and rotate them in one place.
-- Combine with [Favorites](favorites-history.md) to quickly switch between environments while exercising the same set of starred methods.
+- Use a separate workspace per project / customer. Switching is cheap; the topbar chip + favicon tint give you visual confirmation you're in the right one.
+- Pick distinctive colors for your most-active workspaces. The favicon tint is the fastest "am I in Prod?" check.
+- Combine with [Collections](collections.md) and [Recordings](recording.md) to ship a smoke-test bundle as a single `.bww` export.
+
+## Screenshot
+
+![Workspace switcher dropdown — color chips, active workspace highlighted](../images/screenshots/workspaces-switcher.png)
+
+## See also
+
+- [Workspace file format](workspace.md) — the `.bww` schema reference + the `Workspace.Git` per-entity directory layout
+- [Collections](collections.md) — managed from the Compose rail; ride along in the workspace's `.bww`
+- [Export & import](export-import.md) — `.bww` round-trips, HAR / cURL / Postman interchange
+- [Settings](settings.md) — the `Workspaces` rail toggle + the `${name}` → `{{name}}` migration action

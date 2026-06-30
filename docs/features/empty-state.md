@@ -1,11 +1,22 @@
 ---
 title: Empty state
-summary: 'When no method is selected in the sidebar, Bowire renders a context-sensitive landing page.'
+summary: 'When no method is selected in the sidebar, Bowire renders a context-sensitive landing page. v2.1 adds a workspace-required state for hosts launched without a workspace pinned.'
 ---
 
 # Empty-state landing
 
-When no method is selected in the sidebar, Bowire renders a context-sensitive landing page. It detects one of seven distinct states and shows the guidance relevant to that situation &mdash; the first-run welcome, a multi-URL status table, a discovery-failed error, or the "ready" summary once a service is connected.
+When no method is selected in the sidebar, Bowire renders a context-sensitive landing page. It detects one of eight distinct states (seven in v2.0, plus the v2.1 workspace-required state) and shows the guidance relevant to that situation &mdash; the first-run welcome, a workspace-required prompt, a multi-URL status table, a discovery-failed error, or the "ready" summary once a service is connected.
+
+## State 8 — `workspace-required` (new in v2.1)
+
+The workbench booted without an active workspace and the install isn't configured to seed a default. Bowire surfaces a friendly prompt asking the operator to create a workspace before any other state can resolve.
+
+- **Headline**: "Pick a workspace to continue"
+- **Primary CTA**: **+ Create workspace** — opens the create dialog (name, color picker, optional URL seed)
+- **Secondary CTA**: **Import .bww file** — drops the import flow
+- **Tertiary**: link to the [Workspaces](workspaces.md) topic in the Help rail
+
+The state appears the first time Bowire is launched on a fresh machine (or after a workspace delete leaves the list empty). Standalone Tool installs seed a default workspace on first boot so the state is rare; embedded hosts that mount `MapBowire()` without seeding hit it on every fresh visitor.
 
 ## State 7 — `ready` (the most common)
 

@@ -1,6 +1,6 @@
 ---
 title: Mock server
-summary: 'Turn any Bowire recording into a standalone HTTP mock server that replays the captured responses — no live backend required.'
+summary: 'Turn any Bowire recording into a standalone HTTP mock server that replays the captured responses — no live backend required. v2.1 ships the mock host + the Mocks rail in one `Kuestenlogik.Bowire.Mock` package.'
 ---
 
 # Mock Server
@@ -634,9 +634,9 @@ Check recording files into the repo and spin up a mock in CI for deterministic i
 
 Recorded responses are stable and repeatable. Point your demo client at the mock and you get the same result every run, regardless of what the live backend is doing.
 
-### Environment switching
+### Workspace switching
 
-Combine with [Environments](environments.md): set `${baseUrl}` to `http://localhost:6000` in a "Mock" environment and flip between mock and real backend from the Bowire UI without touching the client code.
+Combine with [Workspaces](workspaces.md): set `{{baseUrl}}` to `http://localhost:6000` in a "Mock" workspace and flip between mock and real backend from the Bowire UI without touching the client code.
 
 ## gRPC replay
 
