@@ -682,6 +682,13 @@
                     if (favXfStrip) item.appendChild(favXfStrip);
                 }
 
+                // v2.2 T3 — coverage chip on favorites too. Same
+                // glyphs + tooltip as the main sidebar list.
+                if (available && typeof renderCoverageChip === 'function') {
+                    var favCovChip = renderCoverageChip(row.svc.name, row.method.name);
+                    if (favCovChip) item.appendChild(favCovChip);
+                }
+
                 // Executing indicator (pulsing play icon, only when active)
                 var favExecuting = available && isJobActive(row.svc.name, row.method.name);
                 if (favExecuting) {
@@ -4873,17 +4880,24 @@
                             showContextMenu(e.clientX, e.clientY, items);
                         }
                     },
-                        // Order: [name (flex:1)] [deprecated] [star] [badge]
+                        // Order: [name (flex:1)] [deprecated] [coverage] [star] [badge]
                         // — method name leads the row, tags/indicators
                         // cluster on the right, type badge (SS/CS/DX/U)
                         // at the far right. User preference: the
                         // identifying word comes first, metadata after.
+                        // v2.2 T3 — coverage chip slots between the
+                        // deprecated tag and the favorite star so the
+                        // visual rhythm is consistent regardless of
+                        // whether either of the optional tags is shown.
                         el('span', {
                             className: 'bowire-method-name' + (m.deprecated ? ' deprecated' : ''),
                             title: m.summary || m.description || m.name,
                             textContent: m.name
                         }),
                         m.deprecated ? el('span', { className: 'bowire-method-deprecated-tag', textContent: 'DEPR' }) : null,
+                        (typeof renderCoverageChip === 'function')
+                            ? renderCoverageChip(svc.name, m.name)
+                            : null,
                         (function (svcName, methodName) {
                             var fav = isFavorite(svcName, methodName);
                             return el('span', {

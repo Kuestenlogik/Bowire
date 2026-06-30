@@ -24233,3 +24233,31 @@ not as the
 .bowire-subscriptions-row-context-item:hover {
     background: color-mix(in srgb, var(--bowire-bg-elevated) 80%, var(--bowire-accent) 16%);
 }
+
+/* ===== v2.2 T3 — Regression Coverage chip (Discover sidebar) ===== */
+
+/* Per-method chip on the Discover sidebar. Color-blind-friendly:
+   each state uses a distinct glyph (●  ◐  ✕  ○) on top of a distinct
+   hue so the readout doesn't rely on color alone. Tucks in next to
+   the deprecated tag in the method-item flex row. */
+.bowire-method-coverage-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    font-size: 10px;
+    line-height: 1;
+    flex-shrink: 0;
+    cursor: default;
+    user-select: none;
+    opacity: 0.85;
+    transition: opacity 120ms ease;
+}
+.bowire-method-coverage-chip:hover { opacity: 1; }
+
+.bowire-method-coverage-recent    { color: #10b981; }   /* emerald  ● */
+.bowire-method-coverage-stale     { color: #f59e0b; }   /* amber   ◐ */
+.bowire-method-coverage-failing   { color: #ef4444; }   /* red     ✕ */
+.bowire-method-coverage-uncovered { color: var(--bowire-text-tertiary, #94a3b8); } /* slate ○ */
