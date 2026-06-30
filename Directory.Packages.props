@@ -160,5 +160,14 @@
          noise before tokenising. The on-the-wire body stays raw
          markdown so the client renderer keeps full control. -->
     <PackageVersion Include="Markdig" Version="1.3.2" />
+    <!-- YARP — direct-forwarding mode (IHttpForwarder.SendAsync) for
+         the standalone reverse-proxy host shipped by the Interceptor
+         package (#323, follow-up to #153 / #307). Replaces the
+         hand-rolled HttpClient forwarder with YARP's HTTP/2-aware
+         streaming-safe forwarder + HttpTransformer hooks. Pinned
+         here so the Interceptor package's csproj inherits the
+         version; Core does not reference YARP — embedded hosts that
+         only need the in-process middleware never pull YARP in. -->
+    <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
   </ItemGroup>
 </Project>
