@@ -13,6 +13,8 @@ items:
   href: protocols/
 - name: Samples
   href: samples/
+- name: Extend Bowire
+  href: extending/
 - name: Architecture
   href: architecture/
 - name: API Reference
