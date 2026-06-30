@@ -3,12 +3,15 @@
 
 using System.Diagnostics;
 using System.Text.Json;
+using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Plugins;
 using Kuestenlogik.Bowire.Semantics.Extensions;
+using Kuestenlogik.Bowire.Telemetry;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Kuestenlogik.Bowire.Endpoints;
@@ -272,7 +275,57 @@ internal static class BowirePluginEndpoints
                 status = r.Status.ToString(),
                 errorMessage = r.ErrorMessage,
             }).ToArray();
-            return Results.Ok(new { plugins = entries });
+
+            // Lifecycle status for every protocol currently visible to
+            // the host — "active" when in the live registry, "disabled"
+            // when sitting in the runtime DisabledPlugins store, "errored"
+            // when the loader recorded a non-Loaded status for the same
+            // package id. The frontend keys on plugin id so the same row
+            // can render the load-result + the runtime-disabled badge
+            // without two round-trips.
+            var registry = BowireEndpointHelpers.GetRegistry();
+            var disabled = BowireDisabledPluginsStore.Snapshot();
+            var loaderById = latest
+                .GroupBy(r => r.PackageId, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+            var lifecycleRows = new List<object>();
+            foreach (var protocol in registry.Protocols)
+            {
+                lifecycleRows.Add(new
+                {
+                    id = protocol.Id,
+                    name = protocol.Name,
+                    lifecycle = disabled.Contains(protocol.Id) ? "disabled" : "active",
+                });
+            }
+            foreach (var id in disabled)
+            {
+                if (registry.GetById(id) is not null) continue;
+                lifecycleRows.Add(new
+                {
+                    id,
+                    name = id,
+                    lifecycle = "disabled",
+                });
+            }
+            foreach (var (packageId, result) in loaderById)
+            {
+                if (result.Status == PluginLoading.PluginLoadStatus.Loaded ||
+                    result.Status == PluginLoading.PluginLoadStatus.AlreadyLoaded)
+                    continue;
+                // Loader failed before the protocol could be discovered —
+                // surface it as "errored" so the UI can still render a
+                // row for the operator to act on.
+                lifecycleRows.Add(new
+                {
+                    id = packageId,
+                    name = packageId,
+                    lifecycle = "errored",
+                });
+            }
+
+            return Results.Ok(new { plugins = entries, lifecycle = lifecycleRows });
         }).ExcludeFromDescription();
 
         // List the protocol ids currently registered in the
@@ -456,34 +509,17 @@ internal static class BowirePluginEndpoints
             }
         }).ExcludeFromDescription();
 
-        // #325 (revisited) — per-plugin lifecycle stub.
-        //
-        // Settings → Plugins surfaces Load / Unload / Restart / Reset-
-        // storage buttons per loaded plugin. The runtime side of those
-        // verbs (assembly hot-unload, IBowirePlugin lifecycle hooks,
-        // per-plugin storage reset) is v2.2 scope; v2.1 just needs a
-        // stable endpoint shape so the UI can render the version gate
-        // inline without sprinkling 'TODO' hardcoded into the frontend.
-        //
-        // Returns 501 with a problem-details body announcing the verb
-        // is v2.2 scope. The frontend reads the `title` field and
-        // surfaces it as a banner under the action button row.
+        // Per-plugin lifecycle endpoint — Settings → Plugins surfaces
+        // Load / Unload / Restart / Reset-storage buttons per loaded
+        // plugin. Implementation is per-action: protocol plugins get
+        // the full set, contribution-only packages (rails / modules /
+        // UI extensions) get an informative 501 because their lifecycle
+        // hooks land alongside the IBowireContributionLifecycle contract
+        // in a later release.
         endpoints.MapPost($"{basePath}/api/plugins/{{pluginId}}/lifecycle/{{action}}",
             (string pluginId, string action, HttpContext ctx) =>
-            {
-                return BowireEndpointHelpers.Problem(
-                    type: "urn:bowire:plugin:lifecycle-stub",
-                    title: $"Plugin lifecycle action '{action}' is available in v2.2",
-                    status: 501,
-                    detail: "v2.1 lists installed plugins and supports install / update / uninstall via dotnet tool. Runtime load / unload / restart / reset-storage land in v2.2 alongside the IBowirePlugin lifecycle contract.",
-                    instance: ctx.Request.Path,
-                    extensions: new Dictionary<string, object?>
-                    {
-                        ["pluginId"] = pluginId,
-                        ["action"] = action,
-                        ["availableIn"] = "v2.2",
-                    });
-            }).ExcludeFromDescription();
+                HandleLifecycleAction(pluginId, action, ctx))
+            .ExcludeFromDescription();
 
         // Read the last persisted snapshot + whether the background
         // checker is enabled. Used by the sidebar badge to render
@@ -504,6 +540,352 @@ internal static class BowirePluginEndpoints
         }).ExcludeFromDescription();
 
         return endpoints;
+    }
+
+    /// <summary>
+    /// Lifecycle-action dispatcher. Each verb gets its own private
+    /// implementation; this method just routes by action name and
+    /// surfaces a uniform <c>{ ok, error?, type? }</c> body. Telemetry
+    /// + structured log line emitted once per call regardless of
+    /// outcome.
+    /// </summary>
+    private static IResult HandleLifecycleAction(
+        string pluginId, string action, HttpContext ctx)
+    {
+        var logger = BowireEndpointHelpers.GetLogger(ctx);
+        // Action names are wire-controlled tokens (restart / unload / …);
+        // OrdinalIgnoreCase via switch comparison would be cleaner but
+        // we need a normalised value to ship back to the caller too,
+        // so a single lowercase pass is the simplest path. CA1308's
+        // "use ToUpperInvariant" guidance doesn't apply — we never
+        // compare against an external upper string.
+#pragma warning disable CA1308
+        var normalisedAction = (action ?? "").ToLowerInvariant();
+#pragma warning restore CA1308
+        var safePluginId = pluginId ?? "";
+
+        if (string.IsNullOrWhiteSpace(safePluginId))
+        {
+            EmitLifecycleTelemetry(safePluginId, normalisedAction, "bad-request");
+            return LifecycleProblem(
+                status: 400,
+                type: "urn:bowire:plugin:lifecycle-bad-id",
+                error: "pluginId is required",
+                instance: ctx.Request.Path,
+                pluginId: safePluginId, action: normalisedAction);
+        }
+
+        switch (normalisedAction)
+        {
+            case "restart":
+                return RestartPlugin(safePluginId, ctx, logger);
+            case "unload":
+                return UnloadPlugin(safePluginId, ctx, logger);
+            case "load":
+                return LoadPlugin(safePluginId, ctx, logger);
+            case "reset-storage":
+                return ResetPluginStorage(safePluginId, ctx, logger);
+            default:
+                EmitLifecycleTelemetry(safePluginId, normalisedAction, "unknown-action");
+                return LifecycleProblem(
+                    status: 400,
+                    type: "urn:bowire:plugin:lifecycle-unknown-action",
+                    error: $"Unknown lifecycle action '{action}'. Valid actions: restart, unload, load, reset-storage.",
+                    instance: ctx.Request.Path,
+                    pluginId: safePluginId, action: normalisedAction);
+        }
+    }
+
+    private static IResult RestartPlugin(string pluginId, HttpContext ctx, ILogger logger)
+    {
+        var registry = BowireEndpointHelpers.GetRegistry();
+        var existing = registry.GetById(pluginId);
+        if (existing is null)
+        {
+            EmitLifecycleTelemetry(pluginId, "restart", "not-found");
+            return LifecycleProblem(
+                status: 404,
+                type: "urn:bowire:plugin:lifecycle-not-found",
+                error: $"Plugin '{pluginId}' is not in the live registry. Use 'load' to bring a disabled plugin back online.",
+                instance: ctx.Request.Path,
+                pluginId: pluginId, action: "restart");
+        }
+
+        var type = existing.GetType();
+        IBowireProtocol fresh;
+        try
+        {
+            if (Activator.CreateInstance(type) is not IBowireProtocol candidate)
+            {
+                EmitLifecycleTelemetry(pluginId, "restart", "ctor-returned-null");
+                return LifecycleProblem(
+                    status: 500,
+                    type: "urn:bowire:plugin:lifecycle-construct-failed",
+                    error: $"Activator.CreateInstance returned null for {type.FullName}.",
+                    instance: ctx.Request.Path,
+                    pluginId: pluginId, action: "restart");
+            }
+            fresh = candidate;
+        }
+#pragma warning disable CA1031 // Plugin ctors are unbounded — anything they throw is a "restart failed" outcome.
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            EmitLifecycleTelemetry(pluginId, "restart", "ctor-threw");
+            PluginLifecycleLog.RestartFailed(logger, pluginId, ex);
+            return LifecycleProblem(
+                status: 500,
+                type: "urn:bowire:plugin:lifecycle-construct-failed",
+                error: $"Reconstructing {type.FullName} threw {ex.GetType().Name}: {ex.Message}",
+                instance: ctx.Request.Path,
+                pluginId: pluginId, action: "restart",
+                extraExtensions: new Dictionary<string, object?>
+                {
+                    ["exceptionType"] = ex.GetType().Name,
+                });
+        }
+
+        // Dispose the outgoing instance after the fresh one is built so a
+        // ctor failure leaves the live plugin intact.
+        if (existing is IDisposable disposable)
+        {
+            try { disposable.Dispose(); }
+#pragma warning disable CA1031
+            catch (Exception ex)
+#pragma warning restore CA1031
+            {
+                PluginLifecycleLog.DisposeFailed(logger, pluginId, ex);
+            }
+        }
+
+        registry.Replace(fresh);
+        try { fresh.Initialize(ctx.RequestServices); }
+#pragma warning disable CA1031
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            // The fresh instance is already in the registry; Initialize
+            // failing leaves it half-wired. Surface the failure but
+            // keep the instance so a follow-up restart can retry.
+            EmitLifecycleTelemetry(pluginId, "restart", "init-threw");
+            PluginLifecycleLog.RestartFailed(logger, pluginId, ex);
+            return LifecycleProblem(
+                status: 500,
+                type: "urn:bowire:plugin:lifecycle-init-failed",
+                error: $"Initialize on {type.FullName} threw {ex.GetType().Name}: {ex.Message}",
+                instance: ctx.Request.Path,
+                pluginId: pluginId, action: "restart",
+                extraExtensions: new Dictionary<string, object?>
+                {
+                    ["exceptionType"] = ex.GetType().Name,
+                });
+        }
+
+        EmitLifecycleTelemetry(pluginId, "restart", "ok");
+        PluginLifecycleLog.RestartOk(logger, pluginId);
+        return Results.Ok(new
+        {
+            ok = true,
+            message = $"Plugin '{pluginId}' restarted.",
+            pluginId,
+            action = "restart",
+        });
+    }
+
+    private static IResult UnloadPlugin(string pluginId, HttpContext ctx, ILogger logger)
+    {
+        var registry = BowireEndpointHelpers.GetRegistry();
+        var existing = registry.Unregister(pluginId);
+        var wasInRegistry = existing is not null;
+        if (existing is IDisposable disposable)
+        {
+            try { disposable.Dispose(); }
+#pragma warning disable CA1031
+            catch (Exception ex)
+#pragma warning restore CA1031
+            {
+                PluginLifecycleLog.DisposeFailed(logger, pluginId, ex);
+            }
+        }
+
+        var persisted = BowireDisabledPluginsStore.Disable(pluginId);
+        EmitLifecycleTelemetry(pluginId, "unload", "ok");
+        PluginLifecycleLog.Unloaded(logger, pluginId);
+
+        return Results.Ok(new
+        {
+            ok = true,
+            message = wasInRegistry
+                ? $"Plugin '{pluginId}' unloaded and added to disabled list."
+                : $"Plugin '{pluginId}' was not active; added to disabled list.",
+            pluginId,
+            action = "unload",
+            persisted,
+            wasActive = wasInRegistry,
+        });
+    }
+
+    private static IResult LoadPlugin(string pluginId, HttpContext ctx, ILogger logger)
+    {
+        // Drop the id from the runtime disabled list, then re-run
+        // discovery against the merged disabled set. Discover() works
+        // off the loaded AppDomain assemblies — the plugin's DLL has
+        // to already be in-process for "load" to surface it (i.e. it
+        // was disabled at startup, or unloaded during this session).
+        // Adding a brand-new plugin from disk is the dotnet-tool install
+        // flow, not lifecycle/load.
+        var removed = BowireDisabledPluginsStore.Enable(pluginId);
+        var options = ctx.RequestServices.GetService<IOptions<BowireOptions>>()?.Value;
+        var baseline = options?.DisabledPlugins;
+        var merged = BowireDisabledPluginsStore.MergeWith(baseline);
+
+        BowireProtocolRegistry refreshed;
+        try
+        {
+            refreshed = BowireProtocolRegistry.Discover(merged, logger);
+        }
+#pragma warning disable CA1031
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            EmitLifecycleTelemetry(pluginId, "load", "discover-threw");
+            PluginLifecycleLog.LoadFailed(logger, pluginId, ex);
+            return LifecycleProblem(
+                status: 500,
+                type: "urn:bowire:plugin:lifecycle-discover-failed",
+                error: $"Plugin discovery threw {ex.GetType().Name}: {ex.Message}",
+                instance: ctx.Request.Path,
+                pluginId: pluginId, action: "load");
+        }
+
+        // Initialize freshly-discovered instances so their service
+        // provider is wired before the swap.
+        foreach (var protocol in refreshed.Protocols)
+        {
+            try { protocol.Initialize(ctx.RequestServices); }
+#pragma warning disable CA1031
+            catch (Exception ex)
+#pragma warning restore CA1031
+            {
+                PluginLifecycleLog.LoadFailed(logger, protocol.Id, ex);
+            }
+        }
+        BowireEndpointHelpers.SetRegistry(refreshed);
+
+        var loaded = refreshed.GetById(pluginId) is not null;
+        EmitLifecycleTelemetry(pluginId, "load", loaded ? "ok" : "not-found");
+
+        if (!loaded)
+        {
+            return LifecycleProblem(
+                status: 404,
+                type: "urn:bowire:plugin:lifecycle-not-loadable",
+                error: $"Plugin '{pluginId}' could not be loaded — no IBowireProtocol type with that id is present in any loaded assembly. Install the plugin package first (POST /api/plugins/install).",
+                instance: ctx.Request.Path,
+                pluginId: pluginId, action: "load");
+        }
+
+        PluginLifecycleLog.Loaded(logger, pluginId);
+        return Results.Ok(new
+        {
+            ok = true,
+            message = removed
+                ? $"Plugin '{pluginId}' removed from disabled list and loaded."
+                : $"Plugin '{pluginId}' loaded.",
+            pluginId,
+            action = "load",
+        });
+    }
+
+    private static IResult ResetPluginStorage(string pluginId, HttpContext ctx, ILogger logger)
+    {
+        // Two storage layers Bowire knows about per-plugin:
+        //   1. On-disk state under ~/.bowire/plugins/<id>/state/
+        //   2. Browser localStorage keys prefixed bowire_plugin_<id>_
+        // Layer 1 is wiped here; layer 2 is returned as a key prefix the
+        // JS side flushes (Window.localStorage isn't reachable from the
+        // server). The two-sided design matches how the rest of Bowire
+        // handles split storage (recordings, environments).
+        var stateDir = Path.Combine(PluginDir, pluginId, "state");
+        var diskCleared = false;
+        string? diskError = null;
+        if (Directory.Exists(stateDir))
+        {
+            try
+            {
+                Directory.Delete(stateDir, recursive: true);
+                diskCleared = true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                diskError = ex.Message;
+                PluginLifecycleLog.ResetStorageFailed(logger, pluginId, ex);
+            }
+        }
+
+        if (diskError is not null)
+        {
+            EmitLifecycleTelemetry(pluginId, "reset-storage", "disk-failed");
+            return LifecycleProblem(
+                status: 500,
+                type: "urn:bowire:plugin:lifecycle-reset-failed",
+                error: $"Couldn't delete plugin state directory: {diskError}",
+                instance: ctx.Request.Path,
+                pluginId: pluginId, action: "reset-storage",
+                extraExtensions: new Dictionary<string, object?>
+                {
+                    ["stateDirectory"] = stateDir,
+                });
+        }
+
+        EmitLifecycleTelemetry(pluginId, "reset-storage", "ok");
+        PluginLifecycleLog.ResetStorage(logger, pluginId);
+        return Results.Ok(new
+        {
+            ok = true,
+            message = diskCleared
+                ? $"Cleared {stateDir} and signalled localStorage prefix bowire_plugin_{pluginId}_."
+                : $"No on-disk state at {stateDir}; signalled localStorage prefix bowire_plugin_{pluginId}_.",
+            pluginId,
+            action = "reset-storage",
+            diskCleared,
+            stateDirectory = stateDir,
+            localStorageKeyPrefix = $"bowire_plugin_{pluginId}_",
+        });
+    }
+
+    private static IResult LifecycleProblem(
+        int status, string type, string error, PathString instance,
+        string pluginId, string action,
+        IDictionary<string, object?>? extraExtensions = null)
+    {
+        var ext = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["ok"] = false,
+            ["pluginId"] = pluginId,
+            ["action"] = action,
+            ["error"] = error,
+        };
+        if (extraExtensions is not null)
+        {
+            foreach (var kv in extraExtensions) ext[kv.Key] = kv.Value;
+        }
+        return BowireEndpointHelpers.Problem(
+            type: type,
+            title: error,
+            status: status,
+            instance: instance,
+            extensions: ext);
+    }
+
+    private static void EmitLifecycleTelemetry(string pluginId, string action, string outcome)
+    {
+        BowireTelemetry.PluginLifecycle.Add(1, new TagList
+        {
+            { "plugin", pluginId },
+            { "action", action },
+            { "outcome", outcome },
+        });
     }
 
     /// <summary>
@@ -653,4 +1035,46 @@ internal static class BowirePluginEndpoints
         // consumers; standalone CLI bundles one of these transitively.
         string.Equals(assemblyName, "Kuestenlogik.Bowire.Protocol.Rest.OpenApi2", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(assemblyName, "Kuestenlogik.Bowire.Protocol.Rest.OpenApi3", StringComparison.OrdinalIgnoreCase);
+}
+
+/// <summary>
+/// Source-generated logger wrappers for the lifecycle action handlers
+/// in <see cref="BowirePluginEndpoints"/>. Keeps CA1873 happy (the
+/// generator emits the <c>IsEnabled</c>-gated dispatch the analyzer
+/// wants) and groups every lifecycle log message at one stable
+/// EventId block (2000-2099).
+/// </summary>
+internal static partial class PluginLifecycleLog
+{
+    [LoggerMessage(EventId = 2001, Level = LogLevel.Information,
+        Message = "Plugin '{PluginId}' restarted via lifecycle endpoint.")]
+    public static partial void RestartOk(ILogger logger, string pluginId);
+
+    [LoggerMessage(EventId = 2002, Level = LogLevel.Warning,
+        Message = "Plugin '{PluginId}' restart via lifecycle endpoint failed.")]
+    public static partial void RestartFailed(ILogger logger, string pluginId, Exception ex);
+
+    [LoggerMessage(EventId = 2003, Level = LogLevel.Information,
+        Message = "Plugin '{PluginId}' unloaded via lifecycle endpoint.")]
+    public static partial void Unloaded(ILogger logger, string pluginId);
+
+    [LoggerMessage(EventId = 2004, Level = LogLevel.Information,
+        Message = "Plugin '{PluginId}' loaded via lifecycle endpoint.")]
+    public static partial void Loaded(ILogger logger, string pluginId);
+
+    [LoggerMessage(EventId = 2005, Level = LogLevel.Warning,
+        Message = "Plugin '{PluginId}' load via lifecycle endpoint failed.")]
+    public static partial void LoadFailed(ILogger logger, string pluginId, Exception ex);
+
+    [LoggerMessage(EventId = 2006, Level = LogLevel.Information,
+        Message = "Plugin '{PluginId}' storage reset via lifecycle endpoint.")]
+    public static partial void ResetStorage(ILogger logger, string pluginId);
+
+    [LoggerMessage(EventId = 2007, Level = LogLevel.Warning,
+        Message = "Plugin '{PluginId}' storage reset via lifecycle endpoint failed.")]
+    public static partial void ResetStorageFailed(ILogger logger, string pluginId, Exception ex);
+
+    [LoggerMessage(EventId = 2008, Level = LogLevel.Warning,
+        Message = "Disposing previous instance of plugin '{PluginId}' threw.")]
+    public static partial void DisposeFailed(ILogger logger, string pluginId, Exception ex);
 }

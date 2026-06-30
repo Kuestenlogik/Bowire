@@ -92,6 +92,18 @@ public static class BowireTelemetry
             unit: "{load}",
             description: "Plugin load attempts -- success or failure encoded on the `outcome` dimension.");
 
+    /// <summary>
+    /// <c>bowire.plugin.lifecycle</c> -- one increment per operator-triggered
+    /// plugin lifecycle action (restart / unload / load / reset-storage).
+    /// The <c>action</c> + <c>outcome</c> dimensions split success from
+    /// failure so dashboards can spot a plugin that's restarting on a
+    /// loop.
+    /// </summary>
+    public static readonly Counter<long> PluginLifecycle =
+        Meter.CreateCounter<long>("bowire.plugin.lifecycle",
+            unit: "{action}",
+            description: "Operator-triggered plugin lifecycle actions (restart / unload / load / reset-storage).");
+
     /// <summary><c>bowire.mock.requests</c> -- request entries against UI-started mocks.</summary>
     public static readonly Counter<long> MockRequests =
         Meter.CreateCounter<long>("bowire.mock.requests",

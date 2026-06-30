@@ -36,6 +36,44 @@ public sealed class BowireProtocolRegistry
 
     public void Register(IBowireProtocol protocol) => _protocols.Add(protocol);
 
+    /// <summary>
+    /// Remove the protocol with the given id from the live registry.
+    /// Used by the <c>/api/plugins/{id}/lifecycle/unload</c> endpoint to
+    /// hide a plugin without rebooting the host. Returns the removed
+    /// instance (so the caller can dispose it when applicable), or
+    /// <c>null</c> when no such id was registered.
+    /// </summary>
+    public IBowireProtocol? Unregister(string id)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        var existing = _protocols.FirstOrDefault(p =>
+            string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
+        if (existing is null) return null;
+        _protocols.Remove(existing);
+        return existing;
+    }
+
+    /// <summary>
+    /// Replace an existing protocol instance with a fresh one. Used by
+    /// the <c>/api/plugins/{id}/lifecycle/restart</c> endpoint to swap a
+    /// stateful plugin for a re-constructed instance without changing
+    /// its registry position. Falls back to <see cref="Register"/> when
+    /// no instance is currently registered for the id.
+    /// </summary>
+    public void Replace(IBowireProtocol fresh)
+    {
+        ArgumentNullException.ThrowIfNull(fresh);
+        for (var i = 0; i < _protocols.Count; i++)
+        {
+            if (string.Equals(_protocols[i].Id, fresh.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                _protocols[i] = fresh;
+                return;
+            }
+        }
+        _protocols.Add(fresh);
+    }
+
     public IBowireProtocol? GetById(string id) => _protocols.FirstOrDefault(p => p.Id == id);
 
     /// <summary>
