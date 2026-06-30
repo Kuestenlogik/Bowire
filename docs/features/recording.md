@@ -1,6 +1,6 @@
 ---
 title: Recording
-summary: 'Capture a sequence of API calls and replay them as a regression test or a live mock.'
+summary: 'Capture a sequence of API calls and replay them as a regression test or a live mock. v2.1 ships the rail as `Kuestenlogik.Bowire.Recordings` (renamed from `Rail.Recordings`).'
 ---
 
 # Recording

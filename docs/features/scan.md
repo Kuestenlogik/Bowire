@@ -71,6 +71,6 @@ For GitLab CI / Azure DevOps see the [security architecture ADR](../architecture
 ## Related
 
 * [`bowire fuzz`](fuzz.md) — schema-aware field-level mutation, same SARIF output
-* [`bowire proxy`](proxy.md) — intercepting MITM proxy for capturing real sessions as templates
+* [Interceptor / `bowire proxy`](interceptor.md) — middleware + MITM proxy for capturing real sessions as templates
 * [Recording](recording.md) — captured sessions are templates the scanner can replay
 * [Security-testing ADR](../architecture/security-testing.md) — full design rationale

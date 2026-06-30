@@ -5,7 +5,7 @@ summary: 'The Kuestenlogik.Bowire.Protocol.Rest plugin lets Bowire browse and ex
 
 # REST / OpenAPI
 
-The `Kuestenlogik.Bowire.Protocol.Rest` plugin lets Bowire browse and exercise REST APIs alongside gRPC, SignalR, SSE, and MCP. Together with [Authentication](../features/authentication.md), [Environments](../features/environments.md), [Request Chaining](../features/response-chaining.md), and [Performance Graphs](../features/performance.md), it makes Bowire a single tool for testing every kind of HTTP-based API in your stack.
+The `Kuestenlogik.Bowire.Protocol.Rest` plugin lets Bowire browse and exercise REST APIs alongside gRPC, SignalR, SSE, and MCP. Together with [Authentication](../features/authentication.md), [Workspaces](../features/workspaces.md), [Request Chaining](../features/response-chaining.md), and [Performance Graphs](../features/performance.md), it makes Bowire a single tool for testing every kind of HTTP-based API in your stack.
 
 ## Two discovery modes
 
@@ -99,7 +99,7 @@ Verbs that don't carry a body (`GET`, `HEAD`, `DELETE`, `OPTIONS`, `TRACE`) skip
 The REST plugin doesn't reimplement any of these features -- they Just Work because they live one layer above the protocol plugin. You get:
 
 - **[Authentication](../features/authentication.md)** -- Bearer / Basic / API Key / JWT / OAuth 2.0 (client_credentials, authorization_code+PKCE), AWS Sig v4, **mTLS** (PEM client cert + optional CA bundle), and a **per-environment cookie jar** for `POST /login` → `GET /me` flows
-- **[Environments](../features/environments.md)** -- per-stage variables substituted into URL, headers, body
+- **[Workspaces](../features/workspaces.md)** -- per-workspace variables substituted into URL, headers, body
 - **[Request Chaining](../features/response-chaining.md)** -- `${response.path}` from a previous REST response feeds into the next
 - **[Console / Log View](../features/console.md)** -- chronological stream of REST calls
 - **[Performance Graphs](../features/performance.md)** -- benchmark any unary REST endpoint with histogram + timeline

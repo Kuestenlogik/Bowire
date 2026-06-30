@@ -1,6 +1,5 @@
 ---
 title: UI extensions
-title: UI extensions
 summary: 'UI extensions are opt-in visual widgets (maps, charts, audio players, image viewers) that mount on top of payloads when the data carries a known semantic kind.'
 ---
 

@@ -1,14 +1,27 @@
 - name: Overview
   href: index.md
 
+- name: Navigation
+  items:
+    - name: Rail strip
+      href: rail-strip.md
+    - name: Workspaces
+      href: workspaces.md
+    - name: Help rail
+      href: help-rail.md
+    - name: Command palette
+      href: command-palette.md
+    - name: Keyboard shortcuts
+      href: keyboard-shortcuts.md
+
 - name: Making requests
   items:
     - name: Auto-discovery
       href: auto-discovery.md
+    - name: Compose
+      href: compose.md
     - name: Form & JSON input
       href: form-json-input.md
-    - name: Freeform requests
-      href: freeform-requests.md
     - name: Authentication
       href: authentication.md
     - name: Response chaining
@@ -33,6 +46,8 @@
       href: mock-server.md
     - name: Test assertions
       href: test-assertions.md
+    - name: Interceptor
+      href: interceptor.md
 
 - name: Automation
   items:
@@ -41,10 +56,8 @@
     - name: Performance graphs
       href: performance.md
 
-- name: Environments & data
+- name: Workspace data
   items:
-    - name: Environments & variables
-      href: environments.md
     - name: Collections
       href: collections.md
     - name: Favorites & history
@@ -56,10 +69,6 @@
 
 - name: UI & productivity
   items:
-    - name: Command palette
-      href: command-palette.md
-    - name: Keyboard shortcuts
-      href: keyboard-shortcuts.md
     - name: Empty-state landing
       href: empty-state.md
     - name: Settings dialog
@@ -67,11 +76,16 @@
     - name: Responsive & mobile
       href: responsive-mobile.md
 
+- name: Extensions
+  items:
+    - name: UI extensions
+      href: extensions.md
+    - name: Map widget
+      href: map-widget.md
+
 - name: Command line & extending
   items:
     - name: CLI mode
       href: cli-mode.md
     - name: Plugin system
       href: plugin-system.md
-    - name: UI extensions
-      href: extensions.md

@@ -1,6 +1,6 @@
 ---
 title: Flows
-summary: 'Flows are a sequential multi-step editor for composing API interactions into repeatable pipelines.'
+summary: 'Flows are a sequential multi-step editor for composing API interactions into repeatable pipelines. v2.1 ships the rail as `Kuestenlogik.Bowire.Flows` (renamed from `Rail.Flows`).'
 ---
 
 # Flows
@@ -107,4 +107,4 @@ Flows are stored in `localStorage` under the key `bowire_flows`. They survive br
 - A flow's Request nodes use the **current environment** at run time, so you can switch environments and rerun the same flow against a different server.
 - The flow editor reuses the same modal layout as the recordings and collections managers -- the left panel lists flows, the right panel shows the selected flow's detail.
 
-See also: [Recorder](recording.md), [Collections](collections.md), [Request Chaining](response-chaining.md), [Environments & Variables](environments.md)
+See also: [Recorder](recording.md), [Collections](collections.md), [Request Chaining](response-chaining.md), [Workspaces](workspaces.md)
