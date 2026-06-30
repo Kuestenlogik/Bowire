@@ -4249,8 +4249,13 @@
             });
         }
         card('server', 'Build a mock', 'Replay recordings', function () {
-            railMode = 'mocks';
-            try { localStorage.setItem('bowire_rail_mode', 'mocks'); } catch { /* ignore */ }
+            // v2.2 — Mocks rail folded into Intercept -> Mock servers sub-tab.
+            railMode = 'intercept';
+            try { localStorage.setItem('bowire_rail_mode', 'intercept'); } catch { /* ignore */ }
+            try { localStorage.setItem('bowire_intercept_sub_tab', 'mock-servers'); } catch { /* ignore */ }
+            if (typeof sidebarView !== 'undefined') sidebarView = 'intercept';
+            try { localStorage.setItem('bowire_sidebar_view', 'intercept'); } catch { /* ignore */ }
+            if (typeof interceptSubView !== 'undefined') interceptSubView = 'mock-servers';
             render();
         });
         card('compass', 'Browse Discover', 'Explore services', function () {

@@ -82,10 +82,15 @@
         if (typeof render === 'function') render();
     }
     function _hintNavMocks() {
+        // v2.2 — Mocks rail folded into Intercept -> Mock servers sub-tab.
         if (typeof railMode !== 'undefined') {
-            railMode = 'mocks';
-            try { localStorage.setItem('bowire_rail_mode', 'mocks'); } catch { /* ignore */ }
+            railMode = 'intercept';
+            try { localStorage.setItem('bowire_rail_mode', 'intercept'); } catch { /* ignore */ }
+            try { localStorage.setItem('bowire_intercept_sub_tab', 'mock-servers'); } catch { /* ignore */ }
         }
+        if (typeof sidebarView !== 'undefined') sidebarView = 'intercept';
+        try { localStorage.setItem('bowire_sidebar_view', 'intercept'); } catch { /* ignore */ }
+        if (typeof interceptSubView !== 'undefined') interceptSubView = 'mock-servers';
         if (typeof render === 'function') render();
     }
     function _hintOpenNewWorkspace() {
