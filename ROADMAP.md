@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**65/67 done** · 2 backlog
+**66/68 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -83,6 +83,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [327](https://github.com/Kuestenlogik/Bowire/issues/327) | Bowire | [fix(registry): BowireProtocolRegistry.Discover thread-safety race under parallel xUnit](#issue-kuestenlogik-bowire-327) | ✅ Done |  |
 | [328](https://github.com/Kuestenlogik/Bowire/issues/328) | Bowire | [fix(security): close CodeQL alerts — log-forging, incomplete sanitisation, XSS-through-exception](#issue-kuestenlogik-bowire-328) | ✅ Done |  |
 | [329](https://github.com/Kuestenlogik/Bowire/issues/329) | Bowire | [ci(security): switch CodeQL to Advanced Setup — sanitiser model + paths-ignore](#issue-kuestenlogik-bowire-329) | ✅ Done |  |
+| [330](https://github.com/Kuestenlogik/Bowire/issues/330) | Bowire | [docs: v2.1 docs + screenshots refresh (audit, marquee assets, UI guide, features, API reference)](#issue-kuestenlogik-bowire-330) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -512,6 +513,10 @@ Three security fixes batched to clear the CodeQL alert queue: [[more]](https://g
 #### <a id="issue-kuestenlogik-bowire-329"></a>✅ Done · [#329](https://github.com/Kuestenlogik/Bowire/issues/329) ci(security): switch CodeQL to Advanced Setup — sanitiser model + paths-ignore
 
 Replaces GitHub's Default Setup with an explicit Advanced configuration so we can: [[more]](https://github.com/Kuestenlogik/Bowire/issues/329)
+
+#### <a id="issue-kuestenlogik-bowire-330"></a>✅ Done · [#330](https://github.com/Kuestenlogik/Bowire/issues/330) docs: v2.1 docs + screenshots refresh (audit, marquee assets, UI guide, features, API reference)
+
+Comprehensive post-v2.1 docs refresh based on the staleness inventory: [[more]](https://github.com/Kuestenlogik/Bowire/issues/330)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
