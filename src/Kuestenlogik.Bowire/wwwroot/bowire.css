@@ -11343,6 +11343,16 @@ and chip row */
     flex-wrap: wrap;
 }
 
+/* Hide when there are no filter chips / search content in it — without
+   this, the empty toolbar stacks its border-bottom directly under the
+   sidebar-toolbar's border-bottom, producing two thin horizontal lines
+   above the 'No services discovered yet' empty state with no visual
+   meaning. Operator: 'warum sind unter discover zwei linien horizontal
+   über No service discovered yet? unklar.' */
+.bowire-services-toolbar:empty {
+    display: none;
+}
+
 /* Environment color dot */
 .bowire-env-color-dot {
     width: 8px;
