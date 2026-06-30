@@ -1,0 +1,428 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
+using System.Diagnostics;
+using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Kuestenlogik.Bowire.App.Configuration;
+using Kuestenlogik.Bowire.Flows;
+using Kuestenlogik.Bowire.Flows.Expectations;
+using Kuestenlogik.Bowire.Models;
+
+namespace Kuestenlogik.Bowire.App;
+
+/// <summary>
+/// v2.2 CI runner (T2): executes a Flow JSON document end-to-end against a
+/// real backend, evaluates the per-step <see cref="FlowExpectation"/> list
+/// via <see cref="FlowExpectationEvaluator"/>, and surfaces a
+/// <see cref="FlowRunReport"/> the JUnit XML + HTML emitters consume.
+/// <para>
+/// Protocol dispatch — option <b>B</b> from the design spike: the runner
+/// hosts <see cref="BowireProtocolRegistry"/> in-process and calls
+/// <see cref="IBowireProtocol.InvokeAsync"/> directly. Same path as the
+/// existing recording-driven <see cref="TestRunner"/>; no HTTP detour, no
+/// requirement that a Bowire UI is running on a sidecar port.
+/// </para>
+/// </summary>
+internal static class FlowTestRunner
+{
+    /// <summary>
+    /// JSON options for FlowDefinition deserialisation. Matches the
+    /// kebab-case-lower enum convention the workbench writes
+    /// (<c>"kind":"body-path"</c>, <c>"operator":"not-equals"</c>) so a
+    /// flow file the in-browser editor saved round-trips verbatim through
+    /// the CLI. Mirrors <c>FlowDefinitionTests.KebabEnumOptions</c>.
+    /// </summary>
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.KebabCaseLower) },
+    };
+
+    private static bool UseColor(TextWriter writer)
+        => ReferenceEquals(writer, Console.Out) && !Console.IsOutputRedirected;
+
+    /// <summary>
+    /// Decide at parse time whether <paramref name="json"/> is a Flow JSON
+    /// (v2.2 <c>{ "nodes": [...] }</c> shape) rather than a legacy
+    /// recording / test-collection. Lets <see cref="TestRunner"/>
+    /// auto-dispatch to the right runner without forcing the operator to
+    /// pick a flag.
+    /// </summary>
+    public static bool LooksLikeFlow(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return false;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object) return false;
+            // The Flow document is the only shape that carries a top-level
+            // "nodes" array — recordings use "tests" / "messages", test
+            // collections use "tests". Quick + unambiguous discriminator.
+            return root.TryGetProperty("nodes", out var nodes)
+                && nodes.ValueKind == JsonValueKind.Array;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Run a flow file. Returns the same exit-code contract as the recording
+    /// runner so CI scripts can branch uniformly: 0 = all expectations
+    /// passed, 1 = at least one expectation failed, 2 = a step errored
+    /// before evaluation (backend down, malformed flow, …).
+    /// </summary>
+    public static async Task<int> RunAsync(
+        FlowTestCliOptions cli,
+        TextWriter? output = null,
+        TextWriter? error = null,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(cli);
+        var stdout = output ?? Console.Out;
+        var stderr = error ?? Console.Error;
+
+        if (string.IsNullOrEmpty(cli.FlowPath))
+        {
+            await stderr.WriteLineAsync("error: Usage: bowire test <flow.json> [--report path.html] [--junit path.xml] [--base-url URL] [--env KEY=VALUE ...]").ConfigureAwait(false);
+            return 2;
+        }
+        if (!File.Exists(cli.FlowPath))
+        {
+            await stderr.WriteLineAsync($"error: Flow file not found: {cli.FlowPath}").ConfigureAwait(false);
+            return 2;
+        }
+
+        FlowDefinition? flow;
+        string rawJson;
+        try
+        {
+            rawJson = await File.ReadAllTextAsync(cli.FlowPath, ct).ConfigureAwait(false);
+            flow = JsonSerializer.Deserialize<FlowDefinition>(rawJson, JsonOptions);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
+        {
+            await stderr.WriteLineAsync($"error: Failed to parse flow: {ex.Message}").ConfigureAwait(false);
+            return 2;
+        }
+        if (flow is null || flow.Nodes is null || flow.Nodes.Count == 0)
+        {
+            await stderr.WriteLineAsync("error: Flow has no nodes.").ConfigureAwait(false);
+            return 2;
+        }
+
+        // In-process protocol registry. Same path as the recording runner —
+        // every protocol plugin Bowire.Tool already loaded (REST, gRPC,
+        // GraphQL, MQTT, SignalR, WS, SSE, MCP, OData, Socket.IO,
+        // JSON-RPC) is callable. v0 emphasis is REST; gRPC / MCP / WS
+        // ride along through the same IBowireProtocol contract without
+        // any special-casing here.
+        var registry = BowireProtocolRegistry.Discover();
+
+        var report = new FlowRunReport
+        {
+            FlowId = flow.Id,
+            FlowName = string.IsNullOrEmpty(flow.Name) ? Path.GetFileNameWithoutExtension(cli.FlowPath) : flow.Name,
+            FlowPath = cli.FlowPath,
+            StartedAt = DateTime.UtcNow,
+        };
+
+        await stdout.WriteLineAsync().ConfigureAwait(false);
+        await stdout.WriteLineAsync($"  Bowire Flow Test Runner   flow: {report.FlowName}").ConfigureAwait(false);
+        await stdout.WriteLineAsync().ConfigureAwait(false);
+
+        var env = MergeEnv(cli.EnvOverrides);
+        var sw = Stopwatch.StartNew();
+        var anyError = false;
+        var anyExpectationFailed = false;
+
+        foreach (var step in flow.Nodes)
+        {
+            var stepResult = await RunStepAsync(step, env, registry, cli.BaseUrl, ct).ConfigureAwait(false);
+            report.Steps.Add(stepResult);
+
+            if (!string.IsNullOrEmpty(stepResult.Error)) anyError = true;
+            if (stepResult.Expectations.Any(e => !e.Passed)) anyExpectationFailed = true;
+
+            await PrintStepAsync(stdout, stepResult).ConfigureAwait(false);
+        }
+
+        sw.Stop();
+        report.DurationMs = sw.ElapsedMilliseconds;
+        report.TotalExpectations = report.Steps.Sum(s => s.Expectations.Count);
+        report.PassedExpectations = report.Steps.Sum(s => s.Expectations.Count(e => e.Passed));
+        report.FailedExpectations = report.TotalExpectations - report.PassedExpectations;
+        report.StepErrors = report.Steps.Count(s => !string.IsNullOrEmpty(s.Error));
+
+        await stdout.WriteLineAsync().ConfigureAwait(false);
+        var summary = $"  {report.PassedExpectations}/{report.TotalExpectations} expectations passed   "
+            + $"{report.Steps.Count - report.StepErrors}/{report.Steps.Count} steps invoked   "
+            + $"in {sw.ElapsedMilliseconds} ms";
+        await stdout.WriteLineAsync(summary).ConfigureAwait(false);
+        await stdout.WriteLineAsync().ConfigureAwait(false);
+
+        // Compute exit code per the v2.2 CLI contract:
+        //   2 — a step errored before evaluation (backend unreachable,
+        //       service/method blank, plugin missing). Highest precedence
+        //       because a failed invocation invalidates downstream
+        //       expectation accounting.
+        //   1 — at least one expectation didn't hold.
+        //   0 — every step invoked AND every expectation passed.
+        var exitCode = anyError ? 2 : (anyExpectationFailed ? 1 : 0);
+        report.ExitCode = exitCode;
+
+        if (!string.IsNullOrEmpty(cli.ReportPath))
+        {
+            try
+            {
+                await File.WriteAllTextAsync(cli.ReportPath, FlowHtmlReport.Render(report), ct).ConfigureAwait(false);
+                await stdout.WriteLineAsync($"  HTML report written to {cli.ReportPath}").ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PathTooLongException)
+            {
+                await stderr.WriteLineAsync($"error: Failed to write HTML report: {ex.Message}").ConfigureAwait(false);
+            }
+        }
+        if (!string.IsNullOrEmpty(cli.JUnitPath))
+        {
+            try
+            {
+                await File.WriteAllTextAsync(cli.JUnitPath, FlowJUnitReport.Render(report), ct).ConfigureAwait(false);
+                await stdout.WriteLineAsync($"  JUnit XML written to {cli.JUnitPath}").ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PathTooLongException)
+            {
+                await stderr.WriteLineAsync($"error: Failed to write JUnit report: {ex.Message}").ConfigureAwait(false);
+            }
+        }
+
+        return exitCode;
+    }
+
+    private static async Task<FlowStepRunResult> RunStepAsync(
+        FlowStep step, Dictionary<string, string> env, BowireProtocolRegistry registry,
+        string? baseUrl, CancellationToken ct)
+    {
+        var result = new FlowStepRunResult
+        {
+            StepId = string.IsNullOrEmpty(step.Id) ? "(unnamed)" : step.Id,
+            StepType = step.Type ?? "request",
+            Service = step.Service ?? string.Empty,
+            Method = step.Method ?? string.Empty,
+        };
+
+        // Non-request steps (variable / delay / condition / loop) are
+        // structural — T2 doesn't replay them in v0. They surface as
+        // "skipped" zero-duration entries so a flow with control nodes
+        // doesn't fail outright.
+        if (!string.Equals(step.Type, "request", StringComparison.OrdinalIgnoreCase))
+        {
+            result.Skipped = true;
+            return result;
+        }
+        // Method is required for any protocol — gRPC needs a method name,
+        // REST needs the verb. Service may be empty: the REST plugin's
+        // ad-hoc codepath (#256) keys off `IsNullOrEmpty(service)` to
+        // route schema-free GET / POST / PUT / DELETE / PATCH calls; a
+        // gRPC step keeps a non-empty service. Reject only the case
+        // where the flow can't possibly invoke anything.
+        if (string.IsNullOrEmpty(step.Method))
+        {
+            result.Error = "step missing method";
+            return result;
+        }
+
+        // Variable resolution: step.body + step.serverUrl both run
+        // through the same minimal resolver. {{var}} and ${var} both
+        // resolve against the merged env map; unknown placeholders are
+        // left intact so the operator sees the typo.
+        var resolvedBody = FlowVariableResolver.Resolve(step.Body ?? "{}", env);
+        var serverUrl = !string.IsNullOrEmpty(step.ServerUrl)
+            ? FlowVariableResolver.Resolve(step.ServerUrl, env)
+            : (baseUrl ?? string.Empty);
+
+        var protocolId = step.Protocol;
+        IBowireProtocol? protocol = string.IsNullOrEmpty(protocolId)
+            ? (registry.Protocols.Count > 0 ? registry.Protocols[0] : null)
+            : registry.GetById(protocolId);
+        if (protocol is null)
+        {
+            result.Error = $"protocol '{protocolId ?? "<any>"}' not registered";
+            return result;
+        }
+
+        try
+        {
+            await protocol.DiscoverAsync(serverUrl, showInternalServices: false, ct).ConfigureAwait(false);
+        }
+#pragma warning disable CA1031 // 3rd-party transport surface — soft-fail per step.
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            result.Error = $"discovery failed: {ex.Message}";
+            return result;
+        }
+
+        InvokeResult? invocation;
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            invocation = await protocol.InvokeAsync(
+                serverUrl,
+                step.Service!,
+                step.Method!,
+                new List<string> { resolvedBody },
+                showInternalServices: false,
+                metadata: null,
+                ct: ct).ConfigureAwait(false);
+        }
+#pragma warning disable CA1031
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            sw.Stop();
+            result.LatencyMs = sw.ElapsedMilliseconds;
+            result.Error = $"invocation failed: {ex.Message}";
+            return result;
+        }
+        sw.Stop();
+        result.LatencyMs = invocation.DurationMs > 0 ? invocation.DurationMs : sw.ElapsedMilliseconds;
+        result.Status = invocation.Status;
+        result.ResponseBody = invocation.Response;
+
+        // Capture response headers verbatim, case-insensitive lookup so
+        // kind=header expectations match irrespective of upstream
+        // capitalisation.
+        var headers = new Dictionary<string, string>(invocation.Metadata, StringComparer.OrdinalIgnoreCase);
+        result.ResponseHeaders = headers;
+
+        var envelope = new FlowRequestEnvelope
+        {
+            Status = invocation.Status,
+            Body = invocation.Response,
+            Headers = headers,
+            LatencyMs = result.LatencyMs,
+        };
+
+        // Evaluate the merged v2.2 + v2.1-legacy expectation list. Empty
+        // expectation list → step still "passes" (vacuously true) so a
+        // flow can exist purely as a smoke-test sequence.
+        var effective = step.EffectiveExpectations();
+        var stepRollup = FlowExpectationEvaluator.EvaluateStep(result.StepId, effective, envelope);
+        foreach (var e in stepRollup.Evaluations)
+        {
+            result.Expectations.Add(e);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Build the resolver's variable map from the CLI <c>--env KEY=VALUE</c>
+    /// repeats. Later occurrences win, matching the dotnet-style
+    /// environment-merge convention.
+    /// </summary>
+    internal static Dictionary<string, string> MergeEnv(IEnumerable<string>? envOverrides)
+    {
+        var merged = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (envOverrides is null) return merged;
+        foreach (var raw in envOverrides)
+        {
+            if (string.IsNullOrEmpty(raw)) continue;
+            var idx = raw.IndexOf('=', StringComparison.Ordinal);
+            if (idx <= 0) continue;
+            var key = raw[..idx].Trim();
+            var value = raw[(idx + 1)..];
+            if (key.Length == 0) continue;
+            merged[key] = value;
+        }
+        return merged;
+    }
+
+    private static async Task PrintStepAsync(TextWriter stdout, FlowStepRunResult step)
+    {
+        var useColor = UseColor(stdout);
+        if (step.Skipped)
+        {
+            await stdout.WriteLineAsync($"  SKIP  {step.StepId}   (type: {step.StepType})").ConfigureAwait(false);
+            return;
+        }
+        var passed = string.IsNullOrEmpty(step.Error) && step.Expectations.All(e => e.Passed);
+        var marker = passed ? Green("PASS", useColor) : Red("FAIL", useColor);
+        var endpoint = string.IsNullOrEmpty(step.Service) ? "" : $"{step.Service} / {step.Method}";
+        await stdout.WriteLineAsync($"  {marker}  {step.StepId}   {endpoint}   {step.Status ?? ""} · {step.LatencyMs}ms").ConfigureAwait(false);
+        if (!string.IsNullOrEmpty(step.Error))
+        {
+            await stdout.WriteLineAsync($"        {Red("error: " + step.Error, useColor)}").ConfigureAwait(false);
+            return;
+        }
+        foreach (var e in step.Expectations)
+        {
+            var icon = e.Passed ? Green("✓", useColor) : Red("✗", useColor);
+            await stdout.WriteLineAsync($"        {icon} {e.Message}").ConfigureAwait(false);
+        }
+    }
+
+    private static string Green(string s, bool useColor) => useColor ? $"\x1b[32m{s}\x1b[0m" : s;
+    private static string Red(string s, bool useColor)   => useColor ? $"\x1b[31m{s}\x1b[0m" : s;
+}
+
+/// <summary>
+/// Typed options carried from <see cref="Cli.BowireCli"/> into
+/// <see cref="FlowTestRunner.RunAsync"/>. Lives separately from
+/// <see cref="TestCliOptions"/> because the flow runner needs the
+/// flow-specific <c>--base-url</c> and <c>--env</c> repeats the recording
+/// runner doesn't.
+/// </summary>
+internal sealed class FlowTestCliOptions
+{
+    /// <summary>Path to the flow JSON file (positional arg).</summary>
+    public string? FlowPath { get; set; }
+    /// <summary>Optional HTML report output (<c>--report</c>).</summary>
+    public string? ReportPath { get; set; }
+    /// <summary>Optional JUnit XML report output (<c>--junit</c>).</summary>
+    public string? JUnitPath { get; set; }
+    /// <summary>Fallback server URL used when a step doesn't carry its own (<c>--base-url</c>).</summary>
+    public string? BaseUrl { get; set; }
+    /// <summary><c>KEY=VALUE</c> pairs that populate the variable resolver (<c>--env</c>, repeatable).</summary>
+    public IReadOnlyList<string> EnvOverrides { get; set; } = Array.Empty<string>();
+}
+
+// ---- Run-report record types — consumed by FlowJUnitReport + FlowHtmlReport ----
+
+internal sealed class FlowRunReport
+{
+    public string FlowId { get; set; } = string.Empty;
+    public string FlowName { get; set; } = string.Empty;
+    public string FlowPath { get; set; } = string.Empty;
+    public DateTime StartedAt { get; set; }
+    public long DurationMs { get; set; }
+    public int TotalExpectations { get; set; }
+    public int PassedExpectations { get; set; }
+    public int FailedExpectations { get; set; }
+    public int StepErrors { get; set; }
+    public int ExitCode { get; set; }
+    public List<FlowStepRunResult> Steps { get; } = new();
+}
+
+internal sealed class FlowStepRunResult
+{
+    public string StepId { get; set; } = string.Empty;
+    public string StepType { get; set; } = "request";
+    public string Service { get; set; } = string.Empty;
+    public string Method { get; set; } = string.Empty;
+    public string? Status { get; set; }
+    public long LatencyMs { get; set; }
+    public string? ResponseBody { get; set; }
+    public IReadOnlyDictionary<string, string> ResponseHeaders { get; set; }
+        = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    public string? Error { get; set; }
+    /// <summary>True when the step was a control-flow / variable node that T2 v0 skips.</summary>
+    public bool Skipped { get; set; }
+    public List<FlowExpectationResult> Expectations { get; } = new();
+}

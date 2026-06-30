@@ -851,8 +851,13 @@ internal static class BowireCli
 
     private static Command BuildTestCommand(IConfiguration cfg)
     {
-        var collectionPath = new Argument<string?>("recording")
-        { Description = "Path to a recording JSON.", DefaultValueFactory = _ => cfg["Bowire:Test:CollectionPath"] };
+        // v2.2 — accepts EITHER a recording (legacy v2.1 test-collection
+        // shape) OR a Flow JSON document (T2 deliverable). The runner
+        // sniffs the JSON shape and dispatches to the right backend so
+        // operators don't have to pick a flag. Positional arg therefore
+        // describes both formats.
+        var collectionPath = new Argument<string?>("file")
+        { Description = "Path to a recording (v2.1) or Flow JSON file (v2.2). Format is auto-detected by JSON shape.", DefaultValueFactory = _ => cfg["Bowire:Test:CollectionPath"] };
         var url = new Option<string?>("--url")
         {
             Description = "Override the recording's serverUrl.",
@@ -868,16 +873,32 @@ internal static class BowireCli
             Description = "Write a JUnit XML report to this path.",
             DefaultValueFactory = _ => cfg["Bowire:Test:JUnitPath"]
         };
+        // v2.2 T2 — Flow-runner specific. Ignored for the recording
+        // codepath which already carries serverUrl + environment per
+        // test-collection.
+        var baseUrl = new Option<string?>("--base-url")
+        {
+            Description = "Fallback server URL for Flow steps that don't set their own serverUrl. Flow JSON files only; ignored for recordings.",
+            DefaultValueFactory = _ => cfg["Bowire:Test:BaseUrl"]
+        };
+        var env = new Option<string[]>("--env")
+        {
+            Description = "Variable for the Flow {{name}} / ${name} resolver. KEY=VALUE; repeatable.",
+            AllowMultipleArgumentsPerToken = false,
+        };
 
-        var cmd = new Command("test", "Replay a recording as an assertion-based test suite.");
+        var cmd = new Command("test", "Run an assertion-based test suite. Accepts a recording JSON (v2.1 test-collection format) or a Flow JSON document (v2.2 — the T2 CI runner). Format auto-detected.");
         cmd.Add(collectionPath); cmd.Add(url); cmd.Add(report); cmd.Add(junit);
+        cmd.Add(baseUrl); cmd.Add(env);
         cmd.SetAction(async (pr, _) =>
         {
             var options = new TestCliOptions
             {
                 CollectionPath = pr.GetValue(collectionPath),
                 ReportPath = pr.GetValue(report),
-                JUnitPath = pr.GetValue(junit)
+                JUnitPath = pr.GetValue(junit),
+                BaseUrl = pr.GetValue(baseUrl),
+                EnvOverrides = pr.GetValue(env) ?? Array.Empty<string>(),
             };
             return await TestRunner.RunAsync(
                 options,

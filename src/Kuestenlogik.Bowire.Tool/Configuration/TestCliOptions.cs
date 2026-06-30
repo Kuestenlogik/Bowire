@@ -38,4 +38,20 @@ internal sealed class TestCliOptions
     /// human-readable <see cref="ReportPath"/>.
     /// </summary>
     public string? JUnitPath { get; set; }
+
+    /// <summary>
+    /// v2.2 (#test-pillar T2) — fallback server URL for Flow steps that
+    /// don't carry their own <c>serverUrl</c>. Ignored for the legacy
+    /// test-collection codepath (which already supports a per-collection
+    /// <c>serverUrl</c>); applies only when the runner dispatches to
+    /// <see cref="FlowTestRunner"/>.
+    /// </summary>
+    public string? BaseUrl { get; set; }
+
+    /// <summary>
+    /// v2.2 — <c>--env KEY=VALUE</c> repeats from the CLI. Populate the
+    /// Flow runner's <c>{{var}}</c> / <c>${var}</c> resolver. Empty for
+    /// the legacy codepath.
+    /// </summary>
+    public IReadOnlyList<string> EnvOverrides { get; set; } = Array.Empty<string>();
 }

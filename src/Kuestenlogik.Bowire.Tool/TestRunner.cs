@@ -63,13 +63,42 @@ internal static class TestRunner
             return 2;
         }
 
+        // v2.2 — `bowire test` accepts EITHER a recording/test-collection
+        // (the v2.1 shape this runner has always handled) OR a Flow JSON
+        // document (the v2.2 T2 deliverable). Discriminated by JSON
+        // shape: a top-level "nodes" array is the Flow canonical
+        // discriminator the workbench writes. Dispatch happens here
+        // rather than at the CLI layer because the file format is the
+        // operator's choice — they shouldn't have to pick a flag.
+        string rawJson;
+        try
+        {
+            rawJson = await File.ReadAllTextAsync(cli.CollectionPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            await WriteErrorAsync(stderr, $"Failed to read file: {ex.Message}").ConfigureAwait(false);
+            return 2;
+        }
+        if (FlowTestRunner.LooksLikeFlow(rawJson))
+        {
+            var flowCli = new FlowTestCliOptions
+            {
+                FlowPath = cli.CollectionPath,
+                ReportPath = cli.ReportPath,
+                JUnitPath = cli.JUnitPath,
+                BaseUrl = cli.BaseUrl,
+                EnvOverrides = cli.EnvOverrides,
+            };
+            return await FlowTestRunner.RunAsync(flowCli, stdout, stderr).ConfigureAwait(false);
+        }
+
         TestCollection? collection;
         try
         {
-            var json = await File.ReadAllTextAsync(cli.CollectionPath);
-            collection = JsonSerializer.Deserialize<TestCollection>(json, JsonOptions);
+            collection = JsonSerializer.Deserialize<TestCollection>(rawJson, JsonOptions);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
+        catch (Exception ex) when (ex is JsonException or NotSupportedException)
         {
             await WriteErrorAsync(stderr, $"Failed to parse collection: {ex.Message}").ConfigureAwait(false);
             return 2;
