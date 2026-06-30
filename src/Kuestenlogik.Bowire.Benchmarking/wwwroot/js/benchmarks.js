@@ -2796,8 +2796,12 @@
                     };
                 });
                 randomPoolDecls.push(
-                    "const " + poolVar + " = " + JSON.stringify(poolPayloads, null, 2)
-                        .replace(/\n/g, '\n') + ";"
+                    // No-op .replace stripped — '.replace(/\\n/g, "\\n")'
+                    // mapped newlines to themselves (CodeQL alert #1779
+                    // js/identity-replacement). JSON.stringify with the
+                    // 2-space indent already produces the multi-line
+                    // shape we want inlined into the generated script.
+                    "const " + poolVar + " = " + JSON.stringify(poolPayloads, null, 2) + ";"
                 );
                 var pickN = Math.max(1, t.count || 1);
                 targetCalls.push(
