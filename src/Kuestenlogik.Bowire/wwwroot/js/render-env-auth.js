@@ -4516,9 +4516,15 @@
                         sublabel: 'port ' + mk.port,
                         icon: svgIcon('server'),
                         onSelect: function () {
+                            // v2.2 — Mocks rail folded into Intercept ->
+                            // Mock servers sub-tab.
                             mockSelectedId = mk.mockId;
-                            railMode = 'mocks';
-                            try { localStorage.setItem('bowire_rail_mode', 'mocks'); } catch { /* ignore */ }
+                            railMode = 'intercept';
+                            try { localStorage.setItem('bowire_rail_mode', 'intercept'); } catch { /* ignore */ }
+                            try { localStorage.setItem('bowire_intercept_sub_tab', 'mock-servers'); } catch { /* ignore */ }
+                            if (typeof sidebarView !== 'undefined') sidebarView = 'intercept';
+                            try { localStorage.setItem('bowire_sidebar_view', 'intercept'); } catch { /* ignore */ }
+                            if (typeof interceptSubView !== 'undefined') interceptSubView = 'mock-servers';
                             searchSuggestionsOpen = false;
                             searchQuery = '';
                             render();
@@ -4538,9 +4544,8 @@
         var railJumps = [
             { id: 'home',         label: 'Home',              icon: 'house' },
             { id: 'discover',     label: 'Discover',          icon: 'discover' },
-            { id: 'mocks',        label: 'Mocks',             icon: 'mock' },
+            { id: 'intercept',    label: 'Intercept',         icon: 'trafficLight' },
             { id: 'flows',        label: 'Flows',             icon: 'flow' },
-            { id: 'proxy',        label: 'Proxy / MITM',      icon: 'disconnect' },
             { id: 'benchmarks',   label: 'Benchmarks',        icon: 'chart' },
             { id: 'security',     label: 'Security',          icon: 'shield' },
             { id: 'workspaces',   label: 'Workspaces',        icon: 'layers' },
