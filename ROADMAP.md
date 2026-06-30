@@ -90,7 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**5/16 done** · 11 backlog
+**6/17 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -110,6 +110,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [315](https://github.com/Kuestenlogik/Bowire/issues/315) | Bowire | [Unify Proxy + Intercepted into 'Traffic' rail (Standalone / Embedded sub-modes); Mocks stays separate](#issue-kuestenlogik-bowire-315) | ✅ Done |  |
 | [334](https://github.com/Kuestenlogik/Bowire/issues/334) | Bowire | [feat(v2.2): merge Mocks + Traffic into Intercept rail with four sub-tabs](#issue-kuestenlogik-bowire-334) | ✅ Done |  |
 | [335](https://github.com/Kuestenlogik/Bowire/issues/335) | Bowire | [feat(v2.2): cross-rail transition CTAs](#issue-kuestenlogik-bowire-335) | ✅ Done |  |
+| [336](https://github.com/Kuestenlogik/Bowire/issues/336) | Bowire | [feat(v2.2): Interceptor activation empty-state with Reverse-Proxy CTA](#issue-kuestenlogik-bowire-336) | ✅ Done |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
@@ -602,6 +603,10 @@ Operator audit identified Phase-3 rail bloat: `Mocks` + `Traffic` (Interceptor) 
 #### <a id="issue-kuestenlogik-bowire-335"></a>✅ Done · [#335](https://github.com/Kuestenlogik/Bowire/issues/335) feat(v2.2): cross-rail transition CTAs
 
 Surface implicit operator workflows between rails as concrete UI affordances: [[more]](https://github.com/Kuestenlogik/Bowire/issues/335)
+
+#### <a id="issue-kuestenlogik-bowire-336"></a>✅ Done · [#336](https://github.com/Kuestenlogik/Bowire/issues/336) feat(v2.2): Interceptor activation empty-state with Reverse-Proxy CTA
+
+Operator: 'live overrides machen ja nur sinn bei embedded, oder?' Confirmed: Intercept rail's Captured + Live overrides + Settings sub-tabs are meaningful only when EITHER `app.UseBowireInterceptor()` ran (embedded) OR the standalone Tool's Reverse-Proxy is running. [[more]](https://github.com/Kuestenlogik/Bowire/issues/336)
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
