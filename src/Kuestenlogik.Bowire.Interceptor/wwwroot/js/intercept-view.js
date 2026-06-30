@@ -38,6 +38,74 @@
         return 'captured';
     })();
 
+    // R3b — Interceptor activation status. The Captured / Live
+    // overrides / Settings sub-tabs only make sense when EITHER the
+    // embedded middleware is wired in OR the standalone Tool has a
+    // reverse-proxy running. The Mock-servers sub-tab is UNAFFECTED
+    // (it works regardless of interceptor state). When the probe says
+    // disabled, those three sub-tabs surface an activation empty-state
+    // with the right CTA per deployment mode.
+    //
+    // State machine:
+    //   null      — probe hasn't fired yet (initial). Render assumes
+    //                "active" optimistically so we don't flash the
+    //                empty state on first paint before the probe
+    //                returns; the empty state appears after the probe
+    //                fills in the data.
+    //   { ... }   — last response from /api/intercepted/status.
+    let interceptStatus = null;
+    let interceptStatusLoading = false;
+
+    function bowireInterceptLoadStatus() {
+        if (interceptStatusLoading) return;
+        interceptStatusLoading = true;
+        var prefix = (typeof config !== 'undefined' && config && config.prefix) ? config.prefix : '';
+        fetch(prefix + '/api/intercepted/status')
+            .then(function (r) {
+                if (r.status === 404 || r.status === 501) {
+                    return { enabled: false, source: 'none', middlewareActive: false, reverseProxyCount: 0 };
+                }
+                return r.ok ? r.json() : null;
+            })
+            .catch(function () { return null; })
+            .then(function (body) {
+                interceptStatusLoading = false;
+                if (body && typeof body === 'object') {
+                    interceptStatus = body;
+                } else {
+                    // Probe failed entirely — assume disabled so the
+                    // operator sees the activation copy rather than
+                    // an empty-list mystery.
+                    interceptStatus = { enabled: false, source: 'none', middlewareActive: false, reverseProxyCount: 0 };
+                }
+                render();
+            });
+    }
+
+    // Re-probe whenever the reverse-proxy state changes — the standalone
+    // start path doesn't know the rail is listening, so we lean on the
+    // existing reverseProxyState global as the activation signal and
+    // mirror it into interceptStatus on render.
+    function bowireInterceptResolvedEnabled() {
+        // Optimistic null → assume enabled so the first paint after a
+        // probe hasn't returned yet doesn't flash the empty state.
+        if (interceptStatus === null) return true;
+        if (interceptStatus.enabled) return true;
+        // Fold the JS-side reverse-proxy state in as a fallback — the
+        // /api/intercepted/status server endpoint reports the live
+        // registry count, but a freshly-started proxy in the same
+        // session beats the probe by a heartbeat. Checking the local
+        // reverseProxyState (refreshed by tools-reverse-proxy.js on
+        // every start/stop) lets the rail unblock immediately.
+        if (typeof reverseProxyState !== 'undefined'
+            && reverseProxyState
+            && Array.isArray(reverseProxyState.running)
+            && reverseProxyState.running.length > 0) {
+            return true;
+        }
+        return false;
+    }
+
     function setInterceptSubView(next) {
         interceptSubView = next;
         try { localStorage.setItem('bowire_intercept_sub_tab', next); } catch { /* ignore */ }
@@ -48,9 +116,71 @@
         return (typeof uiMode !== 'undefined' && uiMode === 'embedded');
     }
 
+    // R3b — Shared activation empty-state. Rendered in each of the
+    // three interceptor-gated sub-tabs (Captured / Live overrides /
+    // Settings) when neither the embedded middleware nor a standalone
+    // reverse-proxy is live. The Mock-servers sub-tab is intentionally
+    // not gated on this — mock servers are standalone replay hosts
+    // spun up from recordings and work regardless of interceptor state.
+    //
+    // Activation copy adapts to deployment mode:
+    //   embedded mode  → only the "add app.UseBowireInterceptor()" hint
+    //                    (no CTA because the operator has to edit code)
+    //   standalone     → both hints + a "Start Reverse-Proxy now" CTA
+    //                    that opens the existing reverse-proxy modal
+    function renderInterceptActivationEmptyState(subTabLabel) {
+        var embedded = bowireInterceptIsEmbedded();
+        var headline = 'No interceptor running';
+        var body = 'Embed: add app.UseBowireInterceptor() to your host. '
+            + 'Standalone: start the Reverse-Proxy from the topbar.';
+        var actions = [];
+        if (!embedded && typeof window !== 'undefined'
+            && typeof window.bowireOpenReverseProxyModal === 'function') {
+            actions.push({
+                id: 'bowire-intercept-start-proxy-btn',
+                label: 'Start Reverse-Proxy now',
+                primary: true,
+                onClick: function () {
+                    window.bowireOpenReverseProxyModal();
+                    // Probe again after the operator finishes the modal —
+                    // best-effort polling on the existing refresh helper
+                    // so the rail unblocks as soon as a proxy is bound.
+                    if (typeof window.bowireRefreshReverseProxies === 'function') {
+                        setTimeout(function () {
+                            window.bowireRefreshReverseProxies({ rerender: false });
+                            bowireInterceptLoadStatus();
+                        }, 500);
+                    }
+                }
+            });
+        }
+        actions.push({
+            label: 'Re-check status',
+            onClick: function () {
+                interceptStatus = null;
+                bowireInterceptLoadStatus();
+            }
+        });
+        return renderEmptyCard({
+            icon: 'plug',
+            headline: headline + (subTabLabel ? ' — ' + subTabLabel : ''),
+            body: body,
+            actions: actions
+        });
+    }
+
     // ---- Sidebar — four sub-tabs ----
 
     function renderInterceptListInto(container) {
+        // R3b — lazy-fire the status probe on first render so the
+        // empty-state choice is data-driven by the host's actual
+        // wiring. Subsequent renders consume the cached interceptStatus
+        // without re-fetching; the existing Reconnect / start-proxy
+        // affordances clear it when the operator changes the state.
+        if (interceptStatus === null && !interceptStatusLoading) {
+            bowireInterceptLoadStatus();
+        }
+
         // Lazy-load flow snapshot + live-override rules through the
         // existing intercepted helpers. They auto-connect to
         // /api/intercepted/* on the same workbench origin.
@@ -148,7 +278,19 @@
             }
         });
 
+        // R3b — gate the three interceptor-dependent sub-tabs on the
+        // status probe. Mock-servers falls through to its own renderer
+        // even when the interceptor isn't running. The tabs stay
+        // visible (discoverability for operators learning what the
+        // Intercept rail does); only the BODY swaps to the activation
+        // empty-state.
+        var interceptorEnabled = bowireInterceptResolvedEnabled();
+
         if (interceptSubView === 'live-overrides') {
+            if (!interceptorEnabled) {
+                container.appendChild(renderInterceptActivationEmptyState('Live overrides'));
+                return;
+            }
             if (typeof renderInterceptedMocksListInto === 'function') {
                 renderInterceptedMocksListInto(container);
             }
@@ -159,10 +301,18 @@
             return;
         }
         if (interceptSubView === 'settings') {
+            if (!interceptorEnabled) {
+                container.appendChild(renderInterceptActivationEmptyState('Settings'));
+                return;
+            }
             renderInterceptSettingsListInto(container);
             return;
         }
         // Captured
+        if (!interceptorEnabled) {
+            container.appendChild(renderInterceptActivationEmptyState('Captured'));
+            return;
+        }
         renderInterceptCapturedListBodyInto(container);
     }
 
@@ -376,10 +526,24 @@
     function renderInterceptMainPane() {
         const pane = el('div', { className: 'bowire-env-editor-main' });
 
+        // R3b — Mirror the sidebar's activation gate so the main pane
+        // doesn't show a misleading "select a flow…" / "no override
+        // rule selected" empty when nothing can be selected. Mock
+        // servers stays unaffected.
+        var interceptorEnabled = bowireInterceptResolvedEnabled();
+
         if (interceptSubView === 'settings') {
+            if (!interceptorEnabled) {
+                pane.appendChild(renderInterceptActivationEmptyState(null));
+                return pane;
+            }
             return renderInterceptSettingsMainPane(pane);
         }
         if (interceptSubView === 'live-overrides') {
+            if (!interceptorEnabled) {
+                pane.appendChild(renderInterceptActivationEmptyState(null));
+                return pane;
+            }
             if (typeof renderInterceptedMocksMainPane === 'function') {
                 return renderInterceptedMocksMainPane(pane);
             }
@@ -390,6 +554,10 @@
         }
 
         // Captured (flows) — reuse the intercepted flow detail surface.
+        if (!interceptorEnabled) {
+            pane.appendChild(renderInterceptActivationEmptyState(null));
+            return pane;
+        }
         if (typeof interceptedConnectionState !== 'undefined'
             && interceptedConnectionState === 'error') {
             pane.appendChild(renderEmptyCard({

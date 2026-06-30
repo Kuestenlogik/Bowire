@@ -57,6 +57,34 @@ public static class BowireInterceptorEndpoints
     private static void MapTrafficEndpoints(
         IEndpointRouteBuilder endpoints, string basePath, string apiPrefix)
     {
+        // R3b — Capability probe used by the Intercept rail to choose
+        // between the normal sub-tab content and the v2.2 "interceptor
+        // not running" activation empty-state. Embedded hosts flip
+        // enabled=true via app.UseBowireInterceptor(); standalone
+        // Bowire reaches enabled=true once any reverse-proxy is
+        // running. Mock-servers sub-tab is intentionally unaffected
+        // (it works regardless of interceptor state) — the rail
+        // consumes the source field to know which embedded-vs-
+        // standalone copy to render.
+        endpoints.MapGet($"{basePath}{apiPrefix}/status", (HttpContext ctx) =>
+        {
+            var activation = ctx.RequestServices.GetService<InterceptorActivation>();
+            var registry = ctx.RequestServices.GetService<ReverseProxyRegistry>();
+            var middlewareActive = activation?.Activated ?? false;
+            var reverseProxyCount = registry?.Snapshot().Count ?? 0;
+            var enabled = middlewareActive || reverseProxyCount > 0;
+            string source = middlewareActive
+                ? "embedded"
+                : (reverseProxyCount > 0 ? "standalone" : "none");
+            return Results.Json(new
+            {
+                enabled,
+                source,
+                middlewareActive,
+                reverseProxyCount,
+            }, s_jsonOpts);
+        }).ExcludeFromDescription();
+
         // GET {prefix}/flows — newest-first snapshot for the rail listing.
         endpoints.MapGet($"{basePath}{apiPrefix}/flows", (HttpContext ctx) =>
         {
