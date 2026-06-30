@@ -90,7 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**9/20 done** · 11 backlog
+**10/21 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -104,10 +104,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ⬜ Backlog |  |
 | [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | ⬜ Backlog |  |
 | [312](https://github.com/Kuestenlogik/Bowire/issues/312) | Bowire | [Test coverage gap report — v2.1 audit kickoff](#issue-kuestenlogik-bowire-312) | ⬜ Backlog |  |
-| [323](https://github.com/Kuestenlogik/Bowire/issues/323) | Bowire | [interceptor reverse-proxy: swap hand-rolled HttpClient forwarder for YARP IHttpForwarder](#issue-kuestenlogik-bowire-323) | ⬜ Backlog |  |
+| [341](https://github.com/Kuestenlogik/Bowire/issues/341) | Bowire | [feat(v2.2): swap reverse-proxy forwarding to YARP IHttpForwarder](#issue-kuestenlogik-bowire-341) | ⬜ Backlog |  |
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ✅ Done |  |
 | [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ✅ Done |  |
 | [315](https://github.com/Kuestenlogik/Bowire/issues/315) | Bowire | [Unify Proxy + Intercepted into 'Traffic' rail (Standalone / Embedded sub-modes); Mocks stays separate](#issue-kuestenlogik-bowire-315) | ✅ Done |  |
+| [323](https://github.com/Kuestenlogik/Bowire/issues/323) | Bowire | [interceptor reverse-proxy: swap hand-rolled HttpClient forwarder for YARP IHttpForwarder](#issue-kuestenlogik-bowire-323) | ✅ Done |  |
 | [334](https://github.com/Kuestenlogik/Bowire/issues/334) | Bowire | [feat(v2.2): merge Mocks + Traffic into Intercept rail with four sub-tabs](#issue-kuestenlogik-bowire-334) | ✅ Done |  |
 | [335](https://github.com/Kuestenlogik/Bowire/issues/335) | Bowire | [feat(v2.2): cross-rail transition CTAs](#issue-kuestenlogik-bowire-335) | ✅ Done |  |
 | [336](https://github.com/Kuestenlogik/Bowire/issues/336) | Bowire | [feat(v2.2): Interceptor activation empty-state with Reverse-Proxy CTA](#issue-kuestenlogik-bowire-336) | ✅ Done |  |
@@ -584,9 +585,9 @@ Follow-up to #294. Phases A-F shipped the descriptor architecture + extracted Se
 
 Recon report for the v2.2 test pillar lands at [`docs/testing/coverage-gaps-v2.1.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/testing/coverage-gaps-v2.1.md). This issue tracks the kickoff; per-gap follow-ups should reference back to this one. [[more]](https://github.com/Kuestenlogik/Bowire/issues/312)
 
-#### <a id="issue-kuestenlogik-bowire-323"></a>⬜ Backlog · [#323](https://github.com/Kuestenlogik/Bowire/issues/323) interceptor reverse-proxy: swap hand-rolled HttpClient forwarder for YARP IHttpForwarder
+#### <a id="issue-kuestenlogik-bowire-341"></a>⬜ Backlog · [#341](https://github.com/Kuestenlogik/Bowire/issues/341) feat(v2.2): swap reverse-proxy forwarding to YARP IHttpForwarder
 
-Follow-up to #153 / #307 — the standalone reverse-proxy listener (`bowire interceptor --upstream <url>`) shipped in 67197f2 forwards every request via a hand-rolled `BowireReverseProxyMiddleware` over plain `HttpClient`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/323)
+Migrates Bowire's reverse-proxy host from raw `HttpClient` to YARP's `IHttpForwarder` (v2.1 audit follow-up #323). Closes the deferred-from-v2.1 work. [[more]](https://github.com/Kuestenlogik/Bowire/issues/341)
 
 #### <a id="issue-kuestenlogik-bowire-180"></a>✅ Done · [#180](https://github.com/Kuestenlogik/Bowire/issues/180) Assertion DSL for collection / recording replay
 
@@ -599,6 +600,10 @@ Recordings + Mocks let an operator capture and replay traffic, but nothing in th
 #### <a id="issue-kuestenlogik-bowire-315"></a>✅ Done · [#315](https://github.com/Kuestenlogik/Bowire/issues/315) Unify Proxy + Intercepted into 'Traffic' rail (Standalone / Embedded sub-modes); Mocks stays separate
 
 Three rails exist today that all touch "request flowing through Bowire": [[more]](https://github.com/Kuestenlogik/Bowire/issues/315)
+
+#### <a id="issue-kuestenlogik-bowire-323"></a>✅ Done · [#323](https://github.com/Kuestenlogik/Bowire/issues/323) interceptor reverse-proxy: swap hand-rolled HttpClient forwarder for YARP IHttpForwarder
+
+Follow-up to #153 / #307 — the standalone reverse-proxy listener (`bowire interceptor --upstream <url>`) shipped in 67197f2 forwards every request via a hand-rolled `BowireReverseProxyMiddleware` over plain `HttpClient`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/323)
 
 #### <a id="issue-kuestenlogik-bowire-334"></a>✅ Done · [#334](https://github.com/Kuestenlogik/Bowire/issues/334) feat(v2.2): merge Mocks + Traffic into Intercept rail with four sub-tabs
 
