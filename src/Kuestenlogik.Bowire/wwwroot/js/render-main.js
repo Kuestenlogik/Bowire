@@ -4813,214 +4813,13 @@
         // collection-detail leaf still renders renderCollectionDetail
         // (defined in collections.js, in core).
 
-        // #133 Phase 2 — Mocks rail mode owns the main pane. Sidebar
-        // lists running mock hosts; main pane shows the selected
-        // mock's detail (URL + copy + stop + a live request-log
-        // toggle). Mirrors the table the legacy manager modal
-        // (#94 #56) renders, but inlined into the workbench instead
-        // of a popup.
-        if (railMode === 'mocks') {
-            var mockMain = el('div', { id: 'bowire-main-mocks', className: 'bowire-main bowire-main-mocks' });
-            // Pattern B: workspace-prereq branches first; mock list +
-            // detail panes are workspace-scoped so a no-workspace render
-            // would otherwise paint stale-looking emptiness.
-            if (!activeWorkspaceId && typeof renderWorkspacePrereqEmpty === 'function') {
-                mockMain.appendChild(renderWorkspacePrereqEmpty({
-                    icon: 'mock',
-                    railLabel: 'Mocks',
-                    railBody: 'Mocks spin up a fake host from a recording so your client can hit a stable URL instead of the real service.'
-                }));
-                return mockMain;
-            }
-            var mockMainWrap = el('div', { className: 'bowire-mocks-wrap bowire-main-pad' });
-            // #140 — Presets bar at the top of the Mocks pane. The
-            // saved config carries the currently-selected mock's
-            // recording-id + port + log-polling state so an operator
-            // who flips between "the JWT mock" and "the orders mock"
-            // bookmarks each pick instead of re-finding it by hand.
-            //
-            // Skip the bar entirely on the no-mocks empty state —
-            // there's nothing to snapshot AND no presets to load on
-            // a fresh workspace, so the bar is just noise on the
-            // welcome screen. Operator: 'warum sehe ich diese bar
-            // mit save preset, wenn "no mocks running" status? das
-            // ist doch nur der welcome screen.'
-            var _mocksHasAny = Array.isArray(mocksList) && mocksList.length > 0;
-            var _mocksHasPresets = typeof loadPresets === 'function'
-                && (loadPresets('mocks') || []).length > 0;
-            if (typeof renderPresetsBar === 'function'
-                && (_mocksHasAny || _mocksHasPresets)) {
-                try {
-                    mockMainWrap.appendChild(renderPresetsBar({
-                        mode: 'mocks',
-                        canSave: function () { return !!mockSelectedId; },
-                        canSaveHint: 'Select a mock first',
-                        snapshot: function () {
-                            var sel = (mocksList || []).find(function (m) { return m.mockId === mockSelectedId; });
-                            return {
-                                mockId: sel ? sel.mockId : null,
-                                port: sel ? sel.port : null,
-                                recordingId: sel ? sel.recordingId : null,
-                                recordingName: sel ? sel.recordingName : null,
-                                logPolling: mockLogOpenFor === (sel && sel.mockId)
-                            };
-                        },
-                        apply: function (cfg) {
-                            if (!cfg) return;
-                            // Re-select the mock by id when it's still
-                            // in the list; the recording-id is the
-                            // backup match for "the same mock spun up
-                            // again under a new mockId".
-                            if (cfg.mockId
-                                && (mocksList || []).some(function (m) { return m.mockId === cfg.mockId; })) {
-                                mockSelectedId = cfg.mockId;
-                            } else if (cfg.recordingId) {
-                                var byRec = (mocksList || []).find(function (m) {
-                                    return m.recordingId === cfg.recordingId;
-                                });
-                                if (byRec) mockSelectedId = byRec.mockId;
-                            }
-                            if (cfg.logPolling && typeof startMockLogPolling === 'function' && mockSelectedId) {
-                                mockLogOpenFor = mockSelectedId;
-                                startMockLogPolling(mockSelectedId);
-                            }
-                        }
-                    }));
-                } catch (e) { /* presets.js not loaded — skip */ }
-            }
-
-            var selectedMock = (mocksList || []).find(function (m) { return m.mockId === mockSelectedId; });
-
-            if (!selectedMock) {
-                mockMainWrap.appendChild(renderEmptyCard({
-                    // Mocks rail glyph (matches the rail strip).
-                    // Operator feedback: 'mocks zeigt auch noch das
-                    // alte symbol im welcome'.
-                    icon: 'mock',
-                    headline: (mocksList && mocksList.length > 0) ? 'Pick a mock' : 'No mocks running',
-                    body: (mocksList && mocksList.length > 0)
-                        ? 'Pick a running mock from the sidebar to see its URL, live request log, and stop control.'
-                        // Cross-link to Traffic → Mock Rules so the
-                        // operator understands the two surfaces are
-                        // orthogonal: this rail spins up a standalone
-                        // server replaying a recording end-to-end;
-                        // Mock Rules intercept-and-substitute single
-                        // responses inside the proxy / middleware
-                        // pipeline. Same word "mock" — different verb.
-                        : 'Mocks are standalone replay servers spun up from a recording — switch to the Recordings rail and use "Run as mock" on any session. Looking for one-line response substitution inside the proxy / middleware pipeline? See the Traffic rail’s Mock Rules sub-tab.',
-                    actions: (mocksList && mocksList.length > 0) ? [] : [
-                        {
-                            label: 'Go to Recordings',
-                            primary: true,
-                            onClick: function () {
-                                railMode = 'recordings';
-                                try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
-                                render();
-                            }
-                        },
-                        // #303 — secondary tour: walks Recordings → Use as
-                        // mock → Mocks rail. Force-mode so the operator
-                        // can re-trigger from the same empty card after
-                        // dismissing once.
-                        {
-                            id: 'bowire-mocks-empty-tour-btn',
-                            label: 'Take a tour',
-                            onClick: function () {
-                                if (typeof window !== 'undefined'
-                                    && typeof window.bowireStartBuildMockTour === 'function') {
-                                    window.bowireStartBuildMockTour({ force: true });
-                                }
-                            }
-                        }
-                    ]
-                }));
-            } else {
-                var url = 'http://127.0.0.1:' + selectedMock.port;
-                mockMainWrap.appendChild(el('h2', {
-                    className: 'bowire-sources-title',
-                    textContent: selectedMock.recordingName || ('mock-' + selectedMock.port)
-                }));
-                mockMainWrap.appendChild(el('p', {
-                    className: 'bowire-sources-subtitle',
-                    textContent: 'Mock host on port ' + selectedMock.port + ' · started ' + (selectedMock.startedAt || 'unknown')
-                }));
-
-                // URL card with copy + open buttons
-                var urlCard = el('div', { className: 'bowire-mocks-url-card' });
-                urlCard.appendChild(el('code', { className: 'bowire-mocks-url', textContent: url }));
-                urlCard.appendChild(el('button', {
-                    className: 'bowire-empty-card-action',
-                    textContent: 'Copy URL',
-                    onClick: function () {
-                        if (navigator.clipboard) {
-                            navigator.clipboard.writeText(url).then(function () {
-                                toast('Mock URL copied: ' + url, 'success');
-                            });
-                        }
-                    }
-                }));
-                urlCard.appendChild(el('a', {
-                    className: 'bowire-empty-card-action',
-                    href: url,
-                    target: '_blank',
-                    rel: 'noopener',
-                    textContent: 'Open in tab'
-                }));
-                urlCard.appendChild(el('button', {
-                    className: 'bowire-empty-card-action bowire-recording-action-danger',
-                    textContent: 'Stop mock',
-                    onClick: function () {
-                        if (typeof stopMock === 'function') stopMock(selectedMock.mockId);
-                    }
-                }));
-                mockMainWrap.appendChild(urlCard);
-
-                // Live log toggle + display
-                var logCard = el('div', { className: 'bowire-mocks-log-card', style: 'margin-top:16px' });
-                var logOpen = mockLogOpenFor === selectedMock.mockId;
-                var logState = (typeof mockLogState !== 'undefined' && mockLogState[selectedMock.mockId])
-                    ? mockLogState[selectedMock.mockId]
-                    : { total: 0, entries: [] };
-                logCard.appendChild(el('div', { className: 'bowire-sources-section', style: 'display:flex;align-items:center;gap:8px' },
-                    el('span', { textContent: 'Live request log' }),
-                    el('span', { className: 'bowire-home-section-count', textContent: logState.total + ' request' + (logState.total === 1 ? '' : 's') }),
-                    el('button', {
-                        className: 'bowire-empty-card-action',
-                        textContent: logOpen ? 'Pause polling' : 'Start polling',
-                        onClick: function () {
-                            if (mockLogOpenFor === selectedMock.mockId) {
-                                mockLogOpenFor = null;
-                                if (typeof stopMockLogPolling === 'function') stopMockLogPolling(selectedMock.mockId);
-                            } else {
-                                mockLogOpenFor = selectedMock.mockId;
-                                if (typeof startMockLogPolling === 'function') startMockLogPolling(selectedMock.mockId);
-                            }
-                            render();
-                        }
-                    })
-                ));
-                if (logOpen) {
-                    if (!logState.entries.length) {
-                        logCard.appendChild(el('p', {
-                            className: 'bowire-sources-hint',
-                            textContent: 'No requests yet. Fire one against ' + url + ' and it shows up here.'
-                        }));
-                    } else {
-                        var ul = el('ul', { className: 'bowire-mocks-log-list', style: 'margin:8px 0 0;padding:0;list-style:none' });
-                        logState.entries.slice(0, 20).forEach(function (e, i) {
-                            var li = el('li', { style: 'padding:6px 0;border-top:1px solid var(--bowire-border-subtle);font-size:12px;font-family:var(--bowire-font-mono)' });
-                            li.textContent = '[' + (e.timestamp || '?') + '] ' + (e.method || 'REQ') + ' ' + (e.path || '/') + ' → ' + (e.status || '?');
-                            ul.appendChild(li);
-                        });
-                        logCard.appendChild(ul);
-                    }
-                }
-                mockMainWrap.appendChild(logCard);
-            }
-
-            mockMain.appendChild(mockMainWrap);
-            return mockMain;
-        }
+        // v2.2 — the standalone Mocks rail descriptor is gone. The
+        // Mock-servers content surface now lives inside the Intercept
+        // rail's "Mock servers" sub-tab; the renderer lives in
+        // Bowire.Mock's mocks.js fragment as window.__bowireMocks.
+        // renderRailMain. The boot migration rewrites a stored
+        // railMode='mocks' to 'intercept' on first paint, so this
+        // dispatcher no longer needs to dispatch on 'mocks'.
 
         // #133 Phase 2 — Recordings rail mode owns the main pane.
         // Sidebar shows the recordings list; main pane shows the
@@ -5180,8 +4979,9 @@
                     ? 'proxy-' + (proxyFlowSelectedId || 'none')
                     : sidebarView === 'intercepted'
                         ? 'intercepted-' + (interceptedFlowSelectedId || 'none')
-                        : sidebarView === 'traffic'
-                            ? 'traffic-' + (typeof interceptedFlowSelectedId !== 'undefined' ? (interceptedFlowSelectedId || 'none') : 'none')
+                        : sidebarView === 'intercept'
+                            ? 'intercept-' + (typeof interceptSubView !== 'undefined' ? interceptSubView : 'captured')
+                                + '-' + (typeof interceptedFlowSelectedId !== 'undefined' ? (interceptedFlowSelectedId || 'none') : 'none')
                             : freeformRequest
                                 ? 'freeform'
                                 : selectedMethod
@@ -5218,13 +5018,12 @@
             return main;
         }
 
-        // #315 — Unified Traffic view. Adapts header + Settings sub-tab
-        // to BowireOptions.Mode (Standalone vs Embedded); Flows + Mock
-        // Rules render identically across deployments. Renderer lives
-        // in Rail.Traffic's traffic-view.js fragment.
-        if (sidebarView === 'traffic') {
-            if (typeof renderTrafficMainPane === 'function') {
-                main.appendChild(renderTrafficMainPane());
+        // v2.2 — Unified Intercept view. Four sub-tabs (Captured / Live
+        // overrides / Mock servers / Settings) — sub-tab state is owned
+        // by the Interceptor package's intercept-view.js fragment.
+        if (sidebarView === 'intercept') {
+            if (typeof renderInterceptMainPane === 'function') {
+                main.appendChild(renderInterceptMainPane());
             }
             return main;
         }

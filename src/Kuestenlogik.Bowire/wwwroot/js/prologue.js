@@ -1758,6 +1758,14 @@
         railMode = 'workspaces';
         try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
     }
+    // v2.2 — Environments rail descriptor dropped (R2). The 'environments'
+    // surface continues to render inside Workspaces (per-workspace env
+    // variables); operators that addressed the rail directly land on the
+    // Workspaces switcher instead of a dangling id.
+    if (railMode === 'environments') {
+        railMode = 'workspaces';
+        try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+    }
     // Collections rail retired in v2.1 — Compose rail's side panel
     // (#295) is the canonical Collections + Presets surface. Operators
     // who had explicitly selected the standalone Collections rail land
@@ -1766,27 +1774,97 @@
         railMode = 'compose';
         try { localStorage.setItem('bowire_rail_mode', 'compose'); } catch { /* ignore */ }
     }
-    // #315 — Proxy + Intercepted unified into 'traffic'. Both old ids
-    // rewrite to the new one so existing installs land on the same
-    // surface instead of on a hidden / no-icon rail. The legacy
-    // descriptors stay registered (HideFromRail = true) for the
-    // deprecation window so deep links + tour scripts that still
-    // address 'proxy' / 'intercepted' don't NRE. We also rewrite the
-    // persisted sidebar-view key (bowire_sidebar_view — the
-    // SIDEBAR_VIEW_KEY const is declared further down, so we use the
-    // literal string here) so the main-pane dispatcher (driven by
-    // sidebarView, not railMode) lands on the unified pane on first
-    // paint after the upgrade.
-    if (railMode === 'proxy' || railMode === 'intercepted') {
-        railMode = 'traffic';
-        try { localStorage.setItem('bowire_rail_mode', 'traffic'); } catch { /* ignore */ }
+    // v2.2 rail-IA refactor — Mocks + Traffic (+ the already-hidden
+    // Intercepted + Proxy descriptors) merge into the unified 'intercept'
+    // rail with four sub-tabs: captured / live-overrides / mock-servers
+    // / settings. All four legacy ids rewrite to 'intercept' on first
+    // paint, and the sub-tab discriminator is seeded based on which
+    // surface the operator was last on so the upgrade lands them on
+    // the equivalent sub-tab instead of the default. Idempotent: a
+    // second pass through the migration sees railMode === 'intercept'
+    // and does nothing.
+    //
+    // Sub-tab seeding rules:
+    //   railMode='mocks'          → sub-tab='mock-servers'
+    //   railMode='traffic' + sub  → carries the bowire_traffic_sub_view
+    //                               value forward: flows → captured,
+    //                               mocks → live-overrides, settings →
+    //                               settings.
+    //   railMode='proxy'/         → sub-tab='captured' (proxy was the
+    //   'intercepted'                standalone version of the same
+    //                               surface; live-overrides is server-
+    //                               provided and would be empty there).
+    //
+    // The bowire_enabled_rails list (when present) gets the same merge
+    // pass — 'mocks' / 'traffic' entries collapse into a single
+    // 'intercept'.
+    if (railMode === 'mocks' || railMode === 'traffic'
+        || railMode === 'proxy' || railMode === 'intercepted') {
+        var _legacyMode = railMode;
+        railMode = 'intercept';
+        try { localStorage.setItem('bowire_rail_mode', 'intercept'); } catch { /* ignore */ }
+        try {
+            // Sub-tab discriminator. Seed only when not already set so
+            // an operator who already landed on 'intercept' via the
+            // refactor doesn't get their pick clobbered by a second
+            // upgrade pass.
+            var existingSub = null;
+            try { existingSub = localStorage.getItem('bowire_intercept_sub_tab'); } catch { /* ignore */ }
+            if (!existingSub) {
+                var nextSub = 'captured';
+                if (_legacyMode === 'mocks') {
+                    nextSub = 'mock-servers';
+                } else if (_legacyMode === 'traffic') {
+                    var trafficSub = null;
+                    try { trafficSub = localStorage.getItem('bowire_traffic_sub_view'); } catch { /* ignore */ }
+                    if (trafficSub === 'mocks') nextSub = 'live-overrides';
+                    else if (trafficSub === 'settings') nextSub = 'settings';
+                    else nextSub = 'captured';
+                }
+                localStorage.setItem('bowire_intercept_sub_tab', nextSub);
+            }
+        } catch { /* ignore */ }
         try {
             var storedSidebarView = localStorage.getItem('bowire_sidebar_view');
-            if (storedSidebarView === 'proxy' || storedSidebarView === 'intercepted') {
-                localStorage.setItem('bowire_sidebar_view', 'traffic');
+            if (storedSidebarView === 'proxy' || storedSidebarView === 'intercepted'
+                || storedSidebarView === 'traffic' || storedSidebarView === 'mocks') {
+                localStorage.setItem('bowire_sidebar_view', 'intercept');
             }
         } catch { /* ignore */ }
     }
+    // Merge enabled-rails entries — collapse 'mocks' + 'traffic' into a
+    // single 'intercept'. Same idempotency contract: once the stored
+    // list contains 'intercept' and not the legacy ids, the pass is a
+    // no-op.
+    try {
+        var enabledRaw = localStorage.getItem('bowire_enabled_rails');
+        if (enabledRaw) {
+            var enabledList = JSON.parse(enabledRaw);
+            if (Array.isArray(enabledList)) {
+                var needsMerge = false;
+                for (var _eri = 0; _eri < enabledList.length; _eri++) {
+                    if (enabledList[_eri] === 'mocks' || enabledList[_eri] === 'traffic') {
+                        needsMerge = true; break;
+                    }
+                }
+                if (needsMerge) {
+                    var merged = [];
+                    var sawIntercept = false;
+                    for (var _eri2 = 0; _eri2 < enabledList.length; _eri2++) {
+                        var _id = enabledList[_eri2];
+                        if (_id === 'mocks' || _id === 'traffic') {
+                            if (!sawIntercept) { merged.push('intercept'); sawIntercept = true; }
+                        } else if (_id === 'intercept') {
+                            if (!sawIntercept) { merged.push('intercept'); sawIntercept = true; }
+                        } else {
+                            merged.push(_id);
+                        }
+                    }
+                    localStorage.setItem('bowire_enabled_rails', JSON.stringify(merged));
+                }
+            }
+        }
+    } catch { /* corrupt key — leave alone, isRailEnabled fallback handles it */ }
     // #133 Phase 2 — Mocks mode selection. Session-only;
     // re-derived from the live mocksList every render so a stopped
     // mock automatically deselects.
@@ -5005,18 +5083,19 @@
     let sidebarView = (function () {
         try {
             var v = localStorage.getItem(SIDEBAR_VIEW_KEY);
-            // #315 — accept 'traffic' alongside the legacy 'proxy' +
-            // 'intercepted' values; the boot migration above already
-            // rewrote any stored railMode but a deep-link can still
-            // land sidebarView at the unified value.
+            // v2.2 — 'intercept' is the new unified value; the legacy
+            // 'proxy' / 'intercepted' are retained for backwards
+            // compatibility with deep links. The boot migration above
+            // already rewrote any stored railMode but a deep-link can
+            // still land sidebarView at one of the legacy values.
             if (v === 'favorites' || v === 'environments' || v === 'flows'
-                || v === 'proxy' || v === 'intercepted' || v === 'traffic') return v;
+                || v === 'proxy' || v === 'intercepted' || v === 'intercept') return v;
             return 'services';
         } catch { return 'services'; }
     })();
     function setSidebarView(v) {
         sidebarView = (v === 'favorites' || v === 'environments' || v === 'flows'
-            || v === 'proxy' || v === 'intercepted' || v === 'traffic') ? v : 'services';
+            || v === 'proxy' || v === 'intercepted' || v === 'intercept') ? v : 'services';
         try { localStorage.setItem(SIDEBAR_VIEW_KEY, sidebarView); } catch {}
     }
 

@@ -1317,15 +1317,18 @@
             {
                 id: 'mock-switch-to-mocks',
                 title: 'Step 3 — Inspect the running mock',
-                body: 'The Mocks rail lists every mock host you\'ve started. Pick one to see its URL, copy it again, open the live request log, or stop the server.\n\nFire requests against the mock\'s port from your other tools and watch them stream in.',
-                target: '[data-rail-mode-id="mocks"]',
-                navigate: function () { _tourGoToRail('mocks'); },
+                body: 'The Intercept rail\'s "Mock servers" sub-tab lists every mock host you\'ve started. Pick one to see its URL, copy it again, open the live request log, or stop the server.\n\nFire requests against the mock\'s port from your other tools and watch them stream in.',
+                target: '[data-rail-mode-id="intercept"]',
+                navigate: function () {
+                    try { localStorage.setItem('bowire_intercept_sub_tab', 'mock-servers'); } catch { /* ignore */ }
+                    _tourGoToRail('intercept');
+                },
                 advance: 'next-button'
             },
             {
                 id: 'mock-wrap-up',
                 title: 'That\'s the mock loop',
-                body: 'Recording → Use as mock → invoke against the mock port. From here you can chain it: benchmark the mock, share its URL with the team, or stop it from the Mocks rail when you\'re done.',
+                body: 'Recording → Use as mock → invoke against the mock port. From here you can chain it: benchmark the mock, share its URL with the team, or stop it from the Intercept rail\'s Mock servers sub-tab when you\'re done.',
                 target: null,
                 advance: 'next-button'
             }
@@ -1693,16 +1696,19 @@
             {
                 id: 'traffic-intro',
                 title: 'Capture traffic',
-                body: 'The Traffic rail shows live HTTP flows intercepted by Bowire — every request that hits the host, with timing, status, request + response bodies. Useful when you\'re debugging a misbehaving client or learning how an app actually talks to its backend.',
+                body: 'The Intercept rail\'s Captured sub-tab shows live HTTP flows intercepted by Bowire — every request that hits the host, with timing, status, request + response bodies. Useful when you\'re debugging a misbehaving client or learning how an app actually talks to its backend.',
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'traffic-go-rail',
-                title: 'Step 1 — Open the Traffic rail',
-                body: 'Switch to the Traffic rail. The sidebar streams captured flows in real time; the main pane shows the selected flow\'s request + response detail.',
-                target: '[data-rail-mode-id="traffic"]',
-                navigate: function () { _tourGoToRail('traffic'); },
+                title: 'Step 1 — Open the Intercept rail',
+                body: 'Switch to the Intercept rail. The Captured sub-tab streams flows in real time; the main pane shows the selected flow\'s request + response detail.',
+                target: '[data-rail-mode-id="intercept"]',
+                navigate: function () {
+                    try { localStorage.setItem('bowire_intercept_sub_tab', 'captured'); } catch { /* ignore */ }
+                    _tourGoToRail('intercept');
+                },
                 advance: 'next-button'
             },
             {

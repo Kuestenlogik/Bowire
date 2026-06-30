@@ -1024,11 +1024,11 @@
             case 'intercepted':
                 return (typeof interceptedFlows !== 'undefined' && Array.isArray(interceptedFlows))
                     ? interceptedFlows.length : 0;
-            case 'traffic':
-                // #315 — unified Traffic rail reads the same
-                // InterceptedFlowStore as the legacy Intercepted rail
-                // (the only difference between deployments is the
-                // header banner + Settings sub-tab).
+            case 'intercept':
+                // v2.2 — unified Intercept rail. Badge surfaces the
+                // captured-flow count (the primary "what just happened"
+                // signal); Live overrides + Mock servers carry their
+                // own per-sub-tab counts inside the rail.
                 return (typeof interceptedFlows !== 'undefined' && Array.isArray(interceptedFlows))
                     ? interceptedFlows.length : 0;
             default:
@@ -1161,8 +1161,8 @@
                         sidebarView = 'proxy';
                     } else if (m.id === 'intercepted') {
                         sidebarView = 'intercepted';
-                    } else if (m.id === 'traffic') {
-                        sidebarView = 'traffic';
+                    } else if (m.id === 'intercept') {
+                        sidebarView = 'intercept';
                     } else if (m.id === 'discover') {
                         sidebarView = 'services';
                     }
@@ -1262,7 +1262,7 @@
                         else if (m.id === 'flows') sidebarView = 'flows';
                         else if (m.id === 'proxy') sidebarView = 'proxy';
                         else if (m.id === 'intercepted') sidebarView = 'intercepted';
-                        else if (m.id === 'traffic') sidebarView = 'traffic';
+                        else if (m.id === 'intercept') sidebarView = 'intercept';
                         else if (m.id === 'discover') sidebarView = 'services';
                         render();
                     }
@@ -3503,76 +3503,11 @@
         return sidebar;
     }
 
-    function renderMocksSidebar() {
-        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
-
-        sidebar.appendChild(renderSidebarToolbar({
-            title: 'Running mocks',
-            actions: [
-                {
-                    icon: 'replay',
-                    title: 'Refresh the list of running mocks',
-                    onClick: function () {
-                        if (typeof fetchMocks === 'function') {
-                            fetchMocks().then(function () { render(); });
-                        }
-                    }
-                }
-            ],
-            overflow: (mocksList && mocksList.length > 0 && typeof stopMock === 'function') ? [
-                {
-                    label: 'Stop all mocks',
-                    danger: true,
-                    onClick: function () {
-                        var ids = mocksList.map(function (m) { return m.mockId; });
-                        bowireConfirm(
-                            'Stop all ' + ids.length + ' running mocks?',
-                            function () {
-                                ids.forEach(function (id) { stopMock(id); });
-                                mockSelectedId = null;
-                                render();
-                            },
-                            { title: 'Stop all mocks', confirmText: 'Stop ' + ids.length, danger: true }
-                        );
-                    }
-                }
-            ] : null
-        }));
-
-        if (!mocksList || mocksList.length === 0) {
-            sidebar.appendChild(el('div', {
-                className: 'bowire-pane-empty',
-                style: 'padding:12px 14px',
-                textContent: 'No mocks running.'
-            }));
-        } else {
-            var list = el('div', { id: 'bowire-mocks-list', className: 'bowire-env-list' });
-            mocksList.forEach(function (m) {
-                list.appendChild(renderSidebarListItem({
-                    id: 'bowire-mock-row-' + m.mockId,
-                    name: m.recordingName || ('mock-' + m.port),
-                    meta: 'port ' + m.port,
-                    selected: mockSelectedId === m.mockId,
-                    onClick: function () {
-                        mockSelectedId = m.mockId;
-                        render();
-                    },
-                    // Mocks delete = stop the host. No undo (the port +
-                    // process are released; can't bring them back).
-                    deleteTitle: 'Stop mock host',
-                    onDelete: function () {
-                        if (typeof stopMock === 'function') {
-                            stopMock(m.mockId);
-                            if (mockSelectedId === m.mockId) mockSelectedId = null;
-                        }
-                    }
-                }));
-            });
-            sidebar.appendChild(list);
-        }
-
-        return sidebar;
-    }
+    // v2.2 — renderMocksSidebar dropped: the standalone Mocks rail
+    // descriptor is gone (R2). The running-mocks list now lives in the
+    // Intercept rail's Mock servers sub-tab, rendered by
+    // renderInterceptMockServersListInto inside the Interceptor
+    // package's intercept-view.js fragment.
 
     // Flows + Proxy sidebars — thin wrappers around the existing
     // renderFlowsListInto / renderProxyListInto helpers in flows.js /
@@ -3622,19 +3557,19 @@
         sidebar.appendChild(list);
         return sidebar;
     }
-    // #315 — Unified Traffic rail sidebar. Thin wrapper around the
-    // renderTrafficListInto helper in Rail.Traffic's traffic-view.js
-    // — same dispatcher pattern as Proxy + Intercepted. Replaces both
-    // for new installs (the boot-migration in prologue.js rewrites
-    // 'proxy' / 'intercepted' → 'traffic').
-    function renderTrafficSidebar() {
+    // v2.2 — Unified Intercept rail sidebar. Thin wrapper around the
+    // renderInterceptListInto helper in Interceptor's intercept-view.js.
+    // Replaces the previous renderTrafficSidebar; the boot-migration in
+    // prologue.js rewrites 'mocks' / 'traffic' / 'proxy' / 'intercepted'
+    // → 'intercept'.
+    function renderInterceptSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
         var list = el('div', {
-            id: 'bowire-sidebar-list-traffic',
+            id: 'bowire-sidebar-list-intercept',
             className: 'bowire-service-list'
         });
-        if (typeof renderTrafficListInto === 'function') {
-            renderTrafficListInto(list);
+        if (typeof renderInterceptListInto === 'function') {
+            renderInterceptListInto(list);
         }
         sidebar.appendChild(list);
         return sidebar;
@@ -3673,7 +3608,6 @@
         switch (spec.kind) {
             case 'environments': sidebar = renderEnvironmentsSidebar(); break;
             case 'recordings':   sidebar = renderRecordingsSidebar(); break;
-            case 'mocks':        sidebar = renderMocksSidebar(); break;
             case 'workspaces':   sidebar = renderWorkspacesSidebar(); break;
             case 'sources':      sidebar = renderSourcesSidebar(); break;
             case 'benchmarks':   sidebar = renderBenchmarksSidebar(); break;
@@ -3681,7 +3615,7 @@
             case 'flows':        sidebar = renderFlowsSidebar(); break;
             case 'proxy':        sidebar = renderProxySidebar(); break;
             case 'intercepted':  sidebar = renderInterceptedSidebar(); break;
-            case 'traffic':      sidebar = renderTrafficSidebar(); break;
+            case 'intercept':    sidebar = renderInterceptSidebar(); break;
             // Compose Library (Collections + Presets) — owned by the
             // Kuestenlogik.Bowire.Compose package's compose-rail.js
             // fragment, which exposes the renderer on window so this
