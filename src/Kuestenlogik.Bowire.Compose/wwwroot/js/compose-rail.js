@@ -573,8 +573,16 @@
             ? collectionsList : [];
 
         if (cols.length === 0) {
+            // Use the canonical .bowire-pane-empty class so the
+            // typography (13 px body / secondary text colour /
+            // 12 × 14 padding) matches every other rail's sidebar
+            // empty-state (Recordings, Mocks, Flows, Workspaces,
+            // Discover services view). The old .bowire-compose-side-empty
+            // shipped at 11 px / tertiary which read as a third tier
+            // unique to this rail.
             section.appendChild(el('div', {
-                className: 'bowire-compose-side-empty',
+                className: 'bowire-pane-empty',
+                style: 'padding:12px 14px',
                 textContent: 'No collections yet. Save a request from any live tab via the "Save to collection" action.'
             }));
             return section;
@@ -707,7 +715,8 @@
         });
         if (!anyShown) {
             section.appendChild(el('div', {
-                className: 'bowire-compose-side-empty',
+                className: 'bowire-pane-empty',
+                style: 'padding:12px 14px',
                 textContent: 'No presets yet. Save a configuration from any mode (Discover, Mocks, Benchmarks…) to see it here.'
             }));
         }
