@@ -34,6 +34,14 @@ public sealed class BowireInterceptorServiceContribution : IBowireServiceContrib
         services.TryAddSingleton<InterceptorMockStore>();
         services.AddOptions<BowireInterceptorOptions>();
 
+        // R3b — Activation tracker for the status endpoint that drives
+        // the Intercept rail's empty-state branching. Always registered
+        // so /api/intercepted/status can resolve it even when the host
+        // never wires UseBowireInterceptor() in (in which case
+        // Activated stays false and the rail surfaces the activation
+        // CTA instead of empty lists).
+        services.TryAddSingleton<InterceptorActivation>();
+
         // Reverse-proxy registry. Singleton lifetime so the Tools
         // endpoints (start/stop/list) and the ApplicationStopping hook
         // share one source of truth across the host process. The

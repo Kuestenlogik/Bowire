@@ -105,6 +105,18 @@ public static class BowireInterceptorApplicationBuilderExtensions
             configure(options);
         }
 
+        // R3b — Flip the process-singleton activation flag so the
+        // workbench's /api/intercepted/status endpoint can tell the
+        // operator the embedded middleware is wired in. The
+        // InterceptorActivation singleton is registered by the
+        // BowireInterceptorServiceContribution, which runs as part of
+        // AddBowire (assembly scan). Falling back to a defensive null
+        // check covers hosts that wire UseBowireInterceptor() WITHOUT
+        // having gone through the AddBowire path — they still get a
+        // working middleware, they just won't see the status flag flip.
+        var activation = services.GetService<InterceptorActivation>();
+        activation?.MarkActivated();
+
         return app.UseMiddleware<BowireInterceptorMiddleware>();
     }
 
