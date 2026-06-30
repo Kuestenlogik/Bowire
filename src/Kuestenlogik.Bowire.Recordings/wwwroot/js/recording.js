@@ -674,6 +674,21 @@
                     response: result.response,
                     error: result.error
                 });
+                // v2.2 T3 — coverage entry per replayed step. The
+                // step itself carries the discovered service/method
+                // names captured at recording time, so it points at
+                // the same sidebar row a fresh Discover invoke would.
+                if (typeof safeRecordMethodRun === 'function' && step.service && step.method) {
+                    safeRecordMethodRun({
+                        service: step.service,
+                        method:  step.method,
+                        source: 'recording-replay',
+                        startedAt: Date.now() - (result.durationMs || 0),
+                        durationMs: result.durationMs || 0,
+                        outcome: result.pass ? 'ok' : 'fail',
+                        errorMessage: result.error || null
+                    });
+                }
             } catch (e) {
                 recordingReplayState.results.push({
                     stepId: step.id,
@@ -681,6 +696,13 @@
                     status: 'NetworkError',
                     error: e.message
                 });
+                if (typeof safeRecordMethodRun === 'function' && step.service && step.method) {
+                    safeRecordMethodRun({
+                        service: step.service, method: step.method,
+                        source: 'recording-replay', durationMs: 0,
+                        outcome: 'error', errorMessage: e.message
+                    });
+                }
             }
             render();
         }

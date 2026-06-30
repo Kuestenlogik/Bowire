@@ -3844,7 +3844,15 @@
         'bowire_enabled_modules',
         // bowire_parallel_defaults_v1 — collections.js parallel-
         // run defaults (concurrency / delay) per workspace.
-        'bowire_parallel_defaults_v1'
+        'bowire_parallel_defaults_v1',
+        // v2.2 T3 — Regression coverage surface. Per-method run-log
+        // ring buffer (capped at RUN_HISTORY_CAP, default 500). Carries
+        // the workbench's "have I covered this method? when was it
+        // last exercised?" answer. Project content (an operator's
+        // QA-against-this-target footprint travels with the workspace
+        // through .bww export so a colleague opening the file sees
+        // the same coverage state at hand-off time).
+        'bowire_run_history'
         // bowire_request_tabs intentionally NOT listed here — open
         // tabs are browser session state (which row I happened to be
         // looking at), not project content. Persisted under wsKey()
@@ -6311,6 +6319,25 @@
         benchmark.endTime = performance.now();
         benchmark.running = false;
         var totalMs = benchmark.endTime - benchmark.startTime;
+        // v2.2 T3 — legacy live-benchmark runner emits ONE coverage
+        // entry per spec. Bucketed as 'ok' when every call succeeded;
+        // 'fail' when at least one call failed; 'error' when the run
+        // was cancelled mid-flight. Per-iteration entries would
+        // flood the ring buffer (a 1000-call benchmark drains the
+        // default 500-entry cap from a single run) so we record
+        // the aggregate result instead.
+        if (typeof safeRecordMethodRun === 'function') {
+            var _bmOutcome = benchmark.cancelled ? 'error' :
+                (benchmark.failure === 0 ? 'ok' : 'fail');
+            safeRecordMethodRun({
+                service: service, method: method, source: 'benchmark',
+                startedAt: Date.now() - Math.round(totalMs),
+                durationMs: Math.round(totalMs),
+                outcome: _bmOutcome,
+                errorMessage: benchmark.failure > 0
+                    ? (benchmark.failure + ' of ' + n + ' calls failed') : null
+            });
+        }
         addConsoleEntry({
             type: 'response',
             method: fullName,
