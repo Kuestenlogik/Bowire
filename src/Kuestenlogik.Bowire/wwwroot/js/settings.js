@@ -3305,6 +3305,62 @@
             }
         ));
 
+        // v2.2 T3 — Regression Coverage Surface. Mounts the run-history
+        // view as a Settings → Data sub-section. Option C from the spec:
+        // operator can navigate from per-method coverage chips on the
+        // Discover sidebar to the detail; this view is the aggregate
+        // surface. Order: run-history cap → Run history table.
+        section.appendChild(renderSettingsRow(
+            'Run history cap',
+            'How many recent method-runs to keep in the per-workspace run-log. Older entries are FIFO-evicted. Powers the coverage chips on the Discover sidebar + the Run history view below.',
+            function () {
+                var current;
+                try { current = parseInt(localStorage.getItem('bowire_run_history_cap'), 10); } catch (_) { current = NaN; }
+                if (isNaN(current)) current = 500;
+                var select = el('select', {
+                    className: 'bowire-settings-select',
+                    onChange: function (e) {
+                        var v = parseInt(e.target.value, 10);
+                        if (!isNaN(v) && v >= 50 && v <= 5000) {
+                            try { localStorage.setItem('bowire_run_history_cap', String(v)); }
+                            catch (_) { /* ignore */ }
+                        }
+                    }
+                });
+                var opts = [
+                    { value: '100',  label: '100' },
+                    { value: '250',  label: '250' },
+                    { value: '500',  label: '500 (default)' },
+                    { value: '1000', label: '1000' },
+                    { value: '2500', label: '2500' }
+                ];
+                for (var i = 0; i < opts.length; i++) {
+                    var opt = el('option', { value: opts[i].value, textContent: opts[i].label });
+                    if (String(current) === opts[i].value) opt.selected = true;
+                    select.appendChild(opt);
+                }
+                return select;
+            }
+        ));
+
+        // Sub-section: Run history view. Renders ABOVE the destructive
+        // 'Reset all settings' action so the operator scrolls past it
+        // before reaching the nuclear button.
+        var runHistorySection = el('div', { className: 'bowire-coverage-section' });
+        runHistorySection.appendChild(el('h4', {
+            className: 'bowire-settings-subhead',
+            textContent: 'Run history'
+        }));
+        runHistorySection.appendChild(el('p', {
+            className: 'bowire-settings-row-desc',
+            textContent: 'Recent invocations across Discover, Compose, Benchmark and Recording replay. Click a row to open the method tab.'
+        }));
+        if (typeof renderRunHistoryView === 'function') {
+            var rhv = renderRunHistoryView();
+            if (rhv) runHistorySection.appendChild(rhv);
+        }
+        section.appendChild(runHistorySection);
+
         section.appendChild(renderSettingsAction(
             'Reset all settings',
             'Clear localStorage and reload — undo restores from a pre-reset snapshot',
