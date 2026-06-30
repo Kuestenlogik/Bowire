@@ -271,11 +271,6 @@ public sealed class FlowTestRunnerTests : IDisposable
         Assert.NotEqual(0, rc);
     }
 
-    // RunAsync_JUnitFlag_EmitsValidSurefireXml + companion failure /
-    // HTML report tests live in the report-output commit so each commit
-    // ships with its own coverage. Phase 1 here covers the runner's
-    // dispatch + expectation accounting + exit-code contract only.
-#if FLOW_REPORT_TESTS
     [Fact]
     public async Task RunAsync_JUnitFlag_EmitsValidSurefireXml()
     {
@@ -425,7 +420,6 @@ public sealed class FlowTestRunnerTests : IDisposable
         Assert.Contains("Expectations passed", html, StringComparison.Ordinal);
         Assert.Contains("HtmlFlow", html, StringComparison.Ordinal);
     }
-#endif
 
     [Fact]
     public async Task TestRunner_AutoDispatchesFlowFile_ToFlowRunner()
