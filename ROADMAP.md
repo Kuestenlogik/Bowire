@@ -12,13 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**64/67 done** · 3 backlog
+**65/67 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [324](https://github.com/Kuestenlogik/Bowire/issues/324) | Bowire | [Help: convert from drawer-tab to its own rail (plugin-contributed)](#issue-kuestenlogik-bowire-324) | ⬜ Backlog |  |
 | [325](https://github.com/Kuestenlogik/Bowire/issues/325) | Bowire | [refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)](#issue-kuestenlogik-bowire-325) | ⬜ Backlog |  |
-| [329](https://github.com/Kuestenlogik/Bowire/issues/329) | Bowire | [ci(security): switch CodeQL to Advanced Setup — sanitiser model + paths-ignore](#issue-kuestenlogik-bowire-329) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ✅ Done |  |
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ✅ Done |  |
@@ -83,6 +82,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [310](https://github.com/Kuestenlogik/Bowire/issues/310) | Bowire | [UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up](#issue-kuestenlogik-bowire-310) | ✅ Done |  |
 | [327](https://github.com/Kuestenlogik/Bowire/issues/327) | Bowire | [fix(registry): BowireProtocolRegistry.Discover thread-safety race under parallel xUnit](#issue-kuestenlogik-bowire-327) | ✅ Done |  |
 | [328](https://github.com/Kuestenlogik/Bowire/issues/328) | Bowire | [fix(security): close CodeQL alerts — log-forging, incomplete sanitisation, XSS-through-exception](#issue-kuestenlogik-bowire-328) | ✅ Done |  |
+| [329](https://github.com/Kuestenlogik/Bowire/issues/329) | Bowire | [ci(security): switch CodeQL to Advanced Setup — sanitiser model + paths-ignore](#issue-kuestenlogik-bowire-329) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -252,10 +252,6 @@ Help moves out of the right-side drawer into a full rail with the standard left-
 #### <a id="issue-kuestenlogik-bowire-325"></a>⬜ Backlog · [#325](https://github.com/Kuestenlogik/Bowire/issues/325) refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)
 
 Welle 2 of the v2.1 pre-release cleanup. Welle 1 already folded the Mock + Help rail-fragments into their topic packages (#311 follow-up + #324). This issue tracks the remaining eleven `Rail.*` packages. [[more]](https://github.com/Kuestenlogik/Bowire/issues/325)
-
-#### <a id="issue-kuestenlogik-bowire-329"></a>⬜ Backlog · [#329](https://github.com/Kuestenlogik/Bowire/issues/329) ci(security): switch CodeQL to Advanced Setup — sanitiser model + paths-ignore
-
-Replaces GitHub's Default Setup with an explicit Advanced configuration so we can: [[more]](https://github.com/Kuestenlogik/Bowire/issues/329)
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
@@ -512,6 +508,10 @@ User feedback (Phase 2 walkthrough): "response darstellung auf und einklappen so
 #### <a id="issue-kuestenlogik-bowire-328"></a>✅ Done · [#328](https://github.com/Kuestenlogik/Bowire/issues/328) fix(security): close CodeQL alerts — log-forging, incomplete sanitisation, XSS-through-exception
 
 Three security fixes batched to clear the CodeQL alert queue: [[more]](https://github.com/Kuestenlogik/Bowire/issues/328)
+
+#### <a id="issue-kuestenlogik-bowire-329"></a>✅ Done · [#329](https://github.com/Kuestenlogik/Bowire/issues/329) ci(security): switch CodeQL to Advanced Setup — sanitiser model + paths-ignore
+
+Replaces GitHub's Default Setup with an explicit Advanced configuration so we can: [[more]](https://github.com/Kuestenlogik/Bowire/issues/329)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
