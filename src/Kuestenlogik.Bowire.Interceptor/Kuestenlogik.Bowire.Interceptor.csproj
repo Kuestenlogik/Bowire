@@ -24,6 +24,14 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- YARP IHttpForwarder powers the reverse-proxy host's request
+         forwarding (#323, follow-up to #153 / #307). Only this package
+         pulls YARP in; Core stays slim so embedded hosts that don't
+         reference the Interceptor never see YARP on their dependency
+         graph. -->
+    <PackageReference Include="Yarp.ReverseProxy" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
   </ItemGroup>

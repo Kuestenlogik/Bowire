@@ -9,14 +9,16 @@ using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Yarp.ReverseProxy.Forwarder;
 
 namespace Kuestenlogik.Bowire.Interceptor;
 
 /// <summary>
 /// Reverse-proxy middleware for the standalone <c>bowire interceptor</c>
-/// CLI (#307 — Phase C of #153). Sits in front of an upstream service:
-/// the client points at Bowire's listener, every request is forwarded
-/// upstream over HttpClient, and the request + response are captured
+/// CLI (#307 — Phase C of #153; YARP migration in #323). Sits in front
+/// of an upstream service: the client points at Bowire's listener,
+/// every request is forwarded upstream via YARP's
+/// <see cref="IHttpForwarder"/>, and the request + response are captured
 /// into the same <see cref="InterceptedFlowStore"/> the embedded
 /// middleware (#153 Phase A/B) populates.
 /// </summary>
@@ -36,28 +38,50 @@ namespace Kuestenlogik.Bowire.Interceptor;
 /// proxied through without buffering — the rail surfaces them with a
 /// <c>streaming</c> badge instead of an empty body.
 /// </para>
+/// <para>
+/// #323 — YARP migration. We hand the request off to YARP's
+/// <see cref="IHttpForwarder.SendAsync(HttpContext, string, HttpMessageInvoker, ForwarderRequestConfig, HttpTransformer)"/>
+/// instead of building a <see cref="HttpRequestMessage"/> by hand. The
+/// capture seam moves into a per-request
+/// <see cref="CapturingHttpTransformer"/>: we override
+/// <see cref="HttpTransformer.TransformRequestAsync(HttpContext, HttpRequestMessage, string, CancellationToken)"/>
+/// to inject the pre-buffered body, and
+/// <see cref="HttpTransformer.TransformResponseAsync(HttpContext, HttpResponseMessage?, CancellationToken)"/>
+/// to snapshot status/headers, detect streaming, and (for non-streaming
+/// responses) tee the body into the flow store before letting YARP copy
+/// it to the client. Streaming bodies are copied straight through by
+/// YARP's built-in pipeline.
+/// </para>
 /// </remarks>
 internal sealed class BowireReverseProxyMiddleware
 {
     private readonly InterceptedFlowStore _store;
-    private readonly HttpClient _client;
+    private readonly IHttpForwarder _forwarder;
+    private readonly HttpMessageInvoker _invoker;
+    private readonly ForwarderRequestConfig _requestConfig;
     private readonly Uri _upstream;
     private readonly BowireInterceptorOptions _options;
     private readonly ILogger<BowireReverseProxyMiddleware>? _logger;
 
     public BowireReverseProxyMiddleware(
         InterceptedFlowStore store,
-        HttpClient client,
+        IHttpForwarder forwarder,
+        HttpMessageInvoker invoker,
+        ForwarderRequestConfig requestConfig,
         Uri upstream,
         BowireInterceptorOptions options,
         ILogger<BowireReverseProxyMiddleware>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(forwarder);
+        ArgumentNullException.ThrowIfNull(invoker);
+        ArgumentNullException.ThrowIfNull(requestConfig);
         ArgumentNullException.ThrowIfNull(upstream);
         ArgumentNullException.ThrowIfNull(options);
         _store = store;
-        _client = client;
+        _forwarder = forwarder;
+        _invoker = invoker;
+        _requestConfig = requestConfig;
         _upstream = upstream;
         _options = options;
         _logger = logger;
@@ -97,110 +121,75 @@ internal sealed class BowireReverseProxyMiddleware
 
         var (reqText, reqBase64) = ClassifyBytes(requestBytes);
 
-        // -------- forward upstream --------
-        using var upstreamReq = BuildUpstreamRequest(context.Request, method, requestBytes);
-        HttpResponseMessage? upstreamResp = null;
-        string? error = null;
-        int statusCode = 0;
-        List<KeyValuePair<string, string>> responseHeaders = new();
-        string? respText = null;
-        string? respBase64 = null;
-        bool respTruncated = false;
-        bool streaming = false;
+        // -------- forward upstream via YARP IHttpForwarder --------
+        // The transformer is the capture seam: TransformRequestAsync
+        // re-injects the buffered request body onto the outbound
+        // HttpRequestMessage, TransformResponseAsync taps the response
+        // headers + body for the flow record before YARP copies them to
+        // the client.
+        var transformer = new CapturingHttpTransformer(_options.MaxBodyBytes);
 
+        string? error = null;
+        ForwarderError forwarderError;
+        var destinationPrefix = BuildDestinationPrefix(_upstream);
         try
         {
-            upstreamResp = await _client.SendAsync(upstreamReq, HttpCompletionOption.ResponseHeadersRead,
-                context.RequestAborted).ConfigureAwait(false);
-            statusCode = (int)upstreamResp.StatusCode;
-            responseHeaders = CombineResponseHeaders(upstreamResp);
-
-            // Mirror status + headers onto the client response BEFORE we start
-            // streaming bytes back, so a streaming endpoint actually streams.
-            context.Response.StatusCode = statusCode;
-            foreach (var (k, v) in responseHeaders)
-            {
-                if (IsHopByHop(k)) continue;
-                // Avoid duplicate Content-Length / Transfer-Encoding — Kestrel
-                // sets these from the body it ends up writing.
-                if (string.Equals(k, "Transfer-Encoding", StringComparison.OrdinalIgnoreCase)) continue;
-                if (string.Equals(k, "Content-Length", StringComparison.OrdinalIgnoreCase)) continue;
-                context.Response.Headers.Append(k, v);
-            }
-
-            streaming = IsStreamingResponse(upstreamResp);
-
-            if (streaming)
-            {
-                // Streaming: copy the upstream body to the client live, without
-                // ever buffering all of it. Rail surfaces an empty body + the
-                // streaming flag.
-                await using var upstreamStream = await upstreamResp.Content.ReadAsStreamAsync(context.RequestAborted).ConfigureAwait(false);
-                await upstreamStream.CopyToAsync(context.Response.Body, context.RequestAborted).ConfigureAwait(false);
-            }
-            else
-            {
-                // Non-streaming: buffer up to the capture cap (or the full body
-                // if smaller), record it, then forward the captured bytes to the
-                // client. We CAN'T forward the remainder past the cap because
-                // we've already drained the stream into our buffer; for now we
-                // forward up to the cap and mark the flow truncated. Future
-                // polish: tee + stream simultaneously.
-                await using var upstreamStream = await upstreamResp.Content.ReadAsStreamAsync(context.RequestAborted).ConfigureAwait(false);
-                var (respBytes, truncated) = await ReadAllAsync(
-                    upstreamStream, _options.MaxBodyBytes, context.RequestAborted).ConfigureAwait(false);
-                respTruncated = truncated;
-                if (respBytes.Length > 0)
-                {
-                    (respText, respBase64) = ClassifyBytes(respBytes);
-                    await context.Response.Body.WriteAsync(respBytes.AsMemory(), context.RequestAborted).ConfigureAwait(false);
-                }
-            }
-        }
-        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
-        {
-            error = "client disconnected";
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException)
-        {
-            // Upstream failure modes we expect (connection refused, DNS NXDOMAIN,
-            // TLS handshake reject, HttpClient.Timeout elapsed). Translate to a
-            // 502 + record the error message on the flow so the rail surfaces it.
-            error = ex.Message;
-            try
-            {
-                if (!context.Response.HasStarted)
-                {
-                    context.Response.StatusCode = StatusCodes.Status502BadGateway;
-                    await context.Response.WriteAsync($"bowire interceptor: upstream unreachable ({ex.Message})", context.RequestAborted).ConfigureAwait(false);
-                }
-                statusCode = context.Response.StatusCode;
-            }
-#pragma warning disable CA1031
-            catch (Exception writeEx)
-#pragma warning restore CA1031
-            {
-                if (_logger is { } log && log.IsEnabled(LogLevel.Debug))
-                    log.LogDebug(writeEx, "bowire.interceptor: failed to write 502 response");
-            }
+            forwarderError = await _forwarder.SendAsync(
+                context, destinationPrefix, _invoker, _requestConfig, transformer)
+                .ConfigureAwait(false);
         }
 #pragma warning disable CA1031
         catch (Exception ex)
 #pragma warning restore CA1031
         {
+            // SendAsync rarely throws — it normally surfaces failure via
+            // the returned ForwarderError + IForwarderErrorFeature. Catch
+            // here is defence in depth.
+            forwarderError = ForwarderError.Request;
             error = ex.Message;
             if (_logger is { } log && log.IsEnabled(LogLevel.Debug))
-                log.LogDebug(ex, "bowire.interceptor: upstream forward failed for {Method} {Url}",
+                log.LogDebug(ex, "bowire.interceptor: YARP SendAsync threw for {Method} {Url}",
                     LogSanitizer.Strip(method), LogSanitizer.Strip(clientUrl));
         }
-        finally
+
+        if (forwarderError != ForwarderError.None && error is null)
         {
-            upstreamResp?.Dispose();
+            // Translate YARP's error code into a rail-visible message and,
+            // if YARP didn't already write a status, surface a 502 to the
+            // client (matches the legacy HttpClient path that wrote
+            // "bowire interceptor: upstream unreachable (…)").
+            var errorFeature = context.GetForwarderErrorFeature();
+            error = errorFeature?.Exception?.Message ?? forwarderError.ToString();
+            if (!context.Response.HasStarted)
+            {
+                try
+                {
+                    context.Response.StatusCode = StatusCodes.Status502BadGateway;
+                    await context.Response.WriteAsync(
+                        $"bowire interceptor: upstream unreachable ({error})",
+                        context.RequestAborted).ConfigureAwait(false);
+                }
+#pragma warning disable CA1031
+                catch (Exception writeEx)
+#pragma warning restore CA1031
+                {
+                    if (_logger is { } log && log.IsEnabled(LogLevel.Debug))
+                        log.LogDebug(writeEx, "bowire.interceptor: failed to write 502 response");
+                }
+            }
+        }
+
+        if (context.RequestAborted.IsCancellationRequested && error is null)
+        {
+            error = "client disconnected";
         }
 
         sw.Stop();
 
         // -------- record into the shared store --------
+        var statusCode = transformer.ResponseStatus != 0
+            ? transformer.ResponseStatus
+            : context.Response.StatusCode;
         var flow = new InterceptedFlow
         {
             Id = id,
@@ -214,61 +203,36 @@ internal sealed class BowireReverseProxyMiddleware
             RequestBodyBase64 = reqBase64,
             RequestBodyTruncated = requestBodyTruncated,
             ResponseStatus = statusCode,
-            ResponseHeaders = responseHeaders,
-            ResponseBody = respText,
-            ResponseBodyBase64 = respBase64,
-            ResponseBodyTruncated = respTruncated,
-            Streaming = streaming,
+            ResponseHeaders = transformer.ResponseHeaders,
+            ResponseBody = transformer.ResponseBodyText,
+            ResponseBodyBase64 = transformer.ResponseBodyBase64,
+            ResponseBodyTruncated = transformer.ResponseBodyTruncated,
+            Streaming = transformer.Streaming,
             LatencyMs = (int)sw.ElapsedMilliseconds,
             Error = error,
         };
         _store.Add(flow);
     }
 
-    private HttpRequestMessage BuildUpstreamRequest(HttpRequest req, string method, byte[] requestBytes)
+    /// <summary>
+    /// YARP destination prefix — the upstream URI's scheme + authority +
+    /// base path (anything <see cref="RequestUtilities.MakeDestinationAddress"/>
+    /// prepends in front of the incoming path). Mirrors the legacy
+    /// HttpClient path's <c>UriBuilder</c> assembly.
+    /// </summary>
+    private static string BuildDestinationPrefix(Uri upstream)
     {
-        // Target URL = upstream base + the incoming path/query. The upstream's
-        // own path (e.g. /api) is honoured as a prefix; we append the incoming
-        // path verbatim. Example: --upstream https://api.example.com/v1
-        // incoming GET /users?id=1 -> https://api.example.com/v1/users?id=1
-        var path = req.Path.HasValue ? req.Path.Value! : "/";
-        var query = req.QueryString.HasValue ? req.QueryString.Value! : string.Empty;
-        var upstreamPath = CombinePath(_upstream.AbsolutePath, path);
-        var target = new UriBuilder(_upstream)
-        {
-            Path = upstreamPath,
-            Query = query.StartsWith('?') ? query[1..] : query,
-        }.Uri;
-
-        var message = new HttpRequestMessage(new HttpMethod(method), target);
-        if (requestBytes.Length > 0 && !IsBodyLessMethod(method))
-        {
-            message.Content = new ByteArrayContent(requestBytes);
-        }
-
-        foreach (var pair in req.Headers)
-        {
-            if (IsHopByHop(pair.Key)) continue;
-            if (string.Equals(pair.Key, "Host", StringComparison.OrdinalIgnoreCase)) continue;
-            // System.Net.Http splits headers into request vs content buckets.
-            // The TryAddWithoutValidation pair below is the documented escape
-            // hatch — let the upstream see whatever the client wrote.
-            var values = pair.Value.Where(v => v is not null).ToArray()!;
-            if (values.Length == 0) continue;
-            if (!message.Headers.TryAddWithoutValidation(pair.Key, values))
-            {
-                message.Content?.Headers.TryAddWithoutValidation(pair.Key, values);
-            }
-        }
-        return message;
-    }
-
-    private static string CombinePath(string upstreamBase, string incoming)
-    {
-        if (string.IsNullOrEmpty(upstreamBase) || upstreamBase == "/") return incoming;
-        var trimmedBase = upstreamBase.TrimEnd('/');
-        if (string.IsNullOrEmpty(incoming) || incoming == "/") return trimmedBase + "/";
-        return trimmedBase + (incoming.StartsWith('/') ? incoming : "/" + incoming);
+        // GetLeftPart(Uri.Partial.Authority) gives us scheme://host[:port],
+        // and we append the upstream's base path. YARP's default
+        // RequestUtilities.MakeDestinationAddress(prefix, path, query) then
+        // joins the prefix to the incoming request path verbatim, matching
+        // the legacy CombinePath behaviour exactly.
+        var authority = upstream.GetLeftPart(UriPartial.Authority);
+        var basePath = upstream.AbsolutePath;
+        if (string.IsNullOrEmpty(basePath) || basePath == "/") return authority + "/";
+        // Trim trailing slash — RequestUtilities.MakeDestinationAddress
+        // adds the join slash, and a double slash would 404 most upstreams.
+        return authority + basePath.TrimEnd('/');
     }
 
     private static (string url, string path) ReconstructUrl(HttpRequest req)
@@ -291,7 +255,7 @@ internal sealed class BowireReverseProxyMiddleware
         return list;
     }
 
-    private static List<KeyValuePair<string, string>> CombineResponseHeaders(HttpResponseMessage resp)
+    internal static List<KeyValuePair<string, string>> CombineResponseHeaders(HttpResponseMessage resp)
     {
         var list = new List<KeyValuePair<string, string>>();
         foreach (var h in resp.Headers)
@@ -310,7 +274,7 @@ internal sealed class BowireReverseProxyMiddleware
         return list;
     }
 
-    private static bool IsStreamingResponse(HttpResponseMessage resp)
+    internal static bool IsStreamingResponse(HttpResponseMessage resp)
     {
         // WebSocket / generic 101 Switching Protocols.
         if ((int)resp.StatusCode == 101) return true;
@@ -329,22 +293,12 @@ internal sealed class BowireReverseProxyMiddleware
         return false;
     }
 
-    private static bool IsBodyLessMethod(string method)
+    internal static bool IsBodyLessMethod(string method)
         => string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
         || string.Equals(method, "HEAD", StringComparison.OrdinalIgnoreCase)
         || string.Equals(method, "DELETE", StringComparison.OrdinalIgnoreCase)
         || string.Equals(method, "OPTIONS", StringComparison.OrdinalIgnoreCase)
         || string.Equals(method, "TRACE", StringComparison.OrdinalIgnoreCase);
-
-    /// <summary>RFC 7230 §6.1 hop-by-hop headers that must not be forwarded.</summary>
-    private static bool IsHopByHop(string name)
-        => string.Equals(name, "Connection", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(name, "Keep-Alive", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(name, "Proxy-Authenticate", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(name, "Proxy-Authorization", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(name, "TE", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(name, "Trailers", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(name, "Upgrade", StringComparison.OrdinalIgnoreCase);
 
     private static async Task<(byte[] bytes, bool truncated)> ReadAllAsync(
         Stream stream, int cap, CancellationToken ct)
@@ -389,5 +343,141 @@ internal sealed class BowireReverseProxyMiddleware
             catch (DecoderFallbackException) { /* fall through */ }
         }
         return (null, Convert.ToBase64String(bytes));
+    }
+
+    /// <summary>
+    /// Per-request YARP <see cref="HttpTransformer"/> that taps the
+    /// request body (injecting the pre-buffered bytes onto the outbound
+    /// <see cref="HttpRequestMessage"/>) and the response body (teeing
+    /// non-streaming bodies into the flow record before YARP copies
+    /// them to the client).
+    /// </summary>
+    /// <remarks>
+    /// One instance per request: cheap to allocate, holds the captured
+    /// state across the request → response lifecycle. The
+    /// <c>ResponseHeaders</c> / <c>ResponseStatus</c> / <c>ResponseBody*</c>
+    /// surface lets <see cref="BowireReverseProxyMiddleware.InvokeAsync"/>
+    /// read the captured values back after <see cref="IHttpForwarder.SendAsync(HttpContext, string, HttpMessageInvoker, ForwarderRequestConfig, HttpTransformer)"/>
+    /// returns.
+    /// </remarks>
+    private sealed class CapturingHttpTransformer : HttpTransformer
+    {
+        private readonly int _maxBodyBytes;
+
+        public CapturingHttpTransformer(int maxBodyBytes)
+        {
+            _maxBodyBytes = maxBodyBytes;
+        }
+
+        public List<KeyValuePair<string, string>> ResponseHeaders { get; private set; } = new();
+        public int ResponseStatus { get; private set; }
+        public string? ResponseBodyText { get; private set; }
+        public string? ResponseBodyBase64 { get; private set; }
+        public bool ResponseBodyTruncated { get; private set; }
+        public bool Streaming { get; private set; }
+
+        public override async ValueTask TransformRequestAsync(
+            HttpContext httpContext,
+            HttpRequestMessage proxyRequest,
+            string destinationPrefix,
+            CancellationToken cancellationToken)
+        {
+            // Default: copy headers (modulo HTTP/2 pseudo-headers + the
+            // hop-by-hop set), build the destination URI from the prefix
+            // + incoming path/query, and (if the request has a body) wrap
+            // HttpContext.Request.Body as proxyRequest.Content. The
+            // outer middleware already called EnableBuffering() and
+            // rewound the request body to position 0, so YARP's
+            // StreamContent reads our captured bytes verbatim.
+            await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix, cancellationToken)
+                .ConfigureAwait(false);
+
+            // YARP's direct-forwarding sample suppresses the original
+            // Host header so the destination Uri's authority is used —
+            // matches the legacy middleware which skipped Host when
+            // copying headers.
+            proxyRequest.Headers.Host = null;
+        }
+
+        public override async ValueTask<bool> TransformResponseAsync(
+            HttpContext httpContext,
+            HttpResponseMessage? proxyResponse,
+            CancellationToken cancellationToken)
+        {
+            // YARP calls TransformResponseAsync with a null response when
+            // the upstream never produced one (connection reset, DNS
+            // failure, timeout). The middleware's error-path picks it up
+            // from the ForwarderError return code; nothing to capture here.
+            if (proxyResponse is null)
+            {
+                return await base.TransformResponseAsync(httpContext, proxyResponse, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            ResponseStatus = (int)proxyResponse.StatusCode;
+            ResponseHeaders = CombineResponseHeaders(proxyResponse);
+            Streaming = IsStreamingResponse(proxyResponse);
+
+            if (Streaming)
+            {
+                // Streaming: let YARP copy the body straight through —
+                // base.TransformResponseAsync returns true, which signals
+                // "proxy the body as-is" without buffering anywhere on our
+                // side. Rail surfaces an empty body + the streaming flag.
+                return await base.TransformResponseAsync(httpContext, proxyResponse, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            // Non-streaming: read up to the capture cap, classify, write
+            // the captured bytes back to the client, then return false so
+            // YARP does NOT attempt a second body copy on top of ours.
+            //
+            // Behaviour parity with the legacy HttpClient path: we forward
+            // up to MaxBodyBytes and mark the flow truncated past that. A
+            // future polish is the tee-while-streaming pattern (#323
+            // follow-up).
+            byte[] respBytes;
+            bool truncated;
+            try
+            {
+                await using var upstreamStream = await proxyResponse.Content
+                    .ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                (respBytes, truncated) = await ReadAllAsync(
+                    upstreamStream, _maxBodyBytes, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
+
+            ResponseBodyTruncated = truncated;
+            if (respBytes.Length > 0)
+            {
+                (ResponseBodyText, ResponseBodyBase64) = ClassifyBytes(respBytes);
+
+                // Mirror the status + headers onto the outgoing response
+                // ourselves — when we return false, YARP skips its own
+                // status/header copy as well. The base transformer
+                // already copied them BEFORE we got here (per YARP docs,
+                // status + headers land on HttpContext.Response before
+                // TransformResponseAsync), so we only need to flush the
+                // captured body.
+                try
+                {
+                    await httpContext.Response.Body.WriteAsync(
+                        respBytes.AsMemory(), cancellationToken).ConfigureAwait(false);
+                }
+#pragma warning disable CA1031
+                catch (Exception)
+#pragma warning restore CA1031
+                {
+                    // Client disconnected mid-write — the middleware
+                    // records "client disconnected" via the cancellation
+                    // path; the flow itself is intact.
+                }
+            }
+
+            return false;
+        }
     }
 }
