@@ -90,7 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**7/18 done** · 11 backlog
+**8/19 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -112,6 +112,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [335](https://github.com/Kuestenlogik/Bowire/issues/335) | Bowire | [feat(v2.2): cross-rail transition CTAs](#issue-kuestenlogik-bowire-335) | ✅ Done |  |
 | [336](https://github.com/Kuestenlogik/Bowire/issues/336) | Bowire | [feat(v2.2): Interceptor activation empty-state with Reverse-Proxy CTA](#issue-kuestenlogik-bowire-336) | ✅ Done |  |
 | [337](https://github.com/Kuestenlogik/Bowire/issues/337) | Bowire | [feat(v2.2): workspace deletion hardening — cascade purge + Soft/Hard toggle + Action-Log decouple](#issue-kuestenlogik-bowire-337) | ✅ Done |  |
+| [338](https://github.com/Kuestenlogik/Bowire/issues/338) | Bowire | [fix(bundle): guard rail-load calls for embedded hosts that don't reference every rail package](#issue-kuestenlogik-bowire-338) | ✅ Done |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
@@ -612,6 +613,10 @@ Operator: 'live overrides machen ja nur sinn bei embedded, oder?' Confirmed: Int
 #### <a id="issue-kuestenlogik-bowire-337"></a>✅ Done · [#337](https://github.com/Kuestenlogik/Bowire/issues/337) feat(v2.2): workspace deletion hardening — cascade purge + Soft/Hard toggle + Action-Log decouple
 
 Three-part refactor in one PR. Closes the workspace-delete leaks operator surfaced + adds operator-controlled deletion semantics + decouples Undo from Trash. [[more]](https://github.com/Kuestenlogik/Bowire/issues/337)
+
+#### <a id="issue-kuestenlogik-bowire-338"></a>✅ Done · [#338](https://github.com/Kuestenlogik/Bowire/issues/338) fix(bundle): guard rail-load calls for embedded hosts that don't reference every rail package
+
+**Hypothesis confirmed.** Sample.Embedded crashed during boot with `ReferenceError: loadFlows is not defined`. `loadFlows` is defined ONLY in `Kuestenlogik.Bowire.Flows/wwwroot/js/flows.js`. Sample.Embedded's csproj references Core + Protocol.Rest + Map + Interceptor — but NOT Flows. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/338)
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
