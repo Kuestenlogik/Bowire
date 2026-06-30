@@ -4989,14 +4989,16 @@
             }
             footerLabel = matchTally + ' match' + (matchTally === 1 ? '' : 'es');
         }
+        // "Take Tour" button retired from the sidebar footer — the
+        // canonical entry points live in the Discover empty-state
+        // welcome card (landing.js's renderDiscoverEmpty) and in the
+        // Home landing footer (renderLandingHelpFooter). Stamping a
+        // third copy on the rail itself made the empty Discover read
+        // as "0 services · Take Tour" twice, once on the left and
+        // once in the middle. The services-count label stays as a
+        // navigation aid for the populated tree.
         const footer = el('div', { id: 'bowire-sidebar-footer', className: 'bowire-sidebar-footer' },
-            el('span', { className: 'bowire-service-count-label', textContent: footerLabel }),
-            el('button', {
-                id: 'bowire-tour-btn',
-                className: 'bowire-tour-btn',
-                textContent: 'Take Tour',
-                onClick: startTour
-            })
+            el('span', { className: 'bowire-service-count-label', textContent: footerLabel })
         );
         sidebar.appendChild(footer);
         return sidebar;
