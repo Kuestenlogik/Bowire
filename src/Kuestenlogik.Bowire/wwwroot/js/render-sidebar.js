@@ -2514,7 +2514,16 @@
                         // #194 — soft-delete + log the action so
                         // the operator can undo straight from the
                         // toast, Ctrl/Cmd+Z, or the trash drawer.
+                        // v2.2 W2a — read the snapshot from the side
+                        // channel so the undoSpec carries it directly
+                        // (decouples action log from Trash).
                         if (typeof toast === 'function') {
+                            var sidechannel = (typeof _lastWorkspaceDeleteSnapshot === 'object'
+                                && _lastWorkspaceDeleteSnapshot)
+                                ? _lastWorkspaceDeleteSnapshot[wsId] : null;
+                            if (sidechannel) {
+                                try { delete _lastWorkspaceDeleteSnapshot[wsId]; } catch { /* ignore */ }
+                            }
                             toast('Deleted workspace "' + snapshotName + '"', 'info', {
                                 undo: function () {
                                     var t = (typeof workspacesTrash !== 'undefined'
@@ -2524,13 +2533,34 @@
                                     if (t && typeof restoreWorkspaceFromTrash === 'function') {
                                         restoreWorkspaceFromTrash(t);
                                         render();
+                                        return;
+                                    }
+                                    // Hard-delete path: no trash entry to
+                                    // restore from. Reach into the
+                                    // snapshot the resolver path uses.
+                                    if (sidechannel
+                                        && typeof restoreWorkspaceFromSnapshot === 'function') {
+                                        restoreWorkspaceFromSnapshot(sidechannel);
+                                        render();
                                     }
                                 },
                                 logAction: {
                                     kind: 'workspace-delete',
                                     rail: 'workspaces',
                                     title: 'Deleted workspace "' + snapshotName + '"',
-                                    undoSpec: { workspaceId: wsId }
+                                    undoSpec: {
+                                        workspaceId: wsId,
+                                        // W2a: snapshot carried inline so
+                                        // the action-log resolver can
+                                        // rehydrate without consulting
+                                        // workspacesTrash. mode let
+                                        // diagnostics distinguish soft
+                                        // vs hard entries on replay.
+                                        workspace: sidechannel ? sidechannel.workspace : null,
+                                        data: sidechannel ? sidechannel.data : null,
+                                        originalIdx: sidechannel ? sidechannel.originalIdx : null,
+                                        mode: sidechannel ? sidechannel.mode : 'soft'
+                                    }
                                 }
                             });
                         }

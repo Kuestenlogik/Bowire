@@ -2848,6 +2848,13 @@
     // purge live alongside the other trash sections.
     const WORKSPACES_TRASH_KEY = 'bowire_workspaces_trash';
     let workspacesTrash = [];
+    // v2.2 W2a — module-scope side channel for the last delete's
+    // snapshot, keyed by workspace id. The toast / action-log call
+    // site reads from here so the undoSpec carries the snapshot
+    // directly (Option B: decouple action log from Trash). Drops
+    // the entry on read so a stale snapshot doesn't leak when the
+    // same id is reused.
+    let _lastWorkspaceDeleteSnapshot = {};
     try {
         var rawWsTrash = localStorage.getItem(WORKSPACES_TRASH_KEY);
         if (rawWsTrash) {
@@ -3005,6 +3012,29 @@
         return true;
     }
 
+    // v2.2 W2a — Re-hydrate a workspace from a SNAPSHOT (not from a
+    // trash entry). Used by the action-log resolver when undoing a
+    // workspace-delete in hard mode, where there's no trash entry to
+    // consult. Mirrors restoreWorkspaceFromTrash's spliceback logic
+    // but reads the snapshot off the action-log entry directly.
+    function restoreWorkspaceFromSnapshot(snapshot) {
+        if (!snapshot || !snapshot.workspace) return false;
+        var ws = JSON.parse(JSON.stringify(snapshot.workspace));
+        delete ws.deletedAt;
+        if (workspaces.find(function (w) { return w.id === ws.id; })) return false;
+        var idx = typeof snapshot.originalIdx === 'number'
+            ? snapshot.originalIdx : workspaces.length;
+        if (idx < 0) idx = 0;
+        if (idx > workspaces.length) idx = workspaces.length;
+        workspaces.splice(idx, 0, ws);
+        _restoreWorkspaceData(ws.id, snapshot.data || {});
+        persistWorkspaces();
+        if (!activeWorkspaceId && typeof switchWorkspace === 'function') {
+            switchWorkspace(ws.id);
+        }
+        return true;
+    }
+
     // Hard-delete a workspace from the trash (no recovery). Mirrors
     // the per-bucket 'delete forever' affordance on every other
     // trash section.
@@ -3041,10 +3071,12 @@
         if (idx < 0) return false;
         var removed = workspaces[idx];
         // #194 / v2.2 W2 — Snapshot ALWAYS taken. In soft mode it lands
-        // in the trash bucket (for the Trash drawer surface). In hard
-        // mode we skip the trash bucket entirely — no recovery via
-        // the Trash drawer (Undo via the action log still works for
-        // the brief window before the entry times out).
+        // both in the trash bucket (for the Trash drawer surface) AND
+        // is returned to the caller (action-log resolver in W2a reads
+        // it via the entry's undoSpec). In hard mode we skip the trash
+        // bucket entirely — the snapshot still travels with the
+        // action-log entry so Ctrl/Cmd+Z works for the brief window
+        // before the action log times out.
         var snapshot = _snapshotWorkspaceData(id);
         var mode = getWorkspaceDeleteMode();
         if (mode !== 'hard') {
@@ -3056,6 +3088,17 @@
             });
             persistWorkspacesTrash();
         }
+        // Stash the snapshot on a module-scope side channel keyed by
+        // id so the toast / action-log call site can read it without
+        // a second _snapshotWorkspaceData walk. The key drops itself
+        // on read so a stale entry doesn't leak.
+        try { _lastWorkspaceDeleteSnapshot[id] = {
+            workspace: JSON.parse(JSON.stringify(removed)),
+            data: snapshot,
+            originalIdx: idx,
+            deletedAt: Date.now(),
+            mode: mode
+        }; } catch { /* ignore */ }
         workspaces.splice(idx, 1);
 
         // Workspace = project folder (#155): per-workspace localStorage
@@ -3210,13 +3253,36 @@
         if (!spec || !spec.workspaceId) return null;
         return {
             undo: function () {
-                var t = _findTrashEntryByWorkspaceId(spec.workspaceId);
-                if (t && restoreWorkspaceFromTrash(t)) {
+                // v2.2 W2a — prefer the snapshot the action-log entry
+                // carries (Option B: decoupled from Trash). The trash
+                // bucket is a user-facing curation surface; if the
+                // operator emptied it the action-log undo still works.
+                if (spec.workspace && spec.data
+                    && typeof restoreWorkspaceFromSnapshot === 'function'
+                    && restoreWorkspaceFromSnapshot({
+                        workspace: spec.workspace,
+                        data: spec.data,
+                        originalIdx: spec.originalIdx
+                    })) {
                     if (typeof render === 'function') render();
                     return;
                 }
+                // Fallback (back-compat) — entries persisted BEFORE
+                // v2.2 W2a only carried { workspaceId } and read the
+                // snapshot from the trash bucket. Walk that path so
+                // existing logs keep working; log a one-shot console
+                // note so it's visible during the migration window.
+                var t = _findTrashEntryByWorkspaceId(spec.workspaceId);
+                if (t && restoreWorkspaceFromTrash(t)) {
+                    if (typeof render === 'function') render();
+                    if (!_warnedLegacyWorkspaceDelete) {
+                        _warnedLegacyWorkspaceDelete = true;
+                        console.info('[action-log] resolved legacy workspace-delete entry via trash fallback; new entries carry the snapshot inline.');
+                    }
+                    return;
+                }
                 if (typeof toast === 'function') {
-                    toast('Could not restore workspace — trash entry purged.', 'error');
+                    toast('Could not restore workspace — snapshot expired and trash entry purged.', 'error');
                 }
             },
             redo: function () {
@@ -3225,6 +3291,10 @@
             }
         };
     });
+    // One-shot diagnostic — flips true the first time a v2.1 entry
+    // is replayed via the trash fallback. Keeps the console signal
+    // useful without spamming on every undo of every legacy entry.
+    var _warnedLegacyWorkspaceDelete = false;
 
     // workspace-create — symmetric to workspace-delete. Undo soft-
     // deletes the freshly-created workspace (routes through
