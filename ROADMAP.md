@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**66/68 done** · 2 backlog
+**67/69 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -84,6 +84,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [328](https://github.com/Kuestenlogik/Bowire/issues/328) | Bowire | [fix(security): close CodeQL alerts — log-forging, incomplete sanitisation, XSS-through-exception](#issue-kuestenlogik-bowire-328) | ✅ Done |  |
 | [329](https://github.com/Kuestenlogik/Bowire/issues/329) | Bowire | [ci(security): switch CodeQL to Advanced Setup — sanitiser model + paths-ignore](#issue-kuestenlogik-bowire-329) | ✅ Done |  |
 | [330](https://github.com/Kuestenlogik/Bowire/issues/330) | Bowire | [docs: v2.1 docs + screenshots refresh (audit, marquee assets, UI guide, features, API reference)](#issue-kuestenlogik-bowire-330) | ✅ Done |  |
+| [331](https://github.com/Kuestenlogik/Bowire/issues/331) | Bowire | [docs: extension + embedding developer guides](#issue-kuestenlogik-bowire-331) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -517,6 +518,10 @@ Replaces GitHub's Default Setup with an explicit Advanced configuration so we ca
 #### <a id="issue-kuestenlogik-bowire-330"></a>✅ Done · [#330](https://github.com/Kuestenlogik/Bowire/issues/330) docs: v2.1 docs + screenshots refresh (audit, marquee assets, UI guide, features, API reference)
 
 Comprehensive post-v2.1 docs refresh based on the staleness inventory: [[more]](https://github.com/Kuestenlogik/Bowire/issues/330)
+
+#### <a id="issue-kuestenlogik-bowire-331"></a>✅ Done · [#331](https://github.com/Kuestenlogik/Bowire/issues/331) docs: extension + embedding developer guides
+
+Two new top-level docs sections for the Developer audience: [[more]](https://github.com/Kuestenlogik/Bowire/issues/331)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
