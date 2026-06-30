@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**68/70 done** · 2 backlog
+**69/71 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -86,6 +86,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [330](https://github.com/Kuestenlogik/Bowire/issues/330) | Bowire | [docs: v2.1 docs + screenshots refresh (audit, marquee assets, UI guide, features, API reference)](#issue-kuestenlogik-bowire-330) | ✅ Done |  |
 | [331](https://github.com/Kuestenlogik/Bowire/issues/331) | Bowire | [docs: extension + embedding developer guides](#issue-kuestenlogik-bowire-331) | ✅ Done |  |
 | [332](https://github.com/Kuestenlogik/Bowire/issues/332) | Bowire | [fix(ui): streaming response container honours parent height — detail pane no longer crushed](#issue-kuestenlogik-bowire-332) | ✅ Done |  |
+| [333](https://github.com/Kuestenlogik/Bowire/issues/333) | Bowire | [fix(sidebar): visual consistency — phantom border, uniform toolbar height, shared empty-state](#issue-kuestenlogik-bowire-333) | ✅ Done |  |
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
@@ -527,6 +528,10 @@ Two new top-level docs sections for the Developer audience: [[more]](https://git
 #### <a id="issue-kuestenlogik-bowire-332"></a>✅ Done · [#332](https://github.com/Kuestenlogik/Bowire/issues/332) fix(ui): streaming response container honours parent height — detail pane no longer crushed
 
 Operator: 'bei mehreren messages als antwort (subscribe) scheint es so zu sein, dass die liste der nachrichten dann die anzeige des inhalts einer message (JSON etc.) verdrängt.' [[more]](https://github.com/Kuestenlogik/Bowire/issues/332)
+
+#### <a id="issue-kuestenlogik-bowire-333"></a>✅ Done · [#333](https://github.com/Kuestenlogik/Bowire/issues/333) fix(sidebar): visual consistency — phantom border, uniform toolbar height, shared empty-state
+
+Three sidebar UX bugs operator surfaced in one session: [[more]](https://github.com/Kuestenlogik/Bowire/issues/333)
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
