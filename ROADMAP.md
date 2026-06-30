@@ -90,7 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**3/14 done** · 11 backlog
+**4/15 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -108,6 +108,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ✅ Done |  |
 | [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ✅ Done |  |
 | [315](https://github.com/Kuestenlogik/Bowire/issues/315) | Bowire | [Unify Proxy + Intercepted into 'Traffic' rail (Standalone / Embedded sub-modes); Mocks stays separate](#issue-kuestenlogik-bowire-315) | ✅ Done |  |
+| [334](https://github.com/Kuestenlogik/Bowire/issues/334) | Bowire | [feat(v2.2): merge Mocks + Traffic into Intercept rail with four sub-tabs](#issue-kuestenlogik-bowire-334) | ✅ Done |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
@@ -592,6 +593,10 @@ Recordings + Mocks let an operator capture and replay traffic, but nothing in th
 #### <a id="issue-kuestenlogik-bowire-315"></a>✅ Done · [#315](https://github.com/Kuestenlogik/Bowire/issues/315) Unify Proxy + Intercepted into 'Traffic' rail (Standalone / Embedded sub-modes); Mocks stays separate
 
 Three rails exist today that all touch "request flowing through Bowire": [[more]](https://github.com/Kuestenlogik/Bowire/issues/315)
+
+#### <a id="issue-kuestenlogik-bowire-334"></a>✅ Done · [#334](https://github.com/Kuestenlogik/Bowire/issues/334) feat(v2.2): merge Mocks + Traffic into Intercept rail with four sub-tabs
+
+Operator audit identified Phase-3 rail bloat: `Mocks` + `Traffic` (Interceptor) + 2 legacy contributions (`Intercepted`, `Proxy`) competed for the same conceptual surface ("what do I do with live traffic"). Plus "Flows" had two meanings (Flows rail vs Traffic's request-log sub-tab). [[more]](https://github.com/Kuestenlogik/Bowire/issues/334)
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
