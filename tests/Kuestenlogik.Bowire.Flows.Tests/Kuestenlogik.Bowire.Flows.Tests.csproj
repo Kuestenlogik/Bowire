@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!--
+      Coverage for the v2.2 Flow-Expectations stream: the per-kind ×
+      per-operator evaluation matrix, the legacy v2.1 {path, op, value}
+      adapter, and the FlowDefinition / FlowStep deserialisation
+      contract that the v2.2 CI runner (T2) consumes. Tests live in
+      their own assembly so the Flows package's analyzers don't see test
+      types (matches the pattern Help / Workspace.Git / Ai use).
+    -->
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector"><PrivateAssets>all</PrivateAssets><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets></PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Flows\Kuestenlogik.Bowire.Flows.csproj" />
+  </ItemGroup>
+</Project>

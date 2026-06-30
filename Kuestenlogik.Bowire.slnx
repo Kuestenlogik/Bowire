@@ -33,6 +33,7 @@
     <Project Path="tests/Kuestenlogik.Bowire.Ai.OpenAi.Tests/Kuestenlogik.Bowire.Ai.OpenAi.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Ai.Anthropic.Tests/Kuestenlogik.Bowire.Ai.Anthropic.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Ai.Mcp.Tests/Kuestenlogik.Bowire.Ai.Mcp.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.Flows.Tests/Kuestenlogik.Bowire.Flows.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Help.Tests/Kuestenlogik.Bowire.Help.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Testing.Tests/Kuestenlogik.Bowire.Testing.Tests.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.Otlp/Kuestenlogik.Bowire.Protocol.Otlp.csproj" />
