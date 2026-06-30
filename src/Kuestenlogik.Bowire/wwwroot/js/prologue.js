@@ -2267,13 +2267,49 @@
     }
     // Workspace names must be unique. Case-insensitive trim-compared so
     // "Staging" / "staging " / "STAGING" don't sneak past as duplicates.
+    // v2.2 W1 — ALSO check the workspaces-trash bucket so a soft-deleted
+    // workspace can't be silently shadowed by a fresh create of the same
+    // name. The operator's recourse is documented in
+    // _toastIfTrashCollision below: restore-or-purge.
     function _isWorkspaceNameTaken(name, excludeId) {
         var norm = String(name || '').trim().toLowerCase();
         if (!norm) return false;
-        return workspaces.some(function (w) {
+        var liveHit = workspaces.some(function (w) {
             return w.id !== excludeId
                 && String(w.name || '').trim().toLowerCase() === norm;
         });
+        if (liveHit) return true;
+        if (Array.isArray(workspacesTrash)) {
+            var trashHit = workspacesTrash.some(function (t) {
+                return t && t.workspace && t.workspace.id !== excludeId
+                    && String(t.workspace.name || '').trim().toLowerCase() === norm;
+            });
+            if (trashHit) return true;
+        }
+        return false;
+    }
+    // v2.2 W1 — surface the trash collision specifically so the operator
+    // knows WHY their create attempt failed: a name lives in the trash
+    // bucket, not in the live list. Without the distinct toast the
+    // operator sees "name taken" and starts hunting for a workspace
+    // that doesn't visibly exist.
+    function _toastIfTrashCollision(name) {
+        var norm = String(name || '').trim().toLowerCase();
+        if (!norm || !Array.isArray(workspacesTrash)) return false;
+        var hit = workspacesTrash.find(function (t) {
+            return t && t.workspace
+                && String(t.workspace.name || '').trim().toLowerCase() === norm;
+        });
+        if (!hit) return false;
+        if (typeof toast === 'function') {
+            toast(
+                'A workspace named "' + (hit.workspace.name || name)
+                + '" is in the trash — restore it or purge it from the trash first.',
+                'error',
+                { duration: 6000 }
+            );
+        }
+        return true;
     }
     // Picks the next free "Workspace N" — used only when the caller
     // didn't supply an explicit name (e.g. quick-create flows). For
@@ -2291,8 +2327,13 @@
         var requested = String(name || '').trim();
         if (requested) {
             if (_isWorkspaceNameTaken(requested)) {
-                if (typeof toast === 'function') {
-                    toast('A workspace named "' + requested + '" already exists.', 'error');
+                // v2.2 W1 — distinguish trash-collision vs live-collision
+                // so the operator knows to restore-or-purge instead of
+                // chasing a phantom workspace.
+                if (!_toastIfTrashCollision(requested)) {
+                    if (typeof toast === 'function') {
+                        toast('A workspace named "' + requested + '" already exists.', 'error');
+                    }
                 }
                 return null;
             }
@@ -2886,6 +2927,43 @@
         } catch { /* localStorage quota / disabled — best-effort cleanup */ }
     }
 
+    // v2.2 W1 — disk-side counterpart to _purgeWorkspaceData. Fires a
+    // DELETE against the host's workspace-folder endpoint so a hard-
+    // delete (or a Trash-bucket purge) doesn't leave gigabytes of
+    // recording chunks orphaned under ~/.bowire/workspaces/<id>/.
+    //
+    // Best-effort: embedded hosts refuse the call (the endpoint is
+    // standalone-only), and browser-storage-only workspaces never
+    // wrote any disk bytes. Either way the JS-side localStorage purge
+    // already happened, so a failed disk-side wipe is logged but not
+    // surfaced to the operator — the trash entry / action log have
+    // already disappeared from the UI by the time this lands.
+    function _purgeWorkspaceDiskStorage(id) {
+        if (!id) return;
+        try {
+            // Match the prefix convention every other api caller uses
+            // (window.config.prefix is the mount path; empty string in
+            // standalone, '/bowire' when MapBowire() is embedded).
+            var prefix = (typeof config !== 'undefined'
+                && config && typeof config.prefix === 'string')
+                ? config.prefix : '';
+            var url = prefix + '/api/workspace/' + encodeURIComponent(id);
+            // fetch is fire-and-forget — the JS side has already
+            // committed the localStorage purge by this point, so the
+            // operator's mental model is "deleted". The disk wipe is a
+            // pure background hygiene operation.
+            if (typeof fetch === 'function') {
+                fetch(url, { method: 'DELETE' }).then(function (resp) {
+                    if (!resp.ok && resp.status !== 403 && resp.status !== 404) {
+                        console.warn('[workspace-purge] disk wipe failed', resp.status, id);
+                    }
+                }).catch(function (e) {
+                    console.warn('[workspace-purge] disk wipe network error', e);
+                });
+            }
+        } catch (e) { console.warn('[workspace-purge] disk wipe threw', e); }
+    }
+
     // #194 — Restore a workspace from the trash bucket. Re-inserts at
     // the original index when possible (falls back to append), pipes
     // every persisted bucket back into the per-workspace namespace,
@@ -2930,10 +3008,17 @@
     // Hard-delete a workspace from the trash (no recovery). Mirrors
     // the per-bucket 'delete forever' affordance on every other
     // trash section.
+    // v2.2 W1 — ALSO trigger the disk-storage purge so per-workspace
+    // recording chunks under ~/.bowire/workspaces/<id>/ don't outlive
+    // the trash entry. _purgeWorkspaceData was already called by
+    // deleteWorkspace before the entry landed in the trash (so the
+    // localStorage namespace is gone), but the disk wipe was missing
+    // — that's the leak this closes.
     function purgeWorkspaceFromTrash(trashEntry) {
         if (!trashEntry || !trashEntry.workspace) return;
         var id = trashEntry.workspace.id;
         _purgeWorkspaceData(id);
+        _purgeWorkspaceDiskStorage(id);
         var ti = workspacesTrash.indexOf(trashEntry);
         if (ti >= 0) workspacesTrash.splice(ti, 1);
         persistWorkspacesTrash();
@@ -2995,24 +3080,82 @@
                         });
                     }
                 } catch { /* best-effort */ }
-                // Reset the in-memory state so the UI doesn't keep
-                // showing recordings / urls / collections from the
-                // deleted workspace. Load-fns run against the empty
-                // orphan namespace and come back empty next render.
-                try {
-                    if (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) serverUrls.length = 0;
-                    if (typeof serverUrlAliases !== 'undefined' && serverUrlAliases) {
-                        Object.keys(serverUrlAliases).forEach(function (k) { delete serverUrlAliases[k]; });
-                    }
-                    if (typeof recordingsList !== 'undefined' && Array.isArray(recordingsList)) recordingsList.length = 0;
-                    if (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) collectionsList.length = 0;
-                    if (typeof flowsList !== 'undefined' && Array.isArray(flowsList)) flowsList.length = 0;
-                    if (typeof environments !== 'undefined' && Array.isArray(environments)) environments.length = 0;
-                    if (typeof services !== 'undefined' && Array.isArray(services)) services.length = 0;
-                    if (typeof favorites !== 'undefined' && Array.isArray(favorites)) favorites.length = 0;
-                } catch { /* defensive — some arrays may not be declared yet */ }
             } else {
+                // v2.2 W1 — switch to the first remaining workspace.
+                // The state reset + reload of the NEW active workspace's
+                // data both happen below so neither branch leaks state
+                // from the deleted workspace into the surviving one.
                 activeWorkspaceId = workspaces[0].id;
+            }
+            // v2.2 W1 — reset the in-memory state UNCONDITIONALLY
+            // when the active workspace was deleted (previously the
+            // reset only fired in the workspaces.length===0 branch,
+            // so deleting a non-last workspace left the deleted
+            // workspace's URLs / recordings / collections sitting in
+            // the surviving workspace's view until a full reload).
+            // Then re-hydrate from the NEW active workspace's namespace
+            // if there's still one to land on — otherwise the
+            // surviving workspace would render the empty defaults
+            // even though its localStorage namespace is populated.
+            try {
+                if (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) serverUrls.length = 0;
+                if (typeof serverUrlAliases !== 'undefined' && serverUrlAliases) {
+                    Object.keys(serverUrlAliases).forEach(function (k) { delete serverUrlAliases[k]; });
+                }
+                if (typeof recordingsList !== 'undefined' && Array.isArray(recordingsList)) recordingsList.length = 0;
+                if (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) collectionsList.length = 0;
+                if (typeof flowsList !== 'undefined' && Array.isArray(flowsList)) flowsList.length = 0;
+                if (typeof environments !== 'undefined' && Array.isArray(environments)) environments.length = 0;
+                if (typeof services !== 'undefined' && Array.isArray(services)) services.length = 0;
+                if (typeof favorites !== 'undefined' && Array.isArray(favorites)) favorites.length = 0;
+            } catch { /* defensive — some arrays may not be declared yet */ }
+
+            // Re-hydrate the in-memory caches from the new active
+            // workspace's localStorage namespace so the surviving
+            // rails render the surviving workspace's content instead
+            // of empty defaults. Each cache is restored inline (the
+            // module doesn't expose dedicated load-fns for every
+            // entity); guard each block so a corrupt bucket degrades
+            // to the empty state already set above rather than
+            // throwing.
+            if (activeWorkspaceId) {
+                try {
+                    var rawU = localStorage.getItem(wsKey(SERVER_URLS_KEY));
+                    if (rawU) {
+                        var parsedU = JSON.parse(rawU);
+                        if (Array.isArray(parsedU)
+                            && typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) {
+                            for (var ui = 0; ui < parsedU.length; ui++) serverUrls.push(parsedU[ui]);
+                        }
+                    }
+                } catch { /* leave empty */ }
+                try {
+                    var rawA = localStorage.getItem(wsKey(SERVER_URL_ALIASES_KEY));
+                    if (rawA) {
+                        var parsedA = JSON.parse(rawA);
+                        if (parsedA && typeof parsedA === 'object'
+                            && typeof serverUrlAliases !== 'undefined' && serverUrlAliases) {
+                            Object.keys(parsedA).forEach(function (k) {
+                                serverUrlAliases[k] = parsedA[k];
+                            });
+                        }
+                    }
+                } catch { /* leave empty */ }
+                try {
+                    if (typeof loadCollections === 'function'
+                        && typeof collectionsList !== 'undefined'
+                        && Array.isArray(collectionsList)) {
+                        var fresh = loadCollections();
+                        if (Array.isArray(fresh)) {
+                            for (var ci = 0; ci < fresh.length; ci++) collectionsList.push(fresh[ci]);
+                        }
+                    }
+                } catch { /* leave empty */ }
+                // recordings / flows / favorites / envs read through
+                // their getter-on-demand path
+                // (getRecordings / getFlows / getFavorites /
+                // getEnvironments), so the next render lands fresh
+                // values without an explicit re-hydrate.
             }
         }
         persistWorkspaces();
@@ -3571,7 +3714,44 @@
         // so a team member opening the workspace gets the same recent
         // request set the author had at export time. Disk-mode exports
         // ship []; browser-mode exports fill the bucket.
-        'bowire_request_builder_history'
+        'bowire_request_builder_history',
+        // v2.2 W1 — backfill of every wsKey()'d project-content bucket
+        // that was missing from the canonical set. Without these
+        // entries the disk-purge cascade leaked orphaned per-workspace
+        // localStorage namespaces (hard-delete from Trash spliced the
+        // trash array but left the buckets behind). Each entry was
+        // verified via `wsKey('<name>')` grep in the JS tree.
+        //
+        // bowire_history — call history (last N executed methods).
+        'bowire_history',
+        // bowire_recent_methods — MRU method picker list.
+        'bowire_recent_methods',
+        // bowire_ad_hoc_requests — the catch-all "freeform request"
+        // bucket maintained by the request builder when the operator
+        // hasn't filed the request under a collection yet.
+        'bowire_ad_hoc_requests',
+        // bowire_catalogue_draft — settings.js' catalogue editor
+        // keeps its mid-edit draft per workspace so switching
+        // workspaces doesn't smear an unsaved draft across them.
+        'bowire_catalogue_draft',
+        // bowire_url_headers — default headers per server URL
+        // ({ [url]: { [name]: value } }). Workspace-scoped because
+        // the same URL shows up in different workspaces with
+        // different auth conventions.
+        'bowire_url_headers',
+        // bowire_global_vars — workspace-scoped global variables
+        // (the cross-env constants, surfaced in the Environments
+        // tab as the "Globals" bucket). NOT the shared multi-
+        // workspace store, that's bowire_global_vars_shared and
+        // intentionally NOT per-workspace.
+        'bowire_global_vars',
+        // bowire_enabled_modules — per-workspace module enablement
+        // list (which IBowireModuleContribution surfaces are active).
+        // Workspace-scoped via wsKey(ENABLED_MODULES_KEY).
+        'bowire_enabled_modules',
+        // bowire_parallel_defaults_v1 — collections.js parallel-
+        // run defaults (concurrency / delay) per workspace.
+        'bowire_parallel_defaults_v1'
         // bowire_request_tabs intentionally NOT listed here — open
         // tabs are browser session state (which row I happened to be
         // looking at), not project content. Persisted under wsKey()
@@ -3597,7 +3777,25 @@
         // history (which tabs I just closed), not project content,
         // so wiped on workspace delete and not round-tripped through
         // .bww export. Same lifecycle as bowire_request_tabs above.
-        'bowire_request_tabs_trash'
+        'bowire_request_tabs_trash',
+        // v2.2 W1 — additional per-workspace UI / session flags.
+        // None of these are project content (the operator hasn't
+        // expressed an intent that should travel with the .bww file),
+        // they're transient per-browser preferences that just happen
+        // to be workspace-scoped so each workspace remembers them
+        // independently. Wiped on workspace delete to close the leak.
+        //
+        // bowire_favorites_only — #156 favorites-only toggle for
+        // the sidebar list view.
+        'bowire_favorites_only',
+        // bowire_auto_discover_asked — one-shot "we already prompted
+        // the operator about auto-discovery" flag so re-opening the
+        // workspace doesn't ask twice.
+        'bowire_auto_discover_asked',
+        // bowire_vars_dollar_snoozed — toast-suppression flag
+        // (vars-deprecation.js); per-workspace because the deprecation
+        // banner targets workspace content.
+        'bowire_vars_dollar_snoozed'
     ];
     // Modes that store per-method presets via the presets framework.
     // Each maps to a `bowire_presets_<mode>` key under wsKey().

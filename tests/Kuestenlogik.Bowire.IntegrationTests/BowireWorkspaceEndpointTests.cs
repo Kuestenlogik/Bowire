@@ -331,6 +331,125 @@ public sealed class BowireWorkspaceEndpointTests : IDisposable
         }
     }
 
+    // ----- DELETE /api/workspace/{id} (v2.2 W1) ----------------------
+
+    [Fact]
+    public async Task Delete_returns_403_in_embedded_mode()
+    {
+        // Embedded host refuses to delete server-side bytes, same
+        // policy as POST /api/workspace/open-folder.
+        using var host = await BuildHost(BowireMode.Embedded);
+        var client = host.GetTestClient();
+
+        using var resp = await client.DeleteAsync(
+            new Uri("/api/workspace/ws-1", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
+
+        var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(body);
+        Assert.Equal("urn:bowire:workspace:purge-not-available",
+            doc.RootElement.GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public async Task Delete_returns_400_when_workspaceId_sanitises_to_empty()
+    {
+        // "..." sanitises to empty — would otherwise delete the user-root
+        // wholesale. Endpoint refuses with 400 problem-details.
+        using var host = await BuildHost(BowireMode.Standalone);
+        var client = host.GetTestClient();
+
+        using var resp = await client.DeleteAsync(
+            new Uri("/api/workspace/...", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+
+        var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(body);
+        Assert.Equal("urn:bowire:workspace:purge-bad-id",
+            doc.RootElement.GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public async Task Delete_returns_ok_purged_false_when_workspace_folder_absent()
+    {
+        // Browser-storage-only workspaces never wrote any disk bytes,
+        // so the folder is missing. Endpoint returns 200 with purged=false
+        // so the caller can distinguish "we cleaned up" from "nothing
+        // to clean up" without branching on 404.
+        using var host = await BuildHost(BowireMode.Standalone);
+        var client = host.GetTestClient();
+
+        using var resp = await client.DeleteAsync(
+            new Uri("/api/workspace/ws_no_disk_state", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(body);
+        Assert.False(doc.RootElement.GetProperty("purged").GetBoolean());
+        Assert.Equal("absent", doc.RootElement.GetProperty("reason").GetString());
+    }
+
+    [Fact]
+    public async Task Delete_wipes_workspace_folder_recursively()
+    {
+        // Seed an on-disk workspace folder with a recording + a nested
+        // file so we can prove the recursive delete sweeps everything,
+        // not just the top-level entries.
+        var wsId = "ws_purgetest";
+        var wsRoot = BowireUserContext.GetUserPath(Path.Combine("workspaces", wsId));
+        Directory.CreateDirectory(wsRoot);
+        Directory.CreateDirectory(Path.Combine(wsRoot, "recordings", "r1"));
+        await File.WriteAllTextAsync(
+            Path.Combine(wsRoot, "recordings", "r1", "metadata.json"),
+            "{}",
+            TestContext.Current.CancellationToken);
+        Assert.True(Directory.Exists(wsRoot));
+
+        using var host = await BuildHost(BowireMode.Standalone);
+        var client = host.GetTestClient();
+
+        using var resp = await client.DeleteAsync(
+            new Uri($"/api/workspace/{wsId}", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(body);
+        Assert.True(doc.RootElement.GetProperty("purged").GetBoolean());
+        Assert.False(Directory.Exists(wsRoot),
+            $"Expected workspace folder at {wsRoot} to be deleted recursively.");
+    }
+
+    [Fact]
+    public async Task Delete_sanitises_path_traversal_attempts()
+    {
+        // Hostile workspace id with path separators gets sanitised
+        // to alnum + '-' + '_' before resolving. A "../../etc" id
+        // sanitises to "etc" — the endpoint deletes
+        // workspaces/etc/ inside the user root (which doesn't exist
+        // in this test), NOT the actual /etc.
+        using var host = await BuildHost(BowireMode.Standalone);
+        var client = host.GetTestClient();
+
+        // Use a URL-encoded path-traversal segment — the framework's
+        // route binder gives us a single segment value, which the
+        // sanitiser then strips.
+        using var resp = await client.DeleteAsync(
+            new Uri("/api/workspace/..%2F..%2Fetc", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+        // Endpoint should land in either "absent" (folder doesn't
+        // exist) or "bad id" (sanitised to empty); BOTH are correct
+        // safe-behaviour outcomes. The wrong outcome would be a 500
+        // crash or a path-escape exception. The important assertion
+        // is that we don't end up trying to delete a system path.
+        Assert.True(resp.StatusCode == HttpStatusCode.OK
+            || resp.StatusCode == HttpStatusCode.BadRequest,
+            $"Expected sanitised path traversal to return 200 or 400, got {resp.StatusCode}.");
+    }
+
     // ----- Host builders ---------------------------------------------
 
     private async Task<IHost> BuildHost(BowireMode mode = BowireMode.Standalone)
