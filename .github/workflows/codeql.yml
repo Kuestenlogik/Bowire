@@ -1,0 +1,70 @@
+# Advanced CodeQL setup. Replaces the repo's Default Setup so we can:
+#   - Wire .github/codeql/codeql-config.yml (paths-ignore + extension pack)
+#   - Register Kuestenlogik.Bowire.Interceptor.LogSanitizer.Strip as a
+#     known sanitiser for cs/log-forging (closes alerts #1786-#1791
+#     properly instead of dismissing)
+#
+# Triggers mirror what Default Setup provided: push to main, every PR,
+# and a weekly cron so dependency drift gets noticed.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '17 9 * * 1'  # Monday 09:17 UTC — off-peak
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: csharp
+            build-mode: autobuild
+            runner: ubuntu-latest
+          - language: javascript-typescript
+            build-mode: none
+            runner: ubuntu-latest
+          - language: actions
+            build-mode: none
+            runner: ubuntu-latest
+          - language: python
+            build-mode: none
+            runner: ubuntu-latest
+          - language: ruby
+            build-mode: none
+            runner: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # The csharp build mode is `autobuild`, which means CodeQL needs
+      # the .NET SDK Bowire uses (.NET 10) available before the
+      # `init` step picks the toolchain.
+      - name: Setup .NET (csharp only)
+        if: matrix.language == 'csharp'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:${{ matrix.language }}'

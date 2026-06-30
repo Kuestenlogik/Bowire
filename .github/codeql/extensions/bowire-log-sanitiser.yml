@@ -1,0 +1,27 @@
+# Sanitiser model for LogSanitizer.Strip(string?).
+#
+# Closes CodeQL alerts #1786-#1791 (cs/log-forging in
+# BowireInterceptorMiddleware + BowireReverseProxyMiddleware). The
+# helper strips CR + LF from any user-controlled value before it
+# reaches an ILogger structured-param renderer — see
+# src/Kuestenlogik.Bowire.Interceptor/LogSanitizer.cs.
+#
+# Schema (CodeQL summary-model 8-tuple for C#):
+#   1. namespace                — Kuestenlogik.Bowire.Interceptor
+#   2. type                     — LogSanitizer
+#   3. is subtype                — false (we want THIS class, not children)
+#   4. method name              — Strip
+#   5. method signature         — (System.String) — single-arg overload
+#   6. ext (override/etc)       — "" (none)
+#   7. input access path        — Argument[0] (the user-controlled string)
+#   8. kind                     — sanitizer (a flow-cutting node)
+#
+# 9. provenance / 10. kind-disambiguator picked per the model-pack
+#    docs: "manual" (we wrote it, not generated) + "" (no
+#    sub-kind needed for sanitisers).
+extensions:
+  - addsTo:
+      pack: codeql/csharp-all
+      extensible: sanitizerModel
+    data:
+      - ["Kuestenlogik.Bowire.Interceptor", "LogSanitizer", false, "Strip", "(System.String)", "", "Argument[0]", "log-injection", "manual"]

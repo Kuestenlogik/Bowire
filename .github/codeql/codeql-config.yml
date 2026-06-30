@@ -1,0 +1,66 @@
+# CodeQL configuration for Bowire — switched from Default Setup to
+# Advanced Setup so we can:
+#
+#   1. Register Kuestenlogik.Bowire.Interceptor.LogSanitizer.Strip as
+#      a known sanitiser for the cs/log-forging query (closes CodeQL
+#      alerts #1786-#1791 properly instead of dismissing). The data
+#      extension that does this lives at
+#      .github/codeql/extensions/bowire-log-sanitiser.yml + is wired
+#      into the scan via the `packs:` block below.
+#
+#   2. Skip dev-tooling paths (Playwright screenshot scripts, marketing
+#      PDF build helpers, ad-hoc UX tests) that legitimately disable
+#      cert validation against self-signed localhost dev servers OR
+#      run inside a controlled localhost-only context. CodeQL's
+#      threat model assumes production code; flagging dev-tools as
+#      "remote attack surface" produces noise without security value.
+#
+# Re-enabling Default Setup requires removing this file + the
+# .github/workflows/codeql.yml workflow + re-enabling Default Setup
+# via the repo's Security & analysis settings.
+
+name: Bowire CodeQL config
+
+# Same query suite Default Setup uses — security-extended pulls in
+# every default + a curated set of additional queries that catch
+# more sources without too many false positives.
+queries:
+  - uses: security-extended
+
+# Pack reference. Wires our local extension YAML into the analyser so
+# every C# scan sees LogSanitizer.Strip as a sanitiser node.
+packs:
+  - ./.github/codeql/extensions
+
+paths-ignore:
+  # Playwright drivers for screenshots + the recorded demo. They
+  # hit localhost dev samples over https with self-signed dev certs
+  # (rejectUnauthorized:false) which is correct in this scope but
+  # trips js/disabling-certificate-validation. Capturing UI screens
+  # is not a production attack surface.
+  - 'scripts/screenshots/**'
+
+  # Marketing-site build helpers (Jekyll, PDF render, activity
+  # snapshot, etc). They run only on the documentation-build runner,
+  # never inside the workbench process, + serve content from a
+  # localhost-ephemeral port that only Playwright connects to.
+  - 'scripts/site/**'
+
+  # Ad-hoc UX assertion / probe scripts. Disposable; not part of
+  # the shipping product.
+  - 'scripts/ux-tests/**'
+
+  # Smoke tests that drive sample servers. Same justification as
+  # screenshots — localhost-only dev context.
+  - 'scripts/smoke/**'
+
+  # Branding asset generation helpers (logos, splash, etc).
+  - 'scripts/branding/**'
+
+  # Coverage report post-processors — read xUnit + Cobertura output,
+  # never touch network input.
+  - 'scripts/coverage/**'
+
+  # Static site output (Jekyll-built HTML, downloaded MapLibre
+  # bundle, demo videos) — generated artifacts, not source.
+  - 'site/**'
