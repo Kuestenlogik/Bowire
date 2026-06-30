@@ -2502,6 +2502,38 @@
         try { pushHoppHistoryEntry(fr, historyOutcome); }
         catch (e) { console.warn('[request-builder-history] push failed', e); }
 
+        // v2.2 T3 — coverage recording. Compose-rail requests don't
+        // resolve to a discovered service/method most of the time
+        // (they're freeform URLs), so we synthesise a methodId from
+        // the verb + URL so the run is queryable from the Settings →
+        // Data view. When the user originally bound the freeform to
+        // a discovered method (fr.discoveredService / fr.discoveredMethod
+        // — set by the "Save as method tab" flow), we use that
+        // canonical id so the chip lights up on the sidebar method.
+        if (typeof safeRecordMethodRun === 'function') {
+            var _composeOutcome;
+            if (historyOutcome.status == null || historyOutcome.status === 'NetworkError') _composeOutcome = 'error';
+            else if (historyOutcome.ok) _composeOutcome = 'ok';
+            else _composeOutcome = 'fail';
+            var _composeSvc = fr.discoveredService || '';
+            var _composeMth = fr.discoveredMethod  || verb;
+            var _composeId  = (_composeSvc && _composeMth)
+                ? null
+                : ('compose::' + verb + ' ' + (fr.serverUrl || '(no-url)'));
+            safeRecordMethodRun({
+                service: _composeSvc,
+                method:  _composeMth,
+                methodId: _composeId,
+                source: 'compose',
+                startedAt: Date.now() - (historyOutcome.durationMs || 0),
+                durationMs: historyOutcome.durationMs || 0,
+                outcome: _composeOutcome,
+                errorMessage: (responseError && typeof responseError === 'object' && responseError.title)
+                    ? responseError.title
+                    : (typeof responseError === 'string' ? responseError : null)
+            });
+        }
+
         isExecuting = false;
         if (typeof markJobDone === 'function') markJobDone('request-builder', verb);
         render();

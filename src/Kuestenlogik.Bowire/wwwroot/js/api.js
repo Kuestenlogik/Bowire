@@ -312,6 +312,10 @@
         render();
 
         var fullName = service + '/' + method;
+        // v2.2 T3 — wall-clock start so recordMethodRun gets the same
+        // durationMs the response strip displays even if the server
+        // doesn't echo duration_ms (network-error path).
+        var _invokeStartMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
         addConsoleEntry({ type: 'request', method: fullName, body: messages[0] || '{}' });
 
         try {
@@ -473,6 +477,37 @@
             addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });
         }
 
+        // v2.2 T3 — record this invocation in the per-workspace
+        // run-log so coverage chips + the run-history view pick it up.
+        // outcome: 'ok' if the status looks successful (isHistoryEntryOk
+        // already encodes the rule), 'error' on a network / protocol
+        // exception (responseError set in the catch block above),
+        // 'fail' on a server-returned error envelope (responseError is
+        // an object with .title). Skipped when the runner returned
+        // early (channel methods) — _invokeStartMs is the only signal.
+        if (typeof safeRecordMethodRun === 'function') {
+            var _outcome;
+            if (responseError && typeof responseError === 'string') _outcome = 'error';
+            else if (responseError) _outcome = 'fail';
+            else _outcome = (typeof isHistoryEntryOk === 'function'
+                ? (isHistoryEntryOk({ status: statusInfo && statusInfo.status }) ? 'ok' : 'fail')
+                : 'ok');
+            var _durMs = statusInfo && statusInfo.durationMs
+                ? statusInfo.durationMs
+                : Math.round(((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) - _invokeStartMs);
+            var _errMsg = null;
+            if (typeof responseError === 'string') _errMsg = responseError;
+            else if (responseError && responseError.title) _errMsg = responseError.title;
+            safeRecordMethodRun({
+                service: service,
+                method: method,
+                source: 'discover',
+                startedAt: Date.now() - _durMs,
+                durationMs: _durMs,
+                outcome: _outcome,
+                errorMessage: _errMsg
+            });
+        }
         isExecuting = false;
         markJobDone(service, method);
         render();
@@ -602,6 +637,13 @@
             sseSource = null;
             unregisterSubscription(service, method);
 
+            // v2.2 T3 — server-streaming run completed cleanly.
+            if (typeof safeRecordMethodRun === 'function') {
+                safeRecordMethodRun({
+                    service: service, method: method, source: 'discover',
+                    startedAt: Date.now() - elapsed, durationMs: elapsed, outcome: 'ok'
+                });
+            }
             addConsoleEntry({ type: 'response', method: fullName, status: 'Completed', durationMs: elapsed });
 
             // ---- Post-response script (streaming) ----
@@ -681,6 +723,15 @@
             sseSource.close();
             sseSource = null;
             unregisterSubscription(service, method);
+            // v2.2 T3 — stream errored out. Bucket as 'error' (server
+            // never sent its 'done' event).
+            if (typeof safeRecordMethodRun === 'function') {
+                safeRecordMethodRun({
+                    service: service, method: method, source: 'discover',
+                    startedAt: Date.now() - elapsed, durationMs: elapsed,
+                    outcome: 'error', errorMessage: 'Stream error'
+                });
+            }
             addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: 'Stream error occurred', durationMs: elapsed });
             render();
         });

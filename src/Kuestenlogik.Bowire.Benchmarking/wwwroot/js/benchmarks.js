@@ -823,6 +823,49 @@
         spec.lastRun = thisRun;
 
         persistBenchmarks();
+        // v2.2 T3 — coverage entry per method-target in the envelope.
+        // Bucket per-target outcomes off targetStats when available
+        // (each target tracks its own success/failure counters); fall
+        // back to the aggregate run when targetStats is empty (single-
+        // target envelopes that skipped the per-target rollup). Skips
+        // request-type targets — those don't resolve to a discovered
+        // method, so they don't show up in the sidebar tree.
+        if (typeof safeRecordMethodRun === 'function') {
+            try {
+                var ts = thisRun.targetStats || [];
+                if (ts.length === 0 && Array.isArray(spec.targets)) {
+                    // Single-target envelope — synthesise one slot
+                    // so the recorder still fires for it.
+                    ts = spec.targets.filter(function (t) { return t && t.type === 'method'; })
+                        .map(function (t) {
+                            return {
+                                target: t,
+                                success: thisRun.success || 0,
+                                failure: thisRun.failure || 0
+                            };
+                        });
+                }
+                for (var ti = 0; ti < ts.length; ti++) {
+                    var tt = ts[ti];
+                    if (!tt || !tt.target || tt.target.type !== 'method') continue;
+                    var tgt = tt.target;
+                    if (!tgt.service || !tgt.method) continue;
+                    var ok = (tt.success || 0) > 0 && (tt.failure || 0) === 0;
+                    var outc = benchmark.cancelled ? 'error'
+                        : (ok ? 'ok' : ((tt.failure || 0) > 0 ? 'fail' : 'ok'));
+                    safeRecordMethodRun({
+                        service: tgt.service,
+                        method:  tgt.method,
+                        source:  'benchmark',
+                        startedAt: thisRun.ranAtWallClock || (Date.now() - Math.round(totalMs)),
+                        durationMs: Math.round(totalMs),
+                        outcome: outc,
+                        errorMessage: ((tt.failure || 0) > 0)
+                            ? (tt.failure + ' failed call(s)') : null
+                    });
+                }
+            } catch (_) { /* recording is best-effort */ }
+        }
         // #303 — advance the run-a-benchmark tour the moment a run
         // settles (cancelled or not — the operator saw the result panel
         // either way). Detail carries the run snapshot so a future tour

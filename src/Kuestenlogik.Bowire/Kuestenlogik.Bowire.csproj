@@ -104,6 +104,17 @@
     <BowireJsFragment Include="wwwroot\js\helpers.js" />
     <BowireJsFragment Include="wwwroot\js\workspace-templates.js" />
     <BowireJsFragment Include="wwwroot\js\history-env.js" />
+    <!-- v2.2 T3 — Regression Coverage Surface. Per-workspace run-log
+         ring buffer + per-method aggregation. The runners (Discover
+         invoke, Compose runner, Benchmark runner, Recording replay)
+         call recordMethodRun at their success/failure hooks; the
+         sidebar method-item renderer reads coverageState to paint the
+         chip; the Settings → Data view mounts renderRunHistoryView.
+         Must come BEFORE api.js (invokeUnary calls recordMethodRun),
+         request-builder.js (Compose runner), settings.js (Data view),
+         render-sidebar.js (sidebar chip). Dependencies: wsKey from
+         prologue.js, el from helpers.js. -->
+    <BowireJsFragment Include="wwwroot\js\coverage.js" />
     <BowireJsFragment Include="wwwroot\js\auth.js" />
     <BowireJsFragment Include="wwwroot\js\schema-form.js" />
     <!-- #311 — recording.js / mocks.js / flows.js / intercepted-view.js
