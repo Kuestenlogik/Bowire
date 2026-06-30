@@ -4900,7 +4900,14 @@
                     headline: (mocksList && mocksList.length > 0) ? 'Pick a mock' : 'No mocks running',
                     body: (mocksList && mocksList.length > 0)
                         ? 'Pick a running mock from the sidebar to see its URL, live request log, and stop control.'
-                        : 'Mocks are spun up from a recording — switch to the Recordings mode and use "Run as mock" on any session.',
+                        // Cross-link to Traffic → Mock Rules so the
+                        // operator understands the two surfaces are
+                        // orthogonal: this rail spins up a standalone
+                        // server replaying a recording end-to-end;
+                        // Mock Rules intercept-and-substitute single
+                        // responses inside the proxy / middleware
+                        // pipeline. Same word "mock" — different verb.
+                        : 'Mocks are standalone replay servers spun up from a recording — switch to the Recordings rail and use "Run as mock" on any session. Looking for one-line response substitution inside the proxy / middleware pipeline? See the Traffic rail’s Mock Rules sub-tab.',
                     actions: (mocksList && mocksList.length > 0) ? [] : [
                         {
                             label: 'Go to Recordings',
