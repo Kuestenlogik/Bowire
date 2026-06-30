@@ -140,6 +140,107 @@ internal static partial class BowireWorkspaceEndpoints
             return Results.Ok(new { available = true });
         }).ExcludeFromDescription();
 
+        // v2.2 W1 — per-workspace disk-storage purge. Soft / hard
+        // delete on the JS side wipes the per-workspace localStorage
+        // namespace, but workspaces with the disk-storage posture
+        // (BowireMode.Standalone, recording chunks under
+        // ~/.bowire/workspaces/<id>/) leave the on-disk folder behind.
+        // Without this endpoint a hard-delete from Trash leaks gigabytes
+        // of recording chunks per purged workspace. The handler removes
+        // ~/.bowire/workspaces/<id>/ recursively when the id sanitises
+        // to a non-empty segment + the resolved path stays under the
+        // user root. STANDALONE ONLY for the same reason the open-folder
+        // sibling is — refusing to delete server-side bytes from an
+        // embedded host is the safer default (an embedded operator might
+        // not own the host's filesystem).
+        endpoints.MapDelete($"{basePath}/api/workspace/{{workspaceId}}",
+            (HttpContext ctx, IOptions<BowireOptions> opts, string workspaceId) =>
+        {
+            if (opts.Value.Mode != BowireMode.Standalone)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:workspace:purge-not-available",
+                    title: "Workspace disk purge is standalone-only",
+                    status: 403,
+                    detail: "Bowire refuses to delete server-side bytes from an embedded host (the host is typically a production server shared across operators). This endpoint is available in standalone tool mode only.",
+                    instance: ctx.Request.Path);
+            }
+
+            var sanitised = SanitiseWorkspaceId(workspaceId);
+            if (string.IsNullOrEmpty(sanitised))
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:workspace:purge-bad-id",
+                    title: "Invalid workspace id",
+                    status: 400,
+                    detail: "Workspace id sanitised to empty — refusing to delete user-root in lieu of a workspace folder.",
+                    instance: ctx.Request.Path);
+            }
+
+            string target;
+            try
+            {
+                target = BowireUserContext.GetUserPath(Path.Combine("workspaces", sanitised));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or PathTooLongException or NotSupportedException)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:workspace:purge-resolve-failed",
+                    title: "Couldn't resolve workspace folder",
+                    status: 500,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path);
+            }
+
+            // Defence-in-depth: the resolved absolute path MUST stay
+            // under the user root. SanitiseWorkspaceId already strips
+            // path separators, but a second guard here keeps the
+            // RemoveDirectory sink protected even if the sanitiser
+            // regresses.
+            var userRoot = Path.GetFullPath(BowireUserContext.GetUserPath(""));
+            var resolvedTarget = Path.GetFullPath(target);
+            if (!resolvedTarget.StartsWith(userRoot, StringComparison.Ordinal)
+                || string.Equals(resolvedTarget, userRoot, StringComparison.Ordinal))
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:workspace:purge-escape",
+                    title: "Refusing to purge: resolved path escapes the user root",
+                    status: 400,
+                    detail: $"Resolved path '{resolvedTarget}' is not strictly under '{userRoot}'.",
+                    instance: ctx.Request.Path);
+            }
+
+            // Missing folder is a happy-path no-op: a browser-storage-
+            // only workspace never wrote any disk bytes, so there's
+            // nothing to purge. Return 200 with purged=false so the
+            // caller can distinguish "we cleaned up" from "nothing to
+            // clean up" without branching on 404.
+            if (!Directory.Exists(resolvedTarget))
+            {
+                return Results.Ok(new { purged = false, path = resolvedTarget, reason = "absent" });
+            }
+
+            try
+            {
+                Directory.Delete(resolvedTarget, recursive: true);
+                return Results.Ok(new { purged = true, path = resolvedTarget });
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:workspace:purge-failed",
+                    title: "Couldn't delete workspace folder",
+                    status: 500,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path,
+                    extensions: new Dictionary<string, object?>
+                    {
+                        ["path"] = resolvedTarget,
+                        ["exceptionType"] = ex.GetType().Name
+                    });
+            }
+        }).ExcludeFromDescription();
+
         endpoints.MapPost($"{basePath}/api/workspace/open-folder",
             (HttpContext ctx, IOptions<BowireOptions> opts, string? workspaceId) =>
         {
