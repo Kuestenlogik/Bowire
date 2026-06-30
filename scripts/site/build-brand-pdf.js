@@ -53,7 +53,15 @@ async function main() {
       }
       res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream' });
       res.end(fs.readFileSync(file));
-    } catch (e) { res.writeHead(500); res.end(String(e)); }
+    } catch (e) {
+      // Don't leak the exception body (stack frames, file paths) into
+      // the response — CodeQL alerts #1775 + #1776 (xss-through-
+      // exception + stack-trace-exposure). The error still lands in
+      // build-time stderr where the operator can read it.
+      console.error('[brand-pdf] static-server error:', e);
+      res.writeHead(500);
+      res.end('internal error');
+    }
   });
   await new Promise((r) => server.listen(0, r));
   const port = server.address().port;
