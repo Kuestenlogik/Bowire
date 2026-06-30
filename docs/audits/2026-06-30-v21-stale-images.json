@@ -1,0 +1,894 @@
+[
+  {
+    "date": "2026-05-03",
+    "path": "docs/images/screenshots/discovery-failed.png"
+  },
+  {
+    "date": "2026-05-03",
+    "path": "docs/images/screenshots/first-run.png"
+  },
+  {
+    "date": "2026-05-03",
+    "path": "docs/images/screenshots/method-detail.png"
+  },
+  {
+    "date": "2026-05-03",
+    "path": "docs/images/screenshots/multi-url.png"
+  },
+  {
+    "date": "2026-05-03",
+    "path": "docs/images/screenshots/ready.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-akka-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-akka-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-dis-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-dis-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-graphql-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-graphql-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-grpc-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-grpc-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-kafka-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-kafka-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-mqtt-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-mqtt-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-signalr-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-signalr-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-socketio-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-socketio-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-sse-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-sse-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "docs/images/screenshots/streaming-udp-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-akka-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-akka-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-dis-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-dis-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-graphql-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-graphql-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-grpc-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-grpc-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-kafka-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-kafka-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-mqtt-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-mqtt-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-signalr-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-signalr-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-socketio-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-socketio-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-sse-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-sse-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-udp-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-udp-light.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-websocket-dark.png"
+  },
+  {
+    "date": "2026-05-05",
+    "path": "streaming-websocket-light.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "docs/images/bowire-editable-dark.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "docs/images/bowire-editable-light.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "docs/images/bowire-editable.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "docs/images/bowire-method-detail-dark.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "docs/images/bowire-method-detail-light.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "docs/images/bowire-method-detail.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "docs/images/bowire-wrong-protocol-dark.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "docs/images/bowire-wrong-protocol-light.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "docs/images/bowire-wrong-protocol.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "docs/images/screenshots/performance-light.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "editable-dark.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "editable-light.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "editable.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "method-detail-dark.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "method-detail-light.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "method-detail.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "performance-light.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "wrong-protocol-dark.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "wrong-protocol-light.png"
+  },
+  {
+    "date": "2026-05-08",
+    "path": "wrong-protocol.png"
+  },
+  {
+    "date": "2026-05-11",
+    "path": "discovery-failed-light.png"
+  },
+  {
+    "date": "2026-05-11",
+    "path": "docs/images/bowire-discovery-failed-light.png"
+  },
+  {
+    "date": "2026-05-11",
+    "path": "docs/images/bowire-multi-url-light.png"
+  },
+  {
+    "date": "2026-05-11",
+    "path": "docs/images/bowire-ready-dark.png"
+  },
+  {
+    "date": "2026-05-11",
+    "path": "docs/images/bowire-ready-light.png"
+  },
+  {
+    "date": "2026-05-11",
+    "path": "docs/images/bowire-ready.png"
+  },
+  {
+    "date": "2026-05-11",
+    "path": "docs/images/bowire-schema-upload-dark.png"
+  },
+  {
+    "date": "2026-05-11",
+    "path": "docs/images/bowire-schema-upload-light.png"
+  },
+  {
+    "date": "2026-05-11",
+    "path": "docs/images/bowire-schema-upload.png"
+  },
+  {
+    "date": "2026-05-11",
+    "path": "multi-url-light.png"
+  },
+  {
+    "date": "2026-05-11",
+    "path": "ready-dark.png"
+  },
+  {
+    "date": "2026-05-11",
+    "path": "ready-light.png"
+  },
+  {
+    "date": "2026-05-11",
+    "path": "ready.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "auth-dark.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "auth-light.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "auth.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "docs/images/bowire-auth-dark.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "docs/images/bowire-auth-light.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "docs/images/bowire-auth.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "docs/images/bowire-env-diff-dark.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "docs/images/bowire-env-diff-light.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "docs/images/bowire-env-diff.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "docs/images/bowire-environments-dark.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "docs/images/bowire-environments-light.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "docs/images/bowire-environments.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "environments-dark.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "environments-light.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "environments.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "site/assets/images/screenshots/tacticalapi-dark.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "site/assets/images/screenshots/tacticalapi-light.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "tacticalapi-dark.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "tacticalapi-light.png"
+  },
+  {
+    "date": "2026-05-12",
+    "path": "tacticalapi.png"
+  },
+  {
+    "date": "2026-05-13",
+    "path": "site/assets/images/screenshots/tacticalapi-map-dark.png"
+  },
+  {
+    "date": "2026-05-13",
+    "path": "site/assets/images/screenshots/tacticalapi-map-light.png"
+  },
+  {
+    "date": "2026-05-13",
+    "path": "site/assets/images/screenshots/tacticalapi-map.png"
+  },
+  {
+    "date": "2026-05-13",
+    "path": "tacticalapi-map-dark.png"
+  },
+  {
+    "date": "2026-05-13",
+    "path": "tacticalapi-map-light.png"
+  },
+  {
+    "date": "2026-05-13",
+    "path": "tacticalapi-map.png"
+  },
+  {
+    "date": "2026-05-19",
+    "path": "asyncapi-discovery-dark.png"
+  },
+  {
+    "date": "2026-05-19",
+    "path": "asyncapi-discovery-light.png"
+  },
+  {
+    "date": "2026-05-19",
+    "path": "docs/images/screenshots/asyncapi-discovery-dark.png"
+  },
+  {
+    "date": "2026-05-19",
+    "path": "docs/images/screenshots/asyncapi-discovery-light.png"
+  },
+  {
+    "date": "2026-05-19",
+    "path": "site/assets/images/screenshots/asyncapi-discovery-dark.png"
+  },
+  {
+    "date": "2026-05-19",
+    "path": "site/assets/images/screenshots/asyncapi-discovery-light.png"
+  },
+  {
+    "date": "2026-05-24",
+    "path": "docs/images/screenshots/streaming-amqp-dark.png"
+  },
+  {
+    "date": "2026-05-24",
+    "path": "docs/images/screenshots/streaming-amqp-light.png"
+  },
+  {
+    "date": "2026-05-24",
+    "path": "site/assets/images/screenshots/streaming-amqp-dark.png"
+  },
+  {
+    "date": "2026-05-24",
+    "path": "site/assets/images/screenshots/streaming-amqp-light.png"
+  },
+  {
+    "date": "2026-05-24",
+    "path": "streaming-amqp-dark.png"
+  },
+  {
+    "date": "2026-05-24",
+    "path": "streaming-amqp-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "command-palette-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "discovery-failed-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "discovery-failed.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/bowire-discovery-failed-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/bowire-discovery-failed.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/bowire-first-run-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/bowire-first-run-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/bowire-first-run.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/bowire-multi-url-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/bowire-multi-url.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/command-palette-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/env-diff-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/env-diff-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/env-diff.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/flow-editor-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/json-chaining-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/json-chaining-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/json-chaining.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/recording-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/schema-upload-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/settings-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/settings-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/settings.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "docs/images/screenshots/streaming-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "env-diff-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "env-diff-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "env-diff.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "first-run-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "first-run-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "first-run.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "flow-editor-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "json-chaining-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "json-chaining-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "json-chaining.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "multi-url-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "multi-url.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "recording-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "schema-upload-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "settings-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "settings-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "settings.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/command-palette-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/discovery-failed-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/discovery-failed.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/env-diff-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/env-diff-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/env-diff.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/first-run-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/first-run-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/first-run.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/flow-editor-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/json-chaining-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/json-chaining-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/json-chaining.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/multi-url-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/multi-url.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/recording-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/schema-upload-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/settings-dark.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/settings-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/settings.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "site/assets/images/screenshots/streaming-light.png"
+  },
+  {
+    "date": "2026-06-22",
+    "path": "streaming-light.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "command-palette-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "command-palette.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "docs/images/screenshots/command-palette-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "docs/images/screenshots/command-palette.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "docs/images/screenshots/flow-editor-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "docs/images/screenshots/flow-editor.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "docs/images/screenshots/performance-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "docs/images/screenshots/performance.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "docs/images/screenshots/recording-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "docs/images/screenshots/recording.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "docs/images/screenshots/schema-upload-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "docs/images/screenshots/schema-upload.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "docs/images/screenshots/streaming-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "docs/images/screenshots/streaming.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "flow-editor-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "flow-editor.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "performance-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "performance.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "recording-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "recording.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "schema-upload-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "schema-upload.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "site/assets/images/screenshots/command-palette-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "site/assets/images/screenshots/command-palette.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "site/assets/images/screenshots/flow-editor-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "site/assets/images/screenshots/flow-editor.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "site/assets/images/screenshots/performance-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "site/assets/images/screenshots/performance.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "site/assets/images/screenshots/recording-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "site/assets/images/screenshots/recording.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "site/assets/images/screenshots/schema-upload-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "site/assets/images/screenshots/schema-upload.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "site/assets/images/screenshots/streaming-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "site/assets/images/screenshots/streaming.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "streaming-dark.png"
+  },
+  {
+    "date": "2026-06-24",
+    "path": "streaming.png"
+  },
+  {
+    "date": "2026-06-30",
+    "path": "v2-1/compose-library-left.png"
+  },
+  {
+    "date": "2026-06-30",
+    "path": "v2-1/discover-with-response.png"
+  },
+  {
+    "date": "2026-06-30",
+    "path": "v2-1/help-rail.png"
+  },
+  {
+    "date": "2026-06-30",
+    "path": "v2-1/rail-strip.png"
+  },
+  {
+    "date": "2026-06-30",
+    "path": "v2-1/settings-plugins-protocols.png"
+  },
+  {
+    "date": "2026-06-30",
+    "path": "v2-1/streaming-state-badge.png"
+  },
+  {
+    "date": "ite/assets/images/screenshots/tacticalapi.png",
+    "path": ""
+  }
+]
