@@ -90,7 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**8/19 done** · 11 backlog
+**9/20 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -113,6 +113,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [336](https://github.com/Kuestenlogik/Bowire/issues/336) | Bowire | [feat(v2.2): Interceptor activation empty-state with Reverse-Proxy CTA](#issue-kuestenlogik-bowire-336) | ✅ Done |  |
 | [337](https://github.com/Kuestenlogik/Bowire/issues/337) | Bowire | [feat(v2.2): workspace deletion hardening — cascade purge + Soft/Hard toggle + Action-Log decouple](#issue-kuestenlogik-bowire-337) | ✅ Done |  |
 | [338](https://github.com/Kuestenlogik/Bowire/issues/338) | Bowire | [fix(bundle): guard rail-load calls for embedded hosts that don't reference every rail package](#issue-kuestenlogik-bowire-338) | ✅ Done |  |
+| [340](https://github.com/Kuestenlogik/Bowire/issues/340) | Bowire | [feat(v2.2): plugin lifecycle backend — Restart / Unload / Load / Reset-storage / Health](#issue-kuestenlogik-bowire-340) | ✅ Done |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
@@ -618,6 +619,10 @@ Three-part refactor in one PR. Closes the workspace-delete leaks operator surfac
 #### <a id="issue-kuestenlogik-bowire-338"></a>✅ Done · [#338](https://github.com/Kuestenlogik/Bowire/issues/338) fix(bundle): guard rail-load calls for embedded hosts that don't reference every rail package
 
 **Hypothesis confirmed.** Sample.Embedded crashed during boot with `ReferenceError: loadFlows is not defined`. `loadFlows` is defined ONLY in `Kuestenlogik.Bowire.Flows/wwwroot/js/flows.js`. Sample.Embedded's csproj references Core + Protocol.Rest + Map + Interceptor — but NOT Flows. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/338)
+
+#### <a id="issue-kuestenlogik-bowire-340"></a>✅ Done · [#340](https://github.com/Kuestenlogik/Bowire/issues/340) feat(v2.2): plugin lifecycle backend — Restart / Unload / Load / Reset-storage / Health
+
+Replaces the 501-stub lifecycle endpoint with real per-action handlers. Closes the gap operator surfaced after the v2.1 Settings IA work: clicking a per-plugin lifecycle button used to just toast 'Not implemented'. [[more]](https://github.com/Kuestenlogik/Bowire/issues/340)
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
