@@ -91,7 +91,8 @@ internal sealed class BowireReverseProxyMiddleware
 #pragma warning restore CA1031
         {
             if (_logger is { } log && log.IsEnabled(LogLevel.Debug))
-                log.LogDebug(ex, "bowire.interceptor: request body capture failed for {Method} {Path}", method, path);
+                log.LogDebug(ex, "bowire.interceptor: request body capture failed for {Method} {Path}",
+                    LogSanitizer.Strip(method), LogSanitizer.Strip(path));
         }
 
         var (reqText, reqBase64) = ClassifyBytes(requestBytes);
@@ -189,7 +190,8 @@ internal sealed class BowireReverseProxyMiddleware
         {
             error = ex.Message;
             if (_logger is { } log && log.IsEnabled(LogLevel.Debug))
-                log.LogDebug(ex, "bowire.interceptor: upstream forward failed for {Method} {Url}", method, clientUrl);
+                log.LogDebug(ex, "bowire.interceptor: upstream forward failed for {Method} {Url}",
+                    LogSanitizer.Strip(method), LogSanitizer.Strip(clientUrl));
         }
         finally
         {

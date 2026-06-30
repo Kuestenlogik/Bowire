@@ -136,7 +136,8 @@ internal sealed class BowireInterceptorMiddleware
 #pragma warning restore CA1031
         {
             if (_logger is { } log && log.IsEnabled(LogLevel.Debug))
-                log.LogDebug(ex, "bowire.interceptor: request body capture failed for {Method} {Path}", method, path);
+                log.LogDebug(ex, "bowire.interceptor: request body capture failed for {Method} {Path}",
+                    LogSanitizer.Strip(method), LogSanitizer.Strip(path));
         }
 
         // Phase D — mock injection (#308). When a rule matches the
