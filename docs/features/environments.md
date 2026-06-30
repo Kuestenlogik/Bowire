@@ -171,7 +171,10 @@ The legacy `/bowire/api/environments` endpoints stay mounted for one release win
 
 ## Screenshot
 
-![Workspace switcher dropdown — color chips, active workspace highlighted](../images/screenshots/workspaces-switcher.png)
+![Workspaces rail — Harbor demo expanded with Sources / Environments / Collections / Recordings sub-tree + Acme staging + Globex prod siblings; detail pane shows color picker](../images/screenshots/workspaces-switcher.png)
+
+<!-- TODO: capture topbar workspace-switcher dropdown specifically (color chips, last-used timestamps, + New / Import buttons) — current capture shows the Workspaces rail, which tells a complementary story. -->
+
 
 ## See also
 

@@ -172,7 +172,8 @@ In v2.1's [extension-point-organised Settings tree](../release-notes/v2.1.0.md#s
 
 ## Screenshot
 
-![Interceptor rail — Flows sub-tab with intercepted requests](../images/screenshots/interceptor-flows.png)
+<!-- TODO: capture Interceptor rail — Flows sub-tab with intercepted requests list. Neither Combined (5101) nor standalone Tool (5180) ships the Kuestenlogik.Bowire.Interceptor package in the sample set on this branch; the rail isn't in the rail strip. Re-capture after the package lands in Bundle.Workbench for the demo Tool. -->
+
 
 ## Related
 
