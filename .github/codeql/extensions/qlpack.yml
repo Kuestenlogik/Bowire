@@ -1,0 +1,13 @@
+# Local CodeQL data-extension pack for Bowire. Declares known
+# sanitisers + barriers so the analyser doesn't re-flag custom
+# helpers it can't see by source.
+#
+# This pack is referenced from .github/codeql/codeql-config.yml under
+# `packs:`. It targets codeql/csharp-all because every flow query
+# CodeQL runs against C# eventually consults the sanitiser model
+# extension points exposed by that pack.
+name: kuestenlogik/bowire-codeql-extensions
+version: 0.0.0
+library: true
+extensionTargets:
+  codeql/csharp-all: '*'
