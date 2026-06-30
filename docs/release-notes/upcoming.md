@@ -21,30 +21,16 @@ The new interceptor middleware extends Bowire from "the operator drove a call" t
 
 A thin Bowire process can now relay every incoming MCP tool call to a heavier Bowire running on the operator's workstation. `bowire mcp serve --attach localhost:5198 --port 5199` boots a forwarder that surfaces no local tools — `tools/list`, `tools/call`, prompts, resources, and resource templates are all marshalled to the parent and the parent's response is relayed verbatim. Useful when an LLM agent on a CI runner / container should drive the workstation Bowire without sharing the parent's MCP socket directly. The parent gains a matching `--token <secret>` bearer-auth gate (`--bind http` only); the child passes the secret with `--attach-token <secret>`.
 
-### Workspace deletion: per-workspace cleanup is now exhaustive (W1)
+### Workspace-delete Undo decoupled from Trash (W2a)
 
-The hard-delete path (`Delete forever` on a workspace entry in the Trash drawer) used to leak per-workspace state on two axes:
+The action-log entry for `workspace-delete` is now self-contained: it carries the full snapshot (`workspace`, `data`, `originalIdx`) inline so Undo reads from the entry itself instead of looking the entry up in `workspacesTrash` at undo-time. This gives the two surfaces independent retention models:
 
-- **localStorage** — several buckets read/written through `wsKey()` (`bowire_history`, `bowire_recent_methods`, `bowire_ad_hoc_requests`, `bowire_catalogue_draft`, `bowire_url_headers`, `bowire_global_vars`, `bowire_enabled_modules`, `bowire_parallel_defaults_v1`, plus the per-workspace UI flags `bowire_favorites_only`, `bowire_auto_discover_asked`, `bowire_vars_dollar_snoozed`) were missing from the canonical key lists, so a purge spliced the Trash array but left those entries behind.
-- **Disk storage** — per-workspace recording chunks under `~/.bowire/workspaces/<id>/` were never wiped. Hard-deleting a workspace with gigabytes of recordings reclaimed zero disk space.
+- **Trash drawer** — operator-curated retention via `bowire_trash_retention_days` (W2).
+- **Action log** — sliding window of the last 200 entries.
 
-Both leaks are closed: the canonical key lists now name every `wsKey()`'d bucket the audit found (verified by grep), and a new `DELETE /api/workspace/{workspaceId}` endpoint wipes the disk folder recursively. The endpoint is standalone-only (embedded hosts refuse with the same policy as the existing `open-folder` sibling — refusing to delete server-side bytes from a host that doesn't own its filesystem).
+Hard-delete (W2 mode) now writes ONLY the action-log snapshot — there's no trash entry to consult. Soft-delete writes both. Entries persisted BEFORE this change still resolve via the legacy Trash-lookup path (a one-shot `console.info` flags the fallback so the migration window is visible).
 
-Two related fixes ship at the same time:
-
-- `deleteWorkspace`'s in-memory cache reset used to fire only on the no-active-workspace branch. Non-last-workspace deletes left the deleted workspace's content visible in the surviving workspace's view until the next reload — now the reset runs on every active-workspace delete and the surviving workspace's localStorage namespace gets re-read inline so the rails render the right content immediately.
-- Workspace name-collision check now ALSO sweeps the Trash bucket — creating a workspace with a name that lives in Trash surfaces a distinct toast (`A workspace named X is in the trash — restore it or purge it from the trash first`) instead of a misleading "already exists" against an invisible record.
-
-### Workspace deletion mode + Trash retention (W2)
-
-Two new app-wide settings land under `Settings → Data`:
-
-- **Workspace deletion** — `Soft` (default, the v2.1 behaviour: move to Trash, recover within retention period) vs `Hard` (delete immediately, no recovery via Trash — Undo still works briefly via the action log).
-- **Trash retention** — `7 days`, `14 days`, `30 days` (default), or `Never auto-purge`. Drives the cross-bucket TTL sweep.
-
-The Hard mode adds a distinct confirm-dialog copy (`This workspace will be deleted IMMEDIATELY. Undo will work for the next ~200 actions, but it won't be in the Trash. Continue?`) and a `Delete forever` confirm button so the operator can't trip the path without seeing the difference. The hard-delete path also fires the disk-storage purge (W1's new `DELETE /api/workspace/{id}` endpoint) so per-workspace recording chunks under `~/.bowire/workspaces/<id>/` get reclaimed immediately. Soft-delete keeps deferring the disk wipe to the Trash drawer's `Delete forever` button — the operator may still restore from Trash, and the disk bytes are the only copy of the recording chunks (the localStorage snapshot doesn't carry them).
-
-New localStorage keys: `bowire_workspace_delete_mode` (`'soft'` | `'hard'`, default `'soft'`) and `bowire_trash_retention_days` (`7` | `14` | `30` | `'never'`, default `30`). Both are app-wide — NOT in `_WORKSPACE_DATA_KEYS` — so they survive workspace switches and don't travel through `.bww` export.
+The other entity-delete resolvers (`recording-delete`, `flow-delete`, `env-delete`) were audited and already carry their entity payload inline — only `workspace-delete` had the Trash coupling.
 
 ### Settings tree organized by scope; Configure + Plugins merged (#325)
 

@@ -2958,7 +2958,17 @@
                             // via Ctrl/Cmd+Z, the toast Undo button,
                             // or the global trash drawer's Workspaces
                             // bucket.
+                            // v2.2 W2a — pass the snapshot inline so
+                            // the resolver doesn't have to consult
+                            // workspacesTrash (which is empty in hard
+                            // mode anyway).
                             if (typeof toast === 'function') {
+                                var sidechannel = (typeof _lastWorkspaceDeleteSnapshot === 'object'
+                                    && _lastWorkspaceDeleteSnapshot)
+                                    ? _lastWorkspaceDeleteSnapshot[wsId] : null;
+                                if (sidechannel) {
+                                    try { delete _lastWorkspaceDeleteSnapshot[wsId]; } catch { /* ignore */ }
+                                }
                                 toast('Deleted workspace "' + snapshotName + '"', 'info', {
                                     undo: function () {
                                         var t = (typeof workspacesTrash !== 'undefined'
@@ -2969,13 +2979,26 @@
                                             restoreWorkspaceFromTrash(t);
                                             workspacesSelectedId = wsId;
                                             render();
+                                            return;
+                                        }
+                                        if (sidechannel
+                                            && typeof restoreWorkspaceFromSnapshot === 'function') {
+                                            restoreWorkspaceFromSnapshot(sidechannel);
+                                            workspacesSelectedId = wsId;
+                                            render();
                                         }
                                     },
                                     logAction: {
                                         kind: 'workspace-delete',
                                         rail: 'workspaces',
                                         title: 'Deleted workspace "' + snapshotName + '"',
-                                        undoSpec: { workspaceId: wsId }
+                                        undoSpec: {
+                                            workspaceId: wsId,
+                                            workspace: sidechannel ? sidechannel.workspace : null,
+                                            data: sidechannel ? sidechannel.data : null,
+                                            originalIdx: sidechannel ? sidechannel.originalIdx : null,
+                                            mode: sidechannel ? sidechannel.mode : 'soft'
+                                        }
                                     }
                                 });
                             }
