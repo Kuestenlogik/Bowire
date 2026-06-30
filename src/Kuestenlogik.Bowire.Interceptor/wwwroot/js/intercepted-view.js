@@ -421,13 +421,13 @@
             container.appendChild(renderEmptyCard({
                 icon: 'globe',
                 headline: 'No mock rules',
-                // Cross-link to the Mocks rail so the operator
-                // understands the orthogonal split: rules here
+                // Cross-link to the Mock servers sub-tab so the
+                // operator understands the orthogonal split: rules here
                 // substitute single responses inside the proxy /
-                // middleware pipeline; the Mocks rail spins up a
-                // standalone server that replays a recording
-                // end-to-end. Same word "mock" — different verb.
-                body: 'Add a rule, or open a captured flow and click "Mock this route" to seed one from the response. Looking for a standalone mock server that replays a whole recording? See the Mocks rail.'
+                // middleware pipeline; Mock servers spin up a standalone
+                // host that replays a recording end-to-end. Same word
+                // "mock" — different verb.
+                body: 'Add a rule, or open a captured flow and click "Mock this route" to seed one from the response. Looking for a standalone mock server that replays a whole recording? See the Mock servers sub-tab.'
             }));
             return;
         }

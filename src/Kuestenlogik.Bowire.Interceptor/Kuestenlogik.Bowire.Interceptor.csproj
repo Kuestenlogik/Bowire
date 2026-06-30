@@ -12,7 +12,7 @@
          /api/intercepted endpoints. The standalone Bowire.Tool pulls
          the package in via Bundle.Workbench so the CLI shape stays
          unchanged for end users. -->
-    <Description>Bowire Interceptor — unified Traffic rail (replaces the deprecated Proxy + Intercepted rails) + the in-process UseBowireInterceptor() middleware that captures HTTP flows into a singleton InterceptedFlowStore + the InterceptorMockStore that lets workbench-defined rules short-circuit the pipeline + the BowireReverseProxyHost / ReverseProxyRegistry the Tools surface uses to drive standalone reverse-proxy hosts. Adds the three rail descriptors (Proxy / Intercepted / Traffic) AND mounts /api/intercepted/* (+ /api/traffic/* alias) endpoints.</Description>
+    <Description>Bowire Interceptor — unified Intercept rail (v2.2 rail-IA refactor; replaces Mocks + Traffic + the already-hidden Proxy + Intercepted descriptors) with four sub-tabs (Captured | Live overrides | Mock servers | Settings) + the in-process UseBowireInterceptor() middleware that captures HTTP flows into a singleton InterceptedFlowStore + the InterceptorMockStore that lets workbench-defined rules short-circuit the pipeline + the BowireReverseProxyHost / ReverseProxyRegistry the Tools surface uses to drive standalone reverse-proxy hosts. Mounts /api/intercepted/* (+ /api/traffic/* alias) endpoints.</Description>
     <PackageId>Kuestenlogik.Bowire.Interceptor</PackageId>
     <PackageTags>bowire;interceptor;proxy;mitm;traffic;mock;reverse-proxy;middleware;workbench;plugin</PackageTags>
     <IsPackable>true</IsPackable>
@@ -36,7 +36,7 @@
                       LogicalName="Kuestenlogik.Bowire.Interceptor.wwwroot.js.proxy-view.js" />
     <EmbeddedResource Include="wwwroot\js\intercepted-view.js"
                       LogicalName="Kuestenlogik.Bowire.Interceptor.wwwroot.js.intercepted-view.js" />
-    <EmbeddedResource Include="wwwroot\js\traffic-view.js"
-                      LogicalName="Kuestenlogik.Bowire.Interceptor.wwwroot.js.traffic-view.js" />
+    <EmbeddedResource Include="wwwroot\js\intercept-view.js"
+                      LogicalName="Kuestenlogik.Bowire.Interceptor.wwwroot.js.intercept-view.js" />
   </ItemGroup>
 </Project>

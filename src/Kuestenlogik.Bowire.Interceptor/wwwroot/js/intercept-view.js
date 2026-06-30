@@ -1,55 +1,59 @@
     // Copyright 2026 Küstenlogik · Apache-2.0
     // ------------------------------------------------------------------
-    // #315 — Workbench "Traffic" rail.
+    // v2.2 rail-IA refactor — Workbench "Intercept" rail.
     //
-    // Unifies the previous Proxy + Intercepted rails. A given Bowire
-    // process is NEVER both Standalone AND Embedded at the same time —
-    // the deployment shape is fixed by how Bowire was launched. The
-    // Traffic rail reads __BOWIRE_CONFIG__.embeddedMode (set from
-    // BowireOptions.Mode) on every render and adapts:
+    // Replaces the previous Mocks + Traffic rails (and the already-hidden
+    // Intercepted + Proxy descriptors). One rail, four sub-tabs in a
+    // locked order: Captured | Live overrides | Mock servers | Settings.
     //
-    //   Standalone (uiMode === 'standalone' / 'standalone-locked'):
-    //     header → "Standalone proxy mode"
-    //     Settings sub-tab → loopback / external proxy URL config
-    //   Embedded (uiMode === 'embedded'):
-    //     header → "Embedded middleware mode"
-    //     Settings sub-tab → middleware status (UseBowireInterceptor?)
+    //   Captured       — passive observation of UseBowireInterceptor()
+    //                    flows; was Traffic → "Flows".
+    //   Live overrides — selective response substitution inside the
+    //                    interceptor pipeline; was Traffic → "Mock Rules".
+    //   Mock servers   — standalone mock-server-from-recording hosts;
+    //                    was the entire Mocks rail. Rendered by the
+    //                    Mock package's JS fragment when present;
+    //                    degrades to "Mock package not loaded" when not.
+    //   Settings       — interceptor config (was Traffic → "Settings");
+    //                    adapts header + form to Standalone vs Embedded
+    //                    via __BOWIRE_CONFIG__.embeddedMode.
     //
-    // Flows + Mock Rules sub-tabs render IDENTICALLY across deployments.
-    // Both read from the same /api/intercepted/* store (aliased to
-    // /api/traffic/* — either path resolves the same response).
-    //
-    // The Flows + Mock Rules handlers are intentionally delegated to the
-    // existing intercepted-view.js implementations (bowireIntercepted*)
-    // because (a) the underlying store + endpoint surface is the same,
-    // and (b) keeping one source of truth for the flow / rule rendering
-    // avoids two parallel code paths drifting apart. The legacy
-    // sidebarView='intercepted' + 'proxy' code paths stay registered
-    // for the obsolete-window release; the boot migration rewrites
-    // 'proxy' / 'intercepted' → 'traffic' on first paint so new users
-    // land on this surface.
+    // Architecture for the Mock-servers sub-tab: option C from the audit.
+    // The Mock package still owns mocks.js + the per-mock log polling /
+    // start-from-recording flow; this rail's renderer pokes the global
+    // window.__bowireMocks shim that mocks.js installs. When the Mock
+    // package isn't in the host's reference set, the global is absent
+    // and the sub-tab renders an empty state pointing operators at the
+    // package. Keeps the Mock package decoupled (still pure CLI
+    // citizen) without introducing a new extension-point seam.
     // ------------------------------------------------------------------
 
-    let trafficSubView = 'flows';        // 'flows' | 'mocks' | 'settings'
+    // 'captured' | 'live-overrides' | 'mock-servers' | 'settings'
+    let interceptSubView = (function () {
+        try {
+            var stored = localStorage.getItem('bowire_intercept_sub_tab');
+            if (stored === 'captured' || stored === 'live-overrides'
+                || stored === 'mock-servers' || stored === 'settings') return stored;
+        } catch { /* ignore */ }
+        return 'captured';
+    })();
 
-    function bowireTrafficIsEmbedded() {
+    function setInterceptSubView(next) {
+        interceptSubView = next;
+        try { localStorage.setItem('bowire_intercept_sub_tab', next); } catch { /* ignore */ }
+        render();
+    }
+
+    function bowireInterceptIsEmbedded() {
         return (typeof uiMode !== 'undefined' && uiMode === 'embedded');
     }
 
-    function bowireTrafficModeLabel() {
-        return bowireTrafficIsEmbedded()
-            ? 'Embedded middleware mode'
-            : 'Standalone proxy mode';
-    }
+    // ---- Sidebar — four sub-tabs ----
 
-    // ---- Sidebar (Flows | Mock Rules | Settings sub-tabs) ----
-
-    function renderTrafficListInto(container) {
-        // Lazy-load flow snapshot + mock rules through the existing
-        // intercepted helpers. They auto-connect to /api/intercepted/*
-        // on the same workbench origin — endpoints respond regardless
-        // of whether UseBowireInterceptor() was called (empty store
-        // surfaces an empty-state card).
+    function renderInterceptListInto(container) {
+        // Lazy-load flow snapshot + live-override rules through the
+        // existing intercepted helpers. They auto-connect to
+        // /api/intercepted/* on the same workbench origin.
         if (typeof bowireInterceptedConnect === 'function'
             && typeof interceptedConnectionState !== 'undefined'
             && interceptedConnectionState === 'idle') {
@@ -60,50 +64,43 @@
             && !interceptedMocksLoaded) {
             bowireInterceptedLoadMocks();
         }
+        // Mock-servers list — same lazy pull pattern. Only fires when
+        // the Mock package's shim is installed.
+        if (typeof window !== 'undefined'
+            && window.__bowireMocks
+            && typeof window.__bowireMocks.load === 'function') {
+            try { window.__bowireMocks.load(); } catch { /* ignore */ }
+        }
 
-        // Top toolbar with the 'Traffic' title retired — read as an
-        // inconsistent extra header next to Home (no header at all).
-        // Operator feedback: 'warum hat traffic so eine überschrift?
-        // home sieht anders aus.' The Reconnect + Clear-all-flows
-        // actions move into the right-aligned action group on the
-        // sub-tab strip below so they stay one click away.
-
-        // Mode banner retired — no other rail carries a sub-headline
-        // above its sub-tab strip, and the operator preference was
-        // 'entweder alle mit headline oder keiner'. Mode information
-        // (Standalone vs Embedded) now lives ONLY in the Settings
-        // sub-tab, where it sits alongside the listen-port / upstream
-        // / middleware-status config that already adapts per mode.
-
-        // Sub-tab strip: Flows | Mock Rules | Settings. Same recessed-
-        // strip pattern the other rails use.
         var flowCount = (typeof interceptedFlows !== 'undefined'
             && Array.isArray(interceptedFlows)) ? interceptedFlows.length : 0;
-        var mockCount = (typeof interceptedMockRules !== 'undefined'
+        var overrideCount = (typeof interceptedMockRules !== 'undefined'
             && Array.isArray(interceptedMockRules)) ? interceptedMockRules.length : 0;
+        var serverCount = (typeof window !== 'undefined' && window.__bowireMocks
+            && typeof window.__bowireMocks.list === 'function')
+            ? (window.__bowireMocks.list() || []).length
+            : ((typeof mocksList !== 'undefined' && Array.isArray(mocksList)) ? mocksList.length : 0);
 
-        var tabStrip = el('div', { id: 'bowire-traffic-subtabs', className: 'bowire-rail-subtabs' },
-            el('button', {
-                className: 'bowire-rail-subtab' + (trafficSubView === 'flows' ? ' active' : ''),
-                onClick: function () { trafficSubView = 'flows'; render(); }
-            }, el('span', { textContent: 'Flows' }),
-                el('span', { className: 'bowire-rail-subtab-meta', textContent: flowCount ? String(flowCount) : '' })),
-            el('button', {
-                className: 'bowire-rail-subtab' + (trafficSubView === 'mocks' ? ' active' : ''),
-                onClick: function () { trafficSubView = 'mocks'; render(); }
-            }, el('span', { textContent: 'Mock Rules' }),
-                el('span', { className: 'bowire-rail-subtab-meta', textContent: mockCount ? String(mockCount) : '' })),
-            el('button', {
-                className: 'bowire-rail-subtab' + (trafficSubView === 'settings' ? ' active' : ''),
-                onClick: function () { trafficSubView = 'settings'; render(); }
-            }, el('span', { textContent: 'Settings' }))
+        function _subTabBtn(id, label, count) {
+            var children = [el('span', { textContent: label })];
+            if (typeof count === 'number') {
+                children.push(el('span', {
+                    className: 'bowire-rail-subtab-meta',
+                    textContent: count ? String(count) : ''
+                }));
+            }
+            return el('button', {
+                className: 'bowire-rail-subtab' + (interceptSubView === id ? ' active' : ''),
+                onClick: function () { setInterceptSubView(id); }
+            }, children);
+        }
+
+        var tabStrip = el('div', { id: 'bowire-intercept-subtabs', className: 'bowire-rail-subtabs' },
+            _subTabBtn('captured',       'Captured',       flowCount),
+            _subTabBtn('live-overrides', 'Live overrides', overrideCount),
+            _subTabBtn('mock-servers',   'Mock servers',   serverCount),
+            _subTabBtn('settings',       'Settings')
         );
-        // Right-aligned action group on its own row container. The
-        // Reconnect + more-actions buttons replace the dropped top
-        // toolbar (operator: 'warum hat traffic so eine überschrift?
-        // home sieht anders aus.'). Wrapping the tab strip + actions
-        // in a flex row puts them on the same horizontal line without
-        // fighting the .bowire-rail-subtab flex:1 sizing.
         var actionsBar = el('div', { className: 'bowire-rail-subtabs-actions' },
             el('button', {
                 type: 'button',
@@ -141,13 +138,8 @@
         );
         var stripRow = el('div', { className: 'bowire-rail-subtabs-row' }, tabStrip, actionsBar);
         container.appendChild(stripRow);
-        // Overflow popover — three subtabs rarely overflow but the
-        // helper makes the strip behave consistently when the rail
-        // is narrowed below ~360 px. Look up the LIVE strip after
-        // morphdom commits, not the JS-tree `tabStrip` reference
-        // which can become detached.
         requestAnimationFrame(function () {
-            var live = document.getElementById('bowire-traffic-subtabs');
+            var live = document.getElementById('bowire-intercept-subtabs');
             if (live && typeof bowireWireTabOverflow === 'function') {
                 bowireWireTabOverflow(live, {
                     tabSelector: '.bowire-rail-subtab',
@@ -156,27 +148,25 @@
             }
         });
 
-        if (trafficSubView === 'mocks') {
+        if (interceptSubView === 'live-overrides') {
             if (typeof renderInterceptedMocksListInto === 'function') {
                 renderInterceptedMocksListInto(container);
             }
             return;
         }
-
-        if (trafficSubView === 'settings') {
-            renderTrafficSettingsListInto(container);
+        if (interceptSubView === 'mock-servers') {
+            renderInterceptMockServersListInto(container);
             return;
         }
-
-        // Flows tab — reuse the intercepted flow list renderer for the
-        // body. The toolbar above already wired the title + reconnect
-        // affordance, so we render the body-only variant.
-        renderTrafficFlowsListBodyInto(container);
+        if (interceptSubView === 'settings') {
+            renderInterceptSettingsListInto(container);
+            return;
+        }
+        // Captured
+        renderInterceptCapturedListBodyInto(container);
     }
 
-    function renderTrafficFlowsListBodyInto(container) {
-        // Mirrors intercepted-view.js's body branches but without
-        // re-rendering the toolbar (already painted above).
+    function renderInterceptCapturedListBodyInto(container) {
         if (typeof interceptedConnectionState === 'undefined') return;
 
         if (interceptedConnectionState === 'connecting') {
@@ -203,27 +193,16 @@
         }
 
         if (!Array.isArray(interceptedFlows) || interceptedFlows.length === 0) {
-            var emptyBody = bowireTrafficIsEmbedded()
+            var emptyBody = bowireInterceptIsEmbedded()
                 ? 'Add app.UseBowireInterceptor() to this host\'s pipeline, then drive any request through it from any client. Captured flows land here in real time.'
                 : 'Point your client at the bowire proxy / bowire interceptor CLI sidecar to start capturing. Captured flows land here in real time.';
             container.appendChild(renderEmptyCard({
-                // Match the rail-strip glyph (Traffic uses
-                // trafficLight, not the older 'globe' the
-                // Intercepted rail inherited). Operator feedback:
-                // 'welcome bei traffic hat anderes symbol (globus?
-                // es müsste traffic light sein wie auf dem rail)'.
                 icon: 'trafficLight',
                 headline: 'No traffic yet',
                 body: emptyBody,
                 actions: [
-                    // Per-rail welcome tour: explains the two
-                    // deployment shapes (embedded / standalone) and
-                    // the capture loop. There's no primary CTA on
-                    // this card because the operator's action is
-                    // outside Bowire (wire up the interceptor + drive
-                    // traffic), so the tour CTA stands alone.
                     {
-                        id: 'bowire-traffic-empty-tour-btn',
+                        id: 'bowire-intercept-empty-tour-btn',
                         label: 'Take a tour',
                         onClick: function () {
                             if (typeof window !== 'undefined'
@@ -245,7 +224,7 @@
                                   : flow.responseStatus >= 200 ? 'bowire-proxy-status-ok'
                                   : 'bowire-proxy-status-pending';
                 container.appendChild(el('div', {
-                    id: 'bowire-traffic-flow-' + flow.id,
+                    id: 'bowire-intercept-flow-' + flow.id,
                     className: 'bowire-proxy-list-item' + (isActive ? ' selected' : ''),
                     onClick: function () {
                         interceptedFlowSelectedId = flow.id;
@@ -269,18 +248,92 @@
                         ? el('span', { className: 'bowire-proxy-list-tls', title: 'Streaming response', textContent: '↻' })
                         : null,
                     flow.mocked
-                        ? el('span', { className: 'bowire-proxy-list-tls', title: 'Served from mock rule', textContent: 'M' })
+                        ? el('span', { className: 'bowire-proxy-list-tls', title: 'Served from override rule', textContent: 'M' })
                         : null
                 ));
             })(interceptedFlows[i]);
         }
     }
 
-    function renderTrafficSettingsListInto(container) {
-        // Sidebar Settings sub-tab is intentionally a deep-link card —
-        // the actual editor lives in the main pane where the field
-        // widths make sense. This card is a status-glance + jump.
-        var embedded = bowireTrafficIsEmbedded();
+    function renderInterceptMockServersListInto(container) {
+        // The Mock package's shim installs window.__bowireMocks. When
+        // it's missing the Mock package isn't referenced; render an
+        // empty state so operators see WHY there's no list rather than
+        // a silently-empty pane.
+        if (typeof window === 'undefined' || !window.__bowireMocks) {
+            container.appendChild(renderEmptyCard({
+                icon: 'mock',
+                headline: 'Mock package not loaded',
+                body: 'Reference Kuestenlogik.Bowire.Mock from the host to enable standalone mock servers. The standalone Bowire CLI ships with it included.'
+            }));
+            return;
+        }
+        var list = (typeof window.__bowireMocks.list === 'function')
+            ? (window.__bowireMocks.list() || [])
+            : ((typeof mocksList !== 'undefined' && Array.isArray(mocksList)) ? mocksList : []);
+
+        if (!list.length) {
+            container.appendChild(renderEmptyCard({
+                icon: 'mock',
+                headline: 'No mock servers running',
+                body: 'Mock servers are standalone replay hosts spun up from a recording. Open the Recordings rail and use "Run as mock" on any session to start one.'
+            }));
+            return;
+        }
+        for (var i = 0; i < list.length; i++) {
+            (function (m) {
+                var isActive = (typeof mockSelectedId !== 'undefined' && mockSelectedId === m.mockId);
+                // Reuse the shared sidebar list-item helper so the row
+                // gets the same hover-reveal stop button + selection
+                // chrome as every other sidebar list (Recordings,
+                // Workspaces, &c.).
+                if (typeof renderSidebarListItem === 'function') {
+                    container.appendChild(renderSidebarListItem({
+                        id: 'bowire-intercept-mock-server-' + m.mockId,
+                        name: m.recordingName || ('mock-' + m.port),
+                        meta: 'port ' + m.port,
+                        selected: isActive,
+                        onClick: function () {
+                            if (typeof mockSelectedId !== 'undefined') mockSelectedId = m.mockId;
+                            render();
+                        },
+                        deleteTitle: 'Stop mock host',
+                        onDelete: function () {
+                            if (window.__bowireMocks && typeof window.__bowireMocks.stop === 'function') {
+                                window.__bowireMocks.stop(m.mockId);
+                                if (typeof mockSelectedId !== 'undefined' && mockSelectedId === m.mockId) {
+                                    mockSelectedId = null;
+                                }
+                            }
+                        }
+                    }));
+                } else {
+                    container.appendChild(el('div', {
+                        id: 'bowire-intercept-mock-server-' + m.mockId,
+                        className: 'bowire-proxy-list-item' + (isActive ? ' selected' : ''),
+                        onClick: function () {
+                            if (typeof mockSelectedId !== 'undefined') mockSelectedId = m.mockId;
+                            render();
+                        }
+                    },
+                        el('span', { className: 'bowire-proxy-list-method', textContent: 'MOCK' }),
+                        el('span', {
+                            className: 'bowire-proxy-list-status bowire-proxy-status-ok',
+                            textContent: String(m.port || '?')
+                        }),
+                        el('span', {
+                            className: 'bowire-proxy-list-url',
+                            textContent: m.recordingName || ('mock-' + m.port),
+                            title: m.recordingName || ('mock-' + m.port)
+                        })
+                    ));
+                }
+            })(list[i]);
+        }
+    }
+
+    function renderInterceptSettingsListInto(container) {
+        var embedded = bowireInterceptIsEmbedded();
         var headline = embedded ? 'Embedded middleware' : 'Standalone proxy';
         var body = embedded
             ? 'Bowire is mounted in-process via MapBowire(). Wire UseBowireInterceptor() into the pipeline to capture flows. The main pane shows the live middleware status.'
@@ -295,34 +348,23 @@
 
     // ---- Main pane ----
 
-    function renderTrafficMainPane() {
+    function renderInterceptMainPane() {
         const pane = el('div', { className: 'bowire-env-editor-main' });
 
-        // Headline retired. Operator: 'traffic rail: Traffic —
-        // Standalone proxy mode überschrift wird nicht benötigt.
-        // ist auch anders als bei den anderen rail welcome pages
-        // […] bei den anderen rails ist dort keine headline.'
-        // Deployment-mode signalling moves into the empty-card body
-        // copy (or a small chip in the sub-tabs strip) when actually
-        // needed; the rail title in the rail strip + the workbench
-        // tab strip are enough to identify the surface.
-
-        if (trafficSubView === 'settings') {
-            return renderTrafficSettingsMainPane(pane);
+        if (interceptSubView === 'settings') {
+            return renderInterceptSettingsMainPane(pane);
         }
-
-        if (trafficSubView === 'mocks') {
-            // Delegate to the intercepted Mocks main pane — the editor
-            // shape is identical (path pattern / method / response).
+        if (interceptSubView === 'live-overrides') {
             if (typeof renderInterceptedMocksMainPane === 'function') {
                 return renderInterceptedMocksMainPane(pane);
             }
             return pane;
         }
+        if (interceptSubView === 'mock-servers') {
+            return renderInterceptMockServersMainPane(pane);
+        }
 
-        // Flows main pane — reuse the intercepted flow detail surface so
-        // the request / response renderer + Send-to-recording + Mock-
-        // this-route affordances stay in one place.
+        // Captured (flows) — reuse the intercepted flow detail surface.
         if (typeof interceptedConnectionState !== 'undefined'
             && interceptedConnectionState === 'error') {
             pane.appendChild(renderEmptyCard({
@@ -362,7 +404,7 @@
             el('h2', { className: 'bowire-env-editor-title', textContent: (flow.method || 'GET') + ' ' + (flow.path || flow.url || '') }),
             el('span', { style: 'flex:1' }),
             el('button', {
-                id: 'bowire-traffic-send-rec-btn',
+                id: 'bowire-intercept-send-rec-btn',
                 className: 'bowire-env-editor-action-btn',
                 title: 'Convert this captured flow into a Bowire recording you can replay, fuzz, or include in a test collection.',
                 onClick: function () {
@@ -372,34 +414,32 @@
                 }
             }, el('span', { textContent: 'Send to recording' })),
             el('button', {
-                id: 'bowire-traffic-mock-this-btn',
+                id: 'bowire-intercept-override-btn',
                 className: 'bowire-env-editor-action-btn',
-                title: 'Seed a mock-injection rule from this flow. The interceptor will serve the captured response in place of the upstream endpoint until the rule is paused or removed.',
+                title: 'Seed a live-override rule from this flow. The interceptor will serve the captured response in place of the upstream endpoint until the rule is paused or removed.',
                 onClick: function () {
                     if (typeof bowireInterceptedSeedMockFromFlow === 'function') {
                         bowireInterceptedSeedMockFromFlow(interceptedFlowSelectedId);
                     }
                 }
-            }, el('span', { textContent: 'Mock this route' }))
+            }, el('span', { textContent: 'Override this route' }))
         );
         pane.appendChild(actionRow);
 
-        // Metadata row + exchange — reuse the proxy-view helpers so the
-        // visual shape stays uniform across rails.
         const meta = el('div', { className: 'bowire-proxy-detail-meta' });
-        function _trafficMetaCell(label, value) {
+        function _interceptMetaCell(label, value) {
             return el('div', { className: 'bowire-proxy-detail-meta-cell' },
                 el('div', { className: 'bowire-proxy-detail-meta-label', textContent: label }),
                 el('div', { className: 'bowire-proxy-detail-meta-value', textContent: value })
             );
         }
-        meta.appendChild(_trafficMetaCell('Status', String(flow.responseStatus || (flow.error ? 'ERR' : '…'))));
-        meta.appendChild(_trafficMetaCell('Scheme', flow.scheme || 'http'));
-        meta.appendChild(_trafficMetaCell('Latency', (flow.latencyMs || 0) + ' ms'));
-        meta.appendChild(_trafficMetaCell('Captured', flow.capturedAt ? new Date(flow.capturedAt).toLocaleTimeString() : ''));
-        if (flow.streaming) meta.appendChild(_trafficMetaCell('Mode', 'streaming'));
-        if (flow.mocked) meta.appendChild(_trafficMetaCell('Source', 'mock rule'));
-        if (flow.error) meta.appendChild(_trafficMetaCell('Error', flow.error));
+        meta.appendChild(_interceptMetaCell('Status', String(flow.responseStatus || (flow.error ? 'ERR' : '…'))));
+        meta.appendChild(_interceptMetaCell('Scheme', flow.scheme || 'http'));
+        meta.appendChild(_interceptMetaCell('Latency', (flow.latencyMs || 0) + ' ms'));
+        meta.appendChild(_interceptMetaCell('Captured', flow.capturedAt ? new Date(flow.capturedAt).toLocaleTimeString() : ''));
+        if (flow.streaming) meta.appendChild(_interceptMetaCell('Mode', 'streaming'));
+        if (flow.mocked) meta.appendChild(_interceptMetaCell('Source', 'override rule'));
+        if (flow.error) meta.appendChild(_interceptMetaCell('Error', flow.error));
         pane.appendChild(meta);
 
         if (!detail) {
@@ -413,13 +453,40 @@
         return pane;
     }
 
-    function renderTrafficSettingsMainPane(pane) {
-        var embedded = bowireTrafficIsEmbedded();
+    function renderInterceptMockServersMainPane(pane) {
+        // Delegate to the Mock package's main-pane renderer when present.
+        // The package installs window.__bowireMocks.renderRailMain at
+        // load time; falling back to the inline empty state keeps the
+        // rail useful even when only the package's CSS-side state is
+        // there (no .NET assembly reference).
+        if (typeof window !== 'undefined'
+            && window.__bowireMocks
+            && typeof window.__bowireMocks.renderRailMain === 'function') {
+            try {
+                var rendered = window.__bowireMocks.renderRailMain(pane);
+                if (rendered) return rendered;
+            } catch (e) { /* fall through */ }
+        }
+        if (typeof window === 'undefined' || !window.__bowireMocks) {
+            pane.appendChild(renderEmptyCard({
+                icon: 'mock',
+                headline: 'Mock package not loaded',
+                body: 'Reference Kuestenlogik.Bowire.Mock from the host to enable standalone mock servers.'
+            }));
+            return pane;
+        }
+        pane.appendChild(renderEmptyCard({
+            icon: 'mock',
+            headline: 'Pick a mock server',
+            body: 'Pick a running mock from the sidebar to see its URL, live request log, and stop control.'
+        }));
+        return pane;
+    }
+
+    function renderInterceptSettingsMainPane(pane) {
+        var embedded = bowireInterceptIsEmbedded();
 
         if (embedded) {
-            // Embedded — show middleware status. The operator can't flip
-            // the middleware on from the browser; the surface is a
-            // read-only diagnostic + doc-link.
             pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
                 el('label', { className: 'bowire-env-editor-field-label', textContent: 'Deployment' }),
                 el('div', { className: 'bowire-env-editor-field-value', textContent: 'Embedded — Bowire is mounted in-process via MapBowire().' })
@@ -430,7 +497,7 @@
             ));
             pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
                 el('label', { className: 'bowire-env-editor-field-label', textContent: 'Endpoint base' }),
-                el('div', { className: 'bowire-env-editor-field-value', textContent: '/api/traffic/* (alias of /api/intercepted/*) on this same origin.' })
+                el('div', { className: 'bowire-env-editor-field-value', textContent: '/api/intercepted/* (alias /api/traffic/*) on this same origin.' })
             ));
             pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
                 el('label', { className: 'bowire-env-editor-field-label', textContent: 'Docs' }),
@@ -441,15 +508,11 @@
                             helpOpenDrawer('features/proxy');
                         }
                     }
-                }, el('span', { textContent: 'Open Traffic docs' }))
+                }, el('span', { textContent: 'Open Intercept docs' }))
             ));
             return pane;
         }
 
-        // Standalone — the rail can also point at a remote bowire proxy
-        // sidecar via the workspace-level external endpoint. Reuse the
-        // existing proxy-view helpers so there is one source of truth
-        // for that URL across rails.
         var currentUrl = (typeof bowireProxyEffectiveApiUrl === 'function')
             ? bowireProxyEffectiveApiUrl() : '';
 
@@ -468,7 +531,7 @@
                 onClick: function () {
                     if (typeof bowirePrompt !== 'function') return;
                     bowirePrompt('Sidecar API URL', {
-                        title: 'Traffic sidecar',
+                        title: 'Intercept sidecar',
                         defaultValue: currentUrl || '',
                         placeholder: 'http://localhost:8889',
                         confirmText: 'Save'
@@ -484,7 +547,7 @@
         ));
         pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
             el('label', { className: 'bowire-env-editor-field-label', textContent: 'CLI subcommands' }),
-            el('div', { className: 'bowire-env-editor-field-value', textContent: 'bowire proxy (MITM) and bowire interceptor (reverse-proxy edge) both populate the Traffic rail.' })
+            el('div', { className: 'bowire-env-editor-field-value', textContent: 'bowire proxy (MITM) and bowire interceptor (reverse-proxy edge) both populate the Intercept rail.' })
         ));
         pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
             el('label', { className: 'bowire-env-editor-field-label', textContent: 'Docs' }),
@@ -495,7 +558,7 @@
                         helpOpenDrawer('features/proxy');
                     }
                 }
-            }, el('span', { textContent: 'Open Traffic docs' }))
+            }, el('span', { textContent: 'Open Intercept docs' }))
         ));
         return pane;
     }
