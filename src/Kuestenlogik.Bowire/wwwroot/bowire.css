@@ -6027,6 +6027,33 @@ only an accent-coloured underline under the active tab. The whole
     height: 14px;
 }
 
+/* R3a — tiny "?" deep-link to a Help topic, surfaced next to the
+   protocol icon or method-type badge in the Discover method header.
+   Sized to read as inline meta (same visual weight as the summary's
+   '…' expand button) so it doesn't compete with the verb / path chips. */
+.bowire-header-meta-help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1px solid var(--bowire-border);
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    margin-left: 4px;
+    padding: 0;
+    transition: background var(--bowire-transition), color var(--bowire-transition);
+}
+.bowire-header-meta-help:hover {
+    background: var(--bowire-surface-hover);
+    color: var(--bowire-text);
+}
+
 /* Recent-calls popup that opens from the header's protocol icon.
    Anchors to body via JS-positioning so the drawer's overflow
    doesn't clip it. */

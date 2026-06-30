@@ -323,6 +323,44 @@
             rel: 'noopener',
             textContent: 'Open in tab'
         }));
+        // R3a — Intercept → Mock servers detail → Discover transition.
+        // Add the mock's loopback URL to the active workspace's sources
+        // and switch to the Discover rail focused on it. Uses the same
+        // serverUrls + persistServerUrls + refreshSourceServices pattern
+        // the manual "+ URL" flow uses (see request-builder.js's
+        // auto-add helper) so discovery kicks off exactly the same way.
+        urlCard.appendChild(el('button', {
+            className: 'bowire-empty-card-action',
+            textContent: 'Discover against this mock',
+            title: 'Add this mock URL to the active workspace and jump to the Discover rail',
+            onClick: function () {
+                try {
+                    if (typeof serverUrls !== 'undefined'
+                        && Array.isArray(serverUrls)
+                        && serverUrls.indexOf(url) < 0) {
+                        serverUrls.push(url);
+                        if (typeof connectionStatuses !== 'undefined') {
+                            connectionStatuses[url] = 'disconnected';
+                        }
+                        if (typeof ensureAliasForUrl === 'function') ensureAliasForUrl(url);
+                        if (typeof persistServerUrls === 'function') persistServerUrls();
+                    }
+                } catch (e) { /* fall through; rail jump still useful */ }
+                railMode = 'discover';
+                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch (_) { /* ignore */ }
+                if (typeof setSidebarView === 'function') setSidebarView('services');
+                if (typeof sourcesSelectedUrl !== 'undefined') sourcesSelectedUrl = url;
+                if (typeof refreshSourceServices === 'function') {
+                    try { refreshSourceServices(url); } catch (_) { /* ignore */ }
+                } else if (typeof fetchServices === 'function') {
+                    try { fetchServices(); } catch (_) { /* ignore */ }
+                }
+                render();
+                if (typeof toast === 'function') {
+                    toast(url + ' added to sources — open on Discover rail', 'success');
+                }
+            }
+        }));
         urlCard.appendChild(el('button', {
             className: 'bowire-empty-card-action bowire-recording-action-danger',
             textContent: 'Stop mock',

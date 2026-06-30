@@ -232,6 +232,31 @@
                             bowireInterceptedEnsureDetail(flow.id);
                         }
                         render();
+                    },
+                    // R3a — Captured row → Recordings transition.
+                    // Right-click any captured flow to persist it as a
+                    // recording in the active workspace. Reuses the
+                    // existing bowireInterceptedSendToRecording helper
+                    // — that path POSTs /flows/{id}/recording and
+                    // imports the result into recordingsList — so the
+                    // operator lands with a fresh recording open on
+                    // the Recordings rail.
+                    onContextMenu: function (e) {
+                        if (typeof showContextMenu !== 'function') return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showContextMenu(e.clientX, e.clientY, [
+                            {
+                                label: 'Save as recording',
+                                icon: 'recording',
+                                title: 'Persist this captured flow as a .bwr recording in the active workspace',
+                                onClick: function () {
+                                    if (typeof bowireInterceptedSendToRecording === 'function') {
+                                        bowireInterceptedSendToRecording(flow.id);
+                                    }
+                                }
+                            }
+                        ]);
                     }
                 },
                     el('span', { className: 'bowire-proxy-list-method', textContent: flow.method || 'GET' }),
