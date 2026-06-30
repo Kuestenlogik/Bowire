@@ -116,7 +116,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
-**1/16 done** · 1 in progress · 14 backlog
+**1/17 done** · 1 in progress · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -135,6 +135,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [186](https://github.com/Kuestenlogik/Bowire/issues/186) | Bowire | [HAR import — Chrome DevTools network tab as an input source](#issue-kuestenlogik-bowire-186) | ⬜ Backlog |  |
 | [187](https://github.com/Kuestenlogik/Bowire/issues/187) | Bowire | [CVE lookup for discovered servers — fill Bowire.VulnDb](#issue-kuestenlogik-bowire-187) | ⬜ Backlog |  |
 | [190](https://github.com/Kuestenlogik/Bowire/issues/190) | Bowire | [Authentication session recording + token reuse](#issue-kuestenlogik-bowire-190) | ⬜ Backlog |  |
+| [339](https://github.com/Kuestenlogik/Bowire/issues/339) | Bowire | [docs(audit): Trash-as-plugin architecture proposal for v2.3](#issue-kuestenlogik-bowire-339) | ⬜ Backlog |  |
 | [178](https://github.com/Kuestenlogik/Bowire/issues/178) | Bowire | [bowire scan CLI with SARIF output + GitHub Action wrapper](#issue-kuestenlogik-bowire-178) | ✅ Done |  |
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
@@ -685,6 +686,10 @@ Bowire knows what protocol it's talking to and often what server (Envoy, NGINX, 
 #### <a id="issue-kuestenlogik-bowire-190"></a>⬜ Backlog · [#190](https://github.com/Kuestenlogik/Bowire/issues/190) Authentication session recording + token reuse
 
 Modern API auth is multi-step: hit `/login`, get a session cookie, hit `/refresh`, get a JWT, use the JWT on every subsequent call. Today Bowire has Auth-Configuration (mTLS, basic, bearer-static) but no understanding of FLOWS. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/190)
+
+#### <a id="issue-kuestenlogik-bowire-339"></a>⬜ Backlog · [#339](https://github.com/Kuestenlogik/Bowire/issues/339) docs(audit): Trash-as-plugin architecture proposal for v2.3
+
+Architecture audit + design doc for extracting Trash into a pluggable extension point. Filed in `docs/audits/2026-06-30-trash-as-plugin-architecture.md` (331 lines). [[more]](https://github.com/Kuestenlogik/Bowire/issues/339)
 
 #### <a id="issue-kuestenlogik-bowire-178"></a>✅ Done · [#178](https://github.com/Kuestenlogik/Bowire/issues/178) bowire scan CLI with SARIF output + GitHub Action wrapper
 
