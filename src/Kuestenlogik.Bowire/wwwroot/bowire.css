@@ -7630,7 +7630,20 @@ orange = coordination event). */
     display: flex;
     flex-direction: column;
     height: 100%;
+    /* Override the inherited `min-height: 100%` from .bowire-response-output —
+       in streaming layout the container is the flex parent of toolbar + count
+       row + list pane + splitter + detail pane. With min-height:100% inherited
+       the container intrinsic-sizes to fit its content (many list items +
+       full detail body), growing PAST the parent pane-body's height. Once it
+       grows, list-pane's `flex: 0 0 45%` is computed against the inflated
+       container height, and detail-pane's `flex: 1 1 0` shrinks below the
+       visible viewport. Operator: 'bei mehreren messages als antwort
+       (subscribe) scheint es so zu sein, dass die liste der nachrichten dann
+       die anzeige des inhalts einer message (JSON etc.) verdrängt.' Clamping
+       to 0 + max-height 100% keeps the container at the parent's height + the
+       list scrolls internally as designed. */
     min-height: 0;
+    max-height: 100%;
     /* Splitter position: list pane height as % of the streaming output */
     --bowire-stream-list-pct: 45%;
 }
