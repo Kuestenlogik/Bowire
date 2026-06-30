@@ -730,8 +730,17 @@
         collectionsList = loadCollections();
         loadCollectionsFromDisk().then(function () { render(); });
 
-        // Load flows from localStorage
-        flowsList = loadFlows();
+        // Load flows from localStorage. `loadFlows` lives in the Flows
+        // package (Kuestenlogik.Bowire.Flows) — embedded hosts that
+        // don't reference that package legitimately ship without it,
+        // so guard the call and leave `flowsList` undefined (the
+        // prologue.js consumers already `typeof flowsList === 'undefined'`
+        // around it). Without this guard, boot crashes with
+        // `ReferenceError: loadFlows is not defined` before the
+        // workbench ever reaches `bowire-app-ready`.
+        if (typeof loadFlows === 'function') {
+            flowsList = loadFlows();
+        }
 
         // Phase 3-R — kick off the external-extension bootstrap. Each
         // discovered extension's JS bundle + optional stylesheet
@@ -816,10 +825,17 @@
         // data-bowire-no-vars-chip="1".
         try { installVarsChips(); } catch (e) { console.warn('[vars-chips] install failed', e); }
 
-        Promise.allSettled([
-            loadEnvironmentsFromDisk(),
-            loadRecordingsFromDisk()
-        ]).finally(function () {
+        // `loadRecordingsFromDisk` lives in the Recordings package
+        // (Kuestenlogik.Bowire.Recordings) — embedded hosts that
+        // don't reference it would otherwise crash boot with
+        // `ReferenceError: loadRecordingsFromDisk is not defined`.
+        // Guard + skip; the rail's UI surface is also rail-gated so
+        // the missing list is invisible to the operator.
+        var bootHydrators = [loadEnvironmentsFromDisk()];
+        if (typeof loadRecordingsFromDisk === 'function') {
+            bootHydrators.push(loadRecordingsFromDisk());
+        }
+        Promise.allSettled(bootHydrators).finally(function () {
             render();
 
             // #145 Phase 1 — once recordings + envs are hydrated,

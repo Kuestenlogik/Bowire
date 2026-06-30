@@ -3861,22 +3861,28 @@
                     }
                 }, el('span', { textContent: 'Environment' })));
 
-                // Flow — switch to flows sidebar view
-                dropdown.appendChild(el('div', {
-                    className: 'bowire-new-dropdown-item',
-                    onClick: function () {
-                        flowsList = loadFlows();
-                        if (flowsList.length === 0) {
-                            var flow = createFlow();
-                            flowEditorSelectedId = flow.id;
-                        } else {
-                            flowEditorSelectedId = flowEditorSelectedId || flowsList[0].id;
+                // Flow — switch to flows sidebar view. The Flows rail
+                // (Kuestenlogik.Bowire.Flows) ships `loadFlows` +
+                // `createFlow`; embedded hosts that don't reference it
+                // skip the item entirely so the operator never lands
+                // on a dead view.
+                if (typeof loadFlows === 'function' && typeof createFlow === 'function') {
+                    dropdown.appendChild(el('div', {
+                        className: 'bowire-new-dropdown-item',
+                        onClick: function () {
+                            flowsList = loadFlows();
+                            if (flowsList.length === 0) {
+                                var flow = createFlow();
+                                flowEditorSelectedId = flow.id;
+                            } else {
+                                flowEditorSelectedId = flowEditorSelectedId || flowsList[0].id;
+                            }
+                            setSidebarView('flows');
+                            dropdown.remove();
+                            render();
                         }
-                        setSidebarView('flows');
-                        dropdown.remove();
-                        render();
-                    }
-                }, el('span', { textContent: 'Flow' })));
+                    }, el('span', { textContent: 'Flow' })));
+                }
 
                 newBtnWrapper.appendChild(dropdown);
                 // Close on outside click
