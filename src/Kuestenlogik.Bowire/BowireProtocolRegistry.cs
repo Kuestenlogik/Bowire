@@ -14,6 +14,22 @@ namespace Kuestenlogik.Bowire;
 /// </summary>
 public sealed class BowireProtocolRegistry
 {
+    // Discover() walks AppDomain.CurrentDomain.GetAssemblies() and
+    // calls Assembly.LoadFrom on missing siblings — both side-effecting
+    // operations the CLR safely interleaves between threads MOST of
+    // the time. But the assembly-load chain triggered by GetTypes() +
+    // Activator.CreateInstance can race when xUnit runs MockCommand
+    // tests in parallel: one thread mid-LoadFrom while another
+    // enumerates the same load-triggered side-collection produces
+    // 'Collection was modified; enumeration operation may not execute.'
+    // (CI run 28410978369, RunAsync_RecordingWithUnknownProtocol_…).
+    //
+    // Serialise the static discover entry point on a single gate.
+    // Production callers hit Discover() once at startup so the lock
+    // cost is irrelevant; the test suite is the loud one + benefits
+    // most from determinism.
+    private static readonly Lock _discoveryGate = new();
+
     private readonly List<IBowireProtocol> _protocols = [];
 
     public IReadOnlyList<IBowireProtocol> Protocols => _protocols;
@@ -81,6 +97,20 @@ public sealed class BowireProtocolRegistry
     public static BowireProtocolRegistry Discover(
         IEnumerable<string>? disabledPluginIds,
         ILogger? logger = null)
+    {
+        // See _discoveryGate comment for the parallel-xUnit race this
+        // serialises. Holding the lock across the WHOLE method also
+        // covers Activator.CreateInstance side-effects on shared
+        // plugin static ctors.
+        lock (_discoveryGate)
+        {
+            return DiscoverLocked(disabledPluginIds, logger);
+        }
+    }
+
+    private static BowireProtocolRegistry DiscoverLocked(
+        IEnumerable<string>? disabledPluginIds,
+        ILogger? logger)
     {
         ForceLoadReferencedBowireAssemblies(logger);
 
