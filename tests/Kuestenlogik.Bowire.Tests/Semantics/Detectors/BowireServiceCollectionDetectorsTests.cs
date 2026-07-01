@@ -24,12 +24,18 @@ public sealed class BowireServiceCollectionDetectorsTests
         using var sp = services.BuildServiceProvider();
         var detectors = sp.GetServices<IBowireFieldDetector>().ToList();
 
-        Assert.Equal(5, detectors.Count);
-        Assert.Contains(detectors, d => d is Wgs84CoordinateDetector);
-        Assert.Contains(detectors, d => d is GeoJsonPointDetector);
-        Assert.Contains(detectors, d => d is ImageBytesDetector);
-        Assert.Contains(detectors, d => d is AudioBytesDetector);
-        Assert.Contains(detectors, d => d is TimestampDetector);
+        // The five built-ins are all present. Total count may exceed
+        // five once auto-discovery picks up marker-tagged detectors
+        // from sibling test assemblies — this test pins the built-in
+        // set specifically, not the enumeration size.
+        var coreAssembly = typeof(Wgs84CoordinateDetector).Assembly;
+        var builtIns = detectors.Where(d => d.GetType().Assembly == coreAssembly).ToList();
+        Assert.Equal(5, builtIns.Count);
+        Assert.Contains(builtIns, d => d is Wgs84CoordinateDetector);
+        Assert.Contains(builtIns, d => d is GeoJsonPointDetector);
+        Assert.Contains(builtIns, d => d is ImageBytesDetector);
+        Assert.Contains(builtIns, d => d is AudioBytesDetector);
+        Assert.Contains(builtIns, d => d is TimestampDetector);
     }
 
     [Fact]
@@ -54,7 +60,16 @@ public sealed class BowireServiceCollectionDetectorsTests
         using var sp = services.BuildServiceProvider();
         var detectors = sp.GetServices<IBowireFieldDetector>().ToList();
 
-        Assert.Empty(detectors);
+        // Third-party [BowireExtension]-marker-tagged detectors from
+        // sibling assemblies still auto-discover through the sweep
+        // (that's the point of the extension-registry integration);
+        // this assertion pins the narrow contract that
+        // DisableBuiltInDetectors owns — Core's five built-ins are
+        // absent, even the ones that carry the marker as reference
+        // implementations for the auto-discovery mechanism.
+        var coreAssembly = typeof(Wgs84CoordinateDetector).Assembly;
+        var fromCore = detectors.Where(d => d.GetType().Assembly == coreAssembly).ToList();
+        Assert.Empty(fromCore);
     }
 
     [Fact]
