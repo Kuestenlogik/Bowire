@@ -209,6 +209,267 @@ async function clickMethodItem(page, text) {
     }
 }
 
+// ─── v2.1 workbench surface set ────────────────────────────────────
+//
+// Folded in from the retired capture-v2-1.js (topic-neutral now — no
+// version-pinned script, no screenshots/v2-1/ subdir). These six shots
+// are targeted workbench surfaces (activity rail, discover-with-response,
+// compose library-left flip, settings→plugins→protocols, help rail,
+// gRPC stream state badge). They run in their OWN 1400×900 DSF2 context
+// so the tuned pixel clips stay valid, and write FLAT into
+// screenshots/<name>.png (+ docs mirror) like every other capture.
+//
+// Operator MUST have the samples running (partial success is success —
+// each surface is independently try/caught):
+//   http://localhost:5180          Tool standalone (workbench at /)
+//   https://localhost:5101/bowire  Combined Harbor sample
+//   http://localhost:5181/bowire   Sample.Embedded (REST + Map)
+//   http://localhost:5182          Sample.TacticalApi (gRPC)
+async function captureWorkbenchSurfaces(browser) {
+    const WBS_WIDTH = 1400, WBS_HEIGHT = 900, WBS_DSF = 2;
+    const COMBINED_BOWIRE = 'https://localhost:5101/bowire';
+    const COMBINED_ROOT = 'https://localhost:5101/';
+    const EMBEDDED_BOWIRE = 'http://localhost:5181/bowire';
+
+    // Write flat into site screenshots/ + docs mirror (matches shot()).
+    function wbsWrite(page, name, clip) {
+        const file = path.join(OUT, name + '.png');
+        const p = clip ? page.screenshot({ path: file, clip }) : page.screenshot({ path: file });
+        return p.then(() => {
+            fs.copyFileSync(file, path.join(DOCS_OUT, name + '.png'));
+            log(`  -> ${name}.png  (site + docs, workbench surface)`);
+        });
+    }
+
+    async function wbsWaitForAny(page, selectors, timeoutMs) {
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+            for (const sel of selectors) {
+                if (await page.locator(sel).first().isVisible().catch(() => false)) return sel;
+            }
+            await page.waitForTimeout(150);
+        }
+        return null;
+    }
+
+    // Seed a workspace bound to sampleUrl + boot into railMode. Same
+    // shape record-demo.js uses.
+    async function wbsSeed(page, sampleUrl, railMode) {
+        railMode = railMode || 'discover';
+        await page.evaluate(({ sampleUrl, railMode }) => {
+            try {
+                const id = 'harbor';
+                localStorage.setItem('bowire_workspaces', JSON.stringify([{
+                    id, name: 'Harbor demo', color: 'sky', createdAt: 1_700_000_000_000
+                }]));
+                localStorage.setItem('bowire_active_workspace_id', id);
+                localStorage.setItem('bowire_ws_' + id + '_server_urls', JSON.stringify([sampleUrl]));
+                localStorage.setItem('bowire_rail_mode', railMode);
+                localStorage.setItem('bowire_theme_pref', 'dark');
+            } catch { /* ignore */ }
+        }, { sampleUrl, railMode });
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
+    }
+
+    async function wbsExpandAll(page) {
+        for (const group of await page.locator('.bowire-service-group').all()) {
+            const chev = group.locator('.bowire-service-chevron').first();
+            const cls = await chev.getAttribute('class').catch(() => '');
+            if (!cls || !cls.includes('expanded')) {
+                await group.locator('.bowire-service-header').first().click().catch(() => {});
+                await page.waitForTimeout(120);
+            }
+        }
+        await page.waitForTimeout(400);
+    }
+
+    // ── surface: rail-strip — clip the activity rail column. ──
+    async function railStrip(page) {
+        await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
+        await wbsSeed(page, COMBINED_ROOT, 'discover');
+        await page.waitForSelector('#bowire-activity-rail .bowire-rail-btn', { timeout: 15000 });
+        await page.waitForTimeout(800);
+        await wbsWrite(page, 'rail-strip', { x: 0, y: 56, width: 56, height: 720 });
+    }
+
+    // ── surface: discover-with-response — List method executed, full pane. ──
+    async function discoverWithResponse(page) {
+        await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
+        await wbsSeed(page, COMBINED_ROOT, 'discover');
+        await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 45000 });
+        await page.waitForTimeout(1000);
+        await wbsExpandAll(page);
+        const list = page.locator('.bowire-method-item', { hasText: 'List' }).first();
+        if (!(await list.isVisible().catch(() => false))) throw new Error('no "List" method visible after expand');
+        await list.click();
+        await page.waitForTimeout(600);
+        const exec = page.locator('.bowire-execute-btn, #bowire-execute-btn').first();
+        if (!(await exec.isEnabled().catch(() => false))) throw new Error('execute button not enabled');
+        await exec.click();
+        const hit = await wbsWaitForAny(page, [
+            '.bowire-response-output.is-interactive', '.bowire-response-output.error',
+            '.bowire-json-tree', '.bowire-response-output:has(pre)'
+        ], 10000);
+        if (!hit) throw new Error('response never landed');
+        await page.waitForTimeout(800);
+        await wbsWrite(page, 'discover-with-response');
+    }
+
+    // ── surface: compose-library-left — library sidebar sits LEFT in v2.1. ──
+    async function composeLibraryLeft(page) {
+        await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
+        await page.evaluate(() => {
+            try {
+                const id = 'harbor';
+                localStorage.setItem('bowire_workspaces', JSON.stringify([{
+                    id, name: 'Harbor demo', color: 'sky', createdAt: 1_700_000_000_000
+                }]));
+                localStorage.setItem('bowire_active_workspace_id', id);
+                localStorage.setItem('bowire_ws_' + id + '_server_urls', JSON.stringify(['https://localhost:5101/']));
+                localStorage.setItem('bowire_rail_mode', 'compose');
+                localStorage.setItem('bowire_theme_pref', 'dark');
+                const collection = {
+                    id: 'demo-coll', name: 'Harbor smoke', createdAt: 1_700_000_000_000,
+                    requests: [
+                        { id: 'r1', name: 'List docks',    method: 'GET',  url: '/api/docks',      body: '{}', headers: {} },
+                        { id: 'r2', name: 'List ships',    method: 'GET',  url: '/api/ships',      body: '{}', headers: {} },
+                        { id: 'r3', name: 'Schedule call', method: 'POST', url: '/api/port-calls', body: '{}', headers: {} }
+                    ]
+                };
+                localStorage.setItem('bowire_ws_' + id + '_collections', JSON.stringify([collection]));
+            } catch { /* ignore */ }
+        });
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
+        await page.waitForTimeout(2000);
+        await wbsWrite(page, 'compose-library-left');
+    }
+
+    // ── surface: map-pins — /api/locations on Sample.Embedded → Map widget. ──
+    async function mapPins(page) {
+        await page.goto(EMBEDDED_BOWIRE, { waitUntil: 'domcontentloaded' });
+        await page.evaluate(() => {
+            try {
+                const id = 'harbor';
+                localStorage.setItem('bowire_workspaces', JSON.stringify([{
+                    id, name: 'Harbor demo', color: 'sky', createdAt: 1_700_000_000_000
+                }]));
+                localStorage.setItem('bowire_active_workspace_id', id);
+                localStorage.setItem('bowire_ws_' + id + '_server_urls', JSON.stringify(['http://localhost:5181/']));
+                localStorage.setItem('bowire_rail_mode', 'discover');
+                localStorage.setItem('bowire_theme_pref', 'dark');
+            } catch { /* ignore */ }
+        });
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 25000 });
+        await page.waitForTimeout(1500);
+        await wbsExpandAll(page);
+        let picked = page.locator('.bowire-method-item:has-text("Locations")').first();
+        if (!(await picked.isVisible().catch(() => false))) {
+            picked = page.locator('.bowire-method-item:has-text("locations")').first();
+        }
+        if (!(await picked.isVisible().catch(() => false))) throw new Error('no Locations method visible');
+        await picked.click();
+        await page.waitForTimeout(500);
+        const exec = page.locator('.bowire-execute-btn, #bowire-execute-btn').first();
+        if (!(await exec.isEnabled().catch(() => false))) throw new Error('execute button not enabled');
+        await exec.click();
+        const respHit = await wbsWaitForAny(page, ['.bowire-response-output.is-interactive', '.bowire-json-tree'], 10000);
+        if (!respHit) throw new Error('no response after execute');
+        await wbsWaitForAny(page, ['.bowire-map-widget', '.bowire-map', '.leaflet-container', '.maplibregl-canvas'], 8000);
+        await page.waitForTimeout(1800);
+        await wbsWrite(page, 'map-pins', { x: 280, y: 110, width: 1100, height: 680 });
+    }
+
+    // ── surface: settings-plugins-protocols — Settings → Plugins sub-page. ──
+    async function settingsProtocols(page) {
+        await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
+        await wbsSeed(page, COMBINED_ROOT, 'discover');
+        const gear = page.locator('.bowire-rail-settings, #bowire-settings-btn').first();
+        if (!(await gear.isVisible().catch(() => false))) throw new Error('settings gear not visible');
+        await gear.click();
+        if (!(await wbsWaitForAny(page, ['.bowire-settings-modal'], 8000))) throw new Error('settings modal never opened');
+        await page.waitForTimeout(600);
+        const plugins = page.locator('.bowire-settings-modal').locator('text=Plugins').first();
+        if (await plugins.isVisible().catch(() => false)) {
+            await plugins.click();
+            await page.waitForTimeout(600);
+        }
+        await wbsWrite(page, 'settings-plugins-protocols', { x: 100, y: 60, width: 1200, height: 800 });
+    }
+
+    // ── surface: help-rail — Help rail topic tree + body (fallback on Combined). ──
+    async function helpRail(page) {
+        await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
+        await wbsSeed(page, COMBINED_ROOT, 'help');
+        await wbsWaitForAny(page, ['.bowire-help-topic', '.bowire-help-tree', '.bowire-help-sidebar', '.bowire-help-nav'], 8000);
+        await page.waitForTimeout(1400);
+        await wbsWrite(page, 'help-rail');
+    }
+
+    // ── surface: streaming-state-badge — gRPC WatchCrane stream; clip the header. ──
+    async function streamingBadge(page) {
+        await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
+        await wbsSeed(page, COMBINED_ROOT, 'discover');
+        await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 45000 });
+        await page.waitForTimeout(1000);
+        await wbsExpandAll(page);
+        let picked = null;
+        for (const text of ['WatchCrane', 'Subscribe', 'Watch']) {
+            const m = page.locator('.bowire-method-item', { hasText: text }).first();
+            if (await m.isVisible().catch(() => false)) { picked = m; break; }
+        }
+        if (!picked) throw new Error('no streaming method visible');
+        await picked.scrollIntoViewIfNeeded();
+        await picked.click();
+        await page.waitForTimeout(800);
+        const craneId = page.locator('input[data-field-key="craneId"]').first();
+        if (await craneId.isVisible().catch(() => false)) { await craneId.fill('1').catch(() => {}); await page.waitForTimeout(200); }
+        const exec = page.locator('.bowire-execute-btn, #bowire-execute-btn').first();
+        if (!(await exec.isEnabled().catch(() => false))) throw new Error('execute / subscribe button not enabled');
+        await exec.click();
+        if (!(await wbsWaitForAny(page, ['.bowire-stream-list-item'], 10000))) throw new Error('no stream frames within 10s');
+        const deadline = Date.now() + 8000;
+        while (Date.now() < deadline) {
+            if ((await page.locator('.bowire-stream-list-item').count().catch(() => 0)) >= 3) break;
+            await page.waitForTimeout(300);
+        }
+        await page.waitForTimeout(300);
+        await wbsWrite(page, 'streaming-state-badge', { x: 720, y: 110, width: 700, height: 80 });
+        const cancel = page.locator('.bowire-cancel-btn, #bowire-cancel-btn').first();
+        if (await cancel.isVisible().catch(() => false)) await cancel.click().catch(() => {});
+    }
+
+    const surfaces = [
+        { name: 'rail-strip',                 fn: railStrip },
+        { name: 'discover-with-response',     fn: discoverWithResponse },
+        { name: 'compose-library-left',       fn: composeLibraryLeft },
+        { name: 'map-pins',                   fn: mapPins },
+        { name: 'settings-plugins-protocols', fn: settingsProtocols },
+        { name: 'help-rail',                  fn: helpRail },
+        { name: 'streaming-state-badge',      fn: streamingBadge }
+    ];
+
+    const wbsCtx = await browser.newContext({
+        viewport: { width: WBS_WIDTH, height: WBS_HEIGHT },
+        deviceScaleFactor: WBS_DSF,
+        ignoreHTTPSErrors: true,
+        colorScheme: 'dark'
+    });
+    const wbsPage = await wbsCtx.newPage();
+    await wbsPage.emulateMedia({ colorScheme: 'dark' });
+    for (const s of surfaces) {
+        try {
+            log(`workbench surface: ${s.name}…`);
+            await s.fn(wbsPage);
+        } catch (e) {
+            log(`  (${s.name} failed: ${e.message.split('\n')[0]})`);
+        }
+    }
+    await wbsCtx.close();
+}
+
 (async () => {
     const browser = await chromium.launch({ headless: true });
     const ctx = await browser.newContext({
@@ -1060,6 +1321,10 @@ async function clickMethodItem(page, text) {
     } catch (e) {
         log(`  (first-run capture failed: ${e.message.split('\n')[0]})`);
     }
+
+    // ---- 13) v2.1 workbench surface set (own 1400×900 DSF2 context) ----
+    await captureWorkbenchSurfaces(browser).catch(e =>
+        log(`  (workbench surfaces failed: ${e.message.split('\n')[0]})`));
 
     await ctx.close();
     await browser.close();

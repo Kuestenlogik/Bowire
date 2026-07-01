@@ -1,10 +1,10 @@
 /**
  * Refresh Bowire's highest-impact marquee screenshot assets for a release.
  *
- * Distinct lifecycle from capture-v2-1.js: marquee assets refresh per
- * release (this script), v2-1/* are landing-page surfaces tied to that
- * release's narrative. We keep them separate so a v2.1 -> v2.2 refresh
- * doesn't churn v2-1/.
+ * Distinct lifecycle from capture-screenshots.js: marquee assets are the
+ * highest-impact hero shots refreshed per release (this script), kept
+ * separate from the broader evergreen surface set so a release refresh
+ * only re-shoots the marquee handful.
  *
  * Targets (under site/assets/images/screenshots/):
  *   ready.png                  Single most-seen Bowire shot — populated
