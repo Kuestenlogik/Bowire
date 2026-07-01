@@ -1,6 +1,6 @@
 /**
- * Captures the docs/ui-guide/ companion screenshots for the v2.1
- * rewrite. Each surface is captured in BOTH themes so the docs pages'
+ * Captures the docs/ui-guide/ companion screenshots. Each surface is
+ * captured in BOTH themes so the docs pages'
  * `<img class="theme-img-dark">` / `<img class="theme-img-light">`
  * pair-tag pattern keeps working.
  *
