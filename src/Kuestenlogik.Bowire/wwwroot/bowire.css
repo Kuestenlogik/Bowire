@@ -8194,41 +8194,36 @@ not through to the children of
     pointer-events: none;
 }
 .bowire-sidebar-splitter {
-    /* Unhovered: the splitter reserves ONLY the width of the single
-       divider line. Operator feedback: 'der splitter sollte entweder
-       a) auf beiden seiten den trennstrich haben oder b) unhovered
-       nur den platz von dem einen strich verbrauchen (pfeile /
-       chevron ausgeblendet, wenn kein hover). ich tendiere zu b.'
-       So 1 px of visible line lives in layout, plus a 9 px negative
-       margin so the interaction hit-area still reaches ~10 px without
-       stealing that space from the main pane. The grip dots + chevron
-       (::before, ::after, .bowire-sidebar-edge-toggle-*) already fade
-       in on hover via opacity — no chrome change needed here. */
-    /* Layout width = 1 px (the visible line only). Hit-area = 10 px
-       via `padding-right: 9px` + `box-sizing: content-box` — padding
-       expands the interactive box without changing layout width when
-       paired with `margin-right: -9px` (adjacent content pulls back).
-       `background-clip: content-box` keeps the line paint constrained
-       to the 1 px content area so the padding stays visually empty. */
-    box-sizing: content-box;
-    flex: 0 0 1px;
-    background: var(--bowire-border-subtle);
-    background-clip: content-box;
+    /* Reverted the flex-basis: 1px + padding + margin overlap hack
+       (commit 4424eab2) because it broke double-click / drag: the
+       main pane, pulled 9 px onto the splitter's padding area by the
+       negative margin, created its own stacking context and stole
+       pointer events even with z-index: 2 on the splitter. Operator:
+       'doppelklick am vertikalen splitter für die linke sidebar
+       scheint nicht mehr zu funktionieren.'
+       Back to the original 10 px flex-basis so the whole bar owns
+       its pointer events. The 9 px on the right of the visible line
+       stays transparent — the visual footprint reads as 1 px because
+       the neighbour is a flat background. A proper "1 px layout,
+       10 px hit-area" would need a separate hit-area overlay
+       decoupled from the visible line — filed as v2.3 follow-up. */
+    flex: 0 0 10px;
+    background: transparent;
     cursor: ew-resize;
     flex-shrink: 0;
     position: relative;
     z-index: 2;
-    padding-right: 9px;
-    margin-right: -9px;
+    border-left: 1px solid var(--bowire-border-subtle);
     /* Default transition: no delay on hover-OUT (snap back). The hover
        rule below adds a delay so the highlight only appears if the
        cursor stays on the bar — operator feedback: 'der splitter zeigt
        sich zu schnell, wenn man mit der maus drüberfährt.' */
-    transition: background-color 150ms ease;
+    transition: background 150ms ease, border-color 150ms ease;
 }
 .bowire-sidebar-splitter:hover,
 .bowire-sidebar-splitter:active {
-    background-color: var(--bowire-accent);
+    background: var(--bowire-surface);
+    border-left-color: var(--bowire-accent);
     /* 250 ms hover-intent gate — mouse must dwell before the highlight
        fires so casual mouse-over traversal doesn't flash the accent. */
     transition-delay: 250ms;
