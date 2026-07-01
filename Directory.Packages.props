@@ -48,7 +48,7 @@
          Already transitive via Neuroglia.Serialization.YamlDotNet —
          pinning it here so the direct reference is reproducible. -->
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
-    <PackageVersion Include="MQTTnet" Version="5.1.0.1559" />
+    <PackageVersion Include="MQTTnet" Version="5.2.0.1603" />
     <PackageVersion Include="MQTTnet.AspNetCore" Version="5.1.0.1559" />
     <PackageVersion Include="MQTTnet.Server" Version="5.1.0.1559" />
     <!-- NATS.Net is the official NATS.io .NET client (the meta package
