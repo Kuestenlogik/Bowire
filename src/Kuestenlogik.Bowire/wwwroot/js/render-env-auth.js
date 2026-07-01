@@ -1403,6 +1403,10 @@
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
                 app.classList.remove('is-resizing');
+                // Re-query per-event — the mousedown-time capture is
+                // stale if the pan-open path called render(). See the
+                // matching re-query in onMove for the same reason.
+                var sidebarEl = document.querySelector('#bowire-sidebar');
                 if (sidebarEl) sidebarEl.classList.remove('bowire-sidebar-collapse-preview');
                 try { localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidth)); } catch { /* ignore */ }
                 // Pattern C — if the user released the drag inside
