@@ -92,6 +92,39 @@ Auto-discovery only. Drop the `[BowireExtension]`-tagged class into a `Kuestenlo
 
 There is no `services.AddBowireUiExtension<T>()` helper — the attribute + interface combo is the only registration path, deliberately, to keep the contract narrow in v1.0.
 
+## Register a custom detector
+
+The same `[BowireExtension]` marker + assembly-scan mechanism covers the server-side detector seam. Implement `IBowireFieldDetector` (`src/Kuestenlogik.Bowire/Semantics/Detectors/IBowireFieldDetector.cs`), tag the class, and drop the assembly next to the host — Core registers the detector as a singleton on `IBowireFieldDetector` alongside the built-ins. No `services.AddSingleton<IBowireFieldDetector, MyDetector>()` needed; hosts that still hand-register a detector continue to work, and the sweep de-dupes by concrete type so the same detector never fires twice.
+
+The `IBowireFieldDetector` contract:
+
+```csharp
+public interface IBowireFieldDetector
+{
+    string Id { get; }
+    IEnumerable<DetectionResult> Detect(in DetectionContext ctx);
+}
+```
+
+The `Wgs84CoordinateDetector` in `src/Kuestenlogik.Bowire/Semantics/Detectors/Wgs84CoordinateDetector.cs` is the in-repo reference — it carries the marker so its shape is exactly the one third parties ship:
+
+```csharp
+[BowireExtension]
+public sealed partial class Wgs84CoordinateDetector : IBowireFieldDetector
+{
+    public string Id => "kuestenlogik.wgs84-coordinate";
+
+    public IEnumerable<DetectionResult> Detect(in DetectionContext ctx)
+    {
+        // walk ctx.Frame, propose one or more DetectionResult per match
+    }
+}
+```
+
+Detector authors ship a parameterless constructor (the assembly sweep calls `Activator.CreateInstance` on the type) and keep the implementation stateless so the shared `IFrameProber` singleton can invoke it concurrently across streaming clients. Everything else — `AnnotationKey`, `AnnotationSource.Auto` routing, resolver priority — stays inside the framework.
+
+The `BowireOptions.DisableBuiltInDetectors` flag still opts Core's five built-ins out even though they carry the marker (the sweep filters them by assembly identity); third-party detectors in sibling packages remain unaffected.
+
 ## See also
 
 - <xref:Kuestenlogik.Bowire.Semantics.Extensions.IBowireUiExtension> — auto-generated interface reference.
