@@ -52,8 +52,8 @@ function postLocalhostJson(port, pathName, body) {
     });
 }
 
-const OUT = path.resolve(__dirname, '..', 'site', 'assets', 'images', 'screenshots');
-const DOCS_OUT = path.resolve(__dirname, '..', 'docs', 'images', 'screenshots');
+const OUT = path.resolve(__dirname, '..', '..', 'site', 'assets', 'images', 'screenshots');
+const DOCS_OUT = path.resolve(__dirname, '..', '..', 'docs', 'images', 'screenshots');
 for (const dir of [OUT, DOCS_OUT]) if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
 const THEME = (process.env.THEME || 'dark').toLowerCase();

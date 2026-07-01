@@ -19,8 +19,8 @@ const { chromium } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
 
-const OUT = path.resolve(__dirname, '..', 'site', 'assets', 'images', 'screenshots');
-const QUICKSTART_OUT = path.resolve(__dirname, '..', 'docs', 'images');
+const OUT = path.resolve(__dirname, '..', '..', 'site', 'assets', 'images', 'screenshots');
+const QUICKSTART_OUT = path.resolve(__dirname, '..', '..', 'docs', 'images');
 const TOOL_URL = process.env.TOOL_URL || 'http://localhost:5180/';
 const THEME = (process.env.THEME || 'dark').toLowerCase();
 

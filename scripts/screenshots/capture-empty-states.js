@@ -18,8 +18,8 @@ const { chromium } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
 
-const SITE_OUT = path.resolve(__dirname, '..', 'site', 'assets', 'images', 'screenshots');
-const DOCS_OUT = path.resolve(__dirname, '..', 'docs', 'images');
+const SITE_OUT = path.resolve(__dirname, '..', '..', 'site', 'assets', 'images', 'screenshots');
+const DOCS_OUT = path.resolve(__dirname, '..', '..', 'docs', 'images');
 const THEME = (process.env.THEME || 'dark').toLowerCase();
 
 const STATES = [
