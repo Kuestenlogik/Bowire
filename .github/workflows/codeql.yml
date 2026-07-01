@@ -38,9 +38,11 @@ jobs:
           - language: actions
             build-mode: none
             runner: ubuntu-latest
-          - language: python
-            build-mode: none
-            runner: ubuntu-latest
+          # No `python` here: the repo's only .py file
+          # (scripts/site/add-doc-summaries.py) is a dev-tooling helper
+          # excluded by paths-ignore, so CodeQL sees zero python source
+          # and fails fatally with "could not process any of it". Add it
+          # back if/when production python lands.
           - language: ruby
             build-mode: none
             runner: ubuntu-latest
