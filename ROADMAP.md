@@ -90,7 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**15/25 done** · 10 backlog
+**16/26 done** · 10 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -119,6 +119,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [343](https://github.com/Kuestenlogik/Bowire/issues/343) | Bowire | [feat(v2.2): Regression Coverage surface — per-method run history + Discover sidebar chips (T3)](#issue-kuestenlogik-bowire-343) | ✅ Done |  |
 | [344](https://github.com/Kuestenlogik/Bowire/issues/344) | Bowire | [feat(v2.2): bowire test CLI — flow runner + JUnit XML + HTML report (T2)](#issue-kuestenlogik-bowire-344) | ✅ Done |  |
 | [345](https://github.com/Kuestenlogik/Bowire/issues/345) | Bowire | [feat(v2.2): pluggable field-detector auto-discovery via [BowireExtension] attribute (D)](#issue-kuestenlogik-bowire-345) | ✅ Done |  |
+| [346](https://github.com/Kuestenlogik/Bowire/issues/346) | Bowire | [fix(v2.2): Compose tab Duplicate deep-copies request state — morphdom stale-closure fix (F)](#issue-kuestenlogik-bowire-346) | ✅ Done |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
@@ -648,6 +649,10 @@ v2.2 Test Pillar middle stream — depends on T1 (#342) for the assertion model.
 #### <a id="issue-kuestenlogik-bowire-345"></a>✅ Done · [#345](https://github.com/Kuestenlogik/Bowire/issues/345) feat(v2.2): pluggable field-detector auto-discovery via [BowireExtension] attribute (D)
 
 Closes the extension-point asymmetry noted in `docs/extending/ui-extension.md`: UI extensions were auto-discovered via `[BowireExtension]`, but field detectors landed only via manual `AddSingleton<IBowireFieldDetector, ...>`. Operators wanting to ship custom semantic-kind detectors (e.g. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/345)
+
+#### <a id="issue-kuestenlogik-bowire-346"></a>✅ Done · [#346](https://github.com/Kuestenlogik/Bowire/issues/346) fix(v2.2): Compose tab Duplicate deep-copies request state — morphdom stale-closure fix (F)
+
+v2.1 release notes claimed the Compose Duplicate-tab action fanned out a request without losing the original. Post-v2.2 audit revealed the feature was **broken in production**: editing the duplicated tab mutated the source tab's state. [[more]](https://github.com/Kuestenlogik/Bowire/issues/346)
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
