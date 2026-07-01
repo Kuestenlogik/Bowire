@@ -1427,18 +1427,18 @@
             document.addEventListener('mouseup', onUp);
         });
 
-        // Double-click on the splitter toggles the sidebar. Composes
-        // with the chevron-button (pattern A) sitting on the same
-        // splitter — chevron is the discoverable affordance, dblclick
-        // is the muscle-memory shortcut once users know the pattern.
-        // The dblclick event fires AFTER two mousedown→mouseup pairs
-        // without intervening drag motion, so a normal resize drag
-        // won't accidentally trigger it.
-        splitter.addEventListener('dblclick', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleSidebarCollapsed();
-        });
+        // The native dblclick → toggleSidebarCollapsed handler that
+        // used to sit here has been retired. It duplicated the toggle
+        // that the click delegate above already performs via its own
+        // isDouble tracking, and the two cancelled each other out
+        // once the Option-Y anchor+overlay refactor stabilised the
+        // splitter node (before that, morphdom's swap-out of the
+        // splitter mid-double-click killed the native event before
+        // it could fire, hiding the duplication). Operator: 'getestet:
+        // zum schließen, weil ich nicht mehr in den gedockten modus
+        // komme'. Only the pop-up-suppression dblclick handler at
+        // ~1283 remains — that one just preventDefaults the browser's
+        // default word-select behaviour.
     }
 
     // ---- Unified right-side drawer (#299) ----
