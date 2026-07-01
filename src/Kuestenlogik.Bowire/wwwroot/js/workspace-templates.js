@@ -25,19 +25,23 @@
         {
             id: 'rest',
             label: 'REST API testing',
-            description: 'Petstore (well-known public OpenAPI 2.0 endpoint) — Bowire auto-discovers the Pet / Store / User services on first connect. Plus a starter collection with two ready-to-invoke calls.',
+            description: 'Petstore (well-known public OpenAPI 3.0 endpoint) — Bowire auto-discovers the Pet / Store / User services on first connect. Plus a starter collection with two ready-to-invoke calls.',
             icon: 'globe',
             apply: function (wsId) {
-                // Swagger Petstore exposes /v2/swagger.json — Bowire's
+                // Swagger Petstore v3 exposes /api/v3/openapi.json — Bowire's
                 // REST plugin's discovery surface picks that up
                 // automatically, so the workspace lands with a
                 // populated services tree instead of the empty
                 // "no schema found" state httpbin.org produced
                 // (httpbin doesn't publish OpenAPI / Swagger, so
                 // discovery returned 0 services from it).
-                _templateWriteUrls(wsId, ['https://petstore.swagger.io/v2']);
+                // Discovery needs the schema doc itself (v3 serves
+                // OpenAPI 3.0 at /api/v3/openapi.json — the bare /api/v3
+                // base returns 0 services). baseUrl stays the invocation
+                // base for {{baseUrl}} expansion in manual calls.
+                _templateWriteUrls(wsId, ['https://petstore3.swagger.io/api/v3/openapi.json']);
                 _templateWriteGlobals(wsId, {
-                    baseUrl: 'https://petstore.swagger.io/v2',
+                    baseUrl: 'https://petstore3.swagger.io/api/v3',
                     apiToken: 'special-key'    // documented Petstore token
                 });
                 _templateWriteCollections(wsId, [{
@@ -49,23 +53,23 @@
                             id: 'item_rest_get',
                             protocol: 'rest',
                             service: 'pet',
-                            method: 'GET /pet/findByStatus',
+                            method: 'findPetsByStatus',
                             methodType: 'Unary',
                             body: '',
                             messages: [],
                             metadata: null,
-                            serverUrl: 'https://petstore.swagger.io/v2'
+                            serverUrl: 'https://petstore3.swagger.io/api/v3/openapi.json'
                         },
                         {
                             id: 'item_rest_post',
                             protocol: 'rest',
                             service: 'pet',
-                            method: 'POST /pet',
+                            method: 'addPet',
                             methodType: 'Unary',
                             body: '{"name":"doggie","photoUrls":[],"status":"available"}',
                             messages: ['{"name":"doggie","photoUrls":[],"status":"available"}'],
                             metadata: null,
-                            serverUrl: 'https://petstore.swagger.io/v2'
+                            serverUrl: 'https://petstore3.swagger.io/api/v3/openapi.json'
                         }
                     ]
                 }]);
@@ -106,11 +110,11 @@
             apply: function (wsId) {
                 // Postman-echo is a generic-HTTP-echo service that
                 // exposes no service catalogue — the Discover rail
-                // landed at 0 services / 0 methods. Petstore exposes
-                // OpenAPI 2.0 at /v2/swagger.json so the workspace
+                // landed at 0 services / 0 methods. Petstore v3 exposes
+                // OpenAPI 3.0 at /api/v3/openapi.json so the workspace
                 // arrives with a populated Pet / Store / User tree
                 // ready to record against.
-                _templateWriteUrls(wsId, ['https://petstore.swagger.io/v2']);
+                _templateWriteUrls(wsId, ['https://petstore3.swagger.io/api/v3/openapi.json']);
                 _templateWriteCollections(wsId, [{
                     id: 'col_mock_targets',
                     name: 'Mock targets',
@@ -126,12 +130,12 @@
             icon: 'layers',
             apply: function (wsId) {
                 _templateWriteUrls(wsId, [
-                    'https://petstore.swagger.io/v2',
+                    'https://petstore3.swagger.io/api/v3/openapi.json',
                     'wss://ws.postman-echo.com/raw',
                     'grpcs@grpcb.in:443'
                 ]);
                 _templateWriteGlobals(wsId, {
-                    baseUrl: 'https://petstore.swagger.io/v2',
+                    baseUrl: 'https://petstore3.swagger.io/api/v3',
                     wsUrl: 'wss://ws.postman-echo.com/raw'
                 });
             }
