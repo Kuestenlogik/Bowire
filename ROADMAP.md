@@ -90,7 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**18/29 done** · 11 backlog
+**19/29 done** · 10 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -104,7 +104,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ⬜ Backlog |  |
 | [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | ⬜ Backlog |  |
 | [312](https://github.com/Kuestenlogik/Bowire/issues/312) | Bowire | [Test coverage gap report — v2.1 audit kickoff](#issue-kuestenlogik-bowire-312) | ⬜ Backlog |  |
-| [349](https://github.com/Kuestenlogik/Bowire/issues/349) | Bowire | [fix(compose): Parameter → Header sub-tab preserves Parameter row inputs — mistakes 'X-Test' as params[0].key](#issue-kuestenlogik-bowire-349) | ⬜ Backlog |  |
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ✅ Done |  |
 | [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ✅ Done |  |
 | [315](https://github.com/Kuestenlogik/Bowire/issues/315) | Bowire | [Unify Proxy + Intercepted into 'Traffic' rail (Standalone / Embedded sub-modes); Mocks stays separate](#issue-kuestenlogik-bowire-315) | ✅ Done |  |
@@ -123,6 +122,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [346](https://github.com/Kuestenlogik/Bowire/issues/346) | Bowire | [fix(v2.2): Compose tab Duplicate deep-copies request state — morphdom stale-closure fix (F)](#issue-kuestenlogik-bowire-346) | ✅ Done |  |
 | [347](https://github.com/Kuestenlogik/Bowire/issues/347) | Bowire | [feat(v2.2): Bootcamp lessons — Intercept / Flow Assertions / bowire test CLI / Coverage / Plugin lifecycle / Workspace deletion (G)](#issue-kuestenlogik-bowire-347) | ✅ Done |  |
 | [348](https://github.com/Kuestenlogik/Bowire/issues/348) | Bowire | [feat(v2.2): Settings → Workspace… expanded into 4 sub-pages (E)](#issue-kuestenlogik-bowire-348) | ✅ Done |  |
+| [349](https://github.com/Kuestenlogik/Bowire/issues/349) | Bowire | [fix(compose): Parameter → Header sub-tab preserves Parameter row inputs — mistakes 'X-Test' as params[0].key](#issue-kuestenlogik-bowire-349) | ✅ Done |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
@@ -592,10 +592,6 @@ Follow-up to #294. Phases A-F shipped the descriptor architecture + extracted Se
 
 Recon report for the v2.2 test pillar lands at [`docs/testing/coverage-gaps-v2.1.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/testing/coverage-gaps-v2.1.md). This issue tracks the kickoff; per-gap follow-ups should reference back to this one. [[more]](https://github.com/Kuestenlogik/Bowire/issues/312)
 
-#### <a id="issue-kuestenlogik-bowire-349"></a>⬜ Backlog · [#349](https://github.com/Kuestenlogik/Bowire/issues/349) fix(compose): Parameter → Header sub-tab preserves Parameter row inputs — mistakes 'X-Test' as params[0].key
-
-Discovered during the #346 second-pass fix. Separate bug — same morphdom-stale-closure family but different site. [[more]](https://github.com/Kuestenlogik/Bowire/issues/349)
-
 #### <a id="issue-kuestenlogik-bowire-180"></a>✅ Done · [#180](https://github.com/Kuestenlogik/Bowire/issues/180) Assertion DSL for collection / recording replay
 
 Recordings + Mocks let an operator capture and replay traffic, but nothing in the workbench can answer "did the response match what I expected?" Today the only assertion is "the call returned without throwing" — fine for a developer probing, useless as a regression suite. [[more]](https://github.com/Kuestenlogik/Bowire/issues/180)
@@ -667,6 +663,10 @@ Six new Bowire.Bootcamp lessons covering the v2.2 features that ship in main Bow
 #### <a id="issue-kuestenlogik-bowire-348"></a>✅ Done · [#348](https://github.com/Kuestenlogik/Bowire/issues/348) feat(v2.2): Settings → Workspace… expanded into 4 sub-pages (E)
 
 v2.1 shipped the Settings IA with a single "Workspace…" leaf, deferring the sub-tree expansion for v2.2. This closes that gap. [[more]](https://github.com/Kuestenlogik/Bowire/issues/348)
+
+#### <a id="issue-kuestenlogik-bowire-349"></a>✅ Done · [#349](https://github.com/Kuestenlogik/Bowire/issues/349) fix(compose): Parameter → Header sub-tab preserves Parameter row inputs — mistakes 'X-Test' as params[0].key
+
+Discovered during the #346 second-pass fix. Separate bug — same morphdom-stale-closure family but different site. [[more]](https://github.com/Kuestenlogik/Bowire/issues/349)
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
