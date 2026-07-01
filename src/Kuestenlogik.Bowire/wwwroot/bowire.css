@@ -8193,37 +8193,55 @@ not through to the children of
     flex-shrink: 0;
     pointer-events: none;
 }
-.bowire-sidebar-splitter {
-    /* Reverted the flex-basis: 1px + padding + margin overlap hack
-       (commit 4424eab2) because it broke double-click / drag: the
-       main pane, pulled 9 px onto the splitter's padding area by the
-       negative margin, created its own stacking context and stole
-       pointer events even with z-index: 2 on the splitter. Operator:
-       'doppelklick am vertikalen splitter für die linke sidebar
-       scheint nicht mehr zu funktionieren.'
-       Back to the original 10 px flex-basis so the whole bar owns
-       its pointer events. The 9 px on the right of the visible line
-       stays transparent — the visual footprint reads as 1 px because
-       the neighbour is a flat background. A proper "1 px layout,
-       10 px hit-area" would need a separate hit-area overlay
-       decoupled from the visible line — filed as v2.3 follow-up. */
-    flex: 0 0 10px;
-    background: transparent;
-    cursor: ew-resize;
+/* Anchor: the 1 px visible divider line that lives in flex layout.
+   Owns the visible strip + serves as positioned parent for the
+   splitter overlay. Operator picked Option Y (layout 1 px, hit-area
+   10 px via decoupled overlay) over the earlier padding + negative-
+   margin trick that broke dblclick / drag (commit `4424eab2` →
+   reverted at `17e8b732`). This split lets the overlay own its own
+   stacking context so the main pane can't steal pointer events. */
+.bowire-sidebar-splitter-anchor {
+    flex: 0 0 1px;
     flex-shrink: 0;
     position: relative;
+    background: var(--bowire-border-subtle);
     z-index: 2;
-    border-left: 1px solid var(--bowire-border-subtle);
+    transition: background 150ms ease;
+}
+.bowire-sidebar-splitter-anchor:has(.bowire-sidebar-splitter:hover),
+.bowire-sidebar-splitter-anchor:has(.bowire-sidebar-splitter:active) {
+    background: var(--bowire-accent);
+    /* 250 ms hover-intent gate mirrored on the anchor's line highlight
+       so the accent colour on the visible line syncs with the overlay
+       chrome. Without this the line would flash immediately on any
+       mouse pass. */
+    transition-delay: 250ms;
+}
+
+.bowire-sidebar-splitter {
+    /* Interactive overlay — extends ±5 px beyond the visible line so
+       the hit-area stays at ~10 px. Layout footprint is 0 px (position:
+       absolute takes it out of flex flow); the anchor's 1 px is the
+       only thing that reserves horizontal space. z-index above main
+       pane content so drag / dblclick land on the splitter regardless
+       of what stacking context the neighbour created. */
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -5px;
+    right: -5px;
+    background: transparent;
+    cursor: ew-resize;
+    z-index: 3;
     /* Default transition: no delay on hover-OUT (snap back). The hover
        rule below adds a delay so the highlight only appears if the
        cursor stays on the bar — operator feedback: 'der splitter zeigt
        sich zu schnell, wenn man mit der maus drüberfährt.' */
-    transition: background 150ms ease, border-color 150ms ease;
+    transition: background 150ms ease;
 }
 .bowire-sidebar-splitter:hover,
 .bowire-sidebar-splitter:active {
     background: var(--bowire-surface);
-    border-left-color: var(--bowire-accent);
     /* 250 ms hover-intent gate — mouse must dwell before the highlight
        fires so casual mouse-over traversal doesn't flash the accent. */
     transition-delay: 250ms;
