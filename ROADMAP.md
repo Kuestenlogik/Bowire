@@ -90,7 +90,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**16/27 done** · 11 backlog
+**17/28 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -121,6 +121,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [344](https://github.com/Kuestenlogik/Bowire/issues/344) | Bowire | [feat(v2.2): bowire test CLI — flow runner + JUnit XML + HTML report (T2)](#issue-kuestenlogik-bowire-344) | ✅ Done |  |
 | [345](https://github.com/Kuestenlogik/Bowire/issues/345) | Bowire | [feat(v2.2): pluggable field-detector auto-discovery via [BowireExtension] attribute (D)](#issue-kuestenlogik-bowire-345) | ✅ Done |  |
 | [347](https://github.com/Kuestenlogik/Bowire/issues/347) | Bowire | [feat(v2.2): Bootcamp lessons — Intercept / Flow Assertions / bowire test CLI / Coverage / Plugin lifecycle / Workspace deletion (G)](#issue-kuestenlogik-bowire-347) | ✅ Done |  |
+| [348](https://github.com/Kuestenlogik/Bowire/issues/348) | Bowire | [feat(v2.2): Settings → Workspace… expanded into 4 sub-pages (E)](#issue-kuestenlogik-bowire-348) | ✅ Done |  |
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
@@ -658,6 +659,10 @@ Closes the extension-point asymmetry noted in `docs/extending/ui-extension.md`: 
 #### <a id="issue-kuestenlogik-bowire-347"></a>✅ Done · [#347](https://github.com/Kuestenlogik/Bowire/issues/347) feat(v2.2): Bootcamp lessons — Intercept / Flow Assertions / bowire test CLI / Coverage / Plugin lifecycle / Workspace deletion (G)
 
 Six new Bowire.Bootcamp lessons covering the v2.2 features that ship in main Bowire since Bootcamp PR #12 (Kuestenlogik/Bowire.Bootcamp#13). [[more]](https://github.com/Kuestenlogik/Bowire/issues/347)
+
+#### <a id="issue-kuestenlogik-bowire-348"></a>✅ Done · [#348](https://github.com/Kuestenlogik/Bowire/issues/348) feat(v2.2): Settings → Workspace… expanded into 4 sub-pages (E)
+
+v2.1 shipped the Settings IA with a single "Workspace…" leaf, deferring the sub-tree expansion for v2.2. This closes that gap. [[more]](https://github.com/Kuestenlogik/Bowire/issues/348)
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
