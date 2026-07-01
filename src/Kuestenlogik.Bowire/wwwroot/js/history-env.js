@@ -617,6 +617,8 @@
 
     function substituteMessages(messages) {
         if (!Array.isArray(messages)) return messages;
-        return messages.map(substituteVars);
+        // Wrap: Array.map passes (value, index, array); substituteVars' 2nd arg
+        // is a cycle-guard Set, so a leaked index crashes on entries >= 1 (#316).
+        return messages.map(function (m) { return substituteVars(m); });
     }
 
