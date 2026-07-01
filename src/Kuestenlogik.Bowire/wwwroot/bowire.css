@@ -1671,26 +1671,13 @@ but
    that lives in it. Color matches the splitter's grip-dots; on
    splitter-hover both deepen together. */
 .bowire-sidebar-edge-toggle {
-    position: absolute;
-    top: 50%;
-    /* Vertical centring fallback. The expanded variant overrides
-       transform with translate(-50%, -50%) to also centre horizontally
-       inside the splitter; the collapsed variant keeps this rule so
-       the chevron isn't off-centre on the rail edge. */
-    transform: translateY(-50%);
-    width: 18px;
-    height: 28px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    color: var(--bowire-text-tertiary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 5;
-    transition: color var(--bowire-transition);
+    /* Chevron arrow retired per operator ask: 'mach mal nur die 3
+       dots, keinen pfeil im chevron'. The grip-dot cluster (::before,
+       consolidated below) is the sole hover affordance now. Kept the
+       button element in the DOM because layout.js still checks
+       `e.target.closest('.bowire-sidebar-edge-toggle')` in a few
+       places — removing the class would need matching JS edits. */
+    display: none;
 }
 .bowire-sidebar-edge-toggle svg {
     width: 12px;
@@ -8251,13 +8238,18 @@ not through to the children of
     transition-delay: 0ms;
 }
 
-/* Top grip-dot cluster: subtle three-dot run above the chevron. */
+/* Single 3-dot grip cluster, vertically centred on the splitter.
+   Operator: 'auch nur 1x die 3 dots anstelle von 2x (der pfeil in
+   der mitte fehlt ja nun).' Previous double-cluster shape sandwiched
+   a chevron between top + bottom dot columns; now that the chevron
+   is retired the two clusters merge into one centred column. */
 .bowire-sidebar-splitter::before {
     content: '';
     position: absolute;
-    top: calc(50% - 32px);
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
+    /* 14 px tall dot column, vertically centred. */
+    transform: translate(-50%, -50%);
     width: 2px;
     height: 14px;
     background-image: radial-gradient(circle, var(--bowire-text-tertiary) 1px, transparent 1.5px);
@@ -8267,25 +8259,7 @@ not through to the children of
     transition: opacity var(--bowire-transition);
     pointer-events: none;
 }
-/* Bottom grip-dot cluster: mirror of ::before, sitting below
-   the chevron. Same height + spacing for a symmetric grip pattern. */
-.bowire-sidebar-splitter::after {
-    content: '';
-    position: absolute;
-    top: calc(50% + 18px);
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2px;
-    height: 14px;
-    background-image: radial-gradient(circle, var(--bowire-text-tertiary) 1px, transparent 1.5px);
-    background-size: 2px 5px;
-    background-repeat: repeat-y;
-    opacity: 0;
-    transition: opacity var(--bowire-transition);
-    pointer-events: none;
-}
-.bowire-sidebar-splitter:hover::before,
-.bowire-sidebar-splitter:hover::after {
+.bowire-sidebar-splitter:hover::before {
     opacity: 0.7;
     /* Same hover-intent dwell as the splitter background — the grip
        dots appear in sync with the highlight, not before. */
