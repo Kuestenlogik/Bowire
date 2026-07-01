@@ -1295,10 +1295,25 @@
     // protocol may handle the same ids OR provide its own (e.g. gRPC's
     // 'message' tab uses a proto-typed editor instead of REST's body
     // surface).
-    function _renderHoppTabBody(fr) {
+    function _renderHoppTabBody(fr, mountId) {
         ensureHoppState(fr);
+        // #349 — key the tab-body id by (mount, sub-tab). The sub-tab
+        // segment forces morphdom to DISCARD+REBUILD the body — and thus
+        // rebind the KV-table's `onInput` closures to the correct bag —
+        // when the operator flips Parameter → Header. Without it, morphdom
+        // matches the id-free KV rows positionally, keeps the old input
+        // nodes with their params-bound handlers, and 'X-Test' typed into
+        // the Header add-row lands in params[0].key.
+        //
+        // The mount segment (the Compose tab id) keeps the id globally
+        // unique per open tab. Two tabs on the SAME sub-tab would otherwise
+        // share `…-parameter`, and morphdom's keyed salvage (handleNodeAdded)
+        // would recycle the outgoing tab's stale body into the incoming one
+        // on a tab switch — the exact cross-tab bleed #346 fought. See the
+        // id-free rationale on _renderRequestBuilder.
         var body = el('div', {
             className: 'bowire-request-builder-tab-body',
+            id: 'bowire-request-builder-tab-body-' + (mountId || 'solo') + '-' + fr._requestBuilder.activeTab,
             'data-tab': fr._requestBuilder.activeTab
         });
         var layout = rbActiveLayout(fr) || rbLayouts.rest;
@@ -2221,12 +2236,12 @@
     }
 
     // ---- Top-level render entry — composes the bar + subtabs + body + response ----
-    function _appendRequestBuilderInto(pane) {
+    function _appendRequestBuilderInto(pane, mountId) {
         var fr = freeformRequest;
         ensureHoppState(fr);
         pane.appendChild(_renderRequestBuilder(fr));
         pane.appendChild(_renderHoppSubTabs(fr));
-        pane.appendChild(_renderHoppTabBody(fr));
+        pane.appendChild(_renderHoppTabBody(fr, mountId));
         // #291 Phase E — per-protocol response-pane override. Layouts
         // that provide a `renderResponse(fr)` (today: MQTT, WebSocket,
         // SSE) get their streaming frame log; everything else falls

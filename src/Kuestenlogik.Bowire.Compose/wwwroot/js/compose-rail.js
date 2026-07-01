@@ -1301,7 +1301,11 @@
                         id: 'bowire-compose-builder-' + activeTab2.id,
                         className: 'bowire-compose-builder-wrap'
                     });
-                    _appendRequestBuilderInto(builderWrap);
+                    // Pass the tab id as the mount discriminator so the
+                    // tab-body id is unique per open Compose tab (#349) —
+                    // otherwise two tabs on the same sub-tab collide and
+                    // morphdom salvages a stale body across the switch.
+                    _appendRequestBuilderInto(builderWrap, activeTab2.id);
                     mainCol.appendChild(builderWrap);
                 }
             }
