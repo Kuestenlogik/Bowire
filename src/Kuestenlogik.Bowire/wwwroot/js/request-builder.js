@@ -579,7 +579,9 @@
         fr.method = method;
         var methodBtn = el('button', {
             type: 'button',
-            id: 'bowire-request-builder-method-btn',
+            // No stable `id` — see the "morphdom keyed-id salvage" note
+            // at the head of _renderRequestBuilder. Query by class
+            // instead when you need to reach for this button.
             className: 'bowire-request-builder-method-btn',
             'data-verb': method,
             'aria-haspopup': 'listbox',
@@ -631,7 +633,7 @@
         var active = rbActiveLayout(fr) || rbLayouts.rest;
         var btn = el('button', {
             type: 'button',
-            id: 'bowire-request-builder-protocol-btn',
+            // See id-free rationale in _renderRequestBuilder.
             className: 'bowire-request-builder-protocol-btn'
                 + (rbProtocolMenuOpen ? ' is-open' : ''),
             'data-protocol': active ? active.id : 'rest',
@@ -709,6 +711,22 @@
     }
 
     // ---- Render: the request bar (protocol + 2nd-control + URL + send) ----
+    //
+    // Note on stable ids: none of the form controls in this bar carry an
+    // `id`. Reason is a subtle morphdom-vs-Compose-tabs interaction (see
+    // Issue #346, second-pass fix): the Compose rail wraps this bar in a
+    // per-tab-id container so morphdom rebuilds the wrapper when the
+    // operator switches or duplicates a tab. BUT morphdom's keyed-node
+    // salvage runs at the DESCENDANT level too — when the new wrapper is
+    // added, `handleNodeAdded` walks its keyed children and reuses any
+    // matching-id node it can find in the OLD tree's lookup table. The
+    // stale DOM node comes with its stale addEventListener'd handlers —
+    // including the URL input's `onInput` closure over the PREVIOUS tab's
+    // `fr` request object. Editing the clone's URL would then silently
+    // mutate the SOURCE tab's request. Stripping the stable ids forces
+    // morphdom to construct fresh nodes with fresh closures per tab.
+    // Query these controls via their class name if you need to reach
+    // for them from outside code (e.g. focus after Ctrl+L).
     function _renderRequestBuilder(fr) {
         var bar = el('div', { className: 'bowire-request-builder-bar' });
         var layout = rbActiveLayout(fr) || rbLayouts.rest;
@@ -731,7 +749,7 @@
         var urlPlaceholder = (layout && layout.urlPlaceholder)
             || 'https://api.example.com/users  •  use {{baseUrl}} for env vars';
         var urlInput = el('input', {
-            id: 'bowire-request-builder-url-input',
+            // No `id` — see the header note on _renderRequestBuilder.
             type: 'text',
             className: 'bowire-request-builder-url-input',
             value: fr.serverUrl || '',
@@ -778,7 +796,7 @@
             ? layout.executeLabel(fr) : 'Execute';
         var sendBtn = el('button', {
             type: 'button',
-            id: 'bowire-request-builder-send-btn',
+            // See id-free rationale in _renderRequestBuilder.
             className: 'bowire-request-builder-send-btn',
             'data-protocol': layout ? layout.id : 'rest',
             title: execLabel + ' (Ctrl+Enter)',
@@ -790,7 +808,7 @@
         sendWrap.appendChild(sendBtn);
         var sendCaret = el('button', {
             type: 'button',
-            id: 'bowire-request-builder-send-caret',
+            // See id-free rationale in _renderRequestBuilder.
             className: 'bowire-request-builder-send-caret' + (rbSendMenuOpen ? ' is-open' : ''),
             title: 'More execute options',
             'aria-haspopup': 'menu',
@@ -829,8 +847,11 @@
                     // Always opens the picker (no silent "first
                     // collection wins" surprise); the operator can
                     // pick a target collection or spawn a new one.
-                    var anchor = document.getElementById('bowire-request-builder-send-caret')
-                        || document.getElementById('bowire-request-builder-send-btn');
+                    // Query by class (see id-free rationale in
+                    // _renderRequestBuilder). Only one bar is ever
+                    // mounted, so a single-hit selector is safe.
+                    var anchor = document.querySelector('.bowire-request-builder-send-caret')
+                        || document.querySelector('.bowire-request-builder-send-btn');
                     if (typeof _composeSaveToCollectionPicker === 'function') {
                         _composeSaveToCollectionPicker(fr, anchor);
                     }
@@ -929,7 +950,7 @@
         var wrap = el('div', { className: 'bowire-request-builder-history-wrap' });
         var btn = el('button', {
             type: 'button',
-            id: 'bowire-request-builder-history-btn',
+            // See id-free rationale in _renderRequestBuilder.
             className: 'bowire-request-builder-history-btn' + (rbHistoryMenuOpen ? ' is-open' : ''),
             title: 'Recent requests (' + rbHistoryList.length + ')',
             'aria-haspopup': 'menu',
