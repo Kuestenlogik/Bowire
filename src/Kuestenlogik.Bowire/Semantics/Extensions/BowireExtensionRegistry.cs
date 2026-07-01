@@ -2,16 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Reflection;
+using Kuestenlogik.Bowire.Semantics.Detectors;
 
 namespace Kuestenlogik.Bowire.Semantics.Extensions;
 
 /// <summary>
-/// Discovery + cache for <see cref="IBowireUiExtension"/> instances.
-/// Mirrors <c>BowireProtocolRegistry</c>: a single static
-/// <see cref="Discover()"/> sweeps every loaded
-/// <c>Kuestenlogik.Bowire*</c> assembly, instantiates the types tagged
-/// with <see cref="BowireExtensionAttribute"/> that implement
-/// <see cref="IBowireUiExtension"/>, and exposes them as a flat list.
+/// Discovery + cache for <see cref="IBowireUiExtension"/> and
+/// <see cref="IBowireFieldDetector"/> instances. Mirrors
+/// <c>BowireProtocolRegistry</c>: a single static <see cref="Discover()"/>
+/// sweeps every loaded <c>Kuestenlogik.Bowire*</c> assembly, instantiates
+/// the types tagged with <see cref="BowireExtensionAttribute"/> that
+/// implement one of the supported extension interfaces, and exposes them
+/// as flat lists.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -22,25 +24,43 @@ namespace Kuestenlogik.Bowire.Semantics.Extensions;
 /// installed list, matching the existing protocol-plugin failure mode.
 /// </para>
 /// <para>
-/// Server-side detectors register through a sibling contract (a future
-/// <c>IBowireFieldDetector</c>); the discovery loop here only handles
-/// UI extensions because that is what Phase 3 ships. Adding detector
-/// discovery later is one extra branch in <see cref="Discover()"/>.
+/// Both UI extensions and server-side detectors are picked up in the
+/// same sweep — a single package can ship a
+/// <c>[BowireExtension]</c>-marked detector alongside a
+/// <c>[BowireExtension]</c>-marked viewer. Detector discovery is
+/// additive to the manual <c>AddSingleton&lt;IBowireFieldDetector, ...&gt;()</c>
+/// path: hosts that hand-register a detector continue to work, and the
+/// DI wiring in
+/// <see cref="BowireServiceCollectionExtensions.AddBowire(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action{BowireOptions})"/>
+/// suppresses duplicates by concrete type so a built-in that is both
+/// marker-tagged AND explicitly registered does not fire twice.
 /// </para>
 /// </remarks>
 public sealed class BowireExtensionRegistry
 {
     private readonly List<IBowireUiExtension> _uiExtensions = [];
+    private readonly List<IBowireFieldDetector> _fieldDetectors = [];
     private readonly Dictionary<string, Assembly> _declaringAssemblies = new(StringComparer.Ordinal);
 
     /// <summary>All discovered UI extensions, registration order preserved.</summary>
     public IReadOnlyList<IBowireUiExtension> UiExtensions => _uiExtensions;
 
     /// <summary>
+    /// All discovered field detectors, registration order preserved.
+    /// The DI wiring in
+    /// <see cref="BowireServiceCollectionExtensions.AddBowire(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action{BowireOptions})"/>
+    /// reads this list and registers each entry as an
+    /// <see cref="IBowireFieldDetector"/> singleton, additively with any
+    /// hand-registered detectors already in the container.
+    /// </summary>
+    public IReadOnlyList<IBowireFieldDetector> FieldDetectors => _fieldDetectors;
+
+    /// <summary>
     /// Resolve the <see cref="Assembly"/> that contributed the extension
-    /// with the given <paramref name="extensionId"/>, or <c>null</c> when
-    /// no such extension is registered. Used by the asset-serving
-    /// endpoint to load the embedded bundle out of the right assembly.
+    /// (UI extension or field detector) with the given
+    /// <paramref name="extensionId"/>, or <c>null</c> when no such
+    /// extension is registered. Used by the asset-serving endpoint to
+    /// load the embedded bundle out of the right assembly.
     /// </summary>
     public Assembly? GetDeclaringAssembly(string extensionId)
     {
@@ -49,13 +69,24 @@ public sealed class BowireExtensionRegistry
     }
 
     /// <summary>
-    /// Lookup by id. Returns <c>null</c> when the id is unknown — the
-    /// asset-serving endpoint maps that to <c>404 Not Found</c>.
+    /// Lookup a UI extension by id. Returns <c>null</c> when the id is
+    /// unknown — the asset-serving endpoint maps that to
+    /// <c>404 Not Found</c>.
     /// </summary>
     public IBowireUiExtension? GetUiExtension(string extensionId)
     {
         ArgumentNullException.ThrowIfNull(extensionId);
         return _uiExtensions.FirstOrDefault(ext => string.Equals(ext.Id, extensionId, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Lookup a field detector by id. Returns <c>null</c> when the id
+    /// is unknown.
+    /// </summary>
+    public IBowireFieldDetector? GetFieldDetector(string detectorId)
+    {
+        ArgumentNullException.ThrowIfNull(detectorId);
+        return _fieldDetectors.FirstOrDefault(det => string.Equals(det.Id, detectorId, StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -91,30 +122,57 @@ public sealed class BowireExtensionRegistry
             {
                 if (typeof(IBowireUiExtension).IsAssignableFrom(type))
                 {
-                    // 3rd-party extension's parameterless ctor can throw
-                    // any type from its static field initialiser; one
-                    // bad extension must not block the rest.
-#pragma warning disable CA1031 // Do not catch general exception types
-                    try
+                    TryInstantiate(type, instance =>
                     {
-                        if (Activator.CreateInstance(type) is IBowireUiExtension ext)
+                        var ext = (IBowireUiExtension)instance;
+                        registry._uiExtensions.Add(ext);
+                        registry._declaringAssemblies[ext.Id] = type.Assembly;
+                    });
+                }
+
+                if (typeof(IBowireFieldDetector).IsAssignableFrom(type))
+                {
+                    TryInstantiate(type, instance =>
+                    {
+                        var det = (IBowireFieldDetector)instance;
+                        registry._fieldDetectors.Add(det);
+                        // Only claim the id slot when a UI extension
+                        // hasn't already registered a bundle-carrying
+                        // assembly under it (detectors don't own an
+                        // asset-serving surface).
+                        if (!registry._declaringAssemblies.ContainsKey(det.Id))
                         {
-                            registry._uiExtensions.Add(ext);
-                            registry._declaringAssemblies[ext.Id] = type.Assembly;
+                            registry._declaringAssemblies[det.Id] = type.Assembly;
                         }
-                    }
-                    catch (Exception ex)
-#pragma warning restore CA1031
-                    {
-                        // Skip extensions whose constructor throws —
-                        // matches BowireProtocolRegistry's behaviour for
-                        // plugins that fail to instantiate.
-                        _ = ex;
-                    }
+                    });
                 }
             }
         }
 
         return registry;
+    }
+
+    /// <summary>
+    /// Activator wrapper that swallows any exception a 3rd-party
+    /// extension's parameterless constructor throws. Matches the
+    /// <c>BowireProtocolRegistry</c> failure mode: one bad extension
+    /// must not block the rest.
+    /// </summary>
+    private static void TryInstantiate(Type type, Action<object> onInstance)
+    {
+#pragma warning disable CA1031 // Do not catch general exception types
+        try
+        {
+            var instance = Activator.CreateInstance(type);
+            if (instance is not null) onInstance(instance);
+        }
+        catch (Exception ex)
+        {
+            // Skip extensions whose constructor throws — matches
+            // BowireProtocolRegistry's behaviour for plugins that fail
+            // to instantiate.
+            _ = ex;
+        }
+#pragma warning restore CA1031
     }
 }

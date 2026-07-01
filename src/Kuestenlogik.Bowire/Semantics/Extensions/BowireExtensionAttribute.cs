@@ -4,12 +4,13 @@
 namespace Kuestenlogik.Bowire.Semantics.Extensions;
 
 /// <summary>
-/// Marks a class as a Bowire extension — a viewer / editor / detector that
-/// the workbench should auto-discover at startup via assembly scan. The
-/// attribute itself carries no metadata; the implementation class supplies
-/// id / capabilities / resource names through the
-/// <see cref="IBowireUiExtension"/> contract (or a future
-/// <c>IBowireFieldDetector</c> sibling).
+/// Marks a class as a Bowire extension — a viewer / editor
+/// (<see cref="IBowireUiExtension"/>) or a semantic-kind detector
+/// (<see cref="Kuestenlogik.Bowire.Semantics.Detectors.IBowireFieldDetector"/>)
+/// that the workbench should auto-discover at startup via assembly scan.
+/// The attribute itself carries no metadata; the implementation class
+/// supplies id / capabilities / resource names through the
+/// implemented contract interface.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -25,6 +26,17 @@ namespace Kuestenlogik.Bowire.Semantics.Extensions;
 /// they belong together (e.g. a MIL-symbol package shipping both a
 /// detector and a viewer extension). Each type is independently
 /// instantiated and registered.
+/// </para>
+/// <para>
+/// Detector auto-discovery is additive to the manual
+/// <c>services.AddSingleton&lt;IBowireFieldDetector, ...&gt;()</c> path:
+/// hosts that hand-register a detector continue to work, and both
+/// paths land in the same
+/// <see cref="Microsoft.Extensions.DependencyInjection.IServiceCollection"/>
+/// enumeration. Duplicate instances of the same detector type are
+/// suppressed by the registry sweep — a built-in that carries the
+/// marker AND is registered explicitly in the DI wiring does not fire
+/// twice.
 /// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]

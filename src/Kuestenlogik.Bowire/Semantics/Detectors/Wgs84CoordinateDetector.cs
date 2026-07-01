@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Kuestenlogik.Bowire.Semantics.Extensions;
 
 namespace Kuestenlogik.Bowire.Semantics.Detectors;
 
@@ -34,6 +35,7 @@ namespace Kuestenlogik.Bowire.Semantics.Detectors;
 /// strictly "one lat + one lon at the same parent."
 /// </para>
 /// </remarks>
+[BowireExtension]
 public sealed partial class Wgs84CoordinateDetector : IBowireFieldDetector
 {
     /// <inheritdoc/>

@@ -9,6 +9,7 @@ using Kuestenlogik.Bowire.Plugins;
 using Kuestenlogik.Bowire.Recording;
 using Kuestenlogik.Bowire.Semantics;
 using Kuestenlogik.Bowire.Semantics.Detectors;
+using Kuestenlogik.Bowire.Semantics.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -465,12 +466,125 @@ public static class BowireServiceCollectionExtensions
             services.AddSingleton<IBowireFieldDetector>(sp => sp.GetRequiredService<TimestampDetector>());
         }
 
+        // #(auto-discovery) — sweep every loaded Kuestenlogik.Bowire*
+        // assembly for [BowireExtension]-marked IBowireFieldDetector
+        // types and register them additively. De-duped by concrete
+        // type against detectors already in `services`, so:
+        //   (a) built-ins that ARE hand-registered above AND carry
+        //       the [BowireExtension] marker as a reference example
+        //       don't fire twice;
+        //   (b) hosts that pre-register a specific detector by hand
+        //       (services.AddSingleton<IBowireFieldDetector, ...>)
+        //       still win — the sweep skips their concrete type;
+        //   (c) DisableBuiltInDetectors continues to opt the five
+        //       Core built-ins out even when they carry the marker,
+        //       because the sweep only sees the marker on assemblies
+        //       loaded next to the host — the built-ins skip via the
+        //       hand-registered-type guard when they're wired above,
+        //       and the guard is a no-op when they're NOT wired.
+        //   Third-party detectors in sibling packages
+        //   (Kuestenlogik.Bowire.*) always land through this path
+        //   without any host-side wiring — the goal the extension
+        //   framework promises.
+        RegisterAutoDiscoveredDetectors(services, bootstrapOptions);
+
         services.AddSingleton<IFrameProber>(sp =>
         {
             var store = sp.GetRequiredService<LayeredAnnotationStore>();
             var detectors = sp.GetServices<IBowireFieldDetector>();
             return new FrameProber(detectors, store.AutoDetectorLayer);
         });
+    }
+
+    /// <summary>
+    /// Sweep the loaded assemblies through
+    /// <see cref="BowireExtensionRegistry.Discover"/> and add every
+    /// discovered <see cref="IBowireFieldDetector"/> as a singleton,
+    /// de-duped against detectors already in <paramref name="services"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// De-dup key is the detector's concrete <see cref="Type"/>. Two
+    /// registration shapes signal "already there":
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><description>A <c>ServiceDescriptor</c> for
+    ///     <c>IBowireFieldDetector</c> whose
+    ///     <see cref="ServiceDescriptor.ImplementationType"/> matches
+    ///     (the plain <c>AddSingleton&lt;IBowireFieldDetector, TDetector&gt;()</c>
+    ///     shape hosts commonly use).</description></item>
+    ///   <item><description>A <c>ServiceDescriptor</c> for the concrete
+    ///     detector type itself — the built-in shape uses
+    ///     <c>AddSingleton&lt;Wgs84CoordinateDetector&gt;()</c> followed
+    ///     by a factory that resolves the same concrete out of the
+    ///     provider, so scanning for the concrete's own descriptor is
+    ///     what catches the built-in-plus-marker double-register.</description></item>
+    /// </list>
+    /// <para>
+    /// The instance produced by the registry sweep is what actually
+    /// lands in DI — <see cref="Activator.CreateInstance(Type)"/> once
+    /// per <see cref="BowireExtensionRegistry.Discover"/> call, then
+    /// captured by the singleton factory closure. Detector authors
+    /// must ship a parameterless constructor.
+    /// </para>
+    /// </remarks>
+    private static void RegisterAutoDiscoveredDetectors(
+        IServiceCollection services, BowireOptions bootstrapOptions)
+    {
+        BowireExtensionRegistry registry;
+        try
+        {
+            registry = BowireExtensionRegistry.Discover();
+        }
+        catch (Exception ex) when (ex is TypeLoadException or FileLoadException or FileNotFoundException or BadImageFormatException)
+        {
+            // Discover already swallows per-assembly failures; a top-level
+            // catch protects the AddBowire pipeline from a genuinely
+            // catastrophic reflection failure.
+            return;
+        }
+
+        // DisableBuiltInDetectors flag: opts out of Core's five
+        // built-ins even when they carry the [BowireExtension] marker.
+        // The sweep filters them by assembly identity, so a host that
+        // ships its own coordinate detector in a sibling package still
+        // gets it auto-registered while Core's Wgs84 stays silent.
+        var coreAssembly = typeof(Wgs84CoordinateDetector).Assembly;
+
+        foreach (var detector in registry.FieldDetectors)
+        {
+            var type = detector.GetType();
+
+            if (bootstrapOptions.DisableBuiltInDetectors && type.Assembly == coreAssembly)
+            {
+                continue;
+            }
+
+            // Already registered as IBowireFieldDetector? Three
+            // registration shapes count as "already there":
+            //   (a) ImplementationType set to the concrete
+            //       (services.AddSingleton<IBowireFieldDetector, T>()).
+            //   (b) ImplementationInstance set to an instance of the
+            //       concrete (services.AddSingleton<IBowireFieldDetector>(instance)).
+            //   (c) A companion descriptor for the concrete type itself
+            //       — the built-in shape uses
+            //       AddSingleton<TDetector>() + a factory that pulls it
+            //       back out as IBowireFieldDetector, so the concrete
+            //       descriptor is what we can see statically.
+            var registeredAsInterface = services.Any(d =>
+                d.ServiceType == typeof(IBowireFieldDetector) &&
+                (d.ImplementationType == type
+                 || d.ImplementationInstance?.GetType() == type));
+            if (registeredAsInterface) continue;
+
+            var registeredAsConcrete = services.Any(d => d.ServiceType == type);
+            if (registeredAsConcrete) continue;
+
+            // Capture the instance so the same object flows out of DI
+            // as the one the registry sweep produced.
+            var captured = detector;
+            services.AddSingleton(typeof(IBowireFieldDetector), _ => captured);
+        }
     }
 
     /// <summary>
