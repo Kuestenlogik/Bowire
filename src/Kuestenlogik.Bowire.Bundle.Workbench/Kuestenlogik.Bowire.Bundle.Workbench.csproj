@@ -104,13 +104,21 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Mqtt\Kuestenlogik.Bowire.Protocol.Mqtt.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.SocketIo\Kuestenlogik.Bowire.Protocol.SocketIo.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.OData\Kuestenlogik.Bowire.Protocol.OData.csproj" />
-    <!-- Kuestenlogik.Bowire.Protocol.TacticalApi — Rheinmetall TacticalAPI
-         gRPC plugin. Lives in the sibling repo (Bowire.Protocol.TacticalApi)
-         and is consumed here as a published NuGet package so the standalone
-         Tool ships TacticalAPI support out of the box: DACH operators can
-         point the workbench at any Rheinmetall situation service without
-         a sibling `bowire plugin install`. The plugin auto-registers via
-         [BowireExtension] on assembly load. -->
-    <PackageReference Include="Kuestenlogik.Bowire.Protocol.TacticalApi" />
+    <!-- TacticalApi retired from the default Workbench bundle. Every other
+         reference in this bundle is a UNIVERSAL web protocol (REST, gRPC,
+         GraphQL, MQTT, WS, SSE, MCP, SignalR, JSON-RPC, SOAP, OData,
+         Socket.IO) that any operator using an API workbench might touch.
+         TacticalApi is a DOMAIN-SPECIFIC Rheinmetall gRPC schema — it
+         only makes sense for operators working with tactical situation
+         services + it accidentally surfaced Situation methods against
+         every added source URL (Petstore, arbitrary REST APIs, …),
+         producing an HTTP-464 on invoke because the gRPC request landed
+         on a non-gRPC backend. Operators who need TacticalApi install it
+         explicitly:
+             dotnet add package Kuestenlogik.Bowire.Protocol.TacticalApi
+         or, once the plugin marketplace ships, via
+             Settings → Plugins → Install → Kuestenlogik.Bowire.Protocol.TacticalApi
+         Any domain-specific protocol should follow this opt-in pattern;
+         Bundle.Workbench stays the universal set. -->
   </ItemGroup>
 </Project>
