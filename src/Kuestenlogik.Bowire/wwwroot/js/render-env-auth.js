@@ -1285,12 +1285,17 @@
             e.preventDefault();
         });
         splitter.addEventListener('mousedown', function (e) {
-            // When the sidebar is collapsed: skip drag wiring — the
-            // click delegate above handles the expand. The splitter
-            // has cursor:pointer + no resize semantics.
-            if (_isSidebarCollapsed()) {
-                return;
-            }
+            // Snapshot the starting posture. When collapsed + the user
+            // drags right, reveal the sidebar progressively (pan-open).
+            // Operator: 'jetzt könnte die bedienung beim splitter auch
+            // links angedockt per pan/drag öffnen.' Previous behaviour
+            // early-returned on collapsed + let the click delegate do
+            // the expand only on click; now any drag past DRAG_THRESHOLD
+            // ALSO opens + follows the pointer for width. Pure click
+            // (no drag past threshold) still routes to the click
+            // delegate for the simple expand.
+            var startedCollapsed = _isSidebarCollapsed();
+
             // Don't preventDefault yet — we don't know if this is a
             // drag or a click on a child (like the chevron-toggle).
             // The browser will dispatch the chevron's click event on
@@ -1314,7 +1319,6 @@
             // a translucent overlay as a "release to hide" preview.
             var COLLAPSE_THRESHOLD = 120; // px relative to the app
             var inCollapseZone = false;
-            var sidebarEl = document.querySelector('#bowire-sidebar');
             // Lock in the click offset relative to the splitter's left
             // edge at mousedown — that's how far inside the splitter
             // the user grabbed. Subtracting it from clientX during
@@ -1330,6 +1334,20 @@
                 document.body.style.cursor = 'ew-resize';
                 document.body.style.userSelect = 'none';
                 app.classList.add('is-resizing');
+                // Reveal the sidebar the moment we cross the drag
+                // threshold from a collapsed start. render() swaps the
+                // splitter DOM node — but our mousemove / mouseup
+                // listeners are attached to `document`, so they keep
+                // firing + we re-query #bowire-sidebar inside onMove.
+                // The grabOffsetX stays valid: the splitter's left edge
+                // moves with the freshly-mounted sidebar but our width
+                // math is app-relative, not splitter-relative.
+                if (startedCollapsed
+                    && typeof setSidebarCollapsed === 'function'
+                    && typeof render === 'function') {
+                    setSidebarCollapsed(false);
+                    render();
+                }
                 // No re-baseline of grabOffsetX. With THRESHOLD=2 the
                 // implied 2 px "snap" is small enough to be invisible,
                 // and keeping the original grabOffsetX means the
@@ -1359,6 +1377,10 @@
                 var railWidth = rail ? rail.getBoundingClientRect().width : 0;
                 var raw = Math.round(ev.clientX - rect.left - railWidth - grabOffsetX);
                 inCollapseZone = raw < COLLAPSE_THRESHOLD;
+                // Re-query the sidebar per move — a pan-open drag that
+                // fired render() inside _enterDragMode swaps the DOM
+                // node so the mousedown-time capture would be stale.
+                var sidebarEl = document.querySelector('#bowire-sidebar');
                 if (sidebarEl) sidebarEl.classList.toggle('bowire-sidebar-collapse-preview', inCollapseZone);
 
                 var w = raw;
@@ -1386,8 +1408,13 @@
                 // Pattern C — if the user released the drag inside
                 // the collapse zone, finish the gesture by hiding the
                 // sidebar entirely. The width they had still persists
-                // for the next show.
-                if (inCollapseZone) {
+                // for the next show. Suppress the auto-collapse when
+                // the drag STARTED collapsed (pan-open gesture): any
+                // drag from a collapsed splitter reads as 'intent to
+                // open', even if the release position lands inside
+                // the collapse zone. Without this guard a short
+                // pan-open would flash the sidebar in + straight out.
+                if (inCollapseZone && !startedCollapsed) {
                     setSidebarCollapsed(true);
                     render();
                 }
