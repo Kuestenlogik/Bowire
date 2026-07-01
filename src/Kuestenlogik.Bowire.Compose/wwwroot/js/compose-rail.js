@@ -1283,8 +1283,26 @@
                 // Mount the existing request-builder against the
                 // active tab. _appendRequestBuilderInto reads
                 // freeformRequest directly, which we just refreshed.
+                //
+                // The wrapper's id is keyed by the active tab id so
+                // morphdom rebuilds the whole subtree (URL input, body
+                // editor, method dropdown, &c) whenever the operator
+                // switches tabs or duplicates one. Without the key,
+                // morphdom preserves the old form-input DOM nodes and
+                // their `onInput` closures — which captured `fr` at the
+                // PREVIOUS tab's render time — so typing into the new
+                // active tab silently mutates the previous tab's
+                // request. That's exactly what 'Duplicate tab' hit:
+                // the clone became active, but the URL input's stale
+                // handler still pointed at the source's request object,
+                // so editing the clone's URL bled back into the source.
                 if (typeof _appendRequestBuilderInto === 'function') {
-                    _appendRequestBuilderInto(mainCol);
+                    var builderWrap = el('div', {
+                        id: 'bowire-compose-builder-' + activeTab2.id,
+                        className: 'bowire-compose-builder-wrap'
+                    });
+                    _appendRequestBuilderInto(builderWrap);
+                    mainCol.appendChild(builderWrap);
                 }
             }
         } else {
