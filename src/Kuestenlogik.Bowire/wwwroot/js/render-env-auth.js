@@ -736,6 +736,23 @@
                 body.appendChild(renderSidebar());
             }
             if (!isMobile()) {
+                // Layout-vs-hit-area decoupling. The visible divider is
+                // a 1 px flex anchor; the interactive splitter sits
+                // ABOVE it as a position:absolute overlay extending
+                // ±5 px so the hit-area stays at 10 px without stealing
+                // that space from the main pane. Earlier attempt
+                // (`4424eab2`, reverted at `17e8b732`) tried a
+                // padding + negative-margin overlap on a single element
+                // — but the main pane's stacking context stole the
+                // pointer events over the padding area even with
+                // z-index: 2 on the splitter. Splitting into anchor +
+                // overlay dodges that: the overlay owns its own
+                // stacking context above the neighbour.
+                var anchor = el('div', {
+                    className: 'bowire-sidebar-splitter-anchor'
+                        + (sidebarCollapsed ? ' bowire-sidebar-splitter-anchor-collapsed' : ''),
+                    'aria-hidden': 'true'
+                });
                 var splitterCls = 'bowire-sidebar-splitter';
                 if (sidebarCollapsed) splitterCls += ' bowire-sidebar-splitter-collapsed';
                 var splitter = el('div', {
@@ -757,7 +774,8 @@
                         render();
                     }
                 }, el('span', { innerHTML: svgIcon('chevron') })));
-                body.appendChild(splitter);
+                anchor.appendChild(splitter);
+                body.appendChild(anchor);
             }
         }
         // #160 — Workspace-context breadcrumb at the top of the main
