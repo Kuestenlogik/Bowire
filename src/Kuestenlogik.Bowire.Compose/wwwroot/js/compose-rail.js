@@ -698,7 +698,7 @@
                 });
                 render();
                 requestAnimationFrame(function () {
-                    var inp = document.getElementById('bowire-request-builder-url-input');
+                    var inp = document.querySelector('.bowire-request-builder-url-input');
                     if (inp) inp.focus();
                 });
             },
@@ -1142,7 +1142,7 @@
                 spawnDesignTab();
                 render();
                 requestAnimationFrame(function () {
-                    var inp = document.getElementById('bowire-request-builder-url-input');
+                    var inp = document.querySelector('.bowire-request-builder-url-input');
                     if (inp) inp.focus();
                 });
             }
@@ -1330,7 +1330,7 @@
                         spawnDesignTab();
                         render();
                         requestAnimationFrame(function () {
-                            var inp = document.getElementById('bowire-request-builder-url-input');
+                            var inp = document.querySelector('.bowire-request-builder-url-input');
                             if (inp) inp.focus();
                         });
                     }

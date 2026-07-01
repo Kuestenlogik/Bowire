@@ -4242,7 +4242,7 @@
             card('send', 'Just fire a request', 'Single-line bar (Ctrl+L)', function () {
                 gotoComposeAndSpawn();
                 requestAnimationFrame(function () {
-                    var inp = document.getElementById('bowire-request-builder-url-input');
+                    var inp = document.querySelector('.bowire-request-builder-url-input');
                     if (inp) inp.focus();
                 });
             });

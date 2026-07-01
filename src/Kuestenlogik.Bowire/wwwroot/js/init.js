@@ -393,7 +393,7 @@
                 // Defer focus to the next frame so the freshly-rendered
                 // input is in the DOM by the time we reach for it.
                 requestAnimationFrame(function () {
-                    var inp = document.getElementById('bowire-request-builder-url-input');
+                    var inp = document.querySelector('.bowire-request-builder-url-input');
                     if (inp) inp.focus();
                 });
                 return;
