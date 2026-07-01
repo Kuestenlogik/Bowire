@@ -4680,7 +4680,14 @@
             { id: 'shortcuts', label: 'Settings → Shortcuts',     keywords: ['settings shortcuts', 'keymap', 'bindings'] },
             { id: 'data',      label: 'Settings → Data',          keywords: ['settings data', 'reset', 'clear'] },
             { id: 'ai',        label: 'Settings → Assistant',     keywords: ['settings ai', 'assistant', 'llm'] },
-            { id: 'plugins',   label: 'Settings → Plugins',       keywords: ['settings plugins'] }
+            { id: 'plugins',   label: 'Settings → Plugins',       keywords: ['settings plugins'] },
+            // v2.2 Workspace… sub-tree — one deep-link per sub-page so
+            // the command palette lands operators on the right surface
+            // instead of the pre-expansion "Workspace settings" pointer.
+            { id: 'workspace-sources',      label: 'Settings → Workspace → Sources',      keywords: ['workspace sources', 'urls', 'servers', 'headers'] },
+            { id: 'workspace-environments', label: 'Settings → Workspace → Environments', keywords: ['workspace environments', 'env', 'variables'] },
+            { id: 'workspace-overrides',    label: 'Settings → Workspace → Overrides',    keywords: ['workspace overrides', 'per-workspace'] },
+            { id: 'workspace-data',         label: 'Settings → Workspace → Data',         keywords: ['workspace data', 'storage', 'clear workspace'] }
         ];
         for (var sti = 0; sti < settingsTabs.length; sti++) {
             (function (t) {

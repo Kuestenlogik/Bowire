@@ -132,14 +132,53 @@
         });
 
         // Workspace group — .bww-scoped settings that travel with the
-        // workspace file. The pointer leaf jumps to the Workspaces rail
-        // detail panel. Per-Workspace overrides is an empty-state leaf
-        // today — no machine-scoped setting currently flips to a
-        // workspace override programmatically, so the page renders an
-        // empty-state card explaining the model.
+        // workspace file. v2.2 (#325 follow-up) expanded the single
+        // "Workspace settings" leaf into a real sub-tree so each
+        // scope-clear surface has its own page instead of a monolithic
+        // pointer card:
+        //
+        //   Workspace…
+        //     ├── Sources / URLs             (URL list + per-URL headers)
+        //     ├── Environments               (workspace envs + globals)
+        //     ├── Per-Workspace overrides    (machine defaults replaced by ws)
+        //     └── Data                       (workspace-scoped Clear actions +
+        //                                     storage mode toggle)
+        //
+        // Each sub-page reuses an existing renderer (sources rail /
+        // environments rail / workspace-detail storage section) instead
+        // of inventing new UI — the audit note called for extraction,
+        // not fresh chrome. Overrides stays put (existing renderer).
         nodes.push(header('Workspace…'));
-        nodes.push(leaf('workspace', 'Workspace settings', 'layers'));
-        nodes.push(leaf('workspace-overrides', 'Per-Workspace overrides', 'settings'));
+        var wsKey_ = 'workspace';
+        var wsChildren = [
+            leaf('workspace-sources', 'Sources / URLs', 'globe'),
+            leaf('workspace-environments', 'Environments', 'globe'),
+            leaf('workspace-overrides', 'Per-Workspace overrides', 'settings'),
+            leaf('workspace-data', 'Data', 'trash')
+        ];
+        var wsActive = settingsTab.indexOf('workspace-') === 0
+            || settingsTab === 'workspace';
+        var wsExpanded = isSettingsTreeNodeExpanded(wsKey_, wsActive);
+        nodes.push({
+            id: 'settings:workspace',
+            label: 'Workspace settings',
+            icon: 'layers',
+            expandable: true,
+            expanded: wsExpanded,
+            selected: false,
+            onClick: function () {
+                // Clicking the parent lands on Sources — the most
+                // common workspace-scope entry. Sub-pages handle their
+                // own selection.
+                settingsTab = 'workspace-sources';
+                renderSettingsDialog();
+            },
+            onToggle: function () {
+                toggleSettingsTreeNode(wsKey_, wsActive);
+                renderSettingsDialog();
+            },
+            children: wsChildren
+        });
 
         return nodes;
     }
@@ -162,8 +201,10 @@
             case 'rails':
             case 'shortcuts':
             case 'data':
-            case 'workspace':
+            case 'workspace-sources':
+            case 'workspace-environments':
             case 'workspace-overrides':
+            case 'workspace-data':
                 return tabId;
             case 'configure-protocols':
             case 'configure-widgets':
@@ -173,6 +214,11 @@
             case 'configure-discovery':
                 return tabId;
             // Legacy ids → new locations.
+            // v2.2 sub-tree — the single 'workspace' leaf was replaced by
+            // four sub-pages under a Workspace… parent. Saved deep-links
+            // land on Sources (the parent's default entry).
+            case 'workspace':
+                return 'workspace-sources';
             case 'plugins':
             case 'configure':
                 return 'configure-protocols';
@@ -294,10 +340,14 @@
             rightPanel.appendChild(renderSettingsShortcuts());
         } else if (settingsTab === 'data') {
             rightPanel.appendChild(renderSettingsData());
-        } else if (settingsTab === 'workspace') {
-            rightPanel.appendChild(renderSettingsWorkspacePointer());
+        } else if (settingsTab === 'workspace-sources') {
+            rightPanel.appendChild(renderSettingsWorkspaceSources());
+        } else if (settingsTab === 'workspace-environments') {
+            rightPanel.appendChild(renderSettingsWorkspaceEnvironments());
         } else if (settingsTab === 'workspace-overrides') {
             rightPanel.appendChild(renderSettingsWorkspaceOverrides());
+        } else if (settingsTab === 'workspace-data') {
+            rightPanel.appendChild(renderSettingsWorkspaceData());
         } else if (settingsTab === 'configure-protocols') {
             rightPanel.appendChild(renderSettingsConfigureProtocols());
         } else if (settingsTab === 'configure-widgets') {
@@ -2863,64 +2913,203 @@
         return section;
     }
 
-    // ---- Workspace pointer (#193 Phase 2 item 4) ----
-    // Project-scope settings (URLs, environments, collections,
-    // recordings, flows, plugin pins, storage mode, storage root)
-    // live in the Workspace tree → Settings node so they round-trip
-    // through .bww with the workspace. This pointer page makes the
-    // split discoverable from inside the Settings dialog without
-    // duplicating the workspace-settings UI here — a single jump
-    // closes the modal and lands the operator on the workspace
-    // detail panel.
-    function renderSettingsWorkspacePointer() {
-        var section = el('div', { className: 'bowire-settings-section' });
-        section.appendChild(el('h3', { className: 'bowire-settings-section-title',
-            textContent: 'Workspace settings' }));
+    // ---- Workspace sub-pages (v2.2 expansion of #325 Workspace… leaf) ----
+    //
+    // The audit note called for splitting the single "Workspace settings"
+    // pointer into a real sub-tree. Each sub-page is a discoverability
+    // surface: it shows the state living in .bww that maps to its scope
+    // (URLs / envs / overrides / workspace-scoped Clears) with a jump
+    // button to the rich editor already living in a dedicated rail.
+    //
+    //   Sources / URLs        → jumps to Sources rail (renderSourcesDetailMain)
+    //   Environments          → jumps to Environments rail
+    //   Per-Workspace overrides → renderSettingsWorkspaceOverrides (unchanged)
+    //   Data                  → workspace-scoped Clear actions + storage mode
+    //
+    // No new authoring UI — the existing rail-mode renderers stay the
+    // single source of truth for editing. These pages surface counts +
+    // context so the settings dialog can answer "what does the workspace
+    // hold?" without leaving the modal.
 
+    // Shared header used by every workspace-scope sub-page. Renders
+    // the page title, a hint about workspace scope, and the active
+    // workspace name (or a "pick one" empty state).
+    function _renderWorkspaceSubpageHeader(section, title, hint) {
+        section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: title }));
         var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        section.appendChild(el('div', {
+            className: 'bowire-settings-section-hint',
+            textContent: hint
+        }));
+        if (!ws) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-section-empty',
+                textContent: 'No workspace selected. Pick one in the activity rail to see workspace-scoped settings.'
+            }));
+        } else {
+            section.appendChild(el('p', {
+                className: 'bowire-settings-row-hint',
+                style: 'margin-top:6px;margin-bottom:14px;',
+                textContent: 'Active workspace: ' + ws.name + '.'
+            }));
+        }
+        return ws;
+    }
 
-        section.appendChild(el('p', { className: 'bowire-settings-row-hint',
-            style: 'margin-bottom:14px;',
-            textContent: 'These travel with the workspace file (.bww). A team member opening a checked-in workspace inherits exactly the set you save here:' }));
+    // ---- Workspace → Sources / URLs ----
+    // Shows the current URL list + per-URL count and jumps to the
+    // Sources rail (renderSourcesDetailMain in render-main.js) for the
+    // rich editor: per-URL headers, aliases, schema uploads.
+    function renderSettingsWorkspaceSources() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        var ws = _renderWorkspaceSubpageHeader(section,
+            'Sources / URLs',
+            'Server URLs configured for this workspace. Each URL travels with the .bww file so a team member opening the workspace inherits the same discovery targets, aliases, and per-URL headers.');
+        if (!ws) return section;
 
-        var list = el('ul', { className: 'bowire-settings-scope-list' },
-            el('li', { textContent: 'URLs + per-URL headers (Sources)' }),
-            el('li', { textContent: 'Environments + globals + secrets layout' }),
-            el('li', { textContent: 'Collections + recordings + flows' }),
-            el('li', { textContent: 'Plugin pins — required protocols + version constraints' }),
-            el('li', { textContent: 'Storage mode + storage root (where the workspace lives on disk)' })
-        );
-        section.appendChild(list);
+        var urls = (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) ? serverUrls : [];
+        if (urls.length === 0) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-section-empty',
+                textContent: 'No URLs configured. Add one in the Sources rail to start discovery.'
+            }));
+        } else {
+            var list = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-bottom:12px' });
+            urls.forEach(function (u) {
+                var meta = (typeof getUrlMeta === 'function') ? getUrlMeta(u) : {};
+                var displayName = meta.name
+                    || (typeof _stripUrlPrefix === 'function' ? _stripUrlPrefix(u) : u);
+                var svcN = (typeof services !== 'undefined' && Array.isArray(services))
+                    ? services.filter(function (s) {
+                        return typeof urlMatchesService === 'function'
+                            ? urlMatchesService(u, s) : s.originUrl === u;
+                    }).length
+                    : 0;
+                var status = (typeof connectionStatuses === 'object' && connectionStatuses)
+                    ? (connectionStatuses[u] || 'disconnected') : 'disconnected';
+                var headerCount = (typeof urlHeaders === 'object' && urlHeaders && urlHeaders[u])
+                    ? Object.keys(urlHeaders[u] || {}).length : 0;
+                var row = el('div', {
+                    className: 'bowire-settings-tools-row',
+                    style: 'display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bowire-bg-elevated);border:1px solid var(--bowire-border-subtle);border-radius:6px'
+                },
+                    el('span', {
+                        className: 'bowire-conn-pill-dot bowire-conn-pill-dot-' + status,
+                        style: 'width:10px;height:10px;border-radius:50%;flex-shrink:0'
+                    }),
+                    el('span', {
+                        style: 'flex:1;font-size:12px;font-family:var(--bowire-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+                        title: u,
+                        textContent: displayName
+                    }),
+                    el('span', {
+                        style: 'font-size:11px;color:var(--bowire-text-tertiary)',
+                        textContent: svcN + ' svc' + (svcN === 1 ? '' : 's')
+                            + (headerCount > 0 ? ' · ' + headerCount + ' header' + (headerCount === 1 ? '' : 's') : '')
+                    })
+                );
+                list.appendChild(row);
+            });
+            section.appendChild(list);
+        }
 
-        section.appendChild(el('p', { className: 'bowire-settings-row-hint',
-            style: 'margin-top:14px;',
-            textContent: ws
-                ? 'Active workspace: ' + ws.name + '.'
-                : 'No workspace selected. Pick one in the activity rail before opening the workspace settings.' }));
-
-        var actions = el('div', { style: 'margin-top:14px;display:flex;gap:8px;' });
-        var openBtn = el('button', {
+        var actions = el('div', { style: 'margin-top:8px;display:flex;gap:8px;flex-wrap:wrap' });
+        actions.appendChild(el('button', {
             className: 'bowire-presets-btn',
-            textContent: 'Open Workspace Settings',
-            disabled: !ws,
+            textContent: 'Open Sources rail',
             onClick: function () {
                 closeSettings();
-                // Land on the workspaces rail with the active
-                // workspace selected. _renderWorkspaceSettingsDetail
-                // takes over the main pane from there.
                 if (typeof railMode !== 'undefined') {
-                    railMode = 'workspaces';
-                    try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
-                }
-                if (ws && typeof workspacesSelectedId !== 'undefined') {
-                    workspacesSelectedId = ws.id;
+                    railMode = 'sources';
+                    try { localStorage.setItem('bowire_rail_mode', 'sources'); } catch { /* ignore */ }
                 }
                 if (typeof render === 'function') render();
             }
-        });
-        actions.appendChild(openBtn);
+        }));
         section.appendChild(actions);
+        return section;
+    }
 
+    // ---- Workspace → Environments ----
+    // Shows the workspace's environment set + active env; jumps to the
+    // Environments rail for the rich editor (renderEnvironmentsListInto
+    // + renderEnvVariableTable in the main pane).
+    function renderSettingsWorkspaceEnvironments() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        var ws = _renderWorkspaceSubpageHeader(section,
+            'Environments',
+            'Variable environments this workspace ships with. Globals + per-env vars travel with the .bww file so imports round-trip staging / prod / mock configurations without hand-rebuilding them.');
+        if (!ws) return section;
+
+        var envs = (typeof getEnvironments === 'function') ? getEnvironments() : [];
+        var globals = (typeof getGlobalVars === 'function') ? getGlobalVars() : {};
+        var activeId = (typeof getActiveEnvId === 'function') ? getActiveEnvId() : null;
+        var activeEnv = envs.find ? envs.find(function (e) { return e.id === activeId; }) : null;
+
+        var summary = el('div', { className: 'bowire-ws-detail-stats',
+            style: 'margin-bottom:12px' },
+            el('div', { className: 'bowire-ws-detail-stat' },
+                el('div', { className: 'bowire-ws-detail-stat-value', textContent: String(envs.length) }),
+                el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'Environments' })
+            ),
+            el('div', { className: 'bowire-ws-detail-stat' },
+                el('div', { className: 'bowire-ws-detail-stat-value', textContent: String(Object.keys(globals).length) }),
+                el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'Global vars' })
+            ),
+            el('div', { className: 'bowire-ws-detail-stat' },
+                el('div', { className: 'bowire-ws-detail-stat-value',
+                    textContent: activeEnv ? activeEnv.name : '—' }),
+                el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'Active' })
+            )
+        );
+        section.appendChild(summary);
+
+        if (envs.length === 0 && Object.keys(globals).length === 0) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-section-empty',
+                textContent: 'No environments or globals defined. Add one in the Environments rail.'
+            }));
+        } else if (envs.length > 0) {
+            var list = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-bottom:12px' });
+            envs.forEach(function (env) {
+                var isActive = env.id === activeId;
+                var varCount = Object.keys(env.vars || {}).length;
+                list.appendChild(el('div', {
+                    className: 'bowire-settings-tools-row',
+                    style: 'display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bowire-bg-elevated);border:1px solid var(--bowire-border-subtle);border-radius:6px'
+                },
+                    el('span', {
+                        className: 'bowire-env-color-dot' + (isActive ? ' active' : ''),
+                        style: 'background:' + (env.color || '#6366f1')
+                            + ';width:10px;height:10px;border-radius:50%;flex-shrink:0'
+                    }),
+                    el('span', {
+                        style: 'flex:1;font-size:12px;font-weight:' + (isActive ? '600' : '500'),
+                        textContent: env.name + (isActive ? ' · active' : '')
+                    }),
+                    el('span', {
+                        style: 'font-size:11px;color:var(--bowire-text-tertiary)',
+                        textContent: varCount + ' var' + (varCount === 1 ? '' : 's')
+                    })
+                ));
+            });
+            section.appendChild(list);
+        }
+
+        var actions = el('div', { style: 'margin-top:8px;display:flex;gap:8px;flex-wrap:wrap' });
+        actions.appendChild(el('button', {
+            className: 'bowire-presets-btn',
+            textContent: 'Open Environments rail',
+            onClick: function () {
+                closeSettings();
+                if (typeof railMode !== 'undefined') {
+                    railMode = 'environments';
+                    try { localStorage.setItem('bowire_rail_mode', 'environments'); } catch { /* ignore */ }
+                }
+                if (typeof render === 'function') render();
+            }
+        }));
+        section.appendChild(actions);
         return section;
     }
 
@@ -3120,6 +3309,78 @@
             }
         ));
 
+        // v2.2 (#325 Workspace… sub-tree) — the workspace-scoped Clear
+        // actions below are the SAME rows appended by
+        // renderSettingsWorkspaceData(). Same source of truth; the
+        // Workspace → Data sub-page reaches them via
+        // _appendWorkspaceScopedDataActions, which mutates a passed
+        // section instead of returning a fresh one.
+        _appendWorkspaceScopedDataActions(section);
+
+        // v2.2 T3 — Regression Coverage Surface. Mounts the run-history
+        // view as a Settings → Data sub-section. Option C from the spec:
+        // operator can navigate from per-method coverage chips on the
+        // Discover sidebar to the detail; this view is the aggregate
+        // surface. Order: run-history cap → Run history table.
+        _appendRunHistoryDataRows(section);
+
+        section.appendChild(renderSettingsAction(
+            'Reset all settings',
+            'Clear localStorage and reload — undo restores from a pre-reset snapshot',
+            'Reset All',
+            function () {
+                bowireConfirm('Reset ALL Bowire data (history, favorites, environments, settings)?\n\nThe action log keeps a pre-reset snapshot so Ctrl/Cmd+Z can put it back, but only until the page reloads.', function () {
+                    // #194 — snapshot every localStorage key into an
+                    // array of {key, value} pairs so undo can splat
+                    // it back. Snapshot necessarily includes the
+                    // action-log's own slot pre-reset, so a successful
+                    // undo restores the log to its pre-reset state
+                    // (dropping the reset entry itself). Operator can
+                    // Ctrl/Cmd+Z synchronously before the reload
+                    // timer fires.
+                    var snapshot = [];
+                    try {
+                        for (var i = 0; i < localStorage.length; i++) {
+                            var k = localStorage.key(i);
+                            if (k != null) snapshot.push({ key: k, value: localStorage.getItem(k) });
+                        }
+                    } catch { /* defensive */ }
+                    var keyCount = snapshot.length;
+                    try { localStorage.clear(); } catch { /* ignore */ }
+                    toast('All data cleared — Ctrl/Cmd+Z to undo, reload incoming', 'success', {
+                        duration: 8000,
+                        undo: function () {
+                            try {
+                                snapshot.forEach(function (pair) {
+                                    if (pair && typeof pair.key === 'string' && pair.value != null) {
+                                        localStorage.setItem(pair.key, pair.value);
+                                    }
+                                });
+                            } catch { /* ignore */ }
+                            toast('Settings restored from snapshot — reload for full effect', 'info');
+                        },
+                        logAction: {
+                            kind: 'settings-reset', rail: 'settings',
+                            title: 'Reset all settings (' + keyCount + ' keys snapshotted)',
+                            undoSpec: { entries: snapshot }
+                        }
+                    });
+                    // Wider window than the legacy 500 ms so the
+                    // operator can react to the Undo button.
+                    setTimeout(function () { location.reload(); }, 5000);
+                }, { title: 'Reset All Settings', danger: true, confirmText: 'Reset All' });
+            },
+            true // danger
+        ));
+
+        return section;
+    }
+
+    // Workspace-scoped Clear + Migrate actions. Extracted from
+    // renderSettingsData so the new Workspace → Data sub-page can
+    // reuse the same rows (single source of truth for undo + logging).
+    // Mutates the passed section by appending rows; returns nothing.
+    function _appendWorkspaceScopedDataActions(section) {
         section.appendChild(renderSettingsAction(
             'Clear call history',
             'Remove all request history entries',
@@ -3304,12 +3565,15 @@
                 );
             }
         ));
+    }
 
-        // v2.2 T3 — Regression Coverage Surface. Mounts the run-history
-        // view as a Settings → Data sub-section. Option C from the spec:
-        // operator can navigate from per-method coverage chips on the
-        // Discover sidebar to the detail; this view is the aggregate
-        // surface. Order: run-history cap → Run history table.
+    // Run-history rows extracted from renderSettingsData so both
+    // System → Data and Workspace → Data can present the same
+    // per-workspace run log + cap. renderRunHistoryView reads the
+    // workspace-scoped bucket, so it's a natural fit under Workspace →
+    // Data but stays visible under System → Data for back-compat with
+    // deep-links.
+    function _appendRunHistoryDataRows(section) {
         section.appendChild(renderSettingsRow(
             'Run history cap',
             'How many recent method-runs to keep in the per-workspace run-log. Older entries are FIFO-evicted. Powers the coverage chips on the Discover sidebar + the Run history view below.',
@@ -3360,55 +3624,94 @@
             if (rhv) runHistorySection.appendChild(rhv);
         }
         section.appendChild(runHistorySection);
+    }
 
-        section.appendChild(renderSettingsAction(
-            'Reset all settings',
-            'Clear localStorage and reload — undo restores from a pre-reset snapshot',
-            'Reset All',
+    // ---- Workspace \u2192 Data ----
+    // Workspace-scoped Clear + Migrate actions, storage-mode toggle,
+    // and the run-history view. Storage-root editing still lives in
+    // the workspaces rail (needs a picker + validation UI); this page
+    // links there via an "Open workspace settings" jump.
+    function renderSettingsWorkspaceData() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        var ws = _renderWorkspaceSubpageHeader(section,
+            'Data',
+            'Clear + migrate actions scoped to this workspace, plus the workspace-level storage mode toggle. Every Clear here mutates only .bww-owned state; the machine-wide Reset lives under System \u2192 Data.');
+        if (!ws) return section;
+
+        // Storage mode toggle \u2014 the same control shown on the workspace
+        // detail pane. Both paths call the same setWorkspaceStorageMode
+        // helper so the settings dialog and the rail stay in sync.
+        var storageMode = (typeof getWorkspaceStorageMode === 'function')
+            ? getWorkspaceStorageMode(ws) : 'disk';
+        var browserOnly = storageMode === 'browser-only';
+        section.appendChild(renderSettingsRow(
+            'Storage mode',
+            browserOnly
+                ? 'Browser-only \u2014 localStorage is the only store. Browser clear = data loss; ~5-10 MB quota.'
+                : 'Disk \u2014 data lives under ~/.bowire/workspaces/' + ws.id + '/. Browser cache is best-effort and survives quota errors.',
             function () {
-                bowireConfirm('Reset ALL Bowire data (history, favorites, environments, settings)?\n\nThe action log keeps a pre-reset snapshot so Ctrl/Cmd+Z can put it back, but only until the page reloads.', function () {
-                    // #194 — snapshot every localStorage key into an
-                    // array of {key, value} pairs so undo can splat
-                    // it back. Snapshot necessarily includes the
-                    // action-log's own slot pre-reset, so a successful
-                    // undo restores the log to its pre-reset state
-                    // (dropping the reset entry itself). Operator can
-                    // Ctrl/Cmd+Z synchronously before the reload
-                    // timer fires.
-                    var snapshot = [];
-                    try {
-                        for (var i = 0; i < localStorage.length; i++) {
-                            var k = localStorage.key(i);
-                            if (k != null) snapshot.push({ key: k, value: localStorage.getItem(k) });
+                var select = el('select', {
+                    className: 'bowire-settings-select',
+                    onChange: function (e) {
+                        var mode = e.target.value === 'browser-only' ? 'browser-only' : 'disk';
+                        if (typeof setWorkspaceStorageMode === 'function') {
+                            setWorkspaceStorageMode(ws.id, mode);
                         }
-                    } catch { /* defensive */ }
-                    var keyCount = snapshot.length;
-                    try { localStorage.clear(); } catch { /* ignore */ }
-                    toast('All data cleared \u2014 Ctrl/Cmd+Z to undo, reload incoming', 'success', {
-                        duration: 8000,
-                        undo: function () {
-                            try {
-                                snapshot.forEach(function (pair) {
-                                    if (pair && typeof pair.key === 'string' && pair.value != null) {
-                                        localStorage.setItem(pair.key, pair.value);
-                                    }
-                                });
-                            } catch { /* ignore */ }
-                            toast('Settings restored from snapshot \u2014 reload for full effect', 'info');
-                        },
-                        logAction: {
-                            kind: 'settings-reset', rail: 'settings',
-                            title: 'Reset all settings (' + keyCount + ' keys snapshotted)',
-                            undoSpec: { entries: snapshot }
+                        renderSettingsDialog();
+                        if (typeof render === 'function') render();
+                    }
+                });
+                var storageOpts = [
+                    { value: 'disk', label: 'Disk (default)' },
+                    { value: 'browser-only', label: 'Browser-only' }
+                ];
+                for (var soi = 0; soi < storageOpts.length; soi++) {
+                    var sopt = el('option', { value: storageOpts[soi].value, textContent: storageOpts[soi].label });
+                    if (storageOpts[soi].value === storageMode) sopt.selected = true;
+                    select.appendChild(sopt);
+                }
+                return select;
+            }
+        ));
+
+        // Storage root pointer \u2014 read-only summary + jump to the
+        // workspace rail's storage editor. The rail owns the picker +
+        // validation; this row surfaces the current value so operators
+        // don't need to rail-switch just to see it.
+        if (!browserOnly) {
+            var currentRoot = (typeof getWorkspaceStorageRoot === 'function')
+                ? (getWorkspaceStorageRoot(ws) || '') : '';
+            section.appendChild(renderSettingsRow(
+                'Storage root',
+                currentRoot
+                    ? 'Current override: ' + currentRoot
+                    : 'Default: ~/.bowire/workspaces/' + ws.id + '/. Edit in the workspaces rail.',
+                function () {
+                    return el('button', {
+                        className: 'bowire-settings-action-btn',
+                        textContent: 'Open workspace settings',
+                        onClick: function () {
+                            closeSettings();
+                            if (typeof railMode !== 'undefined') {
+                                railMode = 'workspaces';
+                                try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+                            }
+                            if (typeof workspacesSelectedId !== 'undefined') {
+                                workspacesSelectedId = ws.id;
+                            }
+                            if (typeof render === 'function') render();
                         }
                     });
-                    // Wider window than the legacy 500 ms so the
-                    // operator can react to the Undo button.
-                    setTimeout(function () { location.reload(); }, 5000);
-                }, { title: 'Reset All Settings', danger: true, confirmText: 'Reset All' });
-            },
-            true // danger
-        ));
+                }
+            ));
+        }
+
+        // Workspace-scoped Clear + Migrate rows (shared with System \u2192
+        // Data \u2014 same source of truth, no duplicate logging paths).
+        _appendWorkspaceScopedDataActions(section);
+
+        // Per-workspace run log + coverage view.
+        _appendRunHistoryDataRows(section);
 
         return section;
     }
