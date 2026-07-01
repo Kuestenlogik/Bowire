@@ -6062,12 +6062,47 @@
         // der tab button [+] zum erzeugen eines neuen tabs.' The
         // strip used to gate on requestTabs.length >= 1 which hid
         // the "+" together with the tabs.
-        if (selectedService && selectedMethod) {
+        // Render the strip whenever Discover is showing a work surface
+        // (method view OR the landing card), NOT just when a method is
+        // selected — so the "+" stays reachable to spawn empty tabs /
+        // the new-tab picker even before anything is selected (Discover
+        // '+' cases a + b). The freeform builder owns its own chrome, so
+        // skip the strip while it's active.
+        if (!freeformRequest) {
             var tabBar = el('div', { id: 'bowire-request-tabs', className: 'bowire-request-tabs' });
             var tabScroll = el('div', { className: 'bowire-request-tabs-scroll' });
             for (var ti = 0; ti < requestTabs.length; ti++) {
                 (function (tab) {
                     var isActive = tab.id === activeTabId;
+                    // Empty placeholder tab (case a) — no method to badge;
+                    // render a lightweight "New tab" chip. Selecting a
+                    // method while it's active fills it in place.
+                    if (tab.empty || !tab.method) {
+                        tabScroll.appendChild(el('div', {
+                            id: 'bowire-request-tab-' + tab.id,
+                            className: 'bowire-request-tab bowire-request-tab-empty' + (isActive ? ' active' : ''),
+                            title: 'New tab — pick a method to fill it',
+                            'data-tab-id': tab.id,
+                            onClick: function (e) {
+                                var id = e.currentTarget.dataset.tabId;
+                                if (id) switchTab(id);
+                            }
+                        },
+                            el('span', { className: 'bowire-request-tab-name', textContent: 'New tab' }),
+                            requestTabs.length > 1 ? el('button', {
+                                className: 'bowire-request-tab-close',
+                                innerHTML: svgIcon('close'),
+                                title: 'Close tab (Ctrl+W)',
+                                onClick: function (e) {
+                                    e.stopPropagation();
+                                    var parent = e.currentTarget.closest('.bowire-request-tab');
+                                    var id = parent && parent.dataset.tabId;
+                                    if (id) closeTab(id);
+                                }
+                            }) : null
+                        ));
+                        return;
+                    }
                     var dir = methodDirection(tab.method);
                     var proto = (tab.service && tab.service.source) || 'default';
                     // Stable id + data-tab-id — morphdom matches the
@@ -6170,17 +6205,28 @@
             // freeform request builder. Shift-click forces freeform
             // even when a method is selected, for users who want
             // the empty-tab path on demand.
+            var hasUrl = typeof serverUrls !== 'undefined' && Array.isArray(serverUrls) && serverUrls.length > 0;
             tabScroll.appendChild(el('button', {
                 className: 'bowire-request-tab-new',
                 title: selectedMethod && selectedService
                     ? 'Pin current method into a new tab (Shift-click for empty tab)'
-                    : 'New empty tab',
+                    : (hasUrl ? 'New tab — pick a method' : 'New tab'),
                 onClick: function (e) {
                     var forceEmpty = e && e.shiftKey;
+                    // Primary: copy the active tab's method into a fresh
+                    // tab (previous tab stays put). Shift forces an empty
+                    // tab on demand even with a method selected.
                     if (!forceEmpty && selectedMethod && selectedService) {
                         openTab(selectedService, selectedMethod, { inNewTab: true });
+                    } else if (!forceEmpty && hasUrl) {
+                        // Case b — URL configured but nothing selected:
+                        // offer a URL → service → method picker so a tab
+                        // can be filled without the sidebar.
+                        openNewTabPicker(e.currentTarget);
                     } else {
-                        startFreeformRequest();
+                        // Case a — no discovery URL (or shift-forced):
+                        // spawn an empty tab that shows the landing hint.
+                        openEmptyTab();
                     }
                 },
                 innerHTML: svgIcon('plus')
@@ -6192,16 +6238,23 @@
             // the right edge as a fixed sibling, the chevron sits just
             // BEFORE it so the spawn-new-tab affordance is never tucked
             // away.
-            requestAnimationFrame(function () {
-                var live = document.querySelector('#bowire-request-tabs .bowire-request-tabs-scroll');
-                if (live && typeof bowireWireTabOverflow === 'function') {
-                    bowireWireTabOverflow(live, {
-                        tabSelector: '.bowire-request-tab',
-                        fixedSelector: '.bowire-request-tab-new',
-                        label: 'More tabs'
-                    });
-                }
-            });
+            // Only wire overflow when there are real tabs to overflow.
+            // With zero tabs the strip holds just the '+' over the landing
+            // card; running the relayout there needlessly hid the '+'
+            // (collapsing the strip to 0 height). requestTabs.length gates
+            // it so the '+' stays visible in the empty Discover state.
+            if (requestTabs.length > 0) {
+                requestAnimationFrame(function () {
+                    var live = document.querySelector('#bowire-request-tabs .bowire-request-tabs-scroll');
+                    if (live && typeof bowireWireTabOverflow === 'function') {
+                        bowireWireTabOverflow(live, {
+                            tabSelector: '.bowire-request-tab',
+                            fixedSelector: '.bowire-request-tab-new',
+                            label: 'More tabs'
+                        });
+                    }
+                });
+            }
         }
 
         // Header lives BELOW the tab strip now — see the comment

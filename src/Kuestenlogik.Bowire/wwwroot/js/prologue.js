@@ -4920,7 +4920,7 @@
         try {
             var data = {
                 tabs: requestTabs.map(function (t) {
-                    return { id: t.id, serviceKey: t.serviceKey, methodKey: t.methodKey };
+                    return { id: t.id, serviceKey: t.serviceKey, methodKey: t.methodKey, empty: t.empty || undefined };
                 }),
                 active: activeTabId,
             };
@@ -4959,15 +4959,22 @@
         var seenIds = Object.create(null);
         for (var i = 0; i < data.tabs.length; i++) {
             var t = data.tabs[i];
-            var svc = services.find(function (s) { return s.name === t.serviceKey; });
-            if (!svc) continue;
-            var meth = (svc.methods || []).find(function (m) { return m.name === t.methodKey; });
-            if (!meth) continue;
             // Drop tabs whose id collides with one already restored
             // — corrupt persisted state should not resurrect the
             // duplicate that originally produced the two-active-
             // tabs symptom.
             if (seenIds[t.id]) continue;
+            // Empty placeholder tabs carry no service/method — restore
+            // them as-is so a spawned-but-unfilled tab survives reload.
+            if (t.empty) {
+                seenIds[t.id] = true;
+                requestTabs.push({ id: t.id, empty: true, serviceKey: null, methodKey: null, service: null, method: null });
+                continue;
+            }
+            var svc = services.find(function (s) { return s.name === t.serviceKey; });
+            if (!svc) continue;
+            var meth = (svc.methods || []).find(function (m) { return m.name === t.methodKey; });
+            if (!meth) continue;
             seenIds[t.id] = true;
             requestTabs.push({
                 id: t.id,
@@ -5084,11 +5091,14 @@
         var tab;
         if (activeTab) {
             // Repurpose the active tab. Keep the id stable so
-            // persisted state + UI focus don't flicker.
+            // persisted state + UI focus don't flicker. Clearing the
+            // `empty` flag fills a placeholder tab in place (case a:
+            // "empty tabs get filled on selection").
             activeTab.serviceKey = svc.name;
             activeTab.methodKey = method.name;
             activeTab.service = svc;
             activeTab.method = method;
+            activeTab.empty = false;
             tab = activeTab;
         } else {
             tab = {
@@ -5143,6 +5153,83 @@
         }
         if (isMobile()) sidebarCollapsed = true;
         render();
+    }
+
+    /**
+     * Spawn an empty placeholder tab and make it active. Carries no
+     * service/method — the render path shows the landing card (e.g. the
+     * "add a discovery URL" hint when no URL is configured). Selecting a
+     * method while an empty tab is active repurposes it in place (see
+     * openTab's `empty = false`), so multiple empty tabs are harmless
+     * and fill on demand. Case a of the Discover '+' behaviour.
+     */
+    function openEmptyTab() {
+        stashCurrentChannel();
+        saveCurrentMethodState();
+        freeformRequest = null;
+        var tab = {
+            id: nextTabId(),
+            empty: true,
+            serviceKey: null,
+            methodKey: null,
+            service: null,
+            method: null
+        };
+        requestTabs.push(tab);
+        activeTabId = tab.id;
+        selectedMethod = null;
+        selectedService = null;
+        responseData = null;
+        responseError = null;
+        streamMessages = [];
+        statusInfo = null;
+        persistRequestTabs();
+        render();
+    }
+
+    /**
+     * Case b of the Discover '+' behaviour: a URL configured but nothing
+     * selected yet. Open a dropdown anchored to the '+' offering
+     * URL → service → method, so a fresh tab can be filled without the
+     * sidebar (which may be collapsed/hidden). Picking a method opens it
+     * in a new tab; if nothing has been discovered yet, fall back to an
+     * empty tab. Built on the shared showContextMenu primitive: each
+     * service is a disabled header (name + origin URL as meta), its
+     * methods the clickable rows below.
+     */
+    function openNewTabPicker(anchorEl) {
+        if (!Array.isArray(services) || services.length === 0) {
+            openEmptyTab();
+            return;
+        }
+        var items = [];
+        services.forEach(function (svc) {
+            if (!svc) return;
+            var methods = (svc.methods || []);
+            if (methods.length === 0) return;
+            if (items.length > 0) items.push({ separator: true });
+            items.push({
+                label: svc.name,
+                meta: (svc.originUrl || '').replace(/^https?:\/\//, ''),
+                disabled: true
+            });
+            methods.forEach(function (m) {
+                items.push({
+                    label: m.name,
+                    meta: (typeof methodBadgeText === 'function') ? methodBadgeText(m) : '',
+                    onClick: function () { openTab(svc, m, { inNewTab: true }); }
+                });
+            });
+        });
+        if (items.length === 0) { openEmptyTab(); return; }
+        var rect = (anchorEl && anchorEl.getBoundingClientRect)
+            ? anchorEl.getBoundingClientRect()
+            : { left: 120, bottom: 120 };
+        if (typeof showContextMenu === 'function') {
+            showContextMenu(rect.left, rect.bottom + 4, items);
+        } else {
+            openEmptyTab();
+        }
     }
 
     /**
@@ -5204,7 +5291,10 @@
             }
         }
 
-        var hadChannel = restoreChannelFor(tab.serviceKey, tab.methodKey);
+        // Empty placeholder tab — no method to restore; the render
+        // path shows the landing card (case a). Guard the method-only
+        // restores so tab.method (null) isn't dereferenced.
+        var hadChannel = tab.method ? restoreChannelFor(tab.serviceKey, tab.methodKey) : false;
         if (!hadChannel) {
             responseData = null;
             responseError = null;
@@ -5223,7 +5313,7 @@
         diffSnapshotA = null;
         diffSnapshotB = null;
         showAllHistory = false;
-        loadMethodStateFor(tab.serviceKey, tab.methodKey, tab.method.inputType);
+        if (tab.method) loadMethodStateFor(tab.serviceKey, tab.methodKey, tab.method.inputType);
         render();
     }
 
@@ -5290,7 +5380,7 @@
                 // discovered-method pane.
                 freeformRequest = next.freeform || null;
 
-                var hadChannel = restoreChannelFor(next.serviceKey, next.methodKey);
+                var hadChannel = next.method ? restoreChannelFor(next.serviceKey, next.methodKey) : false;
                 if (!hadChannel) {
                     responseData = null;
                     responseError = null;
@@ -5304,7 +5394,7 @@
                 streamDetailMaximized = false;
                 formValidationErrors = {};
                 showAllHistory = false;
-                loadMethodStateFor(next.serviceKey, next.methodKey, next.method.inputType);
+                if (next.method) loadMethodStateFor(next.serviceKey, next.methodKey, next.method.inputType);
             }
         }
         render();
