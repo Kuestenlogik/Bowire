@@ -16,8 +16,11 @@ const { chromium } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
 
-const OUT = path.resolve(__dirname, '..', 'site', 'assets', 'images', 'screenshots');
-const DOCS_OUT = path.resolve(__dirname, '..', 'docs', 'images', 'screenshots');
+// Two `..` — this script lives in scripts/screenshots/, so the repo root
+// is two levels up (was a single `..` writing to the phantom
+// scripts/site + scripts/docs after the script moved out of scripts/).
+const OUT = path.resolve(__dirname, '..', '..', 'site', 'assets', 'images', 'screenshots');
+const DOCS_OUT = path.resolve(__dirname, '..', '..', 'docs', 'images', 'screenshots');
 const URL = 'https://localhost:5101/bowire';
 // Standalone Tool target for the genuine first-boot welcome (C1 / Phase B).
 // The Combined sample auto-discovers its hosted services via the host's
@@ -101,7 +104,7 @@ async function shot(page, name, opts) {
 // Empty-state captures land in docs/images/ as bowire-NAME.png (without
 // the screenshots/ subdir) — referenced from docs/features/empty-state.md
 // and docs/setup/standalone.md.
-const QUICKSTART_OUT = path.resolve(__dirname, '..', 'docs', 'images');
+const QUICKSTART_OUT = path.resolve(__dirname, '..', '..', 'docs', 'images');
 async function shotQuickstart(page, name) {
     const file = path.join(QUICKSTART_OUT, `bowire-${name}-${THEME}.png`);
     await page.screenshot({ path: file, fullPage: false });
@@ -230,14 +233,25 @@ async function captureWorkbenchSurfaces(browser) {
     const COMBINED_BOWIRE = 'https://localhost:5101/bowire';
     const COMBINED_ROOT = 'https://localhost:5101/';
     const EMBEDDED_BOWIRE = 'http://localhost:5181/bowire';
+    // Tool standalone (workbench at /). Combined (5101) doesn't ship the
+    // Help provider package, so its help rail silently falls back to the
+    // Compose/Discover layout — the help capture there is a dup. The Tool
+    // ships the full workbench incl. the Help rail (RequiresWorkspace=false).
+    const TOOL_ROOT = 'http://localhost:5180/';
 
-    // Write flat into site screenshots/ + docs mirror (matches shot()).
+    // Write `${name}-${THEME}.png` (+ flat `${name}.png` on dark) into
+    // site screenshots/ and the docs mirror — same theme-aware contract
+    // as shot(), so themed-img.html's dark/light pair-swap works.
     function wbsWrite(page, name, clip) {
-        const file = path.join(OUT, name + '.png');
+        const file = path.join(OUT, `${name}-${THEME}.png`);
         const p = clip ? page.screenshot({ path: file, clip }) : page.screenshot({ path: file });
         return p.then(() => {
-            fs.copyFileSync(file, path.join(DOCS_OUT, name + '.png'));
-            log(`  -> ${name}.png  (site + docs, workbench surface)`);
+            fs.copyFileSync(file, path.join(DOCS_OUT, `${name}-${THEME}.png`));
+            if (THEME === 'dark') {
+                fs.copyFileSync(file, path.join(OUT, `${name}.png`));
+                fs.copyFileSync(file, path.join(DOCS_OUT, `${name}.png`));
+            }
+            log(`  -> ${name}-${THEME}.png  (site + docs, workbench surface)`);
         });
     }
 
@@ -256,7 +270,7 @@ async function captureWorkbenchSurfaces(browser) {
     // shape record-demo.js uses.
     async function wbsSeed(page, sampleUrl, railMode) {
         railMode = railMode || 'discover';
-        await page.evaluate(({ sampleUrl, railMode }) => {
+        await page.evaluate(({ sampleUrl, railMode, theme }) => {
             try {
                 const id = 'harbor';
                 localStorage.setItem('bowire_workspaces', JSON.stringify([{
@@ -265,9 +279,9 @@ async function captureWorkbenchSurfaces(browser) {
                 localStorage.setItem('bowire_active_workspace_id', id);
                 localStorage.setItem('bowire_ws_' + id + '_server_urls', JSON.stringify([sampleUrl]));
                 localStorage.setItem('bowire_rail_mode', railMode);
-                localStorage.setItem('bowire_theme_pref', 'dark');
+                localStorage.setItem('bowire_theme_pref', theme);
             } catch { /* ignore */ }
-        }, { sampleUrl, railMode });
+        }, { sampleUrl, railMode, theme: THEME });
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
     }
@@ -319,7 +333,7 @@ async function captureWorkbenchSurfaces(browser) {
     // ── surface: compose-library-left — library sidebar sits LEFT in v2.1. ──
     async function composeLibraryLeft(page) {
         await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
-        await page.evaluate(() => {
+        await page.evaluate((theme) => {
             try {
                 const id = 'harbor';
                 localStorage.setItem('bowire_workspaces', JSON.stringify([{
@@ -328,7 +342,7 @@ async function captureWorkbenchSurfaces(browser) {
                 localStorage.setItem('bowire_active_workspace_id', id);
                 localStorage.setItem('bowire_ws_' + id + '_server_urls', JSON.stringify(['https://localhost:5101/']));
                 localStorage.setItem('bowire_rail_mode', 'compose');
-                localStorage.setItem('bowire_theme_pref', 'dark');
+                localStorage.setItem('bowire_theme_pref', theme);
                 const collection = {
                     id: 'demo-coll', name: 'Harbor smoke', createdAt: 1_700_000_000_000,
                     requests: [
@@ -339,7 +353,7 @@ async function captureWorkbenchSurfaces(browser) {
                 };
                 localStorage.setItem('bowire_ws_' + id + '_collections', JSON.stringify([collection]));
             } catch { /* ignore */ }
-        });
+        }, THEME);
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
         await page.waitForTimeout(2000);
@@ -349,7 +363,7 @@ async function captureWorkbenchSurfaces(browser) {
     // ── surface: map-pins — /api/locations on Sample.Embedded → Map widget. ──
     async function mapPins(page) {
         await page.goto(EMBEDDED_BOWIRE, { waitUntil: 'domcontentloaded' });
-        await page.evaluate(() => {
+        await page.evaluate((theme) => {
             try {
                 const id = 'harbor';
                 localStorage.setItem('bowire_workspaces', JSON.stringify([{
@@ -358,9 +372,9 @@ async function captureWorkbenchSurfaces(browser) {
                 localStorage.setItem('bowire_active_workspace_id', id);
                 localStorage.setItem('bowire_ws_' + id + '_server_urls', JSON.stringify(['http://localhost:5181/']));
                 localStorage.setItem('bowire_rail_mode', 'discover');
-                localStorage.setItem('bowire_theme_pref', 'dark');
+                localStorage.setItem('bowire_theme_pref', theme);
             } catch { /* ignore */ }
-        });
+        }, THEME);
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 25000 });
         await page.waitForTimeout(1500);
@@ -401,10 +415,27 @@ async function captureWorkbenchSurfaces(browser) {
 
     // ── surface: help-rail — Help rail topic tree + body (fallback on Combined). ──
     async function helpRail(page) {
-        await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
-        await wbsSeed(page, COMBINED_ROOT, 'help');
-        await wbsWaitForAny(page, ['.bowire-help-topic', '.bowire-help-tree', '.bowire-help-sidebar', '.bowire-help-nav'], 8000);
-        await page.waitForTimeout(1400);
+        // Against the Tool — Combined has no Help provider and falls back
+        // to a Compose/Discover view (dup capture). Seed the Tool root
+        // (no in-process services, but the Help rail is workspace-free).
+        await page.goto(TOOL_ROOT, { waitUntil: 'domcontentloaded' });
+        await wbsSeed(page, TOOL_ROOT, 'help');
+        const hit = await wbsWaitForAny(page, ['.bowire-help-topic', '.bowire-help-tree', '.bowire-help-sidebar', '.bowire-help-nav'], 8000);
+        if (!hit) throw new Error('help rail did not mount (Help provider missing?)');
+        // Wait for the topic list to populate AND the body to leave its
+        // "Loading…" placeholder, then open the first topic so the body
+        // renders real content instead of an empty selection.
+        await page.waitForFunction(() => {
+            const topics = document.querySelectorAll('.bowire-help-topic, .bowire-help-tree a, .bowire-help-nav a, [class*="help-topic"]');
+            const txt = (document.body && document.body.innerText) || '';
+            return topics.length > 0 && !/Loading…|Loading\.\.\./.test(txt);
+        }, { timeout: 10000 }).catch(() => {});
+        const firstTopic = page.locator('.bowire-help-topic, .bowire-help-tree a, .bowire-help-nav a').first();
+        if (await firstTopic.isVisible().catch(() => false)) {
+            await firstTopic.click().catch(() => {});
+            await page.waitForTimeout(800);
+        }
+        await page.waitForTimeout(600);
         await wbsWrite(page, 'help-rail');
     }
 
@@ -441,7 +472,7 @@ async function captureWorkbenchSurfaces(browser) {
         if (await cancel.isVisible().catch(() => false)) await cancel.click().catch(() => {});
     }
 
-    const surfaces = [
+    let surfaces = [
         { name: 'rail-strip',                 fn: railStrip },
         { name: 'discover-with-response',     fn: discoverWithResponse },
         { name: 'compose-library-left',       fn: composeLibraryLeft },
@@ -450,15 +481,21 @@ async function captureWorkbenchSurfaces(browser) {
         { name: 'help-rail',                  fn: helpRail },
         { name: 'streaming-state-badge',      fn: streamingBadge }
     ];
+    // WBS_SURFACE=name[,name] narrows the run to specific surfaces —
+    // handy for re-shooting a single one without churning the rest.
+    if (process.env.WBS_SURFACE) {
+        const want = new Set(process.env.WBS_SURFACE.split(',').map(s => s.trim()));
+        surfaces = surfaces.filter(s => want.has(s.name));
+    }
 
     const wbsCtx = await browser.newContext({
         viewport: { width: WBS_WIDTH, height: WBS_HEIGHT },
         deviceScaleFactor: WBS_DSF,
         ignoreHTTPSErrors: true,
-        colorScheme: 'dark'
+        colorScheme: THEME
     });
     const wbsPage = await wbsCtx.newPage();
-    await wbsPage.emulateMedia({ colorScheme: 'dark' });
+    await wbsPage.emulateMedia({ colorScheme: THEME });
     for (const s of surfaces) {
         try {
             log(`workbench surface: ${s.name}…`);
@@ -472,6 +509,20 @@ async function captureWorkbenchSurfaces(browser) {
 
 (async () => {
     const browser = await chromium.launch({ headless: true });
+
+    // WBS_ONLY=1 re-shoots ONLY the workbench-surface set (rail-strip,
+    // discover-with-response, compose-library-left, settings-plugins-
+    // protocols, help-rail, streaming-state-badge, map-pins) and exits —
+    // used to refresh those six without churning the other ~20 marketing
+    // captures. Run once per THEME (dark + light) for the paired variants.
+    if (process.env.WBS_ONLY) {
+        log(`WBS_ONLY: workbench surfaces, THEME=${THEME}`);
+        await captureWorkbenchSurfaces(browser);
+        await browser.close();
+        log('done (WBS_ONLY)');
+        return;
+    }
+
     const ctx = await browser.newContext({
         viewport: { width: 1280, height: 720 },
         ignoreHTTPSErrors: true,
