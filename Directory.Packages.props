@@ -28,7 +28,7 @@
          pulls it in so the standalone Tool ships TacticalAPI support out of
          the box for DACH operators dialling Rheinmetall situation services.
          Pinned to 1.0.1 — the locked target for the v2.1 milestone. -->
-    <PackageVersion Include="Kuestenlogik.Bowire.Protocol.TacticalApi" Version="1.0.1" />
+    <PackageVersion Include="Kuestenlogik.Bowire.Protocol.TacticalApi" Version="1.0.4" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Identity.Web" Version="4.11.0" />
     <PackageVersion Include="Microsoft.OpenApi" Version="3.7.0" />
