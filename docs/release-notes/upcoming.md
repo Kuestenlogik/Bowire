@@ -72,3 +72,27 @@ The merge eliminates the previous Phase-3 rail bloat where Mocks + Traffic + the
 ## Acknowledgements
 
 <!-- Optional. Names of contributors who exercised rc / reported. -->
+
+## Breaking — TacticalApi retired from Bundle.Workbench (v2.2)
+
+`Kuestenlogik.Bowire.Protocol.TacticalApi` is now opt-in. Operators
+who need the Rheinmetall Situation service install it explicitly:
+
+```
+dotnet add package Kuestenlogik.Bowire.Protocol.TacticalApi
+```
+
+or, once the plugin marketplace ships, via **Settings → Plugins →
+Install**. Bundle.Workbench stays the universal-web-protocol set
+(REST, gRPC, GraphQL, MQTT, WebSocket, SSE, MCP, SignalR, JSON-RPC,
+OData, Socket.IO). Domain-specific protocols follow the opt-in
+pattern.
+
+Migration for existing operators: nothing to do if you didn't use
+TacticalApi. If you did — a one-line `dotnet add package` restores
+the surface.
+
+Related upstream fix: `Bowire.Protocol.TacticalApi` v1.0.4 now
+gates its `DiscoverAsync` on the `tacticalapi@` URL scheme prefix,
+so it can no longer surface Situation methods for unrelated
+sources like a plain Petstore OpenAPI URL.
