@@ -78,6 +78,7 @@ function loadRequestBuilder(state) {
             pushHoppHistoryEntry: pushHoppHistoryEntry,
             clearHoppHistory: clearHoppHistory,
             _newHoppState: _newHoppState,
+            _renderHoppTabBody: _renderHoppTabBody,
             _getLayouts: function () { return rbLayouts; },
             _setHistoryList: function (v) { rbHistoryList = v; },
             _getHistoryList: function () { return rbHistoryList; },
