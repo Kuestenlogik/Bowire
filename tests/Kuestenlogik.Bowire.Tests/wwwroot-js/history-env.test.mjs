@@ -387,11 +387,11 @@ test('substituteMetadata: null returns null', () => {
     assert.equal(sb.substituteMetadata(null), null);
 });
 
-// Skipped pending #316 — substituteMessages crashes on 2nd+ array entry
-// when the entry contains a placeholder routed through env-var
+// Regression for #316 — substituteMessages used to crash on 2nd+ array
+// entry when the entry contains a placeholder routed through env-var
 // resolution, because Array.prototype.map leaks (value, index, array)
 // into substituteVars's second (_resolvingFromCaller) parameter.
-test('substituteMessages: rewrites every entry in the array (#316)', { skip: 'blocked by #316' }, () => {
+test('substituteMessages: rewrites every entry in the array (#316)', () => {
     const sb = loadHistoryEnv({ globals: { K: 'v' } });
     const out = sb.substituteMessages(['${K}', 'plain', '{{K}}']);
     assert.deepEqual(out, ['v', 'plain', 'v']);
