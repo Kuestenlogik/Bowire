@@ -315,7 +315,11 @@ public sealed class BowireInterceptorMiddlewareTests
         // Endpoint echoes the full payload back — rewind survived truncation.
         Assert.Equal(payload, await resp.Content.ReadAsStringAsync(ct));
 
-        var flow = Assert.Single(store.Snapshot());
+        // The flow is recorded after the response is flushed to the client,
+        // so the client can observe completion before RecordFlow runs — poll
+        // the store rather than snapshotting immediately (same race the
+        // response-truncation test guards against).
+        var flow = Assert.Single(await WaitForFlowsAsync(store, 1, ct));
         Assert.True(flow.RequestBodyTruncated);
         Assert.NotNull(flow.RequestBody);
         Assert.Equal(16, flow.RequestBody!.Length);
