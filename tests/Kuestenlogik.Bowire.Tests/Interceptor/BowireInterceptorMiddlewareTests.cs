@@ -56,6 +56,8 @@ public sealed class BowireInterceptorMiddlewareTests
             await ctx.Response.WriteAsync("data: hello\n\n");
             await ctx.Response.Body.FlushAsync();
         });
+        // Large fixed-size text body for response-truncation coverage.
+        app.MapGet("/api/large", () => Results.Text(new string('x', 5000), "text/plain"));
 
         await app.StartAsync(ct);
         var addr = app.Urls.First();
@@ -64,6 +66,22 @@ public sealed class BowireInterceptorMiddlewareTests
         var session = app.Services.GetRequiredService<BowireRecordingSession>();
         var mocks = app.Services.GetRequiredService<InterceptorMockStore>();
         return (app, http, store, session, mocks);
+    }
+
+    // A large response is socket-flushed to the client during the middleware's
+    // CopyToAsync — the client can finish reading before the server reaches
+    // RecordFlow. Poll the store so the assertion isn't racing that gap.
+    private static async Task<IReadOnlyList<InterceptedFlow>> WaitForFlowsAsync(
+        InterceptedFlowStore store, int count, CancellationToken ct)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            var snap = store.Snapshot();
+            if (snap.Count >= count) return snap;
+            await Task.Delay(10, ct);
+        }
+        return store.Snapshot();
     }
 
     [Fact]
@@ -279,6 +297,128 @@ public sealed class BowireInterceptorMiddlewareTests
         var body = await resp.Content.ReadAsStringAsync(ct);
         Assert.Contains("wildcard", body, StringComparison.Ordinal);
         Assert.True(Assert.Single(store.Snapshot()).Mocked);
+    }
+
+    [Fact]
+    public async Task RequestBody_ExceedingCap_SetsTruncatedFlag_AndEndpointStillSeesFullBody()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (app, http, store, _, _) = await StartAsync(ct, opt => opt.MaxBodyBytes = 16);
+        await using var _app = app;
+        using var _http = http;
+
+        var payload = new string('a', 200);
+        using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+        using var resp = await http.PostAsync(new Uri("/api/echo", UriKind.Relative), content, ct);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        // Endpoint echoes the full payload back — rewind survived truncation.
+        Assert.Equal(payload, await resp.Content.ReadAsStringAsync(ct));
+
+        var flow = Assert.Single(store.Snapshot());
+        Assert.True(flow.RequestBodyTruncated);
+        Assert.NotNull(flow.RequestBody);
+        Assert.Equal(16, flow.RequestBody!.Length);
+    }
+
+    [Fact]
+    public async Task ResponseBody_ExceedingCap_SetsTruncatedFlag_ClientStillGetsFullBody()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (app, http, store, _, _) = await StartAsync(ct, opt => opt.MaxBodyBytes = 16);
+        await using var _app = app;
+        using var _http = http;
+
+        using var resp = await http.GetAsync(new Uri("/api/large", UriKind.Relative), ct);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        // The cap governs what we KEEP for the rail, not what we forward.
+        var clientBody = await resp.Content.ReadAsStringAsync(ct);
+        Assert.Equal(5000, clientBody.Length);
+
+        var flow = Assert.Single(await WaitForFlowsAsync(store, 1, ct));
+        Assert.True(flow.ResponseBodyTruncated);
+        Assert.Equal(16, flow.ResponseBody!.Length);
+    }
+
+    [Fact]
+    public async Task BinaryRequestBody_IsCapturedAsBase64_NotText()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (app, http, store, _, _) = await StartAsync(ct);
+        await using var _app = app;
+        using var _http = http;
+
+        var binary = new byte[] { 0x01, 0x00, 0x02, 0xFF, 0x10 };
+        using var content = new ByteArrayContent(binary);
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+        using var resp = await http.PostAsync(new Uri("/api/echo", UriKind.Relative), content, ct);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        _ = await resp.Content.ReadAsStringAsync(ct);
+
+        var flow = Assert.Single(store.Snapshot());
+        Assert.Null(flow.RequestBody);
+        Assert.NotNull(flow.RequestBodyBase64);
+        Assert.Equal(binary, Convert.FromBase64String(flow.RequestBodyBase64!));
+    }
+
+    [Fact]
+    public async Task EndpointThrows_FlowRecordedWithError_AndExceptionSurfaces()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (app, http, store, _, _) = await StartAsync(ct);
+        await using var _app = app;
+        using var _http = http;
+
+        using var resp = await http.GetAsync(new Uri("/api/boom", UriKind.Relative), ct);
+        Assert.Equal(HttpStatusCode.InternalServerError, resp.StatusCode);
+
+        var flow = Assert.Single(store.Snapshot());
+        Assert.Equal("GET", flow.Method);
+        Assert.NotNull(flow.Error);
+        Assert.Contains("kaboom", flow.Error!, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task MockRule_Base64Body_IsServedAsBinary()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (app, http, store, _, mocks) = await StartAsync(ct);
+        await using var _app = app;
+        using var _http = http;
+
+        var binary = new byte[] { 0x00, 0x01, 0x02, 0xFF };
+        mocks.Add(new InterceptorMockRule
+        {
+            PathPattern = "/api/hello",
+            Method = "GET",
+            ResponseBodyBase64 = Convert.ToBase64String(binary),
+        });
+
+        using var resp = await http.GetAsync(new Uri("/api/hello", UriKind.Relative), ct);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal(binary, await resp.Content.ReadAsByteArrayAsync(ct));
+        Assert.True(Assert.Single(store.Snapshot()).Mocked);
+    }
+
+    [Fact]
+    public async Task MockRule_WithoutContentType_DefaultsToJson()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (app, http, _, _, mocks) = await StartAsync(ct);
+        await using var _app = app;
+        using var _http = http;
+
+        mocks.Add(new InterceptorMockRule
+        {
+            PathPattern = "/api/hello",
+            Method = "GET",
+            ResponseBody = "{\"ok\":true}",
+        });
+
+        using var resp = await http.GetAsync(new Uri("/api/hello", UriKind.Relative), ct);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal("application/json", resp.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]

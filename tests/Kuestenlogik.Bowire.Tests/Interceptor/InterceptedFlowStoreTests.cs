@@ -132,4 +132,18 @@ public sealed class InterceptedFlowStoreTests
         var store = new InterceptedFlowStore();
         Assert.Throws<ArgumentNullException>(() => store.Add(null!));
     }
+
+    [Fact]
+    public void DefaultCapacity_Is1000()
+    {
+        Assert.Equal(1000, new InterceptedFlowStore().Capacity);
+        Assert.Equal(7, new InterceptedFlowStore(capacity: 7).Capacity);
+    }
+
+    [Fact]
+    public void Get_OnEmptyStore_ReturnsNull()
+    {
+        var store = new InterceptedFlowStore();
+        Assert.Null(store.Get(1));
+    }
 }
