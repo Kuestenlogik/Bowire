@@ -12,12 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**69/71 done** · 2 backlog
+**71/71 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [324](https://github.com/Kuestenlogik/Bowire/issues/324) | Bowire | [Help: convert from drawer-tab to its own rail (plugin-contributed)](#issue-kuestenlogik-bowire-324) | ⬜ Backlog |  |
-| [325](https://github.com/Kuestenlogik/Bowire/issues/325) | Bowire | [refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)](#issue-kuestenlogik-bowire-325) | ⬜ Backlog |  |
 | [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
 | [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ✅ Done |  |
 | [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ✅ Done |  |
@@ -80,6 +78,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [302](https://github.com/Kuestenlogik/Bowire/issues/302) | Bowire | [Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)](#issue-kuestenlogik-bowire-302) | ✅ Done |  |
 | [309](https://github.com/Kuestenlogik/Bowire/issues/309) | Bowire | [UI: configure URL catalogue providers from Settings (#136 follow-up)](#issue-kuestenlogik-bowire-309) | ✅ Done |  |
 | [310](https://github.com/Kuestenlogik/Bowire/issues/310) | Bowire | [UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up](#issue-kuestenlogik-bowire-310) | ✅ Done |  |
+| [324](https://github.com/Kuestenlogik/Bowire/issues/324) | Bowire | [Help: convert from drawer-tab to its own rail (plugin-contributed)](#issue-kuestenlogik-bowire-324) | ✅ Done |  |
+| [325](https://github.com/Kuestenlogik/Bowire/issues/325) | Bowire | [refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)](#issue-kuestenlogik-bowire-325) | ✅ Done |  |
 | [327](https://github.com/Kuestenlogik/Bowire/issues/327) | Bowire | [fix(registry): BowireProtocolRegistry.Discover thread-safety race under parallel xUnit](#issue-kuestenlogik-bowire-327) | ✅ Done |  |
 | [328](https://github.com/Kuestenlogik/Bowire/issues/328) | Bowire | [fix(security): close CodeQL alerts — log-forging, incomplete sanitisation, XSS-through-exception](#issue-kuestenlogik-bowire-328) | ✅ Done |  |
 | [329](https://github.com/Kuestenlogik/Bowire/issues/329) | Bowire | [ci(security): switch CodeQL to Advanced Setup — sanitiser model + paths-ignore](#issue-kuestenlogik-bowire-329) | ✅ Done |  |
@@ -263,14 +263,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ## Details
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
-
-#### <a id="issue-kuestenlogik-bowire-324"></a>⬜ Backlog · [#324](https://github.com/Kuestenlogik/Bowire/issues/324) Help: convert from drawer-tab to its own rail (plugin-contributed)
-
-Help moves out of the right-side drawer into a full rail with the standard left-sidebar + main-pane shape every other rail uses. Browsing + searching topics gets the workbench's room to breathe; the Assistant drawer stops width-jumping every time the operator switches tabs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/324)
-
-#### <a id="issue-kuestenlogik-bowire-325"></a>⬜ Backlog · [#325](https://github.com/Kuestenlogik/Bowire/issues/325) refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)
-
-Welle 2 of the v2.1 pre-release cleanup. Welle 1 already folded the Mock + Help rail-fragments into their topic packages (#311 follow-up + #324). This issue tracks the remaining eleven `Rail.*` packages. [[more]](https://github.com/Kuestenlogik/Bowire/issues/325)
 
 #### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
 
@@ -519,6 +511,14 @@ User feedback (Phase 2 walkthrough): "response darstellung auf und einklappen so
 #### <a id="issue-kuestenlogik-bowire-310"></a>✅ Done · [#310](https://github.com/Kuestenlogik/Bowire/issues/310) UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up
 
 #294 introduced IBowireModuleContribution + BowireModuleRegistry — modules (AI, Assistant, Variable resolver, &c) are now contributable from external packages. But the Settings → Modules SECTION that would let an operator turn an installed module ON / OFF doesn't exist. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/310)
+
+#### <a id="issue-kuestenlogik-bowire-324"></a>✅ Done · [#324](https://github.com/Kuestenlogik/Bowire/issues/324) Help: convert from drawer-tab to its own rail (plugin-contributed)
+
+Help moves out of the right-side drawer into a full rail with the standard left-sidebar + main-pane shape every other rail uses. Browsing + searching topics gets the workbench's room to breathe; the Assistant drawer stops width-jumping every time the operator switches tabs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/324)
+
+#### <a id="issue-kuestenlogik-bowire-325"></a>✅ Done · [#325](https://github.com/Kuestenlogik/Bowire/issues/325) refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)
+
+Welle 2 of the v2.1 pre-release cleanup. Welle 1 already folded the Mock + Help rail-fragments into their topic packages (#311 follow-up + #324). This issue tracks the remaining eleven `Rail.*` packages. [[more]](https://github.com/Kuestenlogik/Bowire/issues/325)
 
 #### <a id="issue-kuestenlogik-bowire-327"></a>✅ Done · [#327](https://github.com/Kuestenlogik/Bowire/issues/327) fix(registry): BowireProtocolRegistry.Discover thread-safety race under parallel xUnit
 
@@ -1024,4 +1024,4 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 
 ---
 
-*Generated 2026-07-01 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-07-02 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
