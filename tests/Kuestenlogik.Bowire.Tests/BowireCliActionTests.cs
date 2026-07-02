@@ -97,21 +97,22 @@ public sealed class BowireCliActionTests : IDisposable
     }
 
     [Fact]
-    public async Task MockSubcommand_BadChaosSpec_ReturnsUsageExit()
+    public async Task MockSubcommand_BadChaosSpec_RejectedAtParse()
     {
-        // Forces the action lambda to plumb through every option (host,
-        // port, chaos, capture-miss, control-token, stateful flags) so
-        // every line of the MockCliOptions builder branch executes
-        // before MockCommand.RunAsync returns 2 for the chaos parse
-        // failure.
+        // #38 — --chaos is parsed ahead of dispatch, so a malformed spec
+        // is rejected at Parse time (exit 1, pretty error to stderr)
+        // rather than flowing into MockCommand.RunAsync (which used to
+        // catch the FormatException and return 2). --port stays valid so
+        // the chaos spec is the sole failure.
         var bogusSchema = SafePath.Combine(_tempDir, "anything.yaml");
         await File.WriteAllTextAsync(bogusSchema, "openapi: 3.0.0", TestContext.Current.CancellationToken);
 
+        using var stderr = new StringWriter();
         var rc = await BowireCli.RunAsync(
             ["mock",
                 "--schema", bogusSchema,
                 "--host", "127.0.0.1",
-                "--port", "0",
+                "--port", "6000",
                 "--chaos", "garbage-spec",
                 "--capture-miss", SafePath.Combine(_tempDir, "miss.json"),
                 "--control-token", "tok",
@@ -120,8 +121,9 @@ public sealed class BowireCliActionTests : IDisposable
                 "--loop",
                 "--auto-install"],
             EmptyConfig(),
-            pluginDir: "");
-        Assert.Equal(2, rc);
+            pluginDir: "", stdout: null, stderr: stderr);
+        Assert.Equal(1, rc);
+        Assert.Contains("chaos", stderr.ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
