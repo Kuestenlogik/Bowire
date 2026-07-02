@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Cli;
 using Kuestenlogik.Bowire.Mcp;
+using Kuestenlogik.Bowire.Mock.Chaos;
 using Microsoft.Extensions.Configuration;
 
 namespace Kuestenlogik.Bowire.App.Cli;
@@ -38,7 +40,22 @@ internal static class BowireCli
             Output = stdout ?? Console.Out,
             Error = stderr ?? Console.Error,
         };
-        return await root.Parse(args).InvokeAsync(invocationConfig).ConfigureAwait(false);
+
+        // #38 — pretty-print parse failures ourselves instead of letting
+        // the default ParseErrorAction dump the raw message + full help to
+        // stdout. Only the human-error path is intercepted; help / version
+        // / the [suggest] completion directive leave Errors empty and flow
+        // through InvokeAsync untouched. Colour is enabled only when we own
+        // the real console (no custom writer) and it isn't redirected, so
+        // piped output and captured test streams stay ANSI-free.
+        var parseResult = root.Parse(args);
+        if (parseResult.Errors.Count > 0)
+        {
+            var useColor = stderr is null && !Console.IsErrorRedirected;
+            return CliErrorRenderer.Render(parseResult, invocationConfig.Error, useColor);
+        }
+
+        return await parseResult.InvokeAsync(invocationConfig).ConfigureAwait(false);
     }
 
     private static RootCommand BuildRoot(string[] originalArgs, IConfiguration cfg, string pluginDir)
@@ -58,7 +75,7 @@ internal static class BowireCli
             AllowMultipleArgumentsPerToken = true
         });
         root.Add(new Option<string>("--url-file") { Description = "File with server URLs (one per line)." });
-        root.Add(new Option<int?>("--port") { Description = "Browser UI port. Default 5080." });
+        root.Add(new Option<int?>("--port") { Description = "Browser UI port. Default 5080." }.WithPortValidation());
         root.Add(new Option<string>("--title") { Description = "Browser tab title. Default \"Bowire\"." });
         root.Add(new Option<string>("--description") { Description = "Subtitle shown below the title." });
         root.Add(new Option<bool>("--no-browser") { Description = "Don't auto-open a browser window." });
@@ -72,10 +89,15 @@ internal static class BowireCli
         root.Add(new Option<string>("--ai-endpoint") { Description = "Override the AI provider's HTTP endpoint. Default 'http://localhost:11434' (Ollama). Set to 'http://localhost:1234' for LM Studio, or to a remote Ollama gateway when the model server runs on another host. Maps to Bowire:Ai:Endpoint." });
         root.Add(new Option<string>("--ai-model") { Description = "Model name passed to the AI provider. Default 'llama3.2:3b' (Ollama's small + free model that runs on a laptop). Use `ollama pull <name>` first; LM Studio uses whatever model is currently loaded. Maps to Bowire:Ai:Model." });
         root.Add(new Option<string>("--plugin-dir") { Description = "Override the plugin directory." });
-        root.Add(new Option<string>("--map-basemap")
+        var mapBasemapOpt = new Option<string>("--map-basemap")
         {
             Description = "Map widget basemap: 'osm' / 'satellite' / 'demotiles' / 'none', a tile URL with {z}/{x}/{y}, or a style.json URL. Default: 'demotiles'.",
-        });
+        };
+        // Completion sugar (#38): offer the four keyword basemaps to
+        // dotnet-suggest without restricting the value — a tile / style URL
+        // is still accepted, it just isn't a completion candidate.
+        mapBasemapOpt.CompletionSources.Add("osm", "satellite", "demotiles", "none");
+        root.Add(mapBasemapOpt);
         root.Add(new Option<string[]>("--disable-plugin")
         {
             Description = "Skip a protocol plugin at startup. Repeat or comma-separate ('--disable-plugin grpc --disable-plugin signalr' or '--disable-plugin grpc,signalr'). Useful when a plugin DLL won't load or its discovery probe is too slow for the current host.",
@@ -167,6 +189,72 @@ internal static class BowireCli
         return result;
     }
 
+    // -------------------- per-option validators (#38) --------------------
+    // Validators run at Parse time, so a bad --port / --recording / --chaos
+    // is rejected before any subcommand action boots a server or opens a
+    // socket ("parsed ahead of dispatch"). Every validator skips implicit
+    // results (result.Implicit) so a value supplied purely by a config
+    // DefaultValueFactory — never typed by the user — is never punished.
+
+    private const int MinPort = 1;
+    private const int MaxPort = 65535;
+
+    /// <summary>Reject a TCP port outside 1..65535 on an <see cref="Option{Int32}"/>.</summary>
+    private static Option<int> WithPortValidation(this Option<int> opt)
+    {
+        opt.Validators.Add(result =>
+        {
+            if (result.Implicit) return;
+            CheckPort(result, opt.Name, result.GetValueOrDefault<int>());
+        });
+        return opt;
+    }
+
+    /// <summary>Reject a TCP port outside 1..65535 on a nullable <see cref="Option{T}"/>.</summary>
+    private static Option<int?> WithPortValidation(this Option<int?> opt)
+    {
+        opt.Validators.Add(result =>
+        {
+            if (result.Implicit) return;
+            if (result.GetValueOrDefault<int?>() is int port)
+                CheckPort(result, opt.Name, port);
+        });
+        return opt;
+    }
+
+    private static void CheckPort(OptionResult result, string name, int port)
+    {
+        if (port < MinPort || port > MaxPort)
+            result.AddError($"{name}: port must be between {MinPort} and {MaxPort} (got {port}).");
+    }
+
+    /// <summary>Reject a <c>--recording</c>-style path that doesn't point at an existing file.</summary>
+    private static Option<string?> WithExistingFileValidation(this Option<string?> opt)
+    {
+        opt.Validators.Add(result =>
+        {
+            if (result.Implicit) return;
+            var path = result.GetValueOrDefault<string?>();
+            if (!string.IsNullOrEmpty(path) && !File.Exists(path))
+                result.AddError($"{opt.Name}: file not found: '{path}'.");
+        });
+        return opt;
+    }
+
+    /// <summary>Parse a <c>--chaos</c> spec eagerly so a malformed spec fails at Parse time, not mid-boot.</summary>
+    private static Option<string?> WithChaosValidation(this Option<string?> opt)
+    {
+        opt.Validators.Add(result =>
+        {
+            if (result.Implicit) return;
+            var spec = result.GetValueOrDefault<string?>();
+            if (string.IsNullOrEmpty(spec)) return;
+            try { ChaosOptions.Parse(spec); }
+            catch (FormatException ex) { result.AddError(ex.Message); }
+        });
+        return opt;
+    }
+
     // -------------------- proxy --------------------
 
     private static Command BuildProxyCommand()
@@ -174,8 +262,8 @@ internal static class BowireCli
         var proxy = new Command("proxy",
             "Intercepting HTTP/HTTPS proxy. Tier-3 anchor of the security-testing lane (see docs/architecture/security-testing.md).");
 
-        var portOpt = new Option<int>("--port") { Description = "Port the proxy listens on (point browser / client at it). Default 8888." };
-        var apiPortOpt = new Option<int>("--api-port") { Description = "Sidecar API port the workbench's Proxy tab reads captured flows from. Default 8889." };
+        var portOpt = new Option<int>("--port") { Description = "Port the proxy listens on (point browser / client at it). Default 8888." }.WithPortValidation();
+        var apiPortOpt = new Option<int>("--api-port") { Description = "Sidecar API port the workbench's Proxy tab reads captured flows from. Default 8889." }.WithPortValidation();
         var capacityOpt = new Option<int>("--capacity") { Description = "Maximum number of flows retained in memory (FIFO eviction). Default 1000." };
         var noMitmOpt = new Option<bool>("--no-mitm") { Description = "Disable HTTPS interception — CONNECT requests are tunneled-and-rejected with 501. Default: MITM enabled." };
         var caDirOpt = new Option<string?>("--ca-dir") { Description = "Override the CA storage directory. Default: ~/.bowire (PFX + DER cert persisted there)." };
@@ -222,7 +310,7 @@ internal static class BowireCli
         {
             Description = "host:port the edge listener binds to (e.g. 127.0.0.1:8080, 0.0.0.0:9000, :8080). Default 127.0.0.1:0 (loopback + ephemeral port).",
         };
-        var apiPortOpt = new Option<int?>("--api-port") { Description = "Sidecar API port the workbench's Intercepted rail reads from. Default 5089." };
+        var apiPortOpt = new Option<int?>("--api-port") { Description = "Sidecar API port the workbench's Intercepted rail reads from. Default 5089." }.WithPortValidation();
         var capacityOpt = new Option<int?>("--capacity") { Description = "Maximum number of flows retained in memory (FIFO eviction). Default 1000." };
         var maxBodyOpt = new Option<int?>("--max-body-bytes") { Description = "Per-side body capture cap. Default 1048576 (1 MiB)." };
         var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-upstream")
@@ -275,7 +363,9 @@ internal static class BowireCli
 
     // -------------------- fuzz --------------------
 
-    private static Command BuildFuzzCommand()
+    // internal so the #38 completion-source wiring on --payloads can be
+    // asserted from Kuestenlogik.Bowire.Tests without booting a fuzz run.
+    internal static Command BuildFuzzCommand()
     {
         var fuzz = new Command("fuzz",
             "Schema-aware fuzzing of a single field. Tier-2 anchor of the security-testing lane.");
@@ -284,6 +374,7 @@ internal static class BowireCli
         var templateOpt = new Option<string>("--template") { Description = "Recording-style JSON file describing the request shape (httpVerb / httpPath / body).", Required = true };
         var fieldOpt = new Option<string>("--field") { Description = "JSONPath into the request body identifying the field to fuzz (e.g. $.username or $.filter.id).", Required = true };
         var categoryOpt = new Option<string>("--payloads") { Description = "Payload category: sqli / xss / pathtrav / cmdinj.", Required = true };
+        categoryOpt.CompletionSources.Add("sqli", "xss", "pathtrav", "cmdinj");
         var forceOpt = new Option<bool>("--force") { Description = "Run even when the field's value-shape doesn't match the payload class (e.g. fuzz a numeric field with string payloads anyway)." };
         var timeoutOpt = new Option<int>("--timeout") { Description = "Per-payload HTTP timeout in seconds. Default 30." };
         var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = "Accept self-signed certs on the target." };
@@ -515,7 +606,7 @@ internal static class BowireCli
         {
             Description = "Path to a Bowire recording JSON.",
             DefaultValueFactory = _ => cfg["Bowire:Mock:RecordingPath"]
-        };
+        }.WithExistingFileValidation();
         var schema = new Option<string?>("--schema")
         {
             Description = "Path to an OpenAPI 3 document for schema-only mocks.",
@@ -535,7 +626,7 @@ internal static class BowireCli
         {
             Description = "Listen port. Default 6000.",
             DefaultValueFactory = _ => cfg.GetValue<int?>("Bowire:Mock:Port") ?? 6000
-        };
+        }.WithPortValidation();
         var host = new Option<string>("--host")
         {
             Description = "Listen host. Default 127.0.0.1.",
@@ -575,7 +666,7 @@ internal static class BowireCli
         {
             Description = "Chaos injection: e.g. \"latency:100-500,fail-rate:0.05\".",
             DefaultValueFactory = _ => cfg["Bowire:Mock:Chaos"]
-        };
+        }.WithChaosValidation();
         var captureMiss = new Option<string?>("--capture-miss")
         {
             Description = "Persist unmatched requests to this file.",
@@ -600,6 +691,16 @@ internal static class BowireCli
             Description = "Path to a Bowire .bwr recording. Equivalent to --recording <path>; convenient for one-shot replay. See docs/recordings/bwr-format.md for the file format.",
             Arity = ArgumentArity.ZeroOrOne,
         };
+        // Same existence guard as --recording (#38) — the positional
+        // collapses onto RecordingPath, so a bad path fails identically
+        // at Parse time rather than mid-boot.
+        positionalPath.Validators.Add(result =>
+        {
+            if (result.Implicit) return;
+            var path = result.GetValueOrDefault<string?>();
+            if (!string.IsNullOrEmpty(path) && !File.Exists(path))
+                result.AddError($"path: recording file not found: '{path}'.");
+        });
 
         var cmd = new Command("mock", "Replay a recording (or schema) as a local API endpoint. Pass a .bwr file as the positional argument for the common case, or use --schema / --grpc-schema / --graphql-schema for schema-only mocks.");
         cmd.Add(positionalPath);
@@ -680,7 +781,7 @@ internal static class BowireCli
         {
             Description = "Port for --bind http.",
             DefaultValueFactory = _ => 5081
-        };
+        }.WithPortValidation();
         var allowArbitrary = new Option<bool>("--allow-arbitrary-urls")
         { Description = "Drop the URL allowlist. Only safe in sandboxed contexts." };
         var noEnvAllowlist = new Option<bool>("--no-env-allowlist")
