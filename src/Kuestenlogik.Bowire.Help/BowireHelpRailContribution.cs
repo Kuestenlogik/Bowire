@@ -37,13 +37,13 @@ public sealed class BowireHelpRailContribution : IBowireRailContribution
     public string DisplayName => "Help";
     /// <inheritdoc />
     /// <remarks>
-    /// Uses the shared <c>info</c> icon (the circle-i in
-    /// <c>helpers.js</c> <c>svgIcon</c>) so the rail glyph reads as
-    /// "documentation / reference" without clashing with the topbar's
-    /// life-ring help button (kept as a quick-access affordance that
-    /// now switches into this rail instead of toggling the drawer).
+    /// Uses the shared <c>help</c> life-ring glyph (the same
+    /// <c>helpers.js</c> <c>svgIcon</c> the topbar help button renders)
+    /// so the rail and the quick-access topbar affordance read as one
+    /// consistent "Help" surface — the topbar button now switches into
+    /// this rail rather than toggling the old drawer.
     /// </remarks>
-    public string IconKey => "info";
+    public string IconKey => "help";
     /// <inheritdoc />
     /// <remarks>
     /// Sits at the bottom of the rail strip alongside the other
