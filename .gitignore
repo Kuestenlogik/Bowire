@@ -451,6 +451,11 @@ node_modules/
 # combined site+docs deploy. Source lives under /docs/.
 site/docs/
 
+# UX-test probe screenshots — throwaway output of the scripts/ux-tests/*.mjs
+# probes (Playwright captures for a one-off layout investigation). The .mjs
+# probes are committed; their .png snapshots are not.
+scripts/ux-tests/*.png
+
 # Claude Code local state — per-machine settings + scheduled-task locks.
 # Don't commit; users opt in to their own .claude/settings.local.json.
 .claude/
