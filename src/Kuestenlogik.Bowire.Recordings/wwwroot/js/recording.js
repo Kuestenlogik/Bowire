@@ -973,6 +973,349 @@
         downloadBlob(blob, sanitizeFilename(rec.name) + '.har');
     }
 
+    // ---- Import: HAR 1.2 ----
+    // #39 — the inverse of exportRecordingAsHar. Parses a HAR document
+    // entirely client-side (no server endpoint) and turns each entry into
+    // a recording step, mirroring the core BowireHarConverter mapping
+    // (gRPC-Web classification, service/method derivation, status +
+    // header + timing extraction). The operator sees a preview with a
+    // per-entry checkbox — obvious static assets (images, fonts, CSS,
+    // JS) come pre-unchecked — and can either create a fresh recording or
+    // append the picked entries to the recording they're viewing.
+
+    // MIME types + path extensions that are almost never the thing you
+    // want to replay. Pre-unchecked in the preview (still importable if
+    // the operator ticks them back on).
+    var _HAR_STATIC_MIME = /^(image\/|font\/|text\/css|text\/javascript|application\/(javascript|x-javascript|font-|vnd\.ms-fontobject)|application\/wasm)/i;
+    var _HAR_STATIC_EXT = /\.(css|js|mjs|map|png|jpe?g|gif|svg|webp|avif|ico|bmp|woff2?|ttf|otf|eot|wasm)(\?|$)/i;
+
+    function _harIsStaticAsset(mimeType, path) {
+        if (mimeType && _HAR_STATIC_MIME.test(mimeType)) return true;
+        if (path && _HAR_STATIC_EXT.test(path)) return true;
+        return false;
+    }
+
+    // Split a URL into {path, host}. Mirrors BowireHarConverter.SplitUrl:
+    // absolute web-scheme URLs yield path + "scheme://authority"; a
+    // relative URL keeps its path and reports a null host so the
+    // recording stays portable.
+    function _harSplitUrl(url) {
+        try {
+            var u = new URL(url);
+            if (u.protocol === 'http:' || u.protocol === 'https:'
+                || u.protocol === 'ws:' || u.protocol === 'wss:') {
+                var path = (u.pathname || '/') + (u.search || '');
+                return { path: path || '/', host: u.protocol + '//' + u.host };
+            }
+        } catch (_) { /* relative or malformed — fall through */ }
+        return { path: url && url.charAt(0) === '/' ? url : '/' + (url || ''), host: null };
+    }
+
+    function _harHeaderValue(headers, name) {
+        if (!Array.isArray(headers)) return null;
+        for (var i = 0; i < headers.length; i++) {
+            var h = headers[i];
+            if (h && typeof h.name === 'string'
+                && h.name.toLowerCase() === name.toLowerCase()
+                && h.value != null) {
+                return String(h.value);
+            }
+        }
+        return null;
+    }
+
+    function _harLooksLikeId(seg) {
+        return /^\d+$/.test(seg)
+            || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(seg);
+    }
+
+    // REST (service, method) derivation — matches
+    // BowireHarConverter.DeriveServiceAndMethod.
+    function _harDeriveRest(path, verb) {
+        var pathOnly = (path.split('?')[0] || '').replace(/^\/+|\/+$/g, '');
+        var V = (verb || 'GET').toUpperCase();
+        if (!pathOnly) return { service: 'http', method: V };
+        var segs = pathOnly.split('/').filter(Boolean);
+        if (segs.length === 0) return { service: 'http', method: V };
+        var last = segs[segs.length - 1];
+        if (_harLooksLikeId(last)) {
+            var prev = segs.length >= 2 ? segs[segs.length - 2] : 'http';
+            var parent = segs.length >= 3 ? segs[segs.length - 3] : 'http';
+            return { service: parent, method: V + '_' + prev };
+        }
+        var service = segs.length >= 2 ? segs[segs.length - 2] : 'http';
+        return { service: service, method: V + '_' + last };
+    }
+
+    // gRPC-Web (service, method) — the wire path is /package.Service/Method.
+    function _harDeriveGrpc(path) {
+        var pathOnly = (path.split('?')[0] || '').replace(/^\/+|\/+$/g, '');
+        var segs = pathOnly.split('/').filter(Boolean);
+        if (segs.length >= 2) return { service: segs[segs.length - 2], method: segs[segs.length - 1] };
+        return { service: 'grpc', method: segs.length === 1 ? segs[0] : 'Unknown' };
+    }
+
+    function _harMapStatus(response) {
+        var code = (response && typeof response.status === 'number') ? response.status : 0;
+        if (code >= 200 && code < 300) return 'OK';
+        return String(code);
+    }
+
+    // Turn one HAR entry into a candidate {step, label, meta}. Returns
+    // null for entries too thin to replay (no method / url).
+    function _harEntryToCandidate(entry) {
+        if (!entry || !entry.request) return null;
+        var req = entry.request;
+        var res = entry.response || null;
+        var method = req.method;
+        var url = req.url;
+        if (!method || !url) return null;
+
+        var split = _harSplitUrl(url);
+        var reqCt = _harHeaderValue(req.headers, 'content-type');
+        var resCt = res ? _harHeaderValue(res.headers, 'content-type') : null;
+        var isGrpcWeb =
+            (reqCt && reqCt.toLowerCase().indexOf('application/grpc-web') >= 0)
+            || (resCt && resCt.toLowerCase().indexOf('application/grpc-web') >= 0);
+
+        var derived = isGrpcWeb ? _harDeriveGrpc(split.path) : _harDeriveRest(split.path, method);
+
+        var headers = null;
+        if (Array.isArray(req.headers) && req.headers.length) {
+            headers = {};
+            for (var i = 0; i < req.headers.length; i++) {
+                var h = req.headers[i];
+                if (h && typeof h.name === 'string' && h.value != null) headers[h.name] = String(h.value);
+            }
+            if (Object.keys(headers).length === 0) headers = null;
+        }
+
+        var body = (req.postData && typeof req.postData.text === 'string') ? req.postData.text : null;
+        var responseText = (res && res.content && typeof res.content.text === 'string') ? res.content.text : null;
+        var durationMs = (typeof entry.time === 'number' && entry.time >= 0) ? Math.round(entry.time) : 0;
+        var mime = (res && res.content && res.content.mimeType) || (req.postData && req.postData.mimeType) || reqCt || '';
+
+        var step = {
+            id: nextStepId(),
+            capturedAt: entry.startedDateTime ? Date.parse(entry.startedDateTime) || Date.now() : Date.now(),
+            protocol: isGrpcWeb ? 'grpc' : 'rest',
+            service: derived.service,
+            method: derived.method,
+            methodType: 'Unary',
+            serverUrl: split.host,
+            httpVerb: method,
+            httpPath: split.path,
+            status: _harMapStatus(res),
+            durationMs: durationMs,
+            body: body,
+            response: responseText,
+            metadata: headers,
+            messages: body ? [body] : []
+        };
+
+        return {
+            step: step,
+            verb: method,
+            path: split.path,
+            protocol: step.protocol,
+            mime: mime,
+            isStatic: _harIsStaticAsset(mime, split.path)
+        };
+    }
+
+    function _harParse(harText) {
+        var doc;
+        try { doc = JSON.parse(harText); }
+        catch (e) { throw new Error('Input is not valid JSON.'); }
+        var log = doc && doc.log;
+        if (!log) throw new Error('HAR document is missing the top-level "log" object.');
+        if (!Array.isArray(log.entries)) throw new Error('HAR document has no "log.entries" array.');
+
+        var name = (log.creator && log.creator.name) || 'Imported HAR';
+        var candidates = [];
+        for (var i = 0; i < log.entries.length; i++) {
+            var c = _harEntryToCandidate(log.entries[i]);
+            if (c) candidates.push(c);
+        }
+        return { name: name, candidates: candidates };
+    }
+
+    // Entry point wired to the "Import HAR" button. targetRec (optional)
+    // enables the "append to this recording" merge mode; when omitted the
+    // import always creates a fresh recording.
+    function importHarFromFile(targetRec) {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.har,.json,application/json';
+        input.onchange = async function () {
+            if (!input.files || !input.files[0]) return;
+            var file = input.files[0];
+            var text;
+            try { text = await file.text(); }
+            catch (e) { toast('Could not read file: ' + e.message, 'error'); return; }
+
+            var parsed;
+            try { parsed = _harParse(text); }
+            catch (e) { toast('HAR import failed: ' + e.message, 'error'); return; }
+
+            if (parsed.candidates.length === 0) {
+                toast('No replayable entries found in the HAR file.', 'info');
+                return;
+            }
+            var baseName = (file.name || parsed.name || 'Imported HAR').replace(/\.har$|\.json$/i, '');
+            _openHarImportPreview(parsed.name, baseName, parsed.candidates, targetRec || null);
+        };
+        input.click();
+    }
+
+    // Preview modal: per-entry checkboxes (static assets pre-unchecked),
+    // select-all / none, an optional new-vs-append mode toggle, and an
+    // Import action whose label carries the live selected count.
+    function _openHarImportPreview(harName, baseName, candidates, targetRec) {
+        var existing = document.querySelector('.bowire-confirm-overlay');
+        if (existing) existing.remove();
+
+        var checked = candidates.map(function (c) { return !c.isStatic; });
+        var mode = 'new'; // 'new' | 'append'
+
+        var list = el('div', { className: 'bowire-har-import-list' });
+        var importBtn;
+
+        function selectedCount() {
+            return checked.reduce(function (n, v) { return n + (v ? 1 : 0); }, 0);
+        }
+        function refreshImportLabel() {
+            if (importBtn) importBtn.textContent = 'Import ' + selectedCount();
+        }
+
+        candidates.forEach(function (c, idx) {
+            var cb = el('input', {
+                type: 'checkbox',
+                className: 'bowire-har-import-check',
+                checked: checked[idx],
+                onChange: function (e) { checked[idx] = e.target.checked; refreshImportLabel(); }
+            });
+            var row = el('label', { className: 'bowire-har-import-row' + (c.isStatic ? ' bowire-har-import-row-static' : '') },
+                cb,
+                el('span', { className: 'bowire-har-import-verb', textContent: c.verb }),
+                el('span', { className: 'bowire-har-import-proto', textContent: c.protocol }),
+                el('span', { className: 'bowire-har-import-path', textContent: c.path, title: c.path }),
+                c.mime ? el('span', { className: 'bowire-har-import-mime', textContent: c.mime.split(';')[0] }) : null
+            );
+            list.appendChild(row);
+        });
+
+        function setAll(val) {
+            for (var i = 0; i < checked.length; i++) checked[i] = val;
+            // Re-sync the DOM checkboxes without a full re-render.
+            var boxes = list.querySelectorAll('.bowire-har-import-check');
+            for (var j = 0; j < boxes.length; j++) boxes[j].checked = val;
+            refreshImportLabel();
+        }
+
+        var quickBar = el('div', { className: 'bowire-har-import-quickbar' },
+            el('span', { className: 'bowire-har-import-summary',
+                textContent: candidates.length + (candidates.length === 1 ? ' entry' : ' entries') }),
+            el('span', { className: 'bowire-har-import-spacer' }),
+            el('button', { type: 'button', className: 'bowire-har-import-link', textContent: 'Select all',
+                onClick: function () { setAll(true); } }),
+            el('button', { type: 'button', className: 'bowire-har-import-link', textContent: 'Select none',
+                onClick: function () { setAll(false); } })
+        );
+
+        // Merge mode — only offered when we were opened from a recording.
+        var modeRow = null;
+        if (targetRec) {
+            function modeOption(value, label) {
+                var radio = el('input', {
+                    type: 'radio', name: 'bowire-har-import-mode', value: value, checked: mode === value,
+                    onChange: function () { mode = value; }
+                });
+                return el('label', { className: 'bowire-har-import-mode-opt' }, radio, el('span', { textContent: label }));
+            }
+            modeRow = el('div', { className: 'bowire-har-import-mode' },
+                modeOption('new', 'Create new recording'),
+                modeOption('append', 'Append to "' + (targetRec.name || 'recording') + '"')
+            );
+        }
+
+        function settle(doImport) {
+            overlay.remove();
+            if (!doImport) return;
+            var steps = [];
+            for (var i = 0; i < candidates.length; i++) {
+                if (checked[i]) steps.push(candidates[i].step);
+            }
+            if (steps.length === 0) { toast('Nothing selected.', 'info'); return; }
+
+            if (targetRec && mode === 'append') {
+                if (!Array.isArray(targetRec.steps)) targetRec.steps = [];
+                targetRec.steps = targetRec.steps.concat(steps);
+                persistRecordings();
+                if (typeof addConsoleEntry === 'function') {
+                    addConsoleEntry({ type: 'response', method: targetRec.name, status: 'Appended ' + steps.length + ' HAR steps' });
+                }
+                toast('Appended ' + steps.length + ' step' + (steps.length === 1 ? '' : 's') + ' to "' + (targetRec.name || 'recording') + '"', 'success');
+                render();
+                return;
+            }
+
+            var rec = {
+                id: nextRecordingId(),
+                name: baseName || harName || 'Imported HAR',
+                description: 'Imported from HAR (' + steps.length + (steps.length === 1 ? ' entry' : ' entries') + ')',
+                createdAt: Date.now(),
+                recordingFormatVersion: 2,
+                schemaSnapshot: { annotations: [] },
+                steps: steps
+            };
+            recordingsList.push(rec);
+            persistRecordings();
+            if (typeof recordingManagerSelectedId !== 'undefined') recordingManagerSelectedId = rec.id;
+            if (typeof addConsoleEntry === 'function') {
+                addConsoleEntry({ type: 'response', method: rec.name, status: 'Imported ' + steps.length + ' HAR steps' });
+            }
+            toast('Imported "' + rec.name + '" (' + steps.length + ' step' + (steps.length === 1 ? '' : 's') + ')', 'success', {
+                undo: function () {
+                    var i = recordingsList.findIndex(function (r) { return r.id === rec.id; });
+                    if (i >= 0) { recordingsList.splice(i, 1); persistRecordings(); render(); }
+                }
+            });
+            render();
+        }
+
+        importBtn = el('button', {
+            className: 'bowire-confirm-btn',
+            onClick: function () { settle(true); }
+        });
+        refreshImportLabel();
+        var cancelBtn = el('button', {
+            className: 'bowire-confirm-btn cancel', textContent: 'Cancel',
+            onClick: function () { settle(false); }
+        });
+
+        var dialog = el('div', {
+            className: 'bowire-confirm-dialog bowire-har-import-dialog',
+            role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'bowire-har-import-title'
+        },
+            el('div', { id: 'bowire-har-import-title', className: 'bowire-confirm-title', textContent: 'Import HAR' }),
+            el('div', { className: 'bowire-confirm-message',
+                textContent: 'Pick the entries to import. Static assets (images, fonts, CSS, JS) are unticked by default.' }),
+            quickBar,
+            list,
+            modeRow,
+            el('div', { className: 'bowire-confirm-actions' }, cancelBtn, importBtn)
+        );
+
+        var overlay = el('div', {
+            className: 'bowire-confirm-overlay',
+            onClick: function (e) { if (e.target === overlay) settle(false); }
+        }, dialog);
+        overlay.addEventListener('keydown', function (e) { if (e.key === 'Escape') settle(false); });
+        document.body.appendChild(overlay);
+        importBtn.focus();
+    }
+
     // ---- Export: CI HTML Report ----
     // Self-contained HTML file with embedded styles. Designed to be
     // dropped straight into a CI artifact bucket — open in any browser
@@ -1647,6 +1990,17 @@
             exportBtnWrapper.appendChild(exportMenu);
         }
         exportGroup.appendChild(exportBtnWrapper);
+        // #39 — Import HAR sits next to Export. Passing the current
+        // recording enables the "append to this recording" merge mode in
+        // the preview; "create new recording" stays the default.
+        exportGroup.appendChild(el('button', {
+            className: 'bowire-recording-action-btn',
+            title: 'Import a HAR file (Chrome DevTools / Playwright / Charles) as steps',
+            onClick: function () { importHarFromFile(rec); }
+        },
+            el('span', { innerHTML: svgIcon('upload') }),
+            el('span', { textContent: 'Import HAR' })
+        ));
         toolbar.appendChild(exportGroup);
 
         pane.appendChild(toolbar);

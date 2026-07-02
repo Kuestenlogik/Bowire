@@ -4935,6 +4935,15 @@
                                 render();
                             }
                         },
+                        // #39 — bootstrap a recording straight from a HAR
+                        // (Chrome DevTools / Playwright / Charles) without
+                        // capturing anything first.
+                        {
+                            label: 'Import HAR',
+                            onClick: function () {
+                                if (typeof importHarFromFile === 'function') importHarFromFile();
+                            }
+                        },
                         // Per-rail welcome tour: explains the
                         // capture loop (arm → invoke → stop → save).
                         // Force-mode so the operator can re-trigger

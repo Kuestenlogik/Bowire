@@ -18018,6 +18018,90 @@ the action toolbar {
     font-size: 10px;
     color: var(--bowire-text-tertiary);
 }
+
+/* #39 — HAR import preview modal. Reuses the .bowire-confirm-dialog
+   chrome; widens it and adds a scrollable per-entry checkbox list. */
+.bowire-har-import-dialog {
+    max-width: 640px;
+}
+.bowire-har-import-quickbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 6px;
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+}
+.bowire-har-import-spacer { flex: 1; }
+.bowire-har-import-link {
+    background: none;
+    border: none;
+    color: var(--bowire-accent);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px 4px;
+}
+.bowire-har-import-link:hover { text-decoration: underline; }
+.bowire-har-import-list {
+    max-height: 46vh;
+    overflow-y: auto;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    background: var(--bowire-bg);
+}
+.bowire-har-import-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--bowire-border-subtle, var(--bowire-border));
+    font-size: 12px;
+    cursor: pointer;
+}
+.bowire-har-import-row:last-child { border-bottom: none; }
+.bowire-har-import-row:hover { background: var(--bowire-bg-hover, var(--bowire-bg-elevated)); }
+.bowire-har-import-row-static { opacity: 0.6; }
+.bowire-har-import-check { flex: none; }
+.bowire-har-import-verb {
+    flex: none;
+    font-weight: 600;
+    font-family: var(--bowire-font-mono, monospace);
+    min-width: 3.5em;
+}
+.bowire-har-import-proto {
+    flex: none;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--bowire-text-tertiary);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm, 4px);
+    padding: 0 4px;
+}
+.bowire-har-import-path {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--bowire-font-mono, monospace);
+}
+.bowire-har-import-mime {
+    flex: none;
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+}
+.bowire-har-import-mode {
+    display: flex;
+    gap: 16px;
+    margin: 12px 0 0;
+    font-size: 12px;
+}
+.bowire-har-import-mode-opt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
 /* ---------------------------------------------------------------- *
  * Shared outline-button family.
  *
