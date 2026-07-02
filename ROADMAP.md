@@ -239,10 +239,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 |---|---|---|---|---|
 | [3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) | Templates | [Plugin project template — `dotnet new bowire-plugin`](#issue-kuestenlogik-bowire-templates-3) | ⬜ Backlog | `area:plugin-sdk` |
 | [6](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6) | Bootcamp | [Bootcamp landing renders inconsistent breadcrumb based on arrival path](#issue-kuestenlogik-bowire-bootcamp-6) | ⬜ Backlog |  |
-| [7](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/7) | Bootcamp | [Capstone copy mentions 'bowire mock' before the CLI is introduced — rephrase as capability](#issue-kuestenlogik-bowire-bootcamp-7) | ⬜ Backlog |  |
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Backlog |  |
 | [13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) | Samples | [SimpleGraphQLSubscriptions sample](#issue-kuestenlogik-bowire-samples-13) | ⬜ Backlog | `area:plugin-sdk` |
-| [40](https://github.com/Kuestenlogik/Bowire/issues/40) | Bowire | [Freeform Request Builder](#issue-kuestenlogik-bowire-40) | ⬜ Backlog | `area:workbench` |
 | [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](#issue-kuestenlogik-bowire-44) | ⬜ Backlog | `area:docs` |
 | [50](https://github.com/Kuestenlogik/Bowire/issues/50) | Bowire | [Marketing site — gallery / lightbox layer on solutions/*](#issue-kuestenlogik-bowire-50) | ⬜ Backlog | `area:site` |
 | [51](https://github.com/Kuestenlogik/Bowire/issues/51) | Bowire | [Marketing site — migrate <img> tags to picture.html partial](#issue-kuestenlogik-bowire-51) | ⬜ Backlog | `area:site` |
@@ -930,10 +928,6 @@ When an MCP tool call is in flight, the server can emit `notifications/message` 
 
 Navigating to the Bootcamp landing via the top-bar **Bootcamp** link renders the page **without** a breadcrumb. Navigating to the same page via the B-logo click path (see linked issue) renders **with** a breadcrumb showing `Bootcamp > Home`. Same destination, two different chromes. [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6)
 
-#### <a id="issue-kuestenlogik-bowire-bootcamp-7"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#7](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/7) Capstone copy mentions 'bowire mock' before the CLI is introduced — rephrase as capability
-
-The Capstone (or whichever Bootcamp section it appears in) names a specific tool / CLI command up-front: *"…capture sessions, replay through `bowire mock`, …"*. Bootcamp learners haven't met the `bowire` CLI yet at this point in the narrative — naming it here is jargon ahead of the introduction. [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/7)
-
 #### <a id="issue-kuestenlogik-bowire-protocol-surgewave-11"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) Light up Surgewave protocol plugin
 
 Tracks the Surgewave-lane work split out of Kuestenlogik/Bowire#33 so protocol-specific tickets live with the protocol-specific repo. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11)
@@ -943,12 +937,6 @@ Tracks the Surgewave-lane work split out of Kuestenlogik/Bowire#33 so protocol-s
 > `area:plugin-sdk`
 
 Hand-rolled graphql-transport-ws server (or HotChocolate-based) so the GraphQL pluginʼs subscription code path has a runnable target. [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/13)
-
-#### <a id="issue-kuestenlogik-bowire-40"></a>⬜ Backlog · [#40](https://github.com/Kuestenlogik/Bowire/issues/40) Freeform Request Builder
-
-> `area:workbench`
-
-Bowire today is discovery-first. Freeform flips this — the user creates a request from scratch without a discovered schema. [[more]](https://github.com/Kuestenlogik/Bowire/issues/40)
 
 #### <a id="issue-kuestenlogik-bowire-44"></a>⬜ Backlog · [#44](https://github.com/Kuestenlogik/Bowire/issues/44) Sidecar packaging — Docker / Compose / Kubernetes
 
