@@ -686,7 +686,7 @@ Phase 2a-2e shipped (reader + matcher translation + variable substitution + mult
 
 > `area:workbench`
 
-\`bowire import har <file.har>\` CLI shipped. Remaining: [[more]](https://github.com/Kuestenlogik/Bowire/issues/39)
+`bowire import har <file.har>` CLI shipped. Remaining: [[more]](https://github.com/Kuestenlogik/Bowire/issues/39)
 
 #### <a id="issue-kuestenlogik-bowire-102"></a>⬜ Backlog · [#102](https://github.com/Kuestenlogik/Bowire/issues/102) Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)
 
