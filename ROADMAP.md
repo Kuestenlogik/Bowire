@@ -554,7 +554,7 @@ Three sidebar UX bugs operator surfaced in one session: [[more]](https://github.
 
 > `area:cli`
 
-- [ ] **Tab-completion via dotnet-suggest** — bash / PowerShell / zsh users get free completion. - [ ] **Per-option validators** — \`--port\` validated 1..65535, \`--recording\` validated as FileInfo that exists, \`--chaos\` parsed ahead of dispatch. - [ ] **Pretty-printed System.CommandLine errors* … [[more]](https://github.com/Kuestenlogik/Bowire/issues/38)
+- [x] **Tab-completion via dotnet-suggest** — bash / PowerShell / zsh users get free completion. - [x] **Per-option validators** — `--port` validated 1..65535, `--recording` validated as FileInfo that exists, `--chaos` parsed ahead of dispatch. - [x] **Pretty-printed System.CommandLine errors** — co … [[more]](https://github.com/Kuestenlogik/Bowire/issues/38)
 
 #### <a id="issue-kuestenlogik-bowire-100"></a>⬜ Backlog · [#100](https://github.com/Kuestenlogik/Bowire/issues/100) Ferry — CI/CD runner (collection / recording → headless run + JUnit report)
 
