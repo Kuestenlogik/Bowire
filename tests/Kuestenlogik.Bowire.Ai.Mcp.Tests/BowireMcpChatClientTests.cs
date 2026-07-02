@@ -309,4 +309,197 @@ public sealed class BowireMcpChatClientTests
         // round-trip-parseable.
         Assert.Contains("image/png", text, StringComparison.Ordinal);
     }
+
+    // -- GetService positive paths — the sync GetService returns `this`
+    //    for every type the client is assignable to (IsInstanceOfType).
+    //    The existing suite pins the null/unrelated-type negatives; these
+    //    pin the assignable-type positives + the ignored-serviceKey
+    //    branch so the whole conditional is exercised. --
+
+    [Fact]
+    public void GetService_ReturnsSelf_ForIDisposable()
+    {
+        // The class implements IDisposable, so IsInstanceOfType is true
+        // and the host's DI container can resolve it as a disposable.
+        using var client = new BowireMcpChatClient("http://localhost:9999", "model");
+        Assert.Same(client, client.GetService(typeof(IDisposable)));
+    }
+
+    [Fact]
+    public void GetService_ReturnsNull_ForIAsyncDisposable()
+    {
+        // Subtle: the client exposes a public DisposeAsync but does NOT
+        // declare IAsyncDisposable — IChatClient only extends IDisposable.
+        // So an IAsyncDisposable probe is genuinely unassignable and the
+        // GetService type check returns null, not self.
+        using var client = new BowireMcpChatClient("http://localhost:9999", "model");
+        Assert.Null(client.GetService(typeof(IAsyncDisposable)));
+    }
+
+    [Fact]
+    public void GetService_ReturnsSelf_ForConcreteType()
+    {
+        using var client = new BowireMcpChatClient("http://localhost:9999", "model");
+        Assert.Same(client, client.GetService(typeof(BowireMcpChatClient)));
+    }
+
+    [Fact]
+    public void GetService_ReturnsSelf_ForObjectType()
+    {
+        // Everything is instance-of object, so the client answers a
+        // typeof(object) probe with itself rather than null.
+        using var client = new BowireMcpChatClient("http://localhost:9999", "model");
+        Assert.Same(client, client.GetService(typeof(object)));
+    }
+
+    [Fact]
+    public void GetService_IgnoresServiceKey_StillReturnsSelf()
+    {
+        // The adapter has no keyed services; a non-null serviceKey is
+        // ignored and the matching-type probe still resolves to self.
+        using var client = new BowireMcpChatClient("http://localhost:9999", "model");
+        Assert.Same(client, client.GetService(typeof(IChatClient), serviceKey: "any-key"));
+    }
+
+    // -- Streaming surface — mirrors the non-streaming argument /
+    //    disposal / endpoint-shape guards, but reached through the async
+    //    iterator so the guards must survive the deferred-enumeration
+    //    boundary rather than throwing synchronously. --
+
+    [Fact]
+    public async Task GetStreamingResponseAsync_NullMessages_ThrowsArgumentNull()
+    {
+        // The iterator forwards to GetResponseAsync, whose null-check is
+        // captured in the returned task and only surfaces once the
+        // stream is drained.
+        using var client = new BowireMcpChatClient("http://localhost:9999", "model");
+        await Assert.ThrowsAsync<ArgumentNullException>(async () =>
+        {
+            await foreach (var _ in client.GetStreamingResponseAsync(
+                messages: null!, cancellationToken: TestContext.Current.CancellationToken))
+            {
+            }
+        });
+    }
+
+    [Fact]
+    public async Task GetStreamingResponseAsync_AfterDispose_ThrowsObjectDisposed()
+    {
+        var client = new BowireMcpChatClient("http://localhost:9999", "model");
+        await client.DisposeAsync();
+        await Assert.ThrowsAsync<ObjectDisposedException>(async () =>
+        {
+            await foreach (var _ in client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "x")],
+                cancellationToken: TestContext.Current.CancellationToken))
+            {
+            }
+        });
+    }
+
+    [Fact]
+    public async Task GetStreamingResponseAsync_StdioEmptyCommand_ThrowsInvalidOperation()
+    {
+        using var client = new BowireMcpChatClient("stdio:", "model");
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await foreach (var _ in client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "hi")],
+                cancellationToken: TestContext.Current.CancellationToken))
+            {
+            }
+        });
+        Assert.Contains("command line", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // -- Endpoint-shape parsing — extra failure modes that bail in the
+    //    CreateClientAsync prelude before any transport / process is
+    //    touched (still fully offline). --
+
+    [Fact]
+    public async Task GetResponseAsync_UppercaseStdioMarker_EmptyCommand_Throws()
+    {
+        // The 'stdio:' marker match is OrdinalIgnoreCase — an uppercased
+        // marker still routes into the stdio branch and fails on the
+        // empty command line rather than falling through to the URL
+        // parser.
+        using var client = new BowireMcpChatClient("STDIO:", "model");
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            client.GetResponseAsync([new ChatMessage(ChatRole.User, "hi")], cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Contains("command line", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task GetResponseAsync_StdioWhitespaceCommand_Throws()
+    {
+        // Whitespace after the marker Trim()s to empty, hitting the same
+        // configure-me guard as a bare 'stdio:'.
+        using var client = new BowireMcpChatClient("stdio:    ", "model");
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            client.GetResponseAsync([new ChatMessage(ChatRole.User, "hi")], cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Contains("command line", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("some/relative/path")]   // not absolute — Uri.TryCreate(Absolute) fails
+    [InlineData("ws://localhost/mcp")]   // absolute but non-http(s) scheme
+    [InlineData("mailto:nope@example.com")]
+    public async Task GetResponseAsync_NonHttpNonStdioEndpoint_ThrowsInvalidOperation(string endpoint)
+    {
+        using var client = new BowireMcpChatClient(endpoint, "model");
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            client.GetResponseAsync([new ChatMessage(ChatRole.User, "hi")], cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Contains("absolute http(s)", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // -- Dispose ordering — the existing suite pins same-entry
+    //    idempotency (Dispose×2, DisposeAsync×2); these pin the mixed
+    //    ordering so the shared _disposed guard is exercised across both
+    //    entry points. --
+
+    [Fact]
+    public async Task DisposeAsync_ThenDispose_Idempotent()
+    {
+        var client = new BowireMcpChatClient("http://localhost:9999", "model");
+        await client.DisposeAsync();
+        // Deliberately exercising the sync Dispose entry after async
+        // teardown — CA1849's prefer-async guidance doesn't apply when
+        // the sync path is the unit under test.
+#pragma warning disable CA1849
+        client.Dispose();   // must be a no-op, not a throw
+#pragma warning restore CA1849
+    }
+
+    [Fact]
+    public async Task Dispose_ThenDisposeAsync_Idempotent()
+    {
+        var client = new BowireMcpChatClient("http://localhost:9999", "model");
+#pragma warning disable CA1849
+        client.Dispose();
+#pragma warning restore CA1849
+        await client.DisposeAsync();   // async entry after sync teardown must be a no-op
+    }
+
+    // -- BuildArguments — empty conversation still carries a (empty)
+    //    messages key so the upstream tool sees a well-formed argument
+    //    envelope. --
+
+    [Fact]
+    public void BuildArguments_EmptyMessages_EmitsEmptyMessagesArray()
+    {
+        using var client = new BowireMcpChatClient("http://localhost:9999", "m");
+        var args = client.BuildArguments(Array.Empty<ChatMessage>(), options: null);
+        Assert.True(args.ContainsKey("messages"));
+        var messages = Assert.IsType<object[]>(args["messages"], exactMatch: false);
+        Assert.Empty(messages);
+    }
+
+    [Fact]
+    public void Constructor_AcceptsStdioEndpoint_LazyConnect()
+    {
+        // Construction stays cheap for both endpoint shapes; the stdio
+        // command line isn't split / spawned until the first chat call.
+        using var client = new BowireMcpChatClient("stdio:claude mcp serve", "model");
+        Assert.NotNull(client);
+    }
 }
