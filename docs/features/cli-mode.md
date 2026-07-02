@@ -87,4 +87,52 @@ bowire call --url https://staging:443 \
 
 The `--compact` flag produces one-line JSON output suitable for piping to `jq` or other tools.
 
+## Argument validation
+
+Common mistakes are caught at parse time -- before any server binds a
+socket -- and reported on **stderr** with a one-line pointer at the
+relevant `--help`:
+
+- `--port` (and `--api-port`) must be in `1..65535`.
+- `--recording <path>` (and the positional `bowire mock <file>` form) must
+  point at an existing file.
+- `--chaos` is parsed eagerly, so a malformed spec such as
+  `--chaos bogus` fails immediately instead of mid-boot.
+
+```console
+$ bowire mock --port 70000
+✗ --port: port must be between 1 and 65535 (got 70000).
+
+Run 'bowire mock --help' for usage.
+```
+
+Error output is colourised on an interactive terminal and plain when
+redirected (pipes, CI logs), so captured output stays ANSI-free.
+
+## Tab completion
+
+Bowire answers the standard [`dotnet-suggest`](https://github.com/dotnet/command-line-api/blob/main/docs/dotnet-suggest.md)
+completion protocol, so bash / zsh / PowerShell users get completion for
+sub-commands, options, and enumerated values (e.g. `fuzz --payloads`
+offers `sqli / xss / pathtrav / cmdinj`; `--map-basemap` offers
+`osm / satellite / demotiles / none`).
+
+One-time setup:
+
+```bash
+# 1. Install the completion broker (once per machine)
+dotnet tool install -g dotnet-suggest
+
+# 2. Add the shell shim to your profile, then reload:
+#    bash/zsh  -> https://github.com/dotnet/command-line-api/blob/main/src/System.CommandLine.Suggest/dotnet-suggest-shim.bash
+#    PowerShell:
+#      Add-Content $PROFILE (dotnet-suggest script powershell)
+
+# 3. Register the bowire executable with the broker
+dotnet-suggest register --command-path "$(command -v bowire)"
+```
+
+After reloading the shell, `bowire mo<Tab>` completes to `mock`, and
+`bowire fuzz --payloads <Tab>` lists the payload categories.
+
 See also: [Setup -- Standalone](../setup/standalone.md)

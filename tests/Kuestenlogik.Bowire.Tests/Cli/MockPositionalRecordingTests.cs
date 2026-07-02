@@ -44,7 +44,12 @@ public sealed class MockPositionalRecordingTests
     [Fact]
     public async Task Positional_and_option_recording_together_rejected_with_usage_exit()
     {
-        var (rc, _, stderr) = await Invoke("foo.bwr", "--recording", "bar.bwr");
+        // #38 — the recording path is now existence-validated at Parse
+        // time, so both inputs must point at real files to get *past*
+        // validation and reach the shape mutex we're actually asserting.
+        using var a = new TempFile();
+        using var b = new TempFile();
+        var (rc, _, stderr) = await Invoke(a.Path, "--recording", b.Path);
         Assert.Equal(ExitUsage, rc);
         // Concrete copy lock — operators searching `bowire mock --help`
         // expect this exact phrasing when they hit the mutex.
@@ -57,7 +62,11 @@ public sealed class MockPositionalRecordingTests
     [InlineData("--graphql-schema", "sdl.graphql")]
     public async Task Positional_with_schema_flag_rejected_with_usage_exit(string flag, string flagPath)
     {
-        var (rc, _, stderr) = await Invoke("foo.bwr", flag, flagPath);
+        // Positional must exist (#38 existence validation); the schema
+        // flag isn't existence-checked, so a bare name is fine — the
+        // shape mutex is what should reject the combination.
+        using var rec = new TempFile();
+        var (rc, _, stderr) = await Invoke(rec.Path, flag, flagPath);
         Assert.Equal(ExitUsage, rc);
         Assert.Contains("pick one input", stderr, StringComparison.OrdinalIgnoreCase);
     }
@@ -65,11 +74,11 @@ public sealed class MockPositionalRecordingTests
     [Fact]
     public async Task Bare_option_form_without_positional_still_works()
     {
-        // No positional, just --recording with a nonexistent file — the
-        // mutex doesn't fire and MockCommand.RunAsync gets called.
-        // RunAsync fails downstream with its own non-64 exit, so the
-        // assertion is "not the positional usage error". That's the
-        // back-compat guarantee.
+        // No positional, just --recording with a nonexistent file. Post-#38
+        // this trips the existence validator (rc 1) rather than reaching
+        // RunAsync — either way the key back-compat guarantee holds: the
+        // *positional* usage mutex must NOT be what fires for a single
+        // --recording input.
         var (rc, _, stderr) = await Invoke("--recording", "nope.bwr");
         Assert.NotEqual(ExitUsage, rc);
         Assert.DoesNotContain("positional argument", stderr, StringComparison.OrdinalIgnoreCase);
@@ -78,11 +87,10 @@ public sealed class MockPositionalRecordingTests
     [Fact]
     public async Task Positional_alone_is_routed_to_RecordingPath()
     {
-        // Same back-compat-style guarantee from the other direction —
-        // a positional that points at a nonexistent file lands in
-        // MockCommand.RunAsync, which fails downstream with its own
-        // non-64 exit. The 64 path is reserved for the argument-shape
-        // mutex above; the runtime failure has its own copy.
+        // Same guarantee from the other direction — a lone positional must
+        // not trip either shape-mutex message. (A nonexistent path now
+        // trips the existence validator; the 64 mutex path stays reserved
+        // for genuine argument-shape conflicts.)
         var (rc, _, stderr) = await Invoke("nope.bwr");
         Assert.NotEqual(ExitUsage, rc);
         Assert.DoesNotContain("EITHER as the positional", stderr, StringComparison.OrdinalIgnoreCase);
@@ -90,6 +98,20 @@ public sealed class MockPositionalRecordingTests
     }
 
     // ----------------------------------------------------------------
+
+    /// <summary>Self-deleting temp file so existence-validated paths resolve.</summary>
+    private sealed class TempFile : IDisposable
+    {
+        public string Path { get; } = System.IO.Path.Combine(
+            System.IO.Path.GetTempPath(), System.IO.Path.GetRandomFileName() + ".bwr");
+
+        public TempFile() => File.WriteAllText(Path, "{}");
+
+        public void Dispose()
+        {
+            try { File.Delete(Path); } catch (IOException) { /* best-effort */ }
+        }
+    }
 
     private static IConfiguration EmptyConfig() =>
         new ConfigurationBuilder().AddInMemoryCollection().Build();
