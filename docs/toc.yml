@@ -13,6 +13,8 @@ items:
   href: protocols/
 - name: Samples
   href: samples/
+- name: Integrations
+  href: integrations/
 - name: Embed Bowire
   href: embedding/
 - name: Extend Bowire

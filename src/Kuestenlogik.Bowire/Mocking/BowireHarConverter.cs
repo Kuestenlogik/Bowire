@@ -113,13 +113,21 @@ public static class BowireHarConverter
         // these are mostly cosmetic, but the workbench uses them in the
         // sidebar tree.
         var (path, host) = SplitUrl(url);
-        var (service, methodName) = DeriveServiceAndMethod(path, method);
+
+        // gRPC-Web rides on top of HTTP with an application/grpc-web*
+        // content-type and a `/package.Service/Method` path. Classifying
+        // those entries as `grpc` steps (rather than `rest`) puts them in
+        // the right sidebar branch and lets the gRPC replayer own them.
+        var isGrpcWeb = IsGrpcWeb(request, response);
+        var (service, methodName) = isGrpcWeb
+            ? DeriveGrpcServiceAndMethod(path)
+            : DeriveServiceAndMethod(path, method);
 
         var step = new BowireRecordingStep
         {
             Id = $"step_har_{index:D4}",
             CapturedAt = ParseStartedDateTime(entry["startedDateTime"]),
-            Protocol = "rest",
+            Protocol = isGrpcWeb ? "grpc" : "rest",
             Service = service,
             Method = methodName,
             MethodType = "Unary",
@@ -205,6 +213,55 @@ public static class BowireHarConverter
     /// </summary>
     private static bool LooksLikeId(string segment) =>
         segment.All(char.IsDigit) || Guid.TryParse(segment, out _);
+
+    /// <summary>
+    /// True when the entry is gRPC-Web: an <c>application/grpc-web</c>
+    /// content-type on either side (covers <c>+proto</c> / <c>-text</c>
+    /// variants). gRPC-Web is the only gRPC dialect that shows up in a
+    /// HAR — native gRPC uses HTTP/2 frames DevTools doesn't serialise.
+    /// </summary>
+    private static bool IsGrpcWeb(JsonNode request, JsonNode? response)
+        => HeaderContains(request["headers"], "content-type", "application/grpc-web")
+        || HeaderContains(response?["headers"], "content-type", "application/grpc-web");
+
+    /// <summary>
+    /// Case-insensitive check for a header whose name equals
+    /// <paramref name="name"/> and whose value contains
+    /// <paramref name="valueSubstring"/>.
+    /// </summary>
+    private static bool HeaderContains(JsonNode? headers, string name, string valueSubstring)
+    {
+        if (headers is not JsonArray arr) return false;
+        foreach (var header in arr)
+        {
+            var n = header?["name"]?.GetValue<string>();
+            var v = header?["value"]?.GetValue<string>();
+            if (n is null || v is null) continue;
+            if (string.Equals(n, name, StringComparison.OrdinalIgnoreCase)
+                && v.Contains(valueSubstring, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Derive a (service, method) pair from a gRPC-Web request path. The
+    /// wire shape is always <c>/package.Service/Method</c>, so the last
+    /// two path segments map straight onto service + method — no id
+    /// heuristics needed. Falls back to a <c>grpc</c> catch-all service
+    /// for malformed paths so the step still lands somewhere visible.
+    /// </summary>
+    public static (string Service, string Method) DeriveGrpcServiceAndMethod(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        var pathOnly = path.Split('?', 2)[0].Trim('/');
+        var segments = pathOnly.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return segments.Length >= 2
+            ? (segments[^2], segments[^1])
+            : ("grpc", segments.Length == 1 ? segments[0] : "Unknown");
+    }
 
     /// <summary>
     /// Pull the request body out of <c>postData.text</c>. Some HAR producers

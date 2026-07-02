@@ -145,6 +145,99 @@ public sealed class HarImporterTests
     }
 
     [Fact]
+    public void Convert_GrpcWeb_Request_ContentType_Classifies_As_Grpc_Step()
+    {
+        // application/grpc-web on the request → the entry is a gRPC-Web
+        // call, not plain REST. Service + method come from the
+        // /package.Service/Method wire path.
+        var har = """
+            {
+              "log": {
+                "version": "1.2",
+                "entries": [
+                  {
+                    "startedDateTime": "2026-04-01T10:00:00.000Z",
+                    "time": 8,
+                    "request": {
+                      "method": "POST",
+                      "url": "https://api.example.com/greet.Greeter/SayHello",
+                      "headers": [
+                        { "name": "content-type", "value": "application/grpc-web+proto" }
+                      ]
+                    },
+                    "response": {
+                      "status": 200,
+                      "headers": [{ "name": "content-type", "value": "application/grpc-web+proto" }],
+                      "content": { "size": 0 }
+                    }
+                  }
+                ]
+              }
+            }
+            """;
+
+        var rec = HarImporter.Convert(har);
+        var step = Assert.Single(rec.Steps);
+
+        Assert.Equal("grpc", step.Protocol);
+        Assert.Equal("greet.Greeter", step.Service);
+        Assert.Equal("SayHello", step.Method);
+        // Wire fields survive so the gRPC replayer can still fire the call.
+        Assert.Equal("POST", step.HttpVerb);
+        Assert.Equal("/greet.Greeter/SayHello", step.HttpPath);
+    }
+
+    [Fact]
+    public void Convert_GrpcWeb_Detected_From_Response_ContentType_Alone()
+    {
+        // Some captures only carry the content-type on the response; the
+        // classifier still catches it. -text variant covered here too.
+        var har = """
+            {
+              "log": {
+                "version": "1.2",
+                "entries": [
+                  {
+                    "startedDateTime": "2026-04-01T10:00:00.000Z",
+                    "time": 8,
+                    "request": {
+                      "method": "POST",
+                      "url": "https://api.example.com/pkg.Svc/Do",
+                      "headers": []
+                    },
+                    "response": {
+                      "status": 200,
+                      "headers": [{ "name": "Content-Type", "value": "application/grpc-web-text" }],
+                      "content": { "size": 0 }
+                    }
+                  }
+                ]
+              }
+            }
+            """;
+
+        var rec = HarImporter.Convert(har);
+        var step = Assert.Single(rec.Steps);
+
+        Assert.Equal("grpc", step.Protocol);
+        Assert.Equal("pkg.Svc", step.Service);
+        Assert.Equal("Do", step.Method);
+    }
+
+    [Fact]
+    public void Convert_Plain_Json_Post_Stays_Rest()
+    {
+        // Guard against over-eager classification: a normal JSON POST must
+        // not be mistaken for gRPC-Web.
+        var har = MakeMinimal("POST", "https://api.example.com/pkg.Svc/Do");
+
+        var rec = HarImporter.Convert(har);
+        var step = Assert.Single(rec.Steps);
+
+        Assert.Equal("rest", step.Protocol);
+    }
+
+    [Fact]
     public void Convert_Non_2xx_Status_Surfaces_Numeric_Code()
     {
         // 404 stays a literal "404" so mock-replay mismatches stay visible.
