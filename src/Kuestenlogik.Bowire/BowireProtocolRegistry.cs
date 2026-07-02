@@ -162,11 +162,21 @@ public sealed class BowireProtocolRegistry
         {
             try
             {
+                // Discovery instantiates via the default ctor. Types without
+                // one (e.g. SidecarBowireProtocol, which the sidecar manifest
+                // loader constructs explicitly) are not discoverable by design
+                // — without this filter a single such type aborted the scan of
+                // its whole assembly, which silently dropped every protocol in
+                // the CORE assembly once the sidecar type moved in.
                 foreach (var type in assembly.GetTypes()
-                    .Where(t => !t.IsAbstract && !t.IsInterface && typeof(IBowireProtocol).IsAssignableFrom(t)))
+                    .Where(t => !t.IsAbstract && !t.IsInterface && typeof(IBowireProtocol).IsAssignableFrom(t)
+                        && t.GetConstructor(Type.EmptyTypes) is not null))
                 {
-                    if (Activator.CreateInstance(type) is IBowireProtocol protocol)
+                    try
                     {
+                        if (Activator.CreateInstance(type) is not IBowireProtocol protocol)
+                            continue;
+
                         if (disabled.Contains(protocol.Id))
                         {
                             if (logger is not null)
@@ -188,6 +198,22 @@ public sealed class BowireProtocolRegistry
                         {
                             { "plugin", protocol.Id },
                             { "outcome", "loaded" },
+                        });
+                    }
+                    // One plugin whose static/default ctor throws must not
+                    // abort its sibling types — tolerate per TYPE, not just
+                    // per assembly.
+#pragma warning disable CA1031 // Do not catch general exception types
+                    catch (Exception ex)
+#pragma warning restore CA1031
+                    {
+                        logger?.LogWarning(ex,
+                            "Skipped Bowire protocol type during scan: {Type}",
+                            type.FullName);
+                        BowireTelemetry.PluginLoad.Add(1, new TagList
+                        {
+                            { "plugin", type.FullName },
+                            { "outcome", "failed" },
                         });
                     }
                 }
