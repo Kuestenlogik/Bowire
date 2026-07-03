@@ -13462,18 +13462,21 @@ duplicate) */
 }
 
 /* ---- Form Validation ---- */
+/* Error state tracks the theme's error hue (var) rather than a fixed
+   dark-mode red, so the light theme darkens it to stay legible on the
+   white surface. */
 .bowire-form-input.invalid {
-    border-color: #ef4444;
-    background: rgba(239, 68, 68, 0.06);
+    border-color: var(--bowire-error);
+    background: var(--bowire-error-bg);
 }
 .bowire-form-input.invalid:focus {
-    border-color: #ef4444;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+    border-color: var(--bowire-error);
+    box-shadow: 0 0 0 3px var(--bowire-error-bg);
 }
 .bowire-form-field-error {
     margin-top: 4px;
     font-size: 11px;
-    color: #f87171;
+    color: var(--bowire-error);
     font-family: var(--bowire-font-sans);
 }
 
