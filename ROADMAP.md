@@ -171,7 +171,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**0/5 done** · 5 backlog
+**0/6 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -180,6 +180,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ Backlog |  |
 | [188](https://github.com/Kuestenlogik/Bowire/issues/188) | Bowire | [Org-level Bowire dashboard — rollup across services](#issue-kuestenlogik-bowire-188) | ⬜ Backlog |  |
 | [232](https://github.com/Kuestenlogik/Bowire/issues/232) | Bowire | [Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)](#issue-kuestenlogik-bowire-232) | ⬜ Backlog |  |
+| [364](https://github.com/Kuestenlogik/Bowire/issues/364) | Bowire | [Contract testing: workbench matrix view (consumer × provider pass/fail)](#issue-kuestenlogik-bowire-364) | ⬜ Backlog |  |
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
@@ -837,6 +838,10 @@ Once Bowire ships in multiple services across an org, "what's the state of our A
 #### <a id="issue-kuestenlogik-bowire-232"></a>⬜ Backlog · [#232](https://github.com/Kuestenlogik/Bowire/issues/232) Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)
 
 Add the **scheduled** run shape to Benchmarks — a saved envelope can be set to fire on a cron schedule, the workbench (or a CLI / embedded host) runs it without operator interaction, and results land in the saved-runs history. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/232)
+
+#### <a id="issue-kuestenlogik-bowire-364"></a>⬜ Backlog · [#364](https://github.com/Kuestenlogik/Bowire/issues/364) Contract testing: workbench matrix view (consumer × provider pass/fail)
+
+Follow-up to #191 (CLI pillar shipped in b252e419). The one remaining acceptance item from #191 is a UI surface rather than CI plumbing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/364)
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
