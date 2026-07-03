@@ -3595,6 +3595,12 @@ not just
 /* Flat-list rows (renderSidebarListItem) reuse the tree-tool chrome so
    every rail's per-row tools hover-reveal identically (#276 parity). */
 .bowire-env-list-item:hover .bowire-tree-tool { display: inline-flex; }
+/* #362 — manual drag-reorder feedback on flat-list rows: the dragged
+   row dims, the hovered target shows an accent insertion line on the
+   edge the drop will land. Uses inset box-shadow so nothing reflows. */
+.bowire-env-list-item.is-dragging { opacity: 0.5; }
+.bowire-env-list-item.is-drop-before { box-shadow: inset 0 2px 0 var(--bowire-accent); }
+.bowire-env-list-item.is-drop-after { box-shadow: inset 0 -2px 0 var(--bowire-accent); }
 .bowire-tree-tool:hover {
     background: var(--bowire-surface);
     color: var(--bowire-text);
