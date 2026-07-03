@@ -44,6 +44,9 @@
     let composeSidePanelCollapsed = false;
     let composeCollectionsExpanded = Object.create(null);
     let composePresetsExpanded = Object.create(null);
+    // #362 — Library search (session-only). Filters collections by name
+    // + their items by title; matching collections auto-expand.
+    let composeLibrarySearch = '';
     let _composeSidePanelRehydrated = false;
 
     function _composeSidePanelKey() { return 'bowire_compose_panel_state'; }
@@ -548,7 +551,14 @@
                         }
                     });
                 }
-            }
+            },
+            // #362 — search filters collections + their items by name.
+            // Shown once there's more than one collection to sift.
+            search: ((collectionsList || []).length > 1) ? {
+                placeholder: 'Search library…',
+                value: composeLibrarySearch,
+                onInput: function (v) { composeLibrarySearch = v; render(); }
+            } : null
         }));
 
         // Collections list (no per-section header — the toolbar above
@@ -588,16 +598,54 @@
             return section;
         }
 
+        // #362 — apply the Library search. A collection shows when its
+        // own name matches OR any of its items matches; a name-match
+        // shows all its items, an item-only match narrows to the hits.
+        var q = (composeLibrarySearch || '').trim().toLowerCase();
+        var visibleCols = cols;
+        if (q) {
+            visibleCols = cols.filter(function (col) {
+                if (String(col.name || '').toLowerCase().indexOf(q) >= 0) return true;
+                return (col.items || []).some(function (it) { return _composeItemMatches(it, q); });
+            });
+            if (visibleCols.length === 0) {
+                section.appendChild(el('div', {
+                    className: 'bowire-pane-empty',
+                    style: 'padding:12px 14px',
+                    textContent: 'No collections or requests match "' + composeLibrarySearch + '".'
+                }));
+                return section;
+            }
+        }
+
         var list = el('div', { className: 'bowire-compose-side-list' });
-        cols.forEach(function (col) {
-            list.appendChild(_renderComposeCollectionRow(col));
+        visibleCols.forEach(function (col) {
+            list.appendChild(_renderComposeCollectionRow(col, q));
         });
         section.appendChild(list);
         return section;
     }
 
-    function _renderComposeCollectionRow(col) {
-        var open = !!composeCollectionsExpanded[col.id];
+    // #362 — does a collection item match the Library search? Checks the
+    // human title fields an operator would type: method, service, and
+    // the request URL / path.
+    function _composeItemMatches(item, q) {
+        if (!item) return false;
+        var hay = [item.method, item.service, item.serverUrl, item.protocol]
+            .filter(Boolean).join(' ').toLowerCase();
+        return hay.indexOf(q) >= 0;
+    }
+
+    function _renderComposeCollectionRow(col, query) {
+        // #362 — while a Library search is active, item-only matches
+        // auto-expand the collection so the hits are visible, and the
+        // item list narrows to matching rows (a name-match on the
+        // collection itself shows all its items).
+        var nameMatch = query && String(col.name || '').toLowerCase().indexOf(query) >= 0;
+        var filterItems = query && !nameMatch;
+        var open = query
+            ? !!(nameMatch || (col.items || []).some(function (it) { return _composeItemMatches(it, query); }))
+            : !!composeCollectionsExpanded[col.id];
         var row = el('div', { className: 'bowire-compose-side-collection' + (open ? ' is-open' : '') });
         var head = el('div', {
             className: 'bowire-compose-side-collection-head',
@@ -679,6 +727,7 @@
         if (open && col.items && col.items.length > 0) {
             var itemList = el('div', { className: 'bowire-compose-side-collection-items' });
             col.items.forEach(function (item) {
+                if (filterItems && !_composeItemMatches(item, query)) return;
                 itemList.appendChild(_renderComposeCollectionItemRow(col, item));
             });
             row.appendChild(itemList);
