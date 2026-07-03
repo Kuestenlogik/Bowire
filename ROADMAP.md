@@ -240,7 +240,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) | Templates | [Plugin project template — `dotnet new bowire-plugin`](#issue-kuestenlogik-bowire-templates-3) | ⬜ Backlog | `area:plugin-sdk` |
 | [6](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6) | Bootcamp | [Bootcamp landing renders inconsistent breadcrumb based on arrival path](#issue-kuestenlogik-bowire-bootcamp-6) | ⬜ Backlog |  |
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Backlog |  |
-| [13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) | Samples | [SimpleGraphQLSubscriptions sample](#issue-kuestenlogik-bowire-samples-13) | ⬜ Backlog | `area:plugin-sdk` |
 | [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](#issue-kuestenlogik-bowire-44) | ⬜ Backlog | `area:docs` |
 | [50](https://github.com/Kuestenlogik/Bowire/issues/50) | Bowire | [Marketing site — gallery / lightbox layer on solutions/*](#issue-kuestenlogik-bowire-50) | ⬜ Backlog | `area:site` |
 | [51](https://github.com/Kuestenlogik/Bowire/issues/51) | Bowire | [Marketing site — migrate <img> tags to picture.html partial](#issue-kuestenlogik-bowire-51) | ⬜ Backlog | `area:site` |
@@ -932,12 +931,6 @@ Navigating to the Bootcamp landing via the top-bar **Bootcamp** link renders the
 
 Tracks the Surgewave-lane work split out of Kuestenlogik/Bowire#33 so protocol-specific tickets live with the protocol-specific repo. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11)
 
-#### <a id="issue-kuestenlogik-bowire-samples-13"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#13](https://github.com/Kuestenlogik/Bowire.Samples/issues/13) SimpleGraphQLSubscriptions sample
-
-> `area:plugin-sdk`
-
-Hand-rolled graphql-transport-ws server (or HotChocolate-based) so the GraphQL pluginʼs subscription code path has a runnable target. [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/13)
-
 #### <a id="issue-kuestenlogik-bowire-44"></a>⬜ Backlog · [#44](https://github.com/Kuestenlogik/Bowire/issues/44) Sidecar packaging — Docker / Compose / Kubernetes
 
 > `area:docs`
@@ -1012,4 +1005,4 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 
 ---
 
-*Generated 2026-07-02 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-07-03 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
