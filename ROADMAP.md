@@ -257,6 +257,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog |  |
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ⬜ Backlog |  |
 | [355](https://github.com/Kuestenlogik/Bowire/issues/355) | Bowire | [Eliminate #pragma warning disable across the codebase — rewrite code so analyzer warnings don't fire](#issue-kuestenlogik-bowire-355) | ⬜ Backlog |  |
+| [356](https://github.com/Kuestenlogik/Bowire/issues/356) | Bowire | [JS test safety net: unit-test infra for wwwroot fragments + lift the codecov wwwroot ignore](#issue-kuestenlogik-bowire-356) | ⬜ Backlog |  |
+| [357](https://github.com/Kuestenlogik/Bowire/issues/357) | Bowire | [AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException](#issue-kuestenlogik-bowire-357) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1007,6 +1009,14 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 #### <a id="issue-kuestenlogik-bowire-355"></a>⬜ Backlog · [#355](https://github.com/Kuestenlogik/Bowire/issues/355) Eliminate #pragma warning disable across the codebase — rewrite code so analyzer warnings don't fire
 
 111 files under src/ and tests/ carry `#pragma warning disable` blocks. Commit 6974da7e removed every suppression from the test-pillar files (TestRunner, FlowTestRunner, their tests) and establishes the patterns to reuse: [[more]](https://github.com/Kuestenlogik/Bowire/issues/355)
+
+#### <a id="issue-kuestenlogik-bowire-356"></a>⬜ Backlog · [#356](https://github.com/Kuestenlogik/Bowire/issues/356) JS test safety net: unit-test infra for wwwroot fragments + lift the codecov wwwroot ignore
+
+2026-07-03 architecture audit, highest-risk finding: the frontend is ~72 000 LOC of vanilla JS (41 Core fragments = 60 286 LOC + ~12k LOC of plugin fragments) sharing one closure, and it is **almost entirely untested and invisible to coverage**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/356)
+
+#### <a id="issue-kuestenlogik-bowire-357"></a>⬜ Backlog · [#357](https://github.com/Kuestenlogik/Bowire/issues/357) AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException
+
+2026-07-03 architecture audit: `Kuestenlogik.Bowire.AsyncApi` advertises binding support its resolvers don't implement. Eight of them are stubs that throw `NotImplementedException`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/357)
 
 ---
 
