@@ -75,4 +75,12 @@ internal sealed class TestCliOptions
     /// the legacy codepath.
     /// </summary>
     public IReadOnlyList<string> EnvOverrides { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    /// #181 — <c>--env-file</c> repeats: dotenv-style files whose
+    /// KEY=VALUE lines seed the Flow resolver before the
+    /// <see cref="EnvOverrides"/> repeats are applied on top. Flow
+    /// codepath only.
+    /// </summary>
+    public IReadOnlyList<string> EnvFiles { get; set; } = Array.Empty<string>();
 }

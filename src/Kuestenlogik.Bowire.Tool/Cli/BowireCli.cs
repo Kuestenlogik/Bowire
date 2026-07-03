@@ -995,16 +995,22 @@ internal static class BowireCli
             Description = "Fallback server URL for Flow steps that don't set their own serverUrl. Flow JSON files only; ignored for recordings.",
             DefaultValueFactory = _ => cfg["Bowire:Test:BaseUrl"]
         };
-        var env = new Option<string[]>("--env")
+        var env = new Option<string[]>("--env", "--vars")
         {
-            Description = "Variable for the Flow {{name}} / ${name} resolver. KEY=VALUE; repeatable.",
+            Description = "Variable for the Flow {{name}} / ${name} resolver. KEY=VALUE; repeatable. --vars is an alias.",
             AllowMultipleArgumentsPerToken = false,
+        };
+        var envFile = new Option<string[]>("--env-file")
+        {
+            Description = "File with one KEY=VALUE per line (dotenv-style; blank lines and # comments ignored) for the Flow resolver. Repeatable; --env repeats win over file entries.",
+            AllowMultipleArgumentsPerToken = false,
+            DefaultValueFactory = _ => cfg["Bowire:Test:EnvFile"] is { Length: > 0 } p ? [p] : [],
         };
 
         var cmd = new Command("test", "Run an assertion-based test suite. Accepts a recording JSON (v2.1 test-collection format) or a Flow JSON document (v2.2 — the T2 CI runner). Format auto-detected.");
         cmd.Add(collectionPath); cmd.Add(url); cmd.Add(report); cmd.Add(junit);
         cmd.Add(sarif); cmd.Add(annotations); cmd.Add(updateSnapshots);
-        cmd.Add(baseUrl); cmd.Add(env);
+        cmd.Add(baseUrl); cmd.Add(env); cmd.Add(envFile);
         cmd.SetAction(async (pr, _) =>
         {
             var options = new TestCliOptions
@@ -1017,6 +1023,7 @@ internal static class BowireCli
                 UpdateSnapshots = pr.GetValue(updateSnapshots),
                 BaseUrl = pr.GetValue(baseUrl),
                 EnvOverrides = pr.GetValue(env) ?? Array.Empty<string>(),
+                EnvFiles = pr.GetValue(envFile) ?? Array.Empty<string>(),
             };
             return await TestRunner.RunAsync(
                 options,

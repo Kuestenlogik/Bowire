@@ -136,7 +136,23 @@ internal static class FlowTestRunner
         await stdout.WriteLineAsync($"  Bowire Flow Test Runner   flow: {report.FlowName}").ConfigureAwait(false);
         await stdout.WriteLineAsync().ConfigureAwait(false);
 
-        var env = MergeEnv(cli.EnvOverrides);
+        // #181 — --env-file entries seed the resolver first (files in CLI
+        // order, later files win), then the explicit --env repeats override.
+        var envPairs = new List<string>();
+        foreach (var envFile in cli.EnvFiles)
+        {
+            try
+            {
+                envPairs.AddRange(ReadEnvFileLines(envFile));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                await stderr.WriteLineAsync($"error: Failed to read --env-file '{envFile}': {ex.Message}").ConfigureAwait(false);
+                return 2;
+            }
+        }
+        envPairs.AddRange(cli.EnvOverrides);
+        var env = MergeEnv(envPairs);
         var sw = Stopwatch.StartNew();
         var anyError = false;
         var anyExpectationFailed = false;
@@ -479,6 +495,24 @@ internal static class FlowTestRunner
     }
 
     /// <summary>
+    /// #181 — read one <c>--env-file</c>: KEY=VALUE per line, dotenv-style.
+    /// Blank lines and <c>#</c> comments are skipped; the surviving lines
+    /// run through the same KEY=VALUE parsing as <c>--env</c> repeats, so
+    /// malformed lines are ignored rather than fatal.
+    /// </summary>
+    internal static List<string> ReadEnvFileLines(string path)
+    {
+        var lines = new List<string>();
+        foreach (var raw in File.ReadLines(path))
+        {
+            var line = raw.Trim();
+            if (line.Length == 0 || line.StartsWith('#')) continue;
+            lines.Add(line);
+        }
+        return lines;
+    }
+
+    /// <summary>
     /// Build the resolver's variable map from the CLI <c>--env KEY=VALUE</c>
     /// repeats. Later occurrences win, matching the dotnet-style
     /// environment-merge convention.
@@ -553,6 +587,8 @@ internal sealed class FlowTestCliOptions
     public string? BaseUrl { get; set; }
     /// <summary><c>KEY=VALUE</c> pairs that populate the variable resolver (<c>--env</c>, repeatable).</summary>
     public IReadOnlyList<string> EnvOverrides { get; set; } = Array.Empty<string>();
+    /// <summary>Dotenv-style files whose lines seed the resolver before <see cref="EnvOverrides"/> (<c>--env-file</c>, repeatable).</summary>
+    public IReadOnlyList<string> EnvFiles { get; set; } = Array.Empty<string>();
 }
 
 // ---- Run-report record types — consumed by FlowJUnitReport + FlowHtmlReport ----

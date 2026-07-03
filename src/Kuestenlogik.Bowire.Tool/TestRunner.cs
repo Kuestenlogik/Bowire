@@ -92,6 +92,7 @@ internal static class TestRunner
                 UpdateSnapshots = cli.UpdateSnapshots,
                 BaseUrl = cli.BaseUrl,
                 EnvOverrides = cli.EnvOverrides,
+                EnvFiles = cli.EnvFiles,
             };
             return await FlowTestRunner.RunAsync(flowCli, stdout, stderr).ConfigureAwait(false);
         }
