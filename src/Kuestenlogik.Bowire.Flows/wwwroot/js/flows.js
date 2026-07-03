@@ -806,30 +806,77 @@
         }
 
         for (var i = 0; i < flowsList.length; i++) {
-            (function (flow) {
-                var isActive = flowEditorSelectedId === flow.id;
-                var isRunning = flowRunStatus === 'running' && flowRunFlowId === flow.id;
-                var nodeCount = countNodes(flow.nodes);
-
-                container.appendChild(el('div', {
-                    id: 'bowire-flow-item-' + flow.id,
-                    className: 'bowire-env-sidebar-item' + (isActive ? ' selected' : ''),
-                    onClick: function () {
-                        flowEditorSelectedId = flow.id;
-                        render();
-                    }
-                },
-                    isRunning
-                        ? el('span', { className: 'bowire-flow-sidebar-running', innerHTML: svgIcon('play') })
-                        : el('span', { className: 'bowire-flow-sidebar-icon', innerHTML: svgIcon('play') }),
-                    el('span', { className: 'bowire-env-sidebar-item-name', textContent: flow.name }),
-                    el('span', { className: 'bowire-env-sidebar-item-count', textContent: String(nodeCount) })
-                ));
-            })(flowsList[i]);
+            container.appendChild(renderFlowListRow(flowsList[i].id));
         }
 
         // Bottom "+ New Flow" button retired — primary lives in the
         // sidebar toolbar at the top of this list (see above).
+    }
+
+    // One flow row via the shared renderSidebarListItem so Flows carry
+    // the same hover-tools + right-click parity + reserved active-slot
+    // the Workspaces sidebar defines (#276 house pattern).
+    //
+    // Handlers resolve the flow by id at click time (never a closure
+    // capture) because morphdom preserves row DOM across re-renders —
+    // a captured `flow` object could be stale after a rename / delete.
+    function renderFlowListRow(flowId) {
+        var flow = flowsList.find(function (f) { return f.id === flowId; });
+        if (!flow) return el('span');
+        var isActive = flowEditorSelectedId === flowId;
+        var isRunning = flowRunStatus === 'running' && flowRunFlowId === flowId;
+
+        var openFlow = function () { flowEditorSelectedId = flowId; render(); };
+        var renameFlow = function () {
+            var current = flowsList.find(function (f) { return f.id === flowId; });
+            if (!current) return;
+            bowirePrompt('Rename flow', { defaultValue: current.name }).then(function (name) {
+                var f = flowsList.find(function (x) { return x.id === flowId; });
+                if (!f || !name) return;
+                f.name = name;
+                persistFlows();
+                render();
+            });
+        };
+        var dupFlow = function () {
+            var copy = duplicateFlow(flowId);
+            if (copy) { flowEditorSelectedId = copy.id; toast('Flow duplicated', 'success'); render(); }
+        };
+        var removeFlow = function () {
+            var f = flowsList.find(function (x) { return x.id === flowId; });
+            if (!f) return;
+            bowireConfirm('Delete flow "' + f.name + '"?', function () {
+                deleteFlow(flowId);
+                toast('Flow deleted', 'success');
+                render();
+            }, { title: 'Delete flow', confirmText: 'Delete', danger: true });
+        };
+
+        return renderSidebarListItem({
+            id: 'bowire-flow-item-' + flowId,
+            icon: 'play',
+            name: flow.name,
+            meta: String(countNodes(flow.nodes)),
+            selected: isActive,
+            isActive: isRunning,
+            reserveActiveSlot: true,
+            activeIcon: 'play',
+            activeTitle: 'Running',
+            onClick: openFlow,
+            tools: [
+                { icon: 'copy', title: 'Duplicate flow', onClick: dupFlow },
+                { icon: 'trash', title: 'Delete flow', danger: true, onClick: removeFlow }
+            ],
+            onContextMenu: function (e) {
+                e.preventDefault();
+                showContextMenu(e.clientX, e.clientY, [
+                    { label: 'Open', onClick: openFlow },
+                    { label: 'Rename…', onClick: renameFlow },
+                    { label: 'Duplicate', onClick: dupFlow },
+                    { label: 'Delete', danger: true, onClick: removeFlow }
+                ]);
+            }
+        });
     }
 
     // ---- Flow Canvas (Main Pane) ----

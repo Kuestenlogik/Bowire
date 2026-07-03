@@ -3139,6 +3139,37 @@
         if (opts.meta) {
             row.appendChild(el('span', { className: 'bowire-env-list-item-meta', textContent: opts.meta }));
         }
+
+        // House-pattern parity with the tree (#276) so every flat-list
+        // rail can offer the same per-row affordances the Workspaces
+        // sidebar does:
+        //   opts.tools[]  — hover-revealed action buttons
+        //                   ({ icon, title, danger?, disabled?, onClick }),
+        //                   null entries dropped so callers can inline
+        //                   conditionals. Reuses the tree-tool styling.
+        //   opts.onDelete — kept as the convenience shorthand for the
+        //                   single most-common tool (trash); it renders
+        //                   as one more hover tool after tools[].
+        //   opts.activeIndicator / opts.isActive — reserved-width slot so
+        //                   the active row's ✓ and inactive rows' hidden
+        //                   slot line up (no column shift on selection).
+        if (Array.isArray(opts.tools)) {
+            opts.tools.forEach(function (t) {
+                if (!t) return;
+                row.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-tree-tool' + (t.danger ? ' bowire-tree-tool-danger' : ''),
+                    title: t.title,
+                    'aria-label': t.ariaLabel || t.title,
+                    disabled: t.disabled ? true : undefined,
+                    innerHTML: svgIcon(t.icon),
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        if (typeof t.onClick === 'function') t.onClick(e);
+                    }
+                }));
+            });
+        }
         if (typeof opts.onDelete === 'function') {
             row.appendChild(el('button', {
                 type: 'button',
@@ -3150,6 +3181,22 @@
                     e.stopPropagation();
                     opts.onDelete(e);
                 }
+            }));
+        }
+        // Reserved active slot — only when the caller opts in, so rows
+        // that never mark an active item keep their current width.
+        if (opts.isActive) {
+            row.appendChild(el('span', {
+                className: 'bowire-tree-active-indicator',
+                title: opts.activeTitle || 'Active',
+                innerHTML: svgIcon(opts.activeIcon || 'check')
+            }));
+        } else if (opts.reserveActiveSlot) {
+            row.appendChild(el('span', {
+                className: 'bowire-tree-active-indicator',
+                style: 'visibility:hidden',
+                'aria-hidden': 'true',
+                innerHTML: svgIcon(opts.activeIcon || 'check')
             }));
         }
         return row;
