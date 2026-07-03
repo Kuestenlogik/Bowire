@@ -41,6 +41,83 @@ internal static class TestRunner
     /// <c>ParseResult.InvocationConfiguration.Output/.Error</c> through,
     /// tests pass their own <see cref="StringWriter"/> for capture.
     /// </summary>
+    /// <summary>
+    /// #181 — run every Flow JSON in a git-native workspace directory.
+    /// Discovers <c>&lt;dir&gt;/flows/*.json</c> (or <c>&lt;dir&gt;/*.json</c>
+    /// when there's no <c>flows/</c> subdir), runs each through
+    /// <see cref="RunAsync"/>, and returns the worst exit code — so one
+    /// failing flow fails the whole run. Per-flow reports are written
+    /// next to each flow (report path treated as a suffix) so a CI
+    /// reporter can glob them.
+    /// </summary>
+    public static async Task<int> RunWorkspaceAsync(
+        string workspaceDir, TestCliOptions cli, TextWriter? output = null, TextWriter? error = null)
+    {
+        ArgumentNullException.ThrowIfNull(cli);
+        var stdout = output ?? Console.Out;
+        var stderr = error ?? Console.Error;
+
+        if (!Directory.Exists(workspaceDir))
+        {
+            await WriteErrorAsync(stderr, $"Workspace directory not found: {workspaceDir}").ConfigureAwait(false);
+            return 2;
+        }
+
+        var flowsDir = Path.Combine(workspaceDir, "flows");
+        var searchDir = Directory.Exists(flowsDir) ? flowsDir : workspaceDir;
+        var files = Directory.GetFiles(searchDir, "*.json", SearchOption.TopDirectoryOnly)
+            .OrderBy(f => f, StringComparer.Ordinal)
+            .ToArray();
+        if (files.Length == 0)
+        {
+            await WriteErrorAsync(stderr, $"No flow / test JSON files in {searchDir}.").ConfigureAwait(false);
+            return 2;
+        }
+
+        await WriteHeaderAsync(stdout, $"Bowire Test Runner   workspace: {searchDir}   ({files.Length} files)").ConfigureAwait(false);
+
+        var worst = 0;
+        foreach (var file in files)
+        {
+            var perFlow = new TestCliOptions
+            {
+                CollectionPath = file,
+                // Per-flow report paths: <report>.<flow>.<ext> so a glob
+                // picks all of them up; null stays null.
+                JUnitPath = SuffixReport(cli.JUnitPath, file),
+                SarifPath = SuffixReport(cli.SarifPath, file),
+                ReportPath = SuffixReport(cli.ReportPath, file),
+                Annotations = cli.Annotations,
+                UpdateSnapshots = cli.UpdateSnapshots,
+                FailOn = cli.FailOn,
+                BaseUrl = cli.BaseUrl,
+                EnvOverrides = cli.EnvOverrides,
+                EnvFiles = cli.EnvFiles,
+            };
+            var rc = await RunAsync(perFlow, stdout, stderr).ConfigureAwait(false);
+            // Worst-of: 2 (error) beats 1 (fail) beats 0 (pass).
+            if (rc > worst) worst = rc;
+        }
+        return worst;
+    }
+
+    /// <summary>
+    /// Turn a single report path into a per-flow variant so the workspace
+    /// run doesn't overwrite one file per flow:
+    /// <c>results.xml</c> + flow <c>smoke</c> → <c>results.smoke.xml</c>.
+    /// Null / empty passes through (report disabled).
+    /// </summary>
+    private static string? SuffixReport(string? path, string flowFile)
+    {
+        if (string.IsNullOrEmpty(path)) return null;
+        var stem = Path.GetFileNameWithoutExtension(flowFile);
+        var dir = Path.GetDirectoryName(path);
+        var name = Path.GetFileNameWithoutExtension(path);
+        var ext = Path.GetExtension(path);
+        var combined = $"{name}.{stem}{ext}";
+        return string.IsNullOrEmpty(dir) ? combined : Path.Combine(dir, combined);
+    }
+
     public static async Task<int> RunAsync(
         TestCliOptions cli,
         TextWriter? output = null,
@@ -88,6 +165,7 @@ internal static class TestRunner
                 ReportPath = cli.ReportPath,
                 JUnitPath = cli.JUnitPath,
                 SarifPath = cli.SarifPath,
+                FailOn = cli.FailOn,
                 Annotations = cli.Annotations,
                 UpdateSnapshots = cli.UpdateSnapshots,
                 BaseUrl = cli.BaseUrl,
@@ -214,6 +292,10 @@ internal static class TestRunner
             await GitHubAnnotations.WriteAsync(stdout, report).ConfigureAwait(false);
         }
 
+        // #181 — --fail-on gates the exit code. 'never' runs + reports
+        // but always exits 0 (a non-blocking pre-merge signal); 'any'
+        // (default) fails the build on any failed test.
+        if (string.Equals(cli.FailOn, "never", StringComparison.OrdinalIgnoreCase)) return 0;
         return failedTests > 0 ? 1 : 0;
     }
 

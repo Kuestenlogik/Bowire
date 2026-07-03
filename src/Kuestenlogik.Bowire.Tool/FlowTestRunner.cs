@@ -288,6 +288,15 @@ internal static class FlowTestRunner
             await GitHubAnnotations.WriteAsync(stdout, report).ConfigureAwait(false);
         }
 
+        // #181 — --fail-on gates the exit code. 'never' runs + reports but
+        // always exits 0 (non-blocking pre-merge signal). A step ERROR
+        // (exit 2) still escapes so a broken backend / malformed flow is
+        // never masked by 'never' — only assertion failures are softened.
+        if (string.Equals(cli.FailOn, "never", StringComparison.OrdinalIgnoreCase) && exitCode == 1)
+        {
+            return 0;
+        }
+
         return exitCode;
     }
 
@@ -579,6 +588,8 @@ internal sealed class FlowTestCliOptions
     public string? JUnitPath { get; set; }
     /// <summary>Optional SARIF 2.1.0 report output (<c>--sarif</c>).</summary>
     public string? SarifPath { get; set; }
+    /// <summary>#181 — <c>--fail-on</c> exit-code gate: <c>any</c> (default) or <c>never</c>.</summary>
+    public string FailOn { get; set; } = "any";
     /// <summary>Emit GitHub Actions <c>::error</c> annotations per failure (<c>--annotations</c>).</summary>
     public bool Annotations { get; set; }
     /// <summary>Re-capture every snapshot baseline instead of diffing (<c>--update-snapshots</c>).</summary>

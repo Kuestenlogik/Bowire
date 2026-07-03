@@ -4,6 +4,8 @@
   href: embedded.md
 - name: Standalone Tool
   href: standalone.md
+- name: Bowire in CI
+  href: ci.md
 - name: Docker
   href: docker.md
 - name: Updating Bowire and its plugins
