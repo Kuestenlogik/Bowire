@@ -774,8 +774,8 @@
             } : null,
             sort: (envs.length > 1) ? {
                 title: 'Sort environments',
-                value: envSortBy || 'name',
-                options: BOWIRE_LIST_SORT_OPTIONS,
+                value: envSortBy || 'manual',
+                options: BOWIRE_LIST_SORT_OPTIONS_WITH_MANUAL.concat(BOWIRE_LIST_SORT_OPTIONS),
                 onChange: function (v) { envSortBy = v; render(); }
             } : null
         }));
@@ -820,8 +820,22 @@
                 textContent: 'No environments match "' + envSearchQuery + '".'
             }));
         }
+        var envReorderable = !envSearchQuery && (envSortBy === 'manual' || envSortBy === '');
         for (var i = 0; i < visibleEnvs.length; i++) {
-            list.appendChild(renderEnvironmentRow(visibleEnvs[i].id));
+            var envRow = renderEnvironmentRow(visibleEnvs[i].id);
+            if (envReorderable && typeof attachListReorder === 'function') {
+                attachListReorder(envRow, visibleEnvs[i].id, function (dragId, targetId, after) {
+                    // Reorder the stored env array + persist. saveEnvironments
+                    // takes the full array; getEnvironments returns the live
+                    // list we mutate in place.
+                    var arr = getEnvironments();
+                    if (moveInArrayById(arr, dragId, targetId, after) && typeof saveEnvironments === 'function') {
+                        saveEnvironments(arr);
+                        render();
+                    }
+                });
+            }
+            list.appendChild(envRow);
         }
 
         // The variable editor lives in the main pane (renderMain)

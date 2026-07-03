@@ -3148,6 +3148,76 @@
         return out;
     }
 
+    // #362 — one drag id shared across the app (only one drag at a
+    // time). Module-scope, not a closure capture, so morphdom-preserved
+    // rows resolve the dragged item correctly across re-renders.
+    var _listReorderDragId = null;
+
+    // #362 — attach manual drag-reorder to a flat-list row. `itemId`
+    // identifies the row; `onMove(dragId, targetId, after)` performs the
+    // array move (before targetId, or after it when `after` is true).
+    // The drop position keys off the hovered row's vertical midpoint so
+    // dropping on the top/bottom half inserts before/after. Visual
+    // feedback (is-dragging / is-drop-before / is-drop-after) is pure
+    // box-shadow — no reflow.
+    function attachListReorder(row, itemId, onMove) {
+        row.setAttribute('draggable', 'true');
+        row.addEventListener('dragstart', function (e) {
+            _listReorderDragId = itemId;
+            if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = 'move';
+                try { e.dataTransfer.setData('text/plain', itemId); } catch (_) { /* ignore */ }
+            }
+            row.classList.add('is-dragging');
+        });
+        row.addEventListener('dragend', function () {
+            _listReorderDragId = null;
+            row.classList.remove('is-dragging');
+        });
+        row.addEventListener('dragover', function (e) {
+            if (!_listReorderDragId || _listReorderDragId === itemId) return;
+            e.preventDefault();
+            if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+            var rect = row.getBoundingClientRect();
+            var after = (e.clientY - rect.top) > rect.height / 2;
+            row.classList.toggle('is-drop-before', !after);
+            row.classList.toggle('is-drop-after', after);
+        });
+        row.addEventListener('dragleave', function () {
+            row.classList.remove('is-drop-before', 'is-drop-after');
+        });
+        row.addEventListener('drop', function (e) {
+            e.preventDefault();
+            row.classList.remove('is-drop-before', 'is-drop-after');
+            if (!_listReorderDragId || _listReorderDragId === itemId) return;
+            var rect = row.getBoundingClientRect();
+            var after = (e.clientY - rect.top) > rect.height / 2;
+            onMove(_listReorderDragId, itemId, after);
+        });
+    }
+
+    // #362 — move the element with id==dragId to sit before (or after)
+    // targetId inside `arr`, in place. `idOf` extracts an item's id.
+    // No-op when the drag id isn't found.
+    function moveInArrayById(arr, dragId, targetId, after, idOf) {
+        idOf = idOf || function (x) { return x && x.id; };
+        var from = arr.findIndex(function (x) { return idOf(x) === dragId; });
+        if (from < 0) return false;
+        var moved = arr.splice(from, 1)[0];
+        var to = arr.findIndex(function (x) { return idOf(x) === targetId; });
+        if (to < 0) to = arr.length;
+        if (after) to += 1;
+        arr.splice(to, 0, moved);
+        return true;
+    }
+
+    // #362 — the shared sort options prefixed with a Manual (drag) mode.
+    // Rails that support drag-reorder use this so the grip glyph +
+    // 'Manual' label read identically everywhere.
+    var BOWIRE_LIST_SORT_OPTIONS_WITH_MANUAL = [
+        { value: 'manual', label: 'Manual (drag to reorder)', icon: 'grip' }
+    ];
+
     function renderSidebarListItem(opts) {
         opts = opts || {};
         var rowAttrs = {
