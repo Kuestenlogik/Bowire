@@ -23726,6 +23726,11 @@ not as the
    on row-hover, matching the tree/list house pattern. */
 .bowire-compose-side-collection-head:hover .bowire-tree-tool,
 .bowire-compose-side-collection-head:focus-within .bowire-tree-tool { display: inline-flex; }
+/* #362 — drag a discovered method over a collection head to assign it. */
+.bowire-compose-side-collection-head.is-drop-target {
+    background: var(--bowire-accent-subtle);
+    box-shadow: inset 0 0 0 1px var(--bowire-accent);
+}
 .bowire-compose-side-collection-caret {
     display: inline-flex;
     align-items: center;
