@@ -606,6 +606,23 @@
                 persistComposeSidePanel();
                 render();
             },
+            // #362 — drop target: drag a discovered method here to add
+            // it to this collection. The dragover highlight + copy
+            // cursor telegraph the drop; the drop builds a runnable
+            // collection item from the enriched x-bowire-method payload.
+            onDragOver: function (e) {
+                if (e.dataTransfer && Array.prototype.indexOf.call(
+                        e.dataTransfer.types || [], 'application/x-bowire-method') >= 0) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                    head.classList.add('is-drop-target');
+                }
+            },
+            onDragLeave: function () { head.classList.remove('is-drop-target'); },
+            onDrop: function (e) {
+                head.classList.remove('is-drop-target');
+                _composeDropMethodOnCollection(col.id, e);
+            },
             // R3a — Compose Library row → Flows transition. Right-click
             // the collection head to surface "Build flow from collection",
             // mirroring the Recordings-detail "Convert to Flow" affordance
@@ -660,6 +677,41 @@
             row.appendChild(itemList);
         }
         return row;
+    }
+
+    // #362 — build a collection item from a dropped discovered method
+    // and append it to the target collection. Reuses the same item
+    // shape the Postman-import / save-request paths produce, so the
+    // dropped call is immediately runnable + editable in Compose.
+    function _composeDropMethodOnCollection(colId, e) {
+        var raw;
+        try { raw = e.dataTransfer.getData('application/x-bowire-method'); }
+        catch (_) { raw = null; }
+        if (!raw) return;
+        e.preventDefault();
+        var payload;
+        try { payload = JSON.parse(raw); } catch (_) { return; }
+        if (!payload || !payload.method) return;
+        if (typeof addToCollection !== 'function') return;
+        var body = payload.body || '{}';
+        addToCollection(colId, {
+            protocol: payload.protocol || 'grpc',
+            service: payload.service || '',
+            method: payload.method,
+            methodType: payload.methodType || 'Unary',
+            body: body,
+            messages: [body],
+            metadata: null,
+            serverUrl: payload.serverUrl || null
+        });
+        composeCollectionsExpanded[colId] = true;
+        persistComposeSidePanel();
+        render();
+        if (typeof toast === 'function') {
+            var col = (collectionsList || []).find(function (c) { return c.id === colId; });
+            toast('Added ' + (payload.service ? payload.service + '/' : '') + payload.method
+                + ' to "' + ((col && col.name) || 'collection') + '"', 'success');
+        }
     }
 
     // Shared context-menu items for a collection head (right-click +

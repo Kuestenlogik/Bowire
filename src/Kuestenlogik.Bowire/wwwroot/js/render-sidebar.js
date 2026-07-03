@@ -4890,12 +4890,31 @@
                         'data-direction': methodDirection(m),
                         draggable: 'true',
                         onDragstart: function (e) {
+                            // #362 — enrich the drag payload so a drop
+                            // target (e.g. a Compose collection) can
+                            // build a runnable collection item without
+                            // re-discovering: protocol, method type, and
+                            // a default JSON body for the input schema.
+                            var defBody = '{}';
+                            if (typeof generateDefaultJson === 'function') {
+                                try { defBody = generateDefaultJson(m.inputType, 0); }
+                                catch { /* keep '{}' */ }
+                            }
+                            var payload = {
+                                service: svc.name,
+                                method: m.name,
+                                protocol: svc.source || 'grpc',
+                                methodType: m.methodType || 'Unary',
+                                body: defBody,
+                                serverUrl: (typeof serverUrl !== 'undefined' ? serverUrl : null)
+                                    || (svc.url || null)
+                            };
                             try {
                                 e.dataTransfer.setData('application/x-bowire-method',
-                                    JSON.stringify({ service: svc.name, method: m.name }));
+                                    JSON.stringify(payload));
                                 e.dataTransfer.effectAllowed = 'copy';
                             } catch { /* ignore */ }
-                            methodDragPayload = { service: svc.name, method: m.name };
+                            methodDragPayload = payload;
                             render();
                         },
                         onDragend: function () {
