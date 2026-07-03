@@ -87,6 +87,8 @@ internal static class TestRunner
                 FlowPath = cli.CollectionPath,
                 ReportPath = cli.ReportPath,
                 JUnitPath = cli.JUnitPath,
+                SarifPath = cli.SarifPath,
+                Annotations = cli.Annotations,
                 BaseUrl = cli.BaseUrl,
                 EnvOverrides = cli.EnvOverrides,
             };
@@ -189,6 +191,25 @@ internal static class TestRunner
             {
                 await WriteErrorAsync(stderr, $"Failed to write JUnit report: {ex.Message}").ConfigureAwait(false);
             }
+        }
+
+        if (!string.IsNullOrEmpty(cli.SarifPath))
+        {
+            try
+            {
+                await File.WriteAllTextAsync(cli.SarifPath, TestSarifReport.Render(report));
+                await stdout.WriteLineAsync($"  SARIF written to {cli.SarifPath}").ConfigureAwait(false);
+                await stdout.WriteLineAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PathTooLongException)
+            {
+                await WriteErrorAsync(stderr, $"Failed to write SARIF report: {ex.Message}").ConfigureAwait(false);
+            }
+        }
+
+        if (cli.Annotations)
+        {
+            await GitHubAnnotations.WriteAsync(stdout, report).ConfigureAwait(false);
         }
 
         return failedTests > 0 ? 1 : 0;

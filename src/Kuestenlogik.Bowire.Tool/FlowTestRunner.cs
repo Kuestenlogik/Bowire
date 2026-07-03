@@ -200,6 +200,22 @@ internal static class FlowTestRunner
                 await stderr.WriteLineAsync($"error: Failed to write JUnit report: {ex.Message}").ConfigureAwait(false);
             }
         }
+        if (!string.IsNullOrEmpty(cli.SarifPath))
+        {
+            try
+            {
+                await File.WriteAllTextAsync(cli.SarifPath, TestSarifReport.Render(report), ct).ConfigureAwait(false);
+                await stdout.WriteLineAsync($"  SARIF written to {cli.SarifPath}").ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PathTooLongException)
+            {
+                await stderr.WriteLineAsync($"error: Failed to write SARIF report: {ex.Message}").ConfigureAwait(false);
+            }
+        }
+        if (cli.Annotations)
+        {
+            await GitHubAnnotations.WriteAsync(stdout, report).ConfigureAwait(false);
+        }
 
         return exitCode;
     }
@@ -387,6 +403,10 @@ internal sealed class FlowTestCliOptions
     public string? ReportPath { get; set; }
     /// <summary>Optional JUnit XML report output (<c>--junit</c>).</summary>
     public string? JUnitPath { get; set; }
+    /// <summary>Optional SARIF 2.1.0 report output (<c>--sarif</c>).</summary>
+    public string? SarifPath { get; set; }
+    /// <summary>Emit GitHub Actions <c>::error</c> annotations per failure (<c>--annotations</c>).</summary>
+    public bool Annotations { get; set; }
     /// <summary>Fallback server URL used when a step doesn't carry its own (<c>--base-url</c>).</summary>
     public string? BaseUrl { get; set; }
     /// <summary><c>KEY=VALUE</c> pairs that populate the variable resolver (<c>--env</c>, repeatable).</summary>

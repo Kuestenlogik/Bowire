@@ -974,6 +974,15 @@ internal static class BowireCli
             Description = "Write a JUnit XML report to this path.",
             DefaultValueFactory = _ => cfg["Bowire:Test:JUnitPath"]
         };
+        var sarif = new Option<string?>("--sarif")
+        {
+            Description = "Write a SARIF 2.1.0 report to this path (GitHub Code Scanning, GitLab, Azure DevOps).",
+            DefaultValueFactory = _ => cfg["Bowire:Test:SarifPath"]
+        };
+        var annotations = new Option<bool>("--annotations")
+        {
+            Description = "Emit GitHub Actions ::error annotations for every failure (inline PR annotations without a reporter action).",
+        };
         // v2.2 T2 — Flow-runner specific. Ignored for the recording
         // codepath which already carries serverUrl + environment per
         // test-collection.
@@ -990,6 +999,7 @@ internal static class BowireCli
 
         var cmd = new Command("test", "Run an assertion-based test suite. Accepts a recording JSON (v2.1 test-collection format) or a Flow JSON document (v2.2 — the T2 CI runner). Format auto-detected.");
         cmd.Add(collectionPath); cmd.Add(url); cmd.Add(report); cmd.Add(junit);
+        cmd.Add(sarif); cmd.Add(annotations);
         cmd.Add(baseUrl); cmd.Add(env);
         cmd.SetAction(async (pr, _) =>
         {
@@ -998,6 +1008,8 @@ internal static class BowireCli
                 CollectionPath = pr.GetValue(collectionPath),
                 ReportPath = pr.GetValue(report),
                 JUnitPath = pr.GetValue(junit),
+                SarifPath = pr.GetValue(sarif),
+                Annotations = pr.GetValue(annotations),
                 BaseUrl = pr.GetValue(baseUrl),
                 EnvOverrides = pr.GetValue(env) ?? Array.Empty<string>(),
             };
