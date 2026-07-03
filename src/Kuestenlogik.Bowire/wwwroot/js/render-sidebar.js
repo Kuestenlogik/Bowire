@@ -792,49 +792,74 @@
         // greyed-out non-included rows, because there's no catalogue
         // outside the workspace to gate against.
         for (var i = 0; i < envs.length; i++) {
-            (function (env) {
-                var isActive = env.id === activeId;
-                var isSelected = env.id === envSidebarSelectedId;
-                var varCount = Object.keys(env.vars || {}).length;
-                var item = el('div', {
-                    id: 'bowire-env-item-' + env.id,
-                    className: 'bowire-env-sidebar-item'
-                        + (isSelected ? ' selected' : '')
-                        + (isActive ? ' active-env' : ''),
-                    onClick: function () {
-                        envSidebarSelectedId = env.id;
-                        render();
-                    }
-                },
-                    el('span', {
-                        className: 'bowire-env-color-dot' + (isActive ? ' active' : ''),
-                        style: 'background:' + (env.color || '#6366f1'),
-                        title: isActive ? 'Active environment' : ''
-                    }),
-                    el('span', { className: 'bowire-env-sidebar-item-name', textContent: env.name }),
-                    el('span', { style: 'flex:1' }),
-                    varCount > 0
-                        ? el('span', { className: 'bowire-env-sidebar-item-count', textContent: String(varCount) })
-                        : null,
-                    !isActive
-                        ? el('button', {
-                            className: 'bowire-env-sidebar-activate-btn',
-                            title: 'Set as active environment',
-                            textContent: '\u25B6',
-                            onClick: function (e) {
-                                e.stopPropagation();
-                                setActiveEnvId(env.id);
-                                render();
-                            }
-                        })
-                        : null
-                );
-                list.appendChild(item);
-            })(envs[i]);
+            list.appendChild(renderEnvironmentRow(envs[i].id));
         }
 
         // The variable editor lives in the main pane (renderMain)
         // — the sidebar only shows the selectable list.
+    }
+
+    // One environment row via the shared list-item helper (#362) so
+    // Environments carry the same hover-tools + right-click + reserved
+    // active-slot the house pattern defines — replacing the bespoke
+    // always-visible ▶ activate button. Env resolves by id at click
+    // time (morphdom-safe).
+    function renderEnvironmentRow(envId) {
+        var env = getEnvironments().find(function (e) { return e.id === envId; });
+        if (!env) return el('span');
+        var isActive = envId === getActiveEnvId();
+        var varCount = Object.keys(env.vars || {}).length;
+
+        var activate = function () { setActiveEnvId(envId); render(); };
+        var renameEnv = function () {
+            var current = getEnvironments().find(function (e) { return e.id === envId; });
+            if (!current) return;
+            bowirePrompt('Rename environment', { defaultValue: current.name }).then(function (name) {
+                if (!name) return;
+                if (updateEnvironment(envId, { name: String(name).trim() })) render();
+            });
+        };
+        var removeEnv = function () {
+            var current = getEnvironments().find(function (e) { return e.id === envId; });
+            if (!current) return;
+            bowireConfirm('Delete environment "' + current.name + '"?', function () {
+                var backup = JSON.parse(JSON.stringify(current));
+                deleteEnvironment(envId);
+                if (envSidebarSelectedId === envId) envSidebarSelectedId = null;
+                toast('Environment deleted', 'success', {
+                    undo: function () {
+                        if (typeof restoreEnvironment === 'function') { restoreEnvironment(backup); render(); }
+                    }
+                });
+                render();
+            }, { title: 'Delete environment', confirmText: 'Delete', danger: true });
+        };
+
+        return renderSidebarListItem({
+            id: 'bowire-env-item-' + envId,
+            accent: env.color || '#6366f1',
+            name: env.name,
+            meta: varCount > 0 ? String(varCount) : '',
+            selected: envId === envSidebarSelectedId,
+            isActive: isActive,
+            reserveActiveSlot: true,
+            activeIcon: 'check',
+            activeTitle: 'Active environment',
+            onClick: function () { envSidebarSelectedId = envId; render(); },
+            tools: [
+                isActive ? null : { icon: 'check', title: 'Set as active environment', onClick: activate },
+                { icon: 'trash', title: 'Delete environment', danger: true, onClick: removeEnv }
+            ],
+            onContextMenu: function (e) {
+                e.preventDefault();
+                var items = [{ label: 'Open', onClick: function () { envSidebarSelectedId = envId; render(); } }];
+                if (!isActive) items.push({ label: 'Set as active', onClick: activate });
+                items.push({ label: 'Rename…', onClick: renameEnv });
+                items.push({ separator: true });
+                items.push({ label: 'Delete', danger: true, onClick: removeEnv });
+                showContextMenu(e.clientX, e.clientY, items);
+            }
+        });
     }
 
     // renderInlineVarEditor removed — replaced by renderEnvVariableTable
@@ -1679,10 +1704,16 @@
                     id: 'bowire-rec-row-' + rec.id,
                     icon: 'filmstrip',
                     name: rec.name,
-                    meta: stepN + ' step' + (stepN === 1 ? '' : 's')
-                        + (rec.id === recordingActiveId ? ' · ● recording' : ''),
+                    meta: stepN + ' step' + (stepN === 1 ? '' : 's'),
                     active: recordingManagerSelectedId === rec.id,
                     selected: recordingsSelected.has(rec.id),
+                    // #362 — the actively-recording row gets the reserved
+                    // ✓ slot (was inline "· ● recording" text) so the
+                    // state marker lines up with every other rail.
+                    isActive: rec.id === recordingActiveId,
+                    reserveActiveSlot: true,
+                    activeIcon: 'record',
+                    activeTitle: 'Recording',
                     onContextMenu: function (e) {
                         e.preventDefault();
                         e.stopPropagation();
@@ -4814,31 +4845,6 @@
                             methodDragPayload = null;
                             render();
                         },
-                        onContextMenu: function (e) {
-                            // Right-click on a method-tree row opens an
-                            // "Add to envelope…" picker (Phase 3 add-
-                            // surfaces) — the operator can drop the
-                            // method into an existing envelope or spawn
-                            // a new one seeded with it. Body is the
-                            // default-JSON for the method's inputType so
-                            // the seeded envelope is runnable without
-                            // any further editing.
-                            if (typeof addTargetToEnvelopePicker !== 'function') return;
-                            e.preventDefault();
-                            e.stopPropagation();
-                            var defaultBody = '{}';
-                            if (typeof generateDefaultJson === 'function') {
-                                try { defaultBody = generateDefaultJson(m.inputType, 0); }
-                                catch { /* keep '{}' */ }
-                            }
-                            addTargetToEnvelopePicker(e.clientX, e.clientY, {
-                                type: 'method',
-                                service: svc.name,
-                                method: m.name,
-                                protocol: svc.source || null,
-                                body: defaultBody, metadata: {}, serverUrl: null
-                            }, { name: svc.name + '.' + m.name });
-                        },
                         onClick: function (e) {
                             // Browser-style modifier: Ctrl/Cmd+click
                             // (or middle-click) opens in a new tab;
@@ -4855,10 +4861,13 @@
                                 openTab(svc, m, { inNewTab: true });
                             }
                         },
-                        // Right-click → context menu. Headline action
-                        // is "Open in new tab" so users who don't know
-                        // (or don't want) the Ctrl/middle-click
-                        // modifier shortcut can still pin a method.
+                        // Right-click → one context menu carrying every
+                        // per-method intent. Headline "Open in new tab"
+                        // (so users who don't know the Ctrl/middle-click
+                        // modifier can still pin a method), favorites
+                        // toggle, and "Add to envelope…" — previously a
+                        // SECOND onContextMenu key that this one silently
+                        // shadowed, so the envelope picker was dead code.
                         onContextMenu: function (e) {
                             e.preventDefault();
                             e.stopPropagation();
@@ -4877,6 +4886,26 @@
                                     }
                                 }
                             ];
+                            if (typeof addTargetToEnvelopePicker === 'function') {
+                                items.push({ separator: true });
+                                items.push({
+                                    label: 'Add to envelope…',
+                                    onClick: function () {
+                                        var defaultBody = '{}';
+                                        if (typeof generateDefaultJson === 'function') {
+                                            try { defaultBody = generateDefaultJson(m.inputType, 0); }
+                                            catch { /* keep '{}' */ }
+                                        }
+                                        addTargetToEnvelopePicker(e.clientX, e.clientY, {
+                                            type: 'method',
+                                            service: svc.name,
+                                            method: m.name,
+                                            protocol: svc.source || null,
+                                            body: defaultBody, metadata: {}, serverUrl: null
+                                        }, { name: svc.name + '.' + m.name });
+                                    }
+                                });
+                            }
                             showContextMenu(e.clientX, e.clientY, items);
                         }
                     },

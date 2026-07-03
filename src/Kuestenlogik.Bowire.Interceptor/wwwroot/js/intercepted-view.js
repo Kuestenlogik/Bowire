@@ -337,7 +337,12 @@
                 icon: 'globe',
                 headline: 'No traffic yet',
                 body: 'Add app.UseBowireInterceptor() to this host\'s pipeline, then drive any request through it from any client. '
-                    + 'Captured flows land here in real time.'
+                    + 'Captured flows land here in real time.',
+                actions: [{
+                    label: 'Interceptor docs',
+                    primary: true,
+                    onClick: function () { window.open('https://bowire.io/docs/features/', '_blank', 'noopener'); }
+                }]
             }));
             return;
         }
