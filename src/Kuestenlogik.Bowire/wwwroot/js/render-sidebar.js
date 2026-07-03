@@ -1550,6 +1550,26 @@
                     if (typeof useRecordingAsMock === 'function') useRecordingAsMock(rec);
                 }
             });
+            // #362 — explicit cross-rail handoff to Benchmarks (was only
+            // reachable by rebuilding the target by hand on that rail).
+            items.push({
+                label: 'Benchmark this recording',
+                disabled: !hasSteps || typeof createBenchmarkSpec !== 'function',
+                onClick: function () {
+                    if (typeof createBenchmarkSpec !== 'function') return;
+                    var spec = createBenchmarkSpec({
+                        kind: 'recording',
+                        sourceId: rec.id,
+                        name: 'Benchmark ' + (rec.name || 'recording')
+                    });
+                    if (typeof benchmarksSelectedId !== 'undefined') benchmarksSelectedId = spec.id;
+                    railMode = 'benchmarks';
+                    try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch (_) { /* ignore */ }
+                    if (typeof setSidebarView === 'function') setSidebarView('benchmarks');
+                    toast('Benchmark created from "' + (rec.name || 'recording') + '" — open on Benchmarks rail', 'success');
+                    render();
+                }
+            });
             items.push({
                 label: 'Convert to collection',
                 disabled: !hasSteps || typeof recordingToCollectionItems !== 'function',
