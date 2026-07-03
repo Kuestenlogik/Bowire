@@ -439,7 +439,12 @@
             container.appendChild(renderEmptyCard({
                 icon: 'mock',
                 headline: 'Mock package not loaded',
-                body: 'Reference Kuestenlogik.Bowire.Mock from the host to enable standalone mock servers. The standalone Bowire CLI ships with it included.'
+                body: 'Reference Kuestenlogik.Bowire.Mock from the host to enable standalone mock servers. The standalone Bowire CLI ships with it included.',
+                actions: [{
+                    label: 'Setup docs',
+                    primary: true,
+                    onClick: function () { window.open('https://bowire.io/docs/setup/embedded.html', '_blank', 'noopener'); }
+                }]
             }));
             return;
         }
@@ -451,7 +456,12 @@
             container.appendChild(renderEmptyCard({
                 icon: 'mock',
                 headline: 'No mock servers running',
-                body: 'Mock servers are standalone replay hosts spun up from a recording. Open the Recordings rail and use "Run as mock" on any session to start one.'
+                body: 'Mock servers are standalone replay hosts spun up from a recording. Open the Recordings rail and use "Run as mock" on any session to start one.',
+                actions: [{
+                    label: 'Open Recordings',
+                    primary: true,
+                    onClick: function () { railMode = 'recordings'; render(); }
+                }]
             }));
             return;
         }
@@ -517,7 +527,12 @@
         container.appendChild(renderEmptyCard({
             icon: 'plug',
             headline: headline,
-            body: body
+            body: body,
+            actions: [{
+                label: 'Interceptor docs',
+                primary: true,
+                onClick: function () { window.open('https://bowire.io/docs/features/', '_blank', 'noopener'); }
+            }]
         }));
     }
 

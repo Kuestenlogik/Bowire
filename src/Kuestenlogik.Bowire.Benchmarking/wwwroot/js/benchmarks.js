@@ -1363,6 +1363,21 @@
                 } else {
                     meta = _envelopeSidebarMeta(spec);
                 }
+                var runOrStop = function () {
+                    if (isRunning) {
+                        if (typeof stopBenchmark === 'function') stopBenchmark();
+                    } else {
+                        benchmarksSelectedId = spec.id;
+                        runBenchmarkSpec(spec, function () { render(); });
+                    }
+                };
+                var deleteSpec = function () {
+                    var idx = benchmarksList.indexOf(spec);
+                    if (idx >= 0) benchmarksList.splice(idx, 1);
+                    if (benchmarksSelectedId === spec.id) benchmarksSelectedId = null;
+                    if (typeof persistBenchmarks === 'function') persistBenchmarks();
+                    render();
+                };
                 list.appendChild(renderSidebarListItem({
                     id: 'bowire-bench-row-' + spec.id,
                     accent: isRunning ? 'var(--bowire-warning)' : 'var(--bowire-accent)',
@@ -1370,6 +1385,17 @@
                     name: spec.name,
                     meta: meta,
                     selected: spec.id === benchmarksSelectedId,
+                    // #362 — hover-tools + reserved active slot for house-
+                    // pattern parity. Tools mirror the context-menu's
+                    // primary actions; running benchmark gets the ✓ slot.
+                    isActive: isRunning,
+                    reserveActiveSlot: true,
+                    activeIcon: 'play',
+                    activeTitle: 'Running',
+                    tools: [
+                        { icon: isRunning ? 'stop' : 'play', title: isRunning ? 'Stop run' : 'Run benchmark', onClick: runOrStop },
+                        { icon: 'trash', title: 'Delete benchmark', danger: true, onClick: deleteSpec }
+                    ],
                     onClick: function () {
                         benchmarksSelectedId = spec.id;
                         render();
