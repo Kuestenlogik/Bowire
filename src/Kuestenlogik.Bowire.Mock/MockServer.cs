@@ -32,11 +32,21 @@ public sealed class MockServer : IAsyncDisposable
     private readonly IHost _host;
     private readonly MockKestrelHostedService _kestrel;
 
-    private MockServer(IHost host, MockKestrelHostedService kestrel)
+    private MockServer(IHost host, MockKestrelHostedService kestrel, Chaos.FaultRuleSet faults)
     {
         _host = host;
         _kestrel = kestrel;
+        Faults = faults;
     }
+
+    /// <summary>
+    /// Live fault-injection rules (#170) — the same instance the request
+    /// pipeline reads, so swapping <see cref="Chaos.FaultRuleSet.Rules"/>
+    /// on it re-configures a RUNNING mock (management endpoint / UI
+    /// editor). Reference assignment is atomic; in-flight requests keep
+    /// the list they already picked up.
+    /// </summary>
+    public Chaos.FaultRuleSet Faults { get; }
 
     /// <summary>
     /// TCP port the server is actually listening on. Equal to
@@ -90,7 +100,7 @@ public sealed class MockServer : IAsyncDisposable
         var host = builder.Build();
         await host.StartAsync(ct);
         var kestrel = host.Services.GetRequiredService<MockKestrelHostedService>();
-        return new MockServer(host, kestrel);
+        return new MockServer(host, kestrel, options.Faults);
     }
 
     /// <summary>Block until the host shuts down (Ctrl+C, explicit stop).</summary>

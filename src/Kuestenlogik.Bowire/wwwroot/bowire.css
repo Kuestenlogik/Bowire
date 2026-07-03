@@ -3222,6 +3222,41 @@ not just
     padding: 12px 16px;
 }
 
+/* #170 — injected-fault marker in the live request log + the fault-rule
+   editor rows. The editor reuses the flow-field input styling so it
+   reads as the same house control set. */
+.bowire-mocks-log-fault {
+    color: var(--bowire-warning, #d08700);
+    font-weight: 600;
+    margin-left: 6px;
+}
+.bowire-mocks-fault-rule {
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    padding: 8px;
+    margin-top: 8px;
+}
+.bowire-mocks-fault-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.bowire-mocks-fault-opts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+}
+.bowire-mocks-fault-field {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.bowire-mocks-fault-field-label {
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+}
+
 /* #92 — Sources management view in the main pane. */
 .bowire-conn-pill-clickable {
     cursor: pointer;
@@ -19782,6 +19817,21 @@ full accent for user-pinned
     letter-spacing: 0.05em;
     color: var(--bowire-text-secondary);
     flex: 1;
+}
+/* #171 / #174 — snapshot + data-rows sections reuse the assertions
+   chrome; the hint sits right-aligned in the header, the toggle title
+   wraps a checkbox. */
+.bowire-flow-assertions-hint {
+    font-size: 10px;
+    color: var(--bowire-text-secondary);
+    font-style: italic;
+    white-space: nowrap;
+}
+.bowire-flow-toggle-title {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 .bowire-flow-assertions-empty {
     font-size: 11px;

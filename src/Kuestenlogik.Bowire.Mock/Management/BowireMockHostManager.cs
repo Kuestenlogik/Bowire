@@ -55,6 +55,26 @@ public sealed class BowireMockHostManager : IAsyncDisposable
         _entries.TryGetValue(mockId, out var entry) ? entry.RequestLog : null;
 
     /// <summary>
+    /// Live fault-injection rules of a running mock (#170). Null when
+    /// the mock id isn't in the registry.
+    /// </summary>
+    public Chaos.FaultRuleSet? GetFaults(string mockId) =>
+        _entries.TryGetValue(mockId, out var entry) ? entry.Server.Faults : null;
+
+    /// <summary>
+    /// Swap the fault rules of a RUNNING mock (#170 — the UI editor's
+    /// apply path). Atomic reference swap; false when the mock id isn't
+    /// in the registry.
+    /// </summary>
+    public bool TrySetFaults(string mockId, Chaos.FaultRuleSet faults)
+    {
+        ArgumentNullException.ThrowIfNull(faults);
+        if (!_entries.TryGetValue(mockId, out var entry)) return false;
+        entry.Server.Faults.Rules = faults.Rules;
+        return true;
+    }
+
+    /// <summary>
     /// Boot a mock host for the supplied recording JSON.
     /// </summary>
     /// <param name="recordingJson">Single recording document (NOT the

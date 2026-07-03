@@ -38,9 +38,14 @@ public sealed class FaultRuleSet
         AllowTrailingCommas = true,
     };
 
-    /// <summary>Rules in declaration order; first enabled match wins.</summary>
+    /// <summary>
+    /// Rules in declaration order; first enabled match wins. Settable so
+    /// the management endpoint can swap the live rule list on a running
+    /// mock — reference assignment is atomic, in-flight requests keep
+    /// the list they already picked up.
+    /// </summary>
     [JsonPropertyName("rules")]
-    public IReadOnlyList<FaultRule> Rules { get; init; } = Array.Empty<FaultRule>();
+    public IReadOnlyList<FaultRule> Rules { get; set; } = Array.Empty<FaultRule>();
 
     /// <summary>True when at least one rule can fire.</summary>
     [JsonIgnore]
@@ -51,11 +56,24 @@ public sealed class FaultRuleSet
         => Rules.FirstOrDefault(r => r.Enabled && r.MatchesMethod(service, method));
 
     /// <summary>
+    /// Serialize in the exact <c>mock-faults.json</c> shape
+    /// <see cref="LoadJson"/> accepts (kebab-case enums), indented for
+    /// the UI editor — so GET → edit → PUT round-trips byte-stable.
+    /// </summary>
+    public string ToJson()
+        => JsonSerializer.Serialize(this, WriteOpts);
+
+    private static readonly JsonSerializerOptions WriteOpts = new(JsonOpts) { WriteIndented = true };
+
+    /// <summary>
     /// Parse a <c>mock-faults.json</c> document. Throws
     /// <see cref="FormatException"/> with a pointed message on structural
     /// or semantic problems so CLI users see the offending rule early.
+    /// <paramref name="allowEmpty"/> permits an empty rules array — the
+    /// management endpoint uses that to clear a running mock's rules,
+    /// while the CLI keeps rejecting a pointless sidecar file.
     /// </summary>
-    public static FaultRuleSet LoadJson(string json)
+    public static FaultRuleSet LoadJson(string json, bool allowEmpty = false)
     {
         FaultRuleSet? set;
         try
@@ -68,7 +86,11 @@ public sealed class FaultRuleSet
         }
         if (set is null || set.Rules.Count == 0)
         {
-            throw new FormatException("mock-faults: document has no rules (expected { \"rules\": [ … ] }).");
+            if (!allowEmpty)
+            {
+                throw new FormatException("mock-faults: document has no rules (expected { \"rules\": [ … ] }).");
+            }
+            return set ?? new FaultRuleSet();
         }
         for (var i = 0; i < set.Rules.Count; i++)
         {

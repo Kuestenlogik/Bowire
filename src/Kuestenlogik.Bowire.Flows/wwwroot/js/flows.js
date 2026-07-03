@@ -1330,6 +1330,11 @@
                         // a fully-validated probe without an extra chain
                         // of downstream Condition-nodes.
                         editor.appendChild(renderAssertionsEditor(node));
+                        // #171 / #174 — snapshot baseline + data-driven
+                        // rows. Authored here, consumed by `bowire test`;
+                        // the in-browser runner ignores both for now.
+                        editor.appendChild(renderSnapshotEditor(node));
+                        editor.appendChild(renderDataEditor(node));
                     } else if (node.type === 'delay') {
                         editor.appendChild(flowField('Delay (ms)', 'number', String(node.delayMs || 1000), function (v) { node.delayMs = parseInt(v, 10) || 1000; persistFlows(); }));
                     } else if (node.type === 'condition') {
@@ -1945,6 +1950,169 @@
             },
         }));
         return row;
+    }
+
+    /**
+     * Snapshot-baseline editor (#171) — persisted as node.snapshot in the
+     * shape FlowSnapshotConfig deserialises: { enabled, mode, ignore }.
+     * Unchecked = no snapshot key at all, so flows stay byte-identical
+     * until the operator opts in. Ignore paths are comma-separated in the
+     * input, stored as an array.
+     */
+    function renderSnapshotEditor(node) {
+        var wrap = el('div', { className: 'bowire-flow-assertions' });
+        var enabled = !!(node.snapshot && node.snapshot.enabled !== false);
+        var hasConfig = !!node.snapshot;
+
+        var header = el('div', { className: 'bowire-flow-assertions-header' },
+            el('label', { className: 'bowire-flow-assertions-title bowire-flow-toggle-title' },
+                el('input', {
+                    type: 'checkbox',
+                    checked: hasConfig && enabled ? 'checked' : undefined,
+                    onChange: function (e) {
+                        if (e.target.checked) {
+                            if (!node.snapshot) node.snapshot = { mode: 'exact', ignore: [] };
+                            node.snapshot.enabled = true;
+                        } else if (node.snapshot) {
+                            node.snapshot.enabled = false;
+                        }
+                        persistFlows();
+                        render();
+                    },
+                }),
+                el('span', { textContent: 'Snapshot' })
+            ),
+            el('span', { className: 'bowire-flow-assertions-hint', textContent: 'capture-once baseline · runs in bowire test' })
+        );
+        wrap.appendChild(header);
+
+        if (!hasConfig || !enabled) return wrap;
+
+        wrap.appendChild(flowField('Mode', 'select', node.snapshot.mode || 'exact', function (v) {
+            node.snapshot.mode = v;
+            persistFlows();
+        }, [
+            { value: 'exact', label: 'Exact — values must match' },
+            { value: 'structural', label: 'Structural — shape only' },
+        ]));
+        wrap.appendChild(flowField('Ignore paths', 'text',
+            Array.isArray(node.snapshot.ignore) ? node.snapshot.ignore.join(', ') : '',
+            function (v) {
+                node.snapshot.ignore = v.split(',')
+                    .map(function (x) { return x.trim(); })
+                    .filter(function (x) { return x.length > 0; });
+                persistFlows();
+            }));
+        wrap.appendChild(el('div', { className: 'bowire-flow-assertions-empty',
+            textContent: 'Dynamic fields (timestamps, ids): $.updatedAt, $.items.*.id — value ignored, shape still enforced.' }));
+        return wrap;
+    }
+
+    /**
+     * Data-driven rows editor (#174) — persisted as node.data in the
+     * shape FlowDataSource deserialises: exactly one of { inline },
+     * { csv }, { generator }, plus optional labelColumn. Source 'None'
+     * deletes the key so unparameterised flows stay unchanged. The
+     * inline textarea only persists on VALID JSON — keystrokes through
+     * an invalid intermediate state keep the last good rows.
+     */
+    function renderDataEditor(node) {
+        var wrap = el('div', { className: 'bowire-flow-assertions' });
+        var source = !node.data ? 'none'
+            : node.data.csv ? 'csv'
+            : node.data.generator ? 'generator'
+            : 'inline';
+
+        wrap.appendChild(el('div', { className: 'bowire-flow-assertions-header' },
+            el('span', { className: 'bowire-flow-assertions-title', textContent: 'Data rows' }),
+            el('span', { className: 'bowire-flow-assertions-hint', textContent: 'one run per row · runs in bowire test' })
+        ));
+
+        wrap.appendChild(flowField('Source', 'select', source, function (v) {
+            if (v === 'none') {
+                delete node.data;
+            } else if (v === 'inline') {
+                node.data = { inline: [{}] };
+            } else if (v === 'csv') {
+                node.data = { csv: 'fixtures/data.csv' };
+            } else {
+                node.data = { generator: { kind: 'range', var: 'i', from: 1, to: 10 } };
+            }
+            persistFlows();
+            render();
+        }, [
+            { value: 'none', label: 'None' },
+            { value: 'inline', label: 'Inline JSON rows' },
+            { value: 'csv', label: 'CSV file' },
+            { value: 'generator', label: 'Generator' },
+        ]));
+
+        if (source === 'none') return wrap;
+
+        if (source === 'inline') {
+            wrap.appendChild(flowField('Rows (JSON array)', 'textarea',
+                JSON.stringify(node.data.inline || [], null, 2),
+                function (v) {
+                    try {
+                        var parsed = JSON.parse(v);
+                        if (Array.isArray(parsed)) {
+                            node.data.inline = parsed;
+                            persistFlows();
+                        }
+                    } catch (err) { /* mid-edit invalid JSON — keep last good rows */ }
+                }));
+        } else if (source === 'csv') {
+            wrap.appendChild(flowField('CSV path', 'text', node.data.csv || '', function (v) {
+                node.data.csv = v;
+                persistFlows();
+            }));
+            wrap.appendChild(el('div', { className: 'bowire-flow-assertions-empty',
+                textContent: 'Relative to the exported flow file. First row is the header; columns become {{variables}}.' }));
+        } else {
+            var gen = node.data.generator;
+            wrap.appendChild(flowField('Kind', 'select', gen.kind || 'range', function (v) {
+                node.data.generator = v === 'range'
+                    ? { kind: 'range', var: gen.var || 'i', from: 1, to: 10 }
+                    : { kind: 'random', var: gen.var || 'value', count: 5, seed: 42, min: 0, max: 100 };
+                persistFlows();
+                render();
+            }, [
+                { value: 'range', label: 'Range (from..to)' },
+                { value: 'random', label: 'Random (seeded)' },
+            ]));
+            wrap.appendChild(flowField('Variable', 'text', gen.var || '', function (v) {
+                gen.var = v; persistFlows();
+            }));
+            if ((gen.kind || 'range') === 'range') {
+                wrap.appendChild(flowField('From', 'number', String(gen.from != null ? gen.from : 1), function (v) {
+                    gen.from = parseInt(v, 10) || 0; persistFlows();
+                }));
+                wrap.appendChild(flowField('To', 'number', String(gen.to != null ? gen.to : 10), function (v) {
+                    gen.to = parseInt(v, 10) || 0; persistFlows();
+                }));
+            } else {
+                wrap.appendChild(flowField('Count', 'number', String(gen.count || 5), function (v) {
+                    gen.count = parseInt(v, 10) || 1; persistFlows();
+                }));
+                wrap.appendChild(flowField('Seed', 'number', String(gen.seed || 0), function (v) {
+                    gen.seed = parseInt(v, 10) || 0; persistFlows();
+                }));
+                wrap.appendChild(flowField('Min', 'number', String(gen.min || 0), function (v) {
+                    gen.min = parseInt(v, 10) || 0; persistFlows();
+                }));
+                wrap.appendChild(flowField('Max', 'number', String(gen.max != null ? gen.max : 100), function (v) {
+                    gen.max = parseInt(v, 10) || 0; persistFlows();
+                }));
+            }
+        }
+
+        if (source === 'inline' || source === 'csv') {
+            wrap.appendChild(flowField('Label column', 'text', node.data.labelColumn || '', function (v) {
+                if (v) node.data.labelColumn = v; else delete node.data.labelColumn;
+                persistFlows();
+            }));
+        }
+        return wrap;
     }
 
     function operatorEntriesForKind(kind) {
