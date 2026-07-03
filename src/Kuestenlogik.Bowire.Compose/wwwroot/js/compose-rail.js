@@ -606,22 +606,29 @@
                 persistComposeSidePanel();
                 render();
             },
-            // #362 — drop target: drag a discovered method here to add
-            // it to this collection. The dragover highlight + copy
-            // cursor telegraph the drop; the drop builds a runnable
-            // collection item from the enriched x-bowire-method payload.
+            // #362 — drop target for TWO payloads:
+            //   x-bowire-method  → assign a discovered method (copy)
+            //   x-bowire-compose (kind:collection-item) → MOVE an item
+            //     here from another collection.
             onDragOver: function (e) {
-                if (e.dataTransfer && Array.prototype.indexOf.call(
-                        e.dataTransfer.types || [], 'application/x-bowire-method') >= 0) {
+                var types = (e.dataTransfer && e.dataTransfer.types) || [];
+                var isMethod = Array.prototype.indexOf.call(types, 'application/x-bowire-method') >= 0;
+                var isItem = Array.prototype.indexOf.call(types, 'application/x-bowire-compose') >= 0;
+                if (isMethod || isItem) {
                     e.preventDefault();
-                    e.dataTransfer.dropEffect = 'copy';
+                    e.dataTransfer.dropEffect = isItem ? 'move' : 'copy';
                     head.classList.add('is-drop-target');
                 }
             },
             onDragLeave: function () { head.classList.remove('is-drop-target'); },
             onDrop: function (e) {
                 head.classList.remove('is-drop-target');
-                _composeDropMethodOnCollection(col.id, e);
+                var types = (e.dataTransfer && e.dataTransfer.types) || [];
+                if (Array.prototype.indexOf.call(types, 'application/x-bowire-compose') >= 0) {
+                    _composeDropItemOnCollection(col.id, e);
+                } else {
+                    _composeDropMethodOnCollection(col.id, e);
+                }
             },
             // R3a — Compose Library row → Flows transition. Right-click
             // the collection head to surface "Build flow from collection",
@@ -711,6 +718,36 @@
             var col = (collectionsList || []).find(function (c) { return c.id === colId; });
             toast('Added ' + (payload.service ? payload.service + '/' : '') + payload.method
                 + ' to "' + ((col && col.name) || 'collection') + '"', 'success');
+        }
+    }
+
+    // #362 — MOVE a collection item onto another collection. Reads the
+    // x-bowire-compose payload the item rows emit; no-op when the item
+    // is dropped back onto its own collection. Preserves the item's id
+    // + full shape so it stays runnable after the move.
+    function _composeDropItemOnCollection(destColId, e) {
+        var payload = _resolveComposeDragPayload(e.dataTransfer);
+        if (!payload || payload.kind !== 'collection-item') return;
+        if (payload.collectionId === destColId) return; // same collection
+        e.preventDefault();
+        var found = _findCollectionItem(payload.collectionId, payload.itemId);
+        if (!found || !found.item) return;
+        var moved = JSON.parse(JSON.stringify(found.item));
+        if (typeof removeFromCollection === 'function') {
+            removeFromCollection(payload.collectionId, payload.itemId);
+        }
+        // addToCollection stamps a fresh id; keep the item's own id so
+        // any tab origin referencing it still resolves.
+        var dest = (collectionsList || []).find(function (c) { return c.id === destColId; });
+        if (!dest) return;
+        if (!Array.isArray(dest.items)) dest.items = [];
+        dest.items.push(moved);
+        if (typeof persistCollections === 'function') persistCollections();
+        composeCollectionsExpanded[destColId] = true;
+        persistComposeSidePanel();
+        render();
+        if (typeof toast === 'function') {
+            toast('Moved to "' + (dest.name || 'collection') + '"', 'success');
         }
     }
 
