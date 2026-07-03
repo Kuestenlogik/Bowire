@@ -23719,6 +23719,10 @@ not as the
 .bowire-compose-side-collection-head:hover {
     background: var(--bowire-surface-hover);
 }
+/* #362 — rename/delete hover tools on the collection head reveal only
+   on row-hover, matching the tree/list house pattern. */
+.bowire-compose-side-collection-head:hover .bowire-tree-tool,
+.bowire-compose-side-collection-head:focus-within .bowire-tree-tool { display: inline-flex; }
 .bowire-compose-side-collection-caret {
     display: inline-flex;
     align-items: center;
