@@ -65,6 +65,14 @@ public sealed class MockOptions
     public ChaosOptions Chaos { get; set; } = new();
 
     /// <summary>
+    /// Per-method fault-injection rules (#170) — latency distributions,
+    /// error rates, partial responses, connection drops. Evaluated after
+    /// <see cref="Chaos"/> on matched steps. Defaults to an empty set
+    /// (off).
+    /// </summary>
+    public FaultRuleSet Faults { get; set; } = new();
+
+    /// <summary>
     /// When <c>true</c>, the mock advances through the recording's steps
     /// in order — only the step at the current cursor position is eligible
     /// to match, step N+1 can only reply after step N has been hit

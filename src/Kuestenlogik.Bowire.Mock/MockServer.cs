@@ -246,6 +246,7 @@ public sealed class MockServer : IAsyncDisposable
                 opts.Matcher = _options.Matcher;
                 opts.ReplaySpeed = _options.ReplaySpeed;
                 opts.Chaos = _options.Chaos;
+                opts.Faults = _options.Faults;
                 opts.Stateful = _options.Stateful;
                 opts.StatefulWrapAround = _options.StatefulWrapAround;
                 opts.CaptureMissPath = _options.CaptureMissPath;
@@ -333,6 +334,7 @@ public sealed class MockServer : IAsyncDisposable
                     Matcher = _options.Matcher,
                     ReplaySpeed = _options.ReplaySpeed,
                     Chaos = _options.Chaos,
+                    Faults = _options.Faults,
                     Stateful = _options.Stateful,
                     StatefulWrapAround = _options.StatefulWrapAround,
                     CaptureMissPath = _options.CaptureMissPath,

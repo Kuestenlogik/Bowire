@@ -61,6 +61,19 @@ internal static class MockCommand
             return 2;
         }
 
+        FaultRuleSet faults;
+        try
+        {
+            faults = string.IsNullOrEmpty(cli.FaultsPath)
+                ? new FaultRuleSet()
+                : FaultRuleSet.LoadJson(await File.ReadAllTextAsync(cli.FaultsPath, ct).ConfigureAwait(false));
+        }
+        catch (Exception ex) when (ex is FormatException or IOException or UnauthorizedAccessException)
+        {
+            await io.Err.WriteLineAsync("bowire mock: --faults: " + ex.Message).ConfigureAwait(false);
+            return 2;
+        }
+
         try
         {
             // Load installed protocol plugins (if any) and pull their
@@ -122,6 +135,7 @@ internal static class MockCommand
                 Select = cli.Select,
                 Watch = !cli.NoWatch,
                 Chaos = chaos,
+                Faults = faults,
                 // --stateful-once implies --stateful with wrap-around off;
                 // either flag on its own is enough to enable stateful mode.
                 Stateful = cli.Stateful || cli.StatefulOnce,
