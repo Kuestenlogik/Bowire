@@ -1185,6 +1185,82 @@
         return false;
     }
 
+    // #363 — default JSON body for a discovered method's input schema
+    // (falls back to '{}'). Shared by the method context-menu actions.
+    function _methodDefaultBody(m) {
+        if (typeof generateDefaultJson === 'function') {
+            try { return generateDefaultJson(m.inputType, 0); }
+            catch (_) { /* keep '{}' */ }
+        }
+        return '{}';
+    }
+
+    // #363 — build a runnable collection-item shape from a discovered
+    // method (same shape the Compose drop + Postman import produce).
+    function _methodToCollectionItem(svc, m) {
+        var body = _methodDefaultBody(m);
+        return {
+            protocol: svc.source || 'grpc',
+            service: svc.name || '',
+            method: m.name,
+            methodType: m.methodType || 'Unary',
+            body: body,
+            messages: [body],
+            metadata: null,
+            serverUrl: (typeof serverUrl !== 'undefined' ? serverUrl : null) || (svc.url || null)
+        };
+    }
+
+    // #363 — second-stage picker: choose which collection to add the
+    // method to (or create a new one). Uses showContextMenu as a
+    // lightweight list since it has no submenu support.
+    function _pickCollectionForMethod(x, y, svc, m) {
+        if (typeof addToCollection !== 'function' || typeof showContextMenu !== 'function') return;
+        var cols = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList))
+            ? collectionsList : [];
+        var menu = [];
+        menu.push({
+            label: '+ New collection…',
+            onClick: function () {
+                if (typeof createCollection !== 'function') return;
+                var col = createCollection((svc.name || 'Discovered') + ' requests');
+                addToCollection(col.id, _methodToCollectionItem(svc, m));
+                if (typeof collectionsList !== 'undefined') collectionsList = loadCollections();
+                toast('Added ' + m.name + ' to new collection "' + col.name + '"', 'success');
+                render();
+            }
+        });
+        if (cols.length > 0) menu.push({ separator: true });
+        cols.forEach(function (col) {
+            menu.push({
+                label: col.name || 'Unnamed',
+                meta: String((col.items || []).length),
+                onClick: function () {
+                    addToCollection(col.id, _methodToCollectionItem(svc, m));
+                    toast('Added ' + m.name + ' to "' + (col.name || 'collection') + '"', 'success');
+                    render();
+                }
+            });
+        });
+        showContextMenu(x, y, menu);
+    }
+
+    // #363 — benchmark a discovered method: create a single-target
+    // spec, select it, and jump to the Benchmarks rail.
+    function _benchmarkMethod(svc, m) {
+        if (typeof createBenchmarkSpec !== 'function') return;
+        var spec = createBenchmarkSpec({
+            kind: 'single',
+            service: svc.name, method: m.name,
+            protocol: svc.source || null, body: _methodDefaultBody(m),
+            name: 'Benchmark ' + (svc.name ? svc.name + '/' : '') + m.name
+        });
+        if (typeof benchmarksSelectedId !== 'undefined' && spec) benchmarksSelectedId = spec.id;
+        _switchRail('benchmarks');
+        toast('Benchmark created from ' + m.name + ' — open on Benchmarks rail', 'success');
+        render();
+    }
+
     function renderActivityRail() {
         // Modes marked hideFromRail (Collections, Environments) stay in
         // the catalogue so railMode='…' routing keeps working when the
@@ -5134,24 +5210,34 @@
                                     }
                                 }
                             ];
+                            // #363 — uniform action reachability: the same
+                            // assign / benchmark actions the drag-and-drop
+                            // + rail-strip paths expose, also on right-
+                            // click so they're reachable the same way
+                            // regardless of how the operator works.
+                            items.push({ separator: true });
+                            items.push({
+                                label: 'Add to collection…',
+                                onClick: function () { _pickCollectionForMethod(e.clientX, e.clientY, svc, m); }
+                            });
                             if (typeof addTargetToEnvelopePicker === 'function') {
-                                items.push({ separator: true });
                                 items.push({
                                     label: 'Add to envelope…',
                                     onClick: function () {
-                                        var defaultBody = '{}';
-                                        if (typeof generateDefaultJson === 'function') {
-                                            try { defaultBody = generateDefaultJson(m.inputType, 0); }
-                                            catch { /* keep '{}' */ }
-                                        }
                                         addTargetToEnvelopePicker(e.clientX, e.clientY, {
                                             type: 'method',
                                             service: svc.name,
                                             method: m.name,
                                             protocol: svc.source || null,
-                                            body: defaultBody, metadata: {}, serverUrl: null
+                                            body: _methodDefaultBody(m), metadata: {}, serverUrl: null
                                         }, { name: svc.name + '.' + m.name });
                                     }
+                                });
+                            }
+                            if (typeof createBenchmarkSpec === 'function') {
+                                items.push({
+                                    label: 'Benchmark this method',
+                                    onClick: function () { _benchmarkMethod(svc, m); }
                                 });
                             }
                             showContextMenu(e.clientX, e.clientY, items);
