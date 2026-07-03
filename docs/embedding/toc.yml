@@ -8,3 +8,5 @@
   href: lifecycle.md
 - name: Deployment modes
   href: deployment-modes.md
+- name: Customizing the workbench
+  href: customization.md

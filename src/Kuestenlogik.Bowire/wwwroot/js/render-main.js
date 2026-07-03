@@ -4847,9 +4847,11 @@
         // overwrote the schema-driven view). The renderer lives in
         // compose-rail.js — owns its own tab strip + pinned '+ New
         // Request' tab + per-tab builder instance.
-        if (railMode === 'compose' && typeof renderComposeMain === 'function') {
-            return renderComposeMain();
-        }
+        // #306 / #314 — the Compose rail no longer has a hardcoded arm
+        // here: it registers its main renderer on the #314 seam
+        // (window.__bowireRailRenderers.composeMain, resolved at the top
+        // of renderMain from the descriptor's mainPaneRendererKey). Core
+        // no longer names 'compose' — the pluggable-workbench cut-over.
 
         // #131 Phase 1 — Benchmarks ships the single-method shape;
         // collection / recording / random / scheduled probes land in

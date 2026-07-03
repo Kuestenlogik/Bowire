@@ -4000,20 +4000,12 @@
             case 'proxy':        sidebar = renderProxySidebar(); break;
             case 'intercepted':  sidebar = renderInterceptedSidebar(); break;
             case 'intercept':    sidebar = renderInterceptSidebar(); break;
-            // Compose Library (Collections + Presets) — owned by the
-            // Kuestenlogik.Bowire.Compose package's compose-rail.js
-            // fragment, which exposes the renderer on window so this
-            // dispatcher stays loosely coupled (the Compose package may
-            // not even be loaded in an embedded host). When the host
-            // ships Compose, the rail descriptor sets SidebarKind =>
-            // "library" and the fragment installs the renderer; when
-            // it doesn't, this arm degrades to no sidebar (the rail
-            // itself won't appear in that case either).
-            case 'library':
-                sidebar = (typeof window !== 'undefined'
-                    && typeof window.renderComposeLibrarySidebar === 'function')
-                    ? window.renderComposeLibrarySidebar() : null;
-                break;
+            // Compose Library (Collections + Presets): #306/#314 — moved
+            // to the renderer-key seam. The Compose descriptor sets
+            // sidebarRendererKey=composeLibrarySidebar and compose-rail.js
+            // registers it on window.__bowireRailRenderers, so
+            // _currentRailRenderer('sidebar') at the top of renderSidebar
+            // handles it before this switch — no 'library' arm needed.
             // #324 — Help rail. Sidebar = search box + topic-tree
             // nav (re-uses the existing topic-row + search-hit code
             // hoisted out of the legacy drawer renderer).
