@@ -3211,6 +3211,22 @@
         return true;
     }
 
+    // #363 — make a row carry a cross-rail drag payload (a MIME type +
+    // a JSON object) so it can be dropped on a rail-strip icon. Sets
+    // effectAllowed to 'copyMove' so it composes with an in-list
+    // reorder drag on the same row (reorder wants 'move', rail-strip
+    // drop wants 'copy'). Safe to call after attachListReorder.
+    function makeCrossRailDraggable(row, mime, payload) {
+        row.setAttribute('draggable', 'true');
+        row.addEventListener('dragstart', function (e) {
+            if (!e.dataTransfer) return;
+            try {
+                e.dataTransfer.setData(mime, JSON.stringify(payload));
+                e.dataTransfer.effectAllowed = 'copyMove';
+            } catch (_) { /* ignore */ }
+        });
+    }
+
     // #362 — the shared sort options prefixed with a Manual (drag) mode.
     // Rails that support drag-reorder use this so the grip glyph +
     // 'Manual' label read identically everywhere.

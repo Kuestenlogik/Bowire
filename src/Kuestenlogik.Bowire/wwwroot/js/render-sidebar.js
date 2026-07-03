@@ -1111,6 +1111,80 @@
         }
     }
 
+    // #363 — rail-strip drop targets for true cross-rail DnD. Rails
+    // aren't co-visible, so an operator can drag an item (a discovered
+    // method, a recording) onto a rail ICON to hand it off to that
+    // rail's ingest. Accept rules per rail keyed by the dragged MIME
+    // type; the icon highlights on dragover and the drop routes to the
+    // rail's create/ingest path, switching to it with a toast.
+    var _RAIL_DROP_ACCEPTS = {
+        benchmarks: ['application/x-bowire-method', 'application/x-bowire-recording'],
+        intercept: ['application/x-bowire-recording']
+    };
+
+    function _railDropAccepts(railId, types) {
+        var accepts = _RAIL_DROP_ACCEPTS[railId];
+        if (!accepts) return null;
+        for (var i = 0; i < accepts.length; i++) {
+            if (Array.prototype.indexOf.call(types || [], accepts[i]) >= 0) return accepts[i];
+        }
+        return null;
+    }
+
+    function _switchRail(railId) {
+        railMode = railId;
+        try { localStorage.setItem('bowire_rail_mode', railId); } catch (_) { /* ignore */ }
+        if (typeof setSidebarView === 'function') setSidebarView(railId);
+    }
+
+    // Route a dropped payload to the target rail's ingest. Returns true
+    // when handled. Reads the enriched x-bowire-method / x-bowire-
+    // recording payloads the source rows emit.
+    function _handleRailDrop(railId, dataTransfer) {
+        var mime = _railDropAccepts(railId, dataTransfer && dataTransfer.types);
+        if (!mime) return false;
+        var payload;
+        try { payload = JSON.parse(dataTransfer.getData(mime)); }
+        catch (_) { return false; }
+        if (!payload) return false;
+
+        if (railId === 'benchmarks' && typeof createBenchmarkSpec === 'function') {
+            var spec;
+            if (mime === 'application/x-bowire-recording') {
+                var rec = (typeof recordingsList !== 'undefined' ? recordingsList : [])
+                    .find(function (r) { return r.id === payload.recordingId; });
+                spec = createBenchmarkSpec({
+                    kind: 'recording', sourceId: payload.recordingId,
+                    name: 'Benchmark ' + ((rec && rec.name) || 'recording')
+                });
+            } else {
+                spec = createBenchmarkSpec({
+                    kind: 'single',
+                    service: payload.service, method: payload.method,
+                    protocol: payload.protocol, body: payload.body,
+                    name: 'Benchmark ' + (payload.service ? payload.service + '/' : '') + payload.method
+                });
+            }
+            if (typeof benchmarksSelectedId !== 'undefined' && spec) benchmarksSelectedId = spec.id;
+            _switchRail('benchmarks');
+            toast('Benchmark created — open on Benchmarks rail', 'success');
+            render();
+            return true;
+        }
+
+        if (railId === 'intercept' && mime === 'application/x-bowire-recording') {
+            var rec2 = (typeof recordingsList !== 'undefined' ? recordingsList : [])
+                .find(function (r) { return r.id === payload.recordingId; });
+            if (!rec2 || typeof useRecordingAsMock !== 'function') return false;
+            _switchRail('intercept');
+            useRecordingAsMock(rec2);
+            render();
+            return true;
+        }
+
+        return false;
+    }
+
     function renderActivityRail() {
         // Modes marked hideFromRail (Collections, Environments) stay in
         // the catalogue so railMode='…' routing keeps working when the
@@ -1193,7 +1267,11 @@
             // where railMode is restored from localStorage but the
             // last workspace was meanwhile deleted.
             var isDisabled = !!m.requiresWorkspace && !activeWorkspaceId;
-            rail.appendChild(el('button', {
+            // #363 — rail-strip drop target. Only rails with accept
+            // rules react; the button highlights on a matching dragover
+            // and routes the drop to the rail's ingest.
+            var acceptsDrop = !isDisabled && !!_RAIL_DROP_ACCEPTS[m.id];
+            var railBtn = el('button', {
                 type: 'button',
                 'data-rail-mode-id': m.id,
                 disabled: isDisabled ? 'disabled' : null,
@@ -1259,7 +1337,23 @@
                     className: 'bowire-rail-btn-badge',
                     textContent: count > 99 ? '99+' : String(count)
                 }) : null
-            ));
+            );
+            if (acceptsDrop) {
+                railBtn.addEventListener('dragover', function (e) {
+                    if (!_railDropAccepts(m.id, e.dataTransfer && e.dataTransfer.types)) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                    railBtn.classList.add('is-rail-drop-target');
+                });
+                railBtn.addEventListener('dragleave', function () {
+                    railBtn.classList.remove('is-rail-drop-target');
+                });
+                railBtn.addEventListener('drop', function (e) {
+                    railBtn.classList.remove('is-rail-drop-target');
+                    if (_handleRailDrop(m.id, e.dataTransfer)) e.preventDefault();
+                });
+            }
+            rail.appendChild(railBtn);
         });
 
         // #164 v3 — Overflow '…' button. Always rendered (hidden via
@@ -1867,6 +1961,12 @@
                             render();
                         }
                     });
+                }
+                // #363 — cross-rail drag: drop this recording on the
+                // Benchmarks / Intercept rail icon to hand it off. Layered
+                // after reorder so effectAllowed ends up 'copyMove'.
+                if (typeof makeCrossRailDraggable === 'function') {
+                    makeCrossRailDraggable(recRow, 'application/x-bowire-recording', { recordingId: rec.id });
                 }
                 list.appendChild(recRow);
             });
