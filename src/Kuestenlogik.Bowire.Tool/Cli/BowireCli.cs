@@ -1000,6 +1000,16 @@ internal static class BowireCli
         {
             Description = "Re-capture every snapshot baseline from the actual responses instead of diffing (Flow files only).",
         };
+        var failOn = new Option<string>("--fail-on")
+        {
+            Description = "Exit-code threshold: 'any' (default — non-zero on any failed check) or 'never' (run + report but always exit 0; a step error still exits 2).",
+            DefaultValueFactory = _ => cfg["Bowire:Test:FailOn"] ?? "any",
+        };
+        failOn.AcceptOnlyFromAmong("any", "never");
+        var workspaceDir = new Option<string?>("--workspace")
+        {
+            Description = "Run every Flow JSON under a git-native workspace directory (its flows/ folder, or the directory itself). Aggregates pass/fail across all flows; the positional file is ignored.",
+        };
         // v2.2 T2 — Flow-runner specific. Ignored for the recording
         // codepath which already carries serverUrl + environment per
         // test-collection.
@@ -1023,6 +1033,7 @@ internal static class BowireCli
         var cmd = new Command("test", "Run an assertion-based test suite. Accepts a recording JSON (v2.1 test-collection format) or a Flow JSON document (v2.2 — the T2 CI runner). Format auto-detected.");
         cmd.Add(collectionPath); cmd.Add(url); cmd.Add(report); cmd.Add(junit);
         cmd.Add(sarif); cmd.Add(annotations); cmd.Add(updateSnapshots);
+        cmd.Add(failOn); cmd.Add(workspaceDir);
         cmd.Add(baseUrl); cmd.Add(env); cmd.Add(envFile);
         cmd.SetAction(async (pr, _) =>
         {
@@ -1034,14 +1045,25 @@ internal static class BowireCli
                 SarifPath = pr.GetValue(sarif),
                 Annotations = pr.GetValue(annotations),
                 UpdateSnapshots = pr.GetValue(updateSnapshots),
+                FailOn = pr.GetValue(failOn) ?? "any",
                 BaseUrl = pr.GetValue(baseUrl),
                 EnvOverrides = pr.GetValue(env) ?? Array.Empty<string>(),
                 EnvFiles = pr.GetValue(envFile) ?? Array.Empty<string>(),
             };
-            return await TestRunner.RunAsync(
-                options,
-                pr.InvocationConfiguration.Output,
-                pr.InvocationConfiguration.Error).ConfigureAwait(false);
+            var stdout = pr.InvocationConfiguration.Output;
+            var stderr = pr.InvocationConfiguration.Error;
+
+            // #181 — --workspace runs every flow file in a git-native
+            // workspace directory, aggregating pass/fail. Reports are
+            // per-flow (written next to each flow with a .<flow>.junit
+            // suffix) so a CI reporter can glob them.
+            var wsDir = pr.GetValue(workspaceDir);
+            if (!string.IsNullOrEmpty(wsDir))
+            {
+                return await TestRunner.RunWorkspaceAsync(wsDir, options, stdout, stderr).ConfigureAwait(false);
+            }
+
+            return await TestRunner.RunAsync(options, stdout, stderr).ConfigureAwait(false);
         });
         return cmd;
     }

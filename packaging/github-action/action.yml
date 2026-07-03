@@ -1,0 +1,58 @@
+# Bowire — run API tests / contract verification in CI (#181).
+#
+# Composite action: installs the Bowire .NET tool and runs `bowire test`
+# (or any bowire subcommand). Referenceable straight from this repo:
+#
+#   - uses: Kuestenlogik/Bowire/packaging/github-action@v2
+#     with:
+#       args: test ./flows/smoke.json --junit results.xml
+#
+# Requires a .NET SDK on the runner (actions/setup-dotnet). Set
+# `dotnet-version` to let this action install one, or omit it if the
+# workflow already ran setup-dotnet.
+name: Bowire
+description: Install the Bowire .NET tool and run a bowire command (test / contract verify / scan …).
+branding:
+  icon: activity
+  color: purple
+
+inputs:
+  args:
+    description: "Arguments passed to `bowire` (e.g. `test ./flows/smoke.json --junit results.xml --sarif results.sarif`)."
+    required: true
+  version:
+    description: "Version of Kuestenlogik.Bowire.Tool to install. Defaults to the latest stable."
+    required: false
+    default: ""
+  dotnet-version:
+    description: "If set, this action runs actions/setup-dotnet with this version first. Omit when the workflow already set up .NET."
+    required: false
+    default: ""
+  working-directory:
+    description: "Directory to run `bowire` from."
+    required: false
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    - name: Set up .NET
+      if: inputs.dotnet-version != ''
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Install Bowire
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.version }}" ]; then
+          dotnet tool install --global Kuestenlogik.Bowire.Tool --version "${{ inputs.version }}"
+        else
+          dotnet tool install --global Kuestenlogik.Bowire.Tool
+        fi
+        echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+    - name: Run bowire
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: bowire ${{ inputs.args }}

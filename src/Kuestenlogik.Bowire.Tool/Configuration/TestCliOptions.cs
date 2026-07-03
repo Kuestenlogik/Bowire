@@ -61,6 +61,14 @@ internal sealed class TestCliOptions
     public bool UpdateSnapshots { get; set; }
 
     /// <summary>
+    /// #181 — failure threshold gating the exit code (<c>--fail-on</c>):
+    /// <c>any</c> (default — non-zero on any failed assertion / step) or
+    /// <c>never</c> (always exit 0; run + report only, e.g. a
+    /// non-blocking pre-merge signal). Reports are written regardless.
+    /// </summary>
+    public string FailOn { get; set; } = "any";
+
+    /// <summary>
     /// v2.2 (#test-pillar T2) — fallback server URL for Flow steps that
     /// don't carry their own <c>serverUrl</c>. Ignored for the legacy
     /// test-collection codepath (which already supports a per-collection

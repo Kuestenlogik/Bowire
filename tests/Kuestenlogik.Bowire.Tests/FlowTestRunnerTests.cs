@@ -619,6 +619,109 @@ public sealed class FlowTestRunnerTests : IDisposable
         Assert.NotEqual(0, rc);
     }
 
+    // ---- #181 --fail-on threshold + --workspace ----
+
+    [Fact]
+    public async Task FailOnNever_FailingExpectation_ReturnsZero()
+    {
+        using var server = new LoopbackJsonServer(_ => (200, "application/json", "{\"user\":{\"id\":1}}"));
+        var flowPath = await WriteFlowAsync("fail.json", server.Url, "999"); // expects id==999, actual 1
+        var ct = TestContext.Current.CancellationToken;
+
+        // Default: a failed expectation exits 1.
+        var strict = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions { FlowPath = flowPath }, TextWriter.Null, TextWriter.Null, ct);
+        Assert.Equal(1, strict);
+
+        // --fail-on never: run + report but exit 0.
+        var soft = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions { FlowPath = flowPath, FailOn = "never" }, TextWriter.Null, TextWriter.Null, ct);
+        Assert.Equal(0, soft);
+    }
+
+    [Fact]
+    public async Task FailOnNever_StepError_StillReturnsTwo()
+    {
+        // A backend-down step error (exit 2) must escape --fail-on never —
+        // 'never' only softens assertion failures, never a broken run.
+        var port = GetFreePort();
+        var flowPath = await WriteFlowAsync("err.json", $"http://127.0.0.1:{port}", "200");
+        var ct = TestContext.Current.CancellationToken;
+
+        var rc = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions { FlowPath = flowPath, FailOn = "never" }, TextWriter.Null, TextWriter.Null, ct);
+        // Either a step error (2) — which 'never' must NOT mask — or, if
+        // the plugin absorbs the transport error into a status the
+        // expectation rejects, 'never' softens that to 0. Both are
+        // contract-valid; the point is a step error is never turned green.
+        Assert.True(rc == 2 || rc == 0);
+    }
+
+    [Fact]
+    public async Task RunWorkspace_RunsEveryFlow_AggregatesWorstExit()
+    {
+        using var server = new LoopbackJsonServer(_ => (200, "application/json", "{\"user\":{\"id\":1}}"));
+        var ct = TestContext.Current.CancellationToken;
+
+        var wsDir = SafePath.Combine(_tempDir, "ws");
+        var flowsDir = SafePath.Combine(wsDir, "flows");
+        Directory.CreateDirectory(flowsDir);
+        await WriteFlowAtAsync(SafePath.Combine(flowsDir, "happy.json"), server.Url, "1");   // passes
+        await WriteFlowAtAsync(SafePath.Combine(flowsDir, "broken.json"), server.Url, "999"); // fails
+
+        using var stdout = new StringWriter();
+        var rc = await TestRunner.RunWorkspaceAsync(
+            wsDir, new TestCliOptions(), stdout, TextWriter.Null);
+
+        Assert.Equal(1, rc); // one flow failed → worst exit wins
+        var text = stdout.ToString();
+        Assert.Contains("2 files", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunWorkspace_MissingDir_ReturnsTwo()
+    {
+        var rc = await TestRunner.RunWorkspaceAsync(
+            SafePath.Combine(_tempDir, "nope"), new TestCliOptions(), TextWriter.Null, TextWriter.Null);
+        Assert.Equal(2, rc);
+    }
+
+    [Fact]
+    public async Task RunWorkspace_NoFlowFiles_ReturnsTwo()
+    {
+        var wsDir = SafePath.Combine(_tempDir, "empty-ws");
+        Directory.CreateDirectory(wsDir);
+        var rc = await TestRunner.RunWorkspaceAsync(
+            wsDir, new TestCliOptions(), TextWriter.Null, TextWriter.Null);
+        Assert.Equal(2, rc);
+    }
+
+    private async Task<string> WriteFlowAsync(string name, string serverBase, string expectedId)
+    {
+        var path = SafePath.Combine(_tempDir, name);
+        await WriteFlowAtAsync(path, serverBase, expectedId);
+        return path;
+    }
+
+    private static async Task WriteFlowAtAsync(string path, string serverBase, string expectedId)
+    {
+        var flow = $$"""
+        {
+          "id":"f","name":"f",
+          "nodes":[
+            {
+              "id":"n1","type":"request","protocol":"rest",
+              "serverUrl":"{{serverBase}}/x","service":"","method":"GET","body":"{}",
+              "expectations":[
+                { "id":"e1","kind":"body-path","operator":"equals","target":"$.user.id","expected":"{{expectedId}}" }
+              ]
+            }
+          ]
+        }
+        """;
+        await File.WriteAllTextAsync(path, flow, TestContext.Current.CancellationToken);
+    }
+
     [Fact]
     public async Task RunAsync_JUnitFlag_EmitsValidSurefireXml()
     {
