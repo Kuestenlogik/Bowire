@@ -90,19 +90,19 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**23/29 done** · 6 backlog
+**27/29 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [170](https://github.com/Kuestenlogik/Bowire/issues/170) | Bowire | [Mock-server fault injection — latency / errors / drops / partial responses](#issue-kuestenlogik-bowire-170) | ⬜ Backlog |  |
-| [171](https://github.com/Kuestenlogik/Bowire/issues/171) | Bowire | [Snapshot testing — capture-once, diff-on-change response baselines](#issue-kuestenlogik-bowire-171) | ⬜ Backlog |  |
-| [174](https://github.com/Kuestenlogik/Bowire/issues/174) | Bowire | [Data-driven tests — CSV / JSON / generator parameterisation](#issue-kuestenlogik-bowire-174) | ⬜ Backlog |  |
-| [181](https://github.com/Kuestenlogik/Bowire/issues/181) | Bowire | [bowire test CLI runner with JUnit / SARIF / TTY output](#issue-kuestenlogik-bowire-181) | ⬜ Backlog |  |
 | [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ⬜ Backlog |  |
 | [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | ⬜ Backlog |  |
 | [38](https://github.com/Kuestenlogik/Bowire/issues/38) | Bowire | [CLI — Phase 3 polish (completion + validators + error rendering)](#issue-kuestenlogik-bowire-38) | ✅ Done | `area:cli` |
 | [100](https://github.com/Kuestenlogik/Bowire/issues/100) | Bowire | [Ferry — CI/CD runner (collection / recording → headless run + JUnit report)](#issue-kuestenlogik-bowire-100) | ✅ Done |  |
+| [170](https://github.com/Kuestenlogik/Bowire/issues/170) | Bowire | [Mock-server fault injection — latency / errors / drops / partial responses](#issue-kuestenlogik-bowire-170) | ✅ Done |  |
+| [171](https://github.com/Kuestenlogik/Bowire/issues/171) | Bowire | [Snapshot testing — capture-once, diff-on-change response baselines](#issue-kuestenlogik-bowire-171) | ✅ Done |  |
+| [174](https://github.com/Kuestenlogik/Bowire/issues/174) | Bowire | [Data-driven tests — CSV / JSON / generator parameterisation](#issue-kuestenlogik-bowire-174) | ✅ Done |  |
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ✅ Done |  |
+| [181](https://github.com/Kuestenlogik/Bowire/issues/181) | Bowire | [bowire test CLI runner with JUnit / SARIF / TTY output](#issue-kuestenlogik-bowire-181) | ✅ Done |  |
 | [191](https://github.com/Kuestenlogik/Bowire/issues/191) | Bowire | [Contract testing — Pact-style publish / verify CLI](#issue-kuestenlogik-bowire-191) | ✅ Done |  |
 | [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ✅ Done |  |
 | [312](https://github.com/Kuestenlogik/Bowire/issues/312) | Bowire | [Test coverage gap report — v2.1 audit kickoff](#issue-kuestenlogik-bowire-312) | ✅ Done |  |
@@ -559,22 +559,6 @@ Three sidebar UX bugs operator surfaced in one session: [[more]](https://github.
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-#### <a id="issue-kuestenlogik-bowire-170"></a>⬜ Backlog · [#170](https://github.com/Kuestenlogik/Bowire/issues/170) Mock-server fault injection — latency / errors / drops / partial responses
-
-Mocks (#94) replay captured responses faithfully. But "code that works against the happy path" is not the same as "code that works under failure". Your client should handle 503s, timeouts, slow responses, partial streams, dropped WebSocket frames. Today there's no easy way to test that against a Bowire mock. [[more]](https://github.com/Kuestenlogik/Bowire/issues/170)
-
-#### <a id="issue-kuestenlogik-bowire-171"></a>⬜ Backlog · [#171](https://github.com/Kuestenlogik/Bowire/issues/171) Snapshot testing — capture-once, diff-on-change response baselines
-
-Regression-testing API responses is hard without a baseline. A real assertion DSL covers structural checks ("status is OK", "body.id matches"), but doesn't catch "the response shape changed in a way nobody intended". Jest-style snapshot testing fills that gap: record the response once, fail if it changes unexpectedly. [[more]](https://github.com/Kuestenlogik/Bowire/issues/171)
-
-#### <a id="issue-kuestenlogik-bowire-174"></a>⬜ Backlog · [#174](https://github.com/Kuestenlogik/Bowire/issues/174) Data-driven tests — CSV / JSON / generator parameterisation
-
-Same request, N different inputs is a standard testing pattern. Today an operator would have to clone a collection item N times or write a script. Both flows lose the structured "same test, different data" semantics that test reporters expect. [[more]](https://github.com/Kuestenlogik/Bowire/issues/174)
-
-#### <a id="issue-kuestenlogik-bowire-181"></a>⬜ Backlog · [#181](https://github.com/Kuestenlogik/Bowire/issues/181) bowire test CLI runner with JUnit / SARIF / TTY output
-
-Bowire is currently a UI tool. The "shift-left" / "build safer apps through continuous testing" positioning needs a headless surface that runs in CI and emits CI-friendly output (JUnit-XML, SARIF, GitHub annotations). Without it, the workbench stays a one-developer-at-a-time explorer. [[more]](https://github.com/Kuestenlogik/Bowire/issues/181)
-
 #### <a id="issue-kuestenlogik-bowire-208"></a>⬜ Backlog · [#208](https://github.com/Kuestenlogik/Bowire/issues/208) Variable resolver — Phase 5: OS keyring + AI re-roll + streaming
 
 The variable resolver (phases 1-4, #125/#145) resolves `{{name}}` from environments, workspace vars, and system generators. Three sources from the original design are still missing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/208)
@@ -593,9 +577,25 @@ Follow-up to #294. Phases A-F shipped the descriptor architecture + extracted Se
 
 The five shipping boats (#28 Cruise ship preview included) cover *interactive* use — operator opens a workbench, looks at responses, decides what to do next. They don't cover the CI/CD shape: "every commit, run this collection of calls + assertions, fail the build if anything regresses." [[more]](https://github.com/Kuestenlogik/Bowire/issues/100)
 
+#### <a id="issue-kuestenlogik-bowire-170"></a>✅ Done · [#170](https://github.com/Kuestenlogik/Bowire/issues/170) Mock-server fault injection — latency / errors / drops / partial responses
+
+Mocks (#94) replay captured responses faithfully. But "code that works against the happy path" is not the same as "code that works under failure". Your client should handle 503s, timeouts, slow responses, partial streams, dropped WebSocket frames. Today there's no easy way to test that against a Bowire mock. [[more]](https://github.com/Kuestenlogik/Bowire/issues/170)
+
+#### <a id="issue-kuestenlogik-bowire-171"></a>✅ Done · [#171](https://github.com/Kuestenlogik/Bowire/issues/171) Snapshot testing — capture-once, diff-on-change response baselines
+
+Regression-testing API responses is hard without a baseline. A real assertion DSL covers structural checks ("status is OK", "body.id matches"), but doesn't catch "the response shape changed in a way nobody intended". Jest-style snapshot testing fills that gap: record the response once, fail if it changes unexpectedly. [[more]](https://github.com/Kuestenlogik/Bowire/issues/171)
+
+#### <a id="issue-kuestenlogik-bowire-174"></a>✅ Done · [#174](https://github.com/Kuestenlogik/Bowire/issues/174) Data-driven tests — CSV / JSON / generator parameterisation
+
+Same request, N different inputs is a standard testing pattern. Today an operator would have to clone a collection item N times or write a script. Both flows lose the structured "same test, different data" semantics that test reporters expect. [[more]](https://github.com/Kuestenlogik/Bowire/issues/174)
+
 #### <a id="issue-kuestenlogik-bowire-180"></a>✅ Done · [#180](https://github.com/Kuestenlogik/Bowire/issues/180) Assertion DSL for collection / recording replay
 
 Recordings + Mocks let an operator capture and replay traffic, but nothing in the workbench can answer "did the response match what I expected?" Today the only assertion is "the call returned without throwing" — fine for a developer probing, useless as a regression suite. [[more]](https://github.com/Kuestenlogik/Bowire/issues/180)
+
+#### <a id="issue-kuestenlogik-bowire-181"></a>✅ Done · [#181](https://github.com/Kuestenlogik/Bowire/issues/181) bowire test CLI runner with JUnit / SARIF / TTY output
+
+Bowire is currently a UI tool. The "shift-left" / "build safer apps through continuous testing" positioning needs a headless surface that runs in CI and emits CI-friendly output (JUnit-XML, SARIF, GitHub annotations). Without it, the workbench stays a one-developer-at-a-time explorer. [[more]](https://github.com/Kuestenlogik/Bowire/issues/181)
 
 #### <a id="issue-kuestenlogik-bowire-191"></a>✅ Done · [#191](https://github.com/Kuestenlogik/Bowire/issues/191) Contract testing — Pact-style publish / verify CLI
 
