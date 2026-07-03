@@ -36,6 +36,36 @@ The other entity-delete resolvers (`recording-delete`, `flow-delete`, `env-delet
 
 The Settings dialog now exposes scope through the parent-node names: `This machine` (localStorage / install-scoped) and `Workspace…` (`.bww`-scoped, travels with the workspace file). The per-page disclaimer that used to repeat the scope copy on every sub-page (`"These settings stay on this machine — they don't travel with the workspace file (.bww)."`) is gone — the tree's grouping carries that information unambiguously. The standalone `Plugins` lifecycle leaf is gone; it has merged with `Configure` into a single `Plugins` node whose six sub-pages (Protocols / UI Widgets / Modules / Formats / Tools / Discovery providers) now render the inline per-plugin settings AND the lifecycle button cluster (Restart / Unload / Reset storage, wired to the existing `POST /api/plugins/{id}/lifecycle/{action}` 501-stub) per row, plus Install + Check-for-updates at the top of the Protocols sub-page. A new empty-state `Workspace… → Per-Workspace overrides` page surfaces every machine-scoped setting that the active workspace has overridden (today: the AI provider config, when the workspace has its own `ai-config.<workspaceId>.json`); saved deep-links from v2.1 (`configure-protocols`, `plugin-<id>`, `extension-<id>`) keep working unchanged, and any saved value pointing at the dropped `plugins` lifecycle id migrates to `configure-protocols`.
 
+### Snapshot testing in the flow runner — capture-once, diff-on-change (#171)
+
+A flow step can now carry `"snapshot": { "mode": "exact" | "structural", "ignore": ["$.ts", …] }`. The first `bowire test` run captures the response as a baseline under `__snapshots__/<flow>/<step>.snap.json` (checked into the repo next to the flow file); every later run diffs against it and fails with the drifted JSON paths. `ignore` marks dynamic fields (timestamps, generated ids) whose values may vary — their kind is still checked. `--update-snapshots` re-baselines after an intended change.
+
+### `bowire test` speaks SARIF 2.1.0 and GitHub annotations (#181)
+
+Alongside `--report` (HTML) and `--junit`, the runner now writes `--sarif path.sarif` for upload to GitHub Code Scanning, and `--annotations` emits `::error` workflow commands so failed expectations surface inline on the PR diff.
+
+### Data-driven flow steps — inline / CSV / generator (#174)
+
+A flow step can now carry a `data` source and run once per row: an inline JSON array, a CSV file (path resolved relative to the flow file, RFC-4180 quoting), or a deterministic generator (`range`, or `random` with a seed — same seed, same rows, on every .NET version). Row columns join the `{{var}}` resolver scope and shadow `--env` values of the same name. Each row reports as `stepId[label]` (pick the label column via `labelColumn`), so JUnit / SARIF / HTML reports group the parameterisation as one step family. Zero-row sources and expansions beyond 100 000 rows fail loudly as step errors instead of passing vacuously or hanging CI.
+
+```json
+{
+  "id": "get-user",
+  "type": "request",
+  "serverUrl": "https://api.example.com/users/{{userId}}",
+  "data": {
+    "csv": "fixtures/users.csv",
+    "labelColumn": "userId"
+  },
+  "expectations": [
+    { "kind": "status", "operator": "equals", "expected": "200" },
+    { "kind": "body-path", "operator": "exists", "target": "$.id" }
+  ]
+}
+```
+
+The UI editor for data sources on collection items and per-row pass/fail counts in the workbench are tracked separately on #174.
+
 ## Breaking changes
 
 <!-- Add a section per breaking change, with the migration path. -->

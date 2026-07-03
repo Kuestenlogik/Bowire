@@ -142,10 +142,14 @@ internal static class FlowTestRunner
         var anyExpectationFailed = false;
 
         var snapshotDir = SnapshotDirFor(cli.FlowPath);
+        var flowDir = Path.GetDirectoryName(Path.GetFullPath(cli.FlowPath)) ?? ".";
 
-        foreach (var step in flow.Nodes)
+        // Runs one step execution (one row of a data-driven step, or the
+        // whole step when it carries no data source), evaluates its
+        // snapshot, and folds the result into the report + console.
+        async Task ExecuteAsync(FlowStep step, Dictionary<string, string> stepEnv, string? rowLabel)
         {
-            var stepResult = await RunStepAsync(step, env, registry, cli.BaseUrl, ct).ConfigureAwait(false);
+            var stepResult = await RunStepAsync(step, stepEnv, registry, cli.BaseUrl, rowLabel, ct).ConfigureAwait(false);
             if (step.Snapshot is { Enabled: true } && !stepResult.Skipped && string.IsNullOrEmpty(stepResult.Error))
             {
                 await EvaluateSnapshotAsync(step, stepResult, snapshotDir, cli.UpdateSnapshots, ct).ConfigureAwait(false);
@@ -156,6 +160,51 @@ internal static class FlowTestRunner
             if (stepResult.Expectations.Any(e => !e.Passed)) anyExpectationFailed = true;
 
             await PrintStepAsync(stdout, stepResult).ConfigureAwait(false);
+        }
+
+        foreach (var step in flow.Nodes)
+        {
+            // Data-driven expansion (#174): a step with a data source runs
+            // once per row, the row's columns overriding the --env scope,
+            // and reports as `stepId[label]` so JUnit / SARIF group the
+            // parameterisation under one step family.
+            if (step.Data is not null
+                && string.Equals(step.Type, "request", StringComparison.OrdinalIgnoreCase))
+            {
+                IReadOnlyList<FlowDataRow> rows;
+                try
+                {
+                    rows = FlowDataSourceExpander.Expand(step.Data, flowDir);
+                }
+                catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException or NotSupportedException)
+                {
+                    var invalid = new FlowStepRunResult
+                    {
+                        StepId = string.IsNullOrEmpty(step.Id) ? "(unnamed)" : step.Id,
+                        StepType = step.Type ?? "request",
+                        Service = step.Service ?? string.Empty,
+                        Method = step.Method ?? string.Empty,
+                        Error = $"data source invalid: {ex.Message}",
+                    };
+                    report.Steps.Add(invalid);
+                    anyError = true;
+                    await PrintStepAsync(stdout, invalid).ConfigureAwait(false);
+                    continue;
+                }
+
+                foreach (var row in rows)
+                {
+                    var rowEnv = new Dictionary<string, string>(env, StringComparer.Ordinal);
+                    foreach (var col in row.Values)
+                    {
+                        rowEnv[col.Key] = col.Value;
+                    }
+                    await ExecuteAsync(step, rowEnv, row.Label).ConfigureAwait(false);
+                }
+                continue;
+            }
+
+            await ExecuteAsync(step, env, rowLabel: null).ConfigureAwait(false);
         }
 
         sw.Stop();
@@ -228,11 +277,12 @@ internal static class FlowTestRunner
 
     private static async Task<FlowStepRunResult> RunStepAsync(
         FlowStep step, Dictionary<string, string> env, BowireProtocolRegistry registry,
-        string? baseUrl, CancellationToken ct)
+        string? baseUrl, string? rowLabel, CancellationToken ct)
     {
+        var baseId = string.IsNullOrEmpty(step.Id) ? "(unnamed)" : step.Id;
         var result = new FlowStepRunResult
         {
-            StepId = string.IsNullOrEmpty(step.Id) ? "(unnamed)" : step.Id,
+            StepId = rowLabel is null ? baseId : $"{baseId}[{rowLabel}]",
             StepType = step.Type ?? "request",
             Service = step.Service ?? string.Empty,
             Method = step.Method ?? string.Empty,

@@ -76,6 +76,14 @@ public sealed class FlowStep
     public FlowSnapshotConfig? Snapshot { get; set; }
 
     /// <summary>
+    /// Data-driven parameterisation (#174). Null → the step runs once;
+    /// otherwise once per row, with the row's columns joining the
+    /// variable-resolver scope.
+    /// </summary>
+    [JsonPropertyName("data")]
+    public FlowDataSource? Data { get; set; }
+
+    /// <summary>
     /// Expectations to evaluate after the request returns. v2.2 schema.
     /// Optional + defaults to empty so v2.1 flows load unchanged.
     /// </summary>
