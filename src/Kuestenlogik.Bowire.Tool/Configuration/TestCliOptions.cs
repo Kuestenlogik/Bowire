@@ -40,6 +40,21 @@ internal sealed class TestCliOptions
     public string? JUnitPath { get; set; }
 
     /// <summary>
+    /// Optional SARIF 2.1.0 report output (<c>--sarif</c>). Uploading it
+    /// via <c>github/codeql-action/upload-sarif</c> lights failures up in
+    /// the GitHub Code Scanning tab; GitLab + Azure DevOps ingest the same
+    /// format.
+    /// </summary>
+    public string? SarifPath { get; set; }
+
+    /// <summary>
+    /// Emit GitHub Actions <c>::error</c> workflow-command annotations for
+    /// every failure (<c>--annotations</c>). Default off — the plain TTY
+    /// output stays clean outside CI.
+    /// </summary>
+    public bool Annotations { get; set; }
+
+    /// <summary>
     /// v2.2 (#test-pillar T2) — fallback server URL for Flow steps that
     /// don't carry their own <c>serverUrl</c>. Ignored for the legacy
     /// test-collection codepath (which already supports a per-collection
