@@ -732,6 +732,9 @@
     // selects it for editing (but doesn't switch the active env —
     // that's what the topbar dropdown does).
     var envSidebarSelectedId = null;
+    // #362 — Environments sidebar search + sort (session-only search).
+    var envSearchQuery = '';
+    var envSortBy = '';
 
     function renderEnvironmentsListInto(list) {
         // Self-contained workspaces: envs are the active workspace's
@@ -761,7 +764,20 @@
                         render();
                     });
                 }
-            }
+            },
+            // #362 — search + sort once there's more than one env to
+            // organise. Globals stays pinned above the filtered list.
+            search: (envs.length > 1) ? {
+                placeholder: 'Search environments…',
+                value: envSearchQuery,
+                onInput: function (v) { envSearchQuery = v; render(); }
+            } : null,
+            sort: (envs.length > 1) ? {
+                title: 'Sort environments',
+                value: envSortBy || 'name',
+                options: BOWIRE_LIST_SORT_OPTIONS,
+                onChange: function (v) { envSortBy = v; render(); }
+            } : null
         }));
 
         // (Workspace include-all toggle + per-env inclusion checkboxes
@@ -791,8 +807,21 @@
         // Workspace envs \u2014 just iterate. No inclusion gating, no
         // greyed-out non-included rows, because there's no catalogue
         // outside the workspace to gate against.
-        for (var i = 0; i < envs.length; i++) {
-            list.appendChild(renderEnvironmentRow(envs[i].id));
+        var visibleEnvs = applyListFilterSort(envs, {
+            filter: envSearchQuery,
+            sort: envSortBy,
+            nameOf: function (e) { return e.name; },
+            createdOf: function (e) { return e.createdAt; }
+        });
+        if (visibleEnvs.length === 0 && envSearchQuery) {
+            list.appendChild(el('div', {
+                className: 'bowire-pane-empty',
+                style: 'padding:12px 14px',
+                textContent: 'No environments match "' + envSearchQuery + '".'
+            }));
+        }
+        for (var i = 0; i < visibleEnvs.length; i++) {
+            list.appendChild(renderEnvironmentRow(visibleEnvs[i].id));
         }
 
         // The variable editor lives in the main pane (renderMain)
@@ -1673,6 +1702,18 @@
                     recordingsSelectionAnchor = null;
                     render();
                 }
+            } : null,
+            // #362 — search + sort once there's more than one recording.
+            search: (recordingsList.length > 1 && recordingsSelected.size === 0) ? {
+                placeholder: 'Search recordings…',
+                value: recordingsSearchQuery,
+                onInput: function (v) { recordingsSearchQuery = v; render(); }
+            } : null,
+            sort: (recordingsList.length > 1 && recordingsSelected.size === 0) ? {
+                title: 'Sort recordings',
+                value: recordingsSortBy || 'name',
+                options: BOWIRE_LIST_SORT_OPTIONS,
+                onChange: function (v) { recordingsSortBy = v; render(); }
             } : null
         }));
 
@@ -1689,8 +1730,24 @@
             }));
         } else {
             var list = el('div', { id: 'bowire-recordings-list', className: 'bowire-env-list' });
-            var recIds = recordingsList.map(function (r) { return r.id; });
-            recordingsList.forEach(function (rec, idx) {
+            // #362 — filter + sort. Range-selection indices key off the
+            // VISIBLE list so shift-click still selects a contiguous run
+            // of what the operator actually sees.
+            var visibleRecordings = applyListFilterSort(recordingsList, {
+                filter: recordingsSearchQuery,
+                sort: recordingsSortBy,
+                nameOf: function (r) { return r.name; },
+                createdOf: function (r) { return r.createdAt || r.startedAt; }
+            });
+            var recIds = visibleRecordings.map(function (r) { return r.id; });
+            if (visibleRecordings.length === 0) {
+                list.appendChild(el('div', {
+                    className: 'bowire-pane-empty',
+                    style: 'padding:12px 14px',
+                    textContent: 'No recordings match "' + recordingsSearchQuery + '".'
+                }));
+            }
+            visibleRecordings.forEach(function (rec, idx) {
                 // #144 Phase 1.8 — for manifest-only recordings the
                 // steps[] array is empty until hydration; read step
                 // count from stepCount (written by the backend) or

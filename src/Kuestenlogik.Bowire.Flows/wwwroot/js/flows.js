@@ -13,6 +13,10 @@
     const FLOWS_KEY = 'bowire_flows';
     let flowsList = [];
     let flowEditorSelectedId = null;
+    // #362 — sidebar search + sort. Search is session-only (matches
+    // Workspaces + the other rails); sort defaults to insertion order.
+    let flowsSearchQuery = '';
+    let flowsSortBy = '';
     // Results keyed by node.id: { [nodeId]: { pass, status, durationMs, response, error, iteration?, assertions? } }
     let flowRunResults = {};
     let flowRunActiveNodeId = null;
@@ -787,7 +791,20 @@
                             );
                         }
                     }
-                ] : null
+                ] : null,
+                // #362 — search + sort, shown once there's more than one
+                // flow to organise (a single row needs neither).
+                search: (flowsList && flowsList.length > 1) ? {
+                    placeholder: 'Search flows…',
+                    value: flowsSearchQuery,
+                    onInput: function (v) { flowsSearchQuery = v; render(); }
+                } : null,
+                sort: (flowsList && flowsList.length > 1) ? {
+                    title: 'Sort flows',
+                    value: flowsSortBy || 'name',
+                    options: BOWIRE_LIST_SORT_OPTIONS,
+                    onChange: function (v) { flowsSortBy = v; render(); }
+                } : null
             }));
         }
 
@@ -805,8 +822,23 @@
             return;
         }
 
-        for (var i = 0; i < flowsList.length; i++) {
-            container.appendChild(renderFlowListRow(flowsList[i].id));
+        // #362 — apply the shared filter + sort before rendering rows.
+        var visibleFlows = applyListFilterSort(flowsList, {
+            filter: flowsSearchQuery,
+            sort: flowsSortBy,
+            nameOf: function (f) { return f.name; },
+            createdOf: function (f) { return f.createdAt; }
+        });
+        if (visibleFlows.length === 0) {
+            container.appendChild(el('div', {
+                className: 'bowire-pane-empty',
+                style: 'padding:12px 14px',
+                textContent: 'No flows match "' + flowsSearchQuery + '".'
+            }));
+            return;
+        }
+        for (var i = 0; i < visibleFlows.length; i++) {
+            container.appendChild(renderFlowListRow(visibleFlows[i].id));
         }
 
         // Bottom "+ New Flow" button retired — primary lives in the
