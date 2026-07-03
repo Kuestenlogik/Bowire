@@ -30,6 +30,15 @@ ignore:
   - "tests/**"
   - "samples/**"
   - "benchmarks/**"
+  # The vanilla-JS frontend under wwwroot is not covered by the C#
+  # Cobertura report (dotnet doesn't run JS), so it stays ignored here
+  # to keep the C# coverage number honest — otherwise ~72k uncovered JS
+  # lines would tank the repo-wide %. JS coverage is tracked separately
+  # via node:test (#356): `npm run test:js:coverage` /
+  # `node --test --experimental-test-coverage`, and the JS tests now gate
+  # CI. A dedicated `javascript` codecov flag (lcov upload) is a
+  # follow-up — it needs a per-flag ignore so the global one above
+  # doesn't also hide the JS lcov.
   - "src/**/wwwroot/**"
   - "scripts/**"
 
