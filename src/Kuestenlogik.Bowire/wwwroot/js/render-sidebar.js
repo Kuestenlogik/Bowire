@@ -3994,7 +3994,9 @@
             case 'recordings':   sidebar = renderRecordingsSidebar(); break;
             case 'workspaces':   sidebar = renderWorkspacesSidebar(); break;
             case 'sources':      sidebar = renderSourcesSidebar(); break;
-            case 'benchmarks':   sidebar = renderBenchmarksSidebar(); break;
+            // benchmarks: #306/#314 — moved to the renderer-key seam
+            // (sidebarRendererKey=benchmarksSidebar), handled before this
+            // switch by _currentRailRenderer('sidebar').
             case 'security':     sidebar = renderSecuritySidebar(); break;
             case 'flows':        sidebar = renderFlowsSidebar(); break;
             case 'proxy':        sidebar = renderProxySidebar(); break;

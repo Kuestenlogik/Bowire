@@ -4856,9 +4856,8 @@
         // #131 Phase 1 — Benchmarks ships the single-method shape;
         // collection / recording / random / scheduled probes land in
         // later phases. Renderer lives in benchmarks.js.
-        if (railMode === 'benchmarks') {
-            return renderBenchmarksDetailMain();
-        }
+        // #306 / #314 — Benchmarks moved to the renderer-key seam
+        // (window.__bowireRailRenderers.benchmarksMain); no hardcoded arm.
 
         // #132 — Parallel sessions are launched directly from the
         // Recording / Collection detail toolbars; the result lands

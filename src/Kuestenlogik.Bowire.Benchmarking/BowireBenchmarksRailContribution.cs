@@ -32,6 +32,15 @@ public sealed class BowireBenchmarksRailContribution : IBowireRailContribution
     public string Group => "quality";
     /// <inheritdoc />
     public string SidebarKind => "benchmarks";
+
+    // #306 / #314 — renderer-key seam: core resolves these from
+    // window.__bowireRailRenderers (registered by benchmarks.js) instead
+    // of a hardcoded railMode arm.
+    /// <inheritdoc />
+    public string? SidebarRendererKey => "benchmarksSidebar";
+    /// <inheritdoc />
+    public string? MainPaneRendererKey => "benchmarksMain";
+
     /// <inheritdoc />
     // Benchmark specs persist per-workspace; without one the rail can't
     // list or save anything.
