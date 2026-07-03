@@ -37,6 +37,7 @@ For the UI layout itself &mdash; rail strip, panes, action bar, theme &mdash; se
 - [Recording](recording.md) &mdash; capture a sequence of calls; inspect, export, or replay them
 - [Replay mock server](mock-server.md) &mdash; turn a recording into a live endpoint with `bowire mock`
 - [Test assertions](test-assertions.md) &mdash; convert recording steps into CI-runnable assertions
+- [Contract testing](contract-testing.md) &mdash; publish a recording as a Pact-style consumer contract; verify the provider still honours it in CI
 - [Interceptor](interceptor.md) &mdash; capture every inbound request a host receives via `UseBowireInterceptor()` middleware (replaces v2.0 Proxy + Intercepted + Traffic)
 
 ## Automation

@@ -46,6 +46,8 @@
       href: mock-server.md
     - name: Test assertions
       href: test-assertions.md
+    - name: Contract testing
+      href: contract-testing.md
     - name: Interceptor
       href: interceptor.md
 
