@@ -570,7 +570,7 @@ Microservice teams break each other when one team changes an API without consult
 
 #### <a id="issue-kuestenlogik-bowire-208"></a>⬜ Backlog · [#208](https://github.com/Kuestenlogik/Bowire/issues/208) Variable resolver — Phase 5: OS keyring + AI re-roll + streaming
 
-@-
+The variable resolver (phases 1-4, #125/#145) resolves `{{name}}` from environments, workspace vars, and system generators. Three sources from the original design are still missing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/208)
 
 #### <a id="issue-kuestenlogik-bowire-306"></a>⬜ Backlog · [#306](https://github.com/Kuestenlogik/Bowire/issues/306) Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)
 
