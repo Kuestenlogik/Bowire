@@ -667,6 +667,17 @@ internal static class BowireCli
             Description = "Chaos injection: e.g. \"latency:100-500,fail-rate:0.05\".",
             DefaultValueFactory = _ => cfg["Bowire:Mock:Chaos"]
         }.WithChaosValidation();
+        var faults = new Option<string?>("--faults")
+        {
+            Description = "Per-method fault rules from a mock-faults.json sidecar (latency distributions, error rates, partial responses, connection drops).",
+            DefaultValueFactory = _ => cfg["Bowire:Mock:FaultsPath"]
+        };
+        faults.Validators.Add(result =>
+        {
+            var path = result.GetValueOrDefault<string?>();
+            if (!string.IsNullOrEmpty(path) && !File.Exists(path))
+                result.AddError($"--faults: file not found: '{path}'.");
+        });
         var captureMiss = new Option<string?>("--capture-miss")
         {
             Description = "Persist unmatched requests to this file.",
@@ -707,7 +718,7 @@ internal static class BowireCli
         cmd.Add(recording); cmd.Add(schema); cmd.Add(grpcSchema); cmd.Add(graphqlSchema);
         cmd.Add(port); cmd.Add(host); cmd.Add(select); cmd.Add(noWatch);
         cmd.Add(stateful); cmd.Add(statefulOnce); cmd.Add(loop); cmd.Add(autoInstall);
-        cmd.Add(chaos); cmd.Add(captureMiss); cmd.Add(controlToken);
+        cmd.Add(chaos); cmd.Add(faults); cmd.Add(captureMiss); cmd.Add(controlToken);
         cmd.SetAction(async (pr, ct) =>
         {
             var positional = pr.GetValue(positionalPath);
@@ -757,6 +768,7 @@ internal static class BowireCli
                 Loop = pr.GetValue(loop),
                 AutoInstall = pr.GetValue(autoInstall),
                 Chaos = pr.GetValue(chaos),
+                FaultsPath = pr.GetValue(faults),
                 CaptureMissPath = pr.GetValue(captureMiss),
                 ControlToken = pr.GetValue(controlToken)
             };

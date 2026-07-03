@@ -22,7 +22,8 @@ public sealed record MockRequestEntry(
     int StatusCode,
     string? MatchedStepId,
     string Outcome,             // "matched" | "miss" | "passed-through" | "404"
-    double DurationMs);
+    double DurationMs,
+    string? Fault = null);      // #170 audit trail — human description of the injected fault, null when none fired
 
 /// <summary>
 /// Sink the mock pipeline pushes <see cref="MockRequestEntry"/> records

@@ -166,6 +166,14 @@ public sealed class MockServerOptions
     public ChaosOptions Chaos { get; init; } = new();
 
     /// <summary>
+    /// Per-method fault-injection rules (#170) forwarded to the embedded
+    /// middleware. Populated from the <c>--faults mock-faults.json</c>
+    /// CLI flag via <see cref="FaultRuleSet.LoadJson"/> or set
+    /// programmatically. Defaults to an empty set (off).
+    /// </summary>
+    public FaultRuleSet Faults { get; init; } = new();
+
+    /// <summary>
     /// When <c>true</c>, the mock steps through the recording in strict
     /// order (Phase 3b). CLI: <c>--stateful</c>. Defaults to <c>false</c>.
     /// </summary>

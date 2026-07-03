@@ -63,6 +63,9 @@ internal sealed class MockCliOptions
     /// <summary>Raw chaos spec (e.g. <c>"latency:100-500,fail-rate:0.05"</c>). Parsed by <c>ChaosOptions.Parse</c>.</summary>
     public string? Chaos { get; set; }
 
+    /// <summary>Path to a <c>mock-faults.json</c> per-method fault-rule sidecar (#170). Parsed by <c>FaultRuleSet.LoadJson</c>.</summary>
+    public string? FaultsPath { get; set; }
+
     /// <summary>Target file for captured misses (Phase 3c).</summary>
     public string? CaptureMissPath { get; set; }
 

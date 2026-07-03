@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Diagnostics;
+using Kuestenlogik.Bowire.Mock.Chaos;
 using Kuestenlogik.Bowire.Mock.Management;
 using Kuestenlogik.Bowire.Mock.Matchers;
 using Kuestenlogik.Bowire.Mocking;
@@ -66,6 +67,7 @@ public sealed class MockHandler
     }
 
     private const string MatchedStepIdItemKey = "__bowireMockMatchedStepId";
+    private const string FaultItemKey = "__bowireMockFault";
 
     public async Task HandleAsync(HttpContext ctx, Func<Task> next)
     {
@@ -98,7 +100,8 @@ public sealed class MockHandler
                         StatusCode: ctx.Response.StatusCode,
                         MatchedStepId: matchedStepId,
                         Outcome: outcome,
-                        DurationMs: elapsedMs));
+                        DurationMs: elapsedMs,
+                        Fault: ctx.Items.TryGetValue(FaultItemKey, out var f) ? f as string : null));
                 }
                 catch
                 {
@@ -436,16 +439,12 @@ public sealed class MockHandler
         // replays start with the chaotic first-byte delay instead of
         // mid-stream). A fail-rate hit short-circuits the replayer — the
         // step doesn't run at all for this request.
-        //
-        // CA5394: Random.Shared is deliberate — chaos jitter is
-        // resilience-testing noise, not a security boundary.
-#pragma warning disable CA5394
         var chaos = _options.Chaos;
         if (chaos.IsActive)
         {
             if (chaos.LatencyMinMs is int lo && chaos.LatencyMaxMs is int hi)
             {
-                var delayMs = lo == hi ? lo : Random.Shared.Next(lo, hi + 1);
+                var delayMs = lo == hi ? lo : lo + (int)Math.Floor(FaultRandom.NextDouble() * (hi - lo + 1));
                 if (delayMs > 0)
                 {
                     try { await Task.Delay(delayMs, ctx.RequestAborted); }
@@ -453,7 +452,7 @@ public sealed class MockHandler
                 }
             }
 
-            if (chaos.FailRate > 0 && Random.Shared.NextDouble() < chaos.FailRate)
+            if (chaos.FailRate > 0 && FaultRandom.NextDouble() < chaos.FailRate)
             {
                 ctx.Response.StatusCode = chaos.FailStatusCode;
                 ctx.Response.ContentType = "application/json; charset=utf-8";
@@ -466,7 +465,64 @@ public sealed class MockHandler
                 return;
             }
         }
-#pragma warning restore CA5394
+
+        // Per-method fault rules (#170) — the structured successor to the
+        // global knobs above. First enabled rule whose method glob matches
+        // the step handles the request: its latency shape always applies,
+        // its fault kind fires at the configured rate. Every injection is
+        // recorded via FaultItemKey so the request log carries the audit
+        // trail.
+        if (_options.Faults.IsActive
+            && _options.Faults.FirstMatch(step.Service, step.Method) is { } fault)
+        {
+            if (fault.Latency is not null)
+            {
+                var delayMs = fault.Latency.SampleMs(FaultRandom.NextDouble);
+                if (delayMs > 0)
+                {
+                    ctx.Items[FaultItemKey] = $"latency {delayMs}ms ({fault.Latency.Describe()})";
+                    try { await Task.Delay(delayMs, ctx.RequestAborted); }
+                    catch (OperationCanceledException) { return; }
+                }
+            }
+
+            if (fault.Kind != FaultKind.LatencyOnly
+                && (fault.Rate >= 1.0 || FaultRandom.NextDouble() < fault.Rate))
+            {
+                ctx.Items[FaultItemKey] = fault.Describe();
+                _logger.LogInformation(
+                    "fault(step={StepId}, service={Service}, method={Method}, fault={Fault})",
+                    step.Id, step.Service, step.Method, fault.Describe());
+
+                switch (fault.Kind)
+                {
+                    case FaultKind.Error:
+                        ctx.Response.StatusCode = fault.ErrorStatusCode;
+                        ctx.Response.ContentType = "application/json; charset=utf-8";
+                        await ctx.Response.WriteAsync(
+                            $"{{\"error\":\"fault: simulated failure ({fault.ErrorStatusCode})\"}}",
+                            ctx.RequestAborted);
+                        return;
+
+                    case FaultKind.ConnectionDrop when fault.PartialBytes == 0:
+                        ctx.Abort();
+                        return;
+
+                    case FaultKind.PartialResponse:
+                    case FaultKind.ConnectionDrop:
+                        // The replayer writes the full recorded body as
+                        // always; the wrapper forwards only the first
+                        // PartialBytes. Partial-response then ends the
+                        // response cleanly (truncated body), connection-
+                        // drop aborts the socket mid-body.
+                        ctx.Response.Body = new TruncatingResponseStream(
+                            ctx.Response.Body,
+                            fault.PartialBytes,
+                            fault.Kind == FaultKind.ConnectionDrop ? ctx.Abort : null);
+                        break;
+                }
+            }
+        }
 
         // Build the request template for ${request.*} substitution.
         // Only the REST/SSE paths consume it today; gRPC responses are
