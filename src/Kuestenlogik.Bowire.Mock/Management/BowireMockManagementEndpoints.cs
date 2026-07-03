@@ -182,6 +182,40 @@ public static class BowireMockManagementEndpoints
             }, JsonOptions);
         }).ExcludeFromDescription();
 
+        // #170: per-method fault-injection rules of a RUNNING mock.
+        // GET returns the live rule set in the exact mock-faults.json
+        // shape (kebab-case enums); PUT replaces it — an empty rules
+        // array clears injection. The body is validated by
+        // FaultRuleSet.LoadJson, so a bad rule comes back as a 400 with
+        // the offending rule named, never as a half-applied set.
+        endpoints.MapGet($"{basePath}/api/mocks/{{mockId}}/faults",
+            (string mockId, BowireMockHostManager manager) =>
+        {
+            var faults = manager.GetFaults(mockId);
+            return faults is null
+                ? Results.NotFound(new { error = $"Mock {mockId} not running." })
+                : Results.Text(faults.ToJson(), "application/json");
+        }).ExcludeFromDescription();
+
+        endpoints.MapPut($"{basePath}/api/mocks/{{mockId}}/faults",
+            async (string mockId, HttpRequest request, BowireMockHostManager manager) =>
+        {
+            using var reader = new StreamReader(request.Body);
+            var body = await reader.ReadToEndAsync(request.HttpContext.RequestAborted).ConfigureAwait(false);
+            Chaos.FaultRuleSet faults;
+            try
+            {
+                faults = Chaos.FaultRuleSet.LoadJson(body, allowEmpty: true);
+            }
+            catch (FormatException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+            return manager.TrySetFaults(mockId, faults)
+                ? Results.Text(faults.ToJson(), "application/json")
+                : Results.NotFound(new { error = $"Mock {mockId} not running." });
+        }).ExcludeFromDescription();
+
         return endpoints;
     }
 

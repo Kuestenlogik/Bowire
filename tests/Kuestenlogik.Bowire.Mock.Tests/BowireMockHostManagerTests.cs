@@ -162,4 +162,44 @@ public sealed class BowireMockHostManagerTests
         var snapshot = log.Snapshot();
         Assert.Contains(snapshot, e => e.Path == "/probe");
     }
+
+    // ---- #170 live fault-rule management ----
+
+    [Fact]
+    public async Task Faults_Default_Empty_And_TrySet_Swaps_On_Running_Mock()
+    {
+        await using var manager = NewManager();
+        var handle = await manager.StartAsync(BuildRecording(), "rec_test", "faulty", port: 0, TestContext.Current.CancellationToken);
+
+        // Fresh mock: no rules, inactive.
+        var initial = manager.GetFaults(handle.MockId);
+        Assert.NotNull(initial);
+        Assert.Empty(initial!.Rules);
+        Assert.False(initial.IsActive);
+
+        // Swap in a rule set — must be visible on the SAME live instance
+        // the request pipeline reads (reference identity), no restart.
+        var updated = Chaos.FaultRuleSet.LoadJson("""
+        { "rules": [ { "method": "S/*", "kind": "error", "errorStatusCode": 503 } ] }
+        """);
+        Assert.True(manager.TrySetFaults(handle.MockId, updated));
+
+        var live = manager.GetFaults(handle.MockId)!;
+        Assert.True(live.IsActive);
+        Assert.Single(live.Rules);
+        Assert.NotNull(live.FirstMatch("S", "M"));
+
+        // Clearing back to empty turns injection off again.
+        Assert.True(manager.TrySetFaults(handle.MockId, new Chaos.FaultRuleSet()));
+        Assert.False(manager.GetFaults(handle.MockId)!.IsActive);
+    }
+
+    [Fact]
+    public async Task Faults_On_Unknown_Mock_Return_Null_And_False()
+    {
+        await using var manager = NewManager();
+        Assert.Null(manager.GetFaults("nope"));
+        Assert.False(manager.TrySetFaults("nope", new Chaos.FaultRuleSet()));
+        await Task.CompletedTask;
+    }
 }

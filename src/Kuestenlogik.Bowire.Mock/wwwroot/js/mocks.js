@@ -22,6 +22,8 @@
     // #57 per-mock log state: mockId -> { total, capacity, entries, pollTimer }
     var mockLogState = {};
     var mockLogOpenFor = null;       // mockId currently expanded in the manager
+    // #170 fault-editor state: mockId -> { rules:[...], open:bool, dirty:bool, error:string }
+    var mockFaultState = {};
 
     function loadMocks() {
         if (mocksLoadInFlight) return Promise.resolve(mocksList);
@@ -401,15 +403,232 @@
                 var ul = el('ul', { className: 'bowire-mocks-log-list', style: 'margin:8px 0 0;padding:0;list-style:none' });
                 logSt.entries.slice(0, 20).forEach(function (e) {
                     var li = el('li', { style: 'padding:6px 0;border-top:1px solid var(--bowire-border-subtle);font-size:12px;font-family:var(--bowire-font-mono)' });
-                    li.textContent = '[' + (e.timestamp || '?') + '] ' + (e.method || 'REQ') + ' ' + (e.path || '/') + ' → ' + (e.status || '?');
+                    li.appendChild(el('span', {
+                        textContent: '[' + (e.timestamp || '?') + '] ' + (e.method || 'REQ') + ' ' + (e.path || '/') + ' → ' + (e.status || '?')
+                    }));
+                    // #170 audit trail — surface the injected fault inline
+                    // so an operator sees WHY a request was slow / failed /
+                    // truncated without cross-referencing the fault rules.
+                    if (e.fault) {
+                        li.appendChild(el('span', {
+                            className: 'bowire-mocks-log-fault',
+                            title: 'Injected fault',
+                            textContent: ' ⚡ ' + e.fault
+                        }));
+                    }
                     ul.appendChild(li);
                 });
                 logCard.appendChild(ul);
             }
         }
         wrap.appendChild(logCard);
+
+        wrap.appendChild(renderFaultCard(selected, url));
         pane.appendChild(wrap);
         return pane;
+    }
+
+    // ---------- #170 fault-injection editor ----------
+
+    // Human descriptions of the fault kinds, kept in sync with the C#
+    // FaultKind enum (kebab-case-lower on the wire).
+    var FAULT_KINDS = [
+        { value: 'latency-only',     label: 'Latency only' },
+        { value: 'error',            label: 'Error (short-circuit)' },
+        { value: 'partial-response', label: 'Partial response' },
+        { value: 'connection-drop',  label: 'Connection drop' }
+    ];
+    var FAULT_DISTS = [
+        { value: 'fixed',       label: 'Fixed' },
+        { value: 'uniform',     label: 'Uniform range' },
+        { value: 'normal',      label: 'Normal (mean/stddev)' },
+        { value: 'exponential', label: 'Exponential (mean)' }
+    ];
+
+    function faultState(mockId) {
+        return mockFaultState[mockId] || (mockFaultState[mockId] = { rules: [], open: false, dirty: false, error: '', loaded: false });
+    }
+
+    function loadFaults(mockId) {
+        var st = faultState(mockId);
+        return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId) + '/faults')
+            .then(function (r) { return r.ok ? r.json() : { rules: [] }; })
+            .then(function (data) {
+                st.rules = (data && Array.isArray(data.rules)) ? data.rules : [];
+                st.loaded = true;
+                st.dirty = false;
+                return st;
+            })
+            .catch(function () { st.loaded = true; return st; });
+    }
+
+    function saveFaults(mockId) {
+        var st = faultState(mockId);
+        return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId) + '/faults', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rules: st.rules })
+        }).then(function (r) {
+            if (!r.ok) {
+                return r.json().catch(function () { return { error: 'Save failed (' + r.status + ')' }; })
+                    .then(function (err) { throw new Error(err.error || 'Save failed'); });
+            }
+            st.dirty = false;
+            st.error = '';
+            toast('Fault rules applied to running mock', 'success');
+            render();
+        }).catch(function (err) {
+            st.error = err.message || String(err);
+            render();
+        });
+    }
+
+    // Fault-rule editor card on the mock detail pane. Mirrors the
+    // Live-request-log card's shape (section header + toggle + body) so
+    // the two sit consistently. Rules apply to the RUNNING mock via
+    // PUT — no restart. Empty rule list = injection off (default).
+    function renderFaultCard(selected, url) {
+        var st = faultState(selected.mockId);
+        var card = el('div', { className: 'bowire-mocks-log-card', style: 'margin-top:16px' });
+
+        var activeCount = st.rules.filter(function (r) { return r.enabled !== false; }).length;
+        card.appendChild(el('div', { className: 'bowire-sources-section', style: 'display:flex;align-items:center;gap:8px' },
+            el('span', { textContent: 'Fault injection' }),
+            el('span', { className: 'bowire-home-section-count', textContent: activeCount + ' rule' + (activeCount === 1 ? '' : 's') }),
+            el('button', {
+                className: 'bowire-empty-card-action',
+                textContent: st.open ? 'Hide' : 'Edit',
+                onClick: function () {
+                    st.open = !st.open;
+                    if (st.open && !st.loaded) { loadFaults(selected.mockId).then(render); }
+                    render();
+                }
+            })
+        ));
+
+        if (!st.open) return card;
+
+        if (!st.loaded) {
+            card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: 'Loading rules…' }));
+            return card;
+        }
+
+        if (st.error) {
+            card.appendChild(el('p', { className: 'bowire-sources-hint', style: 'color:var(--bowire-danger)', textContent: st.error }));
+        }
+
+        if (!st.rules.length) {
+            card.appendChild(el('p', { className: 'bowire-sources-hint',
+                textContent: 'No fault rules — the mock replays faithfully. Add a rule to inject latency, errors, or truncated responses.' }));
+        } else {
+            st.rules.forEach(function (rule, idx) {
+                card.appendChild(renderFaultRule(selected.mockId, rule, idx));
+            });
+        }
+
+        var actions = el('div', { style: 'display:flex;gap:8px;margin-top:10px;align-items:center' });
+        actions.appendChild(el('button', {
+            className: 'bowire-empty-card-action',
+            textContent: '+ Add rule',
+            onClick: function () {
+                st.rules.push({ method: '*', kind: 'error', rate: 1.0, errorStatusCode: 503, partialBytes: 1024 });
+                st.dirty = true;
+                render();
+            }
+        }));
+        var applyBtn = el('button', {
+            className: 'bowire-empty-card-action bowire-empty-card-action-primary',
+            textContent: st.dirty ? 'Apply changes' : 'Applied',
+            onClick: function () { if (st.dirty) saveFaults(selected.mockId); }
+        });
+        if (!st.dirty) applyBtn.disabled = true;
+        actions.appendChild(applyBtn);
+        card.appendChild(actions);
+        return card;
+    }
+
+    function faultSelect(value, options, onChange) {
+        var sel = el('select', { className: 'bowire-flow-field-input', onChange: function (e) { onChange(e.target.value); } });
+        options.forEach(function (o) {
+            var opt = el('option', { value: o.value, textContent: o.label });
+            if (o.value === value) opt.selected = true;
+            sel.appendChild(opt);
+        });
+        return sel;
+    }
+
+    function faultNumber(value, placeholder, onChange) {
+        return el('input', {
+            type: 'number', className: 'bowire-flow-field-input', style: 'max-width:90px',
+            value: (value == null ? '' : String(value)), placeholder: placeholder || '',
+            onInput: function (e) { onChange(parseFloat(e.target.value)); }
+        });
+    }
+
+    function renderFaultRule(mockId, rule, idx) {
+        var st = faultState(mockId);
+        var row = el('div', { className: 'bowire-mocks-fault-rule' });
+        var mark = function () { st.dirty = true; };
+
+        var head = el('div', { className: 'bowire-mocks-fault-head' });
+        var enabledBox = el('input', {
+            type: 'checkbox', checked: rule.enabled !== false ? 'checked' : undefined, title: 'Enabled',
+            onChange: function (e) { rule.enabled = e.target.checked; mark(); render(); }
+        });
+        head.appendChild(enabledBox);
+        head.appendChild(el('input', {
+            type: 'text', className: 'bowire-flow-field-input', style: 'flex:1', placeholder: 'Service/Method glob (e.g. UserService/*)',
+            value: rule.method || '*', spellcheck: 'false',
+            onInput: function (e) { rule.method = e.target.value; mark(); }
+        }));
+        head.appendChild(faultSelect(rule.kind || 'error', FAULT_KINDS, function (v) { rule.kind = v; mark(); render(); }));
+        head.appendChild(el('button', {
+            className: 'bowire-flow-card-action-btn', title: 'Remove rule', innerHTML: svgIcon('trash'),
+            onClick: function () { st.rules.splice(idx, 1); mark(); render(); }
+        }));
+        row.appendChild(head);
+
+        var opts = el('div', { className: 'bowire-mocks-fault-opts' });
+        // Kind-specific knobs.
+        if (rule.kind === 'error') {
+            opts.appendChild(labelled('Status', faultNumber(rule.errorStatusCode || 503, '503', function (v) { rule.errorStatusCode = v | 0; mark(); })));
+        }
+        if (rule.kind === 'partial-response' || rule.kind === 'connection-drop') {
+            opts.appendChild(labelled('Bytes', faultNumber(rule.partialBytes != null ? rule.partialBytes : 1024, '1024', function (v) { rule.partialBytes = v | 0; mark(); })));
+        }
+        if (rule.kind !== 'latency-only') {
+            opts.appendChild(labelled('Rate', faultNumber(rule.rate != null ? rule.rate : 1.0, '1.0', function (v) { rule.rate = v; mark(); })));
+        }
+        // Latency shape — available on every kind.
+        var lat = rule.latency || null;
+        var latDist = lat ? lat.distribution : 'none';
+        opts.appendChild(labelled('Latency', faultSelect(latDist, [{ value: 'none', label: 'None' }].concat(FAULT_DISTS), function (v) {
+            if (v === 'none') { rule.latency = null; }
+            else if (v === 'fixed') { rule.latency = { distribution: 'fixed', valueMs: 200 }; }
+            else if (v === 'uniform') { rule.latency = { distribution: 'uniform', minMs: 100, maxMs: 500 }; }
+            else if (v === 'normal') { rule.latency = { distribution: 'normal', meanMs: 200, stdDevMs: 50 }; }
+            else { rule.latency = { distribution: 'exponential', meanMs: 200 }; }
+            mark(); render();
+        })));
+        if (lat && lat.distribution === 'fixed') {
+            opts.appendChild(labelled('ms', faultNumber(lat.valueMs || 0, '200', function (v) { lat.valueMs = v | 0; mark(); })));
+        } else if (lat && lat.distribution === 'uniform') {
+            opts.appendChild(labelled('min', faultNumber(lat.minMs || 0, '100', function (v) { lat.minMs = v | 0; mark(); })));
+            opts.appendChild(labelled('max', faultNumber(lat.maxMs || 0, '500', function (v) { lat.maxMs = v | 0; mark(); })));
+        } else if (lat && lat.distribution === 'normal') {
+            opts.appendChild(labelled('mean', faultNumber(lat.meanMs || 0, '200', function (v) { lat.meanMs = v | 0; mark(); })));
+            opts.appendChild(labelled('stddev', faultNumber(lat.stdDevMs || 0, '50', function (v) { lat.stdDevMs = v | 0; mark(); })));
+        } else if (lat && lat.distribution === 'exponential') {
+            opts.appendChild(labelled('mean', faultNumber(lat.meanMs || 0, '200', function (v) { lat.meanMs = v | 0; mark(); })));
+        }
+        row.appendChild(opts);
+        return row;
+    }
+
+    function labelled(label, control) {
+        return el('label', { className: 'bowire-mocks-fault-field' },
+            el('span', { className: 'bowire-mocks-fault-field-label', textContent: label }),
+            control);
     }
 
     // Expose for recording.js + render-sidebar.js + intercept-view.js
