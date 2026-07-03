@@ -205,7 +205,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
-**1/7 done** · 6 backlog
+**2/7 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -214,8 +214,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog |  |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ⬜ Backlog |  |
 | [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ⬜ Backlog |  |
-| [363](https://github.com/Kuestenlogik/Bowire/issues/363) | Bowire | [Sidebar UX round 2: rail-strip drop targets + uniform 'select → assign → save as preset' toolbar affordance](#issue-kuestenlogik-bowire-363) | ⬜ Backlog |  |
 | [362](https://github.com/Kuestenlogik/Bowire/issues/362) | Bowire | [Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern](#issue-kuestenlogik-bowire-362) | ✅ Done |  |
+| [363](https://github.com/Kuestenlogik/Bowire/issues/363) | Bowire | [Sidebar UX round 2: rail-strip drop targets + uniform 'select → assign → save as preset' toolbar affordance](#issue-kuestenlogik-bowire-363) | ✅ Done |  |
 
 ### v2.9 — MCP completion + agent hub
 
@@ -900,13 +900,13 @@ The freeform request builder today requires a `service` + `method` name even whe
 
 All three buttons used the same X glyph (Close + Clear selection) or text 'Clear' (Clear all). New `selectionClear` SVG (dashed rectangle + interior X) for Clear selection so the three actions read as three different intents. i18n-safe — no labels to translate.
 
-#### <a id="issue-kuestenlogik-bowire-363"></a>⬜ Backlog · [#363](https://github.com/Kuestenlogik/Bowire/issues/363) Sidebar UX round 2: rail-strip drop targets + uniform 'select → assign → save as preset' toolbar affordance
-
-Follow-up to #362 (audit findings cleared). Two genuinely-new enhancements that go beyond the consistency audit: [[more]](https://github.com/Kuestenlogik/Bowire/issues/363)
-
 #### <a id="issue-kuestenlogik-bowire-362"></a>✅ Done · [#362](https://github.com/Kuestenlogik/Bowire/issues/362) Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern
 
 A full sidebar audit (2026-07-03) found the same affordances placed/behaving differently across rails. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/362)
+
+#### <a id="issue-kuestenlogik-bowire-363"></a>✅ Done · [#363](https://github.com/Kuestenlogik/Bowire/issues/363) Sidebar UX round 2: rail-strip drop targets + uniform 'select → assign → save as preset' toolbar affordance
+
+Follow-up to #362 (audit findings cleared). Two genuinely-new enhancements that go beyond the consistency audit: [[more]](https://github.com/Kuestenlogik/Bowire/issues/363)
 
 ### v2.9 — MCP completion + agent hub
 
