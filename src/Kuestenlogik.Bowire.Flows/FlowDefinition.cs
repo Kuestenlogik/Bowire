@@ -69,6 +69,13 @@ public sealed class FlowStep
     public string? Body { get; set; }
 
     /// <summary>
+    /// Snapshot baseline config (#171). Null → no snapshotting for this
+    /// step; presence opts the step into capture-once / diff-on-change.
+    /// </summary>
+    [JsonPropertyName("snapshot")]
+    public FlowSnapshotConfig? Snapshot { get; set; }
+
+    /// <summary>
     /// Expectations to evaluate after the request returns. v2.2 schema.
     /// Optional + defaults to empty so v2.1 flows load unchanged.
     /// </summary>

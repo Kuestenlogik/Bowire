@@ -55,6 +55,12 @@ internal sealed class TestCliOptions
     public bool Annotations { get; set; }
 
     /// <summary>
+    /// #171 — re-capture snapshot baselines instead of diffing
+    /// (<c>--update-snapshots</c>). Flow codepath only.
+    /// </summary>
+    public bool UpdateSnapshots { get; set; }
+
+    /// <summary>
     /// v2.2 (#test-pillar T2) — fallback server URL for Flow steps that
     /// don't carry their own <c>serverUrl</c>. Ignored for the legacy
     /// test-collection codepath (which already supports a per-collection

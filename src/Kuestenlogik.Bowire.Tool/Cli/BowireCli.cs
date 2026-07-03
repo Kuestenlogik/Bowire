@@ -983,6 +983,10 @@ internal static class BowireCli
         {
             Description = "Emit GitHub Actions ::error annotations for every failure (inline PR annotations without a reporter action).",
         };
+        var updateSnapshots = new Option<bool>("--update-snapshots")
+        {
+            Description = "Re-capture every snapshot baseline from the actual responses instead of diffing (Flow files only).",
+        };
         // v2.2 T2 — Flow-runner specific. Ignored for the recording
         // codepath which already carries serverUrl + environment per
         // test-collection.
@@ -999,7 +1003,7 @@ internal static class BowireCli
 
         var cmd = new Command("test", "Run an assertion-based test suite. Accepts a recording JSON (v2.1 test-collection format) or a Flow JSON document (v2.2 — the T2 CI runner). Format auto-detected.");
         cmd.Add(collectionPath); cmd.Add(url); cmd.Add(report); cmd.Add(junit);
-        cmd.Add(sarif); cmd.Add(annotations);
+        cmd.Add(sarif); cmd.Add(annotations); cmd.Add(updateSnapshots);
         cmd.Add(baseUrl); cmd.Add(env);
         cmd.SetAction(async (pr, _) =>
         {
@@ -1010,6 +1014,7 @@ internal static class BowireCli
                 JUnitPath = pr.GetValue(junit),
                 SarifPath = pr.GetValue(sarif),
                 Annotations = pr.GetValue(annotations),
+                UpdateSnapshots = pr.GetValue(updateSnapshots),
                 BaseUrl = pr.GetValue(baseUrl),
                 EnvOverrides = pr.GetValue(env) ?? Array.Empty<string>(),
             };

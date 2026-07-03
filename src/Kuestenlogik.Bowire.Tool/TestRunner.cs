@@ -89,6 +89,7 @@ internal static class TestRunner
                 JUnitPath = cli.JUnitPath,
                 SarifPath = cli.SarifPath,
                 Annotations = cli.Annotations,
+                UpdateSnapshots = cli.UpdateSnapshots,
                 BaseUrl = cli.BaseUrl,
                 EnvOverrides = cli.EnvOverrides,
             };
