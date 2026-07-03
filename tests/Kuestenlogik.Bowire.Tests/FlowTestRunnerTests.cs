@@ -10,12 +10,6 @@ using Kuestenlogik.Bowire.App.Configuration;
 
 namespace Kuestenlogik.Bowire.Tests;
 
-// CA1861 wants `static readonly`-cached array literals for repeated
-// calls; the env-merge helper assertions below pass small per-call
-// arrays. Suppress at file scope — the runtime cost is negligible and
-// inline arrays read better as test data than top-of-file constants.
-#pragma warning disable CA1861
-
 /// <summary>
 /// v2.2 CI runner (T2) coverage — happy path, mixed pass/fail,
 /// step-error, JUnit XML emission, HTML report emission. Boots a real
@@ -26,6 +20,10 @@ namespace Kuestenlogik.Bowire.Tests;
 /// </summary>
 public sealed class FlowTestRunnerTests : IDisposable
 {
+    // Env-merge fixtures as static readonly fields (CA1861-clean).
+    private static readonly string[] WellFormedEnvPairs = ["A=1", "B=two", "C="];
+    private static readonly string[] MalformedEnvPairs = ["no-equals", "=novalue", "=", ""];
+
     private readonly string _tempDir;
 
     public FlowTestRunnerTests()
@@ -67,7 +65,7 @@ public sealed class FlowTestRunnerTests : IDisposable
     [Fact]
     public void MergeEnv_KeyEqualsValue_ParsesEachPair()
     {
-        var merged = FlowTestRunner.MergeEnv(new[] { "A=1", "B=two", "C=" });
+        var merged = FlowTestRunner.MergeEnv(WellFormedEnvPairs);
         Assert.Equal("1", merged["A"]);
         Assert.Equal("two", merged["B"]);
         Assert.Equal(string.Empty, merged["C"]);
@@ -76,7 +74,7 @@ public sealed class FlowTestRunnerTests : IDisposable
     [Fact]
     public void MergeEnv_IgnoresMalformedEntries()
     {
-        var merged = FlowTestRunner.MergeEnv(new[] { "no-equals", "=novalue", "=", "" });
+        var merged = FlowTestRunner.MergeEnv(MalformedEnvPairs);
         Assert.Empty(merged);
     }
 
@@ -108,9 +106,7 @@ public sealed class FlowTestRunnerTests : IDisposable
     public async Task RunAsync_NullCli_Throws()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
-#pragma warning disable xUnit1051 // null-arg guard; no I/O reaches the token.
-            FlowTestRunner.RunAsync(null!));
-#pragma warning restore xUnit1051
+            FlowTestRunner.RunAsync(null!, ct: TestContext.Current.CancellationToken));
     }
 
     [Fact]
