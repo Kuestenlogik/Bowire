@@ -227,11 +227,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts
 
-**0/1 done** · 1 backlog
+**0/2 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [283](https://github.com/Kuestenlogik/Bowire/issues/283) | Bowire | [Retire v1 .bww format migration shim (introduced in #282)](#issue-kuestenlogik-bowire-283) | ⬜ Backlog |  |
+| [359](https://github.com/Kuestenlogik/Bowire/issues/359) | Bowire | [v3.0: consolidate the duplicated runner/reporter pairs in Bowire.Tool](#issue-kuestenlogik-bowire-359) | ⬜ Backlog |  |
 
 ### Backlog (not yet scheduled)
 
@@ -259,6 +260,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [355](https://github.com/Kuestenlogik/Bowire/issues/355) | Bowire | [Eliminate #pragma warning disable across the codebase — rewrite code so analyzer warnings don't fire](#issue-kuestenlogik-bowire-355) | ⬜ Backlog |  |
 | [356](https://github.com/Kuestenlogik/Bowire/issues/356) | Bowire | [JS test safety net: unit-test infra for wwwroot fragments + lift the codecov wwwroot ignore](#issue-kuestenlogik-bowire-356) | ⬜ Backlog |  |
 | [357](https://github.com/Kuestenlogik/Bowire/issues/357) | Bowire | [AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException](#issue-kuestenlogik-bowire-357) | ⬜ Backlog |  |
+| [358](https://github.com/Kuestenlogik/Bowire/issues/358) | Bowire | [Rail packages ship without test projects — Benchmarking / Compose / Interceptor / Recordings / Security.Scanner / Workspaces](#issue-kuestenlogik-bowire-358) | ⬜ Backlog |  |
 
 ## Details
 
@@ -918,6 +920,10 @@ When an MCP tool call is in flight, the server can emit `notifications/message` 
 
 #282 unifies the .bww workspace export format on a v2 canonical schema. To stay non-breaking through v2.x, both reader paths (UI / CLI) ship migration shims that detect and read the legacy v1 shapes (UI-shape + CLI-shape) and rewrite them as v2 in-memory before the rest of the import pipeline runs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/283)
 
+#### <a id="issue-kuestenlogik-bowire-359"></a>⬜ Backlog · [#359](https://github.com/Kuestenlogik/Bowire/issues/359) v3.0: consolidate the duplicated runner/reporter pairs in Bowire.Tool
+
+2026-07-03 architecture audit: the Tool carries two parallel implementations of the same pipeline, one per input format: [[more]](https://github.com/Kuestenlogik/Bowire/issues/359)
+
 ### Backlog (not yet scheduled)
 
 #### <a id="issue-kuestenlogik-bowire-templates-3"></a>⬜ Backlog · [Kuestenlogik/Bowire.Templates#3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) Plugin project template — `dotnet new bowire-plugin`
@@ -1017,6 +1023,10 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 #### <a id="issue-kuestenlogik-bowire-357"></a>⬜ Backlog · [#357](https://github.com/Kuestenlogik/Bowire/issues/357) AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException
 
 2026-07-03 architecture audit: `Kuestenlogik.Bowire.AsyncApi` advertises binding support its resolvers don't implement. Eight of them are stubs that throw `NotImplementedException`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/357)
+
+#### <a id="issue-kuestenlogik-bowire-358"></a>⬜ Backlog · [#358](https://github.com/Kuestenlogik/Bowire/issues/358) Rail packages ship without test projects — Benchmarking / Compose / Interceptor / Recordings / Security.Scanner / Workspaces
+
+2026-07-03 architecture audit: the six extracted rail packages — the newest, most actively churning code — have **no matching `.Tests` project**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/358)
 
 ---
 
