@@ -22,6 +22,15 @@ public sealed class BowireFlowsRailContribution : IBowireRailContribution
     public string Group => "scenarios";
     /// <inheritdoc />
     public string SidebarKind => "flows";
+
+    // #306 / #314 — renderer-key seam: core resolves these from
+    // window.__bowireRailRenderers (registered by flows.js) instead of
+    // hardcoded railMode / sidebarView arms.
+    /// <inheritdoc />
+    public string? SidebarRendererKey => "flowsSidebar";
+    /// <inheritdoc />
+    public string? MainPaneRendererKey => "flowsMain";
+
     /// <inheritdoc />
     // Flow specs are stored under the active workspace; without one the
     // sidebar list has nothing to render and "New flow" has nowhere to

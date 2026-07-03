@@ -3902,18 +3902,9 @@
     // (which used to render search + protocol filters + new-request
     // dropdown ON TOP OF the flow/proxy entries — visually it read as
     // "Discover" with a list of flows tacked on).
-    function renderFlowsSidebar() {
-        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
-        var list = el('div', {
-            id: 'bowire-sidebar-list-flows',
-            className: 'bowire-service-list'
-        });
-        if (typeof renderFlowsListInto === 'function') {
-            renderFlowsListInto(list);
-        }
-        sidebar.appendChild(list);
-        return sidebar;
-    }
+    // #306/#314 — renderFlowsSidebar moved into the Flows package
+    // (flows.js) and registered on the renderer-key seam; core no longer
+    // wraps it. The Proxy wrapper below stays until Proxy migrates too.
     function renderProxySidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
         var list = el('div', {
@@ -3998,7 +3989,8 @@
             // (sidebarRendererKey=benchmarksSidebar), handled before this
             // switch by _currentRailRenderer('sidebar').
             case 'security':     sidebar = renderSecuritySidebar(); break;
-            case 'flows':        sidebar = renderFlowsSidebar(); break;
+            // flows: #306/#314 — renderer-key seam (sidebarRendererKey=
+            // flowsSidebar), handled before this switch.
             case 'proxy':        sidebar = renderProxySidebar(); break;
             case 'intercepted':  sidebar = renderInterceptedSidebar(); break;
             case 'intercept':    sidebar = renderInterceptSidebar(); break;

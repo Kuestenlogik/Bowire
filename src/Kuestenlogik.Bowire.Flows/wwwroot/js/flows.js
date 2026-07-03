@@ -2283,3 +2283,31 @@
         svg.appendChild(line);
         return svg;
     }
+
+    // #306 / #314 — Flows owns its full sidebar shell + main container
+    // now (moved off the thin core wrappers), and registers both on the
+    // rail-renderer seam. Core's render-sidebar.js / render-main.js
+    // resolve these by the descriptor's Sidebar/MainPaneRendererKey
+    // instead of a hardcoded arm — core stops naming 'flows'.
+    function renderFlowsSidebar() {
+        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+        var list = el('div', { id: 'bowire-sidebar-list-flows', className: 'bowire-service-list' });
+        renderFlowsListInto(list);
+        sidebar.appendChild(list);
+        return sidebar;
+    }
+    function renderFlowsMain() {
+        // Morphdom-keyed id — changes with the selected flow so the pane
+        // re-mounts cleanly on flow switch (mirrors the id core computed
+        // in mainViewKey before the cut-over).
+        var selId = (typeof flowEditorSelectedId !== 'undefined' ? (flowEditorSelectedId || 'none') : 'none');
+        var main = el('div', { id: 'bowire-main-flows-' + selId, className: 'bowire-main' });
+        main.appendChild(renderFlowCanvas());
+        return main;
+    }
+    if (typeof window !== 'undefined') {
+        window.__bowireRailRenderers = window.__bowireRailRenderers || {};
+        window.__bowireRailRenderers.flowsSidebar = renderFlowsSidebar;
+        window.__bowireRailRenderers.flowsMain = renderFlowsMain;
+    }
+
