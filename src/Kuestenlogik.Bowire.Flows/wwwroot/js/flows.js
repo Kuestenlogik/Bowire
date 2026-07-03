@@ -17,8 +17,6 @@
     // Workspaces + the other rails); sort defaults to insertion order.
     let flowsSearchQuery = '';
     let flowsSortBy = '';
-    // #362 — id of the flow row being drag-reordered (manual order).
-    let flowListDragId = null;
     // Results keyed by node.id: { [nodeId]: { pass, status, durationMs, response, error, iteration?, assertions? } }
     let flowRunResults = {};
     let flowRunActiveNodeId = null;
@@ -807,8 +805,7 @@
                     // 'manual' preserves the operator's drag order (the
                     // raw flowsList order); the grip glyph telegraphs
                     // that rows are drag-reorderable in this mode.
-                    options: [{ value: 'manual', label: 'Manual (drag to reorder)', icon: 'grip' }]
-                        .concat(BOWIRE_LIST_SORT_OPTIONS),
+                    options: BOWIRE_LIST_SORT_OPTIONS_WITH_MANUAL.concat(BOWIRE_LIST_SORT_OPTIONS),
                     onChange: function (v) { flowsSortBy = v; render(); }
                 } : null
             }));
@@ -855,21 +852,6 @@
         // sidebar toolbar at the top of this list (see above).
     }
 
-    // #362 — move a flow to sit before targetId in flowsList (manual
-    // reorder). No-op when either id is missing or already adjacent.
-    function moveFlowBefore(dragId, targetId) {
-        if (dragId === targetId) return;
-        var from = flowsList.findIndex(function (f) { return f.id === dragId; });
-        if (from < 0) return;
-        var moved = flowsList.splice(from, 1)[0];
-        var to = targetId
-            ? flowsList.findIndex(function (f) { return f.id === targetId; })
-            : flowsList.length;
-        if (to < 0) to = flowsList.length;
-        flowsList.splice(to, 0, moved);
-        persistFlows();
-        render();
-    }
 
     // One flow row via the shared renderSidebarListItem so Flows carry
     // the same hover-tools + right-click parity + reserved active-slot
@@ -936,51 +918,13 @@
             }
         });
 
-        // #362 — manual drag-reorder. Handlers hang off the shared row;
-        // the drop computes position relative to the hovered row's
-        // midpoint so dropping on the top/bottom half inserts before/
-        // after. flowListDragId is a module-scope id (not a closure
-        // capture) so morphdom-preserved rows still resolve correctly.
+        // #362 — manual drag-reorder via the shared helper.
         if (reorderable) {
-            row.setAttribute('draggable', 'true');
-            row.addEventListener('dragstart', function (e) {
-                flowListDragId = flowId;
-                if (e.dataTransfer) {
-                    e.dataTransfer.effectAllowed = 'move';
-                    try { e.dataTransfer.setData('text/plain', flowId); } catch (_) { /* ignore */ }
+            attachListReorder(row, flowId, function (dragId, targetId, after) {
+                if (moveInArrayById(flowsList, dragId, targetId, after)) {
+                    persistFlows();
+                    render();
                 }
-                row.classList.add('is-dragging');
-            });
-            row.addEventListener('dragend', function () {
-                flowListDragId = null;
-                row.classList.remove('is-dragging');
-            });
-            row.addEventListener('dragover', function (e) {
-                if (!flowListDragId || flowListDragId === flowId) return;
-                e.preventDefault();
-                if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-                var rect = row.getBoundingClientRect();
-                var after = (e.clientY - rect.top) > rect.height / 2;
-                row.classList.toggle('is-drop-before', !after);
-                row.classList.toggle('is-drop-after', after);
-            });
-            row.addEventListener('dragleave', function () {
-                row.classList.remove('is-drop-before', 'is-drop-after');
-            });
-            row.addEventListener('drop', function (e) {
-                e.preventDefault();
-                row.classList.remove('is-drop-before', 'is-drop-after');
-                if (!flowListDragId || flowListDragId === flowId) return;
-                var rect = row.getBoundingClientRect();
-                var after = (e.clientY - rect.top) > rect.height / 2;
-                // Insert before this row, or before the next row when
-                // dropping on the lower half (= after this row).
-                var targetId = flowId;
-                if (after) {
-                    var idx = flowsList.findIndex(function (f) { return f.id === flowId; });
-                    targetId = (idx >= 0 && idx + 1 < flowsList.length) ? flowsList[idx + 1].id : null;
-                }
-                moveFlowBefore(flowListDragId, targetId);
             });
         }
         return row;

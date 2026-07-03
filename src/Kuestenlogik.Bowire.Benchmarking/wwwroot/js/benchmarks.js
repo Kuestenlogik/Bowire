@@ -1351,8 +1351,8 @@
             } : null,
             sort: (benchmarksList && benchmarksList.length > 1) ? {
                 title: 'Sort benchmarks',
-                value: benchmarksSortBy || 'name',
-                options: BOWIRE_LIST_SORT_OPTIONS,
+                value: benchmarksSortBy || 'manual',
+                options: BOWIRE_LIST_SORT_OPTIONS_WITH_MANUAL.concat(BOWIRE_LIST_SORT_OPTIONS),
                 onChange: function (v) { benchmarksSortBy = v; render(); }
             } : null
         }));
@@ -1402,7 +1402,7 @@
                     if (typeof persistBenchmarks === 'function') persistBenchmarks();
                     render();
                 };
-                list.appendChild(renderSidebarListItem({
+                var benchRow = renderSidebarListItem({
                     id: 'bowire-bench-row-' + spec.id,
                     accent: isRunning ? 'var(--bowire-warning)' : 'var(--bowire-accent)',
                     pulse: isRunning,
@@ -1469,7 +1469,18 @@
                             }
                         ]);
                     }
-                }));
+                });
+                // #362 — manual drag-reorder when in manual sort with no
+                // active filter.
+                if (!benchmarksSearchQuery && (benchmarksSortBy === 'manual' || benchmarksSortBy === '')) {
+                    attachListReorder(benchRow, spec.id, function (dragId, targetId, after) {
+                        if (moveInArrayById(benchmarksList, dragId, targetId, after)) {
+                            if (typeof persistBenchmarks === 'function') persistBenchmarks();
+                            render();
+                        }
+                    });
+                }
+                list.appendChild(benchRow);
             });
         }
         sidebar.appendChild(list);
