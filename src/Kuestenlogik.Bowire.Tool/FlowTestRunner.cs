@@ -282,9 +282,8 @@ internal static class FlowTestRunner
         {
             await protocol.DiscoverAsync(serverUrl, showInternalServices: false, ct).ConfigureAwait(false);
         }
-#pragma warning disable CA1031 // 3rd-party transport surface — soft-fail per step.
-        catch (Exception ex)
-#pragma warning restore CA1031
+        // 3rd-party transport surface — soft-fail per step.
+        catch (Exception ex) when (PluginBoundary.NonFatal(ex))
         {
             result.Error = $"discovery failed: {ex.Message}";
             return result;
@@ -303,9 +302,7 @@ internal static class FlowTestRunner
                 metadata: null,
                 ct: ct).ConfigureAwait(false);
         }
-#pragma warning disable CA1031
-        catch (Exception ex)
-#pragma warning restore CA1031
+        catch (Exception ex) when (PluginBoundary.NonFatal(ex))
         {
             sw.Stop();
             result.LatencyMs = sw.ElapsedMilliseconds;

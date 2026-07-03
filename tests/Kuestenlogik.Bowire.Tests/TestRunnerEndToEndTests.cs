@@ -336,16 +336,17 @@ internal sealed class StubBowireProtocol : IBowireProtocol
             Metadata: new Dictionary<string, string>()));
     }
 
-#pragma warning disable CS1998 // Stub returns no frames.
     public async IAsyncEnumerable<string> InvokeStreamAsync(
         string serverUrl, string service, string method,
         List<string> jsonMessages, bool showInternalServices,
         Dictionary<string, string>? metadata = null,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
+        // Stub returns no frames; the await keeps the iterator honestly
+        // async (CS1998-clean) without changing behaviour.
+        await Task.CompletedTask.ConfigureAwait(false);
         yield break;
     }
-#pragma warning restore CS1998
 
     public Task<IBowireChannel?> OpenChannelAsync(
         string serverUrl, string service, string method,

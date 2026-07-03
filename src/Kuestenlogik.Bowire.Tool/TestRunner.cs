@@ -261,13 +261,11 @@ internal static class TestRunner
         // Discover services so the plugin's internal cache is primed
         // Plugin DiscoverAsync: 3rd-party transport; report failure +
         // continue to next test rather than aborting the run.
-#pragma warning disable CA1031 // Do not catch general exception types
         try
         {
             await protocol.DiscoverAsync(serverUrl, showInternalServices: false);
         }
-        catch (Exception ex)
-#pragma warning restore CA1031
+        catch (Exception ex) when (PluginBoundary.NonFatal(ex))
         {
             result.Error = $"Discovery failed: {ex.Message}";
             return result;
@@ -277,13 +275,11 @@ internal static class TestRunner
         var sw = Stopwatch.StartNew();
         InvokeResult? invocation;
         // Plugin InvokeAsync: 3rd-party transport surface as above.
-#pragma warning disable CA1031 // Do not catch general exception types
         try
         {
             invocation = await protocol.InvokeAsync(serverUrl, test.Service, test.Method, messages, false, metadata);
         }
-        catch (Exception ex)
-#pragma warning restore CA1031
+        catch (Exception ex) when (PluginBoundary.NonFatal(ex))
         {
             sw.Stop();
             result.DurationMs = sw.ElapsedMilliseconds;
@@ -480,10 +476,14 @@ internal static class TestRunner
             if (jv.TryGetValue<string>(out _)) return "string";
         }
         // CLR type name is ASCII-only — emit it lowercased so it matches the
-        // JS typeof contract used by the in-browser Tests tab.
-#pragma warning disable CA1308 // Normalize strings to uppercase
-        return v.GetType().Name.ToLowerInvariant();
-#pragma warning restore CA1308
+        // JS typeof contract used by the in-browser Tests tab. Char-wise
+        // to sidestep CA1308's (justified) suspicion of string-level
+        // lowercasing for comparisons.
+        return string.Create(v.GetType().Name.Length, v.GetType().Name,
+            static (span, name) =>
+            {
+                for (var i = 0; i < name.Length; i++) span[i] = char.ToLowerInvariant(name[i]);
+            });
     }
 
     private static string SubstituteVars(string input, Dictionary<string, string> env)
