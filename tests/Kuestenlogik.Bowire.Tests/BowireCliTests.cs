@@ -67,6 +67,20 @@ public sealed class BowireCliTests
     }
 
     [Fact]
+    public async Task RunAsync_TestHelp_ListsEnvFileAndVarsAlias()
+    {
+        // #181 — the CI-runner flag surface: --env-file and the --vars
+        // alias for --env must be wired on the test subcommand.
+        using var sw = new StringWriter();
+        var rc = await BowireCli.RunAsync(["test", "--help"], EmptyConfig(), pluginDir: "",
+            stdout: sw, stderr: TextWriter.Null);
+        Assert.Equal(0, rc);
+        var output = sw.ToString();
+        Assert.Contains("--env-file", output, StringComparison.Ordinal);
+        Assert.Contains("--vars", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task RunAsync_McpServe_Help_PrintsAndReturnsZero()
     {
         // mcp is a parent command — its concrete handler lives on the

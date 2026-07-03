@@ -79,6 +79,24 @@ public sealed class FlowTestRunnerTests : IDisposable
     }
 
     [Fact]
+    public async Task ReadEnvFileLines_SkipsBlankLinesAndComments()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var path = SafePath.Combine(_tempDir, "vars.env");
+        await File.WriteAllTextAsync(path, "# staging vars\n\nbaseUrl=https://staging.example\n  token=abc \nmalformed-line\n", ct);
+
+        var lines = FlowTestRunner.ReadEnvFileLines(path);
+        Assert.Equal(["baseUrl=https://staging.example", "token=abc", "malformed-line"], lines);
+
+        // The malformed line survives file reading but is dropped by the
+        // same KEY=VALUE parsing --env repeats go through.
+        var merged = FlowTestRunner.MergeEnv(lines);
+        Assert.Equal(2, merged.Count);
+        Assert.Equal("https://staging.example", merged["baseUrl"]);
+        Assert.Equal("abc", merged["token"]);
+    }
+
+    [Fact]
     public void VariableResolver_ReplacesBothBraceAndDollarForms()
     {
         var env = new Dictionary<string, string> { ["name"] = "Ada" };
@@ -338,6 +356,80 @@ public sealed class FlowTestRunnerTests : IDisposable
             new FlowTestCliOptions { FlowPath = flowPath }, stdout, TextWriter.Null, ct);
         Assert.Equal(0, rc2);
         Assert.Contains("snapshot matches", stdout.ToString(), StringComparison.Ordinal);
+    }
+
+    // ---- --env-file (#181) — dotenv-style resolver seeding ----
+
+    [Fact]
+    public async Task RunAsync_EnvFile_SeedsResolver_ExplicitEnvWins()
+    {
+        var paths = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var server = new LoopbackJsonServer(req =>
+        {
+            paths.Enqueue(req.Url!.AbsolutePath);
+            return (200, "application/json", "{\"ok\":true}");
+        });
+
+        var ct = TestContext.Current.CancellationToken;
+        var envFile = SafePath.Combine(_tempDir, "stage.env");
+        // 'seg' comes from the file; 'user' is set in the file AND via
+        // --env — the explicit repeat must win.
+        await File.WriteAllTextAsync(envFile, "# stage\nseg=users\nuser=from-file\n", ct);
+
+        var flow = $$"""
+        {
+          "id":"flow_envfile",
+          "name":"EnvFile",
+          "nodes":[
+            {
+              "id":"n1",
+              "type":"request",
+              "protocol":"rest",
+              "serverUrl":"{{server.Url}}/${seg}/${user}",
+              "service":"",
+              "method":"GET",
+              "body":"{}",
+              "expectations":[
+                { "id":"e1","kind":"body-path","operator":"exists","target":"$.ok" }
+              ]
+            }
+          ]
+        }
+        """;
+        var flowPath = SafePath.Combine(_tempDir, "envfile.json");
+        await File.WriteAllTextAsync(flowPath, flow, ct);
+
+        var rc = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions
+            {
+                FlowPath = flowPath,
+                EnvFiles = [envFile],
+                EnvOverrides = ["user=cli-wins"],
+            },
+            TextWriter.Null, TextWriter.Null, ct);
+
+        Assert.Equal(0, rc);
+        Assert.Contains("/users/cli-wins", paths, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunAsync_EnvFileMissing_ReturnsTwo()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var flowPath = SafePath.Combine(_tempDir, "envmiss.json");
+        await File.WriteAllTextAsync(flowPath, """{ "id":"f","name":"x","nodes":[ { "id":"n1","type":"request" } ] }""", ct);
+
+        using var stderr = new StringWriter();
+        var rc = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions
+            {
+                FlowPath = flowPath,
+                EnvFiles = [SafePath.Combine(_tempDir, "absent.env")],
+            },
+            TextWriter.Null, stderr, ct);
+
+        Assert.Equal(2, rc);
+        Assert.Contains("--env-file", stderr.ToString(), StringComparison.Ordinal);
     }
 
     // ---- Data-driven steps (#174) — one execution per row ----
