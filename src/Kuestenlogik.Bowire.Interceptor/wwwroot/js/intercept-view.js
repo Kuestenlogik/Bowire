@@ -770,3 +770,29 @@
         ));
         return pane;
     }
+
+    // #306 / #314 — Intercept owns its sidebar shell + main container and
+    // registers both on the rail-renderer seam; core stops naming
+    // 'intercept' in its dispatch.
+    function renderInterceptSidebar() {
+        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
+        var list = el('div', { id: 'bowire-sidebar-list-intercept', className: 'bowire-service-list' });
+        renderInterceptListInto(list);
+        sidebar.appendChild(list);
+        return sidebar;
+    }
+    function renderInterceptMain() {
+        // Reproduce the morphdom-keyed id core built in mainViewKey:
+        // bowire-main-intercept-<subview>-<flowid>.
+        var sub = (typeof interceptSubView !== 'undefined' ? interceptSubView : 'captured');
+        var flowId = (typeof interceptedFlowSelectedId !== 'undefined' ? (interceptedFlowSelectedId || 'none') : 'none');
+        var main = el('div', { id: 'bowire-main-intercept-' + sub + '-' + flowId, className: 'bowire-main' });
+        main.appendChild(renderInterceptMainPane());
+        return main;
+    }
+    if (typeof window !== 'undefined') {
+        window.__bowireRailRenderers = window.__bowireRailRenderers || {};
+        window.__bowireRailRenderers.interceptSidebar = renderInterceptSidebar;
+        window.__bowireRailRenderers.interceptMain = renderInterceptMain;
+    }
+

@@ -63,4 +63,12 @@ public sealed class BowireInterceptRailContribution : IBowireRailContribution
     public string Group => "quality";
     /// <inheritdoc />
     public string SidebarKind => "intercept";
+
+    // #306 / #314 — renderer-key seam: core resolves these from
+    // window.__bowireRailRenderers (registered by intercept-view.js)
+    // instead of hardcoded railMode / sidebarView arms.
+    /// <inheritdoc />
+    public string? SidebarRendererKey => "interceptSidebar";
+    /// <inheritdoc />
+    public string? MainPaneRendererKey => "interceptMain";
 }

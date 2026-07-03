@@ -5084,12 +5084,9 @@
         // v2.2 — Unified Intercept view. Four sub-tabs (Captured / Live
         // overrides / Mock servers / Settings) — sub-tab state is owned
         // by the Interceptor package's intercept-view.js fragment.
-        if (sidebarView === 'intercept') {
-            if (typeof renderInterceptMainPane === 'function') {
-                main.appendChild(renderInterceptMainPane());
-            }
-            return main;
-        }
+        // intercept: #306/#314 — moved to the renderer-key seam
+        // (interceptMain), resolved at the top of renderMain before this
+        // sidebarView block is reached.
 
         // Header bar — the legacy Toggle-sidebar button used to live
         // here; retired in favour of the splitter chevron + Cmd/Ctrl+B

@@ -3937,18 +3937,9 @@
     // Replaces the previous renderTrafficSidebar; the boot-migration in
     // prologue.js rewrites 'mocks' / 'traffic' / 'proxy' / 'intercepted'
     // → 'intercept'.
-    function renderInterceptSidebar() {
-        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
-        var list = el('div', {
-            id: 'bowire-sidebar-list-intercept',
-            className: 'bowire-service-list'
-        });
-        if (typeof renderInterceptListInto === 'function') {
-            renderInterceptListInto(list);
-        }
-        sidebar.appendChild(list);
-        return sidebar;
-    }
+    // #306/#314 — renderInterceptSidebar moved into the Interceptor
+    // package (intercept-view.js) and registered on the renderer-key
+    // seam; core no longer wraps it.
 
     function renderSidebar() {
         // #314 — give rail-owned renderers first crack at the
@@ -3993,7 +3984,8 @@
             // flowsSidebar), handled before this switch.
             case 'proxy':        sidebar = renderProxySidebar(); break;
             case 'intercepted':  sidebar = renderInterceptedSidebar(); break;
-            case 'intercept':    sidebar = renderInterceptSidebar(); break;
+            // intercept: #306/#314 — renderer-key seam
+            // (sidebarRendererKey=interceptSidebar), handled before this switch.
             // Compose Library (Collections + Presets): #306/#314 — moved
             // to the renderer-key seam. The Compose descriptor sets
             // sidebarRendererKey=composeLibrarySidebar and compose-rail.js
