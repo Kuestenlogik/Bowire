@@ -261,6 +261,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [356](https://github.com/Kuestenlogik/Bowire/issues/356) | Bowire | [JS test safety net: unit-test infra for wwwroot fragments + lift the codecov wwwroot ignore](#issue-kuestenlogik-bowire-356) | ⬜ Backlog |  |
 | [357](https://github.com/Kuestenlogik/Bowire/issues/357) | Bowire | [AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException](#issue-kuestenlogik-bowire-357) | ⬜ Backlog |  |
 | [358](https://github.com/Kuestenlogik/Bowire/issues/358) | Bowire | [Rail packages ship without test projects — Benchmarking / Compose / Interceptor / Recordings / Security.Scanner / Workspaces](#issue-kuestenlogik-bowire-358) | ⬜ Backlog |  |
+| [360](https://github.com/Kuestenlogik/Bowire/issues/360) | Bowire | [Benchmarks: k6-style thresholds as CI gates — fail bowire test / bench runs on latency budgets](#issue-kuestenlogik-bowire-360) | ⬜ Backlog |  |
+| [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1027,6 +1029,14 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 #### <a id="issue-kuestenlogik-bowire-358"></a>⬜ Backlog · [#358](https://github.com/Kuestenlogik/Bowire/issues/358) Rail packages ship without test projects — Benchmarking / Compose / Interceptor / Recordings / Security.Scanner / Workspaces
 
 2026-07-03 architecture audit: the six extracted rail packages — the newest, most actively churning code — have **no matching `.Tests` project**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/358)
+
+#### <a id="issue-kuestenlogik-bowire-360"></a>⬜ Backlog · [#360](https://github.com/Kuestenlogik/Bowire/issues/360) Benchmarks: k6-style thresholds as CI gates — fail bowire test / bench runs on latency budgets
+
+Competitive-research input (mid-2026): k6's thresholds (`p95 < 200ms` → non-zero exit) are the load-testing table stake, and k6 2.0 doubled down (OTel output, threshold gates unchanged at the core). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/360)
+
+#### <a id="issue-kuestenlogik-bowire-361"></a>⬜ Backlog · [#361](https://github.com/Kuestenlogik/Bowire/issues/361) Secrets redaction across all test/CI outputs — Hurl-grade
+
+Competitive-research input (mid-2026): Hurl 8.0 sets the bar here — values marked secret are redacted in logs, reports, and even curl-export output. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/361)
 
 ---
 
