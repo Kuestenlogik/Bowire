@@ -123,12 +123,12 @@
         }
 
         if (!locked) {
-            // Footer with "Add URL" and "Refresh all" actions
+            // Footer with "New source" and "Refresh all" actions
             var footer = el('div', { className: 'bowire-url-list-footer' },
                 el('button', {
                     id: 'bowire-url-add-btn',
                     className: 'bowire-url-list-action',
-                    title: 'Add another discovery URL',
+                    title: 'New source',
                     onClick: function () {
                         serverUrls.push('');
                         render();
@@ -140,7 +140,7 @@
                     }
                 },
                     el('span', { innerHTML: svgIcon('plus'), className: 'bowire-url-list-action-icon' }),
-                    el('span', { textContent: 'Add URL' })
+                    el('span', { textContent: 'New source' })
                 ),
                 el('button', {
                     id: 'bowire-url-refresh-btn',
@@ -1794,12 +1794,12 @@
             title: 'Sources',
             primary: !config.lockServerUrl ? {
                 icon: 'plus',
-                title: 'Add a discovery URL',
+                title: 'New source',
                 onClick: function () {
-                    bowirePrompt('Add discovery URL', {
+                    bowirePrompt('New source', {
                         title: 'New source',
                         placeholder: 'rest@https://… / graphql@…  or plain https://…',
-                        confirmText: 'Add',
+                        confirmText: 'Add source',
                     }).then(function (raw) {
                         if (!raw) return;
                         if (typeof addServerUrl === 'function') addServerUrl(raw);
