@@ -3604,3 +3604,12 @@
             });
         }
     }
+
+    // #306 / #314 — register the Benchmarks renderers on the rail-renderer
+    // seam (descriptor keys benchmarksSidebar / benchmarksMain) so core
+    // resolves them by key instead of a hardcoded railMode arm.
+    if (typeof window !== 'undefined') {
+        window.__bowireRailRenderers = window.__bowireRailRenderers || {};
+        window.__bowireRailRenderers.benchmarksSidebar = renderBenchmarksSidebar;
+        window.__bowireRailRenderers.benchmarksMain = renderBenchmarksDetailMain;
+    }
