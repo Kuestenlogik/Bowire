@@ -5063,11 +5063,9 @@
             return main;
         }
 
-        // Flow canvas — visual node editor
-        if (sidebarView === 'flows') {
-            main.appendChild(renderFlowCanvas());
-            return main;
-        }
+        // Flow canvas — #306/#314 — moved to the renderer-key seam
+        // (flowsMain), resolved at the top of renderMain before this
+        // sidebarView block is reached.
 
         // Proxy view — captured-flow detail pane
         if (sidebarView === 'proxy') {
