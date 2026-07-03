@@ -16,7 +16,9 @@ import { dirname, resolve } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/benchmarks.js'),
+    // benchmarks.js moved to the Benchmarking rail package during the
+    // #294 extraction; the test path follows it.
+    resolve(__dirname, '../../../src/Kuestenlogik.Bowire.Benchmarking/wwwroot/js/benchmarks.js'),
     'utf8'
 );
 

@@ -27,6 +27,18 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # #356 — the frontend is vanilla JS run through node:test; these
+      # gate the build so a stale fragment path or a broken pure helper
+      # fails CI instead of rotting silently (they weren't wired in
+      # before, which is how benchmarks.test.mjs drifted to a moved
+      # path). No npm install needed — the harness is dependency-free.
+      - name: JS unit tests
+        run: node --test tests/Kuestenlogik.Bowire.Tests/wwwroot-js/*.test.mjs
+
       - name: Determine version
         run: |
           COMMIT_COUNT=$(git rev-list --count HEAD)

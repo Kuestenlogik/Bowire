@@ -1,6 +1,9 @@
 {
   "scripts": {
-    "optimize-images": "node scripts/site/optimize-images.mjs"
+    "optimize-images": "node scripts/site/optimize-images.mjs",
+    "test:js": "node --test tests/Kuestenlogik.Bowire.Tests/wwwroot-js/*.test.mjs",
+    "test:js:coverage": "node --test --experimental-test-coverage tests/Kuestenlogik.Bowire.Tests/wwwroot-js/*.test.mjs",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
