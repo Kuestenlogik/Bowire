@@ -340,6 +340,149 @@ public sealed class FlowTestRunnerTests : IDisposable
         Assert.Contains("snapshot matches", stdout.ToString(), StringComparison.Ordinal);
     }
 
+    // ---- Data-driven steps (#174) — one execution per row ----
+
+    [Fact]
+    public async Task RunAsync_DataInline_RunsOncePerRow_RowWinsOverEnv()
+    {
+        var paths = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var server = new LoopbackJsonServer(req =>
+        {
+            paths.Enqueue(req.Url!.AbsolutePath);
+            return (200, "application/json", "{\"ok\":true}");
+        });
+
+        // ${userId} (dollar form) so the raw-string template leaves the
+        // placeholder for the runner's resolver instead of interpolating.
+        var flow = $$"""
+        {
+          "id":"flow_data",
+          "name":"DataInline",
+          "nodes":[
+            {
+              "id":"n1",
+              "type":"request",
+              "protocol":"rest",
+              "serverUrl":"{{server.Url}}/users/${userId}",
+              "service":"",
+              "method":"GET",
+              "body":"{}",
+              "data": { "inline": [ { "userId": "1" }, { "userId": "2" } ], "labelColumn": "userId" },
+              "expectations":[
+                { "id":"e1","kind":"body-path","operator":"exists","target":"$.ok" }
+              ]
+            }
+          ]
+        }
+        """;
+        var ct = TestContext.Current.CancellationToken;
+        var flowPath = SafePath.Combine(_tempDir, "data-inline.json");
+        await File.WriteAllTextAsync(flowPath, flow, ct);
+
+        using var stdout = new StringWriter();
+        var rc = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions
+            {
+                FlowPath = flowPath,
+                // Row columns must shadow --env for the same key.
+                EnvOverrides = ["userId=99"],
+            },
+            stdout, TextWriter.Null, ct);
+
+        Assert.Equal(0, rc);
+        var text = stdout.ToString();
+        Assert.Contains("n1[1]", text, StringComparison.Ordinal);
+        Assert.Contains("n1[2]", text, StringComparison.Ordinal);
+        Assert.Contains("2/2 expectations passed", text, StringComparison.Ordinal);
+        Assert.Contains("/users/1", paths, StringComparer.Ordinal);
+        Assert.Contains("/users/2", paths, StringComparer.Ordinal);
+        Assert.DoesNotContain("/users/99", paths, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunAsync_DataCsv_ResolvesRelativeToFlowFile()
+    {
+        var paths = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var server = new LoopbackJsonServer(req =>
+        {
+            paths.Enqueue(req.Url!.AbsolutePath);
+            return (200, "application/json", "{\"ok\":true}");
+        });
+
+        var ct = TestContext.Current.CancellationToken;
+        await File.WriteAllTextAsync(SafePath.Combine(_tempDir, "users.csv"), "userId\n7\n8\n", ct);
+
+        var flow = $$"""
+        {
+          "id":"flow_csv",
+          "name":"DataCsv",
+          "nodes":[
+            {
+              "id":"n1",
+              "type":"request",
+              "protocol":"rest",
+              "serverUrl":"{{server.Url}}/users/${userId}",
+              "service":"",
+              "method":"GET",
+              "body":"{}",
+              "data": { "csv": "users.csv" },
+              "expectations":[
+                { "id":"e1","kind":"body-path","operator":"exists","target":"$.ok" }
+              ]
+            }
+          ]
+        }
+        """;
+        var flowPath = SafePath.Combine(_tempDir, "data-csv.json");
+        await File.WriteAllTextAsync(flowPath, flow, ct);
+
+        using var stdout = new StringWriter();
+        var rc = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions { FlowPath = flowPath }, stdout, TextWriter.Null, ct);
+
+        Assert.Equal(0, rc);
+        Assert.Contains("/users/7", paths, StringComparer.Ordinal);
+        Assert.Contains("/users/8", paths, StringComparer.Ordinal);
+        // No labelColumn → rows report under their zero-based index.
+        Assert.Contains("n1[0]", stdout.ToString(), StringComparison.Ordinal);
+        Assert.Contains("n1[1]", stdout.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunAsync_DataSourceInvalid_StepErrors_ReturnsTwo()
+    {
+        // Empty data object — no inline / csv / generator. The step must
+        // fail as a step error (exit 2), not silently run zero times.
+        var flow = """
+        {
+          "id":"flow_baddata",
+          "name":"BadData",
+          "nodes":[
+            {
+              "id":"n1",
+              "type":"request",
+              "protocol":"rest",
+              "serverUrl":"http://127.0.0.1:1/never-called",
+              "service":"",
+              "method":"GET",
+              "body":"{}",
+              "data": { }
+            }
+          ]
+        }
+        """;
+        var ct = TestContext.Current.CancellationToken;
+        var flowPath = SafePath.Combine(_tempDir, "data-bad.json");
+        await File.WriteAllTextAsync(flowPath, flow, ct);
+
+        using var stdout = new StringWriter();
+        var rc = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions { FlowPath = flowPath }, stdout, TextWriter.Null, ct);
+
+        Assert.Equal(2, rc);
+        Assert.Contains("data source invalid", stdout.ToString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task RunAsync_BackendUnreachable_ReturnsTwo()
     {
