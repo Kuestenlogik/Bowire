@@ -32,6 +32,16 @@ public sealed class BowireComposeRailContribution : IBowireRailContribution
     // renderSidebar() switch, which delegates to
     // window.renderComposeLibrarySidebar() exposed by compose-rail.js.
     public string SidebarKind => "library";
+
+    // #306 / #314 — Compose is the first rail to adopt the renderer-key
+    // seam: instead of core naming 'compose' in a hardcoded railMode ===
+    // arm, the descriptor points at keys the compose-rail.js fragment
+    // registers on window.__bowireRailRenderers. Core stops knowing the
+    // rail exists — the whole point of the pluggable-workbench cut-over.
+    /// <inheritdoc />
+    public string? SidebarRendererKey => "composeLibrarySidebar";
+    /// <inheritdoc />
+    public string? MainPaneRendererKey => "composeMain";
     /// <inheritdoc />
     public bool AlwaysOn => true;
     /// <inheritdoc />

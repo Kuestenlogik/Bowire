@@ -1596,6 +1596,18 @@
         return main;
     }
 
+    // #306 / #314 — register the Compose renderers on the rail-renderer
+    // seam so core's render-sidebar.js / render-main.js resolve them by
+    // key (from the descriptor's SidebarRendererKey / MainPaneRendererKey)
+    // instead of a hardcoded `railMode === 'compose'` arm. The registry
+    // is initialised in render-sidebar.js (which loads before this
+    // fragment's splice slot); guard defensively anyway.
+    if (typeof window !== 'undefined') {
+        window.__bowireRailRenderers = window.__bowireRailRenderers || {};
+        window.__bowireRailRenderers.composeLibrarySidebar = renderComposeLibrarySidebar;
+        window.__bowireRailRenderers.composeMain = renderComposeMain;
+    }
+
     // ---- Helpers used by Ctrl+L + Home CTA ----
     //
     // Switch to the Compose rail and spawn a fresh tab. Reused by the
