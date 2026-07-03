@@ -3592,6 +3592,9 @@ not just
 }
 .bowire-tree-tool svg { width: 11px; height: 11px; }
 .bowire-tree-row:hover .bowire-tree-tool { display: inline-flex; }
+/* Flat-list rows (renderSidebarListItem) reuse the tree-tool chrome so
+   every rail's per-row tools hover-reveal identically (#276 parity). */
+.bowire-env-list-item:hover .bowire-tree-tool { display: inline-flex; }
 .bowire-tree-tool:hover {
     background: var(--bowire-surface);
     color: var(--bowire-text);
