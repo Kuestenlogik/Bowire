@@ -616,30 +616,7 @@
                 if (typeof showContextMenu !== 'function') return;
                 e.preventDefault();
                 e.stopPropagation();
-                var itemCount = (col.items || []).length;
-                showContextMenu(e.clientX, e.clientY, [
-                    {
-                        label: 'Build flow from collection',
-                        icon: 'flow',
-                        disabled: itemCount === 0,
-                        title: itemCount === 0
-                            ? 'This collection has no saved requests yet'
-                            : 'Project each saved request as a Request node on a fresh flow, then jump to the Flows rail',
-                        onClick: function () {
-                            if (typeof convertCollectionToFlow !== 'function') return;
-                            var flowId = convertCollectionToFlow(col.id);
-                            if (!flowId) return;
-                            railMode = 'flows';
-                            try { localStorage.setItem('bowire_rail_mode', 'flows'); } catch (_) { /* ignore */ }
-                            if (typeof setSidebarView === 'function') setSidebarView('flows');
-                            if (typeof flowEditorSelectedId !== 'undefined') flowEditorSelectedId = flowId;
-                            render();
-                            if (typeof toast === 'function') {
-                                toast('Flow created from "' + (col.name || 'collection') + '" — open on Flows rail', 'success');
-                            }
-                        }
-                    }
-                ]);
+                showContextMenu(e.clientX, e.clientY, _composeCollectionMenuItems(col.id));
             }
         });
         head.appendChild(el('span', {
@@ -654,6 +631,25 @@
             className: 'bowire-compose-side-collection-count',
             textContent: String((col.items || []).length)
         }));
+        // #362 — hover-tools parity: rename + delete on the collection
+        // head, mirroring the context menu so management actions are
+        // reachable the same way every rail exposes them.
+        head.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-tree-tool',
+            title: 'Rename collection',
+            'aria-label': 'Rename collection',
+            innerHTML: svgIcon('pencil'),
+            onClick: function (e) { e.stopPropagation(); _composeRenameCollection(col.id); }
+        }));
+        head.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-tree-tool bowire-tree-tool-danger',
+            title: 'Delete collection',
+            'aria-label': 'Delete collection',
+            innerHTML: svgIcon('trash'),
+            onClick: function (e) { e.stopPropagation(); _composeDeleteCollection(col.id); }
+        }));
         row.appendChild(head);
 
         if (open && col.items && col.items.length > 0) {
@@ -664,6 +660,71 @@
             row.appendChild(itemList);
         }
         return row;
+    }
+
+    // Shared context-menu items for a collection head (right-click +
+    // could seed a future overflow). Resolves by id at call time.
+    function _composeCollectionMenuItems(colId) {
+        var col = (collectionsList || []).find(function (c) { return c.id === colId; });
+        if (!col) return [];
+        var itemCount = (col.items || []).length;
+        return [
+            {
+                label: 'Build flow from collection',
+                icon: 'flow',
+                disabled: itemCount === 0,
+                title: itemCount === 0
+                    ? 'This collection has no saved requests yet'
+                    : 'Project each saved request as a Request node on a fresh flow, then jump to the Flows rail',
+                onClick: function () {
+                    if (typeof convertCollectionToFlow !== 'function') return;
+                    var flowId = convertCollectionToFlow(colId);
+                    if (!flowId) return;
+                    railMode = 'flows';
+                    try { localStorage.setItem('bowire_rail_mode', 'flows'); } catch (_) { /* ignore */ }
+                    if (typeof setSidebarView === 'function') setSidebarView('flows');
+                    if (typeof flowEditorSelectedId !== 'undefined') flowEditorSelectedId = flowId;
+                    render();
+                    if (typeof toast === 'function') {
+                        toast('Flow created from "' + (col.name || 'collection') + '" — open on Flows rail', 'success');
+                    }
+                }
+            },
+            { label: 'Rename…', onClick: function () { _composeRenameCollection(colId); } },
+            { separator: true },
+            { label: 'Delete', danger: true, onClick: function () { _composeDeleteCollection(colId); } }
+        ];
+    }
+
+    function _composeRenameCollection(colId) {
+        var col = (collectionsList || []).find(function (c) { return c.id === colId; });
+        if (!col || typeof bowirePrompt !== 'function') return;
+        bowirePrompt('Rename collection', { defaultValue: col.name || '' }).then(function (name) {
+            var c = (collectionsList || []).find(function (x) { return x.id === colId; });
+            if (!c || !name) return;
+            c.name = String(name).trim();
+            if (typeof persistCollections === 'function') persistCollections();
+            render();
+        });
+    }
+
+    function _composeDeleteCollection(colId) {
+        var col = (collectionsList || []).find(function (c) { return c.id === colId; });
+        if (!col || typeof bowireConfirm !== 'function') return;
+        bowireConfirm('Delete collection "' + (col.name || 'unnamed') + '"?', function () {
+            var backup = JSON.parse(JSON.stringify(col));
+            if (typeof deleteCollection === 'function') deleteCollection(colId);
+            render();
+            if (typeof toast === 'function') {
+                toast('Deleted collection "' + (backup.name || 'unnamed') + '"', 'info', {
+                    undo: function () {
+                        if (collectionsList) collectionsList.push(backup);
+                        if (typeof persistCollections === 'function') persistCollections();
+                        render();
+                    }
+                });
+            }
+        }, { title: 'Delete collection', danger: true, confirmText: 'Delete' });
     }
 
     function _renderComposeCollectionItemRow(col, item) {
@@ -712,6 +773,37 @@
                     e.dataTransfer.setData('application/x-bowire-compose', JSON.stringify(payload));
                     e.dataTransfer.effectAllowed = 'copy';
                 } catch (_) { /* setData may throw in obscure browsers */ }
+            },
+            // #362 — item rows gain a context menu (were menu-less) so
+            // 'open' and 'remove from collection' are reachable the same
+            // way the other rails expose per-row actions.
+            onContextMenu: function (e) {
+                if (typeof showContextMenu !== 'function') return;
+                e.preventDefault();
+                e.stopPropagation();
+                showContextMenu(e.clientX, e.clientY, [
+                    {
+                        label: 'Open in new tab',
+                        onClick: function () {
+                            spawnDesignTabFromItem(item, {
+                                kind: 'collection', collectionId: col.id, itemId: item.id, name: col.name
+                            });
+                            render();
+                        }
+                    },
+                    { separator: true },
+                    {
+                        label: 'Remove from collection',
+                        danger: true,
+                        onClick: function () {
+                            if (typeof removeFromCollection === 'function') {
+                                removeFromCollection(col.id, item.id);
+                                render();
+                                if (typeof toast === 'function') toast('Removed from "' + (col.name || 'collection') + '"', 'info');
+                            }
+                        }
+                    }
+                ]);
             }
         });
         row.appendChild(el('span', {
