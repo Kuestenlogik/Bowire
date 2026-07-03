@@ -90,11 +90,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**21/29 done** · 8 backlog
+**22/29 done** · 7 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [100](https://github.com/Kuestenlogik/Bowire/issues/100) | Bowire | [Ferry — CI/CD runner (collection / recording → headless run + JUnit report)](#issue-kuestenlogik-bowire-100) | ⬜ Backlog |  |
 | [170](https://github.com/Kuestenlogik/Bowire/issues/170) | Bowire | [Mock-server fault injection — latency / errors / drops / partial responses](#issue-kuestenlogik-bowire-170) | ⬜ Backlog |  |
 | [171](https://github.com/Kuestenlogik/Bowire/issues/171) | Bowire | [Snapshot testing — capture-once, diff-on-change response baselines](#issue-kuestenlogik-bowire-171) | ⬜ Backlog |  |
 | [174](https://github.com/Kuestenlogik/Bowire/issues/174) | Bowire | [Data-driven tests — CSV / JSON / generator parameterisation](#issue-kuestenlogik-bowire-174) | ⬜ Backlog |  |
@@ -103,6 +102,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ⬜ Backlog |  |
 | [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | ⬜ Backlog |  |
 | [38](https://github.com/Kuestenlogik/Bowire/issues/38) | Bowire | [CLI — Phase 3 polish (completion + validators + error rendering)](#issue-kuestenlogik-bowire-38) | ✅ Done | `area:cli` |
+| [100](https://github.com/Kuestenlogik/Bowire/issues/100) | Bowire | [Ferry — CI/CD runner (collection / recording → headless run + JUnit report)](#issue-kuestenlogik-bowire-100) | ✅ Done |  |
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ✅ Done |  |
 | [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ✅ Done |  |
 | [312](https://github.com/Kuestenlogik/Bowire/issues/312) | Bowire | [Test coverage gap report — v2.1 audit kickoff](#issue-kuestenlogik-bowire-312) | ✅ Done |  |
@@ -548,10 +548,6 @@ Three sidebar UX bugs operator surfaced in one session: [[more]](https://github.
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-#### <a id="issue-kuestenlogik-bowire-100"></a>⬜ Backlog · [#100](https://github.com/Kuestenlogik/Bowire/issues/100) Ferry — CI/CD runner (collection / recording → headless run + JUnit report)
-
-The five shipping boats (#28 Cruise ship preview included) cover *interactive* use — operator opens a workbench, looks at responses, decides what to do next. They don't cover the CI/CD shape: "every commit, run this collection of calls + assertions, fail the build if anything regresses." [[more]](https://github.com/Kuestenlogik/Bowire/issues/100)
-
 #### <a id="issue-kuestenlogik-bowire-170"></a>⬜ Backlog · [#170](https://github.com/Kuestenlogik/Bowire/issues/170) Mock-server fault injection — latency / errors / drops / partial responses
 
 Mocks (#94) replay captured responses faithfully. But "code that works against the happy path" is not the same as "code that works under failure". Your client should handle 503s, timeouts, slow responses, partial streams, dropped WebSocket frames. Today there's no easy way to test that against a Bowire mock. [[more]](https://github.com/Kuestenlogik/Bowire/issues/170)
@@ -585,6 +581,10 @@ Follow-up to #294. Phases A-F shipped the descriptor architecture + extracted Se
 > `area:cli`
 
 - [x] **Tab-completion via dotnet-suggest** — bash / PowerShell / zsh users get free completion. - [x] **Per-option validators** — `--port` validated 1..65535, `--recording` validated as FileInfo that exists, `--chaos` parsed ahead of dispatch. - [x] **Pretty-printed System.CommandLine errors** — co … [[more]](https://github.com/Kuestenlogik/Bowire/issues/38)
+
+#### <a id="issue-kuestenlogik-bowire-100"></a>✅ Done · [#100](https://github.com/Kuestenlogik/Bowire/issues/100) Ferry — CI/CD runner (collection / recording → headless run + JUnit report)
+
+The five shipping boats (#28 Cruise ship preview included) cover *interactive* use — operator opens a workbench, looks at responses, decides what to do next. They don't cover the CI/CD shape: "every commit, run this collection of calls + assertions, fail the build if anything regresses." [[more]](https://github.com/Kuestenlogik/Bowire/issues/100)
 
 #### <a id="issue-kuestenlogik-bowire-180"></a>✅ Done · [#180](https://github.com/Kuestenlogik/Bowire/issues/180) Assertion DSL for collection / recording replay
 
