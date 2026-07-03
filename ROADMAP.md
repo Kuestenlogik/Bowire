@@ -262,12 +262,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog |  |
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ⬜ Backlog |  |
 | [355](https://github.com/Kuestenlogik/Bowire/issues/355) | Bowire | [Eliminate #pragma warning disable across the codebase — rewrite code so analyzer warnings don't fire](#issue-kuestenlogik-bowire-355) | ⬜ Backlog |  |
-| [356](https://github.com/Kuestenlogik/Bowire/issues/356) | Bowire | [JS test safety net: unit-test infra for wwwroot fragments + lift the codecov wwwroot ignore](#issue-kuestenlogik-bowire-356) | ⬜ Backlog |  |
 | [357](https://github.com/Kuestenlogik/Bowire/issues/357) | Bowire | [AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException](#issue-kuestenlogik-bowire-357) | ⬜ Backlog |  |
 | [358](https://github.com/Kuestenlogik/Bowire/issues/358) | Bowire | [Rail packages ship without test projects — Benchmarking / Compose / Interceptor / Recordings / Security.Scanner / Workspaces](#issue-kuestenlogik-bowire-358) | ⬜ Backlog |  |
 | [360](https://github.com/Kuestenlogik/Bowire/issues/360) | Bowire | [Benchmarks: k6-style thresholds as CI gates — fail bowire test / bench runs on latency budgets](#issue-kuestenlogik-bowire-360) | ⬜ Backlog |  |
 | [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ⬜ Backlog |  |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog |  |
+| [367](https://github.com/Kuestenlogik/Bowire/issues/367) | Bowire | [codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)](#issue-kuestenlogik-bowire-367) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1039,10 +1039,6 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 
 111 files under src/ and tests/ carry `#pragma warning disable` blocks. Commit 6974da7e removed every suppression from the test-pillar files (TestRunner, FlowTestRunner, their tests) and establishes the patterns to reuse: [[more]](https://github.com/Kuestenlogik/Bowire/issues/355)
 
-#### <a id="issue-kuestenlogik-bowire-356"></a>⬜ Backlog · [#356](https://github.com/Kuestenlogik/Bowire/issues/356) JS test safety net: unit-test infra for wwwroot fragments + lift the codecov wwwroot ignore
-
-2026-07-03 architecture audit, highest-risk finding: the frontend is ~72 000 LOC of vanilla JS (41 Core fragments = 60 286 LOC + ~12k LOC of plugin fragments) sharing one closure, and it is **almost entirely untested and invisible to coverage**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/356)
-
 #### <a id="issue-kuestenlogik-bowire-357"></a>⬜ Backlog · [#357](https://github.com/Kuestenlogik/Bowire/issues/357) AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException
 
 2026-07-03 architecture audit: `Kuestenlogik.Bowire.AsyncApi` advertises binding support its resolvers don't implement. Eight of them are stubs that throw `NotImplementedException`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/357)
@@ -1062,6 +1058,10 @@ Competitive-research input (mid-2026): Hurl 8.0 sets the bar here — values mar
 #### <a id="issue-kuestenlogik-bowire-365"></a>⬜ Backlog · [#365](https://github.com/Kuestenlogik/Bowire/issues/365) Contract testing + workspace-id: run a workbench-stored workspace's suite by id
 
 Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in a **git-native workspace directory**. The original #181 sketch also listed `--workspace-id` — running a workspace addressed by its id from the workbench's `~/.bowire/` per-user storage. [[more]](https://github.com/Kuestenlogik/Bowire/issues/365)
+
+#### <a id="issue-kuestenlogik-bowire-367"></a>⬜ Backlog · [#367](https://github.com/Kuestenlogik/Bowire/issues/367) codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)
+
+Follow-up to #356. JS tests now gate CI (`node --test` over wwwroot-js) and JS coverage is *runnable* locally (`npm run test:js:coverage` / `node --test --experimental-test-coverage`), but it isn't uploaded to Codecov yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/367)
 
 ---
 
