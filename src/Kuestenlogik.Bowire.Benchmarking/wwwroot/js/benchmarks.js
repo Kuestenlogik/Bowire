@@ -1342,18 +1342,42 @@
                     });
                 }
                 return items;
-            })()
+            })(),
+            // #362 — search + sort once there's more than one to organise.
+            search: (benchmarksList && benchmarksList.length > 1) ? {
+                placeholder: 'Search benchmarks…',
+                value: benchmarksSearchQuery,
+                onInput: function (v) { benchmarksSearchQuery = v; render(); }
+            } : null,
+            sort: (benchmarksList && benchmarksList.length > 1) ? {
+                title: 'Sort benchmarks',
+                value: benchmarksSortBy || 'name',
+                options: BOWIRE_LIST_SORT_OPTIONS,
+                onChange: function (v) { benchmarksSortBy = v; render(); }
+            } : null
         }));
 
         var list = el('div', { id: 'bowire-benchmarks-list', className: 'bowire-env-list' });
+        var visibleBenchmarks = applyListFilterSort(benchmarksList, {
+            filter: benchmarksSearchQuery,
+            sort: benchmarksSortBy,
+            nameOf: function (s) { return s.name; },
+            createdOf: function (s) { return s.createdAt; }
+        });
         if (benchmarksList.length === 0) {
             list.appendChild(el('div', {
                 className: 'bowire-pane-empty',
                 style: 'padding:12px 14px',
                 textContent: 'No benchmarks yet.'
             }));
+        } else if (visibleBenchmarks.length === 0) {
+            list.appendChild(el('div', {
+                className: 'bowire-pane-empty',
+                style: 'padding:12px 14px',
+                textContent: 'No benchmarks match "' + benchmarksSearchQuery + '".'
+            }));
         } else {
-            benchmarksList.forEach(function (spec) {
+            visibleBenchmarks.forEach(function (spec) {
                 var isRunning = spec.id === benchmarkActiveSpecId && benchmark.running;
                 var meta;
                 if (isRunning) {

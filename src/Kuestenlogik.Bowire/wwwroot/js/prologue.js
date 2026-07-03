@@ -5607,6 +5607,9 @@
     // recordingManagerOpen retired — Recordings rail mode owns the surface.
     let recordingManagerSelectedId = null; // selected recording in the manager left panel
     let recordingReplayState = null;  // { recordingId, stepIndex, status, errors[] } during replay
+    // #362 — Recordings sidebar search + sort (session-only search).
+    let recordingsSearchQuery = '';
+    let recordingsSortBy = '';
 
     // ---- Freeform Request State ----
     // When freeformRequest is non-null, the main pane shows the
@@ -6594,6 +6597,9 @@
     }
     let benchmarksSelectedId = null;
     let benchmarkActiveSpecId = null; // spec currently running, if any
+    // #362 — sidebar search + sort state (session-only search).
+    let benchmarksSearchQuery = '';
+    let benchmarksSortBy = '';
     // #233 — diff banner expand state. Keyed by spec id so collapsing
     // one envelope's banner doesn't bleed into another when the
     // operator hops between specs. Session-local — the next reload

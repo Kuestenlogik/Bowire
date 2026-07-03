@@ -3113,6 +3113,41 @@
         }, 0);
     }
 
+    // #362 — shared sort options for the sidebar filterbar so every
+    // list rail cycles Name → Created with the same glyphs the
+    // Workspaces reference uses. Rails that lack a created-timestamp
+    // just filter with the alpha option.
+    var BOWIRE_LIST_SORT_OPTIONS = [
+        { value: 'name',    label: 'Name (A–Z)', icon: 'sortAlpha' },
+        { value: 'created', label: 'Newest first', icon: 'calendar' }
+    ];
+
+    // #362 — one filter+sort pass shared by every list rail so search
+    // and sort behave identically everywhere. `nameOf` extracts the
+    // searchable/sortable label; `createdOf` (optional) the creation
+    // timestamp for the 'created' mode. Non-mutating (returns a new
+    // array); a blank filter / unknown sort passes the list through in
+    // its original order.
+    function applyListFilterSort(items, opts) {
+        opts = opts || {};
+        var nameOf = opts.nameOf || function (x) { return x && x.name; };
+        var out = Array.isArray(items) ? items.slice() : [];
+        var q = (opts.filter || '').trim().toLowerCase();
+        if (q) {
+            out = out.filter(function (x) {
+                return String(nameOf(x) || '').toLowerCase().indexOf(q) >= 0;
+            });
+        }
+        if (opts.sort === 'name') {
+            out.sort(function (a, b) {
+                return String(nameOf(a) || '').localeCompare(String(nameOf(b) || ''));
+            });
+        } else if (opts.sort === 'created' && typeof opts.createdOf === 'function') {
+            out.sort(function (a, b) { return (opts.createdOf(b) || 0) - (opts.createdOf(a) || 0); });
+        }
+        return out;
+    }
+
     function renderSidebarListItem(opts) {
         opts = opts || {};
         var rowAttrs = {
