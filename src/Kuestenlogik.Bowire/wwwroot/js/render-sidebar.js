@@ -1745,8 +1745,8 @@
             } : null,
             sort: (recordingsList.length > 1 && recordingsSelected.size === 0) ? {
                 title: 'Sort recordings',
-                value: recordingsSortBy || 'name',
-                options: BOWIRE_LIST_SORT_OPTIONS,
+                value: recordingsSortBy || 'manual',
+                options: BOWIRE_LIST_SORT_OPTIONS_WITH_MANUAL.concat(BOWIRE_LIST_SORT_OPTIONS),
                 onChange: function (v) { recordingsSortBy = v; render(); }
             } : null
         }));
@@ -1774,6 +1774,11 @@
                 createdOf: function (r) { return r.createdAt || r.startedAt; }
             });
             var recIds = visibleRecordings.map(function (r) { return r.id; });
+            // #362 — reorder only in manual sort, no filter, no active
+            // multi-selection (so drag ≠ range-select).
+            var recReorderable = !recordingsSearchQuery
+                && (recordingsSortBy === 'manual' || recordingsSortBy === '')
+                && recordingsSelected.size === 0;
             if (visibleRecordings.length === 0) {
                 list.appendChild(el('div', {
                     className: 'bowire-pane-empty',
@@ -1791,7 +1796,7 @@
                 else if (typeof rec.stepCount === 'number') stepN = rec.stepCount;
                 else if (Array.isArray(rec.stepsManifest)) stepN = rec.stepsManifest.length;
 
-                list.appendChild(renderSidebarListItem({
+                var recRow = renderSidebarListItem({
                     id: 'bowire-rec-row-' + rec.id,
                     icon: 'filmstrip',
                     name: rec.name,
@@ -1854,7 +1859,16 @@
                         });
                         render();
                     }
-                }));
+                });
+                if (recReorderable && typeof attachListReorder === 'function') {
+                    attachListReorder(recRow, rec.id, function (dragId, targetId, after) {
+                        if (moveInArrayById(recordingsList, dragId, targetId, after)) {
+                            persistRecordings();
+                            render();
+                        }
+                    });
+                }
+                list.appendChild(recRow);
             });
             sidebar.appendChild(list);
         }
@@ -1881,9 +1895,16 @@
     function renderSourcesSidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
 
+        var hasUrls = serverUrls && serverUrls.length > 0;
+        var selMode = sourcesSelected.size > 0;
+
+        // #362 — one renderSidebarToolbar call carries every mode via
+        // its native API (primary / overflow / selection / search /
+        // sort) — no more post-hoc sidebar.replaceChild / append DOM
+        // mutation, so the header matches every other rail.
         sidebar.appendChild(renderSidebarToolbar({
             title: 'Sources',
-            primary: !config.lockServerUrl ? {
+            primary: (!config.lockServerUrl && !selMode) ? {
                 icon: 'plus',
                 title: 'New source',
                 onClick: function () {
@@ -1903,10 +1924,82 @@
                         render();
                     });
                 }
+            } : null,
+            overflow: (hasUrls && !config.lockServerUrl && !selMode) ? [
+                {
+                    label: 'Remove all URLs',
+                    danger: true,
+                    onClick: function () {
+                        var n = serverUrls.length;
+                        bowireConfirm(
+                            'Remove all ' + n + ' URLs from this workspace?',
+                            function () {
+                                serverUrls.length = 0;
+                                urlHeaders = {};
+                                urlMeta = {};
+                                if (typeof persistServerUrls === 'function') persistServerUrls();
+                                persistUrlHeaders();
+                                persistUrlMeta();
+                                sourcesSelectedUrl = null;
+                                sourcesSelected.clear();
+                                if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                                toast(n + ' URLs removed', 'success');
+                                render();
+                            },
+                            { title: 'Remove all URLs', confirmText: 'Remove ' + n, danger: true }
+                        );
+                    }
+                }
+            ] : null,
+            selection: selMode ? {
+                count: sourcesSelected.size,
+                actions: [
+                    {
+                        icon: 'trash',
+                        danger: true,
+                        title: 'Remove selected URLs',
+                        onClick: function () {
+                            var urls = Array.from(sourcesSelected);
+                            urls.forEach(function (uu) {
+                                if (typeof removeServerUrl === 'function') removeServerUrl(uu);
+                                else {
+                                    var ri = serverUrls.indexOf(uu);
+                                    if (ri >= 0) serverUrls.splice(ri, 1);
+                                }
+                                removeUrlMeta(uu);
+                            });
+                            if (typeof persistServerUrls === 'function') persistServerUrls();
+                            if (sourcesSelected.has(sourcesSelectedUrl)) {
+                                sourcesSelectedUrl = serverUrls[0] || null;
+                            }
+                            sourcesSelected.clear();
+                            sourcesSelectionAnchor = null;
+                            if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+                            toast(urls.length + ' URL' + (urls.length === 1 ? '' : 's') + ' removed', 'success');
+                            render();
+                        }
+                    }
+                ],
+                onClear: function () {
+                    sourcesSelected.clear();
+                    sourcesSelectionAnchor = null;
+                    render();
+                }
+            } : null,
+            search: (hasUrls && serverUrls.length > 1 && !selMode) ? {
+                placeholder: 'Search sources…',
+                value: sourcesSearchQuery,
+                onInput: function (v) { sourcesSearchQuery = v; render(); }
+            } : null,
+            sort: (hasUrls && serverUrls.length > 1 && !selMode) ? {
+                title: 'Sort sources',
+                value: sourcesSortBy || 'name',
+                options: BOWIRE_LIST_SORT_OPTIONS,
+                onChange: function (v) { sourcesSortBy = v; render(); }
             } : null
         }));
 
-        if (!serverUrls || serverUrls.length === 0) {
+        if (!hasUrls) {
             // Empty-state copy + "Add URL" call-to-action live in the
             // main pane so the sidebar doesn't shout the same thing.
             sidebar.appendChild(el('div', {
@@ -1921,82 +2014,27 @@
             sourcesSelectedUrl = serverUrls[0];
         }
 
-        // #152 v3 — selection-mode header swap (same #143 shape as
-        // recordings/collections). 'N selected' bar with bulk
-        // delete + clear.
-        if (sourcesSelected.size > 0) {
-            var selHeader = el('div', { className: 'bowire-env-list-header bowire-selection-header' },
-                el('span', { className: 'bowire-selection-count', textContent: sourcesSelected.size + ' selected' }),
-                el('button', {
-                    className: 'bowire-selection-action bowire-selection-action-danger',
-                    title: 'Remove selected URLs',
-                    onClick: function () {
-                        var urls = Array.from(sourcesSelected);
-                        urls.forEach(function (uu) {
-                            if (typeof removeServerUrl === 'function') removeServerUrl(uu);
-                            else {
-                                var ri = serverUrls.indexOf(uu);
-                                if (ri >= 0) serverUrls.splice(ri, 1);
-                            }
-                            removeUrlMeta(uu);
-                        });
-                        if (typeof persistServerUrls === 'function') persistServerUrls();
-                        if (sourcesSelected.has(sourcesSelectedUrl)) {
-                            sourcesSelectedUrl = serverUrls[0] || null;
-                        }
-                        sourcesSelected.clear();
-                        sourcesSelectionAnchor = null;
-                        if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
-                        toast(urls.length + ' URL' + (urls.length === 1 ? '' : 's') + ' removed', 'success');
-                        render();
-                    }
-                }, el('span', { innerHTML: svgIcon('trash'), style: 'width:13px;height:13px;display:inline-flex' })),
-                el('button', {
-                    className: 'bowire-selection-action',
-                    title: 'Clear selection (Esc)',
-                    textContent: '×',
-                    onClick: function () {
-                        sourcesSelected.clear();
-                        sourcesSelectionAnchor = null;
-                        render();
-                    }
-                })
-            );
-            sidebar.replaceChild(selHeader, sidebar.firstChild);
-        } else if (serverUrls.length > 0 && !config.lockServerUrl) {
-            // ⋮ overflow on the normal header for 'Remove all'.
-            var existingHeader = sidebar.firstChild;
-            existingHeader.appendChild(el('button', {
-                className: 'bowire-env-add-btn',
-                title: 'More actions',
-                'aria-label': 'More actions',
-                textContent: '⋮',
-                onClick: function () {
-                    var n = serverUrls.length;
-                    bowireConfirm(
-                        'Remove all ' + n + ' URLs from this workspace?',
-                        function () {
-                            serverUrls.length = 0;
-                            urlHeaders = {};
-                            urlMeta = {};
-                            if (typeof persistServerUrls === 'function') persistServerUrls();
-                            persistUrlHeaders();
-                            persistUrlMeta();
-                            sourcesSelectedUrl = null;
-                            sourcesSelected.clear();
-                            if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
-                            toast(n + ' URLs removed', 'success');
-                            render();
-                        },
-                        { title: 'Remove all URLs', confirmText: 'Remove ' + n, danger: true }
-                    );
-                }
-            }));
-        }
-
         var list = el('div', { id: 'bowire-sources-list', className: 'bowire-env-list' });
-        var urlIds = serverUrls.slice();
-        serverUrls.forEach(function (u, idx) {
+        // #362 — filter (sort of URLs is by string; the array is the
+        // persisted order). Range-selection indices key off the VISIBLE
+        // list. Sort 'name' orders the URLs alphabetically; 'created'
+        // has no timestamp so it falls back to insertion order.
+        var visibleUrls = applyListFilterSort(serverUrls, {
+            filter: sourcesSearchQuery,
+            sort: sourcesSortBy,
+            nameOf: function (u) { return u; }
+        });
+        if (visibleUrls.length === 0) {
+            list.appendChild(el('div', {
+                className: 'bowire-pane-empty',
+                style: 'padding:12px 14px',
+                textContent: 'No sources match "' + sourcesSearchQuery + '".'
+            }));
+            sidebar.appendChild(list);
+            return sidebar;
+        }
+        var urlIds = visibleUrls.slice();
+        visibleUrls.forEach(function (u, idx) {
             var isSelected = u === sourcesSelectedUrl;
             var isMultiSelected = sourcesSelected.has(u);
             var status = (typeof connectionStatuses === 'object' && connectionStatuses)

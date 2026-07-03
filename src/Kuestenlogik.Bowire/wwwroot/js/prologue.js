@@ -1212,6 +1212,9 @@
     // #152 v3 — multi-select state on the Sources list (reuses the
     // #143 selection model: Set of urls + anchor index).
     let sourcesSelected = new Set();
+    // #362 — Sources sidebar search + sort (session-only search).
+    let sourcesSearchQuery = '';
+    let sourcesSortBy = '';
     let sourcesSelectionAnchor = null;
 
     // #152 v2 — per-URL header bag. Keys are URLs (the full string
