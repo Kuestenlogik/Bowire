@@ -120,6 +120,14 @@ public enum FlowExpectationKind
     BodyText,
     /// <summary>The measured request latency in milliseconds.</summary>
     Latency,
+    /// <summary>
+    /// Synthetic kind used for snapshot-baseline results (#171). Not
+    /// authored as a regular expectation row — the runner emits results
+    /// of this kind from the step's <see cref="Kuestenlogik.Bowire.Flows.FlowStep.Snapshot"/>
+    /// config so snapshot drift flows into the same JUnit / SARIF / HTML
+    /// reporting as ordinary expectations.
+    /// </summary>
+    Snapshot,
 }
 
 /// <summary>How an expectation compares actual to expected.</summary>

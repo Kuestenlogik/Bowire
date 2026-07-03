@@ -141,9 +141,15 @@ internal static class FlowTestRunner
         var anyError = false;
         var anyExpectationFailed = false;
 
+        var snapshotDir = SnapshotDirFor(cli.FlowPath);
+
         foreach (var step in flow.Nodes)
         {
             var stepResult = await RunStepAsync(step, env, registry, cli.BaseUrl, ct).ConfigureAwait(false);
+            if (step.Snapshot is { Enabled: true } && !stepResult.Skipped && string.IsNullOrEmpty(stepResult.Error))
+            {
+                await EvaluateSnapshotAsync(step, stepResult, snapshotDir, cli.UpdateSnapshots, ct).ConfigureAwait(false);
+            }
             report.Steps.Add(stepResult);
 
             if (!string.IsNullOrEmpty(stepResult.Error)) anyError = true;
@@ -339,6 +345,93 @@ internal static class FlowTestRunner
     }
 
     /// <summary>
+    /// Snapshot files live in <c>__snapshots__/&lt;flow-file-stem&gt;/</c>
+    /// beside the flow file — checked into the repo alongside the flow, so
+    /// baseline drift shows up in the diff of the PR that caused it (the
+    /// Jest convention, which CI reviewers already know how to read).
+    /// </summary>
+    internal static string SnapshotDirFor(string flowPath)
+    {
+        var dir = Path.GetDirectoryName(Path.GetFullPath(flowPath)) ?? ".";
+        return Path.Combine(dir, "__snapshots__", Path.GetFileNameWithoutExtension(flowPath));
+    }
+
+    /// <summary>
+    /// #171 — capture-once / diff-on-change. Missing baseline (or
+    /// <c>--update-snapshots</c>) writes the actual response and reports a
+    /// passing "captured" result; an existing baseline is diffed via
+    /// <see cref="FlowSnapshotComparer"/> and every drift line lands as a
+    /// failing expectation-shaped result, so JUnit / SARIF / annotations
+    /// pick snapshot failures up without special-casing.
+    /// </summary>
+    private static async Task EvaluateSnapshotAsync(
+        FlowStep step, FlowStepRunResult result, string snapshotDir, bool update, CancellationToken ct)
+    {
+        var cfg = step.Snapshot!;
+        var file = Path.Combine(snapshotDir, SafeFileName(result.StepId) + ".snap.json");
+        var actual = result.ResponseBody ?? string.Empty;
+
+        try
+        {
+            if (update || !File.Exists(file))
+            {
+                Directory.CreateDirectory(snapshotDir);
+                await File.WriteAllTextAsync(file, actual, ct).ConfigureAwait(false);
+                result.Expectations.Add(new FlowExpectationResult
+                {
+                    Passed = true,
+                    Kind = FlowExpectationKind.Snapshot,
+                    Message = update
+                        ? $"snapshot updated → {file}"
+                        : $"snapshot captured → {file}",
+                });
+                return;
+            }
+
+            var baseline = await File.ReadAllTextAsync(file, ct).ConfigureAwait(false);
+            var diffs = FlowSnapshotComparer.Compare(baseline, actual, cfg.Mode, cfg.Ignore);
+            if (diffs.Count == 0)
+            {
+                result.Expectations.Add(new FlowExpectationResult
+                {
+                    Passed = true,
+                    Kind = FlowExpectationKind.Snapshot,
+                    Message = cfg.Mode == FlowSnapshotMode.Structural
+                        ? "snapshot matches (structural)"
+                        : "snapshot matches (exact)",
+                });
+                return;
+            }
+            foreach (var diff in diffs)
+            {
+                result.Expectations.Add(new FlowExpectationResult
+                {
+                    Passed = false,
+                    Kind = FlowExpectationKind.Snapshot,
+                    Message = $"snapshot drift: {diff} (re-baseline via --update-snapshots)",
+                });
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PathTooLongException)
+        {
+            result.Expectations.Add(new FlowExpectationResult
+            {
+                Passed = false,
+                Kind = FlowExpectationKind.Snapshot,
+                Message = $"snapshot I/O failed: {ex.Message}",
+            });
+        }
+    }
+
+    /// <summary>Step ids are workbench-generated ("node_…") but a hand-written flow may carry anything — sanitise for the filesystem.</summary>
+    private static string SafeFileName(string stepId)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var chars = stepId.Select(c => invalid.Contains(c) ? '_' : c).ToArray();
+        return new string(chars);
+    }
+
+    /// <summary>
     /// Build the resolver's variable map from the CLI <c>--env KEY=VALUE</c>
     /// repeats. Later occurrences win, matching the dotnet-style
     /// environment-merge convention.
@@ -407,6 +500,8 @@ internal sealed class FlowTestCliOptions
     public string? SarifPath { get; set; }
     /// <summary>Emit GitHub Actions <c>::error</c> annotations per failure (<c>--annotations</c>).</summary>
     public bool Annotations { get; set; }
+    /// <summary>Re-capture every snapshot baseline instead of diffing (<c>--update-snapshots</c>).</summary>
+    public bool UpdateSnapshots { get; set; }
     /// <summary>Fallback server URL used when a step doesn't carry its own (<c>--base-url</c>).</summary>
     public string? BaseUrl { get; set; }
     /// <summary><c>KEY=VALUE</c> pairs that populate the variable resolver (<c>--env</c>, repeatable).</summary>

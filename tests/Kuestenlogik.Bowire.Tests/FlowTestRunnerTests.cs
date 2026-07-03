@@ -227,6 +227,123 @@ public sealed class FlowTestRunnerTests : IDisposable
         Assert.Contains("1/2 expectations passed", stdout.ToString(), StringComparison.Ordinal);
     }
 
+    // ---- Snapshot testing (#171) — capture-once, diff-on-change ----
+
+    [Fact]
+    public async Task RunAsync_Snapshot_CaptureThenMatchThenDriftThenRebaseline()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var body = "{\"user\":{\"id\":42,\"name\":\"Ada\"}}";
+        // Responder reads the local so the response can drift mid-test.
+        using var server = new LoopbackJsonServer(_ => (200, "application/json", body));
+
+        var flowPath = SafePath.Combine(_tempDir, "snap.json");
+        var flow = $$"""
+        {
+          "id":"flow_snap",
+          "name":"Snap",
+          "nodes":[
+            {
+              "id":"n1",
+              "type":"request",
+              "protocol":"rest",
+              "serverUrl":"{{server.Url}}/users/42",
+              "service":"",
+              "method":"GET",
+              "body":"{}",
+              "snapshot": { "mode": "exact" }
+            }
+          ]
+        }
+        """;
+        await File.WriteAllTextAsync(flowPath, flow, ct);
+        var snapshotFile = SafePath.Combine(
+            FlowTestRunner.SnapshotDirFor(flowPath), "n1.snap.json");
+
+        // Run 1 — no baseline: capture, pass.
+        using (var stdout = new StringWriter())
+        {
+            var rc = await FlowTestRunner.RunAsync(
+                new FlowTestCliOptions { FlowPath = flowPath }, stdout, TextWriter.Null, ct);
+            Assert.Equal(0, rc);
+            Assert.Contains("snapshot captured", stdout.ToString(), StringComparison.Ordinal);
+            Assert.True(File.Exists(snapshotFile));
+        }
+
+        // Run 2 — same response: match, pass.
+        using (var stdout = new StringWriter())
+        {
+            var rc = await FlowTestRunner.RunAsync(
+                new FlowTestCliOptions { FlowPath = flowPath }, stdout, TextWriter.Null, ct);
+            Assert.Equal(0, rc);
+            Assert.Contains("snapshot matches", stdout.ToString(), StringComparison.Ordinal);
+        }
+
+        // Run 3 — response drifted: fail with the changed path in the diff.
+        body = "{\"user\":{\"id\":43,\"name\":\"Ada\"}}";
+        using (var stdout = new StringWriter())
+        {
+            var rc = await FlowTestRunner.RunAsync(
+                new FlowTestCliOptions { FlowPath = flowPath }, stdout, TextWriter.Null, ct);
+            Assert.Equal(1, rc);
+            Assert.Contains("snapshot drift", stdout.ToString(), StringComparison.Ordinal);
+            Assert.Contains("$.user.id", stdout.ToString(), StringComparison.Ordinal);
+        }
+
+        // Run 4 — --update-snapshots re-baselines: pass again.
+        using (var stdout = new StringWriter())
+        {
+            var rc = await FlowTestRunner.RunAsync(
+                new FlowTestCliOptions { FlowPath = flowPath, UpdateSnapshots = true }, stdout, TextWriter.Null, ct);
+            Assert.Equal(0, rc);
+            Assert.Contains("snapshot updated", stdout.ToString(), StringComparison.Ordinal);
+        }
+        var rebaselined = await File.ReadAllTextAsync(snapshotFile, ct);
+        Assert.Contains("43", rebaselined, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunAsync_Snapshot_IgnoredDynamicField_DoesNotFail()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var stamp = 1;
+        using var server = new LoopbackJsonServer(_ =>
+            (200, "application/json", $"{{\"id\":\"abc\",\"ts\":{++stamp}}}"));
+
+        var flowPath = SafePath.Combine(_tempDir, "snap-ignore.json");
+        var flow = $$"""
+        {
+          "id":"flow_snap_ign",
+          "name":"SnapIgnore",
+          "nodes":[
+            {
+              "id":"n1",
+              "type":"request",
+              "protocol":"rest",
+              "serverUrl":"{{server.Url}}/thing",
+              "service":"",
+              "method":"GET",
+              "body":"{}",
+              "snapshot": { "mode": "exact", "ignore": ["$.ts"] }
+            }
+          ]
+        }
+        """;
+        await File.WriteAllTextAsync(flowPath, flow, ct);
+
+        var rc1 = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions { FlowPath = flowPath }, TextWriter.Null, TextWriter.Null, ct);
+        Assert.Equal(0, rc1);
+
+        // Second run: ts drifted (responder increments) but is marked
+        // dynamic — snapshot must still hold.
+        using var stdout = new StringWriter();
+        var rc2 = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions { FlowPath = flowPath }, stdout, TextWriter.Null, ct);
+        Assert.Equal(0, rc2);
+        Assert.Contains("snapshot matches", stdout.ToString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task RunAsync_BackendUnreachable_ReturnsTwo()
     {
