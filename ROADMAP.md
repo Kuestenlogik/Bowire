@@ -206,7 +206,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
-**2/7 done** · 5 backlog
+**2/8 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -215,6 +215,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog |  |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ⬜ Backlog |  |
 | [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ⬜ Backlog |  |
+| [366](https://github.com/Kuestenlogik/Bowire/issues/366) | Bowire | [Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults](#issue-kuestenlogik-bowire-366) | ⬜ Backlog |  |
 | [362](https://github.com/Kuestenlogik/Bowire/issues/362) | Bowire | [Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern](#issue-kuestenlogik-bowire-362) | ✅ Done |  |
 | [363](https://github.com/Kuestenlogik/Bowire/issues/363) | Bowire | [Sidebar UX round 2: rail-strip drop targets + uniform 'select → assign → save as preset' toolbar affordance](#issue-kuestenlogik-bowire-363) | ✅ Done |  |
 
@@ -266,6 +267,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [358](https://github.com/Kuestenlogik/Bowire/issues/358) | Bowire | [Rail packages ship without test projects — Benchmarking / Compose / Interceptor / Recordings / Security.Scanner / Workspaces](#issue-kuestenlogik-bowire-358) | ⬜ Backlog |  |
 | [360](https://github.com/Kuestenlogik/Bowire/issues/360) | Bowire | [Benchmarks: k6-style thresholds as CI gates — fail bowire test / bench runs on latency budgets](#issue-kuestenlogik-bowire-360) | ⬜ Backlog |  |
 | [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ⬜ Backlog |  |
+| [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog |  |
 
 ## Details
 
@@ -905,6 +907,10 @@ The freeform request builder today requires a `service` + `method` name even whe
 
 All three buttons used the same X glyph (Close + Clear selection) or text 'Clear' (Clear all). New `selectionClear` SVG (dashed rectangle + interior X) for Clear selection so the three actions read as three different intents. i18n-safe — no labels to translate.
 
+#### <a id="issue-kuestenlogik-bowire-366"></a>⬜ Backlog · [#366](https://github.com/Kuestenlogik/Bowire/issues/366) Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults
+
+Follow-ups collecting the workbench-UI remainders from the shipped test-pillar features (#170/#171/#174). The CLI + engine + authoring editors are done; these are read-side / streaming refinements. [[more]](https://github.com/Kuestenlogik/Bowire/issues/366)
+
 #### <a id="issue-kuestenlogik-bowire-362"></a>✅ Done · [#362](https://github.com/Kuestenlogik/Bowire/issues/362) Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern
 
 A full sidebar audit (2026-07-03) found the same affordances placed/behaving differently across rails. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/362)
@@ -1052,6 +1058,10 @@ Competitive-research input (mid-2026): k6's thresholds (`p95 < 200ms` → non-ze
 #### <a id="issue-kuestenlogik-bowire-361"></a>⬜ Backlog · [#361](https://github.com/Kuestenlogik/Bowire/issues/361) Secrets redaction across all test/CI outputs — Hurl-grade
 
 Competitive-research input (mid-2026): Hurl 8.0 sets the bar here — values marked secret are redacted in logs, reports, and even curl-export output. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/361)
+
+#### <a id="issue-kuestenlogik-bowire-365"></a>⬜ Backlog · [#365](https://github.com/Kuestenlogik/Bowire/issues/365) Contract testing + workspace-id: run a workbench-stored workspace's suite by id
+
+Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in a **git-native workspace directory**. The original #181 sketch also listed `--workspace-id` — running a workspace addressed by its id from the workbench's `~/.bowire/` per-user storage. [[more]](https://github.com/Kuestenlogik/Bowire/issues/365)
 
 ---
 
