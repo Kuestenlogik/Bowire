@@ -6499,6 +6499,17 @@
     var _envSecrets = {};            // envId → { name → value } (session-only, per Environment)
     var _aiVarsCache = {};           // 'ai.NAME' → resolved value (string)
     var _aiVarsInflight = {};        // 'ai.NAME' → Promise (dedup concurrent prefetches)
+    // #208 Phase 5 — OS-keyring source. Same session-cache shape as the
+    // ai.* vars: prefetchKeyringVars(template) scans the template for
+    // {{keyring.service/account}} refs before send-time and POSTs them
+    // to /api/vars/keyring (which reads Windows Credential Manager /
+    // macOS Keychain / libsecret via the optional Kuestenlogik.Bowire.
+    // Keyring package). substituteVars then reads the cache synchronously.
+    // Keyed by the full prefix-stripped ref ('service/account'). Never
+    // persisted — cleared on reload like secrets, and scrubbed to '***'
+    // at every export boundary.
+    var _keyringVarsCache = {};      // 'service/account' → resolved value (string)
+    var _keyringVarsInflight = {};   // 'service/account' → Promise (dedup)
 
     function getWorkspaceSecrets(workspaceId) {
         var id = workspaceId || activeWorkspaceId;
@@ -6548,6 +6559,83 @@
     }
     function clearAiVarsCache() { _aiVarsCache = {}; _aiVarsInflight = {}; }
 
+    // #208 Phase 5 — OS-keyring resolver + prefetch. resolveKeyringVar is
+    // the synchronous cache read substituteVars calls; prefetchKeyringVars
+    // is the async populate that runs before send-time (mirrors
+    // prefetchAiVars). The read only ever fires for refs a template
+    // literally contains, so the OS store is touched on-demand, never
+    // enumerated.
+    function resolveKeyringVar(ref) {
+        // ref is the full prefix-stripped reference, e.g. 'github.com/deploy-bot'.
+        return Object.prototype.hasOwnProperty.call(_keyringVarsCache, ref)
+            ? _keyringVarsCache[ref] : null;
+    }
+    function clearKeyringVarsCache() { _keyringVarsCache = {}; _keyringVarsInflight = {}; }
+    if (typeof window !== 'undefined') window.bowirePrefetchKeyringVars = function (t) { return prefetchKeyringVars(t); };
+
+    async function prefetchKeyringVars(templates) {
+        // Gated on the keyring module being installed + enabled — a host
+        // that doesn't reference Kuestenlogik.Bowire.Keyring (or an
+        // operator who switched it off) never issues the call.
+        if (typeof isModuleEnabled === 'function' && !isModuleEnabled('keyring')) return;
+        if (typeof templates === 'string') templates = [templates];
+        if (!Array.isArray(templates) || templates.length === 0) return;
+
+        // Scan both placeholder forms the resolver understands so
+        // ${keyring.…} resolves in the workbench too, not only {{keyring.…}}.
+        var refs = new Set();
+        var reCurly = /\{\{\s*keyring\.([^}\s]+)\s*\}\}/g;
+        var reDollar = /\$\{\s*keyring\.([^}\s]+)\s*\}/g;
+        templates.forEach(function (t) {
+            if (typeof t !== 'string') return;
+            var m;
+            while ((m = reCurly.exec(t)) !== null) { refs.add(m[1]); }
+            while ((m = reDollar.exec(t)) !== null) { refs.add(m[1]); }
+        });
+        if (refs.size === 0) return;
+
+        // Only ask for refs not already cached / not already in flight.
+        var wanted = [];
+        refs.forEach(function (ref) {
+            if (resolveKeyringVar(ref) !== null) return;
+            if (_keyringVarsInflight[ref]) return;
+            wanted.push(ref);
+        });
+        if (wanted.length === 0) {
+            // Still await any in-flight prefetches for the referenced refs.
+            var waiting = [];
+            refs.forEach(function (ref) {
+                if (_keyringVarsInflight[ref]) waiting.push(_keyringVarsInflight[ref]);
+            });
+            await Promise.all(waiting);
+            return;
+        }
+
+        // One batch call for every wanted ref. Register the shared promise
+        // against each ref so a concurrent send dedups against it.
+        var batch = fetch(config.prefix + '/api/vars/keyring', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refs: wanted })
+        }).then(function (resp) {
+            return resp.ok ? resp.json() : null;
+        }).then(function (data) {
+            if (!data || !data.enabled || !data.values) return;
+            for (var ref in data.values) {
+                if (Object.prototype.hasOwnProperty.call(data.values, ref)) {
+                    _keyringVarsCache[ref] = String(data.values[ref]);
+                }
+            }
+        }).catch(function () {
+            // Leave cache unset; substituteVars returns the placeholder and
+            // the operator sees the unresolved {{keyring.…}} in the request.
+        }).finally(function () {
+            wanted.forEach(function (ref) { delete _keyringVarsInflight[ref]; });
+        });
+        wanted.forEach(function (ref) { _keyringVarsInflight[ref] = batch; });
+        await batch;
+    }
+
     // #125 Phase 4 — secret sanitiser. Walk a JSON-serialisable value
     // and replace any string occurrence of a current secret's value
     // with '***'. Used at every export boundary (recording step disk
@@ -6568,6 +6656,14 @@
         for (var k in bag) {
             if (Object.prototype.hasOwnProperty.call(bag, k) && bag[k]) {
                 values.push(bag[k]);
+            }
+        }
+        // #208 Phase 5 — keyring-resolved values are just as sensitive as
+        // workspace secrets, so any that were fetched this session get the
+        // same '***' scrub before a recording / export leaves the workbench.
+        for (var kr in _keyringVarsCache) {
+            if (Object.prototype.hasOwnProperty.call(_keyringVarsCache, kr) && _keyringVarsCache[kr]) {
+                values.push(_keyringVarsCache[kr]);
             }
         }
         if (values.length === 0) return value;

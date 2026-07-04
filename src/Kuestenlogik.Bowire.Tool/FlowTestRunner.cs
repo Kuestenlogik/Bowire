@@ -5,9 +5,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Flows;
 using Kuestenlogik.Bowire.Flows.Expectations;
+using Kuestenlogik.Bowire.Keyring;
 using Kuestenlogik.Bowire.Models;
 
 namespace Kuestenlogik.Bowire.App;
@@ -153,6 +155,20 @@ internal static class FlowTestRunner
         }
         envPairs.AddRange(cli.EnvOverrides);
         var env = MergeEnv(envPairs);
+
+        // #208 Phase 5 — opt-in OS-keyring resolution for CI. With
+        // --keyring, every {{keyring.service/account}} / ${keyring.…} ref
+        // in a step body or serverUrl is read from the runner's OS
+        // credential store and seeded into the resolver env, so secrets
+        // never live in the flow file or an --env-file. Misses / a
+        // disabled store leave the placeholder intact and the step's
+        // assertion fails loudly rather than sending an empty credential.
+        if (cli.Keyring)
+        {
+            SeedKeyringVars(flow, env,
+                new KeyringResolver(new KeyringOptions { Enabled = true }, new OsKeyringBackend()));
+        }
+
         var sw = Stopwatch.StartNew();
         var anyError = false;
         var anyExpectationFailed = false;
@@ -543,6 +559,54 @@ internal static class FlowTestRunner
         return merged;
     }
 
+    // #208 Phase 5 — keyring ref scanners. Match the two placeholder forms
+    // the resolver understands; the captured group is the ref that follows
+    // the `keyring.` prefix (e.g. 'github.com/deploy-bot').
+    private static readonly Regex KeyringCurly = new(
+        @"\{\{\s*keyring\.([^}\s]+)\s*\}\}",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
+    private static readonly Regex KeyringDollar = new(
+        @"\$\{\s*keyring\.([^}\s]+)\s*\}",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
+
+    /// <summary>
+    /// Resolve every <c>{{keyring.X}}</c> / <c>${keyring.X}</c> ref the flow
+    /// references against the OS credential store (once per distinct ref)
+    /// and seed <paramref name="env"/> under the full <c>keyring.X</c> key
+    /// so <see cref="FlowVariableResolver"/>'s bare-env fallback substitutes
+    /// it. An explicit <c>--env</c> entry for the same key wins; an
+    /// unresolved ref is left out so the placeholder survives to the
+    /// assertion.
+    /// </summary>
+    private static void SeedKeyringVars(
+        FlowDefinition flow, Dictionary<string, string> env, KeyringResolver resolver)
+    {
+        if (!resolver.Enabled || flow.Nodes is null) return;
+        var refs = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var step in flow.Nodes)
+        {
+            CollectKeyringRefs(step.Body, refs);
+            CollectKeyringRefs(step.ServerUrl, refs);
+        }
+        foreach (var reference in refs)
+        {
+            var key = "keyring." + reference;
+            if (env.ContainsKey(key)) continue; // explicit --env override wins
+            var result = resolver.Resolve(reference);
+            if (result.Status == KeyringReadStatus.Found && result.Value is not null)
+            {
+                env[key] = result.Value;
+            }
+        }
+    }
+
+    private static void CollectKeyringRefs(string? text, HashSet<string> refs)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+        foreach (Match m in KeyringCurly.Matches(text)) refs.Add(m.Groups[1].Value);
+        foreach (Match m in KeyringDollar.Matches(text)) refs.Add(m.Groups[1].Value);
+    }
+
     private static async Task PrintStepAsync(TextWriter stdout, FlowStepRunResult step)
     {
         var useColor = UseColor(stdout);
@@ -600,6 +664,12 @@ internal sealed class FlowTestCliOptions
     public IReadOnlyList<string> EnvOverrides { get; set; } = Array.Empty<string>();
     /// <summary>Dotenv-style files whose lines seed the resolver before <see cref="EnvOverrides"/> (<c>--env-file</c>, repeatable).</summary>
     public IReadOnlyList<string> EnvFiles { get; set; } = Array.Empty<string>();
+    /// <summary>
+    /// #208 Phase 5 — resolve <c>{{keyring.service/account}}</c> refs from
+    /// the runner's OS credential store (<c>--keyring</c>). Off by default so
+    /// a CI job explicitly opts into reading the machine's secret store.
+    /// </summary>
+    public bool Keyring { get; set; }
 }
 
 // ---- Run-report record types — consumed by FlowJUnitReport + FlowHtmlReport ----

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>OS keyring variable source for Bowire (#208 Phase 5). Resolves {{keyring.service/account}} placeholders against the platform credential store — Windows Credential Manager (CredRead), macOS Keychain (security), and libsecret (secret-tool) — so secrets never live in workspace files, environment exports, or shared collections. Dependency-free: the platform bindings are native P/Invoke plus CLI shell-out, no NuGet. Opt-in by construction (only present if the host references the package) and never egresses — the store read is local and only fires when a template explicitly references a keyring ref. Same optional-package shape as the AI + protocol plugins.</Description>
+    <PackageId>Kuestenlogik.Bowire.Keyring</PackageId>
+    <PackageTags>bowire;keyring;secrets;credential-manager;keychain;libsecret;secret-tool;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>

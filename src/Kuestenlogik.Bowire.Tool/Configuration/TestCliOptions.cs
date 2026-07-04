@@ -91,4 +91,12 @@ internal sealed class TestCliOptions
     /// codepath only.
     /// </summary>
     public IReadOnlyList<string> EnvFiles { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    /// #208 Phase 5 — <c>--keyring</c>: resolve <c>{{keyring.service/account}}</c>
+    /// refs from the runner's OS credential store (Windows Credential
+    /// Manager / macOS Keychain / libsecret) so secrets never live in the
+    /// flow file or an <c>--env-file</c>. Off by default; Flow codepath only.
+    /// </summary>
+    public bool Keyring { get; set; }
 }

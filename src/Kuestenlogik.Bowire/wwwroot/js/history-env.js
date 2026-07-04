@@ -518,6 +518,22 @@
                     ? resolveAiVar(aiName) : null;
                 return aiValue === null ? match : aiValue;
             }
+            // {{keyring.service/account}} — value read from the OS
+            // credential store (#208 Phase 5) by the optional
+            // Kuestenlogik.Bowire.Keyring package. Same cache-read shape as
+            // ai.*: prefetchKeyringVars(template) POSTs the refs to
+            // /api/vars/keyring before a send and populates the session
+            // cache; this sync path only reads it. A miss (module absent,
+            // disabled, ref not in the store, prefetch not yet run) leaves
+            // the placeholder intact so the operator notices instead of
+            // sending an empty credential. Resolved values are scrubbed to
+            // '***' at every export boundary.
+            if (key.indexOf('keyring.') === 0) {
+                var keyringRef = key.substring('keyring.'.length);
+                var keyringValue = (typeof resolveKeyringVar === 'function')
+                    ? resolveKeyringVar(keyringRef) : null;
+                return keyringValue === null ? match : keyringValue;
+            }
             // System var (bare ${now} / ${uuid}).
             var sysBare = resolveSystemVar(key);
             if (sysBare !== null) return sysBare;

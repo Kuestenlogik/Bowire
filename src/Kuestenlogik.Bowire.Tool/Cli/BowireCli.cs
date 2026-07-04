@@ -1029,12 +1029,17 @@ internal static class BowireCli
             AllowMultipleArgumentsPerToken = false,
             DefaultValueFactory = _ => cfg["Bowire:Test:EnvFile"] is { Length: > 0 } p ? [p] : [],
         };
+        var keyring = new Option<bool>("--keyring")
+        {
+            Description = "Resolve {{keyring.service/account}} refs from the runner's OS credential store (Windows Credential Manager / macOS Keychain / libsecret) instead of an --env-file, so CI secrets never touch the flow file. Requires the Kuestenlogik.Bowire.Keyring package (bundled in the CLI). Flow files only. Maps to Bowire:Test:Keyring.",
+            DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Test:Keyring"),
+        };
 
         var cmd = new Command("test", "Run an assertion-based test suite. Accepts a recording JSON (v2.1 test-collection format) or a Flow JSON document (v2.2 — the T2 CI runner). Format auto-detected.");
         cmd.Add(collectionPath); cmd.Add(url); cmd.Add(report); cmd.Add(junit);
         cmd.Add(sarif); cmd.Add(annotations); cmd.Add(updateSnapshots);
         cmd.Add(failOn); cmd.Add(workspaceDir);
-        cmd.Add(baseUrl); cmd.Add(env); cmd.Add(envFile);
+        cmd.Add(baseUrl); cmd.Add(env); cmd.Add(envFile); cmd.Add(keyring);
         cmd.SetAction(async (pr, _) =>
         {
             var options = new TestCliOptions
@@ -1049,6 +1054,7 @@ internal static class BowireCli
                 BaseUrl = pr.GetValue(baseUrl),
                 EnvOverrides = pr.GetValue(env) ?? Array.Empty<string>(),
                 EnvFiles = pr.GetValue(envFile) ?? Array.Empty<string>(),
+                Keyring = pr.GetValue(keyring),
             };
             var stdout = pr.InvocationConfiguration.Output;
             var stderr = pr.InvocationConfiguration.Error;
