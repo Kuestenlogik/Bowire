@@ -41,18 +41,27 @@ Reference Core plus exactly the rails and protocols you want:
 
 `app.MapBowire()` discovers whatever's referenced. The rail strip renders only the rails whose packages are present; the sidebar/main dispatch resolves each rail's renderer at runtime, so an absent rail leaves no dangling arm.
 
+## Rails that stay in Core
+
+A few rails are **core-resident by design** — their JS ships inside Core, not a droppable package, because they're the workbench's navigation spine rather than optional feature surfaces:
+
+- **Home** — the cross-workflow launchpad; the default landing.
+- **Discover** — the service/method tree; the reason the workbench exists.
+- **Workspaces** — the workspace-navigation hub. Its main pane isn't a self-contained rail: it dispatches into the *workspace-scoped* Collections, Environments, Recordings, Sources, and Settings sub-views (it even reuses the Sources detail renderer). Pulling it into a package would drag those cross-rail surfaces along, so it belongs with Home/Discover.
+
+These are always present, so there's no pluggability to gain by extracting them — and their dispatch naming stays honest (Core always ships them). Every *optional* feature rail below is a droppable package.
+
 ## What each package contributes
 
 | Package | Rail / surface |
 |---------|----------------|
-| `Kuestenlogik.Bowire` | Core shell + Home + Discover rails |
+| `Kuestenlogik.Bowire` | Core shell + Home + Discover + Workspaces rails |
 | `…Compose` | Compose (request builder, collections, presets) |
 | `…Recordings` | Recordings |
 | `…Flows` | Flows (+ the `bowire test` flow runner) |
 | `…Benchmarking` | Benchmarks |
 | `…Mock` | Mock servers (surfaced under the Intercept rail) |
 | `…Interceptor` | Intercept (captured traffic, live overrides) |
-| `…Workspaces` | Workspaces |
 | `…Security.Scanner` | Security rail + `bowire scan` |
 | `…Help` | Help rail |
 | `…Ai` (+ `.OpenAi` / `.Anthropic` / `.Mcp`) | AI assistant module |
