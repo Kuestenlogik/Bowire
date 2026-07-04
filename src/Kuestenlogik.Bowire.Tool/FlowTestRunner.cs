@@ -169,6 +169,16 @@ internal static class FlowTestRunner
                 new KeyringResolver(new KeyringOptions { Enabled = true }, new OsKeyringBackend()));
         }
 
+        // #208 Phase 5 — deterministic {{ai.*}} resolution for CI. The
+        // workbench resolves ai.* by calling a model (nondeterministic,
+        // needs a provider); a CI run instead pins each ref to a stable
+        // value derived from --ai-seed + the ref name, so the same flow
+        // produces byte-identical requests on every run without any model.
+        if (!string.IsNullOrEmpty(cli.AiSeed))
+        {
+            SeedAiVars(flow, env, cli.AiSeed);
+        }
+
         var sw = Stopwatch.StartNew();
         var anyError = false;
         var anyExpectationFailed = false;
@@ -607,6 +617,67 @@ internal static class FlowTestRunner
         foreach (Match m in KeyringDollar.Matches(text)) refs.Add(m.Groups[1].Value);
     }
 
+    // #208 Phase 5 — ai.* ref scanners, mirroring the keyring pair. The
+    // captured group is the ref that follows the `ai.` prefix.
+    private static readonly Regex AiCurly = new(
+        @"\{\{\s*ai\.([^}\s]+)\s*\}\}",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
+    private static readonly Regex AiDollar = new(
+        @"\$\{\s*ai\.([^}\s]+)\s*\}",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
+
+    /// <summary>
+    /// Seed every <c>{{ai.X}}</c> / <c>${ai.X}</c> ref the flow references
+    /// with a deterministic value derived from <paramref name="seed"/> +
+    /// the ref name, writing it into <paramref name="env"/> under the full
+    /// <c>ai.X</c> key so <see cref="FlowVariableResolver"/>'s bare-env
+    /// fallback substitutes it. An explicit <c>--env</c> entry wins.
+    /// </summary>
+    private static void SeedAiVars(FlowDefinition flow, Dictionary<string, string> env, string seed)
+    {
+        if (flow.Nodes is null) return;
+        var refs = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var step in flow.Nodes)
+        {
+            CollectAiRefs(step.Body, refs);
+            CollectAiRefs(step.ServerUrl, refs);
+        }
+        foreach (var reference in refs)
+        {
+            var key = "ai." + reference;
+            if (env.ContainsKey(key)) continue; // explicit --env override wins
+            env[key] = DeterministicAiValue(seed, reference);
+        }
+    }
+
+    private static void CollectAiRefs(string? text, HashSet<string> refs)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+        foreach (Match m in AiCurly.Matches(text)) refs.Add(m.Groups[1].Value);
+        foreach (Match m in AiDollar.Matches(text)) refs.Add(m.Groups[1].Value);
+    }
+
+    /// <summary>
+    /// Deterministic, seed-derived stand-in for an AI-suggested value:
+    /// <c>{name}-{hash}</c> where hash is FNV-1a-32 over
+    /// <c>seed \x1f name</c>. Stable across runs and machines for a given
+    /// (seed, name), so CI assertions can pin against it.
+    /// </summary>
+    internal static string DeterministicAiValue(string seed, string name)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(seed + "" + name);
+        uint hash = 2166136261; // FNV offset basis
+        unchecked
+        {
+            foreach (var b in bytes)
+            {
+                hash ^= b;
+                hash *= 16777619; // FNV prime — wrap on overflow
+            }
+        }
+        return string.Create(CultureInfo.InvariantCulture, $"{name}-{hash:x8}");
+    }
+
     private static async Task PrintStepAsync(TextWriter stdout, FlowStepRunResult step)
     {
         var useColor = UseColor(stdout);
@@ -670,6 +741,15 @@ internal sealed class FlowTestCliOptions
     /// a CI job explicitly opts into reading the machine's secret store.
     /// </summary>
     public bool Keyring { get; set; }
+
+    /// <summary>
+    /// #208 Phase 5 — deterministic seed for <c>{{ai.*}}</c> refs
+    /// (<c>--ai-seed</c>). When set, each ai ref resolves to a stable
+    /// value derived from the seed + ref name (no model call), so CI runs
+    /// are byte-reproducible. Null leaves ai refs unresolved (the workbench
+    /// resolves them via a model; the CLI has none).
+    /// </summary>
+    public string? AiSeed { get; set; }
 }
 
 // ---- Run-report record types — consumed by FlowJUnitReport + FlowHtmlReport ----

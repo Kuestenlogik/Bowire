@@ -310,7 +310,15 @@
         var label = '<span class="bowire-vars-ref-preview-kind bowire-vars-ref-preview-kind-' + kind + '">'
             + escapeHtmlVA(kind) + '</span>'
             + '<span class="bowire-vars-ref-preview-ref">' + escapeHtmlVA(enclosed.match) + '</span>';
-        _varsRefPopover.innerHTML = label + '<span class="bowire-vars-ref-preview-arrow">→</span>' + preview;
+        // #208 Phase 5 — ai.* values are regenerable; offer a re-roll
+        // button right in the preview so the operator can cycle to a
+        // fresh suggestion without re-typing the reference.
+        var reroll = (kind === 'ai' && typeof window.bowireRerollAiVar === 'function')
+            ? '<button type="button" class="bowire-vars-ref-reroll" title="Re-roll this AI value" aria-label="Re-roll">↻</button>'
+            : '';
+        _varsRefPopover.innerHTML = label + '<span class="bowire-vars-ref-preview-arrow">→</span>' + preview + reroll;
+
+        if (reroll) wireRerollButton(ref);
 
         // Position above the caret. Mirror-div coords from the
         // autocomplete plumbing.
@@ -336,6 +344,49 @@
             _varsRefPopover.style.top = (rect.top - 30) + 'px';
             _varsRefPopover.style.display = 'block';
         }
+    }
+
+    // #208 Phase 5 — wire the re-roll button inside the ref preview.
+    // mousedown/preventDefault keeps the textarea focused so the
+    // selectionchange + blur handlers don't tear the popover down before
+    // the click lands; the click then regenerates the ai.* value and
+    // updates the value span in place.
+    function wireRerollButton(ref) {
+        if (!_varsRefPopover) return;
+        var btn = _varsRefPopover.querySelector('.bowire-vars-ref-reroll');
+        if (!btn) return;
+        var aiName = ref.replace(/^ai\./, '');
+        btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var valSpan = _varsRefPopover.querySelector(
+                '.bowire-vars-ref-preview-value, .bowire-vars-ref-preview-error');
+            btn.disabled = true;
+            btn.classList.add('bowire-vars-ref-reroll-spin');
+            if (valSpan) {
+                valSpan.className = 'bowire-vars-ref-preview-value';
+                valSpan.textContent = 'rerolling…';
+            }
+            window.bowireRerollAiVar(aiName).then(function (v) {
+                if (!valSpan) return;
+                if (v === null || v === undefined || v === '') {
+                    valSpan.className = 'bowire-vars-ref-preview-error';
+                    valSpan.textContent = 'Re-roll returned no value';
+                } else {
+                    valSpan.className = 'bowire-vars-ref-preview-value';
+                    valSpan.textContent = String(v);
+                }
+            }).catch(function () {
+                if (valSpan) {
+                    valSpan.className = 'bowire-vars-ref-preview-error';
+                    valSpan.textContent = 'Re-roll failed';
+                }
+            }).finally(function () {
+                btn.disabled = false;
+                btn.classList.remove('bowire-vars-ref-reroll-spin');
+            });
+        });
     }
 
     function closeVarsRefPreview() {

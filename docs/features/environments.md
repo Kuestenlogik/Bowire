@@ -105,6 +105,14 @@ The source ships in the optional **`Kuestenlogik.Bowire.Keyring`** package (bund
 
 For CI, the same resolution is available headless: `bowire test <flow.json> --keyring` reads every `{{keyring.*}}` ref the flow touches from the runner's credential store, so pipeline secrets stay out of the flow file and the `--env-file`.
 
+### AI-suggested values (`ai.*`)
+
+`{{ai.subject}}` asks the configured AI provider for one plausible value for a variable named `subject` and caches it for the session (requires the **AI Assistant** module). The value is fetched once, just before the first send that references it, so the same request body stays stable across retries.
+
+**Re-roll.** Put the caret inside an `{{ai.…}}` reference and a small preview popover shows the current value with a **↻** button. Click it to discard the cached value and regenerate — useful when the first suggestion doesn't fit. The fresh value replaces the cached one, so the next send uses it.
+
+**Deterministic seed for CI.** The CLI has no AI provider, so `bowire test <flow.json> --ai-seed <seed>` resolves every `{{ai.*}}` ref to a stable value derived from the seed + the ref name (`name-<hash>`) instead of calling a model. The same `(seed, ref)` always produces the same value, so a flow's requests are byte-reproducible across runs and machines — pin your assertions against the seeded value.
+
 ### System variables (`runtime.*`)
 
 These don't need to be defined anywhere — they resolve at substitution time. Useful for JWT claims (iat/exp), correlation IDs, and any time-bound or random values in test requests.

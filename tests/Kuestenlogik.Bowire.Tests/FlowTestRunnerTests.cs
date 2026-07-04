@@ -78,6 +78,28 @@ public sealed class FlowTestRunnerTests : IDisposable
         Assert.Empty(merged);
     }
 
+    // ---- #208 Phase 5 — deterministic ai.* seed --------------------------
+
+    [Fact]
+    public void DeterministicAiValue_SameSeedAndName_IsStable()
+    {
+        var a = FlowTestRunner.DeterministicAiValue("ci-seed", "realistic-name");
+        var b = FlowTestRunner.DeterministicAiValue("ci-seed", "realistic-name");
+        Assert.Equal(a, b);
+        // Format: <name>-<8 hex>.
+        Assert.Matches("^realistic-name-[0-9a-f]{8}$", a);
+    }
+
+    [Fact]
+    public void DeterministicAiValue_DiffersBySeed_AndByName()
+    {
+        var baseVal = FlowTestRunner.DeterministicAiValue("seed-1", "x");
+        Assert.NotEqual(baseVal, FlowTestRunner.DeterministicAiValue("seed-2", "x"));
+        Assert.NotEqual(
+            FlowTestRunner.DeterministicAiValue("s", "ab"),
+            FlowTestRunner.DeterministicAiValue("sa", "b")); // unit-separator keeps these distinct
+    }
+
     [Fact]
     public async Task ReadEnvFileLines_SkipsBlankLinesAndComments()
     {
@@ -410,6 +432,52 @@ public sealed class FlowTestRunnerTests : IDisposable
 
         Assert.Equal(0, rc);
         Assert.Contains("/users/cli-wins", paths, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunAsync_AiSeed_ResolvesAiRefsDeterministically()
+    {
+        // End-to-end: an {{ai.greeting}} ref in the URL resolves to the
+        // deterministic seed value (no model), and the resolved segment
+        // reaches the actual request the runner fires.
+        var paths = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var server = new LoopbackJsonServer(req =>
+        {
+            paths.Enqueue(req.Url!.AbsolutePath);
+            return (200, "application/json", "{\"ok\":true}");
+        });
+
+        var ct = TestContext.Current.CancellationToken;
+        var flow = $$"""
+        {
+          "id":"flow_aiseed",
+          "name":"AiSeed",
+          "nodes":[
+            {
+              "id":"n1",
+              "type":"request",
+              "protocol":"rest",
+              "serverUrl":"{{server.Url}}/echo/${ai.greeting}",
+              "service":"",
+              "method":"GET",
+              "body":"{}",
+              "expectations":[
+                { "id":"e1","kind":"body-path","operator":"exists","target":"$.ok" }
+              ]
+            }
+          ]
+        }
+        """;
+        var flowPath = SafePath.Combine(_tempDir, "aiseed.json");
+        await File.WriteAllTextAsync(flowPath, flow, ct);
+
+        var rc = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions { FlowPath = flowPath, AiSeed = "testseed" },
+            TextWriter.Null, TextWriter.Null, ct);
+
+        Assert.Equal(0, rc);
+        var expected = "/echo/" + FlowTestRunner.DeterministicAiValue("testseed", "greeting");
+        Assert.Contains(expected, paths, StringComparer.Ordinal);
     }
 
     [Fact]
