@@ -4617,7 +4617,6 @@
                         // routing picks up the right editor.
                         if (mode.id === 'environments') sidebarView = 'environments';
                         else if (mode.id === 'flows') sidebarView = 'flows';
-                        else if (mode.id === 'proxy') sidebarView = 'proxy';
                         else if (mode.id === 'intercept') sidebarView = 'intercept';
                         else if (mode.id === 'discover') sidebarView = 'services';
                         searchSuggestionsOpen = false;

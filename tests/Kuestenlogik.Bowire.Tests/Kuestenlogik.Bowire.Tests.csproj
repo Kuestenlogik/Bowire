@@ -26,7 +26,6 @@
          rail packages come transitively via Bundle.Workbench (referenced
          by Tool above). -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Compose\Kuestenlogik.Bowire.Compose.csproj" />
-    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Workspaces\Kuestenlogik.Bowire.Workspaces.csproj" />
     <!-- #315 — Traffic + deprecated Proxy / Intercepted descriptors
          touched directly by BowireTrafficRailContributionTests. v2.1
          (#325): all three descriptors live in the consolidated

@@ -3,13 +3,24 @@
 
 using Kuestenlogik.Bowire.Plugins;
 
-namespace Kuestenlogik.Bowire.Workspaces;
+namespace Kuestenlogik.Bowire.Rails;
 
 /// <summary>
-/// Workspaces rail contribution (#306 Phase G). Always-on — the workspace
-/// switcher is the closest thing to a file tree in Bowire and operators
-/// expect it on by default.
+/// Workspaces rail contribution — the workspace-navigation hub (the
+/// closest thing to a file tree in Bowire), core-resident by design.
 /// </summary>
+/// <remarks>
+/// Folded into <c>Kuestenlogik.Bowire</c> (Core) alongside Home + Discover
+/// (#368, the #306 Phase G tail). Workspaces is the workspace-navigation
+/// hub whose detail pane dispatches into the Collections / Environments /
+/// Recordings / Sources / Settings sub-views, so — like Home and Discover
+/// — it must always be present rather than shipping in a thin optional
+/// package while its JS lives in core. The previous descriptor-only
+/// <c>Kuestenlogik.Bowire.Workspaces</c> package has been retired; the
+/// <see cref="Id"/> string stays <c>"workspaces"</c> verbatim so
+/// operator-saved <c>railMode</c> + <c>bowire_enabled_rails</c> values
+/// keep dispatching correctly.
+/// </remarks>
 public sealed class BowireWorkspacesRailContribution : IBowireRailContribution
 {
     /// <inheritdoc />

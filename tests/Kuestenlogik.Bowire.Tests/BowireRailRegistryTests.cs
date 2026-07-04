@@ -4,7 +4,6 @@
 using Kuestenlogik.Bowire.Compose;
 using Kuestenlogik.Bowire.Plugins;
 using Kuestenlogik.Bowire.Rails;
-using Kuestenlogik.Bowire.Workspaces;
 
 namespace Kuestenlogik.Bowire.Tests;
 
