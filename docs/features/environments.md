@@ -87,6 +87,23 @@ To emit a literal `{{name}}` without substitution, double the braces: `{{{{name}
 | `secret.` | `{{secret.apiKey}}` | Workspace-scoped secrets (in-memory) |
 | `captured.` | `{{captured.token}}` | Values written by a pre/post script |
 | `ai.` | `{{ai.subject}}` | Session-cached AI-suggested values |
+| `keyring.` | `{{keyring.github.com/deploy-bot}}` | OS credential store — Windows Credential Manager / macOS Keychain / libsecret (see below) |
+
+### OS keyring (`keyring.*`)
+
+`{{keyring.service/account}}` reads a secret straight from the operating system's credential store, so a real credential never has to live in a workspace file, an env-var table, or a shared collection. The reference is split on the first `/` into a service (mandatory) and an account (optional): `{{keyring.github.com/deploy-bot}}` looks up account `deploy-bot` under service `github.com`; `{{keyring.stripe-key}}` looks up the bare service `stripe-key`.
+
+| Platform | Backend | Store a value with |
+|----------|---------|--------------------|
+| Windows | Credential Manager (`CredRead`, generic credentials) | PowerShell `CredentialManager` module, node-keytar, or Python `keyring` (blob decoded UTF-16LE) |
+| macOS | Keychain | `security add-generic-password -s <service> -a <account> -w <secret>` |
+| Linux | libsecret | `secret-tool store --label=<l> service <service> account <account>` |
+
+The read is **local-first and on-demand**: nothing leaves the machine, and the store is only touched for a reference a request actually contains — Bowire never enumerates it. Resolved values are masked in the UI and scrubbed to `***` at every export boundary (recordings, HAR/curl export, collection share), exactly like `{{secret.*}}`.
+
+The source ships in the optional **`Kuestenlogik.Bowire.Keyring`** package (bundled in the standalone CLI; embedded hosts add it explicitly). When the package isn't installed — or an operator switches the **OS Keyring** module off in **Settings → Modules** — `{{keyring.*}}` placeholders are left intact so a missing credential surfaces loudly instead of sending an empty value. A machine-wide kill-switch is `Bowire:Keyring:Enabled=false`.
+
+For CI, the same resolution is available headless: `bowire test <flow.json> --keyring` reads every `{{keyring.*}}` ref the flow touches from the runner's credential store, so pipeline secrets stay out of the flow file and the `--env-file`.
 
 ### System variables (`runtime.*`)
 

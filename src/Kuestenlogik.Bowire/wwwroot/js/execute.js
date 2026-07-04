@@ -86,6 +86,26 @@
                 await window.bowirePrefetchAiVars(aiTemplates);
             } catch (e) { console.warn('[ai-prefetch] failed', e); }
         }
+        // #208 Phase 5 — same pre-substitution pass for {{keyring.*}} refs.
+        // Reuses the template set the AI prefetch already assembled (body +
+        // metadata values + URL); no-op unless the keyring module is
+        // installed and a template actually references a keyring ref.
+        if (typeof window.bowirePrefetchKeyringVars === 'function') {
+            try {
+                var keyringTemplates = requestMessages.slice();
+                var mdRowsKr = $$('.bowire-metadata-row');
+                for (var kri = 0; kri < mdRowsKr.length; kri++) {
+                    var krInputs = mdRowsKr[kri].querySelectorAll('.bowire-metadata-input');
+                    if (krInputs.length === 2 && krInputs[1].value) {
+                        keyringTemplates.push(krInputs[1].value);
+                    }
+                }
+                if (selectedService && selectedService.originUrl) {
+                    keyringTemplates.push(selectedService.originUrl);
+                }
+                await window.bowirePrefetchKeyringVars(keyringTemplates);
+            } catch (e) { console.warn('[keyring-prefetch] failed', e); }
+        }
 
         // Substitute ${var} placeholders from active environment + globals
         let messages = substituteMessages(

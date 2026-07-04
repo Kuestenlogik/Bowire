@@ -46,6 +46,10 @@
          explicitly because the package is opt-in and the rest of the
          test suite shouldn't depend on it being installed. -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
+    <!-- Optional Keyring package (#208 Phase 5): tests cover reference
+         parsing, the Enabled gate, the batch endpoint (via an in-memory
+         backend), and the CLI SeedKeyringVars seam. Same opt-in shape. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Keyring\Kuestenlogik.Bowire.Keyring.csproj" />
     <!-- Optional Help package: tests cover the markdown provider's
          resource scan, front-matter parsing, search ranking, and
          AddBowireHelp registration. Same opt-in shape as the Ai

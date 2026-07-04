@@ -93,6 +93,7 @@ internal static class TestRunner
                 BaseUrl = cli.BaseUrl,
                 EnvOverrides = cli.EnvOverrides,
                 EnvFiles = cli.EnvFiles,
+                Keyring = cli.Keyring,
             };
             var rc = await RunAsync(perFlow, stdout, stderr).ConfigureAwait(false);
             // Worst-of: 2 (error) beats 1 (fail) beats 0 (pass).
@@ -171,6 +172,7 @@ internal static class TestRunner
                 BaseUrl = cli.BaseUrl,
                 EnvOverrides = cli.EnvOverrides,
                 EnvFiles = cli.EnvFiles,
+                Keyring = cli.Keyring,
             };
             return await FlowTestRunner.RunAsync(flowCli, stdout, stderr).ConfigureAwait(false);
         }

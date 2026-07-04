@@ -80,6 +80,7 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire.Ai.OpenAi\Kuestenlogik.Bowire.Ai.OpenAi.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Ai.Anthropic\Kuestenlogik.Bowire.Ai.Anthropic.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Ai.Mcp\Kuestenlogik.Bowire.Ai.Mcp.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Keyring\Kuestenlogik.Bowire.Keyring.csproj" />
     <!-- Mock + MCP runtimes. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Mock\Kuestenlogik.Bowire.Mock.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
