@@ -4989,23 +4989,9 @@
         // + renderer-key seam (mainPaneRendererKey=helpMain), resolved at
         // the top of renderMain.
 
-        if (railMode === 'security') {
-            var secMain = el('div', { id: 'bowire-main-security', className: 'bowire-main bowire-main-security' });
-            if (window.__bowireAi && typeof window.__bowireAi.renderSecurityPanel === 'function') {
-                // Wrap in the shared main-pad gutter so the security
-                // surface aligns with every other rail's left/right
-                // inset instead of sitting at the pane edge.
-                var secWrap = el('div', { className: 'bowire-main-pad' });
-                secWrap.appendChild(window.__bowireAi.renderSecurityPanel());
-                secMain.appendChild(secWrap);
-            } else {
-                secMain.appendChild(el('p', {
-                    className: 'bowire-pane-empty bowire-main-pad',
-                    textContent: 'Security tools need Kuestenlogik.Bowire.Ai installed in the workbench process. Install the package + restart, or switch back to Discover via the rail.'
-                }));
-            }
-            return secMain;
-        }
+        // security: #306/#314 — moved to the Security.Scanner package's
+        // security.js fragment + renderer-key seam (mainPaneRendererKey=
+        // securityMain), resolved at the top of renderMain.
 
         // #92 — Sources management view. When the operator clicks
         // the topbar connection pill (or otherwise sets sidebarView
