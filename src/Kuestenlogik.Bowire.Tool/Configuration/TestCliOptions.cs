@@ -99,4 +99,12 @@ internal sealed class TestCliOptions
     /// flow file or an <c>--env-file</c>. Off by default; Flow codepath only.
     /// </summary>
     public bool Keyring { get; set; }
+
+    /// <summary>
+    /// #208 Phase 5 — <c>--ai-seed</c>: deterministic seed for
+    /// <c>{{ai.*}}</c> refs. When set, each ai ref resolves to a stable
+    /// seed-derived value (no model call) so CI runs are reproducible.
+    /// Flow codepath only.
+    /// </summary>
+    public string? AiSeed { get; set; }
 }

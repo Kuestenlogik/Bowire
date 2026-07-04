@@ -15177,6 +15177,33 @@ and
     color: var(--bowire-warning);
     font-style: italic;
 }
+/* #208 Phase 5 — re-roll button for ai.* values in the ref preview. */
+.bowire-vars-ref-reroll {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    flex: 0 0 auto;
+    transition: color 0.12s ease, border-color 0.12s ease;
+}
+.bowire-vars-ref-reroll:hover:not(:disabled) {
+    color: #a855f7;
+    border-color: rgba(168, 85, 247, 0.5);
+}
+.bowire-vars-ref-reroll:disabled { cursor: default; opacity: 0.6; }
+.bowire-vars-ref-reroll-spin { animation: bowire-vars-ref-reroll-spin 0.7s linear infinite; }
+@keyframes bowire-vars-ref-reroll-spin {
+    to { transform: rotate(360deg); }
+}
 
 /* #116 Phase 3 — Settings → Assistant scope bar. Tells the
    operator whether the editor is showing the global config or

@@ -2054,3 +2054,24 @@
     // Expose at module scope so execute.js + benchmarks.js +
     // perf-diff can await it before their substituteVars calls.
     window.bowirePrefetchAiVars = prefetchAiVars;
+
+    // #208 Phase 5 — regenerate a single ai.* value on demand (the
+    // resolver UI's re-roll button). Drops the cached value + any inflight
+    // promise so _runAiPrefetch re-generates instead of returning the
+    // first cached result, then writes the fresh value back into the same
+    // session cache substituteVars reads. Resolves to the new value, or
+    // null if the model returned nothing.
+    async function rerollAiVar(name) {
+        delete _aiVarsCache[name];
+        delete _aiVarsInflight[name];
+        var p = _runAiPrefetch(name).then(function (value) {
+            if (value !== null && value !== undefined && String(value).length > 0) {
+                _aiVarsCache[name] = String(value);
+                return _aiVarsCache[name];
+            }
+            return null;
+        }).finally(function () { delete _aiVarsInflight[name]; });
+        _aiVarsInflight[name] = p;
+        return p;
+    }
+    window.bowireRerollAiVar = rerollAiVar;
