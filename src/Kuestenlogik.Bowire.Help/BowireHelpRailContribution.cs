@@ -63,6 +63,15 @@ public sealed class BowireHelpRailContribution : IBowireRailContribution
     public string Group => "help";
     /// <inheritdoc />
     public string SidebarKind => "help";
+
+    // #306 / #314 — renderer-key seam: core resolves these from
+    // window.__bowireRailRenderers (registered by the help.js fragment
+    // this package now embeds) instead of hardcoded railMode / switch arms.
+    /// <inheritdoc />
+    public string? SidebarRendererKey => "helpSidebar";
+    /// <inheritdoc />
+    public string? MainPaneRendererKey => "helpMain";
+
     /// <inheritdoc />
     public bool DefaultEnabled => true;
     /// <inheritdoc />

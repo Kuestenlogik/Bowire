@@ -233,12 +233,10 @@
          freeformRequest / getEnvironments(), all available globally
          from earlier fragments. -->
     <BowireJsFragment Include="wwwroot\js\vars-deprecation.js" />
-    <!-- #154 Phase 3 — Help drawer renderer + per-rail topic
-         resolution + mini-markdown renderer. Uses the renderDrawer
-         primitive from #115 (declared in helpers.js earlier in this
-         list). Consumed by render-env-auth.js's drawer mount + topbar
-         overflow click, and by init.js's F1 keybind. -->
-    <BowireJsFragment Include="wwwroot\js\help.js" />
+    <!-- #306/#314 — help.js moved to the Kuestenlogik.Bowire.Help package
+         (embedded there, spliced at the rail-fragment marker); the Help
+         rail resolves its renderers via the renderer-key seam. No core
+         fragment entry any more. -->
     <!-- #136 — URL / service catalogue providers boot helper. Fetches
          /api/catalogue/info + /entries on workbench mount and merges
          catalogue-sourced URLs into serverUrls so the existing

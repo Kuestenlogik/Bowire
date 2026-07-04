@@ -3992,10 +3992,9 @@
             // registers it on window.__bowireRailRenderers, so
             // _currentRailRenderer('sidebar') at the top of renderSidebar
             // handles it before this switch — no 'library' arm needed.
-            // #324 — Help rail. Sidebar = search box + topic-tree
-            // nav (re-uses the existing topic-row + search-hit code
-            // hoisted out of the legacy drawer renderer).
-            case 'help':         sidebar = renderHelpSidebar(); break;
+            // help: #306/#314 — moved to the Help package's help.js
+            // fragment + renderer-key seam (sidebarRendererKey=helpSidebar),
+            // handled before this switch.
         }
         if (sidebar) return sidebar;
         // Only 'services' falls through to the legacy Discover

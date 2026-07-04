@@ -15,6 +15,15 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
     <PackageReference Include="Markdig" />
   </ItemGroup>
+  <!-- #306/#314 — the Help rail's JS fragment. Embedded with the
+       `.wwwroot.js.<file>.js` logical-name convention so core's
+       StitchRailFragments splices it into the workbench bundle at the
+       rail-fragment marker; the fragment registers renderHelpSidebar /
+       renderHelpMain on the renderer-key seam. -->
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot\js\help.js"
+                      LogicalName="Kuestenlogik.Bowire.Help.wwwroot.js.help.js" />
+  </ItemGroup>
   <!-- Embedded user-facing docs. Whitelist by category — we ship
        the parts of docs/ that read as a user guide (setup, ui-guide,
        features, protocols-as-reference, the landing page) but skip

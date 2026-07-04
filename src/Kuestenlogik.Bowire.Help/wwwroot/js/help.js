@@ -453,3 +453,12 @@
         }
         return groups;
     }
+
+    // #306 / #314 — register the Help renderers on the rail-renderer seam
+    // so core resolves them via the descriptor's Sidebar/MainPaneRendererKey
+    // instead of hardcoded railMode / switch arms.
+    if (typeof window !== 'undefined') {
+        window.__bowireRailRenderers = window.__bowireRailRenderers || {};
+        window.__bowireRailRenderers.helpSidebar = renderHelpSidebar;
+        window.__bowireRailRenderers.helpMain = renderHelpMain;
+    }
