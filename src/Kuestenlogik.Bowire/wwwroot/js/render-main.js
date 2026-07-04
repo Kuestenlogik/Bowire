@@ -4985,9 +4985,9 @@
         // full-width (no drawer chrome competing for horizontal real
         // estate) with the standard rail-pad gutter so the prose
         // aligns with every other rail's left/right inset.
-        if (railMode === 'help') {
-            return renderHelpMain();
-        }
+        // help: #306/#314 — moved to the Help package's help.js fragment
+        // + renderer-key seam (mainPaneRendererKey=helpMain), resolved at
+        // the top of renderMain.
 
         if (railMode === 'security') {
             var secMain = el('div', { id: 'bowire-main-security', className: 'bowire-main bowire-main-security' });
