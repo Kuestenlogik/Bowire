@@ -4946,18 +4946,14 @@
             ? 'env'
             : sidebarView === 'flows'
                 ? 'flows-' + (flowEditorSelectedId || 'none')
-                : sidebarView === 'proxy'
-                    ? 'proxy-' + (proxyFlowSelectedId || 'none')
-                    : sidebarView === 'intercepted'
-                        ? 'intercepted-' + (interceptedFlowSelectedId || 'none')
-                        : sidebarView === 'intercept'
-                            ? 'intercept-' + (typeof interceptSubView !== 'undefined' ? interceptSubView : 'captured')
-                                + '-' + (typeof interceptedFlowSelectedId !== 'undefined' ? (interceptedFlowSelectedId || 'none') : 'none')
-                            : freeformRequest
-                                ? 'freeform'
-                                : selectedMethod
-                                    ? (selectedService ? selectedService.name : '') + '-' + selectedMethod.name
-                                    : 'landing';
+                : sidebarView === 'intercept'
+                    ? 'intercept-' + (typeof interceptSubView !== 'undefined' ? interceptSubView : 'captured')
+                        + '-' + (typeof interceptedFlowSelectedId !== 'undefined' ? (interceptedFlowSelectedId || 'none') : 'none')
+                    : freeformRequest
+                        ? 'freeform'
+                        : selectedMethod
+                            ? (selectedService ? selectedService.name : '') + '-' + selectedMethod.name
+                            : 'landing';
         const main = el('div', { id: 'bowire-main-' + mainViewKey, className: 'bowire-main' });
 
         // When the sidebar is in Environments view, the main pane
@@ -4973,19 +4969,10 @@
         // (flowsMain), resolved at the top of renderMain before this
         // sidebarView block is reached.
 
-        // Proxy view — captured-flow detail pane
-        if (sidebarView === 'proxy') {
-            main.appendChild(renderProxyMainPane());
-            return main;
-        }
-
-        // #153 — Intercepted view — same detail-pane idiom, but the
-        // source is the in-process interceptor middleware rather than
-        // the standalone CLI proxy. Renderer lives in intercepted-view.js.
-        if (sidebarView === 'intercepted') {
-            main.appendChild(renderInterceptedMainPane());
-            return main;
-        }
+        // #368 — the core-side Proxy + Intercepted main-pane dispatch
+        // (renderProxyMainPane / renderInterceptedMainPane) was retired
+        // here; both rails were superseded by the unified Intercept view
+        // below. Stored 'proxy' / 'intercepted' migrate to 'intercept'.
 
         // v2.2 — Unified Intercept view. Four sub-tabs (Captured / Live
         // overrides / Mock servers / Settings) — sub-tab state is owned

@@ -1093,12 +1093,6 @@
                 // says "you have N folders configured". No meaningful
                 // signal to surface, so the badge is suppressed.
                 return null;
-            case 'proxy':
-                return (typeof proxyFlows !== 'undefined' && Array.isArray(proxyFlows))
-                    ? proxyFlows.length : 0;
-            case 'intercepted':
-                return (typeof interceptedFlows !== 'undefined' && Array.isArray(interceptedFlows))
-                    ? interceptedFlows.length : 0;
             case 'intercept':
                 // v2.2 — unified Intercept rail. Badge surfaces the
                 // captured-flow count (the primary "what just happened"
@@ -1386,10 +1380,6 @@
                         sidebarView = 'environments';
                     } else if (m.id === 'flows') {
                         sidebarView = 'flows';
-                    } else if (m.id === 'proxy') {
-                        sidebarView = 'proxy';
-                    } else if (m.id === 'intercepted') {
-                        sidebarView = 'intercepted';
                     } else if (m.id === 'intercept') {
                         sidebarView = 'intercept';
                     } else if (m.id === 'discover') {
@@ -1505,8 +1495,6 @@
                         try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
                         if (m.id === 'environments') sidebarView = 'environments';
                         else if (m.id === 'flows') sidebarView = 'flows';
-                        else if (m.id === 'proxy') sidebarView = 'proxy';
-                        else if (m.id === 'intercepted') sidebarView = 'intercepted';
                         else if (m.id === 'intercept') sidebarView = 'intercept';
                         else if (m.id === 'discover') sidebarView = 'services';
                         render();
@@ -3510,45 +3498,15 @@
     // renderInterceptMockServersListInto inside the Interceptor
     // package's intercept-view.js fragment.
 
-    // Flows + Proxy sidebars — thin wrappers around the existing
-    // renderFlowsListInto / renderProxyListInto helpers in flows.js /
-    // proxy-view.js. Both helpers already build their own unified
-    // toolbar + list rows; the wrapper just supplies the sidebar
-    // shell so the dispatcher below can route to them, instead of
-    // falling through to the legacy Discover services-tree path
-    // (which used to render search + protocol filters + new-request
-    // dropdown ON TOP OF the flow/proxy entries — visually it read as
-    // "Discover" with a list of flows tacked on).
-    // #306/#314 — renderFlowsSidebar moved into the Flows package
-    // (flows.js) and registered on the renderer-key seam; core no longer
-    // wraps it. The Proxy wrapper below stays until Proxy migrates too.
-    function renderProxySidebar() {
-        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
-        var list = el('div', {
-            id: 'bowire-sidebar-list-proxy',
-            className: 'bowire-service-list'
-        });
-        if (typeof renderProxyListInto === 'function') {
-            renderProxyListInto(list);
-        }
-        sidebar.appendChild(list);
-        return sidebar;
-    }
-    // #153 — Intercepted rail sidebar. Thin wrapper around the
-    // renderInterceptedListInto helper in intercepted-view.js — same
-    // pattern as the proxy sidebar above.
-    function renderInterceptedSidebar() {
-        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
-        var list = el('div', {
-            id: 'bowire-sidebar-list-intercepted',
-            className: 'bowire-service-list'
-        });
-        if (typeof renderInterceptedListInto === 'function') {
-            renderInterceptedListInto(list);
-        }
-        sidebar.appendChild(list);
-        return sidebar;
-    }
+    // #368 — the core-side renderProxySidebar / renderInterceptedSidebar
+    // wrappers + their dispatch were retired here. Both rails were
+    // superseded by the unified Intercept rail
+    // (Kuestenlogik.Bowire.Interceptor); the boot-migration in prologue.js
+    // rewrites any stored 'proxy' / 'intercepted' → 'intercept', so
+    // nothing reaches these paths anymore. (The package still hosts the
+    // shared renderHttpExchange / renderInterceptedMocks* helpers the live
+    // Intercept rail reuses, so proxy-view.js / intercepted-view.js stay.)
+
     // v2.2 — Unified Intercept rail sidebar. Thin wrapper around the
     // renderInterceptListInto helper in Interceptor's intercept-view.js.
     // Replaces the previous renderTrafficSidebar; the boot-migration in
@@ -3601,8 +3559,8 @@
             // (sidebarRendererKey=securitySidebar), handled before this switch.
             // flows: #306/#314 — renderer-key seam (sidebarRendererKey=
             // flowsSidebar), handled before this switch.
-            case 'proxy':        sidebar = renderProxySidebar(); break;
-            case 'intercepted':  sidebar = renderInterceptedSidebar(); break;
+            // proxy / intercepted: #368 — retired (superseded by the
+            // unified Intercept rail; boot-migration remaps stored values).
             // intercept: #306/#314 — renderer-key seam
             // (sidebarRendererKey=interceptSidebar), handled before this switch.
             // Compose Library (Collections + Presets): #306/#314 — moved
@@ -4377,10 +4335,6 @@
             renderEnvironmentsListInto(list);
         } else if (sidebarView === 'flows') {
             renderFlowsListInto(list);
-        } else if (sidebarView === 'proxy') {
-            renderProxyListInto(list);
-        } else if (sidebarView === 'intercepted') {
-            renderInterceptedListInto(list);
         } else if (sidebarView === 'favorites') {
             renderFavoritesListInto(list);
         } else if (services.length === 0 && (!Array.isArray(serverUrls) || serverUrls.length === 0)) {

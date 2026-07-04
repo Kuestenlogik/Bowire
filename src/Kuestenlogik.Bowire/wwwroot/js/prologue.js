@@ -5475,19 +5475,20 @@
     let sidebarView = (function () {
         try {
             var v = localStorage.getItem(SIDEBAR_VIEW_KEY);
-            // v2.2 — 'intercept' is the new unified value; the legacy
-            // 'proxy' / 'intercepted' are retained for backwards
-            // compatibility with deep links. The boot migration above
-            // already rewrote any stored railMode but a deep-link can
-            // still land sidebarView at one of the legacy values.
+            // #368 — 'intercept' is the unified value; a legacy stored or
+            // deep-linked 'proxy' / 'intercepted' migrates to it (both
+            // rails merged into Intercept and their renderers were
+            // retired, so returning them verbatim would dead-end).
+            if (v === 'proxy' || v === 'intercepted') return 'intercept';
             if (v === 'favorites' || v === 'environments' || v === 'flows'
-                || v === 'proxy' || v === 'intercepted' || v === 'intercept') return v;
+                || v === 'intercept') return v;
             return 'services';
         } catch { return 'services'; }
     })();
     function setSidebarView(v) {
+        if (v === 'proxy' || v === 'intercepted') v = 'intercept'; // #368 migrate
         sidebarView = (v === 'favorites' || v === 'environments' || v === 'flows'
-            || v === 'proxy' || v === 'intercepted' || v === 'intercept') ? v : 'services';
+            || v === 'intercept') ? v : 'services';
         try { localStorage.setItem(SIDEBAR_VIEW_KEY, sidebarView); } catch {}
     }
 

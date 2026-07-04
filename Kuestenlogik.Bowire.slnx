@@ -59,7 +59,6 @@
     <Project Path="src/Kuestenlogik.Bowire.Flows/Kuestenlogik.Bowire.Flows.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Interceptor/Kuestenlogik.Bowire.Interceptor.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Benchmarking/Kuestenlogik.Bowire.Benchmarking.csproj" />
-    <Project Path="src/Kuestenlogik.Bowire.Workspaces/Kuestenlogik.Bowire.Workspaces.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Kuestenlogik.Bowire.Testing/Kuestenlogik.Bowire.Testing.csproj" />

@@ -55,10 +55,11 @@
          deprecation against existing DI lookups. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Interceptor\Kuestenlogik.Bowire.Interceptor.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Benchmarking\Kuestenlogik.Bowire.Benchmarking.csproj" />
-    <!-- v2.1 (#325): Workspaces + Environments collapsed into a single
-         Kuestenlogik.Bowire.Workspaces package (env vars are workspace-
-         scoped). The Rail. prefix was dropped at the same time. -->
-    <ProjectReference Include="..\Kuestenlogik.Bowire.Workspaces\Kuestenlogik.Bowire.Workspaces.csproj" />
+    <!-- #368 (#306 Phase G tail): the Workspaces rail descriptor was
+         folded into Core (src/Kuestenlogik.Bowire/Rails/) alongside
+         Home + Discover — it's the core-resident workspace-navigation
+         hub — so the thin Kuestenlogik.Bowire.Workspaces package was
+         retired. Environment vars remain workspace-scoped sub-views. -->
     <!-- Security rail (#294 Phase D) — extracted into its own package
          already; carries the Security rail descriptor + the Nuclei
          scanner runtime. -->
