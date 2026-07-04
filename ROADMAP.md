@@ -90,12 +90,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**27/29 done** · 2 backlog
+**28/29 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ⬜ Backlog |  |
-| [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | ⬜ Backlog |  |
 | [38](https://github.com/Kuestenlogik/Bowire/issues/38) | Bowire | [CLI — Phase 3 polish (completion + validators + error rendering)](#issue-kuestenlogik-bowire-38) | ✅ Done | `area:cli` |
 | [100](https://github.com/Kuestenlogik/Bowire/issues/100) | Bowire | [Ferry — CI/CD runner (collection / recording → headless run + JUnit report)](#issue-kuestenlogik-bowire-100) | ✅ Done |  |
 | [170](https://github.com/Kuestenlogik/Bowire/issues/170) | Bowire | [Mock-server fault injection — latency / errors / drops / partial responses](#issue-kuestenlogik-bowire-170) | ✅ Done |  |
@@ -105,6 +104,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [181](https://github.com/Kuestenlogik/Bowire/issues/181) | Bowire | [bowire test CLI runner with JUnit / SARIF / TTY output](#issue-kuestenlogik-bowire-181) | ✅ Done |  |
 | [191](https://github.com/Kuestenlogik/Bowire/issues/191) | Bowire | [Contract testing — Pact-style publish / verify CLI](#issue-kuestenlogik-bowire-191) | ✅ Done |  |
 | [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ✅ Done |  |
+| [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | ✅ Done |  |
 | [312](https://github.com/Kuestenlogik/Bowire/issues/312) | Bowire | [Test coverage gap report — v2.1 audit kickoff](#issue-kuestenlogik-bowire-312) | ✅ Done |  |
 | [315](https://github.com/Kuestenlogik/Bowire/issues/315) | Bowire | [Unify Proxy + Intercepted into 'Traffic' rail (Standalone / Embedded sub-modes); Mocks stays separate](#issue-kuestenlogik-bowire-315) | ✅ Done |  |
 | [323](https://github.com/Kuestenlogik/Bowire/issues/323) | Bowire | [interceptor reverse-proxy: swap hand-rolled HttpClient forwarder for YARP IHttpForwarder](#issue-kuestenlogik-bowire-323) | ✅ Done |  |
@@ -564,10 +564,6 @@ Three sidebar UX bugs operator surfaced in one session: [[more]](https://github.
 
 The variable resolver (phases 1-4, #125/#145) resolves `{{name}}` from environments, workspace vars, and system generators. Three sources from the original design are still missing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/208)
 
-#### <a id="issue-kuestenlogik-bowire-306"></a>⬜ Backlog · [#306](https://github.com/Kuestenlogik/Bowire/issues/306) Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)
-
-Follow-up to #294. Phases A-F shipped the descriptor architecture + extracted Security (rail) and AI (module) as proof. Phase G is the remaining package-mechanics work — no architectural decisions left to make, just `mv` + csproj wiring. [[more]](https://github.com/Kuestenlogik/Bowire/issues/306)
-
 #### <a id="issue-kuestenlogik-bowire-38"></a>✅ Done · [#38](https://github.com/Kuestenlogik/Bowire/issues/38) CLI — Phase 3 polish (completion + validators + error rendering)
 
 > `area:cli`
@@ -605,6 +601,10 @@ Microservice teams break each other when one team changes an API without consult
 #### <a id="issue-kuestenlogik-bowire-213"></a>✅ Done · [#213](https://github.com/Kuestenlogik/Bowire/issues/213) Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage
 
 > **Status:** shipped. The SidecarFake handshake is complete; the method names diverged from the `tools/list` / `tools/call` nomenclature in the original body. This body reflects the IST state; the original plan is preserved in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/213)
+
+#### <a id="issue-kuestenlogik-bowire-306"></a>✅ Done · [#306](https://github.com/Kuestenlogik/Bowire/issues/306) Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)
+
+Follow-up to #294. Phases A-F shipped the descriptor architecture + extracted Security (rail) and AI (module) as proof. Phase G is the remaining package-mechanics work — no architectural decisions left to make, just `mv` + csproj wiring. [[more]](https://github.com/Kuestenlogik/Bowire/issues/306)
 
 #### <a id="issue-kuestenlogik-bowire-312"></a>✅ Done · [#312](https://github.com/Kuestenlogik/Bowire/issues/312) Test coverage gap report — v2.1 audit kickoff
 
