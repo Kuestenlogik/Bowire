@@ -32,4 +32,13 @@
          in the scan-engine. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Security.Templates.Nuclei\Kuestenlogik.Bowire.Security.Templates.Nuclei.csproj" />
   </ItemGroup>
+  <!-- #306/#314 — the Security rail's JS fragment. Embedded with the
+       `.wwwroot.js.<file>.js` logical-name convention so core's
+       StitchRailFragments splices it into the workbench bundle at the
+       rail-fragment marker; the fragment registers renderSecuritySidebar
+       / renderSecurityMain on the renderer-key seam. -->
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot\js\security.js"
+                      LogicalName="Kuestenlogik.Bowire.Security.Scanner.wwwroot.js.security.js" />
+  </ItemGroup>
 </Project>

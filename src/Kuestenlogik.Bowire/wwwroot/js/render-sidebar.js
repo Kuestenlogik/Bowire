@@ -3876,16 +3876,9 @@
     // and, if sidebarView happened to be 'proxy', rendered the
     // "Proxy not reachable" empty card — surprise content from a
     // sibling rail mode leaking into Security.
-    function renderSecuritySidebar() {
-        var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
-        sidebar.appendChild(renderSidebarToolbar({ title: 'Security' }));
-        sidebar.appendChild(el('div', {
-            className: 'bowire-pane-empty',
-            style: 'padding:12px 14px',
-            textContent: 'Threat model, fuzz, and Nuclei templates sit in the main pane. Discovered endpoints are pulled automatically from the active workspace.'
-        }));
-        return sidebar;
-    }
+    // #306/#314 — renderSecuritySidebar moved into the Security.Scanner
+    // package's security.js fragment + renderer-key seam; core no longer
+    // defines or dispatches it.
 
     // v2.2 — renderMocksSidebar dropped: the standalone Mocks rail
     // descriptor is gone (R2). The running-mocks list now lives in the
@@ -3979,7 +3972,8 @@
             // benchmarks: #306/#314 — moved to the renderer-key seam
             // (sidebarRendererKey=benchmarksSidebar), handled before this
             // switch by _currentRailRenderer('sidebar').
-            case 'security':     sidebar = renderSecuritySidebar(); break;
+            // security: #306/#314 — renderer-key seam
+            // (sidebarRendererKey=securitySidebar), handled before this switch.
             // flows: #306/#314 — renderer-key seam (sidebarRendererKey=
             // flowsSidebar), handled before this switch.
             case 'proxy':        sidebar = renderProxySidebar(); break;

@@ -33,4 +33,11 @@ public sealed class BowireSecurityRailContribution : IBowireRailContribution
     public int SortIndex => 1100;
     public string Group => "hardening";
     public string SidebarKind => "security";
+
+    // #306 / #314 — renderer-key seam: core resolves these from
+    // window.__bowireRailRenderers (registered by the security.js
+    // fragment this package now embeds) instead of hardcoded railMode /
+    // switch arms.
+    public string? SidebarRendererKey => "securitySidebar";
+    public string? MainPaneRendererKey => "securityMain";
 }
