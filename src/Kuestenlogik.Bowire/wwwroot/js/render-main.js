@@ -4882,89 +4882,9 @@
         // selected recording's detail (steps + actions). When no
         // recording is selected (fresh entry, or after a delete),
         // an empty card guides the operator toward the next step.
-        if (railMode === 'recordings') {
-            var recMain = el('div', { id: 'bowire-main-recordings', className: 'bowire-main bowire-main-recordings' });
-            // Pattern B: workspace prereq comes before the
-            // selected-recording lookup; without a workspace there's
-            // no scoped recording list to pick from anyway.
-            if (!activeWorkspaceId && typeof renderWorkspacePrereqEmpty === 'function') {
-                recMain.appendChild(renderWorkspacePrereqEmpty({
-                    icon: 'recording',
-                    railLabel: 'Recordings',
-                    railBody: 'Recordings capture a sequence of live calls you can replay, build mocks from, or run as benchmarks.'
-                }));
-                return recMain;
-            }
-            var selectedRec = recordingsList.find(function (r) { return r.id === recordingManagerSelectedId; });
-            if (selectedRec && typeof renderRecordingDetail === 'function') {
-                // Chunked recording storage (#144 Phase 1) — hydrate
-                // before the toolbar reads rec.steps.length so the
-                // "Use as mock" / "Convert to Tests" actions enable
-                // correctly even when the rail-mode entry path was a
-                // jump rather than a sidebar click. Gate ONLY on
-                // `steps === undefined` — empty array means hydration
-                // already ran and re-triggering would render-loop.
-                if (typeof hydrateRecording === 'function' && selectedRec.steps === undefined) {
-                    hydrateRecording(selectedRec).then(function () { render(); });
-                }
-                recMain.appendChild(renderRecordingDetail(selectedRec));
-            } else {
-                var emptyWrap = el('div', { className: 'bowire-main-pad' });
-                var noRecs = recordingsList.length === 0;
-                emptyWrap.appendChild(renderEmptyCard({
-                    icon: 'recording',
-                    headline: noRecs ? 'No recordings yet' : 'Pick a recording',
-                    body: noRecs
-                        ? 'Recordings capture a sequence of live calls so you can replay them, build mocks, or run them as benchmarks. Start one, then invoke methods from Discover.'
-                        : 'Pick a recording from the sidebar list to see its steps and actions.',
-                    actions: noRecs ? [
-                        {
-                            label: 'Start recording',
-                            primary: true,
-                            onClick: function () {
-                                startRecording();
-                                railMode = 'discover';
-                                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
-                                render();
-                            }
-                        },
-                        {
-                            label: 'Browse Discover',
-                            onClick: function () {
-                                railMode = 'discover';
-                                try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
-                                render();
-                            }
-                        },
-                        // #39 — bootstrap a recording straight from a HAR
-                        // (Chrome DevTools / Playwright / Charles) without
-                        // capturing anything first.
-                        {
-                            label: 'Import HAR',
-                            onClick: function () {
-                                if (typeof importHarFromFile === 'function') importHarFromFile();
-                            }
-                        },
-                        // Per-rail welcome tour: explains the
-                        // capture loop (arm → invoke → stop → save).
-                        // Force-mode so the operator can re-trigger
-                        // from the same empty card after dismissal.
-                        {
-                            id: 'bowire-recordings-empty-tour-btn',
-                            label: 'Take a tour',
-                            onClick: function () {
-                                if (typeof window !== 'undefined'
-                                    && typeof window.bowireStartCaptureRecordingTour === 'function') {
-                                    window.bowireStartCaptureRecordingTour({ force: true });
-                                }
-                            }
-                        }
-                    ] : []
-                }));
-                recMain.appendChild(emptyWrap);
-            }
-            return recMain;
-        }
+        // recordings: #306/#314 — moved to the Recordings package's
+        // recording.js fragment + renderer-key seam (mainPaneRendererKey=
+        // recordingsMain), resolved at the top of renderMain.
 
         // #133 Phase 2 — Security rail mode owns the main pane.
         // When the operator picks the 🛡️ Security icon on the rail,
