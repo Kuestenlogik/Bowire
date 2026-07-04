@@ -268,7 +268,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ⬜ Backlog |  |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog |  |
 | [367](https://github.com/Kuestenlogik/Bowire/issues/367) | Bowire | [codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)](#issue-kuestenlogik-bowire-367) | ⬜ Backlog |  |
-| [368](https://github.com/Kuestenlogik/Bowire/issues/368) | Bowire | [Cleanup: retire legacy proxy/intercepted core render fns + consolidate Workspaces descriptor (#306 tail)](#issue-kuestenlogik-bowire-368) | ✅ Done |  |
 
 ## Details
 
@@ -1063,13 +1062,6 @@ Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in
 #### <a id="issue-kuestenlogik-bowire-367"></a>⬜ Backlog · [#367](https://github.com/Kuestenlogik/Bowire/issues/367) codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)
 
 Follow-up to #356. JS tests now gate CI (`node --test` over wwwroot-js) and JS coverage is *runnable* locally (`npm run test:js:coverage` / `node --test --experimental-test-coverage`), but it isn't uploaded to Codecov yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/367)
-
-#### <a id="issue-kuestenlogik-bowire-368"></a>✅ Done · [#368](https://github.com/Kuestenlogik/Bowire/issues/368) Cleanup: retire legacy proxy/intercepted core render fns + consolidate Workspaces descriptor (#306 tail)
-
-Two low-priority cleanups left after #306's rail cut-over (all 7 optional feature rails now use the #314 renderer-key seam): [[more]](https://github.com/Kuestenlogik/Bowire/issues/368)
-
-- [x] **Retired the core-side proxy/intercepted render code** — `renderProxySidebar` / `renderInterceptedSidebar` + their `renderSidebar` switch arms, the two `renderProxyMainPane` / `renderInterceptedMainPane` `renderMain` dispatch blocks, the `_railModeCount` badge arms, and every dead `m.id`/`sidebarView === 'proxy'|'intercepted'` branch across render-sidebar.js / render-main.js / render-env-auth.js. The two `sidebarView` whitelists in prologue.js now migrate a stored/deep-linked `proxy`/`intercepted` → `intercept` rather than returning a value that no longer renders. (The Interceptor package's proxy-view.js / intercepted-view.js stay: they still host the shared `renderHttpExchange` / `renderInterceptedMocks*` helpers the live Intercept rail reuses.)
-- [x] **Consolidated the Workspaces descriptor into Core** — moved `BowireWorkspacesRailContribution` to `src/Kuestenlogik.Bowire/Rails/` alongside Home + Discover and retired the thin `Kuestenlogik.Bowire.Workspaces` package (removed from the solution, Bundle.Workbench, and the test project). Verified live: the rails config still discovers `workspaces` + `intercept`, with no `proxy`/`intercepted`.
 
 ---
 
