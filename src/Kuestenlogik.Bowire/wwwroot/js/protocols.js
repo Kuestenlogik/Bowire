@@ -371,6 +371,22 @@
 
         // Collect metadata from the metadata tab + apply auth helper from active env
         var metadataRows = $$('.bowire-metadata-row');
+        // #208 Phase 5 — prefetch async vars referenced in connect metadata
+        // (e.g. Authorization: Bearer {{keyring.api/token}}) before the
+        // substitution pass, mirroring the unary path in execute.js.
+        var metadataTemplates = [];
+        for (var mpi = 0; mpi < metadataRows.length; mpi++) {
+            var mpInputs = metadataRows[mpi].querySelectorAll('.bowire-metadata-input');
+            if (mpInputs.length === 2 && mpInputs[1].value) metadataTemplates.push(mpInputs[1].value);
+        }
+        if (metadataTemplates.length > 0) {
+            if (typeof window.bowirePrefetchAiVars === 'function') {
+                try { await window.bowirePrefetchAiVars(metadataTemplates); } catch (e) { console.warn('[ai-prefetch] channel connect failed', e); }
+            }
+            if (typeof window.bowirePrefetchKeyringVars === 'function') {
+                try { await window.bowirePrefetchKeyringVars(metadataTemplates); } catch (e) { console.warn('[keyring-prefetch] channel connect failed', e); }
+            }
+        }
         var channelMetadata = {};
         for (var ri = 0; ri < metadataRows.length; ri++) {
             var inputs = metadataRows[ri].querySelectorAll('.bowire-metadata-input');
@@ -599,6 +615,22 @@
         } else {
             var editor = $('.bowire-editor') || $('.bowire-message-editor');
             message = editor ? editor.value || '{}' : '{}';
+        }
+        // #208 Phase 5 — per-frame resolution for streaming sends. The
+        // sync sources (runtime.*, env, prev, secret + the ai/keyring
+        // caches) already re-resolve on every frame because substituteVars
+        // runs below per send. The async sources (ai.* / keyring.*) need a
+        // prefetch first — the unary path does this in execute.js, but a
+        // duplex / client-streaming frame goes out through here, so mirror
+        // it so {{ai.…}} / {{keyring.…}} resolve on each frame instead of
+        // only the initial connect. No-op unless the frame references one.
+        if (typeof window.bowirePrefetchAiVars === 'function') {
+            try { await window.bowirePrefetchAiVars([message]); }
+            catch (e) { console.warn('[ai-prefetch] channel frame failed', e); }
+        }
+        if (typeof window.bowirePrefetchKeyringVars === 'function') {
+            try { await window.bowirePrefetchKeyringVars([message]); }
+            catch (e) { console.warn('[keyring-prefetch] channel frame failed', e); }
         }
         // Substitute ${var} placeholders from active environment
         message = substituteVars(message);

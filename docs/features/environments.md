@@ -148,6 +148,8 @@ Substitution happens client-side, just before the request is sent. It applies to
 
 Metadata **keys** are not substituted — only values.
 
+**Per-frame resolution in streaming sends.** For duplex / client-streaming channels (WebSocket, gRPC), substitution runs on **every** outbound frame, not just the initial connect. So `{{runtime.now}}` / `{{runtime.uuid}}` produce a fresh value per frame, and the async sources (`{{ai.*}}` / `{{keyring.*}}`) are prefetched per frame before substitution — a frame that references one resolves it live instead of sending a stale or empty value.
+
 ## The `.bww` file format
 
 A workspace is portable. The Workspaces rail's per-row **Export to `.bww`** action writes a single JSON file containing the full workspace state: URLs, collections, recordings, benchmarks, flows, env vars, globals, presets. Import via the switcher's **Import workspace…** entry or by passing a `.bww` path to the create dialog.
