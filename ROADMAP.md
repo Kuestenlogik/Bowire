@@ -90,11 +90,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**28/29 done** · 1 backlog
+**29/29 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ✅ Done |  |
 | [38](https://github.com/Kuestenlogik/Bowire/issues/38) | Bowire | [CLI — Phase 3 polish (completion + validators + error rendering)](#issue-kuestenlogik-bowire-38) | ✅ Done | `area:cli` |
 | [100](https://github.com/Kuestenlogik/Bowire/issues/100) | Bowire | [Ferry — CI/CD runner (collection / recording → headless run + JUnit report)](#issue-kuestenlogik-bowire-100) | ✅ Done |  |
 | [170](https://github.com/Kuestenlogik/Bowire/issues/170) | Bowire | [Mock-server fault injection — latency / errors / drops / partial responses](#issue-kuestenlogik-bowire-170) | ✅ Done |  |
@@ -103,6 +102,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ✅ Done |  |
 | [181](https://github.com/Kuestenlogik/Bowire/issues/181) | Bowire | [bowire test CLI runner with JUnit / SARIF / TTY output](#issue-kuestenlogik-bowire-181) | ✅ Done |  |
 | [191](https://github.com/Kuestenlogik/Bowire/issues/191) | Bowire | [Contract testing — Pact-style publish / verify CLI](#issue-kuestenlogik-bowire-191) | ✅ Done |  |
+| [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ✅ Done |  |
 | [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ✅ Done |  |
 | [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | ✅ Done |  |
 | [312](https://github.com/Kuestenlogik/Bowire/issues/312) | Bowire | [Test coverage gap report — v2.1 audit kickoff](#issue-kuestenlogik-bowire-312) | ✅ Done |  |
@@ -560,14 +560,6 @@ Three sidebar UX bugs operator surfaced in one session: [[more]](https://github.
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-#### <a id="issue-kuestenlogik-bowire-208"></a>✅ Done · [#208](https://github.com/Kuestenlogik/Bowire/issues/208) Variable resolver — Phase 5: OS keyring + AI re-roll + streaming
-
-The variable resolver (phases 1-4, #125/#145) resolves `{{name}}` from environments, workspace vars, and system generators. Phase 5 adds the three remaining sources from the original design. [[more]](https://github.com/Kuestenlogik/Bowire/issues/208)
-
-- [x] **OS keyring source** (`{{keyring.service/account}}`) — new optional `Kuestenlogik.Bowire.Keyring` package reads the platform credential store (Windows Credential Manager via `CredRead`, macOS Keychain via `security`, Linux libsecret via `secret-tool`) with zero NuGet deps. Local-first + on-demand: the store is only touched for a referenced ref, resolved values are scrubbed to `***` at every export boundary, and the JS prefetch mirrors the `ai.*` cache/prefetch pattern. Auto-discovered service + endpoint + module contributions; workbench resolves both `{{…}}` and `${…}` forms, and `bowire test --keyring` resolves the same refs headless for CI. 21 xUnit + 5 JS tests; verified end-to-end (module descriptor → `/api/vars/keyring` → `wincred` backend).
-- [x] **AI re-roll** — per-variable **↻** re-roll button in the `{{ai.…}}` resolver-preview popover (`rerollAiVar` drops the one cached value + re-runs the prefetch), plus `bowire test --ai-seed <seed>` for CI: each `{{ai.*}}` ref resolves to a deterministic FNV-1a-derived `name-<hash>` value (no model call), byte-reproducible across runs. 2 xUnit + 1 end-to-end (seeded value reaches the fired request) + 4 JS tests.
-- [x] **Streaming per-frame resolution** — `channelSend` / `channelConnect` (protocols.js) now prefetch `ai.*` / `keyring.*` before substituting each outbound duplex / client-streaming frame, so every WS / gRPC frame resolves live (sync sources like `runtime.now` already re-resolved per frame). 2 JS ordering-invariant tests pin the prefetch-before-substitute contract.
-
 #### <a id="issue-kuestenlogik-bowire-38"></a>✅ Done · [#38](https://github.com/Kuestenlogik/Bowire/issues/38) CLI — Phase 3 polish (completion + validators + error rendering)
 
 > `area:cli`
@@ -601,6 +593,10 @@ Bowire is currently a UI tool. The "shift-left" / "build safer apps through cont
 #### <a id="issue-kuestenlogik-bowire-191"></a>✅ Done · [#191](https://github.com/Kuestenlogik/Bowire/issues/191) Contract testing — Pact-style publish / verify CLI
 
 Microservice teams break each other when one team changes an API without consulting the consumers. Contract testing (Pact-style) catches that at build time: the consumer team declares "I expect these requests + responses", the provider's CI runs the contracts, fails the build if anything doesn't match. [[more]](https://github.com/Kuestenlogik/Bowire/issues/191)
+
+#### <a id="issue-kuestenlogik-bowire-208"></a>✅ Done · [#208](https://github.com/Kuestenlogik/Bowire/issues/208) Variable resolver — Phase 5: OS keyring + AI re-roll + streaming
+
+The variable resolver (phases 1-4, #125/#145) resolves `{{name}}` from environments, workspace vars, and system generators. Three sources from the original design are still missing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/208)
 
 #### <a id="issue-kuestenlogik-bowire-213"></a>✅ Done · [#213](https://github.com/Kuestenlogik/Bowire/issues/213) Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage
 
