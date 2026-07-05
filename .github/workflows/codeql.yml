@@ -48,7 +48,7 @@ jobs:
             runner: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # The csharp build mode is `autobuild`, which means CodeQL needs
       # the .NET SDK Bowire uses (.NET 10) available before the
