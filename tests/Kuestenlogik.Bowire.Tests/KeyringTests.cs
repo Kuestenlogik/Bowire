@@ -175,6 +175,40 @@ public sealed class KeyringTests
     }
 
     [Fact]
+    public async Task Endpoints_Materialise_WhenResolverNotRegistered()
+    {
+        // Regression: the keyring endpoints are auto-discovered by MapBowire.
+        // If a host maps them without registering the keyring services (e.g.
+        // MapBowire without the matching AddBowire pass), minimal-API must
+        // still MATERIALISE the endpoint group — otherwise the GET's
+        // KeyringResolver param is inferred as a body (forbidden on GET) and
+        // the whole group 500s, taking down sibling routes like the index.
+        // [FromServices] on the resolver pins the binding source so this is
+        // safe. We assert a sibling route still serves; the keyring routes
+        // themselves would only error if actually hit.
+        var ct = TestContext.Current.CancellationToken;
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.Logging.ClearProviders();
+        builder.WebHost.ConfigureKestrel(o =>
+            o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
+        var app = builder.Build();
+        app.MapBowireKeyringEndpoints(basePath: string.Empty); // NO KeyringResolver registered
+        app.MapGet("/sibling", () => "ok");
+        await app.StartAsync(ct);
+        try
+        {
+            using var client = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
+            using var resp = await client.GetAsync(new Uri("/sibling", UriKind.Relative), ct);
+            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        }
+        finally
+        {
+            await app.StopAsync(ct);
+            await app.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task Status_ReportsEnabledAndBackend()
     {
         var ct = TestContext.Current.CancellationToken;
