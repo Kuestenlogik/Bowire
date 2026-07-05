@@ -12905,25 +12905,27 @@ duplicate) */
    vertical (request stacked over response) — switched via the parent
    .bowire-content[data-split] attribute. */
 .bowire-pane-divider {
-    flex: 0 0 10px;
-    background: transparent;
-    cursor: ew-resize;
+    /* Matched to the sidebar splitter: a 1 px visible line that lives in
+       flex flow, a 0-footprint ±5 px transparent hit overlay (::after),
+       and a single centred 3-dot grip (::before). Replaces the earlier
+       10 px bar whose transparent right half left a gap between the
+       hairline and the response pane. */
+    flex: 0 0 1px;
     flex-shrink: 0;
+    align-self: stretch;
+    background: var(--bowire-border-subtle);
+    cursor: ew-resize;
     position: relative;
-    z-index: 2;
-    /* Leading-edge border so the bar reads as a hairline against the
-       request pane — matches the sidebar-splitter's left border. */
-    border-left: 1px solid var(--bowire-border-subtle);
-    /* 150 ms transition with no delay on hover-OUT (snap back). The
-       hover rule below adds a delay so the highlight only appears if
-       the cursor dwells on the bar. */
-    transition: background 150ms ease, border-color 150ms ease;
+    z-index: 3;
+    /* 150 ms transition with no delay on hover-OUT (snap back); the
+       hover rule below adds the dwell delay. Mirrors the sidebar. */
+    transition: background 150ms ease;
 }
 .bowire-pane-divider:hover,
 .bowire-pane-divider.dragging,
 .bowire-pane-divider:active {
-    background: var(--bowire-surface);
-    border-left-color: var(--bowire-accent);
+    /* The hairline itself goes accent — same as the sidebar anchor. */
+    background: var(--bowire-accent);
     /* Hover-intent gate — 250 ms dwell before the accent appears. */
     transition-delay: 250ms;
 }
@@ -12933,14 +12935,29 @@ duplicate) */
     transition-delay: 0ms;
 }
 
-/* Top + bottom grip-dot clusters: subtle three-dot run above + below
-   the centre of the bar. */
-.bowire-pane-divider::before,
+/* ±5 px transparent hit overlay — extends the pointer target to ~10 px
+   without adding layout footprint, exactly like the sidebar splitter's
+   decoupled overlay. Drag / dblclick land here and register on the
+   divider element (initResizer binds the divider). */
 .bowire-pane-divider::after {
     content: '';
     position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -5px;
+    right: -5px;
+    background: transparent;
+    cursor: ew-resize;
+}
+
+/* Single centred 3-dot grip — one cluster, like the sidebar splitter
+   (its double-cluster + middle chevron shape was retired). */
+.bowire-pane-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
     width: 2px;
     height: 14px;
     background-image: radial-gradient(circle, var(--bowire-text-tertiary) 1px, transparent 1.5px);
@@ -12950,51 +12967,46 @@ duplicate) */
     transition: opacity var(--bowire-transition);
     pointer-events: none;
 }
-.bowire-pane-divider::before { top: calc(50% - 32px); }
-.bowire-pane-divider::after  { top: calc(50% + 18px); }
 .bowire-pane-divider:hover::before,
-.bowire-pane-divider:hover::after,
-.bowire-pane-divider.dragging::before,
-.bowire-pane-divider.dragging::after {
+.bowire-pane-divider.dragging::before {
     opacity: 0.7;
     transition-delay: 250ms;
 }
-.bowire-pane-divider.dragging::before,
-.bowire-pane-divider.dragging::after {
+.bowire-pane-divider.dragging::before {
     transition-delay: 0ms;
 }
 
 /* Vertical split — flip the bar's axis. Leading edge becomes the
    top border; grip dots stack horizontally instead of vertically. */
 .bowire-content[data-split="vertical"] .bowire-pane-divider {
-    flex: 0 0 10px;
+    flex: 0 0 1px;
     width: 100%;
-    height: 10px;
+    height: 1px;
+    background: var(--bowire-border-subtle);
     cursor: ns-resize;
-    border-left: 0;
-    border-top: 1px solid var(--bowire-border-subtle);
 }
 .bowire-content[data-split="vertical"] .bowire-pane-divider:hover,
 .bowire-content[data-split="vertical"] .bowire-pane-divider.dragging,
 .bowire-content[data-split="vertical"] .bowire-pane-divider:active {
-    border-top-color: var(--bowire-accent);
+    background: var(--bowire-accent);
 }
-.bowire-content[data-split="vertical"] .bowire-pane-divider::before,
+/* Hit overlay flips to the horizontal axis (±5 px top/bottom). */
 .bowire-content[data-split="vertical"] .bowire-pane-divider::after {
+    top: -5px;
+    bottom: -5px;
+    left: 0;
+    right: 0;
+    cursor: ns-resize;
+}
+/* Single centred grip rotates to a horizontal 3-dot run. */
+.bowire-content[data-split="vertical"] .bowire-pane-divider::before {
     top: 50%;
-    left: auto;
-    transform: translateY(-50%);
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 14px;
     height: 2px;
-    background-image: radial-gradient(circle, var(--bowire-text-tertiary) 1px, transparent 1.5px);
     background-size: 5px 2px;
     background-repeat: repeat-x;
-}
-.bowire-content[data-split="vertical"] .bowire-pane-divider::before {
-    left: calc(50% - 32px);
-}
-.bowire-content[data-split="vertical"] .bowire-pane-divider::after {
-    left: calc(50% + 18px);
 }
 
 /* Suppress the flex-basis transition on the panes while the divider
@@ -13140,6 +13152,37 @@ duplicate) */
 }
 .bowire-content[data-split="vertical"].is-trailing-maxed .bowire-pane-divider-edge-toggle-trailing svg {
     transform: rotate(-90deg);
+}
+
+/* Segmented pane view-switcher (B) — Request / Split / Response, in the
+   statusbar next to the orientation toggle. Explicit counterpart to the
+   splitter's drag + edge chevrons (A). */
+.bowire-pane-view-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    padding: 1px;
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-surface);
+}
+.bowire-pane-view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    transition: color 120ms ease, background 120ms ease;
+}
+.bowire-pane-view-btn:hover { color: var(--bowire-text); }
+.bowire-pane-view-btn.is-active {
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-accent);
 }
 
 /* ---------- Streaming Animation ---------- */

@@ -1302,32 +1302,44 @@
             // doesn't get a split pane just because the map plugin
             // is loaded.
             if (serviceId && methodId) {
-                var anns = bowireEffectiveCacheFor(serviceId, methodId) || [];
-                var seenKinds = {};
-                for (var i = 0; i < anns.length; i++) {
-                    var k = anns[i] && anns[i].semantic;
-                    if (!k || seenKinds[k]) continue;
-                    seenKinds[k] = 1;
-                    if (!isSplit(k)) continue;
-                    var ext = bowirePreferredExtension(k);
-                    if (ext && ext.viewer) return ext;
-                    // Also accept a viewer registered for a parent
-                    // kind whose pairing.required covers this kind
-                    // — same matching shape mountWidgetsForMethod
-                    // uses. Lets coordinate.latitude /
-                    // coordinate.longitude annotations trigger the
-                    // coordinate.wgs84 viewer.
-                    for (var rid in bowireExtensions.byId) {
-                        if (!Object.prototype.hasOwnProperty.call(
-                                bowireExtensions.byId, rid)) continue;
-                        var rext = bowireExtensions.byId[rid];
-                        if (!rext.viewer) continue;
-                        if (!isSplit(rext.kind)) continue;
-                        if (rext.pairing && rext.pairing.required
-                            && rext.pairing.required.indexOf(k) >= 0) {
-                            return rext;
+                // null = the /api/semantics/effective cache hasn't landed
+                // yet (first-render race) → fall through to the flicker-
+                // avoiding fallback. A resolved cache (even an empty array)
+                // is authoritative: the method's real annotations decide,
+                // and a method with no split-kind gets NO split pane even
+                // when the map plugin is loaded — return null instead of
+                // falling through. This is what keeps getPetById (no
+                // coordinates) from rendering an empty Map pane.
+                var anns = bowireEffectiveCacheFor(serviceId, methodId);
+                if (anns !== null) {
+                    var seenKinds = {};
+                    for (var i = 0; i < anns.length; i++) {
+                        var k = anns[i] && anns[i].semantic;
+                        if (!k || seenKinds[k]) continue;
+                        seenKinds[k] = 1;
+                        if (!isSplit(k)) continue;
+                        var ext = bowirePreferredExtension(k);
+                        if (ext && ext.viewer) return ext;
+                        // Also accept a viewer registered for a parent
+                        // kind whose pairing.required covers this kind
+                        // — same matching shape mountWidgetsForMethod
+                        // uses. Lets coordinate.latitude /
+                        // coordinate.longitude annotations trigger the
+                        // coordinate.wgs84 viewer.
+                        for (var rid in bowireExtensions.byId) {
+                            if (!Object.prototype.hasOwnProperty.call(
+                                    bowireExtensions.byId, rid)) continue;
+                            var rext = bowireExtensions.byId[rid];
+                            if (!rext.viewer) continue;
+                            if (!isSplit(rext.kind)) continue;
+                            if (rext.pairing && rext.pairing.required
+                                && rext.pairing.required.indexOf(k) >= 0) {
+                                return rext;
+                            }
                         }
                     }
+                    // Cache resolved, no split-kind present → no split pane.
+                    return null;
                 }
             }
             // Fallback: no annotation cache yet (first render race
