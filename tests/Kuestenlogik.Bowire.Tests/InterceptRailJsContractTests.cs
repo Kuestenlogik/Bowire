@@ -76,25 +76,35 @@ public sealed class InterceptRailJsContractTests
     }
 
     [Fact]
-    public void SidebarDispatch_Recognises_Intercept_Kind()
+    public void SidebarDispatch_Registers_Intercept_Renderer_On_The_Seam()
     {
-        // The render-sidebar.js switch on sidebar.kind must carry an
-        // 'intercept' arm or the unified rail's sidebar never paints.
+        // Post-#306/#314 the intercept rail's sidebar is resolved through
+        // the renderer-key seam, not a hardcoded render-sidebar.js switch
+        // arm: the core bundle gives rail-owned renderers first crack via
+        // _currentRailRenderer('sidebar'), and the Interceptor fragment
+        // registers its renderer under the descriptor's sidebarRendererKey
+        // (interceptSidebar). If either half drifts, the unified rail's
+        // sidebar never paints.
+        Assert.Contains("_currentRailRenderer('sidebar')", CoreBundle.Value, StringComparison.Ordinal);
         Assert.Matches(
-            new Regex(@"case\s+'intercept'\s*:\s*sidebar\s*=\s*renderInterceptSidebar"),
-            CoreBundle.Value);
+            new Regex(@"__bowireRailRenderers\.interceptSidebar\s*=\s*renderInterceptSidebar"),
+            InterceptFragment.Value);
     }
 
     [Fact]
-    public void MainPane_Recognises_Intercept_SidebarView()
+    public void MainPane_Registers_Intercept_Renderer_And_Keeps_SidebarView_Key()
     {
-        // render-main.js must dispatch sidebarView === 'intercept' into
-        // the unified renderInterceptMainPane helper that the
-        // Interceptor fragment ships.
+        // The core bundle still keys the main-pane container off
+        // sidebarView === 'intercept' (so morphdom fully swaps the pane on
+        // a rail switch). The actual renderer moved to the Interceptor
+        // fragment (#306/#314) and is registered on the seam under
+        // interceptMain — it's no longer defined in the core bundle.
         Assert.Matches(
             new Regex(@"sidebarView\s*===\s*'intercept'"),
             CoreBundle.Value);
-        Assert.Contains("renderInterceptMainPane", CoreBundle.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("renderInterceptMainPane", CoreBundle.Value, StringComparison.Ordinal);
+        Assert.Contains("function renderInterceptMainPane", InterceptFragment.Value, StringComparison.Ordinal);
+        Assert.Contains("__bowireRailRenderers.interceptMain", InterceptFragment.Value, StringComparison.Ordinal);
     }
 
     [Fact]

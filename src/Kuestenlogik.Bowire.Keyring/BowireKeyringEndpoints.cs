@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
 namespace Kuestenlogik.Bowire.Keyring;
@@ -37,15 +38,24 @@ public static class BowireKeyringEndpoints
     public static IEndpointRouteBuilder MapBowireKeyringEndpoints(
         this IEndpointRouteBuilder endpoints, string basePath = "/bowire")
     {
+        // [FromServices] is explicit on the resolver so minimal-API never
+        // tries to infer it as a body parameter. Without it, a host that
+        // maps these endpoints but hasn't registered the keyring services
+        // (e.g. MapBowire without the matching AddBowire service pass)
+        // fails to *materialise* the whole endpoint group — the GET would
+        // infer a body, which GET forbids — 500-ing every route including
+        // the index. With the annotation the binding source is fixed to
+        // services, so an absent resolver only errors if this endpoint is
+        // actually hit.
         endpoints.MapGet($"{basePath}/api/vars/keyring/status",
-            (KeyringResolver resolver) => Results.Json(new
+            ([FromServices] KeyringResolver resolver) => Results.Json(new
             {
                 enabled = resolver.Enabled,
                 backend = resolver.BackendId,
             }, JsonOpts)).ExcludeFromDescription();
 
         endpoints.MapPost($"{basePath}/api/vars/keyring",
-            async (HttpContext ctx, KeyringResolver resolver) =>
+            async (HttpContext ctx, [FromServices] KeyringResolver resolver) =>
         {
             if (!resolver.Enabled)
             {
