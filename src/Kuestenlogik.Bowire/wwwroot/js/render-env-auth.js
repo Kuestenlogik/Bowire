@@ -2901,6 +2901,20 @@
     // and (when their issues ship) hint counts, save indicators,
     // workspace name. Hosts items moved out of the topbar so the
     // topbar reads as navigation + identity, not "everything".
+    // Module-level so initResizer (helpers.js) can call it after it
+    // (re)binds window.__bowirePaneView on each render — keeps the
+    // segmented switcher's active highlight in sync with the live maxed
+    // state whether it changed via the switcher, a chevron, or a drag.
+    function syncPaneViewSwitcher() {
+        var mode = (window.__bowirePaneView && typeof window.__bowirePaneView.getMode === 'function')
+            ? window.__bowirePaneView.getMode() : 'split';
+        var btns = document.querySelectorAll('.bowire-pane-view-switcher .bowire-pane-view-btn');
+        for (var i = 0; i < btns.length; i++) {
+            if (btns[i].getAttribute('data-view') === mode) btns[i].classList.add('is-active');
+            else btns[i].classList.remove('is-active');
+        }
+    }
+
     function renderStatusBar() {
         if (uiMode === 'embedded') return el('div', { id: 'bowire-statusbar', style: 'display:none' });
         var bar = el('div', { id: 'bowire-statusbar', className: 'bowire-statusbar' });
@@ -3102,6 +3116,46 @@
             innerHTML: svgIcon(splitMode === 'vertical' ? 'splitVertical' : 'splitHorizontal'),
             style: 'width:14px;height:14px;display:flex'
         }));
+        // Segmented view-switcher (B) — Request-full / Split / Response-
+        // full. The explicit, discoverable counterpart to the splitter's
+        // edge chevrons + drag (A); both drive the same maxed state via
+        // window.__bowirePaneView (registered by initResizer per render).
+        var PANE_VIEW_ICONS = {
+            leading: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1.5" y="3" width="9" height="10" rx="1" fill="currentColor" fill-opacity="0.22"/><rect x="12" y="3" width="2.5" height="10" rx="1"/></svg>',
+            split: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1.5" y="3" width="5.5" height="10" rx="1"/><rect x="9" y="3" width="5.5" height="10" rx="1"/></svg>',
+            trailing: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1.5" y="3" width="2.5" height="10" rx="1"/><rect x="5.5" y="3" width="9" height="10" rx="1" fill="currentColor" fill-opacity="0.22"/></svg>'
+        };
+        function paneViewBtn(view, label) {
+            return el('button', {
+                className: 'bowire-pane-view-btn',
+                'data-view': view,
+                title: label,
+                'aria-label': label,
+                onClick: function () {
+                    if (window.__bowirePaneView && typeof window.__bowirePaneView.setMode === 'function') {
+                        window.__bowirePaneView.setMode(view);
+                    }
+                }
+            }, el('span', { innerHTML: PANE_VIEW_ICONS[view], style: 'width:14px;height:14px;display:flex' }));
+        }
+        var paneViewSwitcher = el('div', {
+            className: 'bowire-pane-view-switcher',
+            role: 'group',
+            'aria-label': 'Request / Response pane layout'
+        },
+            paneViewBtn('leading', 'Request pane only'),
+            paneViewBtn('split', 'Split — request + response'),
+            paneViewBtn('trailing', 'Response pane only')
+        );
+        // Seed the active highlight from the live layout state (falls back
+        // to 'split' before initResizer's rAF registers the hook; that
+        // rAF then calls syncPaneViewSwitcher() to correct it).
+        (function () {
+            var mode = (window.__bowirePaneView && window.__bowirePaneView.getMode)
+                ? window.__bowirePaneView.getMode() : 'split';
+            var b = paneViewSwitcher.querySelector('.bowire-pane-view-btn[data-view="' + mode + '"]');
+            if (b) b.classList.add('is-active');
+        })();
         // Group 1 — drawer/log toggles (Console, Activity, Tests). All
         // three open a panel or drawer, sharing the same 'show me what
         // happened' semantic. The Subscriptions pill sits on the LEFT
@@ -3111,10 +3165,11 @@
         // hand chrome.
         right.appendChild(el('div', { className: 'bowire-statusbar-group' },
             consoleBtn, activityBtn, testsBtn));
-        // Group 2 — layout (split toggle). Single pill but isolated so
-        // it doesn't read as a fourth drawer button.
+        // Group 2 — layout. The view-switcher (Request / Split /
+        // Response) sits next to the orientation toggle; both are pane-
+        // layout controls, isolated so they don't read as drawer buttons.
         right.appendChild(el('div', { className: 'bowire-statusbar-group' },
-            splitBtn));
+            paneViewSwitcher, splitBtn));
         // Group 3 — system (watch + connection). Watch + connection
         // pill describe the live link to the server, distinct from the
         // local-state drawers and layout switches to their left.

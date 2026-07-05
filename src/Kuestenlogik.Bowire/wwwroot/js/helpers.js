@@ -1501,6 +1501,27 @@
             }
         } catch { /* ignore */ }
 
+        // --- Segmented view-switcher hook (B). The statusbar switcher
+        // (Request-full / Split / Response-full) drives the SAME maxed
+        // state the edge-toggle chevrons + splitter-drag use — no new
+        // state model, just a second, more discoverable control surface.
+        // Rebound on every render (initResizer runs per-render in a rAF)
+        // so the closure always points at the live divider / panes. ---
+        window.__bowirePaneView = {
+            getMode: function () {
+                if (_isLeadingMaxed()) return 'leading';
+                if (_isTrailingMaxed()) return 'trailing';
+                return 'split';
+            },
+            setMode: function (mode) {
+                if (mode === 'leading') _setMaxed('leading');
+                else if (mode === 'trailing') _setMaxed('trailing');
+                else { _clearMaxed(); _applyRatio(_loadRatio()); }
+                if (typeof syncPaneViewSwitcher === 'function') syncPaneViewSwitcher();
+            }
+        };
+        if (typeof syncPaneViewSwitcher === 'function') syncPaneViewSwitcher();
+
         // --- React to orientation flips at runtime. The workbench
         // toggle stores splitMode in localStorage + calls render(); the
         // new content node has [data-split] set inline but our inline

@@ -1139,6 +1139,11 @@
     // "add" row. mutateOnInput is called each time the user types so
     // the underlying array stays in sync. The empty row promotes to a
     // real row as soon as the user types into either column.
+    // Monotonic id source for KV rows. A stable per-row id lets morphdom
+    // PRESERVE each row's input nodes across the trailing-add-row render
+    // instead of matching id-free rows positionally and replacing them.
+    var _kvRowUid = 0;
+
     function _renderHoppKvTable(rows, opts) {
         opts = opts || {};
         var keyPlaceholder = opts.keyPlaceholder || 'Key';
@@ -1183,8 +1188,21 @@
 
         var lastIdx = rows.length - 1;
         rows.forEach(function (r, idx) {
+            // Stable, non-enumerable per-row id. Without it morphdom
+            // matches the id-free rows positionally and REPLACES the input
+            // nodes on the focusout render that appends a new trailing row
+            // — which tore focus off the just-clicked input ('two clicks
+            // to activate') and shuffled the cells as a row appeared ('the
+            // input springs'). Non-enumerable so it never leaks into saved
+            // presets / request exports (_kvToObject already ignores it).
+            if (r._uid == null) {
+                Object.defineProperty(r, '_uid', {
+                    value: ++_kvRowUid, enumerable: false, writable: false, configurable: true
+                });
+            }
             var isLast = idx === lastIdx;
             var row = el('div', {
+                id: 'bowire-kvrow-' + r._uid,
                 className: 'bowire-request-builder-kv-row' + (isLast ? ' is-add-row' : ''),
                 draggable: !isLast ? 'true' : undefined,
                 'data-idx': String(idx)
