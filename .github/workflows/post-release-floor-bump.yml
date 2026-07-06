@@ -13,9 +13,13 @@
 #
 # Triggers ONLY on a tag push that the release pipeline already
 # accepted (so a Release-Pipeline failure doesn't bump the floor).
-# Opens a PR rather than pushing to main directly so the bump can be
-# reviewed and, if the just-released version was a major / pre-release
-# that warrants a different floor, hand-edited before merge.
+# Opens a PR (rather than pushing to main directly) for the audit trail
+# + CI gate, then queues rebase auto-merge so it lands hands-off the
+# moment checks pass — no manual merge step. Because auto-merge WAITS for
+# CI, a major / pre-release that warrants a different floor can still be
+# hand-edited on the branch before it goes in. The branch is always
+# recreated linearly from main so GitHub's rebase-merge (this repo is
+# rebase-only) never refuses it over a stray merge commit.
 
 name: Post-release floor bump
 
@@ -118,19 +122,22 @@ jobs:
           BRANCH="chore/floor-bump-v${NEXT}"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          # If the branch already exists from a prior failed run, reuse it.
-          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
-            git fetch origin "$BRANCH"
-            git checkout -B "$BRANCH" "origin/$BRANCH"
-            sed -i -E "s|<Version>[^<]+</Version>|<Version>${NEXT}-dev</Version>|" Directory.Build.props
-            sed -i -E "s|<AssemblyVersion>[^<]+</AssemblyVersion>|<AssemblyVersion>${NEXT}</AssemblyVersion>|" Directory.Build.props
-            sed -i -E "s|<FileVersion>[^<]+</FileVersion>|<FileVersion>${NEXT}</FileVersion>|" Directory.Build.props
-          else
-            git checkout -b "$BRANCH"
-          fi
+          # Always (re)create the branch at the current main tip so it
+          # stays a SINGLE linear commit. Reusing a diverged branch from a
+          # prior run (or one GitHub's "Update branch" merged main into)
+          # leaves a merge commit — and this repo is rebase-only, so
+          # GitHub's rebase-merge then refuses it ("branch can't be
+          # rebased") and the bump can't auto-merge. checkout keeps the
+          # working-tree edit the previous step made; re-sed is idempotent.
+          git checkout -B "$BRANCH"
+          sed -i -E "s|<Version>[^<]+</Version>|<Version>${NEXT}-dev</Version>|" Directory.Build.props
+          sed -i -E "s|<AssemblyVersion>[^<]+</AssemblyVersion>|<AssemblyVersion>${NEXT}</AssemblyVersion>|" Directory.Build.props
+          sed -i -E "s|<FileVersion>[^<]+</FileVersion>|<FileVersion>${NEXT}</FileVersion>|" Directory.Build.props
           git add Directory.Build.props
           git commit -m "chore: bump floor to ${NEXT}-dev after v${RELEASED}"
-          git push -u origin "$BRANCH"
+          # Force — we deliberately reset the branch to a clean linear
+          # commit; --force-with-lease guards against a concurrent push.
+          git push -u --force-with-lease origin "$BRANCH"
           # Only open the PR if one doesn't already exist for this branch.
           if ! gh pr list --head "$BRANCH" --state open --json number -q '.[0].number' | grep -q .; then
             gh pr create \
@@ -140,5 +147,12 @@ jobs:
               --base main \
               --head "$BRANCH"
           else
-            echo "PR already open for $BRANCH — push-only, no new PR."
+            echo "PR already open for $BRANCH — force-pushed the linear bump, no new PR."
           fi
+          # Hands-off: queue auto-merge (rebase) so the PR self-merges the
+          # moment required checks go green — no manual merge step. Auto-
+          # merge still WAITS for CI, so a major / pre-release that warrants
+          # a different floor can be hand-edited on the branch before it
+          # lands. Non-fatal if the repo has 'Allow auto-merge' disabled.
+          gh pr merge "$BRANCH" --auto --rebase \
+            || echo "::warning::could not enable auto-merge — is 'Allow auto-merge' on for the repo?"
