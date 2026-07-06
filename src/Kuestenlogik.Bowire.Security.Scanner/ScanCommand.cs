@@ -222,6 +222,15 @@ public static class ScanCommand
 
         await WriteConsoleReportAsync(findings, stdout).ConfigureAwait(false);
 
+        // OWASP API Top 10 suite view: roll the findings (which already
+        // carry OwaspApi tags) up against the ten-entry catalog and print
+        // a per-entry covered / clean / vulnerable table. Additive to the
+        // flat report above — same findings, grouped by OWASP entry.
+        if (string.Equals(options.Suite, "owasp-api", StringComparison.OrdinalIgnoreCase))
+        {
+            await OwaspApiSuite.WriteSummaryAsync(findings, stdout).ConfigureAwait(false);
+        }
+
         if (!string.IsNullOrEmpty(options.OutSarif))
         {
             await WriteSarifAsync(options.OutSarif, options.Target, findings, ct).ConfigureAwait(false);
@@ -616,6 +625,14 @@ public sealed class ScanOptions
 {
     public string Target { get; init; } = "";
     public string? Templates { get; init; }
+
+    /// <summary>
+    /// Named test-suite to run instead of / alongside the flat template
+    /// report. Currently <c>owasp-api</c> — rolls the scan's findings up
+    /// against the OWASP API Security Top 10 (2023) and prints a per-entry
+    /// coverage table (see <see cref="OwaspApiSuite"/>). Null = flat report only.
+    /// </summary>
+    public string? Suite { get; init; }
 
     /// <summary>
     /// Directory of Nuclei-format YAML templates

@@ -31,6 +31,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
         var templateOpt = new Option<string>("--template") { Description = "Single template *.json file to run (combinable with --templates)." };
         var nucleiOpt = new Option<string>("--nuclei") { Description = "Directory of *.yaml Nuclei templates (projectdiscovery/nuclei-templates). Read alongside --templates; resolved against --target so {{BaseURL}}/{{Hostname}} etc. land on real probes." };
         var outOpt = new Option<string>("--out") { Description = "Write findings as SARIF 2.1.0 JSON to this path (for CI dashboards: GitHub Code Scanning, GitLab, Azure DevOps)." };
+        var suiteOpt = new Option<string>("--suite") { Description = "Run a named suite view after the scan. `owasp-api` rolls findings up against the OWASP API Security Top 10 (2023) and prints a per-entry covered / clean / vulnerable table." };
         var severityOpt = new Option<string>("--severity") { Description = "Minimum severity to report: low / medium / high / critical. Lower-severity templates still load but are reported as skipped." };
         var timeoutOpt = new Option<int>("--timeout") { Description = "Per-probe HTTP timeout in seconds. Default 30." };
         var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = "Accept self-signed / untrusted TLS certs on the target. Off by default — use only when probing a known dev/staging cert." };
@@ -51,6 +52,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
         scan.Add(templateOpt);
         scan.Add(nucleiOpt);
         scan.Add(outOpt);
+        scan.Add(suiteOpt);
         scan.Add(severityOpt);
         scan.Add(timeoutOpt);
         scan.Add(allowSelfSignedOpt);
@@ -67,6 +69,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
                 Template = pr.GetValue(templateOpt),
                 Nuclei = pr.GetValue(nucleiOpt),
                 OutSarif = pr.GetValue(outOpt),
+                Suite = pr.GetValue(suiteOpt),
                 MinSeverity = pr.GetValue(severityOpt),
                 TimeoutSeconds = pr.GetValue(timeoutOpt) is int t and > 0 ? t : 30,
                 AllowSelfSignedCerts = pr.GetValue(allowSelfSignedOpt),
