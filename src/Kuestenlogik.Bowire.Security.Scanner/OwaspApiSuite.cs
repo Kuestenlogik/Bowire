@@ -20,6 +20,22 @@ internal enum OwaspEntryStatus
 internal sealed record OwaspEntryResult(OwaspApiEntry Entry, OwaspEntryStatus Status, int VulnCount, int ProbeCount);
 
 /// <summary>
+/// A default probe for one OWASP API Top 10 (2023) entry. Runs when
+/// <c>--suite=owasp-api</c> is active and emits findings tagged with the
+/// entry's <c>APIn-2023-</c> id so they roll up into that entry's row. A
+/// probe that finds nothing should still emit one Safe finding so the entry
+/// reads as "covered, clean" rather than "no probe yet".
+/// </summary>
+internal interface IOwaspApiProbe
+{
+    /// <summary>The OWASP Top-10 entry this probe covers.</summary>
+    OwaspApiEntry Entry { get; }
+
+    /// <summary>Run the probe against the target and return its findings.</summary>
+    Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, CancellationToken ct);
+}
+
+/// <summary>
 /// The <c>--suite=owasp-api</c> view. It does not run its own probes —
 /// instead it rolls the scan's existing findings (templates + built-ins,
 /// each carrying an <c>OwaspApi</c> tag) up against
@@ -32,6 +48,47 @@ internal sealed record OwaspEntryResult(OwaspApiEntry Entry, OwaspEntryStatus St
 /// </summary>
 internal static class OwaspApiSuite
 {
+    /// <summary>
+    /// The dedicated default probes, one (eventually) per Top-10 entry.
+    /// Grows as each entry's probe lands; entries with no probe yet roll up
+    /// from whatever templates / built-ins happen to be tagged for them.
+    /// </summary>
+    public static IReadOnlyList<IOwaspApiProbe> Probes { get; } =
+    [
+        new Api9InventoryProbe(),
+    ];
+
+    /// <summary>
+    /// Run every registered OWASP probe against the target and return the
+    /// merged findings. A probe that throws is isolated into a single Error
+    /// finding for its entry so one wedged probe can't sink the suite.
+    /// </summary>
+    public static async Task<IReadOnlyList<ScanFinding>> RunProbesAsync(string target, HttpClient http, IList<string> authHeaders, CancellationToken ct)
+    {
+        var merged = new List<ScanFinding>();
+        foreach (var probe in Probes)
+        {
+            try
+            {
+                merged.AddRange(await probe.RunAsync(target, http, authHeaders, ct).ConfigureAwait(false));
+            }
+            catch (Exception ex)
+            {
+                merged.Add(new ScanFinding
+                {
+                    Template = SyntheticTemplate.Build(
+                        id: $"BWR-OWASP-{probe.Entry.Id.Replace(':', '-')}-ERROR",
+                        name: $"{probe.Entry.Title} probe errored",
+                        cwe: null, owaspApi: probe.Entry.Tag, severity: "info", cvss: null,
+                        remediation: "Diagnostic — the probe could not complete; re-run with --verbose or check target reachability."),
+                    Status = ScanFindingStatus.Error,
+                    Detail = ex.Message,
+                });
+            }
+        }
+        return merged;
+    }
+
     /// <summary>Group the findings by OWASP entry and derive a per-entry status for all ten.</summary>
     public static IReadOnlyList<OwaspEntryResult> Rollup(IEnumerable<ScanFinding> findings)
     {
