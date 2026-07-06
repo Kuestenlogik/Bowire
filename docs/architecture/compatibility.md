@@ -42,19 +42,19 @@ The SemVer contract on the Bowire side that makes this work: inside any 1.x rele
 
 | Plugin | Latest release | Built against Bowire | Works with Bowire |
 |---|---|---|---|
-| [`Bowire.Protocol.Amqp`](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp)           | v1.0.0 | 1.6.0 | 1.6.0 ≤ x < 2.0 |
-| [`Bowire.Protocol.TacticalApi`](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi) | v1.0.0 | 1.5.1 | 1.5.1 ≤ x < 2.0 |
-| [`Bowire.Protocol.Kafka`](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka)         | v1.0.3 | 1.5.0 | 1.5.0 ≤ x < 2.0 |
-| [`Bowire.Protocol.Akka`](https://github.com/Kuestenlogik/Bowire.Protocol.Akka)           | v1.0.3 | 1.5.0 | 1.5.0 ≤ x < 2.0 |
-| [`Bowire.Protocol.Dis`](https://github.com/Kuestenlogik/Bowire.Protocol.Dis)             | v1.0.3 | 1.5.0 | 1.5.0 ≤ x < 2.0 |
-| [`Bowire.Protocol.Udp`](https://github.com/Kuestenlogik/Bowire.Protocol.Udp)             | v1.0.3 | 1.5.0 | 1.5.0 ≤ x < 2.0 |
-| [`Bowire.Protocol.Surgewave`](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave) | (no release yet — gated on the `Kuestenlogik.Surgewave.Client` SDK going public) | — | — |
+| [`Bowire.Protocol.Amqp`](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp)           | v1.0.6 | 2.2.1 | 2.2.1 ≤ x < 3.0 |
+| [`Bowire.Protocol.TacticalApi`](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi) | v1.0.8 | 2.2.1 | 2.2.1 ≤ x < 3.0 |
+| [`Bowire.Protocol.Kafka`](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka)         | v1.0.14 | 2.2.1 | 2.2.1 ≤ x < 3.0 |
+| [`Bowire.Protocol.Akka`](https://github.com/Kuestenlogik/Bowire.Protocol.Akka)           | v1.0.14 | 2.2.1 | 2.2.1 ≤ x < 3.0 |
+| [`Bowire.Protocol.Dis`](https://github.com/Kuestenlogik/Bowire.Protocol.Dis)             | v1.0.14 | 2.2.1 | 2.2.1 ≤ x < 3.0 |
+| [`Bowire.Protocol.Udp`](https://github.com/Kuestenlogik/Bowire.Protocol.Udp)             | v1.0.14 | 2.2.1 | 2.2.1 ≤ x < 3.0 |
+| [`Bowire.Protocol.Surgewave`](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave) | v0.1.10 | 2.2.1 | 2.2.1 ≤ x < 3.0 |
 
-Note: each row's "Built against" reflects the Bowire-library version the *currently released* NuGet package was compiled with — not the HEAD `Directory.Packages.props` pin. The HEAD of every sibling-repo has already been bumped to Bowire 1.6.0; that change takes effect on the next plugin release, not retroactively for the rows above.
+Note: each row's "Built against" reflects the Bowire-library version the *currently released* NuGet package was compiled with — not the HEAD `Directory.Packages.props` pin. Every row above is on Bowire 2.2.1 as of its latest release; the release cascade keeps each sibling-repo's pin current, so these rows track the newest published plugin.
 
 "Built against" is the `Kuestenlogik.Bowire` `PackageReference` the plugin was compiled with — the floor of what the consuming host must carry. "Works with" applies the SemVer contract: floor is the build-against version; ceiling is the next major.
 
-When Bowire 2.0 happens, every plugin in this matrix grows a parallel 2.x release line and the ceiling on the 1.x row tightens to the last patch we tested.
+Bowire is now on the 2.x line (2.2.1); each row's ceiling is the next Bowire major (3.0). The plugins track the host version via the release cascade while keeping their own version line.
 
 ## Convention for community plugins
 
