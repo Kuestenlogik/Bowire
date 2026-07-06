@@ -2,32 +2,20 @@
     // ------------------------------------------------------------------
     // #306 / #314 — Security rail JS fragment.
     //
-    // Moved out of core (render-sidebar.js / render-main.js) into the
-    // Kuestenlogik.Bowire.Security.Scanner package. The sidebar is a title
-    // + hint; the main pane hosts the OWASP API Top 10 suite (always,
-    // served by this package's /api/security/owasp-* endpoints) plus the
-    // AI security panel when Kuestenlogik.Bowire.Ai is in the process.
-    // Registered on the renderer-key seam so core resolves them from the
-    // descriptor's Sidebar/MainPaneRendererKey.
+    // The sidebar is a title + hint; the main pane hosts the OWASP API
+    // Top 10 suite (#173) and the endpoint spider (#176), both served by
+    // this package's /api/security/* endpoints, plus the AI security
+    // panel when Kuestenlogik.Bowire.Ai is in the process. Styling uses
+    // the shared `bowire-secsuite-*` / `bowire-btn` / `bowire-form-input`
+    // classes (bowire.css) so the rail matches the rest of the workbench.
     // ------------------------------------------------------------------
 
-    // #173 — OWASP API Security Top 10 suite surface. Lists the ten
-    // entries (fetched from /api/security/owasp-catalog) and runs the
-    // suite against a target via /api/security/owasp-scan, painting each
-    // row covered / clean / vulnerable from the roll-up.
+    // ---- OWASP API Security Top 10 suite (#173) ----
+
     function owaspBadge(status) {
-        var map = {
-            Vulnerable: ['VULN', '#c0392b'],
-            Safe: ['OK', '#1e8449'],
-            Error: ['ERR', '#b9770e'],
-            NotCovered: ['—', '#7f8c8d']
-        };
+        var map = { Vulnerable: ['VULN', 'is-vuln'], Safe: ['OK', 'is-ok'], Error: ['ERR', 'is-err'], NotCovered: ['—', 'is-none'] };
         var m = map[status] || map.NotCovered;
-        return el('span', {
-            textContent: m[0],
-            style: 'display:inline-block;min-width:44px;text-align:center;font-size:11px;font-weight:600;'
-                + 'padding:1px 6px;border-radius:4px;color:#fff;background:' + m[1]
-        });
+        return el('span', { className: 'bowire-secsuite-badge ' + m[1], textContent: m[0] });
     }
 
     function renderOwaspRow(entry) {
@@ -35,24 +23,22 @@
             : entry.status === 'Safe' ? 'clean'
             : entry.status === 'Error' ? 'probe error'
             : 'not exercised';
-        return el('div', { style: 'display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid rgba(127,127,127,.15)' },
+        return el('div', { className: 'bowire-secsuite-row' },
             owaspBadge(entry.status || 'NotCovered'),
-            el('a', { href: entry.reference, target: '_blank', rel: 'noopener noreferrer',
-                textContent: entry.id, style: 'font-family:monospace;font-size:12px;min-width:72px;text-decoration:none' }),
-            el('span', { textContent: entry.title, style: 'flex:1' }),
-            el('span', { textContent: note, style: 'font-size:12px;opacity:.7' }));
+            el('a', { className: 'bowire-secsuite-row-id', href: entry.reference, target: '_blank', rel: 'noopener noreferrer', textContent: entry.id }),
+            el('span', { className: 'bowire-secsuite-row-title', textContent: entry.title }),
+            el('span', { className: 'bowire-secsuite-row-note', textContent: note }));
     }
 
     function renderOwaspSuiteSection() {
-        var wrap = el('div', { style: 'margin-bottom:20px' });
-        wrap.appendChild(el('h3', { textContent: 'OWASP API Security Top 10 (2023)', style: 'margin:0 0 4px' }));
-        wrap.appendChild(el('p', { textContent: 'Run the suite against a target to see which entries are exercised, clean, or vulnerable. Add a credential to unlock the auth-dependent checks (API1 BOLA also takes a second identity).',
-            style: 'margin:0 0 8px;font-size:12px;opacity:.75' }));
+        var wrap = el('div', { className: 'bowire-secsuite' });
+        wrap.appendChild(el('h3', { className: 'bowire-secsuite-title', textContent: 'OWASP API Security Top 10 (2023)' }));
+        wrap.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: 'Run the suite against a target to see which entries are exercised, clean, or vulnerable. Add a credential to unlock the auth-dependent checks (API1 BOLA also takes a second identity).' }));
 
-        var targetInput = el('input', { type: 'text', placeholder: 'https://api.example.com', style: 'flex:1;min-width:200px;padding:5px 8px' });
-        var authInput = el('input', { type: 'text', placeholder: 'Authorization: Bearer … (optional)', style: 'flex:1;min-width:200px;padding:5px 8px' });
-        var statusEl = el('span', { style: 'font-size:12px;opacity:.8' });
-        var list = el('div', {});
+        var targetInput = el('input', { type: 'text', className: 'bowire-form-input', placeholder: 'https://api.example.com' });
+        var authInput = el('input', { type: 'text', className: 'bowire-form-input', placeholder: 'Authorization: Bearer … (optional)' });
+        var statusEl = el('span', { className: 'bowire-secsuite-status' });
+        var list = el('div', { className: 'bowire-secsuite-list' });
 
         function renderRows(entries) {
             list.textContent = '';
@@ -60,9 +46,7 @@
         }
 
         var runBtn = el('button', {
-            textContent: 'Run OWASP suite',
-            className: 'bowire-btn bowire-btn-primary',
-            style: 'padding:5px 12px',
+            className: 'bowire-btn', textContent: 'Run OWASP suite',
             onclick: function () {
                 var target = targetInput.value.trim();
                 if (!target) { statusEl.textContent = 'Enter a target URL first.'; return; }
@@ -70,8 +54,7 @@
                 runBtn.disabled = true;
                 var auth = authInput.value.trim();
                 fetch(config.prefix + '/api/security/owasp-scan', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ target: target, authHeaders: auth ? [auth] : [] })
                 })
                     .then(function (r) { return r.json(); })
@@ -79,20 +62,16 @@
                         if (res && res.entries) {
                             renderRows(res.entries);
                             statusEl.textContent = res.covered + '/' + res.total + ' exercised · ' + res.vulnerable + ' with findings';
-                        } else {
-                            statusEl.textContent = (res && res.detail) || 'Scan failed.';
-                        }
+                        } else { statusEl.textContent = (res && res.detail) || 'Scan failed.'; }
                     })
                     .catch(function (e) { statusEl.textContent = 'Scan failed: ' + e; })
                     .finally(function () { runBtn.disabled = false; });
             }
         });
 
-        wrap.appendChild(el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px' },
-            targetInput, authInput, runBtn, statusEl));
+        wrap.appendChild(el('div', { className: 'bowire-secsuite-controls' }, targetInput, authInput, runBtn, statusEl));
         wrap.appendChild(list);
 
-        // Paint the ten rows straight away (pre-scan, all "not exercised").
         fetch(config.prefix + '/api/security/owasp-catalog')
             .then(function (r) { return r.json(); })
             .then(function (entries) { renderRows(entries); })
@@ -101,18 +80,18 @@
         return wrap;
     }
 
-    // #176 — endpoint discovery (spider) with confirm / ignore triage.
-    function renderSpiderSection() {
-        var wrap = el('div', { style: 'margin-bottom:20px' });
-        wrap.appendChild(el('h3', { textContent: 'Endpoint discovery (spider)', style: 'margin:0 0 4px' }));
-        wrap.appendChild(el('p', { textContent: 'Discover candidate endpoints (OpenAPI / GraphQL / robots / sitemap / common paths / page links) from a base URL, then confirm the real ones and ignore the rest.',
-            style: 'margin:0 0 8px;font-size:12px;opacity:.75' }));
+    // ---- endpoint discovery (spider) with confirm / ignore triage (#176) ----
 
-        var urlInput = el('input', { type: 'text', placeholder: 'https://api.example.com', style: 'flex:1;min-width:200px;padding:5px 8px' });
-        var authInput = el('input', { type: 'text', placeholder: 'Authorization: Bearer … (optional)', style: 'flex:1;min-width:200px;padding:5px 8px' });
-        var statusEl = el('span', { style: 'font-size:12px;opacity:.8' });
-        var summary = el('div', { style: 'font-size:12px;margin:6px 0;min-height:18px;opacity:.85' });
-        var list = el('div', {});
+    function renderSpiderSection() {
+        var wrap = el('div', { className: 'bowire-secsuite' });
+        wrap.appendChild(el('h3', { className: 'bowire-secsuite-title', textContent: 'Endpoint discovery (spider)' }));
+        wrap.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: 'Discover candidate endpoints (OpenAPI / GraphQL / robots / sitemap / common paths / page links) from a base URL, then confirm the real ones and ignore the rest.' }));
+
+        var urlInput = el('input', { type: 'text', className: 'bowire-form-input', placeholder: 'https://api.example.com' });
+        var authInput = el('input', { type: 'text', className: 'bowire-form-input', placeholder: 'Authorization: Bearer … (optional)' });
+        var statusEl = el('span', { className: 'bowire-secsuite-status' });
+        var summary = el('div', { className: 'bowire-secsuite-summary' });
+        var list = el('div', { className: 'bowire-secsuite-list' });
         var triage = {};
         var rendered = [];
 
@@ -128,26 +107,24 @@
         function row(c) {
             var id = c.method + ' ' + c.url + ' ' + c.source;
             rendered.push({ id: id, url: c.url });
-            var urlEl = el('span', { textContent: c.url, style: 'flex:1;font-size:13px;word-break:break-all' });
-            var r = el('div', { style: 'display:flex;align-items:center;gap:8px;padding:4px 0;padding-left:6px;border-bottom:1px solid rgba(127,127,127,.15);border-left:3px solid transparent' });
+            var r = el('div', { className: 'bowire-secsuite-row' });
             function paint() {
                 var s = triage[id];
-                r.style.borderLeftColor = s === 'confirmed' ? '#1e8449' : 'transparent';
-                r.style.opacity = s === 'ignored' ? '.4' : '1';
-                urlEl.style.textDecoration = s === 'ignored' ? 'line-through' : 'none';
+                r.classList.toggle('is-confirmed', s === 'confirmed');
+                r.classList.toggle('is-ignored', s === 'ignored');
             }
-            r.appendChild(el('span', { textContent: c.method, style: 'font-family:monospace;font-size:11px;min-width:52px' }));
-            r.appendChild(urlEl);
-            r.appendChild(el('span', { textContent: c.source, style: 'font-size:11px;opacity:.6' }));
-            r.appendChild(el('button', { textContent: '✓', title: 'Confirm — part of my API', style: 'cursor:pointer;padding:2px 7px',
+            r.appendChild(el('span', { className: 'bowire-secsuite-row-method', textContent: c.method }));
+            r.appendChild(el('span', { className: 'bowire-secsuite-row-url', textContent: c.url }));
+            r.appendChild(el('span', { className: 'bowire-secsuite-row-src', textContent: c.source }));
+            r.appendChild(el('button', { className: 'bowire-btn bowire-secsuite-triage', textContent: '✓', title: 'Confirm — part of my API',
                 onclick: function () { triage[id] = triage[id] === 'confirmed' ? undefined : 'confirmed'; paint(); refreshSummary(); } }));
-            r.appendChild(el('button', { textContent: '✕', title: 'Ignore', style: 'cursor:pointer;padding:2px 7px',
+            r.appendChild(el('button', { className: 'bowire-btn bowire-btn--danger bowire-secsuite-triage', textContent: '✕', title: 'Ignore',
                 onclick: function () { triage[id] = triage[id] === 'ignored' ? undefined : 'ignored'; paint(); refreshSummary(); } }));
             return r;
         }
 
         var discoverBtn = el('button', {
-            textContent: 'Discover endpoints', className: 'bowire-btn bowire-btn-primary', style: 'padding:5px 12px',
+            className: 'bowire-btn', textContent: 'Discover endpoints',
             onclick: function () {
                 var url = urlInput.value.trim();
                 if (!url) { statusEl.textContent = 'Enter a base URL first.'; return; }
@@ -172,7 +149,7 @@
         });
 
         var copyBtn = el('button', {
-            textContent: 'Copy confirmed URLs', style: 'padding:4px 10px;font-size:12px',
+            className: 'bowire-btn', textContent: 'Copy confirmed URLs',
             onclick: function () {
                 var urls = rendered.filter(function (x) { return triage[x.id] === 'confirmed'; }).map(function (x) { return x.url; });
                 if (!urls.length) { statusEl.textContent = 'No confirmed candidates yet.'; return; }
@@ -181,12 +158,13 @@
             }
         });
 
-        wrap.appendChild(el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px' }, urlInput, authInput, discoverBtn, statusEl));
-        wrap.appendChild(el('div', { style: 'margin-bottom:6px' }, copyBtn));
+        wrap.appendChild(el('div', { className: 'bowire-secsuite-controls' }, urlInput, authInput, discoverBtn, copyBtn, statusEl));
         wrap.appendChild(summary);
         wrap.appendChild(list);
         return wrap;
     }
+
+    // ---- rail renderers ----
 
     function renderSecuritySidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
@@ -194,7 +172,7 @@
         sidebar.appendChild(el('div', {
             className: 'bowire-pane-empty',
             style: 'padding:12px 14px',
-            textContent: 'OWASP API Top 10, threat model, fuzz, and Nuclei templates sit in the main pane. Discovered endpoints are pulled automatically from the active workspace.'
+            textContent: 'OWASP API Top 10, endpoint discovery, threat model, fuzz, and Nuclei templates sit in the main pane. Discovered endpoints are pulled automatically from the active workspace.'
         }));
         return sidebar;
     }
