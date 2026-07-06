@@ -101,6 +101,93 @@
         return wrap;
     }
 
+    // #176 — endpoint discovery (spider) with confirm / ignore triage.
+    function renderSpiderSection() {
+        var wrap = el('div', { style: 'margin-bottom:20px' });
+        wrap.appendChild(el('h3', { textContent: 'Endpoint discovery (spider)', style: 'margin:0 0 4px' }));
+        wrap.appendChild(el('p', { textContent: 'Discover candidate endpoints (OpenAPI / GraphQL / robots / sitemap / common paths / page links) from a base URL, then confirm the real ones and ignore the rest.',
+            style: 'margin:0 0 8px;font-size:12px;opacity:.75' }));
+
+        var urlInput = el('input', { type: 'text', placeholder: 'https://api.example.com', style: 'flex:1;min-width:200px;padding:5px 8px' });
+        var authInput = el('input', { type: 'text', placeholder: 'Authorization: Bearer … (optional)', style: 'flex:1;min-width:200px;padding:5px 8px' });
+        var statusEl = el('span', { style: 'font-size:12px;opacity:.8' });
+        var summary = el('div', { style: 'font-size:12px;margin:6px 0;min-height:18px;opacity:.85' });
+        var list = el('div', {});
+        var triage = {};
+        var rendered = [];
+
+        function refreshSummary() {
+            var confirmed = 0, ignored = 0;
+            rendered.forEach(function (x) { if (triage[x.id] === 'confirmed') confirmed++; else if (triage[x.id] === 'ignored') ignored++; });
+            var pending = rendered.length - confirmed - ignored;
+            summary.textContent = rendered.length
+                ? (rendered.length + ' candidate(s) · ' + confirmed + ' confirmed · ' + ignored + ' ignored · ' + pending + ' pending')
+                : '';
+        }
+
+        function row(c) {
+            var id = c.method + ' ' + c.url + ' ' + c.source;
+            rendered.push({ id: id, url: c.url });
+            var urlEl = el('span', { textContent: c.url, style: 'flex:1;font-size:13px;word-break:break-all' });
+            var r = el('div', { style: 'display:flex;align-items:center;gap:8px;padding:4px 0;padding-left:6px;border-bottom:1px solid rgba(127,127,127,.15);border-left:3px solid transparent' });
+            function paint() {
+                var s = triage[id];
+                r.style.borderLeftColor = s === 'confirmed' ? '#1e8449' : 'transparent';
+                r.style.opacity = s === 'ignored' ? '.4' : '1';
+                urlEl.style.textDecoration = s === 'ignored' ? 'line-through' : 'none';
+            }
+            r.appendChild(el('span', { textContent: c.method, style: 'font-family:monospace;font-size:11px;min-width:52px' }));
+            r.appendChild(urlEl);
+            r.appendChild(el('span', { textContent: c.source, style: 'font-size:11px;opacity:.6' }));
+            r.appendChild(el('button', { textContent: '✓', title: 'Confirm — part of my API', style: 'cursor:pointer;padding:2px 7px',
+                onclick: function () { triage[id] = triage[id] === 'confirmed' ? undefined : 'confirmed'; paint(); refreshSummary(); } }));
+            r.appendChild(el('button', { textContent: '✕', title: 'Ignore', style: 'cursor:pointer;padding:2px 7px',
+                onclick: function () { triage[id] = triage[id] === 'ignored' ? undefined : 'ignored'; paint(); refreshSummary(); } }));
+            return r;
+        }
+
+        var discoverBtn = el('button', {
+            textContent: 'Discover endpoints', className: 'bowire-btn bowire-btn-primary', style: 'padding:5px 12px',
+            onclick: function () {
+                var url = urlInput.value.trim();
+                if (!url) { statusEl.textContent = 'Enter a base URL first.'; return; }
+                statusEl.textContent = 'Spidering…'; discoverBtn.disabled = true;
+                triage = {}; rendered = []; list.textContent = ''; summary.textContent = '';
+                var auth = authInput.value.trim();
+                fetch(config.prefix + '/api/security/spider', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url, authHeaders: auth ? [auth] : [] })
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (res) {
+                        if (res && res.candidates) {
+                            res.candidates.forEach(function (c) { list.appendChild(row(c)); });
+                            statusEl.textContent = res.count + ' candidate(s) discovered.';
+                            refreshSummary();
+                        } else { statusEl.textContent = (res && res.detail) || 'Spider failed.'; }
+                    })
+                    .catch(function (e) { statusEl.textContent = 'Spider failed: ' + e; })
+                    .finally(function () { discoverBtn.disabled = false; });
+            }
+        });
+
+        var copyBtn = el('button', {
+            textContent: 'Copy confirmed URLs', style: 'padding:4px 10px;font-size:12px',
+            onclick: function () {
+                var urls = rendered.filter(function (x) { return triage[x.id] === 'confirmed'; }).map(function (x) { return x.url; });
+                if (!urls.length) { statusEl.textContent = 'No confirmed candidates yet.'; return; }
+                if (navigator.clipboard) navigator.clipboard.writeText(urls.join('\n')).then(function () { statusEl.textContent = 'Copied ' + urls.length + ' URL(s).'; });
+                else statusEl.textContent = urls.join('  ');
+            }
+        });
+
+        wrap.appendChild(el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px' }, urlInput, authInput, discoverBtn, statusEl));
+        wrap.appendChild(el('div', { style: 'margin-bottom:6px' }, copyBtn));
+        wrap.appendChild(summary);
+        wrap.appendChild(list);
+        return wrap;
+    }
+
     function renderSecuritySidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
         sidebar.appendChild(renderSidebarToolbar({ title: 'Security' }));
@@ -116,8 +203,9 @@
         var secMain = el('div', { id: 'bowire-main-security', className: 'bowire-main bowire-main-security' });
         var pad = el('div', { className: 'bowire-main-pad' });
 
-        // OWASP suite is always available — it's served by this package.
+        // OWASP suite + endpoint spider are always available — served by this package.
         pad.appendChild(renderOwaspSuiteSection());
+        pad.appendChild(renderSpiderSection());
 
         // AI-assisted tools (threat model, fuzz values) are contributed by
         // the AI package when present; otherwise a thin install hint.

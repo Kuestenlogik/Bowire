@@ -58,13 +58,47 @@ public static partial class SpiderCommand
             await stderr.WriteLineAsync("  Usage: bowire scan spider --url <base-url> [--scope <host>] [--no-robots] [--out <json>]").ConfigureAwait(false);
             return 2;
         }
-        var authority = baseUri.GetLeftPart(UriPartial.Authority);
-        var inScope = ScanCommand.CompileScope(options.Scope, options.Url);
 
-        using var handler = new HttpClientHandler { AllowAutoRedirect = false };
+        using var http = BuildHttpClient(options);
+        await stdout.WriteLineAsync().ConfigureAwait(false);
+        await stdout.WriteLineAsync($"  Spidering {baseUri.GetLeftPart(UriPartial.Authority)}  (scope: {(options.Scope is { Count: > 0 } ? string.Join(",", options.Scope) : baseUri.Host)}, robots: {(options.RespectRobots ? "respected" : "ignored")})").ConfigureAwait(false);
+
+        var ordered = await CrawlAsync(options, http, ct).ConfigureAwait(false);
+        await WriteReportAsync([.. ordered], stdout).ConfigureAwait(false);
+
+        if (!string.IsNullOrEmpty(options.OutJson))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(options.OutJson))!);
+            await File.WriteAllTextAsync(options.OutJson, JsonSerializer.Serialize(ordered, s_jsonOpts), ct).ConfigureAwait(false);
+            await stdout.WriteLineAsync($"  Candidates → {options.OutJson}").ConfigureAwait(false);
+        }
+        return 0;
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope",
+        Justification = "HttpClient(handler, disposeHandler: true) takes ownership; the caller disposes the HttpClient.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5400:HttpClient may be created without enabling CheckCertificateRevocationList",
+        Justification = "CheckCertificateRevocationList is set in the else branch when the operator hasn't opted into self-signed certs.")]
+    private static HttpClient BuildHttpClient(SpiderOptions options)
+    {
+        var handler = new HttpClientHandler { AllowAutoRedirect = false };
         if (options.AllowSelfSignedCerts) handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
         else handler.CheckCertificateRevocationList = true;
-        using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds > 0 ? options.TimeoutSeconds : 30) };
+        return new HttpClient(handler, disposeHandler: true) { Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds > 0 ? options.TimeoutSeconds : 30) };
+    }
+
+    /// <summary>
+    /// Run every discovery source against the target and return the deduped,
+    /// ordered candidates. Shared by the CLI (`bowire scan spider`) and the
+    /// workbench endpoint (`POST /api/security/spider`).
+    /// </summary>
+    public static async Task<IReadOnlyList<SpiderCandidate>> CrawlAsync(SpiderOptions options, HttpClient http, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(http);
+        if (!Uri.TryCreate(options.Url, UriKind.Absolute, out var baseUri)) return [];
+        var authority = baseUri.GetLeftPart(UriPartial.Authority);
+        var inScope = ScanCommand.CompileScope(options.Scope, options.Url);
 
         var candidates = new Dictionary<string, SpiderCandidate>(StringComparer.OrdinalIgnoreCase);
         void Add(string method, string url, string source, int status)
@@ -76,9 +110,6 @@ public static partial class SpiderCommand
             if (!candidates.ContainsKey(key))
                 candidates[key] = new SpiderCandidate(method, u.GetLeftPart(UriPartial.Path), source, status);
         }
-
-        await stdout.WriteLineAsync().ConfigureAwait(false);
-        await stdout.WriteLineAsync($"  Spidering {authority}  (scope: {(options.Scope is { Count: > 0 } ? string.Join(",", options.Scope) : baseUri.Host)}, robots: {(options.RespectRobots ? "respected" : "ignored")})").ConfigureAwait(false);
 
         // 1. robots.txt — collect Disallow globs + Sitemap references.
         var disallow = new List<string>();
@@ -163,16 +194,7 @@ public static partial class SpiderCommand
             }
         }
 
-        var ordered = candidates.Values.OrderBy(c => c.Url, StringComparer.Ordinal).ToList();
-        await WriteReportAsync(ordered, stdout).ConfigureAwait(false);
-
-        if (!string.IsNullOrEmpty(options.OutJson))
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(options.OutJson))!);
-            await File.WriteAllTextAsync(options.OutJson, JsonSerializer.Serialize(ordered, s_jsonOpts), ct).ConfigureAwait(false);
-            await stdout.WriteLineAsync($"  Candidates → {options.OutJson}").ConfigureAwait(false);
-        }
-        return 0;
+        return candidates.Values.OrderBy(c => c.Url, StringComparer.Ordinal).ToList();
     }
 
     // ---- sources ----
