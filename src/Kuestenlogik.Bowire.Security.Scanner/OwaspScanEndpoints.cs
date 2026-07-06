@@ -113,6 +113,58 @@ public sealed class OwaspScanEndpoints : IBowireEndpointContribution
                 entries,
             });
         }).ExcludeFromDescription();
+
+        // #176 — endpoint discovery for the Security rail. Runs the same
+        // SpiderCommand.CrawlAsync the CLI uses, returns the candidate list.
+        endpoints.MapPost($"{basePath}/api/security/spider", async (HttpContext ctx) =>
+        {
+            SpiderApiRequest? req;
+            try { req = await JsonSerializer.DeserializeAsync<SpiderApiRequest>(ctx.Request.Body, s_jsonOpts, ctx.RequestAborted).ConfigureAwait(false); }
+            catch (JsonException ex) { return Results.Problem(title: "Request body isn't valid JSON", detail: ex.Message, statusCode: 400); }
+            if (req is null || string.IsNullOrWhiteSpace(req.Url)) return Results.Problem(title: "'url' is required", statusCode: 400);
+
+            using var handler = new HttpClientHandler { AllowAutoRedirect = false };
+            if (req.AllowSelfSignedCerts) handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
+            else handler.CheckCertificateRevocationList = true;
+            using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(req.TimeoutSeconds > 0 ? req.TimeoutSeconds : 30) };
+
+            IReadOnlyList<SpiderCandidate> candidates;
+            try
+            {
+                candidates = await SpiderCommand.CrawlAsync(new SpiderOptions
+                {
+                    Url = req.Url,
+                    Scope = req.Scope ?? [],
+                    AuthHeaders = req.AuthHeaders ?? [],
+                    TimeoutSeconds = req.TimeoutSeconds,
+                    RespectRobots = req.RespectRobots,
+                    AllowSelfSignedCerts = req.AllowSelfSignedCerts,
+                    MaxCandidates = req.Max > 0 ? req.Max : 500,
+                }, http, ctx.RequestAborted).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or InvalidOperationException or UriFormatException or IOException)
+            {
+                return Results.Problem(title: "Spider failed", detail: ex.Message, statusCode: 500);
+            }
+
+            return Results.Json(new
+            {
+                url = req.Url,
+                count = candidates.Count,
+                candidates = candidates.Select(c => new { method = c.Method, url = c.Url, source = c.Source, status = c.Status }).ToArray(),
+            });
+        }).ExcludeFromDescription();
+    }
+
+    private sealed class SpiderApiRequest
+    {
+        public string Url { get; init; } = "";
+        public string[]? Scope { get; init; }
+        public string[]? AuthHeaders { get; init; }
+        public int TimeoutSeconds { get; init; } = 30;
+        public bool RespectRobots { get; init; } = true;
+        public bool AllowSelfSignedCerts { get; init; }
+        public int Max { get; init; }
     }
 
     private sealed class OwaspScanRequest
