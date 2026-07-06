@@ -386,6 +386,42 @@ jobs:
         if: ${{ github.ref_type == 'tag' && env.NUGET_API_KEY != '' }}
         run: dotnet nuget push "artifacts/packages/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${{ env.NUGET_API_KEY }}" --skip-duplicate
 
+      # nuget.org indexing-lag guard — the fix for the sibling NU1102 race.
+      # `dotnet nuget push` returns the instant the upload is accepted, but
+      # the flat-container / search index that `dotnet restore` reads lags
+      # minutes-to-tens-of-minutes behind. If we dispatch the cascade right
+      # away, every sibling's restore (its dep-bump PR CI *and* its own
+      # release.yml) can fail with
+      #   NU1102: Unable to find package Kuestenlogik.Bowire (>= <new>)
+      # and the sibling release then has to be re-triggered by hand once
+      # indexing catches up. So block here until the just-published version
+      # is actually resolvable on nuget before fanning the cascade out —
+      # fixes the race once, at the source, for every current + future
+      # sibling. (The contract package Kuestenlogik.Bowire is what siblings
+      # reference and what NU1102'd; the sibling NuGets push together and
+      # index alongside it, so gating on the contract package is enough.)
+      - name: Wait for nuget.org to index the release
+        if: ${{ github.ref_type == 'tag' && env.NUGET_API_KEY != '' }}
+        env:
+          NEW_V: ${{ steps.version.outputs.VERSION }}
+        run: |
+          url="https://api.nuget.org/v3-flatcontainer/kuestenlogik.bowire/index.json"
+          deadline=$(( SECONDS + 2400 ))   # 40-minute ceiling
+          attempt=0
+          # Cache-bust each poll so a CDN edge doesn't keep serving a
+          # pre-publish copy of the version list.
+          until curl -fsSL -H 'Cache-Control: no-cache' "${url}?t=${SECONDS}" \
+                | tr ',' '\n' | grep -q "\"${NEW_V}\""; do
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::warning::Kuestenlogik.Bowire $NEW_V still not indexed after 40 min — dispatching anyway."
+              break
+            fi
+            attempt=$((attempt + 1))
+            echo "  not indexed yet (attempt $attempt) — waiting 20s for nuget to resolve $NEW_V…"
+            sleep 20
+          done
+          echo "nuget.org resolves Kuestenlogik.Bowire $NEW_V — safe to dispatch the cascade."
+
       # Fan a `bowire-released` repository_dispatch out to every sibling
       # repo that consumes Kuestenlogik.Bowire. The sibling list is
       # *discovered dynamically* by querying the Kuestenlogik org for
