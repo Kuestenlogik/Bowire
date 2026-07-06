@@ -91,6 +91,16 @@ Each row is honest: `[----]` means **no probe assessed it** (needs input, or no 
 
 The workbench surfaces the same suite in the **Security rail** (a target box + *Run OWASP suite* button paints each row covered / clean / vulnerable), backed by `POST /api/security/owasp-scan` — see the [HTTP API reference](../api/index.md).
 
+## Endpoint discovery — `bowire scan spider`
+
+Real security testing assumes *"find the things the developer forgot to declare"*. `bowire scan spider --url <base>` discovers candidate endpoints so the scanner + [OWASP suite](#owasp-api-security-top-10-suite) have an attack surface — including undocumented ones:
+
+```bash
+bowire scan spider --url https://api.example.com --out candidates.json
+```
+
+Sources: `robots.txt` (Disallow + Sitemap), `sitemap.xml`, an **OpenAPI/Swagger** document's `paths` (every path + method), a curated common-path HEAD sweep, and same-origin links on the base page. Conservative by default — same-host / `--scope` only, honours `robots.txt` (drop with `--no-robots`), and never authenticates beyond `--auth-header`. Candidates are **surfaced, not auto-added**: confirm the real ones into your workspace, treat the rest as potential leaks.
+
 ## Exit-code semantics
 
 `bowire scan` exits **0 whenever the scan ran end-to-end** — findings are the *product* of the scan, not a failure signal. Pipelines that want to gate on findings should add their own post-processing step (jq on the SARIF, or a Code Scanning branch-protection rule). The scanner only exits non-zero when the tool itself crashes (template parse fault, scope rejection, etc.).
