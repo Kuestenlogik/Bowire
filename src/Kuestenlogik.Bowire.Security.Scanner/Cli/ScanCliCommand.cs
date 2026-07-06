@@ -97,6 +97,52 @@ public sealed class ScanCliCommand : IBowireCliCommand
                 pr.InvocationConfiguration.Error).ConfigureAwait(false);
         });
 
+        scan.Add(BuildSpider());
         return scan;
+    }
+
+    // `bowire scan spider --url <base>` (#176) — endpoint discovery. A
+    // subcommand of `scan` so the security surface stays under one verb.
+    private static Command BuildSpider()
+    {
+        var spider = new Command("spider",
+            "Discover candidate endpoints from a base URL (robots.txt, sitemap.xml, an OpenAPI/Swagger document, a common-path HEAD sweep, and same-origin page links). Conservative: same-host/--scope only, honours robots.txt, never authenticates beyond --auth-header.");
+
+        var urlOpt = new Option<string>("--url") { Description = "Base URL to crawl (e.g. https://api.example.com).", Required = true };
+        var scopeOpt = new Option<string[]>("--scope") { Description = "In-scope hostname or `*.`-glob. Repeat / comma-separate. Defaults to the base URL's host.", AllowMultipleArgumentsPerToken = true };
+        var authHeaderOpt = new Option<string[]>("--auth-header") { Description = "Header applied to every request, e.g. `Authorization: Bearer <token>`. Repeatable.", AllowMultipleArgumentsPerToken = false };
+        var timeoutOpt = new Option<int>("--timeout") { Description = "Per-request HTTP timeout in seconds. Default 30." };
+        var noRobotsOpt = new Option<bool>("--no-robots") { Description = "Ignore robots.txt Disallow rules (default: respected)." };
+        var maxOpt = new Option<int>("--max") { Description = "Maximum candidates to collect. Default 500." };
+        var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = "Accept self-signed / untrusted TLS on the target." };
+        var outOpt = new Option<string>("--out") { Description = "Write the candidate list as JSON to this path." };
+
+        spider.Add(urlOpt);
+        spider.Add(scopeOpt);
+        spider.Add(authHeaderOpt);
+        spider.Add(timeoutOpt);
+        spider.Add(noRobotsOpt);
+        spider.Add(maxOpt);
+        spider.Add(allowSelfSignedOpt);
+        spider.Add(outOpt);
+
+        spider.SetAction(async (pr, ct) =>
+        {
+            var options = new SpiderOptions
+            {
+                Url = pr.GetValue(urlOpt) ?? "",
+                Scope = pr.GetValue(scopeOpt) ?? Array.Empty<string>(),
+                AuthHeaders = pr.GetValue(authHeaderOpt) ?? Array.Empty<string>(),
+                TimeoutSeconds = pr.GetValue(timeoutOpt) is int t and > 0 ? t : 30,
+                RespectRobots = !pr.GetValue(noRobotsOpt),
+                MaxCandidates = pr.GetValue(maxOpt) is int m and > 0 ? m : 500,
+                AllowSelfSignedCerts = pr.GetValue(allowSelfSignedOpt),
+                OutJson = pr.GetValue(outOpt),
+            };
+            return await SpiderCommand.RunAsync(
+                options, ct, pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
+        });
+
+        return spider;
     }
 }
