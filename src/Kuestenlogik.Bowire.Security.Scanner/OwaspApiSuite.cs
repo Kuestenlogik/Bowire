@@ -119,12 +119,17 @@ internal static class OwaspApiSuite
                 continue;
             }
 
+            // Only an actual Safe or Vulnerable verdict counts as "assessed".
+            // A bucket that is entirely Skipped (the probe needed input it
+            // didn't have — no credential, no URL parameter) must NOT read as a
+            // clean pass: report NotCovered so the coverage table stays honest.
             var vuln = bucket.Count(f => f.Status == ScanFindingStatus.Vulnerable);
-            var status = vuln > 0
-                ? OwaspEntryStatus.Vulnerable
-                : bucket.All(f => f.Status == ScanFindingStatus.Error)
-                    ? OwaspEntryStatus.Error
-                    : OwaspEntryStatus.Safe;
+            var safe = bucket.Count(f => f.Status == ScanFindingStatus.Safe);
+            OwaspEntryStatus status;
+            if (vuln > 0) status = OwaspEntryStatus.Vulnerable;
+            else if (safe > 0) status = OwaspEntryStatus.Safe;
+            else if (bucket.All(f => f.Status == ScanFindingStatus.Error)) status = OwaspEntryStatus.Error;
+            else status = OwaspEntryStatus.NotCovered;
             results.Add(new OwaspEntryResult(entry, status, vuln, bucket.Count));
         }
         return results;
