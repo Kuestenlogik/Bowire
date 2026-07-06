@@ -247,27 +247,20 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [6](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6) | Bootcamp | [Bootcamp landing renders inconsistent breadcrumb based on arrival path](#issue-kuestenlogik-bowire-bootcamp-6) | ⬜ Backlog |  |
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Backlog |  |
 | [21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21) | Protocol.Dis | [probeDuration setting is ignored by DiscoverAsync](#issue-kuestenlogik-bowire-protocol-dis-21) | ⬜ Backlog |  |
-| [21](https://github.com/Kuestenlogik/Bowire.Protocol.Udp/issues/21) | Protocol.Udp | [Cut a Bowire-2.x (major) release + realign version floor](#issue-kuestenlogik-bowire-protocol-udp-21) | ⬜ Backlog |  |
 | [22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) | Protocol.Dis | [Typed PDU envelope decoding beyond EntityState](#issue-kuestenlogik-bowire-protocol-dis-22) | ⬜ Backlog |  |
 | [23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) | Protocol.Dis | [Entity-filtered stream drops non-EntityState PDUs](#issue-kuestenlogik-bowire-protocol-dis-23) | ⬜ Backlog |  |
 | [24](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24) | Protocol.Dis | [Typed / re-decoded mock replay in DisMockEmitter](#issue-kuestenlogik-bowire-protocol-dis-24) | ⬜ Backlog |  |
 | [25](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/25) | Protocol.Dis | [Minefield Data (ID 39): type the DataFilter-gated per-mine arrays](#issue-kuestenlogik-bowire-protocol-dis-25) | ⬜ Backlog |  |
 | [26](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/26) | Protocol.Dis | [Live Entity family: flag-gated compressed payload decoding](#issue-kuestenlogik-bowire-protocol-dis-26) | ⬜ Backlog |  |
 | [27](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27) | Protocol.Akka | [ClusterClient transport for the standalone bowire CLI](#issue-kuestenlogik-bowire-protocol-akka-27) | ⬜ Backlog |  |
-| [27](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/27) | Protocol.Dis | [Cut a Bowire-2.x (major) release + realign version floor](#issue-kuestenlogik-bowire-protocol-dis-27) | ⬜ Backlog |  |
 | [28](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28) | Protocol.Akka | [Mailbox-snapshot inspection (size + head messages)](#issue-kuestenlogik-bowire-protocol-akka-28) | ⬜ Backlog |  |
-| [28](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/issues/28) | Protocol.Amqp | [Bowire 2.x line: update compatibility matrix + confirm version floor](#issue-kuestenlogik-bowire-protocol-amqp-28) | ⬜ Backlog |  |
 | [29](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29) | Protocol.Akka | [Per-actor throughput stats](#issue-kuestenlogik-bowire-protocol-akka-29) | ⬜ Backlog |  |
 | [30](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30) | Protocol.Akka | [Typed payload via Akka serializer roundtrip](#issue-kuestenlogik-bowire-protocol-akka-30) | ⬜ Backlog |  |
-| [30](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/30) | Protocol.TacticalApi | [Cut a Bowire-2.x (major) release + realign version floor](#issue-kuestenlogik-bowire-protocol-tacticalapi-30) | ⬜ Backlog |  |
 | [31](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31) | Protocol.Akka | [Opt-in filter API from the Bowire UI (per actor path / message type)](#issue-kuestenlogik-bowire-protocol-akka-31) | ⬜ Backlog |  |
 | [32](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/32) | Protocol.Surgewave | [Embedded mode: resolve SDK from host DI + drop direct Confluent path](#issue-kuestenlogik-bowire-protocol-surgewave-32) | ⬜ Backlog |  |
 | [32](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32) | Protocol.Akka | [Tell-from-Bowire — interactive duplex via OpenChannelAsync](#issue-kuestenlogik-bowire-protocol-akka-32) | ⬜ Backlog |  |
 | [33](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33) | Protocol.Akka | [DeadLetter capture under the global default mailbox](#issue-kuestenlogik-bowire-protocol-akka-33) | ⬜ Backlog |  |
-| [33](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/33) | Protocol.Surgewave | [Bowire 2.x line: target 2.x on first release](#issue-kuestenlogik-bowire-protocol-surgewave-33) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) | Protocol.Akka | [Docs drift: TappedMessage envelope field names & payload shape](#issue-kuestenlogik-bowire-protocol-akka-34) | ⬜ Backlog |  |
-| [34](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/34) | Protocol.Kafka | [Cut a Bowire-2.x (major) release + realign version floor](#issue-kuestenlogik-bowire-protocol-kafka-34) | ⬜ Backlog |  |
-| [35](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/35) | Protocol.Akka | [Realign version floor (0.10.1-dev) for the Bowire-2.x major](#issue-kuestenlogik-bowire-protocol-akka-35) | ⬜ Backlog |  |
 | [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog |  |
 | [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](#issue-kuestenlogik-bowire-44) | ⬜ Backlog | `area:docs` |
 | [50](https://github.com/Kuestenlogik/Bowire/issues/50) | Bowire | [Marketing site — gallery / lightbox layer on solutions/*](#issue-kuestenlogik-bowire-50) | ⬜ Backlog | `area:site` |
@@ -292,6 +285,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ⬜ Backlog |  |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog |  |
 | [367](https://github.com/Kuestenlogik/Bowire/issues/367) | Bowire | [codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)](#issue-kuestenlogik-bowire-367) | ⬜ Backlog |  |
+| [382](https://github.com/Kuestenlogik/Bowire/issues/382) | Bowire | [Update the plugin compatibility matrix to the Bowire 2.x line](#issue-kuestenlogik-bowire-382) | ⬜ Backlog |  |
 
 ## Details
 
@@ -995,10 +989,6 @@ Tracks the Surgewave-lane work split out of Kuestenlogik/Bowire#33 so protocol-s
 
 The plugin exposes a `probeDuration` setting (`BowireDisProtocol.Settings`, default 3s) and the README advertises it as configurable ("configurable via the plugin's `probeDuration` setting"). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21)
 
-#### <a id="issue-kuestenlogik-bowire-protocol-udp-21"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Udp#21](https://github.com/Kuestenlogik/Bowire.Protocol.Udp/issues/21) Cut a Bowire-2.x (major) release + realign version floor
-
-The plugin now builds against **Bowire 2.2.1** (was 1.6.0). A major host bump means it no longer loads in Bowire 1.x hosts, so the next plugin release is a **major (v2.0.0)**. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Udp/issues/21)
-
 #### <a id="issue-kuestenlogik-bowire-protocol-dis-22"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) Typed PDU envelope decoding beyond EntityState
 
 `TryBuildEnvelope` only decodes **EntityState** into typed fields; every other PDU kind is surfaced as header + base64 `raw` only (`src/Kuestenlogik.Bowire.Protocol.Dis/BowireDisProtocol.cs:294-350`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22)
@@ -1023,17 +1013,9 @@ TSPI (66), Appearance (99), LE Fire (101) and LE Detonation (102) currently type
 
 **Roadmap:** 1.1.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27)
 
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-27"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#27](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/27) Cut a Bowire-2.x (major) release + realign version floor
-
-The plugin now builds against **Bowire 2.2.1** (was 1.6.0). Per the compatibility contract a major bump means the plugin no longer loads in Bowire 1.x hosts, so the next release is a plugin **major**. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/27)
-
 #### <a id="issue-kuestenlogik-bowire-protocol-akka-28"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#28](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28) Mailbox-snapshot inspection (size + head messages)
 
 **Roadmap:** 1.1.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-amqp-28"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Amqp#28](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/issues/28) Bowire 2.x line: update compatibility matrix + confirm version floor
-
-The plugin now builds against **Bowire 2.2.1** (was 1.6.0), so it no longer loads in Bowire 1.x hosts — the compatibility ceiling has moved to the 2.x line. The plugin's own API is still pre-stable (`0.2.x`), so the Bowire-major does **not** force a plugin major. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/issues/28)
 
 #### <a id="issue-kuestenlogik-bowire-protocol-akka-29"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#29](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29) Per-actor throughput stats
 
@@ -1042,10 +1024,6 @@ The plugin now builds against **Bowire 2.2.1** (was 1.6.0), so it no longer load
 #### <a id="issue-kuestenlogik-bowire-protocol-akka-30"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#30](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30) Typed payload via Akka serializer roundtrip
 
 **Roadmap:** 1.2.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-tacticalapi-30"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.TacticalApi#30](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/30) Cut a Bowire-2.x (major) release + realign version floor
-
-The plugin now builds against **Bowire 2.2.1**. It was already pinned to Bowire `2.1.0` but the README badge still claimed `< 2.0` (now corrected to `≥ 2.2.1, < 3.0`). A 2.x host dependency means it no longer loads in Bowire 1.x hosts, so the next plugin release is a **major (v2.0.0)**. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/30)
 
 #### <a id="issue-kuestenlogik-bowire-protocol-akka-31"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#31](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31) Opt-in filter API from the Bowire UI (per actor path / message type)
 
@@ -1063,21 +1041,9 @@ Make this plugin drift-free against the Surgewave wire protocol in **both** depl
 
 When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` spawn happens during root-guardian bootstrap and is swallowed (try/catch in the `BowireAkkaExtension` ctor), so dead-letter capture is silently disabled in that mode (documented in README + the sample `Program.cs`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33)
 
-#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-33"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#33](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/33) Bowire 2.x line: target 2.x on first release
-
-The plugin now builds against **Bowire 2.2.1** (was 1.6.0). It has no public release yet (gated on the `Kuestenlogik.Surgewave.Client` SDK going public), so there is no compatibility-matrix row to retighten yet. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/33)
-
 #### <a id="issue-kuestenlogik-bowire-protocol-akka-34"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) Docs drift: TappedMessage envelope field names & payload shape
 
 `COVERAGE.md` (envelope table) and `SMOKE.md` (sample JSON frame) show fields `RecipientPath` / `SenderPath` and a JSON-object `Payload`, but the actual record is `Recipient` / `Sender` (string) with a string `Payload` (`src/Kuestenlogik.Bowire.Protocol.Akka/TappedMessage.cs`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-kafka-34"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Kafka#34](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/34) Cut a Bowire-2.x (major) release + realign version floor
-
-The plugin now builds against **Bowire 2.2.1** (was 1.6.0). Per the compatibility contract, a major host bump means the plugin no longer loads in Bowire 1.x hosts, so the next plugin release is a **major (v2.0.0)**. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/34)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-35"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#35](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/35) Realign version floor (0.10.1-dev) for the Bowire-2.x major
-
-`Directory.Build.props` sets `<Version>0.10.1-dev</Version>` / `AssemblyVersion 0.10.1`, which is below the last release tag `v1.0.11` in semver. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/35)
 
 #### <a id="issue-kuestenlogik-bowire-protocol-akka-36"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) Multi-subscriber + mixed-mode integration tests
 
@@ -1182,6 +1148,10 @@ Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in
 #### <a id="issue-kuestenlogik-bowire-367"></a>⬜ Backlog · [#367](https://github.com/Kuestenlogik/Bowire/issues/367) codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)
 
 Follow-up to #356. JS tests now gate CI (`node --test` over wwwroot-js) and JS coverage is *runnable* locally (`npm run test:js:coverage` / `node --test --experimental-test-coverage`), but it isn't uploaded to Codecov yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/367)
+
+#### <a id="issue-kuestenlogik-bowire-382"></a>⬜ Backlog · [#382](https://github.com/Kuestenlogik/Bowire/issues/382) Update the plugin compatibility matrix to the Bowire 2.x line
+
+`docs/architecture/compatibility.md` still lists the first-party plugin rows against the 1.x line ("Built against 1.5.0", "Works with 1.x < 2.0"), but every plugin now references **Bowire 2.2.1** (bumped via the release cascade) and their README badges read `≥ 2.2.1, < 3.0`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/382)
 
 ---
 
