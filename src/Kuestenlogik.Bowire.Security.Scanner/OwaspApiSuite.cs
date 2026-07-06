@@ -56,6 +56,7 @@ internal static class OwaspApiSuite
     public static IReadOnlyList<IOwaspApiProbe> Probes { get; } =
     [
         new Api4ResourceProbe(),
+        new Api5AuthorizationProbe(),
         new Api8ConfigProbe(),
         new Api9InventoryProbe(),
     ];
