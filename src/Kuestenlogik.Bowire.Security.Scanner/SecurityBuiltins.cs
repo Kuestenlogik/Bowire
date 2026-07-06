@@ -385,7 +385,7 @@ internal static class SyntheticTemplate
         cvss: 5.3,
         remediation: "Wire a global exception handler that returns a generic body in production. ASP.NET Core: app.UseExceptionHandler(\"/error\"). Spring: @ControllerAdvice + ResponseStatusException. Express: error-handler middleware gated on NODE_ENV=production. Always: scrub stack traces / inner-exception details / framework version banners before the response leaves the server.");
 
-    private static LoadedTemplate Build(string id, string name, string? cwe, string? owaspApi, string severity, double? cvss, string remediation)
+    internal static LoadedTemplate Build(string id, string name, string? cwe, string? owaspApi, string severity, double? cvss, string remediation)
     {
         return new LoadedTemplate(
             $"(builtin: {id})",

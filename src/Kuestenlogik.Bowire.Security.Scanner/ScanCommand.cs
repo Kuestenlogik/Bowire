@@ -220,13 +220,27 @@ public static class ScanCommand
             }
         }
 
+        // OWASP API Top 10 suite: run the dedicated per-entry probes and
+        // fold their findings into the same list BEFORE the report / SARIF /
+        // roll-up, so they surface everywhere the template + built-in
+        // findings do.
+        var owaspSuite = string.Equals(options.Suite, "owasp-api", StringComparison.OrdinalIgnoreCase);
+        if (owaspSuite)
+        {
+            var probeFindings = await OwaspApiSuite.RunProbesAsync(options.Target, http, options.AuthHeaders, ct).ConfigureAwait(false);
+            foreach (var f in probeFindings)
+            {
+                var sev = f.Template.Recording.Vulnerability?.Severity ?? "info";
+                findings.Add(SeverityRank(sev) < minRank && f.Status == ScanFindingStatus.Vulnerable
+                    ? new ScanFinding { Template = f.Template, Status = ScanFindingStatus.Skipped, Detail = "below severity threshold" }
+                    : f);
+            }
+        }
+
         await WriteConsoleReportAsync(findings, stdout).ConfigureAwait(false);
 
-        // OWASP API Top 10 suite view: roll the findings (which already
-        // carry OwaspApi tags) up against the ten-entry catalog and print
-        // a per-entry covered / clean / vulnerable table. Additive to the
-        // flat report above — same findings, grouped by OWASP entry.
-        if (string.Equals(options.Suite, "owasp-api", StringComparison.OrdinalIgnoreCase))
+        // Per-entry covered / clean / vulnerable table for the OWASP suite.
+        if (owaspSuite)
         {
             await OwaspApiSuite.WriteSummaryAsync(findings, stdout).ConfigureAwait(false);
         }
