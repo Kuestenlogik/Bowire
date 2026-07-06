@@ -62,6 +62,8 @@ the strip.
 - <xref:Kuestenlogik.Bowire.Interceptor> — the Proxy + Intercepted + Traffic rails consolidated into one package (Welle 2 fold-in of `Rail.Proxy` + `Rail.Intercepted` + `Rail.Traffic`).
 - <xref:Kuestenlogik.Bowire.Mock> — the Mocks rail + the mock-server host (Welle 2 fold-in of `Rail.Mocks` into `Mock`).
 - <xref:Kuestenlogik.Bowire.Help> — the Help rail + the `IBowireHelpProvider` contract (#324).
+- <xref:Kuestenlogik.Bowire.Security.Scanner> — the Security rail + the `bowire scan` CLI: vulnerability-template + Nuclei-corpus replay, the always-on passive checks, and the **OWASP API Security Top 10 suite** (`--suite=owasp-api`, the `IOwaspApiProbe` per-entry probes, `OwaspApiCatalog`, and the `/api/security/owasp-catalog` + `/api/security/owasp-scan` workbench endpoints).
+- <xref:Kuestenlogik.Bowire.Security.Templates.Nuclei> — reads the `projectdiscovery/nuclei-templates` YAML corpus and unfolds it into the scanner's template shape.
 - <xref:Kuestenlogik.Bowire.Rails> — the Home + Discover rail descriptors (folded into Core in Welle 2 because they're always-on).
 
 ## First-party protocol plugins

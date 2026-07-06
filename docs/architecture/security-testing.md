@@ -53,12 +53,12 @@ The features that turn Bowire into a "single tool" choice for a pen-tester inste
 
 ### Tier 4 — Differentiation
 
-Features that distinguish Bowire from "just another DAST tool". All items open.
+Features that distinguish Bowire from "just another DAST tool". Most items open; the OWASP API Top 10 suite (compliance mapping, below) shipped in v2.3.
 
 - [ ] **AI-assisted threat modeling via MCP.** Bowire's MCP-server surface (already shipped) lets an LLM call into discovery / replay. New direction: Bowire's MCP adapter exposes a `bowire.threat-model` prompt that asks Claude (or any MCP-aware LLM) to look at the discovered service tree and propose the top-N riskiest endpoints + suggested attack templates. Operator confirms → templates run. The LLM is the smart-default-template-picker; Bowire is the execution engine.
 - [ ] **Recording-driven security regression tests.** Known-good attack as a recording, runs in CI after every deploy. Failure = "this vulnerability got fixed but is back". Reuses the Phase-5 replay-determinism machinery so the regression test stays valid across detector drift.
 - [ ] **Multi-protocol attack chains.** Sequence: record a gRPC discovery → mutate to extract the schema → replay schema fields as SQL-injection payloads against the same service's REST surface → assert no leak. The chain itself is a recording — versionable, reviewable, replayable.
-- [ ] **Compliance mapping.** Automatic OWASP API Top 10 / CWE / CVSS scoring per finding. The HTML report has a compliance-overview tab; the SARIF output carries the mapping in `properties.security-severity` so GitHub Code Scanning groups findings the same way.
+- [~] **Compliance mapping.** The **OWASP API Security Top 10 (2023) suite** shipped in v2.3 (#173): dedicated per-entry probes behind the `IOwaspApiProbe` seam, exposed as `bowire scan --suite=owasp-api` (per-entry coverage table), the `/api/security/owasp-catalog` + `/api/security/owasp-scan` workbench endpoints, and a Security-rail view that paints each entry covered / clean / vulnerable. Every finding carries its `owaspApi` tag + CVSS in `properties.security-severity`, so GitHub Code Scanning groups findings the same way. Eight of ten entries have a dedicated probe (API6 / API10 have no reliable black-box check); a standalone HTML compliance-overview tab is still open. See the [OWASP API Top 10 suite reference](../security/owasp-api/index.md).
 
 ## Vulnerability template format
 
