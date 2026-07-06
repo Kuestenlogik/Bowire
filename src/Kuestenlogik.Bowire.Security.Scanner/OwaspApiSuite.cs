@@ -62,6 +62,7 @@ internal static class OwaspApiSuite
     [
         new Api1BolaProbe(),
         new Api2AuthProbe(),
+        new Api3BoplaProbe(),
         new Api4ResourceProbe(),
         new Api5AuthorizationProbe(),
         new Api7SsrfProbe(),
