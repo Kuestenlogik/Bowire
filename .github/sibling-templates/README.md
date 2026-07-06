@@ -1,17 +1,18 @@
 # Sibling cascade templates
 
-These two workflow files together implement the **Bowire release cascade**: when the main Bowire repo tags a new release, every sibling that consumes `Kuestenlogik.Bowire*` NuGets gets its dependency bumped (PR), tested (CI), and auto-tags its own next patch version on merge.
+These three workflow files together implement the **Bowire release cascade**: when the main Bowire repo tags a new release, every sibling that consumes `Kuestenlogik.Bowire*` NuGets gets its dependency bumped (PR), tested (CI), auto-tags its own next patch version on merge, and — once that tag's release pipeline succeeds — raises its own `Directory.Build.props` version floor to `<released>-dev`.
 
 | File | Purpose | Drop at |
 |---|---|---|
 | `bowire-released.yml` | Listens for `repository_dispatch: bowire-released`, bumps `Kuestenlogik.Bowire*` PackageVersion entries, opens PR | `.github/workflows/bowire-released.yml` |
 | `auto-tag-on-bowire-merge.yml` | On merge of `bowire-cascade`-labelled PRs, patch-bumps the sibling's own version and pushes the tag | `.github/workflows/auto-tag-on-bowire-merge.yml` |
+| `post-release-floor-bump.yml` | On a successful `Release` run (tag push), raises the sibling's own `Directory.Build.props` `<Version>`/`<AssemblyVersion>`/`<FileVersion>` floor to the just-released version + `-dev` via an auto-merging PR | `.github/workflows/post-release-floor-bump.yml` |
 
 ## Wiring
 
 1. **Bowire main repo** — already wired: `release.yml` discovers cascade siblings dynamically by querying the `Kuestenlogik` org for repos carrying the `bowire-cascade` GitHub topic, then fans `repository_dispatch` to each after a successful `nuget.org` push.
 2. **Each sibling** — three things, all in the sibling repo:
-   - Drop the two workflow files above into `.github/workflows/`. No per-repo edits needed; both are sibling-agnostic.
+   - Drop the three workflow files above into `.github/workflows/`. No per-repo edits needed; all three are sibling-agnostic.
    - Add the GitHub topic `bowire-cascade` via the repo's **About → ⚙ → Topics**. This is the opt-in marker — without it, Bowire's release.yml won't dispatch to this repo.
    - Make sure `Directory.Packages.props` exists at the repo root with the `Kuestenlogik.Bowire*` `<PackageVersion>` entries — the bump step's `sed` operates on that file.
 3. **Secrets** — both files use the org-secret `BOWIRE_DISPATCH_TOKEN` (Contents R/W + Pull requests R/W). Already in place from the consolidation step.
