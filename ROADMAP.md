@@ -126,7 +126,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
-**1/18 done** · 1 in progress · 16 backlog
+**2/18 done** · 1 in progress · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -138,7 +138,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [105](https://github.com/Kuestenlogik/Bowire/issues/105) | Bowire | [AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check](#issue-kuestenlogik-bowire-105) | ⬜ Backlog |  |
 | [106](https://github.com/Kuestenlogik/Bowire/issues/106) | Bowire | [AI OWASP API Top 10 panel — per-method status + concrete probe per risk](#issue-kuestenlogik-bowire-106) | ⬜ Backlog |  |
 | [107](https://github.com/Kuestenlogik/Bowire/issues/107) | Bowire | [AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run](#issue-kuestenlogik-bowire-107) | ⬜ Backlog |  |
-| [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ⬜ Backlog |  |
 | [175](https://github.com/Kuestenlogik/Bowire/issues/175) | Bowire | [Schema-aware mutation engine for fuzz / scan](#issue-kuestenlogik-bowire-175) | ⬜ Backlog |  |
 | [176](https://github.com/Kuestenlogik/Bowire/issues/176) | Bowire | [Spider / crawl — discover endpoints from a base URL](#issue-kuestenlogik-bowire-176) | ⬜ Backlog |  |
 | [184](https://github.com/Kuestenlogik/Bowire/issues/184) | Bowire | [Protocol-specific security scanners — gRPC / GraphQL / WS / MQTT / SSE / MCP](#issue-kuestenlogik-bowire-184) | ⬜ Backlog |  |
@@ -147,6 +146,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [190](https://github.com/Kuestenlogik/Bowire/issues/190) | Bowire | [Authentication session recording + token reuse](#issue-kuestenlogik-bowire-190) | ⬜ Backlog |  |
 | [339](https://github.com/Kuestenlogik/Bowire/issues/339) | Bowire | [docs(audit): Trash-as-plugin architecture proposal for v2.3](#issue-kuestenlogik-bowire-339) | ⬜ Backlog |  |
 | [381](https://github.com/Kuestenlogik/Bowire/issues/381) | Bowire | [OWASP API suite — remaining: API6 / API10, protocol-specific variants, compliance tab](#issue-kuestenlogik-bowire-381) | ⬜ Backlog |  |
+| [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ✅ Done |  |
 | [178](https://github.com/Kuestenlogik/Bowire/issues/178) | Bowire | [bowire scan CLI with SARIF output + GitHub Action wrapper](#issue-kuestenlogik-bowire-178) | ✅ Done |  |
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
@@ -741,10 +741,6 @@ OWASP API Security Top 10 is the de-facto checklist API testers run against any 
 
 A scanning session produces a lot of artifacts: per-endpoint threat-model rankings, per-endpoint Nuclei runs, per-field fuzz results, AI-triaged findings. Today each lives in its own pane / log. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/107)
 
-#### <a id="issue-kuestenlogik-bowire-173"></a>⬜ Backlog · [#173](https://github.com/Kuestenlogik/Bowire/issues/173) OWASP API Security Top 10 — structured test suite
-
-Bowire's security scan is currently generic fuzz + a handful of templates. The de-facto industry baseline for "did you check the obvious API security mistakes?" is the OWASP API Security Top 10. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/173)
-
 #### <a id="issue-kuestenlogik-bowire-175"></a>⬜ Backlog · [#175](https://github.com/Kuestenlogik/Bowire/issues/175) Schema-aware mutation engine for fuzz / scan
 
 The current scan/fuzz path generates inputs without much awareness of the schema — generic strings, numbers, nulls. The DOZENS of subtle vulnerabilities that require schema-aware mutation (type confusion, optional→required violation, enum-out-of-range, recursion-depth, alias-abuse in GraphQL) get missed. [[more]](https://github.com/Kuestenlogik/Bowire/issues/175)
@@ -776,6 +772,10 @@ Architecture audit + design doc for extracting Trash into a pluggable extension 
 #### <a id="issue-kuestenlogik-bowire-381"></a>⬜ Backlog · [#381](https://github.com/Kuestenlogik/Bowire/issues/381) OWASP API suite — remaining: API6 / API10, protocol-specific variants, compliance tab
 
 Follow-up to #173, which shipped the OWASP API Security Top 10 (2023) suite — the scaffold (`OwaspApiCatalog` + roll-up), **8/10 dedicated probes** (API1–API5, API7–API9), the CLI (`bowire scan --suite=owasp-api`), the workbench API (`/api/security/owasp-catalog` + `/api/security/owasp-scan`), the S … [[more]](https://github.com/Kuestenlogik/Bowire/issues/381)
+
+#### <a id="issue-kuestenlogik-bowire-173"></a>✅ Done · [#173](https://github.com/Kuestenlogik/Bowire/issues/173) OWASP API Security Top 10 — structured test suite
+
+Bowire's security scan is currently generic fuzz + a handful of templates. The de-facto industry baseline for "did you check the obvious API security mistakes?" is the OWASP API Security Top 10. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/173)
 
 #### <a id="issue-kuestenlogik-bowire-178"></a>✅ Done · [#178](https://github.com/Kuestenlogik/Bowire/issues/178) bowire scan CLI with SARIF output + GitHub Action wrapper
 
