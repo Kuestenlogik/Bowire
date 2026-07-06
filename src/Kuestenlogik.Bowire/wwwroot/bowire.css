@@ -24604,3 +24604,40 @@ not as the
 .bowire-coverage-outcome-ok    { color: #10b981; }
 .bowire-coverage-outcome-fail  { color: #ef4444; }
 .bowire-coverage-outcome-error { color: #b45309; }
+
+/* ------------------------------------------------------------------ */
+/* Security suite — OWASP API Top 10 (#173) + endpoint spider (#176).  */
+/* Uses the shared design tokens so the Security rail matches the rest */
+/* of the workbench instead of ad-hoc inline styles.                   */
+/* ------------------------------------------------------------------ */
+.bowire-secsuite { margin-bottom: 22px; }
+.bowire-secsuite-title { margin: 0 0 4px; font-size: 14px; font-weight: 600; color: var(--bowire-text); }
+.bowire-secsuite-hint { margin: 0 0 10px; font-size: 12px; line-height: 1.45; color: var(--bowire-text-muted); }
+.bowire-secsuite-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+.bowire-secsuite-controls .bowire-form-input { flex: 1 1 200px; min-width: 180px; }
+.bowire-secsuite-status { font-size: 12px; color: var(--bowire-text-secondary); }
+.bowire-secsuite-summary { font-size: 12px; color: var(--bowire-text-secondary); margin: 6px 0; min-height: 18px; }
+.bowire-secsuite-list { border: 1px solid var(--bowire-border-subtle); border-radius: var(--bowire-radius-md); overflow: hidden; }
+.bowire-secsuite-list:empty { border: 0; }
+
+.bowire-secsuite-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-bottom: 1px solid var(--bowire-border-subtle); border-left: 3px solid transparent; }
+.bowire-secsuite-row:last-child { border-bottom: 0; }
+.bowire-secsuite-row:hover { background: var(--bowire-bg-hover); }
+.bowire-secsuite-row-id { font-family: ui-monospace, monospace; font-size: 12px; min-width: 78px; color: var(--bowire-text-secondary); text-decoration: none; }
+.bowire-secsuite-row-id:hover { color: var(--bowire-accent); }
+.bowire-secsuite-row-title { flex: 1; color: var(--bowire-text); }
+.bowire-secsuite-row-note { font-size: 12px; color: var(--bowire-text-muted); }
+.bowire-secsuite-row-method { font-family: ui-monospace, monospace; font-size: 11px; min-width: 54px; color: var(--bowire-text-secondary); }
+.bowire-secsuite-row-url { flex: 1; font-size: 13px; word-break: break-all; color: var(--bowire-text); }
+.bowire-secsuite-row-src { font-size: 11px; color: var(--bowire-text-tertiary); white-space: nowrap; }
+
+.bowire-secsuite-badge { display: inline-block; min-width: 46px; text-align: center; font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: var(--bowire-radius-sm); color: var(--bowire-text-inverse, #fff); }
+.bowire-secsuite-badge.is-vuln { background: var(--bowire-danger); }
+.bowire-secsuite-badge.is-ok { background: var(--bowire-success); }
+.bowire-secsuite-badge.is-err { background: var(--bowire-warning); }
+.bowire-secsuite-badge.is-none { background: var(--bowire-text-tertiary); }
+
+.bowire-secsuite-row.is-confirmed { border-left-color: var(--bowire-success); }
+.bowire-secsuite-row.is-ignored { opacity: .45; }
+.bowire-secsuite-row.is-ignored .bowire-secsuite-row-url { text-decoration: line-through; }
+.bowire-secsuite-triage { cursor: pointer; padding: 2px 8px; }
