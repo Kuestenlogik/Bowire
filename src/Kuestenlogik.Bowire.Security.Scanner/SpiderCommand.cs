@@ -124,6 +124,25 @@ public static partial class SpiderCommand
                 break; // first valid OpenAPI doc wins
         }
 
+        // 3b. GraphQL introspection — one candidate per query / mutation operation.
+        const string introspection = "{\"query\":\"query{__schema{queryType{name fields{name}} mutationType{name fields{name}}}}\"}";
+        var gqlEndpoints = new List<string> { authority + "/graphql", authority + "/api/graphql", authority + "/query", options.Url };
+        if (!string.Equals(basePrefix, authority, StringComparison.OrdinalIgnoreCase)) gqlEndpoints.Add(basePrefix + "/graphql");
+        foreach (var gql in gqlEndpoints.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (!Uri.TryCreate(gql, UriKind.Absolute, out var gu) || !inScope(gu.Host)) continue;
+            var (st, body) = await PostJsonAsync(http, gql, introspection, options.AuthHeaders, ct).ConfigureAwait(false);
+            if (st is < 200 or >= 300 || !body.Contains("__schema", StringComparison.Ordinal)) continue;
+            var ops = ParseGraphQLOps(body, gu.GetLeftPart(UriPartial.Path));
+            if (ops.Count == 0) continue;
+            foreach (var op in ops)
+            {
+                if (candidates.Count >= options.MaxCandidates) break;
+                candidates.TryAdd($"gql {op.Url} {op.Source}", op);
+            }
+            break; // first introspectable endpoint wins
+        }
+
         // 4. Common-path HEAD sweep — reachable (non-404) = candidate.
         foreach (var path in s_commonPaths)
         {
@@ -237,6 +256,48 @@ public static partial class SpiderCommand
             return ((int)resp.StatusCode, body);
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or InvalidOperationException or UriFormatException) { return (-1, ""); }
+    }
+
+    private static async Task<(int Status, string Body)> PostJsonAsync(HttpClient http, string url, string json, IList<string> auth, CancellationToken ct)
+    {
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, url) { Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json") };
+            ScanCommand.ApplyAuthHeaders(req, auth);
+            using var resp = await http.SendAsync(req, ct).ConfigureAwait(false);
+            var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            return ((int)resp.StatusCode, body);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or InvalidOperationException or UriFormatException) { return (-1, ""); }
+    }
+
+    // Parse a GraphQL introspection response into one candidate per query /
+    // mutation operation (the GraphQL analogue of an endpoint).
+    private static List<SpiderCandidate> ParseGraphQLOps(string body, string endpointPath)
+    {
+        var ops = new List<SpiderCandidate>();
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("data", out var data) && data.TryGetProperty("__schema", out var schema))
+            {
+                CollectGraphQLOps(schema, "queryType", "query", endpointPath, ops);
+                CollectGraphQLOps(schema, "mutationType", "mutation", endpointPath, ops);
+            }
+        }
+        catch (JsonException) { /* not a schema — ignore */ }
+        return ops;
+    }
+
+    private static void CollectGraphQLOps(JsonElement schema, string typeProp, string kind, string endpointPath, List<SpiderCandidate> ops)
+    {
+        if (!schema.TryGetProperty(typeProp, out var t) || t.ValueKind != JsonValueKind.Object) return;
+        if (!t.TryGetProperty("fields", out var fields) || fields.ValueKind != JsonValueKind.Array) return;
+        foreach (var f in fields.EnumerateArray())
+        {
+            if (f.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String)
+                ops.Add(new SpiderCandidate("POST", endpointPath, $"graphql:{kind} {n.GetString()}", 200));
+        }
     }
 
     private static async Task<int> HeadAsync(HttpClient http, string url, IList<string> auth, CancellationToken ct)
