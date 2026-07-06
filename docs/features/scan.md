@@ -101,6 +101,18 @@ bowire scan spider --url https://api.example.com --out candidates.json
 
 Sources: `robots.txt` (Disallow + Sitemap), `sitemap.xml`, an **OpenAPI/Swagger** document's `paths` (every path + method), a curated common-path HEAD sweep, and same-origin links on the base page. Conservative by default — same-host / `--scope` only, honours `robots.txt` (drop with `--no-robots`), and never authenticates beyond `--auth-header`. Candidates are **surfaced, not auto-added**: confirm the real ones into your workspace, treat the rest as potential leaks.
 
+## Schema-aware mutations — `bowire scan mutate`
+
+Bowire's edge is that it *knows the schema*. `bowire scan mutate` exercises the schema-aware mutation engine for a field type and prints the targeted invalid inputs it produces — type confusion, boundary + overflow, string-encoding tricks, enum out-of-range / case-variant, required-field omission, and structural attacks:
+
+```bash
+bowire scan mutate --type integer --seed 42 --budget 8
+bowire scan mutate --type enum --enum RED,GREEN,BLUE --seed 1
+bowire scan mutate --type string --format email --required
+```
+
+Each mutation carries a label and the behaviour a correctly-validating server should exhibit. Output is **seeded** (`--seed` reproduces the exact set) and **budget**-capped (`--budget`) so a scan stays bounded. This is the reproducible building block the scan-replay layer walks a whole OpenAPI / protobuf / GraphQL schema with.
+
 ## Exit-code semantics
 
 `bowire scan` exits **0 whenever the scan ran end-to-end** — findings are the *product* of the scan, not a failure signal. Pipelines that want to gate on findings should add their own post-processing step (jq on the SARIF, or a Code Scanning branch-protection rule). The scanner only exits non-zero when the tool itself crashes (template parse fault, scope rejection, etc.).
