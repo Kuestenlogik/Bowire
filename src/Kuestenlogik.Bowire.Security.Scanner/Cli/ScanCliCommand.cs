@@ -98,7 +98,47 @@ public sealed class ScanCliCommand : IBowireCliCommand
         });
 
         scan.Add(BuildSpider());
+        scan.Add(BuildMutate());
         return scan;
+    }
+
+    // `bowire scan mutate --type <kind>` (#175) — exercise the schema-aware
+    // mutation engine for one field type; the reproducible building block.
+    private static Command BuildMutate()
+    {
+        var mutate = new Command("mutate",
+            "Print the schema-aware mutations (targeted invalid inputs) the engine produces for a field type — type-confusion, boundary, encoding, enum-bypass, structural. Seeded + budgeted for reproducibility.");
+
+        var typeOpt = new Option<string>("--type") { Description = "Field type: integer / number / string / boolean / enum / array / object.", Required = true };
+        var enumOpt = new Option<string>("--enum") { Description = "Comma-separated allowed values (for --type enum) — adds a case-variant-bypass mutation." };
+        var requiredOpt = new Option<bool>("--required") { Description = "Treat the field as required — adds an omitted/null violation." };
+        var formatOpt = new Option<string>("--format") { Description = "Format hint (email / uuid / date / uri / ipv4) — adds a format-violation mutation." };
+        var seedOpt = new Option<int>("--seed") { Description = "Seed for reproducible mutation selection under a budget. Default 0." };
+        var budgetOpt = new Option<int>("--budget") { Description = "Max mutations to emit for the field (0 = all). Keeps scans bounded." };
+
+        mutate.Add(typeOpt);
+        mutate.Add(enumOpt);
+        mutate.Add(requiredOpt);
+        mutate.Add(formatOpt);
+        mutate.Add(seedOpt);
+        mutate.Add(budgetOpt);
+
+        mutate.SetAction(async (pr, ct) =>
+        {
+            var options = new MutateOptions
+            {
+                Type = pr.GetValue(typeOpt),
+                Enum = pr.GetValue(enumOpt),
+                Required = pr.GetValue(requiredOpt),
+                Format = pr.GetValue(formatOpt),
+                Seed = pr.GetValue(seedOpt),
+                Budget = pr.GetValue(budgetOpt),
+            };
+            return await MutateCommand.RunAsync(
+                options, ct, pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
+        });
+
+        return mutate;
     }
 
     // `bowire scan spider --url <base>` (#176) — endpoint discovery. A
