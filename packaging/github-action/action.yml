@@ -44,9 +44,14 @@ runs:
 
     - name: Install Bowire
       shell: bash
+      # Route inputs through env vars so the composite-action template
+      # expansion never lands inside the parsed shell script — the
+      # canonical mitigation for actions/code-injection.
+      env:
+        BOWIRE_VERSION: ${{ inputs.version }}
       run: |
-        if [ -n "${{ inputs.version }}" ]; then
-          dotnet tool install --global Kuestenlogik.Bowire.Tool --version "${{ inputs.version }}"
+        if [ -n "$BOWIRE_VERSION" ]; then
+          dotnet tool install --global Kuestenlogik.Bowire.Tool --version "$BOWIRE_VERSION"
         else
           dotnet tool install --global Kuestenlogik.Bowire.Tool
         fi
@@ -55,4 +60,10 @@ runs:
     - name: Run bowire
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: bowire ${{ inputs.args }}
+      # Same mitigation: args come in via env and expand at runtime.
+      # Unquoted so multiple arguments still word-split — but a value from
+      # the env var can no longer inject shell metacharacters the way a
+      # raw ${{ }} expansion into the script would.
+      env:
+        BOWIRE_ARGS: ${{ inputs.args }}
+      run: bowire $BOWIRE_ARGS
