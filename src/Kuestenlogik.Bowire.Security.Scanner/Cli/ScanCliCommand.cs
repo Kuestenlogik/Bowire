@@ -46,6 +46,11 @@ public sealed class ScanCliCommand : IBowireCliCommand
             Description = "Add an HTTP header to every probe — typically `Authorization: Bearer <token>` or `X-Api-Key: <key>`. Repeatable for multiple headers (cookies, multi-header auth schemes). Without this flag, scans of authenticated APIs land on the login wall and the scanner reports misleading 'endpoint missing' findings.",
             AllowMultipleArgumentsPerToken = false,
         };
+        var authHeaderBOpt = new Option<string[]>("--auth-header-b")
+        {
+            Description = "A SECOND identity's auth header(s), same shape as --auth-header. Enables the OWASP API1 BOLA check: the object at --target is read as identity A (--auth-header) and then as identity B; if B can read A's object while anonymous access is blocked, object-level authorization is missing. Repeatable.",
+            AllowMultipleArgumentsPerToken = false,
+        };
 
         scan.Add(targetOpt);
         scan.Add(templatesOpt);
@@ -59,6 +64,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
         scan.Add(noBuiltinsOpt);
         scan.Add(scopeOpt);
         scan.Add(authHeaderOpt);
+        scan.Add(authHeaderBOpt);
 
         scan.SetAction(async (pr, ct) =>
         {
@@ -76,6 +82,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
                 RunBuiltins = !pr.GetValue(noBuiltinsOpt),
                 Scope = pr.GetValue(scopeOpt) ?? Array.Empty<string>(),
                 AuthHeaders = pr.GetValue(authHeaderOpt) ?? Array.Empty<string>(),
+                AuthHeadersB = pr.GetValue(authHeaderBOpt) ?? Array.Empty<string>(),
             };
             // Thread the InvocationConfiguration's Output / Error
             // writers through so production keeps writing to the real

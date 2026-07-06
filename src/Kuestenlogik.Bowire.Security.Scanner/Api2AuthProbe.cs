@@ -25,7 +25,7 @@ internal sealed class Api2AuthProbe : IOwaspApiProbe
 {
     public OwaspApiEntry Entry { get; } = OwaspApiCatalog.Entries.Single(e => e.Id == "API2:2023");
 
-    public async Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, CancellationToken ct)
+    public async Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct)
     {
         if (authHeaders is null || authHeaders.Count == 0)
         {

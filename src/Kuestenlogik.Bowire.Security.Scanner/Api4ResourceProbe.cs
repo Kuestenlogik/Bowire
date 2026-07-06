@@ -27,7 +27,7 @@ internal sealed class Api4ResourceProbe : IOwaspApiProbe
 
     public OwaspApiEntry Entry { get; } = OwaspApiCatalog.Entries.Single(e => e.Id == "API4:2023");
 
-    public async Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, CancellationToken ct)
+    public async Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct)
     {
         var findings = new List<ScanFinding>();
 

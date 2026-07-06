@@ -24,7 +24,7 @@ internal sealed class Api8ConfigProbe : IOwaspApiProbe
 
     public OwaspApiEntry Entry { get; } = OwaspApiCatalog.Entries.Single(e => e.Id == "API8:2023");
 
-    public async Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, CancellationToken ct)
+    public async Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct)
     {
         int status;
         Dictionary<string, string> headers;

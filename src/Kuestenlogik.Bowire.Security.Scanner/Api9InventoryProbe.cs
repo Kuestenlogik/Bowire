@@ -36,7 +36,7 @@ internal sealed partial class Api9InventoryProbe : IOwaspApiProbe
     [GeneratedRegex(@"/v(\d+)(?=/|$)", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex VersionSegment();
 
-    public async Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, CancellationToken ct)
+    public async Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct)
     {
         var uri = TryUri(target);
         if (uri is null)

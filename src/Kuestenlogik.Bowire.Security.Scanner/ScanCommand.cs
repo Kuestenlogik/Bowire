@@ -227,7 +227,7 @@ public static class ScanCommand
         var owaspSuite = string.Equals(options.Suite, "owasp-api", StringComparison.OrdinalIgnoreCase);
         if (owaspSuite)
         {
-            var probeFindings = await OwaspApiSuite.RunProbesAsync(options.Target, http, options.AuthHeaders, ct).ConfigureAwait(false);
+            var probeFindings = await OwaspApiSuite.RunProbesAsync(options.Target, http, options.AuthHeaders, options.AuthHeadersB, ct).ConfigureAwait(false);
             foreach (var f in probeFindings)
             {
                 var sev = f.Template.Recording.Vulnerability?.Severity ?? "info";
@@ -686,6 +686,15 @@ public sealed class ScanOptions
     /// "endpoint missing" findings.
     /// </summary>
     public IList<string> AuthHeaders { get; init; } = new List<string>();
+
+    /// <summary>
+    /// A *second* identity's auth headers (<c>--auth-header-b</c>), same shape
+    /// as <see cref="AuthHeaders"/>. Used by cross-identity checks — the API1
+    /// BOLA probe reads an object as identity A and then tries the same object
+    /// as identity B to detect a missing object-level authorization check.
+    /// Empty = single-identity scan (BOLA probe skips).
+    /// </summary>
+    public IList<string> AuthHeadersB { get; init; } = new List<string>();
 }
 
 /// <summary>One scan-result row — what happened when the template was run against the target.</summary>

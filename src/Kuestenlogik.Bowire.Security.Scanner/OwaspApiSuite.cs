@@ -31,8 +31,13 @@ internal interface IOwaspApiProbe
     /// <summary>The OWASP Top-10 entry this probe covers.</summary>
     OwaspApiEntry Entry { get; }
 
-    /// <summary>Run the probe against the target and return its findings.</summary>
-    Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, CancellationToken ct);
+    /// <summary>
+    /// Run the probe against the target and return its findings.
+    /// <paramref name="authHeadersB"/> carries an optional *second* identity's
+    /// headers (from <c>--auth-header-b</c>) — used by cross-identity checks
+    /// like BOLA; probes that don't need it ignore it.
+    /// </summary>
+    Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct);
 }
 
 /// <summary>
@@ -55,6 +60,7 @@ internal static class OwaspApiSuite
     /// </summary>
     public static IReadOnlyList<IOwaspApiProbe> Probes { get; } =
     [
+        new Api1BolaProbe(),
         new Api2AuthProbe(),
         new Api4ResourceProbe(),
         new Api5AuthorizationProbe(),
@@ -68,14 +74,14 @@ internal static class OwaspApiSuite
     /// merged findings. A probe that throws is isolated into a single Error
     /// finding for its entry so one wedged probe can't sink the suite.
     /// </summary>
-    public static async Task<IReadOnlyList<ScanFinding>> RunProbesAsync(string target, HttpClient http, IList<string> authHeaders, CancellationToken ct)
+    public static async Task<IReadOnlyList<ScanFinding>> RunProbesAsync(string target, HttpClient http, IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct)
     {
         var merged = new List<ScanFinding>();
         foreach (var probe in Probes)
         {
             try
             {
-                merged.AddRange(await probe.RunAsync(target, http, authHeaders, ct).ConfigureAwait(false));
+                merged.AddRange(await probe.RunAsync(target, http, authHeaders, authHeadersB, ct).ConfigureAwait(false));
             }
             catch (Exception ex)
             {
