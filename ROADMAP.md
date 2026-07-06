@@ -285,7 +285,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ⬜ Backlog |  |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog |  |
 | [367](https://github.com/Kuestenlogik/Bowire/issues/367) | Bowire | [codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)](#issue-kuestenlogik-bowire-367) | ⬜ Backlog |  |
-| [382](https://github.com/Kuestenlogik/Bowire/issues/382) | Bowire | [Update the plugin compatibility matrix to the Bowire 2.x line](#issue-kuestenlogik-bowire-382) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1148,10 +1147,6 @@ Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in
 #### <a id="issue-kuestenlogik-bowire-367"></a>⬜ Backlog · [#367](https://github.com/Kuestenlogik/Bowire/issues/367) codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)
 
 Follow-up to #356. JS tests now gate CI (`node --test` over wwwroot-js) and JS coverage is *runnable* locally (`npm run test:js:coverage` / `node --test --experimental-test-coverage`), but it isn't uploaded to Codecov yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/367)
-
-#### <a id="issue-kuestenlogik-bowire-382"></a>⬜ Backlog · [#382](https://github.com/Kuestenlogik/Bowire/issues/382) Update the plugin compatibility matrix to the Bowire 2.x line
-
-`docs/architecture/compatibility.md` still lists the first-party plugin rows against the 1.x line ("Built against 1.5.0", "Works with 1.x < 2.0"), but every plugin now references **Bowire 2.2.1** (bumped via the release cascade) and their README badges read `≥ 2.2.1, < 3.0`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/382)
 
 ---
 
