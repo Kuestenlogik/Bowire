@@ -5,7 +5,7 @@ name: Bowire scan (self-smoke)
 # end-to-end that:
 #   1. The reusable workflow's tool install path still resolves.
 #   2. The scan emits a SARIF file the upload-sarif action accepts.
-#   3. The seed corpus + built-in checks fire without throwing.
+#   3. The seed templates + built-in checks fire without throwing.
 #
 # We deliberately do NOT scan a sample-server we'd have to spin up here
 # — that adds a moving piece (docker compose / health-check / cleanup)
@@ -46,10 +46,10 @@ jobs:
     uses: ./.github/workflows/scan-template.yml
     with:
       target: https://example.com
-      # The seed corpus is in this repo at the default path — pass it
-      # explicitly here so the smoke also exercises the corpus-loading
-      # code path, not only the built-in checks.
-      corpus: docs/security/examples
+      # The seed templates are in this repo at the default path — pass
+      # them explicitly here so the smoke also exercises the template-
+      # loading code path, not only the built-in checks.
+      templates: docs/security/examples
       severity: low
       # Do NOT upload to Code Scanning — example.com's missing security
       # headers belong to example.com, not to Bowire. Without this flag
