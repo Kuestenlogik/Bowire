@@ -58,6 +58,7 @@ public sealed class BowireSecurityEndpointsTests
         apiBuilder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
         var app = apiBuilder.Build();
         app.MapBowireSecurityEndpoints("");
+        new Kuestenlogik.Bowire.Security.Scanner.OwaspScanEndpoints().MapEndpoints(app, "");
         await app.StartAsync(ct);
         var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
 
@@ -66,6 +67,55 @@ public sealed class BowireSecurityEndpointsTests
         // lifetime here, but the test process exits between runs so it's
         // bounded. (Keeps the StartAsync helper's return shape simple.)
         return (app, http, upstreamUrl);
+    }
+
+    [Fact]
+    public async Task GetOwaspCatalog_ReturnsTenEntries()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (app, http, _) = await StartAsync(ct);
+        await using var _1 = app;
+        using var _2 = http;
+
+        using var resp = await http.GetAsync(new Uri("/api/security/owasp-catalog", UriKind.Relative), ct);
+        resp.EnsureSuccessStatusCode();
+        var doc = await resp.Content.ReadFromJsonAsync<JsonElement>(ct);
+        Assert.Equal(10, doc.GetArrayLength());
+        Assert.Equal("API1:2023", doc[0].GetProperty("id").GetString());
+    }
+
+    [Fact]
+    public async Task PostOwaspScan_ReturnsEntriesAndComplianceAggregate()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (app, http, upstreamUrl) = await StartAsync(ct);
+        await using var _1 = app;
+        using var _2 = http;
+
+        using var resp = await http.PostAsJsonAsync(
+            new Uri("/api/security/owasp-scan", UriKind.Relative),
+            new { target = upstreamUrl, runBuiltins = false }, ct);
+
+        resp.EnsureSuccessStatusCode();
+        var doc = await resp.Content.ReadFromJsonAsync<JsonElement>(ct);
+        Assert.Equal(10, doc.GetProperty("total").GetInt32());
+        Assert.True(doc.TryGetProperty("entries", out var entries) && entries.GetArrayLength() == 10);
+        Assert.True(doc.TryGetProperty("compliance", out var compliance));
+        Assert.True(compliance.TryGetProperty("severity", out _));
+        Assert.True(compliance.TryGetProperty("cwe", out _));
+    }
+
+    [Fact]
+    public async Task PostOwaspScan_MissingTarget_Returns400()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (app, http, _) = await StartAsync(ct);
+        await using var _1 = app;
+        using var _2 = http;
+
+        using var resp = await http.PostAsJsonAsync(
+            new Uri("/api/security/owasp-scan", UriKind.Relative), new { target = "" }, ct);
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
 
     [Fact]

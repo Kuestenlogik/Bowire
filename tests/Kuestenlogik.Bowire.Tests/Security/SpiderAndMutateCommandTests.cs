@@ -57,6 +57,46 @@ public sealed class SpiderAndMutateCommandTests
     }
 
     [Fact]
+    public async Task Crawl_DiscoversFromGraphQLIntrospectionAndCommonPaths()
+    {
+        await using var up = await StartAsync(GraphQlAndCommonPathHandler, Ct);
+        using var http = NewClient();
+
+        var candidates = await SpiderCommand.CrawlAsync(
+            new SpiderOptions { Url = up.Urls.First(), RespectRobots = false }, http, Ct);
+
+        Assert.Contains(candidates, c => c.Source.StartsWith("graphql", StringComparison.Ordinal));
+        Assert.Contains(candidates, c => c.Source == "common-path");
+        Assert.Contains(candidates, c => c.Source == "page-link");
+    }
+
+    private static Task GraphQlAndCommonPathHandler(HttpContext ctx)
+    {
+        var path = ctx.Request.Path.Value ?? "/";
+        if (ctx.Request.Method == "POST" && path == "/graphql")
+        {
+            ctx.Response.ContentType = "application/json";
+            return ctx.Response.WriteAsync(
+                "{\"data\":{\"__schema\":{\"queryType\":{\"name\":\"Query\",\"fields\":[{\"name\":\"users\"}]},\"mutationType\":{\"name\":\"Mutation\",\"fields\":[{\"name\":\"createUser\"}]}}}}",
+                ctx.RequestAborted);
+        }
+        if (ctx.Request.Method == "HEAD" && path == "/actuator")
+        {
+            ctx.Response.StatusCode = 200; // a reachable common path → candidate
+            return Task.CompletedTask;
+        }
+        if (path == "/")
+        {
+            ctx.Response.ContentType = "text/html";
+            return ctx.Response.WriteAsync(
+                "<html><body><a href=\"/dashboard\">dash</a> <a href=\"https://off-host.example.com/x\">off</a></body></html>",
+                ctx.RequestAborted);
+        }
+        ctx.Response.StatusCode = 404;
+        return Task.CompletedTask;
+    }
+
+    [Fact]
     public async Task RunAsync_WritesReportAndOutJson()
     {
         await using var up = await StartAsync(SpiderHandler, Ct);
