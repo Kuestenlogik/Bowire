@@ -30,6 +30,80 @@
             el('span', { className: 'bowire-secsuite-row-note', textContent: note }));
     }
 
+    // ---- compliance overview (#381 part 4): per-scan OWASP / CWE / CVSS view ----
+
+    var SEVERITIES = ['critical', 'high', 'medium', 'low'];
+
+    function cweUrl(id) {
+        var m = /CWE-(\d+)/i.exec(id || '');
+        return m ? 'https://cwe.mitre.org/data/definitions/' + m[1] + '.html' : null;
+    }
+
+    function severityChip(sev, count) {
+        var cls = { critical: 'is-critical', high: 'is-high', medium: 'is-medium', low: 'is-low' }[sev] || 'is-low';
+        return el('span', { className: 'bowire-compliance-sev ' + cls, textContent: sev + ' · ' + count });
+    }
+
+    function postureStrip(entries) {
+        var strip = el('div', { className: 'bowire-compliance-strip' });
+        var cellCls = { Vulnerable: 'is-vuln', Safe: 'is-ok', Error: 'is-err', NotCovered: 'is-none' };
+        (entries || []).forEach(function (e) {
+            var s = e.status || 'NotCovered';
+            strip.appendChild(el('span', {
+                className: 'bowire-compliance-cell ' + (cellCls[s] || 'is-none'),
+                title: e.id + ' — ' + e.title + ' (' + s + ')'
+            }));
+        });
+        return strip;
+    }
+
+    function renderComplianceView(container, result) {
+        container.textContent = '';
+        if (!result) {
+            container.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: 'Run the suite to see the OWASP / CWE / CVSS compliance overview.' }));
+            return;
+        }
+        var c = result.compliance || { severity: {}, cwe: [], findingCount: 0, maxCvss: 0 };
+
+        // OWASP posture strip.
+        container.appendChild(el('div', { className: 'bowire-compliance-block' },
+            el('div', { className: 'bowire-compliance-head' },
+                el('span', { className: 'bowire-compliance-label', textContent: 'OWASP API Top 10 posture' }),
+                el('span', { className: 'bowire-compliance-meta', textContent: result.covered + '/' + result.total + ' exercised · ' + result.vulnerable + ' vulnerable' })),
+            postureStrip(result.entries)));
+
+        // Severity histogram + peak CVSS.
+        var sevRow = el('div', { className: 'bowire-compliance-sevrow' });
+        SEVERITIES.forEach(function (s) {
+            var n = (c.severity && c.severity[s]) || 0;
+            if (n > 0) sevRow.appendChild(severityChip(s, n));
+        });
+        if (!sevRow.childNodes.length) sevRow.appendChild(el('span', { className: 'bowire-secsuite-row-note', textContent: 'No vulnerability findings.' }));
+        if (c.maxCvss > 0) sevRow.appendChild(el('span', { className: 'bowire-compliance-cvss', textContent: 'peak CVSS ' + c.maxCvss.toFixed(1) }));
+        container.appendChild(el('div', { className: 'bowire-compliance-block' },
+            el('span', { className: 'bowire-compliance-label', textContent: 'Severity' }),
+            sevRow));
+
+        // CWE breakdown.
+        if (c.cwe && c.cwe.length) {
+            var table = el('div', { className: 'bowire-secsuite-list' });
+            c.cwe.forEach(function (w) {
+                var url = cweUrl(w.id);
+                var idNode = url
+                    ? el('a', { className: 'bowire-secsuite-row-id', href: url, target: '_blank', rel: 'noopener noreferrer', textContent: w.id })
+                    : el('span', { className: 'bowire-secsuite-row-id', textContent: w.id });
+                table.appendChild(el('div', { className: 'bowire-secsuite-row' },
+                    idNode,
+                    severityChip(w.maxSeverity, w.count),
+                    el('span', { className: 'bowire-secsuite-row-title', textContent: w.count + ' finding(s)' }),
+                    el('span', { className: 'bowire-secsuite-row-note', textContent: w.maxCvss > 0 ? 'CVSS ' + w.maxCvss.toFixed(1) : '' })));
+            });
+            container.appendChild(el('div', { className: 'bowire-compliance-block' },
+                el('span', { className: 'bowire-compliance-label', textContent: 'CWE breakdown' }),
+                table));
+        }
+    }
+
     function renderOwaspSuiteSection() {
         var wrap = el('div', { className: 'bowire-secsuite' });
         wrap.appendChild(el('h3', { className: 'bowire-secsuite-title', textContent: 'OWASP API Security Top 10 (2023)' }));
@@ -38,12 +112,26 @@
         var targetInput = el('input', { type: 'text', className: 'bowire-form-input', placeholder: 'https://api.example.com' });
         var authInput = el('input', { type: 'text', className: 'bowire-form-input', placeholder: 'Authorization: Bearer … (optional)' });
         var statusEl = el('span', { className: 'bowire-secsuite-status' });
-        var list = el('div', { className: 'bowire-secsuite-list' });
+        var coverageList = el('div', { className: 'bowire-secsuite-list' });
+        var complianceView = el('div', { className: 'bowire-compliance' });
 
         function renderRows(entries) {
-            list.textContent = '';
-            (entries || []).forEach(function (e) { list.appendChild(renderOwaspRow(e)); });
+            coverageList.textContent = '';
+            (entries || []).forEach(function (e) { coverageList.appendChild(renderOwaspRow(e)); });
         }
+
+        // Coverage / Compliance tab toggle over the same scan result.
+        var coverageBtn, complianceBtn;
+        function setTab(name) {
+            var isCov = name === 'coverage';
+            coverageBtn.classList.toggle('is-active', isCov);
+            complianceBtn.classList.toggle('is-active', !isCov);
+            coverageList.style.display = isCov ? '' : 'none';
+            complianceView.style.display = isCov ? 'none' : '';
+        }
+        coverageBtn = el('button', { className: 'bowire-secsuite-tab', textContent: 'Coverage', onclick: function () { setTab('coverage'); } });
+        complianceBtn = el('button', { className: 'bowire-secsuite-tab', textContent: 'Compliance', onclick: function () { setTab('compliance'); } });
+        var tabs = el('div', { className: 'bowire-secsuite-tabs' }, coverageBtn, complianceBtn);
 
         var runBtn = el('button', {
             className: 'bowire-btn', textContent: 'Run OWASP suite',
@@ -61,8 +149,12 @@
                     .then(function (res) {
                         if (res && res.entries) {
                             renderRows(res.entries);
+                            renderComplianceView(complianceView, res);
                             statusEl.textContent = res.covered + '/' + res.total + ' exercised · ' + res.vulnerable + ' with findings';
-                        } else { statusEl.textContent = (res && res.detail) || 'Scan failed.'; }
+                        } else {
+                            renderComplianceView(complianceView, null);
+                            statusEl.textContent = (res && res.detail) || 'Scan failed.';
+                        }
                     })
                     .catch(function (e) { statusEl.textContent = 'Scan failed: ' + e; })
                     .finally(function () { runBtn.disabled = false; });
@@ -70,7 +162,12 @@
         });
 
         wrap.appendChild(el('div', { className: 'bowire-secsuite-controls' }, targetInput, authInput, runBtn, statusEl));
-        wrap.appendChild(list);
+        wrap.appendChild(tabs);
+        wrap.appendChild(coverageList);
+        wrap.appendChild(complianceView);
+
+        renderComplianceView(complianceView, null);
+        setTab('coverage');
 
         fetch(config.prefix + '/api/security/owasp-catalog')
             .then(function (r) { return r.json(); })
