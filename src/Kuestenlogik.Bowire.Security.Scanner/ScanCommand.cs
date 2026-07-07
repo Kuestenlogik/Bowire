@@ -167,6 +167,13 @@ public static class ScanCommand
         var findings = new List<ScanFinding>();
         using var http = BuildHttpClient(options);
 
+        // The passive built-ins and the HTTP-class OWASP probes talk HTTP to
+        // the target directly. A non-HTTP target (mqtt://, tcp://, ws://, …)
+        // is only meaningful to the protocol-specific probes, so the HTTP-only
+        // work is skipped rather than letting HttpClient throw on the
+        // unsupported scheme (which used to sink the whole scan).
+        var isHttpTarget = IsHttpScheme(options.Target);
+
         foreach (var tmpl in templates)
         {
             var severity = tmpl.Recording.Vulnerability?.Severity ?? "medium";
@@ -181,6 +188,11 @@ public static class ScanCommand
             if (!IsHttpClassProtocol(protocol))
             {
                 findings.Add(ScanFinding.Skipped(tmpl, $"transport {probe.Protocol} not yet supported by scanner (v1 covers HTTP-class only)"));
+                continue;
+            }
+            if (!isHttpTarget)
+            {
+                findings.Add(ScanFinding.Skipped(tmpl, "HTTP-class template skipped — the target is not an http/https URL"));
                 continue;
             }
 
@@ -198,7 +210,11 @@ public static class ScanCommand
             }
         }
 
-        if (options.RunBuiltins)
+        if (options.RunBuiltins && !isHttpTarget)
+        {
+            await stdout.WriteLineAsync("  Built-in passive checks skipped — the target is not an http/https URL.").ConfigureAwait(false);
+        }
+        else if (options.RunBuiltins)
         {
             var builtinResults = await SecurityBuiltins.RunAllAsync(options.Target, http, options.AuthHeaders, ct).ConfigureAwait(false);
             foreach (var f in builtinResults)
@@ -238,7 +254,14 @@ public static class ScanCommand
                 }
             }
 
-            Fold(await OwaspApiSuite.RunProbesAsync(options.Target, http, options.AuthHeaders, options.AuthHeadersB, ct).ConfigureAwait(false));
+            if (isHttpTarget)
+            {
+                Fold(await OwaspApiSuite.RunProbesAsync(options.Target, http, options.AuthHeaders, options.AuthHeadersB, ct).ConfigureAwait(false));
+            }
+            else
+            {
+                await stdout.WriteLineAsync("  HTTP OWASP probes skipped — non-HTTP target; running protocol-specific probes only.").ConfigureAwait(false);
+            }
 
             // Protocol-specific probes (GraphQL introspection, gRPC reflection)
             // drive the corresponding protocol plugin's invoke path — only the
@@ -321,6 +344,16 @@ public static class ScanCommand
         "REST" or "GRAPHQL" or "ODATA" or "HTTP" or "SSE" => true,
         _ => false,
     };
+
+    /// <summary>
+    /// Whether the target is an http/https URL the HTTP-only checks (passive
+    /// built-ins + HTTP-class OWASP probes) can talk to. A scheme HttpClient
+    /// can't handle (mqtt://, tcp://, ws://, …) returns false so that work is
+    /// skipped; a bare host or relative target (no scheme) is treated as HTTP
+    /// to preserve the pre-existing behaviour.
+    /// </summary>
+    private static bool IsHttpScheme(string target)
+        => !Uri.TryCreate(target, UriKind.Absolute, out var uri) || uri.Scheme is "http" or "https";
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope",
         Justification = "HttpClient(handler, disposeHandler: true) takes ownership — the handler is disposed when the HttpClient is.")]
