@@ -47,16 +47,19 @@ internal interface IOwaspApiProbe
 /// <see cref="OwaspApiCatalog"/> so the operator sees, per OWASP API Top 10
 /// (2023) entry, whether this scan exercised it and whether it was clean.
 /// Entries with no mapped finding surface as <see cref="OwaspEntryStatus.NotCovered"/>
-/// — an honest "no probe yet" rather than a false pass. Dedicated per-entry
-/// probes (BOLA, Broken-Auth, SSRF, …) land incrementally and light up their
-/// row automatically as their findings gain the matching tag.
+/// — an honest "not assessed" rather than a false pass. All ten entries now
+/// have a dedicated probe; a row stays <c>[----]</c> only when its probe
+/// skipped (it lacked a required input, or — for API6 / API10 — found no
+/// black-box signal), never because no probe exists.
 /// </summary>
 internal static class OwaspApiSuite
 {
     /// <summary>
-    /// The dedicated default probes, one (eventually) per Top-10 entry.
-    /// Grows as each entry's probe lands; entries with no probe yet roll up
-    /// from whatever templates / built-ins happen to be tagged for them.
+    /// The dedicated default probes — one per Top-10 entry, all ten present.
+    /// API6 (business-flow friction) and API10 (unsafe upstream consumption)
+    /// have no clean generic black-box check, so their probes are conservative:
+    /// they emit a real Safe / Vulnerable verdict only on a strong signal and
+    /// otherwise Skip with a review-only reason rather than a false pass.
     /// </summary>
     public static IReadOnlyList<IOwaspApiProbe> Probes { get; } =
     [
@@ -65,9 +68,11 @@ internal static class OwaspApiSuite
         new Api3BoplaProbe(),
         new Api4ResourceProbe(),
         new Api5AuthorizationProbe(),
+        new Api6BusinessFlowProbe(),
         new Api7SsrfProbe(),
         new Api8ConfigProbe(),
         new Api9InventoryProbe(),
+        new Api10UnsafeConsumptionProbe(),
     ];
 
     /// <summary>
@@ -162,7 +167,7 @@ internal static class OwaspApiSuite
                 OwaspEntryStatus.Vulnerable => $"{result.VulnCount} finding(s) across {result.ProbeCount} probe(s)",
                 OwaspEntryStatus.Safe => $"{result.ProbeCount} probe(s), clean",
                 OwaspEntryStatus.Error => "probe error",
-                _ => "no probe yet — not exercised by this scan",
+                _ => "not assessed — probe skipped (missing input, or no black-box signal)",
             };
             await stdout.WriteLineAsync($"  {marker} {result.Entry.Id,-10} {result.Entry.Title,-48} {note}").ConfigureAwait(false);
         }
@@ -173,7 +178,7 @@ internal static class OwaspApiSuite
         await stdout.WriteLineAsync($"  {covered}/10 Top-10 entries exercised; {vulnerable} with vulnerability finding(s).").ConfigureAwait(false);
         if (covered < OwaspApiCatalog.Entries.Count)
         {
-            await stdout.WriteLineAsync("  '[----]' entries have no probe yet — a clean scan is NOT a pass for them.").ConfigureAwait(false);
+            await stdout.WriteLineAsync("  '[----]' entries were not assessed — a clean scan is NOT a pass for them.").ConfigureAwait(false);
         }
     }
 }
