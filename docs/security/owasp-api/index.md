@@ -52,8 +52,9 @@ A modest rate-limit burst (no `429` / no `RateLimit-*` / `Retry-After` across N 
 Probes a curated set of privileged management-plane endpoints (Spring actuator `env`/`heapdump`/`configprops`, Elasticsearch `_cat`/`_cluster`, Go `pprof`, Prometheus `metrics`). A public `2xx` is a finding; `401`/`403` is healthy.
 **Needs:** nothing (rides `--auth-header` when supplied — a `2xx` under a regular-user token is BFLA).
 
-### API6:2023 — Unrestricted Access to Sensitive Business Flows ⛔
-No reliable black-box probe — this needs business-flow semantics. The generic rate-limit facet is covered by **API4**. Stays `[----]` by design.
+### API6:2023 — Unrestricted Access to Sensitive Business Flows ✅
+No clean *generic* black-box check exists — whether a flow is *sensitive* is business context — so the probe assesses the property that makes a sensitive flow abusable once found: **the same state-changing POST replayed verbatim, accepted every time, with no anti-automation friction** (no CAPTCHA / challenge, no bot-mitigation layer like Cloudflare / DataDome / PerimeterX / Imperva, no per-request anti-replay token, no throttling). The raw rate-limit facet stays with **API4**. Conservative: it only flags when the endpoint actually accepts the repeated POST (`2xx`); a base that rejects POST or is unreachable is `[----]` (skipped) rather than a false pass.
+**Needs:** a `--target` that accepts a state-changing POST — a sensitive-flow endpoint (checkout, invite, vote, signup), not the service root.
 
 ### API7:2023 — Server Side Request Forgery ✅
 Timing differential: finds URL-input query parameters on `--target` (`url`, `uri`, `callback`, `webhook`, `dest`, `image`, …), swaps each for a non-routable blackhole address, and flags a large latency stall (the server tried to fetch it).
@@ -67,9 +68,10 @@ Active CORS check (arbitrary-Origin reflection / `*` / `null`, escalated to high
 Older API versions still routed alongside the target's version, publicly-readable inventory / doc surfaces (`openapi.json`, `swagger.json`, `actuator`, …), and endpoints advertising `Deprecation` / `Sunset` yet still served. A catch-all baseline suppresses false positives.
 **Needs:** nothing.
 
-### API10:2023 — Unsafe Consumption of APIs ⛔
-No black-box probe — this is a server-side concern (the API consuming upstream third-party APIs without validation), not observable from outside. Stays `[----]` by design.
+### API10:2023 — Unsafe Consumption of APIs ✅
+A server-side concern (the API trusting data it consumes from upstream third-party APIs without validation), so the vulnerable code path is out of black-box reach. The probe takes the passive-heuristic route: it flags the one thing observable from outside — the target **leaking raw upstream data back to the client**, i.e. a reflected upstream / gateway error (`upstream connect error`, `502 Bad Gateway` naming a backend, `ECONNREFUSED` / `getaddrinfo`) or a `3xx` redirect to a **different host**. When no signal fires it does not claim a pass: it Skips with a review-only note pointing at a code / config review of the target's outbound integrations.
+**Needs:** nothing (passive over the base response).
 
 ## Coverage
 
-Eight of ten entries have a dedicated probe. API6 and API10 have no reliable automated black-box check and remain review-only. See the [security-testing ADR](../../architecture/security-testing.md) for the rationale, and [`bowire scan`](../../features/scan.md) for the full CLI.
+All ten entries have a dedicated probe. API6 (business-flow friction) and API10 (unsafe upstream consumption) have no clean generic black-box check, so their probes are conservative — a real `[ok]` / `[VULN]` verdict only on a strong signal, otherwise `[----]` (skipped) with a review-only reason rather than a false pass. See the [security-testing ADR](../../architecture/security-testing.md) for the rationale, and [`bowire scan`](../../features/scan.md) for the full CLI.
