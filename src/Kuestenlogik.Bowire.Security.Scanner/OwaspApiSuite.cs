@@ -120,6 +120,7 @@ internal static class OwaspApiSuite
         new McpDiscoveryProbe(),
         new WebSocketAuthProbe(),
         new MqttAuthProbe(),
+        new SseAuthProbe(),
     ];
 
     /// <summary>
