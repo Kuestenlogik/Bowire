@@ -73,6 +73,14 @@ public sealed class OwaspScanEndpoints : IBowireEndpointContribution
                 if (req.RunBuiltins)
                     findings.AddRange(await SecurityBuiltins.RunAllAsync(req.Target, http, authA, ctx.RequestAborted).ConfigureAwait(false));
                 findings.AddRange(await OwaspApiSuite.RunProbesAsync(req.Target, http, authA, authB, ctx.RequestAborted).ConfigureAwait(false));
+
+                // Protocol-specific probes (GraphQL introspection, gRPC
+                // reflection / transport auth) — parity with `bowire scan`.
+                // Only the plugins loaded in this workbench process are
+                // available; absent ones skip. Bounded so a non-matching
+                // target can't stall the request.
+                var registry = BowireProtocolRegistry.Discover();
+                findings.AddRange(await OwaspApiSuite.RunProtocolProbesAsync(req.Target, registry, authA, TimeSpan.FromSeconds(12), ctx.RequestAborted).ConfigureAwait(false));
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or InvalidOperationException or UriFormatException or IOException)
             {
@@ -99,6 +107,8 @@ public sealed class OwaspScanEndpoints : IBowireEndpointContribution
                         id = f.Template.Recording.Vulnerability?.Id,
                         name = f.Template.Recording.Name,
                         severity = f.Template.Recording.Vulnerability?.Severity,
+                        cwe = f.Template.Recording.Vulnerability?.Cwe,
+                        cvss = f.Template.Recording.Vulnerability?.Cvss,
                         status = f.Status.ToString(),
                         detail = f.Detail,
                     }).ToArray(),
@@ -111,6 +121,7 @@ public sealed class OwaspScanEndpoints : IBowireEndpointContribution
                 vulnerable = rollup.Count(r => r.Status is OwaspEntryStatus.Vulnerable),
                 total = OwaspApiCatalog.Entries.Count,
                 entries,
+                compliance = BuildCompliance(findings.Where(f => f.Status == ScanFindingStatus.Vulnerable)),
             });
         }).ExcludeFromDescription();
 
@@ -154,6 +165,50 @@ public sealed class OwaspScanEndpoints : IBowireEndpointContribution
                 candidates = candidates.Select(c => new { method = c.Method, url = c.Url, source = c.Source, status = c.Status }).ToArray(),
             });
         }).ExcludeFromDescription();
+    }
+
+    /// <summary>Severity buckets, most-severe first — the fixed order the compliance view renders.</summary>
+    private static readonly string[] s_severityOrder = ["critical", "high", "medium", "low"];
+
+    /// <summary>
+    /// Roll the scan's vulnerable findings up into the OWASP / CWE / CVSS
+    /// compliance overview the Security rail renders beyond the per-entry
+    /// coverage table: a severity histogram, a per-CWE breakdown, and the peak
+    /// CVSS. Built from the vulnerable findings only — coverage / clean status
+    /// lives in the per-entry roll-up.
+    /// </summary>
+    private static object BuildCompliance(IEnumerable<ScanFinding> vulnerable)
+    {
+        var vulns = vulnerable.ToList();
+
+        var severity = s_severityOrder.ToDictionary(
+            s => s,
+            s => vulns.Count(f => string.Equals(f.Template.Recording.Vulnerability?.Severity, s, StringComparison.OrdinalIgnoreCase)));
+
+        var cwe = vulns
+            .Where(f => !string.IsNullOrEmpty(f.Template.Recording.Vulnerability?.Cwe))
+            .GroupBy(f => f.Template.Recording.Vulnerability!.Cwe!, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new
+            {
+                id = g.Key,
+                count = g.Count(),
+                maxCvss = g.Max(f => f.Template.Recording.Vulnerability?.Cvss ?? 0),
+                maxSeverity = s_severityOrder.FirstOrDefault(s =>
+                    g.Any(f => string.Equals(f.Template.Recording.Vulnerability?.Severity, s, StringComparison.OrdinalIgnoreCase))) ?? "info",
+            })
+            .OrderByDescending(x => x.maxCvss)
+            .ThenByDescending(x => x.count)
+            .ToArray();
+
+        var maxCvss = vulns.Select(f => f.Template.Recording.Vulnerability?.Cvss ?? 0).DefaultIfEmpty(0).Max();
+
+        return new
+        {
+            findingCount = vulns.Count,
+            severity,
+            cwe,
+            maxCvss,
+        };
     }
 
     private sealed class SpiderApiRequest
