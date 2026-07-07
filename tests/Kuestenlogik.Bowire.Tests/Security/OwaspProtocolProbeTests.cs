@@ -250,6 +250,58 @@ public sealed class OwaspProtocolProbeTests
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
     }
 
+    // ---------- SSE (API2) ----------
+
+    [Fact]
+    public async Task Sse_NoAuthHeader_Silent()
+    {
+        var probe = new SseAuthProbe();
+        var proto = new FakeProtocol { Id = "sse", Stream = () => ["{\"data\":\"tick\"}"] };
+        Assert.Empty(await probe.RunAsync("https://x/events", proto, s_noAuth, Ct));
+    }
+
+    [Fact]
+    public async Task Sse_AnonymousStreamEmitsEvent_FlagsApi2()
+    {
+        var probe = new SseAuthProbe();
+        var proto = new FakeProtocol { Id = "sse", Stream = () => ["{\"id\":null,\"event\":null,\"data\":\"tick\",\"retry\":null}"] };
+
+        var f = Assert.Single(await probe.RunAsync("https://x/events", proto, s_auth, Ct));
+        Assert.Equal(ScanFindingStatus.Vulnerable, f.Status);
+        Assert.Equal("BWR-OWASP-API2-SSE-NOAUTH", f.Template.Recording.Vulnerability?.Id);
+    }
+
+    [Fact]
+    public async Task Sse_NotAnEventStream_Skips()
+    {
+        var probe = new SseAuthProbe();
+        var proto = new FakeProtocol { Id = "sse", Stream = () => ["{\"error\":\"not an event-stream (content-type: text/html)\"}"] };
+
+        var f = Assert.Single(await probe.RunAsync("https://x", proto, s_auth, Ct));
+        Assert.Equal(ScanFindingStatus.Skipped, f.Status);
+        Assert.Contains("API2-SSE-NOT-STREAM", f.Template.Recording.Id, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Sse_Rejected401_ReportsAuthEnforced()
+    {
+        var probe = new SseAuthProbe();
+        var proto = new FakeProtocol { Id = "sse", Stream = () => throw new HttpRequestException("Response status code 401 (Unauthorized)") };
+
+        var f = Assert.Single(await probe.RunAsync("https://x/events", proto, s_auth, Ct));
+        Assert.Equal(ScanFindingStatus.Safe, f.Status);
+    }
+
+    [Fact]
+    public async Task Sse_StreamEndsEmpty_Inconclusive()
+    {
+        var probe = new SseAuthProbe();
+        var proto = new FakeProtocol { Id = "sse", Stream = Array.Empty<string> };
+
+        var f = Assert.Single(await probe.RunAsync("https://x/events", proto, s_auth, Ct));
+        Assert.Equal(ScanFindingStatus.Skipped, f.Status);
+    }
+
     // ---------- suite runner ----------
 
     [Fact]
@@ -290,6 +342,7 @@ public sealed class OwaspProtocolProbeTests
         public Func<string, bool, List<BowireServiceInfo>>? Discover { get; init; }
         public Func<string, string, InvokeResult>? Invoke { get; init; }
         public Func<string, string, IBowireChannel?>? Open { get; init; }
+        public Func<IEnumerable<string>>? Stream { get; init; }
 
         public Task<List<BowireServiceInfo>> DiscoverAsync(string serverUrl, bool showInternalServices, CancellationToken ct = default)
             => Discover is null ? throw new InvalidOperationException("Discover not configured") : Task.FromResult(Discover(serverUrl, showInternalServices));
@@ -302,7 +355,12 @@ public sealed class OwaspProtocolProbeTests
             bool showInternalServices, Dictionary<string, string>? metadata = null, [EnumeratorCancellation] CancellationToken ct = default)
         {
             await Task.CompletedTask;
-            yield break;
+            if (Stream is null) yield break;
+            foreach (var item in Stream())
+            {
+                ct.ThrowIfCancellationRequested();
+                yield return item;
+            }
         }
 
         public Task<IBowireChannel?> OpenChannelAsync(string serverUrl, string service, string method,

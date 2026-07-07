@@ -49,6 +49,9 @@ public sealed class SseSubscriberLiveServerTests : IAsyncDisposable
         _app.MapGet("/events/simple", WriteSimple);
         _app.MapGet("/events/multi", WriteMultiline);
         _app.MapGet("/events/comments", WriteComments);
+        // A 2xx response that is NOT text/event-stream — the content-type guard
+        // must surface this as an error envelope instead of parsing the body.
+        _app.MapGet("/notstream", WriteHtml);
 
         _app.Start();
 
@@ -93,6 +96,33 @@ public sealed class SseSubscriberLiveServerTests : IAsyncDisposable
             ": heartbeat\nretry: notanumber\ndata: payload\n\n",
             ctx.RequestAborted);
         await ctx.Response.Body.FlushAsync(ctx.RequestAborted);
+    }
+
+    private static async Task WriteHtml(HttpContext ctx)
+    {
+        ctx.Response.ContentType = "text/html";
+        await ctx.Response.WriteAsync("<html><body>not an SSE feed</body></html>", ctx.RequestAborted);
+    }
+
+    [Fact]
+    public async Task SubscribeAsync_NonEventStream_YieldsErrorEnvelope()
+    {
+        var protocol = new BowireSseProtocol();
+
+        var items = new List<string>();
+        await foreach (var item in protocol.SubscribeAsync(
+            _baseUrl + "/notstream",
+            headers: null,
+            TestContext.Current.CancellationToken))
+        {
+            items.Add(item);
+            break;
+        }
+
+        var json = Assert.Single(items);
+        using var doc = JsonDocument.Parse(json);
+        Assert.True(doc.RootElement.TryGetProperty("error", out var err));
+        Assert.Contains("not an event-stream", err.GetString(), StringComparison.Ordinal);
     }
 
     [Fact]

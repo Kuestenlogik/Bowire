@@ -37,7 +37,7 @@ Cross-identity test: reads the object at `--target` as identity **A**, confirms 
 **Needs:** `--auth-header` (A) **and** `--auth-header-b` (B); an object-scoped `--target` (path ending in a numeric / UUID id).
 
 ### API2:2023 — Broken Authentication ✅
-Establishes an authenticated 2xx baseline, then checks: authentication not enforced (2xx with no credential), JWT forgery (`alg:none` re-header + tampered signature), and token lifetime (expired token accepted / no `exp` claim). Forgery + expiry findings are gated on anonymous access being blocked, so a public API isn't misreported. A **protocol-specific variant** (see [Protocol-specific probes](#protocol-specific-probes)) extends the same entry to **gRPC transport auth** — invoking a method anonymously and reading the status trailer.
+Establishes an authenticated 2xx baseline, then checks: authentication not enforced (2xx with no credential), JWT forgery (`alg:none` re-header + tampered signature), and token lifetime (expired token accepted / no `exp` claim). Forgery + expiry findings are gated on anonymous access being blocked, so a public API isn't misreported. **Protocol-specific variants** (see [Protocol-specific probes](#protocol-specific-probes)) extend the same entry to **gRPC transport auth**, **WebSocket**, **MQTT**, and **SSE** — each connecting / invoking anonymously (given `--auth-header`) and treating an accepted connection as an auth bypass.
 **Needs:** `--auth-header`.
 
 ### API3:2023 — Broken Object Property Level Authorization ✅
@@ -65,7 +65,7 @@ Active CORS check (arbitrary-Origin reflection / `*` / `null`, escalated to high
 **Needs:** nothing.
 
 ### API9:2023 — Improper Inventory Management ✅
-Older API versions still routed alongside the target's version, publicly-readable inventory / doc surfaces (`openapi.json`, `swagger.json`, `actuator`, …), and endpoints advertising `Deprecation` / `Sunset` yet still served. A catch-all baseline suppresses false positives. Two **protocol-specific variants** extend the same entry beyond HTTP (see [Protocol-specific probes](#protocol-specific-probes)): **GraphQL introspection** and **gRPC server reflection** exposed anonymously — each the protocol analog of an exposed API inventory.
+Older API versions still routed alongside the target's version, publicly-readable inventory / doc surfaces (`openapi.json`, `swagger.json`, `actuator`, …), and endpoints advertising `Deprecation` / `Sunset` yet still served. A catch-all baseline suppresses false positives. **Protocol-specific variants** extend the same entry beyond HTTP (see [Protocol-specific probes](#protocol-specific-probes)): **GraphQL introspection**, **gRPC server reflection**, and **MCP tool/resource listing** exposed anonymously — each the protocol analog of an exposed API inventory.
 **Needs:** nothing.
 
 ### API10:2023 — Unsafe Consumption of APIs ✅
@@ -81,8 +81,12 @@ The ten probes above speak HTTP. Bowire also runs **protocol-specific probes** t
 | GraphQL introspection | `graphql` | API9 | An anonymous `__schema` introspection query returns the schema — public introspection lets anyone map the whole API surface. |
 | gRPC server reflection | `grpc` | API9 | Anonymous gRPC Server Reflection returns services — anyone can enumerate every service, method, and message schema without a `.proto`. |
 | gRPC transport auth | `grpc` | API2 | When `--auth-header` asserts a credential is expected, one read-only, unary, reflection-discovered method is invoked **without** it; a gRPC status trailer showing the call reached the handler (rather than `Unauthenticated` / `PermissionDenied`) means auth isn't enforced at the transport. |
+| MCP discovery | `mcp` | API9 | An anonymous MCP initialize + tool/resource listing returns a populated catalogue — the whole tool surface is enumerable without auth (lead-in to tool-call abuse). |
+| WebSocket auth | `websocket` | API2 | With `--auth-header`, an anonymous WebSocket upgrade that completes = the socket accepts unauthenticated clients (auth enforced on REST, forgotten on the socket). |
+| MQTT auth | `mqtt` | API2 | With `--auth-header` and an `mqtt://` target, an accepted anonymous CONNECT = auth bypass on CONNECT — any client can subscribe / publish. |
+| SSE auth | `sse` | API2 | With `--auth-header`, an anonymous subscribe that opens a `text/event-stream` and emits = the event feed is readable without auth. |
 
-The reflection and introspection checks are **discovery-only** (they never invoke a method or mutate the target); the gRPC transport-auth check invokes exactly one method, gated to a read-only name so it can't trip a mutating flow, and only when reflection already surfaced a method to test and `--auth-header` says auth is expected. All probe **anonymously**, so they measure real external exposure. Each runs only when its protocol plugin is deployed next to the host (the `bowire` tool ships them); an absent plugin, a target that doesn't speak the protocol, or a per-probe timeout is reported `[----]` (skipped), never a false pass. Further variants (WS / MQTT / SSE / MCP) are tracked in [#184](https://github.com/Kuestenlogik/Bowire/issues/184) / [#381](https://github.com/Kuestenlogik/Bowire/issues/381).
+The reflection / introspection / MCP-listing checks are **discovery-only** (they never invoke a method or mutate the target); the gRPC transport-auth, WebSocket, MQTT, and SSE checks connect (or invoke one read-only gRPC method) anonymously and close without sending, and run only when `--auth-header` says auth is expected. All probe **anonymously**, so they measure real external exposure. Each runs only when its protocol plugin is deployed next to the host (the `bowire` tool ships them); an absent plugin, a target that doesn't speak the protocol, or a per-probe timeout is reported `[----]` (skipped), never a false pass. The SSE check relies on the plugin's `text/event-stream` content-type guard so a plain HTTP 200 page isn't misread as an open stream.
 
 ## Coverage
 
