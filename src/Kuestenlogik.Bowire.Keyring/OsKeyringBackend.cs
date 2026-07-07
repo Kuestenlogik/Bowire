@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -26,10 +27,19 @@ namespace Kuestenlogik.Bowire.Keyring;
 /// </list>
 /// The <see cref="KeyringOptions.Backend"/> override forces one of these
 /// ids; the default <c>auto</c> selects by <see cref="OperatingSystem"/>.
+///
+/// <para>The two OS-integration surfaces — the CLI shell-out and the Windows
+/// P/Invoke — sit behind injectable seams (<c>ProcessRunner</c> and
+/// <c>WindowsCredReader</c>) so the dispatch + result-mapping logic is
+/// unit-testable on any host with a fake; the public constructor wires the
+/// real OS implementations.</para>
 /// </summary>
 public sealed class OsKeyringBackend : IKeyringBackend
 {
     private static readonly TimeSpan CliTimeout = TimeSpan.FromSeconds(5);
+
+    private readonly ProcessRunner _runProcess;
+    private readonly WindowsCredReader _readWindowsCred;
 
     /// <inheritdoc />
     public string BackendId { get; }
@@ -39,8 +49,20 @@ public sealed class OsKeyringBackend : IKeyringBackend
     /// override and otherwise auto-selecting by OS.
     /// </summary>
     public OsKeyringBackend(string backendOverride = "auto")
+        : this(backendOverride, DefaultRunProcess, DefaultReadWindowsCredential)
+    {
+    }
+
+    /// <summary>
+    /// Test seam: inject fakes for the CLI shell-out and the Windows credential
+    /// read so the per-backend dispatch, exit-code / error mapping, and blob
+    /// decode can be exercised on any OS.
+    /// </summary>
+    internal OsKeyringBackend(string backendOverride, ProcessRunner runProcess, WindowsCredReader readWindowsCred)
     {
         BackendId = ResolveBackendId(backendOverride);
+        _runProcess = runProcess;
+        _readWindowsCred = readWindowsCred;
     }
 
     private static string ResolveBackendId(string backendOverride)
@@ -61,24 +83,17 @@ public sealed class OsKeyringBackend : IKeyringBackend
     }
 
     /// <inheritdoc />
-    public KeyringReadResult Read(KeyringReference reference)
+    public KeyringReadResult Read(KeyringReference reference) => BackendId switch
     {
-        // The IsWindows() guard is what makes the [SupportedOSPlatform]
-        // ReadWindows call site provably reachable only on Windows — a
-        // "wincred" backend forced onto another OS falls through to the
-        // "no store" result instead of P/Invoking advapi32.
-        if (BackendId == "wincred" && OperatingSystem.IsWindows()) return ReadWindows(reference);
-        return BackendId switch
-        {
-            "keychain" => ReadMacKeychain(reference),
-            "secret-tool" => ReadSecretTool(reference),
-            _ => KeyringReadResult.Failed("no OS credential store available on this platform"),
-        };
-    }
+        "wincred" => ReadWindows(reference),
+        "keychain" => ReadMacKeychain(reference),
+        "secret-tool" => ReadSecretTool(reference),
+        _ => KeyringReadResult.Failed("no OS credential store available on this platform"),
+    };
 
     // ---- macOS Keychain -------------------------------------------------
 
-    private static KeyringReadResult ReadMacKeychain(KeyringReference reference)
+    private KeyringReadResult ReadMacKeychain(KeyringReference reference)
     {
         var args = new List<string> { "find-generic-password", "-s", reference.Service };
         if (reference.Account is not null)
@@ -96,7 +111,7 @@ public sealed class OsKeyringBackend : IKeyringBackend
 
     // ---- Linux libsecret ------------------------------------------------
 
-    private static KeyringReadResult ReadSecretTool(KeyringReference reference)
+    private KeyringReadResult ReadSecretTool(KeyringReference reference)
     {
         var args = new List<string> { "lookup", "service", reference.Service };
         if (reference.Account is not null)
@@ -109,8 +124,49 @@ public sealed class OsKeyringBackend : IKeyringBackend
         return RunCli("secret-tool", args, missExitCode: 1, trimTrailingNewline: false);
     }
 
-    private static KeyringReadResult RunCli(
+    private KeyringReadResult RunCli(
         string fileName, IReadOnlyList<string> args, int missExitCode, bool trimTrailingNewline)
+    {
+        ProcessOutput output;
+        try
+        {
+            output = _runProcess(fileName, args);
+        }
+        catch (Win32Exception ex)
+        {
+            // Tool not installed / not on PATH.
+            return KeyringReadResult.Failed($"{fileName} not available: {ex.Message}");
+        }
+        catch (TimeoutException)
+        {
+            return KeyringReadResult.Failed($"{fileName} timed out");
+        }
+        catch (InvalidOperationException)
+        {
+            return KeyringReadResult.Failed($"{fileName} failed to start");
+        }
+
+        if (output.ExitCode == 0)
+        {
+            var value = trimTrailingNewline ? output.StdOut.TrimEnd('\r', '\n') : output.StdOut;
+            return KeyringReadResult.Found(value);
+        }
+        if (output.ExitCode == missExitCode) return KeyringReadResult.NotFound();
+        return KeyringReadResult.Failed($"{fileName} exited {output.ExitCode}");
+    }
+
+    /// <summary>The result of a CLI shell-out: the exit code and captured stdout.</summary>
+    internal readonly record struct ProcessOutput(int ExitCode, string StdOut);
+
+    /// <summary>
+    /// Run a process and return its exit code + stdout. Throws
+    /// <see cref="Win32Exception"/> when the tool isn't installed,
+    /// <see cref="TimeoutException"/> on timeout, and
+    /// <see cref="InvalidOperationException"/> when the process can't start.
+    /// </summary>
+    internal delegate ProcessOutput ProcessRunner(string fileName, IReadOnlyList<string> args);
+
+    internal static ProcessOutput DefaultRunProcess(string fileName, IReadOnlyList<string> args)
     {
         var psi = new ProcessStartInfo(fileName)
         {
@@ -121,18 +177,7 @@ public sealed class OsKeyringBackend : IKeyringBackend
         };
         foreach (var a in args) psi.ArgumentList.Add(a);
 
-        Process? proc;
-        try
-        {
-            proc = Process.Start(psi);
-        }
-        catch (Win32Exception ex)
-        {
-            // Tool not installed / not on PATH.
-            return KeyringReadResult.Failed($"{fileName} not available: {ex.Message}");
-        }
-        if (proc is null) return KeyringReadResult.Failed($"{fileName} failed to start");
-
+        var proc = Process.Start(psi) ?? throw new InvalidOperationException($"{fileName} failed to start");
         using (proc)
         {
             var stdout = proc.StandardOutput.ReadToEnd();
@@ -140,23 +185,15 @@ public sealed class OsKeyringBackend : IKeyringBackend
             if (!proc.WaitForExit(CliTimeout))
             {
                 try { proc.Kill(entireProcessTree: true); } catch (InvalidOperationException) { /* already gone */ }
-                return KeyringReadResult.Failed($"{fileName} timed out");
+                throw new TimeoutException($"{fileName} timed out");
             }
-
-            if (proc.ExitCode == 0)
-            {
-                var value = trimTrailingNewline ? stdout.TrimEnd('\r', '\n') : stdout;
-                return KeyringReadResult.Found(value);
-            }
-            if (proc.ExitCode == missExitCode) return KeyringReadResult.NotFound();
-            return KeyringReadResult.Failed($"{fileName} exited {proc.ExitCode}");
+            return new ProcessOutput(proc.ExitCode, stdout);
         }
     }
 
     // ---- Windows Credential Manager ------------------------------------
 
-    [SupportedOSPlatform("windows")]
-    private static KeyringReadResult ReadWindows(KeyringReference reference)
+    private KeyringReadResult ReadWindows(KeyringReference reference)
     {
         // Generic credentials are keyed by target name only. We use the
         // service as the target; when an account is supplied we also accept
@@ -166,32 +203,25 @@ public sealed class OsKeyringBackend : IKeyringBackend
             ? new[] { reference.Service }
             : new[] { $"{reference.Service}/{reference.Account}", reference.Service };
 
+        WinCredResult last = default;
         foreach (var target in targets)
         {
-            if (!CredReadW(target, CRED_TYPE_GENERIC, 0, out var handle)) continue;
-            try
+            last = _readWindowsCred(target);
+            switch (last.Outcome)
             {
-                var cred = Marshal.PtrToStructure<CREDENTIAL>(handle);
-                if (cred.CredentialBlobSize == 0 || cred.CredentialBlob == IntPtr.Zero)
-                {
-                    return KeyringReadResult.Found(string.Empty);
-                }
-                var blob = new byte[cred.CredentialBlobSize];
-                Marshal.Copy(cred.CredentialBlob, blob, 0, cred.CredentialBlobSize);
-                return KeyringReadResult.Found(DecodeWindowsBlob(blob));
-            }
-            finally
-            {
-                CredFree(handle);
+                case WinCredOutcome.Found:
+                    return KeyringReadResult.Found(
+                        last.Blob is { Length: > 0 } b ? DecodeWindowsBlob(b) : string.Empty);
+                case WinCredOutcome.Unavailable:
+                    return KeyringReadResult.Failed("no OS credential store available on this platform");
             }
         }
 
         // ERROR_NOT_FOUND (1168) is the expected miss; anything else is a
         // real failure (access denied, etc.).
-        var err = Marshal.GetLastPInvokeError();
-        return err is 0 or ERROR_NOT_FOUND
-            ? KeyringReadResult.NotFound()
-            : KeyringReadResult.Failed($"CredRead failed (Win32 error {err})");
+        return last.Outcome == WinCredOutcome.Error
+            ? KeyringReadResult.Failed($"CredRead failed (Win32 error {last.ErrorCode})")
+            : KeyringReadResult.NotFound();
     }
 
     private static string DecodeWindowsBlob(byte[] blob)
@@ -203,6 +233,62 @@ public sealed class OsKeyringBackend : IKeyringBackend
             ? Encoding.Unicode.GetString(blob)
             : Encoding.UTF8.GetString(blob);
         return text.TrimEnd('\0');
+    }
+
+    /// <summary>Per-target outcome of a Windows credential read.</summary>
+    internal enum WinCredOutcome
+    {
+        /// <summary>The target credential was read (blob may be empty).</summary>
+        Found,
+        /// <summary>The target doesn't exist (ERROR_NOT_FOUND).</summary>
+        NotFound,
+        /// <summary>A real read failure (access denied, etc.) — see ErrorCode.</summary>
+        Error,
+        /// <summary>The Windows store isn't available on this OS (wincred forced elsewhere).</summary>
+        Unavailable,
+    }
+
+    /// <summary>Result of reading one target from the Windows credential store.</summary>
+    internal readonly record struct WinCredResult(WinCredOutcome Outcome, byte[]? Blob, int ErrorCode);
+
+    /// <summary>Read one target name from the Windows credential store.</summary>
+    internal delegate WinCredResult WindowsCredReader(string target);
+
+    internal static WinCredResult DefaultReadWindowsCredential(string target)
+        => OperatingSystem.IsWindows()
+            ? ReadWindowsNative(target)
+            : new WinCredResult(WinCredOutcome.Unavailable, null, 0);
+
+    // Windows-native credential read (advapi32 CredReadW). Excluded from
+    // coverage: the P/Invoke can only execute on Windows, but the coverage
+    // CI runs on Linux, so these lines are structurally unreachable there.
+    // The target iteration, blob decode, and result mapping around it live
+    // in ReadWindows / DecodeWindowsBlob and are unit-tested via the seam.
+    [ExcludeFromCodeCoverage]
+    [SupportedOSPlatform("windows")]
+    private static WinCredResult ReadWindowsNative(string target)
+    {
+        if (!CredReadW(target, CRED_TYPE_GENERIC, 0, out var handle))
+        {
+            var err = Marshal.GetLastPInvokeError();
+            return new WinCredResult(
+                err is 0 or ERROR_NOT_FOUND ? WinCredOutcome.NotFound : WinCredOutcome.Error, null, err);
+        }
+        try
+        {
+            var cred = Marshal.PtrToStructure<CREDENTIAL>(handle);
+            byte[]? blob = null;
+            if (cred.CredentialBlobSize > 0 && cred.CredentialBlob != IntPtr.Zero)
+            {
+                blob = new byte[cred.CredentialBlobSize];
+                Marshal.Copy(cred.CredentialBlob, blob, 0, cred.CredentialBlobSize);
+            }
+            return new WinCredResult(WinCredOutcome.Found, blob, 0);
+        }
+        finally
+        {
+            CredFree(handle);
+        }
     }
 
     private const int CRED_TYPE_GENERIC = 1;
@@ -218,6 +304,7 @@ public sealed class OsKeyringBackend : IKeyringBackend
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern void CredFree(IntPtr credential);
 
+    [ExcludeFromCodeCoverage] // Windows-native interop struct — see ReadWindowsNative.
     [StructLayout(LayoutKind.Sequential)]
     private struct CREDENTIAL
     {
