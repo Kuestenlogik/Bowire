@@ -17,7 +17,7 @@ bowire scan --target https://api.example.com --suite=owasp-api \
             --auth-header-b "Authorization: Bearer $TOKEN_B"
 ```
 
-Workbench — the **Security rail** has a target box and a *Run OWASP suite* button that paints each row covered / clean / vulnerable, backed by `POST /api/security/owasp-scan`. `GET /api/security/owasp-catalog` returns the ten entries as static metadata.
+Workbench — the **Security rail** has a target box and a *Run OWASP suite* button that paints each row covered / clean / vulnerable, backed by `POST /api/security/owasp-scan` (which runs the HTTP probes **and** the protocol-specific probes). `GET /api/security/owasp-catalog` returns the ten entries as static metadata. The result has two tabs: **Coverage** (the per-entry table below) and **Compliance** — a per-scan overview that rolls the vulnerable findings up into an OWASP posture strip, a severity histogram, the peak CVSS, and a per-CWE breakdown (each CWE linking to its MITRE definition).
 
 ## Reading the table
 
