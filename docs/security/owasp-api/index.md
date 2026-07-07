@@ -37,7 +37,7 @@ Cross-identity test: reads the object at `--target` as identity **A**, confirms 
 **Needs:** `--auth-header` (A) **and** `--auth-header-b` (B); an object-scoped `--target` (path ending in a numeric / UUID id).
 
 ### API2:2023 — Broken Authentication ✅
-Establishes an authenticated 2xx baseline, then checks: authentication not enforced (2xx with no credential), JWT forgery (`alg:none` re-header + tampered signature), and token lifetime (expired token accepted / no `exp` claim). Forgery + expiry findings are gated on anonymous access being blocked, so a public API isn't misreported.
+Establishes an authenticated 2xx baseline, then checks: authentication not enforced (2xx with no credential), JWT forgery (`alg:none` re-header + tampered signature), and token lifetime (expired token accepted / no `exp` claim). Forgery + expiry findings are gated on anonymous access being blocked, so a public API isn't misreported. A **protocol-specific variant** (see [Protocol-specific probes](#protocol-specific-probes)) extends the same entry to **gRPC transport auth** — invoking a method anonymously and reading the status trailer.
 **Needs:** `--auth-header`.
 
 ### API3:2023 — Broken Object Property Level Authorization ✅
@@ -80,8 +80,9 @@ The ten probes above speak HTTP. Bowire also runs **protocol-specific probes** t
 |---|---|---|---|
 | GraphQL introspection | `graphql` | API9 | An anonymous `__schema` introspection query returns the schema — public introspection lets anyone map the whole API surface. |
 | gRPC server reflection | `grpc` | API9 | Anonymous gRPC Server Reflection returns services — anyone can enumerate every service, method, and message schema without a `.proto`. |
+| gRPC transport auth | `grpc` | API2 | When `--auth-header` asserts a credential is expected, one read-only, unary, reflection-discovered method is invoked **without** it; a gRPC status trailer showing the call reached the handler (rather than `Unauthenticated` / `PermissionDenied`) means auth isn't enforced at the transport. |
 
-Both are **discovery-only** (they never invoke a method or mutate the target) and probe **anonymously**, so they measure real external exposure. Each runs only when its protocol plugin is deployed next to the host (the `bowire` tool ships them); an absent plugin, a target that doesn't speak the protocol, or a per-probe timeout is reported `[----]` (skipped), never a false pass. More protocol variants (gRPC unauthenticated-invoke via trailers, WS / MQTT / SSE / MCP) are tracked in [#184](https://github.com/Kuestenlogik/Bowire/issues/184) / [#381](https://github.com/Kuestenlogik/Bowire/issues/381).
+The reflection and introspection checks are **discovery-only** (they never invoke a method or mutate the target); the gRPC transport-auth check invokes exactly one method, gated to a read-only name so it can't trip a mutating flow, and only when reflection already surfaced a method to test and `--auth-header` says auth is expected. All probe **anonymously**, so they measure real external exposure. Each runs only when its protocol plugin is deployed next to the host (the `bowire` tool ships them); an absent plugin, a target that doesn't speak the protocol, or a per-probe timeout is reported `[----]` (skipped), never a false pass. Further variants (WS / MQTT / SSE / MCP) are tracked in [#184](https://github.com/Kuestenlogik/Bowire/issues/184) / [#381](https://github.com/Kuestenlogik/Bowire/issues/381).
 
 ## Coverage
 
