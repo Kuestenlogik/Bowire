@@ -258,6 +258,38 @@ public sealed class ScanCommandTests
     }
 
     [Fact]
+    public async Task RunAsync_WithOutSarif_WritesSarifReport()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartUpstreamAsync(ct);
+        var path = await WriteAsync(AttackRecording(expectedStatus: 200), ct);
+        var sarif = SafePath.Combine(Path.GetTempPath(), $"bowire-scan-{Guid.NewGuid():N}.sarif");
+        try
+        {
+            var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
+            {
+                Target = upstream.Urls.First(),
+                Template = path,
+                RunBuiltins = false,
+                TimeoutSeconds = 10,
+                OutSarif = sarif,
+            }, ct, @out, err));
+
+            Assert.Equal(0, code);
+            Assert.Contains("SARIF", stdout, StringComparison.OrdinalIgnoreCase);
+            Assert.True(File.Exists(sarif));
+            var body = await File.ReadAllTextAsync(sarif, ct);
+            Assert.Contains("BWR-T-001", body, StringComparison.Ordinal);
+            Assert.Contains("sarif", body, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            File.Delete(path);
+            if (File.Exists(sarif)) File.Delete(sarif);
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_TemplateDoesNotMatch_ReportsSafeAndReturns0()
     {
         var ct = TestContext.Current.CancellationToken;
