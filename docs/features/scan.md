@@ -69,12 +69,12 @@ bowire scan --target https://api.example.com --suite=owasp-api \
   OWASP API Security Top 10 (2023) — suite coverage:
   [VULN] API4:2023  Unrestricted Resource Consumption   1 finding(s) across 1 probe(s)
   [ok]   API5:2023  Broken Function Level Authorization  1 probe(s), clean
-  [----] API6:2023  Unrestricted Access to …             no probe yet — not exercised by this scan
+  [----] API6:2023  Unrestricted Access to …             not assessed — probe skipped (missing input, or no black-box signal)
   …
-  4/10 Top-10 entries exercised; 2 with vulnerability finding(s).
+  6/10 Top-10 entries exercised; 2 with vulnerability finding(s).
 ```
 
-Each row is honest: `[----]` means **no probe assessed it** (needs input, or no probe yet) — a clean scan is never a false pass. What each dedicated probe checks, and what input it needs:
+Each row is honest: `[----]` means **the probe couldn't assess it** (it lacked a required input, or found no black-box signal) — a clean scan is never a false pass. All ten entries have a dedicated probe. What each checks, and what input it needs:
 
 | Entry | Probe checks | Needs |
 |---|---|---|
@@ -84,10 +84,12 @@ Each row is honest: `[----]` means **no probe assessed it** (needs input, or no 
 | **API4** Resource Consumption | No rate limiting (429 / `RateLimit-*`), oversized body accepted | — |
 | **API5** BFLA | Privileged management endpoints (actuator, `_cat`, pprof) reachable | — |
 | **API7** SSRF | URL-input parameter fetched server-side (timing differential) | `--target` with a URL parameter |
+| **API6** Sensitive Business Flows | Repeated identical POST accepted with no anti-automation friction (CAPTCHA / bot-mitigation / anti-replay token / throttle) | POST-accepting sensitive-flow `--target` |
 | **API8** Security Misconfiguration | CORS (reflection / `*` / credentials), missing HSTS / `X-Content-Type-Options` / CSP | — |
 | **API9** Improper Inventory | Older API versions reachable, exposed inventory/doc surfaces, active `Deprecation`/`Sunset` | — |
+| **API10** Unsafe Consumption | Raw upstream / gateway error reflected to the client, or `3xx` redirect to a different host | — |
 
-> API6 (sensitive business flows) and API10 (unsafe upstream consumption) have no reliable black-box probe — API6's generic rate-limit facet is covered by API4, and API10 is a server-side concern. They stay `[----]` by design.
+> API6 (sensitive business flows) and API10 (unsafe upstream consumption) have no clean *generic* black-box check, so their probes are conservative: a real `[ok]` / `[VULN]` verdict only on a strong signal, otherwise `[----]` (skipped) with a review-only reason rather than a false pass. API6's raw rate-limit facet stays with API4; API10 remains a server-side concern best confirmed by code / config review.
 
 The workbench surfaces the same suite in the **Security rail** (a target box + *Run OWASP suite* button paints each row covered / clean / vulnerable), backed by `POST /api/security/owasp-scan` — see the [HTTP API reference](../api/index.md).
 
