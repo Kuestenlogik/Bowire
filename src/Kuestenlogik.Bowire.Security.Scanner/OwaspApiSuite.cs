@@ -106,6 +106,72 @@ internal static class OwaspApiSuite
         return merged;
     }
 
+    /// <summary>
+    /// The protocol-specific probes. Each drives one of Bowire's protocol
+    /// plugins through its own invoke / discovery path to reach a
+    /// vulnerability class that only exists at the protocol layer, and tags
+    /// its findings to the same OWASP entry as the HTTP probes. Runs only
+    /// when the matching plugin is deployed next to the host.
+    /// </summary>
+    public static IReadOnlyList<IOwaspProtocolProbe> ProtocolProbes { get; } =
+    [
+        new GraphQLIntrospectionProbe(),
+        new GrpcReflectionProbe(),
+    ];
+
+    /// <summary>
+    /// Run the protocol-specific probes, resolving each one's plugin from
+    /// <paramref name="registry"/>. A probe whose plugin isn't loaded is
+    /// skipped (not falsely passed); each call is bounded by
+    /// <paramref name="perProbeTimeout"/> so a target that doesn't speak the
+    /// protocol can't stall the scan, and a throwing probe is isolated into a
+    /// single Error finding for its entry.
+    /// </summary>
+    public static async Task<IReadOnlyList<ScanFinding>> RunProtocolProbesAsync(
+        string target, BowireProtocolRegistry registry, IList<string> authHeaders, TimeSpan perProbeTimeout, CancellationToken ct)
+    {
+        var merged = new List<ScanFinding>();
+        foreach (var probe in ProtocolProbes)
+        {
+            var protocol = registry.GetById(probe.ProtocolId);
+            if (protocol is null)
+            {
+                merged.Add(ProtocolMarker(probe, ScanFindingStatus.Skipped, "PLUGIN-ABSENT",
+                    $"The '{probe.ProtocolId}' protocol plugin is not loaded — install it (bowire plugin install …) to run this check."));
+                continue;
+            }
+
+            try
+            {
+                protocol.Initialize(null);
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                cts.CancelAfter(perProbeTimeout);
+                merged.AddRange(await probe.RunAsync(target, protocol, authHeaders, cts.Token).ConfigureAwait(false));
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                merged.Add(ProtocolMarker(probe, ScanFindingStatus.Skipped, "TIMEOUT",
+                    $"The '{probe.ProtocolId}' check timed out after {perProbeTimeout.TotalSeconds:0}s — the target likely does not speak {probe.ProtocolId}."));
+            }
+            catch (Exception ex)
+            {
+                merged.Add(ProtocolMarker(probe, ScanFindingStatus.Error, "ERROR", ex.Message));
+            }
+        }
+        return merged;
+    }
+
+    private static ScanFinding ProtocolMarker(IOwaspProtocolProbe probe, ScanFindingStatus status, string suffix, string detail) => new()
+    {
+        Template = SyntheticTemplate.Build(
+            id: $"BWR-OWASP-{probe.Entry.Id.Replace(':', '-')}-{probe.ProtocolId.ToUpperInvariant()}-{suffix}",
+            name: $"{probe.ProtocolId} {probe.Entry.Title} probe ({status})",
+            cwe: null, owaspApi: probe.Entry.Tag, severity: "info", cvss: null,
+            remediation: $"Diagnostic marker for the {probe.ProtocolId} protocol probe."),
+        Status = status,
+        Detail = detail,
+    };
+
     /// <summary>Group the findings by OWASP entry and derive a per-entry status for all ten.</summary>
     public static IReadOnlyList<OwaspEntryResult> Rollup(IEnumerable<ScanFinding> findings)
     {
