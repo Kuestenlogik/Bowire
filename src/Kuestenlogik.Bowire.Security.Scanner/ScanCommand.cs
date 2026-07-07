@@ -227,14 +227,27 @@ public static class ScanCommand
         var owaspSuite = string.Equals(options.Suite, "owasp-api", StringComparison.OrdinalIgnoreCase);
         if (owaspSuite)
         {
-            var probeFindings = await OwaspApiSuite.RunProbesAsync(options.Target, http, options.AuthHeaders, options.AuthHeadersB, ct).ConfigureAwait(false);
-            foreach (var f in probeFindings)
+            void Fold(IReadOnlyList<ScanFinding> probeFindings)
             {
-                var sev = f.Template.Recording.Vulnerability?.Severity ?? "info";
-                findings.Add(SeverityRank(sev) < minRank && f.Status == ScanFindingStatus.Vulnerable
-                    ? new ScanFinding { Template = f.Template, Status = ScanFindingStatus.Skipped, Detail = "below severity threshold" }
-                    : f);
+                foreach (var f in probeFindings)
+                {
+                    var sev = f.Template.Recording.Vulnerability?.Severity ?? "info";
+                    findings.Add(SeverityRank(sev) < minRank && f.Status == ScanFindingStatus.Vulnerable
+                        ? new ScanFinding { Template = f.Template, Status = ScanFindingStatus.Skipped, Detail = "below severity threshold" }
+                        : f);
+                }
             }
+
+            Fold(await OwaspApiSuite.RunProbesAsync(options.Target, http, options.AuthHeaders, options.AuthHeadersB, ct).ConfigureAwait(false));
+
+            // Protocol-specific probes (GraphQL introspection, gRPC reflection)
+            // drive the corresponding protocol plugin's invoke path — only the
+            // plugins deployed next to the host are available; absent ones skip.
+            // Bounded well under the per-probe HTTP timeout so a target that
+            // doesn't speak the protocol can't stall the whole scan.
+            var registry = BowireProtocolRegistry.Discover();
+            var protocolTimeout = TimeSpan.FromSeconds(Math.Min(options.TimeoutSeconds, 12));
+            Fold(await OwaspApiSuite.RunProtocolProbesAsync(options.Target, registry, options.AuthHeaders, protocolTimeout, ct).ConfigureAwait(false));
         }
 
         await WriteConsoleReportAsync(findings, stdout).ConfigureAwait(false);
