@@ -126,7 +126,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
-**2/18 done** · 1 in progress · 15 backlog
+**3/18 done** · 1 in progress · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -145,9 +145,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [187](https://github.com/Kuestenlogik/Bowire/issues/187) | Bowire | [CVE lookup for discovered servers — fill Bowire.VulnDb](#issue-kuestenlogik-bowire-187) | ⬜ Backlog |  |
 | [190](https://github.com/Kuestenlogik/Bowire/issues/190) | Bowire | [Authentication session recording + token reuse](#issue-kuestenlogik-bowire-190) | ⬜ Backlog |  |
 | [339](https://github.com/Kuestenlogik/Bowire/issues/339) | Bowire | [docs(audit): Trash-as-plugin architecture proposal for v2.3](#issue-kuestenlogik-bowire-339) | ⬜ Backlog |  |
-| [381](https://github.com/Kuestenlogik/Bowire/issues/381) | Bowire | [OWASP API suite — remaining: API6 / API10, protocol-specific variants, compliance tab](#issue-kuestenlogik-bowire-381) | ⬜ Backlog |  |
 | [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ✅ Done |  |
 | [178](https://github.com/Kuestenlogik/Bowire/issues/178) | Bowire | [bowire scan CLI with SARIF output + GitHub Action wrapper](#issue-kuestenlogik-bowire-178) | ✅ Done |  |
+| [381](https://github.com/Kuestenlogik/Bowire/issues/381) | Bowire | [OWASP API suite — remaining: API6 / API10, protocol-specific variants, compliance tab](#issue-kuestenlogik-bowire-381) | ✅ Done |  |
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
@@ -762,10 +762,6 @@ Modern API auth is multi-step: hit `/login`, get a session cookie, hit `/refresh
 
 Architecture audit + design doc for extracting Trash into a pluggable extension point. Filed in `docs/audits/2026-06-30-trash-as-plugin-architecture.md` (331 lines). [[more]](https://github.com/Kuestenlogik/Bowire/issues/339)
 
-#### <a id="issue-kuestenlogik-bowire-381"></a>⬜ Backlog · [#381](https://github.com/Kuestenlogik/Bowire/issues/381) OWASP API suite — remaining: API6 / API10, protocol-specific variants, compliance tab
-
-Follow-up to #173, which shipped the OWASP API Security Top 10 (2023) suite — the scaffold (`OwaspApiCatalog` + roll-up), **8/10 dedicated probes** (API1–API5, API7–API9), the CLI (`bowire scan --suite=owasp-api`), the workbench API (`/api/security/owasp-catalog` + `/api/security/owasp-scan`), the S … [[more]](https://github.com/Kuestenlogik/Bowire/issues/381)
-
 #### <a id="issue-kuestenlogik-bowire-173"></a>✅ Done · [#173](https://github.com/Kuestenlogik/Bowire/issues/173) OWASP API Security Top 10 — structured test suite
 
 Bowire's security scan is currently generic fuzz + a handful of templates. The de-facto industry baseline for "did you check the obvious API security mistakes?" is the OWASP API Security Top 10. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/173)
@@ -773,6 +769,10 @@ Bowire's security scan is currently generic fuzz + a handful of templates. The d
 #### <a id="issue-kuestenlogik-bowire-178"></a>✅ Done · [#178](https://github.com/Kuestenlogik/Bowire/issues/178) bowire scan CLI with SARIF output + GitHub Action wrapper
 
 > **Status:** shipped in the security pillar. The architecture diverged from the original suite-based proposal — this body reflects what was built; the original plan is preserved in the issue history below. [[more]](https://github.com/Kuestenlogik/Bowire/issues/178)
+
+#### <a id="issue-kuestenlogik-bowire-381"></a>✅ Done · [#381](https://github.com/Kuestenlogik/Bowire/issues/381) OWASP API suite — remaining: API6 / API10, protocol-specific variants, compliance tab
+
+Follow-up to #173, which shipped the OWASP API Security Top 10 (2023) suite — the scaffold (`OwaspApiCatalog` + roll-up), **8/10 dedicated probes** (API1–API5, API7–API9), the CLI (`bowire scan --suite=owasp-api`), the workbench API (`/api/security/owasp-catalog` + `/api/security/owasp-scan`), the S … [[more]](https://github.com/Kuestenlogik/Bowire/issues/381)
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
