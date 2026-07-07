@@ -65,12 +65,23 @@ Active CORS check (arbitrary-Origin reflection / `*` / `null`, escalated to high
 **Needs:** nothing.
 
 ### API9:2023 — Improper Inventory Management ✅
-Older API versions still routed alongside the target's version, publicly-readable inventory / doc surfaces (`openapi.json`, `swagger.json`, `actuator`, …), and endpoints advertising `Deprecation` / `Sunset` yet still served. A catch-all baseline suppresses false positives.
+Older API versions still routed alongside the target's version, publicly-readable inventory / doc surfaces (`openapi.json`, `swagger.json`, `actuator`, …), and endpoints advertising `Deprecation` / `Sunset` yet still served. A catch-all baseline suppresses false positives. Two **protocol-specific variants** extend the same entry beyond HTTP (see [Protocol-specific probes](#protocol-specific-probes)): **GraphQL introspection** and **gRPC server reflection** exposed anonymously — each the protocol analog of an exposed API inventory.
 **Needs:** nothing.
 
 ### API10:2023 — Unsafe Consumption of APIs ✅
 A server-side concern (the API trusting data it consumes from upstream third-party APIs without validation), so the vulnerable code path is out of black-box reach. The probe takes the passive-heuristic route: it flags the one thing observable from outside — the target **leaking raw upstream data back to the client**, i.e. a reflected upstream / gateway error (`upstream connect error`, `502 Bad Gateway` naming a backend, `ECONNREFUSED` / `getaddrinfo`) or a `3xx` redirect to a **different host**. When no signal fires it does not claim a pass: it Skips with a review-only note pointing at a code / config review of the target's outbound integrations.
 **Needs:** nothing (passive over the base response).
+
+## Protocol-specific probes
+
+The ten probes above speak HTTP. Bowire also runs **protocol-specific probes** that drive a protocol plugin's own invoke / discovery path to reach vulnerability classes that only exist below HTTP, tagging their findings to the same OWASP entry so they roll up into the coverage table:
+
+| Probe | Protocol | Rolls up to | Check |
+|---|---|---|---|
+| GraphQL introspection | `graphql` | API9 | An anonymous `__schema` introspection query returns the schema — public introspection lets anyone map the whole API surface. |
+| gRPC server reflection | `grpc` | API9 | Anonymous gRPC Server Reflection returns services — anyone can enumerate every service, method, and message schema without a `.proto`. |
+
+Both are **discovery-only** (they never invoke a method or mutate the target) and probe **anonymously**, so they measure real external exposure. Each runs only when its protocol plugin is deployed next to the host (the `bowire` tool ships them); an absent plugin, a target that doesn't speak the protocol, or a per-probe timeout is reported `[----]` (skipped), never a false pass. More protocol variants (gRPC unauthenticated-invoke via trailers, WS / MQTT / SSE / MCP) are tracked in [#184](https://github.com/Kuestenlogik/Bowire/issues/184) / [#381](https://github.com/Kuestenlogik/Bowire/issues/381).
 
 ## Coverage
 
