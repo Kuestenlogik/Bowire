@@ -10,6 +10,10 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="coverlet.collector"><PrivateAssets>all</PrivateAssets><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets></PackageReference>
     <PackageReference Include="Microsoft.Extensions.AI" />
+    <!-- Hosts an in-memory MCP server (a "chat" tool) so the live
+         connect / call / stream path of BowireMcpChatClient is covered
+         without an external MCP endpoint. -->
+    <PackageReference Include="ModelContextProtocol.AspNetCore" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Ai\Kuestenlogik.Bowire.Ai.csproj" />
