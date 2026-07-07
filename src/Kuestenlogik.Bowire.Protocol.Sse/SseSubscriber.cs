@@ -64,6 +64,20 @@ internal sealed class SseSubscriber : IAsyncDisposable
         using var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
         response.EnsureSuccessStatusCode();
 
+        // Guard the content type: a genuine SSE endpoint MUST answer
+        // text/event-stream (per the EventSource spec). A plain 2xx page
+        // (HTML / JSON) would otherwise be parsed line-by-line and silently
+        // yield nothing — surface an explicit error instead so callers (the
+        // workbench, and the API2 SSE security probe) can tell "not an
+        // event-stream" apart from "stream open, no events yet".
+        var mediaType = response.Content.Headers.ContentType?.MediaType;
+        if (!string.Equals(mediaType, "text/event-stream", StringComparison.OrdinalIgnoreCase))
+        {
+            yield return JsonSerializer.Serialize(
+                new { error = $"not an event-stream (content-type: {mediaType ?? "none"})" }, s_jsonOptions);
+            yield break;
+        }
+
         await using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var reader = new StreamReader(stream);
 
