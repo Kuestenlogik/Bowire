@@ -81,6 +81,22 @@ public sealed class ScanCommandTests
     }
 
     [Fact]
+    public void RunAsync_NonHttpTarget_SkipsHttpChecksWithoutCrashing()
+    {
+        // Regression: a mqtt:// (or any non-http/https) target used to sink the
+        // whole scan when the passive built-ins handed the scheme to HttpClient.
+        // It must now skip the HTTP-only work and report cleanly instead.
+        var ct = TestContext.Current.CancellationToken;
+        var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
+        {
+            Target = "mqtt://broker.example.com:1883",
+        }, ct, @out, err));
+
+        Assert.Equal(0, code);
+        Assert.Contains("not an http/https URL", stdout, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task RunAsync_NoTemplatesAndNoBuiltins_ReturnsUsageError()
     {
         var ct = TestContext.Current.CancellationToken;
