@@ -138,6 +138,13 @@ public sealed class MockHandler
         var isGrpc = contentType is not null &&
             contentType.StartsWith("application/grpc", StringComparison.OrdinalIgnoreCase);
 
+        // #403: read the request body (buffered) only when the active
+        // recording actually declares a body matcher, so ordinary scans don't
+        // pay to read the stream. gRPC bodies are binary protobuf — skipped.
+        string? requestBody = null;
+        if (!isGrpc && ctx.Request.ContentLength is not 0 && RecordingHasBodyMatchers())
+            requestBody = await ReadBufferedBodyAsync(ctx);
+
         var request = new MockRequest
         {
             Protocol = isGrpc ? "grpc" : "rest",
@@ -149,10 +156,7 @@ public sealed class MockHandler
                 h => h.Value.ToString(),
                 StringComparer.OrdinalIgnoreCase),
             ContentType = contentType,
-            // Phase 1's exact matcher doesn't inspect the body; left null to
-            // avoid reading the request stream for nothing. Phase 2's
-            // body-aware matcher will populate this when it ships.
-            Body = null
+            Body = requestBody,
         };
 
         var matched = TryMatch(request);
@@ -537,6 +541,36 @@ public sealed class MockHandler
         _logger.LogInformation(
             "match(step={StepId}, protocol={Protocol}, service={Service}, method={Method}) → {StatusCode}",
             step.Id, step.Protocol, step.Service, step.Method, statusCode);
+    }
+
+    /// <summary>Whether any step in the active recording declares a body matcher (#403).</summary>
+    private bool RecordingHasBodyMatchers()
+    {
+        foreach (var s in _recording.Steps)
+            if (s.Match?.Body is { Count: > 0 }) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Read the request body into a string (bounded at 1 MiB) with buffering
+    /// enabled so downstream replayers / templating can re-read it, then rewind
+    /// the stream. Shared by the body-matcher path and request templating.
+    /// </summary>
+    internal static async Task<string?> ReadBufferedBodyAsync(HttpContext ctx)
+    {
+        ctx.Request.EnableBuffering();
+        using var reader = new StreamReader(ctx.Request.Body, leaveOpen: true);
+        var chars = new char[1024 * 1024];
+        var total = 0;
+        int read;
+        while (total < chars.Length &&
+               (read = await reader.ReadAsync(chars.AsMemory(total, chars.Length - total), ctx.RequestAborted)) > 0)
+        {
+            total += read;
+        }
+        var body = total > 0 ? new string(chars, 0, total) : "";
+        ctx.Request.Body.Position = 0;
+        return body;
     }
 
     private static async Task<Replay.RequestTemplate?> BuildRequestTemplateAsync(

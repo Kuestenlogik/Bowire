@@ -399,6 +399,10 @@ public sealed class BowireStepMatch
     [JsonPropertyName("cookies")]
     public IList<BowireMatchPredicate>? Cookies { get; init; }
 
+    /// <summary>Predicates on the request body (<c>#403</c>) — all must pass.</summary>
+    [JsonPropertyName("body")]
+    public IList<BowireBodyMatcher>? Body { get; init; }
+
     /// <summary>
     /// Explicit precedence when several steps match the same request; higher
     /// wins, and dominates the matcher's implicit literal-beats-template /
@@ -443,6 +447,61 @@ public sealed class BowireMatchPredicate
     public bool? Present { get; init; }
 
     /// <summary>Case-insensitive comparison for <see cref="EqualTo"/> / <see cref="Contains"/> / <see cref="Matches"/>.</summary>
+    [JsonPropertyName("caseInsensitive")]
+    public bool CaseInsensitive { get; init; }
+}
+
+/// <summary>
+/// A request-body match predicate (mock matcher, <c>#403</c>). Exactly one
+/// mode applies, in this precedence:
+/// <list type="number">
+///   <item><see cref="JsonPath"/> set → navigate into the JSON body and apply
+///     the text op (<see cref="EqualTo"/> / <see cref="Contains"/> /
+///     <see cref="Matches"/>) to the value there, or — with no op — assert the
+///     path is present (or, with <c>present:false</c>, absent).</item>
+///   <item><see cref="EqualToJson"/> set → semantic JSON equality against the
+///     whole body (order- and whitespace-insensitive), honouring
+///     <see cref="IgnoreExtraElements"/> and <see cref="IgnoreArrayOrder"/>.</item>
+///   <item>otherwise → the text op applies to the raw body string.</item>
+/// </list>
+/// XPath and JSON-schema body matching are not yet implemented (tracked as a
+/// follow-up on <c>#403</c>).
+/// </summary>
+public sealed class BowireBodyMatcher
+{
+    /// <summary>Exact match (raw body, or the <see cref="JsonPath"/> value).</summary>
+    [JsonPropertyName("equals")]
+    public string? EqualTo { get; init; }
+
+    /// <summary>Substring match (raw body, or the <see cref="JsonPath"/> value).</summary>
+    [JsonPropertyName("contains")]
+    public string? Contains { get; init; }
+
+    /// <summary>Regex match (raw body, or the <see cref="JsonPath"/> value).</summary>
+    [JsonPropertyName("matches")]
+    public string? Matches { get; init; }
+
+    /// <summary>Expected JSON (as text) for semantic whole-body equality.</summary>
+    [JsonPropertyName("equalToJson")]
+    public string? EqualToJson { get; init; }
+
+    /// <summary>For <see cref="EqualToJson"/>: allow the actual body to carry properties the expected doesn't.</summary>
+    [JsonPropertyName("ignoreExtraElements")]
+    public bool IgnoreExtraElements { get; init; }
+
+    /// <summary>For <see cref="EqualToJson"/>: compare arrays as multisets (order-independent).</summary>
+    [JsonPropertyName("ignoreArrayOrder")]
+    public bool IgnoreArrayOrder { get; init; }
+
+    /// <summary>JSONPath into the body, e.g. <c>$.user.id</c> or <c>$.items[0].sku</c> (also accepts the dotted <c>user.id</c> form).</summary>
+    [JsonPropertyName("jsonPath")]
+    public string? JsonPath { get; init; }
+
+    /// <summary>For <see cref="JsonPath"/> with no text op: <c>true</c> = path must exist, <c>false</c> = must NOT exist.</summary>
+    [JsonPropertyName("present")]
+    public bool? Present { get; init; }
+
+    /// <summary>Case-insensitive comparison for the text ops.</summary>
     [JsonPropertyName("caseInsensitive")]
     public bool CaseInsensitive { get; init; }
 }

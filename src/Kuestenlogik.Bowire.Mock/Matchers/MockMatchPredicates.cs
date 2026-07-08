@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Kuestenlogik.Bowire.Mocking;
 
@@ -58,7 +59,202 @@ internal static class MockMatchPredicates
                 if (!EvaluatePredicate(p, Lookup(cookies, p.Name))) return false;
         }
 
+        if (match.Body is { Count: > 0 } bodies)
+        {
+            foreach (var b in bodies)
+                if (!EvaluateBody(b, request.Body)) return false;
+        }
+
         return true;
+    }
+
+    /// <summary>Evaluate one body matcher against the raw request body (#403).</summary>
+    internal static bool EvaluateBody(BowireBodyMatcher matcher, string? body)
+    {
+        // 1. JSONPath mode: navigate, then apply the text op to the value there
+        //    (or assert presence / absence when no op is set).
+        if (!string.IsNullOrEmpty(matcher.JsonPath))
+        {
+            var found = TryJsonPath(body, matcher.JsonPath, out var value);
+            if (matcher.Present == false) return !found;
+            if (!found) return false;
+            return ApplyBodyTextOp(matcher, value);
+        }
+
+        // 2. Semantic JSON equality against the whole body.
+        if (!string.IsNullOrEmpty(matcher.EqualToJson))
+        {
+            if (body is null) return false;
+            return JsonSemanticEquals(matcher.EqualToJson, body,
+                matcher.IgnoreExtraElements, matcher.IgnoreArrayOrder, matcher.CaseInsensitive);
+        }
+
+        // 3. Raw-body text op.
+        return ApplyBodyTextOp(matcher, body);
+    }
+
+    private static bool ApplyBodyTextOp(BowireBodyMatcher m, string? value)
+    {
+        var hasOp = m.EqualTo is not null || m.Contains is not null || m.Matches is not null;
+        if (!hasOp) return true; // presence-only (JSONPath) — already known to exist
+        if (value is null) return false;
+
+        var comparison = m.CaseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (m.EqualTo is not null && string.Equals(value, m.EqualTo, comparison)) return true;
+        if (m.Contains is not null && value.Contains(m.Contains, comparison)) return true;
+        if (m.Matches is not null && RegexMatches(m.Matches, value, m.CaseInsensitive)) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Navigate a JSONPath (a leading <c>$</c> plus <c>.prop</c> / <c>[index]</c>
+    /// steps — the dotted <c>a.b.0</c> form is accepted too) into
+    /// <paramref name="body"/>. On a hit, <paramref name="value"/> is the
+    /// string form of the target (JSON strings unwrapped, other kinds as raw
+    /// JSON). Returns false when the body isn't JSON or the path misses.
+    /// </summary>
+    internal static bool TryJsonPath(string? body, string jsonPath, out string? value)
+    {
+        value = null;
+        if (string.IsNullOrEmpty(body)) return false;
+
+        JsonDocument doc;
+        try { doc = JsonDocument.Parse(body); }
+        catch (JsonException) { return false; }
+
+        using (doc)
+        {
+            var element = doc.RootElement;
+            foreach (var segment in NormalizeJsonPath(jsonPath))
+            {
+                if (element.ValueKind == JsonValueKind.Object)
+                {
+                    if (!element.TryGetProperty(segment, out var next)) return false;
+                    element = next;
+                }
+                else if (element.ValueKind == JsonValueKind.Array
+                    && int.TryParse(segment, System.Globalization.NumberStyles.Integer,
+                        System.Globalization.CultureInfo.InvariantCulture, out var idx)
+                    && idx >= 0 && idx < element.GetArrayLength())
+                {
+                    element = element[idx];
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            value = element.ValueKind switch
+            {
+                JsonValueKind.String => element.GetString(),
+                JsonValueKind.Null => null,
+                _ => element.GetRawText(),
+            };
+            return true;
+        }
+    }
+
+    // Split "$.user.items[0].id" (or "user.items.0.id") into ["user","items","0","id"].
+    private static string[] NormalizeJsonPath(string path)
+    {
+        var p = path;
+        if (p.StartsWith('$')) p = p[1..];
+        // Turn "[0]" into ".0" so a single dot-split handles both forms.
+        p = p.Replace("[", ".", StringComparison.Ordinal).Replace("]", "", StringComparison.Ordinal);
+        return p.Split('.', StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    /// <summary>
+    /// Semantic JSON equality: <paramref name="expectedJson"/> vs the parsed
+    /// <paramref name="actualJson"/>. <paramref name="ignoreExtra"/> lets the
+    /// actual object carry properties the expected doesn't;
+    /// <paramref name="ignoreArrayOrder"/> compares arrays as multisets.
+    /// Returns false when either side isn't valid JSON.
+    /// </summary>
+    internal static bool JsonSemanticEquals(
+        string expectedJson, string actualJson, bool ignoreExtra, bool ignoreArrayOrder, bool caseInsensitive)
+    {
+        JsonDocument expected, actual;
+        try { expected = JsonDocument.Parse(expectedJson); }
+        catch (JsonException) { return false; }
+        using (expected)
+        {
+            try { actual = JsonDocument.Parse(actualJson); }
+            catch (JsonException) { return false; }
+            using (actual)
+            {
+                return JsonEquals(expected.RootElement, actual.RootElement, ignoreExtra, ignoreArrayOrder, caseInsensitive);
+            }
+        }
+    }
+
+    private static bool JsonEquals(
+        JsonElement expected, JsonElement actual, bool ignoreExtra, bool ignoreArrayOrder, bool caseInsensitive)
+    {
+        if (expected.ValueKind != actual.ValueKind)
+        {
+            // Numbers may parse to the same value with different token kinds only
+            // within Number; other kind mismatches are inequality.
+            return false;
+        }
+
+        switch (expected.ValueKind)
+        {
+            case JsonValueKind.Object:
+                foreach (var prop in expected.EnumerateObject())
+                {
+                    if (!actual.TryGetProperty(prop.Name, out var actualVal)) return false;
+                    if (!JsonEquals(prop.Value, actualVal, ignoreExtra, ignoreArrayOrder, caseInsensitive)) return false;
+                }
+                if (!ignoreExtra)
+                {
+                    var expectedCount = 0;
+                    foreach (var _ in expected.EnumerateObject()) expectedCount++;
+                    var actualCount = 0;
+                    foreach (var _ in actual.EnumerateObject()) actualCount++;
+                    if (actualCount != expectedCount) return false;
+                }
+                return true;
+
+            case JsonValueKind.Array:
+                var expectedItems = expected.EnumerateArray().ToList();
+                var actualItems = actual.EnumerateArray().ToList();
+                if (expectedItems.Count != actualItems.Count) return false;
+                if (!ignoreArrayOrder)
+                {
+                    for (var i = 0; i < expectedItems.Count; i++)
+                        if (!JsonEquals(expectedItems[i], actualItems[i], ignoreExtra, ignoreArrayOrder, caseInsensitive)) return false;
+                    return true;
+                }
+                // Multiset: every expected item must claim a distinct actual item.
+                var used = new bool[actualItems.Count];
+                foreach (var exp in expectedItems)
+                {
+                    var matched = false;
+                    for (var i = 0; i < actualItems.Count; i++)
+                    {
+                        if (used[i]) continue;
+                        if (JsonEquals(exp, actualItems[i], ignoreExtra, ignoreArrayOrder, caseInsensitive))
+                        {
+                            used[i] = true; matched = true; break;
+                        }
+                    }
+                    if (!matched) return false;
+                }
+                return true;
+
+            case JsonValueKind.String:
+                return string.Equals(expected.GetString(), actual.GetString(),
+                    caseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+            case JsonValueKind.Number:
+                return expected.GetRawText() == actual.GetRawText()
+                    || (expected.TryGetDecimal(out var de) && actual.TryGetDecimal(out var da) && de == da);
+
+            default: // True / False / Null
+                return true; // kind already matched
+        }
     }
 
     /// <summary>Does the request path satisfy the match's regex path pattern?</summary>

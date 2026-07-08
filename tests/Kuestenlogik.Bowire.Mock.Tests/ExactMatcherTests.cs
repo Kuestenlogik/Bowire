@@ -365,13 +365,14 @@ public sealed class ExactMatcherTests
 
     private static MockRequest ReqEx(
         string method, string path, string? query = null,
-        Dictionary<string, string>? headers = null) => new()
+        Dictionary<string, string>? headers = null, string? body = null) => new()
     {
         Protocol = "rest",
         HttpMethod = method,
         Path = path,
         Query = query,
         Headers = headers ?? new(StringComparer.OrdinalIgnoreCase),
+        Body = body,
     };
 
     private static BowireRecordingStep RestStepMatched(
@@ -505,6 +506,66 @@ public sealed class ExactMatcherTests
         // header wrong → no match even though query passes
         Assert.False(matcher.TryMatch(
             ReqEx("GET", "/x", "?a=1", new(StringComparer.OrdinalIgnoreCase) { ["X-Env"] = "dev" }), rec, out _));
+    }
+
+    // ---------------- #403: body matchers ----------------
+
+    [Fact]
+    public void BodyMatcher_EqualToJson_Ignores_Whitespace_And_Order()
+    {
+        var matcher = new ExactMatcher();
+        var rec = MakeRecording(RestStepMatched("POST", "/orders",
+            new BowireStepMatch { Body = [new() { EqualToJson = """{"a":1,"b":2}""" }] }, """{"ok":1}"""));
+
+        // Same fields, different order + whitespace → semantic match.
+        Assert.True(matcher.TryMatch(ReqEx("POST", "/orders", body: """{ "b": 2, "a": 1 }"""), rec, out _));
+        // Extra field → no match (ignoreExtraElements defaults false).
+        Assert.False(matcher.TryMatch(ReqEx("POST", "/orders", body: """{"a":1,"b":2,"c":3}"""), rec, out _));
+    }
+
+    [Fact]
+    public void BodyMatcher_EqualToJson_IgnoreExtraElements_And_ArrayOrder()
+    {
+        var matcher = new ExactMatcher();
+        var rec = MakeRecording(RestStepMatched("POST", "/x",
+            new BowireStepMatch { Body = [new() { EqualToJson = """{"tags":[1,2,3]}""", IgnoreExtraElements = true, IgnoreArrayOrder = true }] }, "{}"));
+
+        Assert.True(matcher.TryMatch(ReqEx("POST", "/x", body: """{"tags":[3,1,2],"extra":true}"""), rec, out _));
+        Assert.False(matcher.TryMatch(ReqEx("POST", "/x", body: """{"tags":[1,2]}"""), rec, out _)); // length differs
+    }
+
+    [Fact]
+    public void BodyMatcher_JsonPath_Value_And_Presence()
+    {
+        var matcher = new ExactMatcher();
+        var byValue = MakeRecording(RestStepMatched("POST", "/u",
+            new BowireStepMatch { Body = [new() { JsonPath = "$.user.role", EqualTo = "admin" }] }, "{}"));
+        Assert.True(matcher.TryMatch(ReqEx("POST", "/u", body: """{"user":{"role":"admin"}}"""), byValue, out _));
+        Assert.False(matcher.TryMatch(ReqEx("POST", "/u", body: """{"user":{"role":"guest"}}"""), byValue, out _));
+
+        var absent = MakeRecording(RestStepMatched("POST", "/u",
+            new BowireStepMatch { Body = [new() { JsonPath = "$.token", Present = false }] }, "{}"));
+        Assert.True(matcher.TryMatch(ReqEx("POST", "/u", body: """{"user":{}}"""), absent, out _));
+        Assert.False(matcher.TryMatch(ReqEx("POST", "/u", body: """{"token":"x"}"""), absent, out _));
+    }
+
+    [Fact]
+    public void BodyMatcher_JsonPath_ArrayIndex()
+    {
+        var matcher = new ExactMatcher();
+        var rec = MakeRecording(RestStepMatched("POST", "/o",
+            new BowireStepMatch { Body = [new() { JsonPath = "$.items[0].sku", EqualTo = "ABC" }] }, "{}"));
+        Assert.True(matcher.TryMatch(ReqEx("POST", "/o", body: """{"items":[{"sku":"ABC"},{"sku":"XYZ"}]}"""), rec, out _));
+    }
+
+    [Fact]
+    public void BodyMatcher_RawText_ContainsAndRegex()
+    {
+        var matcher = new ExactMatcher();
+        var rec = MakeRecording(RestStepMatched("POST", "/t",
+            new BowireStepMatch { Body = [new() { Contains = "ping" }] }, "{}"));
+        Assert.True(matcher.TryMatch(ReqEx("POST", "/t", body: "a ping b"), rec, out _));
+        Assert.False(matcher.TryMatch(ReqEx("POST", "/t", body: "nope"), rec, out _));
     }
 
     // ---- MockMatchPredicates helper units ----
