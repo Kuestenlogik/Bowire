@@ -28,10 +28,10 @@ internal static class MockFaker
 
     /// <summary>
     /// Generate a value for a <c>faker.&lt;spec&gt;</c> token (the part after
-    /// <c>faker.</c>). Unknown specs return the literal token so substitution
-    /// stays idempotent.
+    /// <c>faker.</c>). Returns null for an unknown spec so the caller can leave
+    /// the placeholder literal (in whichever delimiter it used).
     /// </summary>
-    public static string Generate(string spec)
+    public static string? Generate(string spec)
     {
         var (name, args) = ParseSpec(spec);
         return name switch
@@ -50,7 +50,7 @@ internal static class MockFaker
             "date" => DateTimeOffset.UtcNow
                 .AddDays(RandomNumberGenerator.GetInt32(-365, 366))
                 .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            _ => "${faker." + spec + "}",
+            _ => null,
         };
     }
 

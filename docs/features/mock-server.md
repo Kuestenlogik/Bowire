@@ -27,6 +27,8 @@ bowire mock --recording scenario.bwr --port 7070
 | `--https-port <port>` | = `--port` | Port for the HTTPS listener. |
 | `--cert <path>` | &mdash; | Use your own certificate instead of the self-signed one: a `.pfx`/`.p12` (with `--cert-password`) or a PEM file. |
 | `--cert-password <pw>` | &mdash; | Password for a PKCS#12 `--cert`. |
+| `--proxy <base-url>` | &mdash; | Forward unmatched requests to a real upstream (partial mocking). |
+| `--proxy-record <path>` | &mdash; | With `--proxy`: append each proxied response to this recording file (record-through capture). |
 | `--select <name-or-id>` | &mdash; | Disambiguates a store file that contains multiple recordings. Matches on `name` or `id`. |
 | `--no-watch` | off | Disable hot-reload on file changes. |
 
@@ -128,18 +130,32 @@ curl -i http://127.0.0.1:7070/api/weather/current
 
 ## Dynamic values in response bodies
 
-Recorded REST response bodies can carry placeholders that the mock substitutes per-request. Matches the Bowire UI's auth-helper variable syntax so the same `${...}` vocabulary works in both places:
+Recorded REST response bodies can carry placeholders that the mock substitutes per-request, using Bowire's canonical `{{name}}` variable syntax (the same delimiter as the workbench variable resolver and WireMock's Handlebars templating).
+
+**Value tokens:**
 
 | Token | Replaced with |
 |---|---|
-| `${uuid}` | Fresh UUID v4 per substitution |
-| `${now}` | Current Unix timestamp in seconds |
-| `${nowMs}` | Current Unix timestamp in milliseconds |
-| `${now+N}` / `${now-N}` | `${now}` shifted by `N` seconds (e.g. `${now+3600}` for one hour ahead) |
-| `${timestamp}` | Current UTC time as ISO 8601 with millisecond precision (`2026-04-22T14:35:12.478Z`) |
-| `${random}` | Random `uint32`, rendered in decimal |
+| `{{uuid}}` | Fresh UUID v4 per substitution |
+| `{{now}}` / `{{nowMs}}` | Current Unix timestamp (seconds / milliseconds) |
+| `{{now+N}}` / `{{now-N}}` | `{{now}}` shifted by `N` seconds (e.g. `{{now+3600}}` = one hour ahead) |
+| `{{timestamp}}` | Current UTC time as ISO 8601 (`2026-04-22T14:35:12.478Z`) |
+| `{{random}}` | Random `uint32`, rendered in decimal |
+| `{{faker.*}}` | Fake data: `name` / `firstName` / `lastName` / `email` / `city` / `country` / `word` / `bool` / `date`, plus `int(min,max)` and `lorem(n)` |
+| `{{request.*}}` | Inbound-request values — `{{request.path}}`, `{{request.query.NAME}}`, `{{request.header.NAME}}`, `{{request.body.a.b}}` |
 
-Each occurrence is resolved independently, so `{"a":"${uuid}","b":"${uuid}"}` yields two different UUIDs. Unknown tokens (e.g. `${foo}`) are left verbatim, so literal `${...}`-shaped content in a recorded body survives unchanged.
+**Expression helpers** (the argument is substituted first, so helpers nest value tokens):
+
+| Helper | Result |
+|---|---|
+| `{{math:EXPR}}` | Arithmetic over `+ - * / %` and parens, e.g. `{{math:{{request.body.qty}} * 2}}` |
+| `{{if:A OP B ? THEN : ELSE}}` | Ternary; `OP` is `== != < > <= >=`, or a bare truthy value |
+| `{{upper:X}}` / `{{lower:X}}` | Case folding |
+| `{{default:X\|Y}}` | `X` unless empty, else `Y` |
+
+Each occurrence resolves independently, so `{"a":"{{uuid}}","b":"{{uuid}}"}` yields two different UUIDs. `{{{{name}}}}` escapes to a literal `{{name}}`. Unknown tokens are left verbatim. Loops / block templates aren't supported by this flat syntax yet.
+
+> **Deprecated:** the legacy `${name}` dollar syntax is still resolved (leaf tokens only — no helpers) for recordings authored before the move to `{{name}}`, but it is **deprecated and slated for removal in v3.0**. Author new recordings with `{{name}}`.
 
 Example step:
 
@@ -151,9 +167,11 @@ Example step:
   "httpVerb": "POST",
   "httpPath": "/users",
   "status": "Created",
-  "response": "{\"id\":\"${uuid}\",\"createdAt\":${now},\"validUntil\":${now+86400}}"
+  "response": "{\"id\":\"{{uuid}}\",\"name\":\"{{faker.name}}\",\"createdAt\":{{now}},\"validUntil\":{{now+86400}}}"
 }
 ```
+
+Response bodies can also be sourced from a file (`"responseBodyFile": "user.json"`, resolved next to the recording) and post-processed by an embedded-host `MockOptions.ResponseTransformer` hook.
 
 gRPC responses are skipped — they're binary protobuf and a text substitution pass would break the wire format. If you need dynamic values in a gRPC mock, shape the originating recording so the captured protobuf already carries the intended values; future phases may add schema-aware gRPC substitution.
 
