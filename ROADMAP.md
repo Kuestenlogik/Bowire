@@ -289,6 +289,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [396](https://github.com/Kuestenlogik/Bowire/issues/396) | Bowire | [MQTT wildcard-subscribe privilege check (# / + over-broad topic access)](#issue-kuestenlogik-bowire-396) | ⬜ Backlog |  |
 | [397](https://github.com/Kuestenlogik/Bowire/issues/397) | Bowire | [WebSocket compression-bomb probe (permessage-deflate amplification)](#issue-kuestenlogik-bowire-397) | ⬜ Backlog |  |
 | [398](https://github.com/Kuestenlogik/Bowire/issues/398) | Bowire | [Timing-based DoS probes: WebSocket slow-loris + SSE slow-consumption](#issue-kuestenlogik-bowire-398) | ⬜ Backlog |  |
+| [399](https://github.com/Kuestenlogik/Bowire/issues/399) | Bowire | [gRPC stream fork-bomb / concurrent-stream limit probe](#issue-kuestenlogik-bowire-399) | ⬜ Backlog |  |
+| [400](https://github.com/Kuestenlogik/Bowire/issues/400) | Bowire | [MCP tool-call injection probe (adversarial prompt / unintended tool execution)](#issue-kuestenlogik-bowire-400) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1167,6 +1169,14 @@ Follow-up from #184. The v2.3 WebSocket probes cover anonymous-connect auth and 
 #### <a id="issue-kuestenlogik-bowire-398"></a>⬜ Backlog · [#398](https://github.com/Kuestenlogik/Bowire/issues/398) Timing-based DoS probes: WebSocket slow-loris + SSE slow-consumption
 
 Follow-up from #184. Two remaining catalogue checks are **time-based** and unsuitable for a bounded, fast black-box scan; grouping them since they share the same "hold a connection and measure server fairness over time" shape. [[more]](https://github.com/Kuestenlogik/Bowire/issues/398)
+
+#### <a id="issue-kuestenlogik-bowire-399"></a>⬜ Backlog · [#399](https://github.com/Kuestenlogik/Bowire/issues/399) gRPC stream fork-bomb / concurrent-stream limit probe
+
+Follow-up from #184. The v2.3 gRPC probe covers server-reflection exposure (API9) and unary transport-auth (API2). **Stream fork-bomb** (open N concurrent streams; server should rate-limit) is deferred. [[more]](https://github.com/Kuestenlogik/Bowire/issues/399)
+
+#### <a id="issue-kuestenlogik-bowire-400"></a>⬜ Backlog · [#400](https://github.com/Kuestenlogik/Bowire/issues/400) MCP tool-call injection probe (adversarial prompt / unintended tool execution)
+
+Follow-up from #184. The v2.3 MCP probes cover discovery-inventory exposure (API9) and resource-URL traversal (API1, CWE-22). **Tool-call injection** is deferred. [[more]](https://github.com/Kuestenlogik/Bowire/issues/400)
 
 ---
 
