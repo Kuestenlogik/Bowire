@@ -232,6 +232,80 @@ public sealed class FaultRulesTests
         Assert.Contains("pong", body, StringComparison.Ordinal);
     }
 
+    // ---- #411: malformed-response + fault-on-miss ----
+
+    [Fact]
+    public void LoadJson_MalformedAndOnMiss_Parses()
+    {
+        var set = FaultRuleSet.LoadJson("""
+        { "rules": [ { "onMiss": true, "kind": "malformed-response", "partialBytes": 16 } ] }
+        """);
+        var rule = Assert.Single(set.Rules);
+        Assert.True(rule.OnMiss);
+        Assert.Equal(FaultKind.MalformedResponse, rule.Kind);
+        Assert.Equal(16, rule.PartialBytes);
+        // Round-trips through the kebab-case serializer.
+        Assert.Contains("malformed-response", set.ToJson(), StringComparison.Ordinal);
+        Assert.Contains("onMiss", set.ToJson(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task MalformedResponse_MatchedStep_EmitsGarbageNotRecordedBody()
+    {
+        using var host = BuildHost(SimpleRestRecording(), """
+        { "rules": [ { "method": "Ping/*", "kind": "malformed-response", "partialBytes": 8 } ] }
+        """);
+        var client = host.GetTestClient();
+
+        var resp = await client.GetAsync(new Uri("/ping", UriKind.Relative), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var bytes = await resp.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(8, bytes.Length);
+        Assert.All(bytes, b => Assert.Equal(0xFF, b)); // garbage, not "pong"
+    }
+
+    [Fact]
+    public async Task OnMissError_UnmatchedRequest_ReturnsError_NotPassThrough()
+    {
+        using var host = BuildHost(SimpleRestRecording(), """
+        { "rules": [ { "onMiss": true, "kind": "error", "errorStatusCode": 502 } ] }
+        """);
+        var client = host.GetTestClient();
+
+        // /unknown matches no stub → the onMiss error fires before pass-through (418).
+        var resp = await client.GetAsync(new Uri("/unknown", UriKind.Relative), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadGateway, resp.StatusCode);
+        Assert.Contains("fault", await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OnMissMalformed_UnmatchedRequest_EmitsGarbage()
+    {
+        using var host = BuildHost(SimpleRestRecording(), """
+        { "rules": [ { "onMiss": true, "kind": "malformed-response", "partialBytes": 5 } ] }
+        """);
+        var client = host.GetTestClient();
+
+        var resp = await client.GetAsync(new Uri("/unknown", UriKind.Relative), TestContext.Current.CancellationToken);
+        var bytes = await resp.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(5, bytes.Length);
+        Assert.All(bytes, b => Assert.Equal(0xFF, b));
+    }
+
+    [Fact]
+    public async Task OnMissRule_DoesNotFire_OnMatchedStep()
+    {
+        using var host = BuildHost(SimpleRestRecording(), """
+        { "rules": [ { "onMiss": true, "kind": "error", "errorStatusCode": 502 } ] }
+        """);
+        var client = host.GetTestClient();
+
+        // /ping matches a stub → the onMiss rule must NOT touch it.
+        var resp = await client.GetAsync(new Uri("/ping", UriKind.Relative), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Contains("pong", await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
     // ---- helpers ----
 
     private static BowireRecording SimpleRestRecording() => new()
