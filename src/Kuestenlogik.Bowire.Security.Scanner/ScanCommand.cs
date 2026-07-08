@@ -230,24 +230,23 @@ public static class ScanCommand
         }
         else if (options.RunBuiltins)
         {
-            var builtinResults = await SecurityBuiltins.RunAllAsync(options.Target, http, options.AuthHeaders, ct).ConfigureAwait(false);
-            foreach (var f in builtinResults)
+            void FoldBuiltin(IReadOnlyList<ScanFinding> probeFindings)
             {
-                var sev = f.Template.Recording.Vulnerability?.Severity ?? "info";
-                if (SeverityRank(sev) < minRank && f.Status == ScanFindingStatus.Vulnerable)
+                foreach (var f in probeFindings)
                 {
-                    findings.Add(new ScanFinding
-                    {
-                        Template = f.Template,
-                        Status = ScanFindingStatus.Skipped,
-                        Detail = "below severity threshold",
-                    });
-                }
-                else
-                {
-                    findings.Add(f);
+                    var sev = f.Template.Recording.Vulnerability?.Severity ?? "info";
+                    findings.Add(SeverityRank(sev) < minRank && f.Status == ScanFindingStatus.Vulnerable
+                        ? new ScanFinding { Template = f.Template, Status = ScanFindingStatus.Skipped, Detail = "below severity threshold" }
+                        : f);
                 }
             }
+
+            FoldBuiltin(await SecurityBuiltins.RunAllAsync(options.Target, http, options.AuthHeaders, ct).ConfigureAwait(false));
+
+            // #187: CVE lookup — match the Server/X-Powered-By banner against a
+            // VulnDb corpus (loaded from --cve-db, or the built-in seed).
+            var cveDb = LoadCveDatabase(options, stderr);
+            FoldBuiltin(await ServerCveProbe.RunAsync(options.Target, http, options.AuthHeaders, cveDb, ct).ConfigureAwait(false));
         }
 
         // Named suites (#184): fold the dedicated per-entry probes into the
@@ -370,6 +369,23 @@ public static class ScanCommand
     /// </summary>
     private static bool IsHttpScheme(string target)
         => !Uri.TryCreate(target, UriKind.Absolute, out var uri) || uri.Scheme is "http" or "https";
+
+    // #187: load the CVE corpus for the banner lookup — a --cve-db VulnDb file,
+    // or the built-in seed. A bad file degrades to the seed with a warning
+    // rather than sinking the scan.
+    private static CveDatabase LoadCveDatabase(ScanOptions options, TextWriter stderr)
+    {
+        if (string.IsNullOrEmpty(options.CveDbPath)) return CveDatabase.Seed();
+        try
+        {
+            return CveDatabase.Load(options.CveDbPath);
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException or ArgumentException)
+        {
+            stderr.WriteLine($"  --cve-db could not be loaded ({ex.Message}); using the built-in CVE seed.");
+            return CveDatabase.Seed();
+        }
+    }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope",
         Justification = "HttpClient(handler, disposeHandler: true) takes ownership — the handler is disposed when the HttpClient is.")]
@@ -728,6 +744,13 @@ public sealed class ScanOptions
     /// placeholders resolved against <see cref="Target"/>.
     /// </summary>
     public string? Nuclei { get; init; }
+
+    /// <summary>
+    /// #187: path to a CVE / VulnDb JSON file used by the banner CVE-lookup
+    /// (Server / X-Powered-By → known CVEs). Null = use the built-in seed set.
+    /// </summary>
+    public string? CveDbPath { get; init; }
+
     public string? Template { get; init; }
     public string? OutSarif { get; init; }
     public string? MinSeverity { get; init; }

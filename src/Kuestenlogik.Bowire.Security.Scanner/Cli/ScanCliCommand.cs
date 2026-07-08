@@ -30,6 +30,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
         var templatesOpt = new Option<string>("--templates") { Description = "Directory of *.json vulnerability templates to run (Bowire format)." };
         var templateOpt = new Option<string>("--template") { Description = "Single template *.json file to run (combinable with --templates)." };
         var nucleiOpt = new Option<string>("--nuclei") { Description = "Directory of *.yaml Nuclei templates (projectdiscovery/nuclei-templates). Read alongside --templates; resolved against --target so {{BaseURL}}/{{Hostname}} etc. land on real probes." };
+        var cveDbOpt = new Option<string>("--cve-db") { Description = "Path to a CVE / VulnDb JSON file for the banner CVE-lookup (Server / X-Powered-By version → known CVEs). Runs with the built-in passive checks; defaults to a small built-in seed when omitted." };
         var outOpt = new Option<string>("--out") { Description = "Write findings as SARIF 2.1.0 JSON to this path (for CI dashboards: GitHub Code Scanning, GitLab, Azure DevOps)." };
         var suiteOpt = new Option<string>("--suite") { Description = "Run a named suite after the scan. `owasp-api` = OWASP API Top 10 rollup (HTTP + protocol probes) with a per-entry coverage table; `protocol` = only the protocol-specific probes (gRPC/GraphQL/WS/MQTT/SSE/MCP) + the table — use for non-HTTP targets like mqtt:// or ws://; `all` = everything (HTTP OWASP + protocol probes) + the table." };
         var severityOpt = new Option<string>("--severity") { Description = "Minimum severity to report: low / medium / high / critical. Lower-severity templates still load but are reported as skipped." };
@@ -56,6 +57,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
         scan.Add(templatesOpt);
         scan.Add(templateOpt);
         scan.Add(nucleiOpt);
+        scan.Add(cveDbOpt);
         scan.Add(outOpt);
         scan.Add(suiteOpt);
         scan.Add(severityOpt);
@@ -74,6 +76,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
                 Templates = pr.GetValue(templatesOpt),
                 Template = pr.GetValue(templateOpt),
                 Nuclei = pr.GetValue(nucleiOpt),
+                CveDbPath = pr.GetValue(cveDbOpt),
                 OutSarif = pr.GetValue(outOpt),
                 Suite = pr.GetValue(suiteOpt),
                 MinSeverity = pr.GetValue(severityOpt),
