@@ -116,6 +116,7 @@ internal static class OwaspApiSuite
     public static IReadOnlyList<IOwaspProtocolProbe> ProtocolProbes { get; } =
     [
         new GraphQLIntrospectionProbe(),
+        new GraphQLResourceLimitProbe(),
         new GrpcReflectionProbe(),
         new McpDiscoveryProbe(),
         new WebSocketAuthProbe(),
