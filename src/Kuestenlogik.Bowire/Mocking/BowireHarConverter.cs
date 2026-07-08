@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -41,6 +43,23 @@ public static class BowireHarConverter
         ["blocked", "dns", "connect", "send", "wait", "receive", "ssl"];
 
     /// <summary>
+    /// Header names that carry credentials / session material. HAR traces
+    /// straight out of DevTools routinely contain live bearer tokens and
+    /// session cookies; these drive both the redaction pass
+    /// (<see cref="Convert(string, string?, bool)"/> with <c>redactSecrets</c>)
+    /// and the auth-context surfacing (<see cref="DetectAuthHeaders"/>, #190).
+    /// </summary>
+    private static readonly HashSet<string> SensitiveHeaders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Authorization", "Proxy-Authorization", "Cookie", "Set-Cookie",
+        "X-Api-Key", "X-Api-Token", "X-Auth-Token", "X-Access-Token",
+        "X-Csrf-Token", "X-Xsrf-Token", "Api-Key", "Authentication",
+    };
+
+    /// <summary>Placeholder written in place of a redacted header value.</summary>
+    public const string RedactedPlaceholder = "***redacted***";
+
+    /// <summary>
     /// Parse a HAR document and return a fresh <see cref="BowireRecording"/>.
     /// Throws <see cref="BowireHarImportException"/> with a user-facing
     /// message on any structural problem (missing <c>log</c>, malformed
@@ -53,6 +72,22 @@ public static class BowireHarConverter
     /// creator field is missing.
     /// </param>
     public static BowireRecording Convert(string harJson, string? recordingName = null)
+        => Convert(harJson, recordingName, redactSecrets: false);
+
+    /// <summary>
+    /// Parse a HAR document into a <see cref="BowireRecording"/>, optionally
+    /// stripping credential-bearing headers (#186).
+    /// </summary>
+    /// <param name="harJson">HAR 1.2 document content.</param>
+    /// <param name="recordingName">See the other overload.</param>
+    /// <param name="redactSecrets">
+    /// When <c>true</c>, header values in <see cref="SensitiveHeaders"/>
+    /// (Authorization, Cookie, X-Api-Key, …) are replaced with
+    /// <see cref="RedactedPlaceholder"/> on both request + response steps —
+    /// so a HAR captured against production can be imported without persisting
+    /// live tokens / session cookies into a recording file.
+    /// </param>
+    public static BowireRecording Convert(string harJson, string? recordingName, bool redactSecrets)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(harJson);
 
@@ -75,7 +110,11 @@ public static class BowireHarConverter
 
         var recording = new BowireRecording
         {
-            Id = $"rec_har_{Guid.NewGuid():N}",
+            // Deterministic id derived from the HAR content + name, so
+            // re-importing the same trace yields the same recording id — the
+            // building block a workspace/collection store keys on to dedupe
+            // instead of stacking a fresh copy on every import (#186 idempotency).
+            Id = DeriveRecordingId(harJson, name),
             Name = name,
             Description = $"Imported from HAR ({entries.Count} {(entries.Count == 1 ? "entry" : "entries")})",
             CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
@@ -85,7 +124,7 @@ public static class BowireHarConverter
         var index = 0;
         foreach (var entry in entries.Where(e => e is not null))
         {
-            var step = MapEntry(entry!, index++);
+            var step = MapEntry(entry!, index++, redactSecrets);
             if (step is not null) recording.Steps.Add(step);
         }
 
@@ -93,11 +132,59 @@ public static class BowireHarConverter
     }
 
     /// <summary>
+    /// Scan a HAR document and return the distinct credential-bearing header
+    /// names it contains (canonical casing from <see cref="SensitiveHeaders"/>),
+    /// sorted. Lets the importer surface "this trace carries an Authorization /
+    /// Cookie header — redact it, or feed it into auth-recording (#190)" without
+    /// the operator eyeballing raw JSON. Best-effort: returns an empty list for
+    /// malformed input rather than throwing.
+    /// </summary>
+    public static IReadOnlyList<string> DetectAuthHeaders(string harJson)
+    {
+        if (string.IsNullOrWhiteSpace(harJson)) return [];
+        JsonArray? entries;
+        try
+        {
+            entries = JsonNode.Parse(harJson)?["log"]?["entries"] as JsonArray;
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+        if (entries is null) return [];
+
+        var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in entries.Where(e => e is not null))
+        {
+            CollectSensitiveHeaderNames(entry!["request"]?["headers"], found);
+            CollectSensitiveHeaderNames(entry!["response"]?["headers"], found);
+        }
+        return found.OrderBy(h => h, StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
+    private static void CollectSensitiveHeaderNames(JsonNode? headersNode, HashSet<string> into)
+    {
+        if (headersNode is not JsonArray headers) return;
+        foreach (var header in headers)
+        {
+            var name = header?["name"]?.GetValue<string>();
+            if (name is not null && SensitiveHeaders.TryGetValue(name, out var canonical))
+                into.Add(canonical);
+        }
+    }
+
+    private static string DeriveRecordingId(string harJson, string name)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(name + "\0" + harJson));
+        return "rec_har_" + System.Convert.ToHexStringLower(hash)[..32];
+    }
+
+    /// <summary>
     /// Map one HAR entry to a Bowire recording step. Returns <c>null</c> for
     /// entries that don't carry enough fields to round-trip (no method, no
     /// URL) — those would replay as 404s anyway.
     /// </summary>
-    private static BowireRecordingStep? MapEntry(JsonNode entry, int index)
+    private static BowireRecordingStep? MapEntry(JsonNode entry, int index, bool redactSecrets)
     {
         var request = entry["request"];
         var response = entry["response"];
@@ -138,8 +225,8 @@ public static class BowireHarConverter
             DurationMs = ExtractDurationMs(entry),
             Body = ExtractRequestBody(request),
             Response = ExtractResponseBody(response),
-            Metadata = ExtractHeaders(request["headers"]),
-            ResponseHeaders = ExtractHeaders(response?["headers"])
+            Metadata = ExtractHeaders(request["headers"], redactSecrets),
+            ResponseHeaders = ExtractHeaders(response?["headers"], redactSecrets)
         };
 
         if (!string.IsNullOrEmpty(step.Body)) step.Messages.Add(step.Body);
@@ -287,7 +374,7 @@ public static class BowireHarConverter
     /// header convention. Cookies stay in <c>Cookie</c>/<c>Set-Cookie</c>
     /// headers — the dedicated HAR <c>cookies</c> array is redundant info.
     /// </summary>
-    private static Dictionary<string, string>? ExtractHeaders(JsonNode? headersNode)
+    private static Dictionary<string, string>? ExtractHeaders(JsonNode? headersNode, bool redactSecrets)
     {
         if (headersNode is not JsonArray headers || headers.Count == 0) return null;
 
@@ -297,6 +384,9 @@ public static class BowireHarConverter
             var name = header?["name"]?.GetValue<string>();
             var value = header?["value"]?.GetValue<string>();
             if (string.IsNullOrEmpty(name) || value is null) continue;
+            // Strip credential-bearing header values when redaction is on, so
+            // a production HAR never lands live tokens / cookies in a recording.
+            if (redactSecrets && SensitiveHeaders.Contains(name)) value = RedactedPlaceholder;
             // Last-write wins for duplicate headers — matches the matcher's
             // header-substitution behaviour.
             dict[name] = value;
@@ -356,7 +446,7 @@ public static class BowireHarConverter
     }
 }
 
-/// <summary>Thrown by <see cref="BowireHarConverter.Convert"/> when the HAR document is malformed.</summary>
+/// <summary>Thrown by <see cref="BowireHarConverter.Convert(string, string?, bool)"/> when the HAR document is malformed.</summary>
 public sealed class BowireHarImportException : Exception
 {
     public BowireHarImportException() { }

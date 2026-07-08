@@ -27,7 +27,7 @@ Bowire deliberately uses standard formats for everything that crosses an ecosyst
 | Format | Purpose | Bowire's role |
 |--------|---------|---------------|
 | `.nupkg` | NuGet package | **Plugin distribution.** `bowire plugin install <PackageId>` pulls from nuget.org or any configured private feed; embedded hosts use `dotnet add package`. Bowire has no custom plugin-package format — every protocol plugin and template ships as a regular `.nupkg`. |
-| `.har` | HTTP Archive (1.2) | Alternate recording export and import path. Interop with DevTools, Charles, Insomnia, Postman, and Playwright's `recordHar`. HAR import into a `.bwr` recording is on the roadmap. |
+| `.har` | HTTP Archive (1.2) | Alternate recording export and import path. Interop with DevTools, Charles, Insomnia, Postman, and Playwright's `recordHar`. Import a trace into a `.bwr` recording with `bowire import har <file>` (or the `bowire.har.import` MCP tool); add `--redact-secrets` to strip credential headers (Authorization / Cookie / X-Api-Key / …) before writing. Credential headers are reported on every import, and the recording id is a deterministic content hash so re-importing the same trace is idempotent. |
 | `.html` (`*.report.html`) | Self-contained HTML report | Pass/fail summary from the test runner with collapsible step details. Single file — drop it into a CI artefact bucket and link to it. |
 | `.proto` | Protobuf source | Schema upload for gRPC when the target doesn't support Server Reflection. Also produces the `FileDescriptorSet` for `bowire mock --grpc-schema`. |
 | `.pb` | Protobuf descriptor set | Compiled `FileDescriptorSet` (`protoc --descriptor_set_out=path.pb --include_imports your.proto`). Direct input for `bowire mock --grpc-schema`. |
