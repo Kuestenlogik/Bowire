@@ -285,6 +285,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ⬜ Backlog |  |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog |  |
 | [367](https://github.com/Kuestenlogik/Bowire/issues/367) | Bowire | [codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)](#issue-kuestenlogik-bowire-367) | ⬜ Backlog |  |
+| [395](https://github.com/Kuestenlogik/Bowire/issues/395) | Bowire | [Active MQTT probes: retained-message poisoning + will-message abuse (PUBLISH-based)](#issue-kuestenlogik-bowire-395) | ⬜ Backlog |  |
+| [396](https://github.com/Kuestenlogik/Bowire/issues/396) | Bowire | [MQTT wildcard-subscribe privilege check (# / + over-broad topic access)](#issue-kuestenlogik-bowire-396) | ⬜ Backlog |  |
+| [397](https://github.com/Kuestenlogik/Bowire/issues/397) | Bowire | [WebSocket compression-bomb probe (permessage-deflate amplification)](#issue-kuestenlogik-bowire-397) | ⬜ Backlog |  |
+| [398](https://github.com/Kuestenlogik/Bowire/issues/398) | Bowire | [Timing-based DoS probes: WebSocket slow-loris + SSE slow-consumption](#issue-kuestenlogik-bowire-398) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1147,6 +1151,22 @@ Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in
 #### <a id="issue-kuestenlogik-bowire-367"></a>⬜ Backlog · [#367](https://github.com/Kuestenlogik/Bowire/issues/367) codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)
 
 Follow-up to #356. JS tests now gate CI (`node --test` over wwwroot-js) and JS coverage is *runnable* locally (`npm run test:js:coverage` / `node --test --experimental-test-coverage`), but it isn't uploaded to Codecov yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/367)
+
+#### <a id="issue-kuestenlogik-bowire-395"></a>⬜ Backlog · [#395](https://github.com/Kuestenlogik/Bowire/issues/395) Active MQTT probes: retained-message poisoning + will-message abuse (PUBLISH-based)
+
+Follow-up from #184. The v2.3 protocol scanner is intentionally **safe, black-box and non-destructive** — its MQTT auth probe connects + subscribes to a throwaway topic and **never publishes**. These two checks require an **active/mutating** testing mode the passive scanner deliberately avoids. [[more]](https://github.com/Kuestenlogik/Bowire/issues/395)
+
+#### <a id="issue-kuestenlogik-bowire-396"></a>⬜ Backlog · [#396](https://github.com/Kuestenlogik/Bowire/issues/396) MQTT wildcard-subscribe privilege check (# / + over-broad topic access)
+
+Follow-up from #184. The passive MQTT probe checks anonymous-CONNECT auth; it does not assess **wildcard-subscribe privilege**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/396)
+
+#### <a id="issue-kuestenlogik-bowire-397"></a>⬜ Backlog · [#397](https://github.com/Kuestenlogik/Bowire/issues/397) WebSocket compression-bomb probe (permessage-deflate amplification)
+
+Follow-up from #184. The v2.3 WebSocket probes cover anonymous-connect auth and inbound message-size cap. **Compression-bomb** (permessage-deflate amplification) is not yet reachable. [[more]](https://github.com/Kuestenlogik/Bowire/issues/397)
+
+#### <a id="issue-kuestenlogik-bowire-398"></a>⬜ Backlog · [#398](https://github.com/Kuestenlogik/Bowire/issues/398) Timing-based DoS probes: WebSocket slow-loris + SSE slow-consumption
+
+Follow-up from #184. Two remaining catalogue checks are **time-based** and unsuitable for a bounded, fast black-box scan; grouping them since they share the same "hold a connection and measure server fairness over time" shape. [[more]](https://github.com/Kuestenlogik/Bowire/issues/398)
 
 ---
 
