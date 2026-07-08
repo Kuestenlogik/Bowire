@@ -23,6 +23,23 @@ public sealed class MockOptions
     public bool PassThroughOnMiss { get; set; } = true;
 
     /// <summary>
+    /// #407: base URL of a real upstream to forward unmatched requests to
+    /// (WireMock's <c>proxyBaseUrl</c>) — enables partial mocking: mock the
+    /// stubs you have, proxy everything else to the live service. The target is
+    /// fixed by this config (never taken from the request), so the mock can't
+    /// be turned into an open relay. A matched stub can also opt into proxying
+    /// via <see cref="Mocking.BowireRecordingStep.Proxy"/>. Null = no proxy.
+    /// </summary>
+    public string? ProxyBaseUrl { get; set; }
+
+    /// <summary>
+    /// #407: optional <see cref="HttpClient"/> used for proxy forwarding.
+    /// Injectable for embedded hosts / tests; defaults to a shared reusable
+    /// client (the recommended HttpClient pattern) when null.
+    /// </summary>
+    public HttpClient? ProxyHttpClient { get; set; }
+
+    /// <summary>
     /// When <c>true</c> (default), the recording file is watched with
     /// <see cref="Loading.RecordingWatcher"/> and reloaded on change. Tests
     /// usually want this off to avoid reload-vs-assert races.

@@ -69,6 +69,9 @@ internal sealed class MockCliOptions
     /// <summary>Password for a PKCS#12 certificate.</summary>
     public string? CertPassword { get; set; }
 
+    /// <summary>#407: forward unmatched requests to this upstream base URL.</summary>
+    public string? ProxyBaseUrl { get; set; }
+
     /// <summary>Disambiguator when the recording file contains multiple recordings.</summary>
     public string? Select { get; set; }
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Diagnostics;
+using System.Net.Http;
 using Kuestenlogik.Bowire.Mock.Chaos;
 using Kuestenlogik.Bowire.Mock.Management;
 using Kuestenlogik.Bowire.Mock.Matchers;
@@ -351,6 +352,15 @@ public sealed class MockHandler
             if (await ApplyMissFaultAsync(ctx, missFault)) return;
         }
 
+        // #407: forward-on-miss — when a proxy base URL is configured, an
+        // unmatched request goes to the real upstream (partial mocking) rather
+        // than falling through / 404ing.
+        if (!string.IsNullOrEmpty(_options.ProxyBaseUrl))
+        {
+            await ForwardAsync(ctx, _options.ProxyBaseUrl);
+            return;
+        }
+
         // Only after the matcher missed do we defer to any endpoint
         // routing picked up — that's where gRPC Reflection (registered
         // by MockServer when the recording has proto descriptors)
@@ -631,6 +641,14 @@ public sealed class MockHandler
         // tag the request-log entry with which recorded step replied.
         ctx.Items[MatchedStepIdItemKey] = step.Id;
 
+        // #407: a stub can forward to a real upstream instead of replaying —
+        // partial mocking (mock some endpoints, proxy the rest).
+        if (!string.IsNullOrEmpty(step.Proxy))
+        {
+            await ForwardAsync(ctx, step.Proxy);
+            return;
+        }
+
         // Chaos injection (Phase 3a): apply latency jitter and fail-rate
         // *after* we've matched a step (so unmatched traffic still
         // surfaces the miss cleanly) but *before* dispatch (so streaming
@@ -802,6 +820,63 @@ public sealed class MockHandler
         var garbage = new byte[n];
         Array.Fill(garbage, (byte)0xFF);
         await ctx.Response.Body.WriteAsync(garbage, ctx.RequestAborted);
+    }
+
+    // ---- #407: upstream proxy ----
+
+    // A shared client — reusing one HttpClient is the recommended pattern
+    // (per-request clients exhaust sockets). Not a static "service": it's a
+    // general-purpose forwarder, and embedded hosts can inject their own via
+    // MockOptions.ProxyHttpClient.
+    private static readonly HttpClient s_sharedProxyClient =
+        new(new HttpClientHandler { AllowAutoRedirect = false, CheckCertificateRevocationList = true });
+
+    // Hop-by-hop / framing headers Kestrel manages — never copied from upstream.
+    private static readonly HashSet<string> s_proxyStripHeaders = new(StringComparer.OrdinalIgnoreCase)
+    { "Transfer-Encoding", "Connection", "Keep-Alive", "Content-Length", "Server", "Date" };
+
+    private async Task ForwardAsync(HttpContext ctx, string targetBaseUrl)
+    {
+        var client = _options.ProxyHttpClient ?? s_sharedProxyClient;
+        var target = CombineProxyUrl(targetBaseUrl, ctx.Request.Path.Value, ctx.Request.QueryString.Value);
+        using var req = new HttpRequestMessage(new HttpMethod(ctx.Request.Method), target);
+
+        if (ctx.Request.ContentLength is > 0 || ctx.Request.Headers.ContainsKey("Transfer-Encoding"))
+            req.Content = new StreamContent(ctx.Request.Body);
+
+        foreach (var h in ctx.Request.Headers)
+        {
+            if (string.Equals(h.Key, "Host", StringComparison.OrdinalIgnoreCase)) continue;
+            var values = h.Value.ToArray();
+            if (!req.Headers.TryAddWithoutValidation(h.Key, values))
+                req.Content?.Headers.TryAddWithoutValidation(h.Key, values);
+        }
+
+        try
+        {
+            using var upstream = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ctx.RequestAborted);
+            ctx.Response.StatusCode = (int)upstream.StatusCode;
+            foreach (var h in upstream.Headers)
+                if (!s_proxyStripHeaders.Contains(h.Key)) ctx.Response.Headers[h.Key] = h.Value.ToArray();
+            foreach (var h in upstream.Content.Headers)
+                if (!s_proxyStripHeaders.Contains(h.Key)) ctx.Response.Headers[h.Key] = h.Value.ToArray();
+            await upstream.Content.CopyToAsync(ctx.Response.Body, ctx.RequestAborted);
+            _logger.LogDebug("proxy(path={Path}, status={Status})", SafeLog(ctx.Request.Path.Value), (int)upstream.StatusCode);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ctx.RequestAborted.IsCancellationRequested)
+        {
+            ctx.Response.StatusCode = 502;
+            ctx.Response.ContentType = "application/json; charset=utf-8";
+            await ctx.Response.WriteAsync(
+                $"{{\"error\":\"proxy: upstream unreachable ({ex.GetType().Name})\"}}", ctx.RequestAborted);
+        }
+    }
+
+    private static string CombineProxyUrl(string baseUrl, string? path, string? query)
+    {
+        var b = baseUrl.TrimEnd('/');
+        var p = string.IsNullOrEmpty(path) ? "/" : (path.StartsWith('/') ? path : "/" + path);
+        return b + p + (query ?? "");
     }
 
     /// <summary>Whether any step in the active recording declares a body matcher (#403).</summary>
