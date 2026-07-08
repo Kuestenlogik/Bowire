@@ -101,6 +101,69 @@ public sealed class IntegrationTests
     }
 
     [Fact]
+    public async Task GetMatchingPath_WithoutResponseHeaders_DefaultsToJsonContentType()
+    {
+        using var host = BuildHost();
+        var client = host.GetTestClient();
+
+        var resp = await client.GetAsync(new Uri("/weather", UriKind.Relative), TestContext.Current.CancellationToken);
+        Assert.Equal("application/json; charset=utf-8", resp.Content.Headers.ContentType?.ToString());
+    }
+
+    [Fact]
+    public async Task GetRecordedStep_ReEmitsResponseHeadersAndHonoursContentType()
+    {
+        var rec = new BowireRecording
+        {
+            Id = "rec_headers",
+            Name = "headers",
+            RecordingFormatVersion = 2,
+            Steps =
+            {
+                new BowireRecordingStep
+                {
+                    Id = "step_headers",
+                    Protocol = "rest",
+                    Service = "S",
+                    Method = "M",
+                    MethodType = "Unary",
+                    HttpPath = "/thing",
+                    HttpVerb = "GET",
+                    Status = "OK",
+                    Response = "<html><body>hi</body></html>",
+                    ResponseHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["Content-Type"] = "text/html; charset=utf-8",
+                        ["Cache-Control"] = "no-store",
+                        ["X-Custom"] = "bowire",
+                        ["Access-Control-Allow-Origin"] = "*",
+                        // A framing header Kestrel owns — must be dropped, not fought.
+                        ["Transfer-Encoding"] = "chunked",
+                    },
+                },
+            },
+        };
+
+        using var host = BuildHost(recording: rec);
+        var client = host.GetTestClient();
+
+        var resp = await client.GetAsync(new Uri("/thing", UriKind.Relative), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        // Content-Type from the recording wins over the JSON default.
+        Assert.Equal("text/html; charset=utf-8", resp.Content.Headers.ContentType?.ToString());
+        // Custom + standard response headers are re-emitted.
+        Assert.Equal("no-store", resp.Headers.CacheControl?.ToString());
+        Assert.Equal("bowire", resp.Headers.GetValues("X-Custom").Single());
+        Assert.Equal("*", resp.Headers.GetValues("Access-Control-Allow-Origin").Single());
+        // The framing header from the deny-list was not copied verbatim.
+        Assert.False(resp.Headers.Contains("Transfer-Encoding"));
+
+        var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("<html><body>hi</body></html>", body);
+    }
+
+    [Fact]
     public async Task GetRecordedNotFound_ReplaysStatusCodeAndBody()
     {
         using var host = BuildHost();

@@ -98,12 +98,27 @@ public static class UnaryReplayer
             ct);
     }
 
+    // Response headers Kestrel computes/manages itself — never copied from a
+    // recording, or the replay would fight the server framing (duplicate /
+    // conflicting Content-Length, Transfer-Encoding, keep-alive, …).
+    private static readonly HashSet<string> s_restResponseHeaderDenyList = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Content-Length", "Transfer-Encoding", "Connection", "Keep-Alive",
+        "Upgrade", "Proxy-Connection", "TE", "Trailer",
+    };
+
     private static async Task<int> ReplayRestAsync(
         HttpContext ctx, BowireRecordingStep step, RequestTemplate? request, CancellationToken ct)
     {
         var statusCode = MapStatus(step.Status);
         ctx.Response.StatusCode = statusCode;
-        ctx.Response.ContentType = "application/json; charset=utf-8";
+
+        // Re-emit the recorded / authored response headers so the mock
+        // reproduces the real contract (CORS, cache-control, Location, custom
+        // auth/session headers, …) instead of always claiming JSON. A
+        // Content-Type in the map wins over the default; framing headers
+        // Kestrel owns are skipped.
+        ApplyRestResponseHeaders(ctx, step.ResponseHeaders);
 
         // Dynamic-value substitution happens per request — ${uuid} and
         // ${now}-style placeholders in the recorded body are resolved
@@ -118,6 +133,35 @@ public static class UnaryReplayer
         await ctx.Response.Body.WriteAsync(bytes, ct);
 
         return statusCode;
+    }
+
+    // Apply a recording's REST response headers onto the live response.
+    // Content-Type is routed through the typed property (so it wins whether
+    // or not the recording carried one); framing headers Kestrel manages are
+    // dropped; everything else is copied verbatim. A recording with no
+    // response headers keeps the historic JSON default.
+    internal static void ApplyRestResponseHeaders(
+        HttpContext ctx, IDictionary<string, string>? responseHeaders)
+    {
+        string? contentType = null;
+        if (responseHeaders is { Count: > 0 })
+        {
+            foreach (var (name, value) in responseHeaders)
+            {
+                if (string.IsNullOrEmpty(name) || value is null) continue;
+                if (string.Equals(name, "Content-Type", StringComparison.OrdinalIgnoreCase))
+                {
+                    contentType = value; // applied via the typed property below
+                    continue;
+                }
+                if (s_restResponseHeaderDenyList.Contains(name)) continue;
+                ctx.Response.Headers[name] = value;
+            }
+        }
+
+        ctx.Response.ContentType = string.IsNullOrEmpty(contentType)
+            ? "application/json; charset=utf-8"
+            : contentType;
     }
 
     // gRPC unary response shape:
