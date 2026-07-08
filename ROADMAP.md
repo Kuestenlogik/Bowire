@@ -243,12 +243,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts
 
-**0/2 done** · 2 backlog
+**0/3 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [283](https://github.com/Kuestenlogik/Bowire/issues/283) | Bowire | [Retire v1 .bww format migration shim (introduced in #282)](#issue-kuestenlogik-bowire-283) | ⬜ Backlog |  |
 | [359](https://github.com/Kuestenlogik/Bowire/issues/359) | Bowire | [v3.0: consolidate the duplicated runner/reporter pairs in Bowire.Tool](#issue-kuestenlogik-bowire-359) | ⬜ Backlog |  |
+| [421](https://github.com/Kuestenlogik/Bowire/issues/421) | Bowire | [v3.0: rename Kuestenlogik.Bowire.* -> Bowire.* (assemblies, namespaces, NuGet ids)](#issue-kuestenlogik-bowire-421) | ⬜ Backlog |  |
 
 ### Backlog (not yet scheduled)
 
@@ -1030,6 +1031,10 @@ When an MCP tool call is in flight, the server can emit `notifications/message` 
 #### <a id="issue-kuestenlogik-bowire-359"></a>⬜ Backlog · [#359](https://github.com/Kuestenlogik/Bowire/issues/359) v3.0: consolidate the duplicated runner/reporter pairs in Bowire.Tool
 
 2026-07-03 architecture audit: the Tool carries two parallel implementations of the same pipeline, one per input format: [[more]](https://github.com/Kuestenlogik/Bowire/issues/359)
+
+#### <a id="issue-kuestenlogik-bowire-421"></a>⬜ Backlog · [#421](https://github.com/Kuestenlogik/Bowire/issues/421) v3.0: rename Kuestenlogik.Bowire.* -> Bowire.* (assemblies, namespaces, NuGet ids)
+
+For the v3.0 breaking-change release, rename the Bowire .NET surface from `Kuestenlogik.Bowire.*` to **`Bowire.*`** — assembly names, root namespaces, and NuGet package ids (e.g. `Kuestenlogik.Bowire.Ai` → `Bowire.Ai`). This is **Option A** (full rename), chosen over "package-id only" (Option B) and status quo. [[more]](https://github.com/Kuestenlogik/Bowire/issues/421)
 
 ### Backlog (not yet scheduled)
 
