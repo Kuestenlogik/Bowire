@@ -302,6 +302,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [398](https://github.com/Kuestenlogik/Bowire/issues/398) | Bowire | [Timing-based DoS probes: WebSocket slow-loris + SSE slow-consumption](#issue-kuestenlogik-bowire-398) | ⬜ Backlog |  |
 | [399](https://github.com/Kuestenlogik/Bowire/issues/399) | Bowire | [gRPC stream fork-bomb / concurrent-stream limit probe](#issue-kuestenlogik-bowire-399) | ⬜ Backlog |  |
 | [400](https://github.com/Kuestenlogik/Bowire/issues/400) | Bowire | [MCP tool-call injection probe (adversarial prompt / unintended tool execution)](#issue-kuestenlogik-bowire-400) | ⬜ Backlog |  |
+| [413](https://github.com/Kuestenlogik/Bowire/issues/413) | Bowire | [Site comparison: split into topic-specific tables (API-client / mocking / security), add WireMock + Mockito, broaden beyond top-5](#issue-kuestenlogik-bowire-413) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1232,6 +1233,10 @@ Follow-up from #184. The v2.3 gRPC probe covers server-reflection exposure (API9
 #### <a id="issue-kuestenlogik-bowire-400"></a>⬜ Backlog · [#400](https://github.com/Kuestenlogik/Bowire/issues/400) MCP tool-call injection probe (adversarial prompt / unintended tool execution)
 
 Follow-up from #184. The v2.3 MCP probes cover discovery-inventory exposure (API9) and resource-URL traversal (API1, CWE-22). **Tool-call injection** is deferred. [[more]](https://github.com/Kuestenlogik/Bowire/issues/400)
+
+#### <a id="issue-kuestenlogik-bowire-413"></a>⬜ Backlog · [#413](https://github.com/Kuestenlogik/Bowire/issues/413) Site comparison: split into topic-specific tables (API-client / mocking / security), add WireMock + Mockito, broaden beyond top-5
+
+The site has exactly one tool-vs-tool comparison — a hand-authored top-5 matrix in `site/_includes/comparison.html` (rendered on the homepage via `index.html`). It is framed entirely around the **API-client / workbench** category — discovery + invocation + streaming/logging + record/replay: [[more]](https://github.com/Kuestenlogik/Bowire/issues/413)
 
 ---
 
