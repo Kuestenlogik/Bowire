@@ -31,6 +31,9 @@ public static class BowireMockApplicationBuilderExtensions
         var options = new MockOptions();
         configure?.Invoke(options);
 
+        // #406: bodyFileName resolves relative to the recording file's dir.
+        options.RecordingDirectory ??= Path.GetDirectoryName(Path.GetFullPath(recordingPath));
+
         var recording = RecordingLoader.Load(recordingPath, options.Select);
         var logger = ResolveLogger(app, options);
         // Pass the path so the runtime-scenario-switch control

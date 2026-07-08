@@ -5,6 +5,7 @@ using Kuestenlogik.Bowire.Mock.Chaos;
 using Kuestenlogik.Bowire.Mock.Management;
 using Kuestenlogik.Bowire.Mock.Matchers;
 using Kuestenlogik.Bowire.Mocking;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace Kuestenlogik.Bowire.Mock;
@@ -38,6 +39,23 @@ public sealed class MockOptions
     /// client (the recommended HttpClient pattern) when null.
     /// </summary>
     public HttpClient? ProxyHttpClient { get; set; }
+
+    /// <summary>
+    /// #406: base directory for resolving a stub's <c>bodyFileName</c>
+    /// (<see cref="Mocking.BowireRecordingStep.ResponseBodyFile"/>). Set
+    /// automatically from the recording file's directory by
+    /// <c>UseBowireMock(path, …)</c>; null for in-memory recordings (absolute
+    /// paths only).
+    /// </summary>
+    public string? RecordingDirectory { get; set; }
+
+    /// <summary>
+    /// #406: response-transformer extension point. Invoked with the request
+    /// context and the final REST body (after placeholder substitution) to
+    /// return a possibly-mutated body — the analog of WireMock's
+    /// <c>ResponseDefinitionTransformer</c>. Null = no transform.
+    /// </summary>
+    public Func<HttpContext, string, string>? ResponseTransformer { get; set; }
 
     /// <summary>
     /// When <c>true</c> (default), the recording file is watched with
