@@ -181,6 +181,30 @@ public static class ScanCommand
         var findings = new List<ScanFinding>();
         using var http = BuildHttpClient(options);
 
+        // #190: headless auth flow. Run the recorded login → token chain once
+        // (over the same HttpClient, so TLS / timeout settings match the scan),
+        // then inject the captured token as an auth header ahead of every probe.
+        // Fail closed — if the flow can't produce a token we abort rather than
+        // scan an authenticated API unauthenticated and report misleading
+        // "endpoint missing" findings.
+        var effectiveAuth = new List<string>(options.AuthHeaders);
+        if (!string.IsNullOrWhiteSpace(options.AuthFlowPath))
+        {
+            try
+            {
+                var flow = AuthFlowRunner.Load(options.AuthFlowPath);
+                var result = await AuthFlowRunner.RunAsync(flow, http, ct).ConfigureAwait(false);
+                effectiveAuth.Insert(0, result.HeaderLine);
+                await stdout.WriteLineAsync(
+                    $"  Auth flow: {flow.Steps.Count} step(s) ran; injecting '{result.HeaderLine[..result.HeaderLine.IndexOf(':', StringComparison.Ordinal)]}' header into every probe.").ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is AuthFlowException or IOException or HttpRequestException)
+            {
+                await stderr.WriteLineAsync($"  Auth flow failed: {ex.Message}").ConfigureAwait(false);
+                return 2;
+            }
+        }
+
         // The passive built-ins and the HTTP-class OWASP probes talk HTTP to
         // the target directly. A non-HTTP target (mqtt://, tcp://, ws://, …)
         // is only meaningful to the protocol-specific probes, so the HTTP-only
@@ -212,7 +236,7 @@ public static class ScanCommand
 
             try
             {
-                var response = await SendHttpProbeAsync(http, options.Target, probe, options.AuthHeaders, ct).ConfigureAwait(false);
+                var response = await SendHttpProbeAsync(http, options.Target, probe, effectiveAuth, ct).ConfigureAwait(false);
                 var matched = AttackPredicateEvaluator.Evaluate(tmpl.Recording.VulnerableWhen!, response);
                 findings.Add(matched
                     ? ScanFinding.Vulnerable(tmpl, response)
@@ -241,12 +265,12 @@ public static class ScanCommand
                 }
             }
 
-            FoldBuiltin(await SecurityBuiltins.RunAllAsync(options.Target, http, options.AuthHeaders, ct).ConfigureAwait(false));
+            FoldBuiltin(await SecurityBuiltins.RunAllAsync(options.Target, http, effectiveAuth, ct).ConfigureAwait(false));
 
             // #187: CVE lookup — match the Server/X-Powered-By banner against a
             // VulnDb corpus (loaded from --cve-db, or the built-in seed).
             var cveDb = LoadCveDatabase(options, stderr);
-            FoldBuiltin(await ServerCveProbe.RunAsync(options.Target, http, options.AuthHeaders, cveDb, ct).ConfigureAwait(false));
+            FoldBuiltin(await ServerCveProbe.RunAsync(options.Target, http, effectiveAuth, cveDb, ct).ConfigureAwait(false));
         }
 
         // Named suites (#184): fold the dedicated per-entry probes into the
@@ -270,7 +294,7 @@ public static class ScanCommand
             {
                 if (isHttpTarget)
                 {
-                    Fold(await OwaspApiSuite.RunProbesAsync(options.Target, http, options.AuthHeaders, options.AuthHeadersB, ct).ConfigureAwait(false));
+                    Fold(await OwaspApiSuite.RunProbesAsync(options.Target, http, effectiveAuth, options.AuthHeadersB, ct).ConfigureAwait(false));
                 }
                 else
                 {
@@ -285,7 +309,7 @@ public static class ScanCommand
             // doesn't speak the protocol can't stall the whole scan.
             var registry = BowireProtocolRegistry.Discover();
             var protocolTimeout = TimeSpan.FromSeconds(Math.Min(options.TimeoutSeconds, 12));
-            Fold(await OwaspApiSuite.RunProtocolProbesAsync(options.Target, registry, options.AuthHeaders, protocolTimeout, ct).ConfigureAwait(false));
+            Fold(await OwaspApiSuite.RunProtocolProbesAsync(options.Target, registry, effectiveAuth, protocolTimeout, ct).ConfigureAwait(false));
         }
 
         await WriteConsoleReportAsync(findings, stdout).ConfigureAwait(false);
@@ -750,6 +774,14 @@ public sealed class ScanOptions
     /// (Server / X-Powered-By → known CVEs). Null = use the built-in seed set.
     /// </summary>
     public string? CveDbPath { get; init; }
+
+    /// <summary>
+    /// #190: path to a headless auth-flow JSON file. When set, the recorded
+    /// login → token chain runs once before the scan and the captured token is
+    /// injected as an auth header ahead of <see cref="AuthHeaders"/>. Null =
+    /// no flow (use <see cref="AuthHeaders"/> directly).
+    /// </summary>
+    public string? AuthFlowPath { get; init; }
 
     public string? Template { get; init; }
     public string? OutSarif { get; init; }

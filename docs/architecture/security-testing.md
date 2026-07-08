@@ -29,7 +29,37 @@ Roadmap unfolds in four tiers. Each tier is sellable on its own; the upper tiers
 
 ### Tier 1 — Foundation — shipped
 
-The minimum that makes Bowire a credible security tool at all. Covered by `bowire scan` + the seed templates in `kuestenlogik/Bowire.VulnDb`. Live items: active scanner subcommand with built-in passive checks (HTTP security-headers, TLS version + cipher enumeration, verbose-error detection, banner/version disclosure); vulnerability-template format (YAML + JSON DSL, multi-protocol-first, schema-aware); SARIF + HTML + console reporting for CI/CD integration; authentication profile (`--auth-header`); scope-awareness (`--scope`); vulnerable-by-design sample app for regression testing.
+The minimum that makes Bowire a credible security tool at all. Covered by `bowire scan` + the seed templates in `kuestenlogik/Bowire.VulnDb`. Live items: active scanner subcommand with built-in passive checks (HTTP security-headers, TLS version + cipher enumeration, verbose-error detection, banner/version disclosure); CVE lookup that matches the `Server` / `X-Powered-By` banner against a VulnDb corpus (`--cve-db`, OWASP A06); vulnerability-template format (YAML + JSON DSL, multi-protocol-first, schema-aware); SARIF + HTML + console reporting for CI/CD integration; authentication profile (`--auth-header`); scope-awareness (`--scope`); vulnerable-by-design sample app for regression testing.
+
+#### Headless auth flows (`--auth-flow`) — #190
+
+Real APIs sit behind a multi-step login (`/login` → cookie → `/token` → JWT), and the token expires. Rather than paste a fresh bearer into `--auth-header` before every run, `bowire scan --auth-flow flow.json` runs a recorded login → token chain **once** before the scan, extracts the token, and injects it into every probe. Because the flow runs at the start of each scan, an expired token is simply re-fetched.
+
+A flow is an ordered list of HTTP steps; each step may capture values from its response (JSON path, regex, response header, or `Set-Cookie`) into named variables reusable in later steps as `{{var}}`. **Secrets are never inlined** — request fields reference `{{env.NAME}}`, read from the process environment, so a checked-in flow file carries `{{env.CLIENT_SECRET}}`, not the secret.
+
+```jsonc
+// oauth-client-credentials.flow.json
+{
+  "grant": "client_credentials",
+  "steps": [
+    {
+      "url": "https://idp.example.com/oauth/token",
+      "form": {
+        "grant_type": "client_credentials",
+        "client_id": "scanner",
+        "client_secret": "{{env.SCANNER_CLIENT_SECRET}}"
+      },
+      "capture": [ { "var": "access_token", "json": "access_token" } ]
+    }
+  ]
+}
+```
+
+```bash
+SCANNER_CLIENT_SECRET=… bowire scan --target https://api.example.com --auth-flow oauth-client-credentials.flow.json --suite owasp-api
+```
+
+The token variable defaults to `access_token` / `id_token` / `token` / `jwt` (override with the flow's `token` field); the injected header defaults to `Authorization: Bearer <token>` (override with `injectHeader` / `injectPrefix`). This covers the scriptable grants — client-credentials, resource-owner-password, and any login → token chain. Browser-interactive grants (OAuth authorization-code / device-code, OIDC discovery + JWKS validation), the workbench capture UI, and a `{{auth.token}}` variable source are tracked as #190 follow-ups.
 
 ### Tier 2 — Specialty — shipped
 
