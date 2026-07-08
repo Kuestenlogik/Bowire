@@ -151,7 +151,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**2/17 done** · 15 backlog
+**2/20 done** · 18 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -170,6 +170,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [401](https://github.com/Kuestenlogik/Bowire/issues/401) | Bowire | [Mock-server maturity — WireMock feature parity (epic)](#issue-kuestenlogik-bowire-401) | ⬜ Backlog |  |
 | [402](https://github.com/Kuestenlogik/Bowire/issues/402) | Bowire | [Mock request matching: query / header / cookie predicates + regex/glob paths + stub priority](#issue-kuestenlogik-bowire-402) | ⬜ Backlog |  |
 | [403](https://github.com/Kuestenlogik/Bowire/issues/403) | Bowire | [Mock request-body matchers (equalToJson / JSONPath / XPath / JSON-schema / regex)](#issue-kuestenlogik-bowire-403) | ⬜ Backlog |  |
+| [404](https://github.com/Kuestenlogik/Bowire/issues/404) | Bowire | [Hand-authored stub mappings + per-stub admin CRUD API](#issue-kuestenlogik-bowire-404) | ⬜ Backlog |  |
+| [405](https://github.com/Kuestenlogik/Bowire/issues/405) | Bowire | [Mock: replay & override response headers (honour recorded Content-Type)](#issue-kuestenlogik-bowire-405) | ⬜ Backlog |  |
+| [406](https://github.com/Kuestenlogik/Bowire/issues/406) | Bowire | [Mock response templating: helpers / math / faker + bodyFileName + transformer hook](#issue-kuestenlogik-bowire-406) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
 
@@ -848,6 +851,18 @@ Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kues
 #### <a id="issue-kuestenlogik-bowire-403"></a>⬜ Backlog · [#403](https://github.com/Kuestenlogik/Bowire/issues/403) Mock request-body matchers (equalToJson / JSONPath / XPath / JSON-schema / regex)
 
 Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/403)
+
+#### <a id="issue-kuestenlogik-bowire-404"></a>⬜ Backlog · [#404](https://github.com/Kuestenlogik/Bowire/issues/404) Hand-authored stub mappings + per-stub admin CRUD API
+
+Part of the mock-server WireMock-parity effort. (Epic-sized — foundational.) [[more]](https://github.com/Kuestenlogik/Bowire/issues/404)
+
+#### <a id="issue-kuestenlogik-bowire-405"></a>⬜ Backlog · [#405](https://github.com/Kuestenlogik/Bowire/issues/405) Mock: replay & override response headers (honour recorded Content-Type)
+
+Part of the mock-server WireMock-parity effort. (High value — near-bug.) [[more]](https://github.com/Kuestenlogik/Bowire/issues/405)
+
+#### <a id="issue-kuestenlogik-bowire-406"></a>⬜ Backlog · [#406](https://github.com/Kuestenlogik/Bowire/issues/406) Mock response templating: helpers / math / faker + bodyFileName + transformer hook
+
+Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/406)
 
 #### <a id="issue-kuestenlogik-bowire-34"></a>✅ Done · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
 
