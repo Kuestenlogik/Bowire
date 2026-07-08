@@ -1150,4 +1150,4 @@ Follow-up to #356. JS tests now gate CI (`node --test` over wwwroot-js) and JS c
 
 ---
 
-*Generated 2026-07-07 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-07-08 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
