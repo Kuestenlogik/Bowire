@@ -1,6 +1,9 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Kuestenlogik.Bowire.Plugins.Sidecar;
 using Xunit;
 
@@ -202,6 +205,55 @@ public class SidecarPluginManifestTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    // ---------------- #417: published JSON Schema stays in sync ----------------
+
+    private static JsonElement LoadManifestSchema()
+    {
+        // Walk up from the test binary to the repo root (the dir that owns
+        // Directory.Build.props) and read the published schema from site/.
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Directory.Build.props")))
+            dir = dir.Parent;
+        Assert.NotNull(dir);
+        var schemaPath = Path.Combine(dir!.FullName, "site", "schemas", "sidecar.schema.json");
+        Assert.True(File.Exists(schemaPath), "Missing published schema at " + schemaPath);
+        using var doc = JsonDocument.Parse(File.ReadAllText(schemaPath));
+        return doc.RootElement.Clone();
+    }
+
+    [Fact]
+    public void ManifestSchema_Has_Expected_Id_And_Required_Fields()
+    {
+        var schema = LoadManifestSchema();
+        Assert.Equal("https://bowire.io/schemas/sidecar.schema.json", schema.GetProperty("$id").GetString());
+        var required = schema.GetProperty("required").EnumerateArray().Select(e => e.GetString()).ToHashSet();
+        Assert.Contains("packageId", required);
+        Assert.Contains("protocol", required);
+    }
+
+    [Fact]
+    public void ManifestSchema_Properties_Cover_Every_Manifest_Field()
+    {
+        // Drift guard: every JsonPropertyName on the manifest record (and its
+        // nested protocol metadata) must have a matching schema property, so the
+        // published schema can't silently fall behind the model.
+        var schema = LoadManifestSchema();
+        var props = schema.GetProperty("properties");
+
+        foreach (var name in JsonPropertyNames(typeof(SidecarPluginManifest)))
+            Assert.True(props.TryGetProperty(name, out _), $"Schema is missing manifest field '{name}'.");
+
+        var protocolProps = props.GetProperty("protocol").GetProperty("properties");
+        foreach (var name in JsonPropertyNames(typeof(SidecarProtocolMetadata)))
+            Assert.True(protocolProps.TryGetProperty(name, out _), $"Schema is missing protocol field '{name}'.");
+    }
+
+    private static IEnumerable<string> JsonPropertyNames(Type recordType) =>
+        recordType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Select(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name)
+            .Where(n => !string.IsNullOrEmpty(n))!
+            .Cast<string>();
 
     [Fact]
     public void SidecarBowireProtocol_Uses_Manifest_Metadata_Before_Init()

@@ -234,8 +234,8 @@ public sealed class BowireProtocolRegistry
             }
         }
 
-        // Sidecar plugins — any-language executables in
-        // ~/.bowire/plugins/<id>/ marked by a plugin.json manifest.
+        // Sidecar plugins — any-language executables (or http services) in
+        // ~/.bowire/plugins/<id>/ marked by a sidecar.json manifest.
         // Registered alongside the .NET plugins; same disable list
         // applies on the manifest's protocol.id.
         foreach (var sidecar in SidecarPluginDiscovery.Discover(

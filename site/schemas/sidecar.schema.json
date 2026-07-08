@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bowire.io/schemas/sidecar.schema.json",
+  "title": "Bowire sidecar plugin manifest",
+  "description": "The sidecar.json manifest that marks a directory under ~/.bowire/plugins/ as a Bowire sidecar (non-.NET) protocol plugin. See docs/architecture/sidecar-plugins.md.",
+  "type": "object",
+  "required": ["packageId", "protocol"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional pointer to this schema for editor tooling."
+    },
+    "packageId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Reverse-DNS package id (e.g. Acme.Bowire.Protocol.Zenoh); surfaced in `bowire plugin list`.",
+      "examples": ["Acme.Bowire.Protocol.Zenoh"]
+    },
+    "protocol": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "description": "Protocol metadata declared upfront, before `initialize` can override name/iconSvg.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Protocol id the workbench tabs against; must equal what the sidecar returns from `initialize`."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Display name (e.g. Zenoh)."
+        },
+        "iconSvg": {
+          "type": "string",
+          "description": "Inline SVG icon; the `initialize` reply may override it."
+        }
+      }
+    },
+    "transport": {
+      "type": "string",
+      "enum": ["stdio", "http"],
+      "default": "stdio",
+      "description": "Wire transport: stdio (spawn `executable`, JSON-RPC over stdin/stdout) or http (POST JSON-RPC to `url`, notifications over SSE)."
+    },
+    "executable": {
+      "type": "string",
+      "description": "Path to the sidecar executable, relative to the plugin directory. Required for the stdio transport."
+    },
+    "args": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Extra args appended to the executable command line (stdio)."
+    },
+    "envPrefix": {
+      "type": "string",
+      "default": "BOWIRE_",
+      "description": "Env-var prefix forwarded to the subprocess (stdio)."
+    },
+    "shutdownTimeoutMs": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 3000,
+      "description": "Grace period after `shutdown` before force-kill (stdio)."
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "description": "JSON-RPC endpoint for the http transport (e.g. http://localhost:7000/bowire). Required when transport is http.",
+      "examples": ["http://localhost:7000/bowire"]
+    },
+    "version": {
+      "type": "string",
+      "description": "Optional version string for `bowire plugin list` (sidecars carry no NuGet version)."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "transport": { "const": "http" } }, "required": ["transport"] },
+      "then": { "required": ["url"] },
+      "else": { "required": ["executable"] }
+    }
+  ]
+}
