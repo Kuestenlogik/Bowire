@@ -260,16 +260,24 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts
 
-**0/7 done** · 7 backlog
+**0/15 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](#issue-kuestenlogik-bowire-44) | ⬜ Backlog | `area:docs` |
+| [50](https://github.com/Kuestenlogik/Bowire/issues/50) | Bowire | [Marketing site — gallery / lightbox layer on solutions/*](#issue-kuestenlogik-bowire-50) | ⬜ Backlog | `area:site` |
+| [51](https://github.com/Kuestenlogik/Bowire/issues/51) | Bowire | [Marketing site — migrate <img> tags to picture.html partial](#issue-kuestenlogik-bowire-51) | ⬜ Backlog | `area:site` |
+| [53](https://github.com/Kuestenlogik/Bowire/issues/53) | Bowire | [Marketing site — second row of specialist comparisons](#issue-kuestenlogik-bowire-53) | ⬜ Backlog | `area:site` |
+| [103](https://github.com/Kuestenlogik/Bowire/issues/103) | Bowire | [Generate boat photos: submarine, ferry, tugboat, lighthouse](#issue-kuestenlogik-bowire-103) | ⬜ Backlog |  |
+| [214](https://github.com/Kuestenlogik/Bowire/issues/214) | Bowire | [Test infra: BaGet Testcontainer fixture for plugin install/activate coverage](#issue-kuestenlogik-bowire-214) | ⬜ Backlog |  |
+| [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ⬜ Backlog |  |
 | [283](https://github.com/Kuestenlogik/Bowire/issues/283) | Bowire | [Retire v1 .bww format migration shim (introduced in #282)](#issue-kuestenlogik-bowire-283) | ⬜ Backlog |  |
 | [288](https://github.com/Kuestenlogik/Bowire/issues/288) | Bowire | [IInlineSseSubscriber is an orphaned seam — give it a consumer or remove it](#issue-kuestenlogik-bowire-288) | ⬜ Backlog |  |
 | [355](https://github.com/Kuestenlogik/Bowire/issues/355) | Bowire | [Eliminate #pragma warning disable across the codebase — rewrite code so analyzer warnings don't fire](#issue-kuestenlogik-bowire-355) | ⬜ Backlog |  |
 | [357](https://github.com/Kuestenlogik/Bowire/issues/357) | Bowire | [AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException](#issue-kuestenlogik-bowire-357) | ⬜ Backlog |  |
 | [358](https://github.com/Kuestenlogik/Bowire/issues/358) | Bowire | [Rail packages ship without test projects — Benchmarking / Compose / Interceptor / Recordings / Security.Scanner / Workspaces](#issue-kuestenlogik-bowire-358) | ⬜ Backlog |  |
 | [359](https://github.com/Kuestenlogik/Bowire/issues/359) | Bowire | [v3.0: consolidate the duplicated runner/reporter pairs in Bowire.Tool](#issue-kuestenlogik-bowire-359) | ⬜ Backlog |  |
+| [418](https://github.com/Kuestenlogik/Bowire/issues/418) | Bowire | [Re-sync language SDKs (Go/Node/Python/Rust) to the current sidecar contract + version handshake](#issue-kuestenlogik-bowire-418) | ⬜ Backlog |  |
 | [421](https://github.com/Kuestenlogik/Bowire/issues/421) | Bowire | [v3.0: rename Kuestenlogik.Bowire.* -> Bowire.* (assemblies, namespaces, NuGet ids)](#issue-kuestenlogik-bowire-421) | ⬜ Backlog |  |
 
 ### Backlog (not yet scheduled)
@@ -295,16 +303,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [33](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33) | Protocol.Akka | [DeadLetter capture under the global default mailbox](#issue-kuestenlogik-bowire-protocol-akka-33) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) | Protocol.Akka | [Docs drift: TappedMessage envelope field names & payload shape](#issue-kuestenlogik-bowire-protocol-akka-34) | ⬜ Backlog |  |
 | [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog |  |
-| [44](https://github.com/Kuestenlogik/Bowire/issues/44) | Bowire | [Sidecar packaging — Docker / Compose / Kubernetes](#issue-kuestenlogik-bowire-44) | ⬜ Backlog | `area:docs` |
-| [50](https://github.com/Kuestenlogik/Bowire/issues/50) | Bowire | [Marketing site — gallery / lightbox layer on solutions/*](#issue-kuestenlogik-bowire-50) | ⬜ Backlog | `area:site` |
-| [51](https://github.com/Kuestenlogik/Bowire/issues/51) | Bowire | [Marketing site — migrate <img> tags to picture.html partial](#issue-kuestenlogik-bowire-51) | ⬜ Backlog | `area:site` |
-| [53](https://github.com/Kuestenlogik/Bowire/issues/53) | Bowire | [Marketing site — second row of specialist comparisons](#issue-kuestenlogik-bowire-53) | ⬜ Backlog | `area:site` |
-| [103](https://github.com/Kuestenlogik/Bowire/issues/103) | Bowire | [Generate boat photos: submarine, ferry, tugboat, lighthouse](#issue-kuestenlogik-bowire-103) | ⬜ Backlog |  |
 | [130](https://github.com/Kuestenlogik/Bowire/issues/130) | Bowire | [Comparison table: add Hoppscotch + topic-based filtering](#issue-kuestenlogik-bowire-130) | ⬜ Backlog |  |
-| [214](https://github.com/Kuestenlogik/Bowire/issues/214) | Bowire | [Test infra: BaGet Testcontainer fixture for plugin install/activate coverage](#issue-kuestenlogik-bowire-214) | ⬜ Backlog |  |
-| [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ⬜ Backlog |  |
 | [413](https://github.com/Kuestenlogik/Bowire/issues/413) | Bowire | [Site comparison: split into topic-specific tables (API-client / mocking / security), add WireMock + Mockito, broaden beyond top-5](#issue-kuestenlogik-bowire-413) | ⬜ Backlog |  |
-| [418](https://github.com/Kuestenlogik/Bowire/issues/418) | Bowire | [Re-sync language SDKs (Go/Node/Python/Rust) to the current sidecar contract + version handshake](#issue-kuestenlogik-bowire-418) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1092,6 +1092,42 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 
 ### v3.0 — Cleanups + breaking-change cuts
 
+#### <a id="issue-kuestenlogik-bowire-44"></a>⬜ Backlog · [#44](https://github.com/Kuestenlogik/Bowire/issues/44) Sidecar packaging — Docker / Compose / Kubernetes
+
+> `area:docs`
+
+Published \`ghcr.io/kuestenlogik/bowire:latest\` image already; missing: [[more]](https://github.com/Kuestenlogik/Bowire/issues/44)
+
+#### <a id="issue-kuestenlogik-bowire-50"></a>⬜ Backlog · [#50](https://github.com/Kuestenlogik/Bowire/issues/50) Marketing site — gallery / lightbox layer on solutions/*
+
+> `area:site`
+
+The new responsive image pipeline (optimize-images.mjs + picture.html) already emits -400w / -1200w / original variants. Layer a small JS lightbox that swaps the thumbnail-grid render (400w) for the full-resolution AVIF on click — initial page load gets the smallest variant, original only hits the wire on click. [[more]](https://github.com/Kuestenlogik/Bowire/issues/50)
+
+#### <a id="issue-kuestenlogik-bowire-51"></a>⬜ Backlog · [#51](https://github.com/Kuestenlogik/Bowire/issues/51) Marketing site — migrate <img> tags to picture.html partial
+
+> `area:site`
+
+Image-perf pipeline shipped (sharp → AVIF + WebP, three variant widths; picture.html partial; Lighthouse CI gates). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/51)
+
+#### <a id="issue-kuestenlogik-bowire-53"></a>⬜ Backlog · [#53](https://github.com/Kuestenlogik/Bowire/issues/53) Marketing site — second row of specialist comparisons
+
+> `area:site`
+
+The comparison tableʼs "top-5-competitors check" framing already lets us mention more tools in the best-for strip without committing them to a full table row. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/53)
+
+#### <a id="issue-kuestenlogik-bowire-103"></a>⬜ Backlog · [#103](https://github.com/Kuestenlogik/Bowire/issues/103) Generate boat photos: submarine, ferry, tugboat, lighthouse
+
+The launch stepper on the home page ([`/_includes/launch.html`](https://github.com/Kuestenlogik/Bowire/blob/main/site/_includes/launch.html)) uses one photo per boat: [[more]](https://github.com/Kuestenlogik/Bowire/issues/103)
+
+#### <a id="issue-kuestenlogik-bowire-214"></a>⬜ Backlog · [#214](https://github.com/Kuestenlogik/Bowire/issues/214) Test infra: BaGet Testcontainer fixture for plugin install/activate coverage
+
+`BowirePluginEndpoints` (install / activate routes) and `App.PluginManager` (NuGet download + extract paths) together carry ~134 uncovered lines because there's no NuGet feed in the test environment. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/214)
+
+#### <a id="issue-kuestenlogik-bowire-215"></a>⬜ Backlog · [#215](https://github.com/Kuestenlogik/Bowire/issues/215) Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths
+
+`App.PluginManager` shells out to `dotnet publish` / `dotnet nuget …` via `Process.Start` directly. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
+
 #### <a id="issue-kuestenlogik-bowire-283"></a>⬜ Backlog · [#283](https://github.com/Kuestenlogik/Bowire/issues/283) Retire v1 .bww format migration shim (introduced in #282)
 
 #282 unifies the .bww workspace export format on a v2 canonical schema. To stay non-breaking through v2.x, both reader paths (UI / CLI) ship migration shims that detect and read the legacy v1 shapes (UI-shape + CLI-shape) and rewrite them as v2 in-memory before the rest of the import pipeline runs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/283)
@@ -1115,6 +1151,10 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 #### <a id="issue-kuestenlogik-bowire-359"></a>⬜ Backlog · [#359](https://github.com/Kuestenlogik/Bowire/issues/359) v3.0: consolidate the duplicated runner/reporter pairs in Bowire.Tool
 
 2026-07-03 architecture audit: the Tool carries two parallel implementations of the same pipeline, one per input format: [[more]](https://github.com/Kuestenlogik/Bowire/issues/359)
+
+#### <a id="issue-kuestenlogik-bowire-418"></a>⬜ Backlog · [#418](https://github.com/Kuestenlogik/Bowire/issues/418) Re-sync language SDKs (Go/Node/Python/Rust) to the current sidecar contract + version handshake
+
+The four language SDKs for authoring Bowire sidecar plugins were last updated **2026-06-05** and predate a month of active `Bowire` main-repo development (v2.2.1-dev, last touched 2026-07-08): [[more]](https://github.com/Kuestenlogik/Bowire/issues/418)
 
 #### <a id="issue-kuestenlogik-bowire-421"></a>⬜ Backlog · [#421](https://github.com/Kuestenlogik/Bowire/issues/421) v3.0: rename Kuestenlogik.Bowire.* -> Bowire.* (assemblies, namespaces, NuGet ids)
 
@@ -1200,53 +1240,13 @@ When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` 
 
 `COVERAGE.md` calls out the branch gap: the 0/1/many-subscriber paths in `BowireAkkaExtension` and the mixed mode (global default mailbox + per-actor `WithMailbox` override) are only covered by single-mode tests. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36)
 
-#### <a id="issue-kuestenlogik-bowire-44"></a>⬜ Backlog · [#44](https://github.com/Kuestenlogik/Bowire/issues/44) Sidecar packaging — Docker / Compose / Kubernetes
-
-> `area:docs`
-
-Published \`ghcr.io/kuestenlogik/bowire:latest\` image already; missing: [[more]](https://github.com/Kuestenlogik/Bowire/issues/44)
-
-#### <a id="issue-kuestenlogik-bowire-50"></a>⬜ Backlog · [#50](https://github.com/Kuestenlogik/Bowire/issues/50) Marketing site — gallery / lightbox layer on solutions/*
-
-> `area:site`
-
-The new responsive image pipeline (optimize-images.mjs + picture.html) already emits -400w / -1200w / original variants. Layer a small JS lightbox that swaps the thumbnail-grid render (400w) for the full-resolution AVIF on click — initial page load gets the smallest variant, original only hits the wire on click. [[more]](https://github.com/Kuestenlogik/Bowire/issues/50)
-
-#### <a id="issue-kuestenlogik-bowire-51"></a>⬜ Backlog · [#51](https://github.com/Kuestenlogik/Bowire/issues/51) Marketing site — migrate <img> tags to picture.html partial
-
-> `area:site`
-
-Image-perf pipeline shipped (sharp → AVIF + WebP, three variant widths; picture.html partial; Lighthouse CI gates). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/51)
-
-#### <a id="issue-kuestenlogik-bowire-53"></a>⬜ Backlog · [#53](https://github.com/Kuestenlogik/Bowire/issues/53) Marketing site — second row of specialist comparisons
-
-> `area:site`
-
-The comparison tableʼs "top-5-competitors check" framing already lets us mention more tools in the best-for strip without committing them to a full table row. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/53)
-
-#### <a id="issue-kuestenlogik-bowire-103"></a>⬜ Backlog · [#103](https://github.com/Kuestenlogik/Bowire/issues/103) Generate boat photos: submarine, ferry, tugboat, lighthouse
-
-The launch stepper on the home page ([`/_includes/launch.html`](https://github.com/Kuestenlogik/Bowire/blob/main/site/_includes/launch.html)) uses one photo per boat: [[more]](https://github.com/Kuestenlogik/Bowire/issues/103)
-
 #### <a id="issue-kuestenlogik-bowire-130"></a>⬜ Backlog · [#130](https://github.com/Kuestenlogik/Bowire/issues/130) Comparison table: add Hoppscotch + topic-based filtering
 
 The comparison table on bowire.io today lines Bowire up against Postman / Insomnia / Bruno / curl on a single feature matrix. Three gaps: [[more]](https://github.com/Kuestenlogik/Bowire/issues/130)
 
-#### <a id="issue-kuestenlogik-bowire-214"></a>⬜ Backlog · [#214](https://github.com/Kuestenlogik/Bowire/issues/214) Test infra: BaGet Testcontainer fixture for plugin install/activate coverage
-
-`BowirePluginEndpoints` (install / activate routes) and `App.PluginManager` (NuGet download + extract paths) together carry ~134 uncovered lines because there's no NuGet feed in the test environment. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/214)
-
-#### <a id="issue-kuestenlogik-bowire-215"></a>⬜ Backlog · [#215](https://github.com/Kuestenlogik/Bowire/issues/215) Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths
-
-`App.PluginManager` shells out to `dotnet publish` / `dotnet nuget …` via `Process.Start` directly. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
-
 #### <a id="issue-kuestenlogik-bowire-413"></a>⬜ Backlog · [#413](https://github.com/Kuestenlogik/Bowire/issues/413) Site comparison: split into topic-specific tables (API-client / mocking / security), add WireMock + Mockito, broaden beyond top-5
 
 The site has exactly one tool-vs-tool comparison — a hand-authored top-5 matrix in `site/_includes/comparison.html` (rendered on the homepage via `index.html`). It is framed entirely around the **API-client / workbench** category — discovery + invocation + streaming/logging + record/replay: [[more]](https://github.com/Kuestenlogik/Bowire/issues/413)
-
-#### <a id="issue-kuestenlogik-bowire-418"></a>⬜ Backlog · [#418](https://github.com/Kuestenlogik/Bowire/issues/418) Re-sync language SDKs (Go/Node/Python/Rust) to the current sidecar contract + version handshake
-
-The four language SDKs for authoring Bowire sidecar plugins were last updated **2026-06-05** and predate a month of active `Bowire` main-repo development (v2.2.1-dev, last touched 2026-07-08): [[more]](https://github.com/Kuestenlogik/Bowire/issues/418)
 
 ---
 
