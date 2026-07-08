@@ -368,6 +368,14 @@ public sealed class BowireRecordingStep
     /// </summary>
     [JsonPropertyName("scenario")]
     public BowireStepScenario? Scenario { get; init; }
+
+    /// <summary>
+    /// #407: when set, a matched stub forwards the request to this upstream
+    /// base URL instead of replaying its recorded response — per-stub proxying
+    /// for partial mocking. Null = replay the recorded response (the default).
+    /// </summary>
+    [JsonPropertyName("proxy")]
+    public string? Proxy { get; init; }
 }
 
 /// <summary>
