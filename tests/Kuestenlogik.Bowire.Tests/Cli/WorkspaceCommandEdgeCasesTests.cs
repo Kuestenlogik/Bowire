@@ -40,6 +40,16 @@ namespace Kuestenlogik.Bowire.Tests.Cli;
 /// through the CLI's TextWriter overloads, with concrete substring
 /// asserts on the actual diagnostic copy rather than exit codes alone.
 /// </summary>
+/// <remarks>
+/// Joins the <c>CwdSerialised</c> non-parallel collection: the git-init
+/// success test toggles the process-global <see cref="Environment.CurrentDirectory"/>
+/// to <c>_tempRoot</c> and its <see cref="Dispose"/> deletes that dir. Left
+/// unserialised, that races with any sibling calling
+/// <c>WebApplication.CreateSlimBuilder()</c> (which reads the cwd as its
+/// content root) — the sibling then throws "content root does not exist" when
+/// this class's cleanup removes the dir. See <c>CwdSerialisedCollectionDefinition</c>.
+/// </remarks>
+[Collection("CwdSerialised")]
 public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
 {
     private readonly string _tempRoot;
