@@ -49,6 +49,13 @@ public sealed class MockServer : IAsyncDisposable
     public Chaos.FaultRuleSet Faults { get; }
 
     /// <summary>
+    /// The live mock request handler, captured after the pipeline is built
+    /// (#404). Exposes per-stub CRUD for the management API. Null until the
+    /// host has started building its pipeline.
+    /// </summary>
+    public MockHandler? Handler => _kestrel.Handler;
+
+    /// <summary>
     /// TCP port the server is actually listening on. Equal to
     /// <see cref="MockServerOptions.Port"/> when the caller specified one;
     /// when the caller passed <c>0</c>, this returns the OS-assigned port
@@ -138,6 +145,9 @@ public sealed class MockServer : IAsyncDisposable
         /// is active.
         /// </summary>
         public int BoundPort { get; private set; }
+
+        /// <summary>The mock request handler captured during pipeline build (#404).</summary>
+        public MockHandler? Handler { get; private set; }
 
         /// <summary>
         /// Per-transport-id bound ports — populated as each
@@ -263,6 +273,7 @@ public sealed class MockServer : IAsyncDisposable
                 opts.ControlToken = _options.ControlToken;
                 opts.PassThroughOnMiss = false; // standalone host has nothing behind it
                 opts.RequestObserver = _options.RequestObserver;
+                opts.OnHandlerCreated = h => Handler = h; // #404: capture for per-stub CRUD
             };
 
             // Live-schema handlers (GraphQL today) sit in front of the
