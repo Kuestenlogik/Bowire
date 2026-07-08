@@ -347,6 +347,104 @@ public sealed class BowireRecordingStep
     /// </summary>
     [JsonPropertyName("interpretations")]
     public IList<RecordedInterpretation>? Interpretations { get; init; }
+
+    /// <summary>
+    /// REST-only: optional extra match predicates layered on top of the
+    /// verb + path/template match (mock matching — <c>#402</c>). When present,
+    /// <em>every</em> declared predicate must pass for the step to be a
+    /// candidate, and <see cref="BowireStepMatch.Priority"/> breaks ties.
+    /// Absent = the historical verb + path-only behaviour, so pre-#402
+    /// recordings match exactly as before.
+    /// </summary>
+    [JsonPropertyName("match")]
+    public BowireStepMatch? Match { get; init; }
+}
+
+/// <summary>
+/// Extra REST match predicates + precedence for a recording step (mock
+/// matcher, <c>#402</c>). All arms are optional; the matcher applies only
+/// the ones set. A path pattern here (<see cref="PathRegex"/> /
+/// <see cref="PathGlob"/>) overrides the step's <c>httpPath</c> template for
+/// path matching; the query / header / cookie predicate lists all have to
+/// pass; <see cref="Priority"/> orders steps that all match.
+/// </summary>
+public sealed class BowireStepMatch
+{
+    /// <summary>
+    /// Regex the request path must match end-to-end (anchored automatically).
+    /// Alternative to the step's <c>httpPath</c> literal / <c>{param}</c>
+    /// template — use when a single stub should answer a family of paths.
+    /// </summary>
+    [JsonPropertyName("pathRegex")]
+    public string? PathRegex { get; init; }
+
+    /// <summary>
+    /// Glob the request path must match: <c>*</c> matches within one segment
+    /// (no <c>/</c>), <c>**</c> matches across segments, <c>?</c> matches one
+    /// non-<c>/</c> character. Alternative to <see cref="PathRegex"/> /
+    /// <c>httpPath</c>.
+    /// </summary>
+    [JsonPropertyName("pathGlob")]
+    public string? PathGlob { get; init; }
+
+    /// <summary>Predicates on query-string parameters — all must pass.</summary>
+    [JsonPropertyName("query")]
+    public IList<BowireMatchPredicate>? Query { get; init; }
+
+    /// <summary>Predicates on request headers (name-insensitive) — all must pass.</summary>
+    [JsonPropertyName("headers")]
+    public IList<BowireMatchPredicate>? Headers { get; init; }
+
+    /// <summary>Predicates on request cookies (from the <c>Cookie</c> header) — all must pass.</summary>
+    [JsonPropertyName("cookies")]
+    public IList<BowireMatchPredicate>? Cookies { get; init; }
+
+    /// <summary>
+    /// Explicit precedence when several steps match the same request; higher
+    /// wins, and dominates the matcher's implicit literal-beats-template /
+    /// body-binding heuristics. Default <c>0</c>; negative values de-prioritise
+    /// a fallback stub.
+    /// </summary>
+    [JsonPropertyName("priority")]
+    public int Priority { get; init; }
+}
+
+/// <summary>
+/// One name-scoped match predicate applied to a query parameter, header, or
+/// cookie (mock matcher, <c>#402</c>). The name must be present unless
+/// <see cref="Present"/> is <c>false</c>; when an operator
+/// (<see cref="EqualTo"/> / <see cref="Matches"/> / <see cref="Contains"/>) is
+/// set, at least one value must satisfy it. With only <see cref="Name"/> set
+/// the predicate asserts mere presence.
+/// </summary>
+public sealed class BowireMatchPredicate
+{
+    /// <summary>Query-param / header / cookie name to test.</summary>
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = "";
+
+    /// <summary>Require a value exactly equal to this (respects <see cref="CaseInsensitive"/>).</summary>
+    [JsonPropertyName("equals")]
+    public string? EqualTo { get; init; }
+
+    /// <summary>Require a value matching this regex.</summary>
+    [JsonPropertyName("matches")]
+    public string? Matches { get; init; }
+
+    /// <summary>Require a value containing this substring (respects <see cref="CaseInsensitive"/>).</summary>
+    [JsonPropertyName("contains")]
+    public string? Contains { get; init; }
+
+    /// <summary>
+    /// <c>true</c> = the name must be present (the default when any operator is
+    /// set); <c>false</c> = the name must be ABSENT (a negative predicate).
+    /// </summary>
+    [JsonPropertyName("present")]
+    public bool? Present { get; init; }
+
+    /// <summary>Case-insensitive comparison for <see cref="EqualTo"/> / <see cref="Contains"/> / <see cref="Matches"/>.</summary>
+    [JsonPropertyName("caseInsensitive")]
+    public bool CaseInsensitive { get; init; }
 }
 
 /// <summary>
