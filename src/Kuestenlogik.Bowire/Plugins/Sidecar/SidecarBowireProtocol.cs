@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Kuestenlogik.Bowire.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Kuestenlogik.Bowire.Plugins.Sidecar;
 
@@ -24,11 +25,19 @@ namespace Kuestenlogik.Bowire.Plugins.Sidecar;
 /// don't pay the cost of starting every sidecar.
 /// </para>
 /// <para>
-/// Phase 1 surface: discover, invoke, invokeStream. Channels
-/// (<see cref="OpenChannelAsync"/>) return null — plugins that need
-/// long-lived duplex pipes should expose them via the server-streaming
-/// surface of <see cref="InvokeStreamAsync"/>. Full channel support
-/// lands in a Phase 2 follow-up.
+/// Surface: discover, invoke, invokeStream, and full-duplex channels
+/// (<see cref="OpenChannelAsync"/>). A sidecar that doesn't implement
+/// channels advertises <c>capabilities.channels = false</c> in its
+/// <c>initialize</c> reply, in which case <see cref="OpenChannelAsync"/>
+/// returns null without a round-trip.
+/// </para>
+/// <para>
+/// The <c>initialize</c> handshake carries a wire-contract version both
+/// ways (<see cref="SidecarProtocolVersion"/>): the host rejects a sidecar
+/// whose version falls outside
+/// [<see cref="MinSupportedSidecarProtocolVersion"/>,
+/// <see cref="SidecarProtocolVersion"/>] and tolerates a legacy sidecar
+/// that advertises none (with a warning).
 /// </para>
 /// </remarks>
 // CA1001: SidecarJsonRpcTransport holds the long-lived process; the
@@ -39,8 +48,20 @@ namespace Kuestenlogik.Bowire.Plugins.Sidecar;
 public sealed class SidecarBowireProtocol : IBowireProtocol
 #pragma warning restore CA1001
 {
+    /// <summary>
+    /// The sidecar JSON-RPC wire-contract version this host speaks (#416).
+    /// Bump only on a breaking envelope change. A sidecar advertises the
+    /// version it implements in its <c>initialize</c> reply; the host accepts
+    /// anything in [<see cref="MinSupportedSidecarProtocolVersion"/>, this].
+    /// </summary>
+    public const int SidecarProtocolVersion = 1;
+
+    /// <summary>Oldest sidecar contract version this host still accepts.</summary>
+    public const int MinSupportedSidecarProtocolVersion = 1;
+
     private readonly SidecarPluginManifest _manifest;
     private readonly string _pluginDir;
+    private readonly ILogger? _logger;
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private ISidecarTransport? _transport;
     private InitializeResult? _initResult;
@@ -51,10 +72,11 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public SidecarBowireProtocol(SidecarPluginManifest manifest, string pluginDir)
+    public SidecarBowireProtocol(SidecarPluginManifest manifest, string pluginDir, ILogger? logger = null)
     {
         _manifest = manifest ?? throw new ArgumentNullException(nameof(manifest));
         _pluginDir = pluginDir ?? throw new ArgumentNullException(nameof(pluginDir));
+        _logger = logger;
     }
 
     public string Name => _initResult?.Name ?? _manifest.Protocol.Name;
@@ -206,6 +228,12 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
     {
         var transport = await EnsureStartedAsync(ct).ConfigureAwait(false);
 
+        // #416: a sidecar that advertised no channel capability can't answer an
+        // openChannel — return null without a round-trip instead of waiting for
+        // it to reject the request.
+        if (_initResult?.Capabilities is { Channels: false })
+            return null;
+
         // Host generates the channelId + subscribes before the request
         // (same race-avoidance as invokeStream).
         var channelId = Guid.NewGuid().ToString("N");
@@ -291,6 +319,7 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
                 var initJson = await t.RequestAsync("initialize", new
                 {
                     hostVersion = typeof(SidecarBowireProtocol).Assembly.GetName().Version?.ToString() ?? "0.0.0",
+                    protocolVersion = SidecarProtocolVersion,
                     expectedProtocolId = _manifest.Protocol.Id,
                 }, ct).ConfigureAwait(false);
 
@@ -306,6 +335,29 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
                     throw new InvalidOperationException(
                         "Sidecar reported protocol id '" + _initResult.Id +
                         "' but manifest declares '" + _manifest.Protocol.Id + "'.");
+                }
+
+                // #416 wire-contract version gate. A sidecar that advertises a
+                // version outside the host's supported range is rejected here
+                // (clean handshake failure) rather than at the first mismatched
+                // call; a legacy sidecar that advertises none is tolerated as
+                // contract v1, with a warning so the operator knows to update.
+                var reported = _initResult?.ProtocolVersion;
+                if (reported is int version)
+                {
+                    if (version < MinSupportedSidecarProtocolVersion || version > SidecarProtocolVersion)
+                    {
+                        throw new InvalidOperationException(
+                            $"Sidecar '{_manifest.Protocol.Id}' speaks sidecar protocol version {version}, but this " +
+                            $"host supports [{MinSupportedSidecarProtocolVersion}..{SidecarProtocolVersion}]. " +
+                            (version > SidecarProtocolVersion
+                                ? "Update Bowire to a newer version."
+                                : "Update the sidecar plugin to a newer contract version."));
+                    }
+                }
+                else if (_logger is not null)
+                {
+                    SidecarProtocolLog.LegacySidecarNoProtocolVersion(_logger, _manifest.Protocol.Id);
                 }
             }
             catch
@@ -359,5 +411,35 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
         return new InvokeResult(response, durationMs, status, metadata);
     }
 
-    private sealed record InitializeResult(string? Name, string? Id, string? IconSvg);
+    private sealed record InitializeResult(
+        string? Name,
+        string? Id,
+        string? IconSvg,
+        int? ProtocolVersion = null,
+        SidecarCapabilities? Capabilities = null);
+
+    /// <summary>
+    /// Optional capability flags a sidecar advertises in its <c>initialize</c>
+    /// reply (#416). A legacy sidecar omits the object entirely; every flag
+    /// then defaults to <c>true</c> so behaviour is unchanged. Setting a flag
+    /// to <c>false</c> lets the host skip an unsupported call — currently only
+    /// <see cref="Channels"/> is acted on (short-circuits
+    /// <see cref="OpenChannelAsync"/>).
+    /// </summary>
+    internal sealed record SidecarCapabilities(
+        bool Discover = true,
+        bool Invoke = true,
+        bool InvokeStream = true,
+        bool Channels = true);
+}
+
+/// <summary>Source-generated log wrappers for <see cref="SidecarBowireProtocol"/>.</summary>
+internal static partial class SidecarProtocolLog
+{
+    [LoggerMessage(
+        EventId = 1,
+        Level = LogLevel.Warning,
+        Message = "Sidecar plugin '{PluginId}' did not advertise a protocol version in its initialize reply; " +
+            "treating it as legacy sidecar contract v1. Update the sidecar SDK to send protocolVersion + capabilities.")]
+    public static partial void LegacySidecarNoProtocolVersion(ILogger logger, string pluginId);
 }
