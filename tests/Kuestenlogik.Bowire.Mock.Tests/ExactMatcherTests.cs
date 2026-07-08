@@ -360,4 +360,191 @@ public sealed class ExactMatcherTests
         Assert.True(matcher.TryMatch(Req("GET", "/users/42/posts/7"), rec, out var step));
         Assert.Equal("""{"post":"seventh"}""", step.Response);
     }
+
+    // ---------------- #402: predicates, regex/glob paths, priority ----------------
+
+    private static MockRequest ReqEx(
+        string method, string path, string? query = null,
+        Dictionary<string, string>? headers = null) => new()
+    {
+        Protocol = "rest",
+        HttpMethod = method,
+        Path = path,
+        Query = query,
+        Headers = headers ?? new(StringComparer.OrdinalIgnoreCase),
+    };
+
+    private static BowireRecordingStep RestStepMatched(
+        string verb, string path, BowireStepMatch match, string response) => new()
+    {
+        Id = "step_" + Guid.NewGuid().ToString("N")[..8],
+        Protocol = "rest",
+        Service = "S",
+        Method = "M",
+        MethodType = "Unary",
+        HttpPath = path,
+        HttpVerb = verb,
+        Status = "OK",
+        Response = response,
+        Match = match,
+    };
+
+    [Fact]
+    public void QueryPredicate_Equals_GatesTheMatch()
+    {
+        var matcher = new ExactMatcher();
+        var rec = MakeRecording(RestStepMatched("GET", "/search",
+            new BowireStepMatch { Query = [new() { Name = "q", EqualTo = "cats" }] }, """{"hit":true}"""));
+
+        Assert.True(matcher.TryMatch(ReqEx("GET", "/search", "?q=cats"), rec, out var ok));
+        Assert.Equal("""{"hit":true}""", ok.Response);
+        Assert.False(matcher.TryMatch(ReqEx("GET", "/search", "?q=dogs"), rec, out _));
+        Assert.False(matcher.TryMatch(Req("GET", "/search"), rec, out _)); // absent
+    }
+
+    [Fact]
+    public void HeaderPredicate_IsCaseInsensitiveByName_AndSupportsAbsent()
+    {
+        var matcher = new ExactMatcher();
+        var needsAuth = MakeRecording(RestStepMatched("GET", "/secure",
+            new BowireStepMatch { Headers = [new() { Name = "Authorization", Present = true }] }, """{"ok":1}"""));
+
+        Assert.True(matcher.TryMatch(
+            ReqEx("GET", "/secure", headers: new(StringComparer.OrdinalIgnoreCase) { ["authorization"] = "Bearer x" }),
+            needsAuth, out _));
+        Assert.False(matcher.TryMatch(Req("GET", "/secure"), needsAuth, out _));
+
+        var anon = MakeRecording(RestStepMatched("GET", "/secure",
+            new BowireStepMatch { Headers = [new() { Name = "Authorization", Present = false }] }, """{"anon":1}"""));
+        Assert.True(matcher.TryMatch(Req("GET", "/secure"), anon, out var a));
+        Assert.Equal("""{"anon":1}""", a.Response);
+    }
+
+    [Fact]
+    public void CookiePredicate_MatchesFromCookieHeader()
+    {
+        var matcher = new ExactMatcher();
+        var rec = MakeRecording(RestStepMatched("GET", "/me",
+            new BowireStepMatch { Cookies = [new() { Name = "session", Contains = "abc" }] }, """{"user":"x"}"""));
+
+        Assert.True(matcher.TryMatch(
+            ReqEx("GET", "/me", headers: new(StringComparer.OrdinalIgnoreCase) { ["Cookie"] = "theme=dark; session=abc123" }),
+            rec, out _));
+        Assert.False(matcher.TryMatch(
+            ReqEx("GET", "/me", headers: new(StringComparer.OrdinalIgnoreCase) { ["Cookie"] = "theme=dark" }),
+            rec, out _));
+    }
+
+    [Fact]
+    public void PathRegex_MatchesFamilyOfPaths()
+    {
+        var matcher = new ExactMatcher();
+        var rec = MakeRecording(RestStepMatched("GET", null!,
+            new BowireStepMatch { PathRegex = "/orders/[0-9]+" }, """{"order":1}"""));
+
+        Assert.True(matcher.TryMatch(Req("GET", "/orders/123"), rec, out _));
+        Assert.False(matcher.TryMatch(Req("GET", "/orders/abc"), rec, out _));
+        Assert.False(matcher.TryMatch(Req("GET", "/orders/123/items"), rec, out _)); // anchored
+    }
+
+    [Fact]
+    public void PathGlob_SingleAndDoubleStar()
+    {
+        var matcher = new ExactMatcher();
+        var single = MakeRecording(RestStepMatched("GET", null!,
+            new BowireStepMatch { PathGlob = "/api/*/health" }, """{"g":"single"}"""));
+        Assert.True(matcher.TryMatch(Req("GET", "/api/v1/health"), single, out _));
+        Assert.False(matcher.TryMatch(Req("GET", "/api/v1/x/health"), single, out _)); // * is one segment
+
+        var deep = MakeRecording(RestStepMatched("GET", null!,
+            new BowireStepMatch { PathGlob = "/static/**" }, """{"g":"deep"}"""));
+        Assert.True(matcher.TryMatch(Req("GET", "/static/css/app.css"), deep, out _));
+    }
+
+    [Fact]
+    public void Priority_OverridesLiteralBeatsTemplateAndPicksHigher()
+    {
+        var matcher = new ExactMatcher();
+        // A template step with priority 10 outranks a literal step (priority 0)
+        // for the same path — explicit priority dominates the heuristic.
+        var rec = MakeRecording(
+            RestStep("GET", "/thing", """{"who":"literal"}"""),
+            RestStepMatched("GET", "/{x}", new BowireStepMatch { Priority = 10 }, """{"who":"priority"}"""));
+
+        Assert.True(matcher.TryMatch(Req("GET", "/thing"), rec, out var step));
+        Assert.Equal("""{"who":"priority"}""", step.Response);
+    }
+
+    [Fact]
+    public void NegativePriority_ActsAsFallback()
+    {
+        var matcher = new ExactMatcher();
+        var rec = MakeRecording(
+            RestStepMatched("GET", "/{x}", new BowireStepMatch { PathGlob = null, Priority = -1 }, """{"who":"fallback"}"""),
+            RestStep("GET", "/specific", """{"who":"specific"}"""));
+
+        Assert.True(matcher.TryMatch(Req("GET", "/specific"), rec, out var hit));
+        Assert.Equal("""{"who":"specific"}""", hit.Response);
+        // A path only the fallback template matches still resolves to it.
+        Assert.True(matcher.TryMatch(Req("GET", "/anything"), rec, out var fb));
+        Assert.Equal("""{"who":"fallback"}""", fb.Response);
+    }
+
+    [Fact]
+    public void AllPredicatesMustPass()
+    {
+        var matcher = new ExactMatcher();
+        var rec = MakeRecording(RestStepMatched("GET", "/x", new BowireStepMatch
+        {
+            Query = [new() { Name = "a", EqualTo = "1" }],
+            Headers = [new() { Name = "X-Env", EqualTo = "prod", CaseInsensitive = true }],
+        }, """{"ok":1}"""));
+
+        Assert.True(matcher.TryMatch(
+            ReqEx("GET", "/x", "?a=1", new(StringComparer.OrdinalIgnoreCase) { ["X-Env"] = "PROD" }), rec, out _));
+        // header wrong → no match even though query passes
+        Assert.False(matcher.TryMatch(
+            ReqEx("GET", "/x", "?a=1", new(StringComparer.OrdinalIgnoreCase) { ["X-Env"] = "dev" }), rec, out _));
+    }
+
+    // ---- MockMatchPredicates helper units ----
+
+    [Theory]
+    [InlineData("/api/*/health", "/api/v1/health", true)]
+    [InlineData("/api/*/health", "/api/v1/v2/health", false)]
+    [InlineData("/static/**", "/static/a/b/c.js", true)]
+    [InlineData("/f?o", "/f/o", false)] // '?' matches one non-'/' char, not a slash
+    [InlineData("/f?o", "/fao", true)]
+    [InlineData("/a.b", "/aXb", false)] // '.' stays literal
+    public void GlobToRegex_Matches(string glob, string path, bool expected)
+        => Assert.Equal(expected, Kuestenlogik.Bowire.Mock.Matchers.MockMatchPredicates.GlobToRegex(glob).IsMatch(path));
+
+    [Fact]
+    public void ParseQuery_DecodesAndAccumulates()
+    {
+        var q = Kuestenlogik.Bowire.Mock.Matchers.MockMatchPredicates.ParseQuery("?a=1&a=2&b=hello%20world&c");
+        Assert.Equal(2, q["a"].Count);
+        Assert.Equal("1", q["a"][0]);
+        Assert.Equal("2", q["a"][1]);
+        Assert.Equal("hello world", q["b"][0]);
+        Assert.Equal("", q["c"][0]);
+    }
+
+    [Fact]
+    public void EvaluatePredicate_PresenceAndOperators()
+    {
+        var mp = typeof(Kuestenlogik.Bowire.Mock.Matchers.MockMatchPredicates);
+        // present-only passes when a value exists
+        Assert.True(Kuestenlogik.Bowire.Mock.Matchers.MockMatchPredicates.EvaluatePredicate(
+            new BowireMatchPredicate { Name = "x" }, ["v"]));
+        // absent required
+        Assert.True(Kuestenlogik.Bowire.Mock.Matchers.MockMatchPredicates.EvaluatePredicate(
+            new BowireMatchPredicate { Name = "x", Present = false }, null));
+        // matches regex
+        Assert.True(Kuestenlogik.Bowire.Mock.Matchers.MockMatchPredicates.EvaluatePredicate(
+            new BowireMatchPredicate { Name = "x", Matches = "^ab.$" }, ["abc"]));
+        Assert.False(Kuestenlogik.Bowire.Mock.Matchers.MockMatchPredicates.EvaluatePredicate(
+            new BowireMatchPredicate { Name = "x", Matches = "^ab.$" }, ["zzz"]));
+        _ = mp;
+    }
 }
