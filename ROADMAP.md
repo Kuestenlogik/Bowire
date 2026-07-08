@@ -151,7 +151,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**2/15 done** · 13 backlog
+**2/17 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -168,6 +168,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ⬜ Backlog |  |
 | [253](https://github.com/Kuestenlogik/Bowire/issues/253) | Bowire | [Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override](#issue-kuestenlogik-bowire-253) | ⬜ Backlog |  |
 | [401](https://github.com/Kuestenlogik/Bowire/issues/401) | Bowire | [Mock-server maturity — WireMock feature parity (epic)](#issue-kuestenlogik-bowire-401) | ⬜ Backlog |  |
+| [402](https://github.com/Kuestenlogik/Bowire/issues/402) | Bowire | [Mock request matching: query / header / cookie predicates + regex/glob paths + stub priority](#issue-kuestenlogik-bowire-402) | ⬜ Backlog |  |
+| [403](https://github.com/Kuestenlogik/Bowire/issues/403) | Bowire | [Mock request-body matchers (equalToJson / JSONPath / XPath / JSON-schema / regex)](#issue-kuestenlogik-bowire-403) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
 
@@ -838,6 +840,14 @@ Bowire conflates two distinct URL concepts under a single "Server URL" field: [[
 #### <a id="issue-kuestenlogik-bowire-401"></a>⬜ Backlog · [#401](https://github.com/Kuestenlogik/Bowire/issues/401) Mock-server maturity — WireMock feature parity (epic)
 
 Tracking epic for closing the mock-server feature gaps versus **WireMock**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/401)
+
+#### <a id="issue-kuestenlogik-bowire-402"></a>⬜ Backlog · [#402](https://github.com/Kuestenlogik/Bowire/issues/402) Mock request matching: query / header / cookie predicates + regex/glob paths + stub priority
+
+Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/402)
+
+#### <a id="issue-kuestenlogik-bowire-403"></a>⬜ Backlog · [#403](https://github.com/Kuestenlogik/Bowire/issues/403) Mock request-body matchers (equalToJson / JSONPath / XPath / JSON-schema / regex)
+
+Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/403)
 
 #### <a id="issue-kuestenlogik-bowire-34"></a>✅ Done · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
 
