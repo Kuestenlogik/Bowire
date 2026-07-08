@@ -89,6 +89,12 @@ public sealed class MockServerOptions
     public string? CertPassword { get; init; }
 
     /// <summary>
+    /// #407: forward unmatched requests to this real upstream base URL (partial
+    /// mocking). Fixed by config, never taken from the request. Null = no proxy.
+    /// </summary>
+    public string? ProxyBaseUrl { get; init; }
+
+    /// <summary>
     /// Disambiguator when <see cref="RecordingPath"/> points at a file with
     /// multiple recordings. Either a recording name or id.
     /// </summary>
