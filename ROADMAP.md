@@ -303,7 +303,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [399](https://github.com/Kuestenlogik/Bowire/issues/399) | Bowire | [gRPC stream fork-bomb / concurrent-stream limit probe](#issue-kuestenlogik-bowire-399) | ⬜ Backlog |  |
 | [400](https://github.com/Kuestenlogik/Bowire/issues/400) | Bowire | [MCP tool-call injection probe (adversarial prompt / unintended tool execution)](#issue-kuestenlogik-bowire-400) | ⬜ Backlog |  |
 | [413](https://github.com/Kuestenlogik/Bowire/issues/413) | Bowire | [Site comparison: split into topic-specific tables (API-client / mocking / security), add WireMock + Mockito, broaden beyond top-5](#issue-kuestenlogik-bowire-413) | ⬜ Backlog |  |
-| [417](https://github.com/Kuestenlogik/Bowire/issues/417) | Bowire | [Sidecar contract: publish plugin.schema.json + fix doc/comment drift](#issue-kuestenlogik-bowire-417) | ⬜ Backlog |  |
 | [418](https://github.com/Kuestenlogik/Bowire/issues/418) | Bowire | [Re-sync language SDKs (Go/Node/Python/Rust) to the current sidecar contract + version handshake](#issue-kuestenlogik-bowire-418) | ⬜ Backlog |  |
 
 ## Details
@@ -1239,10 +1238,6 @@ Follow-up from #184. The v2.3 MCP probes cover discovery-inventory exposure (API
 #### <a id="issue-kuestenlogik-bowire-413"></a>⬜ Backlog · [#413](https://github.com/Kuestenlogik/Bowire/issues/413) Site comparison: split into topic-specific tables (API-client / mocking / security), add WireMock + Mockito, broaden beyond top-5
 
 The site has exactly one tool-vs-tool comparison — a hand-authored top-5 matrix in `site/_includes/comparison.html` (rendered on the homepage via `index.html`). It is framed entirely around the **API-client / workbench** category — discovery + invocation + streaming/logging + record/replay: [[more]](https://github.com/Kuestenlogik/Bowire/issues/413)
-
-#### <a id="issue-kuestenlogik-bowire-417"></a>⬜ Backlog · [#417](https://github.com/Kuestenlogik/Bowire/issues/417) Sidecar contract: publish plugin.schema.json + fix doc/comment drift
-
-The sidecar plugin contract has documentation/schema drift and a missing artifact: [[more]](https://github.com/Kuestenlogik/Bowire/issues/417)
 
 #### <a id="issue-kuestenlogik-bowire-418"></a>⬜ Backlog · [#418](https://github.com/Kuestenlogik/Bowire/issues/418) Re-sync language SDKs (Go/Node/Python/Rust) to the current sidecar contract + version handshake
 
