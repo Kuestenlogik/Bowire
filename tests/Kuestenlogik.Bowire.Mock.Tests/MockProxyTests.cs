@@ -94,7 +94,33 @@ public sealed class MockProxyTests
         Assert.Equal(HttpStatusCode.BadGateway, resp.StatusCode);
     }
 
-    private static IHost BuildMockHost(BowireRecording recording, string? proxyBaseUrl) =>
+    [Fact]
+    public async Task RecordThrough_PersistsProxiedResponseAsStub()
+    {
+        await using var upstream = await StartUpstreamAsync(Ct);
+        var recordPath = SafePath.Combine(Path.GetTempPath(), $"bowire-rt-{Guid.NewGuid():N}.json");
+        try
+        {
+            var rec = new BowireRecording { Id = "r", Name = "r", RecordingFormatVersion = 2 };
+            using var host = BuildMockHost(rec, proxyBaseUrl: upstream.Urls.First(), recordPath: recordPath);
+            var client = host.GetTestClient();
+
+            var resp = await client.GetAsync(new Uri("/captured", UriKind.Relative), Ct);
+            Assert.Equal("""{"upstream":"/captured"}""", await resp.Content.ReadAsStringAsync(Ct));
+
+            Assert.True(File.Exists(recordPath));
+            var saved = System.Text.Json.JsonSerializer.Deserialize<BowireRecording>(
+                await File.ReadAllTextAsync(recordPath, Ct));
+            Assert.Contains(saved!.Steps, s =>
+                s.HttpPath == "/captured" && s.Response!.Contains("upstream", StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (File.Exists(recordPath)) File.Delete(recordPath);
+        }
+    }
+
+    private static IHost BuildMockHost(BowireRecording recording, string? proxyBaseUrl, string? recordPath = null) =>
         new HostBuilder()
             .ConfigureWebHost(web =>
             {
@@ -106,6 +132,7 @@ public sealed class MockProxyTests
                             opts.Watch = false;
                             opts.ReplaySpeed = 0;
                             opts.ProxyBaseUrl = proxyBaseUrl;
+                            opts.ProxyRecordPath = recordPath;
                         });
                         app.Run(async ctx =>
                         {

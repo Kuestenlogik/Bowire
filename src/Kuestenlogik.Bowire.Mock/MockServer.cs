@@ -286,6 +286,7 @@ public sealed class MockServer : IAsyncDisposable
                 opts.ControlToken = _options.ControlToken;
                 opts.PassThroughOnMiss = false; // standalone host has nothing behind it
                 opts.ProxyBaseUrl = _options.ProxyBaseUrl; // #407: forward-on-miss upstream
+                opts.ProxyRecordPath = _options.ProxyRecordPath; // #430: record-through capture
                 opts.RequestObserver = _options.RequestObserver;
                 opts.OnHandlerCreated = h => Handler = h; // #404: capture for per-stub CRUD
             };

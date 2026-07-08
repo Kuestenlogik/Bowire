@@ -137,6 +137,7 @@ internal static class MockCommand
                 CertPath = cli.CertPath,
                 CertPassword = cli.CertPassword,
                 ProxyBaseUrl = cli.ProxyBaseUrl,
+                ProxyRecordPath = cli.ProxyRecordPath,
                 Select = cli.Select,
                 Watch = !cli.NoWatch,
                 Chaos = chaos,

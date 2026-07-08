@@ -94,6 +94,9 @@ public sealed class MockServerOptions
     /// </summary>
     public string? ProxyBaseUrl { get; init; }
 
+    /// <summary>#430: append each proxied response to this recording file (record-through). Null = don't persist.</summary>
+    public string? ProxyRecordPath { get; init; }
+
     /// <summary>
     /// Disambiguator when <see cref="RecordingPath"/> points at a file with
     /// multiple recordings. Either a recording name or id.

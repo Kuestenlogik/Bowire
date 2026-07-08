@@ -41,6 +41,14 @@ public sealed class MockOptions
     public HttpClient? ProxyHttpClient { get; set; }
 
     /// <summary>
+    /// #430 (record-through): when set alongside a proxy
+    /// (<see cref="ProxyBaseUrl"/> or a per-stub proxy), each proxied response
+    /// is appended as a stub to this recording file — capture-by-proxy, so a
+    /// later run replays it. Null = forward only, don't persist.
+    /// </summary>
+    public string? ProxyRecordPath { get; set; }
+
+    /// <summary>
     /// #406: base directory for resolving a stub's <c>bodyFileName</c>
     /// (<see cref="Mocking.BowireRecordingStep.ResponseBodyFile"/>). Set
     /// automatically from the recording file's directory by
