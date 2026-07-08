@@ -23,10 +23,16 @@ bowire mock --recording scenario.bwr --port 7070
 | `--recording, -r <path>` | &mdash; | Required. Accepts both a single-recording file and the full `~/.bowire/recordings.json` store. |
 | `--port, -p <port>` | `6000` | Listen port. |
 | `--host <addr>` | `127.0.0.1` | Use `0.0.0.0` for LAN / sidecar-container setups. |
+| `--https` | off | Serve over HTTPS. Generates a fresh self-signed `localhost` certificate (untrusted by design — clients must accept it). |
+| `--https-port <port>` | = `--port` | Port for the HTTPS listener. |
+| `--cert <path>` | &mdash; | Use your own certificate instead of the self-signed one: a `.pfx`/`.p12` (with `--cert-password`) or a PEM file. |
+| `--cert-password <pw>` | &mdash; | Password for a PKCS#12 `--cert`. |
 | `--select <name-or-id>` | &mdash; | Disambiguates a store file that contains multiple recordings. Matches on `name` or `id`. |
 | `--no-watch` | off | Disable hot-reload on file changes. |
 
 `Ctrl+C` shuts the server down cleanly.
+
+> **HTTPS** — `bowire mock scenario.bwr --https` serves TLS on `--port` with a self-signed `localhost` cert (regenerated each run, so it's never trusted by default). For a stable/trusted cert, pass `--cert your.pfx --cert-password …`. The mock serves HTTP *or* HTTPS on the port, not both.
 
 ### 2. Embedded, via ASP.NET middleware
 
