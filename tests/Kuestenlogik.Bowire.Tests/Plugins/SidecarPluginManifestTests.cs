@@ -128,6 +128,42 @@ public class SidecarPluginManifestTests
     }
 
     [Fact]
+    public void Discover_Surfaces_Http_Transport_Manifest_Without_Executable()
+    {
+        // #415: an http sidecar legitimately has no executable — only a url.
+        // Discovery must load it (regression: the old guard hardcoded the
+        // executable check and dropped every http manifest).
+        var root = SafePath.Combine(Path.GetTempPath(), "bowire-sidecar-test-" + Guid.NewGuid().ToString("N"));
+        var sub = SafePath.Combine(root, "httpsc");
+        Directory.CreateDirectory(sub);
+        try
+        {
+            File.WriteAllText(SafePath.Combine(sub, "sidecar.json"),
+                """{ "packageId":"H", "protocol":{"id":"h","name":"H"}, "transport":"http", "url":"http://localhost:7000/bowire" }""");
+
+            var sidecars = SidecarPluginDiscovery.Discover(root);
+            var s = Assert.Single(sidecars);
+            Assert.Equal("h", s.Id);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public void Discover_Skips_Http_Manifest_Missing_Url()
+    {
+        var root = SafePath.Combine(Path.GetTempPath(), "bowire-sidecar-test-" + Guid.NewGuid().ToString("N"));
+        var sub = SafePath.Combine(root, "brokenhttp");
+        Directory.CreateDirectory(sub);
+        try
+        {
+            File.WriteAllText(SafePath.Combine(sub, "sidecar.json"),
+                """{ "packageId":"H", "protocol":{"id":"h","name":"H"}, "transport":"http" }""");
+            Assert.Empty(SidecarPluginDiscovery.Discover(root));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public void Discover_Honours_Disabled_Set()
     {
         var root = SafePath.Combine(Path.GetTempPath(), "bowire-sidecar-test-" + Guid.NewGuid().ToString("N"));

@@ -7,7 +7,7 @@ namespace Kuestenlogik.Bowire.Plugins.Sidecar;
 
 /// <summary>
 /// Scans the user plugin directory for sidecar plugins —
-/// subdirectories that contain a <c>plugin.json</c> manifest. Each
+/// subdirectories that contain a <c>sidecar.json</c> manifest. Each
 /// discovered manifest becomes one <see cref="SidecarBowireProtocol"/>
 /// registered alongside the .NET plugins the assembly scanner picks up.
 /// </summary>
@@ -27,7 +27,7 @@ public static class SidecarPluginDiscovery
             ".bowire", "plugins");
 
     /// <summary>
-    /// Find every <c>plugin.json</c> directly under
+    /// Find every <c>sidecar.json</c> directly under
     /// <paramref name="pluginRoot"/> and instantiate one
     /// <see cref="SidecarBowireProtocol"/> per valid manifest. Missing
     /// root directory returns an empty list (not an error — most hosts
@@ -60,8 +60,10 @@ public static class SidecarPluginDiscovery
                 continue;
             }
 
-            if (string.IsNullOrEmpty(manifest.Protocol?.Id)
-                || string.IsNullOrEmpty(manifest.Executable))
+            // Transport-aware validity: stdio needs an executable, http needs a
+            // url. Using the manifest's own IsValid keeps this in lockstep with
+            // the model (an http sidecar legitimately has no executable).
+            if (!manifest.IsValid)
             {
                 if (logger is not null)
                     SidecarDiscoveryLog.ManifestMissingRequiredFields(logger, manifestPath);
@@ -75,7 +77,7 @@ public static class SidecarPluginDiscovery
                 continue;
             }
 
-            results.Add(new SidecarBowireProtocol(manifest, subDir));
+            results.Add(new SidecarBowireProtocol(manifest, subDir, logger));
         }
 
         return results;
@@ -99,7 +101,7 @@ internal static partial class SidecarDiscoveryLog
     [LoggerMessage(
         EventId = 2,
         Level = LogLevel.Warning,
-        Message = "Sidecar manifest at {Path} is missing protocol.id or executable; skipping.")]
+        Message = "Sidecar manifest at {Path} is missing protocol.id or its transport target (executable for stdio, url for http); skipping.")]
     public static partial void ManifestMissingRequiredFields(ILogger logger, string path);
 
     [LoggerMessage(

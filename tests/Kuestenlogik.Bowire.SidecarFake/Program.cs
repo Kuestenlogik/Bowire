@@ -5,7 +5,7 @@
 // invokeStream / shutdown without depending on Python, Node, etc.
 //
 // Behaviour:
-//   initialize  -> { id:"fake", name:"Fake", iconSvg:"<svg/>" }
+//   initialize  -> { id:"fake", name:"Fake", iconSvg:"<svg/>", protocolVersion:1, capabilities:{...} }
 //   discover    -> one service with one method called "echo"
 //   invoke      -> echoes the first jsonMessage back as response
 //   invokeStream-> emits 3 $/stream/data notifications then $/stream/end
@@ -21,6 +21,25 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+
+// Test knobs (#416 handshake): the integration tests pass these via the
+// manifest's `args` to drive the version-gate + capability paths.
+//   --protocol-version <n>  advertise this sidecar contract version (default 1)
+//   --no-channels           advertise capabilities.channels = false
+//   --legacy                omit protocolVersion + capabilities entirely (pre-#416 sidecar)
+var advertiseHandshake = true;
+var protocolVersion = 1;
+var channelsCapability = true;
+for (var ai = 0; ai < args.Length; ai++)
+{
+    switch (args[ai])
+    {
+        case "--protocol-version" when ai + 1 < args.Length && int.TryParse(args[ai + 1], out var pv):
+            protocolVersion = pv; ai++; break;
+        case "--no-channels": channelsCapability = false; break;
+        case "--legacy": advertiseHandshake = false; break;
+    }
+}
 
 var stdin = Console.OpenStandardInput();
 var stdout = Console.OpenStandardOutput();
@@ -42,7 +61,22 @@ while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) is not null)
     switch (method)
     {
         case "initialize":
-            await Reply(id, new { name = "Fake", id = "fake", iconSvg = "<svg/>" });
+            if (advertiseHandshake)
+            {
+                await Reply(id, new
+                {
+                    name = "Fake",
+                    id = "fake",
+                    iconSvg = "<svg/>",
+                    protocolVersion,
+                    capabilities = new { discover = true, invoke = true, invokeStream = true, channels = channelsCapability },
+                });
+            }
+            else
+            {
+                // Legacy sidecar: no protocolVersion / capabilities advertised.
+                await Reply(id, new { name = "Fake", id = "fake", iconSvg = "<svg/>" });
+            }
             break;
 
         case "ping":
