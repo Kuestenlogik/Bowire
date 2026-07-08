@@ -302,6 +302,46 @@ public static class BowireMockManagementEndpoints
                 : Results.NotFound(new { error = $"Mock {mockId} not running." });
         }).ExcludeFromDescription();
 
+        // #408: named-scenario state on a RUNNING mock.
+        endpoints.MapGet($"{basePath}/api/mocks/{{mockId}}/scenarios",
+            (string mockId, BowireMockHostManager manager) =>
+        {
+            var states = manager.GetScenarioStates(mockId);
+            return states is null
+                ? Results.NotFound(new { error = $"Mock {mockId} not running." })
+                : Results.Json(new { mockId, scenarios = states }, JsonOptions);
+        }).ExcludeFromDescription();
+
+        endpoints.MapPost($"{basePath}/api/mocks/{{mockId}}/scenarios/{{name}}/state",
+            async (string mockId, string name, HttpContext ctx, BowireMockHostManager manager) =>
+        {
+            if (manager.Get(mockId) is null)
+                return Results.NotFound(new { error = $"Mock {mockId} not running." });
+            ScenarioStateRequest? body;
+            try
+            {
+                body = await JsonSerializer.DeserializeAsync<ScenarioStateRequest>(
+                    ctx.Request.Body, JsonOptions, ctx.RequestAborted);
+            }
+            catch (JsonException ex)
+            {
+                return Results.Json(new { error = "Invalid JSON: " + ex.Message }, JsonOptions, statusCode: 400);
+            }
+            if (string.IsNullOrEmpty(body?.State))
+                return Results.Json(new { error = "Body must be { \"state\": \"...\" }." }, JsonOptions, statusCode: 400);
+            return manager.SetScenarioState(mockId, name, body.State)
+                ? Results.Json(new { mockId, scenarios = manager.GetScenarioStates(mockId) }, JsonOptions)
+                : Results.NotFound(new { error = $"No scenario '{name}'." });
+        }).ExcludeFromDescription();
+
+        endpoints.MapPost($"{basePath}/api/mocks/{{mockId}}/scenarios/reset",
+            (string mockId, BowireMockHostManager manager) =>
+        {
+            return manager.ResetScenarios(mockId)
+                ? Results.Json(new { mockId, scenarios = manager.GetScenarioStates(mockId) }, JsonOptions)
+                : Results.NotFound(new { error = $"Mock {mockId} not running." });
+        }).ExcludeFromDescription();
+
         // #170: per-method fault-injection rules of a RUNNING mock.
         // GET returns the live rule set in the exact mock-faults.json
         // shape (kebab-case enums); PUT replaces it — an empty rules
@@ -351,6 +391,8 @@ public static class BowireMockManagementEndpoints
             return null;
         }
     }
+
+    private sealed record ScenarioStateRequest(string? State);
 
     private sealed record StartMockRequest(
         string? Recording,

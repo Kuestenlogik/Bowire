@@ -104,6 +104,24 @@ public sealed class BowireMockHostManager : IAsyncDisposable
         return true;
     }
 
+    // #408: named-scenario state on a running mock.
+
+    /// <summary>Current state of every scenario in a running mock (name → state). Null when not running.</summary>
+    public IReadOnlyDictionary<string, string>? GetScenarioStates(string mockId) => HandlerFor(mockId)?.GetScenarioStates();
+
+    /// <summary>Force a scenario to a state. False when the mock isn't running or the scenario is unknown.</summary>
+    public bool SetScenarioState(string mockId, string name, string state) =>
+        HandlerFor(mockId)?.SetScenarioState(name, state) ?? false;
+
+    /// <summary>Reset all scenarios to Started. False when not running.</summary>
+    public bool ResetScenarios(string mockId)
+    {
+        var handler = HandlerFor(mockId);
+        if (handler is null) return false;
+        handler.ResetScenarios();
+        return true;
+    }
+
     /// <summary>
     /// Boot a mock host for the supplied recording JSON.
     /// </summary>

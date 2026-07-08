@@ -358,6 +358,43 @@ public sealed class BowireRecordingStep
     /// </summary>
     [JsonPropertyName("match")]
     public BowireStepMatch? Match { get; init; }
+
+    /// <summary>
+    /// Named-scenario gating for this stub (mock matcher, <c>#408</c>). When
+    /// set, the stub is eligible only while its scenario is in
+    /// <see cref="BowireStepScenario.RequiredState"/>, and a successful match
+    /// transitions the scenario to <see cref="BowireStepScenario.NewState"/>.
+    /// Null = the stub is state-independent (the common case).
+    /// </summary>
+    [JsonPropertyName("scenario")]
+    public BowireStepScenario? Scenario { get; init; }
+}
+
+/// <summary>
+/// Named-scenario state-machine gating for a stub (mock matcher, <c>#408</c>) —
+/// the analog of WireMock Scenarios. A scenario is a named state; a stub gated
+/// on <see cref="RequiredState"/> only matches while the scenario is in that
+/// state, and a match moves the scenario to <see cref="NewState"/>. Lets the
+/// same request return different responses across a lifecycle (e.g.
+/// not-found → created → found).
+/// </summary>
+public sealed class BowireStepScenario
+{
+    /// <summary>Scenario name. Multiple scenarios per recording are independent.</summary>
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = "";
+
+    /// <summary>
+    /// State the scenario must be in for this stub to match. Null = the
+    /// scenario's initial state (<c>Started</c>) — so a stub with a scenario
+    /// name but no required state gates on the start state.
+    /// </summary>
+    [JsonPropertyName("requiredState")]
+    public string? RequiredState { get; init; }
+
+    /// <summary>State to move the scenario to after a successful match. Null = no transition.</summary>
+    [JsonPropertyName("newState")]
+    public string? NewState { get; init; }
 }
 
 /// <summary>
