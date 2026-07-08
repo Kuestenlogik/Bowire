@@ -88,7 +88,7 @@ public static class UnaryReplayer
             return await ReplaySocketIoAsync(ctx, step, options, logger, ct);
         // SignalR /{hub}/negotiate is a plain POST → falls through to the
         // REST replayer if the recording captured it.
-        if (hasHttpRouting && isUnary) return await ReplayRestAsync(ctx, step, request, ct);
+        if (hasHttpRouting && isUnary) return await ReplayRestAsync(ctx, step, options, request, ct);
         if (hasHttpRouting && isServerStreaming) return await ReplaySseAsync(ctx, step, options, logger, request, ct);
 
         return await Not501(ctx, logger,
@@ -107,8 +107,29 @@ public static class UnaryReplayer
         "Upgrade", "Proxy-Connection", "TE", "Trailer",
     };
 
+    // #406: resolve a stub's body — from bodyFileName (relative to the recording
+    // directory) when set, otherwise the inline response. A missing / unreadable
+    // file falls back to the inline response so a bad path can't crash replay.
+    // The path comes from the recording (author-controlled), not the request.
+    private static string ReadStepBody(BowireRecordingStep step, string? recordingDirectory)
+    {
+        if (string.IsNullOrEmpty(step.ResponseBodyFile))
+            return step.Response ?? string.Empty;
+        try
+        {
+            var path = Path.IsPathRooted(step.ResponseBodyFile) || string.IsNullOrEmpty(recordingDirectory)
+                ? step.ResponseBodyFile
+                : Path.Combine(recordingDirectory, step.ResponseBodyFile);
+            return File.ReadAllText(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return step.Response ?? string.Empty;
+        }
+    }
+
     private static async Task<int> ReplayRestAsync(
-        HttpContext ctx, BowireRecordingStep step, RequestTemplate? request, CancellationToken ct)
+        HttpContext ctx, BowireRecordingStep step, MockOptions options, RequestTemplate? request, CancellationToken ct)
     {
         var statusCode = MapStatus(step.Status);
         ctx.Response.StatusCode = statusCode;
@@ -120,14 +141,20 @@ public static class UnaryReplayer
         // Kestrel owns are skipped.
         ApplyRestResponseHeaders(ctx, step.ResponseHeaders);
 
-        // Dynamic-value substitution happens per request — ${uuid} and
-        // ${now}-style placeholders in the recorded body are resolved
-        // here so every replay sees fresh IDs / timestamps; ${request.*}
-        // pulls live values out of the inbound request. gRPC skips
-        // this because its response is binary protobuf; text
-        // substitution would break the wire format.
-        var body = ResponseBodySubstitutor.Substitute(
-            step.Response ?? string.Empty, request, extraBindings: null);
+        // #406: a stub can source its body from a file (bodyFileName) instead
+        // of the inline `response`; resolved relative to the recording dir.
+        var rawBody = ReadStepBody(step, options.RecordingDirectory);
+
+        // Dynamic-value substitution happens per request — ${uuid} / ${now} /
+        // ${faker.*} / ${request.*} placeholders are resolved here so every
+        // replay sees fresh values. gRPC skips this (binary protobuf).
+        var body = ResponseBodySubstitutor.Substitute(rawBody, request, extraBindings: null);
+
+        // #406: optional response-transformer extension point — mutate the
+        // final body (e.g. inject computed fields) after substitution.
+        if (options.ResponseTransformer is { } transform)
+            body = transform(ctx, body);
+
         var bytes = Encoding.UTF8.GetBytes(body);
         ctx.Response.ContentLength = bytes.Length;
         await ctx.Response.Body.WriteAsync(bytes, ct);
