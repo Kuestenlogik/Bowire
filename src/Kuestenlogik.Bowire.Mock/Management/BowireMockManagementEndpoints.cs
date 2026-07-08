@@ -11,8 +11,8 @@ using Microsoft.Extensions.Logging;
 namespace Kuestenlogik.Bowire.Mock.Management;
 
 /// <summary>
-/// HTTP API surface for managing UI-driven mock servers. Five endpoints
-/// under <c>{basePath}/api/mocks</c>:
+/// HTTP API surface for managing UI-driven mock servers, under
+/// <c>{basePath}/api/mocks</c>:
 /// <list type="bullet">
 ///   <item><c>POST /api/mocks</c> — start a mock. Accepts either an
 ///     inline recording payload (<c>{ recording, name?, port? }</c> —
@@ -22,6 +22,9 @@ namespace Kuestenlogik.Bowire.Mock.Management;
 ///   <item><c>GET /api/mocks/{id}</c> — single mock detail.</item>
 ///   <item><c>DELETE /api/mocks/{id}</c> — stop a mock.</item>
 ///   <item><c>GET /api/mocks/{id}/requests</c> — request-log tail (#57).</item>
+///   <item><c>GET /api/mocks/{id}/requests/unmatched</c> — near-miss listing (#409).</item>
+///   <item><c>POST /api/mocks/{id}/verify</c> — verify / findAll over the journal (#409).</item>
+///   <item><c>GET</c>/<c>PUT /api/mocks/{id}/faults</c> — live fault rules (#170).</item>
 /// </list>
 /// </summary>
 /// <remarks>
@@ -179,6 +182,56 @@ public static class BowireMockManagementEndpoints
                 total = log.TotalRequests,
                 capacity = log.Capacity,
                 entries
+            }, JsonOptions);
+        }).ExcludeFromDescription();
+
+        // #409: near-miss listing — requests that matched no stub.
+        endpoints.MapGet($"{basePath}/api/mocks/{{mockId}}/requests/unmatched",
+            (string mockId, int? limit, BowireMockHostManager manager) =>
+        {
+            var log = manager.GetRequestLog(mockId);
+            if (log is null)
+            {
+                return Results.NotFound(new { error = $"Mock {mockId} not running." });
+            }
+            var entries = log.Unmatched(limit);
+            return Results.Json(new { mockId, count = entries.Count, entries }, JsonOptions);
+        }).ExcludeFromDescription();
+
+        // #409: verify / findAll — assert how many journalled requests match a
+        // predicate (method + path/regex/glob + query/header/cookie). Returns
+        // { satisfied, count, matches }. `satisfied` defaults to "at least one"
+        // when no count expectation is supplied.
+        endpoints.MapPost($"{basePath}/api/mocks/{{mockId}}/verify",
+            async (string mockId, HttpContext ctx, BowireMockHostManager manager) =>
+        {
+            var log = manager.GetRequestLog(mockId);
+            if (log is null)
+            {
+                return Results.NotFound(new { error = $"Mock {mockId} not running." });
+            }
+            MockVerification? verification;
+            try
+            {
+                verification = await JsonSerializer.DeserializeAsync<MockVerification>(
+                    ctx.Request.Body, JsonOptions, ctx.RequestAborted);
+            }
+            catch (JsonException ex)
+            {
+                return Results.Json(new { error = "Invalid JSON: " + ex.Message }, JsonOptions, statusCode: 400);
+            }
+            if (verification is null)
+            {
+                return Results.Json(new { error = "Request body is required." }, JsonOptions, statusCode: 400);
+            }
+
+            var result = log.Verify(verification);
+            return Results.Json(new
+            {
+                mockId,
+                satisfied = result.Satisfied,
+                count = result.Count,
+                matches = result.Matches,
             }, JsonOptions);
         }).ExcludeFromDescription();
 

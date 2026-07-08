@@ -101,7 +101,12 @@ public sealed class MockHandler
                         MatchedStepId: matchedStepId,
                         Outcome: outcome,
                         DurationMs: elapsedMs,
-                        Fault: ctx.Items.TryGetValue(FaultItemKey, out var f) ? f as string : null));
+                        Fault: ctx.Items.TryGetValue(FaultItemKey, out var f) ? f as string : null,
+                        // #409: retain query + headers so the verify API can
+                        // assert on them (bounded — the log is a ring buffer).
+                        Query: ctx.Request.QueryString.HasValue ? ctx.Request.QueryString.Value : null,
+                        Headers: ctx.Request.Headers.ToDictionary(
+                            h => h.Key, h => h.Value.ToString(), StringComparer.OrdinalIgnoreCase)));
                 }
                 catch
                 {

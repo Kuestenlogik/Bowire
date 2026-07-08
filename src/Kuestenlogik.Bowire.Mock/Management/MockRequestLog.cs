@@ -23,7 +23,9 @@ public sealed record MockRequestEntry(
     string? MatchedStepId,
     string Outcome,             // "matched" | "miss" | "passed-through" | "404"
     double DurationMs,
-    string? Fault = null);      // #170 audit trail — human description of the injected fault, null when none fired
+    string? Fault = null,       // #170 audit trail — human description of the injected fault, null when none fired
+    string? Query = null,       // #409 raw query string (with leading '?'), for verify predicates
+    IReadOnlyDictionary<string, string>? Headers = null); // #409 request headers, for verify predicates
 
 /// <summary>
 /// Sink the mock pipeline pushes <see cref="MockRequestEntry"/> records
@@ -101,5 +103,26 @@ public sealed class MockRequestLog : IMockRequestObserver
             filtered = filtered.Take(n);
         }
         return filtered.ToArray();
+    }
+
+    /// <summary>
+    /// #409: run a <see cref="MockVerification"/> over the whole buffered
+    /// journal — the embedded-host convenience behind
+    /// <c>POST /api/mocks/{id}/verify</c>.
+    /// </summary>
+    public MockVerificationResult Verify(MockVerification verification)
+        => MockRequestVerifier.Verify(Snapshot(), verification);
+
+    /// <summary>
+    /// #409: buffered requests that did NOT match any stub (outcome
+    /// <c>miss</c> or <c>404</c>), newest first — the near-miss listing behind
+    /// <c>GET /api/mocks/{id}/requests/unmatched</c>.
+    /// </summary>
+    public IReadOnlyList<MockRequestEntry> Unmatched(int? limit = null)
+    {
+        var unmatched = Snapshot()
+            .Where(e => e.Outcome is "miss" or "404");
+        if (limit is int n && n > 0) unmatched = unmatched.Take(n);
+        return unmatched.ToArray();
     }
 }
