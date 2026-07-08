@@ -157,7 +157,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**11/25 done** · 14 backlog
+**12/25 done** · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -174,13 +174,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ⬜ Backlog |  |
 | [253](https://github.com/Kuestenlogik/Bowire/issues/253) | Bowire | [Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override](#issue-kuestenlogik-bowire-253) | ⬜ Backlog |  |
 | [401](https://github.com/Kuestenlogik/Bowire/issues/401) | Bowire | [Mock-server maturity — WireMock feature parity (epic)](#issue-kuestenlogik-bowire-401) | ⬜ Backlog |  |
-| [406](https://github.com/Kuestenlogik/Bowire/issues/406) | Bowire | [Mock response templating: helpers / math / faker + bodyFileName + transformer hook](#issue-kuestenlogik-bowire-406) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
 | [402](https://github.com/Kuestenlogik/Bowire/issues/402) | Bowire | [Mock request matching: query / header / cookie predicates + regex/glob paths + stub priority](#issue-kuestenlogik-bowire-402) | ✅ Done |  |
 | [403](https://github.com/Kuestenlogik/Bowire/issues/403) | Bowire | [Mock request-body matchers (equalToJson / JSONPath / XPath / JSON-schema / regex)](#issue-kuestenlogik-bowire-403) | ✅ Done |  |
 | [404](https://github.com/Kuestenlogik/Bowire/issues/404) | Bowire | [Hand-authored stub mappings + per-stub admin CRUD API](#issue-kuestenlogik-bowire-404) | ✅ Done |  |
 | [405](https://github.com/Kuestenlogik/Bowire/issues/405) | Bowire | [Mock: replay & override response headers (honour recorded Content-Type)](#issue-kuestenlogik-bowire-405) | ✅ Done |  |
+| [406](https://github.com/Kuestenlogik/Bowire/issues/406) | Bowire | [Mock response templating: helpers / math / faker + bodyFileName + transformer hook](#issue-kuestenlogik-bowire-406) | ✅ Done |  |
 | [407](https://github.com/Kuestenlogik/Bowire/issues/407) | Bowire | [Mock: selective upstream proxy (proxyBaseUrl) for partial mocking](#issue-kuestenlogik-bowire-407) | ✅ Done |  |
 | [408](https://github.com/Kuestenlogik/Bowire/issues/408) | Bowire | [Mock: named scenario state machine (states + transitions)](#issue-kuestenlogik-bowire-408) | ✅ Done |  |
 | [409](https://github.com/Kuestenlogik/Bowire/issues/409) | Bowire | [Mock: request verification / assertion API (verify + findAll + near-misses)](#issue-kuestenlogik-bowire-409) | ✅ Done |  |
@@ -876,10 +876,6 @@ Bowire conflates two distinct URL concepts under a single "Server URL" field: [[
 
 Tracking epic for closing the mock-server feature gaps versus **WireMock**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/401)
 
-#### <a id="issue-kuestenlogik-bowire-406"></a>⬜ Backlog · [#406](https://github.com/Kuestenlogik/Bowire/issues/406) Mock response templating: helpers / math / faker + bodyFileName + transformer hook
-
-Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/406)
-
 #### <a id="issue-kuestenlogik-bowire-34"></a>✅ Done · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
 
 > `area:plugin-sdk`
@@ -907,6 +903,10 @@ Part of the mock-server WireMock-parity effort. (Epic-sized — foundational.) [
 #### <a id="issue-kuestenlogik-bowire-405"></a>✅ Done · [#405](https://github.com/Kuestenlogik/Bowire/issues/405) Mock: replay & override response headers (honour recorded Content-Type)
 
 Part of the mock-server WireMock-parity effort. (High value — near-bug.) [[more]](https://github.com/Kuestenlogik/Bowire/issues/405)
+
+#### <a id="issue-kuestenlogik-bowire-406"></a>✅ Done · [#406](https://github.com/Kuestenlogik/Bowire/issues/406) Mock response templating: helpers / math / faker + bodyFileName + transformer hook
+
+Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/406)
 
 #### <a id="issue-kuestenlogik-bowire-407"></a>✅ Done · [#407](https://github.com/Kuestenlogik/Bowire/issues/407) Mock: selective upstream proxy (proxyBaseUrl) for partial mocking
 
