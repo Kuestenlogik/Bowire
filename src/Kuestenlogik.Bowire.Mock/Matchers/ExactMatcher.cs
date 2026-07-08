@@ -50,17 +50,23 @@ public sealed class ExactMatcher : IMockMatcher
     // preserving the original "first literal match wins" contract.
     private const int LiteralOrNonRestMatchScore = 1_000_000;
 
+    // Weight of an explicit stub priority (#402). Larger than any base score
+    // so a declared priority dominates the implicit literal-beats-template /
+    // body-binding ranking. `long` arithmetic keeps priorities beyond ±2 from
+    // overflowing.
+    private const long PriorityMultiplier = 1_000_000_000L;
+
     public bool TryMatch(MockRequest request, BowireRecording recording, out BowireRecordingStep matchedStep)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(recording);
 
         BowireRecordingStep? bestStep = null;
-        var bestScore = -1;
+        var bestScore = long.MinValue;
 
         foreach (var candidate in recording.Steps)
         {
-            int score;
+            int baseScore;
             // Skip protocol-shaped steps that don't match the request family.
             // Replay-ability (unary vs streaming, sent-messages for duplex) is
             // the replayer's concern — here we only pair incoming wire shape
@@ -69,7 +75,7 @@ public sealed class ExactMatcher : IMockMatcher
             {
                 if (!IsGrpcStep(candidate)) continue;
                 if (!MatchesGrpcPath(candidate, request)) continue;
-                score = LiteralOrNonRestMatchScore;
+                baseScore = LiteralOrNonRestMatchScore;
             }
             else if (IsSocketIoStep(candidate))
             {
@@ -79,25 +85,27 @@ public sealed class ExactMatcher : IMockMatcher
                 // instead: any GET upgrade on /socket.io/* pairs
                 // against the first socketio step in the recording.
                 if (!MatchesSocketIoRequest(request)) continue;
-                score = LiteralOrNonRestMatchScore;
+                baseScore = LiteralOrNonRestMatchScore;
             }
             else
             {
                 if (!IsRestStep(candidate)) continue;
                 if (!MatchesRestVerbAndPath(candidate, request)) continue;
-                score = ScoreRestCandidate(candidate, request);
+                // #402: the optional query / header / cookie predicates all
+                // have to pass or the step isn't a candidate at all.
+                if (candidate.Match is { } m && !MockMatchPredicates.AllPredicatesPass(m, request)) continue;
+                baseScore = ScoreRestCandidate(candidate, request);
             }
 
+            // #402: an explicit stub priority dominates the implicit
+            // literal-beats-template / body-binding heuristic; ties keep the
+            // capture order (strict >, first match wins).
+            var score = (long)(candidate.Match?.Priority ?? 0) * PriorityMultiplier + baseScore;
             if (score > bestScore)
             {
                 bestStep = candidate;
                 bestScore = score;
             }
-
-            // Literal / non-REST matches don't get any extra signal from
-            // body inspection, so the first one always wins — short-circuit
-            // to preserve the historical order-of-capture tie-break.
-            if (bestScore >= LiteralOrNonRestMatchScore) break;
         }
 
         if (bestStep is not null)
@@ -122,8 +130,11 @@ public sealed class ExactMatcher : IMockMatcher
     /// </summary>
     private static int ScoreRestCandidate(BowireRecordingStep step, MockRequest request)
     {
-        var template = step.HttpPath!;
-        if (!IsTemplate(template))
+        var template = step.HttpPath;
+        // A literal path, or a step whose path came from a #402 regex / glob
+        // pattern (no httpPath template), is a strong exact hit with no further
+        // body-binding signal to rank on.
+        if (string.IsNullOrEmpty(template) || !IsTemplate(template))
         {
             // Literal-path equality already filtered out non-matches in
             // MatchesRestVerbAndPath; everyone here is an exact hit.
@@ -192,9 +203,13 @@ public sealed class ExactMatcher : IMockMatcher
         return map;
     }
 
+    // A REST step needs a verb plus SOME path source: the classic httpPath
+    // literal/template, or (#402) a regex / glob path pattern on its match.
     private static bool IsRestStep(BowireRecordingStep s) =>
-        !string.IsNullOrEmpty(s.HttpPath) &&
-        !string.IsNullOrEmpty(s.HttpVerb);
+        !string.IsNullOrEmpty(s.HttpVerb) &&
+        (!string.IsNullOrEmpty(s.HttpPath)
+         || !string.IsNullOrEmpty(s.Match?.PathRegex)
+         || !string.IsNullOrEmpty(s.Match?.PathGlob));
 
     private static bool IsGrpcStep(BowireRecordingStep s) =>
         string.Equals(s.Protocol, "grpc", StringComparison.OrdinalIgnoreCase) &&
@@ -218,7 +233,17 @@ public sealed class ExactMatcher : IMockMatcher
         if (!string.Equals(step.HttpVerb, request.HttpMethod, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        var template = step.HttpPath!;
+        // #402: a regex / glob path pattern on the match overrides the
+        // httpPath template for path matching (a single stub answers a family
+        // of paths). Regex wins over glob when both are set.
+        var m = step.Match;
+        if (!string.IsNullOrEmpty(m?.PathRegex))
+            return MockMatchPredicates.PathRegexMatches(m.PathRegex, request.Path);
+        if (!string.IsNullOrEmpty(m?.PathGlob))
+            return MockMatchPredicates.PathGlobMatches(m.PathGlob, request.Path);
+
+        var template = step.HttpPath;
+        if (string.IsNullOrEmpty(template)) return false;
 
         // Fast path: literal templates match via string equality. Case-sensitive
         // per the HTTP spec. This also covers paths that happen to contain a
