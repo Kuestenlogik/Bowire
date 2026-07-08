@@ -151,7 +151,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**7/25 done** · 18 backlog
+**8/25 done** · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -171,7 +171,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [406](https://github.com/Kuestenlogik/Bowire/issues/406) | Bowire | [Mock response templating: helpers / math / faker + bodyFileName + transformer hook](#issue-kuestenlogik-bowire-406) | ⬜ Backlog |  |
 | [407](https://github.com/Kuestenlogik/Bowire/issues/407) | Bowire | [Mock: selective upstream proxy (proxyBaseUrl) for partial mocking](#issue-kuestenlogik-bowire-407) | ⬜ Backlog |  |
 | [408](https://github.com/Kuestenlogik/Bowire/issues/408) | Bowire | [Mock: named scenario state machine (states + transitions)](#issue-kuestenlogik-bowire-408) | ⬜ Backlog |  |
-| [410](https://github.com/Kuestenlogik/Bowire/issues/410) | Bowire | [Mock: HTTPS/TLS on the standalone server (+ Docker image)](#issue-kuestenlogik-bowire-410) | ⬜ Backlog |  |
 | [411](https://github.com/Kuestenlogik/Bowire/issues/411) | Bowire | [Mock fault injection: malformed-response-chunk + faults on unmatched requests](#issue-kuestenlogik-bowire-411) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
@@ -180,6 +179,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [404](https://github.com/Kuestenlogik/Bowire/issues/404) | Bowire | [Hand-authored stub mappings + per-stub admin CRUD API](#issue-kuestenlogik-bowire-404) | ✅ Done |  |
 | [405](https://github.com/Kuestenlogik/Bowire/issues/405) | Bowire | [Mock: replay & override response headers (honour recorded Content-Type)](#issue-kuestenlogik-bowire-405) | ✅ Done |  |
 | [409](https://github.com/Kuestenlogik/Bowire/issues/409) | Bowire | [Mock: request verification / assertion API (verify + findAll + near-misses)](#issue-kuestenlogik-bowire-409) | ✅ Done |  |
+| [410](https://github.com/Kuestenlogik/Bowire/issues/410) | Bowire | [Mock: HTTPS/TLS on the standalone server (+ Docker image)](#issue-kuestenlogik-bowire-410) | ✅ Done |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
@@ -864,10 +864,6 @@ Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kues
 
 Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/408)
 
-#### <a id="issue-kuestenlogik-bowire-410"></a>⬜ Backlog · [#410](https://github.com/Kuestenlogik/Bowire/issues/410) Mock: HTTPS/TLS on the standalone server (+ Docker image)
-
-Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/410)
-
 #### <a id="issue-kuestenlogik-bowire-411"></a>⬜ Backlog · [#411](https://github.com/Kuestenlogik/Bowire/issues/411) Mock fault injection: malformed-response-chunk + faults on unmatched requests
 
 Part of the mock-server WireMock-parity effort. (Small — fault-injection is otherwise ahead of WireMock.) [[more]](https://github.com/Kuestenlogik/Bowire/issues/411)
@@ -903,6 +899,10 @@ Part of the mock-server WireMock-parity effort. (High value — near-bug.) [[mor
 #### <a id="issue-kuestenlogik-bowire-409"></a>✅ Done · [#409](https://github.com/Kuestenlogik/Bowire/issues/409) Mock: request verification / assertion API (verify + findAll + near-misses)
 
 Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/409)
+
+#### <a id="issue-kuestenlogik-bowire-410"></a>✅ Done · [#410](https://github.com/Kuestenlogik/Bowire/issues/410) Mock: HTTPS/TLS on the standalone server (+ Docker image)
+
+Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/410)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
