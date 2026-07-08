@@ -126,7 +126,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
-**4/24 done** · 1 in progress · 19 backlog
+**5/24 done** · 1 in progress · 18 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -141,7 +141,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [175](https://github.com/Kuestenlogik/Bowire/issues/175) | Bowire | [Schema-aware mutation engine for fuzz / scan](#issue-kuestenlogik-bowire-175) | ⬜ Backlog |  |
 | [176](https://github.com/Kuestenlogik/Bowire/issues/176) | Bowire | [Spider / crawl — discover endpoints from a base URL](#issue-kuestenlogik-bowire-176) | ⬜ Backlog |  |
 | [186](https://github.com/Kuestenlogik/Bowire/issues/186) | Bowire | [HAR import — Chrome DevTools network tab as an input source](#issue-kuestenlogik-bowire-186) | ⬜ Backlog |  |
-| [187](https://github.com/Kuestenlogik/Bowire/issues/187) | Bowire | [CVE lookup for discovered servers — fill Bowire.VulnDb](#issue-kuestenlogik-bowire-187) | ⬜ Backlog |  |
 | [190](https://github.com/Kuestenlogik/Bowire/issues/190) | Bowire | [Authentication session recording + token reuse](#issue-kuestenlogik-bowire-190) | ⬜ Backlog |  |
 | [339](https://github.com/Kuestenlogik/Bowire/issues/339) | Bowire | [docs(audit): Trash-as-plugin architecture proposal for v2.3](#issue-kuestenlogik-bowire-339) | ⬜ Backlog |  |
 | [395](https://github.com/Kuestenlogik/Bowire/issues/395) | Bowire | [Active MQTT probes: retained-message poisoning + will-message abuse (PUBLISH-based)](#issue-kuestenlogik-bowire-395) | ⬜ Backlog |  |
@@ -153,6 +152,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ✅ Done |  |
 | [178](https://github.com/Kuestenlogik/Bowire/issues/178) | Bowire | [bowire scan CLI with SARIF output + GitHub Action wrapper](#issue-kuestenlogik-bowire-178) | ✅ Done |  |
 | [184](https://github.com/Kuestenlogik/Bowire/issues/184) | Bowire | [Protocol-specific security scanners — gRPC / GraphQL / WS / MQTT / SSE / MCP](#issue-kuestenlogik-bowire-184) | ✅ Done |  |
+| [187](https://github.com/Kuestenlogik/Bowire/issues/187) | Bowire | [CVE lookup for discovered servers — fill Bowire.VulnDb](#issue-kuestenlogik-bowire-187) | ✅ Done |  |
 | [381](https://github.com/Kuestenlogik/Bowire/issues/381) | Bowire | [OWASP API suite — remaining: API6 / API10, protocol-specific variants, compliance tab](#issue-kuestenlogik-bowire-381) | ✅ Done |  |
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
@@ -767,10 +767,6 @@ Bowire's discovery starts from "you tell me a URL or upload a schema". If the sc
 
 Operators routinely have Chrome DevTools open watching their app's traffic. Today they have to read the URL out, copy it into Bowire, recreate the request manually. That's friction; that's lost coverage. HAR import is the industry-standard way of moving traffic from a browser/CLI/proxy into a testing tool. [[more]](https://github.com/Kuestenlogik/Bowire/issues/186)
 
-#### <a id="issue-kuestenlogik-bowire-187"></a>⬜ Backlog · [#187](https://github.com/Kuestenlogik/Bowire/issues/187) CVE lookup for discovered servers — fill Bowire.VulnDb
-
-Bowire knows what protocol it's talking to and often what server (Envoy, NGINX, Kestrel, gRPC-Go, fastify, &c) — that information leaks through banners, error messages, header values. What Bowire DOESN'T do is cross-reference that against a CVE database. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/187)
-
 #### <a id="issue-kuestenlogik-bowire-190"></a>⬜ Backlog · [#190](https://github.com/Kuestenlogik/Bowire/issues/190) Authentication session recording + token reuse
 
 Modern API auth is multi-step: hit `/login`, get a session cookie, hit `/refresh`, get a JWT, use the JWT on every subsequent call. Today Bowire has Auth-Configuration (mTLS, basic, bearer-static) but no understanding of FLOWS. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/190)
@@ -814,6 +810,10 @@ Bowire's security scan is currently generic fuzz + a handful of templates. The d
 #### <a id="issue-kuestenlogik-bowire-184"></a>✅ Done · [#184](https://github.com/Kuestenlogik/Bowire/issues/184) Protocol-specific security scanners — gRPC / GraphQL / WS / MQTT / SSE / MCP
 
 Each protocol Bowire speaks has its own class of vulnerabilities the HTTP-only DAST tools (ZAP, Burp) don't know about. Without protocol-specific scanners, the multi-protocol differentiation is just a feature; with them, it's the moat. [[more]](https://github.com/Kuestenlogik/Bowire/issues/184)
+
+#### <a id="issue-kuestenlogik-bowire-187"></a>✅ Done · [#187](https://github.com/Kuestenlogik/Bowire/issues/187) CVE lookup for discovered servers — fill Bowire.VulnDb
+
+Bowire knows what protocol it's talking to and often what server (Envoy, NGINX, Kestrel, gRPC-Go, fastify, &c) — that information leaks through banners, error messages, header values. What Bowire DOESN'T do is cross-reference that against a CVE database. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/187)
 
 #### <a id="issue-kuestenlogik-bowire-381"></a>✅ Done · [#381](https://github.com/Kuestenlogik/Bowire/issues/381) OWASP API suite — remaining: API6 / API10, protocol-specific variants, compliance tab
 
