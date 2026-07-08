@@ -20,7 +20,7 @@ internal static class HarImporter
     /// <summary>
     /// Convert a HAR document string. Re-exposed here so the existing
     /// CLI tests keep their existing entry point — delegates to
-    /// <see cref="BowireHarConverter.Convert"/> and re-wraps the core
+    /// <see cref="BowireHarConverter.Convert(string, string?)"/> and re-wraps the core
     /// exception so callers see the CLI-namespaced <see cref="HarImportException"/>.
     /// </summary>
     public static BowireRecording Convert(string harJson, string? recordingName = null)
@@ -56,7 +56,7 @@ internal static class HarImporter
     /// <returns>0 on success, non-zero on failure (CLI exit-code shape).</returns>
     public static async Task<int> ImportAsync(
         string harPath, string outPath, string? recordingName,
-        TextWriter? stdout = null, TextWriter? stderr = null)
+        TextWriter? stdout = null, TextWriter? stderr = null, bool redactSecrets = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(harPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(outPath);
@@ -70,15 +70,29 @@ internal static class HarImporter
         }
 
         BowireRecording recording;
+        IReadOnlyList<string> authHeaders;
         try
         {
             var content = await File.ReadAllTextAsync(harPath).ConfigureAwait(false);
-            recording = BowireHarConverter.Convert(content, recordingName);
+            authHeaders = BowireHarConverter.DetectAuthHeaders(content);
+            recording = BowireHarConverter.Convert(content, recordingName, redactSecrets);
         }
         catch (BowireHarImportException ex)
         {
             await errW.WriteLineAsync($"HAR import failed: {ex.Message}").ConfigureAwait(false);
             return 1;
+        }
+
+        // Surface credential-bearing headers so the operator isn't blind to
+        // secrets riding along in the trace: warn + hint at --redact-secrets
+        // when they weren't stripped, confirm when they were (#186 / #190).
+        if (authHeaders.Count > 0)
+        {
+            var list = string.Join(", ", authHeaders);
+            await outW.WriteLineAsync(redactSecrets
+                ? $"Redacted {authHeaders.Count} credential header(s): {list}"
+                : $"Detected credential header(s): {list}. Re-run with --redact-secrets to strip them before import.")
+                .ConfigureAwait(false);
         }
 
         var json = JsonSerializer.Serialize(recording, IndentedJson);

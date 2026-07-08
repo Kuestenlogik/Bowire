@@ -281,11 +281,12 @@ public sealed class BowireMcpTools
     }
 
     [McpServerTool(Name = "bowire.har.import")]
-    [Description("Convert a HAR 1.2 trace into a Bowire recording. Reads the HAR file at `harPath`, optionally writes the recording JSON to `outPath` (use \"-\" or omit to return the JSON inline), and returns a summary { recordingId, stepCount, outPath?, recording? }. Pair with bowire.mock.start { recording: <outPath> } to serve the trace back.")]
+    [Description("Convert a HAR 1.2 trace into a Bowire recording. Reads the HAR file at `harPath`, optionally writes the recording JSON to `outPath` (use \"-\" or omit to return the JSON inline), and returns a summary { recordingId, stepCount, authHeaders, redacted, outPath?, recording? }. Set `redactSecrets` to strip credential headers (Authorization, Cookie, X-Api-Key, …) before import. Pair with bowire.mock.start { recording: <outPath> } to serve the trace back.")]
     public static async Task<string> HarImport(
         [Description("Path to a HAR 1.2 document on disk.")] string harPath,
         [Description("Optional output path for the resulting recording JSON. Use \"-\" or omit to return the recording inline in the response.")] string? outPath = null,
-        [Description("Optional recording name. Defaults to the HAR's creator name or \"Imported HAR\".")] string? name = null)
+        [Description("Optional recording name. Defaults to the HAR's creator name or \"Imported HAR\".")] string? name = null,
+        [Description("When true, strip credential-bearing header values (Authorization, Cookie, X-Api-Key, …) before import so live tokens/cookies aren't persisted. Default false.")] bool redactSecrets = false)
     {
         if (string.IsNullOrWhiteSpace(harPath))
             return "bowire.har.import: harPath is required.";
@@ -293,10 +294,12 @@ public sealed class BowireMcpTools
             return $"bowire.har.import: HAR file not found at {harPath}.";
 
         BowireRecording recording;
+        IReadOnlyList<string> authHeaders;
         try
         {
             var content = await File.ReadAllTextAsync(harPath).ConfigureAwait(false);
-            recording = BowireHarConverter.Convert(content, name);
+            authHeaders = BowireHarConverter.DetectAuthHeaders(content);
+            recording = BowireHarConverter.Convert(content, name, redactSecrets);
         }
         catch (BowireHarImportException ex)
         {
@@ -314,6 +317,8 @@ public sealed class BowireMcpTools
             {
                 recordingId = recording.Id,
                 stepCount = recording.Steps.Count,
+                authHeaders,
+                redacted = redactSecrets,
                 recording = JsonDocument.Parse(recordingJson).RootElement
             }, JsonOpts);
         }
@@ -326,6 +331,8 @@ public sealed class BowireMcpTools
         {
             recordingId = recording.Id,
             stepCount = recording.Steps.Count,
+            authHeaders,
+            redacted = redactSecrets,
             outPath = Path.GetFullPath(outPath)
         }, JsonOpts);
     }

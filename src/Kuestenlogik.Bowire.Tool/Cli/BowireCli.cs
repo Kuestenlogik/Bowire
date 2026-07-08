@@ -470,14 +470,17 @@ internal static class BowireCli
         };
         var nameOpt = new Option<string?>("--name", "-n")
         { Description = "Recording name. Defaults to the HAR creator name or \"Imported HAR\"." };
+        var redactOpt = new Option<bool>("--redact-secrets")
+        { Description = "Strip credential-bearing header values (Authorization, Cookie, X-Api-Key, …) before writing the recording — so a HAR captured against production never persists live tokens / session cookies. Detected credential headers are reported either way." };
 
         var har = new Command("har", "Convert a HAR 1.2 document into a .bwr recording.");
-        har.Add(fileArg); har.Add(outOpt); har.Add(nameOpt);
+        har.Add(fileArg); har.Add(outOpt); har.Add(nameOpt); har.Add(redactOpt);
         har.SetAction(async (pr, _) =>
         {
             var input = pr.GetValue(fileArg) ?? "";
             var output = pr.GetValue(outOpt);
             var name = pr.GetValue(nameOpt);
+            var redact = pr.GetValue(redactOpt);
             // Sensible default: drop the .bwr next to the HAR with the same
             // basename. Stays predictable regardless of cwd.
             if (string.IsNullOrEmpty(output))
@@ -487,7 +490,7 @@ internal static class BowireCli
                 output = Path.Combine(dir, basename + ".bwr");
             }
             return await HarImporter.ImportAsync(input, output, name,
-                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, redact).ConfigureAwait(false);
         });
 
         var import = new Command("import", "Convert external trace formats into Bowire recordings.");
