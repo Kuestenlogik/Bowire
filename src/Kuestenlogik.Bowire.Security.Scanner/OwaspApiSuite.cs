@@ -117,6 +117,7 @@ internal static class OwaspApiSuite
     [
         new GraphQLIntrospectionProbe(),
         new GraphQLResourceLimitProbe(),
+        new GraphQLQueryDepthProbe(),
         new GrpcReflectionProbe(),
         new McpDiscoveryProbe(),
         new McpResourceTraversalProbe(),

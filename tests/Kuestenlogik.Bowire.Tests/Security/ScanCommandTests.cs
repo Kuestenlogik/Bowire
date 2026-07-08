@@ -597,6 +597,75 @@ public sealed class ScanCommandTests
         finally { Directory.Delete(nucleiDir, recursive: true); }
     }
 
+    // ---------------- named suites (#184): protocol / all ----------------
+
+    [Fact]
+    public async Task RunAsync_SuiteProtocol_HttpTarget_WritesCoverageTableAndSkipsHttpOwaspProbes()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartUpstreamAsync(ct);
+
+        // --suite=protocol against an http target: only the protocol-specific
+        // probes run (the plugins are absent in tests → PLUGIN-ABSENT skips),
+        // the HTTP OWASP probes are skipped by design, and the coverage table
+        // is still written.
+        var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
+        {
+            Target = upstream.Urls.First(),
+            Suite = "protocol",
+            RunBuiltins = false,
+            TimeoutSeconds = 10,
+        }, ct, @out, err));
+
+        Assert.Equal(0, code);
+        Assert.Contains("OWASP API Security Top 10", stdout, StringComparison.Ordinal);
+        // The "HTTP OWASP probes skipped — non-HTTP target" note belongs to the
+        // owasp-api/all path; in protocol mode the HTTP OWASP probes are simply
+        // never invoked, so that note must NOT appear even though the target IS http.
+        Assert.DoesNotContain("HTTP OWASP probes skipped", stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunAsync_SuiteAll_WritesCoverageTable()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartUpstreamAsync(ct);
+
+        // --suite=all is the "run everything" alias: HTTP OWASP probes (http
+        // target) + protocol probes + the coverage table.
+        var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
+        {
+            Target = upstream.Urls.First(),
+            Suite = "all",
+            RunBuiltins = false,
+            TimeoutSeconds = 10,
+        }, ct, @out, err));
+
+        Assert.Equal(0, code);
+        Assert.Contains("OWASP API Security Top 10", stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RunAsync_SuiteProtocol_NonHttpTarget_RunsProtocolProbesAndWritesTable()
+    {
+        // --suite=protocol makes non-HTTP targets first-class: no HTTP work is
+        // attempted (the isHttpTarget guards skip templates/builtins), the
+        // protocol probes still run (PLUGIN-ABSENT skips in tests, which is
+        // fine), and the coverage table is still written.
+        var ct = TestContext.Current.CancellationToken;
+        var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
+        {
+            Target = "mqtt://localhost:1883",
+            Suite = "protocol",
+            RunBuiltins = true,   // exercise the non-http built-in skip note too
+            TimeoutSeconds = 5,
+        }, ct, @out, err));
+
+        Assert.Equal(0, code);
+        Assert.Contains("OWASP API Security Top 10", stdout, StringComparison.Ordinal);
+        Assert.Contains("not an http/https URL", stdout, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static async Task<WebApplication> StartUpstreamAsync(CancellationToken ct)
     {
         // Pin the content root to a known-existing directory so this

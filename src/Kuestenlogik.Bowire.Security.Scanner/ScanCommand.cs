@@ -126,9 +126,23 @@ public static class ScanCommand
             }
         }
 
-        if (templates.Count == 0 && !options.RunBuiltins)
+        // Named suites (#184): resolve which suite view is active up front — a
+        // requested suite is itself a source of work, so an empty-template scan
+        // with built-ins disabled must NOT bail when a suite will run probes.
+        //   owasp-api → HTTP OWASP probes (if http target) + protocol probes + table
+        //   protocol  → ONLY the protocol probes + table — makes non-HTTP targets
+        //               (mqtt://, ws://, …) first-class by skipping the HTTP OWASP
+        //               probes by design, not by accident.
+        //   all       → superset alias: HTTP OWASP (if http) + protocol + table.
+        var suite = options.Suite ?? "";
+        var runHttpOwasp = suite.Equals("owasp-api", StringComparison.OrdinalIgnoreCase)
+            || suite.Equals("all", StringComparison.OrdinalIgnoreCase);
+        var runProtocol = runHttpOwasp || suite.Equals("protocol", StringComparison.OrdinalIgnoreCase);
+        var writeSummary = runProtocol;   // any of the three suites prints the coverage table
+
+        if (templates.Count == 0 && !options.RunBuiltins && !runProtocol)
         {
-            await stderr.WriteLineAsync("  No vulnerability templates found and built-ins disabled. Provide --templates <dir> or --template <file>, OR drop --no-builtins.").ConfigureAwait(false);
+            await stderr.WriteLineAsync("  No vulnerability templates found and built-ins disabled. Provide --templates <dir> or --template <file>, drop --no-builtins, OR run a named suite (--suite owasp-api|protocol|all).").ConfigureAwait(false);
             return 2;
         }
 
@@ -236,12 +250,11 @@ public static class ScanCommand
             }
         }
 
-        // OWASP API Top 10 suite: run the dedicated per-entry probes and
-        // fold their findings into the same list BEFORE the report / SARIF /
-        // roll-up, so they surface everywhere the template + built-in
-        // findings do.
-        var owaspSuite = string.Equals(options.Suite, "owasp-api", StringComparison.OrdinalIgnoreCase);
-        if (owaspSuite)
+        // Named suites (#184): fold the dedicated per-entry probes into the
+        // same list BEFORE the report / SARIF / roll-up, so they surface
+        // everywhere the template + built-in findings do. The suite view was
+        // resolved up front (runHttpOwasp / runProtocol / writeSummary).
+        if (runProtocol)
         {
             void Fold(IReadOnlyList<ScanFinding> probeFindings)
             {
@@ -254,13 +267,16 @@ public static class ScanCommand
                 }
             }
 
-            if (isHttpTarget)
+            if (runHttpOwasp)
             {
-                Fold(await OwaspApiSuite.RunProbesAsync(options.Target, http, options.AuthHeaders, options.AuthHeadersB, ct).ConfigureAwait(false));
-            }
-            else
-            {
-                await stdout.WriteLineAsync("  HTTP OWASP probes skipped — non-HTTP target; running protocol-specific probes only.").ConfigureAwait(false);
+                if (isHttpTarget)
+                {
+                    Fold(await OwaspApiSuite.RunProbesAsync(options.Target, http, options.AuthHeaders, options.AuthHeadersB, ct).ConfigureAwait(false));
+                }
+                else
+                {
+                    await stdout.WriteLineAsync("  HTTP OWASP probes skipped — non-HTTP target; running protocol-specific probes only.").ConfigureAwait(false);
+                }
             }
 
             // Protocol-specific probes (GraphQL introspection, gRPC reflection)
@@ -275,8 +291,8 @@ public static class ScanCommand
 
         await WriteConsoleReportAsync(findings, stdout).ConfigureAwait(false);
 
-        // Per-entry covered / clean / vulnerable table for the OWASP suite.
-        if (owaspSuite)
+        // Per-entry covered / clean / vulnerable table for the named suites.
+        if (writeSummary)
         {
             await OwaspApiSuite.WriteSummaryAsync(findings, stdout).ConfigureAwait(false);
         }
@@ -688,9 +704,17 @@ public sealed class ScanOptions
 
     /// <summary>
     /// Named test-suite to run instead of / alongside the flat template
-    /// report. Currently <c>owasp-api</c> — rolls the scan's findings up
-    /// against the OWASP API Security Top 10 (2023) and prints a per-entry
-    /// coverage table (see <see cref="OwaspApiSuite"/>). Null = flat report only.
+    /// report (case-insensitive). One of:
+    /// <list type="bullet">
+    /// <item><c>owasp-api</c> — HTTP OWASP probes (when the target is http/https)
+    /// + the protocol-specific probes, rolled up against the OWASP API Security
+    /// Top 10 (2023) with a per-entry coverage table (see <see cref="OwaspApiSuite"/>).</item>
+    /// <item><c>protocol</c> — ONLY the protocol-specific probes
+    /// (gRPC/GraphQL/WS/MQTT/SSE/MCP) + the table; the HTTP OWASP probes are
+    /// skipped by design so non-HTTP targets (mqtt://, ws://) are first-class.</item>
+    /// <item><c>all</c> — superset alias: everything <c>owasp-api</c> runs.</item>
+    /// </list>
+    /// Null = flat report only.
     /// </summary>
     public string? Suite { get; init; }
 
