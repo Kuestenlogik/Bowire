@@ -250,6 +250,54 @@ public sealed class IntegrationTests
     }
 
     [Fact]
+    public async Task NamedScenario_SameRequest_ReturnsDifferentResponseAcrossStates()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        // Two stubs on GET /resource, disambiguated only by scenario state:
+        // Started → "first" (+ move to created); created → "second".
+        BowireRecordingStep Step(string id, string? required, string? next, string response) => new()
+        {
+            Id = id, Protocol = "rest", Service = "S", Method = "M", MethodType = "Unary",
+            HttpPath = "/resource", HttpVerb = "GET", Status = "OK", Response = response,
+            Scenario = new BowireStepScenario { Name = "crud", RequiredState = required, NewState = next },
+        };
+        var rec = new BowireRecording
+        {
+            Id = "rec_scn", Name = "scn", RecordingFormatVersion = 2,
+            Steps =
+            {
+                Step("a", required: null, next: "created", """{"state":"first"}"""),
+                Step("b", required: "created", next: null, """{"state":"second"}"""),
+            },
+        };
+
+        MockHandler? handler = null;
+        using var host = BuildHost(configure: opts => opts.OnHandlerCreated = h => handler = h, recording: rec);
+        var client = host.GetTestClient();
+
+        // Started → first, transitions to created.
+        Assert.Equal("""{"state":"first"}""",
+            await (await client.GetAsync(new Uri("/resource", UriKind.Relative), ct)).Content.ReadAsStringAsync(ct));
+        // created → second.
+        Assert.Equal("""{"state":"second"}""",
+            await (await client.GetAsync(new Uri("/resource", UriKind.Relative), ct)).Content.ReadAsStringAsync(ct));
+
+        Assert.NotNull(handler);
+        Assert.Equal("created", handler!.GetScenarioStates()["crud"]);
+
+        // Reset → back to first.
+        handler.ResetScenarios();
+        Assert.Equal("""{"state":"first"}""",
+            await (await client.GetAsync(new Uri("/resource", UriKind.Relative), ct)).Content.ReadAsStringAsync(ct));
+
+        // Force to created directly.
+        Assert.True(handler.SetScenarioState("crud", "created"));
+        Assert.False(handler.SetScenarioState("nope", "x"));
+        Assert.Equal("""{"state":"second"}""",
+            await (await client.GetAsync(new Uri("/resource", UriKind.Relative), ct)).Content.ReadAsStringAsync(ct));
+    }
+
+    [Fact]
     public async Task GetUnmatchedPath_PassesThroughByDefault()
     {
         using var host = BuildHost();
