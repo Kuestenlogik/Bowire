@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire.Plugins.Sidecar;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Kuestenlogik.Bowire.Tests.Plugins;
@@ -67,7 +68,8 @@ public class SidecarBowireProtocolIntegrationTests
 #endif
     }
 
-    private static SidecarBowireProtocol BuildPlugin()
+    private static SidecarBowireProtocol BuildPlugin(
+        IReadOnlyList<string>? args = null, ILogger? logger = null)
     {
         var exe = LocateFakeExecutable();
         var pluginDir = Path.GetDirectoryName(exe)!;
@@ -75,10 +77,10 @@ public class SidecarBowireProtocolIntegrationTests
             PackageId: "Kuestenlogik.Bowire.Tests.SidecarFake",
             Protocol: new SidecarProtocolMetadata("fake", "Fake"),
             Executable: Path.GetFileName(exe),
-            Args: null,
+            Args: args,
             EnvPrefix: "BOWIRE_FAKE_",
             ShutdownTimeoutMs: 2000);
-        return new SidecarBowireProtocol(manifest, pluginDir);
+        return new SidecarBowireProtocol(manifest, pluginDir, logger);
     }
 
     [Fact]
@@ -232,6 +234,77 @@ public class SidecarBowireProtocolIntegrationTests
         finally
         {
             await ShutdownAsync(plugin);
+        }
+    }
+
+    // ---------------- #416: protocol-version + capabilities handshake ----------------
+
+    [Fact]
+    public async Task IncompatibleProtocolVersion_Is_Rejected_At_Handshake()
+    {
+        // The fake advertises a version far above what the host supports →
+        // initialize must fail cleanly, not proceed to the first call.
+        var plugin = BuildPlugin(args: ["--protocol-version", "999"]);
+        try
+        {
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                plugin.DiscoverAsync("fake://x", false, TestContext.Current.CancellationToken));
+            Assert.Contains("protocol version 999", ex.Message, StringComparison.Ordinal);
+            Assert.Contains("Update Bowire", ex.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            await ShutdownAsync(plugin);
+        }
+    }
+
+    [Fact]
+    public async Task LegacySidecar_Without_ProtocolVersion_Is_Tolerated_And_Warns()
+    {
+        var logger = new CapturingLogger();
+        var plugin = BuildPlugin(args: ["--legacy"], logger: logger);
+        try
+        {
+            // A pre-#416 sidecar (no protocolVersion / capabilities) still works.
+            var services = await plugin.DiscoverAsync("fake://x", false, TestContext.Current.CancellationToken);
+            Assert.Single(services);
+            Assert.Contains(logger.Warnings, w =>
+                w.Contains("did not advertise a protocol version", StringComparison.Ordinal));
+        }
+        finally
+        {
+            await ShutdownAsync(plugin);
+        }
+    }
+
+    [Fact]
+    public async Task Sidecar_Advertising_No_Channels_Returns_Null_Without_Round_Trip()
+    {
+        var plugin = BuildPlugin(args: ["--no-channels"]);
+        try
+        {
+            // Force the initialize handshake so capabilities are known.
+            _ = await plugin.DiscoverAsync("fake://x", false, TestContext.Current.CancellationToken);
+
+            var channel = await plugin.OpenChannelAsync(
+                "fake://x", "Echo", "echo", false, null, TestContext.Current.CancellationToken);
+            Assert.Null(channel);
+        }
+        finally
+        {
+            await ShutdownAsync(plugin);
+        }
+    }
+
+    private sealed class CapturingLogger : ILogger
+    {
+        public List<string> Warnings { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state,
+            Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (logLevel == LogLevel.Warning) Warnings.Add(formatter(state, exception));
         }
     }
 

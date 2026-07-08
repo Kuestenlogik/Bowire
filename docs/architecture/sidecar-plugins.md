@@ -154,13 +154,16 @@ mapping is intentionally mechanical so per-language SDKs can be thin.
 
 ### `initialize` (host → sidecar, request)
 
-Sent immediately after the process starts. Carries the host's
-declared protocol id (so the sidecar can verify) and surfaces plugin
-settings + iconSvg overrides.
+Sent immediately after the process starts. Carries the host's version,
+the sidecar **wire-contract version** the host speaks (`protocolVersion`),
+and the declared protocol id (so the sidecar can verify). The sidecar
+replies with its own `protocolVersion`, a `capabilities` object, and
+`name` / `id` / `iconSvg` overrides.
 
 ```json
 {"jsonrpc":"2.0","id":1,"method":"initialize","params":{
-  "hostVersion":"1.7.0",
+  "hostVersion":"2.2.1",
+  "protocolVersion":1,
   "expectedProtocolId":"zenoh"
 }}
 ```
@@ -172,13 +175,26 @@ Reply:
   "name":"Zenoh",
   "id":"zenoh",
   "iconSvg":"<svg...>",
-  "settings":[]
+  "protocolVersion":1,
+  "capabilities":{"discover":true,"invoke":true,"invokeStream":true,"channels":true}
 }}
 ```
 
-A failed `initialize` (id mismatch, missing dependency, etc.) returns
-a JSON-RPC error; the host marks the plugin as unhealthy and surfaces
-the error in `bowire plugin list --verbose`.
+**Protocol versioning (#416).** The current sidecar contract is version
+**1**. The host accepts a sidecar whose `protocolVersion` falls within the
+host's supported range and **rejects** one outside it at the handshake
+(with an actionable error) rather than failing at the first call. A legacy
+sidecar that omits `protocolVersion` is tolerated as contract v1, with a
+warning — update your SDK to advertise `protocolVersion` + `capabilities`.
+
+**Capabilities.** Optional; every flag defaults to `true` when the object
+is omitted, so a legacy sidecar behaves unchanged. Setting a flag to
+`false` lets the host skip a call the sidecar doesn't implement — currently
+`channels:false` makes `openChannel` return null without a round-trip.
+
+A failed `initialize` (id mismatch, incompatible `protocolVersion`, missing
+dependency, etc.) returns a JSON-RPC error; the host marks the plugin as
+unhealthy and surfaces the error in `bowire plugin list --verbose`.
 
 ### `shutdown` (host → sidecar, request)
 
