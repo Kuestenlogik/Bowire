@@ -138,7 +138,8 @@ public static class BowireHarConverter
             DurationMs = ExtractDurationMs(entry),
             Body = ExtractRequestBody(request),
             Response = ExtractResponseBody(response),
-            Metadata = ExtractHeaders(request)
+            Metadata = ExtractHeaders(request["headers"]),
+            ResponseHeaders = ExtractHeaders(response?["headers"])
         };
 
         if (!string.IsNullOrEmpty(step.Body)) step.Messages.Add(step.Body);
@@ -281,14 +282,14 @@ public static class BowireHarConverter
         => response?["content"]?["text"]?.GetValue<string>();
 
     /// <summary>
-    /// Convert a HAR <c>request.headers</c> array into a string→string
-    /// metadata dictionary, preserving the recording format's wire-level
+    /// Convert a HAR <c>headers</c> array (request or response) into a
+    /// string→string dictionary, preserving the recording format's wire-level
     /// header convention. Cookies stay in <c>Cookie</c>/<c>Set-Cookie</c>
     /// headers — the dedicated HAR <c>cookies</c> array is redundant info.
     /// </summary>
-    private static Dictionary<string, string>? ExtractHeaders(JsonNode request)
+    private static Dictionary<string, string>? ExtractHeaders(JsonNode? headersNode)
     {
-        if (request["headers"] is not JsonArray headers || headers.Count == 0) return null;
+        if (headersNode is not JsonArray headers || headers.Count == 0) return null;
 
         var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var header in headers)

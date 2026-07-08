@@ -244,6 +244,17 @@ public sealed class BowireRecordingStep
     [JsonPropertyName("metadata")]
     public IDictionary<string, string>? Metadata { get; init; }
 
+    /// <summary>
+    /// REST-only: response headers to re-emit on mock replay. Optional — when
+    /// absent the replayer emits only the default <c>application/json</c>
+    /// content type. Populated from a captured response (e.g. HAR import) or
+    /// authored directly on a stub; a <c>Content-Type</c> entry here overrides
+    /// the replayer's default. Framing headers Kestrel manages itself
+    /// (Content-Length, Transfer-Encoding, Connection, …) are ignored on replay.
+    /// </summary>
+    [JsonPropertyName("responseHeaders")]
+    public IDictionary<string, string>? ResponseHeaders { get; init; }
+
     /// <summary>Status string — <c>OK</c>, HTTP code name, gRPC status code, ...</summary>
     [JsonPropertyName("status")]
     public string Status { get; set; } = "OK";

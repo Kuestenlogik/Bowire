@@ -66,6 +66,67 @@ public sealed class HarImporterTests
     }
 
     [Fact]
+    public void Convert_Extracts_Response_Headers_Into_Step()
+    {
+        var har = """
+            {
+              "log": {
+                "version": "1.2",
+                "entries": [
+                  {
+                    "request": {
+                      "method": "GET",
+                      "url": "https://api.example.com/thing",
+                      "headers": [{ "name": "Accept", "value": "text/html" }]
+                    },
+                    "response": {
+                      "status": 200,
+                      "headers": [
+                        { "name": "Content-Type", "value": "text/html; charset=utf-8" },
+                        { "name": "Cache-Control", "value": "no-store" },
+                        { "name": "X-Custom", "value": "bowire" }
+                      ],
+                      "content": { "size": 3, "text": "<p>" }
+                    }
+                  }
+                ]
+              }
+            }
+            """;
+
+        var rec = HarImporter.Convert(har);
+        var step = Assert.Single(rec.Steps);
+
+        Assert.NotNull(step.ResponseHeaders);
+        Assert.Equal("text/html; charset=utf-8", step.ResponseHeaders!["Content-Type"]);
+        Assert.Equal("no-store", step.ResponseHeaders["Cache-Control"]);
+        Assert.Equal("bowire", step.ResponseHeaders["X-Custom"]);
+        // Request headers stay on Metadata, response headers on ResponseHeaders.
+        Assert.Equal("text/html", step.Metadata!["Accept"]);
+    }
+
+    [Fact]
+    public void Convert_Without_Response_Headers_Leaves_ResponseHeaders_Null()
+    {
+        var har = """
+            {
+              "log": {
+                "version": "1.2",
+                "entries": [
+                  {
+                    "request": { "method": "GET", "url": "https://api.example.com/x" },
+                    "response": { "status": 200, "content": { "size": 0 } }
+                  }
+                ]
+              }
+            }
+            """;
+
+        var step = Assert.Single(HarImporter.Convert(har).Steps);
+        Assert.Null(step.ResponseHeaders);
+    }
+
+    [Fact]
     public void Convert_Numeric_Tail_Segment_Uses_Parent_Segment_For_Method()
     {
         // GET /users/42 → service "users", method "GET_users" because the
