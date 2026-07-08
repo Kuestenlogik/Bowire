@@ -268,6 +268,16 @@ public sealed class MockHandler
             return;
         }
 
+        // #411: fault-on-miss. A rule flagged `onMiss` fires on requests that
+        // matched no stub — chaos-testing a client's handling of an unknown /
+        // failing endpoint. A terminal kind (error / connection-drop /
+        // malformed) short-circuits before pass-through / 404; latency-only
+        // just delays and falls through to normal miss handling.
+        if (_options.Faults.IsActive && _options.Faults.FirstMissMatch() is { } missFault)
+        {
+            if (await ApplyMissFaultAsync(ctx, missFault)) return;
+        }
+
         // Only after the matcher missed do we defer to any endpoint
         // routing picked up — that's where gRPC Reflection (registered
         // by MockServer when the recording has proto descriptors)
@@ -614,6 +624,12 @@ public sealed class MockHandler
                         ctx.Abort();
                         return;
 
+                    case FaultKind.MalformedResponse:
+                        // Emit garbage instead of the recorded body — the client
+                        // parses nonsense (#411).
+                        await WriteMalformedAsync(ctx, fault);
+                        return;
+
                     case FaultKind.PartialResponse:
                     case FaultKind.ConnectionDrop:
                         // The replayer writes the full recorded body as
@@ -643,6 +659,67 @@ public sealed class MockHandler
         _logger.LogInformation(
             "match(step={StepId}, protocol={Protocol}, service={Service}, method={Method}) → {StatusCode}",
             step.Id, step.Protocol, step.Service, step.Method, statusCode);
+    }
+
+    // #411: apply an `onMiss` fault rule to an unmatched request. Returns true
+    // when the response was terminated (error / drop / malformed / cancelled),
+    // false when only latency ran and normal miss handling should continue.
+    private async Task<bool> ApplyMissFaultAsync(HttpContext ctx, Chaos.FaultRule fault)
+    {
+        if (fault.Latency is not null)
+        {
+            var delayMs = fault.Latency.SampleMs(FaultRandom.NextDouble);
+            if (delayMs > 0)
+            {
+                ctx.Items[FaultItemKey] = $"on-miss latency {delayMs}ms";
+                try { await Task.Delay(delayMs, ctx.RequestAborted); }
+                catch (OperationCanceledException) { return true; }
+            }
+        }
+
+        if (fault.Kind == Chaos.FaultKind.LatencyOnly) return false;
+        if (fault.Rate < 1.0 && FaultRandom.NextDouble() >= fault.Rate) return false;
+
+        ctx.Items[FaultItemKey] = fault.Describe();
+        _logger.LogInformation("fault-on-miss(path={Path}, fault={Fault})",
+            SafeLog(ctx.Request.Path.Value), fault.Describe());
+
+        switch (fault.Kind)
+        {
+            case Chaos.FaultKind.Error:
+                ctx.Response.StatusCode = fault.ErrorStatusCode;
+                ctx.Response.ContentType = "application/json; charset=utf-8";
+                await ctx.Response.WriteAsync(
+                    $"{{\"error\":\"fault: unmatched request ({fault.ErrorStatusCode})\"}}",
+                    ctx.RequestAborted);
+                return true;
+
+            case Chaos.FaultKind.ConnectionDrop:
+                ctx.Abort();
+                return true;
+
+            case Chaos.FaultKind.MalformedResponse:
+                await WriteMalformedAsync(ctx, fault);
+                return true;
+
+            default:
+                // PartialResponse has no recorded body to truncate on a miss.
+                return false;
+        }
+    }
+
+    // #411: emit garbage bytes under a JSON content-type — the recorded body is
+    // never written, so a client expecting JSON parses nonsense. 0xFF bytes are
+    // invalid UTF-8 and invalid JSON, so the corruption is deterministic.
+    private static async Task WriteMalformedAsync(HttpContext ctx, Chaos.FaultRule fault)
+    {
+        var n = Math.Clamp(fault.PartialBytes, 1, 64 * 1024);
+        ctx.Response.StatusCode = 200;
+        ctx.Response.ContentType = "application/json; charset=utf-8";
+        ctx.Response.ContentLength = n;
+        var garbage = new byte[n];
+        Array.Fill(garbage, (byte)0xFF);
+        await ctx.Response.Body.WriteAsync(garbage, ctx.RequestAborted);
     }
 
     /// <summary>Whether any step in the active recording declares a body matcher (#403).</summary>
