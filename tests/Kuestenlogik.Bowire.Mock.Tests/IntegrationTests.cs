@@ -177,6 +177,51 @@ public sealed class IntegrationTests
     }
 
     [Fact]
+    public async Task PostWithBodyMatcher_SelectsStepByBody_AndReadsBodyEndToEnd()
+    {
+        // Two steps on the same POST path, disambiguated only by a #403 body
+        // matcher — proves MockHandler reads the request body and routes on it.
+        var rec = new BowireRecording
+        {
+            Id = "rec_body",
+            Name = "body",
+            RecordingFormatVersion = 2,
+            Steps =
+            {
+                new BowireRecordingStep
+                {
+                    Id = "create", Protocol = "rest", Service = "S", Method = "M", MethodType = "Unary",
+                    HttpPath = "/submit", HttpVerb = "POST", Status = "OK", Response = """{"did":"create"}""",
+                    Match = new BowireStepMatch { Body = [new() { JsonPath = "$.action", EqualTo = "create" }] },
+                },
+                new BowireRecordingStep
+                {
+                    Id = "delete", Protocol = "rest", Service = "S", Method = "M", MethodType = "Unary",
+                    HttpPath = "/submit", HttpVerb = "POST", Status = "OK", Response = """{"did":"delete"}""",
+                    Match = new BowireStepMatch { Body = [new() { JsonPath = "$.action", EqualTo = "delete" }] },
+                },
+            },
+        };
+
+        using var host = BuildHost(recording: rec);
+        var client = host.GetTestClient();
+
+        using var createBody = new StringContent("""{"action":"create"}""", System.Text.Encoding.UTF8, "application/json");
+        var createResp = await client.PostAsync(new Uri("/submit", UriKind.Relative), createBody, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, createResp.StatusCode);
+        Assert.Equal("""{"did":"create"}""", await createResp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+
+        using var deleteBody = new StringContent("""{"action":"delete"}""", System.Text.Encoding.UTF8, "application/json");
+        var deleteResp = await client.PostAsync(new Uri("/submit", UriKind.Relative), deleteBody, TestContext.Current.CancellationToken);
+        Assert.Equal("""{"did":"delete"}""", await deleteResp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+
+        // A body neither matcher accepts → no match → pass-through (418 teapot).
+        using var otherBody = new StringContent("""{"action":"update"}""", System.Text.Encoding.UTF8, "application/json");
+        var otherResp = await client.PostAsync(new Uri("/submit", UriKind.Relative), otherBody, TestContext.Current.CancellationToken);
+        Assert.Equal((HttpStatusCode)418, otherResp.StatusCode);
+    }
+
+    [Fact]
     public async Task GetUnmatchedPath_PassesThroughByDefault()
     {
         using var host = BuildHost();
