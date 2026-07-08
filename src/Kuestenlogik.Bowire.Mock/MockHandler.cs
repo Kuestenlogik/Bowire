@@ -45,6 +45,12 @@ public sealed class MockHandler
     private readonly object _cursorLock = new();
     private int _cursor;
 
+    // #408 named-scenario state machine: scenario name → current state.
+    // Absent = the initial state (Started). Reset on hot-reload.
+    private const string ScenarioStartState = "Started";
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _scenarioStates =
+        new(StringComparer.Ordinal);
+
     // Runtime-scenario-switch (control endpoint) state. When the mock
     // was mounted from a path, we remember it so the control endpoint
     // can reload a different file (or re-select a named recording in
@@ -76,6 +82,7 @@ public sealed class MockHandler
             _baseline = next; // hot-reload resets the stub-CRUD baseline too
         }
         lock (_cursorLock) { _cursor = 0; }
+        _scenarioStates.Clear(); // #408: fresh recording → scenarios back to Started
     }
 
     // ---- #404: per-stub CRUD on a running mock ----
@@ -162,6 +169,72 @@ public sealed class MockHandler
         foreach (var s in steps) clone.Steps.Add(s);
         return clone;
     }
+
+    // ---- #408: named-scenario state machine ----
+
+    private bool RecordingHasScenarios()
+    {
+        foreach (var s in _recording.Steps)
+            if (s.Scenario is not null && !string.IsNullOrEmpty(s.Scenario.Name)) return true;
+        return false;
+    }
+
+    private string ScenarioState(string name) =>
+        _scenarioStates.GetValueOrDefault(name, ScenarioStartState);
+
+    // A recording view containing only the stubs whose scenario gate is open in
+    // the current state (plus every state-independent stub). Copy-on-write, so
+    // concurrent matches see a stable list.
+    private BowireRecording BuildScenarioView()
+    {
+        var eligible = new List<BowireRecordingStep>(_recording.Steps.Count);
+        foreach (var s in _recording.Steps)
+        {
+            var sc = s.Scenario;
+            if (sc is null || string.IsNullOrEmpty(sc.Name))
+            {
+                eligible.Add(s);
+                continue;
+            }
+            var required = string.IsNullOrEmpty(sc.RequiredState) ? ScenarioStartState : sc.RequiredState;
+            if (string.Equals(ScenarioState(sc.Name), required, StringComparison.Ordinal))
+                eligible.Add(s);
+        }
+        return CloneWithSteps(_recording, eligible);
+    }
+
+    private void ApplyScenarioTransition(BowireRecordingStep step)
+    {
+        if (step.Scenario is { } sc && !string.IsNullOrEmpty(sc.Name) && !string.IsNullOrEmpty(sc.NewState))
+        {
+            _scenarioStates[sc.Name] = sc.NewState!;
+            _logger.LogDebug("scenario-transition(name={Name}, newState={State})", sc.Name, sc.NewState);
+        }
+    }
+
+    /// <summary>Current state of every scenario declared in the recording (name → state).</summary>
+    public IReadOnlyDictionary<string, string> GetScenarioStates()
+    {
+        var states = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var s in _recording.Steps)
+        {
+            var name = s.Scenario?.Name;
+            if (!string.IsNullOrEmpty(name)) states[name] = ScenarioState(name);
+        }
+        return states;
+    }
+
+    /// <summary>Force a scenario to a state. False when no stub declares that scenario name.</summary>
+    public bool SetScenarioState(string name, string state)
+    {
+        if (!_recording.Steps.Any(s => string.Equals(s.Scenario?.Name, name, StringComparison.Ordinal)))
+            return false;
+        _scenarioStates[name] = state ?? ScenarioStartState;
+        return true;
+    }
+
+    /// <summary>Reset every scenario back to its initial state (<c>Started</c>).</summary>
+    public void ResetScenarios() => _scenarioStates.Clear();
 
     private const string MatchedStepIdItemKey = "__bowireMockMatchedStepId";
     private const string FaultItemKey = "__bowireMockFault";
@@ -508,7 +581,16 @@ public sealed class MockHandler
     {
         if (!_options.Stateful)
         {
-            return _options.Matcher.TryMatch(request, _recording, out var step) ? step : null;
+            // #408: when the recording uses named scenarios, match only against
+            // the stubs whose scenario gate is currently open, then apply the
+            // matched stub's state transition.
+            var source = RecordingHasScenarios() ? BuildScenarioView() : _recording;
+            if (_options.Matcher.TryMatch(request, source, out var step))
+            {
+                ApplyScenarioTransition(step);
+                return step;
+            }
+            return null;
         }
 
         lock (_cursorLock)
