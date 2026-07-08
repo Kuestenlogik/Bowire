@@ -230,28 +230,33 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
-**2/8 done** · 6 backlog
+**2/11 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ⬜ Backlog | `area:workbench` |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ⬜ Backlog |  |
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog |  |
+| [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog |  |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ⬜ Backlog |  |
 | [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ⬜ Backlog |  |
+| [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog |  |
+| [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog |  |
 | [366](https://github.com/Kuestenlogik/Bowire/issues/366) | Bowire | [Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults](#issue-kuestenlogik-bowire-366) | ⬜ Backlog |  |
 | [362](https://github.com/Kuestenlogik/Bowire/issues/362) | Bowire | [Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern](#issue-kuestenlogik-bowire-362) | ✅ Done |  |
 | [363](https://github.com/Kuestenlogik/Bowire/issues/363) | Bowire | [Sidebar UX round 2: rail-strip drop targets + uniform 'select → assign → save as preset' toolbar affordance](#issue-kuestenlogik-bowire-363) | ✅ Done |  |
 
 ### v2.9 — MCP completion + agent hub
 
-**0/3 done** · 3 backlog
+**0/5 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ⬜ Backlog | `area:mcp` |
 | [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via SDK notification handlers](#issue-kuestenlogik-bowire-46) | ⬜ Backlog | `area:mcp` |
+| [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ⬜ Backlog |  |
 | [128](https://github.com/Kuestenlogik/Bowire/issues/128) | Bowire | [Bowire Agent — register embedded instances with a central hub](#issue-kuestenlogik-bowire-128) | ⬜ Backlog |  |
+| [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ⬜ Backlog |  |
 
 ### v3.0 — Cleanups + breaking-change cuts
 
@@ -291,15 +296,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [51](https://github.com/Kuestenlogik/Bowire/issues/51) | Bowire | [Marketing site — migrate <img> tags to picture.html partial](#issue-kuestenlogik-bowire-51) | ⬜ Backlog | `area:site` |
 | [53](https://github.com/Kuestenlogik/Bowire/issues/53) | Bowire | [Marketing site — second row of specialist comparisons](#issue-kuestenlogik-bowire-53) | ⬜ Backlog | `area:site` |
 | [103](https://github.com/Kuestenlogik/Bowire/issues/103) | Bowire | [Generate boat photos: submarine, ferry, tugboat, lighthouse](#issue-kuestenlogik-bowire-103) | ⬜ Backlog |  |
-| [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ⬜ Backlog |  |
 | [130](https://github.com/Kuestenlogik/Bowire/issues/130) | Bowire | [Comparison table: add Hoppscotch + topic-based filtering](#issue-kuestenlogik-bowire-130) | ⬜ Backlog |  |
 | [214](https://github.com/Kuestenlogik/Bowire/issues/214) | Bowire | [Test infra: BaGet Testcontainer fixture for plugin install/activate coverage](#issue-kuestenlogik-bowire-214) | ⬜ Backlog |  |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ⬜ Backlog |  |
-| [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog |  |
 | [288](https://github.com/Kuestenlogik/Bowire/issues/288) | Bowire | [IInlineSseSubscriber is an orphaned seam — give it a consumer or remove it](#issue-kuestenlogik-bowire-288) | ⬜ Backlog |  |
-| [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog |  |
-| [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog |  |
-| [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ⬜ Backlog |  |
 | [355](https://github.com/Kuestenlogik/Bowire/issues/355) | Bowire | [Eliminate #pragma warning disable across the codebase — rewrite code so analyzer warnings don't fire](#issue-kuestenlogik-bowire-355) | ⬜ Backlog |  |
 | [357](https://github.com/Kuestenlogik/Bowire/issues/357) | Bowire | [AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException](#issue-kuestenlogik-bowire-357) | ⬜ Backlog |  |
 | [358](https://github.com/Kuestenlogik/Bowire/issues/358) | Bowire | [Rail packages ship without test projects — Benchmarking / Compose / Interceptor / Recordings / Security.Scanner / Workspaces](#issue-kuestenlogik-bowire-358) | ⬜ Backlog |  |
@@ -1032,6 +1032,10 @@ Headers like `Accept: application/vnd.example+json`, `X-Api-Version: 2`, `User-A
 
 Bowire's UI is English-only today. Every label, every button, every tooltip, every empty-state copy is a hard-coded literal in the JS source. [[more]](https://github.com/Kuestenlogik/Bowire/issues/117)
 
+#### <a id="issue-kuestenlogik-bowire-216"></a>⬜ Backlog · [#216](https://github.com/Kuestenlogik/Bowire/issues/216) Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage
+
+`Mock.Replay.UnaryReplayer` (~226 uncovered lines) and `Endpoints.BowireInvokeEndpoints` (~58 uncovered lines) together carry the largest single coverage hole in the repo. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/216)
+
 #### <a id="issue-kuestenlogik-bowire-256"></a>⬜ Backlog · [#256](https://github.com/Kuestenlogik/Bowire/issues/256) Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style
 
 The freeform request builder today requires a `service` + `method` name even when the operator just wants to `POST https://api.example.com/foo` with a body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/256)
@@ -1039,6 +1043,14 @@ The freeform request builder today requires a `service` + `method` name even whe
 #### <a id="issue-kuestenlogik-bowire-258"></a>⬜ Backlog · [#258](https://github.com/Kuestenlogik/Bowire/issues/258) Console toolbar: distinct icons for Clear selection / Clear all / Close
 
 All three buttons used the same X glyph (Close + Clear selection) or text 'Clear' (Clear all). New `selectionClear` SVG (dashed rectangle + interior X) for Clear selection so the three actions read as three different intents. i18n-safe — no labels to translate.
+
+#### <a id="issue-kuestenlogik-bowire-292"></a>⬜ Backlog · [#292](https://github.com/Kuestenlogik/Bowire/issues/292) Request-builder: GraphQL layout (#291 Phase D follow-up)
+
+Followup to #291. Phases A+B+C+E shipped (REST / gRPC / MCP / MQTT / WebSocket / SSE + streaming response pane). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/292)
+
+#### <a id="issue-kuestenlogik-bowire-311"></a>⬜ Backlog · [#311](https://github.com/Kuestenlogik/Bowire/issues/311) Pluggable workbench: extract remaining rails (Phase G continuation)
+
+Follow-up to #306. Phase G's descriptor-by-package extraction shipped in 0b76086 — every rail descriptor now lives in its own `Kuestenlogik.Bowire.Rail.*` NuGet, `BuiltInRails.cs` is gone from core, and `Bundle.Workbench` is the new meta-package referenced by `Bowire.Tool`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/311)
 
 #### <a id="issue-kuestenlogik-bowire-366"></a>⬜ Backlog · [#366](https://github.com/Kuestenlogik/Bowire/issues/366) Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults
 
@@ -1066,9 +1078,17 @@ Follow-up to #362 (audit findings cleared). Two genuinely-new enhancements that 
 
 When an MCP tool call is in flight, the server can emit `notifications/message` (logging) and `notifications/progress` updates. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/46)
 
+#### <a id="issue-kuestenlogik-bowire-110"></a>⬜ Backlog · [#110](https://github.com/Kuestenlogik/Bowire/issues/110) Site: surface the AI assistant in the launch wizard + quickstart
+
+v1.9 ships the AI workbench in a real way — chat grounded in workbench state (#89 Phase 1), MCP-style tool calling (#108, #109), AI-assisted security (#59-#63). The "Straight into the water" launch wizard on bowire.io still onboards users as if AI is invisible. [[more]](https://github.com/Kuestenlogik/Bowire/issues/110)
+
 #### <a id="issue-kuestenlogik-bowire-128"></a>⬜ Backlog · [#128](https://github.com/Kuestenlogik/Bowire/issues/128) Bowire Agent — register embedded instances with a central hub
 
 **One-liner.** Bowire instances embedded in apps (e.g. a Surgewave broker) register themselves with a central Bowire **hub** so an operator sees every discovery / call / mock across the fleet in one UI, instead of poking around N per-app endpoints. [[more]](https://github.com/Kuestenlogik/Bowire/issues/128)
+
+#### <a id="issue-kuestenlogik-bowire-313"></a>⬜ Backlog · [#313](https://github.com/Kuestenlogik/Bowire/issues/313) Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)
+
+Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape — coordinator + per-host worker, ramp-up, env pool, failure policy, bearer auth — but deferred the hardening pieces called out on #132's security note. [[more]](https://github.com/Kuestenlogik/Bowire/issues/313)
 
 ### v3.0 — Cleanups + breaking-change cuts
 
@@ -1192,10 +1212,6 @@ The comparison tableʼs "top-5-competitors check" framing already lets us mentio
 
 The launch stepper on the home page ([`/_includes/launch.html`](https://github.com/Kuestenlogik/Bowire/blob/main/site/_includes/launch.html)) uses one photo per boat: [[more]](https://github.com/Kuestenlogik/Bowire/issues/103)
 
-#### <a id="issue-kuestenlogik-bowire-110"></a>⬜ Backlog · [#110](https://github.com/Kuestenlogik/Bowire/issues/110) Site: surface the AI assistant in the launch wizard + quickstart
-
-v1.9 ships the AI workbench in a real way — chat grounded in workbench state (#89 Phase 1), MCP-style tool calling (#108, #109), AI-assisted security (#59-#63). The "Straight into the water" launch wizard on bowire.io still onboards users as if AI is invisible. [[more]](https://github.com/Kuestenlogik/Bowire/issues/110)
-
 #### <a id="issue-kuestenlogik-bowire-130"></a>⬜ Backlog · [#130](https://github.com/Kuestenlogik/Bowire/issues/130) Comparison table: add Hoppscotch + topic-based filtering
 
 The comparison table on bowire.io today lines Bowire up against Postman / Insomnia / Bruno / curl on a single feature matrix. Three gaps: [[more]](https://github.com/Kuestenlogik/Bowire/issues/130)
@@ -1208,25 +1224,9 @@ The comparison table on bowire.io today lines Bowire up against Postman / Insomn
 
 `App.PluginManager` shells out to `dotnet publish` / `dotnet nuget …` via `Process.Start` directly. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
 
-#### <a id="issue-kuestenlogik-bowire-216"></a>⬜ Backlog · [#216](https://github.com/Kuestenlogik/Bowire/issues/216) Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage
-
-`Mock.Replay.UnaryReplayer` (~226 uncovered lines) and `Endpoints.BowireInvokeEndpoints` (~58 uncovered lines) together carry the largest single coverage hole in the repo. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/216)
-
 #### <a id="issue-kuestenlogik-bowire-288"></a>⬜ Backlog · [#288](https://github.com/Kuestenlogik/Bowire/issues/288) IInlineSseSubscriber is an orphaned seam — give it a consumer or remove it
 
 `IInlineSseSubscriber` (`src/Kuestenlogik.Bowire/IInlineSseSubscriber.cs`) is an optional capability seam: a protocol plugin that can subscribe to a remote SSE stream and yield each event as a `{ id, event, data, retry }` envelope, discoverable via `BowireProtocolRegistry.FindSseSubscriber()`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/288)
-
-#### <a id="issue-kuestenlogik-bowire-292"></a>⬜ Backlog · [#292](https://github.com/Kuestenlogik/Bowire/issues/292) Request-builder: GraphQL layout (#291 Phase D follow-up)
-
-Followup to #291. Phases A+B+C+E shipped (REST / gRPC / MCP / MQTT / WebSocket / SSE + streaming response pane). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/292)
-
-#### <a id="issue-kuestenlogik-bowire-311"></a>⬜ Backlog · [#311](https://github.com/Kuestenlogik/Bowire/issues/311) Pluggable workbench: extract remaining rails (Phase G continuation)
-
-Follow-up to #306. Phase G's descriptor-by-package extraction shipped in 0b76086 — every rail descriptor now lives in its own `Kuestenlogik.Bowire.Rail.*` NuGet, `BuiltInRails.cs` is gone from core, and `Bundle.Workbench` is the new meta-package referenced by `Bowire.Tool`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/311)
-
-#### <a id="issue-kuestenlogik-bowire-313"></a>⬜ Backlog · [#313](https://github.com/Kuestenlogik/Bowire/issues/313) Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)
-
-Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape — coordinator + per-host worker, ramp-up, env pool, failure policy, bearer auth — but deferred the hardening pieces called out on #132's security note. [[more]](https://github.com/Kuestenlogik/Bowire/issues/313)
 
 #### <a id="issue-kuestenlogik-bowire-355"></a>⬜ Backlog · [#355](https://github.com/Kuestenlogik/Bowire/issues/355) Eliminate #pragma warning disable across the codebase — rewrite code so analyzer warnings don't fire
 
