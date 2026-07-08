@@ -306,6 +306,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [415](https://github.com/Kuestenlogik/Bowire/issues/415) | Bowire | [Sidecar discovery drops HTTP-transport plugins (guard requires executable)](#issue-kuestenlogik-bowire-415) | ⬜ Backlog |  |
 | [416](https://github.com/Kuestenlogik/Bowire/issues/416) | Bowire | [Sidecar contract: protocol-version + capabilities handshake in initialize](#issue-kuestenlogik-bowire-416) | ⬜ Backlog |  |
 | [417](https://github.com/Kuestenlogik/Bowire/issues/417) | Bowire | [Sidecar contract: publish plugin.schema.json + fix doc/comment drift](#issue-kuestenlogik-bowire-417) | ⬜ Backlog |  |
+| [418](https://github.com/Kuestenlogik/Bowire/issues/418) | Bowire | [Re-sync language SDKs (Go/Node/Python/Rust) to the current sidecar contract + version handshake](#issue-kuestenlogik-bowire-418) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1252,6 +1253,10 @@ The sidecar JSON-RPC contract has **no version negotiation**. `initialize` sends
 #### <a id="issue-kuestenlogik-bowire-417"></a>⬜ Backlog · [#417](https://github.com/Kuestenlogik/Bowire/issues/417) Sidecar contract: publish plugin.schema.json + fix doc/comment drift
 
 The sidecar plugin contract has documentation/schema drift and a missing artifact: [[more]](https://github.com/Kuestenlogik/Bowire/issues/417)
+
+#### <a id="issue-kuestenlogik-bowire-418"></a>⬜ Backlog · [#418](https://github.com/Kuestenlogik/Bowire/issues/418) Re-sync language SDKs (Go/Node/Python/Rust) to the current sidecar contract + version handshake
+
+The four language SDKs for authoring Bowire sidecar plugins were last updated **2026-06-05** and predate a month of active `Bowire` main-repo development (v2.2.1-dev, last touched 2026-07-08): [[more]](https://github.com/Kuestenlogik/Bowire/issues/418)
 
 ---
 
