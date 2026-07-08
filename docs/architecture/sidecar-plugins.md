@@ -93,7 +93,7 @@ oras push ghcr.io/acme/zenoh-sidecar:1.0.0 \
 
 ```json
 {
-  "$schema": "https://bowire.io/schemas/plugin.schema.json",
+  "$schema": "https://bowire.io/schemas/sidecar.schema.json",
   "packageId": "Acme.Bowire.Protocol.Zenoh",
   "protocol": {
     "id": "zenoh",
@@ -120,6 +120,13 @@ oras push ghcr.io/acme/zenoh-sidecar:1.0.0 \
 | `shutdownTimeoutMs` | no | Grace period after `shutdown` before SIGKILL (stdio). Default: `3000`. |
 | `url` | http | The JSON-RPC endpoint (e.g. `http://localhost:7000/rpc`). Required for `http`. |
 | `version` | no | Version string for `bowire plugin list` (sidecars have no NuGet version). |
+
+The manifest has a published JSON Schema at
+[`https://bowire.io/schemas/sidecar.schema.json`](https://bowire.io/schemas/sidecar.schema.json)
+(source: `site/schemas/sidecar.schema.json`). Point your editor at it via the
+`$schema` key for completion + validation as you author `sidecar.json`. The
+schema enforces the transport rule — `executable` is required for `stdio`,
+`url` for `http`.
 
 ## Transports
 
