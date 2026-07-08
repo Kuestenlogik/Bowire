@@ -157,7 +157,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**13/26 done** · 13 backlog
+**14/26 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -173,7 +173,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | ⬜ Backlog |  |
 | [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ⬜ Backlog |  |
 | [253](https://github.com/Kuestenlogik/Bowire/issues/253) | Bowire | [Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override](#issue-kuestenlogik-bowire-253) | ⬜ Backlog |  |
-| [430](https://github.com/Kuestenlogik/Bowire/issues/430) | Bowire | [Mock response templating: expression/helper engine + record-through capture (follow-up)](#issue-kuestenlogik-bowire-430) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
 | [401](https://github.com/Kuestenlogik/Bowire/issues/401) | Bowire | [Mock-server maturity — WireMock feature parity (epic)](#issue-kuestenlogik-bowire-401) | ✅ Done |  |
@@ -187,6 +186,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [409](https://github.com/Kuestenlogik/Bowire/issues/409) | Bowire | [Mock: request verification / assertion API (verify + findAll + near-misses)](#issue-kuestenlogik-bowire-409) | ✅ Done |  |
 | [410](https://github.com/Kuestenlogik/Bowire/issues/410) | Bowire | [Mock: HTTPS/TLS on the standalone server (+ Docker image)](#issue-kuestenlogik-bowire-410) | ✅ Done |  |
 | [411](https://github.com/Kuestenlogik/Bowire/issues/411) | Bowire | [Mock fault injection: malformed-response-chunk + faults on unmatched requests](#issue-kuestenlogik-bowire-411) | ✅ Done |  |
+| [430](https://github.com/Kuestenlogik/Bowire/issues/430) | Bowire | [Mock response templating: expression/helper engine + record-through capture (follow-up)](#issue-kuestenlogik-bowire-430) | ✅ Done |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
@@ -873,10 +873,6 @@ A visible, in-app **shelf** (working name) — a drag-and-drop holding area for 
 
 Bowire conflates two distinct URL concepts under a single "Server URL" field: [[more]](https://github.com/Kuestenlogik/Bowire/issues/253)
 
-#### <a id="issue-kuestenlogik-bowire-430"></a>⬜ Backlog · [#430](https://github.com/Kuestenlogik/Bowire/issues/430) Mock response templating: expression/helper engine + record-through capture (follow-up)
-
-Follow-up from #406 (mock-server WireMock parity, epic #401). The response templating shipped in #406 covers `${faker.*}` generators, `bodyFileName`, and a response-transformer hook. Two richer pieces were deliberately deferred: [[more]](https://github.com/Kuestenlogik/Bowire/issues/430)
-
 #### <a id="issue-kuestenlogik-bowire-34"></a>✅ Done · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
 
 > `area:plugin-sdk`
@@ -932,6 +928,10 @@ Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kues
 #### <a id="issue-kuestenlogik-bowire-411"></a>✅ Done · [#411](https://github.com/Kuestenlogik/Bowire/issues/411) Mock fault injection: malformed-response-chunk + faults on unmatched requests
 
 Part of the mock-server WireMock-parity effort. (Small — fault-injection is otherwise ahead of WireMock.) [[more]](https://github.com/Kuestenlogik/Bowire/issues/411)
+
+#### <a id="issue-kuestenlogik-bowire-430"></a>✅ Done · [#430](https://github.com/Kuestenlogik/Bowire/issues/430) Mock response templating: expression/helper engine + record-through capture (follow-up)
+
+Follow-up from #406 (mock-server WireMock parity, epic #401). The response templating shipped in #406 covers `${faker.*}` generators, `bodyFileName`, and a response-transformer hook. Two richer pieces were deliberately deferred: [[more]](https://github.com/Kuestenlogik/Bowire/issues/430)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
