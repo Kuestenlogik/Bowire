@@ -42,7 +42,14 @@ internal static class PluginManifestProbe
 
         try
         {
-            using var stream = File.OpenRead(manifestPath);
+            // Share read/write/delete: the probed DLL may be held open for
+            // writing by another handle (coverage instrumentation, a
+            // concurrent plugin update, the test host reading its own
+            // assembly). FileShare.Read alone throws a sharing violation in
+            // that window — read past it instead of mis-reporting "no probe".
+            using var stream = new FileStream(
+                manifestPath, FileMode.Open, FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete);
             using var pe = new PEReader(stream);
             if (!pe.HasMetadata) return null;
 
