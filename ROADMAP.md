@@ -151,7 +151,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**2/24 done** · 22 backlog
+**2/25 done** · 23 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -177,6 +177,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [408](https://github.com/Kuestenlogik/Bowire/issues/408) | Bowire | [Mock: named scenario state machine (states + transitions)](#issue-kuestenlogik-bowire-408) | ⬜ Backlog |  |
 | [409](https://github.com/Kuestenlogik/Bowire/issues/409) | Bowire | [Mock: request verification / assertion API (verify + findAll + near-misses)](#issue-kuestenlogik-bowire-409) | ⬜ Backlog |  |
 | [410](https://github.com/Kuestenlogik/Bowire/issues/410) | Bowire | [Mock: HTTPS/TLS on the standalone server (+ Docker image)](#issue-kuestenlogik-bowire-410) | ⬜ Backlog |  |
+| [411](https://github.com/Kuestenlogik/Bowire/issues/411) | Bowire | [Mock fault injection: malformed-response-chunk + faults on unmatched requests](#issue-kuestenlogik-bowire-411) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
 
@@ -883,6 +884,10 @@ Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kues
 #### <a id="issue-kuestenlogik-bowire-410"></a>⬜ Backlog · [#410](https://github.com/Kuestenlogik/Bowire/issues/410) Mock: HTTPS/TLS on the standalone server (+ Docker image)
 
 Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/410)
+
+#### <a id="issue-kuestenlogik-bowire-411"></a>⬜ Backlog · [#411](https://github.com/Kuestenlogik/Bowire/issues/411) Mock fault injection: malformed-response-chunk + faults on unmatched requests
+
+Part of the mock-server WireMock-parity effort. (Small — fault-injection is otherwise ahead of WireMock.) [[more]](https://github.com/Kuestenlogik/Bowire/issues/411)
 
 #### <a id="issue-kuestenlogik-bowire-34"></a>✅ Done · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
 
