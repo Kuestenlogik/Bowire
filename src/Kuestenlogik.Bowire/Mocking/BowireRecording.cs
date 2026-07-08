@@ -270,6 +270,15 @@ public sealed class BowireRecordingStep
     [JsonPropertyName("response")]
     public string? Response { get; set; }
 
+    /// <summary>
+    /// #406: REST-only. When set, the response body is read from this file
+    /// (WireMock's <c>bodyFileName</c>) instead of the inline <see cref="Response"/>
+    /// — resolved relative to the recording's directory. Placeholder
+    /// substitution still applies. A missing file falls back to <see cref="Response"/>.
+    /// </summary>
+    [JsonPropertyName("responseBodyFile")]
+    public string? ResponseBodyFile { get; set; }
+
     /// <summary>REST-only: the HTTP path template the call was made against.</summary>
     [JsonPropertyName("httpPath")]
     public string? HttpPath { get; set; }

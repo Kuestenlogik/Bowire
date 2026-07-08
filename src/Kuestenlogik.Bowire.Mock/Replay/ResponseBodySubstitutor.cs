@@ -84,6 +84,9 @@ public static class ResponseBodySubstitutor
             "nowMs" => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture),
             "timestamp" => DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture),
             "random" => RandomUInt32().ToString(CultureInfo.InvariantCulture),
+            // #406: fake-data generators — ${faker.name}, ${faker.email},
+            // ${faker.int(1,10)}, ${faker.lorem(5)}, ...
+            _ when token.StartsWith("faker.", StringComparison.Ordinal) => MockFaker.Generate(token[6..]),
             _ when token.StartsWith("now+", StringComparison.Ordinal) => NowOffset(token[4..], sign: 1),
             _ when token.StartsWith("now-", StringComparison.Ordinal) => NowOffset(token[4..], sign: -1),
             _ when token.StartsWith("request.", StringComparison.Ordinal) && request is not null
