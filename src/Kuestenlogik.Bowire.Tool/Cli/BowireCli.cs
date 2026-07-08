@@ -664,6 +664,11 @@ internal static class BowireCli
             Description = "Forward unmatched requests to this upstream base URL (partial mocking). e.g. https://api.example.com.",
             DefaultValueFactory = _ => cfg["Bowire:Mock:ProxyBaseUrl"]
         };
+        var proxyRecord = new Option<string?>("--proxy-record")
+        {
+            Description = "With --proxy: append each proxied response to this recording file (record-through capture).",
+            DefaultValueFactory = _ => cfg["Bowire:Mock:ProxyRecordPath"]
+        };
         var select = new Option<string?>("--select")
         {
             Description = "Disambiguator when the recording file contains multiple recordings.",
@@ -749,7 +754,7 @@ internal static class BowireCli
         cmd.Add(positionalPath);
         cmd.Add(recording); cmd.Add(schema); cmd.Add(grpcSchema); cmd.Add(graphqlSchema);
         cmd.Add(port); cmd.Add(host); cmd.Add(https); cmd.Add(httpsPort);
-        cmd.Add(cert); cmd.Add(certPassword); cmd.Add(proxy); cmd.Add(select); cmd.Add(noWatch);
+        cmd.Add(cert); cmd.Add(certPassword); cmd.Add(proxy); cmd.Add(proxyRecord); cmd.Add(select); cmd.Add(noWatch);
         cmd.Add(stateful); cmd.Add(statefulOnce); cmd.Add(loop); cmd.Add(autoInstall);
         cmd.Add(chaos); cmd.Add(faults); cmd.Add(captureMiss); cmd.Add(controlToken);
         cmd.SetAction(async (pr, ct) =>
@@ -799,6 +804,7 @@ internal static class BowireCli
                 CertPath = pr.GetValue(cert),
                 CertPassword = pr.GetValue(certPassword),
                 ProxyBaseUrl = pr.GetValue(proxy),
+                ProxyRecordPath = pr.GetValue(proxyRecord),
                 Select = pr.GetValue(select),
                 NoWatch = pr.GetValue(noWatch),
                 Stateful = pr.GetValue(stateful),

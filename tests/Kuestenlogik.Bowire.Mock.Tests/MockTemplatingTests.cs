@@ -36,25 +36,76 @@ public sealed class MockTemplatingTests : IDisposable
     [Fact]
     public void Faker_Generators_ProduceExpectedShapes()
     {
-        Assert.Contains("@example.com", MockFaker.Generate("email"), StringComparison.Ordinal);
-        Assert.DoesNotContain(" ", MockFaker.Generate("firstName"), StringComparison.Ordinal);
-        Assert.Contains(' ', MockFaker.Generate("name")); // first + last
+        Assert.Contains("@example.com", MockFaker.Generate("email")!, StringComparison.Ordinal);
+        Assert.DoesNotContain(" ", MockFaker.Generate("firstName")!, StringComparison.Ordinal);
+        Assert.Contains(' ', MockFaker.Generate("name")!); // first + last
         Assert.True(Guid.TryParse(MockFaker.Generate("uuid"), out _));
         Assert.Equal("5", MockFaker.Generate("int(5,5)"));
-        Assert.InRange(int.Parse(MockFaker.Generate("int(1,3)"), System.Globalization.CultureInfo.InvariantCulture), 1, 3);
-        Assert.Equal(3, MockFaker.Generate("lorem(3)").Split(' ').Length);
+        Assert.InRange(int.Parse(MockFaker.Generate("int(1,3)")!, System.Globalization.CultureInfo.InvariantCulture), 1, 3);
+        Assert.Equal(3, MockFaker.Generate("lorem(3)")!.Split(' ').Length);
         Assert.True(MockFaker.Generate("bool") is "true" or "false");
-        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", MockFaker.Generate("date"));
-        // Unknown spec → literal (idempotent).
-        Assert.Equal("${faker.nope}", MockFaker.Generate("nope"));
+        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", MockFaker.Generate("date")!);
+        // Unknown spec → null (caller keeps the literal).
+        Assert.Null(MockFaker.Generate("nope"));
     }
 
     [Fact]
-    public void Substitutor_ResolvesFakerTokens()
+    public void Substitutor_ResolvesFakerTokens_CanonicalCurly()
     {
-        var result = ResponseBodySubstitutor.Substitute("""{"user":"${faker.name}","age":${faker.int(18,18)}}""");
-        Assert.DoesNotContain("${", result, StringComparison.Ordinal);
+        var result = ResponseBodySubstitutor.Substitute("""{"user":"{{faker.name}}","age":{{faker.int(18,18)}}}""");
+        Assert.DoesNotContain("{{", result, StringComparison.Ordinal);
         Assert.Contains("\"age\":18", result, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Substitutor_LeafTokens_Curly()
+    {
+        Assert.True(Guid.TryParse(ResponseBodySubstitutor.Substitute("{{uuid}}"), out _));
+        Assert.Matches(@"^\d+$", ResponseBodySubstitutor.Substitute("{{now}}"));
+        // Unknown token stays literal.
+        Assert.Equal("{{nope}}", ResponseBodySubstitutor.Substitute("{{nope}}"));
+    }
+
+    [Theory]
+    [InlineData("{{math:2 + 3 * 4}}", "14")]
+    [InlineData("{{math:(2 + 3) * 4}}", "20")]
+    [InlineData("{{math:10 / 4}}", "2.5")]
+    [InlineData("{{math:7 % 3}}", "1")]
+    [InlineData("{{math:{{now}} - {{now}}}}", "0")] // nested tokens resolve first
+    public void Substitutor_MathHelper(string input, string expected)
+        => Assert.Equal(expected, ResponseBodySubstitutor.Substitute(input));
+
+    [Theory]
+    [InlineData("{{if:1 == 1 ? yes : no}}", "yes")]
+    [InlineData("{{if:2 < 1 ? yes : no}}", "no")]
+    [InlineData("{{if:a == a ? same : diff}}", "same")]
+    [InlineData("{{if:true ? on : off}}", "on")]
+    [InlineData("{{if:false ? on : off}}", "off")]
+    public void Substitutor_IfHelper(string input, string expected)
+        => Assert.Equal(expected, ResponseBodySubstitutor.Substitute(input));
+
+    [Fact]
+    public void Substitutor_FormatHelpers()
+    {
+        Assert.Equal("HELLO", ResponseBodySubstitutor.Substitute("{{upper:hello}}"));
+        Assert.Equal("hello", ResponseBodySubstitutor.Substitute("{{lower:HELLO}}"));
+        Assert.Equal("fallback", ResponseBodySubstitutor.Substitute("{{default:|fallback}}"));
+        Assert.Equal("primary", ResponseBodySubstitutor.Substitute("{{default:primary|fallback}}"));
+    }
+
+    [Fact]
+    public void Substitutor_Escape_KeepsLiteral()
+    {
+        Assert.Equal("{{uuid}}", ResponseBodySubstitutor.Substitute("{{{{uuid}}}}"));
+    }
+
+    [Fact]
+    public void Substitutor_DeprecatedDollarSyntax_StillResolves()
+    {
+        // ${…} is deprecated but kept working for pre-{{}} recordings.
+        Assert.True(Guid.TryParse(ResponseBodySubstitutor.Substitute("${uuid}"), out _));
+        // Helpers are {{…}}-exclusive — a ${math:…} stays literal.
+        Assert.Equal("${math:1+1}", ResponseBodySubstitutor.Substitute("${math:1+1}"));
     }
 
     // ---- bodyFileName + transformer (e2e) ----
@@ -63,7 +114,7 @@ public sealed class MockTemplatingTests : IDisposable
     public async Task BodyFileName_ServesFileContents_WithSubstitution()
     {
         var bodyFile = SafePath.Combine(_tempDir, "resp.json");
-        await File.WriteAllTextAsync(bodyFile, """{"from":"file","id":"${uuid}"}""", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(bodyFile, """{"from":"file","id":"{{uuid}}"}""", TestContext.Current.CancellationToken);
 
         var rec = new BowireRecording
         {
@@ -84,7 +135,7 @@ public sealed class MockTemplatingTests : IDisposable
         var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
         Assert.Contains("\"from\":\"file\"", body, StringComparison.Ordinal); // file body, not inline
-        Assert.DoesNotContain("${uuid}", body, StringComparison.Ordinal);     // substitution applied
+        Assert.DoesNotContain("{{uuid}}", body, StringComparison.Ordinal);    // substitution applied
         Assert.DoesNotContain("inline", body, StringComparison.Ordinal);
     }
 

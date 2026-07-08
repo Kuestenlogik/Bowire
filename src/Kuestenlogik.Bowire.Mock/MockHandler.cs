@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net.Http;
+using System.Text.Json;
 using Kuestenlogik.Bowire.Mock.Chaos;
 using Kuestenlogik.Bowire.Mock.Management;
 using Kuestenlogik.Bowire.Mock.Matchers;
@@ -835,6 +836,11 @@ public sealed class MockHandler
     private static readonly HashSet<string> s_proxyStripHeaders = new(StringComparer.OrdinalIgnoreCase)
     { "Transfer-Encoding", "Connection", "Keep-Alive", "Content-Length", "Server", "Date" };
 
+    // #430 record-through: serialise appends to the capture file. A plain lock
+    // + synchronous file I/O (short, opt-in dev path) — no disposable field.
+    private readonly object _proxyRecordLock = new();
+    private static readonly JsonSerializerOptions s_recordJson = new() { WriteIndented = true };
+
     private async Task ForwardAsync(HttpContext ctx, string targetBaseUrl)
     {
         var client = _options.ProxyHttpClient ?? s_sharedProxyClient;
@@ -860,7 +866,19 @@ public sealed class MockHandler
                 if (!s_proxyStripHeaders.Contains(h.Key)) ctx.Response.Headers[h.Key] = h.Value.ToArray();
             foreach (var h in upstream.Content.Headers)
                 if (!s_proxyStripHeaders.Contains(h.Key)) ctx.Response.Headers[h.Key] = h.Value.ToArray();
-            await upstream.Content.CopyToAsync(ctx.Response.Body, ctx.RequestAborted);
+
+            if (string.IsNullOrEmpty(_options.ProxyRecordPath))
+            {
+                await upstream.Content.CopyToAsync(ctx.Response.Body, ctx.RequestAborted);
+            }
+            else
+            {
+                // #430 record-through: buffer the body so it can be both served
+                // and persisted as a stub.
+                var bodyText = await upstream.Content.ReadAsStringAsync(ctx.RequestAborted);
+                await ctx.Response.WriteAsync(bodyText, ctx.RequestAborted);
+                AppendProxiedStep(ctx, (int)upstream.StatusCode, bodyText);
+            }
             _logger.LogDebug("proxy(path={Path}, status={Status})", SafeLog(ctx.Request.Path.Value), (int)upstream.StatusCode);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ctx.RequestAborted.IsCancellationRequested)
@@ -871,6 +889,51 @@ public sealed class MockHandler
                 $"{{\"error\":\"proxy: upstream unreachable ({ex.GetType().Name})\"}}", ctx.RequestAborted);
         }
     }
+
+    // #430: append a proxied response to the record-through file (load-or-create
+    // a single BowireRecording, add a stub, save). Serialised by a semaphore so
+    // concurrent proxied requests don't corrupt the file. Best-effort — a write
+    // failure never breaks the response the client already received.
+    private void AppendProxiedStep(HttpContext ctx, int statusCode, string body)
+    {
+        var path = _options.ProxyRecordPath!;
+        var method = ctx.Request.Method;
+        var reqPath = ctx.Request.Path.Value ?? "/";
+        lock (_proxyRecordLock)
+        {
+            try
+            {
+                var recording = File.Exists(path)
+                    ? JsonSerializer.Deserialize<BowireRecording>(File.ReadAllText(path), s_recordJson) ?? NewCaptureRecording()
+                    : NewCaptureRecording();
+
+                recording.Steps.Add(new BowireRecordingStep
+                {
+                    Id = "proxy_" + Guid.NewGuid().ToString("N")[..8],
+                    Protocol = "rest",
+                    MethodType = "Unary",
+                    HttpVerb = method,
+                    HttpPath = reqPath,
+                    Status = statusCode is >= 200 and < 300 ? "OK" : statusCode.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    Response = body,
+                });
+
+                File.WriteAllText(path, JsonSerializer.Serialize(recording, s_recordJson));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+            {
+                _logger.LogWarning(ex, "record-through: could not append to {Path}", SafeLog(path));
+            }
+        }
+    }
+
+    private static BowireRecording NewCaptureRecording() => new()
+    {
+        Id = "rec_proxy_capture",
+        Name = "proxy capture",
+        Description = "Recorded by the mock's record-through proxy (#430).",
+        RecordingFormatVersion = 2,
+    };
 
     private static string CombineProxyUrl(string baseUrl, string? path, string? query)
     {

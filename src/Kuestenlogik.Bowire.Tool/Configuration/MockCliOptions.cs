@@ -72,6 +72,9 @@ internal sealed class MockCliOptions
     /// <summary>#407: forward unmatched requests to this upstream base URL.</summary>
     public string? ProxyBaseUrl { get; set; }
 
+    /// <summary>#430: append each proxied response to this recording file (record-through).</summary>
+    public string? ProxyRecordPath { get; set; }
+
     /// <summary>Disambiguator when the recording file contains multiple recordings.</summary>
     public string? Select { get; set; }
 
