@@ -131,6 +131,7 @@ public sealed class MockServer : IAsyncDisposable
         private readonly List<IBowireMockEmitter> _startedEmitters = new();
         private readonly List<IBowireMockTransportHost> _startedTransports = new();
         private readonly Dictionary<string, int> _transportPorts = new(StringComparer.OrdinalIgnoreCase);
+        private System.Security.Cryptography.X509Certificates.X509Certificate2? _httpsCert;
 
         public MockKestrelHostedService(MockServerOptions options, ILoggerFactory loggerFactory)
         {
@@ -214,15 +215,27 @@ public sealed class MockServer : IAsyncDisposable
             }
             var needsHttp2 = _options.HostingExtensions.Any(e => e.RequiresHttp2(recording));
 
+            // #410: HTTPS listener. Source the cert once (supplied PFX/PEM, or a
+            // fresh self-signed localhost cert) and keep it for the process
+            // lifetime — disposed in DisposeAsync.
+            if (_options.Https)
+            {
+                _httpsCert = string.IsNullOrEmpty(_options.CertPath)
+                    ? MockDevCertificate.CreateSelfSigned()
+                    : MockDevCertificate.Load(_options.CertPath, _options.CertPassword);
+            }
+            var bindPort = _options.Https ? (_options.HttpsPort ?? _options.Port) : _options.Port;
+
             var builder = WebApplication.CreateBuilder();
 
             builder.WebHost.ConfigureKestrel(opts =>
             {
-                opts.Listen(System.Net.IPAddress.Parse(_options.Host), _options.Port, lo =>
+                opts.Listen(System.Net.IPAddress.Parse(_options.Host), bindPort, lo =>
                 {
                     lo.Protocols = needsHttp2
                         ? HttpProtocols.Http2
                         : HttpProtocols.Http1;
+                    if (_httpsCert is not null) lo.UseHttps(_httpsCert);
                 });
             });
 
@@ -327,8 +340,8 @@ public sealed class MockServer : IAsyncDisposable
                 hasSchema ? "schema:" + _options.SchemaPath :
                 "recording:" + _options.RecordingPath;
             logger.LogInformation(
-                "Bowire mock listening on http://{Host}:{Port} (source={Source}, steps={StepCount}, watch={Watch})",
-                _options.Host, BoundPort, sourceLabel,
+                "Bowire mock listening on {Scheme}://{Host}:{Port} (source={Source}, steps={StepCount}, watch={Watch})",
+                _options.Https ? "https" : "http", _options.Host, BoundPort, sourceLabel,
                 recording.Steps.Count,
                 hasRecording && _options.Watch);
 
@@ -473,6 +486,7 @@ public sealed class MockServer : IAsyncDisposable
             await DisposePluginEmittersAsync();
             await StopTransportHostsAsync(CancellationToken.None).ConfigureAwait(false);
             if (_app is not null) await _app.DisposeAsync();
+            _httpsCert?.Dispose();
         }
 
         private async Task StopTransportHostsAsync(CancellationToken ct)

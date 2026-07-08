@@ -57,6 +57,18 @@ internal sealed class MockCliOptions
     /// <summary>Listen port. Defaults to 6000; <c>0</c> asks the OS to pick.</summary>
     public int Port { get; set; } = 6000;
 
+    /// <summary>#410: serve over HTTPS (self-signed by default).</summary>
+    public bool Https { get; set; }
+
+    /// <summary>Optional HTTPS port (defaults to <see cref="Port"/>).</summary>
+    public int? HttpsPort { get; set; }
+
+    /// <summary>Path to a supplied certificate (.pfx/.p12 or PEM). Null = self-signed.</summary>
+    public string? CertPath { get; set; }
+
+    /// <summary>Password for a PKCS#12 certificate.</summary>
+    public string? CertPassword { get; set; }
+
     /// <summary>Disambiguator when the recording file contains multiple recordings.</summary>
     public string? Select { get; set; }
 
