@@ -633,6 +633,32 @@ internal static class BowireCli
             Description = "Listen host. Default 127.0.0.1.",
             DefaultValueFactory = _ => cfg["Bowire:Mock:Host"] ?? "127.0.0.1"
         };
+        var https = new Option<bool>("--https")
+        {
+            Description = "Serve over HTTPS (self-signed localhost cert by default; supply --cert for your own).",
+            DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Mock:Https")
+        };
+        var httpsPort = new Option<int?>("--https-port")
+        {
+            Description = "Port for the HTTPS listener. Defaults to --port.",
+            DefaultValueFactory = _ => cfg.GetValue<int?>("Bowire:Mock:HttpsPort")
+        };
+        var cert = new Option<string?>("--cert")
+        {
+            Description = "Path to a certificate for --https: a .pfx/.p12 (with --cert-password) or a PEM file.",
+            DefaultValueFactory = _ => cfg["Bowire:Mock:CertPath"]
+        };
+        cert.Validators.Add(result =>
+        {
+            var path = result.GetValueOrDefault<string?>();
+            if (!string.IsNullOrEmpty(path) && !File.Exists(path))
+                result.AddError($"--cert: file not found: '{path}'.");
+        });
+        var certPassword = new Option<string?>("--cert-password")
+        {
+            Description = "Password for a PKCS#12 (.pfx/.p12) --cert.",
+            DefaultValueFactory = _ => cfg["Bowire:Mock:CertPassword"]
+        };
         var select = new Option<string?>("--select")
         {
             Description = "Disambiguator when the recording file contains multiple recordings.",
@@ -717,7 +743,8 @@ internal static class BowireCli
         var cmd = new Command("mock", "Replay a recording (or schema) as a local API endpoint. Pass a .bwr file as the positional argument for the common case, or use --schema / --grpc-schema / --graphql-schema for schema-only mocks.");
         cmd.Add(positionalPath);
         cmd.Add(recording); cmd.Add(schema); cmd.Add(grpcSchema); cmd.Add(graphqlSchema);
-        cmd.Add(port); cmd.Add(host); cmd.Add(select); cmd.Add(noWatch);
+        cmd.Add(port); cmd.Add(host); cmd.Add(https); cmd.Add(httpsPort);
+        cmd.Add(cert); cmd.Add(certPassword); cmd.Add(select); cmd.Add(noWatch);
         cmd.Add(stateful); cmd.Add(statefulOnce); cmd.Add(loop); cmd.Add(autoInstall);
         cmd.Add(chaos); cmd.Add(faults); cmd.Add(captureMiss); cmd.Add(controlToken);
         cmd.SetAction(async (pr, ct) =>
@@ -762,6 +789,10 @@ internal static class BowireCli
                 GraphQlSchemaPath = graphqlSchemaOpt,
                 Host = pr.GetValue(host) ?? "127.0.0.1",
                 Port = pr.GetValue(port),
+                Https = pr.GetValue(https),
+                HttpsPort = pr.GetValue(httpsPort),
+                CertPath = pr.GetValue(cert),
+                CertPassword = pr.GetValue(certPassword),
                 Select = pr.GetValue(select),
                 NoWatch = pr.GetValue(noWatch),
                 Stateful = pr.GetValue(stateful),

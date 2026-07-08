@@ -66,6 +66,29 @@ public sealed class MockServerOptions
     public int Port { get; init; } = 6000;
 
     /// <summary>
+    /// #410: serve the mock over HTTPS instead of plaintext. Uses a supplied
+    /// certificate (<see cref="CertPath"/>) or, when none is given, a fresh
+    /// in-memory self-signed <c>localhost</c> certificate (untrusted by design).
+    /// </summary>
+    public bool Https { get; init; }
+
+    /// <summary>
+    /// Optional port for the HTTPS listener. When null, HTTPS binds on
+    /// <see cref="Port"/>. Only consulted when <see cref="Https"/> is true.
+    /// </summary>
+    public int? HttpsPort { get; init; }
+
+    /// <summary>
+    /// Path to an operator-supplied certificate for the HTTPS listener — a
+    /// <c>.pfx</c>/<c>.p12</c> (PKCS#12, with <see cref="CertPassword"/>) or a
+    /// PEM file. Null = generate a self-signed dev certificate.
+    /// </summary>
+    public string? CertPath { get; init; }
+
+    /// <summary>Password for a PKCS#12 <see cref="CertPath"/>. Null for none / PEM.</summary>
+    public string? CertPassword { get; init; }
+
+    /// <summary>
     /// Disambiguator when <see cref="RecordingPath"/> points at a file with
     /// multiple recordings. Either a recording name or id.
     /// </summary>
