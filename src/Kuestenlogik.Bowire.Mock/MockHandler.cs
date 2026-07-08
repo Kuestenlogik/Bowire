@@ -24,6 +24,13 @@ public sealed class MockHandler
     private readonly ILogger _logger;
     private BowireRecording _recording;
 
+    // #404 stub CRUD: mutations are copy-on-write — each op builds a new
+    // recording and swaps the _recording reference atomically, so an in-flight
+    // match (which captured the old reference) keeps iterating a stable list.
+    // _baseline is the recording to restore on reset.
+    private readonly object _stubLock = new();
+    private BowireRecording _baseline;
+
     // Strip CR/LF from user-controlled values before formatting them
     // into log messages — stops attackers from smuggling fake log lines
     // via crafted request paths/methods.
@@ -48,6 +55,7 @@ public sealed class MockHandler
     public MockHandler(BowireRecording recording, MockOptions options, ILogger logger, string? recordingPath = null)
     {
         _recording = recording;
+        _baseline = recording;
         _options = options;
         _logger = logger;
         _recordingPath = recordingPath;
@@ -62,8 +70,97 @@ public sealed class MockHandler
     /// </summary>
     public void ReplaceRecording(BowireRecording next)
     {
-        _recording = next;
+        lock (_stubLock)
+        {
+            _recording = next;
+            _baseline = next; // hot-reload resets the stub-CRUD baseline too
+        }
         lock (_cursorLock) { _cursor = 0; }
+    }
+
+    // ---- #404: per-stub CRUD on a running mock ----
+    // A "stub" is a BowireRecordingStep (it already carries the #402/#403 match
+    // predicates + the response fields). These let an operator add / edit /
+    // remove individual stubs at runtime instead of restarting the mock.
+
+    /// <summary>Snapshot of the current stubs (recording steps).</summary>
+    public IReadOnlyList<BowireRecordingStep> ListStubs() => _recording.Steps.ToArray();
+
+    /// <summary>Find a stub by id, or null.</summary>
+    public BowireRecordingStep? GetStub(string id) =>
+        _recording.Steps.FirstOrDefault(s => string.Equals(s.Id, id, StringComparison.Ordinal));
+
+    /// <summary>Append a stub (assigning an id when it has none). Returns the stored stub.</summary>
+    public BowireRecordingStep AddStub(BowireRecordingStep stub)
+    {
+        ArgumentNullException.ThrowIfNull(stub);
+        if (string.IsNullOrEmpty(stub.Id)) stub.Id = "stub_" + Guid.NewGuid().ToString("N")[..12];
+        lock (_stubLock)
+        {
+            var steps = new List<BowireRecordingStep>(_recording.Steps) { stub };
+            _recording = CloneWithSteps(_recording, steps);
+        }
+        return stub;
+    }
+
+    /// <summary>Replace the stub with the given id (id preserved). False when absent.</summary>
+    public bool UpdateStub(string id, BowireRecordingStep stub)
+    {
+        ArgumentNullException.ThrowIfNull(stub);
+        lock (_stubLock)
+        {
+            var steps = _recording.Steps.ToList();
+            var idx = steps.FindIndex(s => string.Equals(s.Id, id, StringComparison.Ordinal));
+            if (idx < 0) return false;
+            stub.Id = id; // the id is the URL key — keep it stable across edits
+            steps[idx] = stub;
+            _recording = CloneWithSteps(_recording, steps);
+        }
+        return true;
+    }
+
+    /// <summary>Remove the stub with the given id. False when absent.</summary>
+    public bool RemoveStub(string id)
+    {
+        lock (_stubLock)
+        {
+            var steps = _recording.Steps.ToList();
+            if (steps.RemoveAll(s => string.Equals(s.Id, id, StringComparison.Ordinal)) == 0) return false;
+            _recording = CloneWithSteps(_recording, steps);
+        }
+        return true;
+    }
+
+    /// <summary>Restore the stubs to the baseline recording (as loaded / last hot-reloaded).</summary>
+    public void ResetStubs()
+    {
+        lock (_stubLock)
+        {
+            _recording = CloneWithSteps(_baseline, _baseline.Steps.ToList());
+        }
+        lock (_cursorLock) { _cursor = 0; }
+    }
+
+    // Shallow-clone a recording with a fresh step list (copy-on-write). Copies
+    // the scalar metadata the mock cares about; a new field on BowireRecording
+    // that must survive stub CRUD needs adding here.
+    private static BowireRecording CloneWithSteps(BowireRecording src, IList<BowireRecordingStep> steps)
+    {
+        var clone = new BowireRecording
+        {
+            Id = src.Id,
+            Name = src.Name,
+            Description = src.Description,
+            CreatedAt = src.CreatedAt,
+            RecordingFormatVersion = src.RecordingFormatVersion,
+            SchemaSnapshot = src.SchemaSnapshot,
+            SourceSchema = src.SourceSchema,
+            Attack = src.Attack,
+            Vulnerability = src.Vulnerability,
+            VulnerableWhen = src.VulnerableWhen,
+        };
+        foreach (var s in steps) clone.Steps.Add(s);
+        return clone;
     }
 
     private const string MatchedStepIdItemKey = "__bowireMockMatchedStepId";
