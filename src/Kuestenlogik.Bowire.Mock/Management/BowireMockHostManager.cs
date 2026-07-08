@@ -74,6 +74,36 @@ public sealed class BowireMockHostManager : IAsyncDisposable
         return true;
     }
 
+    // #404: per-stub CRUD on a running mock. Each delegates to the captured
+    // MockHandler; null / false when the mock id isn't running.
+    private MockHandler? HandlerFor(string mockId) =>
+        _entries.TryGetValue(mockId, out var entry) ? entry.Server.Handler : null;
+
+    /// <summary>List the stubs (recording steps) of a running mock.</summary>
+    public IReadOnlyList<Mocking.BowireRecordingStep>? GetStubs(string mockId) => HandlerFor(mockId)?.ListStubs();
+
+    /// <summary>Get a single stub by id.</summary>
+    public Mocking.BowireRecordingStep? GetStub(string mockId, string stubId) => HandlerFor(mockId)?.GetStub(stubId);
+
+    /// <summary>Add a stub to a running mock. Null when the mock isn't running.</summary>
+    public Mocking.BowireRecordingStep? AddStub(string mockId, Mocking.BowireRecordingStep stub) => HandlerFor(mockId)?.AddStub(stub);
+
+    /// <summary>Replace a stub by id. False when the mock or stub isn't found.</summary>
+    public bool UpdateStub(string mockId, string stubId, Mocking.BowireRecordingStep stub) =>
+        HandlerFor(mockId)?.UpdateStub(stubId, stub) ?? false;
+
+    /// <summary>Remove a stub by id. False when the mock or stub isn't found.</summary>
+    public bool RemoveStub(string mockId, string stubId) => HandlerFor(mockId)?.RemoveStub(stubId) ?? false;
+
+    /// <summary>Restore a running mock's stubs to its baseline recording. False when not running.</summary>
+    public bool ResetStubs(string mockId)
+    {
+        var handler = HandlerFor(mockId);
+        if (handler is null) return false;
+        handler.ResetStubs();
+        return true;
+    }
+
     /// <summary>
     /// Boot a mock host for the supplied recording JSON.
     /// </summary>

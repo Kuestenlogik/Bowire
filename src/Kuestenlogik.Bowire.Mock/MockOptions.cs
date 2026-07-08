@@ -134,6 +134,14 @@ public sealed class MockOptions
     public IMockRequestObserver? RequestObserver { get; set; }
 
     /// <summary>
+    /// #404: invoked with the <see cref="MockHandler"/> just after
+    /// <c>UseBowireMock</c> creates it, so a host (e.g. the standalone
+    /// <see cref="MockServer"/>) can capture the handler and expose per-stub
+    /// CRUD on a running mock. Null for embedded hosts that don't need it.
+    /// </summary>
+    internal Action<MockHandler>? OnHandlerCreated { get; set; }
+
+    /// <summary>
     /// Project this full options bag down to the slim
     /// <see cref="MockEmitterOptions"/> shape that plugin-contributed
     /// emitters consume. The server-only knobs (matchers, chaos,

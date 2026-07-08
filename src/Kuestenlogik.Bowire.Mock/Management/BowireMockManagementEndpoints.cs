@@ -235,6 +235,73 @@ public static class BowireMockManagementEndpoints
             }, JsonOptions);
         }).ExcludeFromDescription();
 
+        // #404: per-stub CRUD on a RUNNING mock. A "stub" is a recording step
+        // (BowireRecordingStep) — it carries the #402/#403 `match` predicates +
+        // the response fields. Lets an operator author / edit / remove
+        // individual stubs at runtime instead of restarting the mock.
+        endpoints.MapGet($"{basePath}/api/mocks/{{mockId}}/stubs",
+            (string mockId, BowireMockHostManager manager) =>
+        {
+            var stubs = manager.GetStubs(mockId);
+            return stubs is null
+                ? Results.NotFound(new { error = $"Mock {mockId} not running." })
+                : Results.Json(new { mockId, count = stubs.Count, stubs }, JsonOptions);
+        }).ExcludeFromDescription();
+
+        endpoints.MapGet($"{basePath}/api/mocks/{{mockId}}/stubs/{{stubId}}",
+            (string mockId, string stubId, BowireMockHostManager manager) =>
+        {
+            if (manager.Get(mockId) is null)
+                return Results.NotFound(new { error = $"Mock {mockId} not running." });
+            var stub = manager.GetStub(mockId, stubId);
+            return stub is null
+                ? Results.NotFound(new { error = $"No stub '{stubId}'." })
+                : Results.Json(stub, JsonOptions);
+        }).ExcludeFromDescription();
+
+        endpoints.MapPost($"{basePath}/api/mocks/{{mockId}}/stubs",
+            async (string mockId, HttpContext ctx, BowireMockHostManager manager) =>
+        {
+            if (manager.Get(mockId) is null)
+                return Results.NotFound(new { error = $"Mock {mockId} not running." });
+            var stub = await ReadStubAsync(ctx);
+            if (stub is null)
+                return Results.Json(new { error = "Body must be a stub (recording step) JSON object." }, JsonOptions, statusCode: 400);
+            var created = manager.AddStub(mockId, stub);
+            return Results.Json(created, JsonOptions, statusCode: 201);
+        }).ExcludeFromDescription();
+
+        endpoints.MapPut($"{basePath}/api/mocks/{{mockId}}/stubs/{{stubId}}",
+            async (string mockId, string stubId, HttpContext ctx, BowireMockHostManager manager) =>
+        {
+            if (manager.Get(mockId) is null)
+                return Results.NotFound(new { error = $"Mock {mockId} not running." });
+            var stub = await ReadStubAsync(ctx);
+            if (stub is null)
+                return Results.Json(new { error = "Body must be a stub (recording step) JSON object." }, JsonOptions, statusCode: 400);
+            return manager.UpdateStub(mockId, stubId, stub)
+                ? Results.Json(manager.GetStub(mockId, stubId), JsonOptions)
+                : Results.NotFound(new { error = $"No stub '{stubId}'." });
+        }).ExcludeFromDescription();
+
+        endpoints.MapDelete($"{basePath}/api/mocks/{{mockId}}/stubs/{{stubId}}",
+            (string mockId, string stubId, BowireMockHostManager manager) =>
+        {
+            if (manager.Get(mockId) is null)
+                return Results.NotFound(new { error = $"Mock {mockId} not running." });
+            return manager.RemoveStub(mockId, stubId)
+                ? Results.NoContent()
+                : Results.NotFound(new { error = $"No stub '{stubId}'." });
+        }).ExcludeFromDescription();
+
+        endpoints.MapPost($"{basePath}/api/mocks/{{mockId}}/stubs/reset",
+            (string mockId, BowireMockHostManager manager) =>
+        {
+            return manager.ResetStubs(mockId)
+                ? Results.Json(new { mockId, stubs = manager.GetStubs(mockId) }, JsonOptions)
+                : Results.NotFound(new { error = $"Mock {mockId} not running." });
+        }).ExcludeFromDescription();
+
         // #170: per-method fault-injection rules of a RUNNING mock.
         // GET returns the live rule set in the exact mock-faults.json
         // shape (kebab-case enums); PUT replaces it — an empty rules
@@ -270,6 +337,19 @@ public static class BowireMockManagementEndpoints
         }).ExcludeFromDescription();
 
         return endpoints;
+    }
+
+    private static async Task<Mocking.BowireRecordingStep?> ReadStubAsync(HttpContext ctx)
+    {
+        try
+        {
+            return await JsonSerializer.DeserializeAsync<Mocking.BowireRecordingStep>(
+                ctx.Request.Body, JsonOptions, ctx.RequestAborted);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private sealed record StartMockRequest(

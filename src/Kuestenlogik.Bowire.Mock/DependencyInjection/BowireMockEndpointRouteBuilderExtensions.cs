@@ -37,6 +37,7 @@ public static class BowireMockApplicationBuilderExtensions
         // endpoint can reload the same file under a different Select
         // or swap to a related file via relative path resolution.
         var handler = new MockHandler(recording, options, logger, recordingPath);
+        options.OnHandlerCreated?.Invoke(handler);
 
         if (options.Watch)
         {
@@ -81,6 +82,7 @@ public static class BowireMockApplicationBuilderExtensions
         configure?.Invoke(options);
         var logger = ResolveLogger(app, options);
         var handler = new MockHandler(recording, options, logger);
+        options.OnHandlerCreated?.Invoke(handler);
 
         return app.Use((ctx, next) => handler.HandleAsync(ctx, next));
     }

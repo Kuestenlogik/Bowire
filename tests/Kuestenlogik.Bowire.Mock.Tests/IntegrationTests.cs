@@ -222,6 +222,34 @@ public sealed class IntegrationTests
     }
 
     [Fact]
+    public async Task RuntimeStubCrud_AddedStubIsServed_ThenRemoved()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        MockHandler? handler = null;
+        using var host = BuildHost(configure: opts => opts.OnHandlerCreated = h => handler = h);
+        var client = host.GetTestClient();
+        Assert.NotNull(handler);
+
+        // Not in the base recording → miss → pass-through (418 teapot).
+        var before = await client.GetAsync(new Uri("/runtime", UriKind.Relative), ct);
+        Assert.Equal((HttpStatusCode)418, before.StatusCode);
+
+        handler!.AddStub(new BowireRecordingStep
+        {
+            Id = "rt", Protocol = "rest", MethodType = "Unary",
+            HttpPath = "/runtime", HttpVerb = "GET", Status = "OK", Response = """{"live":true}""",
+        });
+
+        var after = await client.GetAsync(new Uri("/runtime", UriKind.Relative), ct);
+        Assert.Equal(HttpStatusCode.OK, after.StatusCode);
+        Assert.Equal("""{"live":true}""", await after.Content.ReadAsStringAsync(ct));
+
+        handler.RemoveStub("rt");
+        var gone = await client.GetAsync(new Uri("/runtime", UriKind.Relative), ct);
+        Assert.Equal((HttpStatusCode)418, gone.StatusCode);
+    }
+
+    [Fact]
     public async Task GetUnmatchedPath_PassesThroughByDefault()
     {
         using var host = BuildHost();
