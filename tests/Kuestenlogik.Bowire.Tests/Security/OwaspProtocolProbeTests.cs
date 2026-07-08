@@ -88,6 +88,118 @@ public sealed class OwaspProtocolProbeTests
         Assert.Equal(ScanFindingStatus.Skipped, Assert.Single(await probe.RunAsync("http://x", proto, s_noAuth, Ct)).Status);
     }
 
+    // ---------- GraphQL resource limit (API4) ----------
+
+    private const string GraphQlPreflightOk = "{\"data\":{\"__typename\":\"Query\"}}";
+
+    // A fake that answers the __typename preflight with a GraphQL data envelope
+    // and routes the aliasBatch query to the supplied response.
+    private static FakeProtocol GraphQlResourceFake(Func<InvokeResult> batchResponse, string preflight = GraphQlPreflightOk)
+        => new()
+        {
+            Id = "graphql",
+            InvokeFull = (method, _) => method == "aliasBatch"
+                ? batchResponse()
+                : new InvokeResult(preflight, 1, "OK", []),
+        };
+
+    [Fact]
+    public async Task GraphQL_AliasBatchResolvedInFull_FlagsApi4()
+    {
+        var probe = new GraphQLResourceLimitProbe();
+        var proto = GraphQlResourceFake(() => new InvokeResult("{\"data\":{\"a0\":\"Query\",\"a1\":\"Query\"}}", 2, "OK", []));
+
+        var f = Assert.Single(await probe.RunAsync("http://x/graphql", proto, s_noAuth, Ct));
+        Assert.Equal(ScanFindingStatus.Vulnerable, f.Status);
+        Assert.Equal("BWR-OWASP-API4-GRAPHQL-ALIAS-BATCHING", f.Template.Recording.Vulnerability?.Id);
+        Assert.Equal("API4-2023-RESOURCE", f.Template.Recording.Vulnerability?.OwaspApi);
+        Assert.Equal("CWE-770", f.Template.Recording.Vulnerability?.Cwe);
+    }
+
+    [Fact]
+    public async Task GraphQL_AliasBatchRejectedWithErrors_ReportsLimitEnforced()
+    {
+        var probe = new GraphQLResourceLimitProbe();
+        var proto = GraphQlResourceFake(() => new InvokeResult(
+            "{\"errors\":[{\"message\":\"query is too complex\"}]}", 2, "OK", []));
+
+        var f = Assert.Single(await probe.RunAsync("http://x/graphql", proto, s_noAuth, Ct));
+        Assert.Equal(ScanFindingStatus.Safe, f.Status);
+        Assert.Contains("API4-GRAPHQL-LIMIT-ENFORCED", f.Template.Recording.Id, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GraphQL_AliasBatchRejectedWith400_ReportsLimitEnforced()
+    {
+        var probe = new GraphQLResourceLimitProbe();
+        // Plugin maps a non-2xx to a null-response InvokeResult carrying the message.
+        var proto = GraphQlResourceFake(() => new InvokeResult(
+            null, 2, "Response status code does not indicate success: 400 (Bad Request).", []));
+
+        var f = Assert.Single(await probe.RunAsync("http://x/graphql", proto, s_noAuth, Ct));
+        Assert.Equal(ScanFindingStatus.Safe, f.Status);
+        Assert.Contains("API4-GRAPHQL-LIMIT-ENFORCED", f.Template.Recording.Id, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GraphQL_PreflightNotGraphQl_Skips()
+    {
+        var probe = new GraphQLResourceLimitProbe();
+        var proto = GraphQlResourceFake(
+            () => new InvokeResult("{\"data\":{}}", 2, "OK", []),
+            preflight: "{\"message\":\"not found\"}");
+
+        var f = Assert.Single(await probe.RunAsync("http://x", proto, s_noAuth, Ct));
+        Assert.Equal(ScanFindingStatus.Skipped, f.Status);
+        Assert.Contains("API4-GRAPHQL-NOT-GRAPHQL", f.Template.Recording.Id, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GraphQL_PreflightThrows_SkipsUnreachable()
+    {
+        var probe = new GraphQLResourceLimitProbe();
+        var proto = new FakeProtocol
+        {
+            Id = "graphql",
+            InvokeFull = (_, _) => throw new HttpRequestException("connection refused"),
+        };
+
+        var f = Assert.Single(await probe.RunAsync("http://x/graphql", proto, s_noAuth, Ct));
+        Assert.Equal(ScanFindingStatus.Skipped, f.Status);
+        Assert.Contains("API4-GRAPHQL-UNREACHABLE", f.Template.Recording.Id, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GraphQL_AliasBatchNeitherDataNorErrors_Inconclusive()
+    {
+        var probe = new GraphQLResourceLimitProbe();
+        var proto = GraphQlResourceFake(() => new InvokeResult("{}", 2, "OK", []));
+
+        var f = Assert.Single(await probe.RunAsync("http://x/graphql", proto, s_noAuth, Ct));
+        Assert.Equal(ScanFindingStatus.Skipped, f.Status);
+        Assert.Contains("API4-GRAPHQL-INCONCLUSIVE", f.Template.Recording.Id, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GraphQL_AliasBatchAuthHeader_ForwardedAsMetadata()
+    {
+        var probe = new GraphQLResourceLimitProbe();
+        Dictionary<string, string>? seen = null;
+        var proto = new FakeProtocol
+        {
+            Id = "graphql",
+            InvokeFull = (method, _) => new InvokeResult(
+                method == "aliasBatch" ? "{\"data\":{\"a0\":\"Query\"}}" : GraphQlPreflightOk, 1, "OK", []),
+        };
+        // Capture metadata via a wrapping fake: assert the probe threads auth headers through.
+        var capturing = new CapturingProtocol { Inner = proto, OnMetadata = md => seen = md };
+
+        var f = Assert.Single(await probe.RunAsync("http://x/graphql", capturing, s_auth, Ct));
+        Assert.Equal(ScanFindingStatus.Vulnerable, f.Status);
+        Assert.NotNull(seen);
+        Assert.True(seen!.ContainsKey("Authorization"));
+    }
+
     // ---------- gRPC reflection (API9) + transport auth (API2) ----------
 
     [Fact]
@@ -341,6 +453,14 @@ public sealed class OwaspProtocolProbeTests
         public string IconSvg => "";
         public Func<string, bool, List<BowireServiceInfo>>? Discover { get; init; }
         public Func<string, string, InvokeResult>? Invoke { get; init; }
+
+        /// <summary>
+        /// Invoke variant that also sees the method name + the raw
+        /// <c>jsonMessages</c> (the full <c>{ "query": … }</c> request), so a
+        /// probe that sends several distinct queries can be driven per-query.
+        /// Takes precedence over <see cref="Invoke"/> when set.
+        /// </summary>
+        public Func<string, List<string>, InvokeResult>? InvokeFull { get; init; }
         public Func<string, string, IBowireChannel?>? Open { get; init; }
         public Func<IEnumerable<string>>? Stream { get; init; }
 
@@ -349,7 +469,10 @@ public sealed class OwaspProtocolProbeTests
 
         public Task<InvokeResult> InvokeAsync(string serverUrl, string service, string method, List<string> jsonMessages,
             bool showInternalServices, Dictionary<string, string>? metadata = null, CancellationToken ct = default)
-            => Invoke is null ? throw new InvalidOperationException("Invoke not configured") : Task.FromResult(Invoke(service, method));
+        {
+            if (InvokeFull is not null) return Task.FromResult(InvokeFull(method, jsonMessages));
+            return Invoke is null ? throw new InvalidOperationException("Invoke not configured") : Task.FromResult(Invoke(service, method));
+        }
 
         public async IAsyncEnumerable<string> InvokeStreamAsync(string serverUrl, string service, string method, List<string> jsonMessages,
             bool showInternalServices, Dictionary<string, string>? metadata = null, [EnumeratorCancellation] CancellationToken ct = default)
@@ -366,6 +489,37 @@ public sealed class OwaspProtocolProbeTests
         public Task<IBowireChannel?> OpenChannelAsync(string serverUrl, string service, string method,
             bool showInternalServices, Dictionary<string, string>? metadata = null, CancellationToken ct = default)
             => Open is null ? throw new InvalidOperationException("Open not configured") : Task.FromResult(Open(service, method));
+    }
+
+    // Wraps an inner protocol to capture the metadata dict the probe forwards
+    // on InvokeAsync — used to assert --auth-header values are threaded through
+    // as request headers.
+    private sealed class CapturingProtocol : IBowireProtocol
+    {
+        public required FakeProtocol Inner { get; init; }
+        public Action<Dictionary<string, string>?>? OnMetadata { get; init; }
+
+        public string Id => Inner.Id;
+        public string Name => Inner.Name;
+        public string IconSvg => Inner.IconSvg;
+
+        public Task<List<BowireServiceInfo>> DiscoverAsync(string serverUrl, bool showInternalServices, CancellationToken ct = default)
+            => Inner.DiscoverAsync(serverUrl, showInternalServices, ct);
+
+        public Task<InvokeResult> InvokeAsync(string serverUrl, string service, string method, List<string> jsonMessages,
+            bool showInternalServices, Dictionary<string, string>? metadata = null, CancellationToken ct = default)
+        {
+            OnMetadata?.Invoke(metadata);
+            return Inner.InvokeAsync(serverUrl, service, method, jsonMessages, showInternalServices, metadata, ct);
+        }
+
+        public IAsyncEnumerable<string> InvokeStreamAsync(string serverUrl, string service, string method, List<string> jsonMessages,
+            bool showInternalServices, Dictionary<string, string>? metadata = null, CancellationToken ct = default)
+            => Inner.InvokeStreamAsync(serverUrl, service, method, jsonMessages, showInternalServices, metadata, ct);
+
+        public Task<IBowireChannel?> OpenChannelAsync(string serverUrl, string service, string method,
+            bool showInternalServices, Dictionary<string, string>? metadata = null, CancellationToken ct = default)
+            => Inner.OpenChannelAsync(serverUrl, service, method, showInternalServices, metadata, ct);
     }
 
     private sealed class FakeChannel : IBowireChannel
