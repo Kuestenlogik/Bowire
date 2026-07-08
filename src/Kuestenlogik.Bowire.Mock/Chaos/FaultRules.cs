@@ -51,9 +51,17 @@ public sealed class FaultRuleSet
     [JsonIgnore]
     public bool IsActive => Rules.Any(r => r.Enabled);
 
-    /// <summary>First enabled rule matching the step's service/method, or null.</summary>
+    /// <summary>
+    /// First enabled non-<c>onMiss</c> rule matching the step's service/method,
+    /// or null. <c>onMiss</c> rules never fire on a matched step — they're for
+    /// unmatched requests (see <see cref="FirstMissMatch"/>).
+    /// </summary>
     public FaultRule? FirstMatch(string? service, string? method)
-        => Rules.FirstOrDefault(r => r.Enabled && r.MatchesMethod(service, method));
+        => Rules.FirstOrDefault(r => r.Enabled && !r.OnMiss && r.MatchesMethod(service, method));
+
+    /// <summary>First enabled <c>onMiss</c> rule (#411), applied to requests that matched no stub.</summary>
+    public FaultRule? FirstMissMatch()
+        => Rules.FirstOrDefault(r => r.Enabled && r.OnMiss);
 
     /// <summary>
     /// Serialize in the exact <c>mock-faults.json</c> shape
@@ -127,6 +135,8 @@ public enum FaultKind
     PartialResponse,
     /// <summary>Serve <see cref="FaultRule.PartialBytes"/> bytes (0 = nothing), then abort the TCP connection mid-response.</summary>
     ConnectionDrop,
+    /// <summary>Emit <see cref="FaultRule.PartialBytes"/> bytes of garbage under a JSON content-type — the recorded body is never written, so the client's parse fails on nonsense (#411, the analog of WireMock's MALFORMED_RESPONSE_CHUNK).</summary>
+    MalformedResponse,
 }
 
 /// <summary>One fault rule: method matcher + latency shape + fault behaviour.</summary>
@@ -158,6 +168,17 @@ public sealed class FaultRule
     /// <summary>Fault behaviour. Default <see cref="FaultKind.LatencyOnly"/>.</summary>
     [JsonPropertyName("kind")]
     public FaultKind Kind { get; init; } = FaultKind.LatencyOnly;
+
+    /// <summary>
+    /// #411: when true, this rule applies to requests that matched NO stub
+    /// (instead of a matched step) — chaos-testing a client's handling of an
+    /// unknown/failing endpoint. The <see cref="Method"/> glob is ignored for
+    /// <c>onMiss</c> rules (a miss has no service/method); the first enabled
+    /// <c>onMiss</c> rule wins. Meaningful kinds: latency-only, error,
+    /// connection-drop, malformed-response (partial-response needs a body).
+    /// </summary>
+    [JsonPropertyName("onMiss")]
+    public bool OnMiss { get; init; }
 
     /// <summary>Status returned by <see cref="FaultKind.Error"/> hits. Default 503.</summary>
     [JsonPropertyName("errorStatusCode")]
@@ -206,11 +227,13 @@ public sealed class FaultRule
             FaultKind.Error => $"error {ErrorStatusCode}",
             FaultKind.PartialResponse => $"partial-response after {PartialBytes}B",
             FaultKind.ConnectionDrop => $"connection-drop after {PartialBytes}B",
+            FaultKind.MalformedResponse => $"malformed-response {PartialBytes}B",
             _ => "latency-only",
         };
+        var missTag = OnMiss ? "on-miss " : "";
         var rate = Rate < 1 && Kind != FaultKind.LatencyOnly ? $" @ rate {Rate}" : "";
         var latency = Latency is null ? "" : $" + {Latency.Describe()}";
-        return kind + rate + latency;
+        return missTag + kind + rate + latency;
     }
 }
 
