@@ -78,6 +78,40 @@ public sealed class ActiveMqttProbeIntegrationTests : IAsyncLifetime
         Assert.False(delivered, "A retained message survived — the probe did not clean up after itself.");
     }
 
+    [Fact]
+    public async Task WildcardSubscribe_LiveBroker_FlagsOutOfScopeDelivery()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        // Plant two retained messages: one in the client's scope, one outside.
+        // A `#` subscriber gets both delivered immediately on subscribe.
+        await PublishRetainedAsync("tenantA/telemetry", ct);
+        await PublishRetainedAsync("tenantB/secrets", ct);
+
+        var probe = new MqttWildcardSubscribeProbe();
+        var protocol = new BowireMqttProtocol();
+        var target = $"mqtt://localhost:{_brokerPort}";
+        var opts = new ActiveScanOptions { DurationSeconds = 2, ExpectedTopics = ["tenantA/#"] };
+
+        var findings = await probe.RunAsync(target, protocol, ["Authorization: Bearer x"], opts, ct);
+
+        var f = Assert.Single(findings);
+        Assert.Equal(ScanFindingStatus.Vulnerable, f.Status);
+        Assert.Equal("BWR-OWASP-API1-MQTT-WILDCARD-OVERBROAD", f.Template.Recording.Vulnerability?.Id);
+        Assert.Contains("tenantB/secrets", f.Detail, StringComparison.Ordinal);
+    }
+
+    private async Task PublishRetainedAsync(string topic, CancellationToken ct)
+    {
+        var factory = new MqttClientFactory();
+        using var pub = factory.CreateMqttClient();
+        await pub.ConnectAsync(new MqttClientOptionsBuilder()
+            .WithClientId($"pub-{topic.Replace('/', '-')}").WithTcpServer("localhost", _brokerPort).Build(), ct);
+        await pub.PublishAsync(new MqttApplicationMessageBuilder()
+            .WithTopic(topic).WithPayload("x").WithRetainFlag(true).Build(), ct);
+        await pub.DisconnectAsync();
+    }
+
     private static int FindFreeTcpPort()
     {
         using var listener = new TcpListener(IPAddress.Loopback, 0);

@@ -67,7 +67,11 @@ The default scan is **black-box and side-effect-free**: it connects, reads, and 
 
 `--active` prints a mutating-mode banner, then runs the registered `IActiveProtocolProbe`s alongside the passive scan. Each active probe namespaces + cleans up any side effect it leaves and stays within the operator-set budgets: `--active-duration <sec>` (time-based probes), `--active-concurrency <N>` (fan-out probes), `--active-expected-topic <t>` (the MQTT wildcard-subscribe scope).
 
-**Shipped:** MQTT **retained-message poisoning** (#395) — publishes a retained message to a unique `bowire/probe/<nonce>` topic, opens a fresh subscription to check whether the broker persisted + re-delivered it (the poisoning vector), then clears the retained state by publishing an empty retained payload. Rolls up to API8:2023 (Security Misconfiguration). The remaining cluster items (MQTT will-message + wildcard-subscribe, WS compression-bomb / slow-loris, SSE slow-consumption, gRPC concurrent-stream, MCP tool-call injection) build on the same `--active` seam.
+**Shipped:**
+- MQTT **retained-message poisoning** (#395) — publishes a retained message to a unique `bowire/probe/<nonce>` topic, opens a fresh subscription to check whether the broker persisted + re-delivered it (the poisoning vector), then clears the retained state by publishing an empty retained payload. Rolls up to API8:2023 (Security Misconfiguration).
+- MQTT **wildcard-subscribe privilege** (#396) — with an authenticated client, subscribes to `#` and observes what the broker actually *delivers* over a bounded window (retained messages included), then flags any delivered topic outside the operator-supplied `--active-expected-topic` scope as over-broad access (topic-level authorization failure). Verdict is delivery-based, not SUBACK-based. Rolls up to API1:2023 (BOLA).
+
+The remaining cluster items (MQTT will-message abuse, WS compression-bomb / slow-loris, SSE slow-consumption, gRPC concurrent-stream, MCP tool-call injection) build on the same `--active` seam.
 
 ```bash
 bowire scan --target mqtt://broker.example.com:1883 --suite protocol --auth-header "…" --active
