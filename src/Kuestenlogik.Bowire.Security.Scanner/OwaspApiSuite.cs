@@ -137,6 +137,7 @@ internal static class OwaspApiSuite
     [
         new MqttRetainedPoisoningProbe(),
         new MqttWildcardSubscribeProbe(),
+        new GrpcConcurrentStreamProbe(),
     ];
 
     /// <summary>
