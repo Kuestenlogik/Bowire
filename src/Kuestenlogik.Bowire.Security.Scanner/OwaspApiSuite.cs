@@ -128,6 +128,72 @@ internal static class OwaspApiSuite
     ];
 
     /// <summary>
+    /// The active (mutating / aggressive) protocol probes — #395–#400. These
+    /// run ONLY under <c>--active</c>: they may publish, hold connections, or
+    /// open many streams. Kept separate from <see cref="ProtocolProbes"/> so the
+    /// default scan can never trigger a side effect.
+    /// </summary>
+    public static IReadOnlyList<IActiveProtocolProbe> ActiveProtocolProbes { get; } =
+    [
+        new MqttRetainedPoisoningProbe(),
+    ];
+
+    /// <summary>
+    /// Run the active protocol probes (opt-in, <c>--active</c>). Same
+    /// plugin-resolution + timeout isolation as
+    /// <see cref="RunProtocolProbesAsync"/>, but each probe carries the
+    /// operator-set <see cref="ActiveScanOptions"/> budgets and may mutate the
+    /// target. Callers must have surfaced the mutating-mode warning already.
+    /// </summary>
+    public static async Task<IReadOnlyList<ScanFinding>> RunActiveProtocolProbesAsync(
+        string target, BowireProtocolRegistry registry, IList<string> authHeaders,
+        ActiveScanOptions active, TimeSpan perProbeTimeout, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        ArgumentNullException.ThrowIfNull(active);
+        var merged = new List<ScanFinding>();
+        foreach (var probe in ActiveProtocolProbes)
+        {
+            var protocol = registry.GetById(probe.ProtocolId);
+            if (protocol is null)
+            {
+                merged.Add(ActiveMarker(probe, ScanFindingStatus.Skipped, "PLUGIN-ABSENT",
+                    $"The '{probe.ProtocolId}' protocol plugin is not loaded — install it (bowire plugin install …) to run this active check."));
+                continue;
+            }
+
+            try
+            {
+                protocol.Initialize(null);
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                cts.CancelAfter(perProbeTimeout);
+                merged.AddRange(await probe.RunAsync(target, protocol, authHeaders, active, cts.Token).ConfigureAwait(false));
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                merged.Add(ActiveMarker(probe, ScanFindingStatus.Skipped, "TIMEOUT",
+                    $"The active '{probe.ProtocolId}' check timed out after {perProbeTimeout.TotalSeconds:0}s — the target likely does not speak {probe.ProtocolId}."));
+            }
+            catch (Exception ex)
+            {
+                merged.Add(ActiveMarker(probe, ScanFindingStatus.Error, "ERROR", ex.Message));
+            }
+        }
+        return merged;
+    }
+
+    private static ScanFinding ActiveMarker(IActiveProtocolProbe probe, ScanFindingStatus status, string suffix, string detail) => new()
+    {
+        Template = SyntheticTemplate.Build(
+            id: $"BWR-OWASP-{probe.Entry.Id.Replace(':', '-')}-{probe.ProtocolId.ToUpperInvariant()}-ACTIVE-{suffix}",
+            name: $"{probe.ProtocolId} active {probe.Entry.Title} probe ({status})",
+            cwe: null, owaspApi: probe.Entry.Tag, severity: "info", cvss: null,
+            remediation: $"Diagnostic marker for the active {probe.ProtocolId} protocol probe."),
+        Status = status,
+        Detail = detail,
+    };
+
+    /// <summary>
     /// Run the protocol-specific probes, resolving each one's plugin from
     /// <paramref name="registry"/>. A probe whose plugin isn't loaded is
     /// skipped (not falsely passed); each call is bounded by

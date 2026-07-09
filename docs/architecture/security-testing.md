@@ -61,6 +61,18 @@ SCANNER_CLIENT_SECRET=… bowire scan --target https://api.example.com --auth-fl
 
 The token variable defaults to `access_token` / `id_token` / `token` / `jwt` (override with the flow's `token` field); the injected header defaults to `Authorization: Bearer <token>` (override with `injectHeader` / `injectPrefix`). This covers the scriptable grants — client-credentials, resource-owner-password, and any login → token chain. Browser-interactive grants (OAuth authorization-code / device-code, OIDC discovery + JWKS validation), the workbench capture UI, and a `{{auth.token}}` variable source are tracked as #190 follow-ups.
 
+#### Active (mutating) probe mode (`--active`) — #395–#400
+
+The default scan is **black-box and side-effect-free**: it connects, reads, and observes but never publishes, never holds a connection open to soak a server, never opens hundreds of streams. A second tier of checks (#395–#400) genuinely needs to *mutate* the target or hold resources over time — retained-message poisoning, wildcard-subscribe delivery, WebSocket compression-bomb / slow-loris, SSE slow-consumption, gRPC concurrent-stream fork-bomb. Those run **only** when the operator opts in with `--active`, and never otherwise.
+
+`--active` prints a mutating-mode banner, then runs the registered `IActiveProtocolProbe`s alongside the passive scan. Each active probe namespaces + cleans up any side effect it leaves and stays within the operator-set budgets: `--active-duration <sec>` (time-based probes), `--active-concurrency <N>` (fan-out probes), `--active-expected-topic <t>` (the MQTT wildcard-subscribe scope).
+
+**Shipped:** MQTT **retained-message poisoning** (#395) — publishes a retained message to a unique `bowire/probe/<nonce>` topic, opens a fresh subscription to check whether the broker persisted + re-delivered it (the poisoning vector), then clears the retained state by publishing an empty retained payload. Rolls up to API8:2023 (Security Misconfiguration). The remaining cluster items (MQTT will-message + wildcard-subscribe, WS compression-bomb / slow-loris, SSE slow-consumption, gRPC concurrent-stream, MCP tool-call injection) build on the same `--active` seam.
+
+```bash
+bowire scan --target mqtt://broker.example.com:1883 --suite protocol --auth-header "…" --active
+```
+
 ### Tier 2 — Specialty — shipped
 
 The differentiators that no other tool has. Live items: schema-aware fuzzing both as workbench right-click UI ("Fuzz this field ▸") and CLI (`bowire fuzz` with SQLi / XSS / path-traversal / command-injection categories, schema-aware skip for numeric/bool fields, baseline-diff oracle detection); JWT toolkit (`bowire jwt decode` + `bowire jwt tamper` with `--alg-none`, `--set claim=value`, `--secret <key>`); multi-protocol attack template library bootstrap in [`kuestenlogik/Bowire.VulnDb`](https://github.com/Kuestenlogik/Bowire.VulnDb) (initial 7 templates across gRPC / GraphQL / REST / OData, CI validation against the vulnerable-by-design sample).
