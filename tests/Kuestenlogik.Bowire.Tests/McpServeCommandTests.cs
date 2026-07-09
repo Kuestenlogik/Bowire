@@ -27,6 +27,7 @@ public sealed class McpServeCommandTests
             port: 5081,
             allowArbitraryUrls: false,
             noEnvAllowlist: false,
+            stdout: TextWriter.Null, stderr: TextWriter.Null,
             ct: TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
@@ -40,6 +41,7 @@ public sealed class McpServeCommandTests
             port: 5081,
             allowArbitraryUrls: false,
             noEnvAllowlist: false,
+            stdout: TextWriter.Null, stderr: TextWriter.Null,
             ct: TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
@@ -152,6 +154,7 @@ public sealed class McpServeCommandTests
             port: 0,
             allowArbitraryUrls: true,
             noEnvAllowlist: false,
+            stdout: TextWriter.Null, stderr: TextWriter.Null,
             ct: cts.Token);
         Assert.Equal(0, rc);
     }
@@ -170,6 +173,7 @@ public sealed class McpServeCommandTests
             port: GetFreePort(),
             allowArbitraryUrls: true,
             noEnvAllowlist: true,
+            stdout: TextWriter.Null, stderr: TextWriter.Null,
             ct: cts.Token);
         Assert.Equal(0, rc);
     }
