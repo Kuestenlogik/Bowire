@@ -92,9 +92,14 @@ public sealed class ActiveMqttProbeTests
         var findings = await OwaspApiSuite.RunActiveProtocolProbesAsync(
             "mqtt://broker:1883", registry, s_auth, s_active, TimeSpan.FromSeconds(5), Ct);
 
-        var f = Assert.Single(findings);
-        Assert.Equal(ScanFindingStatus.Skipped, f.Status);
-        Assert.Contains("PLUGIN-ABSENT", f.Template.Recording.Id, StringComparison.Ordinal);
+        // Every registered active mqtt probe skips with a PLUGIN-ABSENT marker
+        // when the plugin isn't loaded (count grows as probes are added).
+        Assert.NotEmpty(findings);
+        Assert.All(findings, f =>
+        {
+            Assert.Equal(ScanFindingStatus.Skipped, f.Status);
+            Assert.Contains("PLUGIN-ABSENT", f.Template.Recording.Id, StringComparison.Ordinal);
+        });
     }
 
     [Fact]
