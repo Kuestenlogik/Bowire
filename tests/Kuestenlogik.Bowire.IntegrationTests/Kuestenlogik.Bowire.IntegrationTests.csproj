@@ -64,6 +64,11 @@
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.JsonRpc\Kuestenlogik.Bowire.Protocol.JsonRpc.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mqtt\Kuestenlogik.Bowire.Protocol.Mqtt.csproj" />
+    <!-- Scanner — the active MQTT retained-poisoning probe (#395) is
+         exercised end-to-end against an in-process MQTTnet broker + the
+         real BowireMqttProtocol plugin (ActiveMqttProbeIntegrationTests).
+         The scanner grants InternalsVisibleTo to this project. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Security.Scanner\Kuestenlogik.Bowire.Security.Scanner.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Nats\Kuestenlogik.Bowire.Protocol.Nats.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Soap\Kuestenlogik.Bowire.Protocol.Soap.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Pulsar\Kuestenlogik.Bowire.Protocol.Pulsar.csproj" />

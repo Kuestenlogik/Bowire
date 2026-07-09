@@ -312,6 +312,35 @@ public static class ScanCommand
             Fold(await OwaspApiSuite.RunProtocolProbesAsync(options.Target, registry, effectiveAuth, protocolTimeout, ct).ConfigureAwait(false));
         }
 
+        // Active (mutating / aggressive) probes — #395–#400. Opt-in only, and
+        // independent of the suite selection: an operator running `--active`
+        // has explicitly asked for the mutating tier. Loud banner first, then
+        // run; per-probe timeout leaves headroom for the duration budget so a
+        // connection-holding probe isn't cut off early.
+        if (options.Active)
+        {
+            await stdout.WriteLineAsync(
+                "  ⚠ ACTIVE MODE — mutating/aggressive probes enabled. This scan may publish messages, hold connections open, or open many streams against the target. Run only against systems you are authorised to test.").ConfigureAwait(false);
+
+            var activeRegistry = BowireProtocolRegistry.Discover();
+            var activeOptions = new ActiveScanOptions
+            {
+                DurationSeconds = options.ActiveDurationSeconds > 0 ? options.ActiveDurationSeconds : 15,
+                Concurrency = options.ActiveConcurrency > 0 ? options.ActiveConcurrency : 100,
+                ExpectedTopics = options.ActiveExpectedTopics.ToArray(),
+            };
+            var activeTimeout = TimeSpan.FromSeconds(activeOptions.DurationSeconds + 10);
+            var activeFindings = await OwaspApiSuite.RunActiveProtocolProbesAsync(
+                options.Target, activeRegistry, effectiveAuth, activeOptions, activeTimeout, ct).ConfigureAwait(false);
+            foreach (var f in activeFindings)
+            {
+                var sev = f.Template.Recording.Vulnerability?.Severity ?? "info";
+                findings.Add(SeverityRank(sev) < minRank && f.Status == ScanFindingStatus.Vulnerable
+                    ? new ScanFinding { Template = f.Template, Status = ScanFindingStatus.Skipped, Detail = "below severity threshold" }
+                    : f);
+            }
+        }
+
         await WriteConsoleReportAsync(findings, stdout).ConfigureAwait(false);
 
         // Per-entry covered / clean / vulnerable table for the named suites.
@@ -782,6 +811,24 @@ public sealed class ScanOptions
     /// no flow (use <see cref="AuthHeaders"/> directly).
     /// </summary>
     public string? AuthFlowPath { get; init; }
+
+    /// <summary>
+    /// #395–#400: opt into the active (mutating / aggressive) scan tier. Off by
+    /// default. When set, active protocol probes run — they may PUBLISH to the
+    /// target, hold connections open, or open many streams. Each namespaces +
+    /// cleans up its side effects, but this is a deliberate mutation of the
+    /// target, so it must never be implicit.
+    /// </summary>
+    public bool Active { get; init; }
+
+    /// <summary>Wall-clock budget (seconds) for time-based active probes. Default 15.</summary>
+    public int ActiveDurationSeconds { get; init; } = 15;
+
+    /// <summary>Concurrency budget for fan-out active probes. Default 100.</summary>
+    public int ActiveConcurrency { get; init; } = 100;
+
+    /// <summary>Operator-supplied expected-topic scope for the MQTT wildcard-subscribe active probe (#396).</summary>
+    public IList<string> ActiveExpectedTopics { get; init; } = new List<string>();
 
     public string? Template { get; init; }
     public string? OutSarif { get; init; }
