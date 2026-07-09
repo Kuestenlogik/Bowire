@@ -136,6 +136,7 @@ internal static class OwaspApiSuite
     public static IReadOnlyList<IActiveProtocolProbe> ActiveProtocolProbes { get; } =
     [
         new MqttRetainedPoisoningProbe(),
+        new MqttWildcardSubscribeProbe(),
     ];
 
     /// <summary>
