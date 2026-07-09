@@ -140,8 +140,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [107](https://github.com/Kuestenlogik/Bowire/issues/107) | Bowire | [AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run](#issue-kuestenlogik-bowire-107) | ⬜ Backlog |  |
 | [175](https://github.com/Kuestenlogik/Bowire/issues/175) | Bowire | [Schema-aware mutation engine for fuzz / scan](#issue-kuestenlogik-bowire-175) | ⬜ Backlog |  |
 | [176](https://github.com/Kuestenlogik/Bowire/issues/176) | Bowire | [Spider / crawl — discover endpoints from a base URL](#issue-kuestenlogik-bowire-176) | ⬜ Backlog |  |
-| [186](https://github.com/Kuestenlogik/Bowire/issues/186) | Bowire | [HAR import — Chrome DevTools network tab as an input source](#issue-kuestenlogik-bowire-186) | 🟡 In progress |  |
-| [190](https://github.com/Kuestenlogik/Bowire/issues/190) | Bowire | [Authentication session recording + token reuse](#issue-kuestenlogik-bowire-190) | 🟡 In progress |  |
+| [186](https://github.com/Kuestenlogik/Bowire/issues/186) | Bowire | [HAR import — Chrome DevTools network tab as an input source](#issue-kuestenlogik-bowire-186) | ⬜ Backlog |  |
+| [190](https://github.com/Kuestenlogik/Bowire/issues/190) | Bowire | [Authentication session recording + token reuse](#issue-kuestenlogik-bowire-190) | ⬜ Backlog |  |
 | [339](https://github.com/Kuestenlogik/Bowire/issues/339) | Bowire | [docs(audit): Trash-as-plugin architecture proposal for v2.3](#issue-kuestenlogik-bowire-339) | ⬜ Backlog |  |
 | [395](https://github.com/Kuestenlogik/Bowire/issues/395) | Bowire | [Active MQTT probes: retained-message poisoning + will-message abuse (PUBLISH-based)](#issue-kuestenlogik-bowire-395) | ⬜ Backlog |  |
 | [396](https://github.com/Kuestenlogik/Bowire/issues/396) | Bowire | [MQTT wildcard-subscribe privilege check (# / + over-broad topic access)](#issue-kuestenlogik-bowire-396) | ⬜ Backlog |  |
@@ -763,17 +763,13 @@ The current scan/fuzz path generates inputs without much awareness of the schema
 
 Bowire's discovery starts from "you tell me a URL or upload a schema". If the schema is incomplete, or if there are endpoints reachable but undocumented (the classic shadow-IT case at API level), Bowire never sees them. Real security testing assumes "find the things the developer forgot to declare". [[more]](https://github.com/Kuestenlogik/Bowire/issues/176)
 
-#### <a id="issue-kuestenlogik-bowire-186"></a>🟡 In progress · [#186](https://github.com/Kuestenlogik/Bowire/issues/186) HAR import — Chrome DevTools network tab as an input source
+#### <a id="issue-kuestenlogik-bowire-186"></a>⬜ Backlog · [#186](https://github.com/Kuestenlogik/Bowire/issues/186) HAR import — Chrome DevTools network tab as an input source
 
 Operators routinely have Chrome DevTools open watching their app's traffic. Today they have to read the URL out, copy it into Bowire, recreate the request manually. That's friction; that's lost coverage. HAR import is the industry-standard way of moving traffic from a browser/CLI/proxy into a testing tool. [[more]](https://github.com/Kuestenlogik/Bowire/issues/186)
 
-**Shipped:** `bowire import har <file>` CLI + `bowire.har.import` MCP tool with body/headers/cookies pre-populated; `--redact-secrets` strips credential headers (Authorization / Cookie / X-Api-Key / …) before import; credential-header detection surfaces auth context (feeds #190); deterministic content-hash recording id makes re-import idempotent. Follow-ups: workbench drag-and-drop dialog + per-row include/exclude candidate list, HAR as a spider discovery source (#176), store-level dedupe on the deterministic id.
-
-#### <a id="issue-kuestenlogik-bowire-190"></a>🟡 In progress · [#190](https://github.com/Kuestenlogik/Bowire/issues/190) Authentication session recording + token reuse
+#### <a id="issue-kuestenlogik-bowire-190"></a>⬜ Backlog · [#190](https://github.com/Kuestenlogik/Bowire/issues/190) Authentication session recording + token reuse
 
 Modern API auth is multi-step: hit `/login`, get a session cookie, hit `/refresh`, get a JWT, use the JWT on every subsequent call. Today Bowire has Auth-Configuration (mTLS, basic, bearer-static) but no understanding of FLOWS. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/190)
-
-**Shipped:** headless auth-flow runner + `bowire scan --auth-flow flow.json` — a recorded login → token chain runs once before the scan; the extracted token (JSON path / regex / header / cookie) is injected into every probe; secrets come from `{{env.NAME}}`, never inlined. Follow-ups: workbench capture UI, browser grants (OAuth auth-code / device, OIDC discovery + JWKS), mid-scan refresh-on-expiry, `{{auth.token}}` variable source.
 
 #### <a id="issue-kuestenlogik-bowire-339"></a>⬜ Backlog · [#339](https://github.com/Kuestenlogik/Bowire/issues/339) docs(audit): Trash-as-plugin architecture proposal for v2.3
 
@@ -1259,4 +1255,4 @@ When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` 
 
 ---
 
-*Generated 2026-07-08 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-07-09 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
