@@ -738,6 +738,11 @@ jobs:
           body_path: release-body.md
           generate_release_notes: true
           prerelease: ${{ contains(github.ref, '-rc') }}
+          # Auto-create a linked Discussion in the Announcements category for
+          # every full release, so releases surface on GitHub Discussions (not
+          # just Discord). Skipped for -rc prereleases to avoid announcement
+          # noise — an empty category name tells the action not to create one.
+          discussion_category_name: ${{ contains(github.ref, '-rc') && '' || 'Announcements' }}
           files: |
             artifacts/packages/*.nupkg
             publish/archives/*

@@ -1,5 +1,14 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Documentation
+  - name: 🙏 Questions & support
+    url: https://github.com/Kuestenlogik/Bowire/discussions/categories/q-a
+    about: Ask how-to / usage questions in Discussions Q&A — GitHub issues are for confirmed bugs and tracked work.
+  - name: 💡 Ideas & feature requests
+    url: https://github.com/Kuestenlogik/Bowire/discussions/categories/ideas
+    about: Propose and upvote ideas in Discussions — popular ones graduate into tracked roadmap issues.
+  - name: 📣 Announcements
+    url: https://github.com/Kuestenlogik/Bowire/discussions/categories/announcements
+    about: Release announcements and project news.
+  - name: 📚 Documentation
     url: https://github.com/Kuestenlogik/Bowire/tree/main/docs
-    about: Check the documentation before opening an issue
+    about: Check the documentation before opening an issue.
