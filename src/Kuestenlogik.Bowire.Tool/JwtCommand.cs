@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kuestenlogik.Bowire.App.Cli;
+using Kuestenlogik.Bowire.Security;
 
 namespace Kuestenlogik.Bowire.App;
 
@@ -82,6 +83,51 @@ internal static class JwtCommand
 
         return 0;
     }
+
+    /// <summary>
+    /// Run the deterministic JWT security analysis (#105) and print the header +
+    /// payload plus the rule-based findings (alg=none, symmetric HMAC, missing /
+    /// expired / long-lived exp, missing nbf, scope creep, audience binding, …).
+    /// Findings are output, not a failure, so a clean run still returns 0.
+    /// </summary>
+    public static async Task<int> RunAnalyzeAsync(string token, string? audience,
+        TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken ct = default)
+    {
+        var io = CommandIo.Resolve(stdout, stderr);
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            await io.Err.WriteLineAsync("  Usage: bowire jwt analyze <token> [--audience <aud>]").ConfigureAwait(false);
+            return 2;
+        }
+
+        var analysis = JwtSecurityAnalyzer.Analyze(token, string.IsNullOrWhiteSpace(audience) ? null : audience);
+        if (!analysis.Parsed)
+        {
+            await io.Err.WriteLineAsync($"  Could not analyze token: {analysis.ParseError}").ConfigureAwait(false);
+            return 1;
+        }
+
+        io.OutLine();
+        io.OutLine("  Header:");
+        io.OutLine(IndentJson(analysis.HeaderJson));
+        io.OutLine();
+        io.OutLine("  Payload:");
+        io.OutLine(IndentJson(analysis.PayloadJson));
+        io.OutLine();
+        io.OutLine("  Security analysis:");
+        foreach (var f in analysis.Flags)
+            io.OutLine($"    {Marker(f.Level)} [{f.Claim}] {f.Message}");
+        io.OutLine();
+        return 0;
+    }
+
+    private static string Marker(JwtFlagLevel level) => level switch
+    {
+        JwtFlagLevel.High => "[HIGH]",
+        JwtFlagLevel.Medium => "[MED] ",
+        JwtFlagLevel.Low => "[low] ",
+        _ => "[info]",
+    };
 
     /// <summary>
     /// Produce a tampered token. <paramref name="algNone"/> downgrades

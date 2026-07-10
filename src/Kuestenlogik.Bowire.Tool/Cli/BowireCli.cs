@@ -429,6 +429,14 @@ internal static class BowireCli
             await JwtCommand.RunDecodeAsync(pr.GetValue(tokenArg) ?? "",
                 pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false));
 
+        var analyze = new Command("analyze", "Deterministic JWT security analysis — flags alg=none, symmetric HMAC, missing/expired/long-lived exp, missing nbf, scope creep, audience binding, kid surface.");
+        var audienceOpt = new Option<string>("--audience", "-a") { Description = "Expected audience — cross-checked against the token's aud claim." };
+        analyze.Add(tokenArg);
+        analyze.Add(audienceOpt);
+        analyze.SetAction(async (pr, ct) =>
+            await JwtCommand.RunAnalyzeAsync(pr.GetValue(tokenArg) ?? "", pr.GetValue(audienceOpt),
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false));
+
         var tamper = new Command("tamper", "Produce a tampered JWT (alg:none downgrade, claim mutation, optional HS256 re-signing).");
         var algNoneOpt = new Option<bool>("--alg-none") { Description = "Downgrade the token to alg:none (drops the signature; the classic JWT bypass)." };
         var setOpt = new Option<string[]>("--set")
@@ -450,6 +458,7 @@ internal static class BowireCli
                 pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false));
 
         jwt.Add(decode);
+        jwt.Add(analyze);
         jwt.Add(tamper);
         return jwt;
     }

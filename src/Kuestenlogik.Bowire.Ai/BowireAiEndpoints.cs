@@ -320,6 +320,79 @@ public static class BowireAiEndpoints
             }
         }).ExcludeFromDescription();
 
+        // #105 — AI JWT analyzer. Runs the deterministic JWT security analysis
+        // (Kuestenlogik.Bowire.Security.JwtSecurityAnalyzer) and, when a chat
+        // client is registered, adds a short AI narrative over the decoded
+        // claims + the deterministic flags. Degrades gracefully: with no AI the
+        // deterministic analysis (the substance) is still returned.
+        endpoints.MapPost($"{basePath}/api/ai/jwt-analyze",
+            async (HttpContext ctx, [Microsoft.AspNetCore.Mvc.FromServices] IChatClient? client) =>
+        {
+            JwtAnalyzeRequest? req;
+            try
+            {
+                req = await JsonSerializer.DeserializeAsync<JwtAnalyzeRequest>(ctx.Request.Body, JsonOpts, ctx.RequestAborted);
+            }
+            catch (JsonException ex)
+            {
+                return Results.Json(new { error = "Invalid JSON: " + ex.Message }, JsonOpts, statusCode: 400);
+            }
+            if (req is null || string.IsNullOrWhiteSpace(req.Token))
+                return Results.Json(new { error = "token required" }, JsonOpts, statusCode: 400);
+
+            var analysis = Kuestenlogik.Bowire.Security.JwtSecurityAnalyzer.Analyze(
+                req.Token.Trim(), string.IsNullOrWhiteSpace(req.Audience) ? null : req.Audience!.Trim());
+            if (!analysis.Parsed)
+                return Results.Json(new { error = analysis.ParseError ?? "Could not parse token." }, JsonOpts, statusCode: 400);
+
+            var flags = analysis.Flags.Select(f => new { level = f.Level.ToString().ToUpperInvariant(), f.Claim, f.Message }).ToArray();
+
+            // Deterministic analysis is always returned; AI narrative is additive.
+            string? aiNarrative = null;
+            string? modelId = null;
+            if (client is not null)
+            {
+                var system = """
+                    You are a senior application-security engineer reviewing a JSON Web Token.
+                    You are given the decoded header + payload and a list of deterministic security
+                    flags already computed by a static analyzer. Write a SHORT plain-text verdict
+                    (max ~6 lines): confirm the real risks, add any claim-level concern the flags
+                    missed, and end with the single most important next step. Do NOT invent claims
+                    that aren't present. Do NOT repeat the flags verbatim — synthesise.
+                    """;
+                var user = $"Header:\n{analysis.HeaderJson}\n\nPayload:\n{analysis.PayloadJson}\n\nDeterministic flags:\n"
+                    + string.Join("\n", analysis.Flags.Select(f => $"- [{f.Level}] {f.Claim}: {f.Message}"));
+                try
+                {
+                    var response = await client.GetResponseAsync(
+                        [new ChatMessage(ChatRole.System, system), new ChatMessage(ChatRole.User, user)],
+                        cancellationToken: ctx.RequestAborted);
+                    aiNarrative = response.Text;
+                    modelId = response.ModelId;
+                }
+                catch (OperationCanceledException)
+                {
+                    return Results.Json(new { error = "canceled" }, JsonOpts, statusCode: 499);
+                }
+                catch (Exception ex)
+                {
+                    // AI failed, but the deterministic analysis is still useful — return it with a note.
+                    return Results.Json(new { analysis.Parsed, analysis.Algorithm, keyId = analysis.KeyId, flags, aiError = ex.Message }, JsonOpts);
+                }
+            }
+
+            return Results.Json(new
+            {
+                analysis.Parsed,
+                analysis.Algorithm,
+                keyId = analysis.KeyId,
+                flags,
+                aiNarrative,
+                aiAvailable = client is not null,
+                modelId,
+            }, JsonOpts);
+        }).ExcludeFromDescription();
+
         // #59 — threat-model. Takes the discovered service surface and
         // returns a ranked list of "where to scan first" entries. The
         // model rates each endpoint 0-10 on likely attack-surface risk
@@ -1080,6 +1153,8 @@ public static class BowireAiEndpoints
         string? Model,
         string? ApiKey,
         bool? AutoDetectLocal);
+
+    private sealed record JwtAnalyzeRequest(string? Token, string? Audience);
 
     /// <summary>
     /// Request shape for <c>POST /api/ai/triage</c>. All fields except
