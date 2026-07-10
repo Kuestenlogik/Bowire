@@ -101,6 +101,23 @@ public sealed class ActiveMqttProbeIntegrationTests : IAsyncLifetime
         Assert.Contains("tenantB/secrets", f.Detail, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task WillMessageAbuse_LiveBroker_FlagsUnfilteredWillDelivery()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var probe = new MqttWillMessageAbuseProbe();
+        var target = $"mqtt://localhost:{_brokerPort}";
+
+        // A default MQTTnet broker publishes the will on an MQTT-5
+        // disconnect-with-will, so the probe should flag unfiltered delivery.
+        // The injected protocol is ignored by this self-contained probe.
+        var findings = await probe.RunAsync(target, new BowireMqttProtocol(), [], new ActiveScanOptions(), ct);
+
+        var f = Assert.Single(findings);
+        Assert.Equal(ScanFindingStatus.Vulnerable, f.Status);
+        Assert.Equal("BWR-OWASP-API8-MQTT-WILL-ABUSE", f.Template.Recording.Vulnerability?.Id);
+    }
+
     private async Task PublishRetainedAsync(string topic, CancellationToken ct)
     {
         var factory = new MqttClientFactory();

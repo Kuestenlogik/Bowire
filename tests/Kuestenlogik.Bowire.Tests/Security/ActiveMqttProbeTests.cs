@@ -108,11 +108,18 @@ public sealed class ActiveMqttProbeTests
         var registry = new BowireProtocolRegistry();
         registry.Register(new RetainedFake { RedeliverRetained = true });
 
+        // 127.0.0.1:1 is a closed port → the self-contained will-abuse probe's
+        // own MQTT connect fails fast (refused) rather than hanging, while the
+        // fake-plugin-driven retained/wildcard probes ignore the address.
         var findings = await OwaspApiSuite.RunActiveProtocolProbesAsync(
-            "mqtt://broker:1883", registry, s_auth, s_active, TimeSpan.FromSeconds(5), Ct);
+            "mqtt://127.0.0.1:1", registry, s_auth, s_active, TimeSpan.FromSeconds(5), Ct);
 
         Assert.Contains(findings, f => f.Template.Recording.Vulnerability?.Id == "BWR-OWASP-API8-MQTT-RETAINED-POISONING");
     }
+
+    [Fact]
+    public async Task WillAbuse_NonBrokerScheme_Silent()
+        => Assert.Empty(await new MqttWillMessageAbuseProbe().RunAsync("https://api.example.com", new RetainedFake(), s_auth, s_active, Ct));
 
     // Stateful MQTT plugin fake: records every PUBLISH; a fresh SUBSCRIBE
     // re-delivers the first retained payload iff RedeliverRetained is set.
