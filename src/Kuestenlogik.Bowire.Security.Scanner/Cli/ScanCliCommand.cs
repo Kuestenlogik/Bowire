@@ -121,6 +121,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
 
         scan.Add(BuildSpider());
         scan.Add(BuildMutate());
+        scan.Add(BuildReport());
         return scan;
     }
 
@@ -161,6 +162,30 @@ public sealed class ScanCliCommand : IBowireCliCommand
         });
 
         return mutate;
+    }
+
+    // `bowire scan report --in <sarif>` (#107) — turn a scan's SARIF artifact
+    // into a deterministic markdown report, optionally diffed against a baseline.
+    private static Command BuildReport()
+    {
+        var report = new Command("report",
+            "Turn a scan SARIF artifact (bowire scan --out) into a markdown report — findings grouped by severity + OWASP, optionally diffed vs a baseline SARIF. Deterministic; the AI executive-summary layer is POST /api/ai/security-report.");
+
+        var inOpt = new Option<string>("--in") { Description = "SARIF file to report on (from `bowire scan --out`).", Required = true };
+        var baselineOpt = new Option<string>("--baseline") { Description = "A previous run's SARIF to diff against — the report adds new / fixed / still-open sections." };
+        var outOpt = new Option<string>("--out") { Description = "Write the markdown report to this path (default: print to stdout)." };
+        var targetOpt = new Option<string>("--target") { Description = "Target name to title the report with (e.g. api.example.com)." };
+
+        report.Add(inOpt);
+        report.Add(baselineOpt);
+        report.Add(outOpt);
+        report.Add(targetOpt);
+        report.SetAction(async (pr, ct) =>
+            await ReportCommand.RunAsync(
+                pr.GetValue(inOpt) ?? "", pr.GetValue(baselineOpt), pr.GetValue(outOpt), pr.GetValue(targetOpt),
+                ct, pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false));
+
+        return report;
     }
 
     // `bowire scan spider --url <base>` (#176) — endpoint discovery. A

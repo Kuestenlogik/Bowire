@@ -393,6 +393,77 @@ public static class BowireAiEndpoints
             }, JsonOpts);
         }).ExcludeFromDescription();
 
+        // #107 — AI security report. Turns a scan SARIF artifact into a markdown
+        // report (deterministic: severity/OWASP grouping + diff vs baseline) and,
+        // when a chat client is registered, prepends an AI executive summary.
+        // Degrades: with no AI the deterministic report is returned.
+        endpoints.MapPost($"{basePath}/api/ai/security-report",
+            async (HttpContext ctx, [Microsoft.AspNetCore.Mvc.FromServices] IChatClient? client) =>
+        {
+            SecurityReportRequest? req;
+            try
+            {
+                req = await JsonSerializer.DeserializeAsync<SecurityReportRequest>(ctx.Request.Body, JsonOpts, ctx.RequestAborted);
+            }
+            catch (JsonException ex)
+            {
+                return Results.Json(new { error = "Invalid JSON: " + ex.Message }, JsonOpts, statusCode: 400);
+            }
+            if (req is null || string.IsNullOrWhiteSpace(req.Sarif))
+                return Results.Json(new { error = "sarif required" }, JsonOpts, statusCode: 400);
+
+            Kuestenlogik.Bowire.Security.SecurityReport report;
+            try
+            {
+                report = Kuestenlogik.Bowire.Security.SecurityReportBuilder.Build(
+                    req.Sarif, string.IsNullOrWhiteSpace(req.Baseline) ? null : req.Baseline,
+                    string.IsNullOrWhiteSpace(req.Target) ? null : req.Target);
+            }
+            catch (Exception ex) when (ex is JsonException or FormatException or ArgumentException)
+            {
+                return Results.Json(new { error = "Could not parse SARIF: " + ex.Message }, JsonOpts, statusCode: 400);
+            }
+
+            string? summary = null;
+            string? modelId = null;
+            if (client is not null && report.Findings.Count > 0)
+            {
+                var system = """
+                    You are a senior application-security engineer writing the executive summary of a
+                    scan report. Given the finding list (grouped by severity + OWASP) and any diff vs a
+                    baseline, write 3-6 sentences of plain prose: the highest-impact issues, the overall
+                    posture, and what changed since the baseline. No markdown headings, no bullet lists,
+                    no invented findings. This text is placed under an "Executive summary" heading.
+                    """;
+                var user = report.ToMarkdown();
+                try
+                {
+                    var response = await client.GetResponseAsync(
+                        [new ChatMessage(ChatRole.System, system), new ChatMessage(ChatRole.User, user)],
+                        cancellationToken: ctx.RequestAborted);
+                    summary = response.Text;
+                    modelId = response.ModelId;
+                }
+                catch (OperationCanceledException)
+                {
+                    return Results.Json(new { error = "canceled" }, JsonOpts, statusCode: 499);
+                }
+                catch (Exception)
+                {
+                    summary = null; // AI failed → fall back to the deterministic report
+                }
+            }
+
+            return Results.Json(new
+            {
+                markdown = report.ToMarkdown(summary),
+                findingCount = report.Findings.Count,
+                bySeverity = report.BySeverity,
+                aiAvailable = client is not null,
+                modelId,
+            }, JsonOpts);
+        }).ExcludeFromDescription();
+
         // #59 — threat-model. Takes the discovered service surface and
         // returns a ranked list of "where to scan first" entries. The
         // model rates each endpoint 0-10 on likely attack-surface risk
@@ -1155,6 +1226,8 @@ public static class BowireAiEndpoints
         bool? AutoDetectLocal);
 
     private sealed record JwtAnalyzeRequest(string? Token, string? Audience);
+
+    private sealed record SecurityReportRequest(string? Sarif, string? Baseline, string? Target);
 
     /// <summary>
     /// Request shape for <c>POST /api/ai/triage</c>. All fields except
