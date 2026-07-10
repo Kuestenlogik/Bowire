@@ -524,6 +524,62 @@ public static class BowireAiEndpoints
             }
         }).ExcludeFromDescription();
 
+        // #106 — AI OWASP API Top 10 panel. Runs the deterministic per-method
+        // OWASP mapper (tri-state status + concrete probe per entry) and, when a
+        // chat client is registered, adds a short AI review of the method's
+        // posture. Degrades: with no AI the deterministic rows are returned.
+        endpoints.MapPost($"{basePath}/api/ai/owasp-panel",
+            async (HttpContext ctx, [Microsoft.AspNetCore.Mvc.FromServices] IChatClient? client) =>
+        {
+            OwaspPanelRequest? req;
+            try
+            {
+                req = await JsonSerializer.DeserializeAsync<OwaspPanelRequest>(ctx.Request.Body, JsonOpts, ctx.RequestAborted);
+            }
+            catch (JsonException ex)
+            {
+                return Results.Json(new { error = "Invalid JSON: " + ex.Message }, JsonOpts, statusCode: 400);
+            }
+            if (req is null || string.IsNullOrWhiteSpace(req.Path))
+                return Results.Json(new { error = "path required" }, JsonOpts, statusCode: 400);
+
+            var rows = Kuestenlogik.Bowire.Security.OwaspApiTop10Mapper.Map(
+                new Kuestenlogik.Bowire.Security.OwaspMethodDescriptor(req.Path!, req.Verb, req.RequestFields));
+            var projected = rows.Select(r => new { entry = r.Entry, title = r.Title, status = r.Status.ToString(), rationale = r.Rationale, suggestedProbe = r.SuggestedProbe }).ToArray();
+
+            string? aiReview = null;
+            string? modelId = null;
+            if (client is not null)
+            {
+                var system = """
+                    You review an API method's OWASP API Top 10 posture. You are given the method +
+                    a deterministic per-entry assessment (at-risk / maybe / n-a). Write 2-4 sentences:
+                    confirm the real risks, flag any the rules missed for THIS method, and name the
+                    single probe to run first. No markdown headings, no invented risks.
+                    """;
+                var atRisk = string.Join("; ", rows.Where(r => r.Status != Kuestenlogik.Bowire.Security.OwaspRiskStatus.NotApplicable)
+                    .Select(r => $"{r.Entry} {r.Status}: {r.Rationale}"));
+                var user = $"Method: {req.Verb} {req.Path}\nRequest fields: {string.Join(", ", req.RequestFields ?? [])}\nAssessment: {atRisk}";
+                try
+                {
+                    var response = await client.GetResponseAsync(
+                        [new ChatMessage(ChatRole.System, system), new ChatMessage(ChatRole.User, user)], cancellationToken: ctx.RequestAborted);
+                    aiReview = response.Text;
+                    modelId = response.ModelId;
+                }
+                catch (OperationCanceledException)
+                {
+                    return Results.Json(new { error = "canceled" }, JsonOpts, statusCode: 499);
+                }
+                catch (Exception)
+                {
+                    aiReview = null; // fall back to the deterministic rows
+                }
+            }
+
+            return Results.Json(new { rows = projected, aiReview, aiAvailable = client is not null, modelId }, JsonOpts);
+        }).ExcludeFromDescription();
+
         // #59 — threat-model. Takes the discovered service surface and
         // returns a ranked list of "where to scan first" entries. The
         // model rates each endpoint 0-10 on likely attack-surface risk
@@ -1294,6 +1350,8 @@ public static class BowireAiEndpoints
         int? RiskThreshold, int? MaxEndpoints, int? TriageKeepThreshold, bool? GenerateReport);
 
     private sealed record SecurityScanEndpoint(string? EndpointId, string? Path, string? Method);
+
+    private sealed record OwaspPanelRequest(string? Path, string? Verb, IReadOnlyList<string>? RequestFields);
 
     /// <summary>
     /// Request shape for <c>POST /api/ai/triage</c>. All fields except
