@@ -71,8 +71,9 @@ The default scan is **black-box and side-effect-free**: it connects, reads, and 
 - MQTT **retained-message poisoning** (#395) — publishes a retained message to a unique `bowire/probe/<nonce>` topic, opens a fresh subscription to check whether the broker persisted + re-delivered it (the poisoning vector), then clears the retained state by publishing an empty retained payload. Rolls up to API8:2023 (Security Misconfiguration).
 - MQTT **wildcard-subscribe privilege** (#396) — with an authenticated client, subscribes to `#` and observes what the broker actually *delivers* over a bounded window (retained messages included), then flags any delivered topic outside the operator-supplied `--active-expected-topic` scope as over-broad access (topic-level authorization failure). Verdict is delivery-based, not SUBACK-based. Rolls up to API1:2023 (BOLA).
 - gRPC **concurrent-stream fork-bomb** (#399) — discovers a server-streaming method by reflection and opens `--active-concurrency N` concurrent streams. A stream rejected with `RESOURCE_EXHAUSTED` before N ⇒ the server rate-limits (Safe, reported at the count it kicked in); all N accepted ⇒ "no concurrent-stream limit observed at N" (the finding names N honestly, since HTTP/2 permits 100+ streams by default). Rolls up to API4:2023 (CWE-770).
+- **Timing-based DoS** (#398), both budgeted by `--active-duration`: WebSocket **slow-loris** holds an idle socket open and flags the absence of a server-side idle/read timeout within the window; SSE **slow-consumption** reads the event stream very slowly and flags a server that keeps feeding a deliberately-slow reader with no drop / backpressure. Both are honest about the window ("no timeout / drop observed within Ns") and roll up to API4:2023 (CWE-400).
 
-The remaining cluster items (MQTT will-message abuse, WS compression-bomb / slow-loris, SSE slow-consumption, MCP tool-call injection) build on the same `--active` seam.
+The remaining cluster items (MQTT will-message abuse, WS compression-bomb, MCP tool-call injection) build on the same `--active` seam.
 
 ```bash
 bowire scan --target mqtt://broker.example.com:1883 --suite protocol --auth-header "…" --active

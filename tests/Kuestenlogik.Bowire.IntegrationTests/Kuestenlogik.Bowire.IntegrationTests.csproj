@@ -55,6 +55,9 @@
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.SignalR\Kuestenlogik.Bowire.Protocol.SignalR.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.GraphQL\Kuestenlogik.Bowire.Protocol.GraphQL.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.WebSocket\Kuestenlogik.Bowire.Protocol.WebSocket.csproj" />
+    <!-- SSE plugin — the active SSE slow-consumption probe (#398) E2E test
+         drives the real BowireSseProtocol against a live event-stream. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Sse\Kuestenlogik.Bowire.Protocol.Sse.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mcp\Kuestenlogik.Bowire.Protocol.Mcp.csproj" />
     <!-- Bowire.Mcp brings the workbench-as-MCP-server side + the
          dual-mount registry/dispatcher (#287). The
