@@ -126,14 +126,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
-**7/24 done** · 5 in progress · 12 backlog
+**8/24 done** · 4 in progress · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [26](https://github.com/Kuestenlogik/Bowire/issues/26) | Bowire | [Security testing tool — remaining tiers](#issue-kuestenlogik-bowire-26) | 🟡 In progress | `area:security` |
 | [186](https://github.com/Kuestenlogik/Bowire/issues/186) | Bowire | [HAR import — Chrome DevTools network tab as an input source](#issue-kuestenlogik-bowire-186) | 🟡 In progress |  |
 | [190](https://github.com/Kuestenlogik/Bowire/issues/190) | Bowire | [Authentication session recording + token reuse](#issue-kuestenlogik-bowire-190) | 🟡 In progress |  |
-| [395](https://github.com/Kuestenlogik/Bowire/issues/395) | Bowire | [Active MQTT probes: retained-message poisoning + will-message abuse (PUBLISH-based)](#issue-kuestenlogik-bowire-395) | 🟡 In progress |  |
 | [396](https://github.com/Kuestenlogik/Bowire/issues/396) | Bowire | [MQTT wildcard-subscribe privilege check (# / + over-broad topic access)](#issue-kuestenlogik-bowire-396) | 🟡 In progress |  |
 | [35](https://github.com/Kuestenlogik/Bowire/issues/35) | Bowire | [Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)](#issue-kuestenlogik-bowire-35) | ⬜ Backlog | `area:security` |
 | [39](https://github.com/Kuestenlogik/Bowire/issues/39) | Bowire | [HAR Import polish](#issue-kuestenlogik-bowire-39) | ⬜ Backlog | `area:workbench` |
@@ -152,6 +151,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [184](https://github.com/Kuestenlogik/Bowire/issues/184) | Bowire | [Protocol-specific security scanners — gRPC / GraphQL / WS / MQTT / SSE / MCP](#issue-kuestenlogik-bowire-184) | ✅ Done |  |
 | [187](https://github.com/Kuestenlogik/Bowire/issues/187) | Bowire | [CVE lookup for discovered servers — fill Bowire.VulnDb](#issue-kuestenlogik-bowire-187) | ✅ Done |  |
 | [381](https://github.com/Kuestenlogik/Bowire/issues/381) | Bowire | [OWASP API suite — remaining: API6 / API10, protocol-specific variants, compliance tab](#issue-kuestenlogik-bowire-381) | ✅ Done |  |
+| [395](https://github.com/Kuestenlogik/Bowire/issues/395) | Bowire | [Active MQTT probes: retained-message poisoning + will-message abuse (PUBLISH-based)](#issue-kuestenlogik-bowire-395) | ✅ Done |  |
 | [398](https://github.com/Kuestenlogik/Bowire/issues/398) | Bowire | [Timing-based DoS probes: WebSocket slow-loris + SSE slow-consumption](#issue-kuestenlogik-bowire-398) | ✅ Done |  |
 | [399](https://github.com/Kuestenlogik/Bowire/issues/399) | Bowire | [gRPC stream fork-bomb / concurrent-stream limit probe](#issue-kuestenlogik-bowire-399) | ✅ Done |  |
 
@@ -731,10 +731,6 @@ Operators routinely have Chrome DevTools open watching their app's traffic. Toda
 
 Modern API auth is multi-step: hit `/login`, get a session cookie, hit `/refresh`, get a JWT, use the JWT on every subsequent call. Today Bowire has Auth-Configuration (mTLS, basic, bearer-static) but no understanding of FLOWS. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/190)
 
-#### <a id="issue-kuestenlogik-bowire-395"></a>🟡 In progress · [#395](https://github.com/Kuestenlogik/Bowire/issues/395) Active MQTT probes: retained-message poisoning + will-message abuse (PUBLISH-based)
-
-Follow-up from #184. The v2.3 protocol scanner is intentionally **safe, black-box and non-destructive** — its MQTT auth probe connects + subscribes to a throwaway topic and **never publishes**. These two checks require an **active/mutating** testing mode the passive scanner deliberately avoids. [[more]](https://github.com/Kuestenlogik/Bowire/issues/395)
-
 #### <a id="issue-kuestenlogik-bowire-396"></a>🟡 In progress · [#396](https://github.com/Kuestenlogik/Bowire/issues/396) MQTT wildcard-subscribe privilege check (# / + over-broad topic access)
 
 Follow-up from #184. The passive MQTT probe checks anonymous-CONNECT auth; it does not assess **wildcard-subscribe privilege**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/396)
@@ -810,6 +806,10 @@ Bowire knows what protocol it's talking to and often what server (Envoy, NGINX, 
 #### <a id="issue-kuestenlogik-bowire-381"></a>✅ Done · [#381](https://github.com/Kuestenlogik/Bowire/issues/381) OWASP API suite — remaining: API6 / API10, protocol-specific variants, compliance tab
 
 Follow-up to #173, which shipped the OWASP API Security Top 10 (2023) suite — the scaffold (`OwaspApiCatalog` + roll-up), **8/10 dedicated probes** (API1–API5, API7–API9), the CLI (`bowire scan --suite=owasp-api`), the workbench API (`/api/security/owasp-catalog` + `/api/security/owasp-scan`), the S … [[more]](https://github.com/Kuestenlogik/Bowire/issues/381)
+
+#### <a id="issue-kuestenlogik-bowire-395"></a>✅ Done · [#395](https://github.com/Kuestenlogik/Bowire/issues/395) Active MQTT probes: retained-message poisoning + will-message abuse (PUBLISH-based)
+
+Follow-up from #184. The v2.3 protocol scanner is intentionally **safe, black-box and non-destructive** — its MQTT auth probe connects + subscribes to a throwaway topic and **never publishes**. These two checks require an **active/mutating** testing mode the passive scanner deliberately avoids. [[more]](https://github.com/Kuestenlogik/Bowire/issues/395)
 
 #### <a id="issue-kuestenlogik-bowire-398"></a>✅ Done · [#398](https://github.com/Kuestenlogik/Bowire/issues/398) Timing-based DoS probes: WebSocket slow-loris + SSE slow-consumption
 
