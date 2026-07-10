@@ -261,7 +261,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts
 
-**0/17 done** · 17 backlog
+**0/18 done** · 18 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -282,6 +282,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [413](https://github.com/Kuestenlogik/Bowire/issues/413) | Bowire | [Site comparison: split into topic-specific tables (API-client / mocking / security), add WireMock + Mockito, broaden beyond top-5](#issue-kuestenlogik-bowire-413) | ⬜ Backlog |  |
 | [418](https://github.com/Kuestenlogik/Bowire/issues/418) | Bowire | [Re-sync language SDKs (Go/Node/Python/Rust) to the current sidecar contract + version handshake](#issue-kuestenlogik-bowire-418) | ⬜ Backlog |  |
 | [421](https://github.com/Kuestenlogik/Bowire/issues/421) | Bowire | [v3.0: rename Kuestenlogik.Bowire.* -> Bowire.* (assemblies, namespaces, NuGet ids)](#issue-kuestenlogik-bowire-421) | ⬜ Backlog |  |
+| [445](https://github.com/Kuestenlogik/Bowire/issues/445) | Bowire | [refactor: centralise connection-options (mTLS / gRPC transport / AWS SigV4) behind one seam instead of magic metadata markers](#issue-kuestenlogik-bowire-445) | ⬜ Backlog |  |
 
 ### Backlog (not yet scheduled)
 
@@ -1172,6 +1173,10 @@ The four language SDKs for authoring Bowire sidecar plugins were last updated **
 #### <a id="issue-kuestenlogik-bowire-421"></a>⬜ Backlog · [#421](https://github.com/Kuestenlogik/Bowire/issues/421) v3.0: rename Kuestenlogik.Bowire.* -> Bowire.* (assemblies, namespaces, NuGet ids)
 
 For the v3.0 breaking-change release, rename the Bowire .NET surface from `Kuestenlogik.Bowire.*` to **`Bowire.*`** — assembly names, root namespaces, and NuGet package ids (e.g. `Kuestenlogik.Bowire.Ai` → `Bowire.Ai`). This is **Option A** (full rename), chosen over "package-id only" (Option B) and status quo. [[more]](https://github.com/Kuestenlogik/Bowire/issues/421)
+
+#### <a id="issue-kuestenlogik-bowire-445"></a>⬜ Backlog · [#445](https://github.com/Kuestenlogik/Bowire/issues/445) refactor: centralise connection-options (mTLS / gRPC transport / AWS SigV4) behind one seam instead of magic metadata markers
+
+Several connection/request-level features are woven into **every** protocol plugin's connect/invoke/channel method via "magic" metadata-string markers plus repeated parse-then-strip boilerplate. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/445)
 
 ### Backlog (not yet scheduled)
 
