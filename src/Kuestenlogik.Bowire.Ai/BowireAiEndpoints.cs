@@ -464,6 +464,66 @@ public static class BowireAiEndpoints
             }, JsonOpts);
         }).ExcludeFromDescription();
 
+        // #104 — AI security-scan orchestration. Chains the primitives into one
+        // flow via SecurityScanOrchestrator: threat-model rank → probe each
+        // above-threshold endpoint (ISecurityScanProbeRunner, if registered) →
+        // triage → report. Degrades: no IChatClient → deterministic heuristic
+        // rank + keep-by-default triage; no probe runner → plan-only (no findings).
+        endpoints.MapPost($"{basePath}/api/ai/security-scan",
+            async (HttpContext ctx,
+                [Microsoft.AspNetCore.Mvc.FromServices] IChatClient? client,
+                [Microsoft.AspNetCore.Mvc.FromServices] Kuestenlogik.Bowire.Security.ISecurityScanProbeRunner? probeRunner) =>
+        {
+            SecurityScanRequest? req;
+            try
+            {
+                req = await JsonSerializer.DeserializeAsync<SecurityScanRequest>(ctx.Request.Body, JsonOpts, ctx.RequestAborted);
+            }
+            catch (JsonException ex)
+            {
+                return Results.Json(new { error = "Invalid JSON: " + ex.Message }, JsonOpts, statusCode: 400);
+            }
+            if (req is null || req.Endpoints is not { Count: > 0 })
+                return Results.Json(new { error = "endpoints required" }, JsonOpts, statusCode: 400);
+
+            var endpointList = req.Endpoints
+                .Where(e => !string.IsNullOrWhiteSpace(e.EndpointId) && !string.IsNullOrWhiteSpace(e.Path))
+                .Select(e => new Kuestenlogik.Bowire.Security.OrchestratorEndpoint(e.EndpointId!, e.Path!, e.Method))
+                .ToArray();
+            if (endpointList.Length == 0)
+                return Results.Json(new { error = "each endpoint needs endpointId + path" }, JsonOpts, statusCode: 400);
+
+            var options = new Kuestenlogik.Bowire.Security.SecurityScanOrchestrationOptions
+            {
+                RiskThreshold = req.RiskThreshold ?? 5,
+                MaxEndpoints = req.MaxEndpoints is int m and > 0 ? m : 10,
+                TriageKeepThreshold = req.TriageKeepThreshold ?? 50,
+                GenerateReport = req.GenerateReport ?? true,
+            };
+            var steps = new AiSecurityScanSteps(client, probeRunner, req.Target ?? "");
+
+            try
+            {
+                var result = await Kuestenlogik.Bowire.Security.SecurityScanOrchestrator.RunAsync(
+                    endpointList, options, steps, ctx.RequestAborted).ConfigureAwait(false);
+                return Results.Json(new
+                {
+                    ranked = result.Ranked.Select(r => new { endpointId = r.Endpoint.EndpointId, r.Endpoint.Path, r.RiskScore, r.Reason }),
+                    probed = result.Probed.Select(r => r.Endpoint.EndpointId),
+                    findings = result.Findings.Select(f => new { f.EndpointId, f.RuleId, f.Title, f.Severity, f.OwaspApi, f.RealScore, f.TriageReasoning }),
+                    result.SuppressedCount,
+                    reportMarkdown = result.ReportMarkdown,
+                    trace = result.Trace,
+                    aiAvailable = client is not null,
+                    probeExecuted = probeRunner is not null,
+                }, JsonOpts);
+            }
+            catch (OperationCanceledException)
+            {
+                return Results.Json(new { error = "canceled" }, JsonOpts, statusCode: 499);
+            }
+        }).ExcludeFromDescription();
+
         // #59 — threat-model. Takes the discovered service surface and
         // returns a ranked list of "where to scan first" entries. The
         // model rates each endpoint 0-10 on likely attack-surface risk
@@ -1228,6 +1288,12 @@ public static class BowireAiEndpoints
     private sealed record JwtAnalyzeRequest(string? Token, string? Audience);
 
     private sealed record SecurityReportRequest(string? Sarif, string? Baseline, string? Target);
+
+    private sealed record SecurityScanRequest(
+        IReadOnlyList<SecurityScanEndpoint>? Endpoints, string? Target,
+        int? RiskThreshold, int? MaxEndpoints, int? TriageKeepThreshold, bool? GenerateReport);
+
+    private sealed record SecurityScanEndpoint(string? EndpointId, string? Path, string? Method);
 
     /// <summary>
     /// Request shape for <c>POST /api/ai/triage</c>. All fields except
