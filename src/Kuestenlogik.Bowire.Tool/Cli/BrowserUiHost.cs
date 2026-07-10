@@ -5,6 +5,7 @@ using Kuestenlogik.Bowire.Ai;
 using Kuestenlogik.Bowire.Ai.Anthropic;
 using Kuestenlogik.Bowire.Ai.Mcp;
 using Kuestenlogik.Bowire.Ai.OpenAi;
+using Kuestenlogik.Bowire.Security.Scanner;
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Mock.Management;
@@ -160,6 +161,12 @@ internal static class BrowserUiHost
         builder.Services.AddBowireAiOpenAi();
         builder.Services.AddBowireAiAnthropic();
         builder.Services.AddBowireAiMcp();
+
+        // #104 — the scanner-backed live probe runner for the AI scan
+        // orchestration (POST /api/ai/security-scan). Standalone opts in so the
+        // orchestration executes real probes; embedded hosts that don't call
+        // this run the orchestration in plan-only mode.
+        builder.Services.AddBowireSecurityScanProbeRunner();
 
         // #154 Phase 4 — in-app help. The standalone CLI always
         // ships with the Help provider so users get docs without
