@@ -121,6 +121,7 @@ internal static class OwaspApiSuite
         new GrpcReflectionProbe(),
         new McpDiscoveryProbe(),
         new McpResourceTraversalProbe(),
+        new McpToolInjectionProbe(),
         new WebSocketAuthProbe(),
         new WebSocketResourceLimitProbe(),
         new MqttAuthProbe(),
