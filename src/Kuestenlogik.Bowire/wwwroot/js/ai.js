@@ -1894,7 +1894,83 @@
         rerenderThreatModelExternal = rerenderThreatModel;
         rerenderThreatModel();
 
+        // #105 — JWT analyzer: paste a token, get deterministic security flags
+        // + an AI narrative (degrades to the flags when no model is connected).
+        panel.appendChild(renderJwtAnalyzerSection());
+
         return panel;
+    }
+
+    // #105 — JWT analyzer surface. Kept as top-level functions (not closures)
+    // so they're unit-testable in isolation against injected el / fetch.
+    function renderJwtAnalyzerSection() {
+        var wrap = el('div', { className: 'bowire-ai-jwt-section bowire-secsuite-section' });
+        wrap.appendChild(el('h4', { className: 'bowire-secsuite-h', textContent: 'JWT analyzer' }));
+        wrap.appendChild(el('p', {
+            className: 'bowire-secsuite-hint',
+            textContent: 'Paste a JWT — deterministic security flags (alg=none, weak HMAC, exp, scope creep, audience) plus an AI narrative when a model is connected.'
+        }));
+
+        var tokenInput = el('textarea', { className: 'bowire-form-input bowire-ai-jwt-input', placeholder: 'header.payload.signature', rows: 3 });
+        var audInput = el('input', { className: 'bowire-form-input', placeholder: 'Expected audience (optional)' });
+        var results = el('div', { className: 'bowire-ai-jwt-results' });
+        var statusEl = el('div', { className: 'bowire-secsuite-status' });
+
+        var analyzeBtn = el('button', {
+            className: 'bowire-btn',
+            textContent: 'Analyze',
+            onclick: function () {
+                var token = (tokenInput.value || '').trim();
+                if (!token) { statusEl.textContent = 'Paste a JWT first.'; return; }
+                analyzeBtn.disabled = true;
+                statusEl.textContent = 'Analyzing…';
+                results.replaceChildren();
+                var aud = (audInput.value || '').trim();
+                fetch(aiPrefix() + '/api/ai/jwt-analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: token, audience: aud || null })
+                })
+                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { statusEl.textContent = (res.body && res.body.error) || 'Analysis failed.'; return; }
+                        statusEl.textContent = res.body.aiAvailable ? '' : 'Deterministic analysis (no AI model connected).';
+                        renderJwtResult(results, res.body);
+                    })
+                    .catch(function (e) { statusEl.textContent = 'Analysis failed: ' + e; })
+                    .finally(function () { analyzeBtn.disabled = false; });
+            }
+        });
+
+        wrap.appendChild(el('div', { className: 'bowire-secsuite-controls' }, tokenInput, audInput, analyzeBtn, statusEl));
+        wrap.appendChild(results);
+        return wrap;
+    }
+
+    // Render the /api/ai/jwt-analyze response into `container`.
+    function renderJwtResult(container, body) {
+        container.replaceChildren();
+        if (body.algorithm) {
+            container.appendChild(el('div', {
+                className: 'bowire-ai-jwt-alg',
+                textContent: 'alg: ' + body.algorithm + (body.keyId ? ' · kid: ' + body.keyId : '')
+            }));
+        }
+        var flags = body.flags || [];
+        var list = el('ul', { className: 'bowire-ai-jwt-flags' });
+        flags.forEach(function (f) {
+            var level = (f.level || 'INFO');
+            var li = el('li', { className: 'bowire-ai-jwt-flag bowire-jwt-' + level.toLowerCase() });
+            li.appendChild(el('span', { className: 'bowire-jwt-flag-level', textContent: level }));
+            li.appendChild(el('span', { className: 'bowire-jwt-flag-claim', textContent: f.claim || '' }));
+            li.appendChild(el('span', { className: 'bowire-jwt-flag-msg', textContent: f.message || '' }));
+            list.appendChild(li);
+        });
+        container.appendChild(list);
+        if (body.aiNarrative) {
+            container.appendChild(el('div', { className: 'bowire-ai-jwt-narrative', textContent: body.aiNarrative }));
+        }
+        return container;
     }
 
     // Expose for render-main.js
