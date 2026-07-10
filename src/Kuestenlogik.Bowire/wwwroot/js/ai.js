@@ -1898,7 +1898,174 @@
         // + an AI narrative (degrades to the flags when no model is connected).
         panel.appendChild(renderJwtAnalyzerSection());
 
+        // #106 — OWASP API Top 10 per-method panel: map a method against the ten
+        // entries (tri-state status + concrete probe), with an AI review on top.
+        panel.appendChild(renderOwaspPanelSection());
+
+        // #104 — one-button AI security scan: chains threat-model → probe →
+        // triage → report over the discovered endpoints, and shows the report.
+        panel.appendChild(renderSecurityScanSection());
+
         return panel;
+    }
+
+    // #104 — collect the discovered methods into the endpoint shape the
+    // orchestration endpoint expects. Defensive: services may not be loaded.
+    function collectScanEndpoints() {
+        var out = [];
+        try {
+            if (typeof services !== 'undefined' && Array.isArray(services)) {
+                services.forEach(function (svc) {
+                    if (!svc || !Array.isArray(svc.methods)) return;
+                    svc.methods.forEach(function (m) {
+                        var path = m.path || m.httpPath || ('/' + (m.name || ''));
+                        out.push({ endpointId: (svc.name || 'svc') + '.' + (m.name || 'method'), path: path, method: m.httpMethod || m.verb || null });
+                    });
+                });
+            }
+        } catch { /* services not ready */ }
+        return out;
+    }
+
+    // #104 — one-button AI security scan section.
+    function renderSecurityScanSection() {
+        var wrap = el('div', { className: 'bowire-ai-scan-section bowire-secsuite-section' });
+        wrap.appendChild(el('h4', { className: 'bowire-secsuite-h', textContent: 'AI security scan' }));
+        wrap.appendChild(el('p', {
+            className: 'bowire-secsuite-hint',
+            textContent: 'One run: threat-model rank → probe the highest-risk endpoints → triage findings → report. Uses the discovered endpoints from the active workspace; degrades to a heuristic ranking without a model.'
+        }));
+
+        var results = el('div', { className: 'bowire-ai-scan-results' });
+        var statusEl = el('div', { className: 'bowire-secsuite-status' });
+
+        var runBtn = el('button', {
+            className: 'bowire-btn',
+            textContent: 'Run AI security scan',
+            onclick: function () {
+                var endpoints = collectScanEndpoints();
+                if (!endpoints.length) { statusEl.textContent = 'No discovered endpoints — connect to a server or load a schema in Discover first.'; return; }
+                var target = (typeof serverUrl !== 'undefined' && serverUrl) ? serverUrl : '';
+                runBtn.disabled = true;
+                statusEl.textContent = 'Running…';
+                results.replaceChildren();
+                fetch(aiPrefix() + '/api/ai/security-scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoints: endpoints, target: target })
+                })
+                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { statusEl.textContent = (res.body && res.body.error) || 'Scan failed.'; return; }
+                        var notes = [];
+                        if (!res.body.aiAvailable) notes.push('heuristic (no model)');
+                        if (!res.body.probeExecuted) notes.push('plan-only (no probe runner)');
+                        statusEl.textContent = notes.length ? notes.join(' · ') : '';
+                        renderScanResult(results, res.body);
+                    })
+                    .catch(function (e) { statusEl.textContent = 'Scan failed: ' + e; })
+                    .finally(function () { runBtn.disabled = false; });
+            }
+        });
+
+        wrap.appendChild(el('div', { className: 'bowire-secsuite-controls' }, runBtn, statusEl));
+        wrap.appendChild(results);
+        return wrap;
+    }
+
+    // Render the /api/ai/security-scan response into `container`.
+    function renderScanResult(container, body) {
+        container.replaceChildren();
+        var ranked = (body.ranked || []).length;
+        var probed = (body.probed || []).length;
+        var findings = body.findings || [];
+        container.appendChild(el('div', {
+            className: 'bowire-ai-scan-summary',
+            textContent: 'Ranked ' + ranked + ' · probed ' + probed + ' · kept ' + findings.length + ' finding(s) · suppressed ' + (body.suppressedCount || 0)
+        }));
+
+        if (findings.length) {
+            var list = el('ul', { className: 'bowire-ai-scan-findings' });
+            findings.forEach(function (f) {
+                var li = el('li', { className: 'bowire-ai-scan-finding bowire-sev-' + (f.severity || 'medium').toLowerCase() });
+                li.appendChild(el('span', { className: 'bowire-scan-finding-title', textContent: '[' + (f.severity || '?') + '] ' + (f.title || f.ruleId || 'finding') }));
+                li.appendChild(el('span', { className: 'bowire-scan-finding-meta', textContent: (f.endpointId || '') + ' · ' + (f.ruleId || '') + ' · real ' + (f.realScore != null ? f.realScore : '?') + '%' }));
+                list.appendChild(li);
+            });
+            container.appendChild(list);
+        }
+
+        if (body.reportMarkdown) {
+            container.appendChild(el('pre', { className: 'bowire-ai-scan-report', textContent: body.reportMarkdown }));
+        }
+        return container;
+    }
+
+    // #106 — per-method OWASP API Top 10 panel.
+    function renderOwaspPanelSection() {
+        var wrap = el('div', { className: 'bowire-ai-owasp-section bowire-secsuite-section' });
+        wrap.appendChild(el('h4', { className: 'bowire-secsuite-h', textContent: 'OWASP API Top 10 — per method' }));
+        wrap.appendChild(el('p', {
+            className: 'bowire-secsuite-hint',
+            textContent: 'Map one method against the ten OWASP API 2023 entries — a tri-state status (at-risk / maybe / n-a) and a concrete probe per row, with an AI review when a model is connected.'
+        }));
+
+        var pathInput = el('input', { className: 'bowire-form-input', placeholder: 'Method path (e.g. /orders/{id})' });
+        var verbInput = el('input', { className: 'bowire-form-input bowire-ai-owasp-verb', placeholder: 'Verb (GET…)' });
+        var fieldsInput = el('input', { className: 'bowire-form-input', placeholder: 'Request fields, comma-separated (optional)' });
+        var results = el('div', { className: 'bowire-ai-owasp-results' });
+        var statusEl = el('div', { className: 'bowire-secsuite-status' });
+
+        var checkBtn = el('button', {
+            className: 'bowire-btn',
+            textContent: 'Check',
+            onclick: function () {
+                var path = (pathInput.value || '').trim();
+                if (!path) { statusEl.textContent = 'Enter a method path first.'; return; }
+                var fields = (fieldsInput.value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+                checkBtn.disabled = true;
+                statusEl.textContent = 'Checking…';
+                results.replaceChildren();
+                fetch(aiPrefix() + '/api/ai/owasp-panel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: path, verb: (verbInput.value || '').trim() || null, requestFields: fields })
+                })
+                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { statusEl.textContent = (res.body && res.body.error) || 'Check failed.'; return; }
+                        statusEl.textContent = res.body.aiAvailable ? '' : 'Deterministic mapping (no AI model connected).';
+                        renderOwaspPanelRows(results, res.body);
+                    })
+                    .catch(function (e) { statusEl.textContent = 'Check failed: ' + e; })
+                    .finally(function () { checkBtn.disabled = false; });
+            }
+        });
+
+        wrap.appendChild(el('div', { className: 'bowire-secsuite-controls' }, pathInput, verbInput, fieldsInput, checkBtn, statusEl));
+        wrap.appendChild(results);
+        return wrap;
+    }
+
+    // Render the /api/ai/owasp-panel response into `container`.
+    function renderOwaspPanelRows(container, body) {
+        container.replaceChildren();
+        var rows = body.rows || [];
+        var table = el('div', { className: 'bowire-ai-owasp-rows' });
+        rows.forEach(function (r) {
+            var status = r.status || 'NotApplicable';
+            var row = el('div', { className: 'bowire-ai-owasp-row bowire-owasp-' + status.toLowerCase() });
+            row.appendChild(el('span', { className: 'bowire-owasp-entry', textContent: r.entry }));
+            row.appendChild(el('span', { className: 'bowire-owasp-title', textContent: r.title }));
+            row.appendChild(el('span', { className: 'bowire-owasp-status', textContent: status }));
+            if (r.suggestedProbe) row.appendChild(el('span', { className: 'bowire-owasp-probe', textContent: r.suggestedProbe }));
+            table.appendChild(row);
+        });
+        container.appendChild(table);
+        if (body.aiReview) {
+            container.appendChild(el('div', { className: 'bowire-ai-owasp-review', textContent: body.aiReview }));
+        }
+        return container;
     }
 
     // #105 — JWT analyzer surface. Kept as top-level functions (not closures)
