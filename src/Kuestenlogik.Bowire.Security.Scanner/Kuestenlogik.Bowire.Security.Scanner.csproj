@@ -18,6 +18,14 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
+    <!-- #395 — the active MQTT will-message-abuse probe needs Last-Will +
+         ungraceful-disconnect control the shared MQTT plugin deliberately does
+         NOT expose (keeping the plugin's connect/discovery path simple). The
+         security rail brings its own MQTT client for that isolated probe rather
+         than complicating the shared BowireMqttProtocol connection interface. -->
+    <PackageReference Include="MQTTnet" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
     <!-- ScanCliCommand implements IBowireCliCommand → needs the CLI
          contract package, which carries the System.CommandLine
