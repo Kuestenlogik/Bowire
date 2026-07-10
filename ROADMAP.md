@@ -126,7 +126,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
-**8/24 done** · 4 in progress · 12 backlog
+**9/24 done** · 4 in progress · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -144,7 +144,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [175](https://github.com/Kuestenlogik/Bowire/issues/175) | Bowire | [Schema-aware mutation engine for fuzz / scan](#issue-kuestenlogik-bowire-175) | ⬜ Backlog |  |
 | [176](https://github.com/Kuestenlogik/Bowire/issues/176) | Bowire | [Spider / crawl — discover endpoints from a base URL](#issue-kuestenlogik-bowire-176) | ⬜ Backlog |  |
 | [339](https://github.com/Kuestenlogik/Bowire/issues/339) | Bowire | [docs(audit): Trash-as-plugin architecture proposal for v2.3](#issue-kuestenlogik-bowire-339) | ⬜ Backlog |  |
-| [397](https://github.com/Kuestenlogik/Bowire/issues/397) | Bowire | [WebSocket compression-bomb probe (permessage-deflate amplification)](#issue-kuestenlogik-bowire-397) | ⬜ Backlog |  |
 | [400](https://github.com/Kuestenlogik/Bowire/issues/400) | Bowire | [MCP tool-call injection probe (adversarial prompt / unintended tool execution)](#issue-kuestenlogik-bowire-400) | ⬜ Backlog |  |
 | [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ✅ Done |  |
 | [178](https://github.com/Kuestenlogik/Bowire/issues/178) | Bowire | [bowire scan CLI with SARIF output + GitHub Action wrapper](#issue-kuestenlogik-bowire-178) | ✅ Done |  |
@@ -152,6 +151,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [187](https://github.com/Kuestenlogik/Bowire/issues/187) | Bowire | [CVE lookup for discovered servers — fill Bowire.VulnDb](#issue-kuestenlogik-bowire-187) | ✅ Done |  |
 | [381](https://github.com/Kuestenlogik/Bowire/issues/381) | Bowire | [OWASP API suite — remaining: API6 / API10, protocol-specific variants, compliance tab](#issue-kuestenlogik-bowire-381) | ✅ Done |  |
 | [395](https://github.com/Kuestenlogik/Bowire/issues/395) | Bowire | [Active MQTT probes: retained-message poisoning + will-message abuse (PUBLISH-based)](#issue-kuestenlogik-bowire-395) | ✅ Done |  |
+| [397](https://github.com/Kuestenlogik/Bowire/issues/397) | Bowire | [WebSocket compression-bomb probe (permessage-deflate amplification)](#issue-kuestenlogik-bowire-397) | ✅ Done |  |
 | [398](https://github.com/Kuestenlogik/Bowire/issues/398) | Bowire | [Timing-based DoS probes: WebSocket slow-loris + SSE slow-consumption](#issue-kuestenlogik-bowire-398) | ✅ Done |  |
 | [399](https://github.com/Kuestenlogik/Bowire/issues/399) | Bowire | [gRPC stream fork-bomb / concurrent-stream limit probe](#issue-kuestenlogik-bowire-399) | ✅ Done |  |
 
@@ -779,10 +779,6 @@ Bowire's discovery starts from "you tell me a URL or upload a schema". If the sc
 
 Architecture audit + design doc for extracting Trash into a pluggable extension point. Filed in `docs/audits/2026-06-30-trash-as-plugin-architecture.md` (331 lines). [[more]](https://github.com/Kuestenlogik/Bowire/issues/339)
 
-#### <a id="issue-kuestenlogik-bowire-397"></a>⬜ Backlog · [#397](https://github.com/Kuestenlogik/Bowire/issues/397) WebSocket compression-bomb probe (permessage-deflate amplification)
-
-Follow-up from #184. The v2.3 WebSocket probes cover anonymous-connect auth and inbound message-size cap. **Compression-bomb** (permessage-deflate amplification) is not yet reachable. [[more]](https://github.com/Kuestenlogik/Bowire/issues/397)
-
 #### <a id="issue-kuestenlogik-bowire-400"></a>⬜ Backlog · [#400](https://github.com/Kuestenlogik/Bowire/issues/400) MCP tool-call injection probe (adversarial prompt / unintended tool execution)
 
 Follow-up from #184. The v2.3 MCP probes cover discovery-inventory exposure (API9) and resource-URL traversal (API1, CWE-22). **Tool-call injection** is deferred. [[more]](https://github.com/Kuestenlogik/Bowire/issues/400)
@@ -810,6 +806,10 @@ Follow-up to #173, which shipped the OWASP API Security Top 10 (2023) suite — 
 #### <a id="issue-kuestenlogik-bowire-395"></a>✅ Done · [#395](https://github.com/Kuestenlogik/Bowire/issues/395) Active MQTT probes: retained-message poisoning + will-message abuse (PUBLISH-based)
 
 Follow-up from #184. The v2.3 protocol scanner is intentionally **safe, black-box and non-destructive** — its MQTT auth probe connects + subscribes to a throwaway topic and **never publishes**. These two checks require an **active/mutating** testing mode the passive scanner deliberately avoids. [[more]](https://github.com/Kuestenlogik/Bowire/issues/395)
+
+#### <a id="issue-kuestenlogik-bowire-397"></a>✅ Done · [#397](https://github.com/Kuestenlogik/Bowire/issues/397) WebSocket compression-bomb probe (permessage-deflate amplification)
+
+Follow-up from #184. The v2.3 WebSocket probes cover anonymous-connect auth and inbound message-size cap. **Compression-bomb** (permessage-deflate amplification) is not yet reachable. [[more]](https://github.com/Kuestenlogik/Bowire/issues/397)
 
 #### <a id="issue-kuestenlogik-bowire-398"></a>✅ Done · [#398](https://github.com/Kuestenlogik/Bowire/issues/398) Timing-based DoS probes: WebSocket slow-loris + SSE slow-consumption
 
