@@ -126,7 +126,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
-**6/24 done** · 5 in progress · 13 backlog
+**7/24 done** · 5 in progress · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -146,13 +146,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [176](https://github.com/Kuestenlogik/Bowire/issues/176) | Bowire | [Spider / crawl — discover endpoints from a base URL](#issue-kuestenlogik-bowire-176) | ⬜ Backlog |  |
 | [339](https://github.com/Kuestenlogik/Bowire/issues/339) | Bowire | [docs(audit): Trash-as-plugin architecture proposal for v2.3](#issue-kuestenlogik-bowire-339) | ⬜ Backlog |  |
 | [397](https://github.com/Kuestenlogik/Bowire/issues/397) | Bowire | [WebSocket compression-bomb probe (permessage-deflate amplification)](#issue-kuestenlogik-bowire-397) | ⬜ Backlog |  |
-| [398](https://github.com/Kuestenlogik/Bowire/issues/398) | Bowire | [Timing-based DoS probes: WebSocket slow-loris + SSE slow-consumption](#issue-kuestenlogik-bowire-398) | ⬜ Backlog |  |
 | [400](https://github.com/Kuestenlogik/Bowire/issues/400) | Bowire | [MCP tool-call injection probe (adversarial prompt / unintended tool execution)](#issue-kuestenlogik-bowire-400) | ⬜ Backlog |  |
 | [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ✅ Done |  |
 | [178](https://github.com/Kuestenlogik/Bowire/issues/178) | Bowire | [bowire scan CLI with SARIF output + GitHub Action wrapper](#issue-kuestenlogik-bowire-178) | ✅ Done |  |
 | [184](https://github.com/Kuestenlogik/Bowire/issues/184) | Bowire | [Protocol-specific security scanners — gRPC / GraphQL / WS / MQTT / SSE / MCP](#issue-kuestenlogik-bowire-184) | ✅ Done |  |
 | [187](https://github.com/Kuestenlogik/Bowire/issues/187) | Bowire | [CVE lookup for discovered servers — fill Bowire.VulnDb](#issue-kuestenlogik-bowire-187) | ✅ Done |  |
 | [381](https://github.com/Kuestenlogik/Bowire/issues/381) | Bowire | [OWASP API suite — remaining: API6 / API10, protocol-specific variants, compliance tab](#issue-kuestenlogik-bowire-381) | ✅ Done |  |
+| [398](https://github.com/Kuestenlogik/Bowire/issues/398) | Bowire | [Timing-based DoS probes: WebSocket slow-loris + SSE slow-consumption](#issue-kuestenlogik-bowire-398) | ✅ Done |  |
 | [399](https://github.com/Kuestenlogik/Bowire/issues/399) | Bowire | [gRPC stream fork-bomb / concurrent-stream limit probe](#issue-kuestenlogik-bowire-399) | ✅ Done |  |
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
@@ -787,10 +787,6 @@ Architecture audit + design doc for extracting Trash into a pluggable extension 
 
 Follow-up from #184. The v2.3 WebSocket probes cover anonymous-connect auth and inbound message-size cap. **Compression-bomb** (permessage-deflate amplification) is not yet reachable. [[more]](https://github.com/Kuestenlogik/Bowire/issues/397)
 
-#### <a id="issue-kuestenlogik-bowire-398"></a>⬜ Backlog · [#398](https://github.com/Kuestenlogik/Bowire/issues/398) Timing-based DoS probes: WebSocket slow-loris + SSE slow-consumption
-
-Follow-up from #184. Two remaining catalogue checks are **time-based** and unsuitable for a bounded, fast black-box scan; grouping them since they share the same "hold a connection and measure server fairness over time" shape. [[more]](https://github.com/Kuestenlogik/Bowire/issues/398)
-
 #### <a id="issue-kuestenlogik-bowire-400"></a>⬜ Backlog · [#400](https://github.com/Kuestenlogik/Bowire/issues/400) MCP tool-call injection probe (adversarial prompt / unintended tool execution)
 
 Follow-up from #184. The v2.3 MCP probes cover discovery-inventory exposure (API9) and resource-URL traversal (API1, CWE-22). **Tool-call injection** is deferred. [[more]](https://github.com/Kuestenlogik/Bowire/issues/400)
@@ -814,6 +810,10 @@ Bowire knows what protocol it's talking to and often what server (Envoy, NGINX, 
 #### <a id="issue-kuestenlogik-bowire-381"></a>✅ Done · [#381](https://github.com/Kuestenlogik/Bowire/issues/381) OWASP API suite — remaining: API6 / API10, protocol-specific variants, compliance tab
 
 Follow-up to #173, which shipped the OWASP API Security Top 10 (2023) suite — the scaffold (`OwaspApiCatalog` + roll-up), **8/10 dedicated probes** (API1–API5, API7–API9), the CLI (`bowire scan --suite=owasp-api`), the workbench API (`/api/security/owasp-catalog` + `/api/security/owasp-scan`), the S … [[more]](https://github.com/Kuestenlogik/Bowire/issues/381)
+
+#### <a id="issue-kuestenlogik-bowire-398"></a>✅ Done · [#398](https://github.com/Kuestenlogik/Bowire/issues/398) Timing-based DoS probes: WebSocket slow-loris + SSE slow-consumption
+
+Follow-up from #184. Two remaining catalogue checks are **time-based** and unsuitable for a bounded, fast black-box scan; grouping them since they share the same "hold a connection and measure server fairness over time" shape. [[more]](https://github.com/Kuestenlogik/Bowire/issues/398)
 
 #### <a id="issue-kuestenlogik-bowire-399"></a>✅ Done · [#399](https://github.com/Kuestenlogik/Bowire/issues/399) gRPC stream fork-bomb / concurrent-stream limit probe
 
@@ -1255,4 +1255,4 @@ When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` 
 
 ---
 
-*Generated 2026-07-09 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-07-10 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
