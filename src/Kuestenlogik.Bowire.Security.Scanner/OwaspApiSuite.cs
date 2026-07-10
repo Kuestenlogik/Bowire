@@ -140,6 +140,7 @@ internal static class OwaspApiSuite
         new MqttWillMessageAbuseProbe(),
         new GrpcConcurrentStreamProbe(),
         new WebSocketSlowLorisProbe(),
+        new WebSocketCompressionBombProbe(),
         new SseSlowConsumptionProbe(),
     ];
 
