@@ -131,6 +131,87 @@ public static class BowireHarConverter
         return recording;
     }
 
+    private static readonly JsonSerializerOptions s_exportJson = new() { WriteIndented = true };
+
+    /// <summary>
+    /// Export a <see cref="BowireRecording"/> back to a HAR 1.2 document — the
+    /// inverse of <see cref="Convert(string, string?)"/> for the unary REST/
+    /// gRPC-Web steps it round-trips (#39). Deterministic: headers are sorted by
+    /// name and timestamps derive from the step's captured time, so
+    /// <c>ToHar(Convert(har))</c> is stable and golden-testable. Lossy fields the
+    /// import already drops (cache / timings detail / page IDs) are emitted as
+    /// their conventional empty shapes.
+    /// </summary>
+    public static string ToHar(BowireRecording recording, string? creatorName = null)
+    {
+        ArgumentNullException.ThrowIfNull(recording);
+        var entries = recording.Steps.Select(ToEntry).ToArray();
+        var doc = new
+        {
+            log = new
+            {
+                version = "1.2",
+                creator = new { name = creatorName ?? (string.IsNullOrEmpty(recording.Name) ? "Bowire" : recording.Name), version = "1.0" },
+                entries,
+            },
+        };
+        return JsonSerializer.Serialize(doc, s_exportJson);
+    }
+
+    private static object ToEntry(BowireRecordingStep step)
+    {
+        var url = (step.ServerUrl ?? "") + (step.HttpPath ?? "/");
+        return new
+        {
+            startedDateTime = DateTimeOffset.FromUnixTimeMilliseconds(step.CapturedAt)
+                .ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture),
+            time = (double)step.DurationMs,
+            request = new
+            {
+                method = string.IsNullOrEmpty(step.HttpVerb) ? "GET" : step.HttpVerb,
+                url,
+                httpVersion = "HTTP/1.1",
+                cookies = Array.Empty<object>(),
+                headers = ToHeaderArray(step.Metadata),
+                queryString = Array.Empty<object>(),
+                postData = step.Body is null ? null : new { mimeType = "application/json", text = step.Body },
+                headersSize = -1,
+                bodySize = step.Body is null ? 0 : Encoding.UTF8.GetByteCount(step.Body),
+            },
+            response = new
+            {
+                status = StatusToCode(step.Status),
+                statusText = step.Status,
+                httpVersion = "HTTP/1.1",
+                cookies = Array.Empty<object>(),
+                headers = ToHeaderArray(step.ResponseHeaders),
+                content = new
+                {
+                    size = step.Response is null ? 0 : Encoding.UTF8.GetByteCount(step.Response),
+                    mimeType = "application/json",
+                    text = step.Response ?? "",
+                },
+                redirectURL = "",
+                headersSize = -1,
+                bodySize = step.Response is null ? 0 : Encoding.UTF8.GetByteCount(step.Response),
+            },
+            cache = new { },
+            timings = new { send = 0.0, wait = (double)step.DurationMs, receive = 0.0 },
+        };
+    }
+
+    private static object[] ToHeaderArray(IDictionary<string, string>? headers)
+        => headers is null
+            ? []
+            : headers.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(kv => (object)new { name = kv.Key, value = kv.Value }).ToArray();
+
+    // Inverse of MapStatus: the recorder stores "OK" for 2xx and the numeric
+    // code otherwise, so map back to a concrete response status.
+    private static int StatusToCode(string status)
+        => string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase) ? 200
+            : int.TryParse(status, NumberStyles.Integer, CultureInfo.InvariantCulture, out var code) ? code : 0;
+
     /// <summary>
     /// Scan a HAR document and return the distinct credential-bearing header
     /// names it contains (canonical casing from <see cref="SensitiveHeaders"/>),
