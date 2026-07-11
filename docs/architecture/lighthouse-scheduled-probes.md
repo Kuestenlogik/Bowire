@@ -130,20 +130,32 @@ out of scope for v1.**
 
 ## Component boundaries
 
-```
-Kuestenlogik.Bowire.Lighthouse            (Core-adjacent, slim)
-├── ProbeFile            parse/serialise recording + schedule/assertions/severity
-├── IProbeScheduler      TimeProvider-based default impl
-├── ProbeRunner          invoke recording → evaluate assertions → OutcomeRow
-├── OutcomeLedger        append-only <probe>.jsonl, last-row read for resume
-├── ISignaler            fire(transition) seam
-└── TransitionDetector   last-outcome vs new-outcome → pass↔fail edge
+```mermaid
+flowchart TB
+    subgraph core["Kuestenlogik.Bowire.Lighthouse — Core-adjacent, slim"]
+        direction TB
+        PF["ProbeFile<br/>recording + schedule / assertions / severity"]
+        SCH["IProbeScheduler<br/>TimeProvider-based default impl"]
+        PR["ProbeRunner<br/>invoke recording → evaluate assertions → OutcomeRow"]
+        LED["OutcomeLedger<br/>append-only &lt;probe&gt;.jsonl, last-row read for resume"]
+        TD["TransitionDetector<br/>last-outcome vs new-outcome → pass↔fail edge"]
+        SIG["ISignaler<br/>fire(transition) seam"]
 
-Optional sibling packages (opt-in, degrade when absent):
-├── …Lighthouse.Slack        ISignaler → incoming webhook
-├── …Lighthouse.PagerDuty    ISignaler → Events API v2
-├── …Lighthouse.Otlp         ISignaler(logs) + metrics exporter (bowire.lighthouse.*)
-└── …Lighthouse.Quartz       IProbeScheduler → Quartz (clustered/persistent)
+        PF --> SCH --> PR --> LED --> TD --> SIG
+    end
+
+    subgraph opt["Optional sibling packages — opt-in, degrade when absent"]
+        direction TB
+        SLACK["…Lighthouse.Slack<br/>incoming webhook"]
+        PD["…Lighthouse.PagerDuty<br/>Events API v2"]
+        OTLP["…Lighthouse.Otlp<br/>logs signaler + metrics exporter<br/>(bowire.lighthouse.*)"]
+        QZ["…Lighthouse.Quartz<br/>clustered / persistent scheduling"]
+    end
+
+    SLACK -. implements .-> SIG
+    PD -. implements .-> SIG
+    OTLP -. implements .-> SIG
+    QZ -. implements .-> SCH
 ```
 
 Every outbound integration (Slack, PagerDuty, OTLP) is an **optional
