@@ -34,10 +34,22 @@ public static class NucleiMatcherTranslator
     public static AttackPredicate? Translate(NucleiHttpRequest http)
     {
         ArgumentNullException.ThrowIfNull(http);
-        if (http.Matchers.Count == 0) return null;
+        return Translate(http.Matchers, http.MatchersCondition);
+    }
+
+    /// <summary>
+    /// Build the predicate tree for a bare matcher list + its
+    /// composition condition — shared across transports (HTTP + the
+    /// Phase-2g <c>dns</c> pass, which reuses the same word / regex /
+    /// negative matcher shape over the resolved DNS answer).
+    /// </summary>
+    public static AttackPredicate? Translate(IReadOnlyList<NucleiMatcher> matchers, string matchersCondition)
+    {
+        ArgumentNullException.ThrowIfNull(matchers);
+        if (matchers.Count == 0) return null;
 
         var subPredicates = new List<AttackPredicate>();
-        foreach (var matcher in http.Matchers)
+        foreach (var matcher in matchers)
         {
             var p = TranslateMatcher(matcher);
             if (p is not null) subPredicates.Add(p);
@@ -48,7 +60,7 @@ public static class NucleiMatcherTranslator
 
         // Compose the matcher-level condition. Nuclei default is "or"
         // when matchers-condition is unset.
-        return string.Equals(http.MatchersCondition, "and", StringComparison.OrdinalIgnoreCase)
+        return string.Equals(matchersCondition, "and", StringComparison.OrdinalIgnoreCase)
             ? new AttackPredicate { AllOf = subPredicates }
             : new AttackPredicate { AnyOf = subPredicates };
     }

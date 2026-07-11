@@ -21,6 +21,30 @@ public sealed class NucleiTemplate
     public string Id { get; set; } = "";
     public NucleiInfo Info { get; set; } = new();
     public List<NucleiHttpRequest> Http { get; init; } = [];
+
+    /// <summary>The <c>dns:</c> block — Phase 2g's first non-HTTP transport pass.
+    /// Empty for HTTP-only templates.</summary>
+    public List<NucleiDnsRequest> Dns { get; init; } = [];
+}
+
+/// <summary>
+/// One entry in the <c>dns:</c> array (#35 Phase 2g). A DNS query (name + record
+/// type) plus matchers over the resolved answer — the same word / regex / negative
+/// matcher shape HTTP uses, applied to the DNS response instead of an HTTP body.
+/// </summary>
+public sealed class NucleiDnsRequest
+{
+    /// <summary>The name to resolve. Nuclei uses <c>{{FQDN}}</c> / <c>{{Host}}</c> placeholders.</summary>
+    public string Name { get; set; } = "";
+
+    /// <summary>Record type: <c>A</c> / <c>AAAA</c> / <c>CNAME</c> / <c>TXT</c> / <c>MX</c> / … Default <c>A</c>.</summary>
+    public string RecordType { get; set; } = "A";
+
+    /// <summary>How matchers compose: <c>and</c> / <c>or</c> (default).</summary>
+    public string MatchersCondition { get; set; } = "or";
+
+    /// <summary>Matchers over the resolved answer (reuses <see cref="NucleiMatcher"/>).</summary>
+    public List<NucleiMatcher> Matchers { get; init; } = [];
 }
 
 /// <summary>The <c>info:</c> block on a Nuclei template — author,

@@ -84,6 +84,66 @@ public sealed class NucleiTemplateConverterTests
     }
 
     [Fact]
+    public void Converts_dns_only_template_to_dns_recording_and_predicate()
+    {
+        // #35 Phase 2g — a dns:-only template becomes a Protocol="dns"
+        // recording. The name → Service, record type → Method, and the
+        // matchers translate through the shared predicate builder.
+        var yaml = """
+            id: dangling-cname
+            info:
+              name: Dangling CNAME
+              severity: high
+            dns:
+              - name: '{{FQDN}}'
+                type: cname
+                matchers:
+                  - type: word
+                    words:
+                      - "s3.amazonaws.com"
+            """;
+        var template = NucleiTemplateReader.ReadText(yaml);
+
+        var recording = NucleiTemplateConverter.ToBowireRecording(template);
+
+        Assert.Equal("dangling-cname", recording.Id);
+        Assert.Equal(new List<string> { "dns" }, recording.Vulnerability!.Protocols);
+
+        var step = Assert.Single(recording.Steps);
+        Assert.Equal("dns", step.Protocol);
+        Assert.Equal("{{FQDN}}", step.Service);
+        Assert.Equal("CNAME", step.Method);
+        Assert.Null(step.HttpVerb);
+
+        Assert.NotNull(recording.VulnerableWhen);
+        Assert.Equal("s3.amazonaws.com", recording.VulnerableWhen!.BodyContains);
+    }
+
+    [Fact]
+    public void Converts_dns_only_template_through_plural_unfold()
+    {
+        // The plural unfolder routes an http-less template through the
+        // singular path — the dns recording still comes out.
+        var yaml = """
+            id: bare-dns
+            info:
+              name: Bare
+              severity: info
+            dns:
+              - name: '{{Host}}'
+                matchers:
+                  - type: word
+                    words:
+                      - "v=spf1"
+            """;
+        var template = NucleiTemplateReader.ReadText(yaml);
+
+        var recording = Assert.Single(NucleiTemplateConverter.ToBowireRecordings(template));
+        Assert.Equal("dns", Assert.Single(recording.Steps).Protocol);
+        Assert.Equal("A", recording.Steps[0].Method);
+    }
+
+    [Fact]
     public void VulnerableWhen_is_null_when_template_declares_no_matchers()
     {
         // Empty-matchers safety — the converter must not invent a

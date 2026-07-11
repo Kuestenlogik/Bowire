@@ -180,6 +180,12 @@ public static class NucleiTemplateConverter
     {
         ArgumentNullException.ThrowIfNull(template);
 
+        // #35 Phase 2g — a template with no http: block but a dns: block is a
+        // DNS-transport probe. The matcher shape is shared; only the protocol
+        // tag + the step change.
+        var firstDns = template.Dns.FirstOrDefault();
+        var isDnsOnly = template.Http.Count == 0 && firstDns is not null;
+
         var recording = new BowireRecording
         {
             Id = string.IsNullOrWhiteSpace(template.Id) ? "nuclei-untitled" : template.Id,
@@ -194,7 +200,7 @@ public static class NucleiTemplateConverter
                     ? new List<string>()
                     : new List<string>(template.Info.Author.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)),
                 References = new List<string>(template.Info.Reference),
-                Protocols = new List<string> { "rest", "http" },
+                Protocols = isDnsOnly ? new List<string> { "dns" } : new List<string> { "rest", "http" },
             },
             // VulnerableWhen translated by NucleiMatcherTranslator —
             // status / word / regex on the body get full coverage.
@@ -207,7 +213,9 @@ public static class NucleiTemplateConverter
             // predicate" — visible, non-silent.
             VulnerableWhen = template.Http.FirstOrDefault() is { } firstReq
                 ? NucleiMatcherTranslator.Translate(firstReq)
-                : null,
+                : firstDns is not null
+                    ? NucleiMatcherTranslator.Translate(firstDns.Matchers, firstDns.MatchersCondition)
+                    : null,
         };
 
         // Phase 2a captures the first http-block's first path as a
@@ -235,6 +243,30 @@ public static class NucleiTemplateConverter
                 HttpVerb = firstHttp.Method,
                 HttpPath = path,
                 Body = body,
+                Status = "OK",
+            });
+        }
+        else if (firstDns is not null)
+        {
+            // #35 Phase 2g — the dns: query becomes a single step whose
+            // Service carries the name to resolve and Method the record
+            // type. Nuclei {{FQDN}}/{{Host}} placeholders resolve the
+            // same way http paths do once a target is bound. Wire-level
+            // execution of the DNS query is a scoped follow-up; the
+            // scanner currently loads dns recordings and skips the
+            // non-http step (visible, non-silent) until then.
+            var rawName = firstDns.Name;
+            var name = variableContext is null
+                ? rawName
+                : NucleiVariableResolver.Resolve(rawName, variableContext);
+
+            recording.Steps.Add(new BowireRecordingStep
+            {
+                Id = "probe-1",
+                Protocol = "dns",
+                Service = string.IsNullOrWhiteSpace(name) ? "dns" : name,
+                Method = firstDns.RecordType,
+                MethodType = "Unary",
                 Status = "OK",
             });
         }
