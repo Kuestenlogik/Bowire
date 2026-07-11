@@ -126,7 +126,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
-**12/24 done** · 6 in progress · 6 backlog
+**13/24 done** · 6 in progress · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -137,11 +137,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [186](https://github.com/Kuestenlogik/Bowire/issues/186) | Bowire | [HAR import — Chrome DevTools network tab as an input source](#issue-kuestenlogik-bowire-186) | 🟡 In progress |  |
 | [190](https://github.com/Kuestenlogik/Bowire/issues/190) | Bowire | [Authentication session recording + token reuse](#issue-kuestenlogik-bowire-190) | 🟡 In progress |  |
 | [35](https://github.com/Kuestenlogik/Bowire/issues/35) | Bowire | [Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)](#issue-kuestenlogik-bowire-35) | ⬜ Backlog | `area:security` |
-| [39](https://github.com/Kuestenlogik/Bowire/issues/39) | Bowire | [HAR Import polish](#issue-kuestenlogik-bowire-39) | ⬜ Backlog | `area:workbench` |
 | [102](https://github.com/Kuestenlogik/Bowire/issues/102) | Bowire | [Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)](#issue-kuestenlogik-bowire-102) | ⬜ Backlog |  |
 | [175](https://github.com/Kuestenlogik/Bowire/issues/175) | Bowire | [Schema-aware mutation engine for fuzz / scan](#issue-kuestenlogik-bowire-175) | ⬜ Backlog |  |
 | [176](https://github.com/Kuestenlogik/Bowire/issues/176) | Bowire | [Spider / crawl — discover endpoints from a base URL](#issue-kuestenlogik-bowire-176) | ⬜ Backlog |  |
 | [339](https://github.com/Kuestenlogik/Bowire/issues/339) | Bowire | [docs(audit): Trash-as-plugin architecture proposal for v2.3](#issue-kuestenlogik-bowire-339) | ⬜ Backlog |  |
+| [39](https://github.com/Kuestenlogik/Bowire/issues/39) | Bowire | [HAR Import polish](#issue-kuestenlogik-bowire-39) | ✅ Done | `area:workbench` |
 | [104](https://github.com/Kuestenlogik/Bowire/issues/104) | Bowire | [AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report](#issue-kuestenlogik-bowire-104) | ✅ Done |  |
 | [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ✅ Done |  |
 | [178](https://github.com/Kuestenlogik/Bowire/issues/178) | Bowire | [bowire scan CLI with SARIF output + GitHub Action wrapper](#issue-kuestenlogik-bowire-178) | ✅ Done |  |
@@ -750,12 +750,6 @@ Modern API auth is multi-step: hit `/login`, get a session cookie, hit `/refresh
 
 Phase 2a-2e shipped (reader + matcher translation + variable substitution + multi-path + ScanCommand integration). Optional follow-ups: [[more]](https://github.com/Kuestenlogik/Bowire/issues/35)
 
-#### <a id="issue-kuestenlogik-bowire-39"></a>⬜ Backlog · [#39](https://github.com/Kuestenlogik/Bowire/issues/39) HAR Import polish
-
-> `area:workbench`
-
-`bowire import har <file.har>` CLI shipped. Remaining: [[more]](https://github.com/Kuestenlogik/Bowire/issues/39)
-
 #### <a id="issue-kuestenlogik-bowire-102"></a>⬜ Backlog · [#102](https://github.com/Kuestenlogik/Bowire/issues/102) Lighthouse — scheduled probes + alerting (Postman Monitors / Synthetics analog)
 
 The five shipping boats + Submarine (#99) cover interactive use, embedded use, and proxied use. None of them cover the *passive* shape: "I don't want to invoke; I want to know if everything is healthy right now." [[more]](https://github.com/Kuestenlogik/Bowire/issues/102)
@@ -771,6 +765,12 @@ Bowire's discovery starts from "you tell me a URL or upload a schema". If the sc
 #### <a id="issue-kuestenlogik-bowire-339"></a>⬜ Backlog · [#339](https://github.com/Kuestenlogik/Bowire/issues/339) docs(audit): Trash-as-plugin architecture proposal for v2.3
 
 Architecture audit + design doc for extracting Trash into a pluggable extension point. Filed in `docs/audits/2026-06-30-trash-as-plugin-architecture.md` (331 lines). [[more]](https://github.com/Kuestenlogik/Bowire/issues/339)
+
+#### <a id="issue-kuestenlogik-bowire-39"></a>✅ Done · [#39](https://github.com/Kuestenlogik/Bowire/issues/39) HAR Import polish
+
+> `area:workbench`
+
+`bowire import har <file.har>` CLI shipped. Remaining: [[more]](https://github.com/Kuestenlogik/Bowire/issues/39)
 
 #### <a id="issue-kuestenlogik-bowire-104"></a>✅ Done · [#104](https://github.com/Kuestenlogik/Bowire/issues/104) AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report
 
