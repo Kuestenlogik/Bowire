@@ -14,5 +14,7 @@
   href: file-formats.md
 - name: Frame semantics framework (design)
   href: frame-semantics-framework.md
+- name: Lighthouse — scheduled probes (design)
+  href: lighthouse-scheduled-probes.md
 - name: Cyber-security testing (draft)
   href: security-testing.md
