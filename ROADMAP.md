@@ -126,14 +126,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
-**14/24 done** · 6 in progress · 4 backlog
+**17/24 done** · 3 in progress · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [26](https://github.com/Kuestenlogik/Bowire/issues/26) | Bowire | [Security testing tool — remaining tiers](#issue-kuestenlogik-bowire-26) | 🟡 In progress | `area:security` |
-| [105](https://github.com/Kuestenlogik/Bowire/issues/105) | Bowire | [AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check](#issue-kuestenlogik-bowire-105) | 🟡 In progress |  |
-| [106](https://github.com/Kuestenlogik/Bowire/issues/106) | Bowire | [AI OWASP API Top 10 panel — per-method status + concrete probe per risk](#issue-kuestenlogik-bowire-106) | 🟡 In progress |  |
-| [107](https://github.com/Kuestenlogik/Bowire/issues/107) | Bowire | [AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run](#issue-kuestenlogik-bowire-107) | 🟡 In progress |  |
 | [186](https://github.com/Kuestenlogik/Bowire/issues/186) | Bowire | [HAR import — Chrome DevTools network tab as an input source](#issue-kuestenlogik-bowire-186) | 🟡 In progress |  |
 | [190](https://github.com/Kuestenlogik/Bowire/issues/190) | Bowire | [Authentication session recording + token reuse](#issue-kuestenlogik-bowire-190) | 🟡 In progress |  |
 | [35](https://github.com/Kuestenlogik/Bowire/issues/35) | Bowire | [Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)](#issue-kuestenlogik-bowire-35) | ⬜ Backlog | `area:security` |
@@ -142,6 +139,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [176](https://github.com/Kuestenlogik/Bowire/issues/176) | Bowire | [Spider / crawl — discover endpoints from a base URL](#issue-kuestenlogik-bowire-176) | ⬜ Backlog |  |
 | [39](https://github.com/Kuestenlogik/Bowire/issues/39) | Bowire | [HAR Import polish](#issue-kuestenlogik-bowire-39) | ✅ Done | `area:workbench` |
 | [104](https://github.com/Kuestenlogik/Bowire/issues/104) | Bowire | [AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report](#issue-kuestenlogik-bowire-104) | ✅ Done |  |
+| [105](https://github.com/Kuestenlogik/Bowire/issues/105) | Bowire | [AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check](#issue-kuestenlogik-bowire-105) | ✅ Done |  |
+| [106](https://github.com/Kuestenlogik/Bowire/issues/106) | Bowire | [AI OWASP API Top 10 panel — per-method status + concrete probe per risk](#issue-kuestenlogik-bowire-106) | ✅ Done |  |
+| [107](https://github.com/Kuestenlogik/Bowire/issues/107) | Bowire | [AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run](#issue-kuestenlogik-bowire-107) | ✅ Done |  |
 | [173](https://github.com/Kuestenlogik/Bowire/issues/173) | Bowire | [OWASP API Security Top 10 — structured test suite](#issue-kuestenlogik-bowire-173) | ✅ Done |  |
 | [178](https://github.com/Kuestenlogik/Bowire/issues/178) | Bowire | [bowire scan CLI with SARIF output + GitHub Action wrapper](#issue-kuestenlogik-bowire-178) | ✅ Done |  |
 | [184](https://github.com/Kuestenlogik/Bowire/issues/184) | Bowire | [Protocol-specific security scanners — gRPC / GraphQL / WS / MQTT / SSE / MCP](#issue-kuestenlogik-bowire-184) | ✅ Done |  |
@@ -724,18 +724,6 @@ Discovered during the #346 second-pass fix. Separate bug — same morphdom-stale
 
 ADR: [`docs/architecture/security-testing.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/security-testing.md) [[more]](https://github.com/Kuestenlogik/Bowire/issues/26)
 
-#### <a id="issue-kuestenlogik-bowire-105"></a>🟡 In progress · [#105](https://github.com/Kuestenlogik/Bowire/issues/105) AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check
-
-JWT bugs are top-3 in every API security report year after year — `alg=none`, weak HS256 secrets, missing `exp`, scope creep, audience mismatch, RSA-vs-HMAC confusion attacks. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/105)
-
-#### <a id="issue-kuestenlogik-bowire-106"></a>🟡 In progress · [#106](https://github.com/Kuestenlogik/Bowire/issues/106) AI OWASP API Top 10 panel — per-method status + concrete probe per risk
-
-OWASP API Security Top 10 is the de-facto checklist API testers run against any new surface. It covers BOLA, broken auth, excessive data exposure, lack of resources / rate limiting, BOPLA, mass assignment, security misconfig, injection, improper inventory management, unsafe consumption of APIs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/106)
-
-#### <a id="issue-kuestenlogik-bowire-107"></a>🟡 In progress · [#107](https://github.com/Kuestenlogik/Bowire/issues/107) AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run
-
-A scanning session produces a lot of artifacts: per-endpoint threat-model rankings, per-endpoint Nuclei runs, per-field fuzz results, AI-triaged findings. Today each lives in its own pane / log. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/107)
-
 #### <a id="issue-kuestenlogik-bowire-186"></a>🟡 In progress · [#186](https://github.com/Kuestenlogik/Bowire/issues/186) HAR import — Chrome DevTools network tab as an input source
 
 Operators routinely have Chrome DevTools open watching their app's traffic. Today they have to read the URL out, copy it into Bowire, recreate the request manually. That's friction; that's lost coverage. HAR import is the industry-standard way of moving traffic from a browser/CLI/proxy into a testing tool. [[more]](https://github.com/Kuestenlogik/Bowire/issues/186)
@@ -771,6 +759,18 @@ Bowire's discovery starts from "you tell me a URL or upload a schema". If the sc
 #### <a id="issue-kuestenlogik-bowire-104"></a>✅ Done · [#104](https://github.com/Kuestenlogik/Bowire/issues/104) AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report
 
 Tier 4 of the security roadmap (#26) shipped four AI primitives in v1.9: [[more]](https://github.com/Kuestenlogik/Bowire/issues/104)
+
+#### <a id="issue-kuestenlogik-bowire-105"></a>✅ Done · [#105](https://github.com/Kuestenlogik/Bowire/issues/105) AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check
+
+JWT bugs are top-3 in every API security report year after year — `alg=none`, weak HS256 secrets, missing `exp`, scope creep, audience mismatch, RSA-vs-HMAC confusion attacks. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/105)
+
+#### <a id="issue-kuestenlogik-bowire-106"></a>✅ Done · [#106](https://github.com/Kuestenlogik/Bowire/issues/106) AI OWASP API Top 10 panel — per-method status + concrete probe per risk
+
+OWASP API Security Top 10 is the de-facto checklist API testers run against any new surface. It covers BOLA, broken auth, excessive data exposure, lack of resources / rate limiting, BOPLA, mass assignment, security misconfig, injection, improper inventory management, unsafe consumption of APIs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/106)
+
+#### <a id="issue-kuestenlogik-bowire-107"></a>✅ Done · [#107](https://github.com/Kuestenlogik/Bowire/issues/107) AI security report — markdown writeup grouped by severity + OWASP mapping + diff-vs-last-run
+
+A scanning session produces a lot of artifacts: per-endpoint threat-model rankings, per-endpoint Nuclei runs, per-field fuzz results, AI-triaged findings. Today each lives in its own pane / log. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/107)
 
 #### <a id="issue-kuestenlogik-bowire-173"></a>✅ Done · [#173](https://github.com/Kuestenlogik/Bowire/issues/173) OWASP API Security Top 10 — structured test suite
 
