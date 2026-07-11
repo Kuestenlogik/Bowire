@@ -61,7 +61,36 @@ public static class NucleiTemplateReader
             }
         }
 
+        // #35 Phase 2g — the dns: transport block.
+        if (TryGetSequence(root, "dns", out var dnsSeq))
+        {
+            foreach (var entry in dnsSeq!.Children)
+            {
+                if (entry is not YamlMappingNode dnsMapping) continue;
+                template.Dns.Add(ReadDnsRequest(dnsMapping));
+            }
+        }
+
         return template;
+    }
+
+    private static NucleiDnsRequest ReadDnsRequest(YamlMappingNode mapping)
+    {
+        var req = new NucleiDnsRequest
+        {
+            Name = GetScalar(mapping, "name") ?? "",
+            RecordType = (GetScalar(mapping, "type") ?? "A").ToUpperInvariant(),
+            MatchersCondition = GetScalar(mapping, "matchers-condition") ?? "or",
+        };
+        if (TryGetSequence(mapping, "matchers", out var matchersSeq))
+        {
+            foreach (var entry in matchersSeq!.Children)
+            {
+                if (entry is not YamlMappingNode matcherMapping) continue;
+                req.Matchers.Add(ReadMatcher(matcherMapping));
+            }
+        }
+        return req;
     }
 
     private static NucleiHttpRequest ReadHttpRequest(YamlMappingNode mapping)

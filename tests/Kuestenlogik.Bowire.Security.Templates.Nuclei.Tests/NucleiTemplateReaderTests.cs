@@ -95,6 +95,55 @@ public sealed class NucleiTemplateReaderTests
     }
 
     [Fact]
+    public void ReadText_parses_dns_block_name_type_and_matchers()
+    {
+        // #35 Phase 2g — the dns: transport block. Record type is
+        // upper-cased; matchers reuse the shared word/regex shape.
+        var yaml = """
+            id: dangling-cname
+            info:
+              name: Dangling CNAME
+              severity: high
+            dns:
+              - name: '{{FQDN}}'
+                type: cname
+                matchers-condition: and
+                matchers:
+                  - type: word
+                    words:
+                      - "s3.amazonaws.com"
+            """;
+        var template = NucleiTemplateReader.ReadText(yaml);
+        var dns = Assert.Single(template.Dns);
+        Assert.Equal("{{FQDN}}", dns.Name);
+        Assert.Equal("CNAME", dns.RecordType);
+        Assert.Equal("and", dns.MatchersCondition);
+        var matcher = Assert.Single(dns.Matchers);
+        Assert.Equal("word", matcher.Type);
+        Assert.Contains("s3.amazonaws.com", matcher.Words);
+        Assert.Empty(template.Http);
+    }
+
+    [Fact]
+    public void ReadText_dns_record_type_defaults_to_A()
+    {
+        var yaml = """
+            id: bare-dns
+            info:
+              name: Bare
+              severity: info
+            dns:
+              - name: '{{Host}}'
+                matchers:
+                  - type: word
+                    words:
+                      - "v=spf1"
+            """;
+        var template = NucleiTemplateReader.ReadText(yaml);
+        Assert.Equal("A", Assert.Single(template.Dns).RecordType);
+    }
+
+    [Fact]
     public void ReadText_negative_matcher_flag_round_trips()
     {
         var yaml = """
