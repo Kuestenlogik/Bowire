@@ -12,6 +12,8 @@
   href: embedded-host-customization.md
 - name: File Formats
   href: file-formats.md
+- name: Rail pipelines & hand-offs
+  href: rail-pipelines.md
 - name: Frame semantics framework (design)
   href: frame-semantics-framework.md
 - name: Lighthouse — scheduled probes (design)

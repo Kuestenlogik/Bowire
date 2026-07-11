@@ -119,6 +119,7 @@ The rail's JS bundle goes in the assembly's `wwwroot/js/rails/my-team-tools.js`;
 
 ## See also
 
+- [Rail pipelines & hand-offs](../architecture/rail-pipelines.md) — per-rail data flow (input → processing → output) + the inter-rail transition graph
 - [UI guide — Rail strip](../ui-guide/rail-strip.md) — visual reference, splitter, sub-tab strip
 - [Plugin system](plugin-system.md) — the `[BowirePlugin]` / `[BowireRailContribution]` contracts
 - [Settings](settings.md) — the rail enable/disable page
