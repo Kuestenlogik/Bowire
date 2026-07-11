@@ -276,6 +276,14 @@ This is the conservative answer to the "what if they switch backends later?" ris
 | R2 | **Risk**: A store backed by SQLite or S3 can fail mid-restore (network, file lock). The contributor's `RestoreAsync` returns `Task<bool>`; the UI needs a richer error type to distinguish "transient retry" from "payload corrupt". | Define a `TrashRestoreResult` discriminated record. | Design phase |
 | R3 | **Risk**: The legacy action-log entries (pre-W2a) walk `workspacesTrash` to find a snapshot (prologue.js:3275). After plugin extraction these still need to resolve. | Keep the fallback path in core, but have it consult the registered store via the host-bridge rather than the global JS array. | Implementation |
 
+### 5.1 — Triage decisions (v2.3)
+
+The three highest-impact questions above were resolved at issue triage; recording them here so the implementation PRs (§6) don't re-litigate:
+
+- **D1 (→ Q4) — Keep the generic `IBowireTrashContributor<T>`.** The generic earns its keep on the `RestoreAsync(TrashEntry<T>)` payload typing; the flat string-discriminator that `renderGlobalTrashOverlay` already uses is exposed as a **non-generic `BucketId`** property on the contributor so the registry (`BowireTrashRegistry`) can key off it without reflecting `T`. Mirrors `IBowireProtocol` for discovery while keeping compile-time payload safety on the host side.
+- **D2 (→ Q2) — Fix the workspaces-retention gap inside the extraction, in PR 4.** No pre-extraction hot-fix; `IBowireTrashStore.ApplyRetentionAsync` sweeps **all** buckets (workspaces included) uniformly, closing the §1.4 gap as part of the same atomic change-set rather than as a separate patch that the extraction would then rewrite.
+- **D3 (→ Q1 / Q5) — Ship the interface in v2.3, one default impl in v2.3, richer stores in v2.4.** `IBowireTrashStore` + the `BrowserLocalStorageTrashStore` default land in v2.3 (PRs 1–2). Server-side / audit-log-backed / SQLite stores (immutable deletes, admin-only purge, the `/bowire/api/trash/*` surface) are **v2.4 sibling packages** against the same interface — so v2.3 doesn't block on the enterprise-store design.
+
 ## Section 6 — Recommended v2.3 PR sequence
 
 Five independently landable PRs. Each ends in a green workbench; none requires a follow-up to be safe to ship.
