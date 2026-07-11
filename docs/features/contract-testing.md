@@ -101,4 +101,4 @@ The broker path (publish push / verify pull) is always **opt-in** via an explici
 ## See also
 
 - [Recording](recording.md) — capture the consumer-side traces contracts are built from.
-- [`bowire test`](../setup/cli-mode.md) — the flow/collection CI runner contracts share their report surface with.
+- [`bowire test`](cli-mode.md) — the flow/collection CI runner contracts share their report surface with.

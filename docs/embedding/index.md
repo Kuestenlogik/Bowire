@@ -17,7 +17,7 @@ Two sentences of positioning:
 - **Embedded** = Bowire ships inside your service. Same process, same
   port, same auth pipeline. Auto-discovers what the host exposes and
   can intercept its own traffic via `app.UseBowireInterceptor()`
-  ([`Kuestenlogik.Bowire.Interceptor`](../features/proxy.md)).
+  ([`Kuestenlogik.Bowire.Interceptor`](../features/interceptor.md)).
 - **Standalone Tool** ([`Kuestenlogik.Bowire.Tool`](../setup/standalone.md))
   = a separate `dotnet tool` process pointed at a remote URL. No code
   change to the target. Use this when the target isn't yours or isn't
@@ -30,7 +30,7 @@ Two sentences of positioning:
 | [Quickstart](quickstart.md) | `dotnet new webapi` → `AddBowire()` → `MapBowire()` → browse `/bowire`. Walk-through of the `samples/Kuestenlogik.Bowire.Sample.Embedded` host, line by line. |
 | [Options](options.md) | Every public property on `BowireOptions` — title, theme, `ServerUrls`, `DisabledPlugins`, `Mode`, `MapBasemap`, `SchemaHintsPath`, `DisableBuiltInDetectors`. Plus the `appsettings.json` keys that bind them. |
 | [Lifecycle](lifecycle.md) | DI registration (`AddBowire`), endpoint mapping (`MapBowire`), startup ordering, plugin auto-discovery via the `IBowireProtocol` / `IBowireProtocolServices` / `IBowireServiceContribution` sweep, interaction with the host's authentication and routing. |
-| [Deployment modes](deployment-modes.md) | Standalone Tool vs Embedded vs in-process middleware-only (the [Interceptor](../features/proxy.md)). Decision rules. |
+| [Deployment modes](deployment-modes.md) | Standalone Tool vs Embedded vs in-process middleware-only (the [Interceptor](../features/interceptor.md)). Decision rules. |
 
 ## Two-line preview
 
