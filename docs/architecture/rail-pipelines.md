@@ -297,4 +297,4 @@ intra-Compose only.
 - [Rail strip](../features/rail-strip.md) — enabling, ordering, deep-linking rails
 - [Plugin architecture](plugin-architecture.md) — the contribution contracts
 - [Recording](../features/recording.md) · [Flows](../features/flows.md) ·
-  [Interceptor](../features/proxy.md) · [Scan](../features/scan.md) — per-rail feature pages
+  [Interceptor](../features/interceptor.md) · [Scan](../features/scan.md) — per-rail feature pages

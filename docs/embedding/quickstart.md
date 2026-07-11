@@ -158,7 +158,7 @@ Mounts the interceptor middleware. Every request through this host
 `InterceptedFlowStore` and surfaced live in the workbench's
 Interceptor rail. The default `IgnoredPathPrefixes` is `["/bowire"]`
 so the rail doesn't observe itself; bodies are capped at 1 MiB.
-See [Interceptor feature](../features/proxy.md) for the rail UI and
+See [Interceptor feature](../features/interceptor.md) for the rail UI and
 [`BowireInterceptorOptions`](https://github.com/Kuestenlogik/Bowire/blob/main/src/Kuestenlogik.Bowire.Interceptor/BowireInterceptorOptions.cs)
 for every knob.
 
@@ -260,7 +260,7 @@ isn't yours, isn't .NET, or you don't want to add a NuGet to it.
   middleware-only.
 - [Embedded mode setup](../setup/embedded.md) — per-protocol package
   requirements (gRPC reflection, SignalR hubs, GraphQL introspection).
-- [Interceptor feature page](../features/proxy.md) — the rail surface
+- [Interceptor feature page](../features/interceptor.md) — the rail surface
   fed by `app.UseBowireInterceptor()`.
 - [Map widget feature page](../features/map-widget.md) — the
   `coordinate.wgs84` widget seen in this sample.

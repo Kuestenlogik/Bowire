@@ -119,7 +119,7 @@ The Help rail surfaces under **Settings → Plugins → Help**:
 
 ![Help rail — topic tree on the left, rendered topic body on the right](../../site/assets/images/screenshots/v2-1/help-rail.png)
 
-> The capture above falls back to the discover layout because the Combined sample doesn't ship the Help provider package — see the [v2.1 captures README](../../site/assets/images/screenshots/v2-1/README.md) for context. Re-capture against the standalone Tool to get the actual help tree + topic body. <!-- TODO: capture help-rail screenshot against Tool standalone 5180 -->
+> The capture above falls back to the discover layout because the Combined sample doesn't ship the Help provider package. Re-capture against the standalone Tool to get the actual help tree + topic body. <!-- TODO: capture help-rail screenshot against Tool standalone 5180 -->
 
 ## See also
 
