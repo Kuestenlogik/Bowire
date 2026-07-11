@@ -1,6 +1,6 @@
 ---
-title: Proxy
-summary: 'Observing + manipulating real client / server traffic. Unified Traffic rail surfaces the standalone MITM proxy CLI and the in-process middleware behind one workbench rail that adapts to the active deployment.'
+title: Interceptor
+summary: 'Observing + manipulating real client / server traffic. The Interceptor rail surfaces the in-process `UseBowireInterceptor()` middleware and the standalone MITM proxy CLI behind one workbench rail; captured flows convert to recordings, mocks, or templates. Ships as `Kuestenlogik.Bowire.Interceptor`.'
 ---
 
 # Interceptor

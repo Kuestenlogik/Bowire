@@ -2,6 +2,8 @@
   href: index.md
 - name: Topbar
   href: topbar.md
+- name: Rail strip
+  href: rail-strip.md
 - name: Sidebar
   href: sidebar.md
 - name: Request Pane

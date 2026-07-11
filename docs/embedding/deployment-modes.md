@@ -173,7 +173,7 @@ When this fits:
   the production host.
 
 For the full feature page see
-[Interceptor](../features/proxy.md) — the rail UI, the SSE stream at
+[Interceptor](../features/interceptor.md) — the rail UI, the SSE stream at
 `/api/intercepted/stream`, the Append-to-recording flow, the mock
 rules.
 
@@ -214,7 +214,7 @@ Is the target service yours?
 - [Lifecycle](lifecycle.md) — what runs when.
 - [Standalone Tool](../setup/standalone.md) — full CLI surface.
 - [Sidecar deployment](../setup/sidecar.md) — non-.NET targets.
-- [Interceptor feature](../features/proxy.md) — the rail surface fed
+- [Interceptor feature](../features/interceptor.md) — the rail surface fed
   by `UseBowireInterceptor()`.
 - [Embedded-host customization](../architecture/embedded-host-customization.md)
   — picking by bundle.
