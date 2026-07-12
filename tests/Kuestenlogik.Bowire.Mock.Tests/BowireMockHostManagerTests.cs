@@ -12,6 +12,7 @@ namespace Kuestenlogik.Bowire.Mock.Tests;
 /// Start / List / Get / Stop / DisposeAsync plus the request-log wiring
 /// used by #57's per-mock log view.
 /// </summary>
+[Collection("MockHostSerialised")]
 public sealed class BowireMockHostManagerTests
 {
     private static string BuildRecording()

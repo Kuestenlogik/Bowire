@@ -15,6 +15,7 @@ namespace Kuestenlogik.Bowire.Mock.Tests;
 /// delegations — both the "mock not running" null/false guards (no server
 /// boot needed) and the happy path against a live mock.
 /// </summary>
+[Collection("MockHostSerialised")]
 public sealed class MockManagementCoverageTests
 {
     private static string BuildRecording()
