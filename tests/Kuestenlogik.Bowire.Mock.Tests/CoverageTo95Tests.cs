@@ -20,6 +20,7 @@ namespace Kuestenlogik.Bowire.Mock.Tests;
 /// happy path lives in <see cref="BowireMockHostManagerTests"/>; this
 /// file pins the error / rollback / endpoint edge cases.
 /// </summary>
+[Collection("MockHostSerialised")]
 public sealed class CoverageTo95Tests
 {
     // ---- Manager-level rollback ------------------------------------
