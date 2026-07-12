@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!-- #102 — Lighthouse Core engine coverage: the schedule parser + next-run
+         logic, the append-only outcome ledger + resume, the transition
+         detector, the assertion evaluator, and the ProbeRunner / scheduler
+         loop driven from a fake TimeProvider. -->
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector"><PrivateAssets>all</PrivateAssets><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets></PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Lighthouse\Kuestenlogik.Bowire.Lighthouse.csproj" />
+  </ItemGroup>
+</Project>
