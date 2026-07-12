@@ -25,6 +25,7 @@ namespace Kuestenlogik.Bowire.Mock.Tests;
 /// (malformed JSON, missing recording, 404 paths) that don't fire
 /// in the happy-path lifecycle tests.
 /// </summary>
+[Collection("MockHostSerialised")]
 public sealed class MockCoverageGapsTests
 {
     // ---- NullMockLogger -------------------------------------------
