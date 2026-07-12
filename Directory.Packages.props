@@ -118,8 +118,8 @@
          expose the workbench as an MCP server for AI agents. Two
          packages from modelcontextprotocol/csharp-sdk: the host/DI
          flavour and .AspNetCore for HTTP/SSE transport. -->
-    <PackageVersion Include="ModelContextProtocol" Version="1.4.0" />
-    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="1.4.0" />
+    <PackageVersion Include="ModelContextProtocol" Version="1.4.1" />
+    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="1.4.1" />
     <!-- System.CommandLine 2.0.7 — stable after the beta-to-stable
          API rework. Used by Kuestenlogik.Bowire.Tool to declare the CLI's
          subcommand tree (list/describe/call/mock/mcp/plugin/test) and
