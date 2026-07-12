@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #102 — Lighthouse: scheduled health probes + alerting. The
+         passive-monitoring shape (Postman Monitors / AWS Synthetics
+         analog). Core-adjacent + slim: the TimeProvider scheduler,
+         the append-only outcome ledger, the transition detector, and
+         the ISignaler seam. Outbound signalers (Slack / PagerDuty /
+         OTLP) ship as separate opt-in packages and are NOT referenced
+         here. See docs/architecture/lighthouse-scheduled-probes.md. -->
+    <Description>Bowire Lighthouse — scheduled health probes + alerting. Runs saved recordings on a schedule, records outcomes to an append-only ledger, and signals on pass↔fail transitions.</Description>
+    <PackageId>Kuestenlogik.Bowire.Lighthouse</PackageId>
+    <PackageTags>bowire;lighthouse;monitoring;probes;synthetics;health</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>
