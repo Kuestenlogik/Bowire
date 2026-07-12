@@ -227,6 +227,28 @@ public sealed class BowireSemanticsEndpointsTests
         Assert.Contains("duration.iso8601", persisted, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Post_project_tier_persists_to_file()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var file = Path.Combine(Path.GetTempPath(), "bowire-projhints-" + Guid.NewGuid().ToString("N") + ".json");
+        var store = new LayeredAnnotationStore(
+            new InMemoryAnnotationLayer(),
+            userFileLayer: null,
+            projectFileLayer: new JsonFileAnnotationLayer(file),
+            new InMemoryAnnotationLayer(),
+            pluginHints: (_, _) => Array.Empty<Annotation>());
+        await using var host = await StartHostAsync(ct, store: store, cleanupFile: file);
+
+        using var resp = await host.Http.PostAsync(AnnotationUri, Json("""
+            { "service": "S", "method": "M", "jsonPath": "$.p", "semantic": "coordinate.wgs84", "scope": "project" }
+            """), ct);
+        resp.EnsureSuccessStatusCode();
+        var body = await ReadJson(resp, ct);
+        Assert.Equal("coordinate.wgs84", body.GetProperty("semantic").GetString());
+        Assert.True(File.Exists(file), "project-tier write should persist the hints file");
+    }
+
     // ----------------------------- annotation DELETE -----------------------------
 
     [Fact]
