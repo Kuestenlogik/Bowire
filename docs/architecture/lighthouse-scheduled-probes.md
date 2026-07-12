@@ -4,12 +4,18 @@ summary: 'Design for Lighthouse — a long-lived probe loop that periodically in
 
 # Lighthouse — scheduled probes + alerting
 
-**Status:** design (v2.3 concept tier, tracks [#102]). Not yet shipped.
-This doc resolves the three open questions the issue left for the
-concept tier — scheduling backend, state recovery after restart,
-multi-tenant probe ownership — and draws the v1 scope line. It does
-not re-argue *why* the passive-monitoring shape belongs in Bowire; the
-issue covers that.
+**Status:** design + Core engine shipped (v2.3, tracks [#102]). The
+`Kuestenlogik.Bowire.Lighthouse` package now implements the Core engine
+below — the `TimeProvider` scheduler, the append-only outcome ledger,
+the transition detector, the assertion evaluator, and the `ISignaler`
+seam. Still to land: the `bowire lighthouse run` CLI command, the
+recording-replay `IProbeExecutor`, the opt-in signaler sibling packages
+(Slack / PagerDuty / OTLP), and the read-only workbench surface. This
+doc resolves the three open questions the issue left for the concept
+tier — scheduling backend, state recovery after restart, multi-tenant
+probe ownership — and draws the v1 scope line. It does not re-argue
+*why* the passive-monitoring shape belongs in Bowire; the issue covers
+that.
 
 ## The shape in one sentence
 
