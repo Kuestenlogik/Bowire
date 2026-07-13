@@ -3,7 +3,7 @@
 
 using Kuestenlogik.Bowire.Mocking;
 
-namespace Kuestenlogik.Bowire.Lighthouse.Tests;
+namespace Kuestenlogik.Bowire.Monitoring.Tests;
 
 /// <summary>
 /// Coverage for <see cref="ProbeRunner"/> — the per-run pipeline (execute →

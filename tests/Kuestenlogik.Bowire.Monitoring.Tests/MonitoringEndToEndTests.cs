@@ -3,7 +3,7 @@
 
 using Kuestenlogik.Bowire;
 
-namespace Kuestenlogik.Bowire.Lighthouse.Tests;
+namespace Kuestenlogik.Bowire.Monitoring.Tests;
 
 /// <summary>
 /// End-to-end: a probe file is parsed, its recording is actually replayed
@@ -12,12 +12,12 @@ namespace Kuestenlogik.Bowire.Lighthouse.Tests;
 /// the whole engine — parse → execute → assert → append → detect → signal —
 /// against a stubbed plugin so no live target is needed.
 /// </summary>
-public sealed class LighthouseEndToEndTests : IDisposable
+public sealed class MonitoringEndToEndTests : IDisposable
 {
     private readonly string _dir;
     private static readonly DateTimeOffset Now = new(2026, 7, 13, 12, 0, 0, TimeSpan.Zero);
 
-    public LighthouseEndToEndTests()
+    public MonitoringEndToEndTests()
     {
         _dir = Path.Combine(Path.GetTempPath(), "bowire-lh-e2e-" + Guid.NewGuid().ToString("N"));
     }

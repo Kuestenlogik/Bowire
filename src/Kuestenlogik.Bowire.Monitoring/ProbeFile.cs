@@ -4,11 +4,11 @@
 using System.Text.Json;
 using Kuestenlogik.Bowire.Mocking;
 
-namespace Kuestenlogik.Bowire.Lighthouse;
+namespace Kuestenlogik.Bowire.Monitoring;
 
 /// <summary>
 /// Loads a probe definition file — a saved recording wrapped with the three
-/// Lighthouse extras (schedule, assertions, severity):
+/// Monitoring extras (schedule, assertions, severity):
 /// <code>
 /// {
 ///   "name": "payments-health",

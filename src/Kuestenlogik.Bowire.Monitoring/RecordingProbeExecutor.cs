@@ -4,7 +4,7 @@
 using System.Globalization;
 using Kuestenlogik.Bowire.Mocking;
 
-namespace Kuestenlogik.Bowire.Lighthouse;
+namespace Kuestenlogik.Bowire.Monitoring;
 
 /// <summary>
 /// The wire-level <see cref="IProbeExecutor"/> — replays a probe's saved
@@ -16,7 +16,7 @@ namespace Kuestenlogik.Bowire.Lighthouse;
 /// records an <see cref="ProbeResult.Error"/> outcome.
 /// </summary>
 /// <remarks>
-/// This is where Lighthouse leaves the Core-slim boundary and touches the
+/// This is where Monitoring leaves the Core-slim boundary and touches the
 /// protocol registry; the host supplies the registry (the standalone CLI
 /// discovers the installed plugins). Streaming steps aren't a health-probe
 /// shape and are dispatched through the unary path like everything else — a

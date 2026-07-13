@@ -59,11 +59,11 @@
     <Project Path="src/Kuestenlogik.Bowire.Flows/Kuestenlogik.Bowire.Flows.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Interceptor/Kuestenlogik.Bowire.Interceptor.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Benchmarking/Kuestenlogik.Bowire.Benchmarking.csproj" />
-    <Project Path="src/Kuestenlogik.Bowire.Lighthouse/Kuestenlogik.Bowire.Lighthouse.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Monitoring/Kuestenlogik.Bowire.Monitoring.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Kuestenlogik.Bowire.Testing/Kuestenlogik.Bowire.Testing.csproj" />
-    <Project Path="tests/Kuestenlogik.Bowire.Lighthouse.Tests/Kuestenlogik.Bowire.Lighthouse.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.Monitoring.Tests/Kuestenlogik.Bowire.Monitoring.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Tests/Kuestenlogik.Bowire.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.IntegrationTests/Kuestenlogik.Bowire.IntegrationTests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Mock.Tests/Kuestenlogik.Bowire.Mock.Tests.csproj" />

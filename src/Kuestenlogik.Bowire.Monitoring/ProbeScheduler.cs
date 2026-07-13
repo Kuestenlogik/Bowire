@@ -1,7 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-namespace Kuestenlogik.Bowire.Lighthouse;
+namespace Kuestenlogik.Bowire.Monitoring;
 
 /// <summary>
 /// Drives probe runs on their schedule (#102, Decision 1). The default
