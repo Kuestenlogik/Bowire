@@ -4,8 +4,8 @@ summary: 'Design for Monitoring — a long-lived probe loop that periodically in
 
 # Monitoring — scheduled probes + alerting
 
-**Status:** design + v1 shipped, minus the read-only workbench surface
-(v2.3, tracks [#102]). The `Kuestenlogik.Bowire.Monitoring` package
+**Status:** design + v1 shipped (v2.3, tracks [#102]). The
+`Kuestenlogik.Bowire.Monitoring` package
 implements the Core engine below — the `TimeProvider` scheduler, the
 append-only outcome ledger, the transition detector, the assertion
 evaluator, the `ISignaler` seam, the `bowire.monitoring.*` metric
@@ -15,8 +15,12 @@ discovered by assembly scan and degrading to a clear "install …" message
 when absent: **Slack** (`--signal slack:<webhook>`), **PagerDuty**
 (`pagerduty:<key>`, Events API v2 with restart-safe auto-resolve), and
 **OTLP** (`otlp:<endpoint>`, exports the probe metrics to an OpenTelemetry
-collector via the official SDK). Still to land: the read-only workbench
-surface. This doc resolves the three open questions the issue left for the
+collector via the official SDK). The read-only workbench surface ships in
+the same package: a Monitoring rail (rail + service + endpoint
+contributions, JS fragment on the renderer-key seam) reads the ledger
+through `/api/monitoring/probes` and renders live status per probe, a
+latency sparkline strip, and the historical outcome table with assertion
+detail. This doc resolves the three open questions the issue left for the
 concept tier — scheduling backend, state recovery after restart,
 multi-tenant probe ownership — and draws the v1 scope line. It does not
 re-argue *why* the passive-monitoring shape belongs in Bowire; the issue
@@ -192,16 +196,16 @@ do not export. In-process recording is not an outbound call.
 
 ## v1 acceptance (unchanged from the issue, now scoped)
 
-- [ ] `bowire monitor run <file>` boots a `TimeProvider`-driven probe
+- [x] `bowire monitor run <file>` boots a `TimeProvider`-driven probe
       loop against the configured target.
-- [ ] Outcomes append to `~/.bowire/monitoring/<probe>.jsonl`; restart
+- [x] Outcomes append to `~/.bowire/monitoring/<probe>.jsonl`; restart
       resumes cadence via lazy-start from the last ledger row.
-- [ ] `ISignaler` transitions fire on pass↔fail; Slack + PagerDuty +
+- [x] `ISignaler` transitions fire on pass↔fail; Slack + PagerDuty +
       OTLP-logs signalers ship as opt-in sibling packages.
-- [ ] OTLP metrics (`bowire.monitoring.*`) export against
+- [x] OTLP metrics (`bowire.monitoring.*`) export against
       `otel/opentelemetry-collector-contrib` when the OTLP package is present.
-- [ ] Workbench surface shows live + historical outcomes with a
-      per-probe sparkline, read-only.
+- [x] Workbench surface shows live + historical outcomes with a
+      per-probe sparkline, read-only (Monitoring rail, `/api/monitoring/*`).
 
 ## Explicitly deferred
 

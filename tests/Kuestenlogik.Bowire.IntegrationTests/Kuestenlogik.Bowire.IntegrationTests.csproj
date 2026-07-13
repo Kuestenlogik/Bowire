@@ -44,6 +44,7 @@
          types directly (BowireInterceptorEndpointTests fixtures), so
          pull the package in explicitly. -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Interceptor\Kuestenlogik.Bowire.Interceptor.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Monitoring\Kuestenlogik.Bowire.Monitoring.csproj" />
     <!-- Reference the MapLibre extension so the asset-endpoint tests
          (BowireSemanticsEndpointsTests, SemanticsEndpointIntegrationTests)
          find the embedded bundle + vendor assets via the registry's

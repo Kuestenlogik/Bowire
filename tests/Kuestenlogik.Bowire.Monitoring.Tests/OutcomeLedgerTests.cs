@@ -91,4 +91,70 @@ public sealed class OutcomeLedgerTests : IDisposable
         var path = ledger.PathFor("payments api/v2");
         Assert.EndsWith("payments_api_v2.jsonl", path, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void ListProbeNames_is_empty_when_the_root_does_not_exist()
+    {
+        var ledger = new OutcomeLedger(_dir);
+        Assert.Empty(ledger.ListProbeNames());
+    }
+
+    [Fact]
+    public void ListProbeNames_returns_sorted_file_stems()
+    {
+        var ledger = new OutcomeLedger(_dir);
+        ledger.Append("zeta", Outcome(1, ProbeResult.Pass));
+        ledger.Append("alpha", Outcome(1, ProbeResult.Pass));
+        ledger.Append("Mid", Outcome(1, ProbeResult.Fail));
+
+        Assert.Equal(["alpha", "Mid", "zeta"], ledger.ListProbeNames());
+    }
+
+    [Fact]
+    public void ListProbeNames_roundtrips_a_sanitised_name_into_ReadOutcomes()
+    {
+        var ledger = new OutcomeLedger(_dir);
+        ledger.Append("payments api/v2", Outcome(42, ProbeResult.Pass));
+
+        var listed = Assert.Single(ledger.ListProbeNames());
+        Assert.Equal("payments_api_v2", listed);
+        var outcome = Assert.Single(ledger.ReadOutcomes(listed));
+        Assert.Equal(42, outcome.TimestampUnixMs);
+    }
+
+    [Fact]
+    public void ReadOutcomes_is_empty_when_never_run()
+    {
+        var ledger = new OutcomeLedger(_dir);
+        Assert.Empty(ledger.ReadOutcomes("nope"));
+    }
+
+    [Fact]
+    public void ReadOutcomes_returns_rows_oldest_first_and_skips_corrupt_lines()
+    {
+        var ledger = new OutcomeLedger(_dir);
+        ledger.Append("p", Outcome(100, ProbeResult.Pass));
+        File.AppendAllText(ledger.PathFor("p"), "{ not json\n");
+        ledger.Append("p", Outcome(200, ProbeResult.Fail));
+
+        var rows = ledger.ReadOutcomes("p");
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(100, rows[0].TimestampUnixMs);
+        Assert.Equal(200, rows[1].TimestampUnixMs);
+    }
+
+    [Fact]
+    public void ReadOutcomes_maxRows_keeps_the_newest_tail()
+    {
+        var ledger = new OutcomeLedger(_dir);
+        for (var i = 1; i <= 5; i++)
+        {
+            ledger.Append("p", Outcome(i * 100, i % 2 == 0 ? ProbeResult.Fail : ProbeResult.Pass));
+        }
+
+        var rows = ledger.ReadOutcomes("p", maxRows: 2);
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(400, rows[0].TimestampUnixMs);
+        Assert.Equal(500, rows[1].TimestampUnixMs);
+    }
 }
