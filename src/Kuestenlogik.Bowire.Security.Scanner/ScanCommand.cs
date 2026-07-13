@@ -24,10 +24,11 @@ namespace Kuestenlogik.Bowire.Security.Scanner;
 /// <remarks>
 /// <para>
 /// v1 scope: HTTP-class probes only (<c>rest</c>, <c>graphql</c>,
-/// <c>odata</c>, <c>http</c>, <c>sse</c>, <c>signalr</c>). SignalR is
-/// HTTP-class because its negotiate handshake (<c>POST /hubs/&lt;name&gt;/negotiate</c>)
-/// is a plain HTTP request the scanner can replay directly. WebSocket /
-/// MQTT / raw-gRPC probes still surface as
+/// <c>odata</c>, <c>http</c>, <c>sse</c>, <c>signalr</c>, <c>socketio</c>,
+/// <c>mcp</c>). These are HTTP-class because the request the template
+/// probes is a plain HTTP call: SignalR's negotiate, Socket.IO's
+/// Engine.IO polling handshake, and MCP's Streamable-HTTP JSON-RPC POST.
+/// WebSocket / MQTT / raw-gRPC probes still surface as
 /// <see cref="ScanFindingStatus.Skipped"/> with a "transport not yet
 /// supported by scanner" message — the templates still load, they just
 /// don't run yet. Later iterations route non-HTTP probes through the
@@ -454,11 +455,15 @@ public static class ScanCommand
 
     private static bool IsHttpClassProtocol(string protocol) => protocol switch
     {
-        // SignalR is HTTP-class: its negotiate handshake is a plain HTTP
-        // POST the scanner replays like any REST probe. The live hub
-        // connection (WebSocket/SSE/long-poll) is out of template scope,
-        // but the open-negotiate misconfiguration is fully HTTP-detectable.
-        "REST" or "GRAPHQL" or "ODATA" or "HTTP" or "SSE" or "SIGNALR" => true,
+        // SignalR / Socket.IO / MCP are HTTP-class for the request the
+        // template probes: SignalR's negotiate + Socket.IO's Engine.IO
+        // polling handshake are HTTP GET/POSTs, and MCP's Streamable-HTTP
+        // transport carries its JSON-RPC calls over HTTP POST. The scanner
+        // replays these like any REST probe. The live upgraded connection
+        // (WebSocket/long-poll/SSE stream) is out of template scope, but the
+        // handshake/initial-request misconfiguration is fully HTTP-detectable.
+        "REST" or "GRAPHQL" or "ODATA" or "HTTP" or "SSE"
+            or "SIGNALR" or "SOCKETIO" or "MCP" => true,
         _ => false,
     };
 
