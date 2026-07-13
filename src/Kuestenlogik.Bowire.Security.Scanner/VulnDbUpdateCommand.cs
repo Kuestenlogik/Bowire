@@ -41,6 +41,15 @@ public sealed record VulnDbUpdateOptions
 /// <see cref="TextWriter"/> and an injected <see cref="HttpMessageHandler"/>;
 /// the directory- and tarball-source paths need no network at all, so the core
 /// logic is unit-tested offline.
+/// <para>
+/// <b>Trust boundary:</b> a fetched archive is trusted on the basis of TLS to
+/// the source host (github.com for the default release path) plus the
+/// decompression-size cap and path-traversal-safe extraction below. There is
+/// no per-archive signature / checksum verification yet — that needs the
+/// Bowire.VulnDb release pipeline to publish signed checksums first; tracked as
+/// follow-up. Air-gapped installs that need stronger assurance should fetch out
+/// of band and use <c>--source &lt;verified-file-or-dir&gt;</c>.
+/// </para>
 /// </summary>
 public static class VulnDbUpdateCommand
 {
@@ -137,18 +146,52 @@ public static class VulnDbUpdateCommand
                 return 1;
             }
 
-            // Swap into the cache: replace <dest>/templates wholesale so a
-            // template removed upstream doesn't linger, then refresh the
-            // index sidecar if the source shipped one.
+            // Swap into the cache. Build the replacement beside the live tree
+            // first, then swap by same-volume renames — so the live cache is
+            // only ever touched by fast moves, never a partial file-by-file
+            // copy. A copy failure hits `incoming`, leaving the existing cache
+            // intact; a failed final move rolls the old tree back. This is what
+            // makes the "can't leave the cache half-overwritten" guarantee true.
             Directory.CreateDirectory(dest);
             var destTemplates = VulnDbCache.TemplatesDir(dest);
-            if (Directory.Exists(destTemplates)) Directory.Delete(destTemplates, recursive: true);
-            CopyTree(stagedTemplates, destTemplates);
+            var incoming = destTemplates + ".incoming-" + Guid.NewGuid().ToString("N");
+            var backup = destTemplates + ".old-" + Guid.NewGuid().ToString("N");
+            try
+            {
+                CopyTree(stagedTemplates, incoming);
+                var hadOld = Directory.Exists(destTemplates);
+                if (hadOld) Directory.Move(destTemplates, backup);
+                try
+                {
+                    Directory.Move(incoming, destTemplates);
+                }
+                catch
+                {
+                    // Roll the previous tree back so a failed swap never leaves
+                    // the cache empty.
+                    if (hadOld && !Directory.Exists(destTemplates)) Directory.Move(backup, destTemplates);
+                    throw;
+                }
+            }
+            finally
+            {
+                TryDelete(incoming);
+                TryDelete(backup);
+            }
 
+            // Refresh the index sidecar from the source — or clear a stale one
+            // when the source ships none, so `vulndb list` falls back to walking
+            // the freshly-swapped tree instead of reporting templates that are
+            // gone (a bare `git clone` source, for instance, has no index).
             var stagedIndex = VulnDbCache.IndexPath(staging);
+            var destIndex = VulnDbCache.IndexPath(dest);
             if (File.Exists(stagedIndex))
             {
-                File.Copy(stagedIndex, VulnDbCache.IndexPath(dest), overwrite: true);
+                File.Copy(stagedIndex, destIndex, overwrite: true);
+            }
+            else if (File.Exists(destIndex))
+            {
+                File.Delete(destIndex);
             }
 
             var count = VulnDbCache.CountTemplates(dest);
@@ -163,8 +206,14 @@ public static class VulnDbUpdateCommand
             await stderr.WriteLineAsync($"  Could not fetch templates: {ex.Message}").ConfigureAwait(false);
             return 1;
         }
-        catch (Exception ex) when (ex is InvalidDataException or JsonException or InvalidOperationException)
+        catch (Exception ex) when (ex is InvalidDataException or JsonException
+            or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
+            // Covers a malformed archive (InvalidDataException), a bad release
+            // JSON (JsonException), a missing tarball asset (InvalidOperationException),
+            // and a locked / unreadable file during the copy-and-swap
+            // (IOException / UnauthorizedAccessException) — all reported as a
+            // graceful exit 1 rather than an unhandled stack trace.
             await stderr.WriteLineAsync($"  Update failed: {ex.Message}").ConfigureAwait(false);
             return 1;
         }
@@ -255,15 +304,69 @@ public static class VulnDbUpdateCommand
     }
 
     /// <summary>
+    /// Cap on the total decompressed size of a fetched tarball. The curated
+    /// corpus is a handful of small JSON files (KB); 256&#160;MB is a generous
+    /// ceiling that still bounds a decompression bomb (a few-KB gzip that
+    /// expands to tens of GB) from a typo'd / hostile <c>--source</c>.
+    /// </summary>
+    private const long MaxDecompressedBytes = 256L * 1024 * 1024;
+
+    /// <summary>
     /// Extract a gzip-compressed tar stream into <paramref name="destDir"/>.
     /// <c>TarFile.ExtractToDirectoryAsync</c> rejects entries whose path
     /// escapes the destination, so a malicious <c>../</c> entry can't write
-    /// outside the isolated staging directory.
+    /// outside the isolated staging directory. The decompressed byte count is
+    /// capped (<see cref="MaxDecompressedBytes"/>) so a decompression bomb
+    /// throws instead of filling the temp volume.
     /// </summary>
     private static async Task ExtractTarGzAsync(Stream source, string destDir, CancellationToken ct)
     {
         await using var gzip = new GZipStream(source, CompressionMode.Decompress);
-        await TarFile.ExtractToDirectoryAsync(gzip, destDir, overwriteFiles: true, ct).ConfigureAwait(false);
+        await using var capped = new ByteCapStream(gzip, MaxDecompressedBytes);
+        await TarFile.ExtractToDirectoryAsync(capped, destDir, overwriteFiles: true, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// A read-only pass-through that throws <see cref="InvalidDataException"/>
+    /// once more than <c>maxBytes</c> have been read from the inner stream —
+    /// the decompression-bomb guard for <see cref="ExtractTarGzAsync"/>.
+    /// </summary>
+    private sealed class ByteCapStream(Stream inner, long maxBytes) : Stream
+    {
+        private long _read;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => _read; set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override int Read(byte[] buffer, int offset, int count)
+            => Track(inner.Read(buffer, offset, count));
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            => Track(await inner.ReadAsync(buffer, cancellationToken).ConfigureAwait(false));
+
+        private int Track(int n)
+        {
+            _read += n;
+            if (_read > maxBytes)
+            {
+                throw new InvalidDataException(
+                    $"Template archive exceeds the {maxBytes / (1024 * 1024)} MB decompressed-size cap — refusing to extract (possible decompression bomb).");
+            }
+            return n;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) inner.Dispose();
+            base.Dispose(disposing);
+        }
     }
 
     /// <summary>Recursively copy <paramref name="from"/> into <paramref name="to"/> (created on demand).</summary>
