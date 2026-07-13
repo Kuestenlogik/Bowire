@@ -140,6 +140,31 @@ public sealed class MonitorRunCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Unknown_signal_scheme_is_reported_but_run_still_succeeds()
+    {
+        MonitorRunCommand.ExecutorFactory = () => new FakeExecutor(200);
+        var probe = WriteProbe();
+        using var outw = new StringWriter();
+        using var errw = new StringWriter();
+
+        // A valid scheme (resolves, but never fires — first --once run is the
+        // baseline, no transition) + an unknown scheme (reported + skipped).
+        var code = await MonitorRunCommand.RunAsync(
+            new MonitorRunOptions
+            {
+                ProbeFiles = [probe],
+                LedgerRoot = _dir,
+                Once = true,
+                Signals = ["pagerduty:rk", "teams:https://x"],
+            },
+            outw, errw, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, code);
+        Assert.Contains("teams", errw.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Ignoring --signal", errw.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Command_exposes_a_run_subcommand()
     {
         var cmd = new MonitorCliCommand().Build();
