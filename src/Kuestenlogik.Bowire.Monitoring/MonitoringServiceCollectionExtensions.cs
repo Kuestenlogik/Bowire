@@ -37,7 +37,8 @@ public static class MonitoringServiceCollectionExtensions
         return services;
     }
 
-    private static string DefaultLedgerRoot()
+    /// <summary>The default outcome-ledger root — <c>~/.bowire/monitoring</c> (temp fallback).</summary>
+    internal static string DefaultLedgerRoot()
     {
         var home = Environment.GetFolderPath(
             Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.None);

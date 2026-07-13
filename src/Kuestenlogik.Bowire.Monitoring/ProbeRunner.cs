@@ -19,13 +19,15 @@ public sealed class ProbeRunner
     private readonly IReadOnlyList<ISignaler> _signalers;
     private readonly TimeProvider _time;
     private readonly ILogger<ProbeRunner>? _log;
+    private readonly Action<Probe, ProbeOutcome>? _onOutcome;
 
     public ProbeRunner(
         IProbeExecutor executor,
         OutcomeLedger ledger,
         IEnumerable<ISignaler> signalers,
         TimeProvider timeProvider,
-        ILogger<ProbeRunner>? logger = null)
+        ILogger<ProbeRunner>? logger = null,
+        Action<Probe, ProbeOutcome>? onOutcome = null)
     {
         ArgumentNullException.ThrowIfNull(signalers);
         _executor = executor ?? throw new ArgumentNullException(nameof(executor));
@@ -33,6 +35,7 @@ public sealed class ProbeRunner
         _signalers = signalers.ToArray();
         _time = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         _log = logger;
+        _onOutcome = onOutcome;
     }
 
     /// <summary>
@@ -72,6 +75,7 @@ public sealed class ProbeRunner
         }
 
         _ledger.Append(probe.Name, outcome);
+        _onOutcome?.Invoke(probe, outcome); // per-run observer (e.g. the CLI's live line)
 
         var transition = TransitionDetector.Detect(previous, outcome.Result);
         if (transition != ProbeTransition.None)
