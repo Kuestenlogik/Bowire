@@ -70,9 +70,28 @@ public static class ScanCommand
             return 2;
         }
 
+        // Default template source: when the operator gave no explicit
+        // template source at all (no --template/--templates, no --nuclei, no
+        // --suite), fall back to the local cache at ~/.bowire/vulndb that
+        // `bowire vulndb update` populates. This closes the loop — update
+        // once, then scan without repeating --templates. An explicit
+        // --templates always wins; the cache is a fallback, never an
+        // override, and it never fetches (scan stays offline).
+        var effectiveTemplatesDir = options.Templates;
+        var cacheDir = ResolveCacheTemplatesDir(options);
+        if (cacheDir is not null)
+        {
+            effectiveTemplatesDir = cacheDir;
+            var cacheRoot = string.IsNullOrWhiteSpace(options.VulnDbCacheRoot)
+                ? VulnDbCache.DefaultRoot()
+                : options.VulnDbCacheRoot;
+            await stdout.WriteLineAsync(
+                $"  Using template cache at {cacheDir} ({VulnDbCache.CountTemplates(cacheRoot)} templates). Run `bowire vulndb update` to refresh.").ConfigureAwait(false);
+        }
+
         // Collect templates from --templates (directory) and/or --template (single file).
         var templates = new List<LoadedTemplate>();
-        foreach (var path in EnumerateTemplatePaths(options))
+        foreach (var path in EnumerateTemplatePaths(options.Template, effectiveTemplatesDir))
         {
             try
             {
@@ -368,13 +387,37 @@ public static class ScanCommand
         return 0;
     }
 
-    private static IEnumerable<string> EnumerateTemplatePaths(ScanOptions options)
+    /// <summary>
+    /// The local template-cache fallback gate. Returns the cache's
+    /// <c>templates/</c> dir when the operator gave no explicit template
+    /// source at all (no <c>--template</c>/<c>--templates</c>/<c>--nuclei</c>/
+    /// <c>--suite</c>) and the cache holds at least one template; otherwise
+    /// <c>null</c> (an explicit source always wins, and the cache is never an
+    /// override). Pure + offline — split out so the resolution is unit-tested
+    /// without running a scan.
+    /// </summary>
+    internal static string? ResolveCacheTemplatesDir(ScanOptions options)
     {
-        if (!string.IsNullOrEmpty(options.Template) && File.Exists(options.Template))
-            yield return options.Template;
-        if (!string.IsNullOrEmpty(options.Templates) && Directory.Exists(options.Templates))
+        if (!string.IsNullOrEmpty(options.Template)
+            || !string.IsNullOrEmpty(options.Templates)
+            || !string.IsNullOrEmpty(options.Nuclei)
+            || !string.IsNullOrEmpty(options.Suite))
         {
-            foreach (var p in Directory.EnumerateFiles(options.Templates, "*.json", SearchOption.AllDirectories))
+            return null;
+        }
+        var cacheRoot = string.IsNullOrWhiteSpace(options.VulnDbCacheRoot)
+            ? VulnDbCache.DefaultRoot()
+            : options.VulnDbCacheRoot;
+        return VulnDbCache.HasTemplates(cacheRoot) ? VulnDbCache.TemplatesDir(cacheRoot) : null;
+    }
+
+    private static IEnumerable<string> EnumerateTemplatePaths(string? templateFile, string? templatesDir)
+    {
+        if (!string.IsNullOrEmpty(templateFile) && File.Exists(templateFile))
+            yield return templateFile;
+        if (!string.IsNullOrEmpty(templatesDir) && Directory.Exists(templatesDir))
+        {
+            foreach (var p in Directory.EnumerateFiles(templatesDir, "*.json", SearchOption.AllDirectories))
                 yield return p;
         }
     }
@@ -770,6 +813,17 @@ public sealed class ScanOptions
 {
     public string Target { get; init; } = "";
     public string? Templates { get; init; }
+
+    /// <summary>
+    /// Override the local template-cache root the scan falls back to when no
+    /// explicit template source (<see cref="Template"/> / <see cref="Templates"/>
+    /// / <see cref="Nuclei"/> / <see cref="Suite"/>) is given. Null → the
+    /// default <c>~/.bowire/vulndb</c> the <c>bowire vulndb update</c> command
+    /// populates. Exposed so embedded hosts (and tests) can pin the cache
+    /// without depending on the process's home directory. Never fetches — the
+    /// scan only ever reads this cache.
+    /// </summary>
+    public string? VulnDbCacheRoot { get; init; }
 
     /// <summary>
     /// Named test-suite to run instead of / alongside the flat template

@@ -85,7 +85,7 @@ bowire scan --target mqtt://broker.example.com:1883 --suite protocol --auth-head
 
 The differentiators that no other tool has. Live items: schema-aware fuzzing both as workbench right-click UI ("Fuzz this field ▸") and CLI (`bowire fuzz` with SQLi / XSS / path-traversal / command-injection categories, schema-aware skip for numeric/bool fields, baseline-diff oracle detection); JWT toolkit (`bowire jwt decode` + `bowire jwt tamper` with `--alg-none`, `--set claim=value`, `--secret <key>`, plus `bowire jwt analyze` — deterministic security flags: alg=none, symmetric-HMAC crackability, missing/expired/long-lived `exp`, missing `nbf`, scope creep, audience binding, `kid` surface — and an AI narrative over those flags via `POST /api/ai/jwt-analyze`, #105, which degrades to the deterministic analysis when no model is connected); multi-protocol attack template library bootstrap in [`kuestenlogik/Bowire.VulnDb`](https://github.com/Kuestenlogik/Bowire.VulnDb) (initial 7 templates across gRPC / GraphQL / REST / OData, CI validation against the vulnerable-by-design sample).
 
-**Open:** Multi-protocol attack template **library expansion** — see ROADMAP for the next batch (SignalR brute-force, OData IDOR, MQTT ACL bypass, WebSocket subprotocol confusion, …) plus the monthly NVD-sync workflow + `bowire vulndb update` plumbing.
+**Open:** Multi-protocol attack template **library expansion** — see ROADMAP for the next batch (SignalR brute-force, OData IDOR, MQTT ACL bypass, WebSocket subprotocol confusion, …) plus the monthly NVD-sync workflow. The `bowire vulndb update` / `list` CLI plumbing has shipped (see the corpus-maintenance section below).
 
 ### Tier 3 — Pro-grade catch-up (parity with Burp / ZAP)
 
@@ -187,7 +187,7 @@ YAML is human-friendly (multi-line strings, comments, indented hierarchy) — co
 2. **Curated set** — the Top-20 per protocol, reviewed by named maintainers, surfaced on the marketing site as a Trust-Signal page. Subset of the community template set.
 3. **Private add-ons** — a future commercial differentiator. Proprietary 0-day templates a Bowire customer subscribes to; ships as encrypted bundles unlocked by license-key, separate from the public template set.
 
-`bowire vulndb update` (planned) is the CLI plumbing — `git pull` against the public template set, `~/.bowire/vulndb-local/` for handwritten templates, license-gate against the private bundle when a subscription is active.
+`bowire vulndb update` is the CLI plumbing: it refreshes the local template cache at `~/.bowire/vulndb` from the public set — pulling the latest [`Kuestenlogik/Bowire.VulnDb`](https://github.com/Kuestenlogik/Bowire.VulnDb) GitHub release by default, or a `--source` (a repo checkout, a release `.tar.gz`, or an http(s) URL) / `--ref <tag>` for air-gapped and pinned installs. It's the only outbound call in the security lane and only runs when invoked. `bowire vulndb list` shows the cache; `bowire scan` reads `~/.bowire/vulndb/templates` by default when no explicit `--template`/`--templates` is given (an explicit source always wins). Still planned on top: a `~/.bowire/vulndb-local/` overlay for handwritten templates and a license-gate against the private bundle when a subscription is active.
 
 ## Differentiation vs incumbents
 
