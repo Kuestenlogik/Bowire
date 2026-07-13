@@ -65,6 +65,7 @@
          assembly scan. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Monitoring.Slack\Kuestenlogik.Bowire.Monitoring.Slack.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Monitoring.PagerDuty\Kuestenlogik.Bowire.Monitoring.PagerDuty.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Monitoring.Otlp\Kuestenlogik.Bowire.Monitoring.Otlp.csproj" />
     <!-- #368 (#306 Phase G tail): the Workspaces rail descriptor was
          folded into Core (src/Kuestenlogik.Bowire/Rails/) alongside
          Home + Discover — it's the core-resident workspace-navigation

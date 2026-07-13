@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #102 — opt-in OTLP signaler for Monitoring. The `otlp:<endpoint>`
+         signal channel exports the bowire.monitoring.* metrics to an
+         OpenTelemetry collector. Uses the official OpenTelemetry SDK + OTLP
+         exporter (never hand-rolled protobuf) — the dependency lives in THIS
+         optional package, so neither Core nor the Monitoring base package
+         gains it. -->
+    <Description>Bowire Monitoring — OTLP signaler. Exports the bowire.monitoring.* probe metrics to an OpenTelemetry collector via `--signal otlp:&lt;endpoint&gt;`.</Description>
+    <PackageId>Kuestenlogik.Bowire.Monitoring.Otlp</PackageId>
+    <PackageTags>bowire;monitoring;opentelemetry;otlp;metrics;signaler</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Monitoring\Kuestenlogik.Bowire.Monitoring.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+  </ItemGroup>
+</Project>
