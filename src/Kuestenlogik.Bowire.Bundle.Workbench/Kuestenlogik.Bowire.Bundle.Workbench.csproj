@@ -60,8 +60,9 @@
          Tool exposes it out of the box. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Monitoring\Kuestenlogik.Bowire.Monitoring.csproj" />
     <!-- Opt-in Monitoring signaler channels (HttpClient-only, no third-party
-         deps). Bundled so the standalone Tool's `--signal slack:… / pagerduty:…`
-         resolve out of the box; SignalerRegistry discovers them by assembly scan. -->
+         deps). Bundled so the standalone Tool's slack: / pagerduty: signal
+         channels resolve out of the box; SignalerRegistry discovers them by
+         assembly scan. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Monitoring.Slack\Kuestenlogik.Bowire.Monitoring.Slack.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Monitoring.PagerDuty\Kuestenlogik.Bowire.Monitoring.PagerDuty.csproj" />
     <!-- #368 (#306 Phase G tail): the Workspaces rail descriptor was
