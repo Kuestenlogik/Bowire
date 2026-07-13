@@ -3,7 +3,7 @@
 
 using Microsoft.Extensions.Logging;
 
-namespace Kuestenlogik.Bowire.Lighthouse;
+namespace Kuestenlogik.Bowire.Monitoring;
 
 /// <summary>
 /// Runs a probe once and records the outcome (#102). The pipeline per run:
@@ -102,7 +102,7 @@ public sealed class ProbeRunner
         LoggerMessage.Define<string, string>(
             LogLevel.Warning,
             new EventId(1, nameof(LogSignalerFailed)),
-            "Lighthouse signaler {Signaler} failed for probe {Probe}");
+            "Monitoring signaler {Signaler} failed for probe {Probe}");
 
     private static void LogSignalerFailed(ILogger? log, string probe, string signaler, Exception ex)
     {

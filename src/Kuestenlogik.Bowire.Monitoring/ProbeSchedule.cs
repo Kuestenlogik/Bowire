@@ -4,7 +4,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace Kuestenlogik.Bowire.Lighthouse;
+namespace Kuestenlogik.Bowire.Monitoring;
 
 /// <summary>
 /// When a probe runs (#102, Decision 1). v1 accepts an interval

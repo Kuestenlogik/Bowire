@@ -1,7 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-namespace Kuestenlogik.Bowire.Lighthouse.Tests;
+namespace Kuestenlogik.Bowire.Monitoring.Tests;
 
 /// <summary>
 /// Coverage for <see cref="OutcomeLedger"/> — the append-only jsonl store and

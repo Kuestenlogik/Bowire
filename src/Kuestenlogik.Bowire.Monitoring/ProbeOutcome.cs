@@ -3,7 +3,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace Kuestenlogik.Bowire.Lighthouse;
+namespace Kuestenlogik.Bowire.Monitoring;
 
 /// <summary>
 /// One row in a probe's outcome ledger — the durable record of a single run.

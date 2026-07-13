@@ -3,7 +3,7 @@
 
 using System.Globalization;
 
-namespace Kuestenlogik.Bowire.Lighthouse;
+namespace Kuestenlogik.Bowire.Monitoring;
 
 /// <summary>
 /// A must-pass predicate over a probe's response. v1 covers the three checks a

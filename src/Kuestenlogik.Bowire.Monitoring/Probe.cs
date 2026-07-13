@@ -3,10 +3,10 @@
 
 using Kuestenlogik.Bowire.Mocking;
 
-namespace Kuestenlogik.Bowire.Lighthouse;
+namespace Kuestenlogik.Bowire.Monitoring;
 
 /// <summary>
-/// A Lighthouse probe (#102) — a saved invocation (<see cref="BowireRecording"/>)
+/// A Monitoring probe (#102) — a saved invocation (<see cref="BowireRecording"/>)
 /// plus the three extras that turn it into a scheduled health check: a
 /// <see cref="Schedule"/>, the <see cref="Assertions"/> that must pass, and a
 /// <see cref="Severity"/> that routes the signal. This is the sentence the

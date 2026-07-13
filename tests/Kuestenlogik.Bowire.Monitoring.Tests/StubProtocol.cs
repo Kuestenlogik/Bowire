@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using Kuestenlogik.Bowire;
 using Kuestenlogik.Bowire.Models;
 
-namespace Kuestenlogik.Bowire.Lighthouse.Tests;
+namespace Kuestenlogik.Bowire.Monitoring.Tests;
 
 /// <summary>
 /// A configurable <see cref="IBowireProtocol"/> for the executor + end-to-end

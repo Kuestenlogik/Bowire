@@ -4,24 +4,24 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace Kuestenlogik.Bowire.Lighthouse;
+namespace Kuestenlogik.Bowire.Monitoring;
 
 /// <summary>
-/// DI wiring for Lighthouse (#102). Registers the Core engine — the outcome
+/// DI wiring for Monitoring (#102). Registers the Core engine — the outcome
 /// ledger, the probe runner, and the <see cref="TimeProvider"/>-backed
 /// scheduler. Registers <b>no</b> <see cref="ISignaler"/>: outbound channels are
 /// opt-in and contributed by their own packages, so a host that calls only this
 /// runs probes and writes the ledger without any outbound call. The host must
 /// supply an <see cref="IProbeExecutor"/> (the recording-replay implementation).
 /// </summary>
-public static class LighthouseServiceCollectionExtensions
+public static class MonitoringServiceCollectionExtensions
 {
     /// <summary>
-    /// Register the Lighthouse Core engine with the ledger rooted at
-    /// <paramref name="ledgerRoot"/> (default <c>~/.bowire/lighthouse</c>).
+    /// Register the Monitoring Core engine with the ledger rooted at
+    /// <paramref name="ledgerRoot"/> (default <c>~/.bowire/monitoring</c>).
     /// Idempotent for the ledger + scheduler singletons.
     /// </summary>
-    public static IServiceCollection AddBowireLighthouse(this IServiceCollection services, string? ledgerRoot = null)
+    public static IServiceCollection AddBowireMonitoring(this IServiceCollection services, string? ledgerRoot = null)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -42,7 +42,7 @@ public static class LighthouseServiceCollectionExtensions
         var home = Environment.GetFolderPath(
             Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.None);
         return string.IsNullOrEmpty(home)
-            ? System.IO.Path.Combine(System.IO.Path.GetTempPath(), "bowire", "lighthouse")
-            : System.IO.Path.Combine(home, ".bowire", "lighthouse");
+            ? System.IO.Path.Combine(System.IO.Path.GetTempPath(), "bowire", "monitoring")
+            : System.IO.Path.Combine(home, ".bowire", "monitoring");
     }
 }

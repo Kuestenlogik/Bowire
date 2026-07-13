@@ -1,13 +1,13 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-namespace Kuestenlogik.Bowire.Lighthouse;
+namespace Kuestenlogik.Bowire.Monitoring;
 
 /// <summary>
 /// Fires when a probe crosses the pass↔fail line (#102). Implementations are
 /// the outbound integrations — Slack / PagerDuty / OTLP-logs — each shipping as
 /// a separate opt-in package and registered only when the operator passes the
-/// matching <c>--signal</c> flag. Core Lighthouse registers <b>no</b> signaler,
+/// matching <c>--signal</c> flag. Core Monitoring registers <b>no</b> signaler,
 /// so nothing leaves the host by default.
 /// </summary>
 public interface ISignaler
