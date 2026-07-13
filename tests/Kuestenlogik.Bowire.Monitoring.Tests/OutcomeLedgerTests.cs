@@ -55,6 +55,23 @@ public sealed class OutcomeLedgerTests : IDisposable
     }
 
     [Fact]
+    public void Assertion_verdicts_serialise_camelCase()
+    {
+        var ledger = new OutcomeLedger(_dir);
+        ledger.Append("p", new ProbeOutcome
+        {
+            TimestampUnixMs = 1,
+            Result = ProbeResult.Fail,
+            Assertions = [new ProbeAssertionVerdict(false, "status 500 == 200")],
+        });
+        var line = File.ReadAllText(ledger.PathFor("p"));
+        // Uniform camelCase — nested verdict keys follow the top-level shape.
+        Assert.Contains("\"passed\"", line, StringComparison.Ordinal);
+        Assert.Contains("\"description\"", line, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"Passed\"", line, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void LastOutcome_skips_a_corrupt_trailing_line()
     {
         var ledger = new OutcomeLedger(_dir);
