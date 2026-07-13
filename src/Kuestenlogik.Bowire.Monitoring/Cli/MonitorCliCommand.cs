@@ -43,10 +43,16 @@ public sealed class MonitorCliCommand : IBowireCliCommand
         {
             Description = "Run each probe exactly once and exit instead of looping — for CI / smoke tests. Exit code 2 when any probe fails or errors.",
         };
+        var signalOpt = new Option<string[]>("--signal")
+        {
+            Description = "Outbound alert channel as '<scheme>:<arg>' — e.g. 'slack:https://hooks.slack.com/...' or 'pagerduty:<routing-key>'. Repeatable. Each scheme is served by an opt-in signaler package; an unknown scheme is reported and skipped. The console channel is always on.",
+            AllowMultipleArgumentsPerToken = false,
+        };
 
         run.Add(filesArg);
         run.Add(ledgerOpt);
         run.Add(onceOpt);
+        run.Add(signalOpt);
 
         run.SetAction(async (pr, ct) => await MonitorRunCommand.RunAsync(
             new MonitorRunOptions
@@ -54,6 +60,7 @@ public sealed class MonitorCliCommand : IBowireCliCommand
                 ProbeFiles = pr.GetValue(filesArg) ?? [],
                 LedgerRoot = pr.GetValue(ledgerOpt),
                 Once = pr.GetValue(onceOpt),
+                Signals = pr.GetValue(signalOpt) ?? [],
             },
             pr.InvocationConfiguration.Output,
             pr.InvocationConfiguration.Error,

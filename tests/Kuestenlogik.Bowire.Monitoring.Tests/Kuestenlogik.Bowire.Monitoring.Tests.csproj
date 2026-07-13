@@ -16,5 +16,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Monitoring\Kuestenlogik.Bowire.Monitoring.csproj" />
+    <!-- The opt-in signaler packages — referenced so their DLLs land in the test
+         bin dir (SignalerRegistry discovery) and their signalers are testable. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Monitoring.Slack\Kuestenlogik.Bowire.Monitoring.Slack.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Monitoring.PagerDuty\Kuestenlogik.Bowire.Monitoring.PagerDuty.csproj" />
   </ItemGroup>
 </Project>

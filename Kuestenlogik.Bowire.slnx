@@ -60,6 +60,8 @@
     <Project Path="src/Kuestenlogik.Bowire.Interceptor/Kuestenlogik.Bowire.Interceptor.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Benchmarking/Kuestenlogik.Bowire.Benchmarking.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Monitoring/Kuestenlogik.Bowire.Monitoring.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Monitoring.Slack/Kuestenlogik.Bowire.Monitoring.Slack.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Monitoring.PagerDuty/Kuestenlogik.Bowire.Monitoring.PagerDuty.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Kuestenlogik.Bowire.Testing/Kuestenlogik.Bowire.Testing.csproj" />

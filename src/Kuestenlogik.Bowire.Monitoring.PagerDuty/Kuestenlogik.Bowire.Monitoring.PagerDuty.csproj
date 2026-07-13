@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #102 — opt-in PagerDuty signaler for Monitoring. The
+         `pagerduty:<routing-key>` signal channel triggers an incident on a
+         failing edge and resolves it on recovery (Events API v2, dedup_key =
+         probe). HttpClient only — no third-party dependency on Core or Monitoring. -->
+    <Description>Bowire Monitoring — PagerDuty signaler. Triggers / resolves incidents on probe pass↔fail transitions via `--signal pagerduty:&lt;routing-key&gt;` (Events API v2).</Description>
+    <PackageId>Kuestenlogik.Bowire.Monitoring.PagerDuty</PackageId>
+    <PackageTags>bowire;monitoring;pagerduty;alerting;signaler</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Monitoring\Kuestenlogik.Bowire.Monitoring.csproj" />
+  </ItemGroup>
+</Project>

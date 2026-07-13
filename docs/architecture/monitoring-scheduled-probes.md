@@ -4,18 +4,20 @@ summary: 'Design for Monitoring — a long-lived probe loop that periodically in
 
 # Monitoring — scheduled probes + alerting
 
-**Status:** design + Core engine shipped (v2.3, tracks [#102]). The
-`Kuestenlogik.Bowire.Monitoring` package now implements the Core engine
-below — the `TimeProvider` scheduler, the append-only outcome ledger,
-the transition detector, the assertion evaluator, and the `ISignaler`
-seam. Still to land: the `bowire monitoring run` CLI command, the
-recording-replay `IProbeExecutor`, the opt-in signaler sibling packages
-(Slack / PagerDuty / OTLP), and the read-only workbench surface. This
-doc resolves the three open questions the issue left for the concept
-tier — scheduling backend, state recovery after restart, multi-tenant
-probe ownership — and draws the v1 scope line. It does not re-argue
-*why* the passive-monitoring shape belongs in Bowire; the issue covers
-that.
+**Status:** design + v1 shipped, minus OTLP + the workbench surface (v2.3,
+tracks [#102]). The `Kuestenlogik.Bowire.Monitoring` package implements
+the Core engine below — the `TimeProvider` scheduler, the append-only
+outcome ledger, the transition detector, the assertion evaluator, the
+`ISignaler` seam, the recording-replay `IProbeExecutor`, and the
+`bowire monitor run` CLI command. The opt-in **Slack** and **PagerDuty**
+signaler packages ship (`--signal slack:<webhook>` / `pagerduty:<key>`),
+discovered by assembly scan and degrading to a clear "install …" message
+when absent. Still to land: the **OTLP** signaler + metrics package, and
+the read-only workbench surface. This doc resolves the three open
+questions the issue left for the concept tier — scheduling backend, state
+recovery after restart, multi-tenant probe ownership — and draws the v1
+scope line. It does not re-argue *why* the passive-monitoring shape
+belongs in Bowire; the issue covers that.
 
 ## The shape in one sentence
 
@@ -124,7 +126,7 @@ out of scope for v1.**
   a personal draft. Operationally, on-call for a workspace must see the
   same probe set regardless of who authored it — per-user probes would
   fragment exactly the view that needs to be shared.
-- v1 ships the **CLI / container** deployment: `bowire monitoring run
+- v1 ships the **CLI / container** deployment: `bowire monitor run
   <file>` owns one probe file, which *is* the workspace. No
   `IBowireUserStore` interaction, no auth, no per-user filtering. This
   keeps v1 shippable without waiting on the multi-tenant user story.
@@ -187,7 +189,7 @@ do not export. In-process recording is not an outbound call.
 
 ## v1 acceptance (unchanged from the issue, now scoped)
 
-- [ ] `bowire monitoring run <file>` boots a `TimeProvider`-driven probe
+- [ ] `bowire monitor run <file>` boots a `TimeProvider`-driven probe
       loop against the configured target.
 - [ ] Outcomes append to `~/.bowire/monitoring/<probe>.jsonl`; restart
       resumes cadence via lazy-start from the last ledger row.

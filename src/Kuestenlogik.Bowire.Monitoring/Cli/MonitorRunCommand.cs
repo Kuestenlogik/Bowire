@@ -17,6 +17,14 @@ public sealed record MonitorRunOptions
 
     /// <summary>Run each probe once and exit, rather than looping on the schedule.</summary>
     public bool Once { get; init; }
+
+    /// <summary>
+    /// Outbound signal channels, each a <c>&lt;scheme&gt;:&lt;arg&gt;</c> spec
+    /// (<c>slack:&lt;webhook&gt;</c>, <c>pagerduty:&lt;routing-key&gt;</c>, …).
+    /// Resolved through the installed signaler packages; an unknown scheme is
+    /// reported and skipped. The console channel is always on.
+    /// </summary>
+    public IReadOnlyList<string> Signals { get; init; } = [];
 }
 
 /// <summary>
@@ -66,7 +74,28 @@ public static class MonitorRunCommand
         var ledger = new OutcomeLedger(string.IsNullOrWhiteSpace(options.LedgerRoot)
             ? MonitoringServiceCollectionExtensions.DefaultLedgerRoot()
             : options.LedgerRoot);
-        var signalers = new ISignaler[] { new ConsoleSignaler(output) };
+
+        // The console channel is always on; the network channels are resolved
+        // through the installed opt-in signaler packages. An unknown scheme is
+        // reported and skipped, never fatal.
+        var signalers = new List<ISignaler> { new ConsoleSignaler(output) };
+        if (options.Signals.Count > 0)
+        {
+            var registry = SignalerRegistry.Discover();
+            foreach (var spec in options.Signals)
+            {
+                var signaler = registry.Resolve(spec, out var signalError);
+                if (signaler is not null)
+                {
+                    signalers.Add(signaler);
+                }
+                else
+                {
+                    await error.WriteLineAsync($"Ignoring --signal: {signalError}").ConfigureAwait(false);
+                }
+            }
+        }
+
         var runner = new ProbeRunner(
             ExecutorFactory(), ledger, signalers, TimeProvider.System, onOutcome: (p, oc) => WriteOutcomeLine(output, p, oc));
 
