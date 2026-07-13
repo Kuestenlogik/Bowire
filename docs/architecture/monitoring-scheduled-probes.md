@@ -4,20 +4,23 @@ summary: 'Design for Monitoring — a long-lived probe loop that periodically in
 
 # Monitoring — scheduled probes + alerting
 
-**Status:** design + v1 shipped, minus OTLP + the workbench surface (v2.3,
-tracks [#102]). The `Kuestenlogik.Bowire.Monitoring` package implements
-the Core engine below — the `TimeProvider` scheduler, the append-only
-outcome ledger, the transition detector, the assertion evaluator, the
-`ISignaler` seam, the recording-replay `IProbeExecutor`, and the
-`bowire monitor run` CLI command. The opt-in **Slack** and **PagerDuty**
-signaler packages ship (`--signal slack:<webhook>` / `pagerduty:<key>`),
+**Status:** design + v1 shipped, minus the read-only workbench surface
+(v2.3, tracks [#102]). The `Kuestenlogik.Bowire.Monitoring` package
+implements the Core engine below — the `TimeProvider` scheduler, the
+append-only outcome ledger, the transition detector, the assertion
+evaluator, the `ISignaler` seam, the `bowire.monitoring.*` metric
+instruments, the recording-replay `IProbeExecutor`, and the
+`bowire monitor run` CLI command. Three opt-in signaler packages ship,
 discovered by assembly scan and degrading to a clear "install …" message
-when absent. Still to land: the **OTLP** signaler + metrics package, and
-the read-only workbench surface. This doc resolves the three open
-questions the issue left for the concept tier — scheduling backend, state
-recovery after restart, multi-tenant probe ownership — and draws the v1
-scope line. It does not re-argue *why* the passive-monitoring shape
-belongs in Bowire; the issue covers that.
+when absent: **Slack** (`--signal slack:<webhook>`), **PagerDuty**
+(`pagerduty:<key>`, Events API v2 with restart-safe auto-resolve), and
+**OTLP** (`otlp:<endpoint>`, exports the probe metrics to an OpenTelemetry
+collector via the official SDK). Still to land: the read-only workbench
+surface. This doc resolves the three open questions the issue left for the
+concept tier — scheduling backend, state recovery after restart,
+multi-tenant probe ownership — and draws the v1 scope line. It does not
+re-argue *why* the passive-monitoring shape belongs in Bowire; the issue
+covers that.
 
 ## The shape in one sentence
 
