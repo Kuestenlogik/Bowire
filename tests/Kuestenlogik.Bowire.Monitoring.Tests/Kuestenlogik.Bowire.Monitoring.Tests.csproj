@@ -20,5 +20,6 @@
          bin dir (SignalerRegistry discovery) and their signalers are testable. -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Monitoring.Slack\Kuestenlogik.Bowire.Monitoring.Slack.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Monitoring.PagerDuty\Kuestenlogik.Bowire.Monitoring.PagerDuty.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Monitoring.Otlp\Kuestenlogik.Bowire.Monitoring.Otlp.csproj" />
   </ItemGroup>
 </Project>

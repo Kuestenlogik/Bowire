@@ -75,6 +75,7 @@ public sealed class ProbeRunner
         }
 
         _ledger.Append(probe.Name, outcome);
+        MonitoringTelemetry.Record(probe.Name, outcome.Result, outcome.LatencyMs);
         _onOutcome?.Invoke(probe, outcome); // per-run observer (e.g. the CLI's live line)
 
         var transition = TransitionDetector.Detect(previous, outcome.Result);
