@@ -287,6 +287,76 @@ public sealed class VulnDbCommandTests : IDisposable
         Assert.Contains("no bowire-vulndb-templates-*.tar.gz asset", stderr, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void Update_pinned_ref_hits_the_tag_endpoint_and_reports_it()
+    {
+        var tarballBytes = File.ReadAllBytes(MakeTarball());
+        string? apiUrl = null;
+        const string releaseJson = """
+            { "tag_name": "v0.1.0", "assets": [
+                { "name": "bowire-vulndb-templates-v0.1.0.tar.gz", "browser_download_url": "https://example.test/tarball" }
+            ] }
+            """;
+        using var handler = new StubHandler(req =>
+        {
+            var url = req.RequestUri!.ToString();
+            if (url.Contains("api.github.com", StringComparison.Ordinal))
+            {
+                apiUrl = url;
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(releaseJson, Encoding.UTF8) };
+            }
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(tarballBytes) };
+        });
+        var dest = Path.Combine(_tmp, "dest-ref");
+
+        var (code, stdout, _) = Capture((o, e) => VulnDbUpdateCommand.RunAsync(
+            new VulnDbUpdateOptions { Ref = "v0.1.0", Dest = dest }, TestContext.Current.CancellationToken, o, e, handler));
+
+        Assert.Equal(0, code);
+        // Pinned ref resolves via releases/tags/<tag>, not releases/latest.
+        Assert.NotNull(apiUrl);
+        Assert.Contains("/releases/tags/v0.1.0", apiUrl, StringComparison.Ordinal);
+        Assert.Contains("Resolving Bowire.VulnDb release v0.1.0", stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Update_fetch_failure_returns_exit_1_gracefully()
+    {
+        using var handler = new StubHandler(_ => throw new HttpRequestException("connection reset"));
+        var dest = Path.Combine(_tmp, "dest-fetchfail");
+
+        var (code, _, stderr) = Capture((o, e) => VulnDbUpdateCommand.RunAsync(
+            new VulnDbUpdateOptions { Source = "https://example.test/x.tar.gz", Dest = dest },
+            TestContext.Current.CancellationToken, o, e, handler));
+
+        Assert.Equal(1, code);
+        Assert.Contains("Could not fetch templates", stderr, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(Path.Combine(dest, "templates")));
+    }
+
+    [Fact]
+    public void Update_from_indexless_source_clears_a_stale_index()
+    {
+        // First populate a cache WITH an index (7 phantom entries not on disk
+        // after the next update).
+        var dest = Path.Combine(_tmp, "dest-staleidx");
+        Capture((o, e) => VulnDbUpdateCommand.RunAsync(
+            new VulnDbUpdateOptions { Source = MakeSourceDir(withIndex: true), Dest = dest },
+            TestContext.Current.CancellationToken, o, e));
+        Assert.True(File.Exists(VulnDbCache.IndexPath(dest)));
+
+        // Now update from an index-less source (a bare checkout).
+        var (code, _, _) = Capture((o, e) => VulnDbUpdateCommand.RunAsync(
+            new VulnDbUpdateOptions { Source = MakeSourceDir(withIndex: false), Dest = dest },
+            TestContext.Current.CancellationToken, o, e));
+
+        Assert.Equal(0, code);
+        // The stale index is gone, so list walks the tree instead of reporting
+        // phantom templates.
+        Assert.False(File.Exists(VulnDbCache.IndexPath(dest)));
+        Assert.True(File.Exists(Path.Combine(dest, "templates", "rest", "teapot.json")));
+    }
+
     // ---------------- list ----------------
 
     [Fact]
@@ -327,6 +397,21 @@ public sealed class VulnDbCommandTests : IDisposable
         Assert.Equal(0, code);
         Assert.Contains("No 'grpc' templates", stdout, StringComparison.Ordinal);
         Assert.DoesNotContain("bwr-rest-999-teapot", stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void List_protocol_filter_includes_matching_rows()
+    {
+        var dest = Path.Combine(_tmp, "list-match");
+        Capture((o, e) => VulnDbUpdateCommand.RunAsync(
+            new VulnDbUpdateOptions { Source = MakeSourceDir(), Dest = dest }, TestContext.Current.CancellationToken, o, e));
+
+        var (code, stdout, _) = Capture((o, e) => VulnDbListCommand.RunAsync(
+            new VulnDbListOptions { Dest = dest, Protocol = "rest" }, TestContext.Current.CancellationToken, o, e));
+
+        Assert.Equal(0, code);
+        Assert.Contains("1 template(s)", stdout, StringComparison.Ordinal);
+        Assert.Contains("bwr-rest-999-teapot", stdout, StringComparison.Ordinal);
     }
 
     // ---------------- scan default-cache fallback (offline resolver) ----------------
@@ -378,6 +463,24 @@ public sealed class VulnDbCommandTests : IDisposable
         {
             Target = "http://example.test/",
             VulnDbCacheRoot = Path.Combine(_tmp, "empty-cache"),
+        });
+
+        Assert.Null(resolved);
+    }
+
+    [Fact]
+    public void ResolveCacheTemplatesDir_null_when_single_template_given()
+    {
+        var dest = Path.Combine(_tmp, "scan-cache-template");
+        Capture((o, e) => VulnDbUpdateCommand.RunAsync(
+            new VulnDbUpdateOptions { Source = MakeSourceDir(), Dest = dest }, TestContext.Current.CancellationToken, o, e));
+
+        // A single explicit --template also suppresses the cache fallback.
+        var resolved = ScanCommand.ResolveCacheTemplatesDir(new ScanOptions
+        {
+            Target = "http://example.test/",
+            Template = Path.Combine(dest, "templates", "rest", "teapot.json"),
+            VulnDbCacheRoot = dest,
         });
 
         Assert.Null(resolved);
