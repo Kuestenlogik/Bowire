@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #102 — opt-in Slack signaler for Monitoring. The `slack:<webhook>`
+         signal channel posts an alert / recovery to a Slack incoming webhook.
+         Uses only HttpClient — no third-party dependency, so neither Core nor
+         the Monitoring package gains one. -->
+    <Description>Bowire Monitoring — Slack signaler. Posts probe pass↔fail transitions to a Slack incoming webhook via `--signal slack:&lt;webhook&gt;`.</Description>
+    <PackageId>Kuestenlogik.Bowire.Monitoring.Slack</PackageId>
+    <PackageTags>bowire;monitoring;slack;alerting;signaler</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Monitoring\Kuestenlogik.Bowire.Monitoring.csproj" />
+  </ItemGroup>
+</Project>
