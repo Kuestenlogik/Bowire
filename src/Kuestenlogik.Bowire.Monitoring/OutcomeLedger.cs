@@ -20,12 +20,18 @@ public sealed class OutcomeLedger
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// JSON shape shared with the workbench reader: camelCase-ish (the property
-    /// names are pinned via <see cref="JsonPropertyNameAttribute"/>) and the
-    /// result enum as a string so <c>&lt;probe&gt;.jsonl</c> is human-readable.
+    /// JSON shape shared with the workbench reader: camelCase throughout — the
+    /// top-level keys are pinned via <see cref="JsonPropertyNameAttribute"/>, and
+    /// the naming policy carries camelCase into the nested assertion verdicts so
+    /// the whole line is uniform (<c>passed</c> / <c>description</c>, not the
+    /// PascalCase record defaults). The result enum serialises as a string so
+    /// <c>&lt;probe&gt;.jsonl</c> stays human-readable; case-insensitive reads
+    /// keep older lines loadable.
     /// </summary>
     public static readonly JsonSerializerOptions Json = new()
     {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
     };
