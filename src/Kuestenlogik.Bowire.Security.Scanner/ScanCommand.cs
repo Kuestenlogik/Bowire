@@ -24,12 +24,14 @@ namespace Kuestenlogik.Bowire.Security.Scanner;
 /// <remarks>
 /// <para>
 /// v1 scope: HTTP-class probes only (<c>rest</c>, <c>graphql</c>,
-/// <c>odata</c>, <c>http</c>). gRPC / SignalR / WebSocket / MQTT probes
-/// surface as <see cref="ScanFindingStatus.Skipped"/> with a
-/// "transport not yet supported by scanner" message — the templates
-/// still load, they just don't run yet. Later iterations route
-/// non-HTTP probes through the corresponding protocol plugin's
-/// invoke path.
+/// <c>odata</c>, <c>http</c>, <c>sse</c>, <c>signalr</c>). SignalR is
+/// HTTP-class because its negotiate handshake (<c>POST /hubs/&lt;name&gt;/negotiate</c>)
+/// is a plain HTTP request the scanner can replay directly. WebSocket /
+/// MQTT / raw-gRPC probes still surface as
+/// <see cref="ScanFindingStatus.Skipped"/> with a "transport not yet
+/// supported by scanner" message — the templates still load, they just
+/// don't run yet. Later iterations route non-HTTP probes through the
+/// corresponding protocol plugin's invoke path.
 /// </para>
 /// </remarks>
 public static class ScanCommand
@@ -452,7 +454,11 @@ public static class ScanCommand
 
     private static bool IsHttpClassProtocol(string protocol) => protocol switch
     {
-        "REST" or "GRAPHQL" or "ODATA" or "HTTP" or "SSE" => true,
+        // SignalR is HTTP-class: its negotiate handshake is a plain HTTP
+        // POST the scanner replays like any REST probe. The live hub
+        // connection (WebSocket/SSE/long-poll) is out of template scope,
+        // but the open-negotiate misconfiguration is fully HTTP-detectable.
+        "REST" or "GRAPHQL" or "ODATA" or "HTTP" or "SSE" or "SIGNALR" => true,
         _ => false,
     };
 

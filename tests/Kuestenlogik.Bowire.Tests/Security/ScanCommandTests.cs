@@ -362,6 +362,38 @@ public sealed class ScanCommandTests
     }
 
     [Fact]
+    public async Task RunAsync_SignalRTemplate_IsProbedAsHttpClass()
+    {
+        // SignalR is HTTP-class: its negotiate handshake is a plain HTTP
+        // POST, so a signalr-protocol template must be probed (and can fire),
+        // NOT skipped with "transport not yet supported". Guards the
+        // IsHttpClassProtocol allow-list against a regression that would
+        // silently stop running every signalr template.
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartUpstreamAsync(ct);
+
+        var rec = AttackRecording(); // default predicate: status == 200
+        rec.Steps[0].Protocol = "signalr";
+        rec.Steps[0].HttpVerb = "POST";
+        rec.Steps[0].HttpPath = "/hubs/probe/negotiate";
+        var path = await WriteAsync(rec, ct);
+        try
+        {
+            var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
+            {
+                Target = upstream.Urls.First(),
+                Template = path,
+                RunBuiltins = false,
+            }, ct, @out, err));
+            Assert.Equal(0, code);
+            Assert.DoesNotContain("not yet supported by scanner", stdout, StringComparison.Ordinal);
+            // The upstream returns 200, so the status==200 predicate fires.
+            Assert.Contains("VULN", stdout, StringComparison.Ordinal);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public async Task RunAsync_TargetUnreachable_RecordsErrorFinding()
     {
         var ct = TestContext.Current.CancellationToken;
