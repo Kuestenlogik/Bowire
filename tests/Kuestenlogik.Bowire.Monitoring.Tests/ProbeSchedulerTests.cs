@@ -4,7 +4,7 @@
 using Kuestenlogik.Bowire.Mocking;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kuestenlogik.Bowire.Lighthouse.Tests;
+namespace Kuestenlogik.Bowire.Monitoring.Tests;
 
 /// <summary>
 /// Coverage for <see cref="TimeProviderProbeScheduler"/> and the DI wiring. The
@@ -74,12 +74,12 @@ public sealed class ProbeSchedulerTests : IDisposable
     }
 
     [Fact]
-    public void AddBowireLighthouse_registers_the_engine()
+    public void AddBowireMonitoring_registers_the_engine()
     {
         using var cts = new CancellationTokenSource();
         var services = new ServiceCollection();
         services.AddSingleton<IProbeExecutor>(new CancelingExecutor(cts));
-        services.AddBowireLighthouse(_dir);
+        services.AddBowireMonitoring(_dir);
 
         using var sp = services.BuildServiceProvider();
         Assert.NotNull(sp.GetRequiredService<OutcomeLedger>());

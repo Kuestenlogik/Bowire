@@ -1,14 +1,14 @@
 ---
-summary: 'Design for Lighthouse — a long-lived probe loop that periodically invokes saved recordings against a target, records outcomes, and signals on pass↔fail transitions. Resolves the concept-tier open questions (scheduler backend, restart recovery, probe ownership) and scopes v1.'
+summary: 'Design for Monitoring — a long-lived probe loop that periodically invokes saved recordings against a target, records outcomes, and signals on pass↔fail transitions. Resolves the concept-tier open questions (scheduler backend, restart recovery, probe ownership) and scopes v1.'
 ---
 
-# Lighthouse — scheduled probes + alerting
+# Monitoring — scheduled probes + alerting
 
 **Status:** design + Core engine shipped (v2.3, tracks [#102]). The
-`Kuestenlogik.Bowire.Lighthouse` package now implements the Core engine
+`Kuestenlogik.Bowire.Monitoring` package now implements the Core engine
 below — the `TimeProvider` scheduler, the append-only outcome ledger,
 the transition detector, the assertion evaluator, and the `ISignaler`
-seam. Still to land: the `bowire lighthouse run` CLI command, the
+seam. Still to land: the `bowire monitoring run` CLI command, the
 recording-replay `IProbeExecutor`, the opt-in signaler sibling packages
 (Slack / PagerDuty / OTLP), and the read-only workbench surface. This
 doc resolves the three open questions the issue left for the concept
@@ -21,16 +21,16 @@ that.
 
 A probe is a saved invocation (a recording / collection entry) with
 three extra fields — `schedule`, `assertions`, `severity` — and
-Lighthouse is the process that runs those invocations on their
+Monitoring is the process that runs those invocations on their
 schedule, appends each outcome to a ledger, and fires a signal when a
 probe crosses the pass↔fail line.
 
 Everything below is in service of keeping that sentence true: no
 separate authoring tool, no new execution engine, no protocol coupling.
 
-## What already exists that Lighthouse reuses
+## What already exists that Monitoring reuses
 
-Lighthouse is deliberately not a greenfield service. It composes seams
+Monitoring is deliberately not a greenfield service. It composes seams
 Bowire already ships:
 
 | Need | Existing seam | Reused as-is? |
@@ -53,7 +53,7 @@ Quartz.NET. No third-party scheduler dependency in v1.**
 Rationale:
 
 - **Core stays slim.** Quartz pulls a persistence/clustering machinery
-  Lighthouse v1 does not need, and Bowire's convention is that heavy
+  Monitoring v1 does not need, and Bowire's convention is that heavy
   third-party libraries live in *optional sibling packages*, not in the
   Core that embedded hosts carry. A cron-tick loop is ~a screen of code.
 - **`TimeProvider` is the testability seam.** Building on
@@ -74,7 +74,7 @@ rather than silently approximating.
 
 If a deployment genuinely needs Quartz-grade scheduling (clustered,
 persistent misfire policies), that arrives as an **optional
-`Kuestenlogik.Bowire.Lighthouse.Quartz` package** contributing an
+`Kuestenlogik.Bowire.Monitoring.Quartz` package** contributing an
 `IProbeScheduler` implementation — the same pattern YARP / MapLibre /
 k8s SDK follow. Core ships the `TimeProvider` scheduler; the rail
 degrades to it when the package is absent.
@@ -84,7 +84,7 @@ degrades to it when the package is absent.
 **Decision: lazy-start resume, anchored to each probe's last recorded
 run in the ledger — not re-anchored to the new wall-clock.**
 
-The outcome ledger (`~/.bowire/lighthouse/<probe>.jsonl`) is the source
+The outcome ledger (`~/.bowire/monitoring/<probe>.jsonl`) is the source
 of truth for "when did this probe last run." On boot, for each probe:
 
 1. Read the last ledger row's timestamp `t_last` (absent → treat as
@@ -116,7 +116,7 @@ last-row that failed, is a fail→pass transition and signals normally).
 ## Decision 3 — Probe ownership under multi-tenant hosting
 
 **Decision: probes are workspace-scoped, not per-user. On a
-single-tenant Lighthouse (CLI / container, the v1 target) that
+single-tenant Monitoring (CLI / container, the v1 target) that
 collapses to "one implicit workspace." Per-user ownership is explicitly
 out of scope for v1.**
 
@@ -124,11 +124,11 @@ out of scope for v1.**
   a personal draft. Operationally, on-call for a workspace must see the
   same probe set regardless of who authored it — per-user probes would
   fragment exactly the view that needs to be shared.
-- v1 ships the **CLI / container** deployment: `bowire lighthouse run
+- v1 ships the **CLI / container** deployment: `bowire monitoring run
   <file>` owns one probe file, which *is* the workspace. No
   `IBowireUserStore` interaction, no auth, no per-user filtering. This
   keeps v1 shippable without waiting on the multi-tenant user story.
-- When Lighthouse later runs *inside* a Cruise-ship-deployed Bowire
+- When Monitoring later runs *inside* a Cruise-ship-deployed Bowire
   (multi-user), probes bind to the workspace via the existing workspace
   seam, and `IBowireUserStore` gates *who may edit the probe set*, not
   *whose probes run*. That is a v2.4+ design and gets its own note; v1
@@ -138,7 +138,7 @@ out of scope for v1.**
 
 ```mermaid
 flowchart TB
-    subgraph core["Kuestenlogik.Bowire.Lighthouse — Core-adjacent, slim"]
+    subgraph core["Kuestenlogik.Bowire.Monitoring — Core-adjacent, slim"]
         direction TB
         PF["ProbeFile<br/>recording + schedule / assertions / severity"]
         SCH["IProbeScheduler<br/>TimeProvider-based default impl"]
@@ -152,10 +152,10 @@ flowchart TB
 
     subgraph opt["Optional sibling packages — opt-in, degrade when absent"]
         direction TB
-        SLACK["…Lighthouse.Slack<br/>incoming webhook"]
-        PD["…Lighthouse.PagerDuty<br/>Events API v2"]
-        OTLP["…Lighthouse.Otlp<br/>logs signaler + metrics exporter<br/>(bowire.lighthouse.*)"]
-        QZ["…Lighthouse.Quartz<br/>clustered / persistent scheduling"]
+        SLACK["…Monitoring.Slack<br/>incoming webhook"]
+        PD["…Monitoring.PagerDuty<br/>Events API v2"]
+        OTLP["…Monitoring.Otlp<br/>logs signaler + metrics exporter<br/>(bowire.monitoring.*)"]
+        QZ["…Monitoring.Quartz<br/>clustered / persistent scheduling"]
     end
 
     SLACK -. implements .-> SIG
@@ -165,7 +165,7 @@ flowchart TB
 ```
 
 Every outbound integration (Slack, PagerDuty, OTLP) is an **optional
-package + explicit `--signal` flag**. Core Lighthouse with zero signal
+package + explicit `--signal` flag**. Core Monitoring with zero signal
 flags is fully functional — it runs probes and writes the ledger; the
 workbench surface reads that ledger. Nothing leaves the host unless the
 operator opts in per channel. This is the same "outbound is opt-in"
@@ -175,10 +175,10 @@ the network-touching signalers are not even in the Core assembly.
 ## Metrics
 
 Two instruments, in the shared `bowire.*` OTel namespace so #29's
-Grafana dashboards gain a Lighthouse section rather than a parallel one:
+Grafana dashboards gain a Monitoring section rather than a parallel one:
 
-- `bowire.lighthouse.probe.duration` — histogram, tags: probe name.
-- `bowire.lighthouse.probe.outcome` — counter, tags: probe name,
+- `bowire.monitoring.probe.duration` — histogram, tags: probe name.
+- `bowire.monitoring.probe.outcome` — counter, tags: probe name,
   outcome (`pass` / `fail` / `error`).
 
 Metrics export is the OTLP *sibling package*; without it the instruments
@@ -187,13 +187,13 @@ do not export. In-process recording is not an outbound call.
 
 ## v1 acceptance (unchanged from the issue, now scoped)
 
-- [ ] `bowire lighthouse run <file>` boots a `TimeProvider`-driven probe
+- [ ] `bowire monitoring run <file>` boots a `TimeProvider`-driven probe
       loop against the configured target.
-- [ ] Outcomes append to `~/.bowire/lighthouse/<probe>.jsonl`; restart
+- [ ] Outcomes append to `~/.bowire/monitoring/<probe>.jsonl`; restart
       resumes cadence via lazy-start from the last ledger row.
 - [ ] `ISignaler` transitions fire on pass↔fail; Slack + PagerDuty +
       OTLP-logs signalers ship as opt-in sibling packages.
-- [ ] OTLP metrics (`bowire.lighthouse.*`) export against
+- [ ] OTLP metrics (`bowire.monitoring.*`) export against
       `otel/opentelemetry-collector-contrib` when the OTLP package is present.
 - [ ] Workbench surface shows live + historical outcomes with a
       per-probe sparkline, read-only.
