@@ -20,4 +20,14 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Monitoring.Tests" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- #102 — Monitoring rail JS fragment (same #311 pattern as the other
+         rail packages): the core HTML generator discovers every embedded
+         resource whose LogicalName matches
+         `Kuestenlogik.Bowire.*.wwwroot.js.*.js` and stitches it into the
+         workbench bundle's IIFE right before init.js. Hosts that don't
+         reference this package don't ship the fragment. -->
+    <EmbeddedResource Include="wwwroot\js\monitoring.js"
+                      LogicalName="Kuestenlogik.Bowire.Monitoring.wwwroot.js.monitoring.js" />
+  </ItemGroup>
 </Project>

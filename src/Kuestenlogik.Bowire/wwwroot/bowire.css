@@ -24723,3 +24723,32 @@ not as the
 .bowire-scan-finding-title { color: var(--bowire-text); font-size: 12.5px; }
 .bowire-scan-finding-meta { font-family: ui-monospace, monospace; font-size: 11px; color: var(--bowire-text-tertiary); }
 .bowire-ai-scan-report { margin: 6px 0 0; padding: 10px 12px; max-height: 320px; overflow: auto; font-family: ui-monospace, monospace; font-size: 11.5px; line-height: 1.5; white-space: pre-wrap; color: var(--bowire-text-secondary); background: var(--bowire-surface-hover); border: 1px solid var(--bowire-border-subtle); border-radius: var(--bowire-radius-md); }
+
+/* ------------------------------------------------------------------ */
+/* Monitoring rail (#102) — read-only ledger surface: overview cards   */
+/* with a latency sparkline per probe + per-probe outcome table.       */
+/* Status colors are the reserved slots (success/error/warning) and    */
+/* always render next to the result word — never color alone.          */
+/* ------------------------------------------------------------------ */
+.bowire-mon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.bowire-mon-card { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; cursor: pointer; background: var(--bowire-surface); border: 1px solid var(--bowire-border-subtle); border-radius: var(--bowire-radius-md); transition: border-color var(--bowire-transition); }
+.bowire-mon-card:hover, .bowire-mon-card:focus-visible { border-color: var(--bowire-accent); outline: none; }
+.bowire-mon-card-head { display: flex; align-items: center; gap: 8px; }
+.bowire-mon-card-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--bowire-text); }
+.bowire-mon-card-meta { font-size: 11.5px; color: var(--bowire-text-tertiary); }
+.bowire-mon-chip { flex: 0 0 auto; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 1px 7px; border-radius: var(--bowire-radius-pill); color: var(--bowire-text-inverse, #fff); background: var(--bowire-text-tertiary); }
+.bowire-mon-chip.is-pass { background: var(--bowire-success); }
+.bowire-mon-chip.is-fail { background: var(--bowire-error); }
+.bowire-mon-chip.is-error { background: var(--bowire-warning); }
+.bowire-mon-chip.is-none { background: var(--bowire-text-tertiary); opacity: .8; }
+.bowire-mon-spark { display: block; max-width: 100%; }
+.bowire-mon-spark-bar { fill: var(--bowire-text-tertiary); }
+.bowire-mon-spark-bar.is-pass { fill: var(--bowire-success); }
+.bowire-mon-spark-bar.is-fail { fill: var(--bowire-error); }
+.bowire-mon-spark-bar.is-error { fill: var(--bowire-warning); }
+.bowire-mon-detail-head { display: flex; align-items: baseline; gap: 10px; margin: 0 0 10px; }
+.bowire-mon-detail-name { margin: 0; font-size: 16px; font-weight: 600; color: var(--bowire-text); }
+.bowire-mon-table { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: 12.5px; }
+.bowire-mon-table th { text-align: left; padding: 6px 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--bowire-text-tertiary); border-bottom: 1px solid var(--bowire-border); }
+.bowire-mon-table td { padding: 5px 10px; color: var(--bowire-text-secondary); border-bottom: 1px solid var(--bowire-border-subtle); }
+.bowire-mon-table-detail { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--bowire-text-tertiary); overflow-wrap: anywhere; }

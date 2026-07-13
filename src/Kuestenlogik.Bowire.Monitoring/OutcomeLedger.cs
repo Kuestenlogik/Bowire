@@ -97,6 +97,76 @@ public sealed class OutcomeLedger
         }
     }
 
+    /// <summary>
+    /// Probe names present under the ledger root — the <c>*.jsonl</c> file
+    /// stems, sorted case-insensitively. These are the <em>sanitised</em>
+    /// names (see <see cref="PathFor"/>); the workbench surface lists and
+    /// re-queries by exactly these stems, so the round-trip stays lossless
+    /// even when the original probe name carried characters the sanitiser
+    /// folded away. Empty when the root doesn't exist yet (no probe ever ran).
+    /// </summary>
+    public IReadOnlyList<string> ListProbeNames()
+    {
+        lock (_gate)
+        {
+            if (!Directory.Exists(_root)) return [];
+            try
+            {
+                return [.. Directory.EnumerateFiles(_root, "*.jsonl")
+                    .Select(System.IO.Path.GetFileNameWithoutExtension)
+                    .Where(static n => !string.IsNullOrEmpty(n))
+                    .Select(static n => n!)
+                    .Order(StringComparer.OrdinalIgnoreCase)];
+            }
+            catch (IOException)
+            {
+                return [];
+            }
+        }
+    }
+
+    /// <summary>
+    /// A probe's recorded outcomes in ledger order (oldest first), skipping
+    /// corrupt / partially-written lines. <paramref name="maxRows"/> &gt; 0
+    /// keeps only the newest rows — the tail the sparkline + outcome table
+    /// render. Empty when the probe has never run.
+    /// </summary>
+    public IReadOnlyList<ProbeOutcome> ReadOutcomes(string probeName, int maxRows = 0)
+    {
+        var path = PathFor(probeName);
+        lock (_gate)
+        {
+            if (!File.Exists(path)) return [];
+            string[] lines;
+            try
+            {
+                lines = File.ReadAllLines(path);
+            }
+            catch (IOException)
+            {
+                return [];
+            }
+            var outcomes = new List<ProbeOutcome>(lines.Length);
+            foreach (var raw in lines)
+            {
+                var line = raw.Trim();
+                if (line.Length == 0) continue;
+                try
+                {
+                    var outcome = JsonSerializer.Deserialize<ProbeOutcome>(line, Json);
+                    if (outcome is not null) outcomes.Add(outcome);
+                }
+                catch (JsonException)
+                {
+                    // Skip a corrupt / partially-written line.
+                }
+            }
+            return maxRows > 0 && outcomes.Count > maxRows
+                ? outcomes[^maxRows..]
+                : outcomes;
+        }
+    }
+
     private static string Sanitise(string name)
     {
         var chars = name.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '_').ToArray();

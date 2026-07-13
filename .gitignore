@@ -303,6 +303,11 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 
+# Playwright e2e output (tests/e2e) — traces / videos / screenshots on
+# failure plus the .last-run.json bookkeeping file.
+test-results/
+playwright-report/
+
 # Repo-local scratch area for build/tool temporaries. The icon
 # generator wrappers (scripts/generate-icons.sh +
 # scripts/distribute-icons.sh) live-populate tmp/icon-gen/ with an
