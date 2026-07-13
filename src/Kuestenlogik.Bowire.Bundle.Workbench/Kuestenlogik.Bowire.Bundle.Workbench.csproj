@@ -55,6 +55,10 @@
          deprecation against existing DI lookups. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Interceptor\Kuestenlogik.Bowire.Interceptor.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Benchmarking\Kuestenlogik.Bowire.Benchmarking.csproj" />
+    <!-- #102 — Monitoring feature: carries the `bowire monitor` CLI command
+         (IBowireCliCommand) + the probe engine. Bundled so the standalone
+         Tool exposes it out of the box. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Monitoring\Kuestenlogik.Bowire.Monitoring.csproj" />
     <!-- #368 (#306 Phase G tail): the Workspaces rail descriptor was
          folded into Core (src/Kuestenlogik.Bowire/Rails/) alongside
          Home + Discover — it's the core-resident workspace-navigation

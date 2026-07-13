@@ -146,6 +146,12 @@ internal static class BowireCli
         try { _ = Activator.CreateInstance<Kuestenlogik.Bowire.Security.Scanner.Cli.ScanCliCommand>(); }
         catch { /* discovery loop below surfaces the real error */ }
 
+        // #102 — force-load the Monitoring assembly so its `bowire monitor`
+        // IBowireCliCommand is visible to the assembly scan below (same reason
+        // as the Scanner force-load above).
+        try { _ = Activator.CreateInstance<Kuestenlogik.Bowire.Monitoring.Cli.MonitorCliCommand>(); }
+        catch { /* discovery loop below surfaces the real error */ }
+
         var disabledCli = PreparseRepeatableArg(originalArgs, "--disable-cli-command");
         foreach (var cmd in BowireCliCommandRegistry.Discover(disabledCli).Commands)
         {
