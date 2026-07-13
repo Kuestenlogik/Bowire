@@ -361,21 +361,25 @@ public sealed class ScanCommandTests
         finally { File.Delete(path); }
     }
 
-    [Fact]
-    public async Task RunAsync_SignalRTemplate_IsProbedAsHttpClass()
+    [Theory]
+    [InlineData("signalr", "POST", "/hubs/probe/negotiate")]
+    [InlineData("socketio", "GET", "/socket.io/?EIO=4&transport=polling")]
+    [InlineData("mcp", "POST", "/mcp")]
+    public async Task RunAsync_HandshakeProtocolTemplate_IsProbedAsHttpClass(string protocol, string verb, string httpPath)
     {
-        // SignalR is HTTP-class: its negotiate handshake is a plain HTTP
-        // POST, so a signalr-protocol template must be probed (and can fire),
-        // NOT skipped with "transport not yet supported". Guards the
-        // IsHttpClassProtocol allow-list against a regression that would
-        // silently stop running every signalr template.
+        // SignalR / Socket.IO / MCP are HTTP-class for the request the
+        // template probes (negotiate / EIO polling handshake / JSON-RPC POST),
+        // so these templates must be probed (and can fire), NOT skipped with
+        // "transport not yet supported". Guards the IsHttpClassProtocol
+        // allow-list against a regression that would silently stop running
+        // every template for one of these protocols.
         var ct = TestContext.Current.CancellationToken;
         await using var upstream = await StartUpstreamAsync(ct);
 
         var rec = AttackRecording(); // default predicate: status == 200
-        rec.Steps[0].Protocol = "signalr";
-        rec.Steps[0].HttpVerb = "POST";
-        rec.Steps[0].HttpPath = "/hubs/probe/negotiate";
+        rec.Steps[0].Protocol = protocol;
+        rec.Steps[0].HttpVerb = verb;
+        rec.Steps[0].HttpPath = httpPath;
         var path = await WriteAsync(rec, ct);
         try
         {
