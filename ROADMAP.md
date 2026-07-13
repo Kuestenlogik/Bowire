@@ -126,14 +126,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
-**21/24 done** · 1 in progress · 2 backlog
+**22/24 done** · 1 in progress · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [26](https://github.com/Kuestenlogik/Bowire/issues/26) | Bowire | [Security testing tool — remaining tiers](#issue-kuestenlogik-bowire-26) | 🟡 In progress | `area:security` |
 | [35](https://github.com/Kuestenlogik/Bowire/issues/35) | Bowire | [Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)](#issue-kuestenlogik-bowire-35) | ⬜ Backlog | `area:security` |
-| [102](https://github.com/Kuestenlogik/Bowire/issues/102) | Bowire | [Monitoring â€” scheduled probes + alerting (Postman Monitors / Synthetics analog)](#issue-kuestenlogik-bowire-102) | ⬜ Backlog |  |
 | [39](https://github.com/Kuestenlogik/Bowire/issues/39) | Bowire | [HAR Import polish](#issue-kuestenlogik-bowire-39) | ✅ Done | `area:workbench` |
+| [102](https://github.com/Kuestenlogik/Bowire/issues/102) | Bowire | [Monitoring â€” scheduled probes + alerting (Postman Monitors / Synthetics analog)](#issue-kuestenlogik-bowire-102) | ✅ Done |  |
 | [104](https://github.com/Kuestenlogik/Bowire/issues/104) | Bowire | [AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report](#issue-kuestenlogik-bowire-104) | ✅ Done |  |
 | [105](https://github.com/Kuestenlogik/Bowire/issues/105) | Bowire | [AI JWT analyzer — claim-by-claim verdict, algorithm flags, scope/audience cross-check](#issue-kuestenlogik-bowire-105) | ✅ Done |  |
 | [106](https://github.com/Kuestenlogik/Bowire/issues/106) | Bowire | [AI OWASP API Top 10 panel — per-method status + concrete probe per risk](#issue-kuestenlogik-bowire-106) | ✅ Done |  |
@@ -730,15 +730,15 @@ ADR: [`docs/architecture/security-testing.md`](https://github.com/Kuestenlogik/B
 
 Phase 2a-2e shipped (reader + matcher translation + variable substitution + multi-path + ScanCommand integration). Optional follow-ups: [[more]](https://github.com/Kuestenlogik/Bowire/issues/35)
 
-#### <a id="issue-kuestenlogik-bowire-102"></a>⬜ Backlog · [#102](https://github.com/Kuestenlogik/Bowire/issues/102) Monitoring â€” scheduled probes + alerting (Postman Monitors / Synthetics analog)
-
-The five shipping boats + Submarine (#99) cover interactive use, embedded use, and proxied use. None of them cover the *passive* shape: "I don't want to invoke; I want to know if everything is healthy right now." [[more]](https://github.com/Kuestenlogik/Bowire/issues/102)
-
 #### <a id="issue-kuestenlogik-bowire-39"></a>✅ Done · [#39](https://github.com/Kuestenlogik/Bowire/issues/39) HAR Import polish
 
 > `area:workbench`
 
 `bowire import har <file.har>` CLI shipped. Remaining: [[more]](https://github.com/Kuestenlogik/Bowire/issues/39)
+
+#### <a id="issue-kuestenlogik-bowire-102"></a>✅ Done · [#102](https://github.com/Kuestenlogik/Bowire/issues/102) Monitoring â€” scheduled probes + alerting (Postman Monitors / Synthetics analog)
+
+The five shipping boats + Submarine (#99) cover interactive use, embedded use, and proxied use. None of them cover the *passive* shape: "I don't want to invoke; I want to know if everything is healthy right now." [[more]](https://github.com/Kuestenlogik/Bowire/issues/102)
 
 #### <a id="issue-kuestenlogik-bowire-104"></a>✅ Done · [#104](https://github.com/Kuestenlogik/Bowire/issues/104) AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report
 
