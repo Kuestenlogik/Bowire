@@ -174,7 +174,16 @@ internal static class OwaspApiSuite
                 protocol.Initialize(null);
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 cts.CancelAfter(perProbeTimeout);
-                merged.AddRange(await probe.RunAsync(target, protocol, authHeaders, active, cts.Token).ConfigureAwait(false));
+                // Same path-awareness as the passive dispatch — reach a
+                // sub-path-mounted protocol (/ws, /events, …) before spending
+                // the active probe's budget on the wrong URL.
+                IReadOnlyList<ScanFinding> result = [];
+                foreach (var candidate in CandidateTargets(target, probe.ProtocolId))
+                {
+                    result = await probe.RunAsync(candidate, protocol, authHeaders, active, cts.Token).ConfigureAwait(false);
+                    if (Reached(result)) break;
+                }
+                merged.AddRange(result);
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
@@ -227,7 +236,19 @@ internal static class OwaspApiSuite
                 protocol.Initialize(null);
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 cts.CancelAfter(perProbeTimeout);
-                merged.AddRange(await probe.RunAsync(target, protocol, authHeaders, cts.Token).ConfigureAwait(false));
+                // Path-awareness: the plugin's discover/invoke path drives a
+                // single URL, so a root scan misses a protocol mounted below
+                // the root (GraphQL at /graphql, MCP at /mcp, …). Try the
+                // target as-is first, then well-known sub-paths, and keep the
+                // first candidate that actually reaches the protocol (a real
+                // verdict, not a skip marker).
+                IReadOnlyList<ScanFinding> result = [];
+                foreach (var candidate in CandidateTargets(target, probe.ProtocolId))
+                {
+                    result = await probe.RunAsync(candidate, protocol, authHeaders, cts.Token).ConfigureAwait(false);
+                    if (Reached(result)) break;
+                }
+                merged.AddRange(result);
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
@@ -241,6 +262,45 @@ internal static class OwaspApiSuite
         }
         return merged;
     }
+
+    /// <summary>
+    /// Well-known sub-paths to try for a protocol that may be mounted below the
+    /// target root. The built-in protocol probes drive a plugin's discover /
+    /// invoke path against one URL, so a root scan would miss a GraphQL
+    /// endpoint at <c>/graphql</c>, MCP at <c>/mcp</c>, &amp;c. Candidates are
+    /// ordered target-as-is first (an operator who passed the exact path wins),
+    /// then base + each suffix. Protocols reached by host authority (gRPC) or a
+    /// non-http scheme (MQTT) only try the target as-is.
+    /// </summary>
+    internal static IReadOnlyList<string> CandidateTargets(string target, string protocolId)
+    {
+        var trimmed = target.TrimEnd('/');
+        string[] suffixes = protocolId.ToUpperInvariant() switch
+        {
+            "GRAPHQL" => ["", "/graphql", "/api/graphql", "/query", "/v1/graphql"],
+            "MCP" => ["", "/mcp", "/sse", "/message", "/api/mcp"],
+            "WEBSOCKET" => ["", "/ws", "/websocket", "/socket", "/hub"],
+            "SSE" => ["", "/events", "/stream", "/sse"],
+            _ => [""],
+        };
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var list = new List<string>();
+        foreach (var s in suffixes)
+        {
+            var url = s.Length == 0 ? target : trimmed + s;
+            if (seen.Add(url)) list.Add(url);
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// True when a probe's findings show it actually reached the protocol
+    /// (produced a real Vulnerable / Safe verdict) rather than only emitting a
+    /// skip / error diagnostic marker — the signal to stop trying candidate
+    /// paths.
+    /// </summary>
+    private static bool Reached(IReadOnlyList<ScanFinding> findings)
+        => findings.Any(f => f.Status is ScanFindingStatus.Vulnerable or ScanFindingStatus.Safe);
 
     private static ScanFinding ProtocolMarker(IOwaspProtocolProbe probe, ScanFindingStatus status, string suffix, string detail) => new()
     {

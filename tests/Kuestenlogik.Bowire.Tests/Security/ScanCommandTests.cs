@@ -399,6 +399,30 @@ public sealed class ScanCommandTests
     }
 
     [Fact]
+    public async Task RunAsync_ActiveOnly_NoTemplatesNoBuiltins_DoesNotBail()
+    {
+        // --active is itself a source of work: `bowire scan --active` with
+        // --no-builtins and no suite/templates must run the active probe tier,
+        // not exit 2 with "no vulnerability templates". Guards the work-source
+        // condition against a regression that silently disabled the whole
+        // active tier in that invocation.
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartUpstreamAsync(ct);
+
+        var (code, _, stderr) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
+        {
+            Target = upstream.Urls.First(),
+            Active = true,
+            ActiveDurationSeconds = 2,
+            ActiveConcurrency = 5,
+            RunBuiltins = false,
+        }, ct, @out, err));
+
+        Assert.NotEqual(2, code);
+        Assert.DoesNotContain("No vulnerability templates found and built-ins disabled", stderr, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task RunAsync_WebSocketTemplate_ProbesHandshake_AndFires()
     {
         // The WebSocket probe does the raw upgrade handshake and evaluates the
