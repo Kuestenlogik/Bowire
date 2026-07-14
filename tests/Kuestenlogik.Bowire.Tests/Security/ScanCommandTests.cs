@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Net;
+using System.Net.WebSockets;
 using System.Text.Json;
 using Kuestenlogik.Bowire.App;
 using Kuestenlogik.Bowire.Mocking;
@@ -398,6 +399,90 @@ public sealed class ScanCommandTests
     }
 
     [Fact]
+    public async Task RunAsync_WebSocketTemplate_ProbesHandshake_AndFires()
+    {
+        // The WebSocket probe does the raw upgrade handshake and evaluates the
+        // predicate against the 101 status + response headers. This upstream
+        // accepts any upgrade and echoes the requested subprotocol, so the
+        // template (status 101 + reflected Sec-WebSocket-Protocol) fires —
+        // proving the whole handshake probe path end-to-end, not just the
+        // dispatch.
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartWebSocketUpstreamAsync(ct);
+
+        var rec = new BowireRecording
+        {
+            Name = "ws-test",
+            Attack = true,
+            Vulnerability = new AttackVulnerability { Id = "BWR-WS-T", Severity = "high" },
+            VulnerableWhen = new AttackPredicate
+            {
+                Status = 101,
+                HeaderEquals = new Dictionary<string, string> { ["Sec-WebSocket-Protocol"] = "chat.attacker" },
+            },
+            Steps =
+            {
+                new BowireRecordingStep
+                {
+                    Protocol = "websocket",
+                    HttpVerb = "GET",
+                    HttpPath = "/ws",
+                    Metadata = new Dictionary<string, string> { ["Sec-WebSocket-Protocol"] = "chat.attacker" },
+                },
+            },
+        };
+        var path = await WriteAsync(rec, ct);
+        try
+        {
+            var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
+            {
+                Target = upstream.Urls.First(),
+                Template = path,
+                RunBuiltins = false,
+            }, ct, @out, err));
+            Assert.Equal(0, code);
+            Assert.DoesNotContain("not yet supported by scanner", stdout, StringComparison.Ordinal);
+            Assert.Contains("VULN", stdout, StringComparison.Ordinal);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task RunAsync_WebSocketTemplate_NonUpgradePath_IsSafe()
+    {
+        // The same probe against a path that doesn't answer the upgrade with a
+        // 101 must NOT match the status-101 predicate — the reject side of the
+        // handshake check.
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartWebSocketUpstreamAsync(ct);
+
+        var rec = new BowireRecording
+        {
+            Name = "ws-test-safe",
+            Attack = true,
+            Vulnerability = new AttackVulnerability { Id = "BWR-WS-T2", Severity = "high" },
+            VulnerableWhen = new AttackPredicate { Status = 101 },
+            Steps =
+            {
+                new BowireRecordingStep { Protocol = "websocket", HttpVerb = "GET", HttpPath = "/not-a-socket" },
+            },
+        };
+        var path = await WriteAsync(rec, ct);
+        try
+        {
+            var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
+            {
+                Target = upstream.Urls.First(),
+                Template = path,
+                RunBuiltins = false,
+            }, ct, @out, err));
+            Assert.Equal(0, code);
+            Assert.DoesNotContain("[VULN]", stdout, StringComparison.Ordinal);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public async Task RunAsync_TargetUnreachable_RecordsErrorFinding()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -721,6 +806,45 @@ public sealed class ScanCommandTests
             ctx.Response.StatusCode = 200;
             ctx.Response.ContentType = "application/json";
             await ctx.Response.WriteAsync("{\"hello\":\"world\"}", ctx.RequestAborted);
+        });
+        await app.StartAsync(ct);
+        return app;
+    }
+
+    // In-process WebSocket upstream: accepts any upgrade (no Origin check) and
+    // echoes the first requested subprotocol — the two behaviours the WS
+    // handshake templates detect. Plain HTTP/1.1 so the probe connects without
+    // TLS.
+    private static async Task<WebApplication> StartWebSocketUpstreamAsync(CancellationToken ct)
+    {
+        var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions
+        {
+            ContentRootPath = AppContext.BaseDirectory,
+        });
+        builder.Logging.ClearProviders();
+        builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
+        var app = builder.Build();
+        app.UseWebSockets();
+        app.Map("/ws", async (HttpContext ctx) =>
+        {
+            if (!ctx.WebSockets.IsWebSocketRequest)
+            {
+                ctx.Response.StatusCode = 400;
+                return;
+            }
+            var requested = ctx.WebSockets.WebSocketRequestedProtocols;
+            var sub = requested.Count > 0 ? requested[0] : null;
+            using var socket = sub is null
+                ? await ctx.WebSockets.AcceptWebSocketAsync()
+                : await ctx.WebSockets.AcceptWebSocketAsync(sub);
+            try
+            {
+                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", ctx.RequestAborted);
+            }
+            catch (Exception ex) when (ex is WebSocketException or IOException or OperationCanceledException)
+            {
+                // The probe drops the TCP connection after reading the 101 head.
+            }
         });
         await app.StartAsync(ct);
         return app;
