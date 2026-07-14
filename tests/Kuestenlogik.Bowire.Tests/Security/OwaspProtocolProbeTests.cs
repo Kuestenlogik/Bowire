@@ -444,6 +444,68 @@ public sealed class OwaspProtocolProbeTests
         Assert.Contains(findings, f => f.Template.Recording.Vulnerability?.OwaspApi == "API9-2023-INVENTORY");
     }
 
+    [Fact]
+    public async Task RunProtocolProbesAsync_ReachesProtocolAtSubPath()
+    {
+        // The GraphQL endpoint is only live at /graphql (empty at the root);
+        // the candidate-path loop must still reach it from a root --target so
+        // the introspection finding fires instead of a path-blind skip.
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new FakeProtocol
+        {
+            Id = "graphql",
+            Discover = (url, _) => url.EndsWith("/graphql", StringComparison.Ordinal) ? [Service("Query", "a")] : [],
+        });
+
+        var findings = await OwaspApiSuite.RunProtocolProbesAsync("http://x", registry, s_noAuth, TimeSpan.FromSeconds(5), Ct);
+
+        Assert.Contains(findings, f => f.Template.Recording.Vulnerability?.Id == "BWR-OWASP-API9-GRAPHQL-INTROSPECTION"
+            && f.Status == ScanFindingStatus.Vulnerable);
+    }
+
+    [Fact]
+    public async Task RunProtocolProbesAsync_ProtocolNowhere_SkipsNotVulnerable()
+    {
+        // GraphQL at no candidate path → every candidate skips; the probe
+        // reports NO-INTROSPECTION, never a false Vulnerable.
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new FakeProtocol { Id = "graphql", Discover = (_, _) => [] });
+
+        var findings = await OwaspApiSuite.RunProtocolProbesAsync("http://x", registry, s_noAuth, TimeSpan.FromSeconds(5), Ct);
+
+        Assert.Contains(findings, f => f.Template.Recording.Id.Contains("GRAPHQL-NO-INTROSPECTION", StringComparison.Ordinal));
+        Assert.DoesNotContain(findings, f => f.Status == ScanFindingStatus.Vulnerable);
+    }
+
+    [Theory]
+    [InlineData("graphql", "/graphql")]
+    [InlineData("mcp", "/mcp")]
+    [InlineData("websocket", "/ws")]
+    [InlineData("sse", "/events")]
+    public void CandidateTargets_IncludesWellKnownSubPath_TargetAsIsFirst(string protocolId, string expectedSuffix)
+    {
+        var candidates = OwaspApiSuite.CandidateTargets("https://h:5140", protocolId);
+        Assert.Equal("https://h:5140", candidates[0]); // the operator-supplied target wins
+        Assert.Contains("https://h:5140" + expectedSuffix, candidates);
+    }
+
+    [Fact]
+    public void CandidateTargets_UnknownProtocol_OnlyTargetAsIs()
+    {
+        // gRPC (host authority) and any protocol without a known sub-path
+        // mount only try the target verbatim.
+        Assert.Equal(["http://x"], OwaspApiSuite.CandidateTargets("http://x", "grpc"));
+    }
+
+    [Fact]
+    public void CandidateTargets_TrimsTrailingSlash_NoDuplicates()
+    {
+        var candidates = OwaspApiSuite.CandidateTargets("http://x/", "graphql");
+        Assert.Equal("http://x/", candidates[0]);          // as-is preserved verbatim
+        Assert.Contains("http://x/graphql", candidates);   // no double slash
+        Assert.Equal(candidates.Count, candidates.Distinct().Count());
+    }
+
     // ---------- fakes ----------
 
     private sealed class FakeProtocol : IBowireProtocol

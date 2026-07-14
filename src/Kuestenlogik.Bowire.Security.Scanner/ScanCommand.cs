@@ -165,9 +165,13 @@ public static class ScanCommand
         var runProtocol = runHttpOwasp || suite.Equals("protocol", StringComparison.OrdinalIgnoreCase);
         var writeSummary = runProtocol;   // any of the three suites prints the coverage table
 
-        if (templates.Count == 0 && !options.RunBuiltins && !runProtocol)
+        // --active is itself a source of work: `bowire scan --active` (even with
+        // --no-builtins and no --suite/--templates) must run the active probe
+        // tier rather than bailing here. Without this the active block below is
+        // unreachable in that invocation.
+        if (templates.Count == 0 && !options.RunBuiltins && !runProtocol && !options.Active)
         {
-            await stderr.WriteLineAsync("  No vulnerability templates found and built-ins disabled. Provide --templates <dir> or --template <file>, drop --no-builtins, OR run a named suite (--suite owasp-api|protocol|all).").ConfigureAwait(false);
+            await stderr.WriteLineAsync("  No vulnerability templates found and built-ins disabled. Provide --templates <dir> or --template <file>, drop --no-builtins, run a named suite (--suite owasp-api|protocol|all), OR pass --active.").ConfigureAwait(false);
             return 2;
         }
 
