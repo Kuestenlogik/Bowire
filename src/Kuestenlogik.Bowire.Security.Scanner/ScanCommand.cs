@@ -4,6 +4,9 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
+using System.Net.Security;
+using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -245,6 +248,36 @@ public static class ScanCommand
 
             var probe = tmpl.Recording.Steps[0];
             var protocol = (probe.Protocol ?? string.Empty).ToUpperInvariant();
+
+            // WebSocket templates probe the HTTP upgrade handshake (a GET with
+            // Upgrade: websocket → 101 Switching Protocols on accept, or a 4xx
+            // on reject). The handshake is HTTP-observable but needs a raw
+            // TLS/TCP round-trip (HttpClient can't surface the 101 + response
+            // headers cleanly), so it routes to its own probe rather than the
+            // HTTP-class path. The upgrade rides the same http/https target.
+            if (protocol is "WEBSOCKET" or "WS")
+            {
+                if (!isHttpTarget)
+                {
+                    findings.Add(ScanFinding.Skipped(tmpl, "WebSocket template skipped — the target is not an http/https URL"));
+                    continue;
+                }
+                try
+                {
+                    var wsResponse = await SendWebSocketProbeAsync(
+                        options.Target, probe, effectiveAuth, options.AllowSelfSignedCerts, options.TimeoutSeconds, ct).ConfigureAwait(false);
+                    var wsMatched = AttackPredicateEvaluator.Evaluate(tmpl.Recording.VulnerableWhen!, wsResponse);
+                    findings.Add(wsMatched
+                        ? ScanFinding.Vulnerable(tmpl, wsResponse)
+                        : ScanFinding.Safe(tmpl, wsResponse));
+                }
+                catch (Exception ex)
+                {
+                    findings.Add(ScanFinding.Error(tmpl, ex.Message));
+                }
+                continue;
+            }
+
             if (!IsHttpClassProtocol(protocol))
             {
                 findings.Add(ScanFinding.Skipped(tmpl, $"transport {probe.Protocol} not yet supported by scanner (v1 covers HTTP-class only)"));
@@ -631,6 +664,158 @@ public static class ScanCommand
         var b = baseUrl.TrimEnd('/');
         var p = string.IsNullOrEmpty(path) ? "/" : (path.StartsWith('/') ? path : "/" + path);
         return b + p;
+    }
+
+    /// <summary>
+    /// Probe a WebSocket upgrade handshake and return the handshake response
+    /// (status line + headers) as an <see cref="AttackProbeResponse"/> — no
+    /// WebSocket frames are exchanged. The template's <c>metadata</c> supplies
+    /// the discriminating request headers (an attacker <c>Origin</c> for the
+    /// origin-validation check, a chosen <c>Sec-WebSocket-Protocol</c> for the
+    /// subprotocol check); the predicate reads the <c>101</c>-vs-reject status
+    /// and the echoed response headers. Done over a raw TCP/TLS stream because
+    /// <see cref="HttpClient"/> consumes the <c>101</c> to upgrade rather than
+    /// exposing it. The connection is closed immediately after the header
+    /// block is read.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5359:Do not disable certificate validation",
+        Justification = "The accept-all validation callback is installed ONLY when the operator explicitly passed --allow-self-signed-certs (allowSelfSignedCerts), same posture as ScanCommand.BuildHttpClient for the HTTP-class probes; the default (null callback) enforces normal chain validation.")]
+    private static async Task<AttackProbeResponse> SendWebSocketProbeAsync(
+        string target, BowireRecordingStep probe, IList<string> authHeaders,
+        bool allowSelfSignedCerts, int timeoutSeconds, CancellationToken ct)
+    {
+        var baseUri = new Uri(CombineUrl(target, "/"), UriKind.Absolute);
+        var useTls = string.Equals(baseUri.Scheme, "https", StringComparison.OrdinalIgnoreCase);
+        var host = baseUri.Host;
+        var port = baseUri.IsDefaultPort ? (useTls ? 443 : 80) : baseUri.Port;
+        var path = string.IsNullOrEmpty(probe.HttpPath) ? "/" : probe.HttpPath;
+
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds > 0 ? timeoutSeconds : 30));
+        var linked = timeoutCts.Token;
+
+        var sw = Stopwatch.StartNew();
+        using var tcp = new TcpClient();
+        await tcp.ConnectAsync(host, port, linked).ConfigureAwait(false);
+
+        // await using binds the SslStream to a scope-exit DisposeAsync (or
+        // no-ops when the target is plain http and tls stays null) — the
+        // CA2000-clean shape without a try/finally. leaveInnerStreamOpen:false
+        // means disposing tls also disposes the NetworkStream; in the plain
+        // path the TcpClient owns + disposes the NetworkStream.
+        Stream stream = tcp.GetStream();
+        await using var tls = useTls
+            ? new SslStream(stream, leaveInnerStreamOpen: false, userCertificateValidationCallback:
+                allowSelfSignedCerts ? (_, _, _, _) => true : null)
+            : null;
+        if (tls is not null)
+        {
+            await tls.AuthenticateAsClientAsync(new SslClientAuthenticationOptions { TargetHost = host }, linked).ConfigureAwait(false);
+            stream = tls;
+        }
+
+        {
+            // Build the upgrade request. Sec-WebSocket-Key is a fresh random
+            // 16-byte base64 nonce per RFC 6455; the template's metadata rides
+            // on top (Origin / Sec-WebSocket-Protocol / …). Auth-profile
+            // headers apply here too, matching the HTTP-class probe.
+            var key = Convert.ToBase64String(RandomNumberGenerator.GetBytes(16));
+            var reqText = new StringBuilder();
+            reqText.Append(CultureInfo.InvariantCulture, $"GET {path} HTTP/1.1\r\n");
+            reqText.Append(CultureInfo.InvariantCulture, $"Host: {host}:{port}\r\n");
+            reqText.Append("Upgrade: websocket\r\n");
+            reqText.Append("Connection: Upgrade\r\n");
+            reqText.Append(CultureInfo.InvariantCulture, $"Sec-WebSocket-Key: {key}\r\n");
+            reqText.Append("Sec-WebSocket-Version: 13\r\n");
+            if (probe.Metadata is { Count: > 0 } md)
+            {
+                foreach (var (k, v) in md)
+                {
+                    // Skip the handshake headers we already control so a
+                    // template can't accidentally break the framing.
+                    if (k.Equals("Upgrade", StringComparison.OrdinalIgnoreCase)
+                        || k.Equals("Connection", StringComparison.OrdinalIgnoreCase)
+                        || k.Equals("Sec-WebSocket-Key", StringComparison.OrdinalIgnoreCase)
+                        || k.Equals("Sec-WebSocket-Version", StringComparison.OrdinalIgnoreCase)
+                        || k.Equals("Host", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+                    reqText.Append(CultureInfo.InvariantCulture, $"{k}: {v}\r\n");
+                }
+            }
+            foreach (var raw in authHeaders ?? Array.Empty<string>())
+            {
+                if (string.IsNullOrWhiteSpace(raw)) continue;
+                var idx = raw.IndexOf(':', StringComparison.Ordinal);
+                if (idx <= 0) continue;
+                reqText.Append(CultureInfo.InvariantCulture, $"{raw[..idx].Trim()}: {raw[(idx + 1)..].Trim()}\r\n");
+            }
+            reqText.Append("\r\n");
+
+            await stream.WriteAsync(Encoding.ASCII.GetBytes(reqText.ToString()), linked).ConfigureAwait(false);
+            await stream.FlushAsync(linked).ConfigureAwait(false);
+
+            var (status, headers) = await ReadHandshakeResponseAsync(stream, linked).ConfigureAwait(false);
+            sw.Stop();
+            return new AttackProbeResponse
+            {
+                Status = status,
+                Headers = headers,
+                Body = string.Empty,
+                LatencyMs = (int)sw.ElapsedMilliseconds,
+            };
+        }
+    }
+
+    /// <summary>
+    /// Read an HTTP/1.1 response head (status line + headers, up to the blank
+    /// line) off a raw stream and parse the status code + headers. Reads one
+    /// byte at a time to stop exactly at the header terminator, so any
+    /// post-101 WebSocket bytes stay unread and the connection can just close.
+    /// </summary>
+    private static async Task<(int Status, Dictionary<string, string> Headers)> ReadHandshakeResponseAsync(
+        Stream stream, CancellationToken ct)
+    {
+        var buffer = new byte[1];
+        var sb = new StringBuilder();
+        var terminator = 0; // counts progress through \r\n\r\n
+        // 16 KiB cap: a handshake head is tiny; this bounds a hostile server
+        // that never sends the terminator.
+        while (sb.Length < 16 * 1024)
+        {
+            var n = await stream.ReadAsync(buffer.AsMemory(0, 1), ct).ConfigureAwait(false);
+            if (n == 0) break; // connection closed before the head completed
+            var c = (char)buffer[0];
+            sb.Append(c);
+            terminator = c switch
+            {
+                '\r' when terminator is 0 or 2 => terminator + 1,
+                '\n' when terminator is 1 => 2,
+                '\n' when terminator is 3 => 4,
+                _ => 0,
+            };
+            if (terminator == 4) break;
+        }
+
+        var text = sb.ToString();
+        var lines = text.Split("\r\n");
+        var status = 0;
+        if (lines.Length > 0)
+        {
+            // "HTTP/1.1 101 Switching Protocols"
+            var parts = lines[0].Split(' ', 3);
+            if (parts.Length >= 2) int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out status);
+        }
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 1; i < lines.Length; i++)
+        {
+            if (string.IsNullOrEmpty(lines[i])) break;
+            var idx = lines[i].IndexOf(':', StringComparison.Ordinal);
+            if (idx <= 0) continue;
+            headers[lines[i][..idx].Trim()] = lines[i][(idx + 1)..].Trim();
+        }
+        return (status, headers);
     }
 
     /// <summary>
