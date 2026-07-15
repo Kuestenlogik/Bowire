@@ -49,18 +49,38 @@ public static class NucleiMatcherTranslator
         if (matchers.Count == 0) return null;
 
         var subPredicates = new List<AttackPredicate>();
+        var dropped = 0;
         foreach (var matcher in matchers)
         {
             var p = TranslateMatcher(matcher);
             if (p is not null) subPredicates.Add(p);
+            else dropped++;
         }
 
         if (subPredicates.Count == 0) return null;
+
+        var isAnd = string.Equals(matchersCondition, "and", StringComparison.OrdinalIgnoreCase);
+
+        // An `and` that lost a conjunct cannot be evaluated honestly. Each
+        // dropped matcher was a REQUIRED condition, so composing only the
+        // survivors WIDENS the predicate — it fires where Nuclei would not.
+        // The OAST templates make this concrete: they pair an out-of-band
+        // callback matcher (`part: interactsh_protocol`, untranslatable —
+        // #35 Phase 2f) with a status check under `matchers-condition: and`.
+        // Dropping the callback conjunct leaves `status == 200` alone, which
+        // reports SSRF/RCE on every healthy response. Refusing to translate
+        // costs a detection; widening invents one, so we refuse.
+        //
+        // `or` is the safe direction and keeps its survivors: dropping a
+        // branch only narrows what can fire (a missed detection), it can
+        // never invent one.
+        if (isAnd && dropped > 0) return null;
+
         if (subPredicates.Count == 1) return subPredicates[0];
 
         // Compose the matcher-level condition. Nuclei default is "or"
         // when matchers-condition is unset.
-        return string.Equals(matchersCondition, "and", StringComparison.OrdinalIgnoreCase)
+        return isAnd
             ? new AttackPredicate { AllOf = subPredicates }
             : new AttackPredicate { AnyOf = subPredicates };
     }

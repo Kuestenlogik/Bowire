@@ -166,4 +166,54 @@ public sealed class NucleiMatcherTranslatorTests
         var p = NucleiMatcherTranslator.Translate(req);
         Assert.Null(p);
     }
+
+    // ---- untranslatable conjuncts (OAST / #35 Phase 2f) ----
+
+    [Fact]
+    public void And_condition_with_untranslatable_matcher_returns_null_not_a_widened_predicate()
+    {
+        // The OAST shape from the nuclei corpus: prove the vulnerability by an
+        // out-of-band callback AND a status check. `part: interactsh_protocol`
+        // is not a body part, so the translator cannot express it.
+        //
+        // Dropping it from an AND silently DELETES the conjunct that carries
+        // the actual proof, leaving `status == 200` alone — which fires on any
+        // healthy response. That is a false positive on every 200, so the
+        // template must not translate at all.
+        var req = WithMatchers("and",
+            new NucleiMatcher { Type = "word", Part = "interactsh_protocol", Words = { "dns" } },
+            new NucleiMatcher { Type = "status", Status = { 200 } });
+
+        Assert.Null(NucleiMatcherTranslator.Translate(req));
+    }
+
+    [Fact]
+    public void Or_condition_with_untranslatable_matcher_keeps_the_translatable_branches()
+    {
+        // OR is the safe direction: dropping a branch only narrows what fires
+        // (a missed detection), it can never invent one. The surviving branch
+        // still translates.
+        var req = WithMatchers("or",
+            new NucleiMatcher { Type = "word", Part = "interactsh_protocol", Words = { "dns" } },
+            new NucleiMatcher { Type = "status", Status = { 500 } });
+
+        var p = NucleiMatcherTranslator.Translate(req);
+        Assert.NotNull(p);
+        Assert.Equal(500, p!.Status);
+    }
+
+    [Fact]
+    public void And_condition_with_all_matchers_translatable_still_composes()
+    {
+        // Guard the fix against over-reach: a fully-translatable AND is
+        // unaffected.
+        var req = WithMatchers("and",
+            new NucleiMatcher { Type = "status", Status = { 200 } },
+            new NucleiMatcher { Type = "word", Words = { "root:x:" } });
+
+        var p = NucleiMatcherTranslator.Translate(req);
+        Assert.NotNull(p);
+        Assert.NotNull(p!.AllOf);
+        Assert.Equal(2, p.AllOf!.Count);
+    }
 }
