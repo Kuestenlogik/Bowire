@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #35 Phase 2f — OAST (out-of-band application security testing).
+         Opt-in sibling package: the scanner only reaches an interaction
+         server when the operator passes the oast-server flag, so neither
+         Core nor the scanner gains an outbound call by default.
+
+         Speaks the interactsh wire protocol, so the flag points at ANY
+         instance: Küstenlogik's own, a self-hosted one, or a third party's.
+         Uses only HttpClient + BCL crypto (RSA-OAEP / AES-CTR), so there is
+         no third-party dependency anywhere in the chain. -->
+    <Description>Bowire OAST — out-of-band interaction client for the security scanner. Detects blind SSRF / RCE / XXE by correlating DNS + HTTP callbacks against an interactsh-compatible interaction server (`--oast-server`). Opt-in: no outbound call without it.</Description>
+    <PackageId>Kuestenlogik.Bowire.Oast</PackageId>
+    <PackageTags>bowire;security;oast;interactsh;ssrf;out-of-band;scanner</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Oast.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>

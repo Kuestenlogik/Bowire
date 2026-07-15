@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!-- #35 Phase 2f — OAST client coverage. The crypto is the risk here: a
+         wrong counter increment or the wrong base32 alphabet still round-trips
+         against itself while producing hosts the real server never correlates
+         and payloads it decrypts to garbage. So the CTR transform is pinned
+         against the NIST SP 800-38A vectors rather than a self-round-trip. -->
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector"><PrivateAssets>all</PrivateAssets><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets></PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Oast\Kuestenlogik.Bowire.Oast.csproj" />
+  </ItemGroup>
+</Project>

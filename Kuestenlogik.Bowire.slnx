@@ -61,12 +61,14 @@
     <Project Path="src/Kuestenlogik.Bowire.Benchmarking/Kuestenlogik.Bowire.Benchmarking.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Monitoring/Kuestenlogik.Bowire.Monitoring.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Monitoring.Slack/Kuestenlogik.Bowire.Monitoring.Slack.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Oast/Kuestenlogik.Bowire.Oast.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Monitoring.PagerDuty/Kuestenlogik.Bowire.Monitoring.PagerDuty.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Monitoring.Otlp/Kuestenlogik.Bowire.Monitoring.Otlp.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Kuestenlogik.Bowire.Testing/Kuestenlogik.Bowire.Testing.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Monitoring.Tests/Kuestenlogik.Bowire.Monitoring.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.Oast.Tests/Kuestenlogik.Bowire.Oast.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Tests/Kuestenlogik.Bowire.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.IntegrationTests/Kuestenlogik.Bowire.IntegrationTests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Mock.Tests/Kuestenlogik.Bowire.Mock.Tests.csproj" />
