@@ -266,4 +266,104 @@ public sealed class AttackPredicateEvaluatorTests
         Assert.False(AttackPredicateEvaluator.Evaluate(p, R(status: 200, body: "")));
         Assert.False(AttackPredicateEvaluator.Evaluate(p, R(status: 401, body: "admin")));
     }
+
+    // ---- oastInteraction (#35 Phase 2f) ----
+
+    private static AttackProbeResponse WithInteractions(params ProbeInteraction[] interactions) => new()
+    {
+        Status = 200,
+        Body = "",
+        Headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+        Interactions = interactions,
+    };
+
+    [Fact]
+    public void OastInteraction_WithoutAnyCallback_DoesNotMatch()
+    {
+        // The load-bearing case: no interaction server means no interactions,
+        // so the clause must FAIL rather than pass. Treating "we couldn't
+        // check" as proof would report a blind SSRF on every scan run without
+        // --oast-server.
+        var p = new AttackPredicate { OastInteraction = new OastInteractionClause() };
+        Assert.False(AttackPredicateEvaluator.Evaluate(p, R()));
+    }
+
+    [Fact]
+    public void OastInteraction_EmptyClause_MatchesAnyCallback()
+    {
+        // For most blind templates the callback IS the finding, whatever the
+        // transport.
+        var p = new AttackPredicate { OastInteraction = new OastInteractionClause() };
+        Assert.True(AttackPredicateEvaluator.Evaluate(p,
+            WithInteractions(new ProbeInteraction { Protocol = "dns" })));
+    }
+
+    [Fact]
+    public void OastInteraction_ProtocolFilter_MatchesCaseInsensitively()
+    {
+        var p = new AttackPredicate { OastInteraction = new OastInteractionClause { Protocol = "dns" } };
+        Assert.True(AttackPredicateEvaluator.Evaluate(p,
+            WithInteractions(new ProbeInteraction { Protocol = "DNS" })));
+    }
+
+    [Fact]
+    public void OastInteraction_ProtocolFilter_RejectsAnotherTransport()
+    {
+        // A DNS callback proves the target resolved the host; a template that
+        // demands http (proving it actually fetched) must not settle for it.
+        var p = new AttackPredicate { OastInteraction = new OastInteractionClause { Protocol = "http" } };
+        Assert.False(AttackPredicateEvaluator.Evaluate(p,
+            WithInteractions(new ProbeInteraction { Protocol = "dns" })));
+    }
+
+    [Fact]
+    public void OastInteraction_PicksTheMatchingCallbackOutOfSeveral()
+    {
+        var p = new AttackPredicate { OastInteraction = new OastInteractionClause { Protocol = "http" } };
+        Assert.True(AttackPredicateEvaluator.Evaluate(p, WithInteractions(
+            new ProbeInteraction { Protocol = "dns" },
+            new ProbeInteraction { Protocol = "http" })));
+    }
+
+    [Fact]
+    public void OastInteraction_RequestContains_FiltersOnTheRawCallback()
+    {
+        var p = new AttackPredicate
+        {
+            OastInteraction = new OastInteractionClause { RequestContains = "root:x:" },
+        };
+        Assert.True(AttackPredicateEvaluator.Evaluate(p, WithInteractions(
+            new ProbeInteraction { Protocol = "http", RawRequest = "GET /?d=root:x:0:0 HTTP/1.1" })));
+        Assert.False(AttackPredicateEvaluator.Evaluate(p, WithInteractions(
+            new ProbeInteraction { Protocol = "http", RawRequest = "GET / HTTP/1.1" })));
+    }
+
+    [Fact]
+    public void OastInteraction_RequestContains_DoesNotMatchWhenRawRequestAbsent()
+    {
+        // DNS callbacks often carry no raw request — a content assertion must
+        // not silently pass on a null.
+        var p = new AttackPredicate
+        {
+            OastInteraction = new OastInteractionClause { RequestContains = "secret" },
+        };
+        Assert.False(AttackPredicateEvaluator.Evaluate(p,
+            WithInteractions(new ProbeInteraction { Protocol = "dns", RawRequest = null })));
+    }
+
+    [Fact]
+    public void OastInteraction_CombinesWithResponseOperatorsAsImplicitAnd()
+    {
+        // The shape the nuclei OAST templates use: status AND callback.
+        var p = new AttackPredicate
+        {
+            Status = 200,
+            OastInteraction = new OastInteractionClause { Protocol = "dns" },
+        };
+        Assert.True(AttackPredicateEvaluator.Evaluate(p, WithInteractions(
+            new ProbeInteraction { Protocol = "dns" })));
+        // 200 alone is not enough — that was exactly the false positive the
+        // translator refuses to emit.
+        Assert.False(AttackPredicateEvaluator.Evaluate(p, R(200)));
+    }
 }

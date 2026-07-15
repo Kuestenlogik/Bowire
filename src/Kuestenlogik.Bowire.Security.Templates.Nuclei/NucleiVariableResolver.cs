@@ -29,14 +29,22 @@ namespace Kuestenlogik.Bowire.Security.Templates.Nuclei;
 /// <list type="bullet">
 ///   <item>DSL helper functions: <c>{{md5(BaseURL)}}</c>, <c>{{base64(...)}}</c>,
 ///     <c>{{rand_text_alpha(N)}}</c>, <c>{{to_lower(...)}}</c>.</item>
-///   <item><c>{{interactsh-url}}</c> — out-of-band callback URL.
-///     Requires an interactsh server; Phase 2f territory.</item>
 /// </list>
+///
+/// Phase 2f (shipped): <c>{{interactsh-url}}</c> resolves to an out-of-band
+/// callback host when an interaction server is configured
+/// (<see cref="NucleiVariableContext.InteractshUrlFactory"/>). Without one it
+/// passes through untouched, so an OAST template yields no usable probe rather
+/// than a meaningless one.
 /// </summary>
 public static class NucleiVariableResolver
 {
+    // Hyphens are part of the name: `{{interactsh-url}}` is the OAST
+    // placeholder (#35 Phase 2f) and would otherwise not even be seen by the
+    // resolver. Widening the class is safe for everything else — an unknown
+    // name still falls through to pass-through below.
     private static readonly Regex VariablePattern = new(
-        @"\{\{(?<name>[A-Za-z][A-Za-z0-9_]*)\}\}",
+        @"\{\{(?<name>[A-Za-z][A-Za-z0-9_-]*)\}\}",
         RegexOptions.Compiled);
 
     private static readonly Regex RandStrPattern = new(
@@ -75,6 +83,12 @@ public static class NucleiVariableResolver
     {
         return name switch
         {
+            // #35 Phase 2f — the OAST callback host. Null when no interaction
+            // server is configured, which makes the placeholder pass through
+            // untouched and leaves the template unusable on purpose: sending a
+            // literal {{interactsh-url}} to a target would probe nothing and
+            // prove nothing.
+            "interactsh-url" => context.InteractshUrl(),
             "BaseURL" => context.BaseUrl,
             "Hostname" => context.Hostname,
             "Host" => context.Host,
@@ -155,6 +169,40 @@ public sealed class NucleiVariableContext
     private readonly Random _random;
     private readonly Dictionary<string, string> _cache = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Allocates an out-of-band callback host for <c>{{interactsh-url}}</c>
+    /// (#35 Phase 2f). Null (the default) means no interaction server is
+    /// configured and OAST templates cannot run.
+    /// </summary>
+    /// <remarks>
+    /// Invoked at most once per context, and the value is memoised — a
+    /// template referencing the placeholder twice must plant the SAME host, or
+    /// the callback could not be attributed back to it. Give each template its
+    /// own context so two templates never share a host, otherwise a callback
+    /// cannot be pinned to the probe that caused it.
+    /// </remarks>
+    public Func<string>? InteractshUrlFactory { get; init; }
+
+    /// <summary>
+    /// The callback host this context handed to <c>{{interactsh-url}}</c>, or
+    /// null if the placeholder was never resolved. The scanner reads it back
+    /// to correlate a recorded interaction to the template that planted it.
+    /// </summary>
+    public string? AllocatedInteractshUrl =>
+        _cache.TryGetValue(InteractshCacheKey, out var v) ? v : null;
+
+    private const string InteractshCacheKey = "interactsh-url";
+
+    /// <summary>Memoised callback host, or null when no factory is configured.</summary>
+    internal string? InteractshUrl()
+    {
+        if (InteractshUrlFactory is null) return null;
+        if (_cache.TryGetValue(InteractshCacheKey, out var existing)) return existing;
+        var value = InteractshUrlFactory();
+        _cache[InteractshCacheKey] = value;
+        return value;
+    }
+
     public string BaseUrl { get; }
     public string Hostname { get; }
     public string Host { get; }
@@ -179,7 +227,8 @@ public sealed class NucleiVariableContext
     /// scan produce the same placeholder values — keeps SARIF diff +
     /// CI dashboards stable.
     /// </summary>
-    public static NucleiVariableContext FromTarget(string target, int? seed = null)
+    public static NucleiVariableContext FromTarget(
+        string target, int? seed = null, Func<string>? interactshUrlFactory = null)
     {
         if (string.IsNullOrWhiteSpace(target))
             throw new ArgumentException("Target must be a non-empty URL.", nameof(target));
@@ -197,7 +246,10 @@ public sealed class NucleiVariableContext
         var port = uri.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         var random = seed.HasValue ? new Random(seed.Value) : new Random();
-        return new NucleiVariableContext(baseUrl, hostname, uri.Host, port, basePath, random);
+        return new NucleiVariableContext(baseUrl, hostname, uri.Host, port, basePath, random)
+        {
+            InteractshUrlFactory = interactshUrlFactory,
+        };
     }
 
     /// <summary>

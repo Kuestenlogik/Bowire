@@ -72,6 +72,21 @@ public sealed class AttackPredicate
     [JsonPropertyName("headerMissing")]
     public IList<string>? HeaderMissing { get; init; }
 
+    // ---- Leaf operator on out-of-band callbacks (#35 Phase 2f) ----
+
+    /// <summary>
+    /// An out-of-band callback was attributed to this probe. The only way to
+    /// prove a <em>blind</em> finding: the response looks innocuous, and the
+    /// evidence is that the target contacted a host the probe planted in it.
+    /// <para>
+    /// Requires an interaction server (<c>--oast-server</c>). Without one no
+    /// interactions are ever collected, so this clause simply never
+    /// matches — it fails closed rather than reporting unproven findings.
+    /// </para>
+    /// </summary>
+    [JsonPropertyName("oastInteraction")]
+    public OastInteractionClause? OastInteraction { get; init; }
+
     // ---- Leaf operator on response timing ----
 
     /// <summary>
@@ -138,4 +153,36 @@ public sealed class AttackJsonPathClause
     /// <summary>At least one individual path-result matches this regex.</summary>
     [JsonPropertyName("anyValueMatches")]
     public string? AnyValueMatches { get; set; }
+}
+
+/// <summary>
+/// Inner clause of <see cref="AttackPredicate.OastInteraction"/> — which
+/// out-of-band callback counts as proof (#35 Phase 2f). An empty clause means
+/// "any callback at all", which is already the finding for most blind
+/// templates: the target contacting a host it was fed is the vulnerability,
+/// regardless of transport.
+/// </summary>
+public sealed class OastInteractionClause
+{
+    /// <summary>
+    /// Only count callbacks that arrived on this transport (<c>dns</c>,
+    /// <c>http</c>, <c>smtp</c>, …), case-insensitively. Maps Nuclei's
+    /// <c>part: interactsh_protocol</c> matcher. Null = any transport.
+    /// <para>
+    /// Worth pinning: a DNS-only callback proves the target *resolved* the
+    /// host, an HTTP one proves it actually fetched it — a materially stronger
+    /// claim that some templates require.
+    /// </para>
+    /// </summary>
+    [JsonPropertyName("protocol")]
+    public string? Protocol { get; set; }
+
+    /// <summary>
+    /// Only count callbacks whose raw request contains this substring
+    /// (case-insensitive). Maps Nuclei's <c>part: interactsh_request</c>
+    /// matcher — e.g. asserting exfiltrated content came back in the callback.
+    /// Null = don't inspect the request.
+    /// </summary>
+    [JsonPropertyName("requestContains")]
+    public string? RequestContains { get; set; }
 }

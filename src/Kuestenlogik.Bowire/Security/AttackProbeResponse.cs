@@ -31,4 +31,14 @@ public sealed class AttackProbeResponse
 
     /// <summary>Wall-clock round-trip latency, measured from probe send to response receipt.</summary>
     public int LatencyMs { get; init; }
+
+    /// <summary>
+    /// Out-of-band callbacks attributed to this probe (#35 Phase 2f). A second
+    /// evaluation axis: unlike every field above, these do not come from the
+    /// response — they are collected from an interaction server *after* the
+    /// probe, and are the only evidence a blind finding has. Empty unless the
+    /// operator opted into an interaction server, so a predicate asserting on
+    /// them simply never matches when OAST is off.
+    /// </summary>
+    public IReadOnlyList<ProbeInteraction> Interactions { get; init; } = [];
 }

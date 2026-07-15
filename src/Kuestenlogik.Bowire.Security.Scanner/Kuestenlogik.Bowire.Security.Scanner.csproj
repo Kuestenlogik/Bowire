@@ -39,6 +39,11 @@
          standalone (e.g. a corpus-converter tool) without dragging
          in the scan-engine. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Security.Templates.Nuclei\Kuestenlogik.Bowire.Security.Templates.Nuclei.csproj" />
+    <!-- #35 Phase 2f — the OAST client. Dep-free (HttpClient + BCL crypto) and
+         dormant unless the operator passes an interaction server, so this
+         costs an embedded host nothing but keeps the out-of-band detection in
+         its own package rather than in the scan engine. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Oast\Kuestenlogik.Bowire.Oast.csproj" />
   </ItemGroup>
   <!-- #306/#314 — the Security rail's JS fragment. Embedded with the
        `.wwwroot.js.<file>.js` logical-name convention so core's
