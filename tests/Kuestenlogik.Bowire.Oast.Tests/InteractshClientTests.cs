@@ -85,7 +85,7 @@ public sealed class InteractshClientTests
     [Fact]
     public void Allocate_builds_a_33_char_label_under_the_server_domain()
     {
-        var client = new InteractshClient("https://oast.example.com", new StubHandler(_ => Json("{}")));
+        var client = new InteractshClient("https://oast.example.com", httpHandler: new StubHandler(_ => Json("{}")));
         var a = client.Allocate();
 
         Assert.EndsWith(".oast.example.com", a.CallbackHost, StringComparison.Ordinal);
@@ -101,7 +101,7 @@ public sealed class InteractshClientTests
     [Fact]
     public void Allocate_shares_the_correlation_id_but_never_the_host()
     {
-        var client = new InteractshClient("https://oast.example.com", new StubHandler(_ => Json("{}")));
+        var client = new InteractshClient("https://oast.example.com", httpHandler: new StubHandler(_ => Json("{}")));
         var first = client.Allocate();
         var second = client.Allocate();
 
@@ -125,7 +125,7 @@ public sealed class InteractshClientTests
     {
         string? body = null;
         string? path = null;
-        var client = new InteractshClient("https://oast.example.com", new StubHandler(req =>
+        var client = new InteractshClient("https://oast.example.com", httpHandler: new StubHandler(req =>
         {
             path = req.RequestUri!.AbsolutePath;
             body = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
@@ -149,7 +149,7 @@ public sealed class InteractshClientTests
     public async Task RegisterAsync_surfaces_a_server_rejection()
     {
         var client = new InteractshClient("https://oast.example.com",
-            new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized)));
+            httpHandler: new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized)));
 
         var ex = await Assert.ThrowsAsync<OastException>(
             () => client.RegisterAsync(TestContext.Current.CancellationToken));
@@ -171,7 +171,7 @@ public sealed class InteractshClientTests
             """;
 
         string? capturedPubKey = null;
-        var client = new InteractshClient("https://oast.example.com", new StubHandler(req =>
+        var client = new InteractshClient("https://oast.example.com", httpHandler: new StubHandler(req =>
         {
             if (req.RequestUri!.AbsolutePath == "/register")
             {
@@ -208,7 +208,7 @@ public sealed class InteractshClientTests
     [Fact]
     public async Task PollAsync_reads_plaintext_extra_and_tld_data()
     {
-        var client = new InteractshClient("https://oast.example.com", new StubHandler(req =>
+        var client = new InteractshClient("https://oast.example.com", httpHandler: new StubHandler(req =>
             req.RequestUri!.AbsolutePath == "/register"
                 ? Json("{}")
                 : Json("""
@@ -227,7 +227,7 @@ public sealed class InteractshClientTests
     public async Task PollAsync_returns_empty_when_nothing_called_back()
     {
         var client = new InteractshClient("https://oast.example.com",
-            new StubHandler(_ => Json("""{"data":[]}""")));
+            httpHandler: new StubHandler(_ => Json("""{"data":[]}""")));
 
         Assert.Empty(await client.PollAsync(TestContext.Current.CancellationToken));
     }
@@ -236,7 +236,7 @@ public sealed class InteractshClientTests
     public async Task PollAsync_sends_the_correlation_id_and_secret()
     {
         string? query = null;
-        var client = new InteractshClient("https://oast.example.com", new StubHandler(req =>
+        var client = new InteractshClient("https://oast.example.com", httpHandler: new StubHandler(req =>
         {
             if (req.RequestUri!.AbsolutePath == "/poll") query = req.RequestUri.Query;
             return Json("{}");

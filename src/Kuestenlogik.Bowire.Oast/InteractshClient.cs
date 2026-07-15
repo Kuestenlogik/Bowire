@@ -73,10 +73,14 @@ public sealed class InteractshClient : IOastClient
 
     /// <summary>
     /// Create a client for the interaction server at <paramref name="serverUrl"/>
-    /// (e.g. <c>https://oast.example.com</c>). Pass <paramref name="httpHandler"/>
-    /// to drive the exchange in tests without a live server.
+    /// (e.g. <c>https://oast.example.com</c>). Pass <paramref name="token"/> to
+    /// authenticate against a gated instance (one started with
+    /// <c>bowire oast serve --token</c>); it is sent verbatim as the
+    /// <c>Authorization</c> header, matching the interactsh convention.
+    /// Pass <paramref name="httpHandler"/> to drive the exchange in tests
+    /// without a live server.
     /// </summary>
-    public InteractshClient(string serverUrl, HttpMessageHandler? httpHandler = null)
+    public InteractshClient(string serverUrl, string? token = null, HttpMessageHandler? httpHandler = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(serverUrl);
         if (!Uri.TryCreate(serverUrl, UriKind.Absolute, out var uri)
@@ -90,6 +94,14 @@ public sealed class InteractshClient : IOastClient
 
         _ownsHttp = httpHandler is null;
         _http = CreateClient(httpHandler);
+        // The token is the raw Authorization value, not a Bearer scheme, so it
+        // is added without validation. Set as a default header so it rides
+        // every request (register / poll / deregister) even though a gated
+        // server currently only checks it on register.
+        if (!string.IsNullOrEmpty(token))
+        {
+            _http.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", token);
+        }
         _rsa = RSA.Create(2048);
         _correlationId = RandomFromAlphabet(CorrelationAlphabet, CorrelationIdLength);
         _secret = Guid.NewGuid().ToString();

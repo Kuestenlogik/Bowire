@@ -26,9 +26,14 @@ namespace Kuestenlogik.Bowire.Oast.Tests;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Test scope")]
 public sealed class BowireOastServerTests
 {
-    /// <summary>An in-process server plus a client already pointed at it.</summary>
+    /// <summary>
+    /// An in-process server plus a client already pointed at it.
+    /// <paramref name="token"/> gates the server; <paramref name="clientToken"/>
+    /// is what the client presents — pass different values to test the
+    /// auth mismatch path.
+    /// </summary>
     private static async Task<(WebApplication App, InteractshClient Client, HttpClient Raw)> StartAsync(
-        OastInteractionStore store, string? token = null)
+        OastInteractionStore store, string? token = null, string? clientToken = null)
     {
         var builder = WebApplication.CreateSlimBuilder();
         builder.WebHost.UseTestServer();
@@ -40,7 +45,7 @@ public sealed class BowireOastServerTests
         // The TestServer handler makes the client talk to the real endpoints
         // without a socket. Host is irrelevant beyond naming the callback zone.
         var handler = app.GetTestServer().CreateHandler();
-        var client = new InteractshClient("http://oast.example.com", handler);
+        var client = new InteractshClient("http://oast.example.com", token: clientToken, httpHandler: handler);
         var raw = app.GetTestServer().CreateClient();
         return (app, client, raw);
     }
@@ -180,6 +185,64 @@ public sealed class BowireOastServerTests
         var ex = await Assert.ThrowsAsync<OastException>(
             () => client.RegisterAsync(TestContext.Current.CancellationToken));
         Assert.Contains("401", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Client_with_the_matching_token_registers_and_the_full_flow_works()
+    {
+        // --oast-token end to end: a gated server + a client carrying the token
+        // must complete the whole plant-and-poll cycle, not just register.
+        var store = new OastInteractionStore();
+        var (app, client, raw) = await StartAsync(store, token: "s3cret", clientToken: "s3cret");
+        await using var _ = app;
+
+        await client.RegisterAsync(TestContext.Current.CancellationToken);
+        var allocation = client.Allocate();
+        await SimulateHttpCallbackAsync(raw, allocation.CallbackHost);
+
+        var one = Assert.Single(await client.PollAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("http", one.Protocol);
+        Assert.Equal(allocation.CallbackHost, one.FullId);
+    }
+
+    [Fact]
+    public async Task Client_with_the_wrong_token_is_refused()
+    {
+        var store = new OastInteractionStore();
+        var (app, client, _) = await StartAsync(store, token: "s3cret", clientToken: "nope");
+        await using var _ = app;
+
+        var ex = await Assert.ThrowsAsync<OastException>(
+            () => client.RegisterAsync(TestContext.Current.CancellationToken));
+        Assert.Contains("401", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Client_sends_the_token_verbatim_as_the_authorization_header()
+    {
+        // Interactsh uses the raw token as the Authorization value — no Bearer
+        // scheme. A structured AuthenticationHeaderValue would reformat it and
+        // the server's fixed-time compare would then never match.
+        string? seenAuth = null;
+        using var handler = new CapturingHandler(req =>
+        {
+            seenAuth = req.Headers.TryGetValues("Authorization", out var v) ? string.Join(",", v) : null;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json"),
+            };
+        });
+        var client = new InteractshClient("https://oast.example.com", token: "raw-token-value", httpHandler: handler);
+
+        await client.RegisterAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal("raw-token-value", seenAuth);
+    }
+
+    private sealed class CapturingHandler(Func<HttpRequestMessage, HttpResponseMessage> route) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => Task.FromResult(route(request));
     }
 
     [Fact]
