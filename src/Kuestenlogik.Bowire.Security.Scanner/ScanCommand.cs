@@ -499,8 +499,16 @@ public static class ScanCommand
         // replays these like any REST probe. The live upgraded connection
         // (WebSocket/long-poll/SSE stream) is out of template scope, but the
         // handshake/initial-request misconfiguration is fully HTTP-detectable.
+        //
+        // gRPC likewise: gRPC-Web IS HTTP/1.1 by construction, and a template
+        // probing a *native* gRPC route over HTTP/1.1 still gets a decisive
+        // HTTP answer — a mapped route replies 415 + `Grpc-Status`, an unmapped
+        // one plain 404 — which is exactly how BWR-GRPC-001 detects exposed
+        // server reflection. Excluding GRPC forced that template to declare a
+        // dishonest `protocol` (graphql) just to get replayed.
         "REST" or "GRAPHQL" or "ODATA" or "HTTP" or "SSE"
-            or "SIGNALR" or "SOCKETIO" or "MCP" => true,
+            or "SIGNALR" or "SOCKETIO" or "MCP"
+            or "GRPC" or "GRPC-WEB" => true,
         _ => false,
     };
 

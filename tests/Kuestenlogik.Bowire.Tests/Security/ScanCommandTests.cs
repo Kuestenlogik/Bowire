@@ -346,7 +346,17 @@ public sealed class ScanCommandTests
         await using var upstream = await StartUpstreamAsync(ct);
 
         var rec = AttackRecording();
-        rec.Steps[0].Protocol = "grpc"; // not yet supported by scanner v1
+        // MQTT is the canonical native-transport case: it reaches its broker
+        // over TCP with no HTTP surface at all, so a template's probe (which
+        // the scanner replays as an HTTP request) can never express it — the
+        // template must be reported as skipped rather than silently mis-probed.
+        // MQTT's real coverage lives in the scanner's native probes
+        // (MqttAuthProbe & co), not in the template corpus.
+        //
+        // NB: this used to assert on "grpc", but gRPC is HTTP-class (gRPC-Web
+        // is HTTP/1.1; a native gRPC route answers 415 + Grpc-Status over
+        // HTTP/1.1), so it moved to the HTTP-class theory above.
+        rec.Steps[0].Protocol = "mqtt";
         var path = await WriteAsync(rec, ct);
         try
         {
@@ -366,14 +376,19 @@ public sealed class ScanCommandTests
     [InlineData("signalr", "POST", "/hubs/probe/negotiate")]
     [InlineData("socketio", "GET", "/socket.io/?EIO=4&transport=polling")]
     [InlineData("mcp", "POST", "/mcp")]
+    // gRPC-Web is HTTP/1.1 by construction, and a native-gRPC route probed over
+    // HTTP/1.1 still answers over HTTP (415 + Grpc-Status when mapped) — which
+    // is how BWR-GRPC-001 detects exposed server reflection.
+    [InlineData("grpc", "POST", "/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")]
+    [InlineData("grpc-web", "POST", "/pkg.Service/Method")]
     public async Task RunAsync_HandshakeProtocolTemplate_IsProbedAsHttpClass(string protocol, string verb, string httpPath)
     {
-        // SignalR / Socket.IO / MCP are HTTP-class for the request the
-        // template probes (negotiate / EIO polling handshake / JSON-RPC POST),
-        // so these templates must be probed (and can fire), NOT skipped with
-        // "transport not yet supported". Guards the IsHttpClassProtocol
-        // allow-list against a regression that would silently stop running
-        // every template for one of these protocols.
+        // SignalR / Socket.IO / MCP / gRPC are HTTP-class for the request the
+        // template probes (negotiate / EIO polling handshake / JSON-RPC POST /
+        // gRPC-Web or native-gRPC POST), so these templates must be probed (and
+        // can fire), NOT skipped with "transport not yet supported". Guards the
+        // IsHttpClassProtocol allow-list against a regression that would
+        // silently stop running every template for one of these protocols.
         var ct = TestContext.Current.CancellationToken;
         await using var upstream = await StartUpstreamAsync(ct);
 
