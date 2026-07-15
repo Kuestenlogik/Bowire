@@ -152,6 +152,13 @@ internal static class BowireCli
         try { _ = Activator.CreateInstance<Kuestenlogik.Bowire.Monitoring.Cli.MonitorCliCommand>(); }
         catch { /* discovery loop below surfaces the real error */ }
 
+        // #35 Phase 2f — force-load the Oast assembly so `bowire oast serve` is
+        // visible to the scan. The Scanner references Oast for the client, but
+        // that reference is only touched when a scan actually uses
+        // --oast-server, so the assembly is not loaded at command-build time.
+        try { _ = Activator.CreateInstance<Kuestenlogik.Bowire.Oast.Cli.OastCliCommand>(); }
+        catch { /* discovery loop below surfaces the real error */ }
+
         var disabledCli = PreparseRepeatableArg(originalArgs, "--disable-cli-command");
         foreach (var cmd in BowireCliCommandRegistry.Discover(disabledCli).Commands)
         {

@@ -18,6 +18,15 @@
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Oast.Tests" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The DNS catcher for `bowire oast serve`. Server-side only: the client
+         path (the scanner's dependency) never touches it. -->
+    <PackageReference Include="DNS" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- OastCliCommand implements IBowireCliCommand → needs the CLI contract
+         package (which carries System.CommandLine). -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Cli\Kuestenlogik.Bowire.Cli.csproj" />
   </ItemGroup>
 </Project>
