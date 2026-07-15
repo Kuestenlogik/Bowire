@@ -308,6 +308,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) | Protocol.Akka | [Docs drift: TappedMessage envelope field names & payload shape](#issue-kuestenlogik-bowire-protocol-akka-34) | ⬜ Backlog |  |
 | [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog |  |
 | [485](https://github.com/Kuestenlogik/Bowire/issues/485) | Bowire | [Infra: stand up oast.bowire.io — the hosted OAST interaction server (#35 Phase 2f)](#issue-kuestenlogik-bowire-485) | ⬜ Backlog |  |
+| [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1262,6 +1263,10 @@ When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` 
 #### <a id="issue-kuestenlogik-bowire-485"></a>⬜ Backlog · [#485](https://github.com/Kuestenlogik/Bowire/issues/485) Infra: stand up oast.bowire.io — the hosted OAST interaction server (#35 Phase 2f)
 
 Operational follow-up to #35 Phase 2f. The **code** side needs nothing from this — `bowire scan --oast-server <url>` already points at any interactsh-compatible instance, and `bowire oast serve` (tracked in #35) will let anyone self-host. This ticket is purely the hosted convenience instance. [[more]](https://github.com/Kuestenlogik/Bowire/issues/485)
+
+#### <a id="issue-kuestenlogik-bowire-486"></a>⬜ Backlog · [#486](https://github.com/Kuestenlogik/Bowire/issues/486) Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live
+
+The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the workflow the OAST work so far does not cover. [[more]](https://github.com/Kuestenlogik/Bowire/issues/486)
 
 ---
 
