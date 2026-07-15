@@ -560,7 +560,7 @@ public static class ScanCommand
     private static Oast.InteractshClient? TryCreateOastClient(ScanOptions options)
         => string.IsNullOrWhiteSpace(options.OastServer)
             ? null
-            : new Oast.InteractshClient(options.OastServer);
+            : new Oast.InteractshClient(options.OastServer, token: options.OastToken);
 
     /// <summary>
     /// Whether <paramref name="url"/> is a usable interaction-server address.
@@ -1299,6 +1299,14 @@ public sealed class ScanOptions
     /// </para>
     /// </summary>
     public string? OastServer { get; init; }
+
+    /// <summary>
+    /// #35 Phase 2f: token for a gated interaction server (one started with
+    /// <c>bowire oast serve --token</c>). Sent verbatim as the
+    /// <c>Authorization</c> header on the register call. Null = no auth, which
+    /// matches an open instance.
+    /// </summary>
+    public string? OastToken { get; init; }
 
     /// <summary>
     /// #35 Phase 2f: seconds to wait after the probes before polling for
