@@ -95,6 +95,37 @@ public static class ScanCommand
                 $"  Using template cache at {cacheDir} ({VulnDbCache.CountTemplates(cacheRoot)} templates). Run `bowire vulndb update` to refresh.").ConfigureAwait(false);
         }
 
+        // #35 Phase 2f — the OAST session, when the operator named an
+        // interaction server. Registered up front so a bad URL / unreachable
+        // server fails before a whole scan runs rather than after it, and
+        // disposed at the end so the session is released.
+        if (!string.IsNullOrWhiteSpace(options.OastServer) && !IsUsableOastServer(options.OastServer))
+        {
+            await stderr.WriteLineAsync(
+                $"  --oast-server must be an http(s) URL, got '{options.OastServer}'.").ConfigureAwait(false);
+            return 2;
+        }
+        // The `await using` declaration owns the client outright, so the session
+        // is released on every exit path below (and is a no-op when OAST is
+        // off) without threading a try/finally through the many returns.
+        await using var oastClient = TryCreateOastClient(options);
+        if (oastClient is not null)
+        {
+            try
+            {
+                // Register up front: a bad URL or unreachable server should
+                // fail before a whole scan runs, not after it.
+                await oastClient.RegisterAsync(ct).ConfigureAwait(false);
+                await stdout.WriteLineAsync(
+                    $"  OAST: callbacks collected via {oastClient.ServerDomain} (out-of-band templates enabled).").ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is Oast.OastException or HttpRequestException or TaskCanceledException)
+            {
+                await stderr.WriteLineAsync($"  OAST server unusable: {ex.Message}").ConfigureAwait(false);
+                return 2;
+            }
+        }
+
         // Collect templates from --templates (directory) and/or --template (single file).
         var templates = new List<LoadedTemplate>();
         foreach (var path in EnumerateTemplatePaths(options.Template, effectiveTemplatesDir))
@@ -125,20 +156,43 @@ public static class ScanCommand
         // (matches the native-template behaviour).
         if (!string.IsNullOrEmpty(options.Nuclei) && Directory.Exists(options.Nuclei))
         {
-            var nucleiContext = NucleiTemplates.NucleiVariableContext.FromTarget(options.Target);
             var nucleiCount = 0;
             var nucleiUntranslated = new List<string>();
+            var needsOast = new List<string>();
             foreach (var path in Directory.EnumerateFiles(options.Nuclei, "*.yaml", SearchOption.AllDirectories)
                 .Concat(Directory.EnumerateFiles(options.Nuclei, "*.yml", SearchOption.AllDirectories)))
             {
                 try
                 {
+                    // A context PER TEMPLATE, not per corpus: the context
+                    // memoises {{interactsh-url}}, so one shared context would
+                    // plant the SAME callback host in every template and make a
+                    // callback unattributable to the probe that caused it.
+                    var nucleiContext = NucleiTemplates.NucleiVariableContext.FromTarget(
+                        options.Target,
+                        interactshUrlFactory: oastClient is null ? null : () => oastClient.Allocate().CallbackHost);
+
                     var template = NucleiTemplates.NucleiTemplateReader.ReadFile(path);
                     var loadedFromFile = 0;
                     foreach (var rec in NucleiTemplates.NucleiTemplateConverter.ToBowireRecordings(template, nucleiContext)
                         .Where(r => r.VulnerableWhen is not null && r.Steps.Count > 0))
                     {
-                        templates.Add(new LoadedTemplate(path, rec));
+                        // With no interaction server the placeholder survives
+                        // into the probe. Running it would send a literal
+                        // `{{interactsh-url}}` to the target, prove nothing, and
+                        // then report "no vulnerabilities matched" — which reads
+                        // as "clean" for a target that was never actually
+                        // tested. Skip and say why instead.
+                        if (NeedsOastButHasNone(rec))
+                        {
+                            needsOast.Add(Path.GetFileName(path));
+                            loadedFromFile++; // accounted for here, not as "untranslatable"
+                            continue;
+                        }
+
+                        // AllocatedInteractshUrl is non-null only once the
+                        // template actually resolved the placeholder.
+                        templates.Add(new LoadedTemplate(path, rec, nucleiContext.AllocatedInteractshUrl));
                         nucleiCount++;
                         loadedFromFile++;
                     }
@@ -157,6 +211,11 @@ public static class ScanCommand
             if (nucleiCount > 0)
             {
                 await stdout.WriteLineAsync($"  Loaded {nucleiCount} nuclei template(s) from {options.Nuclei}").ConfigureAwait(false);
+            }
+            if (needsOast.Count > 0)
+            {
+                await stdout.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
+                    $"  {needsOast.Count} nuclei template(s) skipped — they prove a blind finding via an out-of-band callback and need an interaction server. Pass --oast-server <url> to run them: {string.Join(", ", needsOast.Take(5))}{(needsOast.Count > 5 ? $", +{needsOast.Count - 5} more" : "")}")).ConfigureAwait(false);
             }
             if (nucleiUntranslated.Count > 0)
             {
@@ -255,6 +314,9 @@ public static class ScanCommand
         // unsupported scheme (which used to sink the whole scan).
         var isHttpTarget = IsHttpScheme(options.Target);
 
+        // Out-of-band templates whose verdict has to wait for the poll below.
+        var deferredOast = new List<(LoadedTemplate Tmpl, AttackProbeResponse Response)>();
+
         foreach (var tmpl in templates)
         {
             var severity = tmpl.Recording.Vulnerability?.Severity ?? "medium";
@@ -310,6 +372,19 @@ public static class ScanCommand
             try
             {
                 var response = await SendHttpProbeAsync(http, options.Target, probe, effectiveAuth, ct).ConfigureAwait(false);
+
+                // #35 Phase 2f — an out-of-band template cannot be judged from
+                // the response: the callback it waits for lands asynchronously,
+                // often seconds later. Evaluating now would always read "safe".
+                // Park it and decide after the poll below.
+                if (oastClient is not null
+                    && tmpl.OastHost is not null
+                    && HasOastClause(tmpl.Recording.VulnerableWhen!))
+                {
+                    deferredOast.Add((tmpl, response));
+                    continue;
+                }
+
                 var matched = AttackPredicateEvaluator.Evaluate(tmpl.Recording.VulnerableWhen!, response);
                 findings.Add(matched
                     ? ScanFinding.Vulnerable(tmpl, response)
@@ -318,6 +393,42 @@ public static class ScanCommand
             catch (Exception ex)
             {
                 findings.Add(ScanFinding.Error(tmpl, ex.Message));
+            }
+        }
+
+        // Settle the out-of-band probes: wait for the target to call back, poll
+        // once, attribute each callback to the probe that planted its host, and
+        // only then evaluate.
+        if (deferredOast.Count > 0 && oastClient is not null)
+        {
+            await stdout.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
+                $"  Waiting {options.OastWaitSeconds}s for out-of-band callbacks ({deferredOast.Count} probe(s))…")).ConfigureAwait(false);
+            try
+            {
+                if (options.OastWaitSeconds > 0)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(options.OastWaitSeconds), ct).ConfigureAwait(false);
+                }
+                var interactions = await oastClient.PollAsync(ct).ConfigureAwait(false);
+                foreach (var (tmpl, response) in deferredOast)
+                {
+                    var mine = MatchInteractions(interactions, tmpl.OastHost!);
+                    var withOast = WithInteractions(response, mine);
+                    var matched = AttackPredicateEvaluator.Evaluate(tmpl.Recording.VulnerableWhen!, withOast);
+                    findings.Add(matched
+                        ? ScanFinding.Vulnerable(tmpl, withOast)
+                        : ScanFinding.Safe(tmpl, withOast));
+                }
+            }
+            catch (Exception ex) when (ex is Oast.OastException or HttpRequestException)
+            {
+                // The poll failing is NOT proof the target is clean — say so
+                // rather than reporting every deferred probe as safe.
+                await stderr.WriteLineAsync($"  OAST poll failed: {ex.Message}").ConfigureAwait(false);
+                foreach (var (tmpl, _) in deferredOast)
+                {
+                    findings.Add(ScanFinding.Error(tmpl, $"out-of-band result unknown — poll failed: {ex.Message}"));
+                }
             }
         }
 
@@ -440,6 +551,98 @@ public static class ScanCommand
         // gating logic in the CI yaml, not in the tool's exit code.
         return 0;
     }
+
+    /// <summary>
+    /// The OAST client for this scan, or null when the operator named no
+    /// interaction server (the default — OAST is opt-in). A malformed URL is
+    /// reported as a usage error rather than throwing out of the scan.
+    /// </summary>
+    private static Oast.InteractshClient? TryCreateOastClient(ScanOptions options)
+        => string.IsNullOrWhiteSpace(options.OastServer)
+            ? null
+            : new Oast.InteractshClient(options.OastServer);
+
+    /// <summary>
+    /// Whether <paramref name="url"/> is a usable interaction-server address.
+    /// Checked before the client is built so a typo'd <c>--oast-server</c>
+    /// stops the scan outright: silently continuing without OAST would report
+    /// every out-of-band template clean, which is worse than failing.
+    /// </summary>
+    private static bool IsUsableOastServer(string url)
+        => Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+
+    /// <summary>
+    /// Whether a converted recording still carries an unresolved
+    /// <c>{{interactsh-url}}</c> — i.e. the template needs an out-of-band
+    /// callback but no interaction server was configured, so its probe would
+    /// carry the literal placeholder and prove nothing.
+    /// </summary>
+    private static bool NeedsOastButHasNone(BowireRecording rec)
+    {
+        const string Placeholder = "{{interactsh-url}}";
+        foreach (var step in rec.Steps)
+        {
+            if (step.HttpPath?.Contains(Placeholder, StringComparison.OrdinalIgnoreCase) == true) return true;
+            if (step.Body?.Contains(Placeholder, StringComparison.OrdinalIgnoreCase) == true) return true;
+            if (step.Metadata is not null
+                && step.Metadata.Any(kv => kv.Value?.Contains(Placeholder, StringComparison.OrdinalIgnoreCase) == true))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Whether a predicate tree asserts on an out-of-band callback anywhere
+    /// (#35 Phase 2f) — i.e. whether it can only be judged after polling.
+    /// </summary>
+    private static bool HasOastClause(AttackPredicate predicate)
+    {
+        if (predicate.OastInteraction is not null) return true;
+        if (predicate.Not is not null && HasOastClause(predicate.Not)) return true;
+        if (predicate.AllOf is not null && predicate.AllOf.Any(HasOastClause)) return true;
+        if (predicate.AnyOf is not null && predicate.AnyOf.Any(HasOastClause)) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// The callbacks belonging to one probe. Each template plants a unique
+    /// 33-character label, so matching on that label — not on the server domain
+    /// the whole session shares — is what keeps two probes from being credited
+    /// with each other's callback.
+    /// </summary>
+    private static List<ProbeInteraction> MatchInteractions(
+        IReadOnlyList<Oast.OastInteraction> interactions, string allocatedHost)
+    {
+        var label = allocatedHost.Split('.', 2)[0];
+        return [.. interactions
+            .Where(i => (i.FullId?.Contains(label, StringComparison.OrdinalIgnoreCase) ?? false)
+                     || (i.UniqueId?.Contains(label, StringComparison.OrdinalIgnoreCase) ?? false))
+            .Select(i => new ProbeInteraction
+            {
+                Protocol = i.Protocol,
+                Id = i.FullId ?? i.UniqueId,
+                RemoteAddress = i.RemoteAddress,
+                RawRequest = i.RawRequest,
+            })];
+    }
+
+    /// <summary>
+    /// Copy of <paramref name="response"/> carrying the out-of-band callbacks.
+    /// <see cref="AttackProbeResponse"/> is an init-only class, so this stands
+    /// in for a <c>with</c> expression.
+    /// </summary>
+    private static AttackProbeResponse WithInteractions(
+        AttackProbeResponse response, IReadOnlyList<ProbeInteraction> interactions) => new()
+    {
+        Status = response.Status,
+        Headers = response.Headers,
+        Body = response.Body,
+        LatencyMs = response.LatencyMs,
+        Interactions = interactions,
+    };
 
     /// <summary>
     /// The local template-cache fallback gate. Returns the cache's
@@ -1027,8 +1230,13 @@ public static class ScanCommand
 
 }
 
-/// <summary>Internal record pairing the on-disk template path with its parsed recording.</summary>
-internal sealed record LoadedTemplate(string Path, BowireRecording Recording);
+/// <summary>
+/// Internal record pairing the on-disk template path with its parsed recording.
+/// <paramref name="OastHost"/> is the out-of-band callback host this template
+/// planted (#35 Phase 2f), or null when it plants none — it is how a recorded
+/// interaction is attributed back to the probe that caused it.
+/// </summary>
+internal sealed record LoadedTemplate(string Path, BowireRecording Recording, string? OastHost = null);
 
 /// <summary>Bag of <c>bowire scan</c> CLI options resolved from System.CommandLine.</summary>
 public sealed class ScanOptions
@@ -1079,6 +1287,26 @@ public sealed class ScanOptions
     /// (Server / X-Powered-By → known CVEs). Null = use the built-in seed set.
     /// </summary>
     public string? CveDbPath { get; init; }
+
+    /// <summary>
+    /// #35 Phase 2f: URL of an interactsh-compatible interaction server for
+    /// out-of-band detection (e.g. <c>https://oast.example.com</c>). Null =
+    /// OAST off, which is the default: templates that need a callback are then
+    /// skipped rather than probed with a placeholder that proves nothing.
+    /// <para>
+    /// This is the only outbound call the scanner makes beyond the target
+    /// itself, and it only happens because the operator named a server.
+    /// </para>
+    /// </summary>
+    public string? OastServer { get; init; }
+
+    /// <summary>
+    /// #35 Phase 2f: seconds to wait after the probes before polling for
+    /// callbacks. A target's DNS lookup / fetch lands asynchronously and often
+    /// a second or two late, so polling immediately would miss it and report
+    /// the target clean. Default 5.
+    /// </summary>
+    public int OastWaitSeconds { get; init; } = 5;
 
     /// <summary>
     /// #190: path to a headless auth-flow JSON file. When set, the recorded

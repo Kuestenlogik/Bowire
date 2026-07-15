@@ -172,16 +172,15 @@ public sealed class NucleiMatcherTranslatorTests
     [Fact]
     public void And_condition_with_untranslatable_matcher_returns_null_not_a_widened_predicate()
     {
-        // The OAST shape from the nuclei corpus: prove the vulnerability by an
-        // out-of-band callback AND a status check. `part: interactsh_protocol`
-        // is not a body part, so the translator cannot express it.
+        // `part: header` has no translation yet, so this AND loses a conjunct.
+        // Dropping it would leave `status == 200` alone as the whole
+        // predicate — firing on any healthy response. Refusing to translate
+        // costs a detection; widening invents one.
         //
-        // Dropping it from an AND silently DELETES the conjunct that carries
-        // the actual proof, leaving `status == 200` alone — which fires on any
-        // healthy response. That is a false positive on every 200, so the
-        // template must not translate at all.
+        // NB: this used to assert on `part: interactsh_protocol`. That part is
+        // now translatable (#35 Phase 2f) and moved to its own tests below.
         var req = WithMatchers("and",
-            new NucleiMatcher { Type = "word", Part = "interactsh_protocol", Words = { "dns" } },
+            new NucleiMatcher { Type = "word", Part = "header", Words = { "X-Powered-By" } },
             new NucleiMatcher { Type = "status", Status = { 200 } });
 
         Assert.Null(NucleiMatcherTranslator.Translate(req));
@@ -191,15 +190,75 @@ public sealed class NucleiMatcherTranslatorTests
     public void Or_condition_with_untranslatable_matcher_keeps_the_translatable_branches()
     {
         // OR is the safe direction: dropping a branch only narrows what fires
-        // (a missed detection), it can never invent one. The surviving branch
-        // still translates.
+        // (a missed detection), it can never invent one.
         var req = WithMatchers("or",
-            new NucleiMatcher { Type = "word", Part = "interactsh_protocol", Words = { "dns" } },
+            new NucleiMatcher { Type = "word", Part = "header", Words = { "X-Powered-By" } },
             new NucleiMatcher { Type = "status", Status = { 500 } });
 
         var p = NucleiMatcherTranslator.Translate(req);
         Assert.NotNull(p);
         Assert.Equal(500, p!.Status);
+    }
+
+    // ---- OAST parts (#35 Phase 2f) ----
+
+    [Fact]
+    public void Interactsh_protocol_word_translates_onto_the_interaction_axis()
+    {
+        var req = WithMatchers("or",
+            new NucleiMatcher { Type = "word", Part = "interactsh_protocol", Words = { "dns" } });
+
+        var p = NucleiMatcherTranslator.Translate(req);
+        Assert.NotNull(p);
+        Assert.Equal("dns", p!.OastInteraction!.Protocol);
+        // It asserts on the callback, never on the body.
+        Assert.Null(p.BodyContains);
+    }
+
+    [Fact]
+    public void Interactsh_request_word_translates_to_a_raw_callback_check()
+    {
+        var req = WithMatchers("or",
+            new NucleiMatcher { Type = "word", Part = "interactsh_request", Words = { "root:x:" } });
+
+        var p = NucleiMatcherTranslator.Translate(req);
+        Assert.NotNull(p);
+        Assert.Equal("root:x:", p!.OastInteraction!.RequestContains);
+    }
+
+    [Fact]
+    public void Interactsh_protocol_multi_word_composes_on_condition()
+    {
+        var req = WithMatchers("or", new NucleiMatcher
+        {
+            Type = "word",
+            Part = "interactsh_protocol",
+            Words = { "dns", "http" },
+        });
+
+        var p = NucleiMatcherTranslator.Translate(req);
+        Assert.NotNull(p);
+        // Default condition is `or`: either transport proves the callback.
+        Assert.Equal(2, p!.AnyOf!.Count);
+        Assert.Equal("dns", p.AnyOf[0].OastInteraction!.Protocol);
+        Assert.Equal("http", p.AnyOf[1].OastInteraction!.Protocol);
+    }
+
+    [Fact]
+    public void Oast_template_and_condition_now_translates_whole()
+    {
+        // The exact SSRF shape that previously had to be refused: the OAST
+        // conjunct is expressible now, so the AND composes with the proof
+        // intact instead of being dropped.
+        var req = WithMatchers("and",
+            new NucleiMatcher { Type = "word", Part = "interactsh_protocol", Words = { "dns" } },
+            new NucleiMatcher { Type = "status", Status = { 200 } });
+
+        var p = NucleiMatcherTranslator.Translate(req);
+        Assert.NotNull(p);
+        Assert.Equal(2, p!.AllOf!.Count);
+        Assert.Equal("dns", p.AllOf[0].OastInteraction!.Protocol);
+        Assert.Equal(200, p.AllOf[1].Status);
     }
 
     [Fact]

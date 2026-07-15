@@ -119,6 +119,12 @@ public static class NucleiMatcherTranslator
     private static AttackPredicate? TranslateWord(NucleiMatcher matcher)
     {
         if (matcher.Words.Count == 0) return null;
+
+        // #35 Phase 2f — the OAST parts assert on the out-of-band callback,
+        // not on the response, so they translate onto the interaction axis
+        // instead of a body check.
+        if (TryTranslateInteractshWord(matcher) is { } oast) return oast;
+
         if (!IsBodyPart(matcher.Part)) return null; // Header matchers in a later iteration.
 
         if (matcher.Words.Count == 1)
@@ -132,6 +138,42 @@ public static class NucleiMatcherTranslator
 
         // Within a single multi-value matcher, condition: and|or composes
         // the leaves. Nuclei default is "or" when condition is unset.
+        return string.Equals(matcher.Condition, "and", StringComparison.OrdinalIgnoreCase)
+            ? new AttackPredicate { AllOf = leaves }
+            : new AttackPredicate { AnyOf = leaves };
+    }
+
+    /// <summary>
+    /// Translate Nuclei's OAST matcher parts onto the interaction axis
+    /// (#35 Phase 2f), or null when this matcher isn't one:
+    /// <list type="bullet">
+    /// <item><c>part: interactsh_protocol</c> — words are transports
+    /// (<c>dns</c> / <c>http</c> / …); the callback must have arrived on one.</item>
+    /// <item><c>part: interactsh_request</c> — words must appear in the raw
+    /// callback, e.g. content the target exfiltrated into it.</item>
+    /// </list>
+    /// Safe with OAST switched off: with no interaction server no interactions
+    /// are collected, so the clause simply never matches.
+    /// </summary>
+    private static AttackPredicate? TryTranslateInteractshWord(NucleiMatcher matcher)
+    {
+        var isProtocol = string.Equals(matcher.Part, "interactsh_protocol", StringComparison.OrdinalIgnoreCase);
+        var isRequest = string.Equals(matcher.Part, "interactsh_request", StringComparison.OrdinalIgnoreCase);
+        if (!isProtocol && !isRequest) return null;
+
+        var leaves = matcher.Words
+            .Select(w => new AttackPredicate
+            {
+                OastInteraction = isProtocol
+                    ? new OastInteractionClause { Protocol = w }
+                    : new OastInteractionClause { RequestContains = w },
+            })
+            .ToList<AttackPredicate>();
+
+        if (leaves.Count == 1) return leaves[0];
+
+        // Same composition rule as the body matchers: `condition` defaults to
+        // "or" when unset.
         return string.Equals(matcher.Condition, "and", StringComparison.OrdinalIgnoreCase)
             ? new AttackPredicate { AllOf = leaves }
             : new AttackPredicate { AnyOf = leaves };

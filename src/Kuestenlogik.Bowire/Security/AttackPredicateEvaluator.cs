@@ -91,6 +91,8 @@ public static class AttackPredicateEvaluator
             }
         }
 
+        if (predicate.OastInteraction is { } oast && !MatchesOastInteraction(oast, response)) return false;
+
         if (predicate.LatencyMsAtLeast is int wantLatency
             && response.LatencyMs < wantLatency) return false;
 
@@ -124,6 +126,36 @@ public static class AttackPredicateEvaluator
     /// <c>equals</c> / <c>matches</c> / <c>anyValueMatches</c>) over
     /// the result set.
     /// </summary>
+    /// <summary>
+    /// Whether any out-of-band callback attributed to this probe satisfies the
+    /// clause (#35 Phase 2f).
+    /// </summary>
+    /// <remarks>
+    /// Fails closed: with no interaction server there are no interactions, so
+    /// the clause does not match. That is the safe direction — the alternative
+    /// (treating "we couldn't check" as proof) would report unproven blind
+    /// findings on every scan run without OAST.
+    /// </remarks>
+    private static bool MatchesOastInteraction(OastInteractionClause clause, AttackProbeResponse response)
+    {
+        foreach (var interaction in response.Interactions)
+        {
+            if (!string.IsNullOrEmpty(clause.Protocol)
+                && !string.Equals(interaction.Protocol, clause.Protocol, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+            if (!string.IsNullOrEmpty(clause.RequestContains)
+                && (interaction.RawRequest is null
+                    || !interaction.RawRequest.Contains(clause.RequestContains, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+            return true;
+        }
+        return false;
+    }
+
     private static bool EvaluateJsonPath(AttackJsonPathClause clause, string body)
     {
         if (string.IsNullOrEmpty(body)) return clause.Exists == false;

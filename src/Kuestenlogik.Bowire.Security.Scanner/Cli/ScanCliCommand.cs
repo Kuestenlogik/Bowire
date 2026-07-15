@@ -31,6 +31,8 @@ public sealed class ScanCliCommand : IBowireCliCommand
         var templateOpt = new Option<string>("--template") { Description = "Single template *.json file to run (combinable with --templates)." };
         var nucleiOpt = new Option<string>("--nuclei") { Description = "Directory of *.yaml Nuclei templates (projectdiscovery/nuclei-templates). Read alongside --templates; resolved against --target so {{BaseURL}}/{{Hostname}} etc. land on real probes." };
         var cveDbOpt = new Option<string>("--cve-db") { Description = "Path to a CVE / VulnDb JSON file for the banner CVE-lookup (Server / X-Powered-By version → known CVEs). Runs with the built-in passive checks; defaults to a small built-in seed when omitted." };
+        var oastServerOpt = new Option<string>("--oast-server") { Description = "URL of an interactsh-compatible interaction server for out-of-band detection, e.g. https://oast.example.com. Enables templates that prove a BLIND finding (SSRF / RCE / XXE) by planting a callback host and checking whether the target contacted it — the response itself shows nothing. Points at any instance: your own (`bowire oast serve` / interactsh-server) or a third party's. OFF by default: without it the scanner makes no outbound call beyond the target, and out-of-band templates are skipped rather than reported as clean." };
+        var oastWaitOpt = new Option<int>("--oast-wait") { Description = "Seconds to wait after the probes before polling for callbacks. A target's DNS lookup / fetch arrives asynchronously, so polling immediately would miss it and call the target clean. Default 5." };
         var authFlowOpt = new Option<string>("--auth-flow") { Description = "Path to a headless auth-flow JSON file (login → token chain). Runs once before the scan; the captured token is injected as an auth header into every probe (refresh on expiry). Secrets are read from {{env.NAME}}, never inlined. Covers scriptable grants (client-credentials, password, refresh) — browser grants (OAuth auth-code/device) are not yet supported." };
         var outOpt = new Option<string>("--out") { Description = "Write findings as SARIF 2.1.0 JSON to this path (for CI dashboards: GitHub Code Scanning, GitLab, Azure DevOps)." };
         var suiteOpt = new Option<string>("--suite") { Description = "Run a named suite after the scan. `owasp-api` = OWASP API Top 10 rollup (HTTP + protocol probes) with a per-entry coverage table; `protocol` = only the protocol-specific probes (gRPC/GraphQL/WS/MQTT/SSE/MCP) + the table — use for non-HTTP targets like mqtt:// or ws://; `all` = everything (HTTP OWASP + protocol probes) + the table." };
@@ -67,6 +69,8 @@ public sealed class ScanCliCommand : IBowireCliCommand
         scan.Add(templateOpt);
         scan.Add(nucleiOpt);
         scan.Add(cveDbOpt);
+        scan.Add(oastServerOpt);
+        scan.Add(oastWaitOpt);
         scan.Add(authFlowOpt);
         scan.Add(outOpt);
         scan.Add(suiteOpt);
@@ -91,6 +95,8 @@ public sealed class ScanCliCommand : IBowireCliCommand
                 Template = pr.GetValue(templateOpt),
                 Nuclei = pr.GetValue(nucleiOpt),
                 CveDbPath = pr.GetValue(cveDbOpt),
+                OastServer = pr.GetValue(oastServerOpt),
+                OastWaitSeconds = pr.GetValue(oastWaitOpt) is int w and >= 0 ? w : 5,
                 AuthFlowPath = pr.GetValue(authFlowOpt),
                 OutSarif = pr.GetValue(outOpt),
                 Suite = pr.GetValue(suiteOpt),
