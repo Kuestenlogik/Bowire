@@ -127,18 +127,27 @@ public static class ScanCommand
         {
             var nucleiContext = NucleiTemplates.NucleiVariableContext.FromTarget(options.Target);
             var nucleiCount = 0;
+            var nucleiUntranslated = new List<string>();
             foreach (var path in Directory.EnumerateFiles(options.Nuclei, "*.yaml", SearchOption.AllDirectories)
                 .Concat(Directory.EnumerateFiles(options.Nuclei, "*.yml", SearchOption.AllDirectories)))
             {
                 try
                 {
                     var template = NucleiTemplates.NucleiTemplateReader.ReadFile(path);
+                    var loadedFromFile = 0;
                     foreach (var rec in NucleiTemplates.NucleiTemplateConverter.ToBowireRecordings(template, nucleiContext)
                         .Where(r => r.VulnerableWhen is not null && r.Steps.Count > 0))
                     {
                         templates.Add(new LoadedTemplate(path, rec));
                         nucleiCount++;
+                        loadedFromFile++;
                     }
+                    // A template whose matchers don't translate yields no
+                    // usable recording. Silently dropping it reads as "the
+                    // corpus ran clean" when part of it never ran at all —
+                    // most often the OAST templates, whose interactsh matcher
+                    // has no equivalent yet (#35 Phase 2f).
+                    if (loadedFromFile == 0) nucleiUntranslated.Add(Path.GetFileName(path));
                 }
                 catch (Exception ex)
                 {
@@ -148,6 +157,11 @@ public static class ScanCommand
             if (nucleiCount > 0)
             {
                 await stdout.WriteLineAsync($"  Loaded {nucleiCount} nuclei template(s) from {options.Nuclei}").ConfigureAwait(false);
+            }
+            if (nucleiUntranslated.Count > 0)
+            {
+                await stdout.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
+                    $"  {nucleiUntranslated.Count} nuclei template(s) not translated — their matchers have no Bowire equivalent yet (typically OAST / interactsh, see #35): {string.Join(", ", nucleiUntranslated.Take(5))}{(nucleiUntranslated.Count > 5 ? $", +{nucleiUntranslated.Count - 5} more" : "")}")).ConfigureAwait(false);
             }
         }
 
