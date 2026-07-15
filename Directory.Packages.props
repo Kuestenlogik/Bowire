@@ -48,6 +48,12 @@
          Already transitive via Neuroglia.Serialization.YamlDotNet —
          pinning it here so the direct reference is reproducible. -->
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
+    <!-- #35 Phase 2f — DNS server for `bowire oast serve`'s callback catcher.
+         MIT. Only the optional Kuestenlogik.Bowire.Oast package references it;
+         Core and the scanner stay dep-free. Hand-rolling DNS packet parsing
+         for a server that must answer real resolvers is not worth the sharp
+         edges (compression pointers, EDNS). -->
+    <PackageVersion Include="DNS" Version="7.0.0" />
     <PackageVersion Include="MQTTnet" Version="5.2.0.1603" />
     <PackageVersion Include="MQTTnet.AspNetCore" Version="5.1.0.1559" />
     <PackageVersion Include="MQTTnet.Server" Version="5.2.0.1603" />
