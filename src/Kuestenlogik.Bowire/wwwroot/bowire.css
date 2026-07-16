@@ -13488,6 +13488,19 @@ duplicate) */
     transition: border-color var(--bowire-transition);
 }
 
+/* Textareas share the input chrome but must NOT inherit the single-line 32px
+   height — it crushes their rows and top-aligns the text against the edge.
+   Let `rows` drive the height, with vertical padding so text has breathing
+   room. */
+textarea.bowire-form-input {
+    height: auto;
+    min-height: 68px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    line-height: 1.45;
+    resize: vertical;
+}
+
 .bowire-form-file-wrap {
     display: flex;
     flex-direction: column;

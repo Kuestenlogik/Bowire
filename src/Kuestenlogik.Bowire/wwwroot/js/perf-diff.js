@@ -923,7 +923,9 @@
             }
         },
             el('span', {
-                innerHTML: svgIcon(active ? 'square' : 'record'),
+                // 'stop' is the real glyph; 'square' isn't a catalogue icon and
+                // rendered the generic placeholder.
+                innerHTML: svgIcon(active ? 'stop' : 'record'),
                 className: 'bowire-console-toggle-icon bowire-recording-toggle-icon'
             }),
             // Step-count badge in the corner when recording is live —

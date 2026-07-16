@@ -2334,7 +2334,9 @@
         sidebar.appendChild(renderSidebarToolbar({
             title: 'Recordings',
             primary: {
-                icon: isRecording() ? 'square' : 'record',
+                // 'stop' is the real rounded-square glyph; 'square' isn't a
+                // catalogue icon and fell back to the generic placeholder.
+                icon: isRecording() ? 'stop' : 'record',
                 title: isRecording() ? 'Stop the current recording' : 'Start a new recording',
                 onClick: function () {
                     if (isRecording()) stopRecording();
