@@ -24627,7 +24627,14 @@ not as the
 .bowire-secsuite-title { margin: 0 0 4px; font-size: 14px; font-weight: 600; color: var(--bowire-text); }
 .bowire-secsuite-hint { margin: 0 0 10px; font-size: 12px; line-height: 1.45; color: var(--bowire-text-tertiary); }
 .bowire-secsuite-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
-.bowire-secsuite-controls .bowire-form-input { flex: 1 1 200px; min-width: 180px; }
+/* The vars-chip overlay (js/vars-chips.js) wraps a focused field in a
+   `.bowire-vars-chip-host` span that becomes the flex child in the input's
+   place. The host defaults to width:100% (flex-basis 100%), so in this
+   wrapping row a long unbroken value balloons it to full width and pushes
+   the run button onto a new line. Give the host the same flex sizing the
+   raw input carries so wrapping stays stable across focus. */
+.bowire-secsuite-controls .bowire-form-input,
+.bowire-secsuite-controls .bowire-vars-chip-host { flex: 1 1 200px; min-width: 180px; }
 .bowire-secsuite-status { font-size: 12px; color: var(--bowire-text-secondary); }
 .bowire-secsuite-summary { font-size: 12px; color: var(--bowire-text-secondary); margin: 6px 0; min-height: 18px; }
 .bowire-secsuite-list { border: 1px solid var(--bowire-border-subtle); border-radius: var(--bowire-radius-md); overflow: hidden; }
