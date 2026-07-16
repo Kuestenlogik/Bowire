@@ -310,6 +310,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog |  |
 | [485](https://github.com/Kuestenlogik/Bowire/issues/485) | Bowire | [Infra: stand up oast.bowire.io — the hosted OAST interaction server (#35 Phase 2f)](#issue-kuestenlogik-bowire-485) | ⬜ Backlog |  |
 | [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ⬜ Backlog |  |
+| [488](https://github.com/Kuestenlogik/Bowire/issues/488) | Bowire | [RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench](#issue-kuestenlogik-bowire-488) | ⬜ Backlog |  |
+| [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1272,6 +1274,14 @@ Operational follow-up to #35 Phase 2f. The **code** side needs nothing from this
 #### <a id="issue-kuestenlogik-bowire-486"></a>⬜ Backlog · [#486](https://github.com/Kuestenlogik/Bowire/issues/486) Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live
 
 The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the workflow the OAST work so far does not cover. [[more]](https://github.com/Kuestenlogik/Bowire/issues/486)
+
+#### <a id="issue-kuestenlogik-bowire-488"></a>⬜ Backlog · [#488](https://github.com/Kuestenlogik/Bowire/issues/488) RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench
+
+> **Status: DRAFT / RFC — needs refinement before implementation.** Captures a direction from the #486 discussion; the design sketch and open questions below are starting points, not decisions. [[more]](https://github.com/Kuestenlogik/Bowire/issues/488)
+
+#### <a id="issue-kuestenlogik-bowire-489"></a>⬜ Backlog · [#489](https://github.com/Kuestenlogik/Bowire/issues/489) RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)
+
+> **Status: DRAFT / RFC — needs refinement before implementation.** Direction from the #486 discussion; specifics below are starting points. [[more]](https://github.com/Kuestenlogik/Bowire/issues/489)
 
 ---
 
