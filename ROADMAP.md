@@ -261,7 +261,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts
 
-**0/18 done** · 18 backlog
+**0/19 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -283,6 +283,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [418](https://github.com/Kuestenlogik/Bowire/issues/418) | Bowire | [Re-sync language SDKs (Go/Node/Python/Rust) to the current sidecar contract + version handshake](#issue-kuestenlogik-bowire-418) | ⬜ Backlog |  |
 | [421](https://github.com/Kuestenlogik/Bowire/issues/421) | Bowire | [v3.0: rename Kuestenlogik.Bowire.* -> Bowire.* (assemblies, namespaces, NuGet ids)](#issue-kuestenlogik-bowire-421) | ⬜ Backlog |  |
 | [445](https://github.com/Kuestenlogik/Bowire/issues/445) | Bowire | [refactor: centralise connection-options (mTLS / gRPC transport / AWS SigV4) behind one seam instead of magic metadata markers](#issue-kuestenlogik-bowire-445) | ⬜ Backlog |  |
+| [487](https://github.com/Kuestenlogik/Bowire/issues/487) | Bowire | [v3.0: rename Kuestenlogik.Bowire.Security.Scanner → …Security — the package is the Security rail, not just a scanner](#issue-kuestenlogik-bowire-487) | ⬜ Backlog |  |
 
 ### Backlog (not yet scheduled)
 
@@ -1179,6 +1180,10 @@ For the v3.0 breaking-change release, rename the Bowire .NET surface from `Kuest
 #### <a id="issue-kuestenlogik-bowire-445"></a>⬜ Backlog · [#445](https://github.com/Kuestenlogik/Bowire/issues/445) refactor: centralise connection-options (mTLS / gRPC transport / AWS SigV4) behind one seam instead of magic metadata markers
 
 Several connection/request-level features are woven into **every** protocol plugin's connect/invoke/channel method via "magic" metadata-string markers plus repeated parse-then-strip boilerplate. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/445)
+
+#### <a id="issue-kuestenlogik-bowire-487"></a>⬜ Backlog · [#487](https://github.com/Kuestenlogik/Bowire/issues/487) v3.0: rename Kuestenlogik.Bowire.Security.Scanner → …Security — the package is the Security rail, not just a scanner
+
+The `.Scanner` suffix under-describes what the package has become. It started as the `bowire scan` engine, but it is now the **home of the whole Security rail**: the rail contribution + `security.js`, the OWASP API Top-10 suite, the endpoint spider, and (as of #486) the manual OAST pen-test panel. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/487)
 
 ### Backlog (not yet scheduled)
 
