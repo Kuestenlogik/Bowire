@@ -118,6 +118,17 @@ internal static class BrowserUiHost
     private static async Task<int> DefaultHostRunner(string[] args, BrowserUiOptions ui, CancellationToken ct)
     {
         var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
+        // #486 — bridge the OAST flags into THIS host's configuration. The
+        // command-line source CreateBuilder(args) adds carries no switch
+        // mappings, so --oast-server would land only in the bootstrap config
+        // (which feeds BrowserUiOptions, not this container). The workbench OAST
+        // service reads builder.Configuration, so map the flags here too. Env /
+        // appsettings (Bowire__Oast__Server) already reach this config directly.
+        builder.Configuration.AddCommandLine(args, new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["--oast-server"] = "Bowire:Oast:Server",
+            ["--oast-token"] = "Bowire:Oast:Token",
+        });
         builder.WebHost.UseUrls($"http://localhost:{ui.Port}");
         builder.Services.AddResponseCompression(opts => opts.EnableForHttps = true);
         // Run every loaded plugin's IBowireProtocolServices.ConfigureServices

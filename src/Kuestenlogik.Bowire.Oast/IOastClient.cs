@@ -39,6 +39,14 @@ public interface IOastClient : IAsyncDisposable
     string ServerDomain { get; }
 
     /// <summary>
+    /// Register this session with the interaction server. Callbacks for a
+    /// correlation id the server has not seen registered are dropped, so a
+    /// caller that plants payloads before polling must register first.
+    /// Idempotent — calling it again is a no-op.
+    /// </summary>
+    Task RegisterAsync(CancellationToken ct = default);
+
+    /// <summary>
     /// Reserve a fresh callback host for one probe. Cheap + local after the
     /// session is registered — allocation does not round-trip per call.
     /// </summary>

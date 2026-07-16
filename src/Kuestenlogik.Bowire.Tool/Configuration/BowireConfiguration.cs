@@ -68,6 +68,11 @@ internal static class BowireConfiguration
         ["--ai-endpoint"] = "Bowire:Ai:Endpoint",
         ["--ai-model"] = "Bowire:Ai:Model",
         ["--auth-provider"] = "Bowire:Auth:ProviderId",
+        // #486 — the interaction server the manual OAST panel (and the scanner)
+        // use. Bridged into the web host's IConfiguration in DefaultHostRunner
+        // so the workbench service actually reads it, not just the bootstrap cfg.
+        ["--oast-server"] = "Bowire:Oast:Server",
+        ["--oast-token"] = "Bowire:Oast:Token",
         ["--map-basemap"] = "Bowire:MapBasemap",
         // Subcommand-specific flags that also appear in the top-level
         // pass (because Program.cs builds the bootstrap config from the
