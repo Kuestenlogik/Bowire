@@ -24767,3 +24767,4 @@ not as the
 .bowire-oast-hit.is-dns { border-left-color: var(--bowire-warning); }
 .bowire-oast-hit.is-http { border-left-color: var(--bowire-success); }
 .bowire-oast-proto { font-family: ui-monospace, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; min-width: 64px; color: var(--bowire-text-secondary); }
+.bowire-oast-error { padding: 8px 10px; font-size: 12px; color: var(--bowire-error); background: var(--bowire-error-bg); border-left: 3px solid var(--bowire-error); border-radius: var(--bowire-radius-sm); margin-bottom: 6px; }

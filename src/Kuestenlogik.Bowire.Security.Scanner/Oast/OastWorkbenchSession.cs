@@ -131,9 +131,11 @@ public sealed class OastWorkbenchSession : IAsyncDisposable
             {
                 _feed.Add(Map(interaction));
             }
-            // Cap AFTER appending so a burst can't push older-but-unseen
-            // callbacks out before the panel has rendered them once; the panel
-            // polls faster than 500 callbacks arrive in one interval.
+            // Memory bound only: one drain can return more than the whole cap
+            // (a flooding target, or a long gap while the panel wasn't polling),
+            // in which case the oldest are dropped and may never be rendered.
+            // Acceptable for a manual tool — the proof "the target called back"
+            // survives in the most-recent slice; the count is generous.
             if (_feed.Count > MaxFeed) _feed.RemoveRange(0, _feed.Count - MaxFeed);
             return [.. _feed];
         }
@@ -163,7 +165,18 @@ public sealed class OastWorkbenchSession : IAsyncDisposable
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        if (_client is not null) await _client.DisposeAsync().ConfigureAwait(false);
-        _gate.Dispose();
+        // Acquire the gate first so we never tear the client (RSA key +
+        // HttpClient) down underneath an in-flight allocate / poll. Only host
+        // shutdown disposes this singleton, but the coordination is cheap.
+        await _gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            if (_client is not null) await _client.DisposeAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+            _gate.Dispose();
+        }
     }
 }
