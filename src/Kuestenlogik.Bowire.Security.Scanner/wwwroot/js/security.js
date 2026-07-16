@@ -261,6 +261,148 @@
         return wrap;
     }
 
+    // ---- manual OAST / out-of-band pen-test surface (#486) ----
+    //
+    // The interactive counterpart to the scanner's --oast-server path: generate
+    // a callback payload by hand, paste it into whatever you're testing, and
+    // watch the feed for the target reaching back. The host owns the interactsh
+    // session (crypto + key), so the browser only allocates + polls.
+
+    // Module-scoped so the payload list + feed survive the rail's re-renders
+    // (renderSecurityMain rebuilds the section on every render).
+    var oastGenerated = [];
+    var oastFeed = [];
+    var _oastPollTimer = null;
+    var _oastFeedEl = null;
+
+    function oastCallbackRow(c) {
+        var when = '';
+        try { when = new Date(c.timestampUnixMs).toLocaleTimeString(); } catch (_) { /* ignore */ }
+        var proto = (c.protocol || '?').toLowerCase();
+        var row = el('div', { className: 'bowire-secsuite-row bowire-oast-hit is-' + (proto === 'dns' ? 'dns' : 'http') });
+        row.appendChild(el('span', { className: 'bowire-oast-proto', textContent: proto + (c.queryType ? ' ' + c.queryType : '') }));
+        row.appendChild(el('span', { className: 'bowire-secsuite-row-url', textContent: c.id || '(callback)' }));
+        row.appendChild(el('span', { className: 'bowire-secsuite-row-src', textContent: c.remoteAddress || '' }));
+        row.appendChild(el('span', { className: 'bowire-secsuite-row-note', textContent: when }));
+        return row;
+    }
+
+    function renderOastFeed() {
+        if (!_oastFeedEl) return;
+        _oastFeedEl.textContent = '';
+        if (!oastFeed.length) {
+            _oastFeedEl.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: 'No callbacks yet. Plant a payload where a target might resolve or fetch it — a DNS lookup alone proves it reached the host.' }));
+            return;
+        }
+        // Newest first — the callback that just landed is what the operator is watching for.
+        oastFeed.slice().reverse().forEach(function (c) { _oastFeedEl.appendChild(oastCallbackRow(c)); });
+    }
+
+    function refreshOastFeed() {
+        fetch(config.prefix + '/api/security/oast/poll')
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (res && Array.isArray(res.interactions)) { oastFeed = res.interactions; renderOastFeed(); }
+            })
+            .catch(function () { /* transient — keep the last feed, try again next tick */ });
+    }
+
+    // One guarded timer for the whole rail: polls only while the Security rail
+    // is showing and a session has been started, and never stacks intervals.
+    function ensureOastPoll() {
+        if (_oastPollTimer !== null) return;
+        _oastPollTimer = setInterval(function () {
+            if (typeof railMode !== 'undefined' && railMode !== 'security') return;
+            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+            if (!oastGenerated.length) return;
+            refreshOastFeed();
+        }, 4000);
+    }
+
+    function renderOastPayloadRow(host) {
+        var row = el('div', { className: 'bowire-secsuite-row bowire-oast-payload' });
+        row.appendChild(el('code', { className: 'bowire-oast-host', textContent: host }));
+        row.appendChild(el('button', {
+            className: 'bowire-btn bowire-secsuite-triage', textContent: 'Copy', title: 'Copy the callback host',
+            onclick: function () {
+                var full = host;
+                if (navigator.clipboard) navigator.clipboard.writeText(full).catch(function () { /* ignore */ });
+            }
+        }));
+        return row;
+    }
+
+    function renderOastSection() {
+        var wrap = el('div', { className: 'bowire-secsuite' });
+        wrap.appendChild(el('h3', { className: 'bowire-secsuite-title', textContent: 'Out-of-band (OAST) — manual' }));
+
+        var body = el('div', { className: 'bowire-oast-body' });
+        wrap.appendChild(body);
+
+        // The panel's shape depends on whether a server is configured; decide
+        // that from /status rather than guessing.
+        fetch(config.prefix + '/api/security/oast/status')
+            .then(function (r) { return r.json(); })
+            .then(function (st) {
+                body.textContent = '';
+                if (!st || !st.configured) {
+                    var msg = st && st.error
+                        ? 'OAST server rejected: ' + st.error
+                        : 'No interaction server is configured. Start one — `bowire oast serve --domain oast.example.com --public-ip <ip>` — then launch the workbench with `--oast-server http://oast.example.com` (or set Bowire__Oast__Server). The same server the scanner’s --oast-server uses.';
+                    body.appendChild(el('p', { className: 'bowire-pane-empty', textContent: msg }));
+                    return;
+                }
+
+                body.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: 'Callbacks collected via ' + st.server + '. Generate a payload host, plant it by hand (a URL, a header, an XML entity, an SSRF sink), and watch below for the target reaching back.' }));
+
+                var statusEl = el('span', { className: 'bowire-secsuite-status' });
+                var payloadList = el('div', { className: 'bowire-secsuite-list' });
+                _oastFeedEl = el('div', { className: 'bowire-secsuite-list bowire-oast-feed' });
+
+                var genBtn = el('button', {
+                    className: 'bowire-btn', textContent: 'Generate payload',
+                    onclick: function () {
+                        genBtn.disabled = true; statusEl.textContent = 'Allocating…';
+                        fetch(config.prefix + '/api/security/oast/allocate', { method: 'POST' })
+                            .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+                            .then(function (res) {
+                                if (res.ok && res.body && res.body.host) {
+                                    oastGenerated.push(res.body.host);
+                                    payloadList.insertBefore(renderOastPayloadRow(res.body.host), payloadList.firstChild);
+                                    // Auto-copy the freshest payload — the operator is about to paste it.
+                                    if (navigator.clipboard) navigator.clipboard.writeText(res.body.host).catch(function () { /* ignore */ });
+                                    statusEl.textContent = 'Payload ready + copied. Waiting for callbacks…';
+                                    ensureOastPoll();
+                                    refreshOastFeed();
+                                } else {
+                                    statusEl.textContent = (res.body && res.body.error) || 'Could not allocate a payload.';
+                                }
+                            })
+                            .catch(function (e) { statusEl.textContent = 'Allocate failed: ' + e; })
+                            .finally(function () { genBtn.disabled = false; });
+                    }
+                });
+
+                body.appendChild(el('div', { className: 'bowire-secsuite-controls' }, genBtn, statusEl));
+                if (oastGenerated.length) {
+                    oastGenerated.slice().reverse().forEach(function (h) { payloadList.appendChild(renderOastPayloadRow(h)); });
+                }
+                body.appendChild(el('div', { className: 'bowire-oast-cols' },
+                    el('div', {}, el('div', { className: 'bowire-compliance-label', textContent: 'Payloads' }), payloadList),
+                    el('div', {}, el('div', { className: 'bowire-compliance-label', textContent: 'Live callbacks' }), _oastFeedEl)));
+
+                renderOastFeed();
+                // Pick up any callbacks already caught in a prior render of this session.
+                if (oastGenerated.length) { ensureOastPoll(); refreshOastFeed(); }
+            })
+            .catch(function () {
+                body.textContent = '';
+                body.appendChild(el('p', { className: 'bowire-pane-empty', textContent: 'Could not reach the OAST status endpoint.' }));
+            });
+
+        return wrap;
+    }
+
     // ---- rail renderers ----
 
     function renderSecuritySidebar() {
@@ -281,6 +423,7 @@
         // OWASP suite + endpoint spider are always available — served by this package.
         pad.appendChild(renderOwaspSuiteSection());
         pad.appendChild(renderSpiderSection());
+        pad.appendChild(renderOastSection());
 
         // AI-assisted tools (threat model, fuzz values) are contributed by
         // the AI package when present; otherwise a thin install hint.
