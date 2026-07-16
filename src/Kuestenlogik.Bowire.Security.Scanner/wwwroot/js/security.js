@@ -274,6 +274,9 @@
     var oastFeed = [];
     var _oastPollTimer = null;
     var _oastFeedEl = null;
+    // A poll that keeps failing must NOT read as an empty (clean) feed — that
+    // would hide a lost session / unreachable server on a real target.
+    var _oastError = null;
 
     function oastCallbackRow(c) {
         var when = '';
@@ -290,8 +293,15 @@
     function renderOastFeed() {
         if (!_oastFeedEl) return;
         _oastFeedEl.textContent = '';
+        // Surface a persistent poll failure loudly — an unreachable / restarted
+        // server or a lost session is NOT the same as "target didn't call back".
+        if (_oastError) {
+            _oastFeedEl.appendChild(el('div', { className: 'bowire-oast-error', textContent: 'Callback polling failed — results below may be stale. ' + _oastError }));
+        }
         if (!oastFeed.length) {
-            _oastFeedEl.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: 'No callbacks yet. Plant a payload where a target might resolve or fetch it — a DNS lookup alone proves it reached the host.' }));
+            if (!_oastError) {
+                _oastFeedEl.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: 'No callbacks yet. Plant a payload where a target might resolve or fetch it — a DNS lookup alone proves it reached the host.' }));
+            }
             return;
         }
         // Newest first — the callback that just landed is what the operator is watching for.
@@ -300,11 +310,19 @@
 
     function refreshOastFeed() {
         fetch(config.prefix + '/api/security/oast/poll')
-            .then(function (r) { return r.json(); })
+            .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
             .then(function (res) {
-                if (res && Array.isArray(res.interactions)) { oastFeed = res.interactions; renderOastFeed(); }
+                if (res.ok && res.body && Array.isArray(res.body.interactions)) {
+                    oastFeed = res.body.interactions; _oastError = null;
+                } else {
+                    // The endpoint returns { error } on a 502 (server unreachable
+                    // / unreadable) — show it rather than silently keeping a
+                    // stale-looking empty feed.
+                    _oastError = (res.body && res.body.error) || 'poll returned an unexpected response';
+                }
+                renderOastFeed();
             })
-            .catch(function () { /* transient — keep the last feed, try again next tick */ });
+            .catch(function (e) { _oastError = String(e); renderOastFeed(); });
     }
 
     // One guarded timer for the whole rail: polls only while the Security rail

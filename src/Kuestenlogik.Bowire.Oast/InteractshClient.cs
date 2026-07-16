@@ -151,17 +151,47 @@ public sealed class InteractshClient : IOastClient
     public async Task<IReadOnlyList<OastInteraction>> PollAsync(CancellationToken ct = default)
     {
         await RegisterAsync(ct).ConfigureAwait(false);
+        return await PollOnceAsync(reRegisterOn401: true, ct).ConfigureAwait(false);
+    }
 
+    private async Task<IReadOnlyList<OastInteraction>> PollOnceAsync(bool reRegisterOn401, CancellationToken ct)
+    {
         var url = new Uri(_serverUri,
             $"/poll?id={Uri.EscapeDataString(_correlationId)}&secret={Uri.EscapeDataString(_secret)}");
         using var resp = await _http.GetAsync(url, ct).ConfigureAwait(false);
+
+        // A 401 means the server no longer knows this session — it evicts idle
+        // sessions and keeps nothing across restarts, so a long-lived client
+        // (the workbench panel) outlives its registration. Re-register the SAME
+        // correlation id + key (already-planted payloads stay valid) and retry
+        // once. Without this, every callback after an eviction / server restart
+        // is silently dropped and a vulnerable target reads as clean.
+        if ((int)resp.StatusCode == 401 && reRegisterOn401)
+        {
+            _registered = false;
+            await RegisterAsync(ct).ConfigureAwait(false);
+            return await PollOnceAsync(reRegisterOn401: false, ct).ConfigureAwait(false);
+        }
+
         if (!resp.IsSuccessStatusCode)
         {
             throw new OastException(string.Create(CultureInfo.InvariantCulture,
                 $"OAST poll failed: {(int)resp.StatusCode} {resp.ReasonPhrase} (server {_serverUri})."));
         }
 
-        var poll = await resp.Content.ReadFromJsonAsync<PollResponse>(s_json, ct).ConfigureAwait(false);
+        PollResponse? poll;
+        try
+        {
+            poll = await resp.Content.ReadFromJsonAsync<PollResponse>(s_json, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is JsonException or NotSupportedException)
+        {
+            // A reachable-but-wrong endpoint (proxy / captive portal / wrong
+            // port) answers 200 with non-JSON. Surface it as an OAST error so
+            // callers report "check the server", not a false-empty feed.
+            throw new OastException(string.Create(CultureInfo.InvariantCulture,
+                $"OAST poll returned an unreadable response from {_serverUri}: {ex.Message}"), ex);
+        }
         if (poll is null) return [];
 
         var results = new List<OastInteraction>();

@@ -239,6 +239,37 @@ public sealed class BowireOastServerTests
         Assert.Equal("raw-token-value", seenAuth);
     }
 
+    [Fact]
+    public async Task Client_re_registers_after_the_server_evicts_the_session()
+    {
+        // The server evicts idle sessions and keeps nothing across restarts, so
+        // a long-lived client (the workbench panel) outlives its registration.
+        // A poll must transparently re-establish the session rather than 401
+        // forever — otherwise every callback after an eviction is silently
+        // dropped and a vulnerable target reads as clean (#486 review, HIGH).
+        var time = new FakeTime(DateTimeOffset.UnixEpoch);
+        var store = new OastInteractionStore(time, TimeSpan.FromMinutes(30));
+        var (app, client, raw) = await StartAsync(store);
+        await using var _ = app;
+
+        await client.RegisterAsync(TestContext.Current.CancellationToken);
+        var allocation = client.Allocate();
+        Assert.Equal(1, store.SessionCount);
+
+        // Server forgets the session (idle eviction / restart analog).
+        time.Now = DateTimeOffset.UnixEpoch.AddHours(1);
+        Assert.Equal(1, store.EvictIdle());
+        Assert.Equal(0, store.SessionCount);
+
+        // The poll re-registers under the hood instead of throwing a 401.
+        Assert.Empty(await client.PollAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(1, store.SessionCount);
+
+        // A callback to the SAME already-planted host is caught again.
+        await SimulateHttpCallbackAsync(raw, allocation.CallbackHost);
+        Assert.Single(await client.PollAsync(TestContext.Current.CancellationToken));
+    }
+
     private sealed class CapturingHandler(Func<HttpRequestMessage, HttpResponseMessage> route) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

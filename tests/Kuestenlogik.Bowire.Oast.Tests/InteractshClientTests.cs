@@ -249,6 +249,22 @@ public sealed class InteractshClientTests
         Assert.Contains("secret=", query, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task PollAsync_wraps_a_non_json_200_as_an_oast_error()
+    {
+        // A reachable-but-wrong endpoint (proxy / captive portal / wrong port)
+        // answers 200 with non-JSON. It must surface as an OAST error the
+        // caller reports, not a JsonException 500 or a false-empty feed.
+        var client = new InteractshClient("https://oast.example.com", httpHandler: new StubHandler(req =>
+            req.RequestUri!.AbsolutePath == "/register"
+                ? Json("{}")
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("<html>not json</html>", Encoding.UTF8, "text/html") }));
+
+        var ex = await Assert.ThrowsAsync<OastException>(
+            () => client.PollAsync(TestContext.Current.CancellationToken));
+        Assert.Contains("unreadable", ex.Message, StringComparison.Ordinal);
+    }
+
     private static HttpResponseMessage Json(string body) =>
         new(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
 
