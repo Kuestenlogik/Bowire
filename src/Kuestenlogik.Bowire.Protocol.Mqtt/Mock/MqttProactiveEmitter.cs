@@ -180,7 +180,7 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
 
             _logger.LogInformation(
                 "mqtt-emit(step={StepId}, topic={Topic}, qos={Qos}, retain={Retain}, bytes={Bytes})",
-                step.Id, topic, (int)qos, retain, payloadBytes.Length);
+                step.Id, LogSanitizer.Strip(topic), (int)qos, retain, payloadBytes.Length);
         }
         catch (Exception ex)
         {

@@ -130,7 +130,7 @@ public sealed class MqttReactiveResponder : IDisposable
                 await _broker.InjectApplicationMessage(new InjectedMqttApplicationMessage(response));
                 _logger.LogInformation(
                     "mqtt-react(step={StepId}, request={Topic}) -> {ResponseTopic} ({Bytes} bytes)",
-                    step.Id, topic, responseTopic, payloadBytes.Length);
+                    step.Id, LogSanitizer.Strip(topic), LogSanitizer.Strip(responseTopic), payloadBytes.Length);
             }
             catch (Exception ex)
             {
