@@ -119,10 +119,10 @@ internal static class McpServeCommand
         var io = CommandIo.Resolve(stdout, stderr);
 
         Uri? attachUri = null;
-        if (!string.IsNullOrWhiteSpace(attach))
+        if (!string.IsNullOrWhiteSpace(attach)
+            && !BowireForwardingMcpTransport.TryParseAttachEndpoint(attach, out attachUri, out var parseError))
         {
-            if (!BowireForwardingMcpTransport.TryParseAttachEndpoint(attach, out attachUri, out var parseError))
-                return Fail(parseError, io);
+            return Fail(parseError, io);
         }
 
         var cfg = new McpServeConfig(

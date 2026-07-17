@@ -72,12 +72,9 @@ public sealed partial class ProbeSchedule
         };
 
         ProbeWindow? window = null;
-        if (parts.Length > 1)
+        if (parts.Length > 1 && !TryParseWindow(parts.Skip(1).ToArray(), out window, out error))
         {
-            if (!TryParseWindow(parts.Skip(1).ToArray(), out window, out error))
-            {
-                return false;
-            }
+            return false;
         }
 
         schedule = new ProbeSchedule(interval, window);

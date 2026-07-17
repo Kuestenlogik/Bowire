@@ -172,10 +172,7 @@ public static class AuthFlowRunner
                 name = segment[..bracket];
             }
 
-            if (name.Length > 0)
-            {
-                if (el.ValueKind != JsonValueKind.Object || !el.TryGetProperty(name, out el)) return null;
-            }
+            if (name.Length > 0 && (el.ValueKind != JsonValueKind.Object || !el.TryGetProperty(name, out el))) return null;
             if (index >= 0)
             {
                 if (el.ValueKind != JsonValueKind.Array || index >= el.GetArrayLength()) return null;

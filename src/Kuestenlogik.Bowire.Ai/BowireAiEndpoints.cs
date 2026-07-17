@@ -151,18 +151,16 @@ public static class BowireAiEndpoints
             // (file://, javascript:, &c.) is a config mistake.
             var isMcp = string.Equals(next.ProviderId, "mcp", StringComparison.OrdinalIgnoreCase);
             var isStdioMcp = isMcp && next.Endpoint.StartsWith("stdio:", StringComparison.OrdinalIgnoreCase);
-            if (!isStdioMcp)
+            if (!isStdioMcp
+                && (!Uri.TryCreate(next.Endpoint, UriKind.Absolute, out var u)
+                    || (u.Scheme != Uri.UriSchemeHttp && u.Scheme != Uri.UriSchemeHttps)))
             {
-                if (!Uri.TryCreate(next.Endpoint, UriKind.Absolute, out var u)
-                    || (u.Scheme != Uri.UriSchemeHttp && u.Scheme != Uri.UriSchemeHttps))
+                return Results.Json(new
                 {
-                    return Results.Json(new
-                    {
-                        error = isMcp
-                            ? "MCP endpoint must be an absolute http(s) URL or a 'stdio:<command>' string."
-                            : "Endpoint must be an absolute http(s) URL.",
-                    }, JsonOpts, statusCode: 400);
-                }
+                    error = isMcp
+                        ? "MCP endpoint must be an absolute http(s) URL or a 'stdio:<command>' string."
+                        : "Endpoint must be an absolute http(s) URL.",
+                }, JsonOpts, statusCode: 400);
             }
 
             try

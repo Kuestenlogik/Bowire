@@ -348,10 +348,7 @@ public sealed class MockHandler
         // failing endpoint. A terminal kind (error / connection-drop /
         // malformed) short-circuits before pass-through / 404; latency-only
         // just delays and falls through to normal miss handling.
-        if (_options.Faults.IsActive && _options.Faults.FirstMissMatch() is { } missFault)
-        {
-            if (await ApplyMissFaultAsync(ctx, missFault)) return;
-        }
+        if (_options.Faults.IsActive && _options.Faults.FirstMissMatch() is { } missFault && await ApplyMissFaultAsync(ctx, missFault)) return;
 
         // #407: forward-on-miss — when a proxy base URL is configured, an
         // unmatched request goes to the real upstream (partial mocking) rather

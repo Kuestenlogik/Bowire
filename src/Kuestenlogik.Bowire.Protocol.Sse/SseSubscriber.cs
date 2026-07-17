@@ -125,10 +125,9 @@ internal sealed class SseSubscriber : IAsyncDisposable
             {
                 eventId = line[3..].TrimStart();
             }
-            else if (line.StartsWith("retry:", StringComparison.Ordinal))
+            else if (line.StartsWith("retry:", StringComparison.Ordinal) && int.TryParse(line[6..].TrimStart(), out var retryMs))
             {
-                if (int.TryParse(line[6..].TrimStart(), out var retryMs))
-                    retry = retryMs;
+                retry = retryMs;
             }
         }
     }

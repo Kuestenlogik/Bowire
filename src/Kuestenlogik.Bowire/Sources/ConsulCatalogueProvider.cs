@@ -141,11 +141,9 @@ public sealed class ConsulCatalogueProvider : IBowireCatalogueProvider
             // Optional tag filter — applied here on the cheap tag
             // list to avoid the per-service detail fetch for
             // services we wouldn't surface anyway.
-            if (!string.IsNullOrWhiteSpace(options.Tag))
-            {
-                if (tags is null || !tags.Contains(options.Tag, StringComparer.OrdinalIgnoreCase))
-                    continue;
-            }
+            if (!string.IsNullOrWhiteSpace(options.Tag)
+                && (tags is null || !tags.Contains(options.Tag, StringComparer.OrdinalIgnoreCase)))
+                continue;
 
             var detailUrl = new Uri($"{address}/v1/catalog/service/{Uri.EscapeDataString(name)}{dcSuffix}");
             List<ConsulServiceInstance>? detail;
