@@ -126,12 +126,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
-**23/24 done** · 1 backlog
+**24/24 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [35](https://github.com/Kuestenlogik/Bowire/issues/35) | Bowire | [Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)](#issue-kuestenlogik-bowire-35) | ⬜ Backlog | `area:security` |
 | [26](https://github.com/Kuestenlogik/Bowire/issues/26) | Bowire | [Security testing tool — remaining tiers](#issue-kuestenlogik-bowire-26) | ✅ Done | `area:security` |
+| [35](https://github.com/Kuestenlogik/Bowire/issues/35) | Bowire | [Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)](#issue-kuestenlogik-bowire-35) | ✅ Done | `area:security` |
 | [39](https://github.com/Kuestenlogik/Bowire/issues/39) | Bowire | [HAR Import polish](#issue-kuestenlogik-bowire-39) | ✅ Done | `area:workbench` |
 | [102](https://github.com/Kuestenlogik/Bowire/issues/102) | Bowire | [Monitoring â€” scheduled probes + alerting (Postman Monitors / Synthetics analog)](#issue-kuestenlogik-bowire-102) | ✅ Done |  |
 | [104](https://github.com/Kuestenlogik/Bowire/issues/104) | Bowire | [AI security scan orchestration — one button chains threat-model → templates → fuzz → triage → report](#issue-kuestenlogik-bowire-104) | ✅ Done |  |
@@ -724,17 +724,17 @@ Discovered during the #346 second-pass fix. Separate bug — same morphdom-stale
 
 ### v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording *(due 2026-07-24)*
 
-#### <a id="issue-kuestenlogik-bowire-35"></a>⬜ Backlog · [#35](https://github.com/Kuestenlogik/Bowire/issues/35) Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)
-
-> `area:security`
-
-Phase 2a-2e shipped (reader + matcher translation + variable substitution + multi-path + ScanCommand integration). Optional follow-ups: [[more]](https://github.com/Kuestenlogik/Bowire/issues/35)
-
 #### <a id="issue-kuestenlogik-bowire-26"></a>✅ Done · [#26](https://github.com/Kuestenlogik/Bowire/issues/26) Security testing tool — remaining tiers
 
 > `area:security`
 
 ADR: [`docs/architecture/security-testing.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/security-testing.md) [[more]](https://github.com/Kuestenlogik/Bowire/issues/26)
+
+#### <a id="issue-kuestenlogik-bowire-35"></a>✅ Done · [#35](https://github.com/Kuestenlogik/Bowire/issues/35) Nuclei template compat — OAST + non-HTTP transports (Phase 2f + 2g)
+
+> `area:security`
+
+Phases 2a–2e shipped (reader + matcher translation + variable substitution + multi-path + `ScanCommand` integration). [[more]](https://github.com/Kuestenlogik/Bowire/issues/35)
 
 #### <a id="issue-kuestenlogik-bowire-39"></a>✅ Done · [#39](https://github.com/Kuestenlogik/Bowire/issues/39) HAR Import polish
 
