@@ -102,19 +102,19 @@ docker run --rm -v ~/.bowire:/home/app/.bowire \
 
 `Bundle.Workbench` references the package transitively in v2.1, so the standalone Tool already ships the widget — the explicit install is only needed for embedded hosts that drop the bundle.
 
-## Demo against Sample.TacticalApi
+## Demo against TacticalApi.RadarSweep
 
-The `Sample.TacticalApi` server (`samples/TacticalApi/`) hosts Rheinmetall's `Situation` gRPC service with eight NATO-phonetic-callsign tactical entities (Alpha-1 Recon UAV, Bravo-2 Air Defence Battery, ...) drifting on a per-object sine wave so subscriptions feel live. The TacticalAPI payload uses the `{latitudeCoordinate, longitudeCoordinate}` shape, which the detector matches out of the box.
+The `TacticalApi.RadarSweep` sample server hosts Rheinmetall's `Situation` gRPC service with three MIL-2525C contacts orbiting a radar centre at 54.00°N / 11.50°E (off the German Baltic coast) so subscriptions feel live. It lives in the [`Bowire.Samples`](https://github.com/Kuestenlogik/Bowire.Samples) repo (`protocols/TacticalApi.RadarSweep`) and fetches the upstream `.proto` at build time, so it stays free of a dependency back on the plugin package. The TacticalAPI payload uses the `{latitudeCoordinate, longitudeCoordinate}` shape, which the detector matches out of the box.
 
-Start the sample, point Bowire at `http://localhost:5182`, invoke `Situation.ListEntities` — you'll see eight pins, one per entity. Subscribe to `Situation.StreamUpdates` and the pins move in real time as the server pushes positions.
+Run it from a `Bowire.Samples` checkout (`dotnet run --project protocols/TacticalApi.RadarSweep`), point Bowire at `http://localhost:5191`, invoke `Situation.GetSituationObjects` — you'll see three pins, one per contact. Subscribe to `Situation.SubscribeSituationObjectEvents` and the pins move in real time as the server pushes fresh snapshots.
 
 `Bundle.Workbench` ships the `Kuestenlogik.Bowire.Protocol.TacticalApi` plugin so the gRPC method names + descriptors resolve without separate proto uploads.
 
 ## Screenshot
 
-![Map widget — eight pins from Sample.TacticalApi rendered on MapLibre](../images/screenshots/map-widget-pins.png)
+![Map widget — TacticalApi contacts rendered on MapLibre](../images/screenshots/map-widget-pins.png)
 
-<!-- TODO: capture map-widget screenshot — needs Sample.Embedded boot-error fixed (ReferenceError: loadFlows is not defined) OR capture against Sample.TacticalApi via gRPC-Web shim. -->
+<!-- TODO: capture map-widget screenshot — capture against the Bowire.Samples TacticalApi.RadarSweep server (http://localhost:5191) via the gRPC-Web shim. -->
 
 ## Edge cases
 
