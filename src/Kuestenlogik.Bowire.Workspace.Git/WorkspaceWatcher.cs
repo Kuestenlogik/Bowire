@@ -84,13 +84,10 @@ public sealed class WorkspaceWatcher : IAsyncDisposable
     internal void Unsubscribe(string normalisedRoot, ChannelWriter<WorkspaceFileEvent> writer)
     {
         if (!_bindings.TryGetValue(normalisedRoot, out var binding)) return;
-        if (binding.RemoveSubscriber(writer))
+        // Last subscriber on this root — tear down the watcher.
+        if (binding.RemoveSubscriber(writer) && _bindings.TryRemove(normalisedRoot, out var removed))
         {
-            // Last subscriber on this root — tear down the watcher.
-            if (_bindings.TryRemove(normalisedRoot, out var removed))
-            {
-                removed.Dispose();
-            }
+            removed.Dispose();
         }
     }
 
