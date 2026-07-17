@@ -48,9 +48,9 @@
        minor changes — e.g. 1.x → 2.x. Per-release patch bumps happen
        on the git tag, not here. -->
   <PropertyGroup Condition="'$(IsPackable)' != 'false'">
-    <Version>2.2.1-dev</Version>
-    <AssemblyVersion>2.2.1</AssemblyVersion>
-    <FileVersion>2.2.1</FileVersion>
+    <Version>2.4.0-dev</Version>
+    <AssemblyVersion>2.4.0</AssemblyVersion>
+    <FileVersion>2.4.0</FileVersion>
   </PropertyGroup>
 
   <!-- Mark all Kuestenlogik.Bowire.Protocol.* projects as Bowire plugins so
