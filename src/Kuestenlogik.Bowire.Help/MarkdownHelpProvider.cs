@@ -112,7 +112,7 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
         foreach (var (id, topic) in _topics)
         {
             // Title-word bonus.
-            foreach (var term in terms.Where(t => topic.Title.Contains(t, StringComparison.OrdinalIgnoreCase)))
+            foreach (var _ in terms.Where(t => topic.Title.Contains(t, StringComparison.OrdinalIgnoreCase)))
             {
                 scores.TryGetValue(id, out var s);
                 scores[id] = s + 1;

@@ -234,7 +234,7 @@ internal static class BrowserUiHost
         // prefix would just be a wasted hop. Embedded callers keep the
         // default `/bowire` (or whatever pattern they pass) so they don't
         // collide with their own routes.
-        var bowire = app.MapBowire("/", options =>
+        app.MapBowire("/", options =>
         {
             options.Mode = Kuestenlogik.Bowire.BowireMode.Standalone;
             options.Title = ui.Title;

@@ -181,7 +181,7 @@ public static class BowireOastEndpoints
           .Append(' ').Append(ctx.Request.Protocol).Append('\n');
         foreach (var (name, values) in ctx.Request.Headers)
         {
-            sb.Append(name).Append(": ").Append(values.ToString()).Append('\n');
+            sb.Append(name).Append(": ").Append(values).Append('\n');
         }
 
         // Bodies are bounded: a catcher must not be turned into a memory sink
