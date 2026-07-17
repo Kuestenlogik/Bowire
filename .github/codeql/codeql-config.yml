@@ -64,3 +64,17 @@ paths-ignore:
   # Static site output (Jekyll-built HTML, downloaded MapLibre
   # bundle, demo videos) — generated artifacts, not source.
   - 'site/**'
+
+  # The runtime `wwwroot/bowire.js` is stitched at build time from the
+  # <BowireJsFragment> files in the .csproj. prologue.js OPENS the shared
+  # IIFE and init.js CLOSES it, so each is syntactically incomplete on its
+  # own (unbalanced `(function () { … })();`) and the JS extractor cannot
+  # parse it — surfacing as "Could not process some files due to syntax
+  # errors". Their `// @generated` header only suppresses query *results*,
+  # not the extraction diagnostic, so the two IIFE-boundary fragments must
+  # be excluded from extraction here. They are unparseable standalone and
+  # therefore aren't analysed today anyway — this only silences the noise.
+  # The middle fragments parse as top-level statements and stay analysed;
+  # the assembled bundle is what actually runs in the browser.
+  - 'src/Kuestenlogik.Bowire/wwwroot/js/prologue.js'
+  - 'src/Kuestenlogik.Bowire/wwwroot/js/init.js'
