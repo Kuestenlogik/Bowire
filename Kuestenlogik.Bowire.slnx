@@ -107,5 +107,6 @@
          for it (verified, exit 0) rather than the "Collection has no tests"
          the bare SidecarFake console exe above would trip. -->
     <Project Path="samples/Kuestenlogik.Bowire.Sample.Embedded/Kuestenlogik.Bowire.Sample.Embedded.csproj" />
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.Grpc/Kuestenlogik.Bowire.Sample.Grpc.csproj" />
   </Folder>
 </Solution>

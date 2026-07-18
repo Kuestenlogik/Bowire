@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Kuestenlogik.Bowire.Sample.Grpc</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <!-- Sample-app code, not a library: CA1515 (make types internal)
+         and CA1812 (uninstantiated internal class — the host activates
+         GreeterService via the gRPC routing) don't apply. CA1873 (defer
+         logger-argument evaluation) is overkill at this sample's volume. -->
+    <NoWarn>$(NoWarn);CA1515;CA1812;CA1873</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Embedded Bowire — the full workbench mounted at /bowire on this
+         very host. The gRPC plugin auto-registers via its
+         [BowireExtension] on assembly load, so referencing it is all it
+         takes for the workbench to drive gRPC targets. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Grpc\Kuestenlogik.Bowire.Protocol.Grpc.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The minimal gRPC Greeter server this sample also *is* — the
+         target the embedded workbench (and any external Bowire) points
+         at. Reflection is on so the plugin discovers the surface with no
+         .proto upload. Versions come from the repo's central package
+         management (Directory.Packages.props). -->
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.AspNetCore.Server.Reflection" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Protos\greeter.proto" GrpcServices="Server" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The local catalogue the embedded workbench reads on startup so
+         the Sources rail already lists this host over gRPC. Update (not
+         Include) — the Web SDK already globs .json as content. -->
+    <Content Update="grpc-catalogue.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
