@@ -98,4 +98,14 @@
          it in via a ProjectReference (ReferenceOutputAssembly=false), and
          the integration test locates the built exe under artifacts/bin. -->
   </Folder>
+  <Folder Name="/samples/">
+    <!-- In-repo sample hosts. They live here (not only in Bowire.Samples) so
+         a doc-anchoring sample stays next to its docs and doubles as a local
+         manual-test target when no public server is handy — and, as solution
+         members, CI builds them so they can't silently rot. A Web-host sample
+         carries no test framework, so `dotnet test <slnx>` returns cleanly
+         for it (verified, exit 0) rather than the "Collection has no tests"
+         the bare SidecarFake console exe above would trip. -->
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.Embedded/Kuestenlogik.Bowire.Sample.Embedded.csproj" />
+  </Folder>
 </Solution>
