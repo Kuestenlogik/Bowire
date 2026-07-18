@@ -185,15 +185,17 @@ If you'd rather poke at a real-world API before standing up your own host, these
 
 `httpbin.org/delay/{n}` returns after exactly *n* seconds; combine it with the Benchmarks rail's concurrency setting to see p50/p95 behaviour change as you fan out. `httpbin.org/status/500` produces a deterministic error stream for testing your error-handling assertions.
 
-> These are third-party services that may rate-limit, slow down, or disappear without notice. Treat them as convenience for getting started — for sustained testing, run [`Bowire.Samples/SimpleRest/`](#sample) locally.
+> These are third-party services that may rate-limit, slow down, or disappear without notice. Treat them as convenience for getting started — for sustained testing, run the [combined REST sample](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.Rest) locally.
 
 ## Sample
 
-`Bowire.Samples/SimpleRest/` is a Minimal API host with `Microsoft.AspNetCore.OpenApi`, three tags (`Todos`, `Tags`, `Legacy`), all five common verbs, a deprecated endpoint, and `app.MapBowire()` for embedded discovery. Run it:
+[`samples/Kuestenlogik.Bowire.Sample.Rest`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.Rest) is a combined "server + embedded workbench" sample: one Minimal API host with a .NET 10 native OpenAPI document, backed by an in-memory pet store (`GET /pets`, `GET /pets/{id}`, `POST /pets`, `DELETE /pets/{id}`). It calls `app.MapBowire("/bowire")`, so a single project demonstrates both ways Bowire meets a REST service. Run it:
 
 ```bash
-cd Bowire.Samples
-dotnet run --project src/SimpleRest
+dotnet run --project samples/Kuestenlogik.Bowire.Sample.Rest
 ```
 
-Then open <http://localhost:5006/bowire> and you'll see Todos, Tags, and Legacy in the sidebar with no further configuration.
+The server listens on <http://localhost:5181> (OpenAPI at `/openapi/v1.json`), and you can drive it either way:
+
+- **Embedded** — open <http://localhost:5181/bowire>; the pet-store operations are already in the Sources rail via embedded discovery, no configuration needed.
+- **Separate** — point the standalone tool at the same server with `bowire --url rest@http://localhost:5181`.

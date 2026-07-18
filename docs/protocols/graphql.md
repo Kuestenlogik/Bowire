@@ -103,22 +103,30 @@ bowire --url https://countries.trevorblades.com/graphql
 
 Bowire sends the canonical introspection query, rebuilds the schema, and the **Query** + **Mutation** services show up in the sidebar.
 
-> These are third-party services that may rate-limit, slow down, or disappear without notice. Treat them as convenience for getting started — for sustained testing, run [`Bowire.Samples/SimpleGraphQL`](#sample) locally.
+> These are third-party services that may rate-limit, slow down, or disappear without notice. Treat them as convenience for getting started — for sustained testing, run the [GraphQL sample](#sample) locally.
 
 ## Sample
 
-`Bowire.Samples/SimpleGraphQL` is a hand-rolled minimal introspection-capable server (no HotChocolate / no graphql-dotnet). It exposes:
+[`samples/Kuestenlogik.Bowire.Sample.GraphQL`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.GraphQL) is a HotChocolate **Books** server (Query + Mutation + Subscription) that doubles as both stories from a single project. It exposes:
 
-- `Query.getBook(id: ID!): Book`
-- `Query.listBooks: [Book!]!`
-- `Mutation.addBook(title, author, year): Book`
-- A `Book` object type with `id`, `title`, `author`, `year`
+- `Query.books: [Book!]!` and `Query.bookById(id: Int!): Book`
+- `Mutation.addBook(title, author): Book`
+- `Subscription.bookAdded: Book` — pushes every newly-added book over the WebSocket transport
+- A `Book` object type with `id`, `title`, `author`
 
-Run on port 5008:
+Run on port 5183:
 
 ```bash
-dotnet run --project src/SimpleGraphQL
-bowire --url http://localhost:5008/graphql
+dotnet run --project samples/Kuestenlogik.Bowire.Sample.GraphQL
 ```
+
+- **Embedded** — the workbench is mounted at `/bowire` in the same process, with the `Books` endpoint already seeded into the Sources rail. Open <http://localhost:5183/bowire>.
+- **Separate target** — it's a real GraphQL server, so point the standalone tool (or any external workbench) at it:
+
+  ```bash
+  bowire --url graphql@http://localhost:5183/graphql
+  ```
+
+Try `subscription { bookAdded { id title author } }`, then an `addBook` mutation, to watch the subscription push over WebSockets.
 
 See also: [Quick Start](../setup/index.md), [Plugin System](../features/plugin-system.md)
