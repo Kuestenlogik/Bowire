@@ -54,4 +54,4 @@ JSON-RPC 2.0 has no streaming primitive — `InvokeStreamAsync` always returns a
 
 ## Sample
 
-A runnable sample lives at [`Bowire.Samples/protocols/JsonRpc.Math`](https://github.com/Kuestenlogik/Bowire.Samples/tree/main/protocols/JsonRpc.Math) — `add` / `subtract` / `divide` with full `rpc.discover`.
+A runnable sample lives at [`samples/Kuestenlogik.Bowire.Sample.JsonRpc`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.JsonRpc) — `add` / `subtract` / `divide` with full `rpc.discover`. It doubles as an embedded host: `dotnet run` and open <http://localhost:5187/bowire>, or point an external workbench at `http://localhost:5187/rpc`.
