@@ -58,4 +58,4 @@ Same JSON → UTF-8 → hex fallback chain Bowire uses for MQTT.
 
 ## Sample
 
-A docker-compose NATS broker (with JetStream) lives at [`Bowire.Samples/protocols/Nats`](https://github.com/Kuestenlogik/Bowire.Samples/tree/main/protocols/Nats) — `docker compose up`, point Bowire at `nats://localhost:4222`.
+A combined sample lives at [`samples/Kuestenlogik.Bowire.Sample.Nats`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.Nats) — it mounts the embedded workbench at `/bowire` and runs a resilient publisher on `bowire.sample`, pointed at an external NATS broker (its own `docker-compose.yml`, JetStream on `:4222`). `docker compose up`, then `dotnet run`, and open <http://localhost:5193/bowire> — or point a separate workbench at `nats://localhost:4222`. (The host starts even before the broker is up; the subject lights up once it appears.)
