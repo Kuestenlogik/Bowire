@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "url": "http://localhost:5184/chathub",
+      "name": "Chat hub (this host)",
+      "protocols": ["signalr"],
+      "tags": ["sample", "signalr"]
+    }
+  ]
+}

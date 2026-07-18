@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "url": "http://localhost:5187/rpc",
+      "name": "Math (this host)",
+      "protocols": ["jsonrpc"],
+      "tags": ["sample", "jsonrpc"]
+    }
+  ]
+}

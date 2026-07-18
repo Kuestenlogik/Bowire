@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "url": "ws://localhost:5185/ws",
+      "name": "Echo (this host)",
+      "protocols": ["websocket"],
+      "tags": ["sample", "websocket"]
+    }
+  ]
+}

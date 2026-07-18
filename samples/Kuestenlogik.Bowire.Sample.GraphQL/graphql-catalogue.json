@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "url": "http://localhost:5183/graphql",
+      "name": "Books (this host)",
+      "protocols": ["graphql"],
+      "tags": ["sample", "graphql"]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "url": "http://localhost:5181",
+      "name": "Pet store (this host)",
+      "protocols": ["rest"],
+      "tags": ["sample", "rest"]
+    }
+  ]
+}

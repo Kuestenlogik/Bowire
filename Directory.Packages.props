@@ -85,6 +85,12 @@
          integration suite. Same 4.12.x line as the NATS sibling. -->
     <PackageVersion Include="Testcontainers.Pulsar" Version="4.13.0" />
     <PackageVersion Include="Microsoft.OData.Edm" Version="8.4.3" />
+    <!-- Microsoft.OData.Core — kept in lock-step with Edm above. The
+         GraphQL/OData sample (Kuestenlogik.Bowire.Sample.OData) hosts
+         Microsoft.AspNetCore.OData (server) next to the OData plugin
+         (which reads Edm 8.4.3); pinning Core to the matching 8.4.3
+         resolves the OData.Core-8.2.3-wants-Edm-8.2.3 conflict (NU1608). -->
+    <PackageVersion Include="Microsoft.OData.Core" Version="8.4.3" />
     <!-- Microsoft.AspNetCore.OData — used by the Bowire.Samples
          OData.Northwind demo (sibling repo, protocols/ axis). Kept
          here because legacy plugin code still references it; the
@@ -92,13 +98,20 @@
          in by any shipping plugin (Bowire.Protocol.OData consumes
          its own EDM reader, not the server stack). -->
     <PackageVersion Include="Microsoft.AspNetCore.OData" Version="9.4.0" />
-    <!-- HotChocolate.AspNetCore — used by the Bowire.Samples
-         GraphQL.Books demo (sibling repo, protocols/ axis).
-         Sample-only; the GraphQL plugin itself consumes plain
-         introspection JSON and doesn't pull HotChocolate in. -->
-    <!-- 15.1+ floor: 15.0 carried CVE GHSA-qr3m-xw4c-jqw3 in
-         HotChocolate.Language; 15.1 ships the fix. -->
-    <PackageVersion Include="HotChocolate.AspNetCore" Version="15.1.10" />
+    <!-- HotChocolate.AspNetCore — the GraphQL server behind
+         Kuestenlogik.Bowire.Sample.GraphQL. Sample-only; the GraphQL
+         plugin itself consumes plain introspection JSON and doesn't
+         pull HotChocolate in. -->
+    <!-- 15.1.14 floor: GHSA-qr3m-xw4c-jqw3 (critical) in
+         HotChocolate.Language affects >= 15.0.0, < 15.1.14; the fix
+         ships in 15.1.14. Earlier 15.1.x (e.g. 15.1.10) still trips the
+         NuGet audit. -->
+    <PackageVersion Include="HotChocolate.AspNetCore" Version="15.1.14" />
+    <!-- HotChocolate.Subscriptions.InMemory — the in-process pub/sub
+         backend behind the GraphQL sample's bookAdded subscription
+         (Kuestenlogik.Bowire.Sample.GraphQL). Sample-only, same as the
+         line above; kept on the 15.1.x floor for the same CVE reason. -->
+    <PackageVersion Include="HotChocolate.Subscriptions.InMemory" Version="15.1.14" />
     <PackageVersion Include="SocketIOClient" Version="4.0.4" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />

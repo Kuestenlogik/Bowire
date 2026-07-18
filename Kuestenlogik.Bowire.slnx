@@ -108,5 +108,14 @@
          the bare SidecarFake console exe above would trip. -->
     <Project Path="samples/Kuestenlogik.Bowire.Sample.Embedded/Kuestenlogik.Bowire.Sample.Embedded.csproj" />
     <Project Path="samples/Kuestenlogik.Bowire.Sample.Grpc/Kuestenlogik.Bowire.Sample.Grpc.csproj" />
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.GraphQL/Kuestenlogik.Bowire.Sample.GraphQL.csproj" />
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.JsonRpc/Kuestenlogik.Bowire.Sample.JsonRpc.csproj" />
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.Mcp/Kuestenlogik.Bowire.Sample.Mcp.csproj" />
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.OData/Kuestenlogik.Bowire.Sample.OData.csproj" />
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.Rest/Kuestenlogik.Bowire.Sample.Rest.csproj" />
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.SignalR/Kuestenlogik.Bowire.Sample.SignalR.csproj" />
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.Soap/Kuestenlogik.Bowire.Sample.Soap.csproj" />
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.Sse/Kuestenlogik.Bowire.Sample.Sse.csproj" />
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.WebSocket/Kuestenlogik.Bowire.Sample.WebSocket.csproj" />
   </Folder>
 </Solution>

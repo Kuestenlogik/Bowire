@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "url": "http://localhost:5190/mcp",
+      "name": "Sample tools (this host)",
+      "protocols": ["mcp"],
+      "tags": ["sample", "mcp"]
+    }
+  ]
+}

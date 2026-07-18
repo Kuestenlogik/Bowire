@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Kuestenlogik.Bowire.Sample.Mcp</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CA1515;CA1812;CA1873</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Embedded Bowire + the MCP plugin (auto-registers on load). -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mcp\Kuestenlogik.Bowire.Protocol.Mcp.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The MCP server this sample also *is* — the official C# SDK's
+         ASP.NET streamable-HTTP transport. Version from central PM. -->
+    <PackageReference Include="ModelContextProtocol.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="mcp-catalogue.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
