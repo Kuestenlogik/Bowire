@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "url": "http://localhost:5180/Calculator.asmx?wsdl",
+      "name": "Calculator (this host)",
+      "protocols": ["soap"],
+      "tags": ["sample", "soap"]
+    }
+  ]
+}

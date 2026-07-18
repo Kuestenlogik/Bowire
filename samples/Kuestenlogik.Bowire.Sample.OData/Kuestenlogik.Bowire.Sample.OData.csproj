@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Kuestenlogik.Bowire.Sample.OData</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CA1515;CA1812;CA1873</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Embedded Bowire + the OData plugin (auto-registers on load). -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.OData\Kuestenlogik.Bowire.Protocol.OData.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The OData v4 server this sample also *is* — /odata with $metadata.
+         Version from central package management. -->
+    <PackageReference Include="Microsoft.AspNetCore.OData" />
+    <!-- Align the OData stack: the embedded OData plugin reads Edm 8.4.3,
+         so pin Core to match (see Directory.Packages.props) and avoid the
+         AspNetCore.OData-transitive OData.Core 8.2.3 clash (NU1608). -->
+    <PackageReference Include="Microsoft.OData.Core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="odata-catalogue.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

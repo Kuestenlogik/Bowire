@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "url": "http://localhost:5186/events",
+      "name": "Ticker (this host)",
+      "protocols": ["sse"],
+      "tags": ["sample", "sse"]
+    }
+  ]
+}

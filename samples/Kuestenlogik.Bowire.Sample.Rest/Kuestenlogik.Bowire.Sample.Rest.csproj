@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Kuestenlogik.Bowire.Sample.Rest</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CA1515;CA1812;CA1873</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Embedded Bowire + the REST plugin (auto-registers on load). -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- .NET 10 native OpenAPI so the REST plugin finds a discovery
+         surface at /openapi/v1.json. Version from central package mgmt. -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="rest-catalogue.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

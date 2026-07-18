@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Kuestenlogik.Bowire.Sample.GraphQL</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <!-- Sample-app code, not a library: CA1515 (internal types) / CA1812
+         (uninstantiated internal) / CA1873 (defer logger args) don't apply.
+         CA1822: HotChocolate resolver methods are invoked on an instance
+         of the query/mutation/subscription type — instance is idiomatic. -->
+    <NoWarn>$(NoWarn);CA1515;CA1812;CA1873;CA1822</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Embedded Bowire + the GraphQL plugin (auto-registers via its
+         [BowireExtension] on assembly load). -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.GraphQL\Kuestenlogik.Bowire.Protocol.GraphQL.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The GraphQL server this sample also *is*. HotChocolate publishes
+         the schema (+ introspection) at /graphql; Subscriptions.InMemory
+         backs the bookAdded subscription. Sample-only — the plugin speaks
+         plain introspection. Versions from central package management. -->
+    <PackageReference Include="HotChocolate.AspNetCore" />
+    <PackageReference Include="HotChocolate.Subscriptions.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="graphql-catalogue.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

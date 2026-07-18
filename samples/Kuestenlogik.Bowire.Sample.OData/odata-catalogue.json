@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "url": "http://localhost:5188/odata",
+      "name": "Northwind (this host)",
+      "protocols": ["odata"],
+      "tags": ["sample", "odata"]
+    }
+  ]
+}
