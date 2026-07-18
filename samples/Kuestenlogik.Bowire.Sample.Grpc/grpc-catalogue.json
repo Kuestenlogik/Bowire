@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "url": "http://localhost:5182",
+      "name": "Greeter (this host)",
+      "protocols": ["grpc"],
+      "tags": ["sample", "grpc"]
+    }
+  ]
+}
