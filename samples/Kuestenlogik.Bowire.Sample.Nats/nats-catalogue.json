@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "url": "nats://localhost:4222",
+      "name": "Sample broker",
+      "protocols": ["nats"],
+      "tags": ["sample", "nats"]
+    }
+  ]
+}

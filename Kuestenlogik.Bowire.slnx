@@ -117,5 +117,8 @@
     <Project Path="samples/Kuestenlogik.Bowire.Sample.Soap/Kuestenlogik.Bowire.Sample.Soap.csproj" />
     <Project Path="samples/Kuestenlogik.Bowire.Sample.Sse/Kuestenlogik.Bowire.Sample.Sse.csproj" />
     <Project Path="samples/Kuestenlogik.Bowire.Sample.WebSocket/Kuestenlogik.Bowire.Sample.WebSocket.csproj" />
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.Mqtt/Kuestenlogik.Bowire.Sample.Mqtt.csproj" />
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.Nats/Kuestenlogik.Bowire.Sample.Nats.csproj" />
+    <Project Path="samples/Kuestenlogik.Bowire.Sample.Pulsar/Kuestenlogik.Bowire.Sample.Pulsar.csproj" />
   </Folder>
 </Solution>

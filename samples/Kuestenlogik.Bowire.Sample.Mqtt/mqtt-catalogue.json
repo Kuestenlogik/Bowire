@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "url": "mqtt://localhost:1883",
+      "name": "Sensor broker (this host)",
+      "protocols": ["mqtt"],
+      "tags": ["sample", "mqtt"]
+    }
+  ]
+}

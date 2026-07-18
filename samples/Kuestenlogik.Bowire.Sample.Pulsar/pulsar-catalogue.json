@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "url": "pulsar://localhost:6650",
+      "name": "Sample broker",
+      "protocols": ["pulsar"],
+      "tags": ["sample", "pulsar"]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+# Apache Pulsar standalone for the Bowire Pulsar plugin demo.
+# Brings up a single-node broker on the default ports:
+#   6650 — binary protocol (pulsar://)
+#   8080 — HTTP admin (used by the plugin's topic-discovery scan)
+#
+# Run with: docker compose up
+# Tear down with: docker compose down -v
+services:
+  pulsar:
+    image: apachepulsar/pulsar:3.3.0
+    container_name: bowire-sample-pulsar
+    command: bin/pulsar standalone
+    ports:
+      - "6650:6650"
+      - "8080:8080"
+    environment:
+      PULSAR_MEM: -Xms512m -Xmx512m -XX:MaxDirectMemorySize=256m
+    healthcheck:
+      test: ["CMD-SHELL", "bin/pulsar-admin clusters list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
