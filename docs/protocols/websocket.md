@@ -109,18 +109,19 @@ The negotiated sub-protocol from the server's response is available on the under
 
 ## Sample
 
-`Bowire.Samples/SimpleWebSocket` runs two trivial echo endpoints on port 5009:
-
-| Path | Behaviour |
-|------|-----------|
-| `/ws/echo` | Echoes every text frame back, prefixed with `echo: ` |
-| `/ws/binary` | Receives binary frames, replies with a text frame containing the byte count + base64 dump |
+[`samples/Kuestenlogik.Bowire.Sample.WebSocket`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.WebSocket) is a combined server + embedded-workbench sample. It runs a WebSocket echo endpoint at `/ws` on port 5185 — every text frame is echoed back prefixed with `echo: ` — and mounts the embedded Bowire workbench at `/bowire`, with the endpoint pre-seeded into the Sources rail, so the one project demonstrates both ways Bowire meets a WebSocket service.
 
 Run it:
 
 ```bash
-dotnet run --project src/SimpleWebSocket
-bowire --url ws://localhost:5009/ws/echo
+dotnet run --project samples/Kuestenlogik.Bowire.Sample.WebSocket
 ```
+
+- **Embedded** — open <http://localhost:5185/bowire>; the `/ws` echo endpoint is already in the Sources rail.
+- **Separate target** — point the standalone CLI at the running server:
+
+  ```bash
+  bowire --url websocket@ws://localhost:5185/ws
+  ```
 
 See also: [Quick Start](../setup/index.md), [Plugin System](../features/plugin-system.md)

@@ -38,17 +38,18 @@ Tool input schemas (`inputSchema`, JSON Schema with `type: "object"`) are mapped
 
 ### Sample target
 
-`Bowire.Samples/SimpleMcp` is a hand-rolled JSON-RPC 2.0 MCP server (no Bowire / no gRPC dependency) running on port 5003. It exposes:
+[`samples/Kuestenlogik.Bowire.Sample.Mcp`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.Mcp) is a combined sample — one project that both serves MCP over the official C# SDK's streamable-HTTP transport (message endpoint `http://localhost:5190/mcp`) **and** mounts the embedded workbench at `/bowire`. It exposes two tools:
 
-- **Tools** — `echo`, `add`, `weather`
-- **Resources** — `notes://welcome`, `notes://changelog`
-- **Prompts** — `greet` (with `name` and optional `language` arguments)
+- **Tools** — `echo` (echoes the input text) and `add` (adds two integers)
 
-Run it and point Bowire at it:
+Because it plays both roles at once, you can reach it either way:
+
+- **Embedded** — open <http://localhost:5190/bowire>; the bundled catalogue already seeds the Sources rail with this host's own `/mcp` endpoint.
+- **Separate** — point a standalone Bowire client at the same server with `bowire --url mcp@…`.
 
 ```bash
-dotnet run --project src/SimpleMcp
-bowire --url http://localhost:5003/mcp
+dotnet run --project samples/Kuestenlogik.Bowire.Sample.Mcp
+bowire --url mcp@http://localhost:5190/mcp
 ```
 
 ### Transport notes
