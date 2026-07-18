@@ -60,3 +60,10 @@ MQTT payloads are binary. Bowire tries three strategies:
 - `mqtts://host:8883` (TLS)
 - `tcp://host:1883`
 - `host:1883` (scheme optional)
+
+## Sample
+
+[`samples/Kuestenlogik.Bowire.Sample.Mqtt`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.Mqtt) is a **fully self-contained** demo — no docker. MQTTnet ships a pure-.NET embeddable broker, so one project runs the broker (`:1883`), a publisher emitting one retained reading per second on `bowire/sample/sensor`, **and** the embedded workbench at `/bowire`. Run it with `dotnet run`, then reach it either way:
+
+- **Embedded** — open <http://localhost:5192/bowire>; the broker is already in the Sources rail.
+- **Separate** — point a standalone workbench at the broker with `bowire --url mqtt://localhost:1883`.

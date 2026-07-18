@@ -68,4 +68,4 @@ Short names get expanded into Pulsar's fully-qualified form:
 
 ## Sample
 
-A docker-compose Pulsar broker + .NET producer that publishes one message per second to a demo topic lives at [`Bowire.Samples/protocols/Pulsar`](https://github.com/Kuestenlogik/Bowire.Samples/tree/main/protocols/Pulsar) (broker) + [`Bowire.Samples/protocols/Pulsar.Producer`](https://github.com/Kuestenlogik/Bowire.Samples/tree/main/protocols/Pulsar.Producer) (producer).
+A combined sample lives at [`samples/Kuestenlogik.Bowire.Sample.Pulsar`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.Pulsar) — it mounts the embedded workbench at `/bowire` and runs a resilient producer publishing one message per second to `persistent://public/default/bowire-sample`, pointed at an external Pulsar broker (its own `docker-compose.yml`, broker `:6650` + admin `:8080`). `docker compose up`, then `dotnet run`, and open <http://localhost:5194/bowire> — or point a separate workbench at `pulsar://localhost:6650`. (The host starts even before the broker is up; the topic lights up once it appears.)
