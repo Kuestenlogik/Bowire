@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Kuestenlogik.Bowire.Sample.Mqtt</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CA1515;CA1812;CA1873</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Embedded Bowire + the MQTT plugin (auto-registers on load). -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Mqtt\Kuestenlogik.Bowire.Protocol.Mqtt.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Unlike NATS/Pulsar, MQTT has a pure-.NET embeddable broker
+         (MQTTnet.Server), so this sample is fully self-contained — the
+         broker, the publisher and the workbench all run in-process; no
+         docker required. Versions from central package management. -->
+    <PackageReference Include="MQTTnet" />
+    <PackageReference Include="MQTTnet.Server" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="mqtt-catalogue.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
