@@ -55,7 +55,7 @@ jobs:
       # `init` step picks the toolchain.
       - name: Setup .NET (csharp only)
         if: matrix.language == 'csharp'
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
 
