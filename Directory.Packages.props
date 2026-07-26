@@ -84,7 +84,7 @@
          broker for the Bowire Pulsar plugin's live produce/subscribe
          integration suite. Same 4.12.x line as the NATS sibling. -->
     <PackageVersion Include="Testcontainers.Pulsar" Version="4.13.0" />
-    <PackageVersion Include="Microsoft.OData.Edm" Version="8.4.3" />
+    <PackageVersion Include="Microsoft.OData.Edm" Version="8.4.4" />
     <!-- Microsoft.OData.Core — kept in lock-step with Edm above. The
          GraphQL/OData sample (Kuestenlogik.Bowire.Sample.OData) hosts
          Microsoft.AspNetCore.OData (server) next to the OData plugin
