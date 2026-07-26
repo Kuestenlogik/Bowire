@@ -90,7 +90,7 @@
          Microsoft.AspNetCore.OData (server) next to the OData plugin
          (which reads Edm 8.4.3); pinning Core to the matching 8.4.3
          resolves the OData.Core-8.2.3-wants-Edm-8.2.3 conflict (NU1608). -->
-    <PackageVersion Include="Microsoft.OData.Core" Version="8.4.3" />
+    <PackageVersion Include="Microsoft.OData.Core" Version="8.4.4" />
     <!-- Microsoft.AspNetCore.OData — used by the Bowire.Samples
          OData.Northwind demo (sibling repo, protocols/ axis). Kept
          here because legacy plugin code still references it; the
