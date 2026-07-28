@@ -73,16 +73,99 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
         _http = BowireHttpClientFactory.Create(config, Id, TimeSpan.FromHours(1));
     }
 
+    /// <summary>
+    /// Side-channel marker the discovery endpoint appends to the URL when
+    /// the caller explicitly hinted <c>sse@…</c>. DiscoverAsync has no
+    /// hint parameter, and the ad-hoc fallback below must never fire on
+    /// the hint-less all-plugins fan-out (any URL that happens to answer
+    /// text/event-stream — legacy MCP SSE transport, graphql-sse — would
+    /// grow a phantom "SSE Endpoints" service next to the owning
+    /// plugin's real one). Mirrors the gRPC transport marker; must stay
+    /// aligned with the literal in BowireDiscoveryEndpoints.
+    /// </summary>
+    internal const string AdHocHintMarker = "__bowireSseAdHoc=1";
+
     /// <inheritdoc />
-    public Task<List<BowireServiceInfo>> DiscoverAsync(
+    public async Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
     {
+        // Strip the hint marker before anything else touches the URL —
+        // the self-origin check, the probe, OriginUrl and the ad-hoc
+        // method path must all see the clean URL.
+        var hinted = false;
+        if (!string.IsNullOrEmpty(serverUrl))
+        {
+            var marked = serverUrl;
+            serverUrl = serverUrl
+                .Replace("?" + AdHocHintMarker, "", StringComparison.Ordinal)
+                .Replace("&" + AdHocHintMarker, "", StringComparison.Ordinal);
+            hinted = marked.Length != serverUrl.Length;
+        }
+
         // serverUrl threaded into Discover so the self-origin gate inside
         // can decide whether to scan the local EndpointDataSource — see
         // the comment block on SseEndpointDiscovery.Discover.
         var services = SseEndpointDiscovery.Discover(s_registeredEndpoints, _serviceProvider, serverUrl);
-        return Task.FromResult(services);
+
+        // Separate-target mode (`bowire --url sse@https://host/stream`):
+        // the local-endpoint scan above is self-origin-gated, so an
+        // external URL yields nothing even though the plugin ran — the
+        // documented standalone flow dead-ended in a 502. Mirror the
+        // WebSocket plugin's ad-hoc fallback; but SSE has no dedicated
+        // URI scheme to key on, so this only runs for an explicit sse@
+        // hint AND only after the server confirms it actually speaks
+        // text/event-stream.
+        if (hinted
+            && services.Count == 0
+            && IsHttpUrl(serverUrl)
+            && !Helpers.SelfOriginCheck.IsSelfOrigin(serverUrl, _serviceProvider)
+            && await SpeaksEventStreamAsync(serverUrl, ct).ConfigureAwait(false))
+        {
+            services.Add(SseEndpointDiscovery.BuildAdHocService(serverUrl));
+        }
+
+        foreach (var svc in services)
+            svc.OriginUrl ??= serverUrl;
+
+        return services;
     }
+
+    /// <summary>
+    /// Probes the URL with <c>Accept: text/event-stream</c> and reports
+    /// whether the server answers with an event-stream content type.
+    /// Headers-only read — SSE endpoints stream forever, so the body is
+    /// never awaited; disposing the response drops the connection.
+    /// </summary>
+    private async Task<bool> SpeaksEventStreamAsync(string serverUrl, CancellationToken ct)
+    {
+        try
+        {
+            // Own deadline: _http.Timeout is one hour (sized for the
+            // long-lived subscription streams), and not every discovery
+            // caller passes a bounded token — a header-stalling server
+            // must not wedge discovery.
+            using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            probeCts.CancelAfter(TimeSpan.FromSeconds(4));
+            using var request = new HttpRequestMessage(HttpMethod.Get, serverUrl);
+            request.Headers.Accept.ParseAdd("text/event-stream");
+            using var response = await _http.SendAsync(
+                request, HttpCompletionOption.ResponseHeadersRead, probeCts.Token).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                && string.Equals(
+                    response.Content.Headers.ContentType?.MediaType,
+                    "text/event-stream",
+                    StringComparison.OrdinalIgnoreCase);
+        }
+        catch (HttpRequestException) { return false; }
+        catch (OperationCanceledException) { return false; }
+        catch (UriFormatException) { return false; }
+        catch (InvalidOperationException) { return false; }
+    }
+
+    private static bool IsHttpUrl(string url) =>
+        !string.IsNullOrEmpty(url) &&
+        (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+         url.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
 
     /// <inheritdoc />
     public Task<InvokeResult> InvokeAsync(
@@ -172,7 +255,16 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
             path = method.StartsWith('/') ? method : "/" + method;
         }
 
-        var url = serverUrl.TrimEnd('/') + path;
+        // Ad-hoc separate-target case: the connection URL already IS the
+        // endpoint (the method path was derived from the URL itself) —
+        // appending it again would double the path. The leading '/' in
+        // `path` keeps this from matching partial segments; both sides
+        // are slash-trimmed because the ad-hoc path keeps the URL's
+        // trailing slash while serverUrl loses it here.
+        var trimmed = serverUrl.TrimEnd('/');
+        var url = trimmed.EndsWith(path.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
+            ? trimmed
+            : trimmed + path;
 
         // Allow URL override from the request body. The override is
         // only honoured when it's an absolute http(s) URL or a path
