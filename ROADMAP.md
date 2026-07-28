@@ -283,6 +283,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [488](https://github.com/Kuestenlogik/Bowire/issues/488) | Bowire | [RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench](#issue-kuestenlogik-bowire-488) | ⬜ Backlog |  |
 | [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog |  |
 | [529](https://github.com/Kuestenlogik/Bowire/issues/529) | Bowire | [OData plugin: EDM functions and actions are never discovered (class doc claims they are)](#issue-kuestenlogik-bowire-529) | ⬜ Backlog |  |
+| [534](https://github.com/Kuestenlogik/Bowire/issues/534) | Bowire | [Explain why discovery failed instead of just reporting 0 services](#issue-kuestenlogik-bowire-534) | ⬜ Backlog |  |
+| [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ⬜ Backlog |  |
+| [536](https://github.com/Kuestenlogik/Bowire/issues/536) | Bowire | [Offer next-step handoffs directly from a successful response](#issue-kuestenlogik-bowire-536) | ⬜ Backlog |  |
+| [537](https://github.com/Kuestenlogik/Bowire/issues/537) | Bowire | [Make the catalogue a primary entry point, not a side path](#issue-kuestenlogik-bowire-537) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1157,6 +1161,22 @@ The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the w
 #### <a id="issue-kuestenlogik-bowire-529"></a>⬜ Backlog · [#529](https://github.com/Kuestenlogik/Bowire/issues/529) OData plugin: EDM functions and actions are never discovered (class doc claims they are)
 
 `BowireODataProtocol.DiscoverAsync` emits exactly five methods per entity set — GET, GET_BY_KEY, POST, PATCH, DELETE. EDM **functions and actions** are parsed into the model but never surfaced, so they cannot be invoked from the workbench. [[more]](https://github.com/Kuestenlogik/Bowire/issues/529)
+
+#### <a id="issue-kuestenlogik-bowire-534"></a>⬜ Backlog · [#534](https://github.com/Kuestenlogik/Bowire/issues/534) Explain why discovery failed instead of just reporting 0 services
+
+The `attempts` data does exist server-side, but the claim that "the UI simply does not show it" understates the problem: the UI never even *reads* the body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/534)
+
+#### <a id="issue-kuestenlogik-bowire-535"></a>⬜ Backlog · [#535](https://github.com/Kuestenlogik/Bowire/issues/535) Embedded first run should land on Discover, not on a workspace-creation gate
+
+Feasible and small. Everything the proposal assumes already exists: `BowireOptions.AutoCreateInitialWorkspace` (BowireOptions.cs:133) is emitted into `window.__BOWIRE_CONFIG__` by BowireHtmlGenerator.cs:271 and consumed by the boot seed in prologue.js:1999-2017; embedded-vs-standalone is decided onc … [[more]](https://github.com/Kuestenlogik/Bowire/issues/535)
+
+#### <a id="issue-kuestenlogik-bowire-536"></a>⬜ Backlog · [#536](https://github.com/Kuestenlogik/Bowire/issues/536) Offer next-step handoffs directly from a successful response
+
+Every follow-up action the proposal names already exists as a callable function; what's missing is a path FROM the response. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/536)
+
+#### <a id="issue-kuestenlogik-bowire-537"></a>⬜ Backlog · [#537](https://github.com/Kuestenlogik/Bowire/issues/537) Make the catalogue a primary entry point, not a side path
+
+The catalogue seam is fully built server-side (IBowireCatalogueProvider + local/http/consul in core, kubernetes/agent as sibling packages, GET/POST /api/catalogue/{info,entries,refresh,config}, BowireCatalogueOverrideStore persisting ~/.bowire/catalogue-config.json) but is effectively invisible in t … [[more]](https://github.com/Kuestenlogik/Bowire/issues/537)
 
 ---
 
