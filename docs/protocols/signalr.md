@@ -52,9 +52,33 @@ Hub methods returning `IAsyncEnumerable<T>` or `ChannelReader<T>` are treated as
 
 Hub methods that accept `ChannelReader<T>` and return a streaming type support duplex communication via interactive channels.
 
+## Separate targets (`signalr@`)
+
+Method-level discovery needs the embedded endpoint metadata, but a
+standalone workbench can still drive a remote hub:
+
+```bash
+bowire --url signalr@https://api.example.com/hubs/chat
+```
+
+The plugin confirms hub-ness via the `negotiate` handshake and exposes an
+ad-hoc **SignalR Hub** service with two generic entry points — SignalR has
+no wire-level reflection, so you name the hub method yourself:
+
+- `invoke` -- calls a hub method once and returns its result.
+- `stream` -- subscribes to a streaming hub method.
+
+Both take the same payload: `method` (the hub method name) plus `args`,
+one JSON value per positional parameter (`42`, `"text"`, `{"x":1}` — bare
+words are sent as strings):
+
+```json
+{ "method": "Echo", "args": ["hello"] }
+```
+
 ## Limitations
 
-- **Embedded mode only** -- SignalR discovery requires access to the application's endpoint metadata, which is only available when Bowire runs inside the same process. Standalone mode does not support SignalR discovery.
+- **Method lists are embedded-only** -- the ad-hoc `signalr@` surface can call and stream, but listing a remote hub's methods is impossible without the in-process endpoint metadata; consult the target's own docs for method names.
 - **Hub methods only** -- broadcast methods invoked via `Clients.All.SendAsync()` are not discoverable because they are not defined on the hub class.
 
 ## Example

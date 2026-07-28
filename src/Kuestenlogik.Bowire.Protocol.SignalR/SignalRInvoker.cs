@@ -117,13 +117,23 @@ internal sealed class SignalRInvoker : IAsyncDisposable
         await _connection.StartAsync(ct);
     }
 
-    public async Task<InvokeResult> InvokeAsync(
+    public Task<InvokeResult> InvokeAsync(
         string method, List<string> jsonMessages, CancellationToken ct)
+        => InvokeWithArgsAsync(method, ParseArguments(jsonMessages), ct);
+
+    /// <summary>
+    /// Invoke with pre-built positional arguments. Used by the ad-hoc
+    /// separate-target path, which parses the hub method + args out of
+    /// its own payload shape and must NOT round-trip through
+    /// <see cref="ParseArguments"/> (whose single-object unfold would
+    /// split a lone complex argument into per-property args).
+    /// </summary>
+    public async Task<InvokeResult> InvokeWithArgsAsync(
+        string method, object?[] args, CancellationToken ct)
     {
         if (_connection is null)
             throw new InvalidOperationException("Not connected. Call ConnectAsync first.");
 
-        var args = ParseArguments(jsonMessages);
         var sw = Stopwatch.StartNew();
 
         try
@@ -151,14 +161,20 @@ internal sealed class SignalRInvoker : IAsyncDisposable
         }
     }
 
-    public async IAsyncEnumerable<string> StreamAsync(
-        string method, List<string> jsonMessages,
+    public IAsyncEnumerable<string> StreamAsync(
+        string method, List<string> jsonMessages, CancellationToken ct)
+        => StreamWithArgsAsync(method, ParseArguments(jsonMessages), ct);
+
+    /// <summary>
+    /// Streaming twin of <see cref="InvokeWithArgsAsync"/> — see there
+    /// for why the ad-hoc path bypasses <see cref="ParseArguments"/>.
+    /// </summary>
+    public async IAsyncEnumerable<string> StreamWithArgsAsync(
+        string method, object?[] args,
         [EnumeratorCancellation] CancellationToken ct)
     {
         if (_connection is null)
             throw new InvalidOperationException("Not connected. Call ConnectAsync first.");
-
-        var args = ParseArguments(jsonMessages);
 
         await foreach (var item in _connection.StreamAsyncCore<object?>(method, args, ct))
         {
@@ -235,7 +251,7 @@ internal sealed class SignalRInvoker : IAsyncDisposable
         }).ToArray();
     }
 
-    private static object? JsonElementToArg(JsonElement el) => el.ValueKind switch
+    internal static object? JsonElementToArg(JsonElement el) => el.ValueKind switch
     {
         JsonValueKind.String => el.GetString(),
         JsonValueKind.Number => el.TryGetInt64(out var i) ? i : el.GetDouble(),

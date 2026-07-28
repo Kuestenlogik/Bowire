@@ -24,8 +24,11 @@ dotnet run --project samples/Kuestenlogik.Bowire.Sample.SignalR
   bowire --url signalr@http://localhost:5184/chathub
   ```
 
-  > **Note:** SignalR has no wire-level reflection, so a *separate*
-  > workbench cannot list the hub's methods yet — hub discovery works
-  > in the embedded workbench, which scans this host's endpoint
-  > metadata. Standalone method-level support is tracked in the main
-  > repo's issues.
+  The workbench confirms the hub via the `negotiate` handshake and shows
+  an ad-hoc **SignalR Hub** service with generic `invoke` / `stream`
+  methods — SignalR has no wire-level reflection, so you name the hub
+  method in the payload. Try `Echo`:
+
+  ```json
+  { "method": "Echo", "args": ["hello"] }
+  ```
