@@ -181,7 +181,7 @@
          for the BYOK Claude path — Anthropic doesn't publish an
          official IChatClient binding yet. -->
     <PackageVersion Include="Anthropic.SDK" Version="5.10.0" />
-    <PackageVersion Include="OllamaSharp" Version="5.4.25" />
+    <PackageVersion Include="OllamaSharp" Version="5.4.30" />
     <!-- Markdig powers the in-app help search (#154 Phase 2) — the
          indexer walks parsed markdown to strip layout and code-block
          noise before tokenising. The on-the-wire body stays raw
