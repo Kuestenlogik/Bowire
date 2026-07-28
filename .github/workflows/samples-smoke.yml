@@ -1,0 +1,74 @@
+name: Samples smoke
+
+# Runs every sample and asserts that the workbench a user opens against
+# it actually works: the embedded UI is mounted, the catalogue's targets
+# are discoverable, and every discovered method can be invoked.
+#
+# The CI build only ever proved the samples COMPILE. A 2026-07 QA pass
+# found ten defects in samples and plugins that had been green for
+# months — every one of them needed the sample to run.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'samples/**'
+      - 'src/**'
+      - 'scripts/ci/smoke-samples.mjs'
+      - '.github/workflows/samples-smoke.yml'
+  pull_request:
+    paths:
+      - 'samples/**'
+      - 'src/**'
+      - 'scripts/ci/smoke-samples.mjs'
+      - '.github/workflows/samples-smoke.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: samples-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      # Only the sample projects and what they reference — the full
+      # solution (100+ projects incl. every test assembly) is the CI
+      # workflow's job, not this one.
+      - name: Build samples
+        run: |
+          set -euo pipefail
+          for proj in samples/Kuestenlogik.Bowire.Sample.*/*.csproj; do
+            echo "::group::$proj"
+            dotnet build "$proj" -c Release -m:1 -nodeReuse:false
+            echo "::endgroup::"
+          done
+
+      - name: Smoke-test samples
+        env:
+          BOWIRE_SMOKE_CONFIG: Release
+          # Samples bind fixed localhost ports; the runner has them free.
+          DOTNET_ENVIRONMENT: Production
+        run: node scripts/ci/smoke-samples.mjs
+
+      # The host logs a sample writes on failure are the fastest route to
+      # a diagnosis, and they are gone once the job ends.
+      - name: Upload sample logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: samples-smoke-logs
+          path: |
+            **/*.log
+          retention-days: 7
+          if-no-files-found: ignore
