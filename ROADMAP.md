@@ -282,6 +282,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ⬜ Backlog |  |
 | [488](https://github.com/Kuestenlogik/Bowire/issues/488) | Bowire | [RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench](#issue-kuestenlogik-bowire-488) | ⬜ Backlog |  |
 | [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog |  |
+| [514](https://github.com/Kuestenlogik/Bowire/issues/514) | Bowire | [REST plugin: embedded discovery crashes on duplicate operation keys (CacheEmbeddedSchemas ToDictionary)](#issue-kuestenlogik-bowire-514) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1152,6 +1153,10 @@ The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the w
 #### <a id="issue-kuestenlogik-bowire-489"></a>⬜ Backlog · [#489](https://github.com/Kuestenlogik/Bowire/issues/489) RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)
 
 > **Status: DRAFT / RFC — needs refinement before implementation.** Direction from the #486 discussion; specifics below are starting points. [[more]](https://github.com/Kuestenlogik/Bowire/issues/489)
+
+#### <a id="issue-kuestenlogik-bowire-514"></a>⬜ Backlog · [#514](https://github.com/Kuestenlogik/Bowire/issues/514) REST plugin: embedded discovery crashes on duplicate operation keys (CacheEmbeddedSchemas ToDictionary)
+
+Embedded discovery against a host that serves ASP.NET Core 10's `AddOpenApi()` document fails entirely: [[more]](https://github.com/Kuestenlogik/Bowire/issues/514)
 
 ---
 
