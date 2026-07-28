@@ -80,16 +80,16 @@ names use `camelCase` exactly as `[JsonPropertyName]` declares them.
 | `service` | `string` | yes | OpenAPI tag / gRPC service FQN / hub name / topic, depending on protocol. |
 | `method` | `string` | yes | Operation id / gRPC method / hub method / event name. |
 | `methodType` | `string` | yes | One of `Unary`, `ServerStreaming`, `ClientStreaming`, `Duplex`. |
-| `serverUrl` | `string` | no | Origin the step was captured against. Optional — `bowire mock` doesn't use it; downstream consumers might. |
+| `serverUrl` | `string` | no | Origin the step was captured against. `bowire mock` uses it to derive missing HTTP routing (see `httpPath`); downstream consumers might too. |
 | `body` | `string` | no | Primary request body (unary: full request; streaming: first message). |
 | `messages` | `array<string>` | no | All request messages in order. Single entry for unary; multiple for streaming. |
 | `metadata` | `object<string, string>` | no | Request headers / gRPC metadata. |
 | `status` | `string` | yes | `OK`, an HTTP code, or a gRPC status code. Default `OK`. |
 | `durationMs` | `long` | no | Wall-clock duration the original call took. The replayer ignores this unless `--replay-speed` is configured. |
 | `response` | `string` | no | **Inlined response body.** A standalone `.bwr` MUST inline this — the field is not allowed to be a `responseRef` content-address hash. |
-| `httpPath` | `string` | REST only | Path template the call was made against. |
-| `httpVerb` | `string` | REST only | HTTP verb. |
-| `responseBinary` | `string (base64)` | gRPC only | Raw wire bytes of the response message. Replayed byte-for-byte by the mock without a runtime protobuf encoder. Requires `recordingFormatVersion: 2`. |
+| `httpPath` | `string` | HTTP-routed protocols | Path template the call was made against. Optional for `graphql` / `sse` / `websocket` / `signalr` steps: when absent, the mock loader derives it from `serverUrl`'s path (with `POST` for GraphQL and `GET` for the other three) so lean recordings still match. |
+| `httpVerb` | `string` | HTTP-routed protocols | HTTP verb. Same derivation rule as `httpPath`. |
+| `responseBinary` | `string (base64)` | gRPC only | Raw wire bytes of the response message. Replayed byte-for-byte by the mock without a runtime protobuf encoder. Requires `recordingFormatVersion: 2`. **Without it a gRPC step cannot replay** (the mock logs this at startup) — the JSON `response` is display-only for gRPC. |
 | Additional step fields | … | … | See `BowireRecordingStep` in source for the full surface — streaming variants, capture-side metadata, semantic discriminators, etc. |
 
 ## Self-containment requirement

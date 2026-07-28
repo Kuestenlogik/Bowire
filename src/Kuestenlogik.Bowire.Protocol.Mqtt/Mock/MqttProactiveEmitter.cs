@@ -74,14 +74,81 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
     // interactive use.
     private static readonly TimeSpan s_startupGrace = TimeSpan.FromSeconds(2);
 
-    private async Task RunAsync(CancellationToken ct)
+    /// <summary>
+    /// One scheduled broker injection. Publish steps yield one emission
+    /// at their capture offset; subscription steps (ServerStreaming with
+    /// <c>receivedMessages</c>) yield one emission per captured frame —
+    /// the frames ARE the publishes the original broker delivered, so
+    /// replaying them is what makes a mock subscriber see the recorded
+    /// stream (#511).
+    /// </summary>
+    private sealed record Emission(
+        long OffsetMs,
+        string Topic,
+        string Payload,
+        IDictionary<string, string>? Metadata,
+        string StepId);
+
+    private List<Emission> BuildSchedule()
     {
-        var steps = _recording.Steps
-            .Where(IsMqttPublish)
+        var mqttSteps = _recording.Steps
+            .Where(s => string.Equals(s.Protocol, "mqtt", StringComparison.OrdinalIgnoreCase))
             .OrderBy(s => s.CapturedAt)
             .ToList();
+        if (mqttSteps.Count == 0) return [];
 
-        if (steps.Count == 0) return;
+        var baseCapturedAt = mqttSteps[0].CapturedAt;
+        var emissions = new List<Emission>();
+        foreach (var step in mqttSteps)
+        {
+            var stepOffset = step.CapturedAt - baseCapturedAt;
+            if (IsMqttPublish(step))
+            {
+                // Publish steps: step.method is the topic path.
+                if (string.IsNullOrEmpty(step.Method))
+                {
+                    _logger.LogWarning("Skipping MQTT step '{StepId}' — no topic on the 'method' field.", step.Id);
+                    continue;
+                }
+                var payload = step.Body ?? step.Messages.FirstOrDefault() ?? "{}";
+                emissions.Add(new Emission(stepOffset, step.Method, payload, step.Metadata, step.Id));
+            }
+            else if (string.Equals(step.MethodType, "ServerStreaming", StringComparison.OrdinalIgnoreCase)
+                && step.ReceivedMessages is { Count: > 0 } frames)
+            {
+                // Subscription steps: step.service carries the topic the
+                // client subscribed to (method is the synthetic
+                // "receive"/"subscribe" label).
+                var topic = !string.IsNullOrEmpty(step.Service) ? step.Service : step.Method;
+                if (string.IsNullOrEmpty(topic))
+                {
+                    _logger.LogWarning("Skipping MQTT step '{StepId}' — no topic on 'service' or 'method'.", step.Id);
+                    continue;
+                }
+                foreach (var frame in frames)
+                {
+                    var payload = FramePayload(frame);
+                    if (payload is null) continue;
+                    emissions.Add(new Emission(
+                        stepOffset + (frame.TimestampMs ?? 0), topic, payload, step.Metadata, step.Id));
+                }
+            }
+        }
+        return emissions.OrderBy(e => e.OffsetMs).ToList();
+    }
+
+    private static string? FramePayload(BowireRecordingFrame frame) => frame.Data switch
+    {
+        null => frame.Body,
+        string s => s,
+        System.Text.Json.JsonElement el => el.GetRawText(),
+        _ => System.Text.Json.JsonSerializer.Serialize(frame.Data),
+    };
+
+    private async Task RunAsync(CancellationToken ct)
+    {
+        var emissions = BuildSchedule();
+        if (emissions.Count == 0) return;
 
         // Wait for the first subscriber OR the backstop timeout. Either
         // way we proceed to emit — but the subscribe-triggered path
@@ -94,8 +161,6 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
         catch (TimeoutException) { /* nobody subscribed — fire anyway */ }
         catch (OperationCanceledException) { return; }
 
-        var baseCapturedAt = steps[0].CapturedAt;
-
         do
         {
             // Reset the wall-clock origin at the start of every loop
@@ -103,13 +168,13 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
             // zero, not from way-after-the-first-run's offsets.
             var scheduleStartTicks = Environment.TickCount64;
 
-            foreach (var step in steps)
+            foreach (var emission in emissions)
             {
                 ct.ThrowIfCancellationRequested();
 
                 if (_speed > 0)
                 {
-                    var targetOffsetMs = (long)((step.CapturedAt - baseCapturedAt) / _speed);
+                    var targetOffsetMs = (long)(emission.OffsetMs / _speed);
                     var elapsed = Environment.TickCount64 - scheduleStartTicks;
                     var waitMs = targetOffsetMs - elapsed;
                     if (waitMs > 0)
@@ -119,22 +184,17 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
                     }
                 }
 
-                await EmitAsync(step, ct);
+                await EmitAsync(emission, ct);
             }
         }
         while (_loop && !ct.IsCancellationRequested);
     }
 
-    private async Task EmitAsync(BowireRecordingStep step, CancellationToken ct)
+    private async Task EmitAsync(Emission emission, CancellationToken ct)
     {
         try
         {
-            var topic = step.Method; // MQTT plugin uses step.method as the topic path
-            if (string.IsNullOrEmpty(topic))
-            {
-                _logger.LogWarning("Skipping MQTT step '{StepId}' — no topic on the 'method' field.", step.Id);
-                return;
-            }
+            var topic = emission.Topic;
 
             // Apply the same dynamic-value substitution to the topic
             // that the payload already gets. Enables recorded topics
@@ -144,27 +204,26 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
             // the broker's native routing; no mock-side match needed.
             topic = Kuestenlogik.Bowire.Mock.Replay.ResponseBodySubstitutor.Substitute(topic);
 
-            var payload = step.Body ?? step.Messages.FirstOrDefault() ?? "{}";
             var payloadBytes = Encoding.UTF8.GetBytes(
-                Kuestenlogik.Bowire.Mock.Replay.ResponseBodySubstitutor.Substitute(payload));
+                Kuestenlogik.Bowire.Mock.Replay.ResponseBodySubstitutor.Substitute(emission.Payload));
 
             var qos = MqttQualityOfServiceLevel.AtLeastOnce;
             var retain = false;
-            if (step.Metadata is not null)
+            if (emission.Metadata is not null)
             {
-                if (step.Metadata.TryGetValue("qos", out var qosStr) &&
+                if (emission.Metadata.TryGetValue("qos", out var qosStr) &&
                     Enum.TryParse<MqttQualityOfServiceLevel>(qosStr, ignoreCase: true, out var q))
                 {
                     qos = q;
                 }
-                else if (step.Metadata.TryGetValue("qos", out qosStr) &&
+                else if (emission.Metadata.TryGetValue("qos", out qosStr) &&
                     int.TryParse(qosStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var qi) &&
                     qi is >= 0 and <= 2)
                 {
                     qos = (MqttQualityOfServiceLevel)qi;
                 }
 
-                if (step.Metadata.TryGetValue("retain", out var retainStr))
+                if (emission.Metadata.TryGetValue("retain", out var retainStr))
                     retain = string.Equals(retainStr, "true", StringComparison.OrdinalIgnoreCase);
             }
 
@@ -180,11 +239,11 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
 
             _logger.LogInformation(
                 "mqtt-emit(step={StepId}, topic={Topic}, qos={Qos}, retain={Retain}, bytes={Bytes})",
-                step.Id, LogSanitizer.Strip(topic), (int)qos, retain, payloadBytes.Length);
+                emission.StepId, LogSanitizer.Strip(topic), (int)qos, retain, payloadBytes.Length);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to inject MQTT message for step '{StepId}'; scheduler continues.", step.Id);
+            _logger.LogWarning(ex, "Failed to inject MQTT message for step '{StepId}'; scheduler continues.", emission.StepId);
         }
     }
 

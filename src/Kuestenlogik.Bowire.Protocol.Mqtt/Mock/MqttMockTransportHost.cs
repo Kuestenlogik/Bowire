@@ -35,12 +35,21 @@ public sealed class MqttMockTransportHost : IBowireMockTransportHost, IAsyncDisp
     public string Id => "mqtt";
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// ServerStreaming steps count too (#511): a captured MQTT
+    /// subscription carries the delivered publishes as
+    /// <c>receivedMessages</c> frames, and the proactive emitter
+    /// re-injects those into the broker on their recorded cadence —
+    /// without the broker a mock subscriber could never see them.
+    /// </remarks>
     public bool ShouldStart(BowireRecording recording) =>
         recording.Steps.Any(s =>
             string.Equals(s.Protocol, "mqtt", StringComparison.OrdinalIgnoreCase) &&
             (string.Equals(s.MethodType, "Unary", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(s.MethodType, "Duplex", StringComparison.OrdinalIgnoreCase) ||
-             string.Equals(s.MethodType, "ClientStreaming", StringComparison.OrdinalIgnoreCase)));
+             string.Equals(s.MethodType, "ClientStreaming", StringComparison.OrdinalIgnoreCase) ||
+             (string.Equals(s.MethodType, "ServerStreaming", StringComparison.OrdinalIgnoreCase) &&
+              s.ReceivedMessages is { Count: > 0 })));
 
     /// <inheritdoc/>
     public async Task<int> StartAsync(BowireRecording recording, MockTransportContext context, CancellationToken ct)

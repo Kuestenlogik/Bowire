@@ -87,6 +87,21 @@ public sealed class ExactMatcher : IMockMatcher
                 if (!MatchesSocketIoRequest(request)) continue;
                 baseScore = LiteralOrNonRestMatchScore;
             }
+            else if (IsGraphQlStep(candidate))
+            {
+                // GraphQL steps share one POST route (/graphql), so the
+                // verb+path axis alone can't tell portCall from ships.
+                // Rank by query affinity: byte-normalised equality beats
+                // root-field equality; a root-field CONFLICT (both sides
+                // parse, fields differ) disqualifies the step so a query
+                // for `ships` never gets the recorded `portCall` payload
+                // just because it hit the same endpoint first.
+                if (!MatchesRestVerbAndPath(candidate, request)) continue;
+                if (candidate.Match is { } gm && !MockMatchPredicates.AllPredicatesPass(gm, request)) continue;
+                var affinity = GraphQlQueryAffinity(candidate.Body, request.Body);
+                if (affinity < 0) continue;
+                baseScore = LiteralOrNonRestMatchScore + affinity;
+            }
             else
             {
                 if (!IsRestStep(candidate)) continue;
@@ -218,6 +233,155 @@ public sealed class ExactMatcher : IMockMatcher
 
     private static bool IsSocketIoStep(BowireRecordingStep s) =>
         string.Equals(s.Protocol, "socketio", StringComparison.OrdinalIgnoreCase);
+
+    // GraphQL steps ride the REST wire (POST + path) but need query-aware
+    // ranking — see the TryMatch branch. Routing fields are present after
+    // RecordingLoader.NormalizeHttpRouting.
+    private static bool IsGraphQlStep(BowireRecordingStep s) =>
+        string.Equals(s.Protocol, "graphql", StringComparison.OrdinalIgnoreCase) &&
+        !string.IsNullOrEmpty(s.HttpVerb) &&
+        !string.IsNullOrEmpty(s.HttpPath);
+
+    /// <summary>
+    /// Query affinity between a recorded GraphQL step body and the incoming
+    /// request body (both <c>{"query": "...", ...}</c> envelopes):
+    /// <c>2</c> whitespace-normalised equality, <c>1</c> equal root-field
+    /// sets, <c>0</c> unknown (either side missing / unparseable — stay a
+    /// lenient path-level candidate), <c>-1</c> both sides parsed and the
+    /// root fields differ (disqualify).
+    /// </summary>
+    internal static int GraphQlQueryAffinity(string? stepBody, string? requestBody)
+    {
+        var stepQuery = ExtractGraphQlQuery(stepBody);
+        var requestQuery = ExtractGraphQlQuery(requestBody);
+        if (stepQuery is null || requestQuery is null) return 0;
+
+        if (string.Equals(
+                NormalizeGraphQlText(stepQuery),
+                NormalizeGraphQlText(requestQuery),
+                StringComparison.Ordinal))
+        {
+            return 2;
+        }
+
+        var stepFields = RootFieldNames(stepQuery);
+        var requestFields = RootFieldNames(requestQuery);
+        if (stepFields.Count == 0 || requestFields.Count == 0) return 0;
+        return stepFields.SetEquals(requestFields) ? 1 : -1;
+    }
+
+    private static string? ExtractGraphQlQuery(string? body)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object) return null;
+            if (!doc.RootElement.TryGetProperty("query", out var q)) return null;
+            return q.ValueKind == JsonValueKind.String ? q.GetString() : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    // Collapse whitespace and drop commas (insignificant in GraphQL) so
+    // formatting differences don't defeat the equality check. A space
+    // survives only BETWEEN two word-ish tokens (`query pc`), never next
+    // to punctuation — `portCall( id: 1 )` and `portCall(id:1)` must
+    // normalise identically.
+    private static string NormalizeGraphQlText(string query)
+    {
+        static bool IsWordish(char c) =>
+            char.IsLetterOrDigit(c) || c is '_' or '$' or '"';
+
+        var sb = new System.Text.StringBuilder(query.Length);
+        var pendingSpace = false;
+        foreach (var ch in query)
+        {
+            if (char.IsWhiteSpace(ch) || ch == ',')
+            {
+                pendingSpace = sb.Length > 0;
+                continue;
+            }
+            if (pendingSpace)
+            {
+                if (sb.Length > 0 && IsWordish(sb[^1]) && IsWordish(ch))
+                    sb.Append(' ');
+                pendingSpace = false;
+            }
+            sb.Append(ch);
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Lexically collect the top-level selection-set field names of a
+    /// GraphQL document — the identifiers at brace depth 1 outside
+    /// argument parentheses, e.g. <c>{ portCall(id: 1) { id } }</c> →
+    /// <c>{"portCall"}</c>. Aliases contribute the alias name; that's
+    /// fine — both sides run through the same scanner. Deliberately a
+    /// scanner, not a parser: the mock must not grow a GraphQL-library
+    /// dependency for a ranking heuristic.
+    /// </summary>
+    internal static HashSet<string> RootFieldNames(string query)
+    {
+        var fields = new HashSet<string>(StringComparer.Ordinal);
+        var braceDepth = 0;
+        var parenDepth = 0;
+        var i = 0;
+        while (i < query.Length)
+        {
+            var ch = query[i];
+            if (ch == '{') { braceDepth++; i++; continue; }
+            if (ch == '}') { braceDepth--; i++; continue; }
+            if (ch == '(') { parenDepth++; i++; continue; }
+            if (ch == ')') { parenDepth--; i++; continue; }
+            if (ch == '#')
+            {
+                // Comment runs to end of line.
+                while (i < query.Length && query[i] != '\n') i++;
+                continue;
+            }
+            if (ch == '"')
+            {
+                // String literal — skip to the closing quote (good enough
+                // for a heuristic; block strings degrade to extra tokens
+                // at depths we don't collect from).
+                i++;
+                while (i < query.Length && query[i] != '"')
+                {
+                    if (query[i] == '\\') i++;
+                    i++;
+                }
+                i++;
+                continue;
+            }
+            if (ch == '@')
+            {
+                // Directive — its name is not a field.
+                i++;
+                while (i < query.Length && (char.IsLetterOrDigit(query[i]) || query[i] == '_')) i++;
+                continue;
+            }
+            if (braceDepth == 1 && parenDepth == 0 && (char.IsLetter(ch) || ch == '_'))
+            {
+                var start = i;
+                while (i < query.Length && (char.IsLetterOrDigit(query[i]) || query[i] == '_')) i++;
+                var word = query[start..i];
+                // `on` from inline fragments (`... on Type`) is the only
+                // keyword-ish token that appears at depth 1; the type name
+                // after it is skipped by the directive/fragment shape
+                // being rare enough not to matter for ranking.
+                if (!string.Equals(word, "on", StringComparison.Ordinal))
+                    fields.Add(word);
+                continue;
+            }
+            i++;
+        }
+        return fields;
+    }
 
     // Socket.IO servers conventionally live at /socket.io/. Clients (at
     // least the JavaScript, Python, and SocketIOClient .NET libraries)

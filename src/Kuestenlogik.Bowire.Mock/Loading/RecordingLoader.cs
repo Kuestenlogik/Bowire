@@ -39,6 +39,7 @@ public static class RecordingLoader
         var json = File.ReadAllText(path);
         var recording = ParseAndPickOne(json, select, path);
         Validate(recording, path);
+        NormalizeHttpRouting(recording);
         return recording;
     }
 
@@ -51,7 +52,53 @@ public static class RecordingLoader
     {
         var recording = ParseAndPickOne(json, select, sourceLabel);
         Validate(recording, sourceLabel);
+        NormalizeHttpRouting(recording);
         return recording;
+    }
+
+    /// <summary>
+    /// Derive the HTTP routing pair (<c>httpVerb</c> + <c>httpPath</c>) for
+    /// steps whose protocol rides plain HTTP but whose recorder — or hand
+    /// author — left the fields empty. Both the matcher and the replayer
+    /// key on them, so without this a lean recording's GraphQL / SSE /
+    /// WebSocket / SignalR steps never match anything (#511) even though
+    /// the replayer supports all four. GraphQL posts to the serverUrl's
+    /// path; SSE subscriptions, WebSocket upgrades and SignalR connects
+    /// are GETs on the wire. gRPC (service/method + content-type match),
+    /// MQTT (broker transport host) and Socket.IO (upgrade-shape match)
+    /// have their own routing and stay untouched.
+    /// </summary>
+    public static void NormalizeHttpRouting(BowireRecording recording)
+    {
+        ArgumentNullException.ThrowIfNull(recording);
+        foreach (var step in recording.Steps)
+        {
+            if (!string.IsNullOrEmpty(step.HttpPath) && !string.IsNullOrEmpty(step.HttpVerb))
+                continue;
+
+            var verb = step.Protocol?.ToUpperInvariant() switch
+            {
+                "GRAPHQL" => "POST",
+                "SSE" or "WEBSOCKET" or "SIGNALR" => "GET",
+                _ => null,
+            };
+            if (verb is null) continue;
+            if (string.IsNullOrEmpty(step.ServerUrl)) continue;
+
+            string path;
+            try
+            {
+                path = new Uri(step.ServerUrl).AbsolutePath;
+            }
+            catch (UriFormatException)
+            {
+                continue;
+            }
+            if (string.IsNullOrEmpty(path)) path = "/";
+
+            if (string.IsNullOrEmpty(step.HttpVerb)) step.HttpVerb = verb;
+            if (string.IsNullOrEmpty(step.HttpPath)) step.HttpPath = path;
+        }
     }
 
     private static BowireRecording ParseAndPickOne(string json, string? select, string sourceLabel)

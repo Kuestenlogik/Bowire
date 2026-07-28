@@ -632,15 +632,19 @@ public sealed class PluginManagerTests : IDisposable
     }
 
     [Fact]
-    public void EnumeratePluginServices_NoPluginsLoaded_ReturnsEmpty()
+    public void EnumeratePluginServices_Sweeps_BuiltIn_Bowire_Assemblies()
     {
-        // No LoadPlugins() call before this test → s_pluginContexts may be
-        // non-empty from prior tests, but the contract type is private to
-        // this file so nothing in any plugin ALC implements it.
+        // #511: besides the plugin-directory ALCs, the enumeration sweeps
+        // every Kuestenlogik.Bowire* assembly next to the entry assembly —
+        // that's how `bowire mock` finds the compiled-in protocol plugins'
+        // hosting extensions. In the test host this very assembly sits in
+        // that sweep, so the private probe type below IS discovered and
+        // instantiated exactly once (type-identity dedupe).
         var hits = PluginManager.EnumeratePluginServices<DummyContract>();
         Assert.NotNull(hits);
-        Assert.Empty(hits);
+        var hit = Assert.Single(hits);
+        Assert.IsType<DummyContract>(hit);
     }
 
-    private sealed class DummyContract { /* contract probe — never instantiated */ }
+    private sealed class DummyContract { /* contract probe for the built-in sweep */ }
 }
