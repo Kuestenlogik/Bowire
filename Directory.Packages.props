@@ -91,7 +91,15 @@
          broker for the Bowire Pulsar plugin's live produce/subscribe
          integration suite. Same 4.12.x line as the NATS sibling. -->
     <PackageVersion Include="Testcontainers.Pulsar" Version="4.13.0" />
-    <PackageVersion Include="Microsoft.OData.Edm" Version="9.0.0" />
+    <!-- Microsoft.OData.Edm — held on the 8.4.x line, NOT bumped to 9.x.
+         The OData sample hosts Microsoft.AspNetCore.OData next to the
+         OData plugin, and every stable AspNetCore.OData (up to 9.5.0)
+         constrains Edm to >= 8.4.0 && < 9.0.0. Edm 9.0.0 therefore fails
+         the restore outright with NU1107 — it took both CI and the
+         samples smoke down. Revisit when AspNetCore.OData 10.x ships
+         stable (10.0.0 is preview-only today); dependabot is told to
+         skip 9.x for Edm and Core in .github/dependabot.yml. -->
+    <PackageVersion Include="Microsoft.OData.Edm" Version="8.4.4" />
     <!-- Microsoft.OData.Core — kept in lock-step with Edm above. The
          GraphQL/OData sample (Kuestenlogik.Bowire.Sample.OData) hosts
          Microsoft.AspNetCore.OData (server) next to the OData plugin
