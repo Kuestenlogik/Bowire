@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -44,20 +46,244 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         _configuration = serviceProvider?.GetService<IConfiguration>();
     }
 
-    public Task<List<BowireServiceInfo>> DiscoverAsync(
+    /// <summary>
+    /// Side-channel marker the discovery endpoint appends to the URL when
+    /// the caller explicitly hinted <c>signalr@…</c>. DiscoverAsync has no
+    /// hint parameter, and the ad-hoc fallback below must never fire on
+    /// the hint-less all-plugins fan-out (every http(s) URL would get a
+    /// negotiate probe, and any hub-shaped answer would grow a phantom
+    /// service next to the owning plugin's real one). Mirrors the gRPC
+    /// transport / SSE ad-hoc markers; must stay aligned with the literal
+    /// in BowireDiscoveryEndpoints.
+    /// </summary>
+    internal const string AdHocHintMarker = "__bowireSignalRAdHoc=1";
+
+    /// <summary>
+    /// Service name of the synthesised separate-target hub surface. The
+    /// space makes collisions with real hub class names impossible, so
+    /// the invoke paths can safely key their ad-hoc redirect on it.
+    /// </summary>
+    internal const string AdHocServiceName = "SignalR Hub";
+
+    public async Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct)
     {
-        var services = SignalRHubDiscovery.DiscoverHubs(_serviceProvider, serverUrl);
-
-        if (services.Count == 0)
+        // Strip the hint marker before anything else touches the URL —
+        // the self-origin check, the negotiate probe, OriginUrl and the
+        // hub metadata scan must all see the clean URL.
+        var hinted = false;
+        if (!string.IsNullOrEmpty(serverUrl))
         {
-            // No hubs discovered — return empty list rather than error.
-            // This is expected in standalone mode where we can't scan endpoints.
-            return Task.FromResult<List<BowireServiceInfo>>([]);
+            var marked = serverUrl;
+            serverUrl = serverUrl
+                .Replace("?" + AdHocHintMarker, "", StringComparison.Ordinal)
+                .Replace("&" + AdHocHintMarker, "", StringComparison.Ordinal);
+            hinted = marked.Length != serverUrl.Length;
         }
 
-        return Task.FromResult(services);
+        var services = SignalRHubDiscovery.DiscoverHubs(_serviceProvider, serverUrl);
+
+        // Separate-target mode (`bowire --url signalr@http://host/hub`):
+        // hub metadata only exists in the embedded host's endpoint data
+        // sources, so an external URL yields nothing even though the
+        // plugin ran — the documented standalone flow dead-ended in a
+        // 502 (#510). SignalR has no wire-level reflection to list hub
+        // methods, but the negotiate handshake confirms hub-ness; on a
+        // confirmed hub we expose generic `invoke` / `stream` entry
+        // points whose payload names the hub method explicitly.
+        if (hinted
+            && services.Count == 0
+            && IsHttpUrl(serverUrl)
+            && !Helpers.SelfOriginCheck.IsSelfOrigin(serverUrl, _serviceProvider)
+            && await NegotiateSucceedsAsync(serverUrl, ct).ConfigureAwait(false))
+        {
+            services.Add(BuildAdHocService(serverUrl));
+        }
+
+        foreach (var svc in services)
+            svc.OriginUrl ??= serverUrl;
+
+        return services;
     }
+
+    /// <summary>
+    /// Probes <c>POST {url}/negotiate?negotiateVersion=1</c> and reports
+    /// whether the answer is a SignalR negotiate payload. Own 4 s
+    /// deadline — discovery must not hang on a stalling server.
+    /// </summary>
+    private async Task<bool> NegotiateSucceedsAsync(string serverUrl, CancellationToken ct)
+    {
+        try
+        {
+            using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            probeCts.CancelAfter(TimeSpan.FromSeconds(4));
+            var negotiateUrl = serverUrl.TrimEnd('/') + "/negotiate?negotiateVersion=1";
+            // Per-probe client instead of a long-lived field: discovery
+            // probes are rare, and this keeps the plugin free of an
+            // owned-IDisposable member. The factory wires the
+            // TrustLocalhostCert opt-in the same way the invoke paths do.
+            using var http = BowireHttpClientFactory.Create(_configuration, Id, TimeSpan.FromSeconds(10));
+            using var request = new HttpRequestMessage(HttpMethod.Post, negotiateUrl);
+            using var response = await http.SendAsync(request, probeCts.Token).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode) return false;
+
+            var body = await response.Content.ReadAsStringAsync(probeCts.Token).ConfigureAwait(false);
+            using var doc = JsonDocument.Parse(body);
+            return doc.RootElement.ValueKind == JsonValueKind.Object
+                && (doc.RootElement.TryGetProperty("connectionId", out _)
+                    || doc.RootElement.TryGetProperty("negotiateVersion", out _)
+                    || doc.RootElement.TryGetProperty("availableTransports", out _));
+        }
+        catch (HttpRequestException) { return false; }
+        catch (OperationCanceledException) { return false; }
+        catch (JsonException) { return false; }
+        catch (UriFormatException) { return false; }
+        catch (InvalidOperationException) { return false; }
+    }
+
+    private static bool IsHttpUrl(string url) =>
+        !string.IsNullOrEmpty(url) &&
+        (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+         url.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Builds the separate-target hub surface: one Unary <c>invoke</c> and
+    /// one ServerStreaming <c>stream</c> method whose payload carries the
+    /// real hub method name plus JSON-encoded positional arguments —
+    /// SignalR has no reflection wire, so the operator supplies what
+    /// discovery cannot know.
+    /// </summary>
+    private static BowireServiceInfo BuildAdHocService(string serverUrl)
+    {
+        static BowireMessageInfo BuildAdHocInput() => new("HubCall", "signalr.HubCall",
+        [
+            new BowireFieldInfo("method", 1, "string", "LABEL_REQUIRED", false, false, null, null)
+            {
+                Source = "body",
+                Description = "Hub method to call, e.g. SendMessage."
+            },
+            new BowireFieldInfo("args", 2, "string", "LABEL_OPTIONAL", false, true, null, null)
+            {
+                Source = "body",
+                Description = "Positional arguments, one JSON value per entry: 42, \"text\", {\"x\":1}. Bare words are sent as strings."
+            }
+        ]);
+
+        var output = new BowireMessageInfo("HubResult", "signalr.HubResult", []);
+
+        return new BowireServiceInfo(
+            Name: AdHocServiceName,
+            Package: ExtractPath(serverUrl),
+            Methods:
+            [
+                new BowireMethodInfo(
+                    Name: "invoke",
+                    FullName: $"{AdHocServiceName}/invoke",
+                    ClientStreaming: false,
+                    ServerStreaming: false,
+                    InputType: BuildAdHocInput(),
+                    OutputType: output,
+                    MethodType: "Unary")
+                {
+                    Summary = "Invoke a hub method and await its result",
+                    Description = "Calls the named hub method on " + serverUrl + " and returns its result. SignalR exposes no method list over the wire — name the method yourself."
+                },
+                new BowireMethodInfo(
+                    Name: "stream",
+                    FullName: $"{AdHocServiceName}/stream",
+                    ClientStreaming: false,
+                    ServerStreaming: true,
+                    InputType: BuildAdHocInput(),
+                    OutputType: output,
+                    MethodType: "ServerStreaming")
+                {
+                    Summary = "Subscribe to a streaming hub method",
+                    Description = "Streams from the named hub method (IAsyncEnumerable / ChannelReader) on " + serverUrl + "."
+                }
+            ])
+        { Source = "signalr", Description = "Ad-hoc SignalR hub — negotiate handshake succeeded; hub methods are supplied per call." };
+    }
+
+    private static string ExtractPath(string url)
+    {
+        try
+        {
+            return new Uri(url).PathAndQuery;
+        }
+        catch (UriFormatException)
+        {
+            return "/";
+        }
+    }
+
+    /// <summary>
+    /// Parses the ad-hoc payload <c>{"method": "...", "args": [...]}</c>
+    /// into the target hub method plus positional arguments. Returns an
+    /// error string (instead of throwing) so the invoke paths can surface
+    /// it as a normal failed <see cref="InvokeResult"/>.
+    /// </summary>
+    internal static (string? HubMethod, object?[] Args, string? Error) ParseAdHocPayload(
+        List<string> jsonMessages)
+    {
+        const string usage = "Ad-hoc SignalR calls need a payload like {\"method\": \"SendMessage\", \"args\": [\"hello\"]}.";
+        if (jsonMessages.Count == 0 || string.IsNullOrWhiteSpace(jsonMessages[0]))
+            return (null, [], usage);
+
+        try
+        {
+            using var doc = JsonDocument.Parse(jsonMessages[0]);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                return (null, [], usage);
+
+            if (!doc.RootElement.TryGetProperty("method", out var methodProp)
+                || methodProp.ValueKind != JsonValueKind.String
+                || string.IsNullOrWhiteSpace(methodProp.GetString()))
+            {
+                return (null, [], "Missing hub method name. " + usage);
+            }
+
+            var args = new List<object?>();
+            if (doc.RootElement.TryGetProperty("args", out var argsProp))
+            {
+                if (argsProp.ValueKind != JsonValueKind.Array)
+                    return (null, [], "\"args\" must be an array. " + usage);
+                foreach (var el in argsProp.EnumerateArray())
+                {
+                    // The form pane's repeated-string field delivers every
+                    // entry as a JSON string — re-parse its content so a
+                    // typed `42` / `true` / `{"x":1}` reaches the hub with
+                    // its real type; anything unparseable stays the raw
+                    // string ("bare words are sent as strings").
+                    if (el.ValueKind == JsonValueKind.String)
+                    {
+                        var raw = el.GetString() ?? "";
+                        try
+                        {
+                            using var inner = JsonDocument.Parse(raw);
+                            args.Add(SignalRInvoker.JsonElementToArg(inner.RootElement.Clone()));
+                        }
+                        catch (JsonException)
+                        {
+                            args.Add(raw);
+                        }
+                    }
+                    else
+                    {
+                        args.Add(SignalRInvoker.JsonElementToArg(el));
+                    }
+                }
+            }
+
+            return (methodProp.GetString(), [.. args], null);
+        }
+        catch (JsonException)
+        {
+            return (null, [], "Payload is not valid JSON. " + usage);
+        }
+    }
+
+    private static bool IsAdHocService(string service) =>
+        string.Equals(service, AdHocServiceName, StringComparison.Ordinal);
 
     public async Task<InvokeResult> InvokeAsync(
         string serverUrl, string service, string method,
@@ -66,13 +292,29 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
     {
         var hubUrl = ResolveHubUrl(serverUrl, service);
 
+        // Ad-hoc separate-target surface: the workbench method is the
+        // generic `invoke`; the real hub method + args live in the
+        // payload (SignalR has no reflection wire — see #510).
+        string targetMethod = method;
+        object?[]? adHocArgs = null;
+        if (IsAdHocService(service))
+        {
+            var (hubMethod, args, error) = ParseAdHocPayload(jsonMessages);
+            if (error is not null)
+                return new InvokeResult(error, 0, "Error", []);
+            targetMethod = hubMethod!;
+            adHocArgs = args;
+        }
+
         var mtlsConfig = MtlsConfig.TryParseFromMetadata(metadata);
         var sanitisedMetadata = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
 
         await using var invoker = new SignalRInvoker();
         var trustLocalhost = LocalhostCertTrust.IsTrustedFor(_configuration, Id, hubUrl);
         await invoker.ConnectAsync(hubUrl, sanitisedMetadata, mtlsConfig, ct, trustLocalhost);
-        return await invoker.InvokeAsync(method, jsonMessages, ct);
+        return adHocArgs is not null
+            ? await invoker.InvokeWithArgsAsync(targetMethod, adHocArgs, ct)
+            : await invoker.InvokeAsync(targetMethod, jsonMessages, ct);
     }
 
     public async IAsyncEnumerable<string> InvokeStreamAsync(
@@ -83,6 +325,18 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
     {
         var hubUrl = ResolveHubUrl(serverUrl, service);
 
+        // Ad-hoc redirect — same shape as InvokeAsync above.
+        string targetMethod = method;
+        object?[]? adHocArgs = null;
+        if (IsAdHocService(service))
+        {
+            var (hubMethod, args, error) = ParseAdHocPayload(jsonMessages);
+            if (error is not null)
+                throw new InvalidOperationException(error);
+            targetMethod = hubMethod!;
+            adHocArgs = args;
+        }
+
         var mtlsConfig = MtlsConfig.TryParseFromMetadata(metadata);
         var sanitisedMetadata = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);
 
@@ -90,7 +344,10 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         var trustLocalhost = LocalhostCertTrust.IsTrustedFor(_configuration, Id, hubUrl);
         await invoker.ConnectAsync(hubUrl, sanitisedMetadata, mtlsConfig, ct, trustLocalhost);
 
-        await foreach (var response in invoker.StreamAsync(method, jsonMessages, ct))
+        var stream = adHocArgs is not null
+            ? invoker.StreamWithArgsAsync(targetMethod, adHocArgs, ct)
+            : invoker.StreamAsync(targetMethod, jsonMessages, ct);
+        await foreach (var response in stream)
             yield return response;
     }
 
@@ -98,6 +355,13 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         string serverUrl, string service, string method,
         bool showInternalServices, Dictionary<string, string>? metadata, CancellationToken ct)
     {
+        // The ad-hoc surface is Unary + ServerStreaming only and its hub
+        // method name travels in the request payload — a channel opens on
+        // a method name known up front, which would invoke the literal
+        // "invoke"/"stream" on the hub. Route ad-hoc calls through the
+        // invoke/stream APIs instead.
+        if (IsAdHocService(service)) return null;
+
         var hubUrl = ResolveHubUrl(serverUrl, service);
 
         // Look up method info to determine streaming direction
@@ -128,6 +392,11 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
     /// </summary>
     private string ResolveHubUrl(string serverUrl, string service)
     {
+        // Ad-hoc separate-target service: the connection URL already IS
+        // the hub URL (its path fed the service's Package) — appending
+        // anything would double the path.
+        if (IsAdHocService(service)) return serverUrl;
+
         var services = SignalRHubDiscovery.DiscoverHubs(_serviceProvider, serverUrl);
         var svc = services.FirstOrDefault(s => s.Name == service || s.Package == service);
         var raw = !string.IsNullOrEmpty(svc?.Package) ? svc.Package : service;

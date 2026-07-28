@@ -98,6 +98,16 @@ internal static class BowireDiscoveryEndpoints
                     var sep = serverUrl.Contains('?', StringComparison.Ordinal) ? '&' : '?';
                     serverUrl = $"{serverUrl}{sep}__bowireSseAdHoc=1";
                 }
+
+                // SignalR's separate-target fallback (#510) is gated the
+                // same way: negotiate-probe + ad-hoc service only for an
+                // explicit signalr@ hint. Marker name must stay aligned
+                // with BowireSignalRProtocol.AdHocHintMarker.
+                if (string.Equals(mappedId, "signalr", StringComparison.OrdinalIgnoreCase))
+                {
+                    var sep = serverUrl.Contains('?', StringComparison.Ordinal) ? '&' : '?';
+                    serverUrl = $"{serverUrl}{sep}__bowireSignalRAdHoc=1";
+                }
             }
 
             // Standalone tool launched without --url and with no proto

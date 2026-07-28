@@ -6,7 +6,8 @@
 //   * Separate — it is a real SignalR host, so point an external workbench
 //     or `bowire --url signalr@http://localhost:5184/chathub` at it.
 //
-// One hub (ChatHub): SendMessage broadcasts to everyone, Echo round-trips.
+// One hub (ChatHub): SendMessage broadcasts to everyone, Echo round-trips,
+// Counter server-streams — so the workbench shows all three call shapes.
 //
 // Run:
 //   dotnet run --project samples/Kuestenlogik.Bowire.Sample.SignalR
@@ -36,4 +37,16 @@ sealed class ChatHub : Hub
         => Clients.All.SendAsync("ReceiveMessage", user, message);
 
     public string Echo(string text) => "echo: " + text;
+
+    public async IAsyncEnumerable<int> Counter(
+        int count, int delayMs,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            yield return i;
+            await Task.Delay(delayMs, ct);
+        }
+    }
 }
