@@ -588,14 +588,63 @@ public sealed class SignalRInvokerParseArgumentsTests
         Assert.Equal(2d, Convert.ToDouble(args[1], System.Globalization.CultureInfo.InvariantCulture));
     }
 
-    private static object?[] InvokeParseArguments(List<string> messages)
+    // expectedParameterCount is optional on ParseArguments, but reflection
+    // needs every argument spelled out. null = "arity unknown", which is
+    // the separate-target / legacy path.
+    private static object?[] InvokeParseArguments(List<string> messages, int? expectedParameterCount = null)
     {
         var asm = typeof(BowireSignalRProtocol).Assembly;
         var type = asm.GetType("Kuestenlogik.Bowire.SignalRInvoker", throwOnError: true)!;
         var method = type.GetMethod("ParseArguments", BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(method);
-        var result = method!.Invoke(null, new object[] { messages });
+        var result = method!.Invoke(null, new object?[] { messages, expectedParameterCount });
         return Assert.IsType<object?[]>(result);
+    }
+
+    // ---- arity-aware unfolding ----
+
+    [Fact]
+    public void Single_Parameter_Method_Gets_The_Property_Unfolded()
+    {
+        // Echo(string text) + {"text":"hi"} has to reach the hub as
+        // Echo("hi"). Before the arity hint, unfolding required MORE than
+        // one property, so single-parameter hub methods — the common case
+        // — got the wrapper object and answered HubException.
+        var args = InvokeParseArguments([Json.OneProp], expectedParameterCount: 1);
+
+        var arg = Assert.Single(args);
+        Assert.Equal("hi", arg);
+    }
+
+    [Fact]
+    public void Single_Complex_Parameter_Stays_Wrapped_When_Shape_Does_Not_Match()
+    {
+        // Send(ChatMessage m) invoked with the DTO itself: two properties
+        // against one parameter, so the object travels whole.
+        var args = InvokeParseArguments([Json.TwoProps], expectedParameterCount: 1);
+
+        var arg = Assert.Single(args);
+        Assert.IsNotType<string>(arg);
+    }
+
+    [Fact]
+    public void Two_Parameter_Method_Unfolds_Both()
+    {
+        var args = InvokeParseArguments([Json.CountAndDelay], expectedParameterCount: 2);
+
+        // Compare numerically: JsonElementToArg picks the narrowest CLR
+        // type that fits, and SignalR's serializer coerces to the hub's
+        // parameter type either way.
+        Assert.Equal(2, args.Length);
+        Assert.Equal(5, Convert.ToInt64(args[0], System.Globalization.CultureInfo.InvariantCulture));
+        Assert.Equal(200, Convert.ToInt64(args[1], System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    private static class Json
+    {
+        public const string OneProp = "{\"text\":\"hi\"}";
+        public const string TwoProps = "{\"user\":\"ann\",\"body\":\"hi\"}";
+        public const string CountAndDelay = "{\"count\":5,\"delayMs\":200}";
     }
 }
 
