@@ -282,6 +282,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ⬜ Backlog |  |
 | [488](https://github.com/Kuestenlogik/Bowire/issues/488) | Bowire | [RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench](#issue-kuestenlogik-bowire-488) | ⬜ Backlog |  |
 | [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog |  |
+| [528](https://github.com/Kuestenlogik/Bowire/issues/528) | Bowire | [GraphQL sample throws SchemaException on every request (HotChocolate cannot resolve Query/Mutation/Subscription)](#issue-kuestenlogik-bowire-528) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1152,6 +1153,10 @@ The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the w
 #### <a id="issue-kuestenlogik-bowire-489"></a>⬜ Backlog · [#489](https://github.com/Kuestenlogik/Bowire/issues/489) RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)
 
 > **Status: DRAFT / RFC — needs refinement before implementation.** Direction from the #486 discussion; specifics below are starting points. [[more]](https://github.com/Kuestenlogik/Bowire/issues/489)
+
+#### <a id="issue-kuestenlogik-bowire-528"></a>⬜ Backlog · [#528](https://github.com/Kuestenlogik/Bowire/issues/528) GraphQL sample throws SchemaException on every request (HotChocolate cannot resolve Query/Mutation/Subscription)
+
+`samples/Kuestenlogik.Bowire.Sample.GraphQL` starts and serves `/bowire`, but **every** GraphQL request — including the introspection query Bowire's discovery sends — fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/528)
 
 ---
 
