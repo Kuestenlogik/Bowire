@@ -40,6 +40,15 @@ updates:
       # when the runners get an SDK with Roslyn 5.6.
       - dependency-name: "OllamaSharp"
         versions: [">= 5.4.26"]
+      # Microsoft.OData.Edm/.Core 9.x cannot be restored alongside
+      # Microsoft.AspNetCore.OData, which every stable release (through
+      # 9.5.0) constrains to Edm >= 8.4.0 && < 9.0.0. The Edm 9.0.0 bump
+      # failed the restore with NU1107 and took CI plus the samples smoke
+      # down. Drop this rule once AspNetCore.OData 10.x is stable.
+      - dependency-name: "Microsoft.OData.Edm"
+        versions: [">= 9.0.0"]
+      - dependency-name: "Microsoft.OData.Core"
+        versions: [">= 9.0.0"]
     groups:
       # Bundle related package families so we don't get one PR per
       # ASP.NET / xUnit / Grpc / Roslyn package on each minor bump.
