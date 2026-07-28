@@ -23,6 +23,17 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
+    ignore:
+      # Microsoft.OpenApi 3.9.0 makes IOpenApiMediaType.Example
+      # read-only, which the Microsoft.AspNetCore.OpenApi 10.0.10
+      # XML-comment source generator still assigns to — the bump broke
+      # `main` with CS0200 in generated code (see the pin comment in
+      # Directory.Packages.props). Drop this rule when re-bumping both
+      # together against a fixed generator.
+      - dependency-name: "Microsoft.OpenApi"
+        versions: ["3.9.0"]
+      - dependency-name: "Microsoft.OpenApi.YamlReader"
+        versions: ["3.9.0"]
     groups:
       # Bundle related package families so we don't get one PR per
       # ASP.NET / xUnit / Grpc / Roslyn package on each minor bump.
