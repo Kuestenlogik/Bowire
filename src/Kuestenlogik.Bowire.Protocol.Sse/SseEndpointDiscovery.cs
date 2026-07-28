@@ -88,6 +88,46 @@ internal static class SseEndpointDiscovery
         ];
     }
 
+    /// <summary>
+    /// Builds the single-endpoint ad-hoc service for separate-target mode
+    /// (<c>bowire --url sse@https://host/stream</c>). The URL's own path
+    /// becomes the one subscribable method; the caller has already
+    /// verified the server actually speaks <c>text/event-stream</c>.
+    /// </summary>
+    internal static BowireServiceInfo BuildAdHocService(string serverUrl)
+    {
+        string path;
+        try
+        {
+            path = new Uri(serverUrl).PathAndQuery;
+        }
+        catch (UriFormatException)
+        {
+            path = "/";
+        }
+
+        var ep = new SseEndpointInfo(path, path, $"Ad-hoc SSE subscription — events from {serverUrl}.", null);
+        return new BowireServiceInfo(
+            Name: "SSE Endpoints",
+            Package: path,
+            Methods:
+            [
+                new BowireMethodInfo(
+                    Name: ep.Name,
+                    FullName: $"SSE{ep.Path}",
+                    ClientStreaming: false,
+                    ServerStreaming: true,
+                    InputType: BuildInputType(ep),
+                    OutputType: BuildOutputType(),
+                    MethodType: "ServerStreaming")
+                {
+                    Summary = "Subscribe to " + serverUrl,
+                    Description = ep.Description,
+                }
+            ])
+        { Source = "sse" };
+    }
+
     private static void ScanEndpoint(Endpoint endpoint, List<SseEndpointInfo> results)
     {
         // Check for [SseEndpoint] attribute

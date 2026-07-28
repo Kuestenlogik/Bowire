@@ -23,3 +23,9 @@ dotnet run --project samples/Kuestenlogik.Bowire.Sample.SignalR
   ```pwsh
   bowire --url signalr@http://localhost:5184/chathub
   ```
+
+  > **Note:** SignalR has no wire-level reflection, so a *separate*
+  > workbench cannot list the hub's methods yet — hub discovery works
+  > in the embedded workbench, which scans this host's endpoint
+  > metadata. Standalone method-level support is tracked in the main
+  > repo's issues.

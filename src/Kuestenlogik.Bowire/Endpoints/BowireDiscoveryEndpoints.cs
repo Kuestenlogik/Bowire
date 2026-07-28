@@ -83,6 +83,21 @@ internal static class BowireDiscoveryEndpoints
                     // string here so core doesn't take a plugin reference.
                     serverUrl = $"{serverUrl}{sep}__bowireGrpcTransport={Uri.EscapeDataString(tm.Value)}";
                 }
+
+                // Same side-channel idea for SSE: DiscoverAsync has no
+                // "was I explicitly hinted?" parameter, but the plugin's
+                // ad-hoc separate-target fallback must ONLY fire for
+                // `sse@…` — on the hint-less fan-out any URL that happens
+                // to answer text/event-stream (legacy MCP SSE transport,
+                // graphql-sse, …) would otherwise grow a phantom
+                // "SSE Endpoints" service next to the owning plugin's
+                // real one. Marker name must stay aligned with
+                // BowireSseProtocol.AdHocHintMarker.
+                if (string.Equals(mappedId, "sse", StringComparison.OrdinalIgnoreCase))
+                {
+                    var sep = serverUrl.Contains('?', StringComparison.Ordinal) ? '&' : '?';
+                    serverUrl = $"{serverUrl}{sep}__bowireSseAdHoc=1";
+                }
             }
 
             // Standalone tool launched without --url and with no proto
@@ -123,10 +138,12 @@ internal static class BowireDiscoveryEndpoints
             var allProtocolServices = new List<BowireServiceInfo>();
             var discoveryErrors = new List<string>();
 
-            var protocolsToProbe = pluginHint is null
+            // Materialised so the terminal diagnostics below can tell
+            // "no plugin matched the hint" apart from "no plugins at all".
+            var protocolsToProbe = (pluginHint is null
                 ? registry.Protocols
                 : registry.Protocols.Where(p =>
-                    string.Equals(p.Id, pluginHint, StringComparison.OrdinalIgnoreCase));
+                    string.Equals(p.Id, pluginHint, StringComparison.OrdinalIgnoreCase))).ToList();
 
             // Probe all matching plugins in parallel. Each plugin's
             // DiscoverAsync enforces its own per-probe timeout (HTTP
@@ -237,12 +254,48 @@ internal static class BowireDiscoveryEndpoints
                         ["hint"] = "Add a `protocol@` prefix (e.g. `rest@" + serverUrl + "`) to pin a specific plugin and skip the others' probes."
                     });
             }
+            // "No plugins are loaded" must only claim that when it is
+            // actually true. A plugin that ran and returned an empty list
+            // (no error) must NOT land here — else e.g. `signalr@…` against
+            // a remote host reports "No protocol plugins are loaded"
+            // although the plugin was present and ran.
+            if (registry.Protocols.Count == 0)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:discovery:no-plugins",
+                    title: "No protocol plugins are loaded",
+                    status: 502,
+                    detail: "Bowire has no protocol plugins available to probe this URL. Upload .proto / OpenAPI / GraphQL SDL files via the Schema Files tab, or configure ProtoSources on the host.",
+                    instance: "/api/services");
+            }
+
+            if (pluginHint is not null && protocolsToProbe.Count == 0)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:discovery:unknown-plugin",
+                    title: $"No plugin registered for hint '{pluginHint}'",
+                    status: 502,
+                    detail: "The `protocol@` prefix does not match any loaded plugin id. See `plugins` for the ids this host knows.",
+                    instance: "/api/services",
+                    extensions: new Dictionary<string, object?> {
+                        ["serverUrl"] = serverUrl,
+                        ["pluginHint"] = pluginHint,
+                        ["plugins"] = registry.Protocols.Select(p => p.Id).ToArray(),
+                    });
+            }
+
             return BowireEndpointHelpers.Problem(
-                type: "urn:bowire:discovery:no-plugins",
-                title: "No protocol plugins are loaded",
+                type: "urn:bowire:discovery:no-match",
+                title: "No protocol plugin recognised this URL",
                 status: 502,
-                detail: "Bowire has no protocol plugins available to probe this URL. Upload .proto / OpenAPI / GraphQL SDL files via the Schema Files tab, or configure ProtoSources on the host.",
-                instance: "/api/services");
+                detail: "The probed plugin(s) completed without errors but returned no services for this URL.",
+                instance: "/api/services",
+                extensions: new Dictionary<string, object?> {
+                    ["serverUrl"] = serverUrl,
+                    ["attempts"] = protocolsToProbe
+                        .Select(p => $"{p.Name}: returned no services")
+                        .ToList(),
+                });
         }).ExcludeFromDescription();
 
         return endpoints;
