@@ -34,6 +34,12 @@ updates:
         versions: ["3.9.0"]
       - dependency-name: "Microsoft.OpenApi.YamlReader"
         versions: ["3.9.0"]
+      # OllamaSharp 5.4.26+ ships a Roslyn-5.6 source generator; no
+      # released .NET 10 SDK carries that compiler yet (10.0.204 is on
+      # 5.3), so the bump fails the build with CS9057. Drop this rule
+      # when the runners get an SDK with Roslyn 5.6.
+      - dependency-name: "OllamaSharp"
+        versions: [">= 5.4.26"]
     groups:
       # Bundle related package families so we don't get one PR per
       # ASP.NET / xUnit / Grpc / Roslyn package on each minor bump.
