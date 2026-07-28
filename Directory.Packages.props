@@ -32,8 +32,15 @@
     <PackageVersion Include="Kuestenlogik.Bowire.Protocol.TacticalApi" Version="1.0.4" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Identity.Web" Version="4.13.2" />
-    <PackageVersion Include="Microsoft.OpenApi" Version="3.9.0" />
-    <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="3.9.0" />
+    <!-- Held at 3.8.0: 3.9.0 makes IOpenApiMediaType.Example read-only,
+         which breaks the code the Microsoft.AspNetCore.OpenApi (10.0.10)
+         XML-comment source generator emits — CS0200 in generated code
+         under Sample.Rest / Sample.Embedded, CI red without any code
+         change. Re-bump together with an AspNetCore.OpenApi release
+         whose generator targets the 3.9 surface (dependabot.yml carries
+         the matching ignore rule). -->
+    <PackageVersion Include="Microsoft.OpenApi" Version="3.8.0" />
+    <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="3.8.0" />
     <!-- Neuroglia.AsyncApi is the official AsyncAPI .NET SDK
          (asyncapi/net-sdk repo, Neuroglia maintains the
          implementation). Core = AsyncAPI 2.x + 3.0 models; IO =
