@@ -314,7 +314,8 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         await invoker.ConnectAsync(hubUrl, sanitisedMetadata, mtlsConfig, ct, trustLocalhost);
         return adHocArgs is not null
             ? await invoker.InvokeWithArgsAsync(targetMethod, adHocArgs, ct)
-            : await invoker.InvokeAsync(targetMethod, jsonMessages, ct);
+            : await invoker.InvokeAsync(
+                targetMethod, jsonMessages, ct, ParameterCountOf(serverUrl, service, targetMethod));
     }
 
     public async IAsyncEnumerable<string> InvokeStreamAsync(
@@ -346,7 +347,8 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
 
         var stream = adHocArgs is not null
             ? invoker.StreamWithArgsAsync(targetMethod, adHocArgs, ct)
-            : invoker.StreamAsync(targetMethod, jsonMessages, ct);
+            : invoker.StreamAsync(
+                targetMethod, jsonMessages, ct, ParameterCountOf(serverUrl, service, targetMethod));
         await foreach (var response in stream)
             yield return response;
     }
@@ -378,6 +380,26 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         var trustLocalhost = LocalhostCertTrust.IsTrustedFor(_configuration, Id, hubUrl);
         return await SignalRBowireChannel.CreateAsync(
             hubUrl, method, isClientStreaming, isServerStreaming, headers: sanitisedMetadata, ct, mtlsConfig, trustLocalhost);
+    }
+
+    /// <summary>
+    /// How many parameters the named hub method declares, from the
+    /// embedded discovery scan — <c>null</c> when the method isn't known
+    /// (separate-target mode, where there is no hub metadata to read).
+    ///
+    /// The invoker needs it to decide whether a one-object form payload
+    /// is "one arg per property" or "one complex argument": {"text":"hi"}
+    /// against Echo(string text) is the former, against Send(Dto d) with
+    /// a text field the latter. Without the arity a single-parameter hub
+    /// method received the wrapper object and failed with HubException.
+    /// </summary>
+    private int? ParameterCountOf(string serverUrl, string service, string method)
+    {
+        if (IsAdHocService(service)) return null;
+        var services = SignalRHubDiscovery.DiscoverHubs(_serviceProvider, serverUrl);
+        var svc = services.FirstOrDefault(s => s.Name == service || s.Package == service);
+        var info = svc?.Methods.FirstOrDefault(m => m.Name == method);
+        return info?.InputType?.Fields?.Count;
     }
 
     /// <summary>

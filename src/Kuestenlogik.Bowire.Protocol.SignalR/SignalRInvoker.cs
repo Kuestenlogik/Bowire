@@ -118,8 +118,8 @@ internal sealed class SignalRInvoker : IAsyncDisposable
     }
 
     public Task<InvokeResult> InvokeAsync(
-        string method, List<string> jsonMessages, CancellationToken ct)
-        => InvokeWithArgsAsync(method, ParseArguments(jsonMessages), ct);
+        string method, List<string> jsonMessages, CancellationToken ct, int? expectedParameterCount = null)
+        => InvokeWithArgsAsync(method, ParseArguments(jsonMessages, expectedParameterCount), ct);
 
     /// <summary>
     /// Invoke with pre-built positional arguments. Used by the ad-hoc
@@ -162,8 +162,8 @@ internal sealed class SignalRInvoker : IAsyncDisposable
     }
 
     public IAsyncEnumerable<string> StreamAsync(
-        string method, List<string> jsonMessages, CancellationToken ct)
-        => StreamWithArgsAsync(method, ParseArguments(jsonMessages), ct);
+        string method, List<string> jsonMessages, CancellationToken ct, int? expectedParameterCount = null)
+        => StreamWithArgsAsync(method, ParseArguments(jsonMessages, expectedParameterCount), ct);
 
     /// <summary>
     /// Streaming twin of <see cref="InvokeWithArgsAsync"/> — see there
@@ -193,7 +193,7 @@ internal sealed class SignalRInvoker : IAsyncDisposable
         _mtlsOwner = null;
     }
 
-    private static object?[] ParseArguments(List<string> jsonMessages)
+    private static object?[] ParseArguments(List<string> jsonMessages, int? expectedParameterCount = null)
     {
         // No-arg streaming methods (e.g. SubscribeToChanges() with only
         // the implicit CancellationToken) receive an empty body "{}" from
@@ -206,11 +206,24 @@ internal sealed class SignalRInvoker : IAsyncDisposable
             return [];
         }
 
-        // Form-mode sends a single JSON object like {"count": 5, "delayMs": 200}
-        // for hub methods that take multiple parameters. Unwrap that into one
-        // positional arg per property so InvokeCoreAsync / StreamAsyncCore see
-        // the signature "Counter(5, 200)" rather than "Counter({count:5, delayMs:200})".
-        // Streaming in particular can't recover from the object-wrapped form.
+        // Form-mode sends ONE JSON object keyed by parameter name —
+        // {"count": 5, "delayMs": 200} for Counter(int count, int delayMs),
+        // {"text": "hi"} for Echo(string text). Unwrap it into one
+        // positional arg per property so the hub sees Counter(5, 200)
+        // rather than Counter({count:5,delayMs:200}).
+        //
+        // The decision needs the method's arity, because the payload alone
+        // is ambiguous: {"text":"hi"} is BOTH "one string parameter named
+        // text" and "a DTO with a text field". Unfolding only when the
+        // property count matches the parameter count settles it:
+        //   Echo(string text)      + {"text":"hi"}          1==1 → Echo("hi")
+        //   Send(ChatMessage m)    + {"m":{…}}              1==1 → Send({…})
+        //   Send(ChatMessage m)    + {"user":…,"body":…}    1!=2 → Send({…})
+        // Before this, unfolding required MORE than one property, so every
+        // single-parameter hub method — the common case — received the
+        // wrapper object and answered HubException "Failed to invoke".
+        // Without a known arity (caller didn't supply one) the old
+        // >1 heuristic still applies.
         if (jsonMessages.Count == 1 && !string.IsNullOrWhiteSpace(jsonMessages[0]))
         {
             var only = jsonMessages[0];
@@ -222,7 +235,10 @@ internal sealed class SignalRInvoker : IAsyncDisposable
                     if (doc.RootElement.ValueKind == JsonValueKind.Object)
                     {
                         var props = doc.RootElement.EnumerateObject().ToArray();
-                        if (props.Length > 1)
+                        var unfold = expectedParameterCount is { } expected
+                            ? props.Length == expected
+                            : props.Length > 1;
+                        if (unfold)
                         {
                             var unfolded = new object?[props.Length];
                             for (var i = 0; i < props.Length; i++)
