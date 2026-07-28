@@ -32,6 +32,18 @@ public sealed class BowireODataProtocol : IBowireProtocol, IDisposable
     // invocations may be slower (server-side joins) — give them the default.
     private HttpClient _http = new();
 
+    /// <summary>
+    /// Declared key property name per entity set, captured during
+    /// discovery. The invoke path needs it to (a) lift the addressing key
+    /// out of a form payload that names it properly ("Id"), not "key", and
+    /// (b) strip that same property from a PATCH body, where OData refuses
+    /// it. Discovery and invoke run on the same plugin instance, so this
+    /// survives between them; the invoke path degrades to a first-scalar
+    /// heuristic when a caller invokes without discovering first.
+    /// </summary>
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _entitySetKeys =
+        new(StringComparer.OrdinalIgnoreCase);
+
     public string Name => "OData";
     public string Description => "OData V4 entity-set queries, actions, and metadata-driven discovery.";
     public string Id => "odata";
@@ -92,6 +104,12 @@ public sealed class BowireODataProtocol : IBowireProtocol, IDisposable
                 var entityType = entitySet.EntityType;
                 var methods = new List<BowireMethodInfo>();
                 var inputFields = BuildFieldsFromType(entityType);
+
+                // Remember the declared key so the invoke path can address
+                // entities and keep the key out of PATCH bodies.
+                var declaredKey = entityType.DeclaredKey?.FirstOrDefault()?.Name;
+                if (!string.IsNullOrEmpty(declaredKey))
+                    _entitySetKeys[entitySet.Name] = declaredKey;
                 var inputType = new BowireMessageInfo(entityType.Name, entityType.FullName(), inputFields);
                 var outputType = new BowireMessageInfo(entityType.Name + "Response", entityType.FullName() + "Response", inputFields);
 
@@ -171,13 +189,54 @@ public sealed class BowireODataProtocol : IBowireProtocol, IDisposable
 
         var requestUrl = new Uri($"{baseUrl}/{entitySet}");
 
-        // Parse body for key-based operations
+        // Parse body for key-based operations.
+        //
+        // The key can arrive two ways and BOTH have to work:
+        //   * as a literal "key" property — the shape older callers and
+        //     hand-written payloads use;
+        //   * under the entity's REAL key name ("Id", "Number", …) — which
+        //     is what BuildKeyInput generates, so it is what the workbench
+        //     form actually submits.
+        // Only the first was handled, so a form-driven GET_BY_KEY / DELETE
+        // never found a key and silently addressed the COLLECTION
+        // (/Products instead of /Products(2)) — delete-by-key hit the set,
+        // get-by-key returned the whole list.
         string? key = null;
+        var keyPropertyName = "key";
         try
         {
             var doc = JsonDocument.Parse(payload);
             if (doc.RootElement.TryGetProperty("key", out var k))
+            {
                 key = k.ToString();
+            }
+            else if (doc.RootElement.ValueKind == JsonValueKind.Object
+                && httpVerb is "GET_BY_KEY" or "DELETE" or "PATCH")
+            {
+                // Preferred: the key name discovery recorded for this
+                // entity set. Fallback (invoke without a prior discover):
+                // the first scalar property, which is what BuildKeyInput
+                // emits for GET_BY_KEY / DELETE. PATCH carries the whole
+                // entity, so guessing there would be wrong — it relies on
+                // the recorded name.
+                if (_entitySetKeys.TryGetValue(entitySet, out var known)
+                    && doc.RootElement.TryGetProperty(known, out var kv))
+                {
+                    key = kv.ToString();
+                    keyPropertyName = known;
+                }
+                else if (httpVerb is "GET_BY_KEY" or "DELETE")
+                {
+                    foreach (var prop in doc.RootElement.EnumerateObject())
+                    {
+                        if (prop.Value.ValueKind is JsonValueKind.Object or JsonValueKind.Array) continue;
+                        if (prop.Name.StartsWith('$')) continue;
+                        key = prop.Value.ToString();
+                        keyPropertyName = prop.Name;
+                        break;
+                    }
+                }
+            }
             if (doc.RootElement.TryGetProperty("$filter", out var f))
                 requestUrl = new Uri($"{baseUrl}/{entitySet}?$filter={Uri.EscapeDataString(f.GetString() ?? "")}");
             if (doc.RootElement.TryGetProperty("$select", out var s))
@@ -186,13 +245,19 @@ public sealed class BowireODataProtocol : IBowireProtocol, IDisposable
         catch { /* payload is just a body */ }
 
         if (key is not null && (httpVerb == "GET_BY_KEY" || httpVerb == "PATCH" || httpVerb == "DELETE"))
-            requestUrl = new Uri($"{baseUrl}/{entitySet}({key})");
+            requestUrl = new Uri($"{baseUrl}/{entitySet}({FormatKey(key)})");
         if (httpVerb == "GET_BY_KEY") httpVerb = "GET";
 
         HttpResponseMessage resp;
         if (httpVerb == "POST" || httpVerb == "PATCH")
         {
-            using var content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
+            // The addressing key travels in the URL — leaving it in the
+            // body too makes OData reject the document ("key" is not a
+            // declared property; a declared key must not be re-stated in
+            // a PATCH). Same for the $-query helpers, which are URL
+            // options, not payload.
+            var body = StripNonPayloadProperties(payload, httpVerb == "PATCH" ? keyPropertyName : null);
+            using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
             using var req = new HttpRequestMessage(new HttpMethod(httpVerb), requestUrl) { Content = content };
             resp = await _http.SendAsync(req, ct);
         }
@@ -233,11 +298,25 @@ public sealed class BowireODataProtocol : IBowireProtocol, IDisposable
         => Task.FromResult<IBowireChannel?>(null);
 
     // ---- Schema helpers ----
+    /// <summary>
+    /// Fields for an entity's request/response shape.
+    /// </summary>
+    /// <remarks>
+    /// Structural properties only. <c>IEdmStructuredType.Properties()</c>
+    /// also yields NAVIGATION properties, and MapEdmType falls through to
+    /// "string" for them — so a model with <c>Product.Category</c>
+    /// produced a write template containing <c>"Category": ""</c>, which
+    /// every OData reader rejects (a navigation property carries a nested
+    /// resource or an @odata.bind annotation, never a primitive). The
+    /// generated template 400'd before the operator typed anything, which
+    /// reads as "the tool is broken". Related links stay reachable through
+    /// <c>$expand</c> on the collection GET.
+    /// </remarks>
     private static List<BowireFieldInfo> BuildFieldsFromType(IEdmStructuredType type)
     {
         var fields = new List<BowireFieldInfo>();
         var i = 1;
-        foreach (var prop in type.Properties())
+        foreach (var prop in type.StructuralProperties())
         {
             fields.Add(new BowireFieldInfo(
                 prop.Name, i++,
@@ -249,6 +328,58 @@ public sealed class BowireODataProtocol : IBowireProtocol, IDisposable
             });
         }
         return fields;
+    }
+
+    /// <summary>
+    /// OData addresses string keys quoted (<c>/People('alice')</c>) and
+    /// numeric keys bare (<c>/Products(2)</c>). The key arrives here as
+    /// text, so decide by shape: anything that isn't a plain number (or
+    /// a GUID, which OData also takes bare) gets quoted.
+    /// </summary>
+    private static string FormatKey(string key)
+    {
+        if (key.Length == 0) return "''";
+        if (key.StartsWith('\'')) return key; // caller already quoted
+        var numeric = key.All(c => char.IsDigit(c) || c is '-' or '.' or '+');
+        if (numeric) return key;
+        if (Guid.TryParse(key, out _)) return key;
+        return "'" + key.Replace("'", "''", StringComparison.Ordinal) + "'";
+    }
+
+    /// <summary>
+    /// Strip everything from a write payload that is URL-level rather
+    /// than document-level: the <c>$</c>-prefixed query helpers, the
+    /// synthetic <c>key</c> field, and — for PATCH — the entity's own key
+    /// property (already in the URL; restating it makes OData 400).
+    /// Returns the payload untouched when it isn't a JSON object, so a
+    /// hand-written body is never rewritten.
+    /// </summary>
+    private static string StripNonPayloadProperties(string payload, string? keyPropertyName)
+    {
+        JsonDocument doc;
+        try { doc = JsonDocument.Parse(payload); }
+        catch (JsonException) { return payload; }
+
+        using (doc)
+        {
+            if (doc.RootElement.ValueKind != JsonValueKind.Object) return payload;
+
+            var buffer = new System.IO.MemoryStream();
+            using (var writer = new System.Text.Json.Utf8JsonWriter(buffer))
+            {
+                writer.WriteStartObject();
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                {
+                    if (prop.Name.StartsWith('$')) continue;
+                    if (string.Equals(prop.Name, "key", StringComparison.Ordinal)) continue;
+                    if (keyPropertyName is not null
+                        && string.Equals(prop.Name, keyPropertyName, StringComparison.Ordinal)) continue;
+                    prop.WriteTo(writer);
+                }
+                writer.WriteEndObject();
+            }
+            return System.Text.Encoding.UTF8.GetString(buffer.ToArray());
+        }
     }
 
     private static BowireMessageInfo BuildEmptyInput() => new("Empty", "odata.Empty", []);
