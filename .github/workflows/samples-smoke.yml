@@ -65,7 +65,7 @@ jobs:
       # a diagnosis, and they are gone once the job ends.
       - name: Upload sample logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: samples-smoke-logs
           path: |
