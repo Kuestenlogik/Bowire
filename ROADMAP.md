@@ -283,6 +283,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [488](https://github.com/Kuestenlogik/Bowire/issues/488) | Bowire | [RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench](#issue-kuestenlogik-bowire-488) | ⬜ Backlog |  |
 | [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog |  |
 | [528](https://github.com/Kuestenlogik/Bowire/issues/528) | Bowire | [GraphQL sample throws SchemaException on every request (HotChocolate cannot resolve Query/Mutation/Subscription)](#issue-kuestenlogik-bowire-528) | ⬜ Backlog |  |
+| [529](https://github.com/Kuestenlogik/Bowire/issues/529) | Bowire | [OData plugin: EDM functions and actions are never discovered (class doc claims they are)](#issue-kuestenlogik-bowire-529) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1157,6 +1158,10 @@ The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the w
 #### <a id="issue-kuestenlogik-bowire-528"></a>⬜ Backlog · [#528](https://github.com/Kuestenlogik/Bowire/issues/528) GraphQL sample throws SchemaException on every request (HotChocolate cannot resolve Query/Mutation/Subscription)
 
 `samples/Kuestenlogik.Bowire.Sample.GraphQL` starts and serves `/bowire`, but **every** GraphQL request — including the introspection query Bowire's discovery sends — fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/528)
+
+#### <a id="issue-kuestenlogik-bowire-529"></a>⬜ Backlog · [#529](https://github.com/Kuestenlogik/Bowire/issues/529) OData plugin: EDM functions and actions are never discovered (class doc claims they are)
+
+`BowireODataProtocol.DiscoverAsync` emits exactly five methods per entity set — GET, GET_BY_KEY, POST, PATCH, DELETE. EDM **functions and actions** are parsed into the model but never surfaced, so they cannot be invoked from the workbench. [[more]](https://github.com/Kuestenlogik/Bowire/issues/529)
 
 ---
 
