@@ -424,6 +424,15 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         var raw = !string.IsNullOrEmpty(svc?.Package) ? svc.Package : service;
         var path = raw.StartsWith('/') ? raw : $"/{raw}";
         var baseUrl = serverUrl.TrimEnd('/');
+
+        // The connection URL may already BE the hub URL — a catalogue
+        // entry names the hub directly ("http://host:5184/chathub"), and
+        // so does `--url signalr@http://host/chathub`. Appending the
+        // discovered path again yields /chathub/chathub, which negotiates
+        // 404 and surfaces as a 502 from the invoke endpoint.
+        if (baseUrl.EndsWith(path, StringComparison.OrdinalIgnoreCase))
+            return baseUrl;
+
         return $"{baseUrl}{path}";
     }
 }
