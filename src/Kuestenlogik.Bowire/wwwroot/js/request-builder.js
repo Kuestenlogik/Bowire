@@ -988,7 +988,15 @@
                                 confirmLabel: 'Clear',
                                 onConfirm: clearHoppHistory
                             });
-                        } else if (window.confirm('Clear ' + rbHistoryList.length + ' history entries?')) {
+                        } else if (typeof bowireConfirm === 'function') {
+                            // Never window.confirm: a native modal blocks
+                            // the whole page and is unavailable in some
+                            // embedded hosts (see bowirePrompt's note).
+                            bowireConfirm(
+                                'Clear ' + rbHistoryList.length + ' history entries? Cannot be undone.',
+                                clearHoppHistory,
+                                { confirmText: 'Clear', danger: true });
+                        } else {
                             clearHoppHistory();
                         }
                     },

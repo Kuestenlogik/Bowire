@@ -1132,15 +1132,40 @@
         return bar;
     }
 
-    // Lightweight install-plugin prompt — same /api/plugins/install
-    // surface the previous Plugins page targeted, just driven from
-    // an inline prompt so the operator stays inside the Plugins sub-
-    // tree. The backend handles validation; we just relay the package
-    // id.
+    // Install-plugin dialog — same /api/plugins/install surface the
+    // previous Plugins page targeted, driven from Bowire's own prompt
+    // dialog so the operator stays inside the Plugins sub-tree. It
+    // used to call window.prompt(), which bowirePrompt exists
+    // precisely to avoid: a native modal doesn't match the theme,
+    // BLOCKS every event in the page while it is open (so an embedded
+    // host driving the workbench from automation wedges), and isn't
+    // available at all in some embedded hosts. The backend handles
+    // validation; we just relay the package id.
     function _openInstallPluginModal() {
-        var pkg = window.prompt('Package id to install (e.g. Kuestenlogik.Bowire.Plugin.Foo):', '');
-        if (!pkg) return;
-        pkg = pkg.trim();
+        Promise.resolve(
+            typeof bowirePrompt === 'function'
+                ? bowirePrompt('Package id as published on NuGet — the plugin loads without a restart.', {
+                    title: 'Install a protocol plugin',
+                    placeholder: 'Kuestenlogik.Bowire.Protocol.Kafka',
+                    confirmText: 'Install',
+                    // Catch the two mistakes the backend can only answer
+                    // with a slow NuGet round-trip: an empty id and a
+                    // pasted URL / path instead of a package id.
+                    validator: function (v) {
+                        var t = String(v || '').trim();
+                        if (!t) return 'Enter a package id.';
+                        if (/[\\/\s]/.test(t)) return 'That looks like a path or URL — enter the package id only.';
+                        return null;
+                    }
+                })
+                : null
+        ).then(function (entered) {
+            if (!entered) return;
+            _installPluginById(String(entered).trim());
+        });
+    }
+
+    function _installPluginById(pkg) {
         if (!pkg) return;
         pluginActionInFlight = pkg;
         pluginActionResult = null;
