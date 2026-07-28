@@ -433,7 +433,7 @@
             // httpPath / httpVerb are populated for protocols that carry them
             // (REST, gRPC-HTTP-transcoding) so the Phase-1 mock server can
             // match incoming wire requests against recorded steps.
-            captureRecordingStep({
+            bowireCaptureStep({
                 protocol: (selectedService && selectedService.source) || selectedProtocol || 'grpc',
                 service,
                 method,
@@ -672,7 +672,7 @@
             // AND for Phase-2c mock replay: receivedMessages preserves the
             // full frame sequence with per-frame timestampMs so the mock
             // server can reproduce the original stream cadence.
-            captureRecordingStep({
+            bowireCaptureStep({
                 protocol: (selectedService && selectedService.source) || selectedProtocol || 'grpc',
                 service,
                 method,

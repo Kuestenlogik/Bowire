@@ -538,7 +538,7 @@
                 // log purposes AND for Phase-2 mock replay: sentMessages /
                 // receivedMessages carry per-frame timestampMs so the mock
                 // can reproduce the duplex cadence on replay.
-                captureRecordingStep({
+                bowireCaptureStep({
                     protocol: (selectedService && selectedService.source) || selectedProtocol || 'grpc',
                     service: selectedService.name,
                     method: selectedMethod.name,

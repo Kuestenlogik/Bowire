@@ -825,6 +825,12 @@
             return;
         }
 
+        // Optional Recordings package — see renderRecordingToggleButton.
+        if (typeof isRecording !== 'function') {
+            toast('Capturing mocks needs the Recordings package (Kuestenlogik.Bowire.Recordings).', 'error');
+            return;
+        }
+
         if (!isRecording()) {
             // startRecording already push+persist+set-active; it also
             // renders, but the trailing render() below still runs so
@@ -861,7 +867,7 @@
                 httpPath = fr.method;
             }
         }
-        captureRecordingStep({
+        bowireCaptureStep({
             protocol: fr.protocol,
             service: fr.service,
             method: fr.method,
