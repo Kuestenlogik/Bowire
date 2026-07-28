@@ -852,13 +852,47 @@ public sealed class GrpcMockExtensionTests
     }
 
     [Fact]
-    public void RequiresHttp2_Returns_True_When_Recording_Has_Grpc_Step()
+    public void RequiresHttp2_Returns_True_When_Grpc_Step_Can_Serve()
+    {
+        // #511: only steps with something to serve over the gRPC wire
+        // force HTTP/2 — unary wire bytes, streaming frames, or a
+        // reflection descriptor. A bare grpc step must NOT flip the
+        // whole port to plaintext HTTP/2 (that would cut off every
+        // HTTP/1.1 replay in a mixed recording).
+        var ext = new GrpcMockHostingExtension();
+        var rec = new BowireRecording();
+        rec.Steps.Add(new BowireRecordingStep { Id = "s1", Protocol = "grpc", ResponseBinary = "AAAA" });
+
+        Assert.True(ext.RequiresHttp2(rec));
+    }
+
+    [Fact]
+    public void RequiresHttp2_Returns_True_For_Streaming_Frames()
     {
         var ext = new GrpcMockHostingExtension();
         var rec = new BowireRecording();
-        rec.Steps.Add(new BowireRecordingStep { Id = "s1", Protocol = "grpc" });
+        rec.Steps.Add(new BowireRecordingStep
+        {
+            Id = "s1",
+            Protocol = "grpc",
+            MethodType = "ServerStreaming",
+            ReceivedMessages = [new BowireRecordingFrame { Index = 0, ResponseBinary = "AAAA" }],
+        });
 
         Assert.True(ext.RequiresHttp2(rec));
+    }
+
+    [Fact]
+    public void RequiresHttp2_Returns_False_For_Grpc_Step_Without_Wire_Bytes()
+    {
+        // Hand-authored / pre-v2 recording: the grpc step has a JSON
+        // response but no responseBinary — nothing servable, HTTP/1.1
+        // stays so the recording's other protocols remain reachable.
+        var ext = new GrpcMockHostingExtension();
+        var rec = new BowireRecording();
+        rec.Steps.Add(new BowireRecordingStep { Id = "s1", Protocol = "grpc", Response = "{}" });
+
+        Assert.False(ext.RequiresHttp2(rec));
     }
 
     [Fact]
@@ -866,7 +900,7 @@ public sealed class GrpcMockExtensionTests
     {
         var ext = new GrpcMockHostingExtension();
         var rec = new BowireRecording();
-        rec.Steps.Add(new BowireRecordingStep { Id = "s1", Protocol = "GRPC" });
+        rec.Steps.Add(new BowireRecordingStep { Id = "s1", Protocol = "GRPC", ResponseBinary = "AAAA" });
 
         Assert.True(ext.RequiresHttp2(rec));
     }
