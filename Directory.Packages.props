@@ -181,7 +181,11 @@
          for the BYOK Claude path — Anthropic doesn't publish an
          official IChatClient binding yet. -->
     <PackageVersion Include="Anthropic.SDK" Version="5.10.0" />
-    <PackageVersion Include="OllamaSharp" Version="5.4.30" />
+    <!-- Held at 5.4.25: 5.4.26+ ship a source generator built against
+         Roslyn 5.6, which no released .NET 10 SDK carries yet (10.0.204
+         still runs 5.3) — CS9057 "analyzer references a newer compiler".
+         Re-bump once an SDK with Roslyn 5.6 is on the runners. -->
+    <PackageVersion Include="OllamaSharp" Version="5.4.25" />
     <!-- Markdig powers the in-app help search (#154 Phase 2) — the
          indexer walks parsed markdown to strip layout and code-block
          noise before tokenising. The on-the-wire body stays raw
