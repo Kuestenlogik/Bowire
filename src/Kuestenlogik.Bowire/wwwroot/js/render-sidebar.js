@@ -4333,7 +4333,7 @@
 
         if (sidebarView === 'environments') {
             renderEnvironmentsListInto(list);
-        } else if (sidebarView === 'flows') {
+        } else if (sidebarView === 'flows' && typeof renderFlowsListInto === 'function') {
             renderFlowsListInto(list);
         } else if (sidebarView === 'favorites') {
             renderFavoritesListInto(list);
@@ -4872,7 +4872,7 @@
             var envCountForFooter = getEnvironments().length;
             footerLabel = envCountForFooter + ' environment' + (envCountForFooter === 1 ? '' : 's');
         } else if (sidebarView === 'flows') {
-            var flowCountForFooter = flowsList.length;
+            var flowCountForFooter = typeof flowsList !== 'undefined' ? flowsList.length : 0;
             footerLabel = flowCountForFooter + ' flow' + (flowCountForFooter === 1 ? '' : 's');
         } else if (sidebarView === 'favorites') {
             var favCountForFooter = getFavorites().length;

@@ -3603,11 +3603,11 @@
                     // still acts as 'force open' (openHelpRail
                     // re-pins the contextual topic regardless of
                     // current state).
-                    if (helpActive) {
+                    if (helpActive && typeof helpCloseDrawer === 'function') {
                         helpCloseDrawer();
                     } else if (typeof openHelpRail === 'function') {
                         openHelpRail();
-                    } else {
+                    } else if (typeof helpOpenDrawer === 'function') {
                         helpOpenDrawer();
                     }
                 } else {

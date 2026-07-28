@@ -2546,7 +2546,11 @@
         if (isActive && typeof getFavorites === 'function') {
             try { favCount = getFavorites().length; } catch { /* ignore */ }
         }
-        var mockCount = isActive && Array.isArray(mocksList) ? mocksList.length : '—';
+        // typeof first: Array.isArray(mocksList) still EVALUATES the
+        // identifier, and mocksList ships in the optional Mock package —
+        // this pane is the Workspaces rail, which is always on.
+        var mockCount = isActive && typeof mocksList !== 'undefined' && Array.isArray(mocksList)
+            ? mocksList.length : '—';
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
             el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Contents' }),
             el('div', { className: 'bowire-ws-detail-stats' },
@@ -4951,7 +4955,7 @@
         var mainViewKey = sidebarView === 'environments'
             ? 'env'
             : sidebarView === 'flows'
-                ? 'flows-' + (flowEditorSelectedId || 'none')
+                ? 'flows-' + ((typeof flowEditorSelectedId !== 'undefined' && flowEditorSelectedId) || 'none')
                 : sidebarView === 'intercept'
                     ? 'intercept-' + (typeof interceptSubView !== 'undefined' ? interceptSubView : 'captured')
                         + '-' + (typeof interceptedFlowSelectedId !== 'undefined' ? (interceptedFlowSelectedId || 'none') : 'none')

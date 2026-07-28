@@ -4343,9 +4343,13 @@
             tryRun('workspaces',      function () { persistWorkspaces(); });
             tryRun('requestTabs',     function () { persistRequestTabs(); });
             tryRun('collections',     function () { persistCollections(); });
-            tryRun('recordings',      function () { persistRecordings(); });
-            tryRun('flows',           function () { persistFlows(); });
-            tryRun('benchmarks',      function () { persistBenchmarks(); });
+            // Optional-package slots: skipped outright when the package
+            // isn't part of this build, so a minimal host doesn't log three
+            // warnings and show a permanently-erroring save indicator on
+            // every flush.
+            tryRun('recordings',      function () { if (typeof persistRecordings === 'function') persistRecordings(); });
+            tryRun('flows',           function () { if (typeof persistFlows === 'function') persistFlows(); });
+            tryRun('benchmarks',      function () { if (typeof persistBenchmarks === 'function') persistBenchmarks(); });
         } finally {
             _flushInProgress = false;
         }
@@ -5503,13 +5507,20 @@
             // rails merged into Intercept and their renderers were
             // retired, so returning them verbatim would dead-end).
             if (v === 'proxy' || v === 'intercepted') return 'intercept';
-            if (v === 'favorites' || v === 'environments' || v === 'flows'
+            if (v === 'favorites' || v === 'environments'
                 || v === 'intercept') return v;
+            // 'flows' only when the optional Flows package is part of this
+            // build: the value survives in localStorage across hosts (and
+            // across origins that share one), so a minimal embedded host
+            // would otherwise boot straight into a rail whose renderer
+            // doesn't exist.
+            if (v === 'flows' && typeof loadFlows === 'function') return v;
             return 'services';
         } catch { return 'services'; }
     })();
     function setSidebarView(v) {
         if (v === 'proxy' || v === 'intercepted') v = 'intercept'; // #368 migrate
+        if (v === 'flows' && typeof loadFlows !== 'function') v = 'services'; // package absent
         sidebarView = (v === 'favorites' || v === 'environments' || v === 'flows'
             || v === 'intercept') ? v : 'services';
         try { localStorage.setItem(SIDEBAR_VIEW_KEY, sidebarView); } catch {}
