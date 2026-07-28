@@ -31,7 +31,7 @@
          known-good version. -->
     <PackageVersion Include="Kuestenlogik.Bowire.Protocol.TacticalApi" Version="1.0.4" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.10" />
-    <PackageVersion Include="Microsoft.Identity.Web" Version="4.13.2" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="4.14.0" />
     <!-- Held at 3.8.0: 3.9.0 makes IOpenApiMediaType.Example read-only,
          which breaks the code the Microsoft.AspNetCore.OpenApi (10.0.10)
          XML-comment source generator emits — CS0200 in generated code
