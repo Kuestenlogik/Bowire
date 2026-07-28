@@ -4611,8 +4611,19 @@
                 // Get or create the panel for this service's URL —
                 // serverUrls panels were pre-created above; this
                 // covers stray origins (workspace-local schemas, &c.)
-                // not in the URL bar.
+                // not in the URL bar. The backend stamps originUrl with
+                // the hint-STRIPPED URL while serverUrls holds the raw
+                // `proto@url` entries, so resolve back to the raw entry
+                // via urlMatchesService — otherwise every prefixed source
+                // shows "0 services" next to a duplicate bare host:port
+                // panel that carries the actual services.
                 var _thisOriginUrl = svc.originUrl || '';
+                for (var su = 0; su < serverUrls.length; su++) {
+                    if (urlMatchesService(serverUrls[su], svc)) {
+                        _thisOriginUrl = serverUrls[su];
+                        break;
+                    }
+                }
                 var _panelEntry = ensureSourcePanel(_thisOriginUrl);
                 _panelEntry.services++;
 

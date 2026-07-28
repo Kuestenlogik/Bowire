@@ -304,7 +304,11 @@
         if (st === 'connected' || st === 'connecting') {
             connectionStatuses[url] = 'disconnected';
             if (Array.isArray(services)) {
-                services = services.filter(function (s) { return s.originUrl !== url; });
+                // urlMatchesService, not ===: the backend strips the
+                // `proto@` hint from originUrl while the source list
+                // keeps the raw URL, so a strict compare never drops
+                // the services of a prefixed source.
+                services = services.filter(function (s) { return !urlMatchesService(url, s); });
             }
             render();
             return;
@@ -326,7 +330,7 @@
         // Snapshot the pre-refresh state so we can compute a delta
         // when the fetch resolves.
         var prev = (Array.isArray(services) ? services : [])
-            .filter(function (s) { return s.originUrl === url; });
+            .filter(function (s) { return urlMatchesService(url, s); });
         var prevSvcCount = prev.length;
         var prevMethodCount = prev.reduce(function (acc, s) {
             return acc + (Array.isArray(s.methods) ? s.methods.length : 0);
@@ -336,7 +340,7 @@
         render();
         Promise.resolve(fetchServicesForUrl(url)).then(function (fresh) {
             if (!Array.isArray(services)) services = [];
-            services = services.filter(function (s) { return s.originUrl !== url; });
+            services = services.filter(function (s) { return !urlMatchesService(url, s); });
             if (Array.isArray(fresh) && fresh.length) {
                 services = services.concat(fresh);
             }
