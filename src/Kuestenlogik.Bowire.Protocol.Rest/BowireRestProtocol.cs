@@ -133,9 +133,7 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
             }
 
             // Index for invocation lookup, keyed by source name
-            var index = services
-                .SelectMany(svc => svc.Methods.Select(m => (key: svc.Name + "::" + m.Name, m)))
-                .ToDictionary(pair => pair.key, pair => pair.m, StringComparer.Ordinal);
+            var index = BuildMethodIndex(services);
             _cache[doc.SourceName] = new RestSchemaCache(services, index, apiBaseUrl);
 
             all.AddRange(services);
@@ -145,12 +143,32 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
 
     private void CacheEmbeddedSchemas(List<BowireServiceInfo> services)
     {
-        var index = services
-            .SelectMany(svc => svc.Methods.Select(m => (key: svc.Name + "::" + m.Name, m)))
-            .ToDictionary(pair => pair.key, pair => pair.m, StringComparer.Ordinal);
         // Empty key marks "embedded mode" — invocation falls through to whatever
         // serverUrl the BowireApiEndpoints layer resolves from the request.
-        _cache[string.Empty] = new RestSchemaCache(services, index, string.Empty);
+        _cache[string.Empty] = new RestSchemaCache(services, BuildMethodIndex(services), string.Empty);
+    }
+
+    /// <summary>
+    /// Build the <c>{service}::{method}</c> → method lookup used at invoke
+    /// time. Duplicate keys are tolerated (first wins): an OpenAPI surface
+    /// can legitimately yield the same operation twice — the same handler
+    /// mapped to several routes, an operation listed under multiple tags,
+    /// or two documents describing one endpoint. A raw ToDictionary threw
+    /// ArgumentException there and took the WHOLE discovery pass down, so
+    /// a single duplicate left the operator staring at "0 services /
+    /// Disconnected" with the real reason only in the host log (#514).
+    /// </summary>
+    private static Dictionary<string, BowireMethodInfo> BuildMethodIndex(List<BowireServiceInfo> services)
+    {
+        var index = new Dictionary<string, BowireMethodInfo>(StringComparer.Ordinal);
+        foreach (var svc in services)
+        {
+            foreach (var method in svc.Methods)
+            {
+                index.TryAdd(svc.Name + "::" + method.Name, method);
+            }
+        }
+        return index;
     }
 
     private async Task<List<BowireServiceInfo>> DiscoverInternalAsync(string docUrl, CancellationToken ct)

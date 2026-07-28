@@ -13,6 +13,25 @@
 (function () {
     'use strict';
 
+    /**
+     * Hand a step to the recorder — a no-op when the OPTIONAL Recordings
+     * package (Kuestenlogik.Bowire.Recordings) isn't part of this build.
+     *
+     * Core fragments call this after every invoke / stream / channel so a
+     * running recording captures the step. `captureRecordingStep` itself
+     * lives in the package's fragment, so calling it directly from core
+     * threw `ReferenceError: captureRecordingStep is not defined` in
+     * embedded hosts that only reference Kuestenlogik.Bowire — the error
+     * surfaced INSTEAD of the response the user asked for. One guarded
+     * helper beats a `typeof` at every call site (and beats a core-side
+     * fallback declaration, which would collide with the package's own
+     * function in the shared IIFE scope).
+     */
+    function bowireCaptureStep(step) {
+        if (typeof captureRecordingStep !== 'function') return;
+        captureRecordingStep(step);
+    }
+
     const config = window.__BOWIRE_CONFIG__ || {
         title: 'Bowire',
         description: 'Multi-protocol API workbench',

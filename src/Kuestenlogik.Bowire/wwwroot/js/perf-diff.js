@@ -791,7 +791,9 @@
         // Ctrl+Enter hint retired — the Execute button's title
         // attribute already exposes the shortcut on hover.
 
-        bar.appendChild(renderRecordingToggleButton());
+        // null when the optional Recordings package isn't loaded.
+        var recToggle = renderRecordingToggleButton();
+        if (recToggle) bar.appendChild(recToggle);
         // Console toggle retired from the action bar — same affordance
         // lives in the statusbar at the bottom-right.
         return bar;
@@ -892,6 +894,13 @@
      * the active recording so users can see captures landing as they happen.
      */
     function renderRecordingToggleButton() {
+        // The Recordings package is optional — without it isRecording /
+        // recordingsList / startRecording don't exist at all. The action
+        // bar is CORE, so an unguarded call threw ReferenceError on every
+        // method open and the whole request pane never rendered (embedded
+        // hosts that only reference Kuestenlogik.Bowire saw a dead UI).
+        // No recording surface → no toggle button.
+        if (typeof isRecording !== 'function') return null;
         var active = isRecording();
         var activeRec = active ? recordingsList.find(function (r) { return r.id === recordingActiveId; }) : null;
         var stepCount = activeRec ? activeRec.steps.length : 0;
