@@ -6,6 +6,12 @@
       "name": "Ticker (this host)",
       "protocols": ["sse"],
       "tags": ["sample", "sse"]
+    },
+    {
+      "url": "http://localhost:5186/events/report",
+      "name": "Status report, multi-line data (this host)",
+      "protocols": ["sse"],
+      "tags": ["sample", "sse"]
     }
   ]
 }

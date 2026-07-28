@@ -30,6 +30,11 @@
          management (Directory.Packages.props). -->
     <PackageReference Include="Grpc.AspNetCore" />
     <PackageReference Include="Grpc.AspNetCore.Server.Reflection" />
+    <!-- Grpc.AspNetCore.Web: the server half of gRPC-Web
+         (UseGrpcWeb / EnableGrpcWeb), so the same port also answers the
+         HTTP/1.1 framing a `grpcweb@` target URL speaks. Already
+         centrally versioned for the gRPC-Web integration fixture. -->
+    <PackageReference Include="Grpc.AspNetCore.Web" />
     <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
   </ItemGroup>
 

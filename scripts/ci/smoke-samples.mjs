@@ -189,6 +189,7 @@ async function smokeOne(sample) {
   }
 
   const { child, baseUrl, getLog } = started;
+  let logAtDiscovery = null;
   try {
     // 1. embedded workbench mounted
     const ui = await getJson(`${baseUrl}/bowire`);
@@ -246,6 +247,11 @@ async function smokeOne(sample) {
     }
     const methodCount = services.reduce((n, s) => n + (s.methods?.length ?? 0), 0);
     process.stdout.write(`   discovery   ${services.length} service(s), ${methodCount} method(s)\n`);
+    // Everything logged up to here is startup + discovery. What the host
+    // logs during the invoke sweep is a different animal: every method is
+    // called with an EMPTY payload, so a handler rejecting a missing
+    // required argument is behaving correctly, not failing.
+    logAtDiscovery = getLog();
 
     if (services.length === 0) {
       if (sample.needsBroker) {
@@ -290,7 +296,7 @@ async function smokeOne(sample) {
     child.kill('SIGKILL');
     // Surface host-side exceptions even when the HTTP checks passed:
     // a swallowed discovery failure logs a warning and returns [].
-    const log = getLog();
+    const log = logAtDiscovery ?? getLog();
     const suspicious = log.split('\n').filter(l => /\bUnhandled exception|\bfail:|Discovery failed/i.test(l));
     if (suspicious.length) {
       failures.push(`${sample.name}: host logged errors —\n      ${suspicious.slice(0, 5).join('\n      ')}`);
