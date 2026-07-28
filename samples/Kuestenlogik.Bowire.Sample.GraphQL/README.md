@@ -26,3 +26,18 @@ dotnet run --project samples/Kuestenlogik.Bowire.Sample.GraphQL
 
 Try `subscription { bookAdded { id title author } }`, then an `AddBook`
 mutation, to see the subscription push over WebSockets.
+
+## If you copy this sample
+
+Two details are easy to miss and both make discovery return nothing:
+
+- **Introspection has to be allowed.** HotChocolate disables it outside
+  Development, and discovery *is* introspection — without the
+  `IntrospectionInterceptor` in `Schema.cs`, a Production host answers
+  `HC0046 Introspection is not allowed for the current request` and the
+  Sources rail stays empty.
+- **The root types have to be public.** HotChocolate cannot resolve
+  `internal` `Query` / `Mutation` / `Subscription` types and throws
+  `SchemaException`. Declaring them below top-level statements in
+  `Program.cs` forces them to be namespace-less, hence `internal` — which
+  is why they live in `Schema.cs` here.
