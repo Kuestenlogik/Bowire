@@ -13,6 +13,11 @@ namespace Kuestenlogik.Bowire.Tests;
 /// + corrupt-file recovery; this file targets the per-missing-property
 /// migration branches that determine which fields get back-filled.
 /// </summary>
+// EnvironmentStore.StorePath is process-global static state; every class
+// that swaps it for a temp path must share this collection so xunit never
+// runs them concurrently (parallel ctor/Dispose races restore the wrong
+// path mid-test).
+[Collection("EnvironmentStoreSerialised")]
 public sealed class EnvironmentStoreSchemaMigrationTests : IDisposable
 {
     private readonly string _originalPath;

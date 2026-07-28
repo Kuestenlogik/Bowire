@@ -11,6 +11,9 @@ namespace Kuestenlogik.Bowire.Tests;
 /// settable so the Save path can be exercised against a temp file
 /// without touching the developer's real <c>~/.bowire/</c>.
 /// </summary>
+// See the note on EnvironmentStoreSchemaMigrationTests — shared static
+// StorePath forces serialised execution.
+[Collection("EnvironmentStoreSerialised")]
 public sealed class EnvironmentStoreTests : IDisposable
 {
     private readonly string _originalPath;
