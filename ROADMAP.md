@@ -287,6 +287,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ⬜ Backlog |  |
 | [536](https://github.com/Kuestenlogik/Bowire/issues/536) | Bowire | [Offer next-step handoffs directly from a successful response](#issue-kuestenlogik-bowire-536) | ⬜ Backlog |  |
 | [537](https://github.com/Kuestenlogik/Bowire/issues/537) | Bowire | [Make the catalogue a primary entry point, not a side path](#issue-kuestenlogik-bowire-537) | ⬜ Backlog |  |
+| [538](https://github.com/Kuestenlogik/Bowire/issues/538) | Bowire | [Show the CLI equivalent of every request (Copy as Bowire CLI)](#issue-kuestenlogik-bowire-538) | ⬜ Backlog |  |
+| [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1177,6 +1179,14 @@ Every follow-up action the proposal names already exists as a callable function;
 #### <a id="issue-kuestenlogik-bowire-537"></a>⬜ Backlog · [#537](https://github.com/Kuestenlogik/Bowire/issues/537) Make the catalogue a primary entry point, not a side path
 
 The catalogue seam is fully built server-side (IBowireCatalogueProvider + local/http/consul in core, kubernetes/agent as sibling packages, GET/POST /api/catalogue/{info,entries,refresh,config}, BowireCatalogueOverrideStore persisting ~/.bowire/catalogue-config.json) but is effectively invisible in t … [[more]](https://github.com/Kuestenlogik/Bowire/issues/537)
+
+#### <a id="issue-kuestenlogik-bowire-538"></a>⬜ Backlog · [#538](https://github.com/Kuestenlogik/Bowire/issues/538) Show the CLI equivalent of every request (Copy as Bowire CLI)
+
+Feasible, but the proposal's sample line is not a real command today: `bowire call` in `src/Kuestenlogik.Bowire.Tool/CliHandler.cs` is hard-wired to gRPC (`GrpcReflectionClient` + `GrpcInvoker`), there is no positional-URL form, no `proto@url` on the CLI, no `--protocol`, no `--stream`, and no `--va … [[more]](https://github.com/Kuestenlogik/Bowire/issues/538)
+
+#### <a id="issue-kuestenlogik-bowire-539"></a>⬜ Backlog · [#539](https://github.com/Kuestenlogik/Bowire/issues/539) Cross-protocol correlated timeline for recordings
+
+Ship a "Correlated timeline" as a second tab inside the existing Recordings detail pane (`renderRecordingDetail` in `src/Kuestenlogik.Bowire.Recordings/wwwroot/js/recording.js`), rendering one lane per protocol with one bar per step and per-frame ticks for streaming steps, all placed on a shared tim … [[more]](https://github.com/Kuestenlogik/Bowire/issues/539)
 
 ---
 
