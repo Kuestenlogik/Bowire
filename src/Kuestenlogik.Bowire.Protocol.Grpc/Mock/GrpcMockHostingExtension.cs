@@ -33,8 +33,23 @@ public sealed class GrpcMockHostingExtension : IBowireMockHostingExtension
     public string Id => "grpc";
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// Only steps that can actually serve something over the gRPC wire
+    /// count: unary wire bytes (<c>responseBinary</c>), streaming frames
+    /// (<c>receivedMessages</c>), or a reflection-servable
+    /// <c>schemaDescriptor</c>. A grpc step with none of those (hand-
+    /// authored recording, pre-v2 capture) has nothing to serve, and
+    /// forcing the whole port to plaintext HTTP/2 for it would break
+    /// every HTTP/1.1 replay in a mixed recording (GraphQL / SSE / REST
+    /// steps become unreachable for ordinary clients; see the protocol
+    /// note in MockServer).
+    /// </remarks>
     public bool RequiresHttp2(BowireRecording recording) =>
-        recording.Steps.Any(s => string.Equals(s.Protocol, "grpc", StringComparison.OrdinalIgnoreCase));
+        recording.Steps.Any(s =>
+            string.Equals(s.Protocol, "grpc", StringComparison.OrdinalIgnoreCase)
+            && (!string.IsNullOrEmpty(s.ResponseBinary)
+                || s.ReceivedMessages is { Count: > 0 }
+                || !string.IsNullOrEmpty(s.SchemaDescriptor)));
 
     /// <inheritdoc/>
     public void ConfigureServices(

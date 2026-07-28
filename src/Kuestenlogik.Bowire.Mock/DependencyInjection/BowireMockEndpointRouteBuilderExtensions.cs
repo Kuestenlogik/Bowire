@@ -83,6 +83,10 @@ public static class BowireMockApplicationBuilderExtensions
     {
         var options = new MockOptions();
         configure?.Invoke(options);
+        // The disk path runs this inside RecordingLoader; in-memory
+        // recordings (tests, embedded hosts) get the same treatment so
+        // lean steps match either way.
+        RecordingLoader.NormalizeHttpRouting(recording);
         var logger = ResolveLogger(app, options);
         var handler = new MockHandler(recording, options, logger);
         options.OnHandlerCreated?.Invoke(handler);

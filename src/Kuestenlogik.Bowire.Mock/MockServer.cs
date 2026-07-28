@@ -355,6 +355,12 @@ public sealed class MockServer : IAsyncDisposable
             // ones that say yes.
             await StartTransportHostsAsync(recording, logger, ct).ConfigureAwait(false);
 
+            // Per-protocol replayability summary (#511) — silent
+            // truncation used to read as "covered everything": a step
+            // the matcher can never reach only surfaced as a request-
+            // time no-match 404. Say it up front instead.
+            LogReplayabilitySummary(recording, logger);
+
             // Plugin-contributed emitters (DIS, DDS, raw UDP, ...).
             // Each emitter inspects the recording, decides whether it
             // has relevant steps, and — if so — starts its own
@@ -396,6 +402,70 @@ public sealed class MockServer : IAsyncDisposable
                     {
                         logger.LogWarning(ex, "mock-emitter '{EmitterId}' failed to start; skipping.", emitter.Id);
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// One log line per protocol group in the recording: how its
+        /// steps replay, or a warning naming exactly why they can't.
+        /// </summary>
+        private void LogReplayabilitySummary(BowireRecording recording, ILogger logger)
+        {
+            foreach (var group in recording.Steps
+                .GroupBy(s => string.IsNullOrEmpty(s.Protocol) ? "(none)" : s.Protocol.ToUpperInvariant())
+                .OrderBy(g => g.Key, StringComparer.Ordinal))
+            {
+                var protocol = group.Key;
+                // Display label keeps the recording's own casing (protocol
+                // ids are lower-case by convention) — CA1308 forbids
+                // lower-casing the normalised key back.
+                var display = group.Select(s => s.Protocol)
+                    .FirstOrDefault(p => !string.IsNullOrEmpty(p)) ?? "(none)";
+                var count = group.Count();
+                switch (protocol)
+                {
+                    case "GRPC":
+                        var replayable = group.Count(s =>
+                            !string.IsNullOrEmpty(s.ResponseBinary)
+                            || s.ReceivedMessages is { Count: > 0 });
+                        if (replayable == count)
+                            logger.LogInformation("steps[grpc]: {Count} — replay over gRPC (HTTP/2)", count);
+                        else
+                            logger.LogWarning(
+                                "steps[grpc]: {Missing}/{Count} have no responseBinary wire bytes — those cannot replay. Re-record with a current Bowire, or serve the contract schema-only via --grpc-schema.",
+                                count - replayable, count);
+                        break;
+
+                    case "MQTT":
+                        if (_transportPorts.TryGetValue("mqtt", out var mqttPort))
+                            logger.LogInformation("steps[mqtt]: {Count} — replay via embedded broker on port {Port}", count, mqttPort);
+                        else
+                            logger.LogWarning(
+                                "steps[mqtt]: {Count} — no MQTT broker started (MQTT plugin not loaded, or the steps carry nothing to replay) — those cannot replay.",
+                                count);
+                        break;
+
+                    case "SOCKETIO":
+                        logger.LogInformation("steps[socketio]: {Count} — replay on GET /socket.io/ upgrades", count);
+                        break;
+
+                    default:
+                        var routed = group.Count(s => !string.IsNullOrEmpty(s.HttpPath) && !string.IsNullOrEmpty(s.HttpVerb));
+                        if (routed == count)
+                        {
+                            logger.LogInformation(
+                                "steps[{Protocol}]: {Count} — replay on {Routes}",
+                                display, count,
+                                string.Join(", ", group.Select(s => $"{s.HttpVerb} {s.HttpPath}").Distinct(StringComparer.Ordinal)));
+                        }
+                        else
+                        {
+                            logger.LogWarning(
+                                "steps[{Protocol}]: {Missing}/{Count} carry no HTTP routing (httpVerb + httpPath, or a serverUrl to derive them from) — those cannot replay.",
+                                display, count - routed, count);
+                        }
+                        break;
                 }
             }
         }

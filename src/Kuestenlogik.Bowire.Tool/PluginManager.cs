@@ -1190,44 +1190,105 @@ internal static class PluginManager
     {
         var results = new List<T>();
         var contract = typeof(T);
+        // Global type-identity guard: a NuGet-installed plugin and the
+        // Tool's compiled-in copy of the same assembly would otherwise
+        // both contribute an instance (two MQTT transport hosts fighting
+        // over one broker port). Plugin-directory installs win — they're
+        // scanned first.
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        void ScanAssembly(Assembly asm)
+        {
+            Type[] types;
+            try { types = asm.GetTypes(); }
+            catch (ReflectionTypeLoadException ex)
+            {
+                types = ex.Types.Where(t => t is not null).ToArray()!;
+            }
+            foreach (var type in types)
+            {
+                if (type is null) continue;
+                if (type.IsAbstract || type.IsInterface) continue;
+                if (!contract.IsAssignableFrom(type)) continue;
+                if (type.FullName is { } fullName && !seen.Add(fullName)) continue;
+                // Plugin instantiation: parameterless ctor of a
+                // 3rd-party type — anything can come out of its
+                // static field initialisers.
+#pragma warning disable CA1031 // Do not catch general exception types
+                try
+                {
+                    if (Activator.CreateInstance(type) is T instance)
+                    {
+                        results.Add(instance);
+                    }
+                }
+                catch (Exception ex)
+#pragma warning restore CA1031
+                {
+                    // Runtime plugin-discovery diagnostic — no CLI IO
+                    // context to thread through, so stays on the
+                    // process-global stderr. Not part of the
+                    // PluginIo-routed CLI surface.
+                    Console.Error.WriteLine(
+                        $"  warning: failed to instantiate plugin type '{type.FullName}': {ex.Message}");
+                }
+            }
+        }
+
         foreach (var ctx in s_pluginContexts)
         {
             foreach (var asm in ctx.Assemblies)
             {
-                Type[] types;
-                try { types = asm.GetTypes(); }
-                catch (ReflectionTypeLoadException ex)
-                {
-                    types = ex.Types.Where(t => t is not null).ToArray()!;
-                }
-                foreach (var type in types)
-                {
-                    if (type is null) continue;
-                    if (type.IsAbstract || type.IsInterface) continue;
-                    if (!contract.IsAssignableFrom(type)) continue;
-                    // Plugin instantiation: parameterless ctor of a
-                    // 3rd-party type — anything can come out of its
-                    // static field initialisers.
-#pragma warning disable CA1031 // Do not catch general exception types
-                    try
-                    {
-                        if (Activator.CreateInstance(type) is T instance)
-                        {
-                            results.Add(instance);
-                        }
-                    }
-                    catch (Exception ex)
-#pragma warning restore CA1031
-                    {
-                        // Runtime plugin-discovery diagnostic — no CLI IO
-                        // context to thread through, so stays on the
-                        // process-global stderr. Not part of the
-                        // PluginIo-routed CLI surface.
-                        Console.Error.WriteLine(
-                            $"  warning: failed to instantiate plugin type '{type.FullName}': {ex.Message}");
-                    }
-                }
+                ScanAssembly(asm);
             }
+        }
+
+        // The Tool ships the first-party protocol plugins compiled in
+        // (Bundle.Workbench references), so their mock contributions —
+        // GrpcMockHostingExtension, MqttMockTransportHost,
+        // RestMockHostingExtension, … — live in the default load
+        // context, not in a plugin ALC. Without this pass `bowire mock`
+        // silently ran with zero hosting extensions / transport hosts
+        // unless the same plugin was ALSO installed into the plugin
+        // directory (#511: no MQTT broker, no gRPC reflection, no
+        // OpenAPI re-serve on recordings that carry those steps).
+        foreach (var asm in EnumerateBuiltInBowireAssemblies())
+        {
+            ScanAssembly(asm);
+        }
+
+        return results;
+    }
+
+    /// <summary>
+    /// Load + return every <c>Kuestenlogik.Bowire*</c> assembly sitting next
+    /// to the entry assembly. Same on-disk sweep the protocol registry
+    /// uses for its discovery scan — contributions must be findable
+    /// even when nothing has touched the assembly's types yet (lazy
+    /// loading means "already in the AppDomain" is a race with whoever
+    /// asked first).
+    /// </summary>
+    private static List<Assembly> EnumerateBuiltInBowireAssemblies()
+    {
+        var results = new List<Assembly>();
+        string[] files;
+        try
+        {
+            files = Directory.GetFiles(AppContext.BaseDirectory, "Kuestenlogik.Bowire*.dll");
+        }
+        catch (IOException) { return results; }
+        catch (UnauthorizedAccessException) { return results; }
+
+        foreach (var file in files)
+        {
+            try
+            {
+                var name = AssemblyName.GetAssemblyName(file);
+                results.Add(Assembly.Load(name));
+            }
+            catch (BadImageFormatException) { /* native / non-.NET satellite — skip */ }
+            catch (FileLoadException) { /* version clash — the loaded copy is fine, but unreachable here — skip */ }
+            catch (IOException) { /* unreadable file — skip */ }
         }
         return results;
     }

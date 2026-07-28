@@ -318,9 +318,15 @@ public sealed class MockHandler
         // #403: read the request body (buffered) only when the active
         // recording actually declares a body matcher, so ordinary scans don't
         // pay to read the stream. gRPC bodies are binary protobuf — skipped.
+        // GraphQL steps need the body too (#511): the matcher ranks them by
+        // query affinity, and without the body every POST on the shared
+        // /graphql route would fall back to first-match-wins.
         string? requestBody = null;
-        if (!isGrpc && ctx.Request.ContentLength is not 0 && RecordingHasBodyMatchers())
+        if (!isGrpc && ctx.Request.ContentLength is not 0
+            && (RecordingHasBodyMatchers() || RecordingHasGraphQlSteps()))
+        {
             requestBody = await ReadBufferedBodyAsync(ctx);
+        }
 
         var request = new MockRequest
         {
@@ -944,6 +950,13 @@ public sealed class MockHandler
     {
         foreach (var s in _recording.Steps)
             if (s.Match?.Body is { Count: > 0 }) return true;
+        return false;
+    }
+
+    private bool RecordingHasGraphQlSteps()
+    {
+        foreach (var s in _recording.Steps)
+            if (string.Equals(s.Protocol, "graphql", StringComparison.OrdinalIgnoreCase)) return true;
         return false;
     }
 
