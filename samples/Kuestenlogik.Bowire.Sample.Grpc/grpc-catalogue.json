@@ -2,10 +2,16 @@
   "version": 1,
   "entries": [
     {
-      "url": "http://localhost:5182",
-      "name": "Greeter (this host)",
+      "url": "http://localhost:5183",
+      "name": "Greeter (this host, native gRPC)",
       "protocols": ["grpc"],
-      "tags": ["sample", "grpc"]
+      "tags": ["sample", "grpc", "transport:http2"]
+    },
+    {
+      "url": "grpcweb@http://localhost:5182",
+      "name": "Greeter (this host, gRPC-Web)",
+      "protocols": ["grpc"],
+      "tags": ["sample", "grpc", "transport:grpc-web"]
     }
   ]
 }

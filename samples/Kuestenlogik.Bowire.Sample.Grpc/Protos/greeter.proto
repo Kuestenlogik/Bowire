@@ -4,10 +4,70 @@ package bowire.samples.greeter;
 
 option csharp_namespace = "Bowire.Samples.Greeter";
 
+// All four gRPC call types on one service, so the workbench has a real
+// target for each of them rather than only unary + server streaming.
 service Greeter {
+  // Unary. Reads the `x-caller` request header, writes response
+  // trailers, and answers an empty name with InvalidArgument — metadata
+  // and status handling are both observable from one call.
   rpc SayHello (HelloRequest) returns (HelloReply);
+
+  // Server streaming. Five replies, half a second apart.
   rpc SayHelloStream (HelloRequest) returns (stream HelloReply);
+
+  // Client streaming. Queue N requests in the workbench; the summary
+  // comes back once the request stream completes.
+  rpc SayHelloBatch (stream HelloRequest) returns (HelloSummary);
+
+  // Duplex. One reply per request, both directions flowing
+  // independently over the same channel.
+  rpc Converse (stream HelloRequest) returns (stream HelloReply);
 }
 
-message HelloRequest { string name = 1; }
-message HelloReply { string message = 1; }
+// Salutation language. proto3 mandates the zero value; the server reads
+// it as English so an unset field is still a valid request.
+enum Language {
+  LANGUAGE_UNSPECIFIED = 0;
+  LANGUAGE_ENGLISH = 1;
+  LANGUAGE_GERMAN = 2;
+  LANGUAGE_FRENCH = 3;
+}
+
+message HelloRequest {
+  // Who to greet. Empty ⇒ InvalidArgument from SayHello.
+  string name = 1;
+
+  // Enum field — Bowire's form builder renders the four values as a
+  // select instead of a free-text box.
+  Language language = 2;
+
+  // Nested message — gives the form builder a sub-object to render
+  // rather than one flat row of scalars.
+  Caller caller = 3;
+
+  message Caller {
+    string team = 1;
+    // 1 = urgent, and the reply comes back shouted. Anything else keeps
+    // it civil.
+    int32 priority = 2;
+  }
+}
+
+message HelloReply {
+  string message = 1;
+
+  // The language actually used — echoed back so the enum round-trips
+  // visibly through the response viewer.
+  Language language = 2;
+
+  // The `x-caller` request header, or "anonymous" when it was absent.
+  string caller = 3;
+}
+
+// The single response SayHelloBatch sends after the client stream ends.
+message HelloSummary {
+  string message = 1;
+  int32 greeted = 2;
+  repeated string names = 3;
+  Language language = 4;
+}

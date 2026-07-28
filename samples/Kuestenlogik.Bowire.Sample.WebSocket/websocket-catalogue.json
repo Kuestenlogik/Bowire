@@ -6,6 +6,18 @@
       "name": "Echo (this host)",
       "protocols": ["websocket"],
       "tags": ["sample", "websocket"]
+    },
+    {
+      "url": "ws://localhost:5185/ws/binary",
+      "name": "Binary echo (this host)",
+      "protocols": ["websocket"],
+      "tags": ["sample", "websocket", "binary"]
+    },
+    {
+      "url": "ws://localhost:5185/ws/json",
+      "name": "Strict JSON (this host)",
+      "protocols": ["websocket"],
+      "tags": ["sample", "websocket", "close-status"]
     }
   ]
 }
