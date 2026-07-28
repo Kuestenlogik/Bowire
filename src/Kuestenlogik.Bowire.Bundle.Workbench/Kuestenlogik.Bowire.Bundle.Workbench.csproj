@@ -30,8 +30,6 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Core. -->
-    <PackageReference Include="Microsoft.OpenApi" />
-    <PackageReference Include="Microsoft.OpenApi.YamlReader" />
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
     <!-- Every built-in rail (#306 Phase G).
          v2.1 (#325): the foundational Home + Discover rails were folded
