@@ -298,7 +298,7 @@
                         for (var rk = rRemoved.length - 1; rk >= 0; rk--) recordingsTrash.unshift(rRemoved[rk]);
                         recordingsSelected.clear();
                         recordingsSelectionAnchor = null;
-                        persistRecordings();
+                        if (typeof persistRecordings === 'function') persistRecordings();
                         persistRecordingsTrash();
                         toast(rRemoved.length + ' recording' + (rRemoved.length === 1 ? '' : 's') + ' moved to trash', 'success');
                         render();
