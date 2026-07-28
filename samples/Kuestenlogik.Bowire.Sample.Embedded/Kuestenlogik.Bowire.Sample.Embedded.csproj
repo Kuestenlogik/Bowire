@@ -32,7 +32,6 @@
          when the operator points the workbench at /api/locations).
          Exposed at /openapi/v1.json by app.MapOpenApi(). -->
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
-    <PackageReference Include="Microsoft.OpenApi" VersionOverride="3.9.0" />
   </ItemGroup>
 
 </Project>
