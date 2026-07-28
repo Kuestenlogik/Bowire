@@ -707,9 +707,23 @@
             .then(function (r) { return r.ok ? r.json() : { annotations: [] }; })
             .then(function (data) {
                 bowireEffectiveCache[key] = data;
+                // First resolution for this (service, method): the render
+                // that kicked off this fetch decided the split layout from
+                // a cold cache (no split — see preferredSplitExtensionForMethod).
+                // Re-render once so a response that DOES carry a split-kind
+                // annotation gets its widget pane. The cache hit at the top
+                // of this function makes this a one-shot per key.
+                try { if (typeof render === 'function') render(); } catch (e) { /* pre-boot */ }
                 return data;
             })
-            .catch(function () { return { annotations: [] }; });
+            .catch(function () {
+                // Cache the failure too — otherwise an unreachable
+                // semantics endpoint would leave the cache cold and
+                // re-trigger this fetch on every render, forever.
+                var empty = { annotations: [] };
+                bowireEffectiveCache[key] = empty;
+                return empty;
+            });
     }
 
     /**
@@ -1317,15 +1331,19 @@
                         var k = anns[i] && anns[i].semantic;
                         if (!k || seenKinds[k]) continue;
                         seenKinds[k] = 1;
-                        if (!isSplit(k)) continue;
-                        var ext = bowirePreferredExtension(k);
-                        if (ext && ext.viewer) return ext;
+                        if (isSplit(k)) {
+                            var ext = bowirePreferredExtension(k);
+                            if (ext && ext.viewer) return ext;
+                        }
                         // Also accept a viewer registered for a parent
                         // kind whose pairing.required covers this kind
                         // — same matching shape mountWidgetsForMethod
                         // uses. Lets coordinate.latitude /
                         // coordinate.longitude annotations trigger the
-                        // coordinate.wgs84 viewer.
+                        // coordinate.wgs84 viewer. Runs for NON-split
+                        // kinds too — the auto-detector emits lat/lon,
+                        // never wgs84 itself, so gating this scan on
+                        // isSplit(k) would make it unreachable.
                         for (var rid in bowireExtensions.byId) {
                             if (!Object.prototype.hasOwnProperty.call(
                                     bowireExtensions.byId, rid)) continue;
@@ -1342,21 +1360,13 @@
                     return null;
                 }
             }
-            // Fallback: no annotation cache yet (first render race
-            // before /api/semantics/effective resolves). Walk every
-            // registered viewer and return the first whose primary
-            // kind has a split default. The widget may not actually
-            // mount (mountWidgetsForMethod gates on real pairing
-            // matches) but the split-pane wrapper appears so the
-            // first render doesn't flicker from tab to split when
-            // the cache lands.
-            for (var id in bowireExtensions.byId) {
-                if (!Object.prototype.hasOwnProperty.call(
-                        bowireExtensions.byId, id)) continue;
-                var e = bowireExtensions.byId[id];
-                if (!e.viewer) continue;
-                if (isSplit(e.kind)) return e;
-            }
+            // Cache not resolved yet (first render before
+            // /api/semantics/effective lands): NO split pane. The old
+            // "any registered split-default viewer" fallback here made
+            // every method render an empty half-width Map pane the
+            // moment the map package was installed; bowireFetchEffective
+            // re-renders once when the cache lands, which promotes the
+            // pane for methods that really carry a split-kind.
             return null;
         },
         // Phase 4.1 — response-tree extension hooks. The workbench

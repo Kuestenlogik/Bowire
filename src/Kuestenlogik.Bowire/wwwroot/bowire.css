@@ -295,7 +295,12 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    overflow: hidden;
+    /* clip, not hidden: overflow:hidden still lets the browser scroll
+       the shell programmatically (focus/scrollIntoView on a partially
+       clipped child shifts the ENTIRE fixed app layout up and it never
+       self-corrects — header off-screen, dead band below the statusbar).
+       overflow:clip forbids scrolling outright. */
+    overflow: clip;
 }
 
 /* Workspace identity band — a 2px accent strip between the topbar and
@@ -6959,6 +6964,9 @@ response below.
     display: flex;
     align-items: center;
     justify-content: space-between;
+    /* Gap between the title and the actions cluster — without it the
+       two collide edge-to-edge in a half-width split pane. */
+    gap: 12px;
     padding: 10px 16px;
     background: var(--bowire-bg-elevated);
     border-bottom: 1px solid var(--bowire-border);
@@ -6971,12 +6979,18 @@ response below.
     color: var(--bowire-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    flex: 0 0 auto;
 }
 
 .bowire-pane-actions {
     display: flex;
     align-items: center;
     gap: 6px;
+    /* Narrow panes: let the actions row scroll out of sight instead of
+       overflowing the header box or wrapping button labels. */
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
 }
 
 /* .bowire-pane-btn shares the .bowire-btn outline-button shape — see
@@ -7982,7 +7996,10 @@ so this
     display: flex;
     width: 100%;
     height: 100%;
-    min-height: 360px;
+    /* No fixed floor: a 360px min-height overflowed the pane body by
+       ~100px on short viewports. map.js carries its own 320px inline
+       min-height, so tall widgets still get their space. */
+    min-height: 0;
 }
 .bowire-widget-split-host > .bowire-split-pane-slot > .bowire-widget-pane {
     width: 100%;
@@ -8074,7 +8091,9 @@ so no
     flex-direction: column;
     width: 100%;
     height: 100%;
-    min-height: 360px;
+    /* Same as .bowire-widget-split-host: no fixed floor, the widget
+       brings its own. */
+    min-height: 0;
 }
 .bowire-widget-tab-strip {
     display: flex;
@@ -18276,6 +18295,11 @@ button.bowire-ws-detail-action {
     font-weight: 600;
     cursor: pointer;
     font-family: var(--bowire-font-sans);
+    /* Labels never wrap and buttons never get flex-squeezed below
+       their content — a 28px-tall outline button with "Expand all"
+       broken onto two lines is always wrong. */
+    white-space: nowrap;
+    flex: 0 0 auto;
     transition: background var(--bowire-transition-fast),
                 color var(--bowire-transition-fast),
                 border-color var(--bowire-transition-fast);
@@ -24242,6 +24266,11 @@ not as the
     border: 1px solid var(--bowire-border);
     font-size: 11px;
     line-height: 1.4;
+    /* Half-width split panes compress toolbar flex items below their
+       min-content width; without these the "· N msgs" count wraps to
+       a vertical letter column beside the state label. */
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 .bowire-stream-status-pill .bowire-stream-status-count {
     color: var(--bowire-text-tertiary);

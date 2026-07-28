@@ -6914,25 +6914,30 @@
                             input.click();
                         }
                     }),
-                    el('button', {
-                        id: 'bowire-json-grpcurl-btn',
-                        className: 'bowire-pane-btn',
-                        textContent: 'grpcurl',
-                        title: 'Copy request as grpcurl command',
-                        onClick: function () {
-                            if (!selectedService || !selectedMethod) return;
-                            var body = requestMessages[0] || '{}';
-                            var target = (selectedService && selectedService.originUrl) || getPrimaryServerUrl() || 'localhost:5001';
-                            var plaintext = target.startsWith('http://');
-                            var host = target.replace(/^https?:\/\//, '');
-                            var cmd = 'grpcurl';
-                            if (plaintext) cmd += ' -plaintext';
-                            try { cmd += " -d '" + JSON.stringify(JSON.parse(body)).replace(/'/g, "'\\''") + "'"; }
-                            catch { cmd += " -d '" + body.replace(/\n/g, ' ').replace(/'/g, "'\\''") + "'"; }
-                            cmd += ' ' + host + ' ' + selectedService.name + '/' + selectedMethod.name;
-                            navigator.clipboard.writeText(cmd).then(function () { toast('Copied grpcurl command', 'success'); });
-                        }
-                    })
+                    // Protocol-aware "copy as command" — the label and the
+                    // generated snippet come from the code-export tables
+                    // (curl for REST/GraphQL/MCP, grpcurl for gRPC, wscat
+                    // for WebSocket, …). This button was a hard-coded
+                    // grpcurl exporter before, which produced a grpcurl
+                    // command for OData/REST methods.
+                    (function () {
+                        var cmdLangs = getCodeExportLanguages();
+                        var cmdLang = cmdLangs.length ? cmdLangs[0] : null;
+                        if (!cmdLang) return null;
+                        return el('button', {
+                            id: 'bowire-json-copy-cmd-btn',
+                            className: 'bowire-pane-btn',
+                            textContent: cmdLang.label,
+                            title: 'Copy request as ' + cmdLang.label + ' command',
+                            onClick: function () {
+                                if (!selectedService || !selectedMethod) return;
+                                var gen = CODE_EXPORT_GENERATORS[cmdLang.id];
+                                if (!gen) return;
+                                var cmd = gen(buildCodeExportContext());
+                                navigator.clipboard.writeText(cmd).then(function () { toast('Copied ' + cmdLang.label + ' command', 'success'); });
+                            }
+                        });
+                    })()
                 )
             );
             bodyContent.appendChild(paneHeader);
@@ -8834,13 +8839,27 @@
 
         // Kick off the asynchronous mount. mountWidgetsForMethod
         // resolves /api/semantics/effective, finds pairing matches,
-        // and calls each viewer's mount() on its own slot. We return
-        // the cleanup so the next render() can dispose this mount.
-        var widgetCleanup = fw.mountWidgetsForMethod(
-            selectedService.name, selectedMethod.name, widgetBody);
-        if (typeof widgetCleanup === 'function') {
-            bowireWidgetUnmounts.push(widgetCleanup);
-        }
+        // and calls each viewer's mount() on its own slot. Deferred
+        // via rAF against the LIVE pane body — morphdom discards this
+        // detached `widgetBody` on every render after the first, so a
+        // direct mount would land in an orphaned subtree (see the
+        // unary twin below).
+        var mountService = selectedService.name;
+        var mountMethod = selectedMethod.name;
+        requestAnimationFrame(function () {
+            var liveBody = document.querySelector(
+                '#bowire-response-widget-host-split .bowire-widget-pane-body');
+            // childElementCount guard: two renders can race their rAF
+            // mounts against the same live body (e.g. the semantics-cache
+            // re-render right after execute) — the second mount would
+            // duplicate the viewer.
+            if (!liveBody || liveBody.childElementCount > 0) return;
+            var widgetCleanup = fw.mountWidgetsForMethod(
+                mountService, mountMethod, liveBody);
+            if (typeof widgetCleanup === 'function') {
+                bowireWidgetUnmounts.push(widgetCleanup);
+            }
+        });
 
         return host;
     }
@@ -8988,11 +9007,29 @@
         widgetPane.appendChild(widgetBody);
         pane.secondSlot.appendChild(widgetPane);
 
-        var widgetCleanup = fw.mountWidgetsForMethod(
-            selectedService.name, selectedMethod.name, widgetBody);
-        if (typeof widgetCleanup === 'function') {
-            bowireWidgetUnmounts.push(widgetCleanup);
-        }
+        // Defer the mount and re-resolve the body from the LIVE document —
+        // this function builds a detached tree that morphdom merges into
+        // the page. After the first render the host id already exists in
+        // the live tree, so morphdom patches the live node and discards
+        // this `widgetBody`; mounting into it would strand the viewer in
+        // an orphaned subtree while the visible pane stays empty. Same
+        // pattern as renderStreamingOutput's post-mount wiring.
+        var mountService = selectedService.name;
+        var mountMethod = selectedMethod.name;
+        requestAnimationFrame(function () {
+            var liveBody = document.querySelector(
+                '#bowire-response-widget-host-split .bowire-widget-pane-body');
+            // childElementCount guard: two renders can race their rAF
+            // mounts against the same live body (e.g. the semantics-cache
+            // re-render right after execute) — the second mount would
+            // duplicate the viewer.
+            if (!liveBody || liveBody.childElementCount > 0) return;
+            var widgetCleanup = fw.mountWidgetsForMethod(
+                mountService, mountMethod, liveBody);
+            if (typeof widgetCleanup === 'function') {
+                bowireWidgetUnmounts.push(widgetCleanup);
+            }
+        });
 
         return host;
     }
@@ -9136,11 +9173,22 @@
         widgetBody.style.display = widgetActiveTab === 'widget' ? '' : 'none';
         host.appendChild(widgetBody);
 
-        var widgetCleanup = fw.mountWidgetsForMethod(
-            selectedService.name, selectedMethod.name, widgetBody);
-        if (typeof widgetCleanup === 'function') {
-            bowireWidgetUnmounts.push(widgetCleanup);
-        }
+        // Same live-DOM discipline as the split-mode mounts above:
+        // morphdom discards this detached subtree once the host id
+        // exists in the page, so mount deferred + re-resolved, with
+        // the childElementCount guard against racing renders.
+        var mountService = selectedService.name;
+        var mountMethod = selectedMethod.name;
+        requestAnimationFrame(function () {
+            var liveBody = document.querySelector(
+                '#bowire-response-widget-host .bowire-widget-tab-body[data-widget-tab="widget"]');
+            if (!liveBody || liveBody.childElementCount > 0) return;
+            var widgetCleanup = fw.mountWidgetsForMethod(
+                mountService, mountMethod, liveBody);
+            if (typeof widgetCleanup === 'function') {
+                bowireWidgetUnmounts.push(widgetCleanup);
+            }
+        });
 
         return host;
     }
@@ -9572,6 +9620,14 @@
                 selectedService.name, selectedMethod.name, streamMessages.length);
             badge.replaceWith(fresh);
         }
+        // Same surgical treatment for the action-bar message counter —
+        // no full render() runs while a stream is live, so bump its
+        // text nodes here or it stays frozen at the subscribe-time
+        // count until the stream closes.
+        var abCount = document.getElementById('bowire-actionbar-msg-count');
+        if (abCount) abCount.textContent = String(streamMessages.length);
+        var abLabel = document.getElementById('bowire-actionbar-msg-label');
+        if (abLabel) abLabel.textContent = streamMessages.length === 1 ? 'message' : 'messages';
 
         if (streamAutoScroll) {
             // Follow latest: shift selection forward and refresh the detail pane.

@@ -772,10 +772,16 @@
                     el('span', { textContent: `${statusInfo.durationMs}ms` })
                 ));
             }
-            if (streamMessages.length > 0) {
+            // Rendered whenever a stream is live OR messages exist, and
+            // id-addressed: full render() doesn't run per frame during a
+            // stream, so the surgical updater in renderStreamingOutput
+            // bumps these text nodes directly. Without the ids the bar
+            // froze at whatever count the last full render saw (usually
+            // "1 message") until the stream closed.
+            if (streamMessages.length > 0 || statusInfo.status === 'Streaming') {
                 statusBar.appendChild(el('div', { className: 'bowire-status-item' },
-                    el('span', { className: 'bowire-stream-badge', textContent: String(streamMessages.length) }),
-                    el('span', { textContent: `message${streamMessages.length !== 1 ? 's' : ''}` })
+                    el('span', { className: 'bowire-stream-badge', id: 'bowire-actionbar-msg-count', textContent: String(streamMessages.length) }),
+                    el('span', { id: 'bowire-actionbar-msg-label', textContent: `message${streamMessages.length !== 1 ? 's' : ''}` })
                 ));
             }
         }
