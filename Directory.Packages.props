@@ -119,7 +119,7 @@
          (Kuestenlogik.Bowire.Sample.GraphQL). Sample-only, same as the
          line above; kept on the 15.1.x floor for the same CVE reason. -->
     <PackageVersion Include="HotChocolate.Subscriptions.InMemory" Version="15.1.14" />
-    <PackageVersion Include="SocketIOClient" Version="4.0.4" />
+    <PackageVersion Include="SocketIOClient" Version="4.0.5" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
