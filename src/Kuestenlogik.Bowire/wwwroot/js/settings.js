@@ -2264,18 +2264,40 @@
             // with a missing package surfaces as a clear "provider
             // not loaded" message when the registry tries to resolve
             // it, instead of silently being unavailable.
-            { id: 'kubernetes', label: 'Kubernetes', desc: 'Query a Kubernetes API server for Service objects. Auto-picks in-cluster service-account / kubeconfig credentials when fields are blank. Requires the Kuestenlogik.Bowire.Catalogue.Kubernetes package.' },
-            { id: 'agent', label: 'Bowire Agent hub', desc: 'Aggregate entries from a Bowire Agent hub (depends on #128). Requires the Kuestenlogik.Bowire.Catalogue.Agent package.' }
+            { id: 'kubernetes', label: 'Kubernetes', package: 'Kuestenlogik.Bowire.Catalogue.Kubernetes', desc: 'Query a Kubernetes API server for Service objects. Auto-picks in-cluster service-account / kubeconfig credentials when fields are blank.' },
+            { id: 'agent', label: 'Bowire Agent hub', package: 'Kuestenlogik.Bowire.Catalogue.Agent', desc: 'Aggregate entries from a Bowire Agent hub (depends on #128).' }
         ];
+        // #537 — GET /api/catalogue/info now reports which provider
+        // implementations are actually loaded in the host process. Before
+        // this, the comment above promised that picking an uninstalled
+        // provider "surfaces as a clear provider-not-loaded message" —
+        // nothing checked, so saving it just silently produced no
+        // catalogue. Older hosts omit the field entirely; `null` means
+        // "can't tell" and we keep today's behaviour rather than greying
+        // out a picker we have no information about.
+        var loadedIds = Array.isArray(info.providers)
+            ? info.providers.map(function (p) { return p && p.id; }).filter(Boolean)
+            : null;
         providers.forEach(function (p) {
+            var missing = !!(loadedIds && p.id && loadedIds.indexOf(p.id) < 0);
             var row = el('label', {
-                className: 'bowire-settings-catalogue-provider' + (draft.providerId === p.id ? ' is-selected' : '')
+                className: 'bowire-settings-catalogue-provider'
+                    + (draft.providerId === p.id ? ' is-selected' : '')
+                    + (missing ? ' is-unavailable' : '')
             });
+            // el() writes every attr through setAttribute, and the DOM
+            // treats the mere PRESENCE of `checked` / `disabled` as true —
+            // `disabled="false"` disables. Both therefore have to be
+            // undefined (el skips those) rather than false. Caught live:
+            // every radio came back `disabled: true`, and `checked="false"`
+            // on all six made the browser select the LAST one (agent)
+            // instead of the configured provider.
             var radio = el('input', {
                 type: 'radio',
                 name: 'bowire-catalogue-provider',
                 value: p.id,
-                checked: draft.providerId === p.id,
+                checked: draft.providerId === p.id ? 'checked' : undefined,
+                disabled: missing ? 'disabled' : undefined,
                 onChange: function () {
                     draft.providerId = p.id;
                     _persistDiscoveryDraft();
@@ -2283,13 +2305,38 @@
                 }
             });
             row.appendChild(radio);
-            row.appendChild(el('div', { className: 'bowire-settings-catalogue-provider-text' },
+            var text = el('div', { className: 'bowire-settings-catalogue-provider-text' },
                 el('div', { className: 'bowire-settings-catalogue-provider-label', textContent: p.label }),
                 el('div', { className: 'bowire-settings-catalogue-provider-desc', textContent: p.desc })
-            ));
+            );
+            if (missing) {
+                text.appendChild(el('div', {
+                    className: 'bowire-settings-catalogue-provider-missing',
+                    textContent: p.package
+                        ? ('Package not installed — run `bowire plugin install ' + p.package + '` and restart.')
+                        : 'This provider is not loaded in the running host.'
+                }));
+            } else if (p.package) {
+                text.appendChild(el('div', {
+                    className: 'bowire-settings-catalogue-provider-desc',
+                    textContent: 'Ships in ' + p.package + ' (installed).'
+                }));
+            }
+            row.appendChild(text);
             picker.appendChild(row);
         });
         section.appendChild(picker);
+        // Surface a provider-resolution failure the accessor reported
+        // (a typo, or a provider whose package went away after it was
+        // configured). /info degrades to 200 + this message rather than
+        // 500ing, so without rendering it the operator sees "no
+        // catalogue" and no reason.
+        if (info.error) {
+            section.appendChild(el('p', {
+                className: 'bowire-settings-catalogue-result err',
+                textContent: String(info.error)
+            }));
+        }
 
         // Provider-specific config fields.
         if (draft.providerId === 'local') {

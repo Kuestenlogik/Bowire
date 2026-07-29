@@ -40,7 +40,17 @@ internal static class BowireCatalogueEndpoints
     {
         endpoints.MapGet($"{basePath}/api/catalogue/info", (HttpContext ctx) =>
         {
-            var accessor = ctx.RequestServices.GetService<BowireCatalogueProviderAccessor>();
+            // #537 — touch the override store FIRST. Resolving it is what
+            // constructs it, and its ctor Load()s ~/.bowire/catalogue-config.json
+            // and applies the persisted override to the accessor. Because both
+            // are lazy TryAddSingletons, a workbench that only ever calls /info
+            // + /entries (the boot path) never hydrated the override — the
+            // operator's saved provider only lit up after someone opened the
+            // Settings tab, which GETs /config. Doing it here makes first paint
+            // honest.
+            HydrateOverrideStore(ctx);
+
+            var accessor = TryResolveAccessor(ctx, out var accessorError);
             var provider = accessor?.Provider;
             var options = ctx.RequestServices.GetService<IOptions<BowireCatalogueOptions>>()?.Value
                           ?? new BowireCatalogueOptions();
@@ -69,6 +79,20 @@ internal static class BowireCatalogueEndpoints
                 // separate fetch.
                 hasOverride = accessor?.HasOverride ?? false,
                 defaultProviderId = accessor?.DefaultProvider?.Id,
+                // #537 — the vocabulary of providers that are actually
+                // LOADED in this process. local / http / consul always
+                // resolve (they live in core); kubernetes / agent only
+                // appear once the operator installed the matching sibling
+                // package. The Settings picker greys out the rest instead
+                // of offering a row that fails at save time, and the
+                // workbench can name the package to install.
+                providers = DiscoverLoadedProviders(),
+                // Non-null only when the configured provider id doesn't
+                // resolve (typo, or a sibling package that isn't installed).
+                // /info is documented as always-200, so a bad id degrades
+                // into an explainable "no catalogue" instead of a 500 that
+                // leaves the workbench with no catalogue AND no reason.
+                error = accessorError,
             }, BowireEndpointHelpers.JsonOptions);
         }).ExcludeFromDescription();
 
@@ -180,6 +204,77 @@ internal static class BowireCatalogueEndpoints
         return endpoints;
     }
 
+    /// <summary>
+    /// Wire shape of one row in <c>/api/catalogue/info</c>'s
+    /// <c>providers</c> array (#537). Serialised through
+    /// <see cref="BowireEndpointHelpers.JsonOptions"/>, so the property
+    /// names land camel-cased.
+    /// </summary>
+    private sealed record LoadedProvider(string Id, string Name);
+
+    /// <summary>
+    /// Assembly-scan vocabulary of every catalogue provider present in
+    /// this process. Deliberately independent of the accessor: a typo in
+    /// <c>Bowire:Discovery:Catalogue:Provider</c> makes the accessor
+    /// throw, but the UI still needs the list to explain WHY the
+    /// configured id didn't resolve.
+    /// </summary>
+    private static LoadedProvider[] DiscoverLoadedProviders()
+    {
+        try
+        {
+            return [.. BowireCatalogueProviderRegistry.Discover()
+                .Values
+                .Select(p => new LoadedProvider(p.Id, p.Name))
+                .OrderBy(p => p.Id, StringComparer.OrdinalIgnoreCase)];
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Discover already swallows per-assembly load failures; this
+            // catch only covers a pathological AppDomain enumeration.
+            // An empty vocabulary reads as "we can't tell" on the client,
+            // which is the honest answer.
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Construct the override store so its ctor re-applies the persisted
+    /// <c>~/.bowire/catalogue-config.json</c>. Swallows everything: a host
+    /// that never called <c>AddBowireCatalogue()</c> has no store, and a
+    /// store whose override names a missing provider must not take the
+    /// capability probe down with it.
+    /// </summary>
+    private static void HydrateOverrideStore(HttpContext ctx)
+    {
+        try { _ = ctx.RequestServices.GetService<BowireCatalogueOverrideStore>(); }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Best-effort — the accessor resolution below reports the
+            // actionable error.
+        }
+    }
+
+    /// <summary>
+    /// Resolve the accessor, converting a configuration error (unknown
+    /// provider id — <see cref="BowireCatalogueProviderRegistry.Resolve"/>
+    /// throws by design so a typo surfaces) into an out-param instead of
+    /// a 500.
+    /// </summary>
+    private static BowireCatalogueProviderAccessor? TryResolveAccessor(HttpContext ctx, out string? error)
+    {
+        try
+        {
+            error = null;
+            return ctx.RequestServices.GetService<BowireCatalogueProviderAccessor>();
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            error = ex.Message;
+            return null;
+        }
+    }
+
     private static BowireHttpCatalogueOptions? MaskHttp(BowireHttpCatalogueOptions? opts)
     {
         if (opts is null) return null;
@@ -279,7 +374,20 @@ internal static class BowireCatalogueEndpoints
 
     private static async Task<IResult> FetchAndRespondAsync(HttpContext ctx)
     {
-        var provider = ctx.RequestServices.GetService<BowireCatalogueProviderAccessor>()?.Provider;
+        // #537 — same hydration reason as /info: /entries is the second
+        // call the workbench makes on boot and may well be the first one
+        // that reaches a given process (a reload skips /info's cache).
+        HydrateOverrideStore(ctx);
+        var provider = TryResolveAccessor(ctx, out var accessorError)?.Provider;
+        if (provider is null && accessorError is not null)
+        {
+            return BowireEndpointHelpers.Problem(
+                type: "urn:bowire:catalogue:provider-unresolved",
+                title: "Catalogue provider not loaded",
+                status: 502,
+                detail: accessorError,
+                instance: ctx.Request.Path);
+        }
         if (provider is null)
         {
             // No provider configured — return an empty list (200) so

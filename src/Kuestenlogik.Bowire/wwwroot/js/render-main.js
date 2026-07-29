@@ -3145,28 +3145,90 @@
             });
             section.appendChild(srcList);
         }
-        section.appendChild(el('button', {
-            className: 'bowire-ws-detail-action',
-            style: 'margin-top:4px',
-            textContent: '+ Add URL',
-            onClick: function () {
-                bowirePrompt('Server URL', {
-                    title: 'Add URL',
-                    placeholder: 'e.g. https://petstore3.swagger.io/api/v3/openapi.json',
-                    confirmText: 'Add'
-                }).then(function (raw) {
-                    if (!raw) return;
-                    var trimmed = String(raw).trim();
-                    if (!trimmed) return;
-                    if (serverUrls.indexOf(trimmed) < 0) {
-                        serverUrls.push(trimmed);
-                        if (typeof persistServerUrls === 'function') persistServerUrls();
-                        if (typeof fetchServices === 'function') fetchServices();
-                    }
-                    render();
-                });
+        // #537 — the catalogue block. Everything here is guarded per
+        // symbol: catalogue.js is a later fragment and render() has no
+        // try/catch, so a bare reference would blank the workbench.
+        var catVisibility = (typeof catalogueVisibility === 'function')
+            ? catalogueVisibility() : 'editable';
+        var catAvailable = typeof catalogueIsAvailable === 'function' && catalogueIsAvailable();
+        var catHasEntries = typeof catalogueHasEntries === 'function' && catalogueHasEntries();
+        // 'hidden' means the surrounding org's registry IS the source of
+        // truth and URL management is not the operator's business — so it
+        // suppresses the catalogue block AND the manual add, leaving a
+        // read-only list. 'readonly' shows the catalogue but no adds.
+        var catHidden = catVisibility === 'hidden';
+        var allowManualAdd = catVisibility === 'editable';
+
+        if (!catHidden && catHasEntries && typeof renderCatalogueBrowser === 'function') {
+            // Catalogue first, manual entry below it: picking from a list
+            // the host already curated beats retyping a URL from memory.
+            section.appendChild(el('div', {
+                className: 'bowire-ws-detail-section-label',
+                style: 'margin-top:14px',
+                textContent: 'Catalogue'
+            }));
+            var browser = renderCatalogueBrowser({ inline: true });
+            if (browser) section.appendChild(browser);
+        } else if (!catHidden && catAvailable) {
+            // Provider wired but empty — say so, and offer the refresh
+            // rather than leaving the operator wondering.
+            var emptyRow = el('div', { style: 'display:flex;align-items:center;gap:8px;margin-top:14px' },
+                el('span', {
+                    className: 'bowire-ws-detail-stat-hint',
+                    style: 'margin:0',
+                    textContent: ((typeof catalogueProviderLabel === 'function' && catalogueProviderLabel())
+                        || 'The catalogue') + ' returned no entries.'
+                })
+            );
+            if (typeof refreshCatalogueNow === 'function') {
+                emptyRow.appendChild(el('button', {
+                    className: 'bowire-ws-detail-action',
+                    textContent: 'Refresh',
+                    title: 'Re-fetch the catalogue from the provider',
+                    onClick: function () { refreshCatalogueNow(); }
+                }));
             }
-        }));
+            section.appendChild(emptyRow);
+        }
+
+        if (allowManualAdd) {
+            section.appendChild(el('button', {
+                className: 'bowire-ws-detail-action',
+                style: 'margin-top:8px',
+                textContent: '+ Add URL',
+                onClick: function () {
+                    bowirePrompt('Server URL', {
+                        title: 'Add URL',
+                        placeholder: 'e.g. https://petstore3.swagger.io/api/v3/openapi.json',
+                        confirmText: 'Add'
+                    }).then(function (raw) {
+                        if (!raw) return;
+                        var trimmed = String(raw).trim();
+                        if (!trimmed) return;
+                        if (serverUrls.indexOf(trimmed) < 0) {
+                            serverUrls.push(trimmed);
+                            if (typeof persistServerUrls === 'function') persistServerUrls();
+                            if (typeof fetchServices === 'function') fetchServices();
+                        }
+                        render();
+                    });
+                }
+            }));
+        }
+
+        if (!catHidden && !catAvailable && typeof openSettings === 'function') {
+            // No catalogue wired at all — today's pane, plus one tertiary
+            // pointer at where a catalogue gets configured. Standalone
+            // installs with no provider see exactly what they saw before
+            // apart from this line.
+            section.appendChild(el('button', {
+                className: 'bowire-ws-detail-link',
+                style: 'margin-top:8px;background:none;border:none;padding:0;color:var(--bowire-text-tertiary);font-size:11px;cursor:pointer;text-decoration:underline',
+                textContent: 'Configure a catalogue…',
+                title: 'Point Bowire at a file, an HTTP endpoint, Consul, Kubernetes or an agent hub and browse services instead of typing URLs',
+                onClick: function () { openSettings('configure-discovery'); }
+            }));
+        }
 
         // Schema files — drop-zone for .proto / .openapi.json / .yaml.
         // Used to live in Workspace > Settings; moved here so Sources
@@ -3846,10 +3908,57 @@
         var main = el('div', { id: 'bowire-main-sources', className: 'bowire-main bowire-main-workspaces' });
 
         if (!serverUrls || serverUrls.length === 0) {
-            main.appendChild(el('p', {
-                className: 'bowire-pane-empty bowire-main-pad',
-                textContent: 'No URLs configured yet. Add one via the + button in the sidebar to start discovery.'
-            }));
+            // #537 — when the host ships a catalogue, "no URLs yet" has an
+            // answer that isn't "go find the + button": browse what the
+            // provider already knows about. Without one, the copy is the
+            // same sentence this pane always showed.
+            var catN = (typeof catalogueEntryCount === 'function') ? catalogueEntryCount() : 0;
+            var canBrowse = catN > 0
+                && typeof catalogueVisibility === 'function' && catalogueVisibility() === 'editable'
+                && typeof openCatalogueBrowserDialog === 'function';
+            var emptyActions = [];
+            if (canBrowse) {
+                emptyActions.push({
+                    label: 'Browse catalogue (' + catN + ')',
+                    primary: true,
+                    onClick: function () { openCatalogueBrowserDialog({}); }
+                });
+            }
+            emptyActions.push({
+                label: 'Add a URL manually',
+                primary: !canBrowse,
+                onClick: function () {
+                    if (typeof bowirePrompt !== 'function') return;
+                    bowirePrompt('Server URL', {
+                        title: 'Add URL',
+                        placeholder: 'e.g. https://petstore3.swagger.io/api/v3/openapi.json',
+                        confirmText: 'Add'
+                    }).then(function (raw) {
+                        if (!raw) return;
+                        var trimmed = String(raw).trim();
+                        if (!trimmed) return;
+                        if (serverUrls.indexOf(trimmed) < 0) {
+                            serverUrls.push(trimmed);
+                            if (typeof persistServerUrls === 'function') persistServerUrls();
+                            if (typeof fetchServices === 'function') fetchServices();
+                        }
+                        sourcesSelectedUrl = trimmed;
+                        render();
+                    });
+                }
+            });
+            main.appendChild(el('div', { className: 'bowire-main-pad' },
+                renderEmptyCard({
+                    icon: 'server',
+                    headline: canBrowse ? 'Pick a service from the catalogue' : 'No sources yet',
+                    body: canBrowse
+                        ? ((typeof catalogueProviderLabel === 'function' && catalogueProviderLabel())
+                            || 'The catalogue') + ' knows about ' + catN + ' service'
+                            + (catN === 1 ? '' : 's') + '. Add the ones this workspace talks to.'
+                        : 'No URLs configured yet. Add one via the + button in the sidebar to start discovery.',
+                    actions: emptyActions
+                })
+            ));
             return main;
         }
         if (!sourcesSelectedUrl || serverUrls.indexOf(sourcesSelectedUrl) < 0) {

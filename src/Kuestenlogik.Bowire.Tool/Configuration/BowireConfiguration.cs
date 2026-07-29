@@ -311,6 +311,20 @@ internal static class BowireConfiguration
         return tokens;
     }
 
+    /// <summary>
+    /// #537 — expand the bare boolean flags using the shared
+    /// <see cref="s_booleanFlags"/> vocabulary. Exposed because
+    /// <c>BrowserUiHost.DefaultHostRunner</c> feeds the RAW args into a
+    /// second <c>AddCommandLine</c> (the one carrying the
+    /// <c>--oast-*</c> / <c>--catalogue-*</c> switch mappings), and
+    /// <c>CommandLineConfigurationProvider</c> reads the token after a
+    /// bare flag as that flag's value — so <c>--no-browser
+    /// --catalogue-provider local</c> silently swallowed
+    /// <c>--catalogue-provider</c> and the flag did nothing.
+    /// </summary>
+    internal static string[] ExpandKnownBooleanFlags(string[] args)
+        => ExpandBooleanFlags(args, s_booleanFlags);
+
     private static string[] ExpandBooleanFlags(string[] args, HashSet<string> booleanFlags)
     {
         // Hot path: if none of the known boolean flags appear as a bare

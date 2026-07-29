@@ -14,6 +14,7 @@ using Kuestenlogik.Bowire.Workspace.Git;
 // UseBowireAuth lives in Kuestenlogik.Bowire.Auth; already covered.
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Protocol.Mcp;
+using Kuestenlogik.Bowire.Sources;
 using Microsoft.Extensions.Configuration;
 
 namespace Kuestenlogik.Bowire.App.Cli;
@@ -118,16 +119,33 @@ internal static class BrowserUiHost
     private static async Task<int> DefaultHostRunner(string[] args, BrowserUiOptions ui, CancellationToken ct)
     {
         var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
+        // #537 — expand bare boolean flags before handing the args to a
+        // second command-line source. CommandLineConfigurationProvider
+        // reads the token AFTER a valueless flag as that flag's value, so
+        // `--no-browser --catalogue-provider local` bound
+        // no-browser="--catalogue-provider" and dropped the catalogue flag
+        // on the floor. The bootstrap config has always done this
+        // expansion; this container never did, which quietly made every
+        // switch-mapped flag below order-dependent.
+        var hostArgs = BowireConfiguration.ExpandKnownBooleanFlags(args);
         // #486 — bridge the OAST flags into THIS host's configuration. The
         // command-line source CreateBuilder(args) adds carries no switch
         // mappings, so --oast-server would land only in the bootstrap config
         // (which feeds BrowserUiOptions, not this container). The workbench OAST
         // service reads builder.Configuration, so map the flags here too. Env /
         // appsettings (Bowire__Oast__Server) already reach this config directly.
-        builder.Configuration.AddCommandLine(args, new Dictionary<string, string>(StringComparer.Ordinal)
+        builder.Configuration.AddCommandLine(hostArgs, new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["--oast-server"] = "Bowire:Oast:Server",
             ["--oast-token"] = "Bowire:Oast:Token",
+            // #537 — same reasoning for the catalogue flags. AddBowireCatalogue
+            // binds Bowire:Discovery:Catalogue off builder.Configuration, not
+            // off BrowserUiOptions, so these belong in THIS dictionary rather
+            // than in BowireConfiguration's bootstrap switch mappings.
+            ["--catalogue-provider"] = "Bowire:Discovery:Catalogue:Provider",
+            ["--catalogue-path"] = "Bowire:Discovery:Catalogue:Local:Path",
+            ["--catalogue-url"] = "Bowire:Discovery:Catalogue:Http:Url",
+            ["--catalogue-consul"] = "Bowire:Discovery:Catalogue:Consul:Address",
         });
         builder.WebHost.UseUrls($"http://localhost:{ui.Port}");
         builder.Services.AddResponseCompression(opts => opts.EnableForHttps = true);
@@ -138,6 +156,17 @@ internal static class BrowserUiHost
         // registered" warning even though the workbench itself renders
         // fine.
         builder.Services.AddBowire();
+
+        // Catalogue-provider seam (#136 / #537). The standalone tool never
+        // opted in, so `bowire` was the one host where /api/catalogue/info
+        // always answered available:false — the whole browse-a-catalogue
+        // surface was dead in CLI mode while every embedded sample had it.
+        // Registering unconditionally is a no-op until an operator sets
+        // Bowire:Discovery:Catalogue:Provider (or --catalogue-provider /
+        // --catalogue-path): with no provider id the accessor resolves to
+        // null and the endpoints short-circuit to an empty list, exactly
+        // as before.
+        builder.Services.AddBowireCatalogue(builder.Configuration);
 
         // Mock-management surface (#56). Registers MockRegistry +
         // mounts /api/mocks endpoints so the workbench's Mocks panel

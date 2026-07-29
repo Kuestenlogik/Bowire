@@ -96,11 +96,83 @@ toast now share one helper that re-checks. And the execute split-button's
 **Run as benchmark…** item, which used to synthesise a click on an
 unrelated header menu, now opens the envelope picker directly.
 
+### The service catalogue is something you can actually browse (#537)
+
+The catalogue seam has been fully built server-side since #136 —
+providers for a local file, an HTTP document, Consul, Kubernetes and an
+agent hub, all behind `AddBowireCatalogue()` — and it was invisible.
+The workbench fetched the entries and never rendered them; the standalone
+`bowire` tool never registered the seam at all, so `/api/catalogue/info`
+always answered `available: false` in CLI mode; and there was no way to
+inspect a catalogue without starting a browser.
+
+A catalogue is now the primary "add a source" affordance wherever there
+is one. The Sources node's `+` button and context menu open a picker with
+search, tag chips and per-row **Add**; the Sources detail pane grows a
+**Catalogue** section above `+ Add URL`; and first-run Discover and the
+Home hero lead with **Browse catalogue (N)**. With no catalogue
+configured — still the default — every one of those surfaces is byte-for-byte
+what it was, and manual URL entry stays one click away from the picker
+even when a catalogue is present.
+
+Three fixes make that worth using:
+
+- **Protocol hints are composed.** An entry declaring
+  `"protocols": ["graphql"]` is now discovered as
+  `graphql@http://host/graphql`, not as a bare host that finds nothing.
+  CI's smoke job had been doing this composition for its own probes,
+  which is why the gap never showed up there.
+- **The catalogue loads before the first discovery run**, instead of in
+  parallel with it. Merged entries used to appear in the Sources rail
+  already marked `Disconnected · 0 svcs`, because the fan-out had gone
+  out over the list as it was *before* they arrived.
+- **Merged rows no longer leak into browser storage.** A provider row
+  belongs to the provider and disappears when the entry does; clicking
+  **Add** adopts it into the workspace, and that is what makes it stick.
+
+New CLI surface: `bowire catalogue list | providers | use | clear`, all
+in-process (no running server), plus `--catalogue-provider`,
+`--catalogue-path`, `--catalogue-url` and `--catalogue-consul` on the
+root command. `list` prints the composed URLs, so the terminal and the
+workbench can't disagree about what will be probed.
+
+`GET /api/catalogue/info` gained a `providers` array naming the provider
+implementations actually loaded in the host, so Settings → Discovery
+providers greys out `kubernetes` / `agent` with the package to install
+instead of offering a row that fails at save time. It also gained an
+`error` string: a provider id that doesn't resolve now degrades to a
+`200` explaining itself rather than a `500` that leaves the workbench
+with no catalogue and no reason.
+
+Two adjacent bugs went with it. The persisted
+`~/.bowire/catalogue-config.json` override is now applied on the first
+`/info` or `/entries` request — it previously stayed dormant until
+someone opened the Settings tab, so a restarted workbench reported "no
+catalogue" to an operator who had configured one. And in the standalone
+host, a bare boolean flag swallowed the following token in the
+switch-mapped command-line source, which made `bowire --no-browser
+--catalogue-provider local` (and `--oast-server` before it)
+order-dependent.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor
 and is removed in this release. Add a section per breaking change, with
 the migration path. -->
+
+### The standalone `bowire` tool now wires the catalogue seam (#537)
+
+`bowire` calls `AddBowireCatalogue()` unconditionally. With no provider
+configured this is a no-op — the accessor resolves to null and the
+endpoints short-circuit to an empty list, exactly as before.
+
+The one behaviour change: the `local` provider defaults to
+`~/.bowire/catalogue.json`. An operator who has that file left over from
+an earlier experiment **and** selects the `local` provider (via
+`--catalogue-provider local`, appsettings, or a persisted
+`bowire catalogue use`) will now see those entries merged into their
+workspace's sources. Merged entries are not persisted to browser storage,
+so removing the file or the configuration removes them again.
 
 ### `BowireOptions.AutoCreateInitialWorkspace` is now `bool?` (#535)
 

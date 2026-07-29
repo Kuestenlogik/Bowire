@@ -172,7 +172,14 @@ public sealed class BowireCatalogueOverrideStore
         _accessor.SetOverride(provider);
     }
 
-    private static IBowireCatalogueProvider? BuildProvider(BowireCatalogueOverride payload)
+    /// <summary>
+    /// Turn an override DTO into a live provider instance. Internal
+    /// rather than private since #537 so <c>bowire catalogue list
+    /// --provider local --path …</c> can construct a one-shot provider
+    /// through the SAME code path as a persisted override, instead of
+    /// hand-rolling a second DTO→provider mapping in the Tool.
+    /// </summary>
+    internal static IBowireCatalogueProvider? BuildProvider(BowireCatalogueOverride payload)
     {
         // Compare case-insensitively without round-tripping through
         // ToLowerInvariant (CA1308) — the wire shape is documented as
