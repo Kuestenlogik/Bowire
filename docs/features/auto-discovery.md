@@ -93,4 +93,6 @@ what happened.
 - **SignalR**: hubs must be mapped with `MapHub<T>()` before `MapBowire()`
 - **SSE**: endpoints must be annotated or registered before `MapBowire()`
 
-See also: [Protocols](../protocols/index.md) for protocol-specific discovery details.
+See also: [Protocols](../protocols/index.md) for protocol-specific discovery details,
+and [Service catalogue](catalogue.md) for where the URLs being discovered come from
+when you don't want to type them.

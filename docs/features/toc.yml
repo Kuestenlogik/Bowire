@@ -18,6 +18,8 @@
   items:
     - name: Auto-discovery
       href: auto-discovery.md
+    - name: Service catalogue
+      href: catalogue.md
     - name: Compose
       href: compose.md
     - name: Form & JSON input

@@ -190,42 +190,66 @@
         // :has(> .bowire-empty-card:only-child) centring rule fires.
         // The previous bowire-landing-card wrapper would have broken
         // the direct-child selector and left the welcome top-left.
+        // #537 — a host with a catalogue has a better first move than
+        // "go to Home and find the add button": browse the services it
+        // already knows about. The catalogue action takes over `primary`
+        // in that case; with no catalogue the card is byte-identical to
+        // what it always was. Guarded per symbol — catalogue.js is a
+        // later fragment and render() has no try/catch.
+        var _catN = (typeof catalogueEntryCount === 'function') ? catalogueEntryCount() : 0;
+        var _canBrowseCatalogue = _catN > 0
+            && typeof catalogueVisibility === 'function' && catalogueVisibility() === 'editable'
+            && typeof openCatalogueBrowserDialog === 'function';
+        var _firstRunActions = [];
+        if (_canBrowseCatalogue) {
+            _firstRunActions.push({
+                label: 'Browse catalogue (' + _catN + ')',
+                primary: true,
+                onClick: function () { openCatalogueBrowserDialog({}); }
+            });
+        }
+        _firstRunActions.push({
+            label: 'Open Home',
+            primary: !_canBrowseCatalogue,
+            onClick: function () {
+                railMode = 'home';
+                try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
+                render();
+            }
+        }, {
+            label: 'Open Workspace',
+            onClick: function () {
+                railMode = 'workspaces';
+                try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
+                if (typeof workspacesSelectedId !== 'undefined') workspacesSelectedId = activeWorkspaceId;
+                render();
+            }
+        }, {
+            // Discover first-run is the same state Home shows
+            // when no URLs / uploads / services exist, so we
+            // route the tour CTA through the canonical getting-
+            // started walkthrough (workspace → URL → discover →
+            // execute) instead of duplicating those steps in a
+            // Discover-only variant.
+            id: 'bowire-discover-empty-tour-btn',
+            label: 'Take a tour',
+            onClick: function () {
+                if (typeof window !== 'undefined'
+                    && typeof window.bowireStartGettingStartedTour === 'function') {
+                    window.bowireStartGettingStartedTour({ force: true });
+                }
+            }
+        });
+
         parent.appendChild(renderEmptyCard({
             icon: 'discover',
             headline: 'Discover is empty',
-            body: 'Pick a workspace and add a URL or schema file from there.',
-            actions: [{
-                label: 'Open Home',
-                primary: true,
-                onClick: function () {
-                    railMode = 'home';
-                    try { localStorage.setItem('bowire_rail_mode', 'home'); } catch { /* ignore */ }
-                    render();
-                }
-            }, {
-                label: 'Open Workspace',
-                onClick: function () {
-                    railMode = 'workspaces';
-                    try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
-                    if (typeof workspacesSelectedId !== 'undefined') workspacesSelectedId = activeWorkspaceId;
-                    render();
-                }
-            }, {
-                // Discover first-run is the same state Home shows
-                // when no URLs / uploads / services exist, so we
-                // route the tour CTA through the canonical getting-
-                // started walkthrough (workspace → URL → discover →
-                // execute) instead of duplicating those steps in a
-                // Discover-only variant.
-                id: 'bowire-discover-empty-tour-btn',
-                label: 'Take a tour',
-                onClick: function () {
-                    if (typeof window !== 'undefined'
-                        && typeof window.bowireStartGettingStartedTour === 'function') {
-                        window.bowireStartGettingStartedTour({ force: true });
-                    }
-                }
-            }]
+            body: _canBrowseCatalogue
+                ? ((typeof catalogueProviderLabel === 'function' && catalogueProviderLabel())
+                    || 'The catalogue') + ' knows about ' + _catN + ' service'
+                    + (_catN === 1 ? '' : 's') + ' — pick the ones you want to work with.'
+                : 'Pick a workspace and add a URL or schema file from there.',
+            actions: _firstRunActions
         }));
     }
 
@@ -245,6 +269,25 @@
             textContent: 'Pick what you want to do — or jump back into recent activity below.' }));
 
         var grid = el('div', { className: 'bowire-landing-cta-grid' });
+        // #537 — when the host curated a catalogue, the first tile is
+        // "here are the services we already know about", not "go build a
+        // workspace". The workspace card keeps its place right after it.
+        // With no catalogue this block is skipped and the hero is exactly
+        // what it was.
+        var heroCatN = (typeof catalogueEntryCount === 'function') ? catalogueEntryCount() : 0;
+        if (heroCatN > 0
+            && typeof catalogueVisibility === 'function' && catalogueVisibility() === 'editable'
+            && typeof openCatalogueBrowserDialog === 'function') {
+            grid.appendChild(renderFirstRunCard(
+                'server',
+                'Browse your service catalogue',
+                ((typeof catalogueProviderLabel === 'function' && catalogueProviderLabel())
+                    || 'Your catalogue') + ' lists ' + heroCatN + ' service'
+                    + (heroCatN === 1 ? '' : 's') + ' this install can reach. Add the ones you need — no URLs to type.',
+                'Open catalogue',
+                function () { openCatalogueBrowserDialog({}); }
+            ));
+        }
         grid.appendChild(renderFirstRunCard(
             'layers',
             'Configure your workspace',

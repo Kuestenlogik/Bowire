@@ -124,7 +124,21 @@
 
     function persistServerUrls() {
         if (config.lockServerUrl) return;
-        try { localStorage.setItem(wsKey(SERVER_URLS_KEY), JSON.stringify(serverUrls)); markSaved('URLs'); }
+        // #537 — never persist a URL the catalogue merged in. Those rows
+        // live in `serverUrls` so discovery and the sidebar pick them up,
+        // but they belong to the provider: writing them to localStorage
+        // would freeze them there, and an entry removed upstream would
+        // keep haunting the workspace forever. Explicit adoption (the
+        // catalogue browser's Add button) clears the flag, which is what
+        // makes an adopted entry stick.
+        //
+        // isCatalogueUrl is a hoisted function declaration in catalogue.js
+        // (a much later fragment) that defends against its own `var`
+        // binding, so this is safe even if a save ever fires during boot.
+        var toPersist = (typeof isCatalogueUrl === 'function')
+            ? serverUrls.filter(function (u) { return !isCatalogueUrl(u); })
+            : serverUrls;
+        try { localStorage.setItem(wsKey(SERVER_URLS_KEY), JSON.stringify(toPersist)); markSaved('URLs'); }
         catch (e) { markSaveFailed('URLs', e); }
     }
 

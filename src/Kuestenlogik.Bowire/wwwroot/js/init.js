@@ -892,18 +892,29 @@
                 }
             });
 
-            // #136 — kick off the catalogue fetch in parallel with
-            // the first /api/services call. Catalogue-sourced URLs
-            // get merged into serverUrls; fetchServices() runs against
-            // whatever's already in the list at startup, and a render()
-            // inside initialCatalogueLoad picks up newly-added URLs.
-            // Failure to reach the catalogue endpoint is non-fatal —
-            // initialCatalogueLoad swallows network errors so a half-
-            // configured host still boots into a usable workbench.
+            // #136 / #537 — load the catalogue BEFORE the first
+            // /api/services call, not in parallel with it.
+            //
+            // The parallel version merged catalogue URLs into serverUrls
+            // and re-rendered, so the Sources rail listed them — but
+            // fetchServices() had already fanned out over the list as it
+            // was at startup, i.e. without them. Every catalogue row
+            // booted into "Disconnected · 0 svcs" until the operator hit
+            // Retry on each one by hand, which makes a catalogue actively
+            // worse than typing the URL. Sequencing gives exactly one
+            // discovery run, over the complete URL list.
+            //
+            // Failure is non-fatal in both directions: initialCatalogueLoad
+            // swallows network errors itself, and the rejection handler
+            // below still starts discovery if it ever throws — a
+            // half-configured catalogue must not cost the operator their
+            // whole workbench. Hosts with no catalogue pay one
+            // always-200, non-contacting /api/catalogue/info round trip.
             if (typeof initialCatalogueLoad === 'function') {
-                initialCatalogueLoad();
+                initialCatalogueLoad().then(fetchServices, fetchServices);
+            } else {
+                fetchServices();
             }
-            fetchServices();
         });
     }
 

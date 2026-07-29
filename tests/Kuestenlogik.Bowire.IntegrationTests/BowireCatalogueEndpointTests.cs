@@ -116,6 +116,88 @@ public sealed class BowireCatalogueEndpointTests : IDisposable
         Assert.Equal("hidden", doc.RootElement.GetProperty("visibility").GetString());
     }
 
+    [Fact]
+    public async Task Info_lists_the_provider_implementations_loaded_in_this_process()
+    {
+        // #537 — the Settings picker greys out kubernetes / agent when
+        // their sibling package is absent, and the CLI names the package
+        // to install. Both read this array. The three core providers are
+        // compiled into Kuestenlogik.Bowire, so the assembly scan always
+        // finds them.
+        using var host = await BuildBareHost();
+        var client = host.GetTestClient();
+
+        using var resp = await client.GetAsync(
+            new Uri("/api/catalogue/info", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(body);
+        var ids = doc.RootElement.GetProperty("providers")
+            .EnumerateArray()
+            .Select(p => p.GetProperty("id").GetString())
+            .ToList();
+        Assert.Contains("local", ids);
+        Assert.Contains("http", ids);
+        Assert.Contains("consul", ids);
+        // Names come through too — the picker shows them verbatim.
+        Assert.All(doc.RootElement.GetProperty("providers").EnumerateArray(),
+            p => Assert.False(string.IsNullOrEmpty(p.GetProperty("name").GetString())));
+    }
+
+    [Fact]
+    public async Task Info_hydrates_a_persisted_override_without_a_prior_config_call()
+    {
+        // #537 — the store is a lazily-constructed TryAddSingleton whose
+        // CTOR is what applies ~/.bowire/catalogue-config.json. The
+        // workbench's boot path only calls /info + /entries, so before
+        // this the persisted override stayed dormant until somebody
+        // opened the Settings tab (which GETs /config) — first paint
+        // reported "no catalogue" for an operator who had configured one.
+        await File.WriteAllTextAsync(_overridePath, """{"provider":"local"}""",
+            TestContext.Current.CancellationToken);
+
+        using var host = await BuildHostWithLazyStore();
+        var client = host.GetTestClient();
+
+        using var resp = await client.GetAsync(
+            new Uri("/api/catalogue/info", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(body);
+        Assert.True(doc.RootElement.GetProperty("available").GetBoolean());
+        Assert.True(doc.RootElement.GetProperty("hasOverride").GetBoolean());
+        Assert.Equal("local", doc.RootElement.GetProperty("providerId").GetString());
+    }
+
+    [Fact]
+    public async Task Info_reports_an_unresolvable_provider_as_200_plus_error()
+    {
+        // Resolve() throws by design when a configured id isn't loaded so
+        // a typo surfaces. /info is documented as always-200, and a 500
+        // here leaves the workbench with no catalogue AND no reason — so
+        // the failure is reported in-band instead.
+        using var host = await BuildHostWithThrowingAccessor();
+        var client = host.GetTestClient();
+
+        using var resp = await client.GetAsync(
+            new Uri("/api/catalogue/info", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(body);
+        Assert.False(doc.RootElement.GetProperty("available").GetBoolean());
+        Assert.Contains("not found",
+            doc.RootElement.GetProperty("error").GetString(), StringComparison.OrdinalIgnoreCase);
+        // The vocabulary is still reported — that is what lets the UI say
+        // WHICH ids would have worked.
+        Assert.NotEmpty(doc.RootElement.GetProperty("providers").EnumerateArray());
+    }
+
     // ----- GET /api/catalogue/entries --------------------------------
 
     [Fact]
@@ -536,6 +618,66 @@ public sealed class BowireCatalogueEndpointTests : IDisposable
                        var accessor = new BowireCatalogueProviderAccessor(null);
                        s.AddSingleton(accessor);
                        s.AddSingleton(new BowireCatalogueOverrideStore(accessor));
+                   });
+            })
+            .Build();
+        await host.StartAsync();
+        return host;
+    }
+
+    /// <summary>
+    /// Host that registers the override store the way
+    /// <c>AddBowireCatalogue</c> does — lazily, via a factory. The
+    /// eager <see cref="BuildHostWithStore"/> variant constructs it
+    /// before any request runs, which would hide exactly the hydration
+    /// gap #537 closes.
+    /// </summary>
+    private static async Task<IHost> BuildHostWithLazyStore()
+    {
+        var host = new HostBuilder()
+            .ConfigureWebHost(web =>
+            {
+                web.UseTestServer()
+                   .Configure(app =>
+                   {
+                       app.UseRouting();
+                       app.UseEndpoints(e => e.MapBowireCatalogueEndpoints(basePath: string.Empty));
+                   })
+                   .ConfigureServices(s =>
+                   {
+                       s.AddRouting();
+                       s.AddSingleton(_ => new BowireCatalogueProviderAccessor(null));
+                       s.AddSingleton(sp => new BowireCatalogueOverrideStore(
+                           sp.GetRequiredService<BowireCatalogueProviderAccessor>()));
+                   });
+            })
+            .Build();
+        await host.StartAsync();
+        return host;
+    }
+
+    /// <summary>
+    /// Host whose accessor factory throws the way
+    /// <c>BowireCatalogueProviderRegistry.Resolve</c> does for an
+    /// unknown provider id.
+    /// </summary>
+    private static async Task<IHost> BuildHostWithThrowingAccessor()
+    {
+        var host = new HostBuilder()
+            .ConfigureWebHost(web =>
+            {
+                web.UseTestServer()
+                   .Configure(app =>
+                   {
+                       app.UseRouting();
+                       app.UseEndpoints(e => e.MapBowireCatalogueEndpoints(basePath: string.Empty));
+                   })
+                   .ConfigureServices(s =>
+                   {
+                       s.AddRouting();
+                       s.AddSingleton<BowireCatalogueProviderAccessor>(_ =>
+                           throw new InvalidOperationException(
+                               "Bowire catalogue provider 'kubernetes' not found. Loaded providers: local, http, consul."));
                    });
             })
             .Build();

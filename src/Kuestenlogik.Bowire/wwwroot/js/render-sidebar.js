@@ -1677,6 +1677,28 @@
     // package (recording.js) + renderer-key seam; core no longer
     // defines or dispatches it.
 
+    // Manual "New source" prompt for the Sources rail. Extracted for the
+    // same reason as _promptAddUrlToWorkspace: the catalogue dialog's
+    // footer link has to reach the prompt directly (#537).
+    function _promptForNewSource() {
+        if (typeof bowirePrompt !== 'function') return;
+        bowirePrompt('New source', {
+            title: 'New source',
+            placeholder: 'rest@https://… / graphql@…  or plain https://…',
+            confirmText: 'Add source',
+        }).then(function (raw) {
+            if (!raw) return;
+            if (typeof addServerUrl === 'function') addServerUrl(raw);
+            else if (typeof serverUrls !== 'undefined' && serverUrls.indexOf(raw) < 0) {
+                serverUrls.push(raw);
+                if (typeof persistServerUrls === 'function') persistServerUrls();
+            }
+            sourcesSelectedUrl = raw;
+            if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
+            render();
+        });
+    }
+
     // #152 — Sources rail mode sidebar. Lists every configured
     // discovery URL as a clickable row; the right pane shows the
     // selected URL's discovery state + headers + schema imports.
@@ -1694,23 +1716,19 @@
             title: 'Sources',
             primary: (!config.lockServerUrl && !selMode) ? {
                 icon: 'plus',
-                title: 'New source',
+                title: _catalogueCanBrowse() ? 'Browse catalogue' : 'New source',
                 onClick: function () {
-                    bowirePrompt('New source', {
-                        title: 'New source',
-                        placeholder: 'rest@https://… / graphql@…  or plain https://…',
-                        confirmText: 'Add source',
-                    }).then(function (raw) {
-                        if (!raw) return;
-                        if (typeof addServerUrl === 'function') addServerUrl(raw);
-                        else if (typeof serverUrls !== 'undefined' && serverUrls.indexOf(raw) < 0) {
-                            serverUrls.push(raw);
-                            if (typeof persistServerUrls === 'function') persistServerUrls();
-                        }
-                        sourcesSelectedUrl = raw;
-                        if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
-                        render();
-                    });
+                    // #537 — same catalogue-first branch as the workspace
+                    // tree's Sources node. This rail is retired from the
+                    // rail strip but still reachable at runtime (ai.js /
+                    // render-env-auth.js / settings.js all set
+                    // railMode = 'sources'), so the two affordances must
+                    // not diverge.
+                    if (_catalogueCanBrowse()) {
+                        openCatalogueBrowserDialog({ onManual: _promptForNewSource });
+                        return;
+                    }
+                    _promptForNewSource();
                 }
             } : null,
             overflow: (hasUrls && !config.lockServerUrl && !selMode) ? [
@@ -2647,12 +2665,18 @@
 
         var urlChildren = urls.map(function (u) {
             var urlSelected = sel.wsId === w.id && sel.kind === 'url' && sel.value === u;
+            // #537 — a URL the catalogue put here reads differently from
+            // one the operator typed: it can vanish on the next refresh
+            // and it isn't persisted locally. The chip + tooltip say so.
+            var origin = (typeof catalogueOriginFor === 'function') ? catalogueOriginFor(u) : null;
+            var originLabel = origin ? (origin.providerName || origin.providerId || 'catalogue') : null;
             return {
                 id: 'ws:' + w.id + ':url:' + u,
                 label: u,
                 icon: 'plug',
                 selected: urlSelected,
-                title: u,
+                badge: originLabel ? 'catalogue' : null,
+                title: originLabel ? (u + ' — from ' + originLabel) : u,
                 onClick: function () {
                     workspacesSelectedId = w.id;
                     workspaceTreeSelection = { wsId: w.id, kind: 'url', value: u };
@@ -2726,7 +2750,21 @@
             },
             addTitle: 'Add URL or schema',
             onContext: function (ev) {
+                // #537 — openTreeSubContextMenu skips null entries, so the
+                // catalogue items can be expressed inline. They only show
+                // up on hosts that actually have a catalogue wired.
+                var catAvailable = typeof catalogueIsAvailable === 'function' && catalogueIsAvailable();
                 openTreeSubContextMenu(ev, [
+                    _catalogueCanBrowse() ? {
+                        icon: '⌕',
+                        label: 'Browse catalogue…',
+                        onClick: function () {
+                            openCatalogueBrowserDialog({
+                                workspace: w,
+                                onManual: function () { _promptAddUrlToWorkspace(w); }
+                            });
+                        }
+                    } : null,
                     {
                         icon: '+',
                         label: 'Add URL or schema',
@@ -2736,7 +2774,12 @@
                         icon: '⬆',
                         label: 'Upload schema files…',
                         onClick: function () { _uploadSchemaFilesForWorkspace(w); }
-                    }
+                    },
+                    (catAvailable && typeof refreshCatalogueNow === 'function') ? {
+                        icon: '↻',
+                        label: 'Refresh catalogue',
+                        onClick: function () { refreshCatalogueNow(); }
+                    } : null
                 ]);
             },
             onDrop: function (dt) { _handleWorkspaceDrop(w, dt); },
@@ -3165,9 +3208,43 @@
 
     function _quickAddUrlToWorkspace(w) {
         // If the operator is on a different workspace, switch first so
-        // the URL lands in the right per-workspace bucket. Then prompt.
+        // the URL lands in the right per-workspace bucket.
         if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
+        // #537 — when the host has a catalogue with entries, "add a
+        // source" means "pick one", not "type a URL from memory". The
+        // manual prompt stays exactly as it was and is one click away
+        // from the dialog's footer, so nothing is taken away — it just
+        // stops being the only option. Hosts with no catalogue (the
+        // laptop default) go straight to the prompt as before.
+        if (_catalogueCanBrowse()) {
+            openCatalogueBrowserDialog({
+                workspace: w,
+                // The escape hatch has to be the PROMPT, not this
+                // function — routing it back here would just re-open the
+                // dialog the operator was trying to leave.
+                onManual: function () { _promptAddUrlToWorkspace(w); }
+            });
+            return;
+        }
+        _promptAddUrlToWorkspace(w);
+    }
+
+    // #537 — "the host has a browsable catalogue right now". Guarded per
+    // symbol because catalogue.js is a later fragment; a bare reference
+    // from the render path would blank the workbench if it ever moved.
+    function _catalogueCanBrowse() {
+        return typeof catalogueHasEntries === 'function' && catalogueHasEntries()
+            && typeof catalogueVisibility === 'function' && catalogueVisibility() === 'editable'
+            && typeof openCatalogueBrowserDialog === 'function';
+    }
+
+    // The manual URL prompt — unchanged behaviour, lifted out of
+    // _quickAddUrlToWorkspace so the catalogue dialog's "Enter a URL
+    // manually…" footer and the Sources context menu can reach it
+    // directly instead of bouncing through the catalogue branch.
+    function _promptAddUrlToWorkspace(w) {
         if (typeof bowirePrompt !== 'function') return;
+        if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
         bowirePrompt('Add URL or schema reference', {
             title: 'Add to ' + w.name,
             placeholder: 'https://api.example.com or rest@https://… or grpc@…',

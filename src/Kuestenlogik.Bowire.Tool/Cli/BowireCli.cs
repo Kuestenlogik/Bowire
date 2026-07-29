@@ -62,7 +62,7 @@ internal static class BowireCli
     {
         var root = new RootCommand(
             "Bowire — multi-protocol API workbench. Run without a subcommand to launch the browser UI; " +
-            "run a subcommand (discover / list / describe / call / mock / mcp / plugin / test) for scripting.");
+            "run a subcommand (discover / list / describe / call / catalogue / mock / mcp / plugin / test) for scripting.");
 
         // Root-level options describe the browser-UI defaults so
         // `bowire --port 6000 --url http://api.local` resolves through
@@ -91,6 +91,21 @@ internal static class BowireCli
         root.Add(new Option<string>("--ai-model") { Description = "Model name passed to the AI provider. Default 'llama3.2:3b' (Ollama's small + free model that runs on a laptop). Use `ollama pull <name>` first; LM Studio uses whatever model is currently loaded. Maps to Bowire:Ai:Model." });
         root.Add(new Option<string>("--oast-server") { Description = "Interaction-server URL for the Security rail's manual OAST panel (#486) — e.g. https://oast.example.com. Enables generating out-of-band callback payloads and watching the live feed, the interactive counterpart to `bowire scan --oast-server`. Point it at your own `bowire oast serve` instance. Maps to Bowire:Oast:Server." });
         root.Add(new Option<string>("--oast-token") { Description = "Auth token for a gated interaction server (one started with `bowire oast serve --token`). Maps to Bowire:Oast:Token." });
+        // #537 — catalogue-provider flags. The browser UI's "Browse
+        // catalogue" surface is driven entirely by these; without one the
+        // workbench keeps its manual-URL-entry behaviour. Values land in
+        // Bowire:Discovery:Catalogue:* via the switch mappings in
+        // BrowserUiHost.DefaultHostRunner (AddBowireCatalogue binds off the
+        // host's own configuration, not off BrowserUiOptions).
+        var catalogueProviderOpt = new Option<string>("--catalogue-provider")
+        {
+            Description = "Catalogue provider to read the URL catalogue from: 'local' (a JSON file), 'http' (a remote catalogue document), 'consul', 'kubernetes', or 'agent'. local / http / consul ship in the box; 'kubernetes' needs `bowire plugin install Kuestenlogik.Bowire.Catalogue.Kubernetes` and 'agent' needs `bowire plugin install Kuestenlogik.Bowire.Catalogue.Agent`. Maps to Bowire:Discovery:Catalogue:Provider.",
+        };
+        catalogueProviderOpt.CompletionSources.Add("local", "http", "consul", "kubernetes", "agent");
+        root.Add(catalogueProviderOpt);
+        root.Add(new Option<string>("--catalogue-path") { Description = "Path to the catalogue JSON document read by the 'local' provider. Defaults to ~/.bowire/catalogue.json. Implies --catalogue-provider local when that flag is absent. Maps to Bowire:Discovery:Catalogue:Local:Path." });
+        root.Add(new Option<string>("--catalogue-url") { Description = "URL the 'http' catalogue provider GETs every refresh interval. Must return the catalogue document shape ({ \"version\": 1, \"entries\": [...] }). Maps to Bowire:Discovery:Catalogue:Http:Url." });
+        root.Add(new Option<string>("--catalogue-consul") { Description = "Consul agent address for the 'consul' catalogue provider (e.g. http://localhost:8500). Maps to Bowire:Discovery:Catalogue:Consul:Address." });
         root.Add(new Option<string>("--plugin-dir") { Description = "Override the plugin directory." });
         var mapBasemapOpt = new Option<string>("--map-basemap")
         {
@@ -132,6 +147,7 @@ internal static class BowireCli
         root.Add(BuildInterceptorCommand());
         root.Add(ExportCommand.Build());
         root.Add(WorkspaceCommand.Build());
+        root.Add(CatalogueCommand.Build());
         root.Add(RecordingCommand.Build());
         root.Add(ContractCommand.Build());
 

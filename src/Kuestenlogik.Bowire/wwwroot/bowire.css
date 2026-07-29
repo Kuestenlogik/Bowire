@@ -12261,6 +12261,238 @@ model picker wrap */
 }
 .bowire-settings-catalogue-result.ok { border-color: var(--bowire-success, #6ad27a); color: var(--bowire-success, #6ad27a); }
 .bowire-settings-catalogue-result.err { border-color: var(--bowire-error, #d27a6a); color: var(--bowire-error, #d27a6a); }
+/* #537 — a provider whose sibling package isn't installed. The radio is
+   disabled, so the row must read as unavailable rather than merely
+   unselected. */
+.bowire-settings-catalogue-provider.is-unavailable { opacity: 0.55; cursor: not-allowed; }
+.bowire-settings-catalogue-provider.is-unavailable:hover { border-color: var(--bowire-border); }
+.bowire-settings-catalogue-provider-missing {
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--bowire-warning, #d6a94f);
+    font-family: var(--bowire-mono);
+}
+
+/* ---- #537: the browsable catalogue -------------------------------
+   One renderer, two mount sites — inline inside the Workspace → Sources
+   detail pane and inside the modal dialog. Everything below is flat
+   class selectors so a later wave can reorder the DOM without breaking
+   descendant/child combinators. */
+.bowire-catalogue-browser {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+.bowire-catalogue-browser.is-inline { margin-top: 6px; }
+.bowire-catalogue-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+.bowire-catalogue-provider {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--bowire-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-catalogue-count {
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+.bowire-catalogue-addall {
+    margin-left: auto;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    text-decoration: underline;
+    cursor: pointer;
+}
+.bowire-catalogue-addall:hover { color: var(--bowire-text); }
+.bowire-catalogue-refresh {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    padding: 0;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+}
+/* When "Add all" is absent the refresh button carries the right-align. */
+.bowire-catalogue-refresh:only-of-type { margin-left: auto; }
+.bowire-catalogue-refresh:hover { color: var(--bowire-text); border-color: var(--bowire-border); }
+.bowire-catalogue-refresh svg { width: 14px; height: 14px; }
+.bowire-catalogue-search {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 12px;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+}
+.bowire-catalogue-search:focus { outline: none; border-color: var(--bowire-accent); }
+.bowire-catalogue-tagbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.bowire-catalogue-tag {
+    padding: 1px 8px;
+    font-size: 11px;
+    border: 1px solid var(--bowire-border);
+    border-radius: 10px;
+    background: var(--bowire-bg);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+}
+.bowire-catalogue-tag:hover { color: var(--bowire-text); }
+.bowire-catalogue-tag.is-active {
+    border-color: var(--bowire-accent);
+    color: var(--bowire-accent);
+}
+.bowire-catalogue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    /* Long catalogues (a 200-service Consul) scroll inside the list, not
+       the page — the search box + tag bar stay pinned above them. */
+    max-height: 320px;
+    overflow-y: auto;
+}
+.bowire-catalogue-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    min-width: 0;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+}
+.bowire-catalogue-row:hover { border-color: var(--bowire-border); }
+.bowire-catalogue-row-protos {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-catalogue-row-proto svg { width: 13px; height: 13px; }
+.bowire-catalogue-row-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+}
+.bowire-catalogue-row-name {
+    font-size: 12px;
+    color: var(--bowire-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-catalogue-row-url {
+    font-size: 11px;
+    font-family: var(--bowire-mono);
+    color: var(--bowire-text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-catalogue-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 2px;
+}
+.bowire-catalogue-row-tag {
+    padding: 0 6px;
+    font-size: 10px;
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: 8px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-catalogue-row-add {
+    flex-shrink: 0;
+    padding: 3px 10px;
+    font-size: 11px;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    cursor: pointer;
+}
+.bowire-catalogue-row-add:hover { border-color: var(--bowire-accent); color: var(--bowire-accent); }
+.bowire-catalogue-row-add.is-added,
+.bowire-catalogue-row-add:disabled {
+    color: var(--bowire-text-tertiary);
+    border-color: var(--bowire-border-subtle);
+    cursor: default;
+}
+.bowire-catalogue-row-add.is-added:hover,
+.bowire-catalogue-row-add:disabled:hover {
+    border-color: var(--bowire-border-subtle);
+    color: var(--bowire-text-tertiary);
+}
+.bowire-catalogue-empty {
+    margin: 4px 0;
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+}
+
+/* Modal variant. Deliberately NOT .bowire-confirm-overlay: bowireConfirm
+   and bowirePrompt both start by removing any node carrying that class,
+   so sharing it would make the "Add all" confirmation delete the dialog
+   that raised it. Geometry mirrors the confirm overlay. */
+.bowire-catalogue-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10003;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: bowire-confirm-fade 150ms ease-out;
+}
+.bowire-catalogue-dialog {
+    max-width: 560px;
+    width: 90vw;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.bowire-catalogue-mount { min-width: 0; }
+.bowire-catalogue-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+.bowire-catalogue-footer-link {
+    margin-right: auto;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+    text-decoration: underline;
+    cursor: pointer;
+}
+.bowire-catalogue-footer-link:hover { color: var(--bowire-text); }
 /* Shortcuts table */
 .bowire-settings-shortcuts { display: flex; flex-direction: column; gap: 4px; }
 .bowire-settings-shortcut-row { display: flex; align-items: center; gap: 12px; padding: 4px 0; font-size: 13px; color: var(--bowire-text); }
