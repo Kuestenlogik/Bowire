@@ -553,14 +553,19 @@
                     title: canBench
                         ? 'Create a benchmark spec from this request and open it'
                         : 'Execute a successful call first — benchmarks need a known-good request',
-                    onClick: function () {
+                    onClick: function (e) {
                         menu.remove();
                         if (!canBench) return;
-                        var addBtn = document.querySelector('#bowire-header-addto-btn');
-                        if (addBtn) { try { addBtn.click(); } catch {} }
-                        railMode = 'benchmarks';
-                        try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
-                        render();
+                        // #536 — this used to synthesise a click on
+                        // #bowire-header-addto-btn, i.e. it opened an
+                        // unrelated menu and hoped the operator would
+                        // find the envelope entry inside it. Go straight
+                        // to the picker instead; addTargetToEnvelopePicker
+                        // owns the jump to the Benchmarks rail, and only
+                        // when a new envelope is actually created.
+                        var snap = bowireSnapshotDiscoverRequest();
+                        if (!snap) return;
+                        bowireHandoffToBenchmark(snap, e.clientX, e.clientY);
                     }
                 },
                     el('span', { className: 'bowire-action-execute-menu-icon', innerHTML: svgIcon('lightning') }),

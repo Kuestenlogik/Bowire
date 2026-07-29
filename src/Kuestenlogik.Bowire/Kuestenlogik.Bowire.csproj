@@ -216,6 +216,13 @@
     <BowireJsFragment Include="wwwroot\js\code-export.js" />
     <BowireJsFragment Include="wwwroot\js\perf-diff.js" />
     <BowireJsFragment Include="wwwroot\js\response-diff.js" />
+    <!-- #536 — the response → rail handoff ("Use this…") menu. Mounted
+         from renderResponsePane (render-main.js) and the Compose
+         request-builder's response meta strip; every optional-package
+         call it makes is typeof-guarded. Position in this list is free:
+         the fragment declares only hoisted function declarations and no
+         module-scope let/const, so nothing here can hit a TDZ. -->
+    <BowireJsFragment Include="wwwroot\js\response-handoff.js" />
     <BowireJsFragment Include="wwwroot\js\settings.js" />
     <!-- #153 UI phase — reverse-proxy launcher (Tools menu + Settings list).
          Must come BEFORE settings.js's renderSettingsTools call site (window.bowire*

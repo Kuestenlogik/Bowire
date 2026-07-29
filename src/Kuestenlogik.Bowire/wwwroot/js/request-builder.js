@@ -1729,6 +1729,17 @@
         actions.appendChild(_metaActionBtn('download', 'Download response', false, function () {
             _downloadResponseBody(fr);
         }));
+        // #536 — same "Use this…" handoff the Discover response pane
+        // carries, so both response surfaces answer "and now what?"
+        // identically. Appended last so Search/Wrap/Expand/Collapse/
+        // Copy/Download keep their order. typeof + try/catch because
+        // this runs inside render(), which has no try/catch of its own.
+        if (typeof bowireRenderHandoffButton === 'function') {
+            try {
+                var handoff = bowireRenderHandoffButton('builder');
+                if (handoff) actions.appendChild(handoff);
+            } catch (e) { console.warn('[handoff] builder button failed', e); }
+        }
         strip.appendChild(actions);
         return strip;
     }

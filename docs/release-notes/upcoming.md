@@ -67,6 +67,35 @@ gates on the `bowire_workspaces` key never having been written, not on
 the list merely being empty. Deleting the last workspace on purpose used
 to bring it back on the next reload; now it stays deleted.
 
+### A response you can do something with (#536)
+
+Every follow-up the workbench offers for a response already existed as a
+feature — mocks, flows, test assertions, benchmark envelopes — but none
+of them had a path *from* the response you were looking at. You read a
+result, then walked back to the method header, or the Recordings rail,
+or retyped the request in another surface.
+
+Both response surfaces (the Discover response pane and the Compose
+request builder's response viewer) now carry a single **Use this…**
+button that appears once a call has succeeded. It opens one menu with
+four handoffs: **Save as mock** (freezes request + response into a
+recording step and boots a mock host when
+`Kuestenlogik.Bowire.Mock` is installed), **Add to flow…** (appends the
+request as a step in a new or existing flow, with a status assertion),
+**Keep as test** (saves status + body as assertions and jumps to the
+Test results tab), and **Add to benchmark envelope…**.
+
+Handoffs whose package is absent stay visible and disabled with a
+tooltip naming the package, so a `Bundle.Minimal` host learns what it is
+missing instead of seeing a silently shorter menu.
+
+Two long-standing rough edges went with it. The freeform pane's **Save
+as Mock Step** button used to report success even when `startRecording`
+had refused to start (no active workspace) — capture and the success
+toast now share one helper that re-checks. And the execute split-button's
+**Run as benchmark…** item, which used to synthesise a click on an
+unrelated header menu, now opens the envelope picker directly.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor
