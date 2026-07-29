@@ -22414,6 +22414,39 @@ not as the
     height: 14px;
 }
 
+/* ---- #536 "Use this…" response handoff ----
+   Sits in the response action cluster on both response surfaces
+   (Discover's .bowire-pane-actions and Compose's
+   .bowire-response-meta-actions). Accent-tinted border so the
+   suggested next step reads as the primary move among its outline
+   cluster-mates without becoming a filled button. Always visible once
+   a call has succeeded — the hover-reveal convention is scoped to
+   per-ROW secondary tools, and an affordance whose whole job is
+   answering "and now what?" must not need a hover to be found. */
+.bowire-handoff-btn {
+    border-color: color-mix(in srgb, var(--bowire-accent) 45%, var(--bowire-border));
+    color: var(--bowire-text);
+}
+.bowire-handoff-btn:hover:not(:disabled) {
+    border-color: var(--bowire-accent);
+    color: var(--bowire-accent);
+}
+.bowire-handoff-btn .bowire-handoff-btn-icon {
+    display: inline-flex;
+    align-items: center;
+}
+/* Compose's action cluster is a row of icon-only 28x28 squares; the
+   handoff carries a label, so it widens itself instead of clipping. */
+.bowire-response-meta-btn.bowire-handoff-btn {
+    width: auto;
+    gap: 6px;
+    padding: 0 10px;
+    font-family: var(--bowire-font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 /* ---- Tab strip (JSON / Raw / Headers / Test results) ---- */
 .bowire-response-tab-strip {
     display: flex;

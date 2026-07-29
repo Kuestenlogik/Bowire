@@ -671,6 +671,63 @@
         return flow.id;
     }
 
+    /**
+     * #536 — "and now what?" seam for the response handoff. Core calls
+     * this behind a `typeof addRequestToFlowPicker === 'function'`
+     * probe and passes a ready-made request node; the picker itself
+     * lives HERE because `flowsList` and `flowEditorSelectedId` are
+     * `let`-declared in this fragment and simply do not exist as
+     * bindings in a host without the Flows package.
+     *
+     * Exact mirror of Benchmarking's addTargetToEnvelopePicker: one
+     * "New flow from this" entry, then one entry per existing flow.
+     */
+    function addRequestToFlowPicker(clientX, clientY, node, options) {
+        options = options || {};
+        if (typeof showContextMenu !== 'function') return;
+        var items = [];
+        items.push({
+            label: 'New flow from this',
+            icon: 'plus',
+            onClick: function () {
+                var flow = createFlow(options.name);
+                if (!flow) return;
+                addNodeToFlow(flow.id, JSON.parse(JSON.stringify(node)));
+                flowEditorSelectedId = flow.id;
+                if (options.jumpAfterCreate !== false) {
+                    railMode = 'flows';
+                    try { localStorage.setItem('bowire_rail_mode', 'flows'); } catch { /* ignore */ }
+                    if (typeof setSidebarView === 'function') setSidebarView('flows');
+                }
+                // No toast here — createFlow already raises 'Created
+                // flow "<name>"' with an Undo button, and a second
+                // confirmation right under it just stacks.
+                render();
+            }
+        });
+        if (flowsList.length > 0) {
+            items.push({ separator: true });
+            flowsList.forEach(function (f) {
+                var n = countNodes(f.nodes);
+                items.push({
+                    label: f.name,
+                    icon: 'flow',
+                    title: f.name + ' · ' + n + ' node' + (n === 1 ? '' : 's'),
+                    meta: n + (n === 1 ? ' node' : ' nodes'),
+                    onClick: function () {
+                        // Deep-clone: appending the same object to two
+                        // flows would alias one node across both, so
+                        // editing it in one silently edits the other.
+                        addNodeToFlow(f.id, JSON.parse(JSON.stringify(node)));
+                        if (typeof toast === 'function') toast('Added to "' + f.name + '"', 'success');
+                        render();
+                    }
+                });
+            });
+        }
+        showContextMenu(clientX, clientY, items);
+    }
+
     function tryParseAsJson(value) {
         if (value == null) return null;
         if (typeof value !== 'string') return value;

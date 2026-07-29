@@ -825,25 +825,20 @@
             return;
         }
 
-        // Optional Recordings package — see renderRecordingToggleButton.
-        if (typeof isRecording !== 'function') {
-            toast('Capturing mocks needs the Recordings package (Kuestenlogik.Bowire.Recordings).', 'error');
-            return;
-        }
-
-        if (!isRecording()) {
-            // startRecording already push+persist+set-active; it also
-            // renders, but the trailing render() below still runs so
-            // the freeform pane re-shows with the captured step list.
-            startRecording('Manual mocks');
-        }
-
-        captureFreeformRecordingStep(fr, {
+        // #536 — the "Recordings present? start one if needed →
+        // capture" rule is owned by bowireEnsureRecordingAndCapture
+        // (response-handoff.js) so this button and the response pane's
+        // "Use this… → Save as mock" can't drift apart. It also
+        // re-checks isRecording() after starting: startRecording bails
+        // (with its own toast) when no workspace is active, and this
+        // path used to claim success anyway.
+        var step = bowireFreeformStepPayload(fr, {
             response: responseText,
             responseBinary: null,
             status: fr.mockStatus || 'OK',
             durationMs: 0
         });
+        if (!bowireEnsureRecordingAndCapture(step, 'Manual mocks')) return;
         toast('Saved as mock step', 'success');
         render();
     }
@@ -854,6 +849,14 @@
     // protocols the mock matcher keys on service+method, so leaving
     // these null is the right thing.
     function captureFreeformRecordingStep(fr, extras) {
+        bowireCaptureStep(bowireFreeformStepPayload(fr, extras));
+    }
+
+    // #536 — the payload half of the above, split out so the response
+    // handoff can reuse the REST httpPath/httpVerb parsing instead of
+    // growing a second copy of it. Pure: builds and returns the step,
+    // captures nothing.
+    function bowireFreeformStepPayload(fr, extras) {
         var httpPath = null;
         var httpVerb = null;
         if (fr.protocol === 'rest') {
@@ -865,9 +868,19 @@
             else if (fr.method && fr.method.startsWith('/')) {
                 httpVerb = 'GET';
                 httpPath = fr.method;
+            } else if (/^[A-Z]+$/.test(String(fr.method || '').trim()) && fr.serverUrl) {
+                // #536 — the Compose request builder's shape: the method
+                // field holds a bare HTTP verb and the path lives in the
+                // request URL. Without this branch a Compose response
+                // frozen into a mock step carried no wire coordinates at
+                // all, so the mock server could never match it.
+                httpVerb = String(fr.method).trim();
+                try {
+                    httpPath = new URL(String(fr.serverUrl), window.location.href).pathname;
+                } catch { httpPath = null; }
             }
         }
-        bowireCaptureStep({
+        return {
             protocol: fr.protocol,
             service: fr.service,
             method: fr.method,
@@ -882,7 +895,7 @@
             responseBinary: extras.responseBinary,
             httpPath: httpPath,
             httpVerb: httpVerb
-        });
+        };
     }
 
     // ---- Environment Editor (full-width main pane) ----
@@ -5586,36 +5599,14 @@
                                 title: 'Save current request as a new preset',
                                 onClick: function (ev) {
                                     ev.stopPropagation();
-                                    // Inline snapshot — _snapshotRequest lives
-                                    // in the +Add-to closure and isn't reachable
-                                    // here. Same shape as that path.
-                                    if (!selectedService || !selectedMethod) return;
-                                    try {
-                                        if (typeof syncFormToJson === 'function'
-                                                && typeof requestInputMode !== 'undefined'
-                                                && requestInputMode === 'form') {
-                                            syncFormToJson();
-                                        }
-                                    } catch { /* schema-form not loaded */ }
-                                    var body = (Array.isArray(requestMessages) && requestMessages[0]) || '{}';
-                                    var meta = {};
-                                    var metaRows = document.querySelectorAll('.bowire-metadata-row');
-                                    for (var mi = 0; mi < metaRows.length; mi++) {
-                                        var inputs = metaRows[mi].querySelectorAll('.bowire-metadata-input');
-                                        if (inputs.length === 2 && inputs[0].value.trim()) {
-                                            meta[inputs[0].value.trim()] = inputs[1].value;
-                                        }
-                                    }
-                                    var snap = {
-                                        service: selectedService.name,
-                                        method: selectedMethod.name,
-                                        methodType: selectedMethod.methodType || 'Unary',
-                                        protocol: selectedService.source || selectedProtocol || 'grpc',
-                                        body: body,
-                                        messages: Array.isArray(requestMessages) ? requestMessages.slice() : [body],
-                                        metadata: Object.keys(meta).length > 0 ? meta : null,
-                                        serverUrl: selectedService.originUrl || (Array.isArray(serverUrls) && serverUrls[0]) || null
-                                    };
+                                    // #536 — was a third inline copy of the
+                                    // request snapshot, kept because the old
+                                    // _snapshotRequest was trapped inside the
+                                    // +Add-to closure. It is now a top-level
+                                    // helper in response-handoff.js, so this
+                                    // path calls it instead of duplicating it.
+                                    var snap = bowireSnapshotDiscoverRequest();
+                                    if (!snap) return;
                                     menu.remove();
                                     bowirePrompt('Preset name', {
                                         title: 'Save as preset',
@@ -5700,43 +5691,13 @@
                     function _closeAddToMenu() {
                         methodAddToMenuOpen = false;
                     }
-                    function _snapshotRequest() {
-                        var liveSvc = selectedService;
-                        var liveMth = selectedMethod;
-                        if (!liveSvc || !liveMth) return null;
-                        // If the user was editing on the Form sub-tab,
-                        // their changes live in formValues — flush them
-                        // into requestMessages[0] before snapshotting so
-                        // the saved preset / collection / benchmark
-                        // carries the real edited body, not the empty
-                        // {} that the editor started with.
-                        try {
-                            if (typeof syncFormToJson === 'function'
-                                    && typeof requestInputMode !== 'undefined'
-                                    && requestInputMode === 'form') {
-                                syncFormToJson();
-                            }
-                        } catch { /* schema-form not loaded */ }
-                        var body = (Array.isArray(requestMessages) && requestMessages[0]) || '{}';
-                        var meta = {};
-                        var metaRows = document.querySelectorAll('.bowire-metadata-row');
-                        for (var mi = 0; mi < metaRows.length; mi++) {
-                            var inputs = metaRows[mi].querySelectorAll('.bowire-metadata-input');
-                            if (inputs.length === 2 && inputs[0].value.trim()) {
-                                meta[inputs[0].value.trim()] = inputs[1].value;
-                            }
-                        }
-                        return {
-                            service: liveSvc.name,
-                            method: liveMth.name,
-                            methodType: liveMth.methodType || 'Unary',
-                            protocol: liveSvc.source || selectedProtocol || 'grpc',
-                            body: body,
-                            messages: Array.isArray(requestMessages) ? requestMessages.slice() : [body],
-                            metadata: Object.keys(meta).length > 0 ? meta : null,
-                            serverUrl: liveSvc.originUrl || (Array.isArray(serverUrls) && serverUrls[0]) || null
-                        };
-                    }
+                    // #536 — _snapshotRequest moved out of this closure
+                    // and became the top-level bowireSnapshotDiscoverRequest
+                    // in response-handoff.js, so the response-side
+                    // handoff menu snapshots the request exactly the
+                    // same way this menu does. Still a click-time call
+                    // only: it flushes the Form sub-tab into
+                    // requestMessages, so it must never run from render.
 
                     // ---- Collection section ----
                     menu.appendChild(el('div', { className: 'bowire-header-addto-section', textContent: 'Collection' }));
@@ -5747,7 +5708,7 @@
                                 className: 'bowire-header-addto-item',
                                 role: 'menuitem',
                                 onClick: function () {
-                                    var snap = _snapshotRequest();
+                                    var snap = bowireSnapshotDiscoverRequest();
                                     if (!snap) return;
                                     addToCollection(col.id, snap);
                                     toast('Added to "' + col.name + '"', 'success');
@@ -5780,7 +5741,7 @@
                                 if (name === null) return;
                                 var trimmed = String(name || '').trim();
                                 var col = createCollection(trimmed || undefined);
-                                var snap = _snapshotRequest();
+                                var snap = bowireSnapshotDiscoverRequest();
                                 if (snap) addToCollection(col.id, snap);
                                 toast('Saved to "' + col.name + '"', 'success');
                                 _closeAddToMenu();
@@ -5799,7 +5760,7 @@
                         className: 'bowire-header-addto-item',
                         role: 'menuitem',
                         onClick: function () {
-                            var snap = _snapshotRequest();
+                            var snap = bowireSnapshotDiscoverRequest();
                             if (!snap) return;
                             bowirePrompt('Preset name', {
                                 title: 'Save as preset',
@@ -5830,7 +5791,7 @@
                             className: 'bowire-header-addto-item',
                             role: 'menuitem',
                             onClick: function () {
-                                var snap = _snapshotRequest();
+                                var snap = bowireSnapshotDiscoverRequest();
                                 if (!snap) return;
                                 _closeAddToMenu();
                                 if (typeof railMode !== 'undefined') {
@@ -5873,7 +5834,7 @@
                                 : 'Execute a successful call first — envelopes need a known-good request',
                             onClick: function (ev) {
                                 if (!lastCallOk) return;
-                                var snap = _snapshotRequest();
+                                var snap = bowireSnapshotDiscoverRequest();
                                 if (!snap) return;
                                 _closeAddToMenu();
                                 addTargetToEnvelopePicker(ev.clientX, ev.clientY, {
@@ -10006,6 +9967,24 @@
         const respHeader = el('div', { className: 'bowire-pane-header' },
             el('span', { className: 'bowire-pane-title', textContent: 'Result' }),
             el('div', { className: 'bowire-pane-actions' },
+                // #536 — "Use this…" leads the cluster: once a call has
+                // succeeded, the most useful next move is turning the
+                // response into a mock / flow / test / benchmark, not
+                // copying it. Lives in response-handoff.js, which is
+                // core, but renderResponsePane runs inside render() —
+                // which has no try/catch — so the mount is both typeof-
+                // guarded and wrapped. An unguarded throw here blanks
+                // the entire workbench. Same shape as the
+                // renderInlineHintBanners block above.
+                (function () {
+                    if (typeof bowireRenderHandoffButton !== 'function') return el('span');
+                    try {
+                        return bowireRenderHandoffButton('discover') || el('span');
+                    } catch (e) {
+                        console.warn('[handoff] response button failed', e);
+                        return el('span');
+                    }
+                })(),
                 // Expand all / Collapse all — operate on the
                 // <details> nodes the JSON tree renders. Hidden when
                 // there is no response body or we're in streaming
