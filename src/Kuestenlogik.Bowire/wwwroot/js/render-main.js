@@ -7421,6 +7421,44 @@
                 })(availLangs[li]);
             }
 
+            // #538 — CLI-only knobs. Rendered as a second pill row so the
+            // language strip above stays a single, stable list; hidden
+            // entirely for every other language rather than shown disabled,
+            // because "which shell" is meaningless for a fetch snippet.
+            //
+            // Both handlers write module-scope state and re-read it on the
+            // next render. Nothing is captured from the current entity, so
+            // morphdom keeping these nodes across a method switch is safe.
+            var cliOptionPills = null;
+            if (codeExportLang === 'bowire-cli') {
+                var activeShell = (typeof cliExportShellFlavour === 'function')
+                    ? cliExportShellFlavour() : 'posix';
+                cliOptionPills = el('div', { className: 'bowire-code-lang-pills' },
+                    el('button', {
+                        id: 'bowire-cli-shell-posix',
+                        className: 'bowire-code-lang-pill' + (activeShell === 'posix' ? ' active' : ''),
+                        textContent: 'bash / zsh',
+                        title: 'Quote and continue lines the POSIX way',
+                        onClick: function () { cliExportShell = 'posix'; render(); }
+                    }),
+                    el('button', {
+                        id: 'bowire-cli-shell-powershell',
+                        className: 'bowire-code-lang-pill' + (activeShell === 'powershell' ? ' active' : ''),
+                        textContent: 'PowerShell',
+                        title: 'Quote and continue lines the PowerShell way',
+                        onClick: function () { cliExportShell = 'powershell'; render(); }
+                    }),
+                    el('button', {
+                        id: 'bowire-cli-keepvars',
+                        className: 'bowire-code-lang-pill' + (cliExportKeepVars ? ' active' : ''),
+                        textContent: 'Keep {{variables}}',
+                        title: 'Leave variable references in the command and pass their values as --var pairs, '
+                            + 'instead of baking the resolved values in',
+                        onClick: function () { cliExportKeepVars = !cliExportKeepVars; render(); }
+                    })
+                );
+            }
+
             var snippet = generateCodeSnippet(codeExportLang);
             var codeBox = el('pre', { className: 'bowire-code-snippet' });
             codeBox.textContent = snippet;
@@ -7442,10 +7480,14 @@
 
             codeContent.appendChild(codeHeader);
             codeContent.appendChild(langPills);
+            if (cliOptionPills) codeContent.appendChild(cliOptionPills);
             codeContent.appendChild(codeBox);
             codeContent.appendChild(el('div', {
                 className: 'bowire-code-hint',
                 textContent: 'The snippet uses the current request body, metadata, and the active environment\u2019s {{var}} substitutions. Re-generates whenever you switch language or edit the form.'
+                    + (codeExportLang === 'bowire-cli'
+                        ? ' The Bowire CLI line is checked against the real `bowire call` grammar by a golden fixture, so it stays runnable as the CLI evolves. {{secret.*}} and {{keyring.*}} refs are never resolved into it.'
+                        : '')
             }));
         }
         pane.appendChild(codeContent);

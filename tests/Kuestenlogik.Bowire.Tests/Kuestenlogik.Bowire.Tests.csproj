@@ -5,6 +5,18 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
+    <!-- #538 — the "Copy as Bowire CLI" golden fixture, read by BOTH
+         Cli/CliExportGrammarTests.cs (here, next to the test assembly)
+         and wwwroot-js/cli-export.test.mjs (from the repo, via a relative
+         path). Copied rather than located by walking up to the repo root:
+         the repo has no such discovery helper, and a copied fixture is
+         the shape every other test-data file in this project would use
+         if it had one. -->
+    <Content Include="Cli\cli-export-golden.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />

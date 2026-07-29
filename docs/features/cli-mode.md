@@ -92,16 +92,115 @@ bowire call --url http://server:5000 -plaintext \
   weather.WeatherService/GetCurrentWeather -d '{}'
 ```
 
+#### Any protocol, not just gRPC
+
+`call` invokes through whichever protocol plugin owns the URL, so every
+request the workbench can send has a terminal equivalent. Pin the plugin
+either with the `protocol@url` hint form (the same one `discover` and the
+sidebar accept) or with an explicit `--protocol`:
+
+```bash
+# REST — the hint form
+bowire call --url rest@https://petstore3.swagger.io/api/v3 \
+  pet/getPetById -d '{"petId":1}'
+
+# GraphQL
+bowire call --url graphql@https://countries.trevorblades.com/graphql \
+  Query/country -d '{"query":"query($c:ID!){country(code:$c){name}}","variables":{"c":"DE"}}'
+
+# MQTT — the broker address carries no scheme, so name the plugin instead
+bowire call --url broker.example.com:1883 --protocol mqtt \
+  sensors/sensors/temperature -d '{"celsius":21.5}'
+```
+
+Without a hint or a `--protocol`, `call` assumes gRPC and takes a fast path
+that skips loading the plugin registry — existing gRPC scripts pay nothing
+for the widening. With one, the URL is probed by that plugin (the same
+`BowireDiscoveryProbe` fan-out `discover` uses) before the invocation, so a
+wrong URL reports which plugin said what rather than a bare transport error.
+
+All first-party protocol plugins ship inside the `bowire` tool, so nothing
+needs installing for the protocols listed above. A plugin that is not
+loaded produces an error naming the ones that are, plus the
+`bowire plugin install Kuestenlogik.Bowire.Protocol.<Name>` line that would
+add it.
+
+#### Following a stream
+
+```bash
+# SSE — one JSON document per event until Ctrl+C
+bowire call --url sse@https://stream.example.com 'SSE Endpoints//events' --stream
+
+# WebSocket — send one frame, then print what comes back
+bowire call --url websocket@https://echo.example.com 'WebSocket endpoints//chat' \
+  -d '{"text":"hello"}' --stream
+```
+
+`--stream` routes the call through the plugin's streaming entry point.
+gRPC server-streaming methods are detected automatically and don't need
+it; every other protocol does, because only the caller knows whether an
+SSE / WebSocket / broker target should be read once or followed. A plugin
+with no streaming support answers with a one-line explanation rather than
+a stack trace.
+
+Ctrl+C is the normal way to stop a subscription and exits `0`. A stream
+that ends *without ever delivering a frame* exits `1` with an explanation
+instead — in a pipeline, "printed nothing, exited 0" is indistinguishable
+from success.
+
+#### Variables
+
+`-d`, `-H` and `--url` all run through the same `{{name}}` / `${name}`
+resolver `bowire test` uses, so one recorded request works against several
+environments:
+
+```bash
+bowire call --url rest@https://{{host}}/api/v3 pet/getPetById \
+  -d '{"petId":{{petId}}}' \
+  --var host=petstore3.swagger.io --var petId=1
+
+# Or from a dotenv-style file; --var repeats win over file entries
+bowire call --url rest@https://{{host}}/api/v3 pet/getPetById \
+  -d '{"petId":1}' --env-file staging.env
+```
+
+The built-in `{{uuid}}` / `{{now}}` / `{{timestamp}}` / `{{random}}`
+variables resolve without being declared. Unknown names are left intact so
+a typo shows up in the request rather than as an empty value.
+
+### Copy a request out of the workbench
+
+The workbench's **Code** tab (and the response pane's **Copy ▾** dropdown)
+offers **Bowire CLI** alongside curl / grpcurl / wscat / fetch: it renders
+the request you are looking at as a runnable `bowire call …` line, with a
+shell-flavour toggle (bash/zsh or PowerShell) and a **Keep {{variables}}**
+pill that leaves the refs in place and pairs them with `--var`.
+
+Two things it will not do. It never resolves `{{secret.*}}` or
+`{{keyring.*}}` into the copied text — those stay as refs, with a note
+saying so. And for the auth types whose token is fetched at request time
+(session, OAuth client-credentials / auth-code, custom token, signed JWT)
+it emits a `#` note instead of an `Authorization` header, because the
+exchange happens in the browser and no static header can stand in for it.
+
+A golden fixture parses every command shape that generator can emit
+through this command's real grammar on each build, so the copied line
+cannot quietly stop being runnable.
+
 ## Options
 
-| Option | Description |
-|--------|-------------|
-| `--url <url>` | Target server URL (required). `discover` also accepts the `protocol@url` hint form |
-| `-d, --data <json>` | Request body (JSON string or `@filename`) |
-| `-H <key:value>` | Add metadata header (repeatable) |
-| `--compact` | One-line JSON output for piping |
-| `-plaintext` | Use plaintext (no TLS) |
-| `-v, --verbose` | Verbose output (for `list` and `discover`) |
+| Option | Applies to | Description |
+|--------|------------|-------------|
+| `--url <url>` | all | Target server URL (required). `discover` and `call` also accept the `protocol@url` hint form |
+| `--protocol <id>` | `call` | Protocol plugin to invoke through (`grpc` / `rest` / `graphql` / `mqtt` / …). Overrides a `protocol@url` prefix |
+| `--stream` | `call` | Consume the method as a stream: one JSON document per frame until the stream ends or Ctrl+C |
+| `-d, --data <json>` | `call` | Request body (JSON string or `@filename`). Repeatable — one frame per repeat for client-streaming |
+| `-H <key:value>` | `call` | Add metadata header (repeatable) |
+| `--var, --env <K=V>` | `call` | Variable for the `{{name}}` / `${name}` resolver (repeatable) |
+| `--env-file <path>` | `call` | dotenv-style KEY=VALUE file for the resolver (repeatable; `--var` wins) |
+| `--compact` | `call` | One-line JSON output for piping |
+| `-plaintext` | all | Use plaintext (no TLS) |
+| `-v, --verbose` | `list`, `discover` | Verbose output |
 
 ## Exit Codes
 
@@ -109,7 +208,7 @@ bowire call --url http://server:5000 -plaintext \
 |------|---------|
 | `0` | OK -- call succeeded (for `discover`: at least one service found) |
 | `1` | Connection or runtime error (for `discover`: no service found) |
-| `2` | gRPC error or invalid usage |
+| `2` | Protocol-level error (a gRPC status, a 4xx/5xx HTTP response, an unknown `--protocol`, a URL no plugin recognised) or invalid usage |
 
 ## CI/CD Usage
 

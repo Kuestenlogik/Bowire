@@ -30,23 +30,33 @@ internal static class CliHandler
         => await RunWithErrorHandling(cli, CommandIo.Resolve(stdout, stderr), DiscoverImplAsync).ConfigureAwait(false);
     public static async Task<int> DescribeAsync(CliCommandOptions cli, TextWriter? stdout = null, TextWriter? stderr = null)
         => await RunWithErrorHandling(cli, CommandIo.Resolve(stdout, stderr), DescribeImplAsync).ConfigureAwait(false);
-    public static async Task<int> CallAsync(CliCommandOptions cli, TextWriter? stdout = null, TextWriter? stderr = null)
-        => await RunWithErrorHandling(cli, CommandIo.Resolve(stdout, stderr), CallImplAsync).ConfigureAwait(false);
+
+    /// <summary>
+    /// <c>bowire call</c>. <paramref name="ct"/> is optional and last so
+    /// every existing caller keeps compiling; it matters for
+    /// <c>--stream</c>, where the command blocks until the server ends
+    /// the stream and Ctrl+C is the only way out.
+    /// </summary>
+    public static async Task<int> CallAsync(CliCommandOptions cli, TextWriter? stdout = null,
+        TextWriter? stderr = null, CancellationToken ct = default)
+        => await RunWithErrorHandling(cli, CommandIo.Resolve(stdout, stderr),
+            (c, io) => CallImplAsync(c, io, ct)).ConfigureAwait(false);
 
     private static async Task<int> RunWithErrorHandling(CliCommandOptions cli, CommandIo io,
         Func<CliCommandOptions, CommandIo, Task<int>> impl)
     {
         ArgumentNullException.ThrowIfNull(cli);
-        // Top-level CLI error handler: anything thrown by an
-        // impl (gRPC reflection, transcoding, JSON parse, plugin
-        // call) gets rendered to stderr with exit 1.
-#pragma warning disable CA1031 // Do not catch general exception types
+        // Top-level CLI error handler: anything thrown by an impl (gRPC
+        // reflection, transcoding, JSON parse, plugin call) gets rendered
+        // to stderr with exit 1. The catch-all is the point of the method;
+        // CA1031 is switched off repo-wide in .editorconfig for exactly
+        // this shape, so no pragma is needed (#538 removed the dead pair
+        // that predated that setting).
         try
         {
             return await impl(cli, io).ConfigureAwait(false);
         }
         catch (Exception ex)
-#pragma warning restore CA1031
         {
             WriteError(io, ex.Message);
             if (ex.InnerException is not null)
@@ -108,14 +118,17 @@ internal static class CliHandler
     private static async Task<int> DiscoverImplAsync(CliCommandOptions cli, CommandIo io)
     {
         // `rest@https://…` narrows the fanout to one plugin — same hint
-        // grammar the sidebar and /api/services accept.
-        var (pluginHint, url) = BowireServerUrl.Parse(cli.Url);
+        // grammar the sidebar and /api/services accept. #538 moved the
+        // split into BowireCli.BuildCliOptions so there is exactly one
+        // BowireServerUrl.Parse call site on the CLI; cli.Url is already
+        // bare here and cli.Protocol carries the hint.
+        var pluginHint = cli.Protocol;
 
         // Plugin assemblies are already in the AppDomain: Program.cs runs
         // PluginManager.LoadPlugins before subcommand dispatch.
         var registry = BowireProtocolRegistry.Discover();
         var probe = await BowireDiscoveryProbe.RunAsync(
-            registry, url, pluginHint,
+            registry, cli.Url, pluginHint,
             showInternalServices: false,
             perProbeCeiling: TimeSpan.FromSeconds(8)).ConfigureAwait(false);
 
@@ -228,7 +241,26 @@ internal static class CliHandler
         return 0;
     }
 
-    private static async Task<int> CallImplAsync(CliCommandOptions cli, CommandIo io)
+    /// <summary>
+    /// <c>bowire call</c>. Two code paths on purpose (#538):
+    /// <list type="bullet">
+    ///   <item>
+    ///     gRPC unary/auto-streaming keeps the original
+    ///     <see cref="GrpcReflectionClient"/> + <see cref="GrpcInvoker"/>
+    ///     body verbatim. It is the existing scripting audience's hot path
+    ///     and it must not start paying for
+    ///     <c>BowireProtocolRegistry.Discover()</c>'s assembly scan.
+    ///   </item>
+    ///   <item>
+    ///     Everything else (an explicit non-grpc protocol, or
+    ///     <c>--stream</c>) goes through
+    ///     <see cref="InvokeViaRegistryAsync"/>, which shares
+    ///     <see cref="BowireDiscoveryProbe"/> with <c>bowire discover</c>,
+    ///     <c>/api/services</c> and the MCP tool.
+    ///   </item>
+    /// </list>
+    /// </summary>
+    private static async Task<int> CallImplAsync(CliCommandOptions cli, CommandIo io, CancellationToken ct)
     {
         if (cli.Target is null || !cli.Target.Contains('/'))
         {
@@ -256,7 +288,7 @@ internal static class CliHandler
                 WriteError(io, $"File not found: {filePath}");
                 return 1;
             }
-            messages[i] = await File.ReadAllTextAsync(filePath);
+            messages[i] = await File.ReadAllTextAsync(filePath, ct);
         }
 
         // Parse metadata headers "key: value"
@@ -275,6 +307,32 @@ internal static class CliHandler
                 }
             }
         }
+
+        // #538 — {{name}} / ${name} resolution over body, URL and metadata.
+        // Same resolver + same --env-file-then---var precedence the Flow
+        // runner uses, so a request copied out of the workbench behaves the
+        // same in `bowire call` as it does in `bowire test`. Resolve()
+        // short-circuits when a string carries no placeholder, so a payload
+        // without variables is byte-identical to what pre-#538 sent.
+        var env = BuildCallVars(cli, io, out var envFileError);
+        if (envFileError) return 2;
+        for (var i = 0; i < messages.Count; i++)
+            messages[i] = FlowVariableResolver.Resolve(messages[i], env);
+        cli.Url = FlowVariableResolver.Resolve(cli.Url, env);
+        if (metadata is not null)
+        {
+            foreach (var key in metadata.Keys.ToList())
+                metadata[key] = FlowVariableResolver.Resolve(metadata[key], env);
+        }
+
+        // Anything the gRPC invoker can't express routes through the
+        // plugin registry. `--protocol grpc` without --stream stays on the
+        // fast path: it means the same thing, it just says so out loud.
+        var wantsRegistry = cli.Stream
+            || (cli.Protocol is not null
+                && !string.Equals(cli.Protocol, "grpc", StringComparison.OrdinalIgnoreCase));
+        if (wantsRegistry)
+            return await InvokeViaRegistryAsync(cli, io, serviceName, methodName, messages, metadata, ct);
 
         using var reflectionClient = new GrpcReflectionClient(cli.Url, showInternalServices: false);
         using var invoker = new GrpcInvoker(cli.Url, reflectionClient);
@@ -323,6 +381,258 @@ internal static class CliHandler
             await io.Err.WriteLineAsync(Dim(UseColor(io.Err), $"  {result.DurationMs}ms")).ConfigureAwait(false);
 
         return 0;
+    }
+
+    /// <summary>
+    /// The protocol-generic half of <c>bowire call</c> (#538). Discovery
+    /// is delegated to <see cref="BowireDiscoveryProbe"/> — the same
+    /// fan-out <c>/api/services</c>, <c>bowire discover</c> and the
+    /// <c>bowire.discover</c> MCP tool use — so the terminal can never
+    /// disagree with the workbench about which plugin owns a URL. Only
+    /// the invoke half lives here.
+    /// <para>
+    /// Two reasons the probe is not optional even when the plugin is
+    /// pinned: several plugins populate a schema cache during
+    /// <c>DiscoverAsync</c> that <c>InvokeAsync</c> then reads (the
+    /// pattern <c>FlowTestRunner.RunStepAsync</c> follows), and the
+    /// attempt records are what turn "nothing happened" into a printable
+    /// reason.
+    /// </para>
+    /// </summary>
+    private static async Task<int> InvokeViaRegistryAsync(
+        CliCommandOptions cli, CommandIo io,
+        string serviceName, string methodName,
+        List<string> messages, Dictionary<string, string>? metadata,
+        CancellationToken ct)
+    {
+        // Plugin assemblies are already in the AppDomain: Program.cs runs
+        // PluginManager.LoadPlugins before subcommand dispatch.
+        var registry = BowireProtocolRegistry.Discover();
+        if (registry.Protocols.Count == 0)
+        {
+            WriteError(io, "No protocol plugins are loaded.");
+            WriteError(io, "  Install one with: bowire plugin install Kuestenlogik.Bowire.Protocol.Rest");
+            return 2;
+        }
+
+        // GetById matches ordinally; the CLI is case-insensitive
+        // everywhere else a plugin id appears, so resolve it here.
+        IBowireProtocol? pinned = null;
+        if (cli.Protocol is not null)
+        {
+            pinned = registry.Protocols.FirstOrDefault(p =>
+                string.Equals(p.Id, cli.Protocol, StringComparison.OrdinalIgnoreCase));
+            if (pinned is null)
+            {
+                WriteError(io, $"Unknown protocol '{cli.Protocol}'.");
+                WriteError(io, "  Loaded plugins: "
+                    + string.Join(", ", registry.Protocols.Select(p => p.Id).Order(StringComparer.Ordinal)));
+                WriteError(io, "  Install more with: bowire plugin install Kuestenlogik.Bowire.Protocol.<Name>");
+                return 2;
+            }
+        }
+
+        var probe = await BowireDiscoveryProbe.RunAsync(
+            registry, cli.Url, pinned?.Id,
+            showInternalServices: false,
+            perProbeCeiling: TimeSpan.FromSeconds(8),
+            logger: null, ct: ct).ConfigureAwait(false);
+
+        // Unpinned: the plugin that actually found the target service
+        // wins. Falling back to "the first plugin that found anything"
+        // would invoke against a plugin that has never heard of the
+        // method, which fails later and less legibly.
+        var protocol = pinned ?? ResolveProtocolForService(registry, probe, serviceName);
+        if (protocol is null)
+        {
+            WriteError(io, $"No loaded plugin found service '{serviceName}' at {cli.Url}.");
+            foreach (var attempt in probe.Attempts.OrderBy(OutcomeRank).ThenBy(a => a.Plugin, StringComparer.Ordinal))
+                WriteError(io, $"  {attempt.Plugin}: {attempt.Outcome} — {attempt.Message}");
+            WriteError(io, "  Pin the plugin with --protocol <id> or the protocol@url form,"
+                + " or run `bowire discover --url " + cli.Url + "` for the full table.");
+            return 2;
+        }
+
+        if (cli.Stream)
+            return await StreamViaProtocolAsync(cli, io, protocol, serviceName, methodName, messages, metadata, ct);
+
+        InvokeResult result;
+        try
+        {
+            result = await protocol.InvokeAsync(cli.Url, serviceName, methodName, messages,
+                showInternalServices: false, metadata: metadata, ct: ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (PluginBoundary.NonFatal(ex))
+        {
+            WriteError(io, $"{protocol.Name} invocation failed: {ex.Message}");
+            return 1;
+        }
+
+        // Plugins report their native status label — an HTTP code name for
+        // REST, a gRPC status name for gRPC. "OK" and any 2xx are success;
+        // everything else is a call the operator should be able to gate CI on.
+        if (!IsSuccessStatus(result.Status))
+        {
+            WriteError(io, $"{protocol.Name} error: {result.Status}");
+            if (result.Response is not null)
+                WriteError(io, $"  {result.Response}");
+            if (result.Metadata.Count > 0)
+            {
+                WriteError(io, "  Headers:");
+                foreach (var entry in result.Metadata)
+                    WriteError(io, $"    {entry.Key}: {entry.Value}");
+            }
+            return 2;
+        }
+
+        if (result.Response is not null)
+            WriteJsonResponse(io, result.Response, cli.Compact);
+
+        if (!ReferenceEquals(io.Err, Console.Error) || !Console.IsErrorRedirected)
+            await io.Err.WriteLineAsync(Dim(UseColor(io.Err), $"  {result.DurationMs}ms")).ConfigureAwait(false);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// <c>--stream</c>: one JSON document per frame until the server ends
+    /// the stream or the operator interrupts. Split out of
+    /// <see cref="InvokeViaRegistryAsync"/> so the <c>await foreach</c>
+    /// and its two distinct failure modes stay readable.
+    /// </summary>
+    private static async Task<int> StreamViaProtocolAsync(
+        CliCommandOptions cli, CommandIo io, IBowireProtocol protocol,
+        string serviceName, string methodName,
+        List<string> messages, Dictionary<string, string>? metadata,
+        CancellationToken ct)
+    {
+        var frames = 0;
+        try
+        {
+            await foreach (var frame in protocol.InvokeStreamAsync(cli.Url, serviceName, methodName,
+                messages, showInternalServices: false, metadata: metadata, ct: ct).ConfigureAwait(false))
+            {
+                frames++;
+                WriteJsonResponse(io, frame, cli.Compact);
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // Ctrl+C on a subscription is the normal way to stop, not an
+            // error. Whatever arrived is already on stdout.
+            return 0;
+        }
+        catch (NotSupportedException)
+        {
+            // A one-liner, not a stack trace: several plugins declare
+            // InvokeStreamAsync only to throw, and "this protocol has no
+            // stream" is a usage answer, not a crash.
+            WriteError(io, $"The {protocol.Name} plugin does not support streaming invocations.");
+            WriteError(io, "  Drop --stream to invoke it as a single request.");
+            return 2;
+        }
+        catch (Exception ex) when (PluginBoundary.NonFatal(ex))
+        {
+            // The count is the diagnosis: "0 frames" is a connect/subscribe
+            // failure, "n frames" is a stream that died mid-flight. Stated
+            // as a value rather than a pluralised sentence because the
+            // analyzer can't see through the async iterator and flags any
+            // comparison on `frames` as dead code.
+            WriteError(io, $"{protocol.Name} stream failed (frames received: {frames}): {ex.Message}");
+            return 1;
+        }
+
+        // A stream that ends without ever delivering a frame is the one
+        // outcome that would otherwise print nothing and exit 0 — the
+        // worst possible answer for a CI gate, and indistinguishable from
+        // success in a pipeline. Say what happened and fail, the same way
+        // `bowire discover` exits 1 when it found no service.
+        if (frames == 0)
+        {
+            WriteWarning(io, $"The {protocol.Name} stream ended without delivering a frame.");
+            WriteWarning(io, "  Either the method isn't a streaming one (drop --stream), "
+                + "or the subscription matched nothing.");
+            return 1;
+        }
+        return 0;
+    }
+
+    /// <summary>
+    /// Pick the plugin that discovered <paramref name="serviceName"/>.
+    /// <see cref="BowireDiscoveryProbe"/> tags every service with the
+    /// plugin that produced it, so this is a lookup rather than a second
+    /// heuristic. Falls back to the sole plugin that found anything, which
+    /// covers plugins whose service naming doesn't survive a round-trip
+    /// through a hand-typed target.
+    /// </summary>
+    private static IBowireProtocol? ResolveProtocolForService(
+        BowireProtocolRegistry registry, BowireDiscoveryProbeResult probe, string serviceName)
+    {
+        var match = probe.Services.FirstOrDefault(s =>
+            string.Equals(s.Name, serviceName, StringComparison.OrdinalIgnoreCase));
+        var sourceId = match?.Source;
+        if (string.IsNullOrEmpty(sourceId))
+        {
+            var producers = probe.Attempts
+                .Where(a => a.ServicesFound > 0)
+                .Select(a => a.PluginId)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (producers.Count != 1) return null;
+            sourceId = producers[0];
+        }
+        return registry.Protocols.FirstOrDefault(p =>
+            string.Equals(p.Id, sourceId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Success across the whole plugin surface: gRPC's <c>"OK"</c>, REST's
+    /// numeric or named HTTP status, and the plugins that report a bare
+    /// empty status for fire-and-forget publishes.
+    /// </summary>
+    private static bool IsSuccessStatus(string status)
+    {
+        if (string.IsNullOrEmpty(status)) return true;
+        if (status.Equals("OK", StringComparison.OrdinalIgnoreCase)) return true;
+        if (int.TryParse(status, System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture, out var code))
+            return code is >= 200 and < 400;
+        // Named HTTP statuses arrive as the enum name ("NoContent",
+        // "Accepted", …); anything 4xx/5xx-shaped is a failure name.
+        return status.Equals("Created", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Accepted", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("NoContent", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Build the <c>{{name}}</c> resolver's variable map from
+    /// <c>--env-file</c> (in CLI order) then <c>--var</c>, reusing the
+    /// Flow runner's parsers so the two commands cannot drift on the
+    /// KEY=VALUE grammar. Sets <paramref name="fileError"/> and prints
+    /// when a file can't be read — a silently-empty variable map produces
+    /// a request with literal <c>{{token}}</c> in it, which is far worse
+    /// than failing.
+    /// </summary>
+    private static Dictionary<string, string> BuildCallVars(
+        CliCommandOptions cli, CommandIo io, out bool fileError)
+    {
+        fileError = false;
+        var pairs = new List<string>();
+        foreach (var file in cli.VarFiles)
+        {
+            try
+            {
+                pairs.AddRange(FlowTestRunner.ReadEnvFileLines(file));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                WriteError(io, $"Failed to read --env-file '{file}': {ex.Message}");
+                fileError = true;
+                return [];
+            }
+        }
+        pairs.AddRange(cli.Vars);
+        return FlowTestRunner.MergeEnv(pairs);
     }
 
     private static void WriteJsonResponse(CommandIo io, string json, bool compact)

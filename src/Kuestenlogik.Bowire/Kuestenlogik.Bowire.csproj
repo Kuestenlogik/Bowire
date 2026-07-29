@@ -214,6 +214,15 @@
          _rail-fragments-marker.js note below for the stitching contract. -->
     <BowireJsFragment Include="wwwroot\js\tests.js" />
     <BowireJsFragment Include="wwwroot\js\code-export.js" />
+    <!-- #538 — the `bowire call …` exporter behind
+         CODE_EXPORT_GENERATORS['bowire-cli']. Consumes the context
+         code-export.js builds and is called from the Code tab, the
+         request-pane header button and the response-pane copy dropdown.
+         Position is free: the fragment declares only hoisted function
+         declarations, and its two pieces of state (cliExportShell /
+         cliExportKeepVars) live in prologue.js precisely so no fragment
+         can hit a temporal dead zone reading them. -->
+    <BowireJsFragment Include="wwwroot\js\cli-export.js" />
     <BowireJsFragment Include="wwwroot\js\perf-diff.js" />
     <BowireJsFragment Include="wwwroot\js\response-diff.js" />
     <!-- #536 — the response → rail handoff ("Use this…") menu. Mounted

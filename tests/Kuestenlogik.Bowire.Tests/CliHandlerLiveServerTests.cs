@@ -145,7 +145,7 @@ public sealed class CliHandlerLiveServerTests
         };
         cli.Headers.Add("authorization: bearer x");
         cli.Data.Add("{\"msg\": \"hi\"}");
-        var rc = await CliHandler.CallAsync(cli);
+        var rc = await CliHandler.CallAsync(cli, null, null, TestContext.Current.CancellationToken);
         // 1 (transport / network error) or 2 (gRPC status error) — either
         // way we covered the metadata-build + json-write + error-print
         // branches.
@@ -168,7 +168,7 @@ public sealed class CliHandlerLiveServerTests
             Target = "demo.StreamSvc/S",
         };
         cli.Data.Add("{}");
-        var rc = await CliHandler.CallAsync(cli);
+        var rc = await CliHandler.CallAsync(cli, null, null, TestContext.Current.CancellationToken);
         // The streaming-frame enumeration may surface the missing
         // handler as an InvalidOperationException → exit 1 (catch)
         // or it may quietly emit no frames → exit 0. Either way we

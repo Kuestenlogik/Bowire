@@ -36,7 +36,7 @@ public sealed class CliHandlerTests
     [Fact]
     public async Task CallAsync_NullCli_Throws()
     {
-        await Assert.ThrowsAsync<ArgumentNullException>(() => CliHandler.CallAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => CliHandler.CallAsync(null!, null, null, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public sealed class CliHandlerTests
         {
             Url = DeadUrl,
             Target = null,
-        });
+        }, null, null, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -69,7 +69,7 @@ public sealed class CliHandlerTests
         {
             Url = DeadUrl,
             Target = "users.UserService",
-        });
+        }, null, null, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -85,7 +85,7 @@ public sealed class CliHandlerTests
         };
         cli.Data.Add("@" + bogus);
 
-        var rc = await CliHandler.CallAsync(cli);
+        var rc = await CliHandler.CallAsync(cli, null, null, TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -110,7 +110,7 @@ public sealed class CliHandlerTests
             cli.Headers.Add("authorization: bearer x");
             cli.Headers.Add("malformed-no-colon");
 
-            var rc = await CliHandler.CallAsync(cli);
+            var rc = await CliHandler.CallAsync(cli, null, null, TestContext.Current.CancellationToken);
             Assert.Equal(1, rc);
         }
         finally
@@ -166,7 +166,7 @@ public sealed class CliHandlerTests
         {
             Url = DeadUrl,
             Target = "users.UserService/Get",
-        });
+        }, null, null, TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -185,7 +185,7 @@ public sealed class CliHandlerTests
         cli.Headers.Add("no-colon-at-all");          // no colon
         cli.Headers.Add("good-key: good-value");     // accepted
 
-        var rc = await CliHandler.CallAsync(cli);
+        var rc = await CliHandler.CallAsync(cli, null, null, TestContext.Current.CancellationToken);
         // Dead URL still fails, but we covered the parser branches above.
         Assert.Equal(1, rc);
     }
@@ -202,7 +202,127 @@ public sealed class CliHandlerTests
         };
         cli.Data.Add("{\"id\":1}");
 
-        var rc = await CliHandler.CallAsync(cli);
+        var rc = await CliHandler.CallAsync(cli, null, null, TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
+    }
+
+    // ---------------- #538: the protocol-generic branch ----------------
+    //
+    // These assert stderr as well as the exit code, which the class note
+    // above rules out for the Console-wide path — but CallAsync takes
+    // explicit writers, so nothing process-global is touched and the
+    // parallel runner stays safe.
+
+    [Fact]
+    public async Task CallAsync_UnknownProtocol_NamesTheLoadedPluginsAndExits2()
+    {
+        using var err = new StringWriter();
+        var rc = await CliHandler.CallAsync(new CliCommandOptions
+        {
+            Url = DeadUrl,
+            Target = "users.UserService/Get",
+            Protocol = "definitely-not-a-plugin",
+        }, TextWriter.Null, err, TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, rc);
+        // Either "Unknown protocol …" (plugins loaded) or "No protocol
+        // plugins are loaded." — both must point at `plugin install`
+        // rather than leaving the operator guessing what ids exist.
+        Assert.Contains("plugin", err.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CallAsync_ExplicitGrpcWithoutStream_StaysOnTheFastPath()
+    {
+        // `--protocol grpc` means what the default means, so it must NOT
+        // start paying for BowireProtocolRegistry.Discover()'s assembly
+        // scan. The observable proof is the error shape: the fast path
+        // surfaces the gRPC transport failure through RunWithErrorHandling
+        // as exit 1, where the registry path would report a discovery
+        // verdict as exit 2.
+        using var err = new StringWriter();
+        var rc = await CliHandler.CallAsync(new CliCommandOptions
+        {
+            Url = DeadUrl,
+            Target = "users.UserService/Get",
+            Protocol = "grpc",
+        }, TextWriter.Null, err, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, rc);
+    }
+
+    [Fact]
+    public async Task CallAsync_EnvFileMissing_ReportsAndExits2()
+    {
+        var bogus = Path.Combine(Path.GetTempPath(), $"bowire-env-{Guid.NewGuid():N}.env");
+        using var err = new StringWriter();
+
+        var cli = new CliCommandOptions { Url = DeadUrl, Target = "users.UserService/Get" };
+        cli.VarFiles.Add(bogus);
+
+        var rc = await CliHandler.CallAsync(cli, TextWriter.Null, err, TestContext.Current.CancellationToken);
+
+        // A silently-empty variable map would send a body with literal
+        // {{token}} in it, which is far worse than failing.
+        Assert.Equal(2, rc);
+        Assert.Contains("--env-file", err.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CallAsync_VarsResolveInBodyAndUrl()
+    {
+        // The resolver runs before the invoker, so the proof of
+        // substitution is that the call reaches (and fails at) the
+        // SUBSTITUTED host rather than erroring on a malformed URL.
+        var cli = new CliCommandOptions
+        {
+            Url = "http://{{host}}:1",
+            Target = "users.UserService/Get",
+        };
+        cli.Data.Add("{\"id\":\"{{who}}\"}");
+        cli.Vars.Add("host=127.0.0.1");
+        cli.Vars.Add("who=42");
+
+        var rc = await CliHandler.CallAsync(cli, null, null, TestContext.Current.CancellationToken);
+        Assert.Equal(1, rc);
+        Assert.Equal("http://127.0.0.1:1", cli.Url);
+    }
+
+    [Fact]
+    public async Task CallAsync_Stream_NeverBothPrintsNothingAndSucceeds()
+    {
+        // The contract --stream must hold no matter which plugin answers:
+        // it never both produces no output AND exits 0. In a pipeline the
+        // two together are indistinguishable from success, which is why
+        // StreamViaProtocolAsync warns and exits 1 on an empty stream
+        // instead of returning silently.
+        //
+        // The assertion is deliberately about that invariant rather than
+        // about one plugin's error text, because the plugin that answers
+        // here is NOT the real one. BowireProtocolRegistry.Discover()
+        // assembly-scans, and this test assembly declares several
+        // IBowireProtocol stubs — including one in
+        // Security/GrpcConcurrentStreamProbeTests with `Id => "grpc"` and
+        // a parameterless ctor, which the scan instantiates and which wins
+        // the id lookup. It discovers a fake service and yields a canned
+        // frame, so in-process this exercises the "stream delivered
+        // something" arm; against the real plugin (verified from the built
+        // tool) the dead URL raises Unavailable and the catch renders it.
+        // Both arms satisfy the invariant; neither may be silent-and-zero.
+        using var outSw = new StringWriter();
+        using var err = new StringWriter();
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
+        var rc = await CliHandler.CallAsync(new CliCommandOptions
+        {
+            Url = DeadUrl,
+            Target = "users.UserService/Watch",
+            Protocol = "grpc",
+            Stream = true,
+        }, outSw, err, cts.Token);
+
+        var printedNothing = outSw.ToString().Length == 0 && err.ToString().Length == 0;
+        Assert.False(rc == 0 && printedNothing,
+            "--stream exited 0 without printing anything, which a pipeline cannot tell "
+            + "apart from success. stdout=<" + outSw + "> stderr=<" + err + ">");
     }
 }

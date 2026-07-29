@@ -1,31 +1,64 @@
 ---
 title: Export / Import
-summary: 'Bowire supports exporting requests as grpcurl commands and importing/downloading response data.'
+summary: 'Bowire turns the request you are looking at into a runnable command or snippet, and takes response data back out.'
 ---
 
 # Export & Import
 
-Bowire supports exporting requests as grpcurl commands and importing/downloading response data.
+Bowire turns the request you are looking at into a runnable command or snippet, and takes response data back out.
 
-## Export as grpcurl
+## Code export
 
-From the request editor, click the **Export** button to generate a grpcurl-compatible command for the current method and request body. The generated command includes:
+The request pane's **Code** tab renders the current request — body, metadata headers, resolved `{{variables}}`, server URL — in whichever language fits the protocol. The same list is behind the request-pane header button and the response pane's **Copy ▾** dropdown, so the offer is identical wherever you reach for it:
 
-- The fully qualified service and method name
-- The request body as a `-d` JSON argument
-- Any metadata headers as `-H` flags
-- The server URL
+| Protocol | Offered |
+|----------|---------|
+| REST | curl, JS fetch, Python (requests), C# (HttpClient), Bowire CLI |
+| GraphQL | curl, JS fetch, Python (requests), Bowire CLI |
+| MCP | curl, Python (requests), JS fetch, Bowire CLI |
+| SSE | curl, JS EventSource, Bowire CLI |
+| gRPC | grpcurl, C# (Grpc.Net.Client), Bowire CLI |
+| WebSocket | wscat, JS WebSocket, Bowire CLI |
+| SignalR | C# (HubConnection), JS (@microsoft/signalr), Bowire CLI |
+| MQTT / NATS / Socket.IO | Bowire CLI |
 
-Example output:
+The three broker protocols at the bottom used to fall through to the REST list and be offered a curl command that could never work against a broker; they now offer the one export that can.
+
+Example — the gRPC entry:
 
 ```bash
-grpcurl -d '{"city":"Berlin"}' \
-  -H "authorization: Bearer token123" \
+grpcurl \
+  -H 'authorization: Bearer token123' \
+  -d '{"city":"Berlin"}' \
   localhost:5001 \
   weather.WeatherService/GetCurrentWeather
 ```
 
-This is useful for sharing exact invocations with team members or including them in documentation.
+## Export as a Bowire CLI command
+
+**Bowire CLI** is the one entry that is not a translation into someone else's tool: it renders the request as a runnable [`bowire call`](cli-mode.md#invoke-a-method) line, so the thing you just did in the workbench has a terminal equivalent you can paste into a script or a CI job.
+
+```bash
+bowire call \
+  --url grpc@http://localhost:5001 \
+  weather.WeatherService/GetCurrentWeather \
+  -d '{"city":"Berlin"}' \
+  -H 'authorization: Bearer token123'
+```
+
+Two pills appear next to the language strip while it is selected:
+
+- **bash/zsh** ⇄ **PowerShell** — quoting and line continuations for the shell you are in. Defaults to PowerShell on a Windows client.
+- **Keep {{variables}}** — leaves the variable references in the command and pairs them with `--var NAME=value` instead of baking the resolved values in, so the line stays readable and re-targetable.
+
+Above the command, a `#` comment block names anything the CLI cannot reproduce:
+
+- **Runtime-fetched tokens.** Session login, OAuth client-credentials / authorization-code, custom-token and signed-JWT auth all exchange a token in the browser at request time. No static header can stand in for that, so the note tells you to export the token and add `-H 'Authorization: Bearer $TOKEN'` yourself.
+- **API keys sent as a query parameter**, which belong on `--url` rather than on `-H`.
+- **Client-streaming and duplex methods**, where `bowire call` sends each `-d` as one frame and then closes the send side; an interactive duplex session needs the workbench.
+- **Secrets.** `{{secret.*}}` and `{{keyring.*}}` references are deliberately *not* resolved into the copied text — they stay as references, so a command pasted into a ticket or a shell history carries no credential. (The curl / fetch / Python generators still substitute everything, including secrets. Treat those as clipboard-only.)
+
+A golden fixture parses every command shape this generator can emit through the real `bowire call` grammar on each build, so a renamed or removed flag fails CI rather than quietly producing a line that no longer runs.
 
 ## JSON Response Download
 

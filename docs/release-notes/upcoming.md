@@ -154,6 +154,58 @@ switch-mapped command-line source, which made `bowire --no-browser
 --catalogue-provider local` (and `--oast-server` before it)
 order-dependent.
 
+### `bowire call` speaks every protocol, and the workbench can hand you the line (#538)
+
+`bowire call` was a grpcurl clone. It reached `GrpcReflectionClient` and
+`GrpcInvoker` directly, which meant that every REST, GraphQL, SSE,
+WebSocket, SignalR, MQTT, NATS or Socket.IO request you could build in the
+workbench had no terminal equivalent at all — a large hole in a tool whose
+premise is that the UI and the CLI do the same things.
+
+It now invokes through the protocol registry. Pin the plugin with the
+`protocol@url` hint form the sidebar and `bowire discover` already accept,
+or with a new `--protocol`:
+
+```bash
+bowire call --url rest@https://petstore3.swagger.io/api/v3/openapi.json \
+  pet/getPetById -d '{"petId":1}'
+```
+
+Three more additions round it out: `--stream` follows a server-streaming,
+SSE, WebSocket or broker subscription and prints one JSON document per
+frame until Ctrl+C; `--var KEY=VALUE` / `--env-file` run the same
+`{{name}}` / `${name}` resolver `bowire test` uses over the body, the URL
+and every header; and the discovery half shares `BowireDiscoveryProbe`
+with `/api/services` and `bowire discover`, so a URL that finds nothing
+reports which plugin said what instead of a bare transport error.
+
+gRPC keeps a fast path — no `--protocol`, no `--stream` means the original
+code runs unchanged and never pays for the plugin assembly scan.
+
+The workbench side is the point of all of it: the Code tab and the
+response pane's **Copy ▾** dropdown now offer **Bowire CLI** on every
+protocol, rendering the request you are looking at as a runnable
+`bowire call …` line, with a bash/zsh ⇄ PowerShell toggle and a **Keep
+{{variables}}** pill that emits `--var` pairs instead of baking values in.
+`{{secret.*}}` and `{{keyring.*}}` references are deliberately left
+unresolved — unlike the existing curl / fetch / Python generators, which
+still put live credentials on the clipboard. A `#` note block names what
+the CLI cannot reproduce (browser-side OAuth / session / JWT exchanges,
+query-string API keys, duplex methods).
+
+A golden fixture keeps that honest from both ends: a Node test pins what
+the generator emits, and an xUnit test replays the same argv arrays
+through the real System.CommandLine `call` command. Rename a flag and CI
+fails rather than the copied line quietly ceasing to run.
+
+Two smaller fixes ride along. MQTT, NATS and Socket.IO used to fall
+through the code-export table's REST fallback and be offered a curl
+command that could never reach a broker; they now offer the CLI export
+instead. And `--url grpc@https://host` combined with `-plaintext` never
+downgraded to `http://`, because the hint prefix was still on the string
+when the check ran — the hint is now split off once, in one place, for
+every subcommand.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor

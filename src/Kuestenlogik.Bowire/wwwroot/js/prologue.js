@@ -4995,6 +4995,20 @@
     // languages depends on the protocol — see CODE_EXPORT_LANGUAGES below.
     let codeExportLang = null;
 
+    // #538 — the two knobs the "Bowire CLI" export adds to the Code tab.
+    // They live here rather than in cli-export.js because let/const do NOT
+    // hoist across the concatenated fragments: prologue.js is first, so
+    // every later fragment can read them, whereas a `let` in cli-export.js
+    // would be a temporal-dead-zone ReferenceError for anything that ran
+    // earlier.
+    //
+    // cliExportShell stays null until an operator picks one; the generator
+    // resolves null → 'powershell' on a Windows client, 'posix' elsewhere.
+    // Resolving lazily rather than seeding here keeps the render path free
+    // of writes, and keeps navigator out of the fragment-sandbox tests.
+    let cliExportShell = null;              // null | 'posix' | 'powershell'
+    let cliExportKeepVars = false;          // emit --var pairs instead of baking values in
+
     // ---- Form Validation State ----
     // Per-field validation errors keyed by the same dotted formValues key
     // ('user.address.zip', 'tags.0', etc.). Populated by handleExecute on

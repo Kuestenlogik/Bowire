@@ -50,6 +50,10 @@ Click the **Download** button to save the response as a JSON file. For streaming
 
 The **Copy** button is a split button. The primary half copies the response body; the caret opens a protocol-aware code-export list -- REST offers curl / fetch / Python, gRPC offers grpcurl, WebSocket offers wscat, and so on. The old standalone **Export as grpcurl** button was folded into this dropdown, so the offered commands always match the protocol of the method you are looking at.
 
+Every protocol's list ends with **Copy as Bowire CLI**, which renders the request as a runnable `bowire call ...` line rather than translating it into another tool. It is an entry in this dropdown rather than a button of its own -- the action cluster has exactly one primary button, and that one is **Use this...** below. MQTT, NATS and Socket.IO offer only this entry: they used to fall through to the REST list and be handed a curl command that could never reach a broker.
+
+The command carries a `#` note block for anything the CLI cannot reproduce (runtime-fetched auth tokens, query-string API keys, duplex methods), and never resolves `{{secret.*}}` or `{{keyring.*}}` references into the copied text. The Code tab in the request pane offers the same entry plus a shell-flavour toggle and a **Keep {{variables}}** pill. See [Export & Import](../features/export-import.md#export-as-a-bowire-cli-command) and [CLI mode](../features/cli-mode.md#invoke-a-method).
+
 ### Use this...
 
 Once a call has succeeded, a **Use this...** button appears at the front of the action cluster. It answers the question the workbench used to leave hanging -- *and now what?* -- by turning the response you are looking at into the next artefact, without retyping the request anywhere:
