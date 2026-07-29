@@ -97,6 +97,64 @@ public class BowireHtmlGeneratorRenderTests
     }
 
     [Fact]
+    public void GenerateIndexHtml_AutoCreateInitialWorkspace_Unset_Emits_Null()
+    {
+        // #535 — tri-state. An unset option means "the host has no
+        // stance", which the JS resolver turns into the per-browser
+        // toggle or the mode default. Emitting `false` here would look
+        // like an explicit opt-out and lock the Settings row read-only.
+        var options = new BowireOptions(); // AutoCreateInitialWorkspace null
+
+        var html = BowireHtmlGenerator.GenerateIndexHtml(options, BuildRequest());
+
+        Assert.Contains("autoCreateInitialWorkspace: null", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GenerateIndexHtml_AutoCreateInitialWorkspace_Explicit_Values_Round_Trip()
+    {
+        var on = new BowireOptions { AutoCreateInitialWorkspace = true };
+        var off = new BowireOptions { AutoCreateInitialWorkspace = false };
+
+        var onHtml = BowireHtmlGenerator.GenerateIndexHtml(on, BuildRequest());
+        var offHtml = BowireHtmlGenerator.GenerateIndexHtml(off, BuildRequest());
+
+        Assert.Contains("autoCreateInitialWorkspace: true", onHtml, StringComparison.Ordinal);
+        Assert.Contains("autoCreateInitialWorkspace: false", offHtml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GenerateIndexHtml_HostName_Prefers_Explicit_Title()
+    {
+        // A host that bothered to set a Title wrote the name it wants
+        // operators to see — it beats the entry assembly and the origin.
+        var options = new BowireOptions { Title = "Payments API" };
+
+        var html = BowireHtmlGenerator.GenerateIndexHtml(options, BuildRequest());
+
+        Assert.Contains("hostName: \"Payments API\"", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GenerateIndexHtml_HostName_Falls_Through_When_Title_Is_The_Default()
+    {
+        // Default Title ("Bowire") is not a host stance, so the chain
+        // moves on to the entry assembly and then the request host. The
+        // exact value depends on the test runner, but it must never be
+        // empty and must never be the placeholder — a nameless workspace
+        // is the failure this fallback exists to prevent.
+        var options = new BowireOptions(); // Title == "Bowire"
+
+        var html = BowireHtmlGenerator.GenerateIndexHtml(options, BuildRequest());
+
+        Assert.Contains("hostName: \"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("hostName: \"\"", html, StringComparison.Ordinal);
+        // The Tool's own assembly is deliberately skipped so the
+        // standalone CLI never names a workspace after itself.
+        Assert.DoesNotContain("hostName: \"Kuestenlogik.Bowire", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void GenerateIndexHtml_Escapes_Quotes_And_Backslashes_In_Title()
     {
         // EscapeJs replaces the backslash, the double-quote, and the LF

@@ -1785,7 +1785,21 @@
     // workspace/theme shortcuts. Closed by backdrop click, Esc or
     // selecting a mode.
     let appDrawerOpen = false;
-    try { railMode = localStorage.getItem('bowire_rail_mode') || 'home'; } catch { /* ignore */ }
+    // Landing rail. The default is mode-derived (#535): in an embedded
+    // workbench the host's own API IS the subject — it is already
+    // discovered before first paint (fetchServices() hits /api/services
+    // with no URL and the endpoint falls back to the request origin), so
+    // Home's Continue / Favorites / Recent bands are all empty and read
+    // as a dead end. Standalone still needs the operator to add a URL
+    // first, so Home (with its "Create your first workspace" CTA) stays
+    // the right landing spot there.
+    //
+    // Deliberately NOT persisted: the stored value keeps winning the
+    // moment the operator picks any rail, so this is self-correcting and
+    // no "was this a first run?" flag has to be threaded through boot.
+    var _defaultRailMode = (uiMode === 'embedded') ? 'discover' : 'home';
+    try { railMode = localStorage.getItem('bowire_rail_mode') || _defaultRailMode; }
+    catch { railMode = _defaultRailMode; }
     // Boot migration — the legacy 'sources' rail was retired in favour
     // of the Workspace-detail pane (workspaces own their sources now).
     // 'recordings' / 'environments' are still standalone rails, so they
@@ -1989,41 +2003,73 @@
             activeWorkspaceId = localStorage.getItem('bowire_active_workspace') || null;
         }
     } catch { /* ignore */ }
-    // First-run behaviour. Default leaves the workspace list empty so
-    // the operator sees the "Create your first workspace" Home CTA
-    // and understands the concept up front instead of finding a
-    // pre-seeded "Personal" they didn't ask for.
+    // First-run behaviour (#535). Three layers, highest precedence first,
+    // and the layer that decided is reported back as `source` so
+    // Settings → General can label the row honestly instead of showing a
+    // mode default as "forced by the host".
     //
-    // The legacy auto-seed path is still available via the
-    // bowire_auto_create_initial_workspace toggle (Settings → General).
-    // Users who relied on the old "boot straight into Personal" flow
-    // can flip it on once and stop seeing the empty home.
-    // Resolution order, highest-precedence first:
-    //   1. Host-side config (appsettings.json: Bowire.AutoCreateInitialWorkspace,
-    //      CLI flag --auto-create-initial-workspace, env var
-    //      Bowire__AutoCreateInitialWorkspace). Lets the admin/host
-    //      enforce a baseline for every operator.
-    //   2. Per-browser localStorage toggle (Settings → General).
-    //      Lets an individual user opt in/out on their own machine.
-    //   3. Default false — empty workspace list on first run.
-    var autoCreateInitial = false;
-    if (config && config.autoCreateInitialWorkspace === true) {
-        autoCreateInitial = true;
-    } else {
+    //   1. 'host'         — config.autoCreateInitialWorkspace is a real
+    //                       boolean (appsettings Bowire:AutoCreateInitial
+    //                       Workspace, the --auto-create-initial-workspace
+    //                       CLI flag, env BOWIRE_Bowire__AutoCreateInitial
+    //                       Workspace, or options.AutoCreateInitialWorkspace
+    //                       on an embedded host). It is `null` when the
+    //                       host has no stance — that is the tri-state
+    //                       contract, do not coerce it to false.
+    //   2. 'browser'      — the per-browser Settings → General toggle.
+    //   3. 'mode-default' — embedded seeds, standalone does not. An
+    //                       embedded host's own API is discovered before
+    //                       first paint, so a workspace is pure upside
+    //                       there; a standalone operator has nothing to
+    //                       put in a workspace yet and learns the concept
+    //                       from the empty-Home CTA instead.
+    //
+    // Hoisted function declaration in the shared IIFE — settings.js calls
+    // the same resolver so the Settings row can never disagree with what
+    // boot actually did.
+    function resolveAutoCreateInitialWorkspace() {
+        if (config && typeof config.autoCreateInitialWorkspace === 'boolean') {
+            return { value: config.autoCreateInitialWorkspace, source: 'host' };
+        }
+        var stored = null;
         try {
-            autoCreateInitial = localStorage.getItem('bowire_auto_create_initial_workspace') === 'true';
-        } catch { /* ignore */ }
+            stored = localStorage.getItem('bowire_auto_create_initial_workspace');
+        } catch { /* localStorage blocked — fall through to the mode default */ }
+        if (stored === 'true') return { value: true, source: 'browser' };
+        if (stored === 'false') return { value: false, source: 'browser' };
+        return { value: uiMode === 'embedded', source: 'mode-default' };
     }
-    if (workspaces.length === 0 && autoCreateInitial) {
+    var autoCreateInitial = resolveAutoCreateInitialWorkspace().value;
+    // Gate on the ABSENCE of the bowire_workspaces key, not on an empty
+    // list: deleteWorkspace() ends in persistWorkspaces(), which writes
+    // `[]`, so the key exists from the first deliberate delete onward and
+    // a re-seed here would resurrect a workspace the operator removed on
+    // purpose. `rawWs` is the var read a few lines up (undefined when
+    // localStorage threw, which we treat as "never seeded").
+    if (workspaces.length === 0 && rawWs == null && autoCreateInitial) {
         workspaces.push({
             id: 'personal',
-            name: 'Personal',
+            // Embedded: name it after the host app so the topbar chip
+            // says what you are actually looking at. config.hostName
+            // resolves host-side (Title → entry assembly → request
+            // origin) and is never empty.
+            name: (uiMode === 'embedded' && config && config.hostName)
+                ? config.hostName
+                : 'Personal',
             color: '#6366f1',
             createdAt: Date.now(),
             lastOpenedAt: Date.now(),
             storage: 'disk'
         });
         activeWorkspaceId = 'personal';
+        // Deliberately NOT persisted here. persistWorkspaces() calls
+        // markSaved(), which writes saveStateClearTimer — a `let`
+        // declared much further down, i.e. still in the temporal dead
+        // zone at module-eval time. The ReferenceError would escape (the
+        // catch arm's markSaveFailed has the identical problem) and blank
+        // the workbench. The seed is deterministic (fixed id 'personal'),
+        // so it re-materialises identically on every boot until some
+        // post-boot path persists it.
     }
     if (workspaces.length === 0) {
         // No workspaces at all (first-run, auto-create off). Leave

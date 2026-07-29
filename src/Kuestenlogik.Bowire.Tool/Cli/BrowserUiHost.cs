@@ -257,6 +257,13 @@ internal static class BrowserUiHost
             // widget picks the operator-chosen basemap (osm / satellite /
             // demotiles / custom URL) instead of the bundled default.
             options.MapBasemap = ui.MapBasemap;
+            // Forward --auto-create-initial-workspace / Bowire:AutoCreate
+            // InitialWorkspace. Null (the usual case) means "no host
+            // stance" and the workbench falls back to the mode default,
+            // which for Standalone is off — the empty Home + "Create your
+            // first workspace" CTA. Passing it through is what makes the
+            // documented flag actually do something.
+            options.AutoCreateInitialWorkspace = ui.AutoCreateInitialWorkspace;
         });
 
         if (ui.EnableMcpAdapter)

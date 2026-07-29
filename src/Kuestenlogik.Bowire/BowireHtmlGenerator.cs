@@ -190,6 +190,23 @@ internal static class BowireHtmlGenerator
         var desc = EscapeJs(options.Description);
         var serverUrl = options.ServerUrl is not null ? EscapeJs(options.ServerUrl) : "";
 
+        // Tri-state, deliberately NOT collapsed to a bool. `null` means
+        // "the host has no stance", which the JS resolver
+        // (resolveAutoCreateInitialWorkspace) turns into the per-browser
+        // Settings toggle or, failing that, the mode default. Emitting
+        // `false` for an unset option would look like an explicit host
+        // opt-out and lock the Settings row read-only.
+        var autoCreateInitialWorkspace = options.AutoCreateInitialWorkspace switch
+        {
+            true => "true",
+            false => "false",
+            null => "null",
+        };
+        // Display name of the app Bowire is mounted in — used to name the
+        // workspace an embedded first run seeds, so the topbar chip reads
+        // "Payments API" instead of a generic "Personal".
+        var hostName = EscapeJs(ResolveHostDisplayName(options, request));
+
         // MapBasemap surfaces to the JS bundle as either a JSON string
         // ("\"satellite\"" / "\"osm\"" / a custom tile URL) or `null` when
         // the operator hasn't configured one — the widget's
@@ -268,7 +285,11 @@ internal static class BowireHtmlGenerator
                            serverUrls: {{serverUrlsJson}},
                            lockServerUrl: {{lockServerUrl}},
                            embeddedMode: {{(options.Mode == BowireMode.Embedded ? "true" : "false")}},
-                           autoCreateInitialWorkspace: {{(options.AutoCreateInitialWorkspace ? "true" : "false")}},
+                           autoCreateInitialWorkspace: {{autoCreateInitialWorkspace}},
+                           // Display name of the host app Bowire is mounted
+                           // in (Title → entry assembly → request origin).
+                           // Names the workspace an embedded first run seeds.
+                           hostName: "{{hostName}}",
                            mapBasemap: {{mapBasemap}},
                            logoIcon: "{{FaviconDataUrl.Value}}",
                            logoIconMono: "{{FaviconMonoDataUrl.Value}}",
@@ -415,6 +436,63 @@ internal static class BowireHtmlGenerator
         // requiring a per-package whitelist update.
         return true;
     }
+
+    /// <summary>
+    /// Best-effort display name for the app Bowire is mounted in. Feeds
+    /// <c>window.__BOWIRE_CONFIG__.hostName</c>, which names the workspace
+    /// an embedded first run seeds.
+    /// </summary>
+    /// <remarks>
+    /// Precedence, and why:
+    /// <list type="number">
+    /// <item><description><see cref="BowireOptions.Title"/> when the host
+    /// changed it from the default — a host that bothered to set a title
+    /// wrote the name it wants operators to see.</description></item>
+    /// <item><description>The entry assembly's simple name — the
+    /// zero-config <c>app.MapBowire()</c> case. Skipped when it is
+    /// Bowire's own entry point so the standalone Tool never names a
+    /// workspace after itself; see <see cref="IsBowireOwnAssembly"/> for
+    /// why the check needs two shapes.</description></item>
+    /// <item><description>The request host — covers single-file and
+    /// in-process IIS hosting where <c>GetEntryAssembly()</c> is
+    /// null.</description></item>
+    /// <item><description><c>"Bowire"</c> — last resort. The chain must
+    /// never yield an empty string or the seeded workspace would be
+    /// nameless.</description></item>
+    /// </list>
+    /// </remarks>
+    private static string ResolveHostDisplayName(BowireOptions options, HttpRequest request)
+    {
+        if (!string.IsNullOrWhiteSpace(options.Title)
+            && !string.Equals(options.Title, "Bowire", StringComparison.Ordinal))
+        {
+            return options.Title.Trim();
+        }
+
+        var entryName = Assembly.GetEntryAssembly()?.GetName().Name;
+        if (!string.IsNullOrWhiteSpace(entryName) && !IsBowireOwnAssembly(entryName))
+        {
+            return entryName;
+        }
+
+        var host = request.Host.Value;
+        return string.IsNullOrWhiteSpace(host) ? "Bowire" : host;
+    }
+
+    /// <summary>
+    /// True when the entry assembly is Bowire itself rather than a host
+    /// app that embedded it.
+    /// </summary>
+    /// <remarks>
+    /// Two shapes, both needed: the packages and samples are named
+    /// <c>Kuestenlogik.Bowire.*</c>, but the standalone Tool sets
+    /// <c>&lt;AssemblyName&gt;bowire&lt;/AssemblyName&gt;</c> so its
+    /// entry assembly is the bare <c>bowire</c> — a prefix check alone
+    /// would let the CLI name a workspace after itself.
+    /// </remarks>
+    private static bool IsBowireOwnAssembly(string entryName)
+        => entryName.StartsWith("Kuestenlogik.Bowire", StringComparison.Ordinal)
+        || string.Equals(entryName, "bowire", StringComparison.OrdinalIgnoreCase);
 
     private static string EscapeJs(string value)
         => value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n");
