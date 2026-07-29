@@ -146,12 +146,41 @@ When `true`, the sidebar lists well-known internal services such as
 endpoint. Useful for debugging reflection itself; hidden by default
 because it clutters the service tree for most users.
 
-### `AutoCreateInitialWorkspace` (`bool`, default `false`)
+### `AutoCreateInitialWorkspace` (`bool?`, default `null`)
 
-When `true`, the workbench seeds a default "Personal" workspace for
-first-run users so they boot straight into a usable shell. The
-v2.0 default is `false` — the Home page shows a "Create your first
-workspace" CTA so the operator learns the workspace concept up front.
+Host stance on seeding a workspace for first-run users. Resolved in
+three layers, highest precedence first:
+
+1. **This option**, when set to `true` or `false`. An explicit stance
+   wins and the per-browser toggle is shown read-only.
+2. **Settings → General → "Auto-create initial workspace"**, the
+   per-browser toggle, when the operator has flipped it.
+3. **The mode default**, when neither of the above applies:
+   - `BowireMode.Embedded` → **on**. A first run seeds one workspace
+     named after the host app and lands on the Discover rail, where
+     the host's own API is already listed (embedded discovery runs
+     against the request origin before first paint, so there is
+     nothing for the operator to configure).
+   - `BowireMode.Standalone` → **off**. The Home page shows the
+     "Create your first workspace" CTA so the operator meets the
+     concept before pointing the workbench anywhere.
+
+The workspace name comes from the host: `Title` when you set one, else
+the entry assembly's simple name, else the request origin.
+
+Set `options.AutoCreateInitialWorkspace = false` to opt an embedded
+host out — that restores the empty Home + Create-Workspace CTA. Setting
+`true` in standalone (or passing `--auto-create-initial-workspace`)
+seeds a workspace called "Personal" instead.
+
+Workspace management is unaffected either way: the topbar workspace
+chip and the Workspaces rail expose switch / create / rename / delete
+in both modes.
+
+> **Changed in 2.3** — the type went from `bool` to `bool?` so "unset"
+> can mean "use the mode default". `options.AutoCreateInitialWorkspace
+> = true` still compiles unchanged; only code that *reads* the property
+> into a `bool` needs a `?? false`.
 
 ### `Mode` (`BowireMode`, default `BowireMode.Embedded`)
 

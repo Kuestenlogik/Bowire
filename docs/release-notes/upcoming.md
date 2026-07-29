@@ -39,11 +39,64 @@ Also fixed: an embedded host whose own `/api/services` probe failed used to
 fall through to the first-run welcome hero, hiding the failure completely.
 It now lands on the discovery-failed card like any other target.
 
+### An embedded Bowire is useful on first paint (#535)
+
+Mounting `MapBowire()` in your own app used to drop you on an empty
+Home: no workspace, a "Create your first workspace" card, and the
+Continue / Favorites / Recent bands all blank — even though the host's
+own API had already been discovered in-process and was sitting one rail
+away. The first thing every embedded user did was dismiss a dialog about
+a concept they did not need yet.
+
+An embedded first run now seeds a single workspace named after the host
+app (`Title` if you set one, else the entry assembly, else the request
+origin) and lands on **Discover**, with your services already listed.
+Nothing else changes — the topbar workspace chip and the Workspaces rail
+still switch / create / rename / delete, and `options.AutoCreate
+InitialWorkspace = false` restores the old empty-Home behaviour.
+
+Standalone is untouched: `bowire` still opens on Home with the
+Create-Workspace CTA. The `--auto-create-initial-workspace` flag that
+the docs have referenced since 2.0 now actually exists and opts a
+standalone install in (also bindable as
+`Bowire:AutoCreateInitialWorkspace` / `BOWIRE_Bowire__AutoCreate
+InitialWorkspace`).
+
+One behaviour change worth knowing about in both modes: the seed now
+gates on the `bowire_workspaces` key never having been written, not on
+the list merely being empty. Deleting the last workspace on purpose used
+to bring it back on the next reload; now it stays deleted.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor
 and is removed in this release. Add a section per breaking change, with
 the migration path. -->
+
+### `BowireOptions.AutoCreateInitialWorkspace` is now `bool?` (#535)
+
+The property changed from `bool` to `bool?` so that "the host has no
+stance" is expressible and distinct from an explicit opt-out. `null`
+(the new default) resolves from `BowireOptions.Mode` — Embedded seeds a
+workspace, Standalone does not — and leaves the per-browser Settings →
+General toggle in control. `true` / `false` remain an explicit host
+stance that locks that toggle read-only.
+
+This is source-breaking for readers, not writers:
+
+```csharp
+options.AutoCreateInitialWorkspace = true;          // unchanged
+bool seeded = options.AutoCreateInitialWorkspace;   // no longer compiles
+bool seeded = options.AutoCreateInitialWorkspace ?? false;  // migration
+```
+
+Hosts that never touched the property need no change, but note that
+leaving it unset now means "seed" in embedded mode where it previously
+meant "don't". Pass `false` to keep the 2.2 behaviour.
+
+`window.__BOWIRE_CONFIG__.autoCreateInitialWorkspace` follows the same
+shape and can now be `null`; a new `hostName` key next to it carries the
+resolved host display name.
 
 ### `/api/services` — `attempts` changes from `string[]` to `object[]` (#534)
 

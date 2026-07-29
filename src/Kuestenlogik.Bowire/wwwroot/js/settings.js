@@ -443,17 +443,32 @@
             }
         ));
 
-        // Auto-create initial workspace. Per-browser opt-in; the host
-        // can also force this on via appsettings (Bowire:
-        // AutoCreateInitialWorkspace) or --auto-create-initial-workspace.
-        var autoCreateInitial = localStorage.getItem('bowire_auto_create_initial_workspace') === 'true';
-        var hostForced = !!(config && config.autoCreateInitialWorkspace === true);
+        // Auto-create initial workspace. Reads through the SAME resolver
+        // boot uses (prologue.js) so this row can never claim something
+        // different from what actually happened (#535). `source` tells us
+        // which of the three layers decided: only 'host' means the
+        // per-browser toggle is powerless — a 'mode-default' true in an
+        // embedded workbench is still overridable here.
+        var _autoCreate = resolveAutoCreateInitialWorkspace();
+        var hostForced = _autoCreate.source === 'host';
+        var autoCreateDesc;
+        if (hostForced) {
+            autoCreateDesc = 'Forced by the host (appsettings / CLI) — currently '
+                + (_autoCreate.value ? 'on' : 'off') + '.';
+        } else if (uiMode === 'embedded') {
+            autoCreateDesc = 'On by default when Bowire is embedded: a first run seeds one '
+                + 'workspace named after the host app and lands on Discover, where this host\'s '
+                + 'own API is already listed. Turn it off to get the empty Home + '
+                + 'Create-Workspace CTA instead. Takes effect after a reload of a fresh install.';
+        } else {
+            autoCreateDesc = 'Seed a default "Personal" workspace on first run instead of '
+                + 'showing the empty Home + Create-Workspace CTA. Takes effect after a reload '
+                + 'of a fresh install.';
+        }
         section.appendChild(renderSettingsToggle(
             'Auto-create initial workspace',
-            hostForced
-                ? 'Forced on by the host (appsettings / CLI). New installs boot straight into a "Personal" workspace.'
-                : 'Seed a default "Personal" workspace on first run instead of showing the empty Home + Create-Workspace CTA. Takes effect after a reload of a fresh install.',
-            hostForced || autoCreateInitial,
+            autoCreateDesc,
+            _autoCreate.value,
             function (val) {
                 if (hostForced) return; // host forces value, browser can't override
                 localStorage.setItem('bowire_auto_create_initial_workspace', val ? 'true' : 'false');

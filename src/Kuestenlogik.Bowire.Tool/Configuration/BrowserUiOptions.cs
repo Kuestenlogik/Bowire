@@ -81,6 +81,21 @@ internal sealed class BrowserUiOptions
     public bool EnableMcpAdapter { get; set; }
 
     /// <summary>
+    /// Host stance on seeding a workspace on first run. Bound from
+    /// <c>Bowire:AutoCreateInitialWorkspace</c> and the
+    /// <c>--auto-create-initial-workspace</c> flag, then forwarded into
+    /// <see cref="BowireOptions.AutoCreateInitialWorkspace"/>.
+    /// </summary>
+    /// <remarks>
+    /// Nullable on purpose: "not configured" has to stay distinguishable
+    /// from an explicit <c>false</c>, because only the explicit value
+    /// locks the per-browser Settings → General toggle. <c>Bind</c>
+    /// leaves it null when the key is absent, which the workbench reads
+    /// as "no host stance — use the mode default" (standalone: off).
+    /// </remarks>
+    public bool? AutoCreateInitialWorkspace { get; set; }
+
+    /// <summary>
     /// Resolved plugin directory. Populated separately by
     /// <see cref="BowireConfiguration.PluginDir"/> so its three-source
     /// precedence (flag → legacy env → appsettings → default) stays in

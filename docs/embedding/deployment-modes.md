@@ -203,9 +203,17 @@ Is the target service yours?
 | Discovery seam | Network (URL bar visible) | Host's `IServiceProvider` (URL bar hidden) | n/a (no UI) |
 | Can intercept host's traffic | No (use `bowire proxy` for MITM) | Yes, with `UseBowireInterceptor()` | Yes |
 | Workbench UI mounted | Yes, at `/` on `localhost:5080` | Yes, at `/bowire` (default) | No |
+| First run | Empty Home + "Create your first workspace" CTA (`--auto-create-initial-workspace` opts in to a seeded one) | Workspace auto-seeded from the host name; lands on Discover with the host's own API already listed (`AutoCreateInitialWorkspace = false` opts out) | n/a |
 | Cert-trust dance | None | None | None |
 | `BowireOptions.Mode` | `Standalone` | `Embedded` | n/a (`MapBowire` not called) |
 | Typical fit | Third-party APIs, QA, CI | Dev-time workbench for your own service | Production audit / capture without UI surface |
+
+The first-run difference is about where you *land*, not about what you
+can reach: the topbar workspace chip and the Workspaces rail expose
+switch / create / rename / delete in both modes, and Discover's own
+empty state handles a host that opted out of the seeded workspace. See
+[`AutoCreateInitialWorkspace`](options.md#autocreateinitialworkspace-bool-default-null)
+for the full three-layer resolution.
 
 ## Cross-links
 

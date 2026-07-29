@@ -61,6 +61,7 @@ internal static class BowireConfiguration
         ["-u"] = "Bowire:ServerUrl",
         ["--no-browser"] = "Bowire:NoBrowser",
         ["--enable-mcp-adapter"] = "Bowire:EnableMcpAdapter",
+        ["--auto-create-initial-workspace"] = "Bowire:AutoCreateInitialWorkspace",
         ["--update-check"] = "Bowire:PluginUpdateCheck:Enabled",
         ["--telemetry"] = "Bowire:Telemetry:Enabled",
         ["--telemetry-strip-method-labels"] = "Bowire:Telemetry:StripMethodLabels",
@@ -110,6 +111,7 @@ internal static class BowireConfiguration
     {
         "--no-browser",
         "--enable-mcp-adapter",
+        "--auto-create-initial-workspace",
         "--update-check",
         "--no-watch",
         "--stateful",

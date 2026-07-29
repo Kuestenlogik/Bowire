@@ -121,16 +121,25 @@ public sealed class BowireOptions
     public bool ShowInternalServices { get; set; }
 
     /// <summary>
-    /// When <c>true</c>, the workbench seeds a default "Personal" workspace
-    /// for first-run users so they boot straight into a usable shell.
-    /// When <c>false</c> (the v2.0 default), the workbench starts with no
-    /// workspace and the Home page shows a "Create your first workspace"
-    /// CTA so the operator learns the concept up front. End-users can
-    /// override per-browser via Settings → General; this option is the
-    /// host-side baseline (appsettings.json or
-    /// <c>--auto-create-initial-workspace</c> CLI flag).
+    /// Host stance on seeding a workspace for first-run users. Tri-state:
+    /// <list type="bullet">
+    /// <item><description><c>null</c> (the default) — no host stance. The
+    /// workbench resolves it from <see cref="Mode"/>: an
+    /// <see cref="BowireMode.Embedded"/> host seeds one workspace named
+    /// after the host app and lands on the Discover rail, because the
+    /// host's own API is already the subject and an empty Home reads as a
+    /// dead end. A <see cref="BowireMode.Standalone"/> install keeps the
+    /// empty Home + "Create your first workspace" CTA so the operator
+    /// learns the concept before pointing at anything.</description></item>
+    /// <item><description><c>true</c> / <c>false</c> — an explicit host
+    /// stance. It wins over the per-browser Settings → General toggle,
+    /// which is then shown read-only.</description></item>
+    /// </list>
+    /// Set from appsettings.json (<c>Bowire:AutoCreateInitialWorkspace</c>),
+    /// the <c>--auto-create-initial-workspace</c> CLI flag, or directly on
+    /// the options object in an embedded host.
     /// </summary>
-    public bool AutoCreateInitialWorkspace { get; set; }
+    public bool? AutoCreateInitialWorkspace { get; set; }
 
     /// <summary>
     /// UI operating mode — controls whether the URL bar is shown and whether

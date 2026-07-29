@@ -46,6 +46,47 @@ public sealed class BrowserUiOptionsTests : IDisposable
         Assert.False(ui.NoBrowser);
         Assert.False(ui.EnableMcpAdapter);
         Assert.False(ui.LockServerUrl);
+        // #535 — tri-state. "Not configured" must stay distinguishable
+        // from an explicit false: only the explicit value locks the
+        // per-browser Settings toggle.
+        Assert.Null(ui.AutoCreateInitialWorkspace);
+    }
+
+    [Fact]
+    public void BareBooleanFlag_AutoCreateInitialWorkspace_BindsToTrue()
+    {
+        var args = new[] { "--auto-create-initial-workspace" };
+        var config = BowireConfiguration.Build(args);
+        var ui = BowireConfiguration.BuildBrowserUiOptions(config, args);
+
+        Assert.True(ui.AutoCreateInitialWorkspace);
+    }
+
+    [Fact]
+    public void AutoCreateInitialWorkspace_FromAppSettings_Binds()
+    {
+        File.WriteAllText(SafePath.Combine(_tempDir, "appsettings.json"),
+            """{ "Bowire": { "AutoCreateInitialWorkspace": true } }""");
+
+        var config = BowireConfiguration.Build([]);
+        var ui = BowireConfiguration.BuildBrowserUiOptions(config, []);
+
+        Assert.True(ui.AutoCreateInitialWorkspace);
+    }
+
+    [Fact]
+    public void AutoCreateInitialWorkspace_ExplicitFalse_IsNotNull()
+    {
+        // The distinction that makes the tri-state worth having: an
+        // explicit `false` is a host stance ("never seed"), not the
+        // absence of one.
+        File.WriteAllText(SafePath.Combine(_tempDir, "appsettings.json"),
+            """{ "Bowire": { "AutoCreateInitialWorkspace": false } }""");
+
+        var config = BowireConfiguration.Build([]);
+        var ui = BowireConfiguration.BuildBrowserUiOptions(config, []);
+
+        Assert.False(ui.AutoCreateInitialWorkspace);
     }
 
     [Fact]

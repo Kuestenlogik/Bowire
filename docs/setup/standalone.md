@@ -120,6 +120,7 @@ for runtime feature switches inside an already-loaded plugin.
 | `--title <text>` | Browser title | `Bowire` |
 | `--no-browser` | Don't auto-open the browser | `false` |
 | `--enable-mcp-adapter` | Expose discovered methods as MCP tools at `/bowire/mcp/sse` | `false` |
+| `--auto-create-initial-workspace` | Seed a default "Personal" workspace on first run instead of the empty Home + Create-Workspace CTA. Also bindable as `Bowire:AutoCreateInitialWorkspace` in appsettings.json or `BOWIRE_Bowire__AutoCreateInitialWorkspace`. Embedded hosts seed one by default; standalone does not. | `false` |
 | `--disable-plugin <id>` | Skip a protocol plugin at startup. Repeat or comma-separate. | none |
 | `--update-check` | Opt in to the daily plugin-update check (off by default — outbound calls to nuget.org are opt-in). When enabled, the workbench sidebar surfaces a count badge when sibling-plugin updates are available. See [Updating Bowire and its plugins](updating.md#automatic-update-check-opt-in). | `false` |
 
