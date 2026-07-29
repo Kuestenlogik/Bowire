@@ -68,6 +68,7 @@ names use `camelCase` exactly as `[JsonPropertyName]` declares them.
 | `steps` | `array<step>` | yes | At least one entry; the loader rejects empty `steps`. |
 | `schemaSnapshot` | `object` | no | Phase-5+ recordings carry the resolved frame-semantics annotations as a sidecar so a replay can mount the same widgets the original session did. Optional; loader treats omission as "ask the live store at replay". |
 | `sourceSchema` | `object` | no | Original OpenAPI / AsyncAPI / GraphQL / WSDL document the target advertised at capture time. Used by mock-hosting extensions to serve the **full** declared surface, not just the realized slice. |
+| `correlation` | `object` | no | `{ "name": "shipId", "value": "101", "source": "field" \| "header" }` — the correlation key this recording is read through in the [Correlated timeline](../features/correlated-timeline.md) and by `bowire recording correlate`. **Diagnostic only**: no replay, mock or matcher path reads it, and writing it does **not** bump `recordingFormatVersion` (the loader ignores unknown properties, and the version check only inspects the integer). `source` is optional — readers re-derive it from the name. |
 | `attack` | `bool` | no | When `true` this is a security probe (a "vulnerability template" — `docs/architecture/security-testing.md`), NOT a fixture; the mock-server replay path explicitly skips it. Default `false`. |
 | `vulnerability`, `vulnerableWhen` | object | iff `attack=true` | Identifying metadata + match predicate for the targeted vulnerability. |
 
@@ -134,6 +135,14 @@ The CLI surface is `bowire recording validate <path>` (alias on the
 `recording` subcommand) — exit `0` for a valid file, `64` (EX_USAGE)
 for bad args, `65` (EX_DATAERR) for a malformed file, with the inner
 diagnostic on stderr.
+
+Its sibling `bowire recording correlate <path> [--name <recording>]
+[--key name=value] [--json]` reads the file through the same loader and
+prints every step on a shared time axis with a strong / weak / no-match
+verdict against the resolved correlation key — the identical analysis
+the workbench's Correlated-timeline tab runs over
+`POST /api/recordings/correlate`. Same exit codes. See
+[Correlated timeline](../features/correlated-timeline.md).
 
 ## Out of scope
 

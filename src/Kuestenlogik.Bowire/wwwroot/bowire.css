@@ -18686,6 +18686,365 @@ button.bowire-ws-detail-action.bowire-ws-detail-danger:hover:not(:disabled) {
     height: 12px;
 }
 
+/* ---- Correlated timeline (#539) ----
+   Second tab of the Recordings detail pane, rendered by the
+   Kuestenlogik.Bowire.Recordings fragment recording-correlation.js.
+   Deliberately plain HTML/CSS rather than SVG: el() in helpers.js only
+   knows document.createElement, the lanes have to survive morphdom, and
+   percentage-positioned divs are responsive for free.
+   Match tiers get three visually distinct treatments — a solid accent
+   bar (strong), an outlined/hatched bar (weak), and a faded bar
+   (unmatched) — so the verdict reads without relying on hue alone. */
+.bowire-recording-detail-tabs {
+    margin-top: 4px;
+}
+.bowire-recording-detail-tabs .bowire-tab.disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+.bowire-recording-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+}
+.bowire-recording-timeline-note {
+    padding: 18px 4px;
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-recording-timeline-notice {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 16px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-sidebar-hover, transparent);
+}
+.bowire-recording-timeline-notice-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-recording-timeline-notice-body {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--bowire-text-secondary);
+    max-width: 62ch;
+}
+.bowire-recording-timeline-keybar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.bowire-recording-timeline-key-wrap {
+    position: relative;
+}
+.bowire-recording-timeline-key-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border: 1px solid var(--bowire-accent-border, var(--bowire-border));
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-text);
+    font-family: var(--bowire-font-mono);
+    font-size: 11px;
+    cursor: pointer;
+}
+.bowire-recording-timeline-key-chip.is-empty {
+    border-color: var(--bowire-border);
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-recording-timeline-key-source {
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-recording-timeline-key-caret svg {
+    width: 10px;
+    height: 10px;
+    transform: rotate(90deg);
+}
+.bowire-recording-timeline-key-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 40;
+    min-width: 280px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-bg-elevated, var(--bowire-bg));
+    box-shadow: var(--bowire-shadow-md, 0 6px 18px rgba(0, 0, 0, 0.25));
+}
+.bowire-recording-timeline-key-menu-empty {
+    padding: 10px;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-recording-timeline-key-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 5px 8px;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-text);
+    font-size: 11px;
+    text-align: left;
+    cursor: pointer;
+}
+.bowire-recording-timeline-key-menu-item:hover {
+    background: var(--bowire-sidebar-hover);
+}
+.bowire-recording-timeline-key-menu-mark {
+    width: 12px;
+    flex: 0 0 12px;
+    color: var(--bowire-accent-text);
+}
+.bowire-recording-timeline-key-menu-label {
+    flex: 1;
+    font-family: var(--bowire-font-mono);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-recording-timeline-key-menu-meta {
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+    white-space: nowrap;
+}
+.bowire-recording-timeline-stats {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    font-family: var(--bowire-font-mono);
+}
+.bowire-recording-timeline-copy {
+    margin-left: auto;
+    padding: 3px 8px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: transparent;
+    color: var(--bowire-text-secondary);
+    font-size: 11px;
+    cursor: pointer;
+}
+.bowire-recording-timeline-copy:hover {
+    color: var(--bowire-text);
+    border-color: var(--bowire-text-tertiary);
+}
+.bowire-recording-timeline-banner {
+    padding: 8px 10px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-sidebar-hover, transparent);
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--bowire-text-secondary);
+}
+.bowire-recording-timeline-banner-warn {
+    border-color: rgba(245, 158, 11, 0.45);
+    color: var(--bowire-text-secondary);
+}
+.bowire-recording-timeline-lanes {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.bowire-recording-lane {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.bowire-recording-lane-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 118px;
+    flex: 0 0 118px;
+    overflow: hidden;
+}
+.bowire-recording-lane-count {
+    color: var(--bowire-text-tertiary);
+    font-family: var(--bowire-font-mono);
+    font-size: 10px;
+}
+.bowire-recording-lane-track {
+    position: relative;
+    flex: 1;
+    height: 22px;
+    min-width: 0;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-sidebar-hover, transparent);
+    overflow: hidden;
+}
+.bowire-recording-bar {
+    position: absolute;
+    top: 4px;
+    height: 14px;
+    min-width: 3px;
+    border-radius: 2px;
+    background: var(--bowire-accent);
+    cursor: pointer;
+}
+/* Weak keeps the dashed outline as its signal, but carries a tint too:
+   a unary call is only ~3px wide at the min-width clamp, and a
+   transparent 3px dashed box reads as nothing at all. */
+.bowire-recording-bar.is-weak {
+    background: var(--bowire-accent-subtle);
+    border: 1px dashed var(--bowire-accent);
+}
+.bowire-recording-bar.is-none {
+    background: var(--bowire-text-tertiary);
+    opacity: 0.3;
+}
+.bowire-recording-bar.is-fail {
+    background: #ef4444;
+    opacity: 1;
+}
+.bowire-recording-bar.is-fail.is-weak {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: #ef4444;
+}
+.bowire-recording-bar.is-selected {
+    outline: 2px solid var(--bowire-text);
+    outline-offset: 1px;
+}
+.bowire-recording-bar:hover {
+    filter: brightness(1.15);
+}
+.bowire-recording-frame-tick {
+    position: absolute;
+    top: 2px;
+    width: 2px;
+    height: 18px;
+    margin-left: -1px;
+    border-radius: 1px;
+    background: var(--bowire-accent-text, var(--bowire-accent));
+    opacity: 0.85;
+    cursor: pointer;
+}
+.bowire-recording-frame-tick.is-none {
+    background: var(--bowire-text-tertiary);
+    opacity: 0.45;
+}
+.bowire-recording-frame-tick.is-weak {
+    opacity: 0.6;
+}
+.bowire-recording-timeline-axis {
+    position: relative;
+    height: 16px;
+    margin-left: 128px;
+}
+.bowire-recording-timeline-axis-tick {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-family: var(--bowire-font-mono);
+    font-size: 9px;
+    color: var(--bowire-text-tertiary);
+    white-space: nowrap;
+}
+.bowire-recording-timeline-inspect {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 18px;
+    padding: 10px 12px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-sidebar-hover, transparent);
+}
+.bowire-recording-timeline-inspect-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+.bowire-recording-timeline-inspect-title {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bowire-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-recording-timeline-inspect-close {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+}
+.bowire-recording-timeline-inspect-close svg {
+    width: 12px;
+    height: 12px;
+}
+.bowire-recording-timeline-inspect-field {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 11px;
+}
+.bowire-recording-timeline-inspect-label {
+    color: var(--bowire-text-tertiary);
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+}
+.bowire-recording-timeline-inspect-value {
+    color: var(--bowire-text);
+    font-family: var(--bowire-font-mono);
+}
+.bowire-recording-timeline-legend {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-recording-timeline-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.bowire-recording-timeline-legend-swatch {
+    display: inline-block;
+    width: 16px;
+    height: 8px;
+    border-radius: 2px;
+}
+.bowire-recording-timeline-legend-swatch.is-strong {
+    background: var(--bowire-accent);
+}
+.bowire-recording-timeline-legend-swatch.is-weak {
+    background: transparent;
+    border: 1px dashed var(--bowire-accent);
+}
+.bowire-recording-timeline-legend-swatch.is-none {
+    background: var(--bowire-text-tertiary);
+    opacity: 0.3;
+}
+
 /* ============================================================
    Empty-State Landing Page
    ============================================================

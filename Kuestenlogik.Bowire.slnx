@@ -68,6 +68,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Kuestenlogik.Bowire.Testing/Kuestenlogik.Bowire.Testing.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Monitoring.Tests/Kuestenlogik.Bowire.Monitoring.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.Recordings.Tests/Kuestenlogik.Bowire.Recordings.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Oast.Tests/Kuestenlogik.Bowire.Oast.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Tests/Kuestenlogik.Bowire.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.IntegrationTests/Kuestenlogik.Bowire.IntegrationTests.csproj" />

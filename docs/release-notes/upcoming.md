@@ -206,6 +206,41 @@ downgraded to `http://`, because the hint prefix was still on the string
 when the check ran — the hint is now split off once, in one place, for
 every subcommand.
 
+### A recording of eight protocols now reads as one transaction (#539)
+
+A recording that walked one business transaction across gRPC, OData,
+REST, GraphQL, WebSocket, SignalR, SSE and MQTT looked, in the step
+list, like eight unrelated rows. The Recordings detail pane gained a
+second tab, **Correlated timeline**: one lane per protocol on a shared
+time axis, one bar per step, per-frame ticks for streaming steps, and a
+per-step verdict against a correlation key.
+
+Bowire recordings carry no trace id — nothing in the `.bwr` format ever
+had one — so the key is resolved in three tiers and the view says which
+one it used: a correlation header on `step.metadata` (`traceparent`'s
+trace-id, `x-correlation-id`, `x-request-id`, …), otherwise an
+id-shaped JSON leaf shared by two or more steps, otherwise nothing, in
+which case the lanes still render and the banner admits there is no
+signal. Matches are **strong** (the key's own name *and* value are in
+the payload — so `shipId` also ties `onShipId` and `OccupiedByShipId`)
+or **weak** (the value turned up on some other id-shaped field). The
+weak tier is not decoration: in a harbour capture `portCallId = 1`,
+`craneId = 1` and dock `1` are three different things wearing the same
+number, and a value-only match would fuse them.
+
+The analysis lives once, in C#, and both surfaces call it — so the new
+`bowire recording correlate <path> [--key name=value] [--json]` and the
+browser cannot disagree about what correlates. The chosen key persists
+onto the recording as an optional `correlation` field, which is
+additive and does **not** bump `recordingFormatVersion`.
+
+Two things ride along. **Import .bwr** now sits next to Import HAR: the
+rail could import someone else's format but not its own, so a `.bwr`
+from a colleague or from `bowire har convert` was openable everywhere
+except the workbench that writes it. And a recording whose `capturedAt`
+stamps are all zero now falls back to cumulative durations rather than
+collapsing every step onto the same offset.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor

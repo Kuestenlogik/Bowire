@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!-- #539 — correlated-timeline coverage: candidate suggestion +
+         ranking, the strong/weak/none match rule, timebase
+         normalisation, streaming frame offsets, and the key-resolution
+         precedence (explicit argument > persisted `correlation` field >
+         best auto-suggestion). Driven off a trimmed copy of the harbor
+         flagship recording so the multi-protocol case is exercised for
+         real rather than from a hand-built two-step stub. -->
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector"><PrivateAssets>all</PrivateAssets><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets></PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Recordings\Kuestenlogik.Bowire.Recordings.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
