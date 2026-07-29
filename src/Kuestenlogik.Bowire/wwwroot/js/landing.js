@@ -64,6 +64,21 @@
             return 'editable-no-services';
         }
 
+        // 5b. Embedded host whose own /api/services failed. #534 — this
+        //     case used to fall straight through to 'first-run' below and
+        //     render the welcome hero: an embedded host has no serverUrls
+        //     and (usually) no config.lockServerUrl, so check 4 never
+        //     fired and the 502 was completely hidden. The failure is
+        //     filed under the '(embedded)' key api.js writes for the
+        //     URL-less host probe. Scoped to uiMode === 'embedded' on
+        //     purpose: in standalone the same key can be set by the
+        //     no-URL host probe while the operator is simply between
+        //     URLs, and first-run is the right screen for that.
+        if (uiMode === 'embedded' && !hasServices && !isLoadingServices
+            && discoveryErrors['(embedded)']) {
+            return 'discovery-failed';
+        }
+
         // 6. First-run — empty slate. No URLs, no uploads, AND no
         //    services (embedded hosts auto-populate services[] via
         //    the in-process EndpointDataSource scan — those users
@@ -286,13 +301,26 @@
     function renderStateDiscoveryFailed(parent) {
         var card = el('div', { className: 'bowire-landing-card bowire-landing-error' });
 
-        var firstUrl = serverUrls[0] || '(unknown)';
-        var errMsg = discoveryErrors[firstUrl] || Object.values(discoveryErrors)[0] || 'Connection failed';
+        // One key for both the headline and the diagnostics lookup. An
+        // embedded host has no serverUrls at all — its failure is filed
+        // under the literal '(embedded)' key api.js writes.
+        var diagKey = serverUrls[0] || Object.keys(discoveryErrors)[0] || '(embedded)';
+        var errMsg = discoveryErrors[diagKey] || Object.values(discoveryErrors)[0] || 'Connection failed';
+        var titleTarget = diagKey === '(embedded)' ? 'this host' : diagKey;
 
         card.appendChild(el('div', { className: 'bowire-landing-error-icon', innerHTML: svgIcon('disconnect') }));
         card.appendChild(el('div', { className: 'bowire-landing-error-title',
-            textContent: 'Could not discover services at ' + firstUrl }));
+            textContent: 'Could not discover services at ' + titleTarget }));
         card.appendChild(el('div', { className: 'bowire-landing-error-message', textContent: errMsg }));
+
+        var diag = renderDiscoveryDiagnostics(diagKey);
+        if (diag) {
+            // A concrete per-plugin list strictly dominates the generic
+            // advice below, so we show one or the other — never both.
+            card.appendChild(diag);
+            parent.appendChild(card);
+            return;
+        }
 
         var listTitle = el('div', { className: 'bowire-landing-section-title',
             textContent: 'Common causes:' });
@@ -418,6 +446,164 @@
 
     // ---- Shared sub-renderers ----
 
+    // #534 — per-plugin discovery diagnostics.
+    //
+    // Before this, a discovery that came back empty told the operator
+    // "HTTP 502 Bad Gateway" and nothing else: which of the twelve loaded
+    // plugins even got a turn, which one refused the connection, which one
+    // ran fine and simply didn't recognise the URL — all of that was in the
+    // problem+json body the UI never read. This renders it.
+    //
+    // Collapsed by default (one line: "12 plugins probed · 3 failed") so
+    // the failure card doesn't become a wall of text; the Sources rail
+    // passes forceOpen because that pane IS the diagnosis surface.
+    //
+    // Returns null when there is nothing to show. render() has no
+    // try/catch — a throw here blanks the entire workbench — so every
+    // read is defensive and every caller must tolerate null.
+    function renderDiscoveryDiagnostics(key, opts) {
+        if (!key) return null;
+        if (typeof discoveryAttempts === 'undefined') return null;
+        var attempts = discoveryAttempts[key];
+        if (!Array.isArray(attempts) || attempts.length === 0) return null;
+
+        var forceOpen = !!(opts && opts.forceOpen);
+        var open = forceOpen
+            || (typeof discoveryDiagnosticsOpen !== 'undefined' && discoveryDiagnosticsOpen.has(key));
+        var failed = attempts.filter(_diagIsFailure).length;
+
+        var wrap = el('div', {
+            id: 'bowire-diag-' + _diagKeySlug(key),
+            className: 'bowire-diag'
+        });
+
+        if (!forceOpen) {
+            // MORPHDOM: the key is read off the element at CLICK time, not
+            // captured in this closure. morphdom preserves the existing
+            // node (and its listener) while copying the new node's
+            // attributes, so a closure would keep toggling whichever URL
+            // this row rendered for FIRST — wrong the moment the status
+            // list reorders or the operator switches source.
+            wrap.appendChild(el('button', {
+                className: 'bowire-diag-toggle' + (open ? ' is-open' : ''),
+                'data-bowire-diag-key': key,
+                'aria-expanded': open ? 'true' : 'false',
+                onClick: function (e) {
+                    var k = e.currentTarget.getAttribute('data-bowire-diag-key');
+                    if (!k) return;
+                    if (discoveryDiagnosticsOpen.has(k)) discoveryDiagnosticsOpen.delete(k);
+                    else discoveryDiagnosticsOpen.add(k);
+                    render();
+                }
+            },
+                el('span', { className: 'bowire-diag-toggle-chevron', innerHTML: svgIcon('chevron') }),
+                el('span', {
+                    textContent: attempts.length + ' plugin' + (attempts.length === 1 ? '' : 's')
+                        + ' probed · ' + failed + ' failed'
+                })
+            ));
+        }
+
+        if (!open) return wrap;
+
+        var list = el('div', { className: 'bowire-diag-list' });
+        var ordered = attempts.slice().sort(function (a, b) {
+            return _diagOutcomeRank(a) - _diagOutcomeRank(b);
+        });
+        for (var i = 0; i < ordered.length; i++) {
+            list.appendChild(_renderDiagRow(ordered[i]));
+        }
+        wrap.appendChild(list);
+
+        var hint = (typeof discoveryHints !== 'undefined') ? discoveryHints[key] : null;
+        if (hint) {
+            wrap.appendChild(el('div', { className: 'bowire-diag-hint', textContent: hint }));
+        }
+
+        // One-click "paste this into the bug report" — the whole table as
+        // plain text, which is what an operator actually needs to hand to
+        // whoever owns the server.
+        wrap.appendChild(el('button', {
+            className: 'bowire-diag-copy',
+            'data-bowire-diag-key': key,
+            onClick: function (e) {
+                var k = e.currentTarget.getAttribute('data-bowire-diag-key');
+                if (!k) return;
+                if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') return;
+                navigator.clipboard.writeText(serializeDiscoveryDiagnostics(k)).then(function () {
+                    if (typeof toast === 'function') toast('Diagnostics copied', 'success');
+                });
+            }
+        },
+            el('span', { innerHTML: svgIcon('copy') }),
+            el('span', { textContent: 'Copy diagnostics' })
+        ));
+
+        return wrap;
+    }
+
+    function _diagIsFailure(a) {
+        return a && (a.outcome === 'error' || a.outcome === 'timeout');
+    }
+
+    // Failures first — the reason a discovery came back empty should be
+    // the first row, not buried under nine "returned no services" lines.
+    function _diagOutcomeRank(a) {
+        var o = (a && a.outcome) || '';
+        if (o === 'error') return 0;
+        if (o === 'timeout') return 1;
+        if (o === 'empty') return 2;
+        return 3;
+    }
+
+    // Stable element id per key so morphdom keys the subtree by id rather
+    // than by sibling position.
+    function _diagKeySlug(key) {
+        return String(key).replace(/[^a-zA-Z0-9]+/g, '-');
+    }
+
+    function _renderDiagRow(a) {
+        var outcome = (a && a.outcome) || 'error';
+        var msg = String((a && a.message) || '');
+        var shown = msg.length > 160 ? (msg.slice(0, 159) + '…') : msg;
+        var row = el('div', { className: 'bowire-diag-row' },
+            el('span', { className: 'bowire-diag-dot bowire-diag-' + outcome, title: outcome }),
+            el('span', { className: 'bowire-diag-plugin', textContent: (a && a.plugin) || 'plugin' }),
+            el('span', { className: 'bowire-diag-msg', textContent: shown, title: msg || outcome })
+        );
+        if (a && typeof a.durationMs === 'number') {
+            row.appendChild(el('span', {
+                className: 'bowire-diag-dur',
+                textContent: a.durationMs + ' ms'
+            }));
+        }
+        return row;
+    }
+
+    // Plain-text rendering of one key's attempt table, for bug reports.
+    function serializeDiscoveryDiagnostics(key) {
+        if (typeof discoveryAttempts === 'undefined') return '';
+        var attempts = discoveryAttempts[key];
+        if (!Array.isArray(attempts) || attempts.length === 0) return '';
+        var lines = ['Bowire discovery diagnostics for ' + key];
+        var err = (typeof discoveryErrors !== 'undefined') ? discoveryErrors[key] : null;
+        if (err) lines.push('Result: ' + err);
+        lines.push('');
+        var ordered = attempts.slice().sort(function (a, b) {
+            return _diagOutcomeRank(a) - _diagOutcomeRank(b);
+        });
+        for (var i = 0; i < ordered.length; i++) {
+            var a = ordered[i];
+            lines.push('  ' + (a.plugin || 'plugin')
+                + '  ' + (a.outcome || '?')
+                + '  ' + (typeof a.durationMs === 'number' ? a.durationMs + ' ms' : '')
+                + '  ' + (a.message || ''));
+        }
+        var hint = (typeof discoveryHints !== 'undefined') ? discoveryHints[key] : null;
+        if (hint) { lines.push(''); lines.push('Hint: ' + hint); }
+        return lines.join('\n');
+    }
+
     function renderUrlStatusRow(url) {
         var status = connectionStatuses[url] || 'disconnected';
         var row = el('div', { className: 'bowire-landing-status-row bowire-landing-status-' + status });
@@ -437,7 +623,17 @@
                 onClick: function () { fetchServices(); }
             }));
         }
-        return row;
+
+        // Attach the per-plugin disclosure under the row when this URL has
+        // one. Both call sites only appendChild the return value, and every
+        // .bowire-landing-status-* CSS rule is a flat class selector with no
+        // child combinator, so wrapping is safe.
+        var diag = renderDiscoveryDiagnostics(url);
+        if (!diag) return row;
+        var wrap = el('div', { className: 'bowire-landing-status-entry' });
+        wrap.appendChild(row);
+        wrap.appendChild(diag);
+        return wrap;
     }
 
     function renderFirstRunCard(iconName, title, description, ctaLabel, ctaHandler) {

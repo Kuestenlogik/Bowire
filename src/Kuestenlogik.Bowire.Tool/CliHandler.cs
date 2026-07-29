@@ -26,6 +26,8 @@ internal static class CliHandler
 
     public static async Task<int> ListAsync(CliCommandOptions cli, TextWriter? stdout = null, TextWriter? stderr = null)
         => await RunWithErrorHandling(cli, CommandIo.Resolve(stdout, stderr), ListImplAsync).ConfigureAwait(false);
+    public static async Task<int> DiscoverAsync(CliCommandOptions cli, TextWriter? stdout = null, TextWriter? stderr = null)
+        => await RunWithErrorHandling(cli, CommandIo.Resolve(stdout, stderr), DiscoverImplAsync).ConfigureAwait(false);
     public static async Task<int> DescribeAsync(CliCommandOptions cli, TextWriter? stdout = null, TextWriter? stderr = null)
         => await RunWithErrorHandling(cli, CommandIo.Resolve(stdout, stderr), DescribeImplAsync).ConfigureAwait(false);
     public static async Task<int> CallAsync(CliCommandOptions cli, TextWriter? stdout = null, TextWriter? stderr = null)
@@ -89,6 +91,92 @@ internal static class CliHandler
 
         return 0;
     }
+
+    /// <summary>
+    /// <c>bowire discover</c> (#534) — probe a URL with every loaded
+    /// protocol plugin and report what each one found, or why it didn't.
+    /// <para>
+    /// Deliberately NOT folded into <c>bowire list</c>: that command is
+    /// documented as gRPC-reflection-only and hard-wired to
+    /// <see cref="GrpcReflectionClient"/>, so widening it would silently
+    /// change what existing scripts get back. This one shares
+    /// <see cref="BowireDiscoveryProbe"/> with the <c>/api/services</c>
+    /// endpoint and the <c>bowire.discover</c> MCP tool, so the workbench
+    /// and the terminal can never drift on the diagnosis.
+    /// </para>
+    /// </summary>
+    private static async Task<int> DiscoverImplAsync(CliCommandOptions cli, CommandIo io)
+    {
+        // `rest@https://…` narrows the fanout to one plugin — same hint
+        // grammar the sidebar and /api/services accept.
+        var (pluginHint, url) = BowireServerUrl.Parse(cli.Url);
+
+        // Plugin assemblies are already in the AppDomain: Program.cs runs
+        // PluginManager.LoadPlugins before subcommand dispatch.
+        var registry = BowireProtocolRegistry.Discover();
+        var probe = await BowireDiscoveryProbe.RunAsync(
+            registry, url, pluginHint,
+            showInternalServices: false,
+            perProbeCeiling: TimeSpan.FromSeconds(8)).ConfigureAwait(false);
+
+        var color = UseColor(io.Out);
+
+        foreach (var svc in probe.Services)
+        {
+            var methodCount = svc.Methods.Count;
+            Write(io, $"{Cyan(color, svc.Name)}"
+                + $"{Dim(color, $"  ({methodCount} method{(methodCount != 1 ? "s" : "")}, via {svc.Source})")}");
+
+            if (cli.Verbose)
+            {
+                foreach (var method in svc.Methods)
+                    Write(io, $"  {method.Name}");
+            }
+        }
+
+        if (probe.Services.Count > 0) Write(io, "");
+
+        // The attempt table is the point of the command — there is no
+        // collapsed-vs-expanded tradeoff on a terminal, so it always
+        // prints in full. Failures first: that is what the operator came
+        // for when the service list above is empty.
+        if (probe.Attempts.Count == 0)
+        {
+            WriteWarning(io, pluginHint is null
+                ? "No protocol plugins are loaded."
+                : $"No plugin registered for hint '{pluginHint}'.");
+            return 1;
+        }
+
+        var ordered = probe.Attempts.OrderBy(OutcomeRank).ThenBy(a => a.Plugin, StringComparer.Ordinal).ToList();
+        var pluginWidth = ordered.Max(a => a.Plugin.Length);
+        Write(io, Dim(color, $"{ordered.Count} plugin{(ordered.Count != 1 ? "s" : "")} probed"
+            + $" · {ordered.Count(a => a.Outcome is BowireDiscoveryAttempt.OutcomeError or BowireDiscoveryAttempt.OutcomeTimeout)} failed"));
+        foreach (var a in ordered)
+        {
+            Write(io, "  "
+                + a.Plugin.PadRight(pluginWidth)
+                + "  " + a.Outcome.PadRight(7)
+                + "  " + Dim(color, $"{a.DurationMs} ms".PadLeft(8))
+                + "  " + a.Message);
+        }
+
+        return probe.Services.Count > 0 ? 0 : 1;
+    }
+
+    /// <summary>
+    /// Sort key for the attempt table — failures first, successes last,
+    /// so the reason a discovery came back empty is the first thing on
+    /// screen. Mirrors the row order the workbench's diagnostics
+    /// disclosure uses.
+    /// </summary>
+    private static int OutcomeRank(BowireDiscoveryAttempt attempt) => attempt.Outcome switch
+    {
+        BowireDiscoveryAttempt.OutcomeError => 0,
+        BowireDiscoveryAttempt.OutcomeTimeout => 1,
+        BowireDiscoveryAttempt.OutcomeEmpty => 2,
+        _ => 3,
+    };
 
     private static async Task<int> DescribeImplAsync(CliCommandOptions cli, CommandIo io)
     {

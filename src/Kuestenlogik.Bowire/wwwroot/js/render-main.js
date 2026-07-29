@@ -3968,6 +3968,22 @@
             )
         ));
 
+        // #534 — the always-expanded home for the full per-plugin attempt
+        // table. Everywhere else the disclosure is collapsed to keep the
+        // failure card scannable; this pane exists to answer "what
+        // happened to this URL?", so it shows everything, untruncated.
+        // Guarded because renderDiscoveryDiagnostics lives in landing.js
+        // and returns null when the URL has no recorded attempts.
+        if (typeof renderDiscoveryDiagnostics === 'function') {
+            var diagBody = renderDiscoveryDiagnostics(u, { forceOpen: true });
+            if (diagBody) {
+                main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+                    el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Discovery diagnostics' }),
+                    diagBody
+                ));
+            }
+        }
+
         var actions = el('div', { className: 'bowire-ws-detail-section' },
             el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Actions' }),
             el('div', { style: 'display:flex; gap:8px; flex-wrap:wrap;' },

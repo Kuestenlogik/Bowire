@@ -9,6 +9,39 @@ A command-line interface for scripting, automation, and quick exploration withou
 
 ## Commands
 
+### Discover Services (all protocols)
+
+```bash
+bowire discover --url https://api.example.com
+bowire discover --url https://api.example.com -v      # verbose: list methods too
+bowire discover --url rest@https://api.example.com    # pin one plugin, skip the rest
+```
+
+Probes the URL with **every** loaded protocol plugin in parallel and prints
+what each one found — or why it didn't:
+
+```text
+petstore.Pets  (7 methods, via rest)
+
+12 plugins probed · 2 failed
+  gRPC     error      2011 ms  connection refused
+  MQTT     timeout    8003 ms  probe exceeded the 8 s ceiling
+  GraphQL  empty       311 ms  returned no services
+  REST     ok          142 ms  1 service
+  …
+```
+
+The attempt table always prints — the whole point of running the command is
+the diagnosis, so there is no collapsed / expanded tradeoff the way there is
+in the UI. Exit code is `0` when at least one service was found and `1`
+otherwise, so CI can gate on it.
+
+This is the same `BowireDiscoveryProbe` fan-out the `/bowire/api/services`
+endpoint and the `bowire.discover` MCP tool use, so the terminal and the
+workbench can never disagree about what happened. See
+[Auto-discovery → When discovery finds nothing](auto-discovery.md#when-discovery-finds-nothing)
+for the outcome vocabulary.
+
 ### List Services
 
 ```bash
@@ -16,7 +49,11 @@ bowire list --url https://server:443
 bowire list --url https://server:443 -v   # verbose: show methods
 ```
 
-Lists all discovered services. With `-v`, shows each method with its call type.
+Lists all discovered services via **gRPC server reflection only** — it talks
+straight to `GrpcReflectionClient` and never touches the multi-protocol
+fan-out. That is deliberate: scripts depend on its output shape. Reach for
+`bowire discover` when you want every plugin's verdict. With `-v`, shows each
+method with its call type.
 
 ### Describe a Service or Method
 
@@ -59,19 +96,19 @@ bowire call --url http://server:5000 -plaintext \
 
 | Option | Description |
 |--------|-------------|
-| `--url <url>` | Target server URL (required) |
+| `--url <url>` | Target server URL (required). `discover` also accepts the `protocol@url` hint form |
 | `-d, --data <json>` | Request body (JSON string or `@filename`) |
 | `-H <key:value>` | Add metadata header (repeatable) |
 | `--compact` | One-line JSON output for piping |
 | `-plaintext` | Use plaintext (no TLS) |
-| `-v, --verbose` | Verbose output (for `list`) |
+| `-v, --verbose` | Verbose output (for `list` and `discover`) |
 
 ## Exit Codes
 
 | Code | Meaning |
 |------|---------|
-| `0` | OK -- call succeeded |
-| `1` | Connection or runtime error |
+| `0` | OK -- call succeeded (for `discover`: at least one service found) |
+| `1` | Connection or runtime error (for `discover`: no service found) |
 | `2` | gRPC error or invalid usage |
 
 ## CI/CD Usage

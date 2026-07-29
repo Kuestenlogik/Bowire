@@ -2582,6 +2582,38 @@
                         row.appendChild(el('div', { className: 'bowire-conn-popover-row-err',
                             textContent: err }));
                     }
+                    // #534 — a capped preview of the per-plugin attempts.
+                    // No disclosure control here on purpose: this popover
+                    // is shown purely via CSS :hover (see the comment on
+                    // the pill), so a click-toggle inside it is
+                    // unreliable. The pill's own onClick already routes to
+                    // the Sources rail, which shows the full table.
+                    if (typeof discoveryAttempts !== 'undefined'
+                        && Array.isArray(discoveryAttempts[url])
+                        && discoveryAttempts[url].length > 0) {
+                        var attempts = discoveryAttempts[url].slice().sort(function (a, b) {
+                            var rank = function (x) {
+                                var o = (x && x.outcome) || '';
+                                return o === 'error' ? 0 : o === 'timeout' ? 1 : o === 'empty' ? 2 : 3;
+                            };
+                            return rank(a) - rank(b);
+                        });
+                        var shown = Math.min(2, attempts.length);
+                        for (var ai = 0; ai < shown; ai++) {
+                            var at = attempts[ai];
+                            row.appendChild(el('div', {
+                                className: 'bowire-conn-popover-row-attempt',
+                                textContent: ((at && at.plugin) || 'plugin') + ' — '
+                                    + truncateMiddle(String((at && at.message) || at.outcome || ''), 52)
+                            }));
+                        }
+                        if (attempts.length > shown) {
+                            row.appendChild(el('div', {
+                                className: 'bowire-conn-popover-row-attempt',
+                                textContent: '+' + (attempts.length - shown) + ' more — click to open Sources'
+                            }));
+                        }
+                    }
                     list.appendChild(row);
                 })(urlsPresent[li]);
             }
