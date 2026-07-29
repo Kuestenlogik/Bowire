@@ -53,17 +53,28 @@ yet. Two onboarding cards: connect to a server, or upload a schema.
 
 ## State 4 — `discovery-failed`
 
-Locked-mode startup against a server that didn't respond with
-discoverable services. Surfaces the actual error and four
-troubleshoot bullets so the user knows what to check.
+A server that didn't respond with discoverable services. Reached from a
+locked-mode startup, and — since v2.3 — also from an embedded host whose
+own `/api/services` probe failed. That second case used to fall through to
+the first-run welcome hero, which hid the failure entirely: an embedded
+host has no `serverUrls` and usually no `lockServerUrl`, so no earlier
+check matched it.
 
 ![Discovery failed against unreachable server](../images/bowire-discovery-failed.png)
 
 - Red disconnect icon
-- Title with the failed URL
-- Error box with the actual `discoveryErrors[url]` message
+- Title with the failed URL (or "this host" for the embedded probe)
+- Error box with the actual `discoveryErrors[key]` message
   (HTTP status, exception message, or server-returned error envelope)
-- Four troubleshoot bullets covering the most common causes
+- **Per-plugin diagnostics** (v2.3): a disclosure chip reading
+  `12 plugins probed · 3 failed`. Expanded it lists one row per plugin —
+  outcome dot, plugin name, message, probe duration — sorted failures
+  first, followed by the `protocol@` pinning hint and a **Copy
+  diagnostics** button. See
+  [Auto-discovery → When discovery finds nothing](auto-discovery.md#when-discovery-finds-nothing).
+- Four generic troubleshoot bullets — shown **only** when no per-plugin
+  attempts came back. A concrete list of who tried what strictly dominates
+  generic advice, so the two never appear together.
 - Footer with docs link
 
 ## State 2 — `multi-url-partial`
@@ -78,6 +89,7 @@ because services from the working URLs are available.
 - "X of Y discovery URLs connected" headline
 - Status table with green / red dots, the URL, and a Retry button
   per failed entry
+- A collapsed per-plugin diagnostics chip under each failed row (v2.3)
 - "Pick a method from the sidebar" hint at the bottom
 
 ## State 5 — `editable-no-services`
@@ -89,7 +101,8 @@ fallback card.
 ![Editable mode with no services discovered](../images/bowire-editable.png)
 
 - "No services discovered yet" title with help text
-- Per-URL connection status row
+- Per-URL connection status row, each with its own collapsed per-plugin
+  diagnostics chip when that URL produced a failed probe (v2.3)
 - Divider, then the upload-schema fallback button
 
 ## State 1 — `wrong-protocol-tab`
@@ -138,8 +151,17 @@ empty set sees the switch hint instead of the generic "select a method" prompt.
 - Render hook: `wwwroot/js/render-main.js` calls
   `renderLandingPage(main)` whenever `selectedMethod` is null
 - State variables: `serverUrls`, `services`, `selectedProtocol`,
-  `connectionStatuses`, `discoveryErrors`, `isLoadingServices`,
+  `connectionStatuses`, `discoveryErrors`, `discoveryAttempts`,
+  `discoveryHints`, `discoveryDiagnosticsOpen`, `isLoadingServices`,
   `config.lockServerUrl` — all declared in `wwwroot/js/prologue.js`
 - Discovery hooks: `wwwroot/js/api.js` `fetchServices` /
   `fetchServicesForUrl` set `isLoadingServices` and write per-URL
-  errors into `discoveryErrors` so the landing can render them
+  errors into `discoveryErrors` so the landing can render them.
+  `_recordDiscoveryProblem` parses the problem+json body into
+  `discoveryAttempts` / `discoveryHints`; it accepts both the object
+  array current hosts emit and the legacy string array, so a newer
+  workbench pointed at an older embedded host still renders something
+- Diagnostics renderer: `renderDiscoveryDiagnostics(key, opts)` and
+  `serializeDiscoveryDiagnostics(key)` in `wwwroot/js/landing.js`. Both
+  return early when the key has no attempts — `render()` has no
+  try/catch, so every caller must tolerate `null`

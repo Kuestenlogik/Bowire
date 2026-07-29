@@ -62,7 +62,7 @@ internal static class BowireCli
     {
         var root = new RootCommand(
             "Bowire — multi-protocol API workbench. Run without a subcommand to launch the browser UI; " +
-            "run a subcommand (list / describe / call / mock / mcp / plugin / test) for scripting.");
+            "run a subcommand (discover / list / describe / call / mock / mcp / plugin / test) for scripting.");
 
         // Root-level options describe the browser-UI defaults so
         // `bowire --port 6000 --url http://api.local` resolves through
@@ -116,6 +116,7 @@ internal static class BowireCli
             await BrowserUiHost.RunAsync(originalArgs, cfg, pluginDir,
                 pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false));
 
+        root.Add(BuildDiscoverCommand(cfg));
         root.Add(BuildListCommand(cfg));
         root.Add(BuildDescribeCommand(cfg));
         root.Add(BuildCallCommand(cfg));
@@ -580,6 +581,26 @@ internal static class BowireCli
         if (options.Plaintext && options.Url.StartsWith("https://", StringComparison.Ordinal))
             options.Url = "http://" + options.Url["https://".Length..];
         return options;
+    }
+
+    // #534 — the multi-protocol counterpart to `list`. `bowire list` stays
+    // gRPC-reflection-only (scripts depend on its output shape); this one
+    // fans out over every loaded plugin and always prints the per-plugin
+    // attempt table, so a headless / CI user gets the same diagnosis the
+    // workbench shows in its Sources rail. Exit 0 when at least one
+    // service was found, 1 otherwise, so CI can gate on it.
+    // internal so the CLI-grammar tests can parse it without booting a host.
+    internal static Command BuildDiscoverCommand(IConfiguration cfg)
+    {
+        var (url, plaintext, verbose, _, _, _) = GrpcCliOptions(cfg);
+        var cmd = new Command("discover",
+            "Probe a URL with every loaded protocol plugin and report what each one found — or why it didn't. "
+            + "Accepts the `protocol@url` hint form to pin one plugin.");
+        cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose);
+        cmd.SetAction(async (pr, _) =>
+            await CliHandler.DiscoverAsync(BuildCliOptions(pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, null),
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false));
+        return cmd;
     }
 
     private static Command BuildListCommand(IConfiguration cfg)

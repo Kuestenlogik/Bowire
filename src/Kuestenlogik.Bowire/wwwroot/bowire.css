@@ -3848,6 +3848,18 @@ aligned to its right
     word-break: break-word;
 }
 
+/* Capped per-plugin probe preview under a failed connection row (#534).
+   The full table lives in the Sources rail; the pill's onClick goes
+   there. */
+.bowire-conn-popover-row-attempt {
+    margin-top: 2px;
+    padding-left: 12px;
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+    line-height: 1.4;
+    word-break: break-word;
+}
+
 /* ---------- AI drawer (#90) ---------- */
 /* Assistant drawer (#90,
 formerly the AI drawer). Cross-cutting
@@ -18953,6 +18965,133 @@ with the big logo. */
 .bowire-landing-status-retry:hover {
     border-color: var(--bowire-accent);
     color: var(--bowire-accent);
+}
+
+/* ---------- Discovery diagnostics (#534) ---------- */
+/* Per-plugin probe outcomes. Collapsed to a single chip in the landing
+   status rows and the discovery-failed card; always expanded in the
+   Sources rail detail pane, which is the surface dedicated to the
+   question this table answers. */
+.bowire-landing-status-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.bowire-diag {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+}
+.bowire-diag-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    padding: 2px 6px 2px 2px;
+    background: transparent;
+    border: none;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    font-family: var(--bowire-font-sans);
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+.bowire-diag-toggle:hover {
+    color: var(--bowire-text-secondary);
+}
+.bowire-diag-toggle-chevron {
+    display: inline-flex;
+    width: 12px;
+    height: 12px;
+    transition: transform 0.15s ease;
+}
+.bowire-diag-toggle-chevron svg {
+    width: 12px;
+    height: 12px;
+}
+.bowire-diag-toggle.is-open .bowire-diag-toggle-chevron {
+    transform: rotate(90deg);
+}
+.bowire-diag-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-left: 8px;
+    border-left: 1px solid var(--bowire-border);
+}
+.bowire-diag-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+.bowire-diag-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--bowire-text-tertiary);
+}
+.bowire-diag-error {
+    background: #ef4444;
+}
+.bowire-diag-timeout {
+    background: #f59e0b;
+}
+.bowire-diag-empty {
+    background: var(--bowire-text-tertiary);
+}
+.bowire-diag-ok {
+    background: #10b981;
+}
+.bowire-diag-plugin {
+    flex-shrink: 0;
+    min-width: 84px;
+    color: var(--bowire-text);
+}
+.bowire-diag-msg {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--bowire-text-secondary);
+    font-family: var(--bowire-font-mono);
+}
+.bowire-diag-dur {
+    flex-shrink: 0;
+    color: var(--bowire-text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+.bowire-diag-hint {
+    padding-left: 8px;
+    color: var(--bowire-text-secondary);
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+.bowire-diag-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    padding: 4px 10px;
+    background: transparent;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-secondary);
+    font-family: var(--bowire-font-sans);
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+.bowire-diag-copy:hover {
+    border-color: var(--bowire-accent);
+    color: var(--bowire-accent);
+}
+.bowire-diag-copy svg {
+    width: 12px;
+    height: 12px;
 }
 
 /* Wrong-protocol-tab switcher */

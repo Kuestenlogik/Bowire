@@ -91,7 +91,7 @@ public sealed class BowireMcpTools
     }
 
     [McpServerTool(Name = "bowire.discover")]
-    [Description("Run discovery against a server URL and return the discovered services and methods. Optional `protocol` filters to one plugin (grpc, rest, graphql, signalr, mqtt, ws, sse, mcp, odata, socketio); without it every registered protocol that handles the URL gets a turn.")]
+    [Description("Run discovery against a server URL and return the discovered services and methods. Optional `protocol` filters to one plugin (grpc, rest, graphql, signalr, mqtt, ws, sse, mcp, odata, socketio); without it every registered protocol that handles the URL gets a turn. The `attempts` array reports what each plugin did — outcome is ok / empty / error / timeout — so an empty `services` list always comes with an explanation instead of leaving you to guess.")]
     public async Task<string> Discover(
         [Description("Server URL to discover (must be on the allowlist unless arbitrary URLs are allowed).")] string url,
         [Description("Optional protocol id (grpc, rest, graphql, signalr, mqtt, ws, sse, mcp, odata, socketio).")] string? protocol = null,
@@ -103,35 +103,36 @@ public sealed class BowireMcpTools
         if (protocols.Count == 0)
             return $"No matching protocol plugin{(protocol is null ? "" : $" for id \"{protocol}\"")}.";
 
-        var collected = new List<object>();
-        foreach (var plugin in protocols)
-        {
-            try
-            {
-                var services = await plugin.DiscoverAsync(url, false, ct).ConfigureAwait(false);
-                foreach (var svc in services)
-                {
-                    collected.Add(new
-                    {
-                        protocol = plugin.Id,
-                        service = svc.Name,
-                        methods = svc.Methods.Select(mi => new
-                        {
-                            name = mi.Name,
-                            type = mi.MethodType.ToString(),
-                            input = mi.InputType,
-                            output = mi.OutputType
-                        }).ToArray()
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Discovery via {Protocol} failed for {Url}", plugin.Id, url);
-            }
-        }
+        // #534 — the old hand-rolled loop swallowed every per-plugin
+        // exception into a LogDebug the agent never sees, so a failed
+        // probe and a URL that genuinely hosts nothing both came back as
+        // `services: []`. Route through the shared probe instead: same
+        // fanout the /api/services endpoint and `bowire discover` use, and
+        // it hands back one structured attempt per plugin.
+        var probe = await BowireDiscoveryProbe.RunAsync(
+            _registry,
+            url,
+            pluginHint: string.IsNullOrWhiteSpace(protocol) ? null : protocol,
+            showInternalServices: false,
+            perProbeCeiling: TimeSpan.FromSeconds(20),
+            logger: _logger,
+            ct: ct).ConfigureAwait(false);
 
-        return JsonSerializer.Serialize(new { url, services = collected }, JsonOpts);
+        var collected = probe.Services.Select(svc => new
+        {
+            protocol = svc.Source,
+            service = svc.Name,
+            methods = svc.Methods.Select(mi => new
+            {
+                name = mi.Name,
+                type = mi.MethodType.ToString(),
+                input = mi.InputType,
+                output = mi.OutputType
+            }).ToArray()
+        }).ToArray();
+
+        return JsonSerializer.Serialize(
+            new { url, services = collected, attempts = probe.Attempts }, JsonOpts);
     }
 
     [McpServerTool(Name = "bowire.invoke")]

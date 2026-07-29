@@ -15,6 +15,60 @@
         } catch (_) { return null; }
     }
 
+    // #534 — read an application/problem+json body off a non-ok
+    // discovery response. MUST never throw: a reverse proxy or gateway
+    // in front of an embedded host answers 502 with HTML, and this runs
+    // inside the caller's try block where a parse error would turn a
+    // soft "Disconnected" into an unhandled rejection.
+    async function _readProblemBody(resp) {
+        try {
+            var j = await resp.json();
+            return (j && typeof j === 'object') ? j : {};
+        } catch (_) { return {}; }
+    }
+
+    // Normalise a problem body's `attempts` / `hint` into the module
+    // state the diagnostics disclosure reads. Accepts BOTH shapes:
+    // the object array this Bowire emits, and the legacy string array
+    // ("gRPC: connection refused") an older embedded host still sends —
+    // a newer workbench pointed at an older host must still render
+    // something rather than nothing.
+    function _recordDiscoveryProblem(key, prob) {
+        if (!key || !prob) return;
+        var raw = prob.attempts;
+        var list = [];
+        if (Array.isArray(raw)) {
+            for (var i = 0; i < raw.length; i++) {
+                var a = raw[i];
+                if (a && typeof a === 'object') {
+                    list.push({
+                        pluginId: a.pluginId || a.plugin || '',
+                        plugin: a.plugin || a.pluginId || 'plugin',
+                        outcome: a.outcome || 'error',
+                        servicesFound: typeof a.servicesFound === 'number' ? a.servicesFound : 0,
+                        durationMs: typeof a.durationMs === 'number' ? a.durationMs : 0,
+                        message: a.message || ''
+                    });
+                } else if (typeof a === 'string' && a) {
+                    var sep = a.indexOf(':');
+                    list.push({
+                        pluginId: '',
+                        plugin: sep > 0 ? a.slice(0, sep).trim() : a,
+                        outcome: 'error',
+                        servicesFound: 0,
+                        durationMs: 0,
+                        message: sep > 0 ? a.slice(sep + 1).trim() : ''
+                    });
+                }
+            }
+        }
+        if (list.length > 0) discoveryAttempts[key] = list;
+        else delete discoveryAttempts[key];
+
+        if (prob.hint) discoveryHints[key] = String(prob.hint);
+        else delete discoveryHints[key];
+    }
+
     // ---- API Calls ----
     async function fetchServices() {
         // Mark discovery in flight + clear stale errors so the empty-state
@@ -24,6 +78,9 @@
         // the previous landing state until discovery completed.
         isLoadingServices = true;
         discoveryErrors = {};
+        discoveryAttempts = {};
+        discoveryHints = {};
+        discoveryDiagnosticsOpen.clear();
         render();
 
         // Fetch protocols list once — this is identity, doesn't depend on URL
@@ -44,7 +101,15 @@
             const timer = setTimeout(() => ctrl.abort(), 12000);
             try {
                 const resp = await fetch(`${config.prefix}/api/services`, { signal: ctrl.signal });
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                if (!resp.ok) {
+                    // Read the problem body BEFORE throwing — it carries
+                    // the per-plugin attempts that explain the empty
+                    // sidebar. The throw still lands in the catch below
+                    // so discoveryErrors['(embedded)'] stays populated.
+                    var prob = await _readProblemBody(resp);
+                    _recordDiscoveryProblem('(embedded)', prob);
+                    throw new Error(prob.title || ('HTTP ' + resp.status));
+                }
                 services = await resp.json();
             } finally {
                 clearTimeout(timer);
@@ -190,17 +255,31 @@
         try {
             const resp = await fetch(`${config.prefix}/api/services${serverUrlParam(false, url)}`, { signal: ctrl.signal });
             if (!resp.ok) {
+                // The problem+json body carries `attempts` (one entry per
+                // probed plugin) and `hint`. Bailing on resp.ok alone —
+                // which is what this did before #534 — threw all of that
+                // away and left the operator with a bare "HTTP 502".
+                var prob = await _readProblemBody(resp);
                 connectionStatuses[url] = 'error';
-                discoveryErrors[url] = 'HTTP ' + resp.status + ' ' + resp.statusText;
+                discoveryErrors[url] = prob.title || ('HTTP ' + resp.status + ' ' + resp.statusText);
+                _recordDiscoveryProblem(url, prob);
                 return [];
             }
             var data = await resp.json();
             if (data && data.title) {
                 connectionStatuses[url] = 'error';
                 discoveryErrors[url] = data.title;
+                _recordDiscoveryProblem(url, data);
                 return [];
             }
             connectionStatuses[url] = 'connected';
+            // Clear stale per-URL diagnostics: refreshSourceServices()
+            // re-enters this function for a single URL without the global
+            // reset fetchServices() does, so a fixed URL would otherwise
+            // keep showing the failure list from its last bad probe.
+            delete discoveryAttempts[url];
+            delete discoveryHints[url];
+            discoveryDiagnosticsOpen.delete(url);
             if (isMqtt && Array.isArray(data)) {
                 var topicCount = data.reduce(function (acc, s) { return acc + (s.methods ? s.methods.length : 0); }, 0);
                 addConsoleEntry({ type: 'response', method: 'MQTT Discovery', status: 'OK', body: topicCount + ' topics discovered at ' + url });

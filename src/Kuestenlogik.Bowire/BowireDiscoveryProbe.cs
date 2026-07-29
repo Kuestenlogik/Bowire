@@ -1,0 +1,192 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
+using System.Diagnostics;
+using Kuestenlogik.Bowire.Endpoints;
+using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Telemetry;
+using Microsoft.Extensions.Logging;
+
+namespace Kuestenlogik.Bowire;
+
+/// <summary>
+/// The registry fan-out behind every discovery surface Bowire has (#534):
+/// the <c>/api/services</c> endpoint, <c>bowire discover</c> on the CLI,
+/// and the <c>bowire.discover</c> MCP tool. Each of those used to own a
+/// private copy of "loop the plugins, call DiscoverAsync, swallow what
+/// throws" — and each swallowed a different amount of the diagnosis, so
+/// the three surfaces disagreed about why a URL produced nothing.
+/// <para>
+/// One pass produces two things: the merged service list, and one
+/// <see cref="BowireDiscoveryAttempt"/> per probed plugin — including the
+/// plugins that ran cleanly and found nothing, which is precisely the case
+/// the old error-only reporting hid.
+/// </para>
+/// <para>
+/// Static because it is pure: no cache, no ring buffer, no registry of its
+/// own. Every input arrives as a parameter. Should it ever need to
+/// remember something between calls, it has to become an injected service
+/// instead.
+/// </para>
+/// </summary>
+public static class BowireDiscoveryProbe
+{
+    /// <summary>
+    /// Probe <paramref name="serverUrl"/> with every registered protocol
+    /// plugin (or just the hinted one) in parallel and report what each
+    /// one found.
+    /// </summary>
+    /// <param name="registry">The protocol registry to fan out over.</param>
+    /// <param name="serverUrl">
+    /// The bare target URL — <em>without</em> a <c>hint@</c> prefix. Split
+    /// it with <see cref="BowireServerUrl.Parse"/> first and pass the hint
+    /// separately.
+    /// </param>
+    /// <param name="pluginHint">
+    /// When non-null, only the plugin whose <see cref="IBowireProtocol.Id"/>
+    /// matches (case-insensitively) is probed. Saves the ~12 s cost of
+    /// probing every plugin against a URL the caller already knows the
+    /// owner of. An unknown hint yields zero attempts — callers that need
+    /// to tell "unknown hint" apart from "no plugins loaded" check the
+    /// registry themselves.
+    /// </param>
+    /// <param name="showInternalServices">Forwarded to each plugin's DiscoverAsync.</param>
+    /// <param name="perProbeCeiling">
+    /// Hard cap on any single plugin's probe. Plugins enforce their own
+    /// timeouts, but a wedged one would otherwise drag the whole fan-out
+    /// past the browser's 12 s abort — total wall-clock is
+    /// max(per-probe), not the sum, because the probes run in parallel.
+    /// </param>
+    /// <param name="logger">Optional; receives one warning per failed probe.</param>
+    /// <param name="ct">Caller cancellation, linked into the ceiling.</param>
+    public static async Task<BowireDiscoveryProbeResult> RunAsync(
+        BowireProtocolRegistry registry,
+        string serverUrl,
+        string? pluginHint,
+        bool showInternalServices,
+        TimeSpan perProbeCeiling,
+        ILogger? logger = null,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+
+        // Materialised so the caller's terminal diagnostics can tell
+        // "no plugin matched the hint" apart from "no plugins at all".
+        var protocolsToProbe = (pluginHint is null
+            ? registry.Protocols
+            : registry.Protocols.Where(p =>
+                string.Equals(p.Id, pluginHint, StringComparison.OrdinalIgnoreCase))).ToList();
+
+        var services = new List<BowireServiceInfo>();
+        var attempts = new List<BowireDiscoveryAttempt>(protocolsToProbe.Count);
+        if (protocolsToProbe.Count == 0)
+            return new BowireDiscoveryProbeResult(services, attempts);
+
+        using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        probeCts.CancelAfter(perProbeCeiling);
+        var probeCt = probeCts.Token;
+        var ceilingSeconds = perProbeCeiling.TotalSeconds;
+
+        var probeTasks = protocolsToProbe.Select(async protocol =>
+        {
+            var probeStart = Stopwatch.GetTimestamp();
+            var outcome = BowireDiscoveryAttempt.OutcomeOk;
+            var found = new List<BowireServiceInfo>();
+            string message;
+            try
+            {
+                found = await protocol.DiscoverAsync(serverUrl, showInternalServices, probeCt);
+                foreach (var svc in found)
+                {
+                    svc.Source = protocol.Id;
+                    // Tag every service with its origin URL so multi-URL setups
+                    // can route invocations back to the right base. Plugins may
+                    // have already set this (e.g. REST does); we only fill it in
+                    // when missing.
+                    svc.OriginUrl ??= serverUrl;
+                }
+
+                if (found.Count == 0)
+                {
+                    // "Ran and found nothing" is the outcome the old
+                    // error-only reporting dropped on the floor, and it is
+                    // the most common one — every plugin that doesn't own
+                    // the URL lands here.
+                    outcome = BowireDiscoveryAttempt.OutcomeEmpty;
+                    message = "returned no services";
+                }
+                else
+                {
+                    message = $"{found.Count} service{(found.Count == 1 ? "" : "s")}";
+                }
+            }
+            // Plugin DiscoverAsync calls into third-party transports
+            // (HTTP, gRPC reflection, MQTT broker connect, ...) and can
+            // throw anything from HttpRequestException to SocketException
+            // to plugin-author-defined types. The fan-out MUST tolerate
+            // any one plugin's failure and report it as an attempt
+            // instead of poisoning the whole result. CA1031 is switched
+            // off repo-wide in .editorconfig for exactly this shape — no
+            // pragma needed.
+            catch (Exception ex)
+            {
+                found = [];
+                if (ex is OperationCanceledException)
+                {
+                    outcome = BowireDiscoveryAttempt.OutcomeTimeout;
+                    message = ct.IsCancellationRequested
+                        ? "discovery was cancelled by the caller"
+                        : $"probe exceeded the {ceilingSeconds:0.#} s ceiling";
+                }
+                else
+                {
+                    outcome = BowireDiscoveryAttempt.OutcomeError;
+                    // No "{plugin}: " prefix — the attempt record already
+                    // carries the plugin name, and a prefixed message
+                    // renders as "gRPC — gRPC: connection refused".
+                    message = ex.Message;
+                }
+
+                if (logger is not null)
+                {
+                    logger.LogWarning(ex,
+                        "Discovery failed for protocol {Protocol} at {ServerUrl}",
+                        protocol.Name, BowireEndpointHelpers.SafeLog(serverUrl));
+                }
+            }
+
+            var elapsedMs = (long)((Stopwatch.GetTimestamp() - probeStart)
+                / (double)Stopwatch.Frequency * 1000.0);
+
+            BowireTelemetry.DiscoverCount.Add(1, new TagList
+            {
+                { "protocol", protocol.Id },
+                { "outcome", outcome },
+                { "services_found", found.Count },
+            });
+
+            return (Services: found, Attempt: new BowireDiscoveryAttempt(
+                protocol.Id, protocol.Name, outcome, found.Count, elapsedMs, message));
+        }).ToArray();
+
+        var probeResults = await Task.WhenAll(probeTasks);
+        foreach (var (found, attempt) in probeResults)
+        {
+            services.AddRange(found);
+            attempts.Add(attempt);
+        }
+
+        return new BowireDiscoveryProbeResult(services, attempts);
+    }
+}
+
+/// <summary>
+/// What one <see cref="BowireDiscoveryProbe.RunAsync"/> pass produced:
+/// the merged services from every plugin that found something, plus one
+/// <see cref="BowireDiscoveryAttempt"/> per probed plugin regardless of
+/// outcome. <see cref="Attempts"/> is populated even when
+/// <see cref="Services"/> is not — that is the whole point.
+/// </summary>
+public sealed record BowireDiscoveryProbeResult(
+    List<BowireServiceInfo> Services,
+    List<BowireDiscoveryAttempt> Attempts);

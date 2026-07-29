@@ -36,6 +36,57 @@ app.MapBowire(options =>
 });
 ```
 
+## When discovery finds nothing
+
+An empty sidebar has several very different causes, and until v2.3 they all
+looked the same. `/bowire/api/services` now answers with an RFC 7807
+`application/problem+json` body whose `attempts` array accounts for
+**every** plugin that got a turn — including the ones that ran cleanly and
+found nothing, which is by far the most common case and the one the old
+error-only list hid completely.
+
+```jsonc
+{
+  "type": "urn:bowire:discovery:no-match",
+  "title": "No protocol plugin recognised this URL",
+  "status": 502,
+  "serverUrl": "https://api.example.com",
+  "attempts": [
+    { "pluginId": "grpc",  "plugin": "gRPC",    "outcome": "error",   "servicesFound": 0, "durationMs": 2011, "message": "connection refused" },
+    { "pluginId": "mqtt",  "plugin": "MQTT",    "outcome": "timeout", "servicesFound": 0, "durationMs": 8003, "message": "probe exceeded the 8 s ceiling" },
+    { "pluginId": "rest",  "plugin": "REST",    "outcome": "empty",   "servicesFound": 0, "durationMs": 142,  "message": "returned no services" }
+  ],
+  "hint": "Add a `protocol@` prefix (e.g. `rest@https://api.example.com`) to pin a specific plugin and skip the others' probes."
+}
+```
+
+Each attempt carries:
+
+| Field | Meaning |
+| --- | --- |
+| `pluginId` | The plugin's `IBowireProtocol.Id` — the stable machine key (`grpc`, `rest`, …) |
+| `plugin` | The plugin's display name |
+| `outcome` | `ok` \| `empty` \| `error` \| `timeout` |
+| `servicesFound` | Services this plugin contributed |
+| `durationMs` | Wall-clock cost of that one probe |
+| `message` | One-liner: the service count, `returned no services`, the raw exception text, or the ceiling that was hit |
+
+Three `type` URNs split the triage:
+
+- `urn:bowire:discovery:no-match` — plugins ran; read `attempts` to see who failed and who simply didn't recognise the URL.
+- `urn:bowire:discovery:no-plugins` — the registry is empty. `attempts` is present but empty.
+- `urn:bowire:discovery:unknown-plugin` — a `protocol@` hint named a plugin this host doesn't have. `plugins` lists the ids it does.
+
+In the workbench the same data renders as a disclosure: collapsed to
+`12 plugins probed · 3 failed` on the discovery-failed card, the per-URL
+status rows and the topbar connection popover, and always expanded under
+**Discovery diagnostics** in the Sources detail pane, which also has a
+**Copy diagnostics** button for bug reports.
+
+On the terminal, [`bowire discover`](cli-mode.md) prints the same table
+from the same code path, so the UI and the CLI can never disagree about
+what happened.
+
 ## Requirements
 
 - **gRPC**: `AddGrpcReflection()` and `MapGrpcReflectionService()` must be configured

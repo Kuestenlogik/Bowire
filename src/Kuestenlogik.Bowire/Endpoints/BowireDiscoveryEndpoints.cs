@@ -1,13 +1,10 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Diagnostics;
 using Kuestenlogik.Bowire.Models;
-using Kuestenlogik.Bowire.Telemetry;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Logging;
 
 namespace Kuestenlogik.Bowire.Endpoints;
 
@@ -143,126 +140,75 @@ internal static class BowireDiscoveryEndpoints
                 protoServices.AddRange(uploaded);
             }
 
-            // Try protocol plugins
+            // Try protocol plugins. The fanout itself lives in
+            // BowireDiscoveryProbe so this endpoint, `bowire discover`
+            // and the bowire.discover MCP tool all report the same
+            // per-plugin outcomes instead of each swallowing a different
+            // amount of the diagnosis (#534). The 8 s ceiling is a
+            // frontend contract: the browser aborts /api/services at
+            // 12 s, so one wedged plugin must not eat the whole budget —
+            // probes run in parallel, so total wall-clock is
+            // max(per-probe), not the sum (#83).
             var registry = BowireEndpointHelpers.GetRegistry();
-            var allProtocolServices = new List<BowireServiceInfo>();
-            var discoveryErrors = new List<string>();
-
-            // Materialised so the terminal diagnostics below can tell
-            // "no plugin matched the hint" apart from "no plugins at all".
-            var protocolsToProbe = (pluginHint is null
-                ? registry.Protocols
-                : registry.Protocols.Where(p =>
-                    string.Equals(p.Id, pluginHint, StringComparison.OrdinalIgnoreCase))).ToList();
-
-            // Probe all matching plugins in parallel. Each plugin's
-            // DiscoverAsync enforces its own per-probe timeout (HTTP
-            // client, MQTT broker connect, gRPC reflection handshake,
-            // …). Total wall-clock = max(per-probe) rather than the
-            // sum — without this, with 12 bundled plugins probing
-            // serially, an arbitrary URL takes ~30 s and blows past
-            // the frontend's 12 s abort (#83). A linked CancellationToken
-            // with a 10 s ceiling caps any single plugin so one wedge
-            // can't drag the whole fanout past the frontend limit.
-            using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(ctx.RequestAborted);
-            // 8 s ceiling on any single plugin's probe — frontend
-            // aborts the /api/services fetch at 12 s, so we leave a
-            // ~4 s margin for the slowest plugin's TCP teardown +
-            // JSON serialization of the merged result.
-            probeCts.CancelAfter(TimeSpan.FromSeconds(8));
-            var probeCt = probeCts.Token;
-            var logger = BowireEndpointHelpers.GetLogger(ctx);
-
-            var probeTasks = protocolsToProbe.Select(async protocol =>
-            {
-                var probeStart = Stopwatch.GetTimestamp();
-                string discoverOutcome = "ok";
-                int discoveredCount = 0;
-                List<BowireServiceInfo> services = [];
-                string? errorMessage = null;
-                try
-                {
-                    services = await protocol.DiscoverAsync(serverUrl, options.ShowInternalServices, probeCt);
-                    foreach (var svc in services)
-                    {
-                        svc.Source = protocol.Id;
-                        // Tag every service with its origin URL so multi-URL setups
-                        // can route invocations back to the right base. Plugins may
-                        // have already set this (e.g. REST does); we only fill it in
-                        // when missing.
-                        svc.OriginUrl ??= serverUrl;
-                        discoveredCount++;
-                    }
-                }
-                // Plugin DiscoverAsync calls into third-party transports
-                // (HTTP, gRPC reflection, MQTT broker connect, ...) and
-                // can throw anything from HttpRequestException to
-                // SocketException to plugin-author-defined types. The
-                // probe fanout MUST tolerate any one plugin's failure
-                // and report it via discoveryErrors instead of poisoning
-                // the whole result.
-#pragma warning disable CA1031 // Do not catch general exception types
-                catch (Exception ex)
-#pragma warning restore CA1031
-                {
-                    discoverOutcome = ex is OperationCanceledException ? "canceled" : "error";
-                    logger.LogWarning(ex,
-                        "Discovery failed for protocol {Protocol} at {ServerUrl}",
-                        protocol.Name, BowireEndpointHelpers.SafeLog(serverUrl));
-                    errorMessage = $"{protocol.Name}: {ex.Message}";
-                    services = [];
-                }
-                finally
-                {
-                    var elapsedMs = (Stopwatch.GetTimestamp() - probeStart)
-                        / (double)Stopwatch.Frequency * 1000.0;
-                    BowireTelemetry.DiscoverCount.Add(1, new TagList
-                    {
-                        { "protocol", protocol.Id },
-                        { "outcome", discoverOutcome },
-                        { "services_found", discoveredCount },
-                    });
-                    _ = elapsedMs; // wired up if/when we add a discover-duration histogram
-                }
-                return (services, errorMessage);
-            }).ToArray();
-
-            var probeResults = await Task.WhenAll(probeTasks);
-            foreach (var (services, errorMessage) in probeResults)
-            {
-                allProtocolServices.AddRange(services);
-                if (errorMessage is not null) discoveryErrors.Add(errorMessage);
-            }
+            var probe = await BowireDiscoveryProbe.RunAsync(
+                registry,
+                serverUrl,
+                pluginHint,
+                options.ShowInternalServices,
+                TimeSpan.FromSeconds(8),
+                BowireEndpointHelpers.GetLogger(ctx),
+                ctx.RequestAborted);
 
             // Same for proto-sourced services
             foreach (var svc in protoServices)
                 svc.OriginUrl ??= serverUrl;
 
-            if (protoServices.Count > 0 && allProtocolServices.Count > 0)
-                return Results.Json(BowireEndpointHelpers.MergeServices(protoServices, allProtocolServices), BowireEndpointHelpers.JsonOptions);
+            if (protoServices.Count > 0 && probe.Services.Count > 0)
+                return Results.Json(BowireEndpointHelpers.MergeServices(protoServices, probe.Services), BowireEndpointHelpers.JsonOptions);
 
             if (protoServices.Count > 0)
                 return Results.Json(protoServices, BowireEndpointHelpers.JsonOptions);
 
-            if (allProtocolServices.Count > 0)
-                return Results.Json(allProtocolServices, BowireEndpointHelpers.JsonOptions);
+            if (probe.Services.Count > 0)
+                return Results.Json(probe.Services, BowireEndpointHelpers.JsonOptions);
 
             // No services from any source — surface as ProblemDetails so
             // the frontend can render the per-plugin failure list as
-            // an actionable detail block (#88).
-            if (discoveryErrors.Count > 0)
+            // an actionable detail block (#88). `attempts` always carries
+            // EVERY probed plugin, not just the ones that threw (#534):
+            // a plugin that ran cleanly and returned nothing used to be
+            // invisible next to one that failed, which made "the URL
+            // isn't a gRPC endpoint" indistinguishable from "gRPC never
+            // got a turn".
+            // The `protocol@` hint only makes sense when we actually have
+            // a URL to prefix. In embedded mode with no configured URL,
+            // serverUrl is empty and the old unconditional text told the
+            // operator to type the nonsense `rest@`.
+            Dictionary<string, object?> NoMatchExtensions()
+            {
+                var ext = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["serverUrl"] = serverUrl,
+                    ["attempts"] = probe.Attempts,
+                };
+                if (!string.IsNullOrEmpty(serverUrl))
+                {
+                    ext["hint"] = "Add a `protocol@` prefix (e.g. `rest@" + serverUrl
+                        + "`) to pin a specific plugin and skip the others' probes.";
+                }
+                return ext;
+            }
+
+            if (probe.Attempts.Any(a => a.Outcome is BowireDiscoveryAttempt.OutcomeError
+                                                  or BowireDiscoveryAttempt.OutcomeTimeout))
             {
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:discovery:no-match",
                     title: "No protocol plugin recognised this URL",
                     status: 502,
-                    detail: "Every loaded plugin probed the URL and either returned no services or failed. See `attempts` for the per-plugin error message.",
+                    detail: "Every loaded plugin probed the URL and either returned no services or failed. See `attempts` for the per-plugin outcome.",
                     instance: "/api/services",
-                    extensions: new Dictionary<string, object?> {
-                        ["serverUrl"] = serverUrl,
-                        ["attempts"] = discoveryErrors,
-                        ["hint"] = "Add a `protocol@` prefix (e.g. `rest@" + serverUrl + "`) to pin a specific plugin and skip the others' probes."
-                    });
+                    extensions: NoMatchExtensions());
             }
             // "No plugins are loaded" must only claim that when it is
             // actually true. A plugin that ran and returned an empty list
@@ -276,10 +222,17 @@ internal static class BowireDiscoveryEndpoints
                     title: "No protocol plugins are loaded",
                     status: 502,
                     detail: "Bowire has no protocol plugins available to probe this URL. Upload .proto / OpenAPI / GraphQL SDL files via the Schema Files tab, or configure ProtoSources on the host.",
-                    instance: "/api/services");
+                    instance: "/api/services",
+                    // Empty, but present — every no-services body carries an
+                    // `attempts` array so clients can render one code path.
+                    extensions: new Dictionary<string, object?> {
+                        ["attempts"] = probe.Attempts,
+                    });
             }
 
-            if (pluginHint is not null && protocolsToProbe.Count == 0)
+            // Attempts is empty when the hint matched no registered plugin —
+            // the probe had nobody to fan out to.
+            if (pluginHint is not null && probe.Attempts.Count == 0)
             {
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:discovery:unknown-plugin",
@@ -300,12 +253,7 @@ internal static class BowireDiscoveryEndpoints
                 status: 502,
                 detail: "The probed plugin(s) completed without errors but returned no services for this URL.",
                 instance: "/api/services",
-                extensions: new Dictionary<string, object?> {
-                    ["serverUrl"] = serverUrl,
-                    ["attempts"] = protocolsToProbe
-                        .Select(p => $"{p.Name}: returned no services")
-                        .ToList(),
-                });
+                extensions: NoMatchExtensions());
         }).ExcludeFromDescription();
 
         return endpoints;

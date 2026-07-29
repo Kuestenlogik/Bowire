@@ -620,6 +620,16 @@
     // landing.js' detectLandingState reads both to pick a state.
     let isLoadingServices = false;
     let discoveryErrors = {};   // { [url]: error message }
+    // #534 — per-plugin discovery diagnostics. The /api/services
+    // ProblemDetails body carries an `attempts` array (one entry per
+    // probed plugin, outcome ok|empty|error|timeout) and an optional
+    // `hint`; api.js' _recordDiscoveryProblem is the only writer,
+    // landing.js' renderDiscoveryDiagnostics the only reader. Keyed
+    // exactly like discoveryErrors: a server URL, or the literal
+    // '(embedded)' for the URL-less host probe.
+    let discoveryAttempts = {};          // { [key]: [{pluginId, plugin, outcome, servicesFound, durationMs, message}] }
+    let discoveryHints = {};             // { [key]: hint string }
+    let discoveryDiagnosticsOpen = new Set(); // keys whose attempt list is expanded
     // AI drawer (#90). Was a tab in the response pane; now a workbench-
     // wide side drawer that persists across method/service switches and
     // coexists with the response view. Open state mirrored to
