@@ -1,15 +1,27 @@
     // ---- Code Export ----
     // Per-protocol list of available export languages. The order matters:
-    // the first entry is the default. Each entry's `id` keys into the
-    // CODE_EXPORT_GENERATORS map below.
+    // the first entry is the default — resolveCodeExportLang falls back to
+    // available[0], and the request-pane header button labels itself from
+    // cmdLangs[0]. Each entry's `id` keys into the CODE_EXPORT_GENERATORS
+    // map below.
+    //
+    // #538 — every protocol ends with 'bowire-cli'. LAST, deliberately:
+    // curl / grpcurl / wscat stay the primary offer for the protocols that
+    // have a well-known third-party tool. The three keys at the bottom
+    // (mqtt / nats / socketio) are new: they used to fall through
+    // getCodeExportLanguages' `|| CODE_EXPORT_LANGUAGES.rest` and be
+    // offered a curl command that could never work against a broker.
     const CODE_EXPORT_LANGUAGES = {
-        rest:      [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }, { id: 'csharp-http', label: 'C# (HttpClient)' }],
-        graphql:   [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }],
-        mcp:       [{ id: 'curl', label: 'curl' }, { id: 'python', label: 'Python (requests)' }, { id: 'fetch', label: 'JS fetch' }],
-        sse:       [{ id: 'curl-sse', label: 'curl' }, { id: 'js-eventsource', label: 'JS EventSource' }],
-        grpc:      [{ id: 'grpcurl', label: 'grpcurl' }, { id: 'csharp-grpc', label: 'C# (Grpc.Net.Client)' }],
-        websocket: [{ id: 'wscat', label: 'wscat' }, { id: 'js-ws', label: 'JS WebSocket' }],
-        signalr:   [{ id: 'csharp-signalr', label: 'C# (HubConnection)' }, { id: 'js-signalr', label: 'JS (@microsoft/signalr)' }]
+        rest:      [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }, { id: 'csharp-http', label: 'C# (HttpClient)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
+        graphql:   [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
+        mcp:       [{ id: 'curl', label: 'curl' }, { id: 'python', label: 'Python (requests)' }, { id: 'fetch', label: 'JS fetch' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
+        sse:       [{ id: 'curl-sse', label: 'curl' }, { id: 'js-eventsource', label: 'JS EventSource' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
+        grpc:      [{ id: 'grpcurl', label: 'grpcurl' }, { id: 'csharp-grpc', label: 'C# (Grpc.Net.Client)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
+        websocket: [{ id: 'wscat', label: 'wscat' }, { id: 'js-ws', label: 'JS WebSocket' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
+        signalr:   [{ id: 'csharp-signalr', label: 'C# (HubConnection)' }, { id: 'js-signalr', label: 'JS (@microsoft/signalr)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
+        mqtt:      [{ id: 'bowire-cli', label: 'Bowire CLI' }],
+        nats:      [{ id: 'bowire-cli', label: 'Bowire CLI' }],
+        socketio:  [{ id: 'bowire-cli', label: 'Bowire CLI' }]
     };
 
     // Returns the list of language entries available for the currently
@@ -45,6 +57,7 @@
     // assemble bodyJson read-only without mutating any global.
     function buildCodeExportContext() {
         var bodyJson = '{}';
+        var bodyJsonRaw = '{}';
         if (selectedMethod && selectedMethod.inputType && requestInputMode === 'form') {
             // Read-only snapshot: prefer formValues for the current schema,
             // fall back to requestMessages[0] if formValues isn't initialised
@@ -65,14 +78,23 @@
             var ed = $('.bowire-editor') || $('.bowire-message-editor');
             bodyJson = ed ? ed.value || '{}' : '{}';
         }
+        // #538 — keep the UNSUBSTITUTED body alongside the substituted one.
+        // The curl / fetch / python generators want a ready-to-paste string
+        // and have always resolved everything, secrets included. The Bowire
+        // CLI generator resolves it itself so it can hold {{secret.*}} /
+        // {{keyring.*}} back (cli-export.js), and so "keep variables" can
+        // emit --var pairs instead of baked values.
+        bodyJsonRaw = bodyJson;
         bodyJson = substituteVars(bodyJson);
 
         var meta = {};
+        var metaRaw = {};
         var rows = $$('.bowire-metadata-row');
         for (var i = 0; i < rows.length; i++) {
             var inputs = rows[i].querySelectorAll('.bowire-metadata-input');
             if (inputs.length === 2 && inputs[0].value.trim()) {
                 meta[inputs[0].value.trim()] = substituteVars(inputs[1].value);
+                metaRaw[inputs[0].value.trim()] = inputs[1].value;
             }
         }
 
@@ -86,7 +108,31 @@
             httpPath: selectedMethod.httpPath || '',
             bodyJson: bodyJson,
             metadata: meta,
-            source: selectedService.source || 'rest'
+            source: selectedService.source || 'rest',
+            // ---- #538 additions. Every one of these is a pure read; see
+            // the CRITICAL note above this function. ----
+            bodyJsonRaw: bodyJsonRaw,
+            metadataRaw: metaRaw,
+            // selectedService.source IS the IBowireProtocol.Id — api.js
+            // sends it verbatim as /api/invoke's `protocol` field — so the
+            // CLI's --protocol / protocol@url needs no mapping table.
+            protocolId: selectedService.source || 'rest',
+            serverStreaming: !!(selectedMethod && selectedMethod.serverStreaming),
+            clientStreaming: !!(selectedMethod && selectedMethod.clientStreaming),
+            messages: (typeof requestMessages !== 'undefined' && requestMessages)
+                ? requestMessages.slice() : [],
+            // The auth TYPE only. applyAuth is async and performs fetches
+            // (session login, OAuth token endpoints, JWT signing), so no
+            // exporter can call it from the render path — the CLI generator
+            // emits a note for the types whose header it cannot reproduce.
+            authKind: (function () {
+                var e = (typeof getActiveEnv === 'function') ? getActiveEnv() : null;
+                return (e && e.auth && e.auth.type) || 'none';
+            })(),
+            authLocation: (function () {
+                var e = (typeof getActiveEnv === 'function') ? getActiveEnv() : null;
+                return (e && e.auth && e.auth.location) || '';
+            })()
         };
     }
 
@@ -311,6 +357,23 @@
                 '// payload from: ' + ctx.bodyJson,
                 'console.log(result);'
             ].join('\n');
+        },
+
+        // ---- Bowire's own CLI (#538) ----
+        // The one export that is not a translation: it emits the same
+        // request as a `bowire call …` line, which is why a golden fixture
+        // + a System.CommandLine parse test keep it honest as the CLI
+        // evolves. The body lives in cli-export.js.
+        //
+        // typeof-guarded even though both fragments are core: the response
+        // pane's copy dropdown and the request pane's header button call
+        // generators OUTSIDE generateCodeSnippet's try/catch, and render()
+        // has none of its own — a bare ReferenceError there blanks the
+        // whole workbench.
+        'bowire-cli': function (ctx) {
+            return (typeof generateCliCommand === 'function')
+                ? generateCliCommand(ctx)
+                : '# Bowire CLI export is unavailable in this build.';
         }
     };
 

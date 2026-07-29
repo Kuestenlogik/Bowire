@@ -29,6 +29,16 @@ public sealed class CliCommandOptionsTests
         Assert.Empty(o.Data);
         Assert.NotNull(o.Headers);
         Assert.Empty(o.Headers);
+        // #538 — the protocol-generic additions. Protocol MUST default to
+        // null: CallImplAsync reads "no protocol" as "take the gRPC fast
+        // path", so a non-null default would silently route every existing
+        // gRPC script through the plugin registry.
+        Assert.Null(o.Protocol);
+        Assert.False(o.Stream);
+        Assert.NotNull(o.Vars);
+        Assert.Empty(o.Vars);
+        Assert.NotNull(o.VarFiles);
+        Assert.Empty(o.VarFiles);
     }
 
     [Fact]
@@ -41,10 +51,14 @@ public sealed class CliCommandOptionsTests
             Verbose = true,
             Compact = true,
             Target = "users.UserService/Get",
+            Protocol = "rest",
+            Stream = true,
         };
         o.Data.Add("{\"id\":1}");
         o.Data.Add("@payload.json");
         o.Headers.Add("authorization: bearer x");
+        o.Vars.Add("host=api.example.com");
+        o.VarFiles.Add("staging.env");
 
         Assert.Equal("http://api", o.Url);
         Assert.True(o.Plaintext);
@@ -53,6 +67,10 @@ public sealed class CliCommandOptionsTests
         Assert.Equal("users.UserService/Get", o.Target);
         Assert.Equal(2, o.Data.Count);
         Assert.Single(o.Headers);
+        Assert.Equal("rest", o.Protocol);
+        Assert.True(o.Stream);
+        Assert.Single(o.Vars);
+        Assert.Single(o.VarFiles);
     }
 
     [Fact]

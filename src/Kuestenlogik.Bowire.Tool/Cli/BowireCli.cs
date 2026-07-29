@@ -540,17 +540,20 @@ internal static class BowireCli
         return import;
     }
 
-    // -------------------- list / describe / call --------------------
-    // CliCommandOptions binds Url / Plaintext / Verbose / Compact +
-    // positional Target, repeated -d / -H. All three subcommands share
-    // the option set; only the action handler differs.
+    // -------------------- discover / list / describe / call --------------------
+    // CliCommandOptions binds Url / Protocol / Plaintext / Verbose / Compact +
+    // positional Target, repeated -d / -H. All four subcommands share
+    // the option set; only the action handler differs. `call` layers four
+    // more options of its own (#538) — see BuildCallCommand.
 
     private static (Option<string> url, Option<bool> plaintext, Option<bool> verbose, Option<bool> compact,
         Option<string[]> data, Option<string[]> headers) GrpcCliOptions(IConfiguration cfg)
     {
         var url = new Option<string>("--url", "-url")
         {
-            Description = "gRPC server URL.",
+            Description = "Target server URL. Accepts the `protocol@url` hint form "
+                + "(e.g. `grpc@https://localhost:5001`, `mqtt@tcp://broker:1883`) to pin one plugin "
+                + "and skip probing the rest.",
             DefaultValueFactory = _ => cfg["Bowire:Cli:Url"] ?? "https://localhost:5001"
         };
         var plaintext = new Option<bool>("-plaintext", "--plaintext")
@@ -592,6 +595,18 @@ internal static class BowireCli
             options.Data.AddRange(pr.GetValue(data) ?? []);
         if (headers is not null)
             options.Headers.AddRange(pr.GetValue(headers) ?? []);
+        // #538 — split `hint@url` ONCE, here, so everything downstream
+        // sees a bare URL plus a typed Protocol. Two things depended on
+        // this being done before anything else touches the value:
+        //   * the plaintext downgrade below matched on StartsWith("https://"),
+        //     which never fired for `grpc@https://…` — a latent bug;
+        //   * DiscoverImplAsync used to re-parse the hint itself, and a
+        //     second parser is exactly the kind of duplicate this repo
+        //     avoids. BowireServerUrl.Parse owns the three
+        //     userinfo/email disambiguation rules.
+        var (hint, bareUrl) = BowireServerUrl.Parse(options.Url);
+        options.Url = bareUrl;
+        options.Protocol = hint;
         // Plaintext URL downgrade: callers shouldn't have to do the
         // substitution themselves. Same one-line policy as
         // BowireConfiguration.BuildCliOptions used to apply.
@@ -645,18 +660,82 @@ internal static class BowireCli
         return cmd;
     }
 
-    private static Command BuildCallCommand(IConfiguration cfg)
+    /// <summary>
+    /// <c>bowire call</c> — protocol-generic since #538. gRPC keeps a fast
+    /// path (no assembly scan) so existing scripts pay nothing; anything
+    /// else routes through the plugin registry.
+    /// </summary>
+    /// <remarks>
+    /// <c>internal</c> rather than <c>private</c> for the same reason as
+    /// <see cref="BuildMockCommand"/> and <see cref="BuildFuzzCommand"/>:
+    /// the CLI-grammar tests parse this command directly instead of
+    /// booting a host. <c>CliExportGrammarTests</c> in particular replays
+    /// every argv the workbench's "Copy as Bowire CLI" exporter emits
+    /// through <c>Parse(...)</c> and fails when a flag is renamed or
+    /// removed — that pair is what keeps the generated command honest.
+    /// </remarks>
+    internal static Command BuildCallCommand(IConfiguration cfg)
     {
         var (url, plaintext, verbose, compact, data, headers) = GrpcCliOptions(cfg);
         var target = new Argument<string>("target") { Description = "service/method." };
 
-        var cmd = new Command("call", "Invoke a gRPC method (grpcurl-style).");
+        // #538 — the four options that make `call` more than a grpcurl
+        // clone. Declared locally rather than on the shared
+        // GrpcCliOptions tuple on purpose: `list` / `describe` stay
+        // gRPC-reflection-only and must not grow a --protocol that does
+        // nothing.
+        var protocol = new Option<string?>("--protocol")
+        {
+            Description = "Protocol plugin id to invoke through (grpc / rest / graphql / mqtt / …). "
+                + "Overrides a `protocol@url` prefix on --url. Without either, gRPC is assumed unless "
+                + "--stream is set, in which case every loaded plugin is probed and the one that owns "
+                + "the service wins.",
+        };
+        protocol.CompletionSources.Add("grpc", "rest", "graphql", "mcp", "sse", "websocket",
+            "signalr", "mqtt", "nats", "odata", "soap", "jsonrpc", "socketio");
+        var stream = new Option<bool>("--stream")
+        {
+            Description = "Consume the method as a stream: prints one JSON document per received frame "
+                + "until the server ends the stream or you press Ctrl+C. gRPC server-streaming methods "
+                + "are detected automatically and don't need the flag.",
+        };
+        var vars = new Option<string[]>("--var", "--env")
+        {
+            Description = "Variable for the {{name}} / ${name} resolver that runs over -d, -H and --url. "
+                + "KEY=VALUE; repeatable. --env is an alias, matching `bowire test`.",
+            AllowMultipleArgumentsPerToken = false,
+        };
+        var varFiles = new Option<string[]>("--env-file")
+        {
+            Description = "File with one KEY=VALUE per line (dotenv-style; blank lines and # comments "
+                + "ignored) for the resolver. Repeatable; --var repeats win over file entries.",
+            AllowMultipleArgumentsPerToken = false,
+        };
+
+        var cmd = new Command("call",
+            "Invoke a method on any loaded protocol plugin (grpcurl-style). "
+            + "Pin the plugin with `--protocol` or the `protocol@url` form; add `--stream` to follow "
+            + "a server-streaming, SSE, WebSocket or broker subscription.");
         cmd.Add(target); cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose);
         cmd.Add(compact); cmd.Add(data); cmd.Add(headers);
-        cmd.SetAction(async (pr, _) =>
-            await CliHandler.CallAsync(BuildCliOptions(
-                pr, url, plaintext, verbose, compact, data, headers, pr.GetValue(target)),
-                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false));
+        cmd.Add(protocol); cmd.Add(stream); cmd.Add(vars); cmd.Add(varFiles);
+        // ct rather than `_`: --stream blocks until the server ends the
+        // stream, so Ctrl+C has to reach InvokeStreamAsync.
+        cmd.SetAction(async (pr, ct) =>
+        {
+            var cli = BuildCliOptions(
+                pr, url, plaintext, verbose, compact, data, headers, pr.GetValue(target));
+            // Explicit --protocol beats the hint BuildCliOptions parsed
+            // off the URL; a hint is a convenience, the flag is a
+            // statement.
+            var explicitProtocol = pr.GetValue(protocol);
+            if (!string.IsNullOrEmpty(explicitProtocol)) cli.Protocol = explicitProtocol;
+            cli.Stream = pr.GetValue(stream);
+            cli.Vars.AddRange(pr.GetValue(vars) ?? []);
+            cli.VarFiles.AddRange(pr.GetValue(varFiles) ?? []);
+            return await CliHandler.CallAsync(cli,
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false);
+        });
         return cmd;
     }
 
