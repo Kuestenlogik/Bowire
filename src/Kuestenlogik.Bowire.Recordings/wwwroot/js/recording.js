@@ -2001,6 +2001,20 @@
             el('span', { innerHTML: svgIcon('upload') }),
             el('span', { textContent: 'Import HAR' })
         ));
+        // #539 — the rail could import HAR but not its own format, so a
+        // .bwr shared by a colleague (or produced by `bowire har convert`
+        // / "Export → JSON") was openable everywhere except the
+        // workbench that writes it. Lives in recording-correlation.js.
+        if (typeof importRecordingFromFile === 'function') {
+            exportGroup.appendChild(el('button', {
+                className: 'bowire-recording-action-btn',
+                title: 'Import a Bowire recording (.bwr / exported JSON) as a new recording',
+                onClick: function () { importRecordingFromFile(); }
+            },
+                el('span', { innerHTML: svgIcon('upload') }),
+                el('span', { textContent: 'Import .bwr' })
+            ));
+        }
         toolbar.appendChild(exportGroup);
 
         pane.appendChild(toolbar);
@@ -2012,6 +2026,65 @@
         if (typeof renderParallelSessionsPanel === 'function') {
             var parallelPanel = renderParallelSessionsPanel('recording', rec.id);
             if (parallelPanel) pane.appendChild(parallelPanel);
+        }
+
+        // #539 — Steps | Correlated timeline. The step list answers
+        // "what did I call"; the timeline answers "was that one
+        // transaction, and where did it go". Same generic tab strip the
+        // request + response panes use. The timeline lives in the
+        // sibling fragment recording-correlation.js, so both the tab and
+        // its content are typeof-guarded: a host that somehow ships
+        // recording.js without it must degrade to the step list, not
+        // throw out of render().
+        var _timelineAvailable = typeof renderRecordingTimeline === 'function'
+            && typeof recordingActiveDetailTab === 'function';
+        var _detailTab = _timelineAvailable ? recordingActiveDetailTab(rec.id) : 'steps';
+        if (_timelineAvailable) {
+            // Both handlers re-resolve the recording from
+            // recordingManagerSelectedId at CLICK time. morphdom keeps
+            // this strip alive when the operator picks a different
+            // recording, so a captured `rec` would flip the tab on the
+            // recording they just left.
+            var detailTabs = el('div', { className: 'bowire-tabs bowire-recording-detail-tabs' });
+            detailTabs.appendChild(el('div', {
+                className: 'bowire-tab' + (_detailTab === 'steps' ? ' active' : ''),
+                textContent: 'Steps',
+                onClick: function () {
+                    setRecordingDetailTab(recordingManagerSelectedId, 'steps');
+                    render();
+                }
+            }));
+            detailTabs.appendChild(el('div', {
+                className: 'bowire-tab' + (_detailTab === 'timeline' ? ' active' : '')
+                    + (_hasSteps ? '' : ' disabled'),
+                title: _hasSteps
+                    ? 'One lane per protocol on a shared time axis, correlated on a shared id'
+                    : 'Nothing to correlate — this recording has no steps yet',
+                textContent: 'Correlated timeline',
+                onClick: function () {
+                    var live = recordingsList.find(function (r) { return r.id === recordingManagerSelectedId; });
+                    // Same three step shapes the toolbar gates on;
+                    // ensureRecordingCorrelation hydrates the
+                    // manifest-only ones before it posts.
+                    var liveHasSteps = live && ((Array.isArray(live.steps) && live.steps.length > 0)
+                        || (Array.isArray(live.stepsManifest) && live.stepsManifest.length > 0)
+                        || (typeof live.stepCount === 'number' && live.stepCount > 0));
+                    if (!liveHasSteps) return;
+                    setRecordingDetailTab(live.id, 'timeline');
+                    // Priming the model is a click-path mutation on
+                    // purpose — renderRecordingTimeline itself never
+                    // fetches.
+                    var k = (typeof correlationKeyOf === 'function') ? correlationKeyOf(live) : null;
+                    ensureRecordingCorrelation(live.id, k && k.name, k && k.value);
+                    render();
+                }
+            }));
+            pane.appendChild(detailTabs);
+        }
+
+        if (_detailTab === 'timeline' && _timelineAvailable) {
+            pane.appendChild(renderRecordingTimeline(rec));
+            return pane;
         }
 
         // Step list
@@ -2198,6 +2271,24 @@
                     } else {
                         if (typeof continueRecording === 'function') continueRecording(rec.id);
                     }
+                }
+            });
+            // #539 — jump straight to the correlated view. Selecting
+            // the recording is part of the action: the timeline lives
+            // in the detail pane, so opening it from the sidebar has to
+            // bring the pane along.
+            items.push({
+                label: 'Correlated timeline',
+                disabled: !hasSteps || typeof renderRecordingTimeline !== 'function',
+                onClick: function () {
+                    if (typeof setRecordingDetailTab !== 'function') return;
+                    recordingManagerSelectedId = rec.id;
+                    setRecordingDetailTab(rec.id, 'timeline');
+                    var k = (typeof correlationKeyOf === 'function') ? correlationKeyOf(rec) : null;
+                    if (typeof ensureRecordingCorrelation === 'function') {
+                        ensureRecordingCorrelation(rec.id, k && k.name, k && k.value);
+                    }
+                    render();
                 }
             });
             items.push({ separator: true });

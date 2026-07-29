@@ -314,6 +314,124 @@ public sealed class RecordingCommandTests : IDisposable
     }
 
     // ----------------------------------------------------------------
+    // `bowire recording correlate` (#539)
+    // ----------------------------------------------------------------
+
+    private const int ExitUsage = 64;
+
+    // A miniature of the harbor flagship: `shipId` is spelled two ways
+    // across two protocols (that pair is what makes it a *candidate*),
+    // one step reaches it only by suffix (`onShipId`), one carries the
+    // value on a bare `id` (the weak tier), and one is unrelated.
+    private const string CorrelateFixture = """
+        {
+          "id": "rec_corr",
+          "name": "port call",
+          "recordingFormatVersion": 2,
+          "steps": [
+            { "id": "s1", "protocol": "grpc", "service": "Fleet", "method": "GetShip",
+              "capturedAt": 0, "durationMs": 6, "status": "OK",
+              "body": "{\"id\":101}", "response": "{\"id\":101,\"name\":\"Nordstern\"}" },
+            { "id": "s2", "protocol": "rest", "service": "Containers", "method": "List",
+              "capturedAt": 150, "durationMs": 5, "status": "200",
+              "response": "[{\"id\":\"MSCU1\",\"onShipId\":101}]" },
+            { "id": "s3", "protocol": "websocket", "service": "ais", "method": "subscribe",
+              "capturedAt": 300, "durationMs": 30, "status": "OK",
+              "response": "{\"ShipId\":101,\"speedKnots\":8}" },
+            { "id": "s4", "protocol": "signalr", "service": "OpsHub", "method": "Stream",
+              "capturedAt": 450, "durationMs": 30, "status": "OK",
+              "response": "{\"shipId\":101,\"latitude\":54.03}" },
+            { "id": "s5", "protocol": "mqtt", "service": "crane", "method": "receive",
+              "capturedAt": 600, "durationMs": 20, "status": "OK",
+              "response": "{\"craneId\":1}" }
+          ]
+        }
+        """;
+
+    [Fact]
+    public void Build_advertises_correlate_subcommand_with_its_flags()
+    {
+        var recording = RecordingCommand.Build();
+        var correlate = recording.Subcommands.SingleOrDefault(s => s.Name == "correlate");
+
+        Assert.NotNull(correlate);
+        Assert.Contains(correlate!.Arguments, a => a.Name == "path");
+        Assert.Contains(correlate.Options, o => o.Name == "--key");
+        Assert.Contains(correlate.Options, o => o.Name == "--json");
+        Assert.Contains(correlate.Options, o => o.Name == "--name");
+    }
+
+    [Fact]
+    public async Task Correlate_resolves_the_shared_id_and_reports_the_honest_count()
+    {
+        var path = Path.Combine(_tempRoot, "corr.bwr");
+        await File.WriteAllTextAsync(path, CorrelateFixture, TestContext.Current.CancellationToken);
+
+        var (rc, stdout, stderr) = await InvokeValidate(["correlate", path]);
+
+        Assert.Equal(ExitOk, rc);
+        Assert.Empty(stderr);
+        // rest / websocket / signalr name the key (onShipId matches by
+        // suffix); the gRPC step only carries a bare `id` with the same
+        // value, which is the weak tier; mqtt has neither. 4 of 5, and
+        // the CLI says 4 of 5 rather than rounding up.
+        Assert.Contains("matched:  4/5 step(s) across 4/5 protocol(s)", stdout, StringComparison.Ordinal);
+        Assert.Contains("strong", stdout, StringComparison.Ordinal);
+        Assert.Contains("weak", stdout, StringComparison.Ordinal);
+        Assert.Contains("relative timebase", stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Correlate_honours_an_explicit_key()
+    {
+        var path = Path.Combine(_tempRoot, "corr-key.bwr");
+        await File.WriteAllTextAsync(path, CorrelateFixture, TestContext.Current.CancellationToken);
+
+        var (rc, stdout, _) = await InvokeValidate(["correlate", path, "--key", "craneId=1"]);
+
+        Assert.Equal(ExitOk, rc);
+        Assert.Contains("key:      craneId = 1", stdout, StringComparison.Ordinal);
+        Assert.Contains("matched:  1/5 step(s)", stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Correlate_json_emits_the_same_model_the_endpoint_returns()
+    {
+        var path = Path.Combine(_tempRoot, "corr-json.bwr");
+        await File.WriteAllTextAsync(path, CorrelateFixture, TestContext.Current.CancellationToken);
+
+        var (rc, stdout, _) = await InvokeValidate(["correlate", path, "--json"]);
+
+        Assert.Equal(ExitOk, rc);
+        // camelCase, same property names the workbench consumes.
+        Assert.Contains("\"matchedStepCount\": 4", stdout, StringComparison.Ordinal);
+        Assert.Contains("\"timebase\": \"relative\"", stdout, StringComparison.Ordinal);
+        Assert.Contains("\"lanes\"", stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Correlate_rejects_a_malformed_key_as_a_usage_error()
+    {
+        var path = Path.Combine(_tempRoot, "corr-badkey.bwr");
+        await File.WriteAllTextAsync(path, CorrelateFixture, TestContext.Current.CancellationToken);
+
+        var (rc, _, stderr) = await InvokeValidate(["correlate", path, "--key", "shipId"]);
+
+        Assert.Equal(ExitUsage, rc);
+        Assert.Contains("name=value", stderr, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Correlate_missing_file_exits_no_input()
+    {
+        var (rc, _, stderr) = await InvokeValidate(
+            ["correlate", Path.Combine(_tempRoot, "nope.bwr")]);
+
+        Assert.Equal(ExitNoInput, rc);
+        Assert.Contains("bowire recording correlate:", stderr, StringComparison.Ordinal);
+    }
+
+    // ----------------------------------------------------------------
     // Helpers
     // ----------------------------------------------------------------
 

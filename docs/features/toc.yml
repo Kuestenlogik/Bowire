@@ -44,6 +44,8 @@
   items:
     - name: Recording
       href: recording.md
+    - name: Correlated timeline
+      href: correlated-timeline.md
     - name: Replay mock server
       href: mock-server.md
     - name: Test assertions

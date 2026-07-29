@@ -1,0 +1,249 @@
+{
+  "id": "rec_harbor_port_call_1",
+  "name": "Port call #1 — one call, every wire",
+  "description": "The harbor money-shot: a single port call (PortCall.Id 1, ship 101 'Nordstern', dock 1, crane 1) correlated across the whole microservices landscape on one timeline — gRPC (Fleet) + OData (Inventory) + REST (Gate) + GraphQL (PortCalls BFF) + WebSocket (Tracking AIS) + SignalR (Operations) + SSE (Arrivals) + MQTT (Telemetry). Every step is keyed by the same shared ids, so the timeline reads as one business event crossing eight wires. Validate with `bowire recording validate`, replay unary steps against the running landscape from the workbench's Recordings rail, or re-serve the surface with `bowire mock --recording`.",
+  "createdAt": 1784678400000,
+  "recordingFormatVersion": 2,
+  "steps": [
+    {
+      "id": "step_01_fleet_getship",
+      "capturedAt": 0,
+      "protocol": "grpc",
+      "service": "harbor.fleet.v1.Fleet",
+      "method": "GetShip",
+      "methodType": "Unary",
+      "serverUrl": "http://localhost:5150",
+      "body": "{\"id\":101}",
+      "messages": [
+        "{\"id\":101}"
+      ],
+      "status": "OK",
+      "durationMs": 6,
+      "response": "{\"id\":101,\"name\":\"Nordstern\",\"flag\":\"DE\",\"lengthMeters\":210,\"type\":\"CONTAINER\"}"
+    },
+    {
+      "id": "step_02_inventory_dock",
+      "capturedAt": 150,
+      "protocol": "odata",
+      "service": "Docks",
+      "method": "Get",
+      "methodType": "Unary",
+      "serverUrl": "https://localhost:5151/odata",
+      "httpPath": "/Docks(1)",
+      "httpVerb": "GET",
+      "status": "OK",
+      "durationMs": 9,
+      "responseHeaders": {
+        "Content-Type": "application/json"
+      },
+      "response": "{\"Number\":1,\"MaxDepthMeters\":14.5,\"HasCrane\":true,\"OccupiedByShipId\":101}"
+    },
+    {
+      "id": "step_03_gate_containers",
+      "capturedAt": 300,
+      "protocol": "rest",
+      "service": "Containers",
+      "method": "ListContainers",
+      "methodType": "Unary",
+      "serverUrl": "http://localhost:5152",
+      "httpPath": "/containers",
+      "httpVerb": "GET",
+      "metadata": {
+        "accept": "application/json"
+      },
+      "status": "200",
+      "durationMs": 5,
+      "responseHeaders": {
+        "Content-Type": "application/json"
+      },
+      "response": "[{\"id\":\"MSCU1234567\",\"weightKg\":18500,\"owner\":\"MSC\",\"status\":\"Loading\",\"onShipId\":101},{\"id\":\"HLBU2345678\",\"weightKg\":22000,\"owner\":\"Hapag\",\"status\":\"Loading\",\"onShipId\":101},{\"id\":\"EGHU3456789\",\"weightKg\":14800,\"owner\":\"Evergreen\",\"status\":\"OnShip\",\"onShipId\":101}]"
+    },
+    {
+      "id": "step_04_portcalls_bff",
+      "capturedAt": 500,
+      "protocol": "graphql",
+      "service": "Query",
+      "method": "portCall",
+      "methodType": "Unary",
+      "serverUrl": "http://localhost:5153/graphql",
+      "body": "{\"query\":\"{ portCall(id: 1) { id status ship { name flag type } dock { number maxDepthMeters hasCrane } containers { id owner status } } }\"}",
+      "status": "OK",
+      "durationMs": 38,
+      "response": "{\"data\":{\"portCall\":{\"id\":1,\"status\":\"DOCKED\",\"ship\":{\"name\":\"Nordstern\",\"flag\":\"DE\",\"type\":\"CONTAINER\"},\"dock\":{\"number\":1,\"maxDepthMeters\":14.5,\"hasCrane\":true},\"containers\":[{\"id\":\"MSCU1234567\",\"owner\":\"MSC\",\"status\":\"LOADING\"},{\"id\":\"HLBU2345678\",\"owner\":\"Hapag\",\"status\":\"LOADING\"},{\"id\":\"EGHU3456789\",\"owner\":\"Evergreen\",\"status\":\"ON_SHIP\"}]}}}"
+    },
+    {
+      "id": "step_05_tracking_ais",
+      "capturedAt": 700,
+      "protocol": "websocket",
+      "service": "ais",
+      "method": "subscribe",
+      "methodType": "ServerStreaming",
+      "serverUrl": "ws://localhost:5154/ais",
+      "metadata": {
+        "sec-websocket-protocol": "ais+json"
+      },
+      "status": "OK",
+      "durationMs": 3000,
+      "receivedMessages": [
+        {
+          "index": 0,
+          "timestampMs": 0,
+          "data": {
+            "ShipId": 101,
+            "Latitude": 54.03,
+            "Longitude": 11.5,
+            "SpeedKnots": 8,
+            "CourseDegrees": 90,
+            "At": "2026-07-22T06:00:00Z"
+          }
+        },
+        {
+          "index": 1,
+          "timestampMs": 1000,
+          "data": {
+            "ShipId": 101,
+            "Latitude": 54.02995,
+            "Longitude": 11.50209,
+            "SpeedKnots": 8,
+            "CourseDegrees": 94,
+            "At": "2026-07-22T06:00:01Z"
+          }
+        },
+        {
+          "index": 2,
+          "timestampMs": 2000,
+          "data": {
+            "ShipId": 101,
+            "Latitude": 54.02981,
+            "Longitude": 11.50417,
+            "SpeedKnots": 8,
+            "CourseDegrees": 98,
+            "At": "2026-07-22T06:00:02Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_06_operations_stream",
+      "capturedAt": 900,
+      "protocol": "signalr",
+      "service": "OpsHub",
+      "method": "StreamPositions",
+      "methodType": "ServerStreaming",
+      "serverUrl": "http://localhost:5155/ops",
+      "status": "OK",
+      "durationMs": 3000,
+      "receivedMessages": [
+        {
+          "index": 0,
+          "timestampMs": 200,
+          "data": {
+            "shipId": 101,
+            "latitude": 54.03,
+            "longitude": 11.5,
+            "speedKnots": 8,
+            "courseDegrees": 90,
+            "at": "2026-07-22T06:00:00Z"
+          }
+        },
+        {
+          "index": 1,
+          "timestampMs": 1200,
+          "data": {
+            "shipId": 101,
+            "latitude": 54.02995,
+            "longitude": 11.50209,
+            "speedKnots": 8,
+            "courseDegrees": 94,
+            "at": "2026-07-22T06:00:01Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_07_arrivals_board",
+      "capturedAt": 1100,
+      "protocol": "sse",
+      "service": "arrivals",
+      "method": "arrival",
+      "methodType": "ServerStreaming",
+      "serverUrl": "http://localhost:5156/arrivals",
+      "status": "OK",
+      "durationMs": 3000,
+      "receivedMessages": [
+        {
+          "index": 0,
+          "timestampMs": 0,
+          "data": {
+            "Seq": 1,
+            "PortCallId": 1,
+            "ShipId": 101,
+            "Status": "Docked",
+            "At": "2026-07-22T06:00:00Z"
+          }
+        },
+        {
+          "index": 1,
+          "timestampMs": 3000,
+          "data": {
+            "Seq": 4,
+            "PortCallId": 1,
+            "ShipId": 101,
+            "Status": "Departing",
+            "At": "2026-07-22T06:00:03Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "step_08_telemetry_crane",
+      "capturedAt": 1300,
+      "protocol": "mqtt",
+      "service": "harbor/crane/1/status",
+      "method": "receive",
+      "methodType": "ServerStreaming",
+      "serverUrl": "mqtt://localhost:1883",
+      "metadata": {
+        "qos": "1",
+        "retain": "true"
+      },
+      "status": "OK",
+      "durationMs": 3000,
+      "receivedMessages": [
+        {
+          "index": 0,
+          "timestampMs": 0,
+          "data": {
+            "craneId": 1,
+            "status": "Lifting",
+            "boomAngleDeg": 41.5,
+            "loadTonnes": 22,
+            "at": 1784678400000
+          }
+        },
+        {
+          "index": 1,
+          "timestampMs": 1000,
+          "data": {
+            "craneId": 1,
+            "status": "Lifting",
+            "boomAngleDeg": 44,
+            "loadTonnes": 22,
+            "at": 1784678401000
+          }
+        },
+        {
+          "index": 2,
+          "timestampMs": 2000,
+          "data": {
+            "craneId": 1,
+            "status": "Idle",
+            "boomAngleDeg": 12,
+            "loadTonnes": 0,
+            "at": 1784678402000
+          }
+        }
+      ]
+    }
+  ]
+}

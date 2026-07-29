@@ -21,5 +21,18 @@
          don't ship the fragment — the byte-count win of #311. -->
     <EmbeddedResource Include="wwwroot\js\recording.js"
                       LogicalName="Kuestenlogik.Bowire.Recordings.wwwroot.js.recording.js" />
+    <!-- #539 — the correlated-timeline surface. A second fragment
+         rather than 700 more lines in recording.js: it is the only
+         part of the rail that talks to /api/recordings/correlate, and
+         keeping it separate means a reader of recording.js is not
+         wading through chart geometry. Both fragments share one IIFE;
+         the splice order is ordinal by resource name, which puts this
+         file first — harmless, because it declares only `var`s and
+         hoisted functions. -->
+    <EmbeddedResource Include="wwwroot\js\recording-correlation.js"
+                      LogicalName="Kuestenlogik.Bowire.Recordings.wwwroot.js.recording-correlation.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Recordings.Tests" />
   </ItemGroup>
 </Project>

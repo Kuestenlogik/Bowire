@@ -77,6 +77,26 @@ public sealed class BowireRecording
     [JsonPropertyName("sourceSchema")]
     public RecordingSourceSchema? SourceSchema { get; set; }
 
+    /// <summary>
+    /// Optional correlation key this recording is read through — the
+    /// signal that ties one logical transaction together across the
+    /// protocols it fanned out to (#539). Diagnostic only: nothing in
+    /// the replay, mock or matcher path reads it. It exists so the
+    /// workbench's Correlated-timeline tab and
+    /// <c>bowire recording correlate</c> agree on the same key without
+    /// the operator re-picking it every time, and so a shipped sample
+    /// recording can open on its intended key with zero clicks.
+    /// </summary>
+    /// <remarks>
+    /// Purely additive — the loader ignores unknown properties and
+    /// <c>RecordingFormatVersion.IsSupported</c> only inspects the
+    /// integer, so writing this field does <em>not</em> bump
+    /// <c>recordingFormatVersion</c> and a v2 build without #539
+    /// reads such a file unchanged.
+    /// </remarks>
+    [JsonPropertyName("correlation")]
+    public BowireRecordingCorrelation? Correlation { get; set; }
+
     [JsonPropertyName("steps")]
     public IList<BowireRecordingStep> Steps { get; init; } = new List<BowireRecordingStep>();
 
@@ -199,6 +219,36 @@ public sealed record RecordingSourceSchema(
     [property: JsonPropertyName("format")] string Format,
     [property: JsonPropertyName("content")] string Content,
     [property: JsonPropertyName("sourceUrl")] string? SourceUrl = null);
+
+/// <summary>
+/// The correlation key a recording is read through — see
+/// <see cref="BowireRecording.Correlation"/>. Data only; the analysis
+/// that produces and consumes it lives in the
+/// <c>Kuestenlogik.Bowire.Recordings</c> package so core carries no
+/// correlation logic.
+/// </summary>
+/// <param name="Name">
+/// The signal's name — either a correlation header
+/// (<c>traceparent</c>, <c>x-correlation-id</c>, …) or a JSON leaf name
+/// found in the step payloads (<c>shipId</c>, <c>orderId</c>, …).
+/// Matched case- and separator-insensitively, and by suffix for leaves,
+/// so <c>shipId</c> also ties <c>onShipId</c> and <c>OccupiedByShipId</c>
+/// together.
+/// </param>
+/// <param name="Value">
+/// The value that identifies this one transaction (<c>"101"</c>).
+/// Always a string — a JSON number leaf is compared by its invariant
+/// text so <c>101</c> and <c>"101"</c> correlate across protocols that
+/// disagree about the type.
+/// </param>
+/// <param name="Source">
+/// Where the key came from: <c>"header"</c>, <c>"field"</c>, or
+/// <c>null</c> when the writer had no opinion (readers re-derive it).
+/// </param>
+public sealed record BowireRecordingCorrelation(
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("value")] string Value,
+    [property: JsonPropertyName("source")] string? Source = null);
 
 /// <summary>
 /// One captured invocation inside a <see cref="BowireRecording"/>.

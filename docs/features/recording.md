@@ -30,7 +30,33 @@ right panel shows the selected recording's details:
 - **Step list** — every captured call with protocol badge, service /
   method, status, duration, and a per-step delete button
 - **Action toolbar** — Replay, Convert to Tests, Export HAR, Export
-  JSON, Delete
+  JSON, Import HAR, Import .bwr, Delete
+
+## Correlated timeline
+
+The detail pane has two tabs. **Steps** is the list above; **Correlated
+timeline** reads the same recording as one transaction — a lane per
+protocol on a shared time axis, one bar per step, per-frame ticks for
+streaming steps.
+
+Because the `.bwr` format carries no trace id, the view resolves a
+signal in three tiers and tells you which one it used:
+
+1. a correlation header on `step.metadata` (`traceparent`,
+   `x-correlation-id`, `x-request-id`, …),
+2. otherwise an id-shaped JSON leaf shared by two or more steps
+   (`shipId`, `orderId`, …), auto-picked and overridable from a ranked
+   candidate list,
+3. otherwise nothing — the lanes and the axis still render, with no
+   per-step verdict and a banner saying so.
+
+Each step is then marked **strong** (the key's own name *and* value are
+in its payload), **weak** (the value turned up on some other id-shaped
+field) or **unmatched**. The same analysis is available as
+`bowire recording correlate <path>`.
+
+See [Correlated timeline](correlated-timeline.md) for the matching
+rules, the timebase handling, and what is deliberately deferred.
 
 ## Replay
 
