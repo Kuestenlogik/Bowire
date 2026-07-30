@@ -289,6 +289,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [537](https://github.com/Kuestenlogik/Bowire/issues/537) | Bowire | [Make the catalogue a primary entry point, not a side path](#issue-kuestenlogik-bowire-537) | ⬜ Backlog |  |
 | [538](https://github.com/Kuestenlogik/Bowire/issues/538) | Bowire | [Show the CLI equivalent of every request (Copy as Bowire CLI)](#issue-kuestenlogik-bowire-538) | ⬜ Backlog |  |
 | [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ⬜ Backlog |  |
+| [543](https://github.com/Kuestenlogik/Bowire/issues/543) | Bowire | [MockCommandAutoInstallTests reads the developer's real plugin directory](#issue-kuestenlogik-bowire-543) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1187,6 +1188,10 @@ Feasible, but the proposal's sample line is not a real command today: `bowire ca
 #### <a id="issue-kuestenlogik-bowire-539"></a>⬜ Backlog · [#539](https://github.com/Kuestenlogik/Bowire/issues/539) Cross-protocol correlated timeline for recordings
 
 Ship a "Correlated timeline" as a second tab inside the existing Recordings detail pane (`renderRecordingDetail` in `src/Kuestenlogik.Bowire.Recordings/wwwroot/js/recording.js`), rendering one lane per protocol with one bar per step and per-frame ticks for streaming steps, all placed on a shared tim … [[more]](https://github.com/Kuestenlogik/Bowire/issues/539)
+
+#### <a id="issue-kuestenlogik-bowire-543"></a>⬜ Backlog · [#543](https://github.com/Kuestenlogik/Bowire/issues/543) MockCommandAutoInstallTests reads the developer's real plugin directory
+
+`MockCommandAutoInstallTests.RunAsync_AutoInstall_MultipleMissing_InstallsEach` fails on a developer machine that has any protocol plugin installed: [[more]](https://github.com/Kuestenlogik/Bowire/issues/543)
 
 ---
 
