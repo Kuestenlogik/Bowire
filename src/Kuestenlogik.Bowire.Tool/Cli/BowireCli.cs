@@ -104,8 +104,8 @@ internal static class BowireCli
         catalogueProviderOpt.CompletionSources.Add("local", "http", "consul", "kubernetes", "agent");
         root.Add(catalogueProviderOpt);
         root.Add(new Option<string>("--catalogue-path") { Description = "Path to the catalogue JSON document read by the 'local' provider. Defaults to ~/.bowire/catalogue.json. Implies --catalogue-provider local when that flag is absent. Maps to Bowire:Discovery:Catalogue:Local:Path." });
-        root.Add(new Option<string>("--catalogue-url") { Description = "URL the 'http' catalogue provider GETs every refresh interval. Must return the catalogue document shape ({ \"version\": 1, \"entries\": [...] }). Maps to Bowire:Discovery:Catalogue:Http:Url." });
-        root.Add(new Option<string>("--catalogue-consul") { Description = "Consul agent address for the 'consul' catalogue provider (e.g. http://localhost:8500). Maps to Bowire:Discovery:Catalogue:Consul:Address." });
+        root.Add(new Option<string>("--catalogue-url") { Description = "URL the 'http' catalogue provider GETs every refresh interval. Must return the catalogue document shape ({ \"version\": 1, \"entries\": [...] }). Implies --catalogue-provider http when that flag is absent. Maps to Bowire:Discovery:Catalogue:Http:Url." });
+        root.Add(new Option<string>("--catalogue-consul") { Description = "Consul agent address for the 'consul' catalogue provider (e.g. http://localhost:8500). Implies --catalogue-provider consul when that flag is absent. Maps to Bowire:Discovery:Catalogue:Consul:Address." });
         root.Add(new Option<string>("--plugin-dir") { Description = "Override the plugin directory." });
         var mapBasemapOpt = new Option<string>("--map-basemap")
         {

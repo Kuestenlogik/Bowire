@@ -442,8 +442,18 @@
                     type: 'button',
                     className: 'bowire-catalogue-tag' + (catalogueTagFilter === t ? ' is-active' : ''),
                     textContent: t,
-                    onClick: function () {
-                        catalogueTagFilter = (catalogueTagFilter === t) ? null : t;
+                    // The tag travels on the node, not in the closure. In
+                    // the inline mount these chips sit inside the morphdom
+                    // tree and are keyless, so a refresh that changes the
+                    // tag set recycles a preserved chip onto a different
+                    // label — a closed-over `t` would then filter by the
+                    // tag the chip USED to show.
+                    dataset: { catalogueTag: t },
+                    onClick: function (e) {
+                        var tag = (e && e.currentTarget && e.currentTarget.dataset)
+                            ? e.currentTarget.dataset.catalogueTag
+                            : t;
+                        catalogueTagFilter = (catalogueTagFilter === tag) ? null : tag;
                         paintTags();
                         paintList();
                     }
@@ -531,18 +541,27 @@
             title: readOnly
                 ? 'This catalogue is read-only — URL management is disabled by the host.'
                 : (already ? 'Already in this workspace' : 'Add ' + entryUrl + ' to this workspace'),
-            onClick: function () {
-                // Re-resolve at CLICK time. morphdom keeps this button
-                // alive across renders and a refresh swaps catalogueEntries
-                // wholesale, so anything captured at render time is stale.
-                var live = catalogueEntryByUrl(entryUrl);
+            onClick: function (e) {
+                // Re-resolve at CLICK time from the DOM, not from the
+                // render-time closure. Both halves matter: morphdom keeps
+                // this button alive across renders AND the rows are
+                // keyless, so a refresh that reorders or shortens the list
+                // recycles this node onto a DIFFERENT entry. The captured
+                // `entryUrl` would then add the previous row's URL. The
+                // row's data-bowire-catalogue-url attribute is the one
+                // thing morphdom patches to match the node it kept.
+                var rowEl = e && e.currentTarget && e.currentTarget.closest
+                    ? e.currentTarget.closest('.bowire-catalogue-row')
+                    : null;
+                var liveUrl = rowEl ? rowEl.getAttribute('data-bowire-catalogue-url') : entryUrl;
+                var live = catalogueEntryByUrl(liveUrl);
                 if (!live) {
                     if (typeof toast === 'function') toast('That entry is no longer in the catalogue', 'error');
                     if (typeof repaint === 'function') repaint();
                     return;
                 }
                 addCatalogueEntryToWorkspace(catalogueEntryUrl(live));
-                if (typeof opts.onAdded === 'function') opts.onAdded(entryUrl);
+                if (typeof opts.onAdded === 'function') opts.onAdded(liveUrl);
                 else if (typeof repaint === 'function') repaint();
             }
         }));

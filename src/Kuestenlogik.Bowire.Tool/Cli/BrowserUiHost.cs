@@ -147,6 +147,7 @@ internal static class BrowserUiHost
             ["--catalogue-url"] = "Bowire:Discovery:Catalogue:Http:Url",
             ["--catalogue-consul"] = "Bowire:Discovery:Catalogue:Consul:Address",
         });
+        InferCatalogueProvider(builder.Configuration);
         builder.WebHost.UseUrls($"http://localhost:{ui.Port}");
         builder.Services.AddResponseCompression(opts => opts.EnableForHttps = true);
         // Run every loaded plugin's IBowireProtocolServices.ConfigureServices
@@ -332,5 +333,45 @@ internal static class BrowserUiHost
 
         await app.RunAsync(ct).ConfigureAwait(false);
         return 0;
+    }
+
+    /// <summary>
+    /// Derive <c>Bowire:Discovery:Catalogue:Provider</c> from whichever
+    /// provider-specific flag the operator actually passed.
+    /// </summary>
+    /// <remarks>
+    /// Without this, <c>--catalogue-path ./team.json</c> boots with no
+    /// catalogue at all: the path lands in configuration but
+    /// <see cref="Kuestenlogik.Bowire.Sources.BowireCatalogueProviderRegistry"/>
+    /// resolves to null without a provider id, so every catalogue endpoint
+    /// short-circuits to empty. The flag looks accepted and does nothing —
+    /// the worst kind of failure, because there is no error to search for.
+    /// <c>--catalogue-path</c>'s help text already promised this implication;
+    /// the two sibling flags get it as well, because a lone
+    /// <c>--catalogue-consul</c> or <c>--catalogue-url</c> is exactly as
+    /// unambiguous about what the operator meant.
+    /// An explicit <c>--catalogue-provider</c> always wins.
+    /// </remarks>
+    private static void InferCatalogueProvider(ConfigurationManager configuration)
+    {
+        if (!string.IsNullOrWhiteSpace(configuration["Bowire:Discovery:Catalogue:Provider"]))
+        {
+            return;
+        }
+
+        var inferred = !string.IsNullOrWhiteSpace(configuration["Bowire:Discovery:Catalogue:Local:Path"]) ? "local"
+            : !string.IsNullOrWhiteSpace(configuration["Bowire:Discovery:Catalogue:Http:Url"]) ? "http"
+            : !string.IsNullOrWhiteSpace(configuration["Bowire:Discovery:Catalogue:Consul:Address"]) ? "consul"
+            : null;
+
+        if (inferred is null)
+        {
+            return;
+        }
+
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["Bowire:Discovery:Catalogue:Provider"] = inferred,
+        });
     }
 }

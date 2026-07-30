@@ -236,7 +236,7 @@ additive and does **not** bump `recordingFormatVersion`.
 
 Two things ride along. **Import .bwr** now sits next to Import HAR: the
 rail could import someone else's format but not its own, so a `.bwr`
-from a colleague or from `bowire har convert` was openable everywhere
+from a colleague or from `bowire import har` was openable everywhere
 except the workbench that writes it. And a recording whose `capturedAt`
 stamps are all zero now falls back to cumulative durations rather than
 collapsing every step onto the same offset.

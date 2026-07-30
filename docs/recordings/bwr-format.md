@@ -9,7 +9,7 @@ store, no cross-reference to a workspace.
 
 Throughout the docs this file extension is what is meant by:
 
-- the HAR import tool (`bowire har convert ... -o foo.bwr`)
+- the HAR import tool (`bowire import har ... -o foo.bwr`)
 - the `bowire mock --recording <foo.bwr>` CLI ([#211](https://github.com/Kuestenlogik/Bowire/issues/211))
 - the workbench's "Export recording" download
 - the on-disk format of a UI-started mock (`~/.bowire/mocks/<id>.bwr`)

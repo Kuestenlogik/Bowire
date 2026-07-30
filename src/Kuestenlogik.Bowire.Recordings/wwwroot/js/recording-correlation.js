@@ -238,8 +238,19 @@
             }));
         });
 
-        var lanes = el('div', { className: 'bowire-recording-timeline-lanes' });
-        // ONE delegated listener for every bar and tick in this pane.
+        // The id is load-bearing, not decoration. This node carries the ONE
+        // delegated listener for every bar and tick in the pane, and a
+        // listener is a property — morphdom copies attributes, never
+        // properties. Without a stable id morphdom matches this div by
+        // sibling position, keeps whichever live node already sat there,
+        // and discards the freshly built one along with its listener; the
+        // timeline then renders correctly but nothing in it responds to a
+        // click. With the id, morphdom key-matches and patches the node
+        // that already has the listener bound.
+        var lanes = el('div', {
+            id: 'bowire-recording-timeline-lanes',
+            className: 'bowire-recording-timeline-lanes'
+        });
         lanes.addEventListener('click', _correlationLaneClick);
         var laneList = Array.isArray(model.lanes) ? model.lanes : [];
         if (laneList.length === 0) {

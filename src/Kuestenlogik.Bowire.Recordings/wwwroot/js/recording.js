@@ -2002,7 +2002,7 @@
             el('span', { textContent: 'Import HAR' })
         ));
         // #539 — the rail could import HAR but not its own format, so a
-        // .bwr shared by a colleague (or produced by `bowire har convert`
+        // .bwr shared by a colleague (or produced by `bowire import har`
         // / "Export → JSON") was openable everywhere except the
         // workbench that writes it. Lives in recording-correlation.js.
         if (typeof importRecordingFromFile === 'function') {
