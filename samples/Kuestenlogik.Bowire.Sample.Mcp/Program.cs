@@ -20,7 +20,11 @@
 //
 // Everything is stateless: the tool computes its answer from the batch it
 // is handed and the resources derive their readings from the sensor id,
-// so the sample stays a single project with nothing to reset.
+// so the sample stays a single project with nothing to reset. As of MCP
+// revision 2026-07-28 the *transport* is stateless too — the revision
+// dropped Mcp-Session-Id and the initialize handshake, so there is no
+// session to resume and `Stateless = true` below is pinned deliberately
+// rather than inherited from the SDK default that now happens to match.
 //
 // Run:
 //   dotnet run --project samples/Kuestenlogik.Bowire.Sample.Mcp
@@ -37,7 +41,14 @@ builder.WebHost.UseUrls("http://localhost:5190");
 
 builder.Services
     .AddMcpServer()
-    .WithHttpTransport()
+    // Pinned, not inherited: SDK 2.0.0 flipped HttpServerTransportOptions
+    // .Stateless from false to true. Stating it here keeps the sample's
+    // topology readable in source instead of tracking an SDK default.
+    // Do not set false — a stateful server answers a 2026-07-28 request
+    // with UnsupportedProtocolVersion to push the client back onto the
+    // legacy initialize handshake, costing every modern client a wasted
+    // round trip.
+    .WithHttpTransport(o => o.Stateless = true)
     .WithTools<SampleTools>()
     .WithResources<SampleResources>()
     .WithPrompts<SamplePrompts>();
