@@ -241,6 +241,46 @@ except the workbench that writes it. And a recording whose `capturedAt`
 stamps are all zero now falls back to cumulative durations rather than
 collapsing every step onto the same offset.
 
+### MCP moves to SDK 2.0 and the 2026-07-28 revision
+
+Bowire's three MCP surfaces — workbench-as-server, Bowire-as-client, and
+the adapter that fronts other protocols — now run on ModelContextProtocol
+2.0.0.
+
+**Nothing to do on your side.** The revision made the wire busier while
+leaving the calling code identical: clients probe `server/discover` before
+falling back to the legacy `initialize` handshake, and the standardized
+`MCP-Protocol-Version` / `Mcp-Method` / `Mcp-Name` headers are added by the
+transport itself. There is no session id to carry any more — 2026-07-28
+dropped `Mcp-Session-Id`, and per-request identity moved into `params._meta`,
+which the SDK injects. If you point Bowire at an older server, the client
+falls back automatically.
+
+**What did change is the transport topology.** SDK 2.0 flipped
+`HttpServerTransportOptions.Stateless` to `true`, so a mount that inherited
+the default silently switched behaviour without a line of source changing.
+Every `WithHttpTransport` call site in this repo — the sample, the adapter,
+and `bowire mcp serve` — now states `Stateless = true` explicitly rather
+than tracking an SDK default. On a stateless mount the standalone SSE `GET`
+is gone and the server cannot send unsolicited requests; Bowire never used
+either. Embedded hosts that mount MCP themselves should pin the flag too.
+Do not pin it to `false` to recover the old shape: a stateful server answers
+a 2026-07-28 request with `UnsupportedProtocolVersion` to force the client
+back onto the legacy handshake, costing every modern client a wasted round
+trip.
+
+**One new failure mode is now visible instead of silent.** 2.0 requires
+`inputSchema` when deserializing a tool, so a single malformed tool on a
+third-party server throws for the whole `tools/list` page. Bowire used to
+swallow that and render an empty Tools node — indistinguishable from "this
+server has no tools". It now reports through the per-plugin discovery
+diagnostics from #534, naming the surface and the payload complaint. Note
+the trade-off: a diagnosable fault fails the whole probe, so a server whose
+tools are broken no longer contributes its working resources and prompts
+either. The attempt message names the surfaces that did answer so the
+missing ones are not a mystery. A per-plugin partial-diagnostics seam would
+let both coexist; it is tracked as follow-up work.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor

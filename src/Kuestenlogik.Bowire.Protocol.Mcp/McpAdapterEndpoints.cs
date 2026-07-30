@@ -80,8 +80,11 @@ public static class McpAdapterEndpoints
         registry.Register(canonical, BowireMcpEndpointMode.Adapter);
 
         // The SDK mounts the streamable-HTTP transport at the given
-        // path: POST <pattern> handles incoming JSON-RPC, GET <pattern>
-        // serves the server-stream half (notifications, sampling).
+        // path. POST <pattern> handles incoming JSON-RPC and is the only
+        // verb mapped here: the adapter is stateless (see
+        // AddBowireMcpAdapter), and on a stateless mount the SDK maps
+        // neither the standalone GET stream nor DELETE — MCP revision
+        // 2026-07-28 has no session to stream into or terminate.
         // Match MapMcp's empty-string semantics: when canonical is "/"
         // we pass "" so the SDK doesn't double-slash.
         var mountPattern = canonical == "/" ? string.Empty : canonical;

@@ -279,13 +279,15 @@ public sealed class BowireMcpDualHandlerDispatcher
 
     private bool IsAdapterRequest<T>(RequestContext<T> ctx)
     {
-        // The streamable-HTTP transport runs in stateless mode by default
-        // (see BowireMcpServiceCollectionExtensions.AddBowireMcp), which
+        // The streamable-HTTP transport runs in stateless mode: that is
+        // the SDK's own default as of 2.0.0, and every Bowire mount pins
+        // it explicitly (the sample, the adapter, `bowire mcp serve`, the
+        // test fixtures) — AddBowireMcp itself never sets it. Stateless
         // reuses HttpContext.RequestServices as the McpServer's service
-        // provider — so the IHttpContextAccessor sees the live request.
-        // Stateful hosts get the path latched on HttpContext.Items at
-        // session-init time (see BowireMcpHttpTransportSetup) so the
-        // dispatcher still has a path to consult.
+        // provider, so the IHttpContextAccessor sees the live request.
+        // A host that deliberately runs stateful still has a path to
+        // consult: BowireMcpHttpTransportSetup stashes it on
+        // HttpContext.Items when the transport builds the session.
         var sp = ctx.Services;
         if (sp is null) return false;
 

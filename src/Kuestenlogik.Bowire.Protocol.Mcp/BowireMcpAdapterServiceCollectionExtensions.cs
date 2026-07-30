@@ -149,7 +149,18 @@ public static class BowireMcpAdapterServiceCollectionExtensions
                     Title = "Bowire workbench (adapter)",
                 };
             })
-            .WithHttpTransport();
+            // Pinned, not inherited: SDK 2.0.0 flipped
+            // HttpServerTransportOptions.Stateless from false to true, so
+            // this mount changed topology without a line of source moving.
+            // Stating it keeps the adapter's contract in the source that
+            // owns it. Do not set false to "restore" 1.4.1 behaviour — a
+            // stateful server refuses a 2026-07-28 request outright with
+            // UnsupportedProtocolVersion to force the client back onto the
+            // legacy initialize handshake. Note also that MapBowireMcp and
+            // MapBowireMcpAdapter share one IOptions<HttpServerTransportOptions>
+            // singleton: a dual-mount host cannot run one endpoint stateful
+            // and the other stateless.
+            .WithHttpTransport(o => o.Stateless = true);
 
         // When AddBowireMcp also ran on this DI container, the
         // dispatcher already owns the SDK's With*Handler slots — the

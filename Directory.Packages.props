@@ -151,7 +151,13 @@
     <!-- ModelContextProtocol C# SDK — Kuestenlogik.Bowire.Mcp builds on this to
          expose the workbench as an MCP server for AI agents. Two
          packages from modelcontextprotocol/csharp-sdk: the host/DI
-         flavour and .AspNetCore for HTTP/SSE transport. -->
+         flavour and .AspNetCore for the Streamable-HTTP transport.
+         2.0.0 speaks MCP revision 2026-07-28: discovery-first
+         negotiation (server/discover before initialize), no session id,
+         and HttpServerTransportOptions.Stateless defaulting to true —
+         which is why every WithHttpTransport call site in this repo pins
+         Stateless explicitly instead of inheriting it. On a stateless
+         mount the SDK maps POST only; the standalone SSE GET is gone. -->
     <PackageVersion Include="ModelContextProtocol" Version="2.0.0" />
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.0.0" />
     <!-- System.CommandLine 2.0.7 — stable after the beta-to-stable

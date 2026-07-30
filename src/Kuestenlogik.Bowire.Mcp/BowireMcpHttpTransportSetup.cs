@@ -7,12 +7,11 @@ using ModelContextProtocol.AspNetCore;
 namespace Kuestenlogik.Bowire.Mcp;
 
 /// <summary>
-/// <see cref="IConfigureOptions{T}"/> setup that latches the
-/// originating request path on
-/// <see cref="BowireMcpDualHandlerDispatcher"/> at session-init time
-/// so the dispatcher can route <c>tools/list</c>, <c>tools/call</c>,
-/// &amp;c. to the right handler based on the URL the JSON-RPC POST
-/// hit — even after the request scope has unwound.
+/// <see cref="IConfigureOptions{T}"/> setup that stashes the originating
+/// request path where <see cref="BowireMcpDualHandlerDispatcher"/> can
+/// read it, so the dispatcher can route <c>tools/list</c>,
+/// <c>tools/call</c>, &amp;c. to the right handler based on the URL the
+/// JSON-RPC POST hit.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -21,6 +20,15 @@ namespace Kuestenlogik.Bowire.Mcp;
 /// repeat composition: the wrap only happens once per options
 /// snapshot because <c>IConfigureOptions</c> instances are de-duped
 /// by the options pipeline.
+/// </para>
+/// <para>
+/// "Session" is now a historical name for the hook. MCP revision
+/// 2026-07-28 dropped HTTP sessions, and every Bowire mount pins
+/// <c>Stateless = true</c>, so the SDK invokes this callback once per
+/// request with that request's <c>HttpContext</c> — not once per session
+/// at init time. That is strictly better for this seam: the stash and
+/// the live-<c>HttpContext</c> fallback the dispatcher uses now read the
+/// same request instead of diverging after the first one.
 /// </para>
 /// </remarks>
 internal sealed class BowireMcpHttpTransportSetup
@@ -39,8 +47,9 @@ internal sealed class BowireMcpHttpTransportSetup
         ArgumentNullException.ThrowIfNull(options);
 
         // The streamable-HTTP transport calls ConfigureSessionOptions
-        // once per session (or per request in stateless mode) with the
-        // originating HttpContext in scope. The McpServerOptions
+        // with the originating HttpContext in scope — once per request on
+        // a stateless mount, which is every Bowire mount and the SDK
+        // default since 2.0.0. The McpServerOptions
         // doesn't carry a stash slot for free-form data, but the
         // HttpContext does — Items[] is request-scoped in stateless
         // mode and propagates to RequestServices, so the dispatcher
@@ -56,11 +65,11 @@ internal sealed class BowireMcpHttpTransportSetup
             if (previous is not null)
                 await previous(httpContext, mcpOptions, ct).ConfigureAwait(false);
 
-            // Idempotent — the SDK only fires once per session, but
-            // a host that re-installs this setup wouldn't end up
-            // stashing a stale path either (the HttpContext.Items
-            // dictionary is per-request, so each session writes its
-            // own path on its own request).
+            // Idempotent, and stale-proof by construction: the callback
+            // fires per request on a stateless mount, and
+            // HttpContext.Items is per-request storage, so each request
+            // writes its own path into its own dictionary. A host that
+            // re-installs this setup just writes the same value twice.
             httpContext.Items[BowireMcpDualHandlerDispatcher.SessionRoutePathItemKey]
                 = httpContext.Request.Path.Value ?? string.Empty;
         };

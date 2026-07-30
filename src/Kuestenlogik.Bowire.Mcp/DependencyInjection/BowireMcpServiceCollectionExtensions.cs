@@ -29,7 +29,7 @@ namespace Kuestenlogik.Bowire.Mcp;
 ///         .WithResources&lt;BowireMcpResources&gt;()
 ///         .WithPrompts&lt;BowireMcpPrompts&gt;();
 ///
-/// // HTTP/SSE (embedded)
+/// // Streamable HTTP (embedded)
 /// services.AddBowireMcp()
 ///         .WithHttpTransport(o => o.Stateless = true)
 ///         .WithTools&lt;BowireMcpTools&gt;()
@@ -37,6 +37,18 @@ namespace Kuestenlogik.Bowire.Mcp;
 ///         .WithPrompts&lt;BowireMcpPrompts&gt;();
 /// // …then `app.MapBowireMcp();` (defaults to /bowire/mcp)
 /// </code>
+/// <para>
+/// <c>Stateless = true</c> matches the SDK default since 2.0.0 and is
+/// spelled out anyway: it flipped in that release, so leaving it implicit
+/// would hide a topology change inside a dependency bump. Do not set it
+/// to <see langword="false"/> — a stateful server answers an MCP
+/// 2026-07-28 request with <c>UnsupportedProtocolVersion</c> to push the
+/// client onto the legacy <c>initialize</c> handshake. Note too that
+/// <c>MapBowireMcp</c> and <c>MapBowireMcpAdapter</c> share one
+/// <c>IOptions&lt;HttpServerTransportOptions&gt;</c> singleton, so a
+/// dual-mount host cannot run one endpoint stateful and the other
+/// stateless.
+/// </para>
 /// </summary>
 public static class BowireMcpServiceCollectionExtensions
 {
@@ -100,12 +112,14 @@ public static class BowireMcpServiceCollectionExtensions
         // for that lookup; idempotent on repeat registration.
         services.AddHttpContextAccessor();
 
-        // Per-session path-latching: stash the request URL on the
-        // dispatcher at the moment the SDK creates an McpServer for
-        // a freshly-arrived JSON-RPC session. This is the robust
-        // routing signal — the IHttpContextAccessor path can come
-        // back stale or null in stateful transport mode where the
-        // long-lived server runs outside the original request scope.
+        // Path stashing: record the request URL when the SDK builds the
+        // McpServer for an incoming JSON-RPC request. On a stateless
+        // mount — the SDK default since 2.0.0 and what every Bowire
+        // caller pins — that is once per request, so this and the live
+        // IHttpContextAccessor lookup agree. It earns its keep on the
+        // exceptional stateful path, where the long-lived server runs
+        // outside the original request scope and the accessor comes back
+        // stale or null.
         // The setup wraps any existing caller-supplied
         // ConfigureSessionOptions delegate so the test-suite + embedded
         // host can still install their own callbacks.

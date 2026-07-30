@@ -1,8 +1,10 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Collections.Concurrent;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Models;
+using ModelContextProtocol;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 
@@ -18,22 +20,50 @@ namespace Kuestenlogik.Bowire.Protocol.Mcp;
 /// Built on the official <c>ModelContextProtocol</c> C# SDK
 /// (<see cref="McpClient"/> + <see cref="HttpClientTransport"/>) — the
 /// previous hand-rolled JSON-RPC client predates the SDK's client
-/// surface. The SDK handles spec-version negotiation, Streamable-HTTP-
-/// vs-SSE auto-detection, session resumption, and the JSON-RPC wire
+/// surface. The SDK owns the entire negotiation: on MCP revision
+/// 2026-07-28 it probes <c>server/discover</c> first and only falls back
+/// to the legacy <c>initialize</c> handshake when that errors or the
+/// probe timeout elapses; it auto-detects Streamable HTTP vs SSE, stamps
+/// the SEP-2243 <c>MCP-Protocol-Version</c> / <c>Mcp-Method</c> /
+/// <c>Mcp-Name</c> headers onto every POST, and writes the JSON-RPC
 /// envelope.
+/// </para>
+/// <para>
+/// There is no session left to resume: 2026-07-28 removed
+/// <c>Mcp-Session-Id</c> along with the initialize handshake, so
+/// per-request identity (protocol version, client info, client
+/// capabilities) travels inside <c>params._meta</c> and the SDK injects
+/// it. Bowire stores, echoes and transmits none of it — which is also
+/// why a fresh throwaway client per call costs nothing but the probe
+/// round trip.
 /// </para>
 /// <para>
 /// The companion <see cref="McpAdapterEndpoints.MapBowireMcpAdapter"/>
 /// extension lives in the same assembly but is unrelated to discovery: it is
 /// an opt-in development feature that goes the other direction (Bowire's
-/// services exposed as MCP tools so AI agents can call them). The
-/// adapter is hand-rolled because it sits on Bowire's own
-/// <c>BowireProtocolRegistry</c> rather than ASP.NET MCP middleware.
+/// services exposed as MCP tools so AI agents can call them). It runs on
+/// the SDK's own server transport (<c>AddBowireMcpAdapter</c> →
+/// <c>WithHttpTransport</c>); only the tool/resource/prompt <em>contents</em>
+/// are synthesised from Bowire's <c>BowireProtocolRegistry</c>.
 /// </para>
 /// </remarks>
 public sealed class BowireMcpProtocol : IBowireProtocol
 {
     private static readonly JsonSerializerOptions s_indented = new() { WriteIndented = true };
+
+    // Tool definitions captured by the last successful DiscoverAsync, keyed
+    // by normalised server URL. InvokeAsync builds a *fresh* McpClient per
+    // call, so the SDK's own tool cache is guaranteed empty at tools/call
+    // time and the SEP-2243 Mcp-Param-* headers would be dropped (the SDK
+    // logs a cache miss and sends the call header-less). Replaying these
+    // through McpClient.AddKnownTools closes that gap without a second
+    // tools/list round trip — and without letting one malformed tool on the
+    // server break an unrelated invoke, which a pre-call ListToolsAsync
+    // would. Unbounded on purpose, like the REST plugin's schema cache: the
+    // key space is the set of MCP URLs one operator discovered in one
+    // process lifetime.
+    private readonly ConcurrentDictionary<string, IReadOnlyList<Tool>> _knownTools =
+        new(StringComparer.Ordinal);
 
     public string Name => "MCP";
     public string Description => "Model Context Protocol — Claude / Cursor / Copilot tool + resource server discovery + invoke.";
@@ -55,31 +85,109 @@ public sealed class BowireMcpProtocol : IBowireProtocol
         if (string.IsNullOrWhiteSpace(serverUrl))
             return [];
 
-        McpClient? client = null;
+        McpClient client;
         try
         {
             client = await CreateClientAsync(serverUrl, metadata: null, ct).ConfigureAwait(false);
         }
+        catch (OperationCanceledException)
+        {
+            // The probe ceiling or the caller aborted — let it out so
+            // BowireDiscoveryProbe records `timeout` rather than `empty`.
+            throw;
+        }
         catch
         {
-            // Server is not an MCP endpoint or rejected the handshake — nothing to discover.
-            if (client is not null) await client.DisposeAsync().ConfigureAwait(false);
+            // The connect/negotiate leg failed, so this URL is not an MCP
+            // endpoint (or nothing is listening). Bowire probes EVERY
+            // plugin against EVERY URL, so raising this would tag the MCP
+            // plugin `error` on every REST/gRPC/MQTT URL in the fan-out.
+            // `empty` — "the URL simply is not this plugin's" — is the
+            // honest outcome here. Failures *after* a successful
+            // handshake are the opposite case and do get reported below.
+            // CreateClientAsync already disposed the transport it built.
             return [];
         }
 
         await using (client)
         {
             var services = new List<BowireServiceInfo>();
+            var failures = new List<string>();
 
-            // Tools, resources, and prompts are all optional on the
-            // server side — the SDK throws NotSupportedException when
-            // the capability is absent; treat that as "no entries".
-            await AddToolsAsync(client, services, serverUrl, ct).ConfigureAwait(false);
-            await AddResourcesAsync(client, services, serverUrl, ct).ConfigureAwait(false);
-            await AddPromptsAsync(client, services, serverUrl, ct).ConfigureAwait(false);
+            // Tools, resources, and prompts are all optional on the server
+            // side, so "this surface is absent" must stay silent — but
+            // anything else is a real fault on a server we just shook
+            // hands with, and swallowing it used to render as an empty
+            // tree indistinguishable from "this server has nothing".
+            await AddToolsAsync(client, services, serverUrl, failures, ct).ConfigureAwait(false);
+            await AddResourcesAsync(client, services, serverUrl, failures, ct).ConfigureAwait(false);
+            await AddPromptsAsync(client, services, serverUrl, failures, ct).ConfigureAwait(false);
+
+            if (failures.Count > 0)
+                throw new InvalidOperationException(DescribeFailures(failures, services));
 
             return services;
         }
+    }
+
+    /// <summary>
+    /// Compose the one-liner <see cref="BowireDiscoveryAttempt.Message"/>
+    /// carries for an <c>error</c> outcome. Names the surfaces that did
+    /// answer, because a discovery error suppresses the whole plugin's
+    /// contribution and an operator who sees "tools/list failed" should
+    /// not also have to wonder where their resources went.
+    /// </summary>
+    private static string DescribeFailures(List<string> failures, List<BowireServiceInfo> found)
+    {
+        var message = string.Join("; ", failures);
+        if (found.Count > 0)
+        {
+            message += $" ({string.Join(", ", found.Select(s => s.Name))} answered, "
+                + "but discovery reports the whole probe as failed)";
+        }
+        return message;
+    }
+
+    /// <summary>
+    /// Decide whether a failed <c>*/list</c> call is a missing capability
+    /// (silent — the surface simply is not there) or a diagnosable fault
+    /// worth surfacing through the discovery-diagnostics channel.
+    /// </summary>
+    /// <returns><see langword="null"/> when the surface is merely absent.</returns>
+    private static string? ClassifyListFailure(string surface, Exception ex)
+    {
+        // Capability absent is not a fault. A server that ships only tools
+        // answers resources/list with -32601 MethodNotFound, and the SDK
+        // raises NotSupportedException when the server never advertised
+        // the capability in the first place. Both mean "no entries".
+        if (ex is NotSupportedException)
+            return null;
+        if (ex is McpProtocolException { ErrorCode: McpErrorCode.MethodNotFound })
+            return null;
+
+        // SDK 2.0 made Tool.inputSchema required at deserialization time,
+        // so ONE malformed tool now throws for the whole page. Say so in
+        // MCP's vocabulary: the raw JsonException text names a CLR type
+        // and a JSON property, never the server or the surface.
+        if (FindJsonException(ex) is { } json)
+            return $"{surface} returned a payload this MCP revision rejects — {json.Message}";
+
+        return $"{surface} failed: {ex.Message}";
+    }
+
+    /// <summary>
+    /// Walk the inner-exception chain for a <see cref="JsonException"/>:
+    /// the SDK may hand back the deserialization failure directly or
+    /// wrapped in a transport/protocol exception depending on where in the
+    /// pipeline the malformed payload was read.
+    /// </summary>
+    private static JsonException? FindJsonException(Exception? ex)
+    {
+        for (var current = ex; current is not null; current = current.InnerException)
+        {
+            if (current is JsonException json) return json;
+        }
+        return null;
     }
 
     public async Task<InvokeResult> InvokeAsync(
@@ -95,6 +203,20 @@ public sealed class BowireMcpProtocol : IBowireProtocol
 
             await using (client)
             {
+                // SEP-2243: the transport only stamps Mcp-Param-* headers
+                // on a tools/call when the client holds that tool's
+                // definition. This client is seconds old and never listed
+                // anything, so replay what DiscoverAsync captured — that is
+                // the difference between Bowire's request and the one
+                // Claude Desktop or Cursor would send to a header-routing
+                // gateway.
+                if (service == "Tools"
+                    && _knownTools.TryGetValue(NormalizeUrl(serverUrl), out var known)
+                    && known.Count > 0)
+                {
+                    PrimeToolCache(client, known);
+                }
+
                 JsonElement payload = service switch
                 {
                     "Tools" => await CallToolAsync(client, method, jsonMessages, ct).ConfigureAwait(false),
@@ -137,6 +259,32 @@ public sealed class BowireMcpProtocol : IBowireProtocol
 
     // ----- SDK plumbing -------------------------------------------------
 
+    /// <summary>
+    /// The cache key for a target: the same string
+    /// <see cref="CreateClientAsync"/> turns into the transport endpoint,
+    /// so a trailing slash cannot split one server into two entries.
+    /// </summary>
+    private static string NormalizeUrl(string serverUrl) => serverUrl.TrimEnd('/');
+
+    /// <summary>
+    /// Replay discovered tool definitions into a fresh client's cache so the
+    /// transport can stamp the SEP-2243 <c>Mcp-Param-*</c> headers on the
+    /// <c>tools/call</c> that follows.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately best-effort. <c>AddKnownTools</c> validates the
+    /// <c>x-mcp-header</c> annotations of the whole batch and throws
+    /// <see cref="ArgumentException"/> all-or-nothing, so a single tool with
+    /// a malformed annotation would otherwise fail an invoke that the SDK is
+    /// perfectly willing to send without the headers. Header fidelity is a
+    /// nicety; completing the call the user asked for is not.
+    /// </remarks>
+    private static void PrimeToolCache(McpClient client, IReadOnlyList<Tool> known)
+    {
+        try { client.AddKnownTools(known); }
+        catch (ArgumentException) { /* header stamping is not worth a failed invoke */ }
+    }
+
     private static async Task<McpClient> CreateClientAsync(
         string serverUrl,
         Dictionary<string, string>? metadata,
@@ -144,11 +292,14 @@ public sealed class BowireMcpProtocol : IBowireProtocol
     {
         var options = new HttpClientTransportOptions
         {
-            Endpoint = new Uri(serverUrl.TrimEnd('/'), UriKind.Absolute),
+            Endpoint = new Uri(NormalizeUrl(serverUrl), UriKind.Absolute),
             // AutoDetect lets the SDK try Streamable HTTP first and fall
-            // back to SSE+POST (the 2024-11-05 transport) when the
-            // server returns 405 or text/event-stream content type on
-            // the initialize POST. Same behaviour we had hand-rolled.
+            // back to SSE+POST (the 2024-11-05 transport) when the server
+            // answers 405 or text/event-stream. On SDK 2.0 the POST that
+            // triggers that detection is the `server/discover` probe, not
+            // the old `initialize` call — the client only reaches
+            // `initialize` when discover errors or its probe timeout
+            // (5 s by default) elapses.
             TransportMode = HttpTransportMode.AutoDetect,
             AdditionalHeaders = metadata is null
                 ? null
@@ -176,12 +327,24 @@ public sealed class BowireMcpProtocol : IBowireProtocol
 
     // ----- discovery: tools / resources / prompts -----------------------
 
-    private static async Task AddToolsAsync(
-        McpClient client, List<BowireServiceInfo> services, string serverUrl, CancellationToken ct)
+    private async Task AddToolsAsync(
+        McpClient client, List<BowireServiceInfo> services, string serverUrl,
+        List<string> failures, CancellationToken ct)
     {
         IList<McpClientTool> tools;
         try { tools = await client.ListToolsAsync(cancellationToken: ct).ConfigureAwait(false); }
-        catch { return; }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            if (ClassifyListFailure("tools/list", ex) is { } failure) failures.Add(failure);
+            return;
+        }
+
+        // Keep the definitions for InvokeAsync's fresh client (Mcp-Param-*).
+        // Written even when the list is empty so a server that dropped its
+        // tools doesn't leave a stale entry behind.
+        _knownTools[NormalizeUrl(serverUrl)] = [.. tools.Select(tool => tool.ProtocolTool)];
+
         if (tools.Count == 0) return;
 
         var methods = tools.Select(tool => new BowireMethodInfo(
@@ -206,11 +369,17 @@ public sealed class BowireMcpProtocol : IBowireProtocol
     }
 
     private static async Task AddResourcesAsync(
-        McpClient client, List<BowireServiceInfo> services, string serverUrl, CancellationToken ct)
+        McpClient client, List<BowireServiceInfo> services, string serverUrl,
+        List<string> failures, CancellationToken ct)
     {
         IList<McpClientResource> resources;
         try { resources = await client.ListResourcesAsync(cancellationToken: ct).ConfigureAwait(false); }
-        catch { return; }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            if (ClassifyListFailure("resources/list", ex) is { } failure) failures.Add(failure);
+            return;
+        }
         if (resources.Count == 0) return;
 
         var methods = resources.Select(res => new BowireMethodInfo(
@@ -235,11 +404,17 @@ public sealed class BowireMcpProtocol : IBowireProtocol
     }
 
     private static async Task AddPromptsAsync(
-        McpClient client, List<BowireServiceInfo> services, string serverUrl, CancellationToken ct)
+        McpClient client, List<BowireServiceInfo> services, string serverUrl,
+        List<string> failures, CancellationToken ct)
     {
         IList<McpClientPrompt> prompts;
         try { prompts = await client.ListPromptsAsync(cancellationToken: ct).ConfigureAwait(false); }
-        catch { return; }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            if (ClassifyListFailure("prompts/list", ex) is { } failure) failures.Add(failure);
+            return;
+        }
         if (prompts.Count == 0) return;
 
         var methods = prompts.Select(prompt => new BowireMethodInfo(
