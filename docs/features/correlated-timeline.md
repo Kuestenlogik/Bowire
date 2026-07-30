@@ -162,7 +162,7 @@ this view.
 ## Importing a recording
 
 The Recordings rail could always import HAR but never its own format,
-which meant a `.bwr` from a colleague, from `bowire har convert`, or
+which meant a `.bwr` from a colleague, from `bowire import har`, or
 from this workbench's own **Export → JSON** was openable everywhere
 except the workbench that writes it. **Import .bwr** now sits next to
 **Import HAR** in the recording toolbar and accepts both envelope
