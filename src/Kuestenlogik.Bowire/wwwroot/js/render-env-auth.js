@@ -2436,7 +2436,49 @@
     // renders as a quiet pill until something needs attention — same
     // visual contract as the env-selector to its right.
     function renderConnectionPill() {
-        if (uiMode === 'embedded') return null;
+        if (uiMode === 'embedded') {
+            // Embedded normally gets no pill — there is no source selector
+            // behind it, and chrome around a knob you cannot turn is noise.
+            // A degraded in-process probe is the exception, because it has
+            // nowhere else to live: the host files its attempts under the
+            // literal key '(embedded)', which is never a member of
+            // serverUrls, so every other degraded marker in the workbench
+            // (Sources rail, Sources detail badge, per-URL status rows) is
+            // keyed to something this mode does not have. Without this the
+            // fault would show on the Discover landing card and vanish the
+            // moment the operator clicked a method — visible for one click,
+            // which is the invisibility #544 exists to remove.
+            var embeddedDegraded = (typeof urlDiscoveryDegraded === 'function')
+                && urlDiscoveryDegraded('(embedded)');
+            if (!embeddedDegraded) return null;
+
+            // Deliberately not a button. The disclosure this would open lives
+            // on the Discover landing card, which is exactly the surface that
+            // is not on screen once a method is selected — a click that
+            // expands something invisible is worse than no click. So the chip
+            // carries the diagnosis itself, in its tooltip.
+            var partials = [];
+            var embAttempts = (typeof discoveryAttempts !== 'undefined')
+                ? discoveryAttempts['(embedded)'] : null;
+            if (Array.isArray(embAttempts)) {
+                for (var pi = 0; pi < embAttempts.length; pi++) {
+                    var at = embAttempts[pi];
+                    if (at && at.outcome === 'partial' && at.message) {
+                        partials.push((at.plugin || at.pluginId || '?') + ': ' + at.message);
+                    }
+                }
+            }
+
+            return el('span', {
+                className: 'bowire-conn-pill is-degraded',
+                title: partials.length
+                    ? 'Discovery returned services, but:\n' + partials.join('\n')
+                    : 'Discovery returned services but a plugin reported a fault.'
+            }, [
+                el('span', { className: 'bowire-conn-dot is-degraded' }),
+                el('span', { textContent: 'Discovery incomplete' })
+            ]);
+        }
 
         // ---- Aggregate state ----
         // Order matters: error wins over connecting wins over connected.

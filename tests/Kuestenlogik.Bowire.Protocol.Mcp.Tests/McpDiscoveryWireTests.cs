@@ -120,12 +120,14 @@ public sealed class McpDiscoveryWireTests
     }
 
     [Fact]
-    public async Task DiscoverAsync_Returns_The_Working_Surfaces_Rather_Than_Throwing_Them_Away()
+    public async Task DiscoverAsync_Throws_Rather_Than_Handing_Back_A_Silently_Truncated_List()
     {
-        // The lossy channel's half of the same case. A caller reaching the
-        // plugin through plain IBowireProtocol has no field for the fault —
-        // but losing it is better than losing a server's whole contribution
-        // to one malformed tool.
+        // The lossy channel's half of the same case, and the one place where
+        // "keep what works" is the WRONG answer. IBowireProtocol has no field
+        // for a fault, so this signature can only truncate silently or throw
+        // — and Bowire's own security scanner calls it directly. A half-list
+        // with no word about the missing half would let the scanner report a
+        // clean result for an attack surface it never examined.
         using var server = new RawJsonRpcMcpServer(method => method switch
         {
             RequestMethods.ServerDiscover => DiscoverJson(tools: true, resources: true),
@@ -135,9 +137,18 @@ public sealed class McpDiscoveryWireTests
         });
 
         var protocol = new BowireMcpProtocol();
-        var services = await protocol.DiscoverAsync(server.Url, showInternalServices: false, Ct);
 
-        Assert.Equal("Resources", Assert.Single(services).Name);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => protocol.DiscoverAsync(server.Url, showInternalServices: false, Ct));
+        Assert.Contains("tools/list", ex.Message, StringComparison.Ordinal);
+
+        // …while the diagnostics channel keeps the working surface. Both
+        // behaviours in one test on purpose: they are a pair, and changing
+        // either alone reintroduces one of the two bugs.
+        var report = await protocol.DiscoverWithDiagnosticsAsync(
+            server.Url, showInternalServices: false, Ct);
+        Assert.Equal("Resources", Assert.Single(report.Services).Name);
+        Assert.Equal(BowireDiscoverySeverity.Fault, report.Diagnostic!.Severity);
     }
 
     [Fact]
