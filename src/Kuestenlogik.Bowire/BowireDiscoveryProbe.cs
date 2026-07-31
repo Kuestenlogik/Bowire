@@ -26,7 +26,11 @@ namespace Kuestenlogik.Bowire;
 /// Static because it is pure: no cache, no ring buffer, no registry of its
 /// own. Every input arrives as a parameter. Should it ever need to
 /// remember something between calls, it has to become an injected service
-/// instead.
+/// instead. <see cref="IBowireDiscoveryDiagnostics"/> (#544) does not
+/// change that: the probe <em>reads</em> a diagnostic off the return value
+/// of the same await it was already making, into a local that dies with
+/// the task. It stores nothing, and it never goes back to a plugin to ask
+/// what happened.
 /// </para>
 /// </summary>
 public static class BowireDiscoveryProbe
@@ -92,10 +96,27 @@ public static class BowireDiscoveryProbe
             var probeStart = Stopwatch.GetTimestamp();
             var outcome = BowireDiscoveryAttempt.OutcomeOk;
             var found = new List<BowireServiceInfo>();
+            // A local, read from the return value of the await below and
+            // dead when this task ends. Two concurrent probes of the same
+            // plugin instance for two URLs cannot see each other's — which
+            // is the whole reason the channel is a return value and not a
+            // "ask the plugin afterwards" lookup (#544).
+            BowireDiscoveryDiagnostic? diagnostic = null;
             string message;
             try
             {
-                found = await protocol.DiscoverAsync(serverUrl, showInternalServices, probeCt);
+                if (protocol is IBowireDiscoveryDiagnostics reporter)
+                {
+                    var report = await reporter.DiscoverWithDiagnosticsAsync(
+                        serverUrl, showInternalServices, probeCt);
+                    found = report.Services;
+                    diagnostic = report.Diagnostic;
+                }
+                else
+                {
+                    found = await protocol.DiscoverAsync(serverUrl, showInternalServices, probeCt);
+                }
+
                 foreach (var svc in found)
                 {
                     svc.Source = protocol.Id;
@@ -119,6 +140,14 @@ public static class BowireDiscoveryProbe
                 {
                     message = $"{found.Count} service{(found.Count == 1 ? "" : "s")}";
                 }
+
+                // A plugin that reported something gets to overwrite both,
+                // because "5 services" is a worse answer than "5 services,
+                // but tools/list returned a payload this MCP revision
+                // rejects". Runs before the telemetry block below so the
+                // `outcome` tag picks `partial` up for free.
+                if (diagnostic is not null)
+                    (outcome, message) = ApplyDiagnostic(diagnostic, found.Count);
             }
             // Plugin DiscoverAsync calls into third-party transports
             // (HTTP, gRPC reflection, MQTT broker connect, ...) and can
@@ -131,6 +160,12 @@ public static class BowireDiscoveryProbe
             catch (Exception ex)
             {
                 found = [];
+                // The exception is the better diagnosis — it says what
+                // actually stopped the probe. Anything the plugin managed
+                // to report before throwing is superseded, so it must not
+                // leave its `details` hanging off an `error` attempt whose
+                // message now comes from somewhere else.
+                diagnostic = null;
                 if (ex is OperationCanceledException)
                 {
                     outcome = BowireDiscoveryAttempt.OutcomeTimeout;
@@ -166,7 +201,10 @@ public static class BowireDiscoveryProbe
             });
 
             return (Services: found, Attempt: new BowireDiscoveryAttempt(
-                protocol.Id, protocol.Name, outcome, found.Count, elapsedMs, message));
+                protocol.Id, protocol.Name, outcome, found.Count, elapsedMs, message)
+            {
+                Details = diagnostic?.Details,
+            });
         }).ToArray();
 
         var probeResults = await Task.WhenAll(probeTasks);
@@ -177,6 +215,44 @@ public static class BowireDiscoveryProbe
         }
 
         return new BowireDiscoveryProbeResult(services, attempts);
+    }
+
+    /// <summary>
+    /// Fold a plugin's <see cref="BowireDiscoveryDiagnostic"/> and the
+    /// number of services it produced into the outcome + message the
+    /// attempt carries (#544). Pure: the probe, not the plugin, owns the
+    /// outcome vocabulary, because only the probe has both halves.
+    /// <list type="bullet">
+    ///   <item>Fault + services → <c>partial</c>. The tree is populated but
+    ///         incomplete, which is neither <c>ok</c> nor <c>error</c>.</item>
+    ///   <item>Fault + nothing → <c>error</c>. Indistinguishable from a
+    ///         throw, so it reports as one.</item>
+    ///   <item>Note → the outcome the service count alone would have
+    ///         produced; only the message improves.</item>
+    /// </list>
+    /// The service count stays in the message on every branch because the
+    /// CLI table and the workbench rows print <c>Message</c>, not
+    /// <c>ServicesFound</c>.
+    /// </summary>
+    private static (string Outcome, string Message) ApplyDiagnostic(
+        BowireDiscoveryDiagnostic diagnostic, int found)
+    {
+        var plural = found == 1 ? "" : "s";
+        return (diagnostic.Severity, found) switch
+        {
+            (BowireDiscoverySeverity.Fault, > 0) => (
+                BowireDiscoveryAttempt.OutcomePartial,
+                $"{found} service{plural}, but {diagnostic.Message}"),
+            (BowireDiscoverySeverity.Fault, _) => (
+                BowireDiscoveryAttempt.OutcomeError,
+                diagnostic.Message),
+            (_, > 0) => (
+                BowireDiscoveryAttempt.OutcomeOk,
+                $"{found} service{plural} — {diagnostic.Message}"),
+            _ => (
+                BowireDiscoveryAttempt.OutcomeEmpty,
+                diagnostic.Message),
+        };
     }
 }
 

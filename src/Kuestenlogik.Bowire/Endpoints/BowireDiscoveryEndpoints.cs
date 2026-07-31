@@ -62,6 +62,17 @@ internal static class BowireDiscoveryEndpoints
             // caller already knows belongs to one of them.
             var (pluginHint, serverUrl) = BowireServerUrl.Parse(rawServerUrl);
 
+            // Opt-in success envelope (#544). A *successful* discovery can
+            // now carry a diagnostic — `partial` means "services came back
+            // AND something faulted" — but the 200 body has always been a
+            // bare BowireServiceInfo[], so there was nowhere to put it and
+            // the outcome was unobservable over HTTP. `?includeAttempts=1`
+            // switches the body to { services, attempts }; without the flag
+            // the array ships exactly as before, so no existing consumer
+            // moves. The probe is stateless, so "fetch the attempts
+            // afterwards" is not an option — it would mean probing twice.
+            var includeAttempts = IsTruthy(ctx.Request.Query["includeAttempts"].FirstOrDefault());
+
             // Transport-variant hints (e.g. `grpcweb@`) map to an existing
             // plugin id plus a side-channel metadata entry. DiscoverAsync
             // takes no metadata bag, so we stitch the side-channel onto the
@@ -122,7 +133,12 @@ internal static class BowireDiscoveryEndpoints
                 && !ProtoUploadStore.HasUploads
                 && string.IsNullOrEmpty(serverUrl))
             {
-                return Results.Json(Array.Empty<BowireServiceInfo>(), BowireEndpointHelpers.JsonOptions);
+                // Nothing was probed, so the envelope's attempts array is
+                // empty — but present, so an opted-in client has one shape
+                // to read on every 200.
+                return includeAttempts
+                    ? Results.Json(new BowireDiscoveryEnvelope([], []), BowireEndpointHelpers.JsonOptions)
+                    : Results.Json(Array.Empty<BowireServiceInfo>(), BowireEndpointHelpers.JsonOptions);
             }
 
             // Collect proto-sourced services (code-configured + uploaded). Code-configured
@@ -163,14 +179,23 @@ internal static class BowireDiscoveryEndpoints
             foreach (var svc in protoServices)
                 svc.OriginUrl ??= serverUrl;
 
+            // One payload variable, three sources — so the success shape
+            // (bare array vs. { services, attempts }) is decided in exactly
+            // one place instead of three.
+            List<BowireServiceInfo>? payload = null;
             if (protoServices.Count > 0 && probe.Services.Count > 0)
-                return Results.Json(BowireEndpointHelpers.MergeServices(protoServices, probe.Services), BowireEndpointHelpers.JsonOptions);
+                payload = BowireEndpointHelpers.MergeServices(protoServices, probe.Services);
+            else if (protoServices.Count > 0)
+                payload = protoServices;
+            else if (probe.Services.Count > 0)
+                payload = probe.Services;
 
-            if (protoServices.Count > 0)
-                return Results.Json(protoServices, BowireEndpointHelpers.JsonOptions);
-
-            if (probe.Services.Count > 0)
-                return Results.Json(probe.Services, BowireEndpointHelpers.JsonOptions);
+            if (payload is not null)
+            {
+                return includeAttempts
+                    ? Results.Json(new BowireDiscoveryEnvelope(payload, probe.Attempts), BowireEndpointHelpers.JsonOptions)
+                    : Results.Json(payload, BowireEndpointHelpers.JsonOptions);
+            }
 
             // No services from any source — surface as ProblemDetails so
             // the frontend can render the per-plugin failure list as
@@ -258,4 +283,30 @@ internal static class BowireDiscoveryEndpoints
 
         return endpoints;
     }
+
+    /// <summary>
+    /// Query-flag parsing for <c>?includeAttempts=…</c>. Present-but-empty
+    /// counts as on (<c>?includeAttempts</c>), <c>0</c> / <c>false</c> as
+    /// off — so a caller can pin the legacy shape explicitly rather than by
+    /// omission.
+    /// </summary>
+    private static bool IsTruthy(string? value)
+    {
+        if (value is null) return false;
+        if (value.Length == 0) return true;
+        return !string.Equals(value, "0", StringComparison.Ordinal)
+            && !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
+    }
 }
+
+/// <summary>
+/// The opt-in <c>/api/services</c> success body (#544): the same service
+/// list the bare-array shape returns, plus the per-plugin
+/// <see cref="BowireDiscoveryAttempt"/> list that until now only existed on
+/// the 502 problem+json. Without it a <c>partial</c> outcome — which by
+/// definition implies services came back, i.e. a 200 — could never reach a
+/// browser.
+/// </summary>
+internal sealed record BowireDiscoveryEnvelope(
+    List<BowireServiceInfo> Services,
+    List<BowireDiscoveryAttempt> Attempts);

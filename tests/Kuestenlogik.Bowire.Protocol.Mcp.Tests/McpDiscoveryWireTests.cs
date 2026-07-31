@@ -86,13 +86,14 @@ public sealed class McpDiscoveryWireTests
     }
 
     [Fact]
-    public async Task DiscoverAsync_Reports_A_Tool_Missing_InputSchema_Instead_Of_Silently_Dropping_Tools()
+    public async Task DiscoverWithDiagnosticsAsync_Keeps_The_Working_Surfaces_And_Reports_The_Broken_One()
     {
         // SDK 2.0 made Tool.inputSchema required at deserialization time, so
-        // ONE malformed tool now throws for the whole tools/list page. Under
-        // the old blanket `catch { return; }` that rendered as a tree with no
-        // Tools node — indistinguishable from a server that simply has no
-        // tools. It must reach the operator instead.
+        // ONE malformed tool now throws for the whole tools/list page. The
+        // 2.0 port made that fault visible by throwing — which suppressed
+        // this server's perfectly good resources as well, because
+        // DiscoverAsync has no channel for "results AND a fault" (#544).
+        // The diagnostics seam does.
         using var server = new RawJsonRpcMcpServer(method => method switch
         {
             RequestMethods.ServerDiscover => DiscoverJson(tools: true, resources: true),
@@ -103,23 +104,79 @@ public sealed class McpDiscoveryWireTests
         });
 
         var protocol = new BowireMcpProtocol();
+        var report = await protocol.DiscoverWithDiagnosticsAsync(
+            server.Url, showInternalServices: false, Ct);
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => protocol.DiscoverAsync(server.Url, showInternalServices: false, Ct));
+        // The resources are back in the tree — that is the fix.
+        Assert.Equal("Resources", Assert.Single(report.Services).Name);
 
-        Assert.Contains("tools/list", ex.Message, StringComparison.Ordinal);
-        // The surfaces that DID answer are named, so an operator does not also
-        // have to wonder where the resources went.
-        Assert.Contains("Resources", ex.Message, StringComparison.Ordinal);
+        var diagnostic = report.Diagnostic;
+        Assert.NotNull(diagnostic);
+        Assert.Equal(BowireDiscoverySeverity.Fault, diagnostic.Severity);
+        Assert.Contains("tools/list", diagnostic.Message, StringComparison.Ordinal);
+        // One `details` line per faulted surface, so the workbench can render
+        // the breakdown rather than one joined blob.
+        Assert.Contains("tools/list", Assert.Single(diagnostic.Details!), StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Probe_Records_A_Malformed_Tools_Payload_As_An_Error_Attempt()
+    public async Task DiscoverAsync_Returns_The_Working_Surfaces_Rather_Than_Throwing_Them_Away()
     {
-        // The end of the same wire: BowireDiscoveryProbe (#534) is what turns
-        // a plugin throw into the per-plugin attempt the UI, the CLI and the
-        // bowire.discover MCP tool all render. `error` with a message beats
-        // `empty` with none, which is what this used to be.
+        // The lossy channel's half of the same case. A caller reaching the
+        // plugin through plain IBowireProtocol has no field for the fault —
+        // but losing it is better than losing a server's whole contribution
+        // to one malformed tool.
+        using var server = new RawJsonRpcMcpServer(method => method switch
+        {
+            RequestMethods.ServerDiscover => DiscoverJson(tools: true, resources: true),
+            RequestMethods.ToolsList => """{"tools":[{"name":"bad","description":"no inputSchema"}]}""",
+            RequestMethods.ResourcesList => """{"resources":[{"uri":"mem://reading","name":"reading"}]}""",
+            _ => null,
+        });
+
+        var protocol = new BowireMcpProtocol();
+        var services = await protocol.DiscoverAsync(server.Url, showInternalServices: false, Ct);
+
+        Assert.Equal("Resources", Assert.Single(services).Name);
+    }
+
+    [Fact]
+    public async Task Probe_Records_A_Half_Broken_Server_As_A_Partial_Attempt()
+    {
+        // The end of the wire, and the shape #544 exists to produce:
+        // services intact, fault named, and an outcome a dashboard can tell
+        // apart from a clean `ok`.
+        using var server = new RawJsonRpcMcpServer(method => method switch
+        {
+            RequestMethods.ServerDiscover => DiscoverJson(tools: true, resources: true),
+            RequestMethods.ToolsList => """{"tools":[{"name":"bad","description":"no inputSchema"}]}""",
+            RequestMethods.ResourcesList => """{"resources":[{"uri":"mem://reading","name":"reading"}]}""",
+            _ => null,
+        });
+
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new BowireMcpProtocol());
+
+        var result = await BowireDiscoveryProbe.RunAsync(
+            registry, server.Url, pluginHint: "mcp", showInternalServices: false,
+            perProbeCeiling: TimeSpan.FromSeconds(30), logger: null, ct: Ct);
+
+        var attempt = Assert.Single(result.Attempts);
+        Assert.Equal(BowireDiscoveryAttempt.OutcomePartial, attempt.Outcome);
+        Assert.Equal(1, attempt.ServicesFound);
+        Assert.Contains("tools/list", attempt.Message, StringComparison.Ordinal);
+        Assert.NotNull(attempt.Details);
+        // The services survive the round trip through the probe. Before
+        // #544 this list was empty because the plugin threw.
+        Assert.Equal("Resources", Assert.Single(result.Services).Name);
+    }
+
+    [Fact]
+    public async Task Probe_Still_Records_Error_When_Nothing_Answered_At_All()
+    {
+        // A fault with no partial result left to protect is
+        // indistinguishable from a throw, so it stays `error` — #534's
+        // behaviour is untouched for the all-surfaces-failed case.
         using var server = new RawJsonRpcMcpServer(method => method switch
         {
             RequestMethods.ServerDiscover => DiscoverJson(tools: true),
@@ -137,6 +194,13 @@ public sealed class McpDiscoveryWireTests
         var attempt = Assert.Single(result.Attempts);
         Assert.Equal(BowireDiscoveryAttempt.OutcomeError, attempt.Outcome);
         Assert.Contains("tools/list", attempt.Message, StringComparison.Ordinal);
+
+        // …and the lossy channel still throws there, because an empty list
+        // would be indistinguishable from "this server has nothing".
+        var protocol = new BowireMcpProtocol();
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => protocol.DiscoverAsync(server.Url, showInternalServices: false, Ct));
+        Assert.Contains("tools/list", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -47,7 +47,7 @@ namespace Kuestenlogik.Bowire.Protocol.Mcp;
 /// are synthesised from Bowire's <c>BowireProtocolRegistry</c>.
 /// </para>
 /// </remarks>
-public sealed class BowireMcpProtocol : IBowireProtocol
+public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnostics
 {
     private static readonly JsonSerializerOptions s_indented = new() { WriteIndented = true };
 
@@ -79,11 +79,42 @@ public sealed class BowireMcpProtocol : IBowireProtocol
     // Model Context Protocol — official three-stroke mark (modelcontextprotocol.io).
     public string IconSvg => """<svg viewBox="0 0 180 180" fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round" width="16" height="16" aria-hidden="true"><path d="M18 84.8528L85.8822 16.9706C95.2548 7.59798 110.451 7.59798 119.823 16.9706C129.196 26.3431 129.196 41.5391 119.823 50.9117L68.5581 102.177"/><path d="M69.2652 101.47L119.823 50.9117C129.196 41.5391 144.392 41.5391 153.765 50.9117L154.118 51.2652C163.491 60.6378 163.491 75.8338 154.118 85.2063L92.7248 146.6C89.6006 149.724 89.6006 154.789 92.7248 157.913L105.331 170.52"/><path d="M102.853 33.9411L52.6482 84.1457C43.2756 93.5183 43.2756 108.714 52.6482 118.087C62.0208 127.459 77.2167 127.459 86.5893 118.087L136.794 67.8822"/></svg>""";
 
+    /// <summary>
+    /// The lossy channel. Everything happens in
+    /// <see cref="DiscoverWithDiagnosticsAsync"/>; this only has to decide
+    /// what to do with a fault when the caller has no field to put it in.
+    /// </summary>
+    /// <remarks>
+    /// A partial probe returns its services and drops the diagnostic —
+    /// losing a fault is better than losing a server's working resources
+    /// and prompts because one of its tools is malformed. Only when
+    /// <em>nothing</em> answered is the throw the more honest answer: an
+    /// empty list would be indistinguishable from "this server has nothing"
+    /// (#534), and there is no partial result left to protect.
+    /// Callers that want both go through
+    /// <see cref="IBowireDiscoveryDiagnostics"/> —
+    /// <see cref="BowireDiscoveryProbe"/> does.
+    /// </remarks>
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
     {
+        var report = await DiscoverWithDiagnosticsAsync(serverUrl, showInternalServices, ct)
+            .ConfigureAwait(false);
+
+        if (report.Services.Count == 0
+            && report.Diagnostic is { Severity: BowireDiscoverySeverity.Fault } fault)
+        {
+            throw new InvalidOperationException(fault.Message);
+        }
+
+        return report.Services;
+    }
+
+    public async Task<BowireDiscoveryReport> DiscoverWithDiagnosticsAsync(
+        string serverUrl, bool showInternalServices, CancellationToken ct = default)
+    {
         if (string.IsNullOrWhiteSpace(serverUrl))
-            return [];
+            return new BowireDiscoveryReport([], null);
 
         McpClient client;
         try
@@ -105,8 +136,10 @@ public sealed class BowireMcpProtocol : IBowireProtocol
             // `empty` — "the URL simply is not this plugin's" — is the
             // honest outcome here. Failures *after* a successful
             // handshake are the opposite case and do get reported below.
+            // No diagnostic either, for the same reason: even a Note here
+            // would put an MCP line on every row of the diagnostics table.
             // CreateClientAsync already disposed the transport it built.
-            return [];
+            return new BowireDiscoveryReport([], null);
         }
 
         await using (client)
@@ -123,29 +156,24 @@ public sealed class BowireMcpProtocol : IBowireProtocol
             await AddResourcesAsync(client, services, serverUrl, failures, ct).ConfigureAwait(false);
             await AddPromptsAsync(client, services, serverUrl, failures, ct).ConfigureAwait(false);
 
-            if (failures.Count > 0)
-                throw new InvalidOperationException(DescribeFailures(failures, services));
+            if (failures.Count == 0)
+                return new BowireDiscoveryReport(services, null);
 
-            return services;
+            // The surfaces that DID answer stay in `services`. Before #544
+            // this threw, which suppressed them — the message even had to
+            // apologise for it ("Resources, Prompts answered, but discovery
+            // reports the whole probe as failed"), because there was no way
+            // to hand back both. There is now: the probe pairs these
+            // services with this Fault and records `partial`, so a server
+            // with one malformed tool keeps contributing everything else.
+            return new BowireDiscoveryReport(
+                services,
+                new BowireDiscoveryDiagnostic(
+                    BowireDiscoverySeverity.Fault, string.Join("; ", failures))
+                {
+                    Details = failures,
+                });
         }
-    }
-
-    /// <summary>
-    /// Compose the one-liner <see cref="BowireDiscoveryAttempt.Message"/>
-    /// carries for an <c>error</c> outcome. Names the surfaces that did
-    /// answer, because a discovery error suppresses the whole plugin's
-    /// contribution and an operator who sees "tools/list failed" should
-    /// not also have to wonder where their resources went.
-    /// </summary>
-    private static string DescribeFailures(List<string> failures, List<BowireServiceInfo> found)
-    {
-        var message = string.Join("; ", failures);
-        if (found.Count > 0)
-        {
-            message += $" ({string.Join(", ", found.Select(s => s.Name))} answered, "
-                + "but discovery reports the whole probe as failed)";
-        }
-        return message;
     }
 
     /// <summary>

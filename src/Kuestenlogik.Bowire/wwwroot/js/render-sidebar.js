@@ -1884,6 +1884,22 @@
                 }),
                 el('span', { className: 'bowire-env-list-item-name', textContent: displayName }),
                 el('span', { style: 'flex:1' }),
+                // Degraded marker (#544): a plugin returned services AND
+                // faulted, so this source's tree is populated but
+                // incomplete — the status dot above says 'connected',
+                // because the connection genuinely is. This is a STATE
+                // MARKER, not an action: it gets a reserved-width slot
+                // that goes `visibility: hidden` when clean, never the
+                // hover-reveal the delete button uses. Re-hiding the fault
+                // behind a hover is the bug, not the fix. No handler, so
+                // there is no render-time closure for morphdom to preserve
+                // against a re-sorted list.
+                el('span', {
+                    className: 'bowire-sources-list-item-degraded'
+                        + ((typeof urlDiscoveryDegraded === 'function' && urlDiscoveryDegraded(u))
+                            ? ' is-degraded' : ''),
+                    title: 'Discovery is incomplete — open this source for the per-plugin diagnostics'
+                }),
                 el('span', { className: 'bowire-env-list-item-meta', textContent: svcN + ' svc' + (svcN === 1 ? '' : 's') }),
                 !config.lockServerUrl ? el('button', {
                     type: 'button',

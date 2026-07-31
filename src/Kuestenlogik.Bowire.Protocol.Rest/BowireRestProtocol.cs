@@ -15,7 +15,8 @@ namespace Kuestenlogik.Bowire.Protocol.Rest;
 /// them via <see cref="RestInvoker"/>. Auto-discovered by
 /// <see cref="BowireProtocolRegistry"/>.
 /// </summary>
-public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, IDisposable
+public sealed class BowireRestProtocol
+    : IBowireProtocol, IInlineHttpInvoker, IBowireDiscoveryDiagnostics, IDisposable
 {
     // One HttpClient for the lifetime of the plugin — fine for a dev tool.
     // 30s timeout matches the OAuth proxy timeout used elsewhere in Bowire.
@@ -75,6 +76,28 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
+        => (await DiscoverWithDiagnosticsAsync(serverUrl, showInternalServices, ct)
+            .ConfigureAwait(false)).Services;
+
+    /// <summary>
+    /// Discovery plus the sweep's own account of itself (#544). Everything
+    /// this reports is what <see cref="RestProbeLog"/> already recorded —
+    /// the difference is that core cannot read a plugin-local static ring
+    /// buffer, so "no OpenAPI document found at http://localhost:5181"
+    /// rendered in the diagnostics table as the generic "returned no
+    /// services".
+    /// </summary>
+    /// <remarks>
+    /// The <c>details</c> lines are accumulated into a list allocated by
+    /// this call and threaded down as a parameter — never into a field.
+    /// That duplicates a handful of <see cref="RestProbeLog"/> writes on
+    /// purpose, and the duplication must stay: core must not read the
+    /// static (a process-global buffer keyed by nothing can hand URL A's
+    /// entry to URL B's probe, which is the exact bug this seam removes),
+    /// and the ring buffer keeps serving its own tests and UI.
+    /// </remarks>
+    public async Task<BowireDiscoveryReport> DiscoverWithDiagnosticsAsync(
+        string serverUrl, bool showInternalServices, CancellationToken ct = default)
     {
         // Uploaded OpenAPI documents (via /api/openapi/upload) take precedence
         // when present so users can override or augment runtime discovery with
@@ -91,13 +114,14 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
         }
 
         // URL discovery — only fires when a serverUrl is supplied (standalone).
-        var urlServices = !string.IsNullOrEmpty(serverUrl)
-            ? await DiscoverInternalAsync(serverUrl, ct).ConfigureAwait(false)
-            : [];
+        List<BowireServiceInfo> urlServices = [];
+        BowireDiscoveryDiagnostic? diagnostic = null;
+        if (!string.IsNullOrEmpty(serverUrl))
+            (urlServices, diagnostic) = await DiscoverInternalAsync(serverUrl, ct).ConfigureAwait(false);
 
         // Merge in priority order: uploads > embedded > URL.
         if (uploadedServices.Count == 0 && embeddedServices.Count == 0)
-            return urlServices;
+            return new BowireDiscoveryReport(urlServices, diagnostic);
 
         var merged = new List<BowireServiceInfo>(uploadedServices);
         merged.AddRange(embeddedServices);
@@ -108,7 +132,16 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
         {
             if (taken.Add(svc.Name)) merged.Add(svc);
         }
-        return merged;
+
+        // The diagnostic is about the URL leg. Keep it when that leg is what
+        // the operator is looking at (it contributed) or when nothing was
+        // found at all (it is the explanation). Dropped otherwise: "3
+        // services — no OpenAPI document found at …" is a contradiction to
+        // anyone reading the row, and the uploads that produced those three
+        // services never went near the sweep.
+        return new BowireDiscoveryReport(
+            merged,
+            urlServices.Count > 0 || merged.Count == 0 ? diagnostic : null);
     }
 
     private async Task<List<BowireServiceInfo>> DiscoverFromUploadsAsync(CancellationToken ct)
@@ -171,11 +204,22 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
         return index;
     }
 
-    private async Task<List<BowireServiceInfo>> DiscoverInternalAsync(string docUrl, CancellationToken ct)
+    private async Task<(List<BowireServiceInfo> Services, BowireDiscoveryDiagnostic? Diagnostic)>
+        DiscoverInternalAsync(string docUrl, CancellationToken ct)
     {
-        if (string.IsNullOrEmpty(docUrl)) return [];
+        if (string.IsNullOrEmpty(docUrl)) return ([], null);
         var adapter = BowireOpenApiAdapterRegistry.TryGet();
-        if (adapter is null) return [];
+        if (adapter is null)
+        {
+            // The single worst diagnosis Bowire could give: a missing
+            // OPTIONAL PACKAGE rendered as "returned no services", which
+            // reads as "your URL is not a REST API". Say what is actually
+            // missing and how to install it.
+            return ([], new BowireDiscoveryDiagnostic(
+                BowireDiscoverySeverity.Note,
+                "no OpenAPI parser installed — run `bowire plugin install "
+                + "Kuestenlogik.Bowire.Protocol.Rest.OpenApi3`"));
+        }
 
         // Fast path: the operator already supplied a well-known path on a
         // previous call against this origin — fetch from the resolved URL
@@ -184,7 +228,7 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
             && _probeResolved.TryGetValue(fastOrigin, out var cachedUrl)
             && !string.Equals(cachedUrl, docUrl, StringComparison.Ordinal))
         {
-            var fromCache = await TryDiscoverAtAsync(adapter, cachedUrl, ct).ConfigureAwait(false);
+            var fromCache = await TryDiscoverAtAsync(adapter, cachedUrl, details: null, ct).ConfigureAwait(false);
             // CommitDiscovery uses cachedUrl as the cache key + base for
             // apiBaseUrl resolution, but the SERVICES' OriginUrl must
             // carry the operator-supplied docUrl so the workbench groups
@@ -200,7 +244,7 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
                 var result = CommitDiscovery(cachedUrl, fromCache);
                 RetagOriginUrl(result, docUrl);
                 AliasSchemaCache(cachedUrl, docUrl);
-                return result;
+                return (result, ResolvedVia(cachedUrl));
             }
             // Cached URL stopped responding — fall through to the regular path.
             _probeResolved.TryRemove(fastOrigin, out _);
@@ -218,8 +262,12 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
 
             if (!LooksLikeSpecUrl(docUrl) && TryGetOrigin(docUrl, out var origin))
             {
+                // Per-call accumulator: one line per swept path, allocated
+                // here and handed down. Never a field — see the remarks on
+                // DiscoverWithDiagnosticsAsync.
+                var details = new List<string>();
                 var (probedUrl, probedResult) = await ProbeWellKnownPathsAsync(
-                    adapter, origin, ct).ConfigureAwait(false);
+                    adapter, origin, details, ct).ConfigureAwait(false);
                 if (probedResult is not null)
                 {
                     _probeResolved[origin] = probedUrl;
@@ -228,18 +276,41 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
                     var probed = CommitDiscovery(probedUrl, probedResult);
                     RetagOriginUrl(probed, docUrl);
                     AliasSchemaCache(probedUrl, docUrl);
-                    return probed;
+                    return (probed, ResolvedVia(probedUrl));
                 }
 
                 RestProbeLog.Debug($"no OpenAPI document found at {origin}");
+
+                // Let other protocol plugins try this URL — but say why REST
+                // bowed out. This is the #544 REST half: the diagnostics row
+                // stops reading "returned no services" and starts naming the
+                // origin the sweep exhausted, with every path it tried
+                // behind it.
+                return ([], new BowireDiscoveryDiagnostic(
+                    BowireDiscoverySeverity.Note,
+                    $"no OpenAPI document found at {origin}")
+                {
+                    Details = details.Count > 0 ? details : null,
+                });
             }
 
             // Let other protocol plugins try this URL.
-            return [];
+            return ([], null);
         }
 
-        return CommitDiscovery(docUrl, discovered);
+        return (CommitDiscovery(docUrl, discovered), null);
     }
+
+    /// <summary>
+    /// The "we found it somewhere else" note. Answers the standing operator
+    /// question about why <c>http://localhost:5181</c> yields services that
+    /// live at <c>/openapi/v1.json</c> — see the feedback quoted in
+    /// <see cref="RetagOriginUrl"/>. Same line
+    /// <see cref="RestProbeLog"/> records at Info level, on a channel core
+    /// can actually read.
+    /// </summary>
+    private static BowireDiscoveryDiagnostic ResolvedVia(string probedUrl)
+        => new(BowireDiscoverySeverity.Note, $"resolved via well-known path {probedUrl}");
 
     /// <summary>
     /// Overwrite the <see cref="BowireServiceInfo.OriginUrl"/> on every
@@ -315,14 +386,20 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
     /// short timeout so the sweep can't stall discovery on an unreachable
     /// host. Defensive — a 5xx or DNS failure on one probe doesn't kill the
     /// loop; that path just gets logged at debug-level.
+    /// <para>
+    /// <c>details</c> is a per-call accumulator for the sweep's own account
+    /// of itself — one line per path that did not answer, which is what
+    /// reaches core as the attempt's <c>details</c> array (#544). Null when
+    /// the caller has nothing to report it through.
+    /// </para>
     /// </summary>
     private async Task<(string ProbeUrl, BowireOpenApiDiscoveryResult? Result)> ProbeWellKnownPathsAsync(
-        IBowireOpenApiAdapter adapter, string origin, CancellationToken ct)
+        IBowireOpenApiAdapter adapter, string origin, List<string>? details, CancellationToken ct)
     {
         foreach (var path in WellKnownOpenApiPaths)
         {
             var probeUrl = origin + path;
-            var result = await TryDiscoverAtAsync(adapter, probeUrl, ct).ConfigureAwait(false);
+            var result = await TryDiscoverAtAsync(adapter, probeUrl, details, ct).ConfigureAwait(false);
             if (result is not null) return (probeUrl, result);
         }
         return (string.Empty, null);
@@ -334,7 +411,7 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
     /// (timeout, DNS failure, 500…) can't take down the rest of the sweep.
     /// </summary>
     private async Task<BowireOpenApiDiscoveryResult?> TryDiscoverAtAsync(
-        IBowireOpenApiAdapter adapter, string probeUrl, CancellationToken ct)
+        IBowireOpenApiAdapter adapter, string probeUrl, List<string>? details, CancellationToken ct)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(ProbeTimeout);
@@ -344,8 +421,11 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            // Per-probe timeout fired — try the next candidate.
+            // Per-probe timeout fired — try the next candidate. Recorded
+            // twice on purpose: the ring buffer keeps its own consumers,
+            // the accumulator is what reaches core (#544).
             RestProbeLog.Debug($"probe timeout: {probeUrl}");
+            details?.Add($"probe timeout: {probeUrl}");
             return null;
         }
         catch (Exception ex)
@@ -354,6 +434,7 @@ public sealed class BowireRestProtocol : IBowireProtocol, IInlineHttpInvoker, ID
             // 5xx that the adapter surfaces as a throw, JSON / YAML parse
             // crash — record at debug level so the sweep keeps going.
             RestProbeLog.Debug($"probe failed: {probeUrl} ({ex.GetType().Name})");
+            details?.Add($"probe failed: {probeUrl} ({ex.GetType().Name})");
             return null;
         }
     }

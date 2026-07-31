@@ -91,7 +91,7 @@ public sealed class BowireMcpTools
     }
 
     [McpServerTool(Name = "bowire.discover")]
-    [Description("Run discovery against a server URL and return the discovered services and methods. Optional `protocol` filters to one plugin (grpc, rest, graphql, signalr, mqtt, ws, sse, mcp, odata, socketio); without it every registered protocol that handles the URL gets a turn. The `attempts` array reports what each plugin did — outcome is ok / empty / error / timeout — so an empty `services` list always comes with an explanation instead of leaving you to guess.")]
+    [Description("Run discovery against a server URL and return the discovered services and methods. Optional `protocol` filters to one plugin (grpc, rest, graphql, signalr, mqtt, ws, sse, mcp, odata, socketio); without it every registered protocol that handles the URL gets a turn. The `attempts` array reports what each plugin did — outcome is ok / empty / partial / error / timeout — so an empty `services` list always comes with an explanation instead of leaving you to guess. `partial` means that plugin returned services AND hit a fault while producing them, so its contribution is incomplete; the optional `details` array breaks the message down step by step.")]
     public async Task<string> Discover(
         [Description("Server URL to discover (must be on the allowlist unless arbitrary URLs are allowed).")] string url,
         [Description("Optional protocol id (grpc, rest, graphql, signalr, mqtt, ws, sse, mcp, odata, socketio).")] string? protocol = null,

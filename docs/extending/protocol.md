@@ -109,6 +109,31 @@ The full file is ~1500 lines because REST has to handle uploaded specs + embedde
 
 The optional secondary interfaces (`IInlineHttpInvoker` here, `IInlineSseSubscriber`, `IInlineWebSocketChannel`) are how other plugins reach across the registry without taking a compile-time reference. If your protocol exposes a primitive other plugins might want to reuse (an HTTP invoker, a WS channel), declaring an inline-interface implementation lets them ask `BowireProtocolRegistry.FindHttpInvoker()` for it.
 
+### Reporting a fault without losing the results
+
+`DiscoverAsync` is all-or-nothing: you return a list or you throw. If your probe can half-succeed — a server whose tools are malformed but whose resources are fine, a sweep that found nothing but knows exactly what it tried — implement `IBowireDiscoveryDiagnostics` next to `IBowireProtocol` and return both:
+
+```csharp
+public async Task<BowireDiscoveryReport> DiscoverWithDiagnosticsAsync(
+    string serverUrl, bool showInternalServices, CancellationToken ct = default)
+{
+    var services = new List<BowireServiceInfo>();
+    var failures = new List<string>();   // a local, allocated by THIS call
+    // ...probe, appending to both...
+
+    return failures.Count == 0
+        ? new BowireDiscoveryReport(services, null)
+        : new BowireDiscoveryReport(services, new BowireDiscoveryDiagnostic(
+            BowireDiscoverySeverity.Fault, string.Join("; ", failures)) { Details = failures });
+}
+```
+
+`BowireDiscoveryProbe` picks it up automatically — it does `protocol is IBowireDiscoveryDiagnostics` on the instance it was going to call anyway — and pairs your `Severity` with the number of services you returned to choose the wire outcome: `Fault` plus services becomes `partial`, `Fault` with nothing becomes `error`, `Note` only improves the message on the `ok` / `empty` the count alone would have produced. You do not pick the outcome; only the probe has both halves.
+
+**Build the diagnostic from locals of the call that produced it.** The channel is a return value on purpose: it is bound to its invocation by the call stack, so two concurrent probes of two URLs through the same plugin instance cannot read each other's diagnosis. A plugin that instead stashes the diagnostic in an instance field, a static ring buffer or an `AsyncLocal` and lets core come back for it re-creates precisely the cross-call bleed this seam exists to remove.
+
+Throwing still works and is still the stronger signal — an exception is classified `error` (or `timeout`) with its own message. A diagnostic is for the case where you have something to return.
+
 ## Registration
 
 Auto-discovery is the only path. `BowireProtocolRegistry.Discover` (in `src/Kuestenlogik.Bowire/BowireProtocolRegistry.cs`) does the work:
