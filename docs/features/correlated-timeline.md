@@ -57,12 +57,13 @@ The chosen key is shown as a chip at the top of the tab. Click it to
 pick a different one from the ranked candidate list, or to go back to
 **Auto — best guess**.
 
-## Strong, weak, and unmatched
+## Strong, weak, derived, and unmatched
 
 | Tier | Rendered as | Rule |
 |---|---|---|
 | **strong** | Solid accent bar | Some leaf's normalised name *ends with* the key's normalised name **and** carries the key's value. `shipId` therefore matches `onShipId` and `OccupiedByShipId`. |
 | **weak** | Dashed outline | The value turned up on some *other* id-shaped leaf. |
+| **derived** | Dotted outline with an inner ring | The key is absent, but this step shares a distinctive id-shaped value with a step the key *did* match — see [Joining a renamed identifier](#joining-a-renamed-identifier). |
 | **unmatched** | Faded bar | The key does not appear in this step at all. |
 
 The weak tier exists because low-cardinality ids collide. In the harbor
@@ -78,7 +79,75 @@ not.
 Streaming steps also get one tick per received frame, verdicted the same
 way and placed at *step offset + frame timestamp*. Click any bar or tick
 to pin a detail strip with the step's offset, duration, status and
-match; click it again to unpin.
+match; click it again to unpin. On a derived step only the frames that
+carry the bridge value light up, so a lit bar never sits over dead ticks.
+
+## Joining a renamed identifier
+
+A business transaction that changes its identifier as it crosses services
+lights only the lanes that speak the chosen key. On the harbor recording,
+keyed on `shipId = 101`, the GraphQL lane stays dark — not for want of a
+correlation key, but because it calls the same transaction
+`portCall.id = 1`.
+
+So a step the key left unmatched gets one more chance: it is joined to
+the transaction when it shares a value with a step the key *did* match.
+GraphQL and REST share the container manifest, and that is enough.
+
+```mermaid
+flowchart LR
+    K["key<br/>shipId = 101"] -->|edge 1| R["rest<br/>Containers / ListContainers<br/>onShipId = 101<br/>id = MSCU1234567"]
+    R -->|"edge 2 — bridge<br/>id = MSCU1234567"| G["graphql<br/>Query / portCall<br/>portCall.id = 1<br/>containers.id = MSCU1234567"]
+    G -.->|"no edge 3"| X["any further step"]
+```
+
+**Which shared values count as evidence** is the whole problem, and the
+rule is deliberately strict. A value may bridge two steps only when all
+of these hold:
+
+1. **Id-shaped on both ends.** The value sits on a leaf whose normalised
+   name ends in `id` on the unmatched step *and* on the matched one. The
+   bare name `id` is allowed here, unlike in candidate suggestion: the
+   seed edge has already fixed *which* transaction is being read, so this
+   hop only asks whether the step touches something that transaction
+   touched.
+2. **Distinctive on its own — at least six characters.** `1`, `42`,
+   `true` and `OK` are not evidence: there are too few of them for a
+   collision to be surprising.
+3. **One family of field names.** Every field name carrying the value
+   anywhere in the recording must share a common id-shaped suffix.
+   `{id, onShipId, occupiedByShipId}` is one entity under three
+   spellings; `{number, id, seq, portCallId, craneId}` is the number 1
+   doing five unrelated jobs.
+4. **Two edges, and no more.** Only a step the key matched *directly* may
+   act as a bridge source. A step reached through a bridge never bridges
+   onward. An unbounded walk over an id-rich recording relates everything
+   to everything, which is worse than no join at all.
+
+The bar is higher for a bridge than for the seed key on purpose. A seed
+is corroborated by two steps agreeing on the field *name*; a bridge gets
+no such corroboration, so the value has to carry its own weight. A short
+id can still be promoted to the seed by hand from the key picker.
+
+When several values would serve equally well — the harbor recording
+shares three container ids between REST and GraphQL — the winner is the
+one whose field names agree most closely, then the longest, then the
+first in scan order, and the model reports how many runners-up there
+were so the UI does not present one arbitrary container as special.
+
+**Every derived lane names the value that linked it.** An unexplained
+match is worse than no match, because an operator cannot tell a real
+correlation from a coincidence. The tab renders an always-visible strip
+under the lanes, one row per derived step, and the pinned inspect strip
+gains a `linked via` field.
+
+A lane that stays dark **because** its only shared value was turned down
+says so as a note, naming the value it was offered. On the harbor
+recording that is `mqtt (craneId = 1)`.
+
+Derived edges are computed on read. Nothing about them is persisted: the
+recording's `correlation` field still holds exactly one seed key, and the
+format version does not move.
 
 ## Timebase
 
@@ -100,19 +169,22 @@ spacing.
 ## What it looks like on the harbor sample
 
 The flagship `port-call-1` recording resolves `shipId = 101` and reports
-**6 of 8 steps across 6 protocols**:
+**7 of 8 steps across 7 protocols**:
 
 | Protocol | Verdict | Why |
 |---|---|---|
 | `odata`, `rest`, `websocket`, `signalr`, `sse` | strong | Carry `OccupiedByShipId` / `onShipId` / `ShipId` / `shipId` = 101 |
 | `grpc` | weak | Carries `"id": 101` — right value, generic name |
-| `graphql` | unmatched | The id lives inside a query *string*, not as a JSON leaf |
-| `mqtt` | unmatched | Crane telemetry only knows `craneId` |
+| `graphql` | derived | Calls the same transaction `portCall.id = 1`, and shares `id = MSCU1234567` with the REST step |
+| `mqtt` | unmatched | Crane telemetry shares only the number `1`, on `craneId` |
 
-That is the honest number, and it is what the tab shows. Correlating the
-last two needs multi-key joins (`shipId → portCallId → craneId`), which
-is deliberately out of scope for this stage — see
-[Not yet](#not-yet).
+That is the honest number, and it is what the tab shows. The eighth lane
+is not a ranking failure: the crane telemetry carries no business
+linkage at all beyond `craneId = 1`, and that same `1` is also a dock
+`Number`, an SSE `Seq` and the `portCallId`. Accepting it would fuse four
+unrelated entities — exactly the coincidence the bridge rule exists to
+reject. Lighting it honestly needs the *sample* to say which container
+the crane is lifting, not a looser rule.
 
 ## Persisting the key
 
@@ -154,10 +226,27 @@ Exit codes are the same sysexits set `bowire recording validate` uses:
 `0` ok, `64` bad args, `65` malformed file, `66` file not found, `70`
 I/O error.
 
-Default output is a table — offset, protocol, service / method,
-duration, status, match — followed by the runner-up candidate keys and
-any notes. No ASCII bar art: a terminal table is the honest CLI form of
-this view.
+Default output is a table — offset, protocol, service / method, duration
+(with the frame count for streaming steps), status, match and **via** —
+followed by the derived links, the runner-up candidate keys and any
+notes. No ASCII bar art: a terminal table is the honest CLI form of this
+view.
+
+`MATCH` and `VIA` together tell all four states apart without a fifth
+column: a directly matched step names its tier and shows `–` for `VIA`, a
+joined step reads `derived` plus the value that joined it, and an
+unjoined step is `–` in both.
+
+```text
+    OFFSET  PROTOCOL    SERVICE / METHOD                           DUR  STATUS  MATCH    VIA
+    +300ms  rest        Containers / ListContainers                5ms  200     strong   –
+    +500ms  graphql     Query / portCall                          38ms  OK      derived  id = MSCU1234567 (rest)
+   +1300ms  mqtt        harbor/crane/1/status / receive      3000ms x3  OK      –        –
+
+derived links (depth 2 — a step the key matched directly bridges one hop further, and no further):
+  graphql Query / portCall
+    linked by id = MSCU1234567, shared with rest step 3 (Containers / ListContainers); 2 other shared value(s) would have served equally well
+```
 
 ## Importing a recording
 
@@ -194,12 +283,22 @@ rail at all and never sees any of this; core carries only the optional
 Deliberately out of scope for this stage, so nobody has to re-litigate
 it:
 
-- **Multi-key joins.** `shipId 101 → portCallId 1 → craneId 1` is what
-  would light up all eight harbor lanes. Stage 1 is one key with a
-  strong/weak/none verdict per step.
+- **Joins deeper than two edges.** Fixed and documented rather than
+  configurable — see
+  [Joining a renamed identifier](#joining-a-renamed-identifier).
 - **GraphQL query parsing.** The id inside `{ portCall(id: 1) { … } }`
-  is inside a string, not a JSON leaf. The response side still
-  contributes.
+  sits in a string, not a JSON leaf, so the *request* side of that one
+  sample query contributes nothing. This is a property of the query, not
+  of GraphQL: the **response** is ordinary JSON (`data.portCall.id`) and
+  has always been walked, and a query written with variables —
+  `{"query":"query($id:Int!){…}","variables":{"id":1}}` — puts the id in
+  a plain JSON leaf that the scanner finds with no change at all. Write
+  your queries with variables and there is nothing to parse.
+- **A bridge that corroborates by name rather than by length.** Two steps
+  that both call a four-character value `customerId` are arguably
+  evidence, but admitting that reopens the door to low-cardinality enums
+  stored under an id-shaped name. The length floor stays until there is a
+  rule that separates the two.
 - **Causality.** No parent/child span arrows — the format carries no
   parent link to draw them from.
 - **A real `traceId` field in the format**, and OTLP trace ingestion.

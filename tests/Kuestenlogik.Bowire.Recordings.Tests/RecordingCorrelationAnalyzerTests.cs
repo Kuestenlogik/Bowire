@@ -106,10 +106,13 @@ public sealed class RecordingCorrelationAnalyzerTests
         var grpc = timeline.Events.Single(e => e.Protocol == "grpc");
         Assert.Equal(RecordingCorrelationMatch.Weak, grpc.Match);
 
-        // 6 of 8: graphql's id lives inside a query STRING and mqtt only
-        // knows about craneId. Reported as it is, not rounded up.
-        Assert.Equal(6, timeline.MatchedStepCount);
-        Assert.Equal(6, timeline.MatchedProtocolCount);
+        // 7 of 8 since #545: five strong, one weak, and graphql joined
+        // through a container id (see the derived-join tests below). mqtt
+        // stays dark and is reported as such, not rounded up.
+        Assert.Equal(7, timeline.MatchedStepCount);
+        Assert.Equal(7, timeline.MatchedProtocolCount);
+        Assert.Equal(1, timeline.DerivedStepCount);
+        Assert.Equal(1, timeline.DerivedProtocolCount);
     }
 
     [Fact]
@@ -305,7 +308,7 @@ public sealed class RecordingCorrelationAnalyzerTests
             rec, new RecordingCorrelationKey("shipId", "101", RecordingCorrelationKey.SourceField));
 
         Assert.Equal("shipId", timeline.Key!.Name);
-        Assert.Equal(6, timeline.MatchedStepCount);
+        Assert.Equal(7, timeline.MatchedStepCount);
     }
 
     [Fact]
@@ -315,6 +318,222 @@ public sealed class RecordingCorrelationAnalyzerTests
         Assert.Equal(RecordingCorrelationKey.SourceHeader, RecordingCorrelationAnalyzer.ResolveSource("X-Correlation-Id"));
         Assert.Equal(RecordingCorrelationKey.SourceField, RecordingCorrelationAnalyzer.ResolveSource("shipId"));
         Assert.Equal(RecordingCorrelationKey.SourceNone, RecordingCorrelationAnalyzer.ResolveSource(null));
+    }
+
+    // ---- (7) the second edge — joining a renamed identifier (#545) ----
+    //
+    // A transaction that renames its identifier as it crosses services
+    // lights only the lanes that speak the seed key. Every test in this
+    // block is about which shared values are allowed to close that gap,
+    // and — at least as importantly — which are not.
+
+    [Fact]
+    public void Analyze_JoinsTheGraphqlLane_ThroughAContainerIdItSharesWithRest()
+    {
+        var timeline = RecordingCorrelationAnalyzer.Analyze(LoadHarbor());
+
+        // GraphQL calls the same transaction portCall.id = 1 and carries
+        // shipId nowhere, so the seed key cannot reach it. It shares three
+        // container ids with the REST step, and those are distinctive.
+        var graphql = timeline.Events.Single(e => e.Protocol == "graphql");
+        Assert.Equal(RecordingCorrelationMatch.Derived, graphql.Match);
+        Assert.NotNull(graphql.Link);
+        Assert.Equal("MSCU1234567", graphql.Link.Value);
+        Assert.Equal("id", graphql.Link.Name);
+        Assert.Equal("id", graphql.Link.ViaName);
+        Assert.Equal("rest", graphql.Link.ViaProtocol);
+        Assert.Equal("step_03_gate_containers", graphql.Link.ViaStepId);
+        Assert.Equal(2, graphql.Link.ViaStepIndex);
+        // Three containers tie exactly. Naming one without admitting the
+        // other two would read as though that container were special.
+        Assert.Equal(2, graphql.Link.AlternativeCount);
+
+        var lane = timeline.Lanes.Single(l => l.Protocol == "graphql");
+        Assert.Equal(1, lane.MatchedCount);
+        Assert.Equal(1, lane.DerivedCount);
+
+        // Only a derived step carries a link — a strong or weak verdict
+        // stands on the key itself and has nothing to explain.
+        Assert.All(
+            timeline.Events.Where(e => e.Match != RecordingCorrelationMatch.Derived),
+            e => Assert.Null(e.Link));
+    }
+
+    [Fact]
+    public void Analyze_LeavesTheMqttLaneDark_BecauseTheOnlyValueItSharesIsTheNumberOne()
+    {
+        var timeline = RecordingCorrelationAnalyzer.Analyze(LoadHarbor());
+
+        // The crane telemetry shares exactly one value with the rest of
+        // the capture: the integer 1, on craneId. That same 1 is also a
+        // dock number, a sequence number and the port-call id. Joining on
+        // it would fuse four unrelated entities, so the eighth lane stays
+        // dark — and says so rather than going quietly missing.
+        var mqtt = timeline.Events.Single(e => e.Protocol == "mqtt");
+        Assert.Equal(RecordingCorrelationMatch.None, mqtt.Match);
+        Assert.Null(mqtt.Link);
+        Assert.DoesNotContain(timeline.Events, e => e.Link is not null && e.Link.Value == "1");
+        Assert.Contains(timeline.Warnings, w => w.Contains("craneId = 1", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Analyze_ARenamedIdentifier_IsReachedOnlyByTheSecondEdge()
+    {
+        // Shaped like harbor: two services agree on shipId, a third calls
+        // the same transaction by its own id and shares only the manifest.
+        var rec = new BowireRecording { Id = "r", Name = "renamed" };
+        rec.Steps.Add(Step("s1", "rest", 0,
+            response: """{"shipId":"9001","containers":[{"id":"MSCU1234567"},{"id":"HLBU2345678"}]}"""));
+        rec.Steps.Add(Step("s2", "odata", 10, response: """{"ShipId":"9001"}"""));
+        rec.Steps.Add(Step("s3", "graphql", 20,
+            response: """{"data":{"portCall":{"id":"77","containers":[{"id":"MSCU1234567"}]}}}"""));
+
+        var timeline = RecordingCorrelationAnalyzer.Analyze(rec);
+
+        Assert.Equal("9001", timeline.Key!.Value);
+        // The seed key alone cannot reach s3 — 9001 is not in its payload
+        // at all. Without the second edge this is a 2/3 recording.
+        Assert.DoesNotContain("9001", rec.Steps[2].Response, StringComparison.Ordinal);
+
+        var bff = timeline.Events[2];
+        Assert.Equal(RecordingCorrelationMatch.Derived, bff.Match);
+        Assert.Equal("MSCU1234567", bff.Link!.Value);
+        Assert.Equal("rest", bff.Link.ViaProtocol);
+        // HLBU2345678 never reaches s3, so there is no runner-up here.
+        Assert.Equal(0, bff.Link.AlternativeCount);
+        Assert.Equal(3, timeline.MatchedStepCount);
+        Assert.Equal(1, timeline.DerivedStepCount);
+    }
+
+    [Fact]
+    public void Analyze_ABareIntegerNeverBridges_EvenWhenTwoStepsAgreeOnIt()
+    {
+        var rec = new BowireRecording { Id = "r", Name = "collide" };
+        rec.Steps.Add(Step("s1", "rest", 0, response: """{"orderId":"AC-77120-QX","seatId":1}"""));
+        rec.Steps.Add(Step("s2", "grpc", 10, response: """{"orderId":"AC-77120-QX"}"""));
+        // A different entity that happens to be number 1.
+        rec.Steps.Add(Step("s3", "mqtt", 20, response: """{"craneId":1}"""));
+
+        var timeline = RecordingCorrelationAnalyzer.Analyze(rec);
+
+        Assert.Equal("AC-77120-QX", timeline.Key!.Value);
+        Assert.Equal(RecordingCorrelationMatch.None, timeline.Events[2].Match);
+        Assert.Null(timeline.Events[2].Link);
+        Assert.Equal(0, timeline.DerivedStepCount);
+        Assert.Contains(timeline.Warnings, w => w.Contains("craneId = 1", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Analyze_ABooleanOnAnIdShapedLeafNeverBridges()
+    {
+        var rec = new BowireRecording { Id = "r", Name = "boolean" };
+        rec.Steps.Add(Step("s1", "rest", 0, response: """{"orderId":"AC-77120-QX","verifiedId":true}"""));
+        rec.Steps.Add(Step("s2", "grpc", 10, response: """{"orderId":"AC-77120-QX"}"""));
+        rec.Steps.Add(Step("s3", "mqtt", 20, response: """{"verifiedId":true}"""));
+
+        var timeline = RecordingCorrelationAnalyzer.Analyze(rec);
+
+        // `true` is id-shaped by name and its names cohere perfectly — the
+        // distinctiveness floor is the only thing standing between two
+        // steps and a join on a two-valued field.
+        Assert.Equal(RecordingCorrelationMatch.None, timeline.Events[2].Match);
+        Assert.Equal(0, timeline.DerivedStepCount);
+    }
+
+    [Fact]
+    public void Analyze_ARepeatedStatusStringNeverBridges_BecauseItsFieldNamesDoNotCohere()
+    {
+        var rec = new BowireRecording { Id = "r", Name = "enum" };
+        rec.Steps.Add(Step("s1", "rest", 0,
+            response: """{"orderId":"AC-77120-QX","statusId":"Loading","status":"Loading"}"""));
+        rec.Steps.Add(Step("s2", "grpc", 10, response: """{"orderId":"AC-77120-QX"}"""));
+        rec.Steps.Add(Step("s3", "mqtt", 20, response: """{"statusId":"Loading"}"""));
+
+        var timeline = RecordingCorrelationAnalyzer.Analyze(rec);
+
+        // "Loading" is 7 characters, so the length floor lets it through.
+        // What stops it is that the same value is also carried by a leaf
+        // called `status`, which is not id-shaped: a value doing two jobs
+        // is a label, not an identifier.
+        Assert.Equal(RecordingCorrelationMatch.None, timeline.Events[2].Match);
+        Assert.Null(timeline.Events[2].Link);
+        Assert.Contains(timeline.Warnings, w => w.Contains("statusId = Loading", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Analyze_DepthIsTwoEdges_SoTheChainStopsAfterTheFirstBridge()
+    {
+        var rec = new BowireRecording { Id = "r", Name = "chain" };
+        rec.Steps.Add(Step("s1", "rest", 0,
+            response: """{"orderId":"AC-77120-QX","bookingId":"BK-4471209"}"""));
+        rec.Steps.Add(Step("s2", "grpc", 10,
+            response: """{"bookingId":"BK-4471209","parcelId":"PZ-9930881"}"""));
+        rec.Steps.Add(Step("s3", "mqtt", 20, response: """{"parcelId":"PZ-9930881"}"""));
+
+        var timeline = RecordingCorrelationAnalyzer.Analyze(
+            rec, new RecordingCorrelationKey("orderId", "AC-77120-QX", RecordingCorrelationKey.SourceField));
+
+        Assert.Equal(RecordingCorrelationMatch.Strong, timeline.Events[0].Match);
+        Assert.Equal(RecordingCorrelationMatch.Derived, timeline.Events[1].Match);
+        Assert.Equal("BK-4471209", timeline.Events[1].Link!.Value);
+
+        // s3 shares a perfectly distinctive value with s2 — but s2 is
+        // itself only on the transaction by inference, and following it
+        // would be a third edge. This is the whole depth cap in one
+        // assertion: relax it and an id-rich recording relates everything
+        // to everything.
+        Assert.Equal(RecordingCorrelationMatch.None, timeline.Events[2].Match);
+        Assert.Null(timeline.Events[2].Link);
+        Assert.Equal(2, timeline.MatchedStepCount);
+        Assert.Equal(1, timeline.DerivedStepCount);
+    }
+
+    [Fact]
+    public void Analyze_ADerivedStreamingStep_LightsOnlyTheFramesCarryingTheBridge()
+    {
+        var rec = new BowireRecording { Id = "r", Name = "stream" };
+        rec.Steps.Add(Step("s1", "rest", 0,
+            response: """{"orderId":"AC-77120-QX","parcelId":"PZ-9930881"}"""));
+        rec.Steps.Add(new BowireRecordingStep
+        {
+            Id = "s2",
+            Protocol = "mqtt",
+            Service = "telemetry",
+            Method = "receive",
+            MethodType = "ServerStreaming",
+            CapturedAt = 100,
+            DurationMs = 300,
+            ReceivedMessages =
+            [
+                new BowireRecordingFrame { Index = 0, TimestampMs = 0, Body = """{"parcelId":"PZ-9930881"}""" },
+                new BowireRecordingFrame { Index = 1, TimestampMs = 100, Body = """{"craneId":1}""" },
+            ],
+        });
+
+        var timeline = RecordingCorrelationAnalyzer.Analyze(
+            rec, new RecordingCorrelationKey("orderId", "AC-77120-QX", RecordingCorrelationKey.SourceField));
+
+        var stream = timeline.Events[1];
+        Assert.Equal(RecordingCorrelationMatch.Derived, stream.Match);
+        // Without rebuilding the frames against the bridge value, a lit
+        // bar would sit over two dead ticks.
+        Assert.Equal(RecordingCorrelationMatch.Derived, stream.Frames[0].Match);
+        Assert.Equal(RecordingCorrelationMatch.None, stream.Frames[1].Match);
+    }
+
+    [Fact]
+    public void Analyze_TheJoinNeverFeedsBackIntoTheSuggestionList()
+    {
+        var timeline = RecordingCorrelationAnalyzer.Analyze(LoadHarbor());
+
+        // A bridge is not a candidate key. If derived edges leaked into
+        // candidate scoring, the picker would start offering one arbitrary
+        // container id and the suggestion order would drift as the join
+        // grew.
+        Assert.DoesNotContain(timeline.Suggestions, s => s.Value == "MSCU1234567");
+        Assert.Equal(
+            RecordingCorrelationAnalyzer.Suggest(LoadHarbor()).Select(s => s.Name + "=" + s.Value).ToArray(),
+            timeline.Suggestions.Select(s => s.Name + "=" + s.Value).ToArray());
     }
 
     // ---- guards ----

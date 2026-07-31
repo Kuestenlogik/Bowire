@@ -262,6 +262,13 @@
         laneList.forEach(function (lane) {
             lanes.appendChild(renderCorrelationLane(lane, model));
         });
+        // Inside the lanes container ON PURPOSE: the rows carry
+        // data-step-id and therefore ride the ONE delegated listener bound
+        // above. Rendered outside, they would each need their own stable
+        // id and their own listener, and the failure mode is the silent
+        // one — rows that look right and simply never respond to a click.
+        var links = _renderCorrelationDerivedLinks(model);
+        if (links) lanes.appendChild(links);
         wrap.appendChild(lanes);
 
         wrap.appendChild(_renderCorrelationAxis(model));
@@ -378,19 +385,27 @@
 
         var protoTotal = Array.isArray(model.lanes) ? model.lanes.length : 0;
         var stepTotal = Array.isArray(model.events) ? model.events.length : 0;
-        bar.appendChild(el('div', { className: 'bowire-recording-timeline-stats' },
+        var derivedTotal = (typeof model.derivedStepCount === 'number') ? model.derivedStepCount : 0;
+        var stats = el('div', { className: 'bowire-recording-timeline-stats' },
             el('span', { textContent: 'matched ' + (model.matchedStepCount || 0) + '/' + stepTotal + ' steps' }),
-            el('span', { textContent: (model.matchedProtocolCount || 0) + '/' + protoTotal + ' protocols' }),
-            el('span', { textContent: _fmtDuration(model.spanMs) + ' span' }),
-            el('span', {
-                title: model.timebase === 'absolute'
-                    ? 'capturedAt carries wall-clock timestamps'
-                    : 'capturedAt carries offsets from an arbitrary zero — no wall clock to show',
-                textContent: model.timebase === 'absolute'
-                    ? _fmtClock(model.originMs)
-                    : 'relative timebase'
-            })
-        ));
+            el('span', { textContent: (model.matchedProtocolCount || 0) + '/' + protoTotal + ' protocols' }));
+        if (derivedTotal > 0) {
+            stats.appendChild(el('span', {
+                title: 'Steps that do not carry the key at all and were joined through a value they '
+                    + 'share with a step that does. Each one names its bridge below the lanes.',
+                textContent: derivedTotal + ' derived'
+            }));
+        }
+        stats.appendChild(el('span', { textContent: _fmtDuration(model.spanMs) + ' span' }));
+        stats.appendChild(el('span', {
+            title: model.timebase === 'absolute'
+                ? 'capturedAt carries wall-clock timestamps'
+                : 'capturedAt carries offsets from an arbitrary zero — no wall clock to show',
+            textContent: model.timebase === 'absolute'
+                ? _fmtClock(model.originMs)
+                : 'relative timebase'
+        }));
+        bar.appendChild(stats);
 
         bar.appendChild(el('button', {
             type: 'button',
@@ -435,10 +450,20 @@
     function renderCorrelationLane(lane, model) {
         var span = Math.max(1, model.spanMs || 1);
         var row = el('div', { className: 'bowire-recording-lane' });
+        // No third child here: the label is a hard 118px with the axis
+        // offset hardcoded to mirror it, so a marker would clip the count
+        // on the longest protocol name. The count's own tooltip carries
+        // the derived split instead, and the strip below the lanes carries
+        // the explanation in full.
+        var derivedInLane = (typeof lane.derivedCount === 'number') ? lane.derivedCount : 0;
         row.appendChild(el('div', { className: 'bowire-recording-lane-label' },
             el('span', { className: 'bowire-recording-step-protocol', textContent: lane.protocol }),
             el('span', {
                 className: 'bowire-recording-lane-count',
+                title: derivedInLane > 0
+                    ? (derivedInLane + ' of these do not carry the key at all — they were joined through a '
+                        + 'shared value, listed under the lanes.')
+                    : 'Steps in this lane that are on the correlated transaction.',
                 textContent: lane.matchedCount + '/' + lane.stepCount
             })
         ));
@@ -453,7 +478,7 @@
             if (left + width > 100) width = Math.max(0.4, 100 - left);
             var failed = _correlationEventFailed(ev);
             var bar = el('div', {
-                className: 'bowire-recording-bar is-' + (ev.match || 'none')
+                className: 'bowire-recording-bar ' + _correlationMatchClass(ev.match)
                     + (failed ? ' is-fail' : '')
                     + (ev.stepId === recordingCorrelationSelectedStepId ? ' is-selected' : ''),
                 style: 'left:' + left.toFixed(3) + '%;width:' + width.toFixed(3) + '%',
@@ -472,7 +497,7 @@
                 var f = frames[i];
                 var fLeft = (f.offsetMs / span) * 100;
                 track.appendChild(el('div', {
-                    className: 'bowire-recording-frame-tick is-' + (f.match || 'none'),
+                    className: 'bowire-recording-frame-tick ' + _correlationMatchClass(f.match),
                     style: 'left:' + Math.min(100, fLeft).toFixed(3) + '%',
                     title: 'frame ' + f.index + (f.label ? ' · ' + f.label : '')
                         + ' · +' + _fmtOffset(f.offsetMs)
@@ -500,16 +525,103 @@
         var parts = [ev.protocol + ' · ' + (ev.service || '') + ' / ' + (ev.method || '')];
         parts.push('+' + _fmtOffset(ev.offsetMs) + ' · ' + _fmtDuration(ev.durationMs));
         parts.push('status ' + (ev.status || '?'));
-        parts.push(model.key
-            ? (_matchWord(ev.match) + ' match on ' + model.key.name)
-            : 'no correlation key');
+        var link = _correlationLinkOf(ev);
+        if (link) {
+            // Not "derived match on shipId" — shipId is precisely what is
+            // NOT in this step. Saying otherwise is the kind of small lie
+            // that makes an operator stop trusting the whole view.
+            parts.push('derived — ' + (model.key ? model.key.name : 'the key') + ' is not in this step');
+            parts.push('linked by ' + link.name + ' = ' + link.value
+                + ', shared with ' + link.viaProtocol + ' step ' + ((link.viaStepIndex || 0) + 1));
+        } else {
+            parts.push(model.key
+                ? (_matchWord(ev.match) + ' match on ' + model.key.name)
+                : 'no correlation key');
+        }
         return parts.join('\n');
     }
 
     function _matchWord(match) {
         if (match === 'strong') return 'strong';
         if (match === 'weak') return 'weak';
+        if (match === 'derived') return 'derived';
         return 'no';
+    }
+
+    // A derived match (#545) is a fourth tier the model can carry, but it
+    // renders as "weak, plus a marker" rather than as a colour of its own.
+    // Recordings is an optional package and can be newer than the core it
+    // is mounted in — core owns bowire.css, which may only know is-strong
+    // / is-weak / is-none, and a bar whose ONLY class were is-derived
+    // would have no background at all. Falling back to weak is also the
+    // honest reading: a step reached through a bridge is qualified
+    // evidence, never as good as the key itself.
+    function _correlationMatchClass(match) {
+        if (match === 'derived') return 'is-weak is-derived';
+        return 'is-' + (match || 'none');
+    }
+
+    function _correlationInspectMatch(ev, model) {
+        if (!model.key) return 'no correlation key resolved';
+        if (_correlationLinkOf(ev)) {
+            return 'derived — ' + model.key.name + ' = ' + model.key.value + ' is not in this step';
+        }
+        return _matchWord(ev.match) + ' on ' + model.key.name + ' = ' + model.key.value;
+    }
+
+    // The one place a derived link is read off the model. An older
+    // Recordings package answers /api/recordings/correlate perfectly
+    // happily and simply never emits `link`, in which case every consumer
+    // below degrades to "nothing was derived" — which is exactly right.
+    function _correlationLinkOf(ev) {
+        if (!ev || !ev.link) return null;
+        var link = ev.link;
+        if (!link.name || !link.value || !link.viaProtocol) return null;
+        return link;
+    }
+
+    // Decision from #545: a derived lane that cannot name the value which
+    // linked it is worse than an unmatched lane, because the operator
+    // cannot tell a real correlation from a coincidence. So this strip is
+    // always visible whenever anything was derived — never hover-only.
+    function _renderCorrelationDerivedLinks(model) {
+        var events = Array.isArray(model.events) ? model.events : [];
+        var derived = events.filter(function (e) { return !!_correlationLinkOf(e); });
+        if (derived.length === 0) return null;
+
+        var strip = el('div', { className: 'bowire-recording-timeline-links' });
+        strip.appendChild(el('div', {
+            className: 'bowire-recording-timeline-links-head',
+            textContent: 'Joined through a shared value — these steps do not carry the key itself'
+        }));
+        derived.forEach(function (ev) {
+            var link = _correlationLinkOf(ev);
+            var alt = (typeof link.alternativeCount === 'number' && link.alternativeCount > 0)
+                ? ' · +' + link.alternativeCount + ' other value'
+                    + (link.alternativeCount === 1 ? '' : 's') + ' would have served'
+                : '';
+            strip.appendChild(el('div', {
+                className: 'bowire-recording-timeline-links-row',
+                title: 'Click to pin this step',
+                dataset: { stepId: String(ev.stepId) }
+            },
+                el('span', { className: 'bowire-recording-step-protocol', textContent: ev.protocol }),
+                el('span', {
+                    className: 'bowire-recording-timeline-links-target',
+                    textContent: (ev.service || '') + ' / ' + (ev.method || '')
+                }),
+                el('span', {
+                    className: 'bowire-recording-timeline-links-via',
+                    textContent: 'via ' + link.name + ' = ' + link.value
+                }),
+                el('span', {
+                    className: 'bowire-recording-timeline-links-from',
+                    textContent: 'shared with ' + link.viaProtocol + ' step '
+                        + ((link.viaStepIndex || 0) + 1) + alt
+                })
+            ));
+        });
+        return strip;
     }
 
     function _renderCorrelationAxis(model) {
@@ -538,6 +650,11 @@
                 'The key’s own name and value were both found in this step’s payload.'),
             swatch('is-weak', 'weak',
                 'The value turned up on some other id-shaped field. Low-cardinality ids collide, so this tier stays visibly separate.'),
+            swatch('is-weak is-derived', 'derived',
+                'The key is absent, but this step shares a distinctive id-shaped value with a step the key did match. '
+                + 'A bridge value has to be id-shaped on both steps, at least 6 characters, and carried by one family '
+                + 'of field names — which is why a bare 1 never links anything. The value that linked each step in is '
+                + 'listed under the lanes.'),
             swatch('is-none', 'unmatched',
                 'The key does not appear in this step at all.')
         );
@@ -588,10 +705,15 @@
             field('duration', _fmtDuration(ev.durationMs)),
             field('type', ev.methodType || 'Unary'),
             field('status', ev.status || '?'),
-            field('match', model.key
-                ? (_matchWord(ev.match) + ' on ' + model.key.name + ' = ' + model.key.value)
-                : 'no correlation key resolved')
+            field('match', _correlationInspectMatch(ev, model))
         );
+        var link = _correlationLinkOf(ev);
+        if (link) {
+            panel.appendChild(field('linked via',
+                link.name + ' = ' + link.value
+                + '  ·  shared with ' + link.viaProtocol + ' step ' + ((link.viaStepIndex || 0) + 1)
+                + ' (' + (link.viaService || '') + ' / ' + (link.viaMethod || '') + ')'));
+        }
         if (Array.isArray(ev.frames) && ev.frames.length > 0) {
             panel.appendChild(field('frames', String(ev.frames.length)));
         }

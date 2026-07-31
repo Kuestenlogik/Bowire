@@ -421,6 +421,58 @@ public sealed class RecordingCommandTests : IDisposable
         Assert.Contains("name=value", stderr, StringComparison.Ordinal);
     }
 
+    // The same miniature, plus a BFF that calls the transaction by its
+    // own id and shares only the container manifest — the #545 case. The
+    // container id is long enough to be evidence; the crane's `1` is not.
+    private const string CorrelateJoinFixture = """
+        {
+          "id": "rec_join",
+          "name": "port call",
+          "recordingFormatVersion": 2,
+          "steps": [
+            { "id": "s1", "protocol": "rest", "service": "Containers", "method": "List",
+              "capturedAt": 0, "durationMs": 5, "status": "200",
+              "response": "[{\"id\":\"MSCU1234567\",\"onShipId\":101}]" },
+            { "id": "s2", "protocol": "websocket", "service": "ais", "method": "subscribe",
+              "capturedAt": 150, "durationMs": 30, "status": "OK",
+              "response": "{\"ShipId\":101,\"speedKnots\":8}" },
+            { "id": "s3", "protocol": "signalr", "service": "OpsHub", "method": "Stream",
+              "capturedAt": 300, "durationMs": 30, "status": "OK",
+              "response": "{\"shipId\":101,\"portCallId\":1,\"latitude\":54.03}" },
+            { "id": "s4", "protocol": "graphql", "service": "Query", "method": "portCall",
+              "capturedAt": 450, "durationMs": 38, "status": "OK",
+              "response": "{\"data\":{\"portCall\":{\"id\":1,\"containers\":[{\"id\":\"MSCU1234567\"}]}}}" },
+            { "id": "s5", "protocol": "mqtt", "service": "crane", "method": "receive",
+              "capturedAt": 600, "durationMs": 20, "status": "OK",
+              "response": "{\"craneId\":1}" }
+          ]
+        }
+        """;
+
+    [Fact]
+    public async Task Correlate_names_the_bridge_value_in_a_via_column()
+    {
+        var path = Path.Combine(_tempRoot, "corr-join.bwr");
+        await File.WriteAllTextAsync(path, CorrelateJoinFixture, TestContext.Current.CancellationToken);
+
+        var (rc, stdout, stderr) = await InvokeValidate(["correlate", path]);
+
+        Assert.Equal(ExitOk, rc);
+        Assert.Empty(stderr);
+        Assert.Contains("matched:  4/5 step(s) across 4/5 protocol(s), 1 joined through a bridge value",
+            stdout, StringComparison.Ordinal);
+        Assert.Contains("VIA", stdout, StringComparison.Ordinal);
+        // A derived step names its tier AND its bridge; a directly matched
+        // step names its tier and shows `–` for VIA. Both states have to
+        // be readable off one row.
+        Assert.Contains("derived  id = MSCU1234567 (rest)", stdout, StringComparison.Ordinal);
+        Assert.Contains("derived links (depth 2", stdout, StringComparison.Ordinal);
+        Assert.Contains("linked by id = MSCU1234567, shared with rest step 1", stdout, StringComparison.Ordinal);
+        // The crane shares only `1`, and the table says so instead of
+        // leaving the operator to wonder.
+        Assert.Contains("craneId = 1", stdout, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task Correlate_missing_file_exits_no_input()
     {

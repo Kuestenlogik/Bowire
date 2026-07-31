@@ -23,6 +23,17 @@ namespace Kuestenlogik.Bowire.Recordings.Correlation;
 /// </para>
 ///
 /// <para>
+/// One key is not always enough (#545): a transaction that renames its
+/// identifier on the way across the landscape lights only the lanes that
+/// speak the chosen key. So a step the key missed gets a second and last
+/// edge — it joins the transaction when it shares a <em>distinctive</em>
+/// id-shaped value with a step the key did match, and the resulting
+/// <see cref="RecordingCorrelationLink"/> always names that value.
+/// See <see cref="JoinThroughBridges"/> for the admissibility rule and
+/// what it turns down.
+/// </para>
+///
+/// <para>
 /// Pure and stateless by contract: no cache, no ring buffer, no
 /// injected dependency. Two calls with the same inputs produce the same
 /// output, which is what lets the CLI and the endpoint agree.
@@ -50,6 +61,32 @@ public static class RecordingCorrelationAnalyzer
 
     /// <summary>Most suggestions we hand back; beyond this the picker stops being a picker.</summary>
     private const int MaxSuggestions = 20;
+
+    /// <summary>
+    /// How improbable a value has to be before it may bridge two steps
+    /// (#545). A bridge is an <em>inference</em>, not the operator's
+    /// choice, and unlike the seed key it gets no corroboration from a
+    /// matching field name — so the value has to carry its own weight.
+    /// Anything shorter than this has too few possible values for a
+    /// collision to be surprising: <c>1</c>, <c>42</c>, <c>true</c> and
+    /// <c>OK</c> are not evidence, and a harbour capture where
+    /// <c>portCallId</c>, <c>craneId</c> and a dock number are all
+    /// <c>1</c> is precisely the case that must not join.
+    /// </summary>
+    public const int MinBridgeValueLength = 6;
+
+    /// <summary>
+    /// Edges the join may walk, counting the seed match as the first.
+    /// Fixed, not configurable: an unbounded walk over an id-rich
+    /// recording relates everything to everything, which is worse than
+    /// no join at all. Concretely — a step the key matched directly may
+    /// bridge one hop further, and a step reached through a bridge never
+    /// bridges onward.
+    /// </summary>
+    public const int MaxJoinDepth = 2;
+
+    /// <summary>Dark lanes named in the "why did this not join" warning before it turns into a list.</summary>
+    private const int MaxRejectedBridgesReported = 3;
 
     /// <summary>
     /// Every key this recording would accept, best first. Empty when no
@@ -140,7 +177,7 @@ public static class RecordingCorrelationAnalyzer
             var step = steps[i];
             var offset = offsets[i];
             var match = MatchStep(step, resolved);
-            var frames = BuildFrames(step, offset, resolved, match);
+            var frames = BuildFrames(step, offset, KeyFrameVerdict(resolved, match));
 
             events.Add(new RecordingCorrelationEvent(
                 string.IsNullOrEmpty(step.Id) ? "step_" + i.ToString(CultureInfo.InvariantCulture) : step.Id,
@@ -159,10 +196,22 @@ public static class RecordingCorrelationAnalyzer
             foreach (var frame in frames) spanMs = Math.Max(spanMs, frame.OffsetMs);
         }
 
+        // Second and last edge (#545). Runs after the whole first pass,
+        // because a bridge can only be measured once every step has its
+        // seed verdict — and it rewrites `events` in place, so lanes and
+        // counts below already see the joined result.
+        JoinThroughBridges(steps, offsets, events, resolved, warnings);
+
         var lanes = BuildLanes(events, warnings);
         var matchedSteps = events.Count(e => !string.Equals(e.Match, RecordingCorrelationMatch.None, StringComparison.Ordinal));
         var matchedProtocols = events
             .Where(e => !string.Equals(e.Match, RecordingCorrelationMatch.None, StringComparison.Ordinal))
+            .Select(e => e.Protocol)
+            .Distinct(StringComparer.Ordinal)
+            .Count();
+        var derivedSteps = events.Count(e => string.Equals(e.Match, RecordingCorrelationMatch.Derived, StringComparison.Ordinal));
+        var derivedProtocols = events
+            .Where(e => string.Equals(e.Match, RecordingCorrelationMatch.Derived, StringComparison.Ordinal))
             .Select(e => e.Protocol)
             .Distinct(StringComparer.Ordinal)
             .Count();
@@ -194,7 +243,9 @@ public static class RecordingCorrelationAnalyzer
             events,
             matchedSteps,
             matchedProtocols,
-            warnings);
+            warnings,
+            derivedSteps,
+            derivedProtocols);
     }
 
     /// <summary>
@@ -284,18 +335,20 @@ public static class RecordingCorrelationAnalyzer
         return verdict;
     }
 
+    /// <summary>
+    /// Place every received frame of a step on the axis and let
+    /// <paramref name="verdict"/> decide its tier. The verdict is a
+    /// parameter rather than being derived here because the same frame
+    /// list is built twice for a derived step (#545) — once against the
+    /// key, once against the bridge value that actually joined it.
+    /// </summary>
     private static List<RecordingCorrelationFrame> BuildFrames(
         BowireRecordingStep step,
         long stepOffset,
-        RecordingCorrelationKey? key,
-        string stepMatch)
+        Func<BowireRecordingFrame, string> verdict)
     {
         var received = step.ReceivedMessages;
         if (received is null || received.Count == 0) return [];
-
-        var isHeaderKey = key is not null
-            && string.Equals(key.Source, RecordingCorrelationKey.SourceHeader, StringComparison.Ordinal);
-        var keyName = key is null ? string.Empty : RecordingCorrelationScanner.NormalizeName(key.Name);
 
         var frames = new List<RecordingCorrelationFrame>(received.Count);
         for (var i = 0; i < received.Count; i++)
@@ -304,33 +357,53 @@ public static class RecordingCorrelationAnalyzer
             if (frame is null) continue;
             var offset = stepOffset + Math.Max(0, frame.TimestampMs ?? 0);
 
-            string match;
-            if (key is null)
-            {
-                match = RecordingCorrelationMatch.None;
-            }
-            else if (isHeaderKey)
-            {
-                // Headers are step-level metadata — every frame of a
-                // matched step inherits the step's verdict rather than
-                // pretending the frame body carried the header.
-                match = stepMatch;
-            }
-            else
-            {
-                match = MatchFrame(frame, keyName, key.Value);
-            }
-
             frames.Add(new RecordingCorrelationFrame(
                 frame.Index >= 0 ? frame.Index : i,
                 offset,
-                match,
+                verdict(frame),
                 string.IsNullOrWhiteSpace(frame.Discriminator) || frame.Discriminator == "*"
                     ? null
                     : frame.Discriminator));
         }
         return frames;
     }
+
+    /// <summary>Per-frame verdict against the resolved correlation key.</summary>
+    private static Func<BowireRecordingFrame, string> KeyFrameVerdict(
+        RecordingCorrelationKey? key,
+        string stepMatch)
+    {
+        if (key is null) return _ => RecordingCorrelationMatch.None;
+
+        // Headers are step-level metadata — every frame of a matched
+        // step inherits the step's verdict rather than pretending the
+        // frame body carried the header.
+        if (string.Equals(key.Source, RecordingCorrelationKey.SourceHeader, StringComparison.Ordinal))
+        {
+            return _ => stepMatch;
+        }
+
+        var keyName = RecordingCorrelationScanner.NormalizeName(key.Name);
+        return frame => MatchFrame(frame, keyName, key.Value);
+    }
+
+    /// <summary>
+    /// Per-frame verdict against a bridge value (#545). Only a frame
+    /// that carries the value itself lights up, so a derived streaming
+    /// lane never renders a lit bar over dead ticks.
+    /// </summary>
+    private static Func<BowireRecordingFrame, string> BridgeFrameVerdict(string bridgeValue)
+        => frame =>
+        {
+            var carried = false;
+            RecordingCorrelationScanner.ScanFrame(frame, (_, normalized, value) =>
+            {
+                if (carried) return;
+                if (!string.Equals(value, bridgeValue, StringComparison.Ordinal)) return;
+                if (normalized.EndsWith("id", StringComparison.Ordinal)) carried = true;
+            });
+            return carried ? RecordingCorrelationMatch.Derived : RecordingCorrelationMatch.None;
+        };
 
     private static string MatchFrame(BowireRecordingFrame frame, string keyName, string keyValue)
     {
@@ -350,6 +423,274 @@ public static class RecordingCorrelationAnalyzer
             }
         });
         return verdict;
+    }
+
+    // ---- The second edge (#545) ----
+    //
+    // A transaction that renames its identifier on the way across the
+    // landscape lights only the lanes that speak the seed key. The harbor
+    // recording is the exact case: keyed on shipId=101, the GraphQL step
+    // stays dark — not for lack of a key, but because it calls the same
+    // transaction portCall.id=1. The bridge is already in the data, in
+    // the container ids it shares with the REST step.
+    //
+    // Which shared values count as evidence is the whole problem. Two
+    // steps sharing `1` is near-worthless; sharing `MSCU1234567` is
+    // strong. Three gates decide it, and all three must hold.
+
+    /// <summary>
+    /// Join the steps the key left dark onto the transaction through a
+    /// value they share with a step it lit (#545). Rewrites
+    /// <paramref name="events"/> in place — a joined step becomes
+    /// <see cref="RecordingCorrelationMatch.Derived"/> and always carries
+    /// the <see cref="RecordingCorrelationLink"/> that explains it.
+    /// </summary>
+    private static void JoinThroughBridges(
+        List<BowireRecordingStep> steps,
+        long[] offsets,
+        List<RecordingCorrelationEvent> events,
+        RecordingCorrelationKey? key,
+        List<string> warnings)
+    {
+        if (key is null || events.Count < 2) return;
+
+        // Frozen BEFORE anything is joined: only a step the seed key
+        // matched may act as a bridge source. That one line is what fixes
+        // the walk at MaxJoinDepth edges, and it also makes the result
+        // independent of the order the dark steps happen to be visited
+        // in — a step joined early can never become a stepping stone for
+        // a step joined later.
+        var seedLit = new bool[events.Count];
+        var anySeedLit = false;
+        var anyDark = false;
+        for (var i = 0; i < events.Count; i++)
+        {
+            seedLit[i] = !string.Equals(events[i].Match, RecordingCorrelationMatch.None, StringComparison.Ordinal);
+            anySeedLit |= seedLit[i];
+            anyDark |= !seedLit[i];
+        }
+        if (!anySeedLit || !anyDark) return;
+
+        var index = BuildLeafIndex(steps);
+        var rejected = new List<string>();
+
+        for (var i = 0; i < events.Count; i++)
+        {
+            if (seedLit[i]) continue;
+
+            var link = FindBridge(i, index, seedLit, events, out var nearMiss);
+            if (link is not null)
+            {
+                events[i] = events[i] with
+                {
+                    Match = RecordingCorrelationMatch.Derived,
+                    Link = link,
+                    Frames = BuildFrames(steps[i], offsets[i], BridgeFrameVerdict(link.Value)),
+                };
+                continue;
+            }
+
+            if (nearMiss is not null)
+            {
+                rejected.Add($"{events[i].Protocol} ({nearMiss.Value.Name} = {nearMiss.Value.Value})");
+            }
+        }
+
+        if (rejected.Count == 0) return;
+
+        // An operator staring at a dark lane will ask why. Saying nothing
+        // is the one answer that makes the join look arbitrary, so name
+        // the candidate that was considered and turned down.
+        var named = string.Join(", ", rejected.Take(MaxRejectedBridgesReported));
+        var tail = rejected.Count > MaxRejectedBridgesReported
+            ? $", and {RecordingCorrelationScanner.Format(rejected.Count - MaxRejectedBridgesReported)} more"
+            : string.Empty;
+        warnings.Add(
+            $"{RecordingCorrelationScanner.Format(rejected.Count)} step(s) share a value with the correlated "
+            + $"steps but were not joined, because the shared value is too weak to be evidence: {named}{tail}. "
+            + $"A bridge value must be id-shaped on both steps, at least {MinBridgeValueLength} characters long, "
+            + "and carried by a single family of field names.");
+    }
+
+    /// <summary>
+    /// The best admissible bridge for one dark step, or
+    /// <see langword="null"/> when nothing it carries is evidence.
+    /// </summary>
+    /// <param name="darkIndex">Index of the step the key did not match.</param>
+    /// <param name="index">The one-walk leaf index for this recording.</param>
+    /// <param name="seedLit">Which steps the seed key matched, frozen before any join.</param>
+    /// <param name="events">First-pass events, read for the bridge step's identity.</param>
+    /// <param name="nearMiss">
+    /// The first value this step genuinely shares with a matched step and
+    /// which was nonetheless turned down. Feeds the warning that tells an
+    /// operator the lane was considered rather than overlooked.
+    /// </param>
+    private static RecordingCorrelationLink? FindBridge(
+        int darkIndex,
+        LeafIndex index,
+        bool[] seedLit,
+        List<RecordingCorrelationEvent> events,
+        out (string Name, string Value)? nearMiss)
+    {
+        nearMiss = null;
+        RecordingCorrelationLink? best = null;
+        var bestStrength = int.MinValue;
+        var admissibleValues = new List<string>();
+
+        // Scan order, not hash order: three container ids tie exactly on
+        // the harbor recording, and the CLI's `via` column and the UI chip
+        // have to name the same one on every run.
+        foreach (var leaf in index.IdLeaves[darkIndex])
+        {
+            var names = index.NamesByValue[leaf.Value];
+            var carriers = index.IdCarriers[leaf.Value];
+
+            // GATE 2 — distinctiveness. GATE 3 — name cohesion.
+            // (GATE 1, id-shape, already applies: IdLeaves only holds
+            // leaves whose name ends in "id", and IdCarriers only records
+            // the same, so both ends of every edge are id-shaped.)
+            if (leaf.Value.Length < MinBridgeValueLength || !NamesCohere(names))
+            {
+                if (nearMiss is null
+                    && carriers.Any(c => c.StepIndex != darkIndex && seedLit[c.StepIndex]))
+                {
+                    nearMiss = (leaf.Name, leaf.Value);
+                }
+                continue;
+            }
+
+            var admitted = false;
+            foreach (var carrier in carriers)
+            {
+                // GATE 4 — depth. Seed-lit steps only.
+                if (carrier.StepIndex == darkIndex || !seedLit[carrier.StepIndex]) continue;
+                admitted = true;
+
+                var strength = BridgeStrength(leaf.NormalizedName, carrier.NormalizedName, leaf.Value, names.Count);
+                if (strength <= bestStrength) continue;
+                var via = events[carrier.StepIndex];
+                bestStrength = strength;
+                best = new RecordingCorrelationLink(
+                    leaf.Value,
+                    leaf.Name,
+                    via.StepId,
+                    via.StepIndex,
+                    via.Protocol,
+                    carrier.Name,
+                    via.Service,
+                    via.Method,
+                    0,
+                    strength);
+            }
+
+            if (admitted && !admissibleValues.Contains(leaf.Value, StringComparer.Ordinal))
+            {
+                admissibleValues.Add(leaf.Value);
+            }
+        }
+
+        return best is null ? null : best with { AlternativeCount = admissibleValues.Count - 1 };
+    }
+
+    /// <summary>
+    /// GATE 3 — every field name carrying this value, anywhere in the
+    /// recording, must belong to one suffix family rooted in an id-shaped
+    /// name. <c>{id, onShipId, occupiedByShipId}</c> is one entity under
+    /// three spellings; <c>{number, id, seq, portCallId, craneId}</c> is
+    /// the number 1 doing five unrelated jobs.
+    /// </summary>
+    private static bool NamesCohere(List<string> names)
+    {
+        if (names.Count == 0) return false;
+
+        var root = names[0];
+        foreach (var name in names)
+        {
+            if (name.Length < root.Length) root = name;
+        }
+        if (!root.EndsWith("id", StringComparison.Ordinal)) return false;
+
+        // A tie on length that is not the same string fails here, which is
+        // the intended reading: two equally short unrelated names are not
+        // a family.
+        foreach (var name in names)
+        {
+            if (!name.EndsWith(root, StringComparison.Ordinal)) return false;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Rank among admissible bridges. Same leaf name on both ends is the
+    /// strongest reading (the two services agree on what the field is
+    /// called); a longer value is less likely to collide; a value spread
+    /// across many field names is doing more than one job and is
+    /// penalised for it.
+    /// </summary>
+    private static int BridgeStrength(string darkName, string litName, string value, int nameSpread)
+        => (string.Equals(darkName, litName, StringComparison.Ordinal) ? 200 : 100)
+            + Math.Min(value.Length, 32)
+            - (8 * (nameSpread - 1));
+
+    /// <summary>
+    /// One walk over every payload, producing what the join needs: the
+    /// id-shaped leaves of each step in scan order, every field name each
+    /// value is carried by anywhere in the recording, and which steps
+    /// carry a value on an id-shaped leaf.
+    ///
+    /// <para>
+    /// Deliberately separate from <see cref="Suggest"/> rather than
+    /// feeding it: candidate scoring must not see derived edges, or the
+    /// suggestion list would drift as the join grows.
+    /// </para>
+    /// </summary>
+    private static LeafIndex BuildLeafIndex(List<BowireRecordingStep> steps)
+    {
+        var index = new LeafIndex();
+        for (var i = 0; i < steps.Count; i++)
+        {
+            var stepIndex = i;
+            var leaves = new List<IdLeaf>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            RecordingCorrelationScanner.ScanStep(steps[i], (name, normalized, value) =>
+            {
+                if (!index.NamesByValue.TryGetValue(value, out var names))
+                {
+                    names = [];
+                    index.NamesByValue[value] = names;
+                }
+                if (!names.Contains(normalized, StringComparer.Ordinal)) names.Add(normalized);
+
+                if (!normalized.EndsWith("id", StringComparison.Ordinal)) return;
+                if (!seen.Add(normalized + " " + value)) return;
+
+                leaves.Add(new IdLeaf(name, normalized, value));
+                if (!index.IdCarriers.TryGetValue(value, out var carriers))
+                {
+                    carriers = [];
+                    index.IdCarriers[value] = carriers;
+                }
+                carriers.Add(new IdCarrier(stepIndex, name, normalized));
+            });
+            index.IdLeaves.Add(leaves);
+        }
+        return index;
+    }
+
+    private readonly record struct IdLeaf(string Name, string NormalizedName, string Value);
+
+    private readonly record struct IdCarrier(int StepIndex, string Name, string NormalizedName);
+
+    private sealed class LeafIndex
+    {
+        /// <summary>Per step, its distinct id-shaped leaves in scan order.</summary>
+        public List<List<IdLeaf>> IdLeaves { get; } = [];
+
+        /// <summary>Value to every distinct normalised field name carrying it, id-shaped or not.</summary>
+        public Dictionary<string, List<string>> NamesByValue { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>Value to the id-shaped leaves carrying it, one entry per (step, name).</summary>
+        public Dictionary<string, List<IdCarrier>> IdCarriers { get; } = new(StringComparer.Ordinal);
     }
 
     private static List<RecordingCorrelationLane> BuildLanes(
@@ -376,6 +717,10 @@ public static class RecordingCorrelationAnalyzer
             {
                 lane.MatchedCount++;
             }
+            if (string.Equals(e.Match, RecordingCorrelationMatch.Derived, StringComparison.Ordinal))
+            {
+                lane.DerivedCount++;
+            }
         }
 
         foreach (var lane in order)
@@ -389,7 +734,7 @@ public static class RecordingCorrelationAnalyzer
         }
 
         return order
-            .Select(l => new RecordingCorrelationLane(l.Protocol, l.StepCount, l.MatchedCount))
+            .Select(l => new RecordingCorrelationLane(l.Protocol, l.StepCount, l.MatchedCount, l.DerivedCount))
             .ToList();
     }
 
@@ -398,6 +743,7 @@ public static class RecordingCorrelationAnalyzer
         public string Protocol { get; } = protocol;
         public int StepCount { get; set; }
         public int MatchedCount { get; set; }
+        public int DerivedCount { get; set; }
         public int FrameCount { get; set; }
     }
 
