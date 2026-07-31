@@ -417,7 +417,20 @@ public sealed class BowireRestProtocol
         cts.CancelAfter(ProbeTimeout);
         try
         {
-            return await adapter.FetchAndDiscoverAsync(probeUrl, _http, cts.Token).ConfigureAwait(false);
+            var result = await adapter.FetchAndDiscoverAsync(probeUrl, _http, cts.Token).ConfigureAwait(false);
+            if (result is null)
+            {
+                // The quiet miss, and the common one. Both shipped adapters
+                // funnel a non-success status, a network error and a parse
+                // failure through OpenApiDiscovery.FetchAndParseAsync, which
+                // answers `null` rather than throwing — so without this line
+                // the catch arms below almost never run and the breakdown
+                // stays empty. "Every path the sweep tried" has to include
+                // the ones that simply were not there, otherwise the detail
+                // list is a list of crashes, not of what was attempted.
+                details?.Add($"no document at {probeUrl}");
+            }
+            return result;
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {

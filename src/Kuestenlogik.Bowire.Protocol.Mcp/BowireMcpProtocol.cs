@@ -85,15 +85,23 @@ public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnos
     /// what to do with a fault when the caller has no field to put it in.
     /// </summary>
     /// <remarks>
-    /// A partial probe returns its services and drops the diagnostic —
-    /// losing a fault is better than losing a server's working resources
-    /// and prompts because one of its tools is malformed. Only when
-    /// <em>nothing</em> answered is the throw the more honest answer: an
-    /// empty list would be indistinguishable from "this server has nothing"
-    /// (#534), and there is no partial result left to protect.
-    /// Callers that want both go through
-    /// <see cref="IBowireDiscoveryDiagnostics"/> —
-    /// <see cref="BowireDiscoveryProbe"/> does.
+    /// This signature stays all-or-nothing: a fault throws, even when some
+    /// surfaces answered. That looks like the opposite of #544, and it is
+    /// deliberate — the lossy channel cannot carry "and by the way, part of
+    /// this is missing", so the only two options are a silent truncation or
+    /// a throw, and a silent truncation is the dangerous one. Bowire's own
+    /// security scanner calls this signature directly
+    /// (<c>McpToolInjectionProbe</c>, <c>McpDiscoveryProbe</c>,
+    /// <c>McpResourceTraversalProbe</c> via <c>OwaspApiSuite</c>): handing it
+    /// a half-list without a word would make it report a clean bill of
+    /// health for an attack surface it never saw.
+    /// <para>
+    /// Callers that want the services AND the fault use
+    /// <see cref="IBowireDiscoveryDiagnostics"/>, which is where #544 lives
+    /// — <see cref="BowireDiscoveryProbe"/> takes that path, so the
+    /// workbench and the CLI keep the working surfaces and show the
+    /// diagnostic.
+    /// </para>
     /// </remarks>
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
@@ -101,8 +109,7 @@ public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnos
         var report = await DiscoverWithDiagnosticsAsync(serverUrl, showInternalServices, ct)
             .ConfigureAwait(false);
 
-        if (report.Services.Count == 0
-            && report.Diagnostic is { Severity: BowireDiscoverySeverity.Fault } fault)
+        if (report.Diagnostic is { Severity: BowireDiscoverySeverity.Fault } fault)
         {
             throw new InvalidOperationException(fault.Message);
         }
