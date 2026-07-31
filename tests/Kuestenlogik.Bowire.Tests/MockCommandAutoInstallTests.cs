@@ -3,6 +3,7 @@
 
 using Kuestenlogik.Bowire.App;
 using Kuestenlogik.Bowire.App.Configuration;
+using Kuestenlogik.Bowire.PluginLoading;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -14,50 +15,102 @@ namespace Kuestenlogik.Bowire.Tests;
 /// the actual install call so we can drive both success and failure
 /// branches offline.
 /// </summary>
-[Collection(MockCommandAutoInstallTests.CollectionName)]
+// Joins CwdSerialised rather than carrying a private collection (#543).
+// These tests read BOWIRE_PLUGIN_DIR through MockCommand; BowireConfigurationTests
+// clears that same variable to exercise the fallback. A private collection
+// serialises this class against itself but runs it in parallel with THAT one,
+// so the clear landed mid-test, MockCommand fell back to ~/.bowire/plugins, and
+// an installed plugin made a protocol look present. CwdSerialisedCollectionDefinition
+// exists for exactly this and already covers the config tests.
+[Collection("CwdSerialised")]
 public sealed class MockCommandAutoInstallTests : IDisposable
 {
-    public const string CollectionName = "MockCommandAutoInstallSerial";
-
     private const string PluginDirVar = "BOWIRE_PLUGIN_DIR";
 
     private readonly string _tempDir =
         Directory.CreateTempSubdirectory("bowire-mock-ai-").FullName;
 
-    private readonly string? _previousPluginDir;
+    private string? _previousPluginDir;
+    private bool _pluginDirOverridden;
 
     /// <summary>
-    /// Point the command under test at an EMPTY plugin directory.
+    /// Guarantee an empty plugin directory at the moment
+    /// <see cref="MockCommand.RunAsync"/> resolves one, and put the
+    /// previous value back afterwards.
+    /// </summary>
+    /// <remarks>
+    /// Setting this in the constructor is not enough, and that is measured
+    /// rather than assumed (#543): <c>BowireConfigurationTests</c> clears
+    /// <c>BOWIRE_PLUGIN_DIR</c> to exercise the fallback, and a run of the
+    /// full assembly still found the variable <c>&lt;null&gt;</c> inside this
+    /// test — long after this class's constructor had set it. Writing it
+    /// immediately before the call closes the window that matters.
+    /// The assembly-wide redirect in <see cref="TestPluginIsolation"/> and
+    /// the CwdSerialised collection remain the outer layers; this is the one
+    /// that makes the assertion depend on nothing but itself.
+    /// </remarks>
+    /// <summary>
+    /// Pick <paramref name="count"/> protocol ids from Bowire's package
+    /// catalogue that this process does NOT already have registered.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// These tests assert that a recording referencing an unavailable
-    /// protocol triggers auto-install. <see cref="MockCommand.RunAsync"/>
-    /// resolves its plugin directory from the ambient configuration —
-    /// <c>BOWIRE_PLUGIN_DIR</c>, else <c>~/.bowire/plugins</c> — so without
-    /// this the assertions depend on what the developer happens to have
-    /// installed on their machine (#543). A machine with
-    /// <c>Kuestenlogik.Bowire.Protocol.Dis</c> installed sees "dis" as
-    /// present, so only one of the two protocols counts as missing and the
-    /// multi-install test fails with 1 instead of 2 — while CI, which has
-    /// no plugin directory at all, stays green.
+    /// The tests used to hard-code "kafka" and "dis". That silently assumed
+    /// nobody had those installed — and the assumption broke the moment a
+    /// developer ran <c>bowire plugin install Kuestenlogik.Bowire.Protocol.Dis</c>
+    /// (#543). Worse, it is not fixable by pointing BOWIRE_PLUGIN_DIR
+    /// somewhere empty: once ANY test in the run has loaded a plugin
+    /// assembly, it stays visible through
+    /// <c>AppDomain.CurrentDomain.GetAssemblies()</c> for the rest of the
+    /// process, and <c>BowireProtocolRegistry.Discover</c> reports it as
+    /// present regardless of directories. Measured, repeatedly.
     /// </para>
     /// <para>
-    /// The environment variable is process-global, which is why this class
-    /// carries a collection with <c>DisableParallelization = true</c>.
+    /// What these tests actually verify is the auto-install fan-out — that
+    /// N missing protocols produce N install calls — not any particular
+    /// protocol name. Choosing the ids at runtime tests exactly that and
+    /// nothing about the developer's machine.
     /// </para>
     /// </remarks>
-    public MockCommandAutoInstallTests()
+    private static List<string> PickMissingProtocols(int count)
     {
-        _previousPluginDir = Environment.GetEnvironmentVariable(PluginDirVar);
-        var isolated = Path.Combine(_tempDir, "plugins");
-        Directory.CreateDirectory(isolated);
-        Environment.SetEnvironmentVariable(PluginDirVar, isolated);
+        var registered = BowireProtocolRegistry.Discover().Protocols
+            .Select(p => p.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return [.. PluginPackageMap.Snapshot().Keys
+            .Where(id => !registered.Contains(id))
+            .Take(count)];
+    }
+
+    private string IsolatedPluginDir()
+    {
+        // Capture once: a test may call this more than once, and the second
+        // capture would record OUR value as the thing to restore.
+        if (!_pluginDirOverridden)
+        {
+            _previousPluginDir = Environment.GetEnvironmentVariable(PluginDirVar);
+            _pluginDirOverridden = true;
+        }
+
+        var dir = Path.Combine(_tempDir, "plugins");
+        Directory.CreateDirectory(dir);
+        Environment.SetEnvironmentVariable(PluginDirVar, dir);
+        return dir;
     }
 
     public void Dispose()
     {
-        Environment.SetEnvironmentVariable(PluginDirVar, _previousPluginDir);
+        // Hand the variable back exactly as we found it. Leaving our temp
+        // path behind would be the same defect that made this test flaky in
+        // the first place — a test writing process-global state that the
+        // next one silently inherits, except pointing at a directory that
+        // is about to be deleted.
+        if (_pluginDirOverridden)
+        {
+            Environment.SetEnvironmentVariable(PluginDirVar, _previousPluginDir);
+        }
+
         try { Directory.Delete(_tempDir, recursive: true); } catch { /* best-effort */ }
         GC.SuppressFinalize(this);
     }
@@ -98,6 +151,7 @@ public sealed class MockCommandAutoInstallTests : IDisposable
                 Port = 0,
             };
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            IsolatedPluginDir();
             var rc = await MockCommand.RunAsync(cli, ct: cts.Token);
 
             Assert.Contains(rc, s_acceptedExitCodes);
@@ -125,6 +179,7 @@ public sealed class MockCommandAutoInstallTests : IDisposable
                 TestContext.Current.CancellationToken);
 
             var cli = new MockCliOptions { RecordingPath = rec, AutoInstall = true };
+            IsolatedPluginDir();
             var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
 
             Assert.Equal(1, rc);
@@ -138,9 +193,14 @@ public sealed class MockCommandAutoInstallTests : IDisposable
     [Fact]
     public async Task RunAsync_AutoInstall_MultipleMissing_InstallsEach()
     {
-        // Recording references two unknown-but-mapped protocols (kafka +
-        // dis) → TryAutoInstallAsync iterates both, the stub records
-        // each install call.
+        // Recording references two mapped protocols this process does not
+        // have → TryAutoInstallAsync iterates both, the stub records each
+        // install call. The ids are chosen at runtime, see PickMissingProtocols.
+        var missing = PickMissingProtocols(2);
+        Assert.SkipWhen(missing.Count < 2,
+            "Needs two catalogue protocols that are not registered in this "
+            + "process; this host has too many of them loaded.");
+
         var prev = MockCommand.AutoInstallInvoker;
         var seen = new List<string>();
         try
@@ -152,7 +212,7 @@ public sealed class MockCommandAutoInstallTests : IDisposable
             };
 
             var rec = Path.Combine(_tempDir, "multi.json");
-            await File.WriteAllTextAsync(rec, MakeMultiRecordingJson("kafka", "dis"),
+            await File.WriteAllTextAsync(rec, MakeMultiRecordingJson(missing[0], missing[1]),
                 TestContext.Current.CancellationToken);
 
             var cli = new MockCliOptions
@@ -163,11 +223,24 @@ public sealed class MockCommandAutoInstallTests : IDisposable
                 Port = 0,
             };
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            IsolatedPluginDir();
             await MockCommand.RunAsync(cli, ct: cts.Token);
 
-            Assert.Equal(2, seen.Count);
-            Assert.Contains("Kuestenlogik.Bowire.Protocol.Kafka", seen);
-            Assert.Contains("Kuestenlogik.Bowire.Protocol.Dis", seen);
+            // Self-explaining failure: "Expected 2, Actual 1" says nothing
+            // about WHY a protocol stopped counting as missing, and the
+            // answer is always environmental (#543) — a plugin dir that
+            // isn't the one we think, or a protocol already registered in
+            // this process.
+            // Self-explaining failure: "Expected 2, Actual 1" says nothing
+            // about WHY a protocol stopped counting as missing, and the
+            // answer is always environmental (#543).
+            Assert.True(seen.Count == 2,
+                $"expected 2 installs for [{string.Join(", ", missing)}], saw {seen.Count}: "
+                + $"[{string.Join(", ", seen)}]"
+                + $"; BOWIRE_PLUGIN_DIR={Environment.GetEnvironmentVariable(PluginDirVar) ?? "<null>"}"
+                + $"; registry knows [{string.Join(", ", BowireProtocolRegistry.Discover().Protocols.Select(p => p.Id))}]");
+            Assert.Contains(PluginPackageMap.TryGetPackageId(missing[0]), seen);
+            Assert.Contains(PluginPackageMap.TryGetPackageId(missing[1]), seen);
         }
         finally
         {
@@ -236,9 +309,7 @@ public sealed class MockCommandAutoInstallTests : IDisposable
         """;
 }
 
-[CollectionDefinition(MockCommandAutoInstallTests.CollectionName, DisableParallelization = true)]
-#pragma warning disable CA1515 // xUnit collection definitions must be public.
-#pragma warning disable CA1711 // Suffix "Collection" is xUnit convention.
-public sealed class MockCommandAutoInstallTestsCollection { }
-#pragma warning restore CA1711
-#pragma warning restore CA1515
+// The private collection this class used to define is gone: it serialised
+// these tests against themselves while leaving them free to run alongside
+// BowireConfigurationTests, which is precisely what broke them (#543).
+// CwdSerialisedCollectionDefinition owns that serialisation now.

@@ -14,6 +14,12 @@ namespace Kuestenlogik.Bowire.Tests;
 /// --help smoke tests, this lifts <c>BowireCli</c>'s action-closure coverage
 /// from "parser only" to "lambda-bodies executed too".
 /// </summary>
+// Runs MockCommand.RunAsync, which loads plugins from the ambient
+// BOWIRE_PLUGIN_DIR. Unserialised, it can load the developer's real
+// plugins during the window BowireConfigurationTests clears that
+// variable — and a loaded assembly stays visible to every later test
+// through AppDomain.GetAssemblies(), no matter what they set (#543).
+[Collection("CwdSerialised")]
 public sealed class BowireCliActionTests : IDisposable
 {
     private readonly string _tempDir =
