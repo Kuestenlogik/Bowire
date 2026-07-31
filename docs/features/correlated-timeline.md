@@ -114,13 +114,28 @@ of these hold:
 2. **Distinctive on its own — at least six characters.** `1`, `42`,
    `true` and `OK` are not evidence: there are too few of them for a
    collision to be surprising.
-3. **One family of field names.** Every field name carrying the value
-   anywhere in the recording must share a common id-shaped suffix.
-   `{id, onShipId, occupiedByShipId}` is one entity under three
-   spellings; `{number, id, seq, portCallId, craneId}` is the number 1
-   doing five unrelated jobs.
-4. **Two edges, and no more.** Only a step the key matched *directly* may
-   act as a bridge source. A step reached through a bridge never bridges
+3. **The two names are one identifier under two spellings.** Judged on
+   the pair actually being joined: identical, or the shorter a suffix of
+   the longer. `id`/`onShipId` cohere; `craneId`/`portCallId` do not.
+   Deliberately not judged across the whole recording — a value that
+   appears on a bare `id` field somewhere would make any id-suffixed name
+   "cohere", and the verdict would then change when an unrelated step was
+   appended.
+4. **Never carried by a non-id field.** If the same value also sits on a
+   field like `status`, it is a label the capture shares, not an
+   identifier: `"Loading"` on both `statusId` and `status` is an enum.
+5. **On a minority of the steps.** A value smeared across most of a
+   recording describes the capture, not a transaction inside it. This is
+   what stops a session, tenant or customer id from fusing unrelated
+   work into one "transaction" — and length alone would never catch it,
+   because a GUID session id is long, high-entropy and wears the same
+   field name at both ends, which is exactly the profile the strength
+   score likes most. Two carriers is the floor, since a bridge needs one
+   step at each end.
+6. **Two edges, and no more.** Only a step the key matched *strongly*
+   may act as a bridge source — a weak match is this analyzer's own name
+   for a coincidence, and anchoring an inference to one leaves the far
+   end resting on nothing. A step reached through a bridge never bridges
    onward. An unbounded walk over an id-rich recording relates everything
    to everything, which is worse than no join at all.
 
