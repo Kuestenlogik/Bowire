@@ -289,7 +289,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [537](https://github.com/Kuestenlogik/Bowire/issues/537) | Bowire | [Make the catalogue a primary entry point, not a side path](#issue-kuestenlogik-bowire-537) | ⬜ Backlog |  |
 | [538](https://github.com/Kuestenlogik/Bowire/issues/538) | Bowire | [Show the CLI equivalent of every request (Copy as Bowire CLI)](#issue-kuestenlogik-bowire-538) | ⬜ Backlog |  |
 | [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ⬜ Backlog |  |
-| [544](https://github.com/Kuestenlogik/Bowire/issues/544) | Bowire | [Discovery cannot report a partial fault: results and diagnostics are mutually exclusive](#issue-kuestenlogik-bowire-544) | ⬜ Backlog |  |
 | [545](https://github.com/Kuestenlogik/Bowire/issues/545) | Bowire | [Correlated timeline: join across renamed identifiers (multi-key)](#issue-kuestenlogik-bowire-545) | ⬜ Backlog |  |
 | [546](https://github.com/Kuestenlogik/Bowire/issues/546) | Bowire | [Make plugin management DI-friendly: retire the static PluginManager and its duplicate ledger](#issue-kuestenlogik-bowire-546) | ⬜ Backlog |  |
 
@@ -1190,10 +1189,6 @@ Feasible, but the proposal's sample line is not a real command today: `bowire ca
 #### <a id="issue-kuestenlogik-bowire-539"></a>⬜ Backlog · [#539](https://github.com/Kuestenlogik/Bowire/issues/539) Cross-protocol correlated timeline for recordings
 
 Ship a "Correlated timeline" as a second tab inside the existing Recordings detail pane (`renderRecordingDetail` in `src/Kuestenlogik.Bowire.Recordings/wwwroot/js/recording.js`), rendering one lane per protocol with one bar per step and per-frame ticks for streaming steps, all placed on a shared tim … [[more]](https://github.com/Kuestenlogik/Bowire/issues/539)
-
-#### <a id="issue-kuestenlogik-bowire-544"></a>⬜ Backlog · [#544](https://github.com/Kuestenlogik/Bowire/issues/544) Discovery cannot report a partial fault: results and diagnostics are mutually exclusive
-
-A discovery probe is all-or-nothing. If any surface of a server faults, the plugin's entire contribution is dropped — including the surfaces that answered perfectly. [[more]](https://github.com/Kuestenlogik/Bowire/issues/544)
 
 #### <a id="issue-kuestenlogik-bowire-545"></a>⬜ Backlog · [#545](https://github.com/Kuestenlogik/Bowire/issues/545) Correlated timeline: join across renamed identifiers (multi-key)
 
