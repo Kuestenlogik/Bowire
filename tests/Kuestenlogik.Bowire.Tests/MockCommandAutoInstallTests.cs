@@ -19,11 +19,45 @@ public sealed class MockCommandAutoInstallTests : IDisposable
 {
     public const string CollectionName = "MockCommandAutoInstallSerial";
 
+    private const string PluginDirVar = "BOWIRE_PLUGIN_DIR";
+
     private readonly string _tempDir =
         Directory.CreateTempSubdirectory("bowire-mock-ai-").FullName;
 
+    private readonly string? _previousPluginDir;
+
+    /// <summary>
+    /// Point the command under test at an EMPTY plugin directory.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// These tests assert that a recording referencing an unavailable
+    /// protocol triggers auto-install. <see cref="MockCommand.RunAsync"/>
+    /// resolves its plugin directory from the ambient configuration —
+    /// <c>BOWIRE_PLUGIN_DIR</c>, else <c>~/.bowire/plugins</c> — so without
+    /// this the assertions depend on what the developer happens to have
+    /// installed on their machine (#543). A machine with
+    /// <c>Kuestenlogik.Bowire.Protocol.Dis</c> installed sees "dis" as
+    /// present, so only one of the two protocols counts as missing and the
+    /// multi-install test fails with 1 instead of 2 — while CI, which has
+    /// no plugin directory at all, stays green.
+    /// </para>
+    /// <para>
+    /// The environment variable is process-global, which is why this class
+    /// carries a collection with <c>DisableParallelization = true</c>.
+    /// </para>
+    /// </remarks>
+    public MockCommandAutoInstallTests()
+    {
+        _previousPluginDir = Environment.GetEnvironmentVariable(PluginDirVar);
+        var isolated = Path.Combine(_tempDir, "plugins");
+        Directory.CreateDirectory(isolated);
+        Environment.SetEnvironmentVariable(PluginDirVar, isolated);
+    }
+
     public void Dispose()
     {
+        Environment.SetEnvironmentVariable(PluginDirVar, _previousPluginDir);
         try { Directory.Delete(_tempDir, recursive: true); } catch { /* best-effort */ }
         GC.SuppressFinalize(this);
     }
