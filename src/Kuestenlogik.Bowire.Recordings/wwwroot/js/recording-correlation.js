@@ -651,10 +651,11 @@
             swatch('is-weak', 'weak',
                 'The value turned up on some other id-shaped field. Low-cardinality ids collide, so this tier stays visibly separate.'),
             swatch('is-weak is-derived', 'derived',
-                'The key is absent, but this step shares a distinctive id-shaped value with a step the key did match. '
-                + 'A bridge value has to be id-shaped on both steps, at least 6 characters, and carried by one family '
-                + 'of field names — which is why a bare 1 never links anything. The value that linked each step in is '
-                + 'listed under the lanes.'),
+                'The key is absent, but this step shares a distinctive id-shaped value with a step the key matched '
+                + 'strongly. A bridge value has to be id-shaped at both ends, at least 6 characters, never carried by '
+                + 'a non-id field, and on only a minority of the steps — which is why a bare 1 never links anything, '
+                + 'and why a session id cannot fuse a whole capture into one transaction. The value that linked each '
+                + 'step in is listed under the lanes.'),
             swatch('is-none', 'unmatched',
                 'The key does not appear in this step at all.')
         );

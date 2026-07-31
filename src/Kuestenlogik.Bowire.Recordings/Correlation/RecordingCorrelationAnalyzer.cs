@@ -76,6 +76,33 @@ public static class RecordingCorrelationAnalyzer
     public const int MinBridgeValueLength = 6;
 
     /// <summary>
+    /// The largest share of a recording's steps a value may appear on and
+    /// still be treated as identifying ONE transaction.
+    /// </summary>
+    /// <remarks>
+    /// Length alone is the wrong measure of "distinctive", and dangerously
+    /// so: a session, tenant, customer or node id is long, high-entropy and
+    /// sits on the same field name at both ends — the exact profile the
+    /// strength score rewards most. A GUID session id would therefore be the
+    /// single best bridge this analyzer can find, and it would fuse every
+    /// request made in that session into one "transaction". A password
+    /// change would become part of an order.
+    /// <para>
+    /// What separates a transaction key from a context key is not how it
+    /// looks but how far it spreads: the transaction id appears on the steps
+    /// belonging to that transaction, the session id appears on nearly
+    /// everything. A value carried by most of the recording is describing
+    /// the capture, not a transaction inside it.
+    /// </para>
+    /// <para>
+    /// Deliberately generous — this rejects the pathological case without
+    /// second-guessing short recordings, where a legitimate id can easily
+    /// touch half the steps.
+    /// </para>
+    /// </remarks>
+    public const double MaxBridgeCarrierShare = 0.6;
+
+    /// <summary>
     /// Edges the join may walk, counting the seed match as the first.
     /// Fixed, not configurable: an unbounded walk over an id-rich
     /// recording relates everything to everything, which is worse than
@@ -460,14 +487,26 @@ public static class RecordingCorrelationAnalyzer
         // independent of the order the dark steps happen to be visited
         // in — a step joined early can never become a stepping stone for
         // a step joined later.
+        // STRONG anchors only. A weak match is this analyzer's own name for
+        // a coincidence — same value on some other id-shaped leaf, no
+        // agreement on the field name, and no length floor — so a step lit
+        // by a bare "1" could otherwise drag an unrelated step onto the
+        // transaction and present it as evidence. A bridge already gets no
+        // name corroboration of its own; anchoring it to something that has
+        // none either leaves the far end resting on nothing.
+        // Two different questions, deliberately two arrays: who may ANCHOR a
+        // bridge, and who is still dark enough to NEED one. A weakly matched
+        // step is neither — it is already on the timeline, and it is not
+        // solid enough to pull anyone else on.
         var seedLit = new bool[events.Count];
         var anySeedLit = false;
         var anyDark = false;
         for (var i = 0; i < events.Count; i++)
         {
-            seedLit[i] = !string.Equals(events[i].Match, RecordingCorrelationMatch.None, StringComparison.Ordinal);
+            var match = events[i].Match;
+            seedLit[i] = string.Equals(match, RecordingCorrelationMatch.Strong, StringComparison.Ordinal);
             anySeedLit |= seedLit[i];
-            anyDark |= !seedLit[i];
+            anyDark |= string.Equals(match, RecordingCorrelationMatch.None, StringComparison.Ordinal);
         }
         if (!anySeedLit || !anyDark) return;
 
@@ -509,7 +548,9 @@ public static class RecordingCorrelationAnalyzer
             $"{RecordingCorrelationScanner.Format(rejected.Count)} step(s) share a value with the correlated "
             + $"steps but were not joined, because the shared value is too weak to be evidence: {named}{tail}. "
             + $"A bridge value must be id-shaped on both steps, at least {MinBridgeValueLength} characters long, "
-            + "and carried by a single family of field names.");
+            + "never carried by a non-id field, on a minority of the recording's steps, and its two field "
+            + "names must be the same identifier under two spellings. The step it bridges to must be a "
+            + "strong match, not a weak one.");
     }
 
     /// <summary>
@@ -545,11 +586,41 @@ public static class RecordingCorrelationAnalyzer
             var names = index.NamesByValue[leaf.Value];
             var carriers = index.IdCarriers[leaf.Value];
 
-            // GATE 2 — distinctiveness. GATE 3 — name cohesion.
+            // GATE 2 — distinctiveness.
             // (GATE 1, id-shape, already applies: IdLeaves only holds
             // leaves whose name ends in "id", and IdCarriers only records
             // the same, so both ends of every edge are id-shaped.)
-            if (leaf.Value.Length < MinBridgeValueLength || !NamesCohere(names))
+            // GATE 4 — selectivity. See MaxBridgeCarrierShare: a value on
+            // most of the steps is describing the capture (a session, a
+            // tenant, a node), not a transaction within it.
+            // GATE 3 (name cohesion) is NOT applied here any more — it is
+            // now checked per edge below, against the two names actually
+            // involved. Checked over every carrier in the recording it was
+            // both toothless and non-monotonic: whenever any occurrence sat
+            // on a field literally called "id" the family root became "id",
+            // which every id-suffixed name satisfies by definition, and
+            // appending an unrelated step could flip an already-rejected
+            // bridge to accepted.
+            // Two carriers is the FLOOR, not a smell: a bridge needs the dark
+            // step at one end and the lit step at the other, so it always
+            // touches at least two. On a three-step recording that is already
+            // 67% — a share test alone would reject every bridge a short
+            // capture can produce. The floor is what keeps the gate aimed at
+            // the case it exists for: a value smeared across most of a long
+            // recording.
+            var distinctCarrierSteps = carriers.Select(c => c.StepIndex).Distinct().Count();
+            var carrierCeiling = Math.Max(2, events.Count * MaxBridgeCarrierShare);
+            var tooCommon = distinctCarrierSteps > carrierCeiling;
+
+            // GATE 6 — a value doing two jobs is a label, not an identifier.
+            // "Loading" on both `statusId` and `status` is an enum the whole
+            // capture shares, not something that identifies one transaction.
+            // Unlike the old whole-recording cohesion check this only ever
+            // REJECTS as more of the recording is considered, so a later step
+            // can never talk an unsound bridge into being accepted.
+            var wearsANonIdName = names.Any(n => !n.EndsWith("id", StringComparison.Ordinal));
+
+            if (leaf.Value.Length < MinBridgeValueLength || tooCommon || wearsANonIdName)
             {
                 if (nearMiss is null
                     && carriers.Any(c => c.StepIndex != darkIndex && seedLit[c.StepIndex]))
@@ -562,8 +633,17 @@ public static class RecordingCorrelationAnalyzer
             var admitted = false;
             foreach (var carrier in carriers)
             {
-                // GATE 4 — depth. Seed-lit steps only.
+                // GATE 5 — depth. Seed-lit steps only.
                 if (carrier.StepIndex == darkIndex || !seedLit[carrier.StepIndex]) continue;
+
+                // GATE 3 — name cohesion, per edge. The two names actually
+                // being joined must be the same entity under two spellings:
+                // identical, or one a suffix of the other (id / shipId /
+                // onShipId). Judged on this pair alone, so the verdict does
+                // not change when an unrelated step elsewhere in the
+                // recording happens to reuse the value.
+                if (!NamesCohere(leaf.NormalizedName, carrier.NormalizedName)) continue;
+
                 admitted = true;
 
                 var strength = BridgeStrength(leaf.NormalizedName, carrier.NormalizedName, leaf.Value, names.Count);
@@ -593,31 +673,29 @@ public static class RecordingCorrelationAnalyzer
     }
 
     /// <summary>
-    /// GATE 3 — every field name carrying this value, anywhere in the
-    /// recording, must belong to one suffix family rooted in an id-shaped
-    /// name. <c>{id, onShipId, occupiedByShipId}</c> is one entity under
-    /// three spellings; <c>{number, id, seq, portCallId, craneId}</c> is
-    /// the number 1 doing five unrelated jobs.
+    /// GATE 3 — the two field names being joined must be one entity under
+    /// two spellings: identical, or the shorter a suffix of the longer.
+    /// <c>id</c>/<c>onShipId</c> and <c>shipId</c>/<c>occupiedByShipId</c>
+    /// cohere; <c>craneId</c>/<c>portCallId</c> do not.
     /// </summary>
-    private static bool NamesCohere(List<string> names)
+    /// <remarks>
+    /// Judged on the candidate edge alone, deliberately. The earlier version
+    /// took every carrier of the value anywhere in the recording and looked
+    /// for a common suffix root, which failed twice over: the root collapsed
+    /// to <c>"id"</c> as soon as any occurrence sat on a bare <c>id</c>
+    /// field — and then every id-suffixed name satisfies it, so the gate
+    /// stopped rejecting anything precisely in the commonest case — and the
+    /// verdict depended on steps that had nothing to do with the edge, so
+    /// appending an unrelated step could flip a rejected bridge to accepted.
+    /// Both names are already known to end in <c>id</c> by gate 1.
+    /// </remarks>
+    private static bool NamesCohere(string a, string b)
     {
-        if (names.Count == 0) return false;
+        if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return false;
+        if (string.Equals(a, b, StringComparison.Ordinal)) return true;
 
-        var root = names[0];
-        foreach (var name in names)
-        {
-            if (name.Length < root.Length) root = name;
-        }
-        if (!root.EndsWith("id", StringComparison.Ordinal)) return false;
-
-        // A tie on length that is not the same string fails here, which is
-        // the intended reading: two equally short unrelated names are not
-        // a family.
-        foreach (var name in names)
-        {
-            if (!name.EndsWith(root, StringComparison.Ordinal)) return false;
-        }
-        return true;
+        var (shorter, longer) = a.Length <= b.Length ? (a, b) : (b, a);
+        return longer.EndsWith(shorter, StringComparison.Ordinal);
     }
 
     /// <summary>
