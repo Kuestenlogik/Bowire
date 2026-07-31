@@ -291,6 +291,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ⬜ Backlog |  |
 | [544](https://github.com/Kuestenlogik/Bowire/issues/544) | Bowire | [Discovery cannot report a partial fault: results and diagnostics are mutually exclusive](#issue-kuestenlogik-bowire-544) | ⬜ Backlog |  |
 | [545](https://github.com/Kuestenlogik/Bowire/issues/545) | Bowire | [Correlated timeline: join across renamed identifiers (multi-key)](#issue-kuestenlogik-bowire-545) | ⬜ Backlog |  |
+| [546](https://github.com/Kuestenlogik/Bowire/issues/546) | Bowire | [Make plugin management DI-friendly: retire the static PluginManager and its duplicate ledger](#issue-kuestenlogik-bowire-546) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1197,6 +1198,10 @@ A discovery probe is all-or-nothing. If any surface of a server faults, the plug
 #### <a id="issue-kuestenlogik-bowire-545"></a>⬜ Backlog · [#545](https://github.com/Kuestenlogik/Bowire/issues/545) Correlated timeline: join across renamed identifiers (multi-key)
 
 The correlated timeline (#539) keys a recording on **one** value. A business transaction that changes its identifier as it crosses services therefore lights up only the lanes that happen to speak the chosen key. [[more]](https://github.com/Kuestenlogik/Bowire/issues/545)
+
+#### <a id="issue-kuestenlogik-bowire-546"></a>⬜ Backlog · [#546](https://github.com/Kuestenlogik/Bowire/issues/546) Make plugin management DI-friendly: retire the static PluginManager and its duplicate ledger
+
+Plugin management is static end to end: `PluginManager` is a `static class` holding `s_pluginContexts` (the load contexts) and `s_loadedSubdirs` (a hand-maintained record of what has been loaded), and `BowireProtocolRegistry.Discover()` is a static call with side effects — it runs `Assembly.LoadFrom` while scanning. [[more]](https://github.com/Kuestenlogik/Bowire/issues/546)
 
 ---
 
