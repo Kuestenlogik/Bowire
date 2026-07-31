@@ -66,7 +66,10 @@ public sealed record RecordingCorrelationCandidate(
 /// <param name="Match">
 /// <see cref="RecordingCorrelationMatch.Strong"/> /
 /// <see cref="RecordingCorrelationMatch.Weak"/> /
+/// <see cref="RecordingCorrelationMatch.Derived"/> /
 /// <see cref="RecordingCorrelationMatch.None"/> for this frame alone.
+/// On a derived step a frame is only <c>derived</c> when it carries the
+/// bridge value itself, so a lit bar never sits over dead ticks.
 /// </param>
 /// <param name="Label">Optional short label (the frame's discriminator) for the tooltip.</param>
 public sealed record RecordingCorrelationFrame(
@@ -75,7 +78,7 @@ public sealed record RecordingCorrelationFrame(
     string Match,
     string? Label);
 
-/// <summary>The three match tiers a step or frame can land in.</summary>
+/// <summary>The match tiers a step or frame can land in.</summary>
 public static class RecordingCorrelationMatch
 {
     /// <summary>The key's own name (by suffix) and value were both found.</summary>
@@ -88,9 +91,58 @@ public static class RecordingCorrelationMatch
     /// </summary>
     public const string Weak = "weak";
 
+    /// <summary>
+    /// The key itself is absent, but the step shares a distinctive
+    /// id-shaped value with a step the key <em>did</em> match (#545) —
+    /// the transaction renamed its identifier on the way across. The
+    /// linking value is always reported on
+    /// <see cref="RecordingCorrelationEvent.Link"/>: a derived match
+    /// that cannot name its bridge is worse than no match at all.
+    /// Weaker evidence than <see cref="Strong"/> or <see cref="Weak"/>,
+    /// because nothing about the key's own name was found.
+    /// </summary>
+    public const string Derived = "derived";
+
     /// <summary>The key does not appear in this step at all.</summary>
     public const string None = "none";
 }
+
+/// <summary>
+/// Why a step is on the transaction even though the correlation key is
+/// nowhere in it (#545). One bridge value, shared with one step the key
+/// matched directly — the second and last edge of the join.
+/// </summary>
+/// <param name="Value">The shared value that linked this step in.</param>
+/// <param name="Name">The leaf name carrying it on <em>this</em> step, as written.</param>
+/// <param name="ViaStepId">Id of the already-matched step it is shared with.</param>
+/// <param name="ViaStepIndex">That step's zero-based position in the recording.</param>
+/// <param name="ViaProtocol">That step's protocol lane.</param>
+/// <param name="ViaName">The leaf name carrying the value on that step, as written.</param>
+/// <param name="ViaService">That step's service identifier, so a UI can name it without a second lookup.</param>
+/// <param name="ViaMethod">That step's method identifier.</param>
+/// <param name="AlternativeCount">
+/// How many <em>other</em> equally admissible values would have joined
+/// the same pair of steps. The harbor recording shares three container
+/// ids between REST and GraphQL, so the winner reports 2 — the operator
+/// should not read one arbitrary container as the special one.
+/// </param>
+/// <param name="Strength">
+/// Rank among the admissible bridges for this step; higher wins. Same
+/// leaf name on both ends beats a suffix relative, a longer value beats
+/// a shorter one, and a value spread across many field names is
+/// penalised.
+/// </param>
+public sealed record RecordingCorrelationLink(
+    string Value,
+    string Name,
+    string ViaStepId,
+    int ViaStepIndex,
+    string ViaProtocol,
+    string ViaName,
+    string ViaService,
+    string ViaMethod,
+    int AlternativeCount,
+    int Strength);
 
 /// <summary>One recorded step, placed on the shared time axis.</summary>
 /// <param name="StepId">The step's own id.</param>
@@ -104,6 +156,12 @@ public static class RecordingCorrelationMatch
 /// <param name="DurationMs">Recorded wall-clock duration.</param>
 /// <param name="Match">Match tier for the whole step.</param>
 /// <param name="Frames">Per-frame ticks for streaming steps; empty for unary.</param>
+/// <param name="Link">
+/// Set exactly when <paramref name="Match"/> is
+/// <see cref="RecordingCorrelationMatch.Derived"/>: which shared value
+/// joined this step, and to which already-matched step (#545).
+/// <see langword="null"/> for every other tier.
+/// </param>
 public sealed record RecordingCorrelationEvent(
     string StepId,
     int StepIndex,
@@ -115,13 +173,22 @@ public sealed record RecordingCorrelationEvent(
     long OffsetMs,
     long DurationMs,
     string Match,
-    IReadOnlyList<RecordingCorrelationFrame> Frames);
+    IReadOnlyList<RecordingCorrelationFrame> Frames,
+    RecordingCorrelationLink? Link = null);
 
 /// <summary>One protocol lane.</summary>
 /// <param name="Protocol">Lane key — the step's <c>protocol</c> field.</param>
 /// <param name="StepCount">Steps in this lane.</param>
-/// <param name="MatchedCount">Steps in this lane that matched (strong or weak).</param>
-public sealed record RecordingCorrelationLane(string Protocol, int StepCount, int MatchedCount);
+/// <param name="MatchedCount">Steps in this lane that matched — strong, weak or derived.</param>
+/// <param name="DerivedCount">
+/// How many of <paramref name="MatchedCount"/> got there through a
+/// bridge value rather than the key itself (#545).
+/// </param>
+public sealed record RecordingCorrelationLane(
+    string Protocol,
+    int StepCount,
+    int MatchedCount,
+    int DerivedCount = 0);
 
 /// <summary>
 /// The full correlated view of one recording — what the workbench's
@@ -143,9 +210,16 @@ public sealed record RecordingCorrelationLane(string Protocol, int StepCount, in
 /// <param name="Suggestions">Every key the analyzer would accept, best first.</param>
 /// <param name="Lanes">One entry per protocol, in first-appearance order.</param>
 /// <param name="Events">One entry per step, in recording order.</param>
-/// <param name="MatchedStepCount">Steps whose match is not <c>none</c>.</param>
+/// <param name="MatchedStepCount">
+/// Steps whose match is not <c>none</c> — strong, weak <em>and</em>
+/// derived. A derived step is on the transaction; it just got there
+/// through a bridge value, which <paramref name="DerivedStepCount"/>
+/// keeps separately visible.
+/// </param>
 /// <param name="MatchedProtocolCount">Distinct protocols with at least one matched step.</param>
 /// <param name="Warnings">Human-readable caveats about this particular analysis.</param>
+/// <param name="DerivedStepCount">Of <paramref name="MatchedStepCount"/>, how many were joined through a bridge value (#545).</param>
+/// <param name="DerivedProtocolCount">Distinct protocols whose only route onto the transaction is a bridge value.</param>
 public sealed record RecordingCorrelationTimeline(
     string RecordingId,
     string RecordingName,
@@ -158,7 +232,9 @@ public sealed record RecordingCorrelationTimeline(
     IReadOnlyList<RecordingCorrelationEvent> Events,
     int MatchedStepCount,
     int MatchedProtocolCount,
-    IReadOnlyList<string> Warnings)
+    IReadOnlyList<string> Warnings,
+    int DerivedStepCount = 0,
+    int DerivedProtocolCount = 0)
 {
     /// <summary>Timebase tag for recordings whose <c>capturedAt</c> are wall-clock epoch milliseconds.</summary>
     public const string TimebaseAbsolute = "absolute";

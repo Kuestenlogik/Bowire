@@ -275,6 +275,77 @@ except the workbench that writes it. And a recording whose `capturedAt`
 stamps are all zero now falls back to cumulative durations rather than
 collapsing every step onto the same offset.
 
+### The timeline follows a transaction that renames its id (#545)
+
+#539 keyed a recording on **one** value, so a transaction that changes
+its identifier as it crosses services lit only the lanes that happened to
+speak the chosen key. On the harbor recording, `shipId = 101` reached six
+of eight lanes — GraphQL stayed dark not for want of a correlation key
+but because it calls the same transaction `portCall.id = 1`.
+
+The analyzer now walks a **second edge**. A step the key left unmatched
+is joined to the transaction when it shares a distinctive id-shaped value
+with a step the key *did* match. On the harbor recording that lights the
+GraphQL lane through the container ids it shares with the REST step
+(`id = MSCU1234567`), taking it to **seven of eight**:
+
+| Protocol | Before | Now |
+|---|---|---|
+| `odata`, `rest`, `websocket`, `signalr`, `sse` | strong | strong |
+| `grpc` | weak | weak |
+| `graphql` | unmatched | **derived** — `id = MSCU1234567`, shared with `rest` |
+| `mqtt` | unmatched | unmatched |
+
+**Which shared values count is the whole problem, and the rule is
+deliberately strict.** A bridge value must be id-shaped on *both* steps,
+at least six characters long, and carried by a single family of field
+names across the recording. That rejects `1` (one character, and it is
+simultaneously a dock `Number`, a `Seq`, a `portCallId` and a `craneId`),
+`true`, a repeated status string that doubles as a plain `status` label,
+and a shared timestamp. The bar is higher than for the seed key on
+purpose: a seed is corroborated by two steps agreeing on the field
+*name*, a bridge gets no such corroboration, so the value has to carry
+its own weight. A short id can still be promoted to the seed by hand.
+
+**The eighth lane stays dark, and now says why.** The MQTT crane
+telemetry shares exactly one value with the rest of the capture — the
+number `1` — and joining on it would fuse four unrelated entities. The
+run reports `mqtt (craneId = 1)` as a rejected bridge instead of leaving
+the lane silently missing.
+
+**Depth is two edges, fixed.** A step the key matched directly may bridge
+one hop further; a step reached *through* a bridge never bridges onward.
+An unbounded walk over an id-rich recording relates everything to
+everything, which is worse than no join.
+
+Every derived lane names the value that linked it — an unexplained match
+is worse than no match, because an operator cannot tell a real
+correlation from a coincidence. The timeline tab gains an always-visible
+strip under the lanes (`graphql · Query / portCall · via id =
+MSCU1234567 · shared with rest step 3`), a fourth legend swatch, and a
+`linked via` row in the pinned inspect strip; derived bars render as
+qualified evidence rather than as a full match. `bowire recording
+correlate` gains a **VIA** column — an unjoined step reads `–` in both
+`MATCH` and `VIA`, a directly matched step names its tier and shows `–`
+for `VIA` — plus a `derived links` block naming the bridge and its source
+step.
+
+The persisted `correlation` field is **unchanged**: it still holds the
+single seed key exactly as #539 wrote it. Derived edges are recomputed on
+read, so there is no format change and no `recordingFormatVersion` bump.
+`matchedStepCount` now counts derived steps too (7 on the harbor file,
+where it was 6), with `derivedStepCount` / `derivedProtocolCount` keeping
+the split visible.
+
+One correction to a #539 note rides along. The feature doc said the
+GraphQL lane contributes nothing because its id lives inside the query
+string. That is only half right, and the wrong half sounded general: the
+GraphQL **response** is ordinary JSON (`data.portCall.id`) and the
+scanner has always walked it. What the sample query is missing is
+`variables` — a query written as `{"query":"query($id:Int!){…}",
+"variables":{"id":1}}` puts the id in a plain JSON leaf with no scanner
+change at all. It is a property of that one query, not of GraphQL.
+
 ### MCP moves to SDK 2.0 and the 2026-07-28 revision
 
 Bowire's three MCP surfaces — workbench-as-server, Bowire-as-client, and

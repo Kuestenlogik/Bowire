@@ -154,7 +154,7 @@ internal static class RecordingCommand
     private static Command BuildCorrelateCommand()
     {
         var correlate = new Command("correlate",
-            "Read a .bwr as one correlated transaction: resolve a correlation signal (a traceparent / x-correlation-id header, else a shared id-shaped payload field), then print every step on a shared time axis with a strong/weak/no-match verdict. Exit 0 on success, 64 bad args, 65 malformed file, 66 file not found.");
+            "Read a .bwr as one correlated transaction: resolve a correlation signal (a traceparent / x-correlation-id header, else a shared id-shaped payload field), then print every step on a shared time axis with a strong/weak/derived/no-match verdict. A step the key misses is still joined when it shares a distinctive id-shaped value with a step the key matched, and the `via` column names that value. Exit 0 on success, 64 bad args, 65 malformed file, 66 file not found.");
 
         var pathArg = new Argument<string>("path")
         {
@@ -273,27 +273,59 @@ internal static class RecordingCommand
         io.OutLine(t.Key is null
             ? "key:      (none) — no correlation header and no id shared by two or more steps"
             : $"key:      {t.Key.Name} = {t.Key.Value}  [{t.Key.Source}]");
-        io.OutLine($"matched:  {Num(t.MatchedStepCount)}/{Num(t.Events.Count)} step(s) across {Num(t.MatchedProtocolCount)}/{Num(t.Lanes.Count)} protocol(s)");
+        var derived = t.DerivedStepCount > 0
+            ? $", {Num(t.DerivedStepCount)} joined through a bridge value"
+            : string.Empty;
+        io.OutLine($"matched:  {Num(t.MatchedStepCount)}/{Num(t.Events.Count)} step(s) across {Num(t.MatchedProtocolCount)}/{Num(t.Lanes.Count)} protocol(s){derived}");
         io.OutLine($"span:     {Num(t.SpanMs)} ms ({t.Timebase} timebase)");
         io.OutLine();
 
-        io.OutLine("    OFFSET  PROTOCOL    SERVICE / METHOD                                     DUR  STATUS    MATCH");
+        // Frame counts moved into DUR to free the columns VIA needs. MATCH
+        // and VIA together tell all four states apart without a fifth
+        // column: a directly matched step names a tier and shows `–` for
+        // VIA, a joined step reads `derived` plus the value that joined
+        // it, and an unjoined step is `–` in both.
+        io.OutLine($"{"OFFSET",10}  {"PROTOCOL",-10}  {"SERVICE / METHOD",-32}  {"DUR",12}  {"STATUS",-6}  {"MATCH",-7}  VIA");
         foreach (var e in t.Events)
         {
             var offset = "+" + Num(e.OffsetMs) + "ms";
-            var duration = Num(e.DurationMs) + "ms";
-            var target = Clip(e.Service + " / " + e.Method, 46);
+            var duration = Num(e.DurationMs) + "ms"
+                + (e.Frames.Count > 0 ? " x" + Num(e.Frames.Count) : string.Empty);
+            var target = Clip(e.Service + " / " + e.Method, 32);
             var protocol = Clip(e.Protocol, 10);
-            var status = Clip(e.Status, 8);
+            var status = Clip(e.Status, 6);
             var match = e.Match switch
             {
                 RecordingCorrelationMatch.Strong => "strong",
                 RecordingCorrelationMatch.Weak => "weak",
+                RecordingCorrelationMatch.Derived => "derived",
                 _ => "–",
             };
-            var frames = e.Frames.Count > 0 ? " (" + Num(e.Frames.Count) + " frames)" : string.Empty;
+            var via = e.Link is null
+                ? "–"
+                : Clip($"{e.Link.Name} = {e.Link.Value} ({e.Link.ViaProtocol})", 32);
             io.OutLine(
-                $"{offset,10}  {protocol,-10}  {target,-46}  {duration,8}  {status,-8}  {match}{frames}");
+                $"{offset,10}  {protocol,-10}  {target,-32}  {duration,12}  {status,-6}  {match,-7}  {via}");
+        }
+
+        var links = t.Events.Where(e => e.Link is not null).ToList();
+        if (links.Count > 0)
+        {
+            io.OutLine();
+            io.OutLine(
+                $"derived links (depth {Num(RecordingCorrelationAnalyzer.MaxJoinDepth)} — a step the key matched directly "
+                + "bridges one hop further, and no further):");
+            foreach (var e in links)
+            {
+                var link = e.Link!;
+                var alternatives = link.AlternativeCount > 0
+                    ? $"; {Num(link.AlternativeCount)} other shared value(s) would have served equally well"
+                    : string.Empty;
+                io.OutLine($"  {e.Protocol} {e.Service} / {e.Method}");
+                io.OutLine(
+                    $"    linked by {link.Name} = {link.Value}, shared with {link.ViaProtocol} step "
+                    + $"{Num(link.ViaStepIndex + 1)} ({link.ViaService} / {link.ViaMethod}){alternatives}");
+            }
         }
 
         var others = t.Suggestions

@@ -18940,6 +18940,17 @@ button.bowire-ws-detail-action.bowire-ws-detail-danger:hover:not(:disabled) {
     background: rgba(239, 68, 68, 0.18);
     border-color: #ef4444;
 }
+/* Derived (#545) — this step does not carry the key at all; it was joined
+   through a value it shares with a step that does. It composes ON TOP of
+   is-weak rather than replacing a tier, and it has to be an inset ring:
+   `background` is already spoken for by the tier and again by .is-fail,
+   and `outline` is spoken for by .is-selected, so a derived+failed or
+   derived+selected bar would silently lose one of the two. */
+.bowire-recording-bar.is-derived {
+    box-shadow: inset 0 0 0 1px var(--bowire-accent);
+    border-style: dotted;
+    opacity: 0.7;
+}
 .bowire-recording-bar.is-selected {
     outline: 2px solid var(--bowire-text);
     outline-offset: 1px;
@@ -18964,6 +18975,53 @@ button.bowire-ws-detail-action.bowire-ws-detail-danger:hover:not(:disabled) {
 }
 .bowire-recording-frame-tick.is-weak {
     opacity: 0.6;
+}
+.bowire-recording-frame-tick.is-derived {
+    opacity: 0.5;
+}
+/* The always-visible explanation for every derived lane (#545). Lives
+   INSIDE .bowire-recording-timeline-lanes so its rows ride the one
+   delegated click listener; the top border is what separates it from the
+   lanes proper. */
+.bowire-recording-timeline-links {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--bowire-border);
+}
+.bowire-recording-timeline-links-head {
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.bowire-recording-timeline-links-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    padding: 3px 4px;
+    border-radius: var(--bowire-radius-sm);
+    font-size: 11px;
+    cursor: pointer;
+}
+.bowire-recording-timeline-links-row:hover {
+    background: var(--bowire-sidebar-hover, transparent);
+}
+.bowire-recording-timeline-links-target {
+    color: var(--bowire-text);
+}
+.bowire-recording-timeline-links-via {
+    font-family: var(--bowire-font-mono);
+    font-size: 10px;
+    color: var(--bowire-accent);
+    white-space: nowrap;
+}
+.bowire-recording-timeline-links-from {
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
 }
 .bowire-recording-timeline-axis {
     position: relative;
@@ -19057,6 +19115,12 @@ button.bowire-ws-detail-action.bowire-ws-detail-danger:hover:not(:disabled) {
 .bowire-recording-timeline-legend-swatch.is-weak {
     background: transparent;
     border: 1px dashed var(--bowire-accent);
+}
+.bowire-recording-timeline-legend-swatch.is-weak.is-derived {
+    background: var(--bowire-accent-subtle);
+    border: 1px dotted var(--bowire-accent);
+    box-shadow: inset 0 0 0 1px var(--bowire-accent);
+    opacity: 0.7;
 }
 .bowire-recording-timeline-legend-swatch.is-none {
     background: var(--bowire-text-tertiary);

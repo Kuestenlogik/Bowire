@@ -138,8 +138,8 @@ diagnostic on stderr.
 
 Its sibling `bowire recording correlate <path> [--name <recording>]
 [--key name=value] [--json]` reads the file through the same loader and
-prints every step on a shared time axis with a strong / weak / no-match
-verdict against the resolved correlation key — the identical analysis
+prints every step on a shared time axis with a strong / weak / derived /
+no-match verdict against the resolved correlation key — the identical analysis
 the workbench's Correlated-timeline tab runs over
 `POST /api/recordings/correlate`. Same exit codes. See
 [Correlated timeline](../features/correlated-timeline.md).
