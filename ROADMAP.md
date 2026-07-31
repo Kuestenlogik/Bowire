@@ -290,6 +290,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [538](https://github.com/Kuestenlogik/Bowire/issues/538) | Bowire | [Show the CLI equivalent of every request (Copy as Bowire CLI)](#issue-kuestenlogik-bowire-538) | ⬜ Backlog |  |
 | [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ⬜ Backlog |  |
 | [543](https://github.com/Kuestenlogik/Bowire/issues/543) | Bowire | [MockCommandAutoInstallTests reads the developer's real plugin directory](#issue-kuestenlogik-bowire-543) | ⬜ Backlog |  |
+| [544](https://github.com/Kuestenlogik/Bowire/issues/544) | Bowire | [Discovery cannot report a partial fault: results and diagnostics are mutually exclusive](#issue-kuestenlogik-bowire-544) | ⬜ Backlog |  |
+| [545](https://github.com/Kuestenlogik/Bowire/issues/545) | Bowire | [Correlated timeline: join across renamed identifiers (multi-key)](#issue-kuestenlogik-bowire-545) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1193,6 +1195,14 @@ Ship a "Correlated timeline" as a second tab inside the existing Recordings deta
 
 `MockCommandAutoInstallTests.RunAsync_AutoInstall_MultipleMissing_InstallsEach` fails on a developer machine that has any protocol plugin installed: [[more]](https://github.com/Kuestenlogik/Bowire/issues/543)
 
+#### <a id="issue-kuestenlogik-bowire-544"></a>⬜ Backlog · [#544](https://github.com/Kuestenlogik/Bowire/issues/544) Discovery cannot report a partial fault: results and diagnostics are mutually exclusive
+
+A discovery probe is all-or-nothing. If any surface of a server faults, the plugin's entire contribution is dropped — including the surfaces that answered perfectly. [[more]](https://github.com/Kuestenlogik/Bowire/issues/544)
+
+#### <a id="issue-kuestenlogik-bowire-545"></a>⬜ Backlog · [#545](https://github.com/Kuestenlogik/Bowire/issues/545) Correlated timeline: join across renamed identifiers (multi-key)
+
+The correlated timeline (#539) keys a recording on **one** value. A business transaction that changes its identifier as it crosses services therefore lights up only the lanes that happen to speak the chosen key. [[more]](https://github.com/Kuestenlogik/Bowire/issues/545)
+
 ---
 
-*Generated 2026-07-30 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-07-31 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
