@@ -163,6 +163,147 @@ public class BowireDiscoveryProbeTests
     }
 
     [Fact]
+    public async Task RunAsync_Records_Partial_When_A_Plugin_Returns_Services_And_A_Fault()
+    {
+        // #544's headline. Before the seam a plugin had to choose: return
+        // the partial list (the fault vanishes) or throw (the services
+        // vanish). Both halves have to survive one probe.
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new ReportingProtocol("mcp", "MCP", services: 2,
+            new BowireDiscoveryDiagnostic(BowireDiscoverySeverity.Fault, "tools/list rejected the payload")
+            {
+                Details = ["tools/list rejected the payload"],
+            }));
+
+        var result = await BowireDiscoveryProbe.RunAsync(
+            registry, "https://api.example.com", pluginHint: null,
+            showInternalServices: false, perProbeCeiling: Ceiling,
+            ct: TestContext.Current.CancellationToken);
+
+        var attempt = Assert.Single(result.Attempts);
+        Assert.Equal(BowireDiscoveryAttempt.OutcomePartial, attempt.Outcome);
+        Assert.Equal(2, attempt.ServicesFound);
+        // The count stays in the message — the CLI table and the workbench
+        // rows print Message, not ServicesFound.
+        Assert.Equal("2 services, but tools/list rejected the payload", attempt.Message);
+        Assert.Equal("tools/list rejected the payload", Assert.Single(attempt.Details!));
+        // …and the services are still there. That is the bug.
+        Assert.Equal(2, result.Services.Count);
+    }
+
+    [Fact]
+    public async Task RunAsync_Downgrades_A_Fault_With_No_Services_To_Error()
+    {
+        // With nothing to protect, a fault is indistinguishable from a
+        // throw — so it reports as one rather than inventing a `partial`
+        // that carries no partial result.
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new ReportingProtocol("mcp", "MCP", services: 0,
+            new BowireDiscoveryDiagnostic(BowireDiscoverySeverity.Fault, "every surface failed")));
+
+        var result = await BowireDiscoveryProbe.RunAsync(
+            registry, "https://api.example.com", pluginHint: null,
+            showInternalServices: false, perProbeCeiling: Ceiling,
+            ct: TestContext.Current.CancellationToken);
+
+        var attempt = Assert.Single(result.Attempts);
+        Assert.Equal(BowireDiscoveryAttempt.OutcomeError, attempt.Outcome);
+        Assert.Equal("every surface failed", attempt.Message);
+    }
+
+    [Fact]
+    public async Task RunAsync_Keeps_Empty_For_A_Note_But_Replaces_The_Generic_Message()
+    {
+        // The REST half of #544: "no OpenAPI document found at <origin>"
+        // was known to the plugin and unreachable by core, so the row read
+        // "returned no services". A Note is not a failure — the outcome
+        // must stay `empty`.
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new ReportingProtocol("rest", "REST", services: 0,
+            new BowireDiscoveryDiagnostic(
+                BowireDiscoverySeverity.Note, "no OpenAPI document found at http://localhost:5181")
+            {
+                Details = ["probe timeout: http://localhost:5181/openapi.json"],
+            }));
+
+        var result = await BowireDiscoveryProbe.RunAsync(
+            registry, "http://localhost:5181", pluginHint: null,
+            showInternalServices: false, perProbeCeiling: Ceiling,
+            ct: TestContext.Current.CancellationToken);
+
+        var attempt = Assert.Single(result.Attempts);
+        Assert.Equal(BowireDiscoveryAttempt.OutcomeEmpty, attempt.Outcome);
+        Assert.Equal("no OpenAPI document found at http://localhost:5181", attempt.Message);
+        Assert.NotNull(attempt.Details);
+    }
+
+    [Fact]
+    public async Task RunAsync_Keeps_Ok_For_A_Note_And_Keeps_The_Count_In_The_Message()
+    {
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new ReportingProtocol("rest", "REST", services: 1,
+            new BowireDiscoveryDiagnostic(
+                BowireDiscoverySeverity.Note,
+                "resolved via well-known path http://localhost:5181/openapi/v1.json")));
+
+        var result = await BowireDiscoveryProbe.RunAsync(
+            registry, "http://localhost:5181", pluginHint: null,
+            showInternalServices: false, perProbeCeiling: Ceiling,
+            ct: TestContext.Current.CancellationToken);
+
+        var attempt = Assert.Single(result.Attempts);
+        Assert.Equal(BowireDiscoveryAttempt.OutcomeOk, attempt.Outcome);
+        Assert.Equal(
+            "1 service — resolved via well-known path http://localhost:5181/openapi/v1.json",
+            attempt.Message);
+    }
+
+    [Fact]
+    public async Task RunAsync_Leaves_A_Reporting_Plugin_That_Says_Nothing_Exactly_As_Before()
+    {
+        // Implementing the interface must not change a clean probe by one
+        // character — otherwise every plugin that adopts it pays for the
+        // diagnostics of the ones that need them.
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new ReportingProtocol("rest", "REST", services: 3, diagnostic: null));
+
+        var result = await BowireDiscoveryProbe.RunAsync(
+            registry, "https://api.example.com", pluginHint: null,
+            showInternalServices: false, perProbeCeiling: Ceiling,
+            ct: TestContext.Current.CancellationToken);
+
+        var attempt = Assert.Single(result.Attempts);
+        Assert.Equal(BowireDiscoveryAttempt.OutcomeOk, attempt.Outcome);
+        Assert.Equal("3 services", attempt.Message);
+        Assert.Null(attempt.Details);
+        // Services still get tagged on the diagnostics path — the tagging
+        // loop must not sit inside the non-reporting branch.
+        Assert.All(result.Services, s => Assert.Equal("rest", s.Source));
+        Assert.All(result.Services, s => Assert.Equal("https://api.example.com", s.OriginUrl));
+    }
+
+    [Fact]
+    public async Task RunAsync_Prefers_A_Throw_Over_A_Diagnostic_Reported_Before_It()
+    {
+        // A plugin that reports and then throws: the exception says what
+        // actually stopped the probe, so it wins — and must not leave the
+        // reported `details` hanging off an `error` attempt whose message
+        // now comes from somewhere else.
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new ThrowAfterReportingProtocol("mcp", "MCP", "connection reset"));
+
+        var result = await BowireDiscoveryProbe.RunAsync(
+            registry, "https://api.example.com", pluginHint: null,
+            showInternalServices: false, perProbeCeiling: Ceiling,
+            ct: TestContext.Current.CancellationToken);
+
+        var attempt = Assert.Single(result.Attempts);
+        Assert.Equal(BowireDiscoveryAttempt.OutcomeError, attempt.Outcome);
+        Assert.Equal("connection reset", attempt.Message);
+        Assert.Null(attempt.Details);
+    }
+
+    [Fact]
     public async Task RunAsync_Rejects_A_Null_Registry()
         => await Assert.ThrowsAsync<ArgumentNullException>(async () =>
             await BowireDiscoveryProbe.RunAsync(
@@ -179,6 +320,40 @@ public class BowireDiscoveryProbeTests
             => Task.FromResult(Enumerable.Range(0, services)
                 .Select(i => new BowireServiceInfo($"{Id}.Service{i}", Id, []))
                 .ToList());
+    }
+
+    /// <summary>
+    /// A plugin on the #544 seam. DiscoverAsync stays implemented (every
+    /// IBowireProtocol has it) but must never be reached by the probe — it
+    /// throws so a regression that skips the interface check fails loudly
+    /// instead of silently reporting the old outcome.
+    /// </summary>
+    private sealed class ReportingProtocol(
+        string id, string name, int services, BowireDiscoveryDiagnostic? diagnostic)
+        : StubProtocolBase(id, name), IBowireDiscoveryDiagnostics
+    {
+        public override Task<List<BowireServiceInfo>> DiscoverAsync(
+            string serverUrl, bool showInternalServices, CancellationToken ct = default)
+            => throw new InvalidOperationException(
+                "BowireDiscoveryProbe must call DiscoverWithDiagnosticsAsync on a reporting plugin");
+
+        public Task<BowireDiscoveryReport> DiscoverWithDiagnosticsAsync(
+            string serverUrl, bool showInternalServices, CancellationToken ct = default)
+            => Task.FromResult(new BowireDiscoveryReport(
+                [.. Enumerable.Range(0, services).Select(i => new BowireServiceInfo($"{Id}.Service{i}", Id, []))],
+                diagnostic));
+    }
+
+    private sealed class ThrowAfterReportingProtocol(string id, string name, string message)
+        : StubProtocolBase(id, name), IBowireDiscoveryDiagnostics
+    {
+        public override Task<List<BowireServiceInfo>> DiscoverAsync(
+            string serverUrl, bool showInternalServices, CancellationToken ct = default)
+            => throw new InvalidOperationException(message);
+
+        public Task<BowireDiscoveryReport> DiscoverWithDiagnosticsAsync(
+            string serverUrl, bool showInternalServices, CancellationToken ct = default)
+            => throw new InvalidOperationException(message);
     }
 
     private sealed class ThrowingProtocol(string id, string name, string message)

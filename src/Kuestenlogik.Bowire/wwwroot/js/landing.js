@@ -144,6 +144,30 @@
             body: bodyText
         }));
 
+        // A partially-faulted probe lands HERE, not on the failure card:
+        // it produced services, so detectLandingState correctly classifies
+        // it 'ready'. Without this the sidebar fills up and nothing says a
+        // server's tools are missing — #544's bug reproduced one layer up.
+        // The same collapsed disclosure the failure card uses, so there is
+        // one diagnostics surface, not two.
+        var degradedKeys = [];
+        if (typeof discoveryAttempts !== 'undefined' && typeof urlDiscoveryDegraded === 'function') {
+            var keys = Object.keys(discoveryAttempts);
+            for (var d = 0; d < keys.length; d++) {
+                if (urlDiscoveryDegraded(keys[d])) degradedKeys.push(keys[d]);
+            }
+        }
+        if (degradedKeys.length > 0) {
+            card.appendChild(el('div', {
+                className: 'bowire-landing-section-title',
+                textContent: 'Discovery is incomplete'
+            }));
+            for (var k = 0; k < degradedKeys.length; k++) {
+                var diag = renderDiscoveryDiagnostics(degradedKeys[k]);
+                if (diag) card.appendChild(diag);
+            }
+        }
+
         // Recent history quick-recall (filtered to current servers).
         // Each row is its own action — clicking jumps into the request.
         var recents = getRecentHistoryForCurrentServers(5);
@@ -514,6 +538,7 @@
         var open = forceOpen
             || (typeof discoveryDiagnosticsOpen !== 'undefined' && discoveryDiagnosticsOpen.has(key));
         var failed = attempts.filter(_diagIsFailure).length;
+        var degraded = attempts.filter(_diagIsPartial).length;
 
         var wrap = el('div', {
             id: 'bowire-diag-' + _diagKeySlug(key),
@@ -542,7 +567,9 @@
                 el('span', { className: 'bowire-diag-toggle-chevron', innerHTML: svgIcon('chevron') }),
                 el('span', {
                     textContent: attempts.length + ' plugin' + (attempts.length === 1 ? '' : 's')
-                        + ' probed · ' + failed + ' failed'
+                        + ' probed'
+                        + (degraded > 0 ? ' · ' + degraded + ' degraded' : '')
+                        + ' · ' + failed + ' failed'
                 })
             ));
         }
@@ -589,14 +616,24 @@
         return a && (a.outcome === 'error' || a.outcome === 'timeout');
     }
 
+    // Deliberately NOT folded into _diagIsFailure: a partial probe did
+    // contribute services, so counting it as failed next to a populated
+    // tree reads as a bug in the workbench. It is its own term (#544).
+    function _diagIsPartial(a) {
+        return !!(a && a.outcome === 'partial');
+    }
+
     // Failures first — the reason a discovery came back empty should be
     // the first row, not buried under nine "returned no services" lines.
+    // `partial` sits above `empty` for the same reason: it is closer to
+    // what the operator opened this list for.
     function _diagOutcomeRank(a) {
         var o = (a && a.outcome) || '';
         if (o === 'error') return 0;
         if (o === 'timeout') return 1;
-        if (o === 'empty') return 2;
-        return 3;
+        if (o === 'partial') return 2;
+        if (o === 'empty') return 3;
+        return 4;
     }
 
     // Stable element id per key so morphdom keys the subtree by id rather
@@ -620,7 +657,27 @@
                 textContent: a.durationMs + ' ms'
             }));
         }
-        return row;
+
+        // Per-step breakdown (#544): one line per faulted MCP surface, one
+        // per well-known path a REST sweep tried. Only present when the
+        // plugin implements the diagnostics seam — everything else keeps
+        // rendering exactly the single-line row it always did. Rendered
+        // as a sibling block so the row's flex layout is untouched.
+        var details = (a && Array.isArray(a.details)) ? a.details : null;
+        if (!details || details.length === 0) return row;
+        // A joined message already repeats a single detail line verbatim.
+        if (details.length === 1 && msg.indexOf(String(details[0])) >= 0) return row;
+
+        var group = el('div', { className: 'bowire-diag-row-group' }, row);
+        var list = el('div', { className: 'bowire-diag-details' });
+        for (var i = 0; i < details.length; i++) {
+            list.appendChild(el('div', {
+                className: 'bowire-diag-detail',
+                textContent: String(details[i])
+            }));
+        }
+        group.appendChild(list);
+        return group;
     }
 
     // Plain-text rendering of one key's attempt table, for bug reports.
@@ -641,6 +698,13 @@
                 + '  ' + (a.outcome || '?')
                 + '  ' + (typeof a.durationMs === 'number' ? a.durationMs + ' ms' : '')
                 + '  ' + (a.message || ''));
+            // The breakdown belongs in the bug report too — it names the
+            // exact surface / path, which the joined message may not.
+            if (Array.isArray(a.details)) {
+                for (var d = 0; d < a.details.length; d++) {
+                    lines.push('      ' + String(a.details[d]));
+                }
+            }
         }
         var hint = (typeof discoveryHints !== 'undefined') ? discoveryHints[key] : null;
         if (hint) { lines.push(''); lines.push('Hint: ' + hint); }

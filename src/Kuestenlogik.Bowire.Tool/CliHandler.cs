@@ -163,17 +163,37 @@ internal static class CliHandler
 
         var ordered = probe.Attempts.OrderBy(OutcomeRank).ThenBy(a => a.Plugin, StringComparer.Ordinal).ToList();
         var pluginWidth = ordered.Max(a => a.Plugin.Length);
+        var failed = ordered.Count(a => a.Outcome
+            is BowireDiscoveryAttempt.OutcomeError or BowireDiscoveryAttempt.OutcomeTimeout);
+        // `partial` gets its own term rather than folding into `failed`
+        // (#544): a partial probe DID contribute services, and counting it
+        // as a failure next to a list that visibly has entries reads as a
+        // bug in the tool.
+        var partial = ordered.Count(a => a.Outcome == BowireDiscoveryAttempt.OutcomePartial);
         Write(io, Dim(color, $"{ordered.Count} plugin{(ordered.Count != 1 ? "s" : "")} probed"
-            + $" · {ordered.Count(a => a.Outcome is BowireDiscoveryAttempt.OutcomeError or BowireDiscoveryAttempt.OutcomeTimeout)} failed"));
+            + (partial > 0 ? $" · {partial} partial" : "")
+            + $" · {failed} failed"));
         foreach (var a in ordered)
         {
             Write(io, "  "
                 + a.Plugin.PadRight(pluginWidth)
+                // 7 fits every value in the vocabulary: `timeout` already
+                // forced that width and `partial` is exactly as long.
                 + "  " + a.Outcome.PadRight(7)
                 + "  " + Dim(color, $"{a.DurationMs} ms".PadLeft(8))
                 + "  " + a.Message);
         }
 
+        if (partial > 0)
+        {
+            Write(io, "");
+            Write(io, Dim(color, $"{partial} plugin{(partial != 1 ? "s" : "")} returned partial results"
+                + " — the services above are incomplete."));
+        }
+
+        // Unchanged on purpose: a partial probe found services, so the
+        // documented "exit 1 when nothing was found" CI gate stays green.
+        // Gating on partial is an opt-in flag's job, not a silent change.
         return probe.Services.Count > 0 ? 0 : 1;
     }
 
@@ -187,8 +207,12 @@ internal static class CliHandler
     {
         BowireDiscoveryAttempt.OutcomeError => 0,
         BowireDiscoveryAttempt.OutcomeTimeout => 1,
-        BowireDiscoveryAttempt.OutcomeEmpty => 2,
-        _ => 3,
+        // Above `empty`: a plugin that found things and still faulted is
+        // closer to the reason the operator ran this than nine rows of
+        // "returned no services".
+        BowireDiscoveryAttempt.OutcomePartial => 2,
+        BowireDiscoveryAttempt.OutcomeEmpty => 3,
+        _ => 4,
     };
 
     private static async Task<int> DescribeImplAsync(CliCommandOptions cli, CommandIo io)

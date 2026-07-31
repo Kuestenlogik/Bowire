@@ -47,7 +47,11 @@
                         outcome: a.outcome || 'error',
                         servicesFound: typeof a.servicesFound === 'number' ? a.servicesFound : 0,
                         durationMs: typeof a.durationMs === 'number' ? a.durationMs : 0,
-                        message: a.message || ''
+                        message: a.message || '',
+                        // Optional per-step breakdown (#544). Absent on
+                        // every attempt a plugin without the diagnostics
+                        // seam produces, and on every older host.
+                        details: Array.isArray(a.details) ? a.details : null
                     });
                 } else if (typeof a === 'string' && a) {
                     var sep = a.indexOf(':');
@@ -67,6 +71,52 @@
 
         if (prob.hint) discoveryHints[key] = String(prob.hint);
         else delete discoveryHints[key];
+    }
+
+    // Build the /api/services query string. `includeAttempts=1` opts into
+    // the { services, attempts } success envelope (#544) — a partial probe
+    // by definition returned services, so it arrives on a 200 and the bare
+    // array shape has nowhere to put the diagnostic. Old hosts ignore the
+    // flag and keep answering with the array, which _unwrapServices below
+    // still understands.
+    function _servicesQuery(url) {
+        var q = (url === undefined) ? '' : serverUrlParam(false, url);
+        return q + (q ? '&' : '?') + 'includeAttempts=1';
+    }
+
+    // Read a 200 body in either shape and file its attempts under `key`.
+    // Returns the service array. Tolerating both shapes is what lets a
+    // newer workbench keep working against an older embedded host — the
+    // same stance #534 took on the attempts array itself.
+    function _unwrapServices(key, body) {
+        if (Array.isArray(body)) {
+            // Legacy shape: no diagnostics channel at all, so a stale
+            // failure list from this key's last bad probe has to go.
+            delete discoveryAttempts[key];
+            delete discoveryHints[key];
+            discoveryDiagnosticsOpen.delete(key);
+            return body;
+        }
+        if (!body || typeof body !== 'object') return [];
+        // Attempts on a SUCCESS: this is the only path a `partial` outcome
+        // can take. Recording them (rather than the old unconditional
+        // delete) is what makes a half-broken server visible at all.
+        _recordDiscoveryProblem(key, body);
+        if (!discoveryAttempts[key]) discoveryDiagnosticsOpen.delete(key);
+        return Array.isArray(body.services) ? body.services : [];
+    }
+
+    // Does this key have a plugin that returned services AND faulted?
+    // Derived rather than stored: connectionStatuses stays 'connected'
+    // because the HTTP call genuinely succeeded, and widening that bag
+    // would touch ~20 readers for a state none of them mean.
+    function urlDiscoveryDegraded(key) {
+        var attempts = (typeof discoveryAttempts !== 'undefined') ? discoveryAttempts[key] : null;
+        if (!Array.isArray(attempts)) return false;
+        for (var i = 0; i < attempts.length; i++) {
+            if (attempts[i] && attempts[i].outcome === 'partial') return true;
+        }
+        return false;
     }
 
     // ---- API Calls ----
@@ -100,7 +150,7 @@
             const ctrl = new AbortController();
             const timer = setTimeout(() => ctrl.abort(), 12000);
             try {
-                const resp = await fetch(`${config.prefix}/api/services`, { signal: ctrl.signal });
+                const resp = await fetch(`${config.prefix}/api/services${_servicesQuery(undefined)}`, { signal: ctrl.signal });
                 if (!resp.ok) {
                     // Read the problem body BEFORE throwing — it carries
                     // the per-plugin attempts that explain the empty
@@ -110,7 +160,7 @@
                     _recordDiscoveryProblem('(embedded)', prob);
                     throw new Error(prob.title || ('HTTP ' + resp.status));
                 }
-                services = await resp.json();
+                services = _unwrapServices('(embedded)', await resp.json());
             } finally {
                 clearTimeout(timer);
             }
@@ -253,7 +303,7 @@
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 12000);
         try {
-            const resp = await fetch(`${config.prefix}/api/services${serverUrlParam(false, url)}`, { signal: ctrl.signal });
+            const resp = await fetch(`${config.prefix}/api/services${_servicesQuery(url)}`, { signal: ctrl.signal });
             if (!resp.ok) {
                 // The problem+json body carries `attempts` (one entry per
                 // probed plugin) and `hint`. Bailing on resp.ok alone —
@@ -273,26 +323,23 @@
                 return [];
             }
             connectionStatuses[url] = 'connected';
-            // Clear stale per-URL diagnostics: refreshSourceServices()
+            // Replaces the per-URL diagnostics wholesale: refreshSourceServices()
             // re-enters this function for a single URL without the global
-            // reset fetchServices() does, so a fixed URL would otherwise
-            // keep showing the failure list from its last bad probe.
-            delete discoveryAttempts[url];
-            delete discoveryHints[url];
-            discoveryDiagnosticsOpen.delete(url);
-            if (isMqtt && Array.isArray(data)) {
-                var topicCount = data.reduce(function (acc, s) { return acc + (s.methods ? s.methods.length : 0); }, 0);
+            // reset fetchServices() does, so a fixed URL must not keep the
+            // failure list from its last bad probe — but a URL that is
+            // merely DEGRADED has to keep the attempts that say so, which
+            // the old unconditional delete threw away (#544).
+            var list = _unwrapServices(url, data);
+            if (isMqtt) {
+                var topicCount = list.reduce(function (acc, s) { return acc + (s.methods ? s.methods.length : 0); }, 0);
                 addConsoleEntry({ type: 'response', method: 'MQTT Discovery', status: 'OK', body: topicCount + ' topics discovered at ' + url });
             }
             // Make sure every service is tagged with its origin so per-service
             // routing works even if the server forgot to set it.
-            if (Array.isArray(data)) {
-                for (var i = 0; i < data.length; i++) {
-                    if (!data[i].originUrl) data[i].originUrl = url;
-                }
-                return data;
+            for (var i = 0; i < list.length; i++) {
+                if (!list[i].originUrl) list[i].originUrl = url;
             }
-            return [];
+            return list;
         } catch (e) {
             connectionStatuses[url] = 'error';
             discoveryErrors[url] = e.name === 'AbortError'

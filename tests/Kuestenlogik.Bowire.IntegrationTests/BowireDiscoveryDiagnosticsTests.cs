@@ -173,6 +173,68 @@ public sealed class BowireDiscoveryDiagnosticsTests
             => Task.FromResult(new List<BowireServiceInfo>());
     }
 
+    [Fact]
+    public async Task Services_200_Carries_A_Partial_Attempt_Only_When_Attempts_Are_Requested()
+    {
+        // The end-to-end path #544 needs and #534 never had: `partial`
+        // implies servicesFound > 0, so it can ONLY arrive on a 200 — and
+        // the 200 body was a bare array with nowhere to put it. Without
+        // the envelope the MCP fix is invisible in the browser no matter
+        // what the probe records.
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new HalfBrokenProtocol("mcp", "MCP"));
+
+        await using var host = await StartAsync(registry);
+        var url = $"/bowire/api/services?serverUrl={Uri.EscapeDataString(TargetUrl)}";
+
+        // Legacy shape — unchanged for every client that does not opt in.
+        var bare = await host.Client.GetAsync(
+            new Uri(url, UriKind.Relative), TestContext.Current.CancellationToken);
+        bare.EnsureSuccessStatusCode();
+        using var bareDoc = JsonDocument.Parse(
+            await bare.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(JsonValueKind.Array, bareDoc.RootElement.ValueKind);
+        Assert.Equal(1, bareDoc.RootElement.GetArrayLength());
+
+        var enveloped = await host.Client.GetAsync(
+            new Uri(url + "&includeAttempts=1", UriKind.Relative), TestContext.Current.CancellationToken);
+        enveloped.EnsureSuccessStatusCode();
+        using var doc = JsonDocument.Parse(
+            await enveloped.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+
+        // The service the half-broken plugin DID find is still served.
+        Assert.Equal(1, doc.RootElement.GetProperty("services").GetArrayLength());
+
+        var attempt = doc.RootElement.GetProperty("attempts").EnumerateArray().Single();
+        Assert.Equal("partial", attempt.GetProperty("outcome").GetString());
+        Assert.Equal(1, attempt.GetProperty("servicesFound").GetInt32());
+        Assert.Contains("tools/list", attempt.GetProperty("message").GetString()!, StringComparison.Ordinal);
+        Assert.Equal("tools/list broke",
+            attempt.GetProperty("details").EnumerateArray().Single().GetString());
+    }
+
+    /// <summary>
+    /// A plugin on the #544 seam: one service found, one surface faulted.
+    /// DiscoverAsync throws so a regression that bypasses the interface
+    /// check fails loudly instead of silently reporting the old outcome.
+    /// </summary>
+    private sealed class HalfBrokenProtocol(string id, string name)
+        : StubProtocol(id, name), IBowireDiscoveryDiagnostics
+    {
+        public override Task<List<BowireServiceInfo>> DiscoverAsync(
+            string serverUrl, bool showInternalServices, CancellationToken ct = default)
+            => throw new InvalidOperationException("the probe must use the diagnostics seam");
+
+        public Task<BowireDiscoveryReport> DiscoverWithDiagnosticsAsync(
+            string serverUrl, bool showInternalServices, CancellationToken ct = default)
+            => Task.FromResult(new BowireDiscoveryReport(
+                [new BowireServiceInfo("Resources", "mcp", [])],
+                new BowireDiscoveryDiagnostic(BowireDiscoverySeverity.Fault, "tools/list broke")
+                {
+                    Details = ["tools/list broke"],
+                }));
+    }
+
     private abstract class StubProtocol(string id, string name) : IBowireProtocol
     {
         public string Id { get; } = id;

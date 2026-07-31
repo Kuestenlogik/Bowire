@@ -2451,10 +2451,24 @@
             summary = 'Pick a URL';
         } else {
             var counts = { connected: 0, connecting: 0, error: 0, disconnected: 0 };
+            // A URL whose HTTP call succeeded but whose probe came back
+            // incomplete (#544). Derived, not a connectionStatuses value:
+            // the connection itself is fine, and widening that bag would
+            // touch every one of its ~20 readers for a state none of them
+            // mean. Guarded per symbol — api.js is a different fragment.
+            var degradedCount = 0;
             for (var ci = 0; ci < urlsPresent.length; ci++) {
                 var st = (connectionStatuses && connectionStatuses[urlsPresent[ci]]) || 'disconnected';
                 counts[st] = (counts[st] || 0) + 1;
+                if (typeof urlDiscoveryDegraded === 'function'
+                    && urlDiscoveryDegraded(urlsPresent[ci])) degradedCount++;
             }
+            // "degraded", never "partial": `partial` is already this
+            // pill's word for "some of my URLs connected, some did not"
+            // (see the aggregate below, and .bowire-conn-pill-partial),
+            // and reusing it at a different granularity makes the pill
+            // ambiguous.
+            var degradedSuffix = degradedCount > 0 ? ' · ' + degradedCount + ' degraded' : '';
             if (counts.error > 0) {
                 aggregate = 'error';
                 summary = counts.error + ' / ' + urlsPresent.length + ' failed';
@@ -2463,12 +2477,12 @@
                 summary = counts.connecting + ' / ' + urlsPresent.length + ' connecting…';
             } else if (counts.connected === urlsPresent.length) {
                 aggregate = 'connected';
-                summary = urlsPresent.length === 1
+                summary = (urlsPresent.length === 1
                     ? truncateMiddle(urlsPresent[0], 28)
-                    : 'All ' + urlsPresent.length + ' connected';
+                    : 'All ' + urlsPresent.length + ' connected') + degradedSuffix;
             } else {
                 aggregate = 'partial';
-                summary = counts.connected + ' / ' + urlsPresent.length + ' connected';
+                summary = counts.connected + ' / ' + urlsPresent.length + ' connected' + degradedSuffix;
             }
         }
 
@@ -2559,7 +2573,9 @@
                         }),
                         el('span', {
                             className: 'bowire-conn-popover-row-status',
-                            textContent: status === 'connected' ? 'OK'
+                            textContent: status === 'connected'
+                                       ? ((typeof urlDiscoveryDegraded === 'function'
+                                           && urlDiscoveryDegraded(url)) ? 'degraded' : 'OK')
                                        : status === 'connecting' ? '…'
                                        : status === 'error' ? 'failed'
                                        : 'idle'
@@ -2588,13 +2604,29 @@
                     // the pill), so a click-toggle inside it is
                     // unreliable. The pill's own onClick already routes to
                     // the Sources rail, which shows the full table.
+                    // Filtered to the outcomes that say something is wrong.
+                    // Before #544 attempts only ever existed on a FAILED
+                    // probe, so `length > 0` was an adequate guard; now
+                    // that a successful probe carries them too, an unfiltered
+                    // list would print "REST — 3 services" under every
+                    // healthy URL and turn a quiet hover card into noise.
+                    var noteworthy = [];
                     if (typeof discoveryAttempts !== 'undefined'
-                        && Array.isArray(discoveryAttempts[url])
-                        && discoveryAttempts[url].length > 0) {
-                        var attempts = discoveryAttempts[url].slice().sort(function (a, b) {
+                        && Array.isArray(discoveryAttempts[url])) {
+                        noteworthy = discoveryAttempts[url].filter(function (x) {
+                            var o = (x && x.outcome) || '';
+                            return o === 'error' || o === 'timeout' || o === 'partial';
+                        });
+                    }
+                    if (noteworthy.length > 0) {
+                        var attempts = noteworthy.slice().sort(function (a, b) {
+                            // Same order as landing.js's _diagOutcomeRank —
+                            // the popover and the disclosure must not
+                            // disagree about which row matters most.
                             var rank = function (x) {
                                 var o = (x && x.outcome) || '';
-                                return o === 'error' ? 0 : o === 'timeout' ? 1 : o === 'empty' ? 2 : 3;
+                                return o === 'error' ? 0 : o === 'timeout' ? 1
+                                     : o === 'partial' ? 2 : o === 'empty' ? 3 : 4;
                             };
                             return rank(a) - rank(b);
                         });

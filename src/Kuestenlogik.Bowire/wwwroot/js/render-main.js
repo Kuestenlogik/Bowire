@@ -3967,7 +3967,14 @@
         var u = sourcesSelectedUrl;
         var status = (typeof connectionStatuses === 'object' && connectionStatuses)
             ? (connectionStatuses[u] || 'disconnected') : 'disconnected';
-        var statusLabel = status === 'connected' ? 'Connected'
+        // 'Connected' alone would be a flat lie for a source whose probe
+        // came back incomplete (#544) — the connection is fine, the
+        // discovery is not, and the diagnostics table is further down this
+        // very pane. Guarded per symbol: urlDiscoveryDegraded lives in
+        // api.js, a different fragment.
+        var isDegraded = (typeof urlDiscoveryDegraded === 'function') && urlDiscoveryDegraded(u);
+        var statusLabel = status === 'connected'
+                            ? (isDegraded ? 'Connected — discovery incomplete' : 'Connected')
                         : status === 'disconnected' ? 'Disconnected'
                         : status === 'discovering' ? 'Discovering' : status;
         var svcList = (typeof services !== 'undefined')

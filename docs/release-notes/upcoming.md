@@ -39,6 +39,40 @@ Also fixed: an embedded host whose own `/api/services` probe failed used to
 fall through to the first-run welcome hero, hiding the failure completely.
 It now lands on the discovery-failed card like any other target.
 
+### A half-broken server contributes what still works (#544)
+
+`IBowireProtocol.DiscoverAsync` is all-or-nothing: a plugin returns a list
+or it throws. A plugin whose probe half-worked therefore had to hide either
+the fault or the results — and the MCP plugin picked the fault, so an MCP
+server with a single malformed tool stopped contributing its perfectly good
+resources and prompts as well.
+
+Plugins can now implement the optional `IBowireDiscoveryDiagnostics`
+alongside `IBowireProtocol` and hand back both: the services they found and
+a `BowireDiscoveryDiagnostic` describing what broke while they found them.
+`BowireDiscoveryProbe` pairs the diagnostic's severity with the number of
+services returned and records a new `partial` outcome — its own state, so a
+dashboard can tell "populated but incomplete" from a clean `ok`. A plugin
+that does not implement the interface behaves exactly as before, and
+`IBowireProtocol` itself is unchanged, so third-party plugins keep compiling.
+
+Two plugins use it today. **MCP** returns the surfaces that answered plus a
+fault naming the one that did not, so the malformed-tool server keeps its
+resources and prompts. **REST** finally says out loud what it always knew:
+"no OpenAPI document found at `http://localhost:5181`" — with every
+well-known path the sweep tried behind it — instead of the generic "returned
+no services", and it names a *missing optional package* as such rather than
+letting `bowire plugin install …Rest.OpenApi3` look like "your URL is not a
+REST API".
+
+The workbench counts degraded plugins separately from failed ones
+(`12 plugins probed · 1 degraded · 0 failed`), marks the source in the
+Sources rail, labels it *Connected — discovery incomplete* in the Sources
+detail pane, and shows the diagnostics disclosure on the Discover landing
+even when discovery succeeded. `bowire discover` gets a `· N partial` term
+and a trailer sentence; its exit code is unchanged, so an existing CI gate
+does not start failing.
+
 ### An embedded Bowire is useful on first paint (#535)
 
 Mounting `MapBowire()` in your own app used to drop you on an empty
@@ -274,12 +308,11 @@ trip.
 third-party server throws for the whole `tools/list` page. Bowire used to
 swallow that and render an empty Tools node — indistinguishable from "this
 server has no tools". It now reports through the per-plugin discovery
-diagnostics from #534, naming the surface and the payload complaint. Note
-the trade-off: a diagnosable fault fails the whole probe, so a server whose
-tools are broken no longer contributes its working resources and prompts
-either. The attempt message names the surfaces that did answer so the
-missing ones are not a mystery. A per-plugin partial-diagnostics seam would
-let both coexist; it is tracked as follow-up work.
+diagnostics from #534, naming the surface and the payload complaint. The
+first cut of this fix failed the whole probe on a diagnosable fault, so a
+server whose tools were broken stopped contributing its working resources
+and prompts too; #544 removed that trade-off in the same release. Such a
+server now reports `partial` and keeps everything that still works.
 
 ## Breaking changes
 
@@ -337,7 +370,8 @@ ProblemDetails body used to be an array of pre-formatted strings
   "servicesFound": 0, "durationMs": 2011, "message": "connection refused" }
 ```
 
-`outcome` is one of `ok` / `empty` / `error` / `timeout`. The array now
+`outcome` is one of `ok` / `empty` / `partial` / `error` / `timeout` — see
+below for `partial`, which is additive on top of #534's four. The array now
 covers **every** probed plugin, not only the failing ones, and it is also
 present (empty) on the `urn:bowire:discovery:no-plugins` body so clients can
 render one code path.
@@ -355,13 +389,53 @@ Two smaller wire-adjacent changes ride along:
 - The `bowire.discover` MCP tool's JSON result gained an `attempts` field
   next to `url` and `services`.
 
-### Telemetry: `bowire.discover.count` outcome vocabulary widened (#534)
+### `/api/services` — additive `partial` outcome, `details`, and an opt-in success envelope (#544)
 
-The `outcome` dimension now takes `ok` / `empty` / `error` / `timeout`.
-`canceled` is gone (it reports as `timeout`), and a probe that succeeded
-with zero results now reports `empty` instead of `ok`. Dashboards or alerts
-filtering on `outcome="ok"` will see counts drop with no change in
-behaviour — sum `ok` + `empty` to recover the old total.
+Three additive changes on top of the #534 shape above. Nothing moves for a
+client that ignores all three.
+
+`outcome` gains a fifth value, `partial`: the plugin returned services
+**and** reported a fault while producing them, so its contribution is
+incomplete. It is deliberately not folded into `ok` — a dashboard has to be
+able to tell a populated-but-incomplete tree from a clean one. Only plugins
+implementing `IBowireDiscoveryDiagnostics` can produce it.
+
+An attempt may carry an optional `details` array: the per-step breakdown
+behind `message` — one line per faulted MCP surface, one per well-known path
+a REST sweep tried. The field is omitted entirely when there is nothing to
+break down.
+
+```jsonc
+{ "pluginId": "mcp", "plugin": "MCP", "outcome": "partial",
+  "servicesFound": 2, "durationMs": 431,
+  "message": "2 services, but tools/list returned a payload this MCP revision rejects — …",
+  "details": ["tools/list returned a payload this MCP revision rejects — …"] }
+```
+
+`partial` implies `servicesFound > 0`, which means it arrives on a **200**,
+where the body has always been a bare `BowireServiceInfo[]` with nowhere to
+put a diagnostic. `GET /api/services?includeAttempts=1` switches the success
+body to `{ "services": [...], "attempts": [...] }`. Without the flag the
+bare array ships byte-for-byte as before, so no existing consumer moves;
+Bowire's own workbench sends the flag and accepts both shapes
+(`Array.isArray(body) ? body : body.services`), so a newer workbench pointed
+at an older embedded host keeps working. There is no "fetch the attempts
+afterwards" endpoint on purpose — `BowireDiscoveryProbe` is stateless, so it
+would have to probe twice.
+
+Plugin authors: build the diagnostic from locals of the call that produced
+it. The channel is a return value so that two concurrent probes of two URLs
+through one plugin instance cannot read each other's diagnosis; stashing it
+in a field or a static ring buffer re-creates exactly that bug.
+
+### Telemetry: `bowire.discover.count` outcome vocabulary widened (#534, #544)
+
+The `outcome` dimension now takes `ok` / `empty` / `partial` / `error` /
+`timeout`. `canceled` is gone (it reports as `timeout`), and a probe that
+succeeded with zero results now reports `empty` instead of `ok`. Dashboards
+or alerts filtering on `outcome="ok"` will see counts drop with no change in
+behaviour — sum `ok` + `empty` to recover the old total, and add `partial`
+if you are counting "probes that produced something".
 
 ## Acknowledgements
 
