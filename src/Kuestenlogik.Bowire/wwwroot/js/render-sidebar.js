@@ -4676,6 +4676,42 @@
                 ensureSourcePanel(serverUrls[preU]);
             }
 
+            // #48 — what the last schema-watch poll found, above the
+            // tree. Removals are only visible here: a method that is
+            // gone has no row left to mark, and that is exactly the
+            // change most likely to break a saved request.
+            var _watchDelta = typeof getSchemaWatchDelta === 'function' ? getSchemaWatchDelta() : null;
+            if (_watchDelta) {
+                var banner = el('div', {
+                    id: 'bowire-schema-watch-delta',
+                    className: 'bowire-schema-delta'
+                });
+                banner.appendChild(el('span', {
+                    className: 'bowire-schema-delta-summary',
+                    textContent: schemaDeltaSummary(_watchDelta)
+                }));
+                var gone = _watchDelta.removedServices.map(function (s) { return 'service ' + s; })
+                    .concat(_watchDelta.removedMethods.map(function (m) { return m.key.replace(' ', ' / '); }));
+                if (gone.length) {
+                    banner.appendChild(el('span', {
+                        className: 'bowire-schema-delta-gone',
+                        title: 'No longer discovered:\n' + gone.join('\n'),
+                        textContent: gone.length === 1 ? gone[0] : gone.length + ' gone'
+                    }));
+                }
+                banner.appendChild(el('button', {
+                    className: 'bowire-schema-delta-dismiss',
+                    title: 'Dismiss',
+                    'aria-label': 'Dismiss schema change summary',
+                    textContent: '×',
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        clearSchemaWatchDelta();
+                    }
+                }));
+                list.appendChild(banner);
+            }
+
             for (const svc of orderedServices) {
                 var baseMethods = svc.methods;
                 // Method-type filter (Unary / SS / CS / DX). Applied
@@ -4766,6 +4802,18 @@
                             innerHTML: svcProto.icon
                         }));
                     }
+                }
+
+                // #48 — per-service tally from the last watch poll, so a
+                // change is findable in a collapsed tree without
+                // expanding every group to look for a marked row.
+                var _svcDelta = typeof schemaServiceDelta === 'function' ? schemaServiceDelta(svc.name) : null;
+                if (_svcDelta) {
+                    headerEl.appendChild(el('span', {
+                        className: 'bowire-schema-delta-chip',
+                        title: _svcDelta.title,
+                        textContent: _svcDelta.label
+                    }));
                 }
 
                 headerEl.appendChild(el('span', {
@@ -4912,6 +4960,21 @@
                             textContent: m.name
                         }),
                         m.deprecated ? el('span', { className: 'bowire-method-deprecated-tag', textContent: 'DEPR' }) : null,
+                        // #48 — marker for a method the last watch poll
+                        // saw appear or change shape. `~` means the
+                        // signature moved under a name that stayed put,
+                        // which is the case a saved request survives
+                        // syntactically and fails at runtime.
+                        (function (marker) {
+                            if (!marker) return null;
+                            return el('span', {
+                                className: 'bowire-schema-delta-mark is-' + marker,
+                                title: marker === 'added'
+                                    ? 'Appeared since the last schema-watch poll'
+                                    : 'Request or response shape changed since the last schema-watch poll',
+                                textContent: marker === 'added' ? '+' : '~'
+                            });
+                        })(typeof schemaWatchMarkerFor === 'function' ? schemaWatchMarkerFor(svc.name, m) : null),
                         (typeof renderCoverageChip === 'function')
                             ? renderCoverageChip(svc.name, m.name)
                             : null,

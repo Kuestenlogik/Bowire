@@ -225,53 +225,216 @@
         render();
     }
 
-    // ---- Schema Watch Mode ----
-    // Re-discovers services every N seconds and shows a delta toast
-    // when the schema changes. Useful during API development where
-    // the schema moves frequently.
+    // ---- Schema Watch Mode (#48) ----
+    // Re-discovers the active server URL(s) every N seconds and reports
+    // what changed. Useful during API development, where the schema
+    // moves under you while the workbench is open.
+    //
+    // The comparison is a keyed set diff, not a count subtraction. A
+    // count told you "0 methods changed" when GetUser was replaced by
+    // FetchUser — the arithmetic cancelled out and the rename, the one
+    // event most likely to break a saved request, went unreported.
     var schemaWatchInterval = null;
-    var schemaWatchPreviousCount = -1;
+    var schemaWatchDelta = null;
+
+    var SCHEMA_WATCH_DEFAULT_SECONDS = 15;
+    var SCHEMA_WATCH_MIN_SECONDS = 5;
+    var SCHEMA_WATCH_MAX_SECONDS = 300;
+
+    // Settings → General writes bowire_watch_interval. Nothing read it
+    // before #48, so the control was documented as working and did
+    // nothing; the button hardcoded 15s. Clamped to the same bounds the
+    // input advertises, because localStorage is user-editable.
+    function schemaWatchSeconds() {
+        var raw = parseInt(localStorage.getItem('bowire_watch_interval'), 10);
+        if (!isFinite(raw)) return SCHEMA_WATCH_DEFAULT_SECONDS;
+        return Math.min(SCHEMA_WATCH_MAX_SECONDS, Math.max(SCHEMA_WATCH_MIN_SECONDS, raw));
+    }
+
+    // Identity of a method across two discoveries. fullName is what the
+    // sidebar, saved tabs and coverage all key on, so a change of
+    // fullName is an add + a remove, which is the truth: the old one is
+    // no longer callable.
+    function schemaMethodKey(svc, m) {
+        return (svc.name || '') + ' ' + (m.fullName || m.name || '');
+    }
+
+    // Everything about a method that changes what a caller has to send
+    // or can expect back. Two methods with the same key but different
+    // signatures are "~ changed".
+    function schemaMethodSignature(m) {
+        return [
+            m.httpMethod || '',
+            m.httpPath || '',
+            m.methodType || '',
+            m.clientStreaming ? 'cs' : '',
+            m.serverStreaming ? 'ss' : '',
+            m.deprecated ? 'dep' : '',
+            schemaMessageShape(m.inputType, 0),
+            schemaMessageShape(m.outputType, 0)
+        ].join('|');
+    }
+
+    // Field shape, one line per field. Depth-bounded: a schema may
+    // reference itself (a Node with children of its own type), and an
+    // unbounded walk would never return.
+    function schemaMessageShape(msg, depth) {
+        if (!msg || depth > 3) return '';
+        var fields = msg.fields || [];
+        var parts = new Array(fields.length);
+        for (var i = 0; i < fields.length; i++) {
+            var f = fields[i];
+            parts[i] = (f.name || '') + ':' + (f.type || '')
+                + (f.isRepeated ? '[]' : '')
+                + (f.required ? '!' : '')
+                + (f.source ? '@' + f.source : '')
+                + (f.messageType ? '{' + schemaMessageShape(f.messageType, depth + 1) + '}' : '');
+        }
+        return (msg.name || '') + '(' + parts.join(',') + ')';
+    }
+
+    function schemaSnapshot(list) {
+        var snap = Object.create(null);
+        for (var i = 0; i < (list || []).length; i++) {
+            var svc = list[i];
+            var methods = Object.create(null);
+            var ms = svc.methods || [];
+            for (var j = 0; j < ms.length; j++) {
+                methods[schemaMethodKey(svc, ms[j])] = schemaMethodSignature(ms[j]);
+            }
+            snap[svc.name] = { source: svc.source || '', methods: methods };
+        }
+        return snap;
+    }
+
+    // Returns null when nothing moved, so callers can treat "no delta"
+    // and "no change" as the same thing.
+    function schemaDiff(before, after) {
+        var d = {
+            addedServices: [], removedServices: [],
+            addedMethods: [], removedMethods: [], changedMethods: [],
+            at: null
+        };
+        var name;
+        for (name in after) {
+            if (!(name in before)) {
+                d.addedServices.push(name);
+                // Every method of a new service is new, but listing them
+                // individually would bury the one fact that matters.
+                continue;
+            }
+            var b = before[name].methods, a = after[name].methods, key;
+            for (key in a) {
+                if (!(key in b)) d.addedMethods.push({ service: name, key: key });
+                else if (a[key] !== b[key]) d.changedMethods.push({ service: name, key: key });
+            }
+            for (key in b) {
+                if (!(key in a)) d.removedMethods.push({ service: name, key: key });
+            }
+        }
+        for (name in before) {
+            if (!(name in after)) d.removedServices.push(name);
+        }
+        var moved = d.addedServices.length + d.removedServices.length
+            + d.addedMethods.length + d.removedMethods.length + d.changedMethods.length;
+        return moved === 0 ? null : d;
+    }
+
+    function schemaDeltaSummary(d) {
+        var parts = [];
+        if (d.addedServices.length) parts.push('+' + d.addedServices.length + ' service' + (d.addedServices.length !== 1 ? 's' : ''));
+        if (d.removedServices.length) parts.push('−' + d.removedServices.length + ' service' + (d.removedServices.length !== 1 ? 's' : ''));
+        if (d.addedMethods.length) parts.push('+' + d.addedMethods.length + ' method' + (d.addedMethods.length !== 1 ? 's' : ''));
+        if (d.removedMethods.length) parts.push('−' + d.removedMethods.length + ' method' + (d.removedMethods.length !== 1 ? 's' : ''));
+        if (d.changedMethods.length) parts.push('~' + d.changedMethods.length + ' changed');
+        return parts.join(', ');
+    }
+
+    /// Last delta the watch observed, or null. The sidebar reads this;
+    /// it survives ticks that report nothing so the operator can step
+    /// away and still see what moved, and is cleared on dismiss.
+    function getSchemaWatchDelta() { return schemaWatchDelta; }
+
+    function clearSchemaWatchDelta() {
+        schemaWatchDelta = null;
+        render();
+    }
+
+    // Per-service tally for the sidebar header chip, or null when this
+    // service was untouched by the last poll.
+    function schemaServiceDelta(svcName) {
+        if (!schemaWatchDelta) return null;
+        var d = schemaWatchDelta;
+        if (d.addedServices.indexOf(svcName) !== -1) {
+            return { label: 'new', title: 'Service appeared since the last poll' };
+        }
+        var count = function (arr) {
+            return arr.filter(function (m) { return m.service === svcName; }).length;
+        };
+        var added = count(d.addedMethods), removed = count(d.removedMethods), changed = count(d.changedMethods);
+        if (!added && !removed && !changed) return null;
+        var bits = [], title = [];
+        if (added) { bits.push('+' + added); title.push(added + ' method(s) added'); }
+        if (removed) { bits.push('−' + removed); title.push(removed + ' method(s) removed'); }
+        if (changed) { bits.push('~' + changed); title.push(changed + ' method(s) changed shape'); }
+        return { label: bits.join(' '), title: title.join('\n') };
+    }
+
+    // True when this method row should carry an added / changed marker.
+    // Removals have no row to mark — they are only in the summary.
+    function schemaWatchMarkerFor(svcName, method) {
+        if (!schemaWatchDelta) return null;
+        var key = schemaMethodKey({ name: svcName }, method);
+        var i;
+        for (i = 0; i < schemaWatchDelta.addedMethods.length; i++) {
+            if (schemaWatchDelta.addedMethods[i].key === key) return 'added';
+        }
+        for (i = 0; i < schemaWatchDelta.changedMethods.length; i++) {
+            if (schemaWatchDelta.changedMethods[i].key === key) return 'changed';
+        }
+        if (schemaWatchDelta.addedServices.indexOf(svcName) !== -1) return 'added';
+        return null;
+    }
 
     function startSchemaWatch(intervalMs) {
-        stopSchemaWatch();
-        intervalMs = intervalMs || 15000;
+        stopSchemaWatch({ quiet: true });
+        intervalMs = intervalMs || schemaWatchSeconds() * 1000;
+        schemaWatchDelta = null;
         schemaWatchInterval = setInterval(async function () {
-            var prevServices = services.slice();
-            var prevMethodCount = prevServices.reduce(function (acc, s) {
-                return acc + (s.methods ? s.methods.length : 0);
-            }, 0);
-            var prevServiceCount = prevServices.length;
-
+            var before = schemaSnapshot(services);
             await fetchServices();
-
-            var newMethodCount = services.reduce(function (acc, s) {
-                return acc + (s.methods ? s.methods.length : 0);
-            }, 0);
-            var newServiceCount = services.length;
-
-            if (schemaWatchPreviousCount >= 0) {
-                var svcDelta = newServiceCount - prevServiceCount;
-                var methodDelta = newMethodCount - prevMethodCount;
-                if (svcDelta !== 0 || methodDelta !== 0) {
-                    var parts = [];
-                    if (svcDelta > 0) parts.push('+' + svcDelta + ' service' + (svcDelta !== 1 ? 's' : ''));
-                    if (svcDelta < 0) parts.push(svcDelta + ' service' + (svcDelta !== -1 ? 's' : ''));
-                    if (methodDelta > 0) parts.push('+' + methodDelta + ' method' + (methodDelta !== 1 ? 's' : ''));
-                    if (methodDelta < 0) parts.push(methodDelta + ' method' + (methodDelta !== -1 ? 's' : ''));
-                    toast('Schema changed: ' + parts.join(', '), 'info');
-                    addConsoleEntry({ type: 'response', method: 'Schema Watch', status: 'Changed', body: parts.join(', ') });
-                }
+            var delta = schemaDiff(before, schemaSnapshot(services));
+            if (delta) {
+                delta.at = new Date();
+                schemaWatchDelta = delta;
+                var summary = schemaDeltaSummary(delta);
+                toast('Schema changed: ' + summary, 'info');
+                addConsoleEntry({
+                    type: 'response', method: 'Schema Watch', status: 'Changed',
+                    body: summary + '\n' + schemaDeltaDetail(delta)
+                });
+                render();
             }
-            schemaWatchPreviousCount = newMethodCount;
         }, intervalMs);
         toast('Schema watch started (every ' + (intervalMs / 1000) + 's)', 'info');
     }
 
-    function stopSchemaWatch() {
+    // Long-form for the console, where there is room to name names.
+    function schemaDeltaDetail(d) {
+        var lines = [];
+        d.addedServices.forEach(function (s) { lines.push('+ service ' + s); });
+        d.removedServices.forEach(function (s) { lines.push('− service ' + s); });
+        d.addedMethods.forEach(function (m) { lines.push('+ ' + m.key.replace(' ', ' / ')); });
+        d.removedMethods.forEach(function (m) { lines.push('− ' + m.key.replace(' ', ' / ')); });
+        d.changedMethods.forEach(function (m) { lines.push('~ ' + m.key.replace(' ', ' / ')); });
+        return lines.join('\n');
+    }
+
+    function stopSchemaWatch(opts) {
         if (schemaWatchInterval) {
             clearInterval(schemaWatchInterval);
             schemaWatchInterval = null;
-            toast('Schema watch stopped', 'info');
+            if (!opts || !opts.quiet) toast('Schema watch stopped', 'info');
         }
     }
 
