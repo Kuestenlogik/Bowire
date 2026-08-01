@@ -291,6 +291,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ⬜ Backlog |  |
 | [545](https://github.com/Kuestenlogik/Bowire/issues/545) | Bowire | [Correlated timeline: join across renamed identifiers (multi-key)](#issue-kuestenlogik-bowire-545) | ⬜ Backlog |  |
 | [546](https://github.com/Kuestenlogik/Bowire/issues/546) | Bowire | [Make plugin management DI-friendly: retire the static PluginManager and its duplicate ledger](#issue-kuestenlogik-bowire-546) | ⬜ Backlog |  |
+| [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1197,6 +1198,10 @@ The correlated timeline (#539) keys a recording on **one** value. A business tra
 #### <a id="issue-kuestenlogik-bowire-546"></a>⬜ Backlog · [#546](https://github.com/Kuestenlogik/Bowire/issues/546) Make plugin management DI-friendly: retire the static PluginManager and its duplicate ledger
 
 Plugin management is static end to end: `PluginManager` is a `static class` holding `s_pluginContexts` (the load contexts) and `s_loadedSubdirs` (a hand-maintained record of what has been loaded), and `BowireProtocolRegistry.Discover()` is a static call with side effects — it runs `Assembly.LoadFrom` while scanning. [[more]](https://github.com/Kuestenlogik/Bowire/issues/546)
+
+#### <a id="issue-kuestenlogik-bowire-547"></a>⬜ Backlog · [#547](https://github.com/Kuestenlogik/Bowire/issues/547) Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one
+
+`RecordingCorrelationScanner.ScanStep` documents itself as walking "every JSON-bearing surface of one step", but it misses one: the interpretations. [[more]](https://github.com/Kuestenlogik/Bowire/issues/547)
 
 ---
 
