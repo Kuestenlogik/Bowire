@@ -278,6 +278,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [33](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33) | Protocol.Akka | [DeadLetter capture under the global default mailbox](#issue-kuestenlogik-bowire-protocol-akka-33) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) | Protocol.Akka | [Docs drift: TappedMessage envelope field names & payload shape](#issue-kuestenlogik-bowire-protocol-akka-34) | ⬜ Backlog |  |
 | [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog |  |
+| [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ⬜ Backlog |  |
 | [485](https://github.com/Kuestenlogik/Bowire/issues/485) | Bowire | [Infra: stand up oast.bowire.io — the hosted OAST interaction server (#35 Phase 2f)](#issue-kuestenlogik-bowire-485) | ⬜ Backlog |  |
 | [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ⬜ Backlog |  |
 | [488](https://github.com/Kuestenlogik/Bowire/issues/488) | Bowire | [RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench](#issue-kuestenlogik-bowire-488) | ⬜ Backlog |  |
@@ -289,7 +290,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [537](https://github.com/Kuestenlogik/Bowire/issues/537) | Bowire | [Make the catalogue a primary entry point, not a side path](#issue-kuestenlogik-bowire-537) | ⬜ Backlog |  |
 | [538](https://github.com/Kuestenlogik/Bowire/issues/538) | Bowire | [Show the CLI equivalent of every request (Copy as Bowire CLI)](#issue-kuestenlogik-bowire-538) | ⬜ Backlog |  |
 | [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ⬜ Backlog |  |
-| [545](https://github.com/Kuestenlogik/Bowire/issues/545) | Bowire | [Correlated timeline: join across renamed identifiers (multi-key)](#issue-kuestenlogik-bowire-545) | ⬜ Backlog |  |
 | [546](https://github.com/Kuestenlogik/Bowire/issues/546) | Bowire | [Make plugin management DI-friendly: retire the static PluginManager and its duplicate ledger](#issue-kuestenlogik-bowire-546) | ⬜ Backlog |  |
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog |  |
 
@@ -1147,6 +1147,10 @@ When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` 
 
 `COVERAGE.md` calls out the branch gap: the 0/1/many-subscriber paths in `BowireAkkaExtension` and the mixed mode (global default mailbox + per-actor `WithMailbox` override) are only covered by single-mode tests. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36)
 
+#### <a id="issue-kuestenlogik-bowire-samples-54"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) harbor-demo: MQTT crane telemetry should name the container it lifts
+
+The harbor demo is the reference recording for Bowire's correlated timeline (Kuestenlogik/Bowire#539, #545). Seven of its eight protocol steps now join into one flow. The eighth — the MQTT crane telemetry — stays dark, and the sample is the reason. [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/54)
+
 #### <a id="issue-kuestenlogik-bowire-485"></a>⬜ Backlog · [#485](https://github.com/Kuestenlogik/Bowire/issues/485) Infra: stand up oast.bowire.io — the hosted OAST interaction server (#35 Phase 2f)
 
 Operational follow-up to #35 Phase 2f. The **code** side needs nothing from this — `bowire scan --oast-server <url>` already points at any interactsh-compatible instance, and `bowire oast serve` (tracked in #35) will let anyone self-host. This ticket is purely the hosted convenience instance. [[more]](https://github.com/Kuestenlogik/Bowire/issues/485)
@@ -1190,10 +1194,6 @@ Feasible, but the proposal's sample line is not a real command today: `bowire ca
 #### <a id="issue-kuestenlogik-bowire-539"></a>⬜ Backlog · [#539](https://github.com/Kuestenlogik/Bowire/issues/539) Cross-protocol correlated timeline for recordings
 
 Ship a "Correlated timeline" as a second tab inside the existing Recordings detail pane (`renderRecordingDetail` in `src/Kuestenlogik.Bowire.Recordings/wwwroot/js/recording.js`), rendering one lane per protocol with one bar per step and per-frame ticks for streaming steps, all placed on a shared tim … [[more]](https://github.com/Kuestenlogik/Bowire/issues/539)
-
-#### <a id="issue-kuestenlogik-bowire-545"></a>⬜ Backlog · [#545](https://github.com/Kuestenlogik/Bowire/issues/545) Correlated timeline: join across renamed identifiers (multi-key)
-
-The correlated timeline (#539) keys a recording on **one** value. A business transaction that changes its identifier as it crosses services therefore lights up only the lanes that happen to speak the chosen key. [[more]](https://github.com/Kuestenlogik/Bowire/issues/545)
 
 #### <a id="issue-kuestenlogik-bowire-546"></a>⬜ Backlog · [#546](https://github.com/Kuestenlogik/Bowire/issues/546) Make plugin management DI-friendly: retire the static PluginManager and its duplicate ledger
 
