@@ -125,7 +125,7 @@ internal static class CliHandler
         var pluginHint = cli.Protocol;
 
         // Plugin assemblies are already in the AppDomain: Program.cs runs
-        // PluginManager.LoadPlugins before subcommand dispatch.
+        // the injected IBowirePluginLoader before subcommand dispatch.
         var registry = BowireProtocolRegistry.Discover();
         var probe = await BowireDiscoveryProbe.RunAsync(
             registry, cli.Url, pluginHint,
@@ -430,7 +430,7 @@ internal static class CliHandler
         CancellationToken ct)
     {
         // Plugin assemblies are already in the AppDomain: Program.cs runs
-        // PluginManager.LoadPlugins before subcommand dispatch.
+        // the injected IBowirePluginLoader before subcommand dispatch.
         var registry = BowireProtocolRegistry.Discover();
         if (registry.Protocols.Count == 0)
         {

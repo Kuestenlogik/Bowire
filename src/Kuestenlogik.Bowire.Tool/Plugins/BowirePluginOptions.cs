@@ -62,6 +62,21 @@ internal sealed record BowirePluginOptions
     public required string PluginDirectory { get; init; }
 
     /// <summary>
+    /// Bowire contract version a plugin's manifest is checked against.
+    /// <c>null</c> means the running host's own version, which is what
+    /// production always wants.
+    /// </summary>
+    /// <remarks>
+    /// Exists so the contract-mismatch path can be driven from an object
+    /// rather than from <c>PluginManifestProbe.HostVersionOverride</c>, a
+    /// mutable static with more than one writer. Two test classes setting
+    /// it concurrently is not hypothetical — one sets 999.0, another reads
+    /// the host version expecting the real one, and which answer arrives
+    /// depends on scheduling.
+    /// </remarks>
+    public Version? HostContractVersion { get; init; }
+
+    /// <summary>
     /// Resolve the directory from the layers documented on the type.
     /// </summary>
     /// <param name="explicitPath">

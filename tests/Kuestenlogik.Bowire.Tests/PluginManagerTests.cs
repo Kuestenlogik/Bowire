@@ -3,6 +3,7 @@
 
 using Kuestenlogik.Bowire.App;
 using Kuestenlogik.Bowire.PluginLoading;
+using Kuestenlogik.Bowire.Tests.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -531,14 +532,14 @@ public sealed class PluginManagerTests : IDisposable
     {
         // Should silently return — exercised here so the early-out
         // branch is covered without any side-effects.
-        var results = PluginManager.LoadPlugins(SafePath.Combine(_tempDir, "nope"));
+        var results = TestPluginLoaders.For(SafePath.Combine(_tempDir, "nope")).Load();
         Assert.Empty(results);
     }
 
     [Fact]
     public void LoadPlugins_EmptyDir_NoOp()
     {
-        var results = PluginManager.LoadPlugins(_tempDir);
+        var results = TestPluginLoaders.For(_tempDir).Load();
         Assert.Empty(results);
     }
 
@@ -554,7 +555,7 @@ public sealed class PluginManagerTests : IDisposable
         var subDir = SafePath.Combine(_tempDir, "Empty.Plugin");
         Directory.CreateDirectory(subDir);
 
-        var results = PluginManager.LoadPlugins(_tempDir);
+        var results = TestPluginLoaders.For(_tempDir).Load();
 
         var entry = Assert.Single(results, r => r.PackageId == "Empty.Plugin");
         Assert.Equal(PluginLoadStatus.ManifestMissing, entry.Status);
@@ -568,11 +569,12 @@ public sealed class PluginManagerTests : IDisposable
         // A subdirectory with no DLLs creates a load context but loads
         // nothing — exercises the for-each-DLL branch with zero entries.
         Directory.CreateDirectory(SafePath.Combine(_tempDir, "stub"));
-        PluginManager.LoadPlugins(_tempDir);
-        // EnumeratePluginServices over an arbitrary contract returns
-        // an empty list when no plugin contributes one — confirms the
-        // no-op behaviour without depending on test ordering.
-        var emitters = PluginManager.EnumeratePluginServices<DummyContract>();
+        var loader = TestPluginLoaders.For(_tempDir);
+        loader.Load();
+        // EnumerateServices over an arbitrary contract returns an empty
+        // list when no plugin contributes one — confirms the no-op
+        // behaviour without depending on test ordering.
+        var emitters = loader.EnumerateServices<DummyContract>();
         Assert.NotNull(emitters);
     }
 
@@ -640,7 +642,7 @@ public sealed class PluginManagerTests : IDisposable
         // hosting extensions. In the test host this very assembly sits in
         // that sweep, so the private probe type below IS discovered and
         // instantiated exactly once (type-identity dedupe).
-        var hits = PluginManager.EnumeratePluginServices<DummyContract>();
+        var hits = TestPluginLoaders.None().EnumerateServices<DummyContract>();
         Assert.NotNull(hits);
         var hit = Assert.Single(hits);
         Assert.IsType<DummyContract>(hit);

@@ -86,7 +86,7 @@ public sealed class BowirePluginHost
         // single identity across the host ↔ plugin boundary; everything
         // else falls back to a filename lookup inside the plugin folder.
         //
-        // See PluginManager.LoadPlugins for the long-form explanation —
+        // See BowirePluginLoader.Load for the long-form explanation —
         // the same dual-load bug existed here and the fix is the same:
         // never call LoadFromAssemblyPath on a copy of Kuestenlogik.Bowire
         // that ships next to the plugin, because that creates a second

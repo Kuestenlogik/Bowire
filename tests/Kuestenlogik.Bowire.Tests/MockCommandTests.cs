@@ -3,6 +3,7 @@
 
 using Kuestenlogik.Bowire.App;
 using Kuestenlogik.Bowire.App.Configuration;
+using Kuestenlogik.Bowire.Tests.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -25,7 +26,7 @@ public sealed class MockCommandTests
     public async Task RunAsync_NullCli_Throws()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => MockCommand.RunAsync(null!, ct: TestContext.Current.CancellationToken));
+            () => MockCommand.RunAsync(null!, TestPluginLoaders.None(), ct: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -35,7 +36,7 @@ public sealed class MockCommandTests
         // specified → exit code 2 with a usage hint on stderr.
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var rc = await MockCommand.RunAsync(new MockCliOptions(), stdout, stderr, TestContext.Current.CancellationToken);
+        var rc = await MockCommand.RunAsync(new MockCliOptions(), TestPluginLoaders.None(), stdout, stderr, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
         // Concrete usage line — guards the "which flag is missing" copy
         // so a future refactor that drops the hint blows the test
@@ -55,7 +56,7 @@ public sealed class MockCommandTests
             RecordingPath = "rec.json",
             SchemaPath = "openapi.yml",
         };
-        var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
+        var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), stdout, stderr, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
         Assert.Contains("mutually exclusive", stderr.ToString());
     }
@@ -72,7 +73,7 @@ public sealed class MockCommandTests
             GrpcSchemaPath = "fds.pb",
             GraphQlSchemaPath = "schema.graphql",
         };
-        var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
+        var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), stdout, stderr, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
         Assert.Contains("mutually exclusive", stderr.ToString());
     }
@@ -91,7 +92,7 @@ public sealed class MockCommandTests
             SchemaPath = "openapi.yml",
             Chaos = "this-is-not-valid-syntax-!@#$",
         };
-        var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
+        var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), stdout, stderr, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
         // Asserts the chaos parser actually surfaces a parse error
         // (rather than e.g. a generic "missing recording" failing to
@@ -121,7 +122,7 @@ public sealed class MockCommandTests
             using var stdout = new StringWriter();
             using var stderr = new StringWriter();
             var cli = new MockCliOptions { RecordingPath = rec };
-            var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), stdout, stderr, TestContext.Current.CancellationToken);
 
             Assert.Equal(1, rc);
             var err = stderr.ToString();
@@ -156,7 +157,7 @@ public sealed class MockCommandTests
             using var stdout = new StringWriter();
             using var stderr = new StringWriter();
             var cli = new MockCliOptions { RecordingPath = rec };
-            var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), stdout, stderr, TestContext.Current.CancellationToken);
 
             Assert.Equal(1, rc);
             var err = stderr.ToString();
@@ -189,7 +190,7 @@ public sealed class MockCommandTests
             using var stdout = new StringWriter();
             using var stderr = new StringWriter();
             var cli = new MockCliOptions { RecordingPath = rec, AutoInstall = true };
-            var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), stdout, stderr, TestContext.Current.CancellationToken);
 
             Assert.Equal(1, rc);
             var err = stderr.ToString();
@@ -219,7 +220,7 @@ public sealed class MockCommandTests
             {
                 RecordingPath = SafePath.Combine(dir, "absent.bwr"),
             };
-            var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), stdout, stderr, TestContext.Current.CancellationToken);
             Assert.Equal(1, rc);
             Assert.Contains("bowire mock:", stderr.ToString());
         }
@@ -242,7 +243,7 @@ public sealed class MockCommandTests
             using var stdout = new StringWriter();
             using var stderr = new StringWriter();
             var cli = new MockCliOptions { RecordingPath = rec };
-            var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), stdout, stderr, TestContext.Current.CancellationToken);
             Assert.Equal(1, rc);
             // Confirms the failure is the JSON parser, not a downstream
             // path that happens to also return 1.
@@ -270,7 +271,7 @@ public sealed class MockCommandTests
             {
                 SchemaPath = SafePath.Combine(dir, "missing-openapi.yml"),
             };
-            var rc = await MockCommand.RunAsync(cli, stdout, stderr, TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), stdout, stderr, TestContext.Current.CancellationToken);
             Assert.Equal(1, rc);
             Assert.Contains("bowire mock:", stderr.ToString());
         }
@@ -299,7 +300,7 @@ public sealed class MockCommandTests
             };
             using var cts = new CancellationTokenSource();
             await cts.CancelAsync();
-            var rc = await MockCommand.RunAsync(cli, ct: cts.Token);
+            var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), ct: cts.Token);
             Assert.Contains(rc, s_acceptedExitCodes);
         }
         finally

@@ -4,6 +4,7 @@
 using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.App.Configuration;
 using Microsoft.Extensions.Configuration;
+using Kuestenlogik.Bowire.Tests.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -33,14 +34,14 @@ public sealed class BrowserUiHostTests
     public async Task RunAsync_NullArgs_Throws()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            BrowserUiHost.RunAsync(null!, BuildConfig(), pluginDir: "", ct: CancellationToken.None));
+            BrowserUiHost.RunAsync(null!, BuildConfig(), plugins: TestPluginLoaders.None(), ct: CancellationToken.None));
     }
 
     [Fact]
     public async Task RunAsync_NullConfig_Throws()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            BrowserUiHost.RunAsync([], null!, pluginDir: "", ct: CancellationToken.None));
+            BrowserUiHost.RunAsync([], null!, plugins: TestPluginLoaders.None(), ct: CancellationToken.None));
     }
 
     [Fact]
@@ -62,7 +63,7 @@ public sealed class BrowserUiHostTests
                     ["Bowire:Port"] = "5099",
                     ["Bowire:NoBrowser"] = "true"
                 }),
-                pluginDir: "",
+                plugins: TestPluginLoaders.None(),
                 ct: CancellationToken.None);
 
             Assert.Equal(42, rc);
@@ -115,7 +116,7 @@ public sealed class BrowserUiHostTests
                     var rc = await BrowserUiHost.RunAsync(
                         [],
                         BuildConfig(new() { ["Bowire:Port"] = "5180" }),
-                        pluginDir: "",
+                        plugins: TestPluginLoaders.None(),
                         ct: CancellationToken.None);
 
                     Assert.Equal(0, rc);
@@ -134,7 +135,7 @@ public sealed class BrowserUiHostTests
                     var rc = await BrowserUiHost.RunAsync(
                         [],
                         BuildConfig(new() { ["Bowire:Port"] = "5180" }),
-                        pluginDir: "",
+                        plugins: TestPluginLoaders.None(),
                         ct: CancellationToken.None);
                     Assert.Equal(0, rc);
                 }
@@ -178,7 +179,7 @@ public sealed class BrowserUiHostTests
                 var rc = await BrowserUiHost.RunAsync(
                     [],
                     BuildConfig(),
-                    pluginDir: "",
+                    plugins: TestPluginLoaders.None(),
                     ct: CancellationToken.None);
                 Assert.Equal(0, rc);
                 Assert.True(hostStarted.Task.IsCompletedSuccessfully);
@@ -213,7 +214,7 @@ public sealed class BrowserUiHostTests
                     ["Bowire:NoBrowser"] = "true",
                     ["Bowire:EnableMcpAdapter"] = "true",
                 }),
-                pluginDir: "",
+                plugins: TestPluginLoaders.None(),
                 ct: CancellationToken.None);
 
             Assert.Equal(0, rc);
@@ -244,7 +245,7 @@ public sealed class BrowserUiHostTests
             var rc = await BrowserUiHost.RunAsync(
                 ["--url", "http://a", "--url", "http://b"],
                 BuildConfig(new() { ["Bowire:NoBrowser"] = "true" }),
-                pluginDir: "",
+                plugins: TestPluginLoaders.None(),
                 ct: CancellationToken.None);
 
             Assert.Equal(0, rc);
@@ -287,7 +288,7 @@ public sealed class BrowserUiHostTests
                         ["Bowire:EnableMcpAdapter"] = "true",
                         ["Bowire:ServerUrl"] = "http://api.local",
                     }),
-                    pluginDir: "",
+                    plugins: TestPluginLoaders.None(),
                     ct: cts.Token);
                 Assert.Contains(rc, s_acceptedExitCodes);
             }
@@ -330,7 +331,7 @@ public sealed class BrowserUiHostTests
                     ["Bowire:NoBrowser"] = "true",
                     ["Bowire:ServerUrl"] = "http://only.local",
                 }),
-                pluginDir: "",
+                plugins: TestPluginLoaders.None(),
                 ct: CancellationToken.None);
 
             Assert.Equal(0, rc);

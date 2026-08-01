@@ -4,6 +4,8 @@
 using System.IO.Compression;
 using Kuestenlogik.Bowire.App;
 using Kuestenlogik.Bowire.PluginLoading;
+using Kuestenlogik.Bowire.Tests.Plugins;
+using Kuestenlogik.Bowire.App.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -60,25 +62,27 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
     [Fact]
     public void LoadPlugins_SecondCallOnSameDir_ReportsAlreadyLoaded()
     {
-        // Two consecutive LoadPlugins calls on the same plugin dir: the
-        // first call records a load result, the second hits the
-        // s_loadedSubdirs guard and surfaces PluginLoadStatus.AlreadyLoaded.
-        // Guards against the duplicate-context regression where every
-        // subsequent embedded-host startup would double-register every
-        // protocol.
+        // Two consecutive Load() calls on the SAME loader: the first
+        // records a load result, the second finds the package id already
+        // in the loader's ledger and surfaces AlreadyLoaded. Guards
+        // against the duplicate-context regression where every subsequent
+        // embedded-host startup would double-register every protocol.
+        //
+        // "Same loader" is the whole point after #546 — two loaders over
+        // two directories are supposed to load independently.
         var pluginSub = SafePath.Combine(_tempDir, "Already.Loaded.Edge");
         Directory.CreateDirectory(pluginSub);
-        // No manifest dll — first call reports ManifestMissing, but the
-        // subdir is *not* added to s_loadedSubdirs in that path (the
-        // ManifestMissing branch removes it). So we need an actual
-        // manifest to land in s_loadedSubdirs.
+        // A manifest has to exist: the ManifestMissing branch records
+        // nothing in the ledger, so without one the second call would
+        // report ManifestMissing again rather than AlreadyLoaded.
         File.Copy(ProbePluginDll, SafePath.Combine(pluginSub, "Already.Loaded.Edge.dll"));
 
-        var first = PluginManager.LoadPlugins(_tempDir);
+        var loader = TestPluginLoaders.For(_tempDir);
+        var first = loader.Load();
         var firstEntry = Assert.Single(first, r => r.PackageId == "Already.Loaded.Edge");
         Assert.Equal(PluginLoadStatus.Loaded, firstEntry.Status);
 
-        var second = PluginManager.LoadPlugins(_tempDir);
+        var second = loader.Load();
         var secondEntry = Assert.Single(second, r => r.PackageId == "Already.Loaded.Edge");
         Assert.Equal(PluginLoadStatus.AlreadyLoaded, secondEntry.Status);
         Assert.Null(secondEntry.ErrorMessage);
@@ -87,34 +91,37 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
     [Fact]
     public void LoadPlugins_ContractMajorMismatch_IsRejectedWithStructuredError()
     {
-        // Override the host's Bowire contract version so the manifest's
-        // referenced version (read from the real Kuestenlogik.Bowire.dll
-        // that the renamed Protocol.OData assembly references) registers
-        // as "wrong major". The loader must NOT call LoadFromAssemblyPath
-        // — it must short-circuit with PluginLoadStatus.ContractMajorMismatch
-        // and surface an actionable error mentioning the plugin id.
+        // State the host's contract version on the loader's options so the
+        // manifest's referenced version (read from the real
+        // Kuestenlogik.Bowire.dll that the renamed Protocol.OData assembly
+        // references) registers as "wrong major". The loader must NOT call
+        // LoadFromAssemblyPath — it must short-circuit with
+        // PluginLoadStatus.ContractMajorMismatch and surface an actionable
+        // error mentioning the plugin id.
+        //
+        // This used to go through PluginManifestProbe.HostVersionOverride,
+        // a mutable static that PluginManifestProbeTests also writes. The
+        // two raced: whichever ran second saw the other's value, and
+        // ReadReferencedBowireVersion_...ReturnsTheReferenceVersion failed
+        // with "Expected: 999, Actual: 2". Saying it on the options object
+        // is the whole point of #546 — the setting belongs to this loader,
+        // not to the process.
         var pluginSub = SafePath.Combine(_tempDir, "Bad.Major.Plug");
         Directory.CreateDirectory(pluginSub);
         File.Copy(ProbePluginDll, SafePath.Combine(pluginSub, "Bad.Major.Plug.dll"));
 
-        var originalOverride = PluginManifestProbe.HostVersionOverride;
-        try
+        var loader = new BowirePluginLoader(new BowirePluginOptions
         {
-            // Force a non-matching major version. The plugin references
-            // the real Kuestenlogik.Bowire at its actual version, so any
-            // host version with a different Major triggers the mismatch.
-            PluginManifestProbe.HostVersionOverride = new Version(999, 0, 0, 0);
-            var results = PluginManager.LoadPlugins(_tempDir);
-            var entry = Assert.Single(results, r => r.PackageId == "Bad.Major.Plug");
-            Assert.Equal(PluginLoadStatus.ContractMajorMismatch, entry.Status);
-            Assert.NotNull(entry.ErrorMessage);
-            Assert.Contains("Bad.Major.Plug", entry.ErrorMessage, StringComparison.Ordinal);
-            Assert.Contains("999.0", entry.ErrorMessage, StringComparison.Ordinal);
-        }
-        finally
-        {
-            PluginManifestProbe.HostVersionOverride = originalOverride;
-        }
+            PluginDirectory = _tempDir,
+            HostContractVersion = new Version(999, 0, 0, 0),
+        });
+
+        var results = loader.Load();
+        var entry = Assert.Single(results, r => r.PackageId == "Bad.Major.Plug");
+        Assert.Equal(PluginLoadStatus.ContractMajorMismatch, entry.Status);
+        Assert.NotNull(entry.ErrorMessage);
+        Assert.Contains("Bad.Major.Plug", entry.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("999.0", entry.ErrorMessage, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -133,7 +140,7 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         // Bytes that fail every PE-header check.
         File.WriteAllBytes(manifest, [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
 
-        var results = PluginManager.LoadPlugins(_tempDir);
+        var results = TestPluginLoaders.For(_tempDir).Load();
         var entry = Assert.Single(results, r => r.PackageId == "Corrupt.Manifest");
         Assert.Equal(PluginLoadStatus.AssemblyLoadFailed, entry.Status);
         Assert.NotNull(entry.ErrorMessage);
@@ -144,16 +151,16 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
     [Fact]
     public void LastLoadResults_AfterLoadPlugins_MatchesReturnedSnapshot()
     {
-        // The /api/plugins/health endpoint reads from
-        // PluginManager.LastLoadResults — it has to match whatever
-        // LoadPlugins last returned so the panel doesn't drift from the
-        // loader's view.
+        // The /api/plugins/health endpoint reads the loader's published
+        // results — they have to match whatever Load() last returned so
+        // the panel doesn't drift from the loader's view.
         var pluginSub = SafePath.Combine(_tempDir, "LastLoad.Snapshot");
         Directory.CreateDirectory(pluginSub);
         // No manifest dll — ManifestMissing path produces a record.
-        var returned = PluginManager.LoadPlugins(_tempDir);
+        var loader = TestPluginLoaders.For(_tempDir);
+        var returned = loader.Load();
 
-        var snapshot = PluginManager.LastLoadResults;
+        var snapshot = loader.LastResults;
         Assert.NotNull(snapshot);
         Assert.Contains(snapshot, r => r.PackageId == "LastLoad.Snapshot");
         // Snapshot is the same reference as the returned list (lock-free
@@ -214,20 +221,20 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
         Directory.CreateDirectory(pluginSub);
         File.Copy(ProbePluginDll, SafePath.Combine(pluginSub, "Enum.OData.dll"));
 
-        PluginManager.LoadPlugins(_tempDir);
+        var loader = TestPluginLoaders.For(_tempDir);
+        loader.Load();
 
-        var hits = PluginManager.EnumeratePluginServices<IBowireProtocol>();
+        var hits = loader.EnumerateServices<IBowireProtocol>();
         Assert.NotNull(hits);
         // Either the concrete BowireODataProtocol got constructed (most
         // common path) or the Activator surfaced a per-type exception
         // that the stderr warning catch swallowed (rare CI path on a
-        // clean runner). Verifying "non-empty" would be ideal but the
-        // s_pluginContexts list is process-static and prior tests in the
-        // run may have added contexts that don't expose IBowireProtocol;
-        // what we care about is that the inner foreach body — the lines
-        // we're driving — actually executed. We assert at least one OData
-        // protocol id surfaces, which can only come from the renamed
-        // manifest we just loaded.
+        // clean runner). The loader also sweeps the built-in
+        // Kuestenlogik.Bowire* assemblies next to the host, which is
+        // process-global by construction, so a bare "non-empty" assertion
+        // would pass without proving this loader's own contexts were
+        // walked. Asserting the OData id specifically does prove it — it
+        // can only come from the renamed manifest we just loaded.
         Assert.Contains(hits, p => string.Equals(p.Id, "odata", StringComparison.Ordinal));
     }
 
@@ -235,13 +242,13 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
     public void LoadPlugins_SuccessfulManifestLoad_RecordsLoadedStatus()
     {
         // Direct test for the PluginLoadStatus.Loaded path — separate
-        // from Inspect so a failure here points squarely at LoadPlugins
+        // from Inspect so a failure here points squarely at the loader
         // instead of at the inspect-side enumeration.
         var pluginSub = SafePath.Combine(_tempDir, "Success.Load");
         Directory.CreateDirectory(pluginSub);
         File.Copy(ProbePluginDll, SafePath.Combine(pluginSub, "Success.Load.dll"));
 
-        var results = PluginManager.LoadPlugins(_tempDir);
+        var results = TestPluginLoaders.For(_tempDir).Load();
         var entry = Assert.Single(results, r => r.PackageId == "Success.Load");
         Assert.Equal(PluginLoadStatus.Loaded, entry.Status);
         Assert.Null(entry.ErrorMessage);
