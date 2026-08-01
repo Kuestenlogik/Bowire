@@ -3,6 +3,7 @@
 
 using Kuestenlogik.Bowire.App;
 using Kuestenlogik.Bowire.App.Configuration;
+using Kuestenlogik.Bowire.Tests.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -76,7 +77,7 @@ public sealed class MockCommandShutdownTests : IDisposable
             Host = "127.0.0.1",
             Port = 0,
             NoWatch = true,
-        }, ct: cts.Token);
+        }, TestPluginLoaders.None(), ct: cts.Token);
 
         await Task.Delay(500, TestContext.Current.CancellationToken);
         await cts.CancelAsync();

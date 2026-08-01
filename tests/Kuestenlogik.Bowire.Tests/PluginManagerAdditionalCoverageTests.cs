@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire.App;
+using Kuestenlogik.Bowire.Tests.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -177,7 +178,7 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         Directory.CreateDirectory(pluginSub);
         File.WriteAllText(SafePath.Combine(pluginSub, "NotAnAssembly.dll"), "this is not a PE");
 
-        PluginManager.LoadPlugins(_tempDir);
+        TestPluginLoaders.For(_tempDir).Load();
     }
 
     [Fact]
@@ -191,7 +192,7 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
         Directory.CreateDirectory(withGarbage);
         File.WriteAllBytes(SafePath.Combine(withGarbage, "Junk.dll"), [0x00, 0x01, 0x02]);
 
-        PluginManager.LoadPlugins(_tempDir);
+        TestPluginLoaders.For(_tempDir).Load();
     }
 
     [Fact]
@@ -388,9 +389,10 @@ public sealed class PluginManagerAdditionalCoverageTests : IDisposable
             SafePath.Combine(here, "Kuestenlogik.Bowire.Protocol.Grpc.dll"),
             SafePath.Combine(pluginSub, "Kuestenlogik.Bowire.Protocol.Grpc.dll"));
 
-        PluginManager.LoadPlugins(_tempDir);
+        var loader = TestPluginLoaders.For(_tempDir);
+        loader.Load();
 
-        var protocols = PluginManager.EnumeratePluginServices<Kuestenlogik.Bowire.IBowireProtocol>();
+        var protocols = loader.EnumerateServices<Kuestenlogik.Bowire.IBowireProtocol>();
         // Either a concrete BowireGrpcProtocol gets instantiated, or
         // (rare CI path) the Activator surfaces a per-type exception
         // that the catch swallows with a stderr warning. Either way

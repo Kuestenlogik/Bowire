@@ -7,6 +7,7 @@ using Kuestenlogik.Bowire.Ai.Mcp;
 using Kuestenlogik.Bowire.Ai.OpenAi;
 using Kuestenlogik.Bowire.Security.Scanner;
 using Kuestenlogik.Bowire.App.Configuration;
+using Kuestenlogik.Bowire.App.Plugins;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Mock.Management;
 using Kuestenlogik.Bowire.Telemetry;
@@ -39,23 +40,27 @@ internal static class BrowserUiHost
     // original inline code did.
     internal static Func<string[], BrowserUiOptions, CancellationToken, Task<int>> HostRunner { get; set; } = DefaultHostRunner;
 
-    public static async Task<int> RunAsync(string[] args, IConfiguration bootstrapConfig, string pluginDir,
+    public static async Task<int> RunAsync(string[] args, IConfiguration bootstrapConfig, IBowirePluginLoader plugins,
         TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(args);
         ArgumentNullException.ThrowIfNull(bootstrapConfig);
-        _ = pluginDir; // resolved via the configuration stack by BuildBrowserUiOptions
+        ArgumentNullException.ThrowIfNull(plugins);
         var io = CommandIo.Resolve(stdout, stderr);
 
         var ui = BowireConfiguration.BuildBrowserUiOptions(bootstrapConfig, args);
 
-        // Plugins must be loaded before MapBowire's reflection scan
-        // sees them. The CLI dispatcher already loaded them once; this
-        // call is idempotent for the host's load context. We surface
-        // per-plugin load outcomes to stderr so operators see version
-        // mismatches and load failures up-front instead of debugging
-        // a silently-missing protocol later.
-        var pluginResults = PluginManager.LoadPlugins(ui.PluginDir);
+        // Plugins must be loaded before MapBowire's reflection scan sees
+        // them. Program.cs already loaded them through this same loader;
+        // the repeat is idempotent because the ledger lives on the
+        // instance. We surface per-plugin outcomes to stderr so operators
+        // see version mismatches and load failures up front instead of
+        // debugging a silently-missing protocol later.
+        //
+        // ui.PluginDir and the loader's directory cannot disagree —
+        // BuildBrowserUiOptions fills the former from the same
+        // BowirePluginOptions chain (#546).
+        var pluginResults = plugins.Load();
         foreach (var r in pluginResults)
         {
             if (r.Status == Kuestenlogik.Bowire.PluginLoading.PluginLoadStatus.Loaded

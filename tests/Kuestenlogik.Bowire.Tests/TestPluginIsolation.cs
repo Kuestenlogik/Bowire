@@ -11,7 +11,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Anything that reaches <c>PluginManager.LoadPlugins</c> without an
+/// Anything that reaches <c>BowirePluginLoader.Load</c> without an
 /// explicit directory — <c>MockCommand.RunAsync</c> among others —
 /// resolves <c>BOWIRE_PLUGIN_DIR</c> and then <c>~/.bowire/plugins</c>.
 /// On a developer machine that directory holds whatever they last
@@ -25,19 +25,19 @@ namespace Kuestenlogik.Bowire.Tests;
 /// </para>
 /// <para>
 /// This has to be an assembly-wide module initializer rather than a
-/// per-class fixture, because <c>PluginManager</c> keeps its loaded
-/// contexts in static fields (<c>s_pluginContexts</c> /
-/// <c>s_loadedSubdirs</c>). Assembly loading is process-global — an ALC
-/// cannot be scoped to a test — so once ANY test has loaded the real
-/// plugins, every later test sees them through
+/// per-class fixture, and #546 did not change that. Moving the load
+/// ledger onto <c>BowirePluginLoader</c> removed the shared bookkeeping,
+/// but assembly loading itself stays process-global — an ALC cannot be
+/// scoped to a test — so once ANY test has loaded the real plugins, every
+/// later test sees them through
 /// <c>AppDomain.CurrentDomain.GetAssemblies()</c> no matter what it sets
 /// afterwards. The only reliable moment is before the first test runs.
 /// </para>
 /// <para>
 /// An explicitly set <c>BOWIRE_PLUGIN_DIR</c> is left alone so CI or a
 /// developer can still point the suite somewhere deliberately. Tests that
-/// pass an explicit directory to <c>LoadPlugins</c> are unaffected either
-/// way.
+/// construct a loader with an explicit directory are unaffected either
+/// way — which is the shape #546 makes available.
 /// </para>
 /// </remarks>
 internal static class TestPluginIsolation

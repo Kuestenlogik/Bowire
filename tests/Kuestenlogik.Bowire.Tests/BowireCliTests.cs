@@ -3,6 +3,7 @@
 
 using Kuestenlogik.Bowire.App.Cli;
 using Microsoft.Extensions.Configuration;
+using Kuestenlogik.Bowire.Tests.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -28,7 +29,7 @@ public sealed class BowireCliTests
     public async Task RunAsync_RootHelp_PrintsAndReturnsZero()
     {
         using var sw = new StringWriter();
-        var rc = await BowireCli.RunAsync(["--help"], EmptyConfig(), pluginDir: "",
+        var rc = await BowireCli.RunAsync(["--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
             stdout: sw, stderr: TextWriter.Null);
         Assert.Equal(0, rc);
         var output = sw.ToString();
@@ -60,7 +61,7 @@ public sealed class BowireCliTests
     public async Task RunAsync_SubcommandHelp_PrintsAndReturnsZero(string subcommand)
     {
         using var sw = new StringWriter();
-        var rc = await BowireCli.RunAsync([subcommand, "--help"], EmptyConfig(), pluginDir: "",
+        var rc = await BowireCli.RunAsync([subcommand, "--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
             stdout: sw, stderr: TextWriter.Null);
         Assert.Equal(0, rc);
         Assert.NotEmpty(sw.ToString());
@@ -72,7 +73,7 @@ public sealed class BowireCliTests
         // #181 — the CI-runner flag surface: --env-file and the --vars
         // alias for --env must be wired on the test subcommand.
         using var sw = new StringWriter();
-        var rc = await BowireCli.RunAsync(["test", "--help"], EmptyConfig(), pluginDir: "",
+        var rc = await BowireCli.RunAsync(["test", "--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
             stdout: sw, stderr: TextWriter.Null);
         Assert.Equal(0, rc);
         var output = sw.ToString();
@@ -87,7 +88,7 @@ public sealed class BowireCliTests
         // serve subcommand. Help on either should be a no-op exit.
         using var sw = new StringWriter();
         var rc = await BowireCli.RunAsync(
-            ["mcp", "serve", "--help"], EmptyConfig(), pluginDir: "",
+            ["mcp", "serve", "--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
             stdout: sw, stderr: TextWriter.Null);
         Assert.Equal(0, rc);
         Assert.Contains("--bind", sw.ToString(), StringComparison.Ordinal);
@@ -104,7 +105,7 @@ public sealed class BowireCliTests
     {
         using var sw = new StringWriter();
         var rc = await BowireCli.RunAsync(
-            ["plugin", sub, "--help"], EmptyConfig(), pluginDir: "",
+            ["plugin", sub, "--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
             stdout: sw, stderr: TextWriter.Null);
         Assert.Equal(0, rc);
         Assert.NotEmpty(sw.ToString());
@@ -116,7 +117,7 @@ public sealed class BowireCliTests
     public async Task RunAsync_RootHelp_ListsCatalogueVerbAndFlags()
     {
         using var sw = new StringWriter();
-        var rc = await BowireCli.RunAsync(["--help"], EmptyConfig(), pluginDir: "",
+        var rc = await BowireCli.RunAsync(["--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
             stdout: sw, stderr: TextWriter.Null);
         Assert.Equal(0, rc);
         var output = sw.ToString();
@@ -141,7 +142,7 @@ public sealed class BowireCliTests
     {
         using var sw = new StringWriter();
         var rc = await BowireCli.RunAsync(
-            ["catalogue", sub, "--help"], EmptyConfig(), pluginDir: "",
+            ["catalogue", sub, "--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
             stdout: sw, stderr: TextWriter.Null);
         Assert.Equal(0, rc);
         Assert.NotEmpty(sw.ToString());
@@ -156,7 +157,7 @@ public sealed class BowireCliTests
         using var err = new StringWriter();
         var rc = await BowireCli.RunAsync(
             ["--catalogue-provider", "local", "--catalogue-path", "/tmp/x.json", "--help"],
-            EmptyConfig(), pluginDir: "", stdout: sw, stderr: err);
+            EmptyConfig(), plugins: TestPluginLoaders.None(), stdout: sw, stderr: err);
         Assert.Equal(0, rc);
         Assert.Empty(err.ToString());
     }

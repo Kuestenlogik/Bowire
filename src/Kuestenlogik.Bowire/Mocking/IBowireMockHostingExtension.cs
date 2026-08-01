@@ -28,7 +28,7 @@ namespace Kuestenlogik.Bowire.Mocking;
 /// </para>
 /// <para>
 /// Discovered via
-/// <c>PluginManager.EnumeratePluginServices&lt;IBowireMockHostingExtension&gt;()</c>
+/// <c>IBowirePluginLoader.EnumerateServices&lt;IBowireMockHostingExtension&gt;()</c>
 /// at MockServer startup. Default-implemented members let a plugin
 /// opt into only the hooks it needs.
 /// </para>

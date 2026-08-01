@@ -7,7 +7,7 @@ namespace Kuestenlogik.Bowire.Tests;
 
 /// <summary>
 /// Tests for <see cref="PluginLoadResultStore"/> — the static bridge
-/// between the CLI-side <c>PluginManager.LoadPlugins</c> and the
+/// between the CLI-side <c>BowirePluginLoader.Load</c> and the
 /// core's <c>/api/plugins/health</c> endpoint. The bridge keeps the
 /// endpoint in core (no dependency on Kuestenlogik.Bowire.Tool) while
 /// still letting it surface the loader's structured failure rows.

@@ -31,7 +31,7 @@ namespace Kuestenlogik.Bowire.Protocol.Rest.Mock;
 ///     a lot of legacy clients hardcode this path.</item>
 /// </list>
 /// <para>
-/// Picked up via assembly-scan (<c>PluginManager.EnumeratePluginServices&lt;IBowireMockHostingExtension&gt;</c>)
+/// Picked up via assembly-scan (<c>IBowirePluginLoader.EnumerateServices&lt;IBowireMockHostingExtension&gt;</c>)
 /// at mock-server startup — same discovery pattern gRPC uses for its
 /// reflection-service mapping. Recordings without an OpenAPI source
 /// schema (gRPC-only, AsyncAPI-only, or pre-v1.7 captures that pre-date

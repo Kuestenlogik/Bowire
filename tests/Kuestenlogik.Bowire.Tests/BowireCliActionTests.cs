@@ -3,6 +3,7 @@
 
 using Kuestenlogik.Bowire.App.Cli;
 using Microsoft.Extensions.Configuration;
+using Kuestenlogik.Bowire.Tests.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -41,7 +42,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["list", "--url", "http://127.0.0.1:1", "-plaintext"],
             EmptyConfig(),
-            pluginDir: "");
+            plugins: TestPluginLoaders.None());
         Assert.Equal(1, rc);
     }
 
@@ -51,7 +52,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["describe", "users.UserService", "--url", "http://127.0.0.1:1"],
             EmptyConfig(),
-            pluginDir: "");
+            plugins: TestPluginLoaders.None());
         Assert.Equal(1, rc);
     }
 
@@ -68,7 +69,7 @@ public sealed class BowireCliActionTests : IDisposable
                 "-d", "{\"id\":1}",
                 "-H", "authorization: bearer x"],
             EmptyConfig(),
-            pluginDir: "");
+            plugins: TestPluginLoaders.None());
         Assert.Equal(1, rc);
     }
 
@@ -85,7 +86,7 @@ public sealed class BowireCliActionTests : IDisposable
                 "-plaintext",
                 "-d", "{}"],
             EmptyConfig(),
-            pluginDir: "");
+            plugins: TestPluginLoaders.None());
         Assert.Equal(1, rc);
     }
 
@@ -98,7 +99,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["mock"],
             EmptyConfig(),
-            pluginDir: "");
+            plugins: TestPluginLoaders.None());
         Assert.Equal(2, rc);
     }
 
@@ -127,7 +128,7 @@ public sealed class BowireCliActionTests : IDisposable
                 "--loop",
                 "--auto-install"],
             EmptyConfig(),
-            pluginDir: "", stdout: null, stderr: stderr);
+            plugins: TestPluginLoaders.None(), stdout: null, stderr: stderr);
         Assert.Equal(1, rc);
         Assert.Contains("chaos", stderr.ToString(), StringComparison.OrdinalIgnoreCase);
     }
@@ -141,7 +142,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["test"],
             EmptyConfig(),
-            pluginDir: "");
+            plugins: TestPluginLoaders.None());
         Assert.Equal(2, rc);
     }
 
@@ -168,7 +169,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["test", coll, "--report", report, "--junit", junit],
             EmptyConfig(),
-            pluginDir: "");
+            plugins: TestPluginLoaders.None());
         Assert.Equal(1, rc);
         Assert.True(File.Exists(report));
         Assert.True(File.Exists(junit));
@@ -182,7 +183,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "list", "--verbose"],
             EmptyConfig(),
-            pluginDir: _tempDir);
+            plugins: TestPluginLoaders.For(_tempDir));
         Assert.Equal(0, rc);
     }
 
@@ -192,7 +193,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "uninstall", "no-such-package"],
             EmptyConfig(),
-            pluginDir: _tempDir);
+            plugins: TestPluginLoaders.For(_tempDir));
         Assert.Equal(1, rc);
     }
 
@@ -203,7 +204,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "install", "any-id", "--file", SafePath.Combine(_tempDir, "absent.nupkg")],
             EmptyConfig(),
-            pluginDir: _tempDir);
+            plugins: TestPluginLoaders.For(_tempDir));
         Assert.Equal(1, rc);
     }
 
@@ -220,7 +221,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "install", "Ghost.Pkg", "--source", feed],
             EmptyConfig(),
-            pluginDir: _tempDir);
+            plugins: TestPluginLoaders.For(_tempDir));
         Assert.Equal(1, rc);
     }
 
@@ -239,7 +240,7 @@ public sealed class BowireCliActionTests : IDisposable
                 "--output", bundle,
                 "--source", feed],
             EmptyConfig(),
-            pluginDir: _tempDir);
+            plugins: TestPluginLoaders.For(_tempDir));
         Assert.Equal(1, rc);
     }
 
@@ -251,7 +252,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "update"],
             EmptyConfig(),
-            pluginDir: _tempDir);
+            plugins: TestPluginLoaders.For(_tempDir));
         Assert.Equal(0, rc);
     }
 
@@ -263,7 +264,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "update", "ghost"],
             EmptyConfig(),
-            pluginDir: _tempDir);
+            plugins: TestPluginLoaders.For(_tempDir));
         Assert.Equal(1, rc);
     }
 
@@ -273,7 +274,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "inspect", "no-such"],
             EmptyConfig(),
-            pluginDir: _tempDir);
+            plugins: TestPluginLoaders.For(_tempDir));
         Assert.Equal(1, rc);
     }
 
@@ -305,7 +306,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["import", "har", har],
             EmptyConfig(),
-            pluginDir: "");
+            plugins: TestPluginLoaders.None());
         Assert.Equal(0, rc);
         Assert.True(File.Exists(Path.ChangeExtension(har, ".bwr")));
     }
@@ -324,7 +325,7 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["import", "har", har, "--out", explicitOut, "--name", "custom"],
             EmptyConfig(),
-            pluginDir: "");
+            plugins: TestPluginLoaders.None());
         // Empty entries array — importer may emit a recording with no
         // steps (exit 0) or surface a "no entries" diagnostic (exit 1).
         // Either way the action lambda body executed.

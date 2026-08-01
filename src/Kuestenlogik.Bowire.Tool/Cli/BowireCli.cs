@@ -4,6 +4,7 @@
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using Kuestenlogik.Bowire.App.Configuration;
+using Kuestenlogik.Bowire.App.Plugins;
 using Kuestenlogik.Bowire.Cli;
 using Kuestenlogik.Bowire.Mcp;
 using Kuestenlogik.Bowire.Mock.Chaos;
@@ -31,10 +32,11 @@ namespace Kuestenlogik.Bowire.App.Cli;
 /// </summary>
 internal static class BowireCli
 {
-    public static async Task<int> RunAsync(string[] args, IConfiguration cfg, string pluginDir,
+    public static async Task<int> RunAsync(string[] args, IConfiguration cfg, IBowirePluginLoader plugins,
         TextWriter? stdout = null, TextWriter? stderr = null)
     {
-        var root = BuildRoot(args, cfg, pluginDir);
+        ArgumentNullException.ThrowIfNull(plugins);
+        var root = BuildRoot(args, cfg, plugins);
         var invocationConfig = new InvocationConfiguration
         {
             Output = stdout ?? Console.Out,
@@ -58,8 +60,13 @@ internal static class BowireCli
         return await parseResult.InvokeAsync(invocationConfig).ConfigureAwait(false);
     }
 
-    private static RootCommand BuildRoot(string[] originalArgs, IConfiguration cfg, string pluginDir)
+    private static RootCommand BuildRoot(string[] originalArgs, IConfiguration cfg, IBowirePluginLoader plugins)
     {
+        // The plugin verbs only need the directory, and their nine action
+        // lambdas see a plain string — keeping that shape means the loader
+        // reaches the two commands that actually load (browser UI, mock)
+        // without churning the installer surface.
+        var pluginDir = plugins.Options.PluginDirectory;
         var root = new RootCommand(
             "Bowire — multi-protocol API workbench. Run without a subcommand to launch the browser UI; " +
             "run a subcommand (discover / list / describe / call / catalogue / mock / mcp / plugin / test) for scripting.");
@@ -129,14 +136,14 @@ internal static class BowireCli
         root.Add(disableCliCommandOpt);
 
         root.SetAction(async (pr, ct) =>
-            await BrowserUiHost.RunAsync(originalArgs, cfg, pluginDir,
+            await BrowserUiHost.RunAsync(originalArgs, cfg, plugins,
                 pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false));
 
         root.Add(BuildDiscoverCommand(cfg));
         root.Add(BuildListCommand(cfg));
         root.Add(BuildDescribeCommand(cfg));
         root.Add(BuildCallCommand(cfg));
-        root.Add(BuildMockCommand(cfg));
+        root.Add(BuildMockCommand(cfg, plugins));
         root.Add(BuildMcpCommand());
         root.Add(BuildPluginCommand(cfg, pluginDir));
         root.Add(BuildTestCommand(cfg));
@@ -745,7 +752,7 @@ internal static class BowireCli
     // the System.CommandLine wiring (the #211 positional shape +
     // mutex against --recording / --schema) without booting a real
     // mock server.
-    internal static Command BuildMockCommand(IConfiguration cfg)
+    internal static Command BuildMockCommand(IConfiguration cfg, IBowirePluginLoader plugins)
     {
         var recording = new Option<string?>("--recording", "-r")
         {
@@ -960,7 +967,7 @@ internal static class BowireCli
                 CaptureMissPath = pr.GetValue(captureMiss),
                 ControlToken = pr.GetValue(controlToken)
             };
-            return await MockCommand.RunAsync(options,
+            return await MockCommand.RunAsync(options, plugins,
                 pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false);
         });
         return cmd;

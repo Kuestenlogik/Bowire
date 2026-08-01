@@ -14,7 +14,7 @@ namespace Kuestenlogik.Bowire.Mocking;
 /// serve from.
 /// </summary>
 /// <remarks>
-/// Discovered via <c>PluginManager.EnumeratePluginServices&lt;IBowireMockSchemaSource&gt;()</c>
+/// Discovered via <c>IBowirePluginLoader.EnumerateServices&lt;IBowireMockSchemaSource&gt;()</c>
 /// at MockServer startup; selection is by <see cref="Kind"/> matching
 /// the configured schema-kind label. Kinds are stable lower-case ids:
 /// <c>"openapi"</c>, <c>"protobuf"</c>, <c>"graphql"</c>. Custom

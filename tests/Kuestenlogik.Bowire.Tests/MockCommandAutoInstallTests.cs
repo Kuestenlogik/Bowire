@@ -4,6 +4,7 @@
 using Kuestenlogik.Bowire.App;
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.PluginLoading;
+using Kuestenlogik.Bowire.Tests.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -152,7 +153,7 @@ public sealed class MockCommandAutoInstallTests : IDisposable
             };
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             IsolatedPluginDir();
-            var rc = await MockCommand.RunAsync(cli, ct: cts.Token);
+            var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), ct: cts.Token);
 
             Assert.Contains(rc, s_acceptedExitCodes);
             Assert.Single(seenPackageIds);
@@ -180,7 +181,7 @@ public sealed class MockCommandAutoInstallTests : IDisposable
 
             var cli = new MockCliOptions { RecordingPath = rec, AutoInstall = true };
             IsolatedPluginDir();
-            var rc = await MockCommand.RunAsync(cli, ct: TestContext.Current.CancellationToken);
+            var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), ct: TestContext.Current.CancellationToken);
 
             Assert.Equal(1, rc);
         }
@@ -224,7 +225,7 @@ public sealed class MockCommandAutoInstallTests : IDisposable
             };
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             IsolatedPluginDir();
-            await MockCommand.RunAsync(cli, ct: cts.Token);
+            await MockCommand.RunAsync(cli, TestPluginLoaders.None(), ct: cts.Token);
 
             // Self-explaining failure: "Expected 2, Actual 1" says nothing
             // about WHY a protocol stopped counting as missing, and the

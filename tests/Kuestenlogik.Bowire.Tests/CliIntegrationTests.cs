@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.App.Configuration;
+using Kuestenlogik.Bowire.Tests.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -38,7 +39,7 @@ public sealed class CliIntegrationTests : IDisposable
         var cfg = BowireConfiguration.Build(args);
         await using var outW = new StringWriter();
         await using var errW = new StringWriter();
-        var code = await BowireCli.RunAsync(args, cfg, pluginDir: "", outW, errW);
+        var code = await BowireCli.RunAsync(args, cfg, plugins: TestPluginLoaders.None(), outW, errW);
         return (code, outW.ToString(), errW.ToString());
     }
 

@@ -4,6 +4,7 @@
 using System.CommandLine;
 using Kuestenlogik.Bowire.App.Cli;
 using Microsoft.Extensions.Configuration;
+using Kuestenlogik.Bowire.Tests.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests.Cli;
 
@@ -36,7 +37,7 @@ public sealed class MockPositionalRecordingTests
     [Fact]
     public void Build_advertises_positional_path_argument_for_recording_shorthand()
     {
-        var mock = BowireCli.BuildMockCommand(EmptyConfig());
+        var mock = BowireCli.BuildMockCommand(EmptyConfig(), TestPluginLoaders.None());
         Assert.Equal("mock", mock.Name);
         var positional = mock.Arguments.SingleOrDefault(a => a.Name == "path");
         Assert.NotNull(positional);
@@ -126,7 +127,7 @@ public sealed class MockPositionalRecordingTests
     {
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var mock = BowireCli.BuildMockCommand(EmptyConfig());
+        var mock = BowireCli.BuildMockCommand(EmptyConfig(), TestPluginLoaders.None());
         var parse = mock.Parse(args);
         var rc = await parse.InvokeAsync(new InvocationConfiguration
         {

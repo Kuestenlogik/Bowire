@@ -30,7 +30,7 @@ namespace Kuestenlogik.Bowire.AsyncApi;
 /// </para>
 /// <para>
 /// Picked up via assembly-scan
-/// (<c>PluginManager.EnumeratePluginServices&lt;IBowireMockHostingExtension&gt;</c>)
+/// (<c>IBowirePluginLoader.EnumerateServices&lt;IBowireMockHostingExtension&gt;</c>)
 /// at mock-server startup — same discovery path as
 /// <c>RestMockHostingExtension</c> and the gRPC reflection extension.
 /// Recordings without an AsyncAPI source schema (gRPC, OpenAPI, or

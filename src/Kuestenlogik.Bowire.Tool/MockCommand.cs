@@ -3,6 +3,7 @@
 
 using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.App.Configuration;
+using Kuestenlogik.Bowire.App.Plugins;
 using Kuestenlogik.Bowire.Mock;
 using Kuestenlogik.Bowire.Mock.Chaos;
 using Kuestenlogik.Bowire.Mock.Loading;
@@ -29,9 +30,10 @@ internal static class MockCommand
         = (packageId, pluginDir, sources, ct) =>
             PluginManager.InstallAsync(packageId, version: null, pluginDir, sources, ct: ct);
 
-    public static async Task<int> RunAsync(MockCliOptions cli, TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken ct = default)
+    public static async Task<int> RunAsync(MockCliOptions cli, IBowirePluginLoader plugins, TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(cli);
+        ArgumentNullException.ThrowIfNull(plugins);
         var io = CommandIo.Resolve(stdout, stderr);
 
         var hasRecording = !string.IsNullOrEmpty(cli.RecordingPath);
@@ -80,17 +82,20 @@ internal static class MockCommand
             // mock-emitter contributions. Plugins that implement
             // `IBowireMockEmitter` (DIS, DDS, raw-UDP multicast, ...)
             // are discovered via the same ALC walk the workbench uses.
-            // No-op when the plugin directory is empty. Resolves under
-            // the same Bowire:PluginDir layering the host uses; argv
-            // is no longer the source since BowireCli passes typed
-            // values directly.
-            var pluginDir = BowireConfiguration.PluginDir(BowireConfiguration.Build([]));
-            PluginManager.LoadPlugins(pluginDir);
-            var emitters = PluginManager.EnumeratePluginServices<Kuestenlogik.Bowire.Mocking.IBowireMockEmitter>();
-            var transportHosts = PluginManager.EnumeratePluginServices<Kuestenlogik.Bowire.Mocking.IBowireMockTransportHost>();
-            var schemaSources = PluginManager.EnumeratePluginServices<Kuestenlogik.Bowire.Mocking.IBowireMockSchemaSource>();
-            var liveSchemaHandlers = PluginManager.EnumeratePluginServices<Kuestenlogik.Bowire.Mocking.IBowireMockLiveSchemaHandler>();
-            var hostingExtensions = PluginManager.EnumeratePluginServices<Kuestenlogik.Bowire.Mocking.IBowireMockHostingExtension>();
+            // No-op when the plugin directory is empty.
+            //
+            // The directory comes from the injected loader, which is the
+            // same instance Program.cs built from the real argv. This used
+            // to rebuild the configuration from an EMPTY argument list,
+            // so `bowire mock --plugin-dir X` structurally could not see
+            // X — only appsettings and the environment reached it (#546).
+            var pluginDir = plugins.Options.PluginDirectory;
+            plugins.Load();
+            var emitters = plugins.EnumerateServices<Kuestenlogik.Bowire.Mocking.IBowireMockEmitter>();
+            var transportHosts = plugins.EnumerateServices<Kuestenlogik.Bowire.Mocking.IBowireMockTransportHost>();
+            var schemaSources = plugins.EnumerateServices<Kuestenlogik.Bowire.Mocking.IBowireMockSchemaSource>();
+            var liveSchemaHandlers = plugins.EnumerateServices<Kuestenlogik.Bowire.Mocking.IBowireMockLiveSchemaHandler>();
+            var hostingExtensions = plugins.EnumerateServices<Kuestenlogik.Bowire.Mocking.IBowireMockHostingExtension>();
 
             // Plugin detection — only meaningful for recording-driven
             // mocks; schema-only modes (--schema / --grpc-schema /
@@ -109,12 +114,12 @@ internal static class MockCommand
                         // protocols show up in subsequent registry walks
                         // (this also reseats the emitter list for
                         // proactive replay).
-                        PluginManager.LoadPlugins(pluginDir);
-                        emitters = PluginManager.EnumeratePluginServices<Kuestenlogik.Bowire.Mocking.IBowireMockEmitter>();
-                        transportHosts = PluginManager.EnumeratePluginServices<Kuestenlogik.Bowire.Mocking.IBowireMockTransportHost>();
-                        schemaSources = PluginManager.EnumeratePluginServices<Kuestenlogik.Bowire.Mocking.IBowireMockSchemaSource>();
-                        liveSchemaHandlers = PluginManager.EnumeratePluginServices<Kuestenlogik.Bowire.Mocking.IBowireMockLiveSchemaHandler>();
-                        hostingExtensions = PluginManager.EnumeratePluginServices<Kuestenlogik.Bowire.Mocking.IBowireMockHostingExtension>();
+                        plugins.Load();
+                        emitters = plugins.EnumerateServices<Kuestenlogik.Bowire.Mocking.IBowireMockEmitter>();
+                        transportHosts = plugins.EnumerateServices<Kuestenlogik.Bowire.Mocking.IBowireMockTransportHost>();
+                        schemaSources = plugins.EnumerateServices<Kuestenlogik.Bowire.Mocking.IBowireMockSchemaSource>();
+                        liveSchemaHandlers = plugins.EnumerateServices<Kuestenlogik.Bowire.Mocking.IBowireMockLiveSchemaHandler>();
+                        hostingExtensions = plugins.EnumerateServices<Kuestenlogik.Bowire.Mocking.IBowireMockHostingExtension>();
                     }
                     else
                     {

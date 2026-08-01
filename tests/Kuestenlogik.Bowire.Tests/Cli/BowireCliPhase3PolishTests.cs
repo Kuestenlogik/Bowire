@@ -5,6 +5,7 @@ using System.CommandLine;
 using System.CommandLine.Completions;
 using Kuestenlogik.Bowire.App.Cli;
 using Microsoft.Extensions.Configuration;
+using Kuestenlogik.Bowire.Tests.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests.Cli;
 
@@ -107,7 +108,7 @@ public sealed class BowireCliPhase3PolishTests
         using var stderr = new StringWriter();
 
         string[] args = ["mock", "--port", "70000"];
-        var rc = await BowireCli.RunAsync(args, EmptyConfig(), pluginDir: "", stdout, stderr);
+        var rc = await BowireCli.RunAsync(args, EmptyConfig(), plugins: TestPluginLoaders.None(), stdout, stderr);
 
         Assert.Equal(1, rc);
         Assert.Equal(string.Empty, stdout.ToString());
@@ -180,7 +181,7 @@ public sealed class BowireCliPhase3PolishTests
 
     private static List<string> ParseMock(params string[] args)
     {
-        var mock = BowireCli.BuildMockCommand(EmptyConfig());
+        var mock = BowireCli.BuildMockCommand(EmptyConfig(), TestPluginLoaders.None());
         return mock.Parse(args).Errors.Select(e => e.Message).ToList();
     }
 }
