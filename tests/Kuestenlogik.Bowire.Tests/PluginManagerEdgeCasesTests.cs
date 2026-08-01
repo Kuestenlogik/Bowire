@@ -33,13 +33,13 @@ public sealed class PluginManagerEdgeCasesTests : IDisposable
     public PluginManagerEdgeCasesTests()
     {
         _tempDir = Directory.CreateTempSubdirectory("bowire-pm-edge-").FullName;
-        _envBackup = Environment.GetEnvironmentVariable(PluginManager.PluginDirEnvVar);
-        Environment.SetEnvironmentVariable(PluginManager.PluginDirEnvVar, null);
+        _envBackup = Environment.GetEnvironmentVariable(BowirePluginOptions.EnvVarName);
+        Environment.SetEnvironmentVariable(BowirePluginOptions.EnvVarName, null);
     }
 
     public void Dispose()
     {
-        Environment.SetEnvironmentVariable(PluginManager.PluginDirEnvVar, _envBackup);
+        Environment.SetEnvironmentVariable(BowirePluginOptions.EnvVarName, _envBackup);
         try { Directory.Delete(_tempDir, recursive: true); } catch { /* best-effort */ }
         GC.SuppressFinalize(this);
     }

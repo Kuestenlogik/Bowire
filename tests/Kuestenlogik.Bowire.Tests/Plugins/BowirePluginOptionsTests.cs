@@ -81,6 +81,20 @@ public sealed class BowirePluginOptionsTests : IDisposable
     }
 
     [Fact]
+    public void Resolve_WhitespaceExplicitPath_FallsThroughToEnvironmentVariable()
+    {
+        // `--plugin-dir ""` means "I did not choose one", not "use the
+        // working directory" — which is what Path.GetFullPath("   ")
+        // would hand back.
+        var fromEnv = Path.Combine(Path.GetTempPath(), "bowire-ws-" + Guid.NewGuid().ToString("N"));
+        Environment.SetEnvironmentVariable(BowirePluginOptions.EnvVarName, fromEnv);
+
+        var options = BowirePluginOptions.Resolve("   ");
+
+        Assert.Equal(Path.GetFullPath(fromEnv), options.PluginDirectory);
+    }
+
+    [Fact]
     public void Resolve_BlankConfigurationValue_FallsThroughToDefault()
     {
         // A configuration that answers with whitespace is answering "unset".
