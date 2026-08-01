@@ -1200,4 +1200,4 @@ Plugin management is static end to end: `PluginManager` is a `static class` hold
 
 ---
 
-*Generated 2026-07-31 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-08-01 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
