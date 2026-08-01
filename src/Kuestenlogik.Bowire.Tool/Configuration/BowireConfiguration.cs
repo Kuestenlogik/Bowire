@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.App.Plugins;
 using Microsoft.Extensions.Configuration;
 
 namespace Kuestenlogik.Bowire.App.Configuration;
@@ -133,7 +134,7 @@ internal static class BowireConfiguration
     /// </summary>
     private static readonly Dictionary<string, string> s_legacyEnvVars = new(StringComparer.Ordinal)
     {
-        ["BOWIRE_PLUGIN_DIR"] = "Bowire:PluginDir"
+        [BowirePluginOptions.EnvVarName] = BowirePluginOptions.ConfigurationKey
     };
 
     /// <summary>
@@ -175,7 +176,12 @@ internal static class BowireConfiguration
         foreach (var (envName, configKey) in s_legacyEnvVars)
         {
             var value = Environment.GetEnvironmentVariable(envName);
-            if (!string.IsNullOrEmpty(value))
+            // Whitespace counts as unset. This layer outranks appsettings,
+            // so an all-blank BOWIRE_PLUGIN_DIR used to shadow a perfectly
+            // good Bowire:PluginDir from the config file — and then read
+            // back as null, because PluginDir() rejects whitespace. The
+            // two guards have to agree on what "empty" means.
+            if (!string.IsNullOrWhiteSpace(value))
             {
                 legacyEnvBindings[configKey] = value;
             }
@@ -361,14 +367,15 @@ internal static class BowireConfiguration
     /// <summary>Resolve the active plugin directory.</summary>
     /// <remarks>
     /// Returns the absolute path when a value is configured, or
-    /// <c>null</c> when none of the layers set <c>Bowire:PluginDir</c>
-    /// — in which case <see cref="PluginManager.ResolvePluginDir"/> falls
-    /// back to the default <c>~/.bowire/plugins/</c>.
+    /// <c>null</c> when none of the layers set
+    /// <see cref="BowirePluginOptions.ConfigurationKey"/> — in which case
+    /// <see cref="BowirePluginOptions.Resolve"/> falls back to
+    /// <see cref="BowirePluginOptions.DefaultDirectory"/>.
     /// </remarks>
     public static string? PluginDir(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        var raw = configuration["Bowire:PluginDir"];
+        var raw = configuration[BowirePluginOptions.ConfigurationKey];
         return string.IsNullOrWhiteSpace(raw) ? null : Path.GetFullPath(raw);
     }
 }
