@@ -18,13 +18,8 @@ namespace Kuestenlogik.Bowire.App;
 /// </summary>
 internal static class PluginManager
 {
-    // Default location when nothing else is set — per-user, self-contained.
-    private static readonly string DefaultPluginDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        ".bowire", "plugins");
-
     /// <summary>Environment-variable name that overrides the default plugin path.</summary>
-    public const string PluginDirEnvVar = "BOWIRE_PLUGIN_DIR";
+    public const string PluginDirEnvVar = BowirePluginOptions.EnvVarName;
 
     private static readonly JsonSerializerOptions IndentedJson = new() { WriteIndented = true };
 
@@ -52,24 +47,13 @@ internal static class PluginManager
     }
 
     /// <summary>
-    /// Pick the active plugin directory. Priority order:
-    /// <list type="number">
-    ///   <item>Explicit path passed via <c>--plugin-dir</c> on the CLI.</item>
-    ///   <item>The <c>BOWIRE_PLUGIN_DIR</c> environment variable.</item>
-    ///   <item>The default <c>~/.bowire/plugins/</c>.</item>
-    /// </list>
-    /// Returns the absolute path so install / list / uninstall / load all
-    /// agree on the same directory regardless of working-directory drift.
+    /// Pick the active plugin directory. Forwards to
+    /// <see cref="BowirePluginOptions.Resolve"/>, which owns the precedence
+    /// chain — this overload has no configuration to hand, so it takes the
+    /// direct-environment branch documented there.
     /// </summary>
     public static string ResolvePluginDir(string? explicitPath = null)
-    {
-        if (!string.IsNullOrWhiteSpace(explicitPath))
-            return Path.GetFullPath(explicitPath);
-        var env = Environment.GetEnvironmentVariable(PluginDirEnvVar);
-        if (!string.IsNullOrWhiteSpace(env))
-            return Path.GetFullPath(env);
-        return DefaultPluginDir;
-    }
+        => BowirePluginOptions.Resolve(explicitPath).PluginDirectory;
 
     /// <summary>
     /// Install a NuGet package as a Bowire plugin.
