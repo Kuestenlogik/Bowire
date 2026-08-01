@@ -31,9 +31,6 @@ namespace Kuestenlogik.Bowire.App;
 /// </remarks>
 internal static class PluginManager
 {
-    /// <summary>Environment-variable name that overrides the default plugin path.</summary>
-    public const string PluginDirEnvVar = BowirePluginOptions.EnvVarName;
-
     private static readonly JsonSerializerOptions IndentedJson = new() { WriteIndented = true };
 
     /// <summary>
@@ -60,15 +57,6 @@ internal static class PluginManager
     }
 
     /// <summary>
-    /// Pick the active plugin directory. Forwards to
-    /// <see cref="BowirePluginOptions.Resolve"/>, which owns the precedence
-    /// chain — this overload has no configuration to hand, so it takes the
-    /// direct-environment branch documented there.
-    /// </summary>
-    public static string ResolvePluginDir(string? explicitPath = null)
-        => BowirePluginOptions.Resolve(explicitPath).PluginDirectory;
-
-    /// <summary>
     /// Install a NuGet package as a Bowire plugin.
     /// Downloads the package, extracts DLLs to ~/.bowire/plugins/{packageId}/
     /// </summary>
@@ -89,7 +77,7 @@ internal static class PluginManager
             return 2;
         }
 
-        var dir = ResolvePluginDir(pluginDir);
+        var dir = BowirePluginOptions.Resolve(pluginDir).PluginDirectory;
         Directory.CreateDirectory(dir);
         var pluginSubDir = Path.Combine(dir, packageId);
 
@@ -191,7 +179,7 @@ internal static class PluginManager
             return 1;
         }
 
-        var dir = ResolvePluginDir(pluginDir);
+        var dir = BowirePluginOptions.Resolve(pluginDir).PluginDirectory;
         Directory.CreateDirectory(dir);
 
         // We can't run the "already installed" guard before reading
@@ -314,7 +302,7 @@ internal static class PluginManager
             return 2;
         }
 
-        var dir = ResolvePluginDir(pluginDir);
+        var dir = BowirePluginOptions.Resolve(pluginDir).PluginDirectory;
         Directory.CreateDirectory(dir);
 
         // Resolve the zip to a local path. Three source shapes:
@@ -553,7 +541,7 @@ internal static class PluginManager
     public static int List(string? pluginDir = null, bool verbose = false, TextWriter? stdout = null, TextWriter? stderr = null)
     {
         var io = PluginIo.Resolve(stdout, stderr);
-        var dir = ResolvePluginDir(pluginDir);
+        var dir = BowirePluginOptions.Resolve(pluginDir).PluginDirectory;
         if (!Directory.Exists(dir))
         {
             io.OutLine("  No plugins installed.");
@@ -722,7 +710,7 @@ internal static class PluginManager
             return 2;
         }
 
-        var dir = ResolvePluginDir(pluginDir);
+        var dir = BowirePluginOptions.Resolve(pluginDir).PluginDirectory;
         var pluginSubDir = Path.Combine(dir, packageId);
         if (!Directory.Exists(pluginSubDir))
         {
@@ -790,7 +778,7 @@ internal static class PluginManager
         PluginIo io,
         CancellationToken ct)
     {
-        var dir = ResolvePluginDir(pluginDir);
+        var dir = BowirePluginOptions.Resolve(pluginDir).PluginDirectory;
         if (!Directory.Exists(dir))
         {
             io.OutLine("  No plugins installed.");
@@ -875,7 +863,7 @@ internal static class PluginManager
             return 2;
         }
 
-        var dir = ResolvePluginDir(pluginDir);
+        var dir = BowirePluginOptions.Resolve(pluginDir).PluginDirectory;
         var pluginSubDir = Path.Combine(dir, packageId);
         if (!Directory.Exists(pluginSubDir))
         {
@@ -997,7 +985,7 @@ internal static class PluginManager
             return 2;
         }
 
-        var dir = ResolvePluginDir(pluginDir);
+        var dir = BowirePluginOptions.Resolve(pluginDir).PluginDirectory;
         var pluginSubDir = Path.Combine(dir, packageId);
         if (!Directory.Exists(pluginSubDir))
         {
@@ -1067,7 +1055,7 @@ internal static class PluginManager
                                      loading in every bowire subcommand).
 
             Environment:
-              {PluginDirEnvVar}      Default plugin directory (used when --plugin-dir is
+              {BowirePluginOptions.EnvVarName}      Default plugin directory (used when --plugin-dir is
                                      not passed). Falls back to ~/.bowire/plugins/.
 
             Examples:

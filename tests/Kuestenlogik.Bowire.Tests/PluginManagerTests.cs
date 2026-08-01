@@ -4,6 +4,7 @@
 using Kuestenlogik.Bowire.App;
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Tests.Plugins;
+using Kuestenlogik.Bowire.App.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -27,61 +28,15 @@ public sealed class PluginManagerTests : IDisposable
     {
         _tempDir = SafePath.Combine(Path.GetTempPath(), "bowire-pm-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
-        _envBackup = Environment.GetEnvironmentVariable(PluginManager.PluginDirEnvVar);
-        Environment.SetEnvironmentVariable(PluginManager.PluginDirEnvVar, null);
+        _envBackup = Environment.GetEnvironmentVariable(BowirePluginOptions.EnvVarName);
+        Environment.SetEnvironmentVariable(BowirePluginOptions.EnvVarName, null);
     }
 
     public void Dispose()
     {
-        Environment.SetEnvironmentVariable(PluginManager.PluginDirEnvVar, _envBackup);
+        Environment.SetEnvironmentVariable(BowirePluginOptions.EnvVarName, _envBackup);
         try { Directory.Delete(_tempDir, recursive: true); } catch { /* best-effort */ }
         GC.SuppressFinalize(this);
-    }
-
-    [Fact]
-    public void ResolvePluginDir_Explicit_WinsOverEnvAndDefault()
-    {
-        Environment.SetEnvironmentVariable(PluginManager.PluginDirEnvVar, "/tmp/from-env");
-        try
-        {
-            var resolved = PluginManager.ResolvePluginDir(_tempDir);
-            Assert.Equal(Path.GetFullPath(_tempDir), resolved);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable(PluginManager.PluginDirEnvVar, null);
-        }
-    }
-
-    [Fact]
-    public void ResolvePluginDir_EnvVar_UsedWhenNoExplicitArg()
-    {
-        var target = SafePath.Combine(_tempDir, "env-dir");
-        Environment.SetEnvironmentVariable(PluginManager.PluginDirEnvVar, target);
-        try
-        {
-            var resolved = PluginManager.ResolvePluginDir(null);
-            Assert.Equal(Path.GetFullPath(target), resolved);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable(PluginManager.PluginDirEnvVar, null);
-        }
-    }
-
-    [Fact]
-    public void ResolvePluginDir_WhitespaceExplicit_FallsThroughToEnv()
-    {
-        Environment.SetEnvironmentVariable(PluginManager.PluginDirEnvVar, _tempDir);
-        try
-        {
-            var resolved = PluginManager.ResolvePluginDir("   ");
-            Assert.Equal(Path.GetFullPath(_tempDir), resolved);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable(PluginManager.PluginDirEnvVar, null);
-        }
     }
 
     [Fact]
@@ -524,7 +479,7 @@ public sealed class PluginManagerTests : IDisposable
         var output = sw.ToString();
         Assert.Contains("bowire plugin", output, StringComparison.Ordinal);
         Assert.Contains("install", output, StringComparison.Ordinal);
-        Assert.Contains(PluginManager.PluginDirEnvVar, output, StringComparison.Ordinal);
+        Assert.Contains(BowirePluginOptions.EnvVarName, output, StringComparison.Ordinal);
     }
 
     [Fact]
