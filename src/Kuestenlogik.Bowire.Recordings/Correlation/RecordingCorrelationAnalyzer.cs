@@ -740,7 +740,7 @@ public static class RecordingCorrelationAnalyzer
                 if (!names.Contains(normalized, StringComparer.Ordinal)) names.Add(normalized);
 
                 if (!normalized.EndsWith("id", StringComparison.Ordinal)) return;
-                if (!seen.Add(normalized + " " + value)) return;
+                if (!seen.Add(normalized + "\0" + value)) return;
 
                 leaves.Add(new IdLeaf(name, normalized, value));
                 if (!index.IdCarriers.TryGetValue(value, out var carriers))
@@ -886,7 +886,7 @@ public static class RecordingCorrelationAnalyzer
         int stepIndex)
     {
         if (normalizedName.Length == 0 || value.Length == 0) return;
-        var groupKey = source + " " + normalizedName + " " + value;
+        var groupKey = source + "\0" + normalizedName + "\0" + value;
         if (!groups.TryGetValue(groupKey, out var group))
         {
             group = new CandidateGroup(displayName, value, source);
