@@ -263,6 +263,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [6](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6) | Bootcamp | [Bootcamp landing renders inconsistent breadcrumb based on arrival path](#issue-kuestenlogik-bowire-bootcamp-6) | ⬜ Backlog |  |
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Backlog |  |
 | [21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21) | Protocol.Dis | [probeDuration setting is ignored by DiscoverAsync](#issue-kuestenlogik-bowire-protocol-dis-21) | ⬜ Backlog |  |
+| [21](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/21) | Bootcamp | [main requires a 'build' check no workflow produces — every cascade PR is permanently blocked](#issue-kuestenlogik-bowire-bootcamp-21) | ⬜ Backlog |  |
 | [22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) | Protocol.Dis | [Typed PDU envelope decoding beyond EntityState](#issue-kuestenlogik-bowire-protocol-dis-22) | ⬜ Backlog |  |
 | [23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) | Protocol.Dis | [Entity-filtered stream drops non-EntityState PDUs](#issue-kuestenlogik-bowire-protocol-dis-23) | ⬜ Backlog |  |
 | [24](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24) | Protocol.Dis | [Typed / re-decoded mock replay in DisMockEmitter](#issue-kuestenlogik-bowire-protocol-dis-24) | ⬜ Backlog |  |
@@ -292,6 +293,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ⬜ Backlog |  |
 | [546](https://github.com/Kuestenlogik/Bowire/issues/546) | Bowire | [Make plugin management DI-friendly: retire the static PluginManager and its duplicate ledger](#issue-kuestenlogik-bowire-546) | ⬜ Backlog |  |
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog |  |
+| [548](https://github.com/Kuestenlogik/Bowire/issues/548) | Bowire | [Release cascade skips Kuestenlogik.Bowire.Protocol.* — the bump regex allows only one dot-segment](#issue-kuestenlogik-bowire-548) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1087,6 +1089,10 @@ Tracks the Surgewave-lane work split out of Kuestenlogik/Bowire#33 so protocol-s
 
 The plugin exposes a `probeDuration` setting (`BowireDisProtocol.Settings`, default 3s) and the README advertises it as configurable ("configurable via the plugin's `probeDuration` setting"). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21)
 
+#### <a id="issue-kuestenlogik-bowire-bootcamp-21"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#21](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/21) main requires a 'build' check no workflow produces — every cascade PR is permanently blocked
+
+`main` requires the status check `build`. No workflow in this repository produces one. [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/21)
+
 #### <a id="issue-kuestenlogik-bowire-protocol-dis-22"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) Typed PDU envelope decoding beyond EntityState
 
 `TryBuildEnvelope` only decodes **EntityState** into typed fields; every other PDU kind is surfaced as header + base64 `raw` only (`src/Kuestenlogik.Bowire.Protocol.Dis/BowireDisProtocol.cs:294-350`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22)
@@ -1202,6 +1208,10 @@ Plugin management is static end to end: `PluginManager` is a `static class` hold
 #### <a id="issue-kuestenlogik-bowire-547"></a>⬜ Backlog · [#547](https://github.com/Kuestenlogik/Bowire/issues/547) Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one
 
 `RecordingCorrelationScanner.ScanStep` documents itself as walking "every JSON-bearing surface of one step", but it misses one: the interpretations. [[more]](https://github.com/Kuestenlogik/Bowire/issues/547)
+
+#### <a id="issue-kuestenlogik-bowire-548"></a>⬜ Backlog · [#548](https://github.com/Kuestenlogik/Bowire/issues/548) Release cascade skips Kuestenlogik.Bowire.Protocol.* — the bump regex allows only one dot-segment
+
+The release cascade bumps `Kuestenlogik.Bowire` and `Kuestenlogik.Bowire.<One>` in every sibling, and silently skips `Kuestenlogik.Bowire.<Two>.<Segments>`. The bump regex in `.github/sibling-templates/bowire-released.yml` allows exactly one dot-segment past the prefix: [[more]](https://github.com/Kuestenlogik/Bowire/issues/548)
 
 ---
 
