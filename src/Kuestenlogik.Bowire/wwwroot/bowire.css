@@ -9982,6 +9982,91 @@ details:not([open]) > .bowire-json-tree-close {
     animation: bowire-pulse 1.5s ease-in-out infinite;
 }
 
+/* #48 Schema watch — what the last poll found, in the sidebar.
+   Three marks, one meaning each: `+` appeared, `−` gone, `~` the
+   signature moved under a name that stayed put. The third is the one
+   worth a colour of its own: a saved request against a `~` method
+   still opens and still sends, and fails at the far end. */
+.bowire-schema-delta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 8px 6px;
+    padding: 5px 6px 5px 9px;
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-info-bg, var(--bowire-surface));
+    border-left: 3px solid var(--bowire-info, var(--bowire-accent));
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.bowire-schema-delta-summary {
+    color: var(--bowire-text-secondary);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Removals have no row left to mark, so they only exist here. Kept
+   truncatable rather than wrapped — the full list is in the title. */
+.bowire-schema-delta-gone {
+    color: var(--bowire-text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: help;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.bowire-schema-delta-dismiss {
+    margin-left: auto;
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--bowire-text-tertiary);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0 2px;
+    cursor: pointer;
+    border-radius: var(--bowire-radius-sm);
+}
+
+.bowire-schema-delta-dismiss:hover {
+    color: var(--bowire-text-primary);
+    background: var(--bowire-surface-hover, transparent);
+}
+
+/* Per-service tally on the group header, so a change is findable
+   without expanding every group to hunt for a marked row. */
+.bowire-schema-delta-chip {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 1px 5px;
+    border-radius: var(--bowire-radius-pill);
+    background: var(--bowire-info-bg, var(--bowire-surface));
+    color: var(--bowire-info, var(--bowire-accent));
+    flex-shrink: 0;
+    cursor: help;
+}
+
+.bowire-schema-delta-mark {
+    font-size: 11px;
+    font-weight: 700;
+    width: 13px;
+    text-align: center;
+    flex-shrink: 0;
+    cursor: help;
+}
+
+.bowire-schema-delta-mark.is-added {
+    color: var(--bowire-success);
+}
+
+.bowire-schema-delta-mark.is-changed {
+    color: var(--bowire-warning);
+}
+
 /* #114 Phase 2 — inline hint banners. Renders at the surface that
    the hint targets (response pane,
 auth panel) so the operator reads

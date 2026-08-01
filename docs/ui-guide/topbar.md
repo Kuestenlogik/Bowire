@@ -39,7 +39,7 @@ The right cluster is the at-a-glance status row plus the per-session toggles.
 |---|---|
 | **Connection pill** | Aggregate state of every configured discovery URL — green when all are connected, amber when partial / connecting, red when any failed. Hover for a per-URL breakdown with service counts + retry. ([#93](https://github.com/Kuestenlogik/Bowire/issues/93)) |
 | **Environment selector** | Switch active environment; click to manage variables. |
-| **Schema watch** | Toggle the background re-discovery loop that polls the configured URLs every 15 s. Useful when developing against a service whose proto / OpenAPI / schema is changing under you. |
+| **Schema watch** | Toggle the background re-discovery loop. The interval comes from **Settings → General → Schema Watch interval** (15 s by default); the button tooltip states the value in force. Each poll is diffed against the last, and what moved is marked in the Discover sidebar -- see [Settings](../features/settings.md#schema-watch-interval). Useful when developing against a service whose proto / OpenAPI / schema is changing under you. |
 | **Theme toggle** | Cycle auto → dark → light → auto. Keyboard shortcut: `t`. |
 | **AI drawer** | Open / close the right-side AI assistant. Badge shows live hint-engine count. Keyboard shortcut: `Ctrl/Cmd+Shift+A`. |
 | **About** | Standalone dialog with version, open-source notices, and Küstenlogik credit. |

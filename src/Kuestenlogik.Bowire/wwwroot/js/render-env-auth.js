@@ -2983,16 +2983,23 @@
     }
 
     function renderWatchButton() {
+        // #48 — the interval comes from Settings → General. It used to
+        // be hardcoded here at 15s while the settings control wrote a
+        // localStorage key nothing read, so the documented knob did
+        // nothing. Read it at click time, not render time, so changing
+        // the setting and restarting the watch takes effect without a
+        // reload.
+        var seconds = schemaWatchSeconds();
         return el('button', {
             id: 'bowire-schema-watch-btn',
             className: 'bowire-theme-toggle-btn' + (isSchemaWatchActive() ? ' is-watching' : ''),
             title: isSchemaWatchActive()
-                ? 'Schema watch active — click to stop'
-                : 'Start schema watch (re-discover every 15s)',
+                ? 'Schema watch active (every ' + seconds + 's) — click to stop'
+                : 'Start schema watch (re-discover every ' + seconds + 's)',
             'aria-label': isSchemaWatchActive() ? 'Stop schema watch' : 'Start schema watch',
             onClick: function () {
                 if (isSchemaWatchActive()) { stopSchemaWatch(); }
-                else { startSchemaWatch(15000); }
+                else { startSchemaWatch(); }
                 render();
             }
         }, el('span', {

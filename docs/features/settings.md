@@ -35,9 +35,18 @@ When enabled (the default), Bowire parses JSON payloads in WebSocket, MQTT, and 
 
 ### Schema Watch interval
 
-Controls how often Bowire re-discovers services when Schema Watch is active. The value is in seconds, with a minimum of 5 and a maximum of 300. The default is 15 seconds.
+Controls how often Bowire re-discovers services when Schema Watch is active. The value is in seconds, with a minimum of 5 and a maximum of 300. The default is 15 seconds. A value outside those bounds is clamped rather than rejected.
 
-Schema Watch is useful during active development -- your server's service definitions are polled at this interval and the sidebar updates automatically when methods are added or changed.
+Schema Watch is useful during active development -- your server's service definitions are polled at this interval, and each poll is compared against the previous one. What moved is shown in the Discover sidebar:
+
+| Mark | Where | Meaning |
+|---|---|---|
+| `+` | on the method row | The method appeared since the last poll. |
+| `~` | on the method row | The name stayed put but the shape moved -- a parameter, a required flag, an HTTP verb or path, a streaming direction. A saved request still opens and still sends, and fails at the far end. |
+| `+n −n ~n` | on the service header | Per-service tally, so a change is findable without expanding every group. |
+| summary banner | above the tree | One line for the whole delta, plus the removals -- a method that is gone has no row left to mark, so this is the only place it appears. Dismiss with the `×`. |
+
+Prose-only edits (a changed summary or description) are deliberately **not** reported: descriptions move constantly while a schema is under development, and marking them would train you to ignore the marker.
 
 ## Shortcuts
 
