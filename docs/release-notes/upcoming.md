@@ -385,6 +385,46 @@ server whose tools were broken stopped contributing its working resources
 and prompts too; #544 removed that trade-off in the same release. Such a
 server now reports `partial` and keeps everything that still works.
 
+### Plugin management stops being process-global (#546)
+
+`bowire mock --plugin-dir X` never used X. The mock command rebuilt its
+configuration from an **empty** argument list, so only `appsettings.json`
+and `BOWIRE_PLUGIN_DIR` could reach it — the flag you typed was parsed,
+accepted, and then structurally unreachable. Threading a plugin loader
+through the CLI instead of resolving one per call fixes it.
+
+That thread is the visible half of a larger cleanup. Plugin loading kept
+its state in three static fields, including `s_loadedSubdirs` — a
+hand-maintained record of what had been loaded, sitting next to the
+context list that already knew. Two records of one truth can drift, and
+they made testing miserable: issue #543 took four failed fixes, every one
+defeated by process-global state coordinated through an environment
+variable with several test classes as competing writers.
+
+There is now one `BowirePluginLoader` per Bowire instance, built at the
+composition root and passed down, and one `BowirePluginOptions` answering
+"which directory" instead of two code paths that could disagree. A test
+constructs plugin management with an explicit directory and touches
+nothing ambient.
+
+**What this does not claim.** Assembly loading is process-wide. Two
+loaders keep separate ledgers and separate load contexts, but once either
+has run, the assemblies stay visible to the whole process — an
+`AssemblyLoadContext` cannot be scoped to a container or a test. The goal
+was one owner for that global state, reached through an interface, not the
+absence of global state. Collectible contexts would allow unloading and
+bring their own sharp edges; that stays a separate decision.
+
+Two defects surfaced on the way. A whitespace-only `BOWIRE_PLUGIN_DIR`
+used to shadow a working `Bowire:PluginDir` from `appsettings.json`,
+because the layer that admitted the value and the one that read it back
+disagreed on what "empty" means. And `PluginManifestProbe.HostVersionOverride`
+— a mutable static test seam with two writers — made a suite failure
+depend on scheduling; the contract version is now an option on the loader.
+
+Nothing here changes a public API. `IBowireProtocol` is untouched, plugins
+keep compiling, and `PluginManager` was internal to the CLI.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor
