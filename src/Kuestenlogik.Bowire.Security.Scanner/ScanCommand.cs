@@ -326,6 +326,22 @@ public static class ScanCommand
         var dnsSource = new Lazy<IDnsAnswerSource>(
             () => new DnsClientAnswerSource(options.TimeoutSeconds, options.DnsResolver));
 
+        // #491 — null means "the defaults"; an explicit list replaces them, so
+        // the operator can narrow as well as widen.
+        var codeEngines = options.CodeTemplateInterpreters.Count > 0
+            ? new HashSet<string>(options.CodeTemplateInterpreters, StringComparer.OrdinalIgnoreCase)
+            : null;
+
+        // Naming interpreters without opening the gate is almost certainly a
+        // mistake, and the symptom — code templates still skipped — looks
+        // identical to the flag not working.
+        if (codeEngines is not null && !options.AllowCodeTemplates)
+        {
+            await stderr.WriteLineAsync(
+                "  --code-template-interpreters was given without --allow-code-templates; code templates stay skipped and the list has no effect.")
+                .ConfigureAwait(false);
+        }
+
         foreach (var tmpl in templates)
         {
             var severity = tmpl.Recording.Vulnerability?.Severity ?? "medium";
@@ -409,6 +425,35 @@ public static class ScanCommand
                     findings.Add(transportMatched
                         ? ScanFinding.Vulnerable(tmpl, transportResponse)
                         : ScanFinding.Safe(tmpl, transportResponse));
+                }
+                catch (Exception ex)
+                {
+                    findings.Add(ScanFinding.Error(tmpl, ex.Message));
+                }
+                continue;
+            }
+
+            // #491 — code: templates are programs, not requests. They run only
+            // when the operator said so, and the refusal names the template so
+            // "no findings" can never quietly mean "half the corpus never ran".
+            if (protocol is "CODE")
+            {
+                if (!options.AllowCodeTemplates)
+                {
+                    findings.Add(ScanFinding.Skipped(tmpl,
+                        "code template skipped — it executes arbitrary code on this machine. Pass --allow-code-templates to run it."));
+                    continue;
+                }
+                try
+                {
+                    var codeResponse = await CodeProbeExecutor
+                        .ExecuteAsync(probe, options.TimeoutSeconds, codeEngines, resolveEngine: null, ct)
+                        .ConfigureAwait(false);
+                    var codeMatched = AttackPredicateEvaluator.Evaluate(
+                        tmpl.Recording.VulnerableWhen!, codeResponse);
+                    findings.Add(codeMatched
+                        ? ScanFinding.Vulnerable(tmpl, codeResponse)
+                        : ScanFinding.Safe(tmpl, codeResponse));
                 }
                 catch (Exception ex)
                 {
@@ -1414,6 +1459,23 @@ public sealed class ScanOptions
     /// and a wrong answer here reads as "not vulnerable".
     /// </summary>
     public string? DnsResolver { get; init; }
+
+    /// <summary>
+    /// Opt-in for Nuclei <c>code:</c> templates (#491). Off by default and
+    /// deliberately so: a <c>code:</c> template is a program that runs on the
+    /// scanning machine with the caller's rights, and the corpus it comes from
+    /// is community-supplied. With this off those templates load and report as
+    /// skipped, which is visible; they never execute.
+    /// </summary>
+    public bool AllowCodeTemplates { get; init; }
+
+    /// <summary>
+    /// Interpreters <c>code:</c> templates may be launched with. Empty uses
+    /// <see cref="CodeProbeExecutor.DefaultEngines"/>; a non-empty list
+    /// REPLACES them, so this narrows as readily as it widens. Has no effect
+    /// without <see cref="AllowCodeTemplates"/> — nothing runs either way.
+    /// </summary>
+    public IList<string> CodeTemplateInterpreters { get; init; } = new List<string>();
 
     public bool AllowSelfSignedCerts { get; init; }
     public bool RunBuiltins { get; init; } = true;

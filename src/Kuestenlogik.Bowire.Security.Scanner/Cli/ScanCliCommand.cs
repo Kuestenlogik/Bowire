@@ -40,6 +40,12 @@ public sealed class ScanCliCommand : IBowireCliCommand
         var severityOpt = new Option<string>("--severity") { Description = "Minimum severity to report: low / medium / high / critical. Lower-severity templates still load but are reported as skipped." };
         var timeoutOpt = new Option<int>("--timeout") { Description = "Per-probe HTTP timeout in seconds. Default 30." };
         var dnsResolverOpt = new Option<string>("--dns-resolver") { Description = "Nameserver IP for Nuclei `dns:` templates, e.g. 1.1.1.1. Defaults to the machine's resolvers. Worth setting deliberately: a split-horizon or filtering resolver answers differently from the public view a subdomain-takeover template assumes, and the wrong answer reads as 'not vulnerable' rather than as an error." };
+        var allowCodeOpt = new Option<bool>("--allow-code-templates") { Description = "Run Nuclei `code:` templates. OFF by default, and think before turning it on: a code: template is a PROGRAM that executes on this machine with your rights, not a request sent to the target, and the nuclei-templates corpus is community-supplied. Bowire runs it in a child process with an interpreter allow-list, a wall-clock kill and an output cap — that bounds a hang or a crash, it is not a sandbox. Without the flag such templates load and report as skipped. `javascript:` templates never run: they need Nuclei's own embedded JS runtime." };
+        var codeInterpretersOpt = new Option<string[]>("--code-template-interpreters")
+        {
+            AllowMultipleArgumentsPerToken = true,
+            Description = "Interpreters `code:` templates may be launched with, e.g. `deno bun`. REPLACES the default set (sh, bash, zsh, py, python, python3, node, ruby, perl, pwsh, powershell) rather than adding to it, so it narrows as readily as it widens — pass `python3` alone to permit nothing else. Needs --allow-code-templates; on its own it changes nothing, because nothing runs.",
+        };
         var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = "Accept self-signed / untrusted TLS certs on the target. Off by default — use only when probing a known dev/staging cert." };
         var noBuiltinsOpt = new Option<bool>("--no-builtins") { Description = "Skip the built-in passive checks (TLS-version enumeration, version-disclosing headers, verbose-error detection). Built-ins run by default." };
         var scopeOpt = new Option<string[]>("--scope")
@@ -80,6 +86,8 @@ public sealed class ScanCliCommand : IBowireCliCommand
         scan.Add(severityOpt);
         scan.Add(timeoutOpt);
         scan.Add(dnsResolverOpt);
+        scan.Add(allowCodeOpt);
+        scan.Add(codeInterpretersOpt);
         scan.Add(allowSelfSignedOpt);
         scan.Add(noBuiltinsOpt);
         scan.Add(scopeOpt);
@@ -108,6 +116,8 @@ public sealed class ScanCliCommand : IBowireCliCommand
                 MinSeverity = pr.GetValue(severityOpt),
                 TimeoutSeconds = pr.GetValue(timeoutOpt) is int t and > 0 ? t : 30,
                 DnsResolver = pr.GetValue(dnsResolverOpt),
+                AllowCodeTemplates = pr.GetValue(allowCodeOpt),
+                CodeTemplateInterpreters = pr.GetValue(codeInterpretersOpt) ?? Array.Empty<string>(),
                 AllowSelfSignedCerts = pr.GetValue(allowSelfSignedOpt),
                 RunBuiltins = !pr.GetValue(noBuiltinsOpt),
                 Scope = pr.GetValue(scopeOpt) ?? Array.Empty<string>(),

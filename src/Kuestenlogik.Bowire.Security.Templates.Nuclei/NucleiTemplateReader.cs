@@ -93,7 +93,49 @@ public static class NucleiTemplateReader
             }
         }
 
+        // #491 — code: names an interpreter, javascript: needs Nuclei's own
+        // runtime. Read both, keep them distinguishable.
+        if (TryGetSequence(root, "code", out var codeSeq))
+        {
+            foreach (var entry in codeSeq!.Children)
+            {
+                if (entry is not YamlMappingNode codeMapping) continue;
+                template.Code.Add(ReadCodeRequest(codeMapping, isJavaScript: false));
+            }
+        }
+        if (TryGetSequence(root, "javascript", out var jsSeq))
+        {
+            foreach (var entry in jsSeq!.Children)
+            {
+                if (entry is not YamlMappingNode jsMapping) continue;
+                template.Code.Add(ReadCodeRequest(jsMapping, isJavaScript: true));
+            }
+        }
+
         return template;
+    }
+
+    private static NucleiCodeRequest ReadCodeRequest(YamlMappingNode mapping, bool isJavaScript)
+    {
+        var req = new NucleiCodeRequest
+        {
+            // javascript: blocks carry the program under `code:`; code: blocks
+            // under `source:`. Accept either so neither shape reads as empty.
+            Source = GetScalar(mapping, "source") ?? GetScalar(mapping, "code") ?? "",
+            IsNucleiJavaScript = isJavaScript,
+            MatchersCondition = GetScalar(mapping, "matchers-condition") ?? "or",
+        };
+        CollectStringList(mapping, "engine", req.Engine);
+
+        if (TryGetSequence(mapping, "matchers", out var matchersSeq))
+        {
+            foreach (var entry in matchersSeq!.Children)
+            {
+                if (entry is not YamlMappingNode matcherMapping) continue;
+                req.Matchers.Add(ReadMatcher(matcherMapping));
+            }
+        }
+        return req;
     }
 
     private static NucleiNetworkRequest ReadNetworkRequest(YamlMappingNode mapping)
