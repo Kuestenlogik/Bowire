@@ -1214,12 +1214,19 @@
      *     max/now on the divider for keyboard / AT consumers.
      *
      * Idempotent — calling initResizer on the same divider twice is a
-     * no-op (the divider carries a dataset.resizerInit marker).
+     * no-op. The marker is an expando property rather than a dataset
+     * attribute, because morphdom strips attributes the fresh tree does
+     * not carry.
      */
     function initResizer(divider, leadingPane, trailingPane) {
         if (!divider || !leadingPane || !trailingPane) return;
-        if (divider.dataset.resizerInit === '1') return;
-        divider.dataset.resizerInit = '1';
+        // Expando property, not a dataset attribute: morphdom keeps the
+        // node and strips any attribute the fresh tree lacks, so a
+        // data-* marker set after render is gone by the next one and
+        // every render stacked another two listeners plus a
+        // ResizeObserver and a MutationObserver on the parent.
+        if (divider._bowireResizerWired) return;
+        divider._bowireResizerWired = true;
 
         var parent = divider.parentElement;
 
@@ -2814,10 +2821,10 @@
     //       label: 'More'                // optional — chevron-button title prefix
     //   });
     //
-    // The helper is idempotent: it marks the strip via dataset.overflowWired
-    // and disconnects its ResizeObserver when the strip detaches from the
-    // DOM. Safe to call from every render() pass — re-running the layout
-    // pass is cheap and self-resetting.
+    // The helper is idempotent: it marks the strip with an expando
+    // property (NOT a dataset attribute — morphdom strips those, see the
+    // guard below) and re-runs only the layout pass on later calls. Safe
+    // to call from every render() pass.
     //
     // Visual contract:
     //   - The "▾ N" chevron sits flex:0 0 auto at the right end (before any
@@ -2858,13 +2865,29 @@
         var fixedSelector = opts.fixedSelector || null;
         var labelPrefix = opts.label || 'More';
 
-        // Idempotency marker — re-running is a cheap relayout, not a re-wire.
-        if (stripEl.dataset.overflowWired === '1') {
+        // Idempotency marker — an expando PROPERTY, not a dataset
+        // attribute. morphdom preserves this node across renders but
+        // syncs its attributes against the freshly built tree, and this
+        // marker is set imperatively AFTER a render, so the fresh tree
+        // never carries it and morphAttrs removes it every time. The
+        // guard therefore never held: each render re-wired the strip and
+        // left another ResizeObserver + MutationObserver registered,
+        // with `stripEl._bowireOverflowRO` simply overwritten so the
+        // previous one was unreachable but still live. Their callback
+        // forces synchronous layout and the MutationObserver watches
+        // childList — which every render mutates — so the cost of a
+        // render grew with the number of renders already performed.
+        //
+        // Properties survive morphdom untouched, which is the whole
+        // point. The class is re-asserted on every call for the same
+        // reason: it is a class the fresh tree does not know about, so
+        // morphdom strips it too.
+        stripEl.classList.add('bowire-has-overflow-wired');
+        if (stripEl._bowireOverflowWired) {
             _bowireOverflowRelayout(stripEl);
             return;
         }
-        stripEl.dataset.overflowWired = '1';
-        stripEl.classList.add('bowire-has-overflow-wired');
+        stripEl._bowireOverflowWired = true;
 
         // Chevron trigger — a real button so keyboard focus + a11y come for
         // free. Carries the count badge inside; CSS hides it when empty.

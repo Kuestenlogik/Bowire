@@ -9948,8 +9948,10 @@
     var streamProgrammaticScroll = false;
     function attachStreamScrollListener() {
         var pane = document.getElementById('bowire-stream-list-pane');
-        if (!pane || pane.dataset.scrollHooked === '1') return;
-        pane.dataset.scrollHooked = '1';
+        // Expando property, not a dataset attribute — same reason as the
+        // two splitters. The scroll handler used to stack once per render.
+        if (!pane || pane._bowireScrollHooked) return;
+        pane._bowireScrollHooked = true;
         pane.addEventListener('scroll', function () {
             if (streamProgrammaticScroll) {
                 streamProgrammaticScroll = false;
@@ -9969,8 +9971,11 @@
     function attachStreamSplitterDrag() {
         var splitter = document.getElementById('bowire-stream-splitter');
         var output = document.getElementById('bowire-stream-output');
-        if (!splitter || !output || splitter.dataset.dragHooked === '1') return;
-        splitter.dataset.dragHooked = '1';
+        // Expando property, not a dataset attribute — see the sidebar
+        // splitter's twin. morphdom strips the attribute on every render,
+        // so the guard never held and the mousedown handler stacked.
+        if (!splitter || !output || splitter._bowireDragHooked) return;
+        splitter._bowireDragHooked = true;
         splitter.addEventListener('mousedown', function (e) {
             e.preventDefault();
             e.stopPropagation();
