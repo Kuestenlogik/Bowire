@@ -214,5 +214,12 @@
          version; Core does not reference YARP — embedded hosts that
          only need the in-process middleware never pull YARP in. -->
     <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
+    <!-- DnsClient.NET — the resolver behind the Nuclei `dns:` transport
+         pass (#491, #35 Phase 2g). System.Net.Dns only answers A/AAAA,
+         and the templates that matter here ask for CNAME (subdomain
+         takeover) and TXT, so a real resolver is not optional. Pinned
+         here so only the Security.Scanner package inherits it; Core
+         has no DNS surface and must not grow one. -->
+    <PackageVersion Include="DnsClient" Version="1.8.0" />
   </ItemGroup>
 </Project>

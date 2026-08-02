@@ -23,6 +23,20 @@ namespace Kuestenlogik.Bowire.Security.Templates.Nuclei;
 /// types likewise emit <c>null</c> — the surrounding predicate-tree
 /// just drops the matcher rather than blocking the whole template.
 /// </summary>
+public enum NucleiMatcherSurface
+{
+    /// <summary>Matchers over an HTTP response — <c>body</c> / <c>all</c>.</summary>
+    Http,
+
+    /// <summary>
+    /// Matchers over a DNS response (#491, Phase 2g). Nuclei addresses the
+    /// sections separately (<c>answer</c> / <c>question</c> / <c>authority</c> /
+    /// <c>additional</c> / <c>raw</c>); Bowire has one body, and
+    /// <c>DnsProbeExecutor</c> fills it with the answer section alone.
+    /// </summary>
+    Dns,
+}
+
 public static class NucleiMatcherTranslator
 {
     /// <summary>
@@ -43,7 +57,10 @@ public static class NucleiMatcherTranslator
     /// Phase-2g <c>dns</c> pass, which reuses the same word / regex /
     /// negative matcher shape over the resolved DNS answer).
     /// </summary>
-    public static AttackPredicate? Translate(IReadOnlyList<NucleiMatcher> matchers, string matchersCondition)
+    public static AttackPredicate? Translate(
+        IReadOnlyList<NucleiMatcher> matchers,
+        string matchersCondition,
+        NucleiMatcherSurface surface = NucleiMatcherSurface.Http)
     {
         ArgumentNullException.ThrowIfNull(matchers);
         if (matchers.Count == 0) return null;
@@ -52,7 +69,7 @@ public static class NucleiMatcherTranslator
         var dropped = 0;
         foreach (var matcher in matchers)
         {
-            var p = TranslateMatcher(matcher);
+            var p = TranslateMatcher(matcher, surface);
             if (p is not null) subPredicates.Add(p);
             else dropped++;
         }
@@ -85,13 +102,17 @@ public static class NucleiMatcherTranslator
             : new AttackPredicate { AnyOf = subPredicates };
     }
 
-    private static AttackPredicate? TranslateMatcher(NucleiMatcher matcher)
+    private static AttackPredicate? TranslateMatcher(NucleiMatcher matcher, NucleiMatcherSurface surface)
     {
         var predicate = matcher.Type switch
         {
+            // On the DNS surface a `status` matcher reads the RCODE that
+            // DnsProbeExecutor puts in AttackProbeResponse.Status — 0 NOERROR,
+            // 3 NXDOMAIN — rather than an HTTP status. Same predicate slot,
+            // different meaning, and the template already means the rcode.
             "status" => TranslateStatus(matcher),
-            "word" => TranslateWord(matcher),
-            "regex" => TranslateRegex(matcher),
+            "word" => TranslateWord(matcher, surface),
+            "regex" => TranslateRegex(matcher, surface),
             _ => null,
         };
 
@@ -116,7 +137,7 @@ public static class NucleiMatcherTranslator
         return new AttackPredicate { StatusIn = matcher.Status.ToList() };
     }
 
-    private static AttackPredicate? TranslateWord(NucleiMatcher matcher)
+    private static AttackPredicate? TranslateWord(NucleiMatcher matcher, NucleiMatcherSurface surface)
     {
         if (matcher.Words.Count == 0) return null;
 
@@ -125,7 +146,7 @@ public static class NucleiMatcherTranslator
         // instead of a body check.
         if (TryTranslateInteractshWord(matcher) is { } oast) return oast;
 
-        if (!IsBodyPart(matcher.Part)) return null; // Header matchers in a later iteration.
+        if (!IsBodyPart(matcher.Part, surface)) return null; // Header matchers in a later iteration.
 
         if (matcher.Words.Count == 1)
         {
@@ -179,10 +200,10 @@ public static class NucleiMatcherTranslator
             : new AttackPredicate { AnyOf = leaves };
     }
 
-    private static AttackPredicate? TranslateRegex(NucleiMatcher matcher)
+    private static AttackPredicate? TranslateRegex(NucleiMatcher matcher, NucleiMatcherSurface surface)
     {
         if (matcher.Regex.Count == 0) return null;
-        if (!IsBodyPart(matcher.Part)) return null;
+        if (!IsBodyPart(matcher.Part, surface)) return null;
 
         if (matcher.Regex.Count == 1)
         {
@@ -208,10 +229,45 @@ public static class NucleiMatcherTranslator
     /// their own translation pass; until then they're filtered out so
     /// the matcher contributes nothing.
     /// </summary>
-    private static bool IsBodyPart(string part)
+    private static bool IsBodyPart(string part, NucleiMatcherSurface surface)
     {
+        if (surface == NucleiMatcherSurface.Dns) return IsDnsAnswerPart(part);
+
         return string.IsNullOrEmpty(part)
             || part.Equals("body", StringComparison.OrdinalIgnoreCase)
+            || part.Equals("all", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Which Nuclei DNS matcher parts can be honoured against the single body
+    /// <c>DnsProbeExecutor</c> produces — the <b>answer section only</b>.
+    /// <para>
+    /// <c>answer</c> is exact. <c>raw</c> / <c>all</c> / the unset default
+    /// address the whole response in Nuclei, so evaluating them against the
+    /// answer section alone is strictly narrower: a word living in another
+    /// section is missed. That direction is a lost detection, which this
+    /// translator already accepts elsewhere.
+    /// </para>
+    /// <para>
+    /// <c>question</c> / <c>authority</c> / <c>additional</c> are refused
+    /// outright. Answering them from the answer section would be a different
+    /// assertion wearing the same name, and for <c>question</c> in particular
+    /// it inverts into a false positive: the question echoes the name the
+    /// template asked for, so a word drawn from that name matches on every
+    /// lookup, vulnerable or not.
+    /// </para>
+    /// </summary>
+    private static bool IsDnsAnswerPart(string part)
+    {
+        // `body` is not a DNS part — it is what NucleiMatcher.Part defaults to
+        // when the template says nothing, so at this layer it is
+        // indistinguishable from unset and has to be treated as such. A DNS
+        // template that writes `part: body` literally means nothing either
+        // way, so accepting it costs nothing.
+        return string.IsNullOrEmpty(part)
+            || part.Equals("body", StringComparison.OrdinalIgnoreCase)
+            || part.Equals("answer", StringComparison.OrdinalIgnoreCase)
+            || part.Equals("raw", StringComparison.OrdinalIgnoreCase)
             || part.Equals("all", StringComparison.OrdinalIgnoreCase);
     }
 }

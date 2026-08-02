@@ -39,6 +39,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
         var suiteOpt = new Option<string>("--suite") { Description = "Run a named suite after the scan. `owasp-api` = OWASP API Top 10 rollup (HTTP + protocol probes) with a per-entry coverage table; `protocol` = only the protocol-specific probes (gRPC/GraphQL/WS/MQTT/SSE/MCP) + the table — use for non-HTTP targets like mqtt:// or ws://; `all` = everything (HTTP OWASP + protocol probes) + the table." };
         var severityOpt = new Option<string>("--severity") { Description = "Minimum severity to report: low / medium / high / critical. Lower-severity templates still load but are reported as skipped." };
         var timeoutOpt = new Option<int>("--timeout") { Description = "Per-probe HTTP timeout in seconds. Default 30." };
+        var dnsResolverOpt = new Option<string>("--dns-resolver") { Description = "Nameserver IP for Nuclei `dns:` templates, e.g. 1.1.1.1. Defaults to the machine's resolvers. Worth setting deliberately: a split-horizon or filtering resolver answers differently from the public view a subdomain-takeover template assumes, and the wrong answer reads as 'not vulnerable' rather than as an error." };
         var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = "Accept self-signed / untrusted TLS certs on the target. Off by default — use only when probing a known dev/staging cert." };
         var noBuiltinsOpt = new Option<bool>("--no-builtins") { Description = "Skip the built-in passive checks (TLS-version enumeration, version-disclosing headers, verbose-error detection). Built-ins run by default." };
         var scopeOpt = new Option<string[]>("--scope")
@@ -78,6 +79,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
         scan.Add(suiteOpt);
         scan.Add(severityOpt);
         scan.Add(timeoutOpt);
+        scan.Add(dnsResolverOpt);
         scan.Add(allowSelfSignedOpt);
         scan.Add(noBuiltinsOpt);
         scan.Add(scopeOpt);
@@ -105,6 +107,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
                 Suite = pr.GetValue(suiteOpt),
                 MinSeverity = pr.GetValue(severityOpt),
                 TimeoutSeconds = pr.GetValue(timeoutOpt) is int t and > 0 ? t : 30,
+                DnsResolver = pr.GetValue(dnsResolverOpt),
                 AllowSelfSignedCerts = pr.GetValue(allowSelfSignedOpt),
                 RunBuiltins = !pr.GetValue(noBuiltinsOpt),
                 Scope = pr.GetValue(scopeOpt) ?? Array.Empty<string>(),

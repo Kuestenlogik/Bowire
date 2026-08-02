@@ -24,6 +24,7 @@
          security rail brings its own MQTT client for that isolated probe rather
          than complicating the shared BowireMqttProtocol connection interface. -->
     <PackageReference Include="MQTTnet" />
+    <PackageReference Include="DnsClient" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
