@@ -294,6 +294,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog |  |
 | [548](https://github.com/Kuestenlogik/Bowire/issues/548) | Bowire | [Release cascade skips Kuestenlogik.Bowire.Protocol.* — the bump regex allows only one dot-segment](#issue-kuestenlogik-bowire-548) | ⬜ Backlog |  |
 | [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins](#issue-kuestenlogik-bowire-549) | ⬜ Backlog |  |
+| [550](https://github.com/Kuestenlogik/Bowire/issues/550) | Bowire | [morphdom strips the data-* idempotence markers — four sites leak a ResizeObserver + MutationObserver per render](#issue-kuestenlogik-bowire-550) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1212,6 +1213,10 @@ The release cascade bumps `Kuestenlogik.Bowire` and `Kuestenlogik.Bowire.<One>` 
 #### <a id="issue-kuestenlogik-bowire-549"></a>⬜ Backlog · [#549](https://github.com/Kuestenlogik/Bowire/issues/549) Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins
 
 Start the workbench with `--plugin-dir X`, install a plugin from **Settings → Plugins**, and it lands in `~/.bowire/plugins` instead. The list you are looking at reads from `~/.bowire/plugins` too, so the plugin you just installed does appear — in the directory the host is not loading from. [[more]](https://github.com/Kuestenlogik/Bowire/issues/549)
+
+#### <a id="issue-kuestenlogik-bowire-550"></a>⬜ Backlog · [#550](https://github.com/Kuestenlogik/Bowire/issues/550) morphdom strips the data-* idempotence markers — four sites leak a ResizeObserver + MutationObserver per render
+
+Four sites use a `data-*` attribute as the "already wired" marker for imperative DOM work. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/550)
 
 ---
 
