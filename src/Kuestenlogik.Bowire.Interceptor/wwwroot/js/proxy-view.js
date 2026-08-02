@@ -124,6 +124,11 @@
                 } catch (err) { /* drop malformed frame */ }
             });
             proxyEventSource.onerror = function () {
+                // EventSource retries by itself and fires onerror on every
+                // attempt. Render only on the TRANSITION into error —
+                // repainting the whole workbench once per reconnect is a
+                // render loop at a cadence Bowire does not set (#552).
+                if (proxyConnectionState === 'error') return;
                 proxyConnectionState = 'error';
                 proxyConnectionError = 'live stream disconnected';
                 render();

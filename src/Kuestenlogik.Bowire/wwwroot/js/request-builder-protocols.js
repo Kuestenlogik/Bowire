@@ -752,6 +752,12 @@
         }
     }
 
+    // How many consecutive failed EventSource reconnects the SSE panel
+    // tolerates before closing the source and saying so. The browser
+    // retries on a cadence the remote server chooses, so without a
+    // ceiling the panel renders on someone else's schedule forever.
+    var SSE_MAX_RETRIES = 5;
+
     // ============================================================
     // SSE
     // ============================================================
@@ -804,6 +810,12 @@
         try {
             var src = new EventSource(url, { withCredentials: !!ps.withCredentials });
             rbConnState.sseSource = src;
+            rbConnState.sseRetries = 0;
+            src.onopen = function () {
+                // A successful (re)connect clears the retry budget, so a
+                // stream that flaps occasionally keeps working.
+                rbConnState.sseRetries = 0;
+            };
             src.onmessage = function (ev) {
                 rbConnState.sseEvents.push({
                     event: 'message', data: String(ev.data || ''),
@@ -812,9 +824,34 @@
                 if (rbConnState.sseEvents.length > 500) rbConnState.sseEvents.shift();
                 render();
             };
+            // EventSource reconnects on its own after a drop and fires
+            // onerror again on every attempt — at a cadence the REMOTE
+            // server's `retry:` directive sets. Logging and rendering each
+            // attempt turned a dead endpoint into a full-app render loop
+            // Bowire did not control the rate of (#552). Report the first
+            // failure, stay quiet through the retries, and give up out
+            // loud rather than reconnecting silently forever: an operator
+            // needs to know the stream is gone.
             src.onerror = function () {
+                rbConnState.sseRetries = (rbConnState.sseRetries || 0) + 1;
+                var closed = src.readyState === 2; // CLOSED — the browser gave up
+                if (rbConnState.sseRetries === 1) {
+                    rbConnState.sseEvents.push({
+                        event: 'error',
+                        data: closed ? '[stream error]' : '[stream error — reconnecting]',
+                        ts: Date.now()
+                    });
+                    render();
+                }
+                if (!closed && rbConnState.sseRetries < SSE_MAX_RETRIES) return;
+                try { src.close(); } catch (_) { /* already closed */ }
+                rbConnState.sseSource = null;
                 rbConnState.sseEvents.push({
-                    event: 'error', data: '[stream error]', ts: Date.now()
+                    event: 'error',
+                    data: closed
+                        ? '[stream closed by the browser]'
+                        : '[gave up after ' + rbConnState.sseRetries + ' reconnect attempts]',
+                    ts: Date.now()
                 });
                 render();
             };
