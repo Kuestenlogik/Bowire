@@ -456,6 +456,216 @@
         return strip;
     }
 
+    // #551 — one sidebar method row. Lifted out of the service loop
+    // in renderSidebar so the loop can skip building rows wholesale
+    // for a collapsed group; nothing here reads the surrounding
+    // render scope beyond the cross-feature index, which is passed in.
+    function buildMethodRow(svc, m, xfIndex) {
+        const isActive = selectedMethod && selectedMethod.fullName === m.fullName;
+        const executing = isJobActive(svc.name, m.name);
+        const item = el('div', {
+            className: 'bowire-method-item'
+                + (isActive ? ' active' : '')
+                + (executing ? ' executing' : ''),
+            // #122 — direction encoded on the row itself
+            // so the right-edge rail picks up the warm /
+            // cool / duplex hue. Pairs with the
+            // protocol-color stripe on the group's left
+            // edge for the two-axis read.
+            'data-direction': methodDirection(m),
+            draggable: 'true',
+            onDragstart: function (e) {
+                // #362 — enrich the drag payload so a drop
+                // target (e.g. a Compose collection) can
+                // build a runnable collection item without
+                // re-discovering: protocol, method type, and
+                // a default JSON body for the input schema.
+                var defBody = '{}';
+                if (typeof generateDefaultJson === 'function') {
+                    try { defBody = generateDefaultJson(m.inputType, 0); }
+                    catch { /* keep '{}' */ }
+                }
+                var payload = {
+                    service: svc.name,
+                    method: m.name,
+                    protocol: svc.source || 'grpc',
+                    methodType: m.methodType || 'Unary',
+                    body: defBody,
+                    serverUrl: (typeof serverUrl !== 'undefined' ? serverUrl : null)
+                        || (svc.url || null)
+                };
+                try {
+                    e.dataTransfer.setData('application/x-bowire-method',
+                        JSON.stringify(payload));
+                    e.dataTransfer.effectAllowed = 'copy';
+                } catch { /* ignore */ }
+                methodDragPayload = payload;
+                render();
+            },
+            onDragend: function () {
+                methodDragPayload = null;
+                render();
+            },
+            onClick: function (e) {
+                // Browser-style modifier: Ctrl/Cmd+click
+                // (or middle-click) opens in a new tab;
+                // plain click adopts the active tab.
+                var inNewTab = !!(e && (e.ctrlKey || e.metaKey || e.button === 1));
+                openTab(svc, m, { inNewTab: inNewTab });
+            },
+            // Wire middle-click via auxclick since DOM
+            // click events don't fire for button 1
+            // (middle mouse) by default.
+            onAuxClick: function (e) {
+                if (e && e.button === 1) {
+                    e.preventDefault();
+                    openTab(svc, m, { inNewTab: true });
+                }
+            },
+            // Right-click → one context menu carrying every
+            // per-method intent. Headline "Open in new tab"
+            // (so users who don't know the Ctrl/middle-click
+            // modifier can still pin a method), favorites
+            // toggle, and "Add to envelope…" — previously a
+            // SECOND onContextMenu key that this one silently
+            // shadowed, so the envelope picker was dead code.
+            onContextMenu: function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof showContextMenu !== 'function') return;
+                var items = [
+                    { label: 'Open in new tab', onClick: function () {
+                        openTab(svc, m, { inNewTab: true });
+                    } },
+                    { separator: true },
+                    {
+                        label: isFavorite(svc.name, m.name)
+                            ? 'Remove from favorites'
+                            : 'Add to favorites',
+                        onClick: function () {
+                            toggleFavorite(svc.name, m.name);
+                        }
+                    }
+                ];
+                // #363 — uniform action reachability: the same
+                // assign / benchmark actions the drag-and-drop
+                // + rail-strip paths expose, also on right-
+                // click so they're reachable the same way
+                // regardless of how the operator works.
+                items.push({ separator: true });
+                items.push({
+                    label: 'Add to collection…',
+                    onClick: function () { _pickCollectionForMethod(e.clientX, e.clientY, svc, m); }
+                });
+                if (typeof addTargetToEnvelopePicker === 'function') {
+                    items.push({
+                        label: 'Add to envelope…',
+                        onClick: function () {
+                            addTargetToEnvelopePicker(e.clientX, e.clientY, {
+                                type: 'method',
+                                service: svc.name,
+                                method: m.name,
+                                protocol: svc.source || null,
+                                body: _methodDefaultBody(m), metadata: {}, serverUrl: null
+                            }, { name: svc.name + '.' + m.name });
+                        }
+                    });
+                }
+                if (typeof createBenchmarkSpec === 'function') {
+                    items.push({
+                        label: 'Benchmark this method',
+                        onClick: function () { _benchmarkMethod(svc, m); }
+                    });
+                }
+                showContextMenu(e.clientX, e.clientY, items);
+            }
+        },
+            // Order: [name (flex:1)] [deprecated] [coverage] [star] [badge]
+            // — method name leads the row, tags/indicators
+            // cluster on the right, type badge (SS/CS/DX/U)
+            // at the far right. User preference: the
+            // identifying word comes first, metadata after.
+            // v2.2 T3 — coverage chip slots between the
+            // deprecated tag and the favorite star so the
+            // visual rhythm is consistent regardless of
+            // whether either of the optional tags is shown.
+            el('span', {
+                className: 'bowire-method-name' + (m.deprecated ? ' deprecated' : ''),
+                title: m.summary || m.description || m.name,
+                textContent: m.name
+            }),
+            m.deprecated ? el('span', { className: 'bowire-method-deprecated-tag', textContent: 'DEPR' }) : null,
+            // #48 — marker for a method the last watch poll
+            // saw appear or change shape. `~` means the
+            // signature moved under a name that stayed put,
+            // which is the case a saved request survives
+            // syntactically and fails at runtime.
+            (function (marker) {
+                if (!marker) return null;
+                return el('span', {
+                    className: 'bowire-schema-delta-mark is-' + marker,
+                    title: marker === 'added'
+                        ? 'Appeared since the last schema-watch poll'
+                        : 'Request or response shape changed since the last schema-watch poll',
+                    textContent: marker === 'added' ? '+' : '~'
+                });
+            })(typeof schemaWatchMarkerFor === 'function' ? schemaWatchMarkerFor(svc.name, m) : null),
+            (typeof renderCoverageChip === 'function')
+                ? renderCoverageChip(svc.name, m.name)
+                : null,
+            (function (svcName, methodName) {
+                var fav = isFavorite(svcName, methodName);
+                return el('span', {
+                    className: 'bowire-method-star' + (fav ? ' active' : ''),
+                    innerHTML: svgIcon(fav ? 'starFilled' : 'star'),
+                    title: fav ? 'Remove from favorites' : 'Add to favorites',
+                    onClick: function (e) {
+                        e.stopPropagation();
+                        toggleFavorite(svcName, methodName);
+                    }
+                });
+            })(svc.name, m.name),
+            renderMethodCrossFeatureBadges(xfIndex, svc.name, m.name),
+            executing ? el('span', {
+                className: 'bowire-method-executing',
+                innerHTML: svgIcon('play'),
+                title: 'Currently executing'
+            }) : null,
+            el('span', {
+                className: 'bowire-method-badge',
+                dataset: { type: methodBadgeType(m), direction: methodDirection(m) },
+                textContent: methodBadgeText(m)
+            })
+        );
+        return item;
+    }
+
+    // #551 — the `.bowire-method-list` for one service group.
+    //
+    // Rows are built ONLY when the group is expanded. The list is
+    // hidden with `display: none` while collapsed, so every row built
+    // for a collapsed service cost a DOM subtree, a morphdom diff and
+    // a per-row coverage / favourite / cross-feature lookup with
+    // nothing on screen to show for it — thousands of nodes per render
+    // on a large catalogue, paid again on every one of the ~685
+    // render() call sites.
+    //
+    // Safe because no consumer reads these rows out of the DOM:
+    // buildVisibleMethodSequence (J/K keyboard nav), the search tally,
+    // the per-service and per-source counts and the favourites list
+    // all walk the in-memory `services` model. A search forces
+    // isExpanded true for every group that matched, and openTab()
+    // adds the owning service to expandedServices before it renders,
+    // so the matched rows and the `.active` row are always built.
+    function buildServiceMethodList(svc, filteredMethods, isExpanded, xfIndex) {
+        const methodList = el('div', { className: `bowire-method-list ${isExpanded ? 'expanded' : ''}` });
+        if (!isExpanded) return methodList;
+        for (const m of filteredMethods) {
+            methodList.appendChild(buildMethodRow(svc, m, xfIndex));
+        }
+        return methodList;
+    }
+
     function renderProtoUploadPanel() {
         var panel = el('div', { className: 'bowire-proto-panel' });
 
@@ -4824,187 +5034,7 @@
                 }));
                 group.appendChild(headerEl);
 
-                const methodList = el('div', { className: `bowire-method-list ${isExpanded ? 'expanded' : ''}` });
-                for (const m of filteredMethods) {
-                    const isActive = selectedMethod && selectedMethod.fullName === m.fullName;
-                    const executing = isJobActive(svc.name, m.name);
-                    const item = el('div', {
-                        className: 'bowire-method-item'
-                            + (isActive ? ' active' : '')
-                            + (executing ? ' executing' : ''),
-                        // #122 — direction encoded on the row itself
-                        // so the right-edge rail picks up the warm /
-                        // cool / duplex hue. Pairs with the
-                        // protocol-color stripe on the group's left
-                        // edge for the two-axis read.
-                        'data-direction': methodDirection(m),
-                        draggable: 'true',
-                        onDragstart: function (e) {
-                            // #362 — enrich the drag payload so a drop
-                            // target (e.g. a Compose collection) can
-                            // build a runnable collection item without
-                            // re-discovering: protocol, method type, and
-                            // a default JSON body for the input schema.
-                            var defBody = '{}';
-                            if (typeof generateDefaultJson === 'function') {
-                                try { defBody = generateDefaultJson(m.inputType, 0); }
-                                catch { /* keep '{}' */ }
-                            }
-                            var payload = {
-                                service: svc.name,
-                                method: m.name,
-                                protocol: svc.source || 'grpc',
-                                methodType: m.methodType || 'Unary',
-                                body: defBody,
-                                serverUrl: (typeof serverUrl !== 'undefined' ? serverUrl : null)
-                                    || (svc.url || null)
-                            };
-                            try {
-                                e.dataTransfer.setData('application/x-bowire-method',
-                                    JSON.stringify(payload));
-                                e.dataTransfer.effectAllowed = 'copy';
-                            } catch { /* ignore */ }
-                            methodDragPayload = payload;
-                            render();
-                        },
-                        onDragend: function () {
-                            methodDragPayload = null;
-                            render();
-                        },
-                        onClick: function (e) {
-                            // Browser-style modifier: Ctrl/Cmd+click
-                            // (or middle-click) opens in a new tab;
-                            // plain click adopts the active tab.
-                            var inNewTab = !!(e && (e.ctrlKey || e.metaKey || e.button === 1));
-                            openTab(svc, m, { inNewTab: inNewTab });
-                        },
-                        // Wire middle-click via auxclick since DOM
-                        // click events don't fire for button 1
-                        // (middle mouse) by default.
-                        onAuxClick: function (e) {
-                            if (e && e.button === 1) {
-                                e.preventDefault();
-                                openTab(svc, m, { inNewTab: true });
-                            }
-                        },
-                        // Right-click → one context menu carrying every
-                        // per-method intent. Headline "Open in new tab"
-                        // (so users who don't know the Ctrl/middle-click
-                        // modifier can still pin a method), favorites
-                        // toggle, and "Add to envelope…" — previously a
-                        // SECOND onContextMenu key that this one silently
-                        // shadowed, so the envelope picker was dead code.
-                        onContextMenu: function (e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (typeof showContextMenu !== 'function') return;
-                            var items = [
-                                { label: 'Open in new tab', onClick: function () {
-                                    openTab(svc, m, { inNewTab: true });
-                                } },
-                                { separator: true },
-                                {
-                                    label: isFavorite(svc.name, m.name)
-                                        ? 'Remove from favorites'
-                                        : 'Add to favorites',
-                                    onClick: function () {
-                                        toggleFavorite(svc.name, m.name);
-                                    }
-                                }
-                            ];
-                            // #363 — uniform action reachability: the same
-                            // assign / benchmark actions the drag-and-drop
-                            // + rail-strip paths expose, also on right-
-                            // click so they're reachable the same way
-                            // regardless of how the operator works.
-                            items.push({ separator: true });
-                            items.push({
-                                label: 'Add to collection…',
-                                onClick: function () { _pickCollectionForMethod(e.clientX, e.clientY, svc, m); }
-                            });
-                            if (typeof addTargetToEnvelopePicker === 'function') {
-                                items.push({
-                                    label: 'Add to envelope…',
-                                    onClick: function () {
-                                        addTargetToEnvelopePicker(e.clientX, e.clientY, {
-                                            type: 'method',
-                                            service: svc.name,
-                                            method: m.name,
-                                            protocol: svc.source || null,
-                                            body: _methodDefaultBody(m), metadata: {}, serverUrl: null
-                                        }, { name: svc.name + '.' + m.name });
-                                    }
-                                });
-                            }
-                            if (typeof createBenchmarkSpec === 'function') {
-                                items.push({
-                                    label: 'Benchmark this method',
-                                    onClick: function () { _benchmarkMethod(svc, m); }
-                                });
-                            }
-                            showContextMenu(e.clientX, e.clientY, items);
-                        }
-                    },
-                        // Order: [name (flex:1)] [deprecated] [coverage] [star] [badge]
-                        // — method name leads the row, tags/indicators
-                        // cluster on the right, type badge (SS/CS/DX/U)
-                        // at the far right. User preference: the
-                        // identifying word comes first, metadata after.
-                        // v2.2 T3 — coverage chip slots between the
-                        // deprecated tag and the favorite star so the
-                        // visual rhythm is consistent regardless of
-                        // whether either of the optional tags is shown.
-                        el('span', {
-                            className: 'bowire-method-name' + (m.deprecated ? ' deprecated' : ''),
-                            title: m.summary || m.description || m.name,
-                            textContent: m.name
-                        }),
-                        m.deprecated ? el('span', { className: 'bowire-method-deprecated-tag', textContent: 'DEPR' }) : null,
-                        // #48 — marker for a method the last watch poll
-                        // saw appear or change shape. `~` means the
-                        // signature moved under a name that stayed put,
-                        // which is the case a saved request survives
-                        // syntactically and fails at runtime.
-                        (function (marker) {
-                            if (!marker) return null;
-                            return el('span', {
-                                className: 'bowire-schema-delta-mark is-' + marker,
-                                title: marker === 'added'
-                                    ? 'Appeared since the last schema-watch poll'
-                                    : 'Request or response shape changed since the last schema-watch poll',
-                                textContent: marker === 'added' ? '+' : '~'
-                            });
-                        })(typeof schemaWatchMarkerFor === 'function' ? schemaWatchMarkerFor(svc.name, m) : null),
-                        (typeof renderCoverageChip === 'function')
-                            ? renderCoverageChip(svc.name, m.name)
-                            : null,
-                        (function (svcName, methodName) {
-                            var fav = isFavorite(svcName, methodName);
-                            return el('span', {
-                                className: 'bowire-method-star' + (fav ? ' active' : ''),
-                                innerHTML: svgIcon(fav ? 'starFilled' : 'star'),
-                                title: fav ? 'Remove from favorites' : 'Add to favorites',
-                                onClick: function (e) {
-                                    e.stopPropagation();
-                                    toggleFavorite(svcName, methodName);
-                                }
-                            });
-                        })(svc.name, m.name),
-                        renderMethodCrossFeatureBadges(xfIndex, svc.name, m.name),
-                        executing ? el('span', {
-                            className: 'bowire-method-executing',
-                            innerHTML: svgIcon('play'),
-                            title: 'Currently executing'
-                        }) : null,
-                        el('span', {
-                            className: 'bowire-method-badge',
-                            dataset: { type: methodBadgeType(m), direction: methodDirection(m) },
-                            textContent: methodBadgeText(m)
-                        })
-                    );
-                    methodList.appendChild(item);
-                }
-                group.appendChild(methodList);
+                group.appendChild(buildServiceMethodList(svc, filteredMethods, isExpanded, xfIndex));
                 _panelEntry.body.appendChild(group);
             }
             // Stamp each panel's count badge with the running tally
