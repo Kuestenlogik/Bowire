@@ -64,7 +64,7 @@ jobs:
       PAYLOAD_PKGS: ${{ github.event.client_payload.packages || github.event.inputs.packages }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           token: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
 
