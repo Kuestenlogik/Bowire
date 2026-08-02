@@ -157,14 +157,27 @@
     var _coverageIndexSig = null;
     function _invalidateCoverageCache() { _coverageIndexCache = null; _coverageIndexSig = null; }
     function _coverageIndex() {
-        var list = getRunHistory();
-        // Cheap signature: length + last-entry timestamp. Cache
-        // invalidates the moment a write lands without us having to
-        // wire an explicit broadcast.
-        var sig = list.length + ':' + (list.length > 0 ? list[list.length - 1].startedAt : 0);
-        if (_coverageIndexCache && _coverageIndexSig === sig) {
+        // Signature off the RAW string, before any parse. It used to be
+        // computed from the parsed list — so the cache saved the grouping
+        // and never the JSON.parse, and this runs twice per method row on
+        // every render (coverageState then getMethodCoverage). At the
+        // default 500-entry cap that is ~54 KB parsed twice per row; at
+        // the settable cap of 5000 it is ~545 KB. The string compare that
+        // replaces it is a memcmp, an order of magnitude cheaper, and it
+        // is exact rather than a heuristic — a write that happened to
+        // preserve both length and last timestamp used to go unnoticed.
+        var raw;
+        try { raw = localStorage.getItem(wsKey(RUN_HISTORY_KEY)) || ''; }
+        catch (_) { raw = ''; }
+        if (_coverageIndexCache && _coverageIndexSig === raw) {
             return _coverageIndexCache;
         }
+        var list;
+        try {
+            var parsed = raw ? JSON.parse(raw) : [];
+            list = Array.isArray(parsed) ? parsed : [];
+        } catch (_) { list = []; }
+        var sig = raw;
         var idx = {};
         for (var i = 0; i < list.length; i++) {
             var e = list[i];
