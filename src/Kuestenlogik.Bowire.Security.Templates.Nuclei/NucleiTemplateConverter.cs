@@ -184,7 +184,19 @@ public static class NucleiTemplateConverter
         // DNS-transport probe. The matcher shape is shared; only the protocol
         // tag + the step change.
         var firstDns = template.Dns.FirstOrDefault();
-        var isDnsOnly = template.Http.Count == 0 && firstDns is not null;
+        var firstNetwork = template.Network.FirstOrDefault();
+        var firstSsl = template.Ssl.FirstOrDefault();
+
+        // http: wins when present; the non-HTTP blocks are mutually exclusive
+        // in practice, and picking a fixed order keeps a hybrid template
+        // deterministic rather than dependent on dictionary order.
+        var httpWins = template.Http.Count > 0;
+        var transport =
+            httpWins ? "http"
+            : firstDns is not null ? "dns"
+            : firstNetwork is not null ? "network"
+            : firstSsl is not null ? "ssl"
+            : "http";
 
         var recording = new BowireRecording
         {
@@ -200,7 +212,13 @@ public static class NucleiTemplateConverter
                     ? new List<string>()
                     : new List<string>(template.Info.Author.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)),
                 References = new List<string>(template.Info.Reference),
-                Protocols = isDnsOnly ? new List<string> { "dns" } : new List<string> { "rest", "http" },
+                Protocols = transport switch
+                {
+                    "dns" => new List<string> { "dns" },
+                    "network" => new List<string> { "network" },
+                    "ssl" => new List<string> { "ssl" },
+                    _ => new List<string> { "rest", "http" },
+                },
             },
             // VulnerableWhen translated by NucleiMatcherTranslator —
             // status / word / regex on the body get full coverage.
@@ -211,12 +229,21 @@ public static class NucleiTemplateConverter
             // translated matchers end up with VulnerableWhen = null
             // and the scanner reports them as "no actionable
             // predicate" — visible, non-silent.
-            VulnerableWhen = template.Http.FirstOrDefault() is { } firstReq
-                ? NucleiMatcherTranslator.Translate(firstReq)
-                : firstDns is not null
-                    ? NucleiMatcherTranslator.Translate(
-                        firstDns.Matchers, firstDns.MatchersCondition, NucleiMatcherSurface.Dns)
-                    : null,
+            VulnerableWhen = transport switch
+            {
+                "http" when template.Http.FirstOrDefault() is { } firstReq =>
+                    NucleiMatcherTranslator.Translate(firstReq),
+                "dns" when firstDns is not null =>
+                    NucleiMatcherTranslator.Translate(
+                        firstDns.Matchers, firstDns.MatchersCondition, NucleiMatcherSurface.Dns),
+                "network" when firstNetwork is not null =>
+                    NucleiMatcherTranslator.Translate(
+                        firstNetwork.Matchers, firstNetwork.MatchersCondition, NucleiMatcherSurface.Network),
+                "ssl" when firstSsl is not null =>
+                    NucleiMatcherTranslator.Translate(
+                        firstSsl.Matchers, firstSsl.MatchersCondition, NucleiMatcherSurface.Ssl),
+                _ => null,
+            },
         };
 
         // Phase 2a captures the first http-block's first path as a
@@ -267,6 +294,66 @@ public static class NucleiTemplateConverter
                 Protocol = "dns",
                 Service = string.IsNullOrWhiteSpace(name) ? "dns" : name,
                 Method = firstDns.RecordType,
+                MethodType = "Unary",
+                Status = "OK",
+            });
+        }
+        else if (firstNetwork is not null)
+        {
+            // #491 — the network:/tcp: request becomes one step: Service is the
+            // address to open, Messages the payloads to write in order, and
+            // read-size rides in Metadata because the step model has nowhere
+            // else to put a transport knob. NetworkProbeExecutor reads all
+            // three back, so this shape is a contract between the two.
+            var rawHost = firstNetwork.Host.FirstOrDefault() ?? "";
+            var host = variableContext is null
+                ? rawHost
+                : NucleiVariableResolver.Resolve(rawHost, variableContext);
+
+            var step = new BowireRecordingStep
+            {
+                Id = "probe-1",
+                Protocol = "network",
+                Service = host,
+                Method = "TCP",
+                MethodType = "Unary",
+                Status = "OK",
+                Metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["read-size"] = firstNetwork.ReadSize.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                },
+            };
+
+            foreach (var input in firstNetwork.Inputs)
+            {
+                var data = variableContext is null
+                    ? input.Data
+                    : NucleiVariableResolver.Resolve(input.Data, variableContext);
+                // The encoding travels with the payload rather than the request,
+                // because Nuclei lets each input choose its own.
+                step.Messages.Add(string.Equals(input.Type, "hex", StringComparison.OrdinalIgnoreCase)
+                    ? "hex:" + data
+                    : data);
+            }
+            step.Body = step.Messages.FirstOrDefault();
+
+            recording.Steps.Add(step);
+        }
+        else if (firstSsl is not null)
+        {
+            // #491 — an ssl: request carries no payload; the handshake is the
+            // probe and the certificate is the response.
+            var rawAddress = firstSsl.Address;
+            var address = variableContext is null
+                ? rawAddress
+                : NucleiVariableResolver.Resolve(rawAddress, variableContext);
+
+            recording.Steps.Add(new BowireRecordingStep
+            {
+                Id = "probe-1",
+                Protocol = "ssl",
+                Service = address,
+                Method = "TLS",
                 MethodType = "Unary",
                 Status = "OK",
             });

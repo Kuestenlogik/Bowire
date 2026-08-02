@@ -25,6 +25,66 @@ public sealed class NucleiTemplate
     /// <summary>The <c>dns:</c> block — Phase 2g's first non-HTTP transport pass.
     /// Empty for HTTP-only templates.</summary>
     public List<NucleiDnsRequest> Dns { get; init; } = [];
+
+    /// <summary>The <c>network:</c> (alias <c>tcp:</c>) block — raw send/expect
+    /// over a socket. Empty unless the template carries one.</summary>
+    public List<NucleiNetworkRequest> Network { get; init; } = [];
+
+    /// <summary>The <c>ssl:</c> block — TLS handshake plus certificate
+    /// inspection. Empty unless the template carries one.</summary>
+    public List<NucleiSslRequest> Ssl { get; init; } = [];
+}
+
+/// <summary>
+/// One entry in the <c>network:</c> / <c>tcp:</c> array (#491, #35 Phase 2g).
+/// Opens a socket, writes the inputs in order, reads the reply, and matches
+/// over it — the shape behind unauthenticated-Redis, exposed-Memcached and
+/// banner-grab templates.
+/// </summary>
+public sealed class NucleiNetworkRequest
+{
+    /// <summary>Address candidates. Nuclei writes <c>{{Hostname}}</c> (host and
+    /// port) or pins the port itself, e.g. <c>{{Host}}:6379</c>.</summary>
+    public List<string> Host { get; init; } = [];
+
+    /// <summary>Payloads to write, in order.</summary>
+    public List<NucleiNetworkInput> Inputs { get; init; } = [];
+
+    /// <summary>Bytes to read back. Nuclei's default is 1024.</summary>
+    public int ReadSize { get; set; } = 1024;
+
+    /// <summary>How matchers compose: <c>and</c> / <c>or</c> (default).</summary>
+    public string MatchersCondition { get; set; } = "or";
+
+    /// <summary>Matchers over what came back.</summary>
+    public List<NucleiMatcher> Matchers { get; init; } = [];
+}
+
+/// <summary>One <c>inputs:</c> entry on a network request.</summary>
+public sealed class NucleiNetworkInput
+{
+    /// <summary>The payload. Carries Go-style escapes (<c>\r\n</c>, <c>\x00</c>)
+    /// unless <see cref="Type"/> says <c>hex</c>.</summary>
+    public string Data { get; set; } = "";
+
+    /// <summary><c>hex</c> when <see cref="Data"/> is hex-encoded; empty for text.</summary>
+    public string Type { get; set; } = "";
+}
+
+/// <summary>
+/// One entry in the <c>ssl:</c> array (#491, #35 Phase 2g). Completes a TLS
+/// handshake and matches over the presented certificate.
+/// </summary>
+public sealed class NucleiSslRequest
+{
+    /// <summary>Address to connect to, e.g. <c>{{Host}}:{{Port}}</c>.</summary>
+    public string Address { get; set; } = "";
+
+    /// <summary>How matchers compose: <c>and</c> / <c>or</c> (default).</summary>
+    public string MatchersCondition { get; set; } = "or";
+
+    /// <summary>Matchers over the rendered certificate.</summary>
+    public List<NucleiMatcher> Matchers { get; init; } = [];
 }
 
 /// <summary>

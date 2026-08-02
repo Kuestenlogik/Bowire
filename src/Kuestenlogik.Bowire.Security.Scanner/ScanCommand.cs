@@ -31,13 +31,14 @@ namespace Kuestenlogik.Bowire.Security.Scanner;
 /// <c>mcp</c>). These are HTTP-class because the request the template
 /// probes is a plain HTTP call: SignalR's negotiate, Socket.IO's
 /// Engine.IO polling handshake, and MCP's Streamable-HTTP JSON-RPC POST.
-/// WebSocket runs through its own handshake probe, and <c>dns</c>
-/// through <see cref="DnsProbeExecutor"/> (#491). MQTT / raw-gRPC and
-/// the remaining Nuclei transports (<c>network</c>/<c>tcp</c>,
-/// <c>ssl</c>) still surface as <see cref="ScanFindingStatus.Skipped"/>
-/// with a "transport not yet supported by scanner" message — the
-/// templates load, they just don't run yet. Later iterations route them
-/// through the corresponding protocol plugin's invoke path.
+/// WebSocket runs through its own handshake probe, and the Nuclei
+/// transports <c>dns</c> / <c>network</c> / <c>tcp</c> / <c>ssl</c>
+/// through <see cref="DnsProbeExecutor"/>,
+/// <see cref="NetworkProbeExecutor"/> and
+/// <see cref="SslProbeExecutor"/> (#491). MQTT and raw-gRPC still
+/// surface as <see cref="ScanFindingStatus.Skipped"/> with a "transport
+/// not yet supported by scanner" message — those templates load, they
+/// just don't run yet.
 /// </para>
 /// </remarks>
 public static class ScanCommand
@@ -382,6 +383,32 @@ public static class ScanCommand
                     findings.Add(dnsMatched
                         ? ScanFinding.Vulnerable(tmpl, dnsResponse)
                         : ScanFinding.Safe(tmpl, dnsResponse));
+                }
+                catch (Exception ex)
+                {
+                    findings.Add(ScanFinding.Error(tmpl, ex.Message));
+                }
+                continue;
+            }
+
+            // #491 (#35 Phase 2g) — raw socket and TLS templates. Like dns:
+            // they address a host the template names, not the scan's HTTP
+            // target, so isHttpTarget does not gate them.
+            if (protocol is "NETWORK" or "TCP" or "SSL")
+            {
+                try
+                {
+                    var transportResponse = protocol is "SSL"
+                        ? await SslProbeExecutor
+                            .ExecuteAsync(probe, options.TimeoutSeconds, now: null, ct).ConfigureAwait(false)
+                        : await NetworkProbeExecutor
+                            .ExecuteAsync(probe, options.TimeoutSeconds, ct).ConfigureAwait(false);
+
+                    var transportMatched = AttackPredicateEvaluator.Evaluate(
+                        tmpl.Recording.VulnerableWhen!, transportResponse);
+                    findings.Add(transportMatched
+                        ? ScanFinding.Vulnerable(tmpl, transportResponse)
+                        : ScanFinding.Safe(tmpl, transportResponse));
                 }
                 catch (Exception ex)
                 {
