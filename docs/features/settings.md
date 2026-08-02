@@ -35,7 +35,9 @@ When enabled (the default), Bowire parses JSON payloads in WebSocket, MQTT, and 
 
 ### Schema Watch interval
 
-Controls how often Bowire re-discovers services when Schema Watch is active. The value is in seconds, with a minimum of 5 and a maximum of 300. The default is 15 seconds. A value outside those bounds is clamped rather than rejected.
+Time to wait after one re-discovery **finishes** before starting the next. In seconds, minimum 5, maximum 300, default 15; a value outside those bounds is clamped rather than rejected.
+
+It is a gap, not a fixed cadence, and the distinction matters: a discovery fans out over every loaded plugin and takes seconds against a real server (5-8 s is typical). The watch waits for a poll to settle before re-arming, so two discoveries are never in flight at once. Setting 5 s does not mean "every 5 s" -- it means "5 s of quiet between polls".
 
 Schema Watch is useful during active development -- your server's service definitions are polled at this interval, and each poll is compared against the previous one. What moved is shown in the Discover sidebar:
 

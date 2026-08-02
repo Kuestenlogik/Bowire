@@ -549,7 +549,7 @@
         // Schema Watch interval
         section.appendChild(renderSettingsRow(
             'Schema Watch interval',
-            'How often to re-discover services when Schema Watch is active',
+            'Time to wait after one re-discovery finishes before starting the next. A discovery over every plugin takes seconds, so this is a gap, not a fixed cadence.',
             function () {
                 var input = el('input', {
                     id: 'bowire-settings-watch-interval-input',

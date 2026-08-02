@@ -234,7 +234,8 @@
     // count told you "0 methods changed" when GetUser was replaced by
     // FetchUser — the arithmetic cancelled out and the rename, the one
     // event most likely to break a saved request, went unreported.
-    var schemaWatchInterval = null;
+    var schemaWatchTimer = null;
+    var schemaWatchRunning = false;
     var schemaWatchDelta = null;
 
     var SCHEMA_WATCH_DEFAULT_SECONDS = 15;
@@ -365,14 +366,12 @@
     function schemaServiceDelta(svcName) {
         if (!schemaWatchDelta) return null;
         var d = schemaWatchDelta;
-        if (d.addedServices.indexOf(svcName) !== -1) {
+        if (d.addedServiceNames.has(svcName)) {
             return { label: 'new', title: 'Service appeared since the last poll' };
         }
-        var count = function (arr) {
-            return arr.filter(function (m) { return m.service === svcName; }).length;
-        };
-        var added = count(d.addedMethods), removed = count(d.removedMethods), changed = count(d.changedMethods);
-        if (!added && !removed && !changed) return null;
+        var e = d.perService[svcName];
+        if (!e) return null;
+        var added = e.added, removed = e.removed, changed = e.changed;
         var bits = [], title = [];
         if (added) { bits.push('+' + added); title.push(added + ' method(s) added'); }
         if (removed) { bits.push('−' + removed); title.push(removed + ' method(s) removed'); }
@@ -382,18 +381,35 @@
 
     // True when this method row should carry an added / changed marker.
     // Removals have no row to mark — they are only in the summary.
+    //
+    // Called once per method row on the RENDER path, so it must not scan.
+    // The lookup sets are built once when the delta is published; scanning
+    // the arrays here instead made every render O(rows x delta), and that
+    // cost outlived the watch because the delta is sticky until dismissed.
     function schemaWatchMarkerFor(svcName, method) {
         if (!schemaWatchDelta) return null;
         var key = schemaMethodKey({ name: svcName }, method);
-        var i;
-        for (i = 0; i < schemaWatchDelta.addedMethods.length; i++) {
-            if (schemaWatchDelta.addedMethods[i].key === key) return 'added';
-        }
-        for (i = 0; i < schemaWatchDelta.changedMethods.length; i++) {
-            if (schemaWatchDelta.changedMethods[i].key === key) return 'changed';
-        }
-        if (schemaWatchDelta.addedServices.indexOf(svcName) !== -1) return 'added';
+        if (schemaWatchDelta.addedKeys.has(key)) return 'added';
+        if (schemaWatchDelta.changedKeys.has(key)) return 'changed';
+        if (schemaWatchDelta.addedServiceNames.has(svcName)) return 'added';
         return null;
+    }
+
+    // Index a fresh delta for the render path. Sets, not arrays: the render
+    // path asks "is this one of them" once per row and once per service.
+    function schemaIndexDelta(d) {
+        d.addedKeys = new Set(d.addedMethods.map(function (m) { return m.key; }));
+        d.changedKeys = new Set(d.changedMethods.map(function (m) { return m.key; }));
+        d.addedServiceNames = new Set(d.addedServices);
+        d.perService = Object.create(null);
+        var bump = function (name, field) {
+            var e = d.perService[name] || (d.perService[name] = { added: 0, removed: 0, changed: 0 });
+            e[field]++;
+        };
+        d.addedMethods.forEach(function (m) { bump(m.service, 'added'); });
+        d.removedMethods.forEach(function (m) { bump(m.service, 'removed'); });
+        d.changedMethods.forEach(function (m) { bump(m.service, 'changed'); });
+        return d;
     }
 
     // A poll that failed says nothing about the schema. Without this
@@ -412,28 +428,60 @@
         return true;
     }
 
+    // The watch re-arms AFTER a poll settles rather than on a fixed
+    // cadence, so two discoveries can never be in flight at once.
+    //
+    // `setInterval` with an async callback does not wait for the previous
+    // callback to resolve — it fires on the wall clock regardless. A
+    // discovery fan-out over every plugin takes seconds (measured: 5-8 s
+    // against one URL), so any interval shorter than that had a new poll
+    // starting before the last one returned. Two overlapping
+    // `fetchServices` calls both reset `isLoadingServices`,
+    // `discoveryErrors`, `discoveryAttempts` and `services`, then both
+    // render — so the older one can finish last and publish stale results
+    // over the newer one, and the page rebuilds its whole DOM tree twice
+    // per period for as long as the watch runs.
+    //
+    // A self-scheduling timeout makes the period a *gap between* polls,
+    // which is the honest reading of "re-discover every N seconds" for
+    // work that takes an unknown time.
     function startSchemaWatch(intervalMs) {
         stopSchemaWatch({ quiet: true });
-        intervalMs = intervalMs || schemaWatchSeconds() * 1000;
+        var period = intervalMs || schemaWatchSeconds() * 1000;
         schemaWatchDelta = null;
-        schemaWatchInterval = setInterval(async function () {
-            var before = schemaSnapshot(services);
-            await fetchServices();
-            if (!schemaWatchPollUsable()) return;
-            var delta = schemaDiff(before, schemaSnapshot(services));
-            if (delta) {
-                delta.at = new Date();
-                schemaWatchDelta = delta;
-                var summary = schemaDeltaSummary(delta);
-                toast('Schema changed: ' + summary, 'info');
-                addConsoleEntry({
-                    type: 'response', method: 'Schema Watch', status: 'Changed',
-                    body: summary + '\n' + schemaDeltaDetail(delta)
-                });
-                render();
+        schemaWatchRunning = true;
+
+        var tick = async function () {
+            schemaWatchTimer = null;
+            if (!schemaWatchRunning) return;
+            try {
+                var before = schemaSnapshot(services);
+                await fetchServices();
+                // Re-check: the operator may have switched the watch off
+                // while this poll was in flight.
+                if (!schemaWatchRunning || !schemaWatchPollUsable()) return;
+                var delta = schemaDiff(before, schemaSnapshot(services));
+                if (delta) {
+                    delta.at = new Date();
+                    schemaWatchDelta = schemaIndexDelta(delta);
+                    var summary = schemaDeltaSummary(delta);
+                    toast('Schema changed: ' + summary, 'info');
+                    addConsoleEntry({
+                        type: 'response', method: 'Schema Watch', status: 'Changed',
+                        body: summary + '\n' + schemaDeltaDetail(delta)
+                    });
+                    render();
+                }
+            } finally {
+                // Re-arm even when the poll threw or returned early —
+                // otherwise one failed discovery silently ends the watch
+                // while the button still shows it as running.
+                if (schemaWatchRunning) schemaWatchTimer = setTimeout(tick, period);
             }
-        }, intervalMs);
-        toast('Schema watch started (every ' + (intervalMs / 1000) + 's)', 'info');
+        };
+
+        schemaWatchTimer = setTimeout(tick, period);
+        toast('Schema watch started (every ' + (period / 1000) + 's)', 'info');
     }
 
     // Long-form for the console, where there is room to name names.
@@ -448,15 +496,26 @@
     }
 
     function stopSchemaWatch(opts) {
-        if (schemaWatchInterval) {
-            clearInterval(schemaWatchInterval);
-            schemaWatchInterval = null;
-            if (!opts || !opts.quiet) toast('Schema watch stopped', 'info');
+        // Drop the delta unconditionally, before the running check. It is
+        // read once per method row on the render path, so leaving it behind
+        // taxed every later render — including every keystroke in the
+        // sidebar search — long after the watch was switched off.
+        schemaWatchDelta = null;
+        if (!schemaWatchRunning) return;
+        // Clearing the flag is what stops an in-flight poll from re-arming
+        // when it settles.
+        schemaWatchRunning = false;
+        if (schemaWatchTimer !== null) {
+            clearTimeout(schemaWatchTimer);
+            schemaWatchTimer = null;
         }
+        if (!opts || !opts.quiet) toast('Schema watch stopped', 'info');
     }
 
     function isSchemaWatchActive() {
-        return schemaWatchInterval !== null;
+        // The flag, not the timer handle: between a poll starting and
+        // re-arming there is no timer, and the watch is still on.
+        return schemaWatchRunning;
     }
 
     async function fetchServicesForAllUrls() {

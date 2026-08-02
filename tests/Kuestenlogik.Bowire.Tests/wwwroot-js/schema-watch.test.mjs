@@ -71,7 +71,14 @@ function loadWatch() {
             schemaDiff: schemaDiff,
             schemaDeltaSummary: schemaDeltaSummary,
             schemaWatchSeconds: schemaWatchSeconds,
+            stopSchemaWatch: stopSchemaWatch,
+            startSchemaWatch: startSchemaWatch,
+            isSchemaWatchActive: isSchemaWatchActive,
             schemaWatchPollUsable: schemaWatchPollUsable,
+            schemaIndexDelta: schemaIndexDelta,
+            schemaWatchMarkerFor: schemaWatchMarkerFor,
+            schemaServiceDelta: schemaServiceDelta,
+            _publishDelta: function (d) { schemaWatchDelta = d ? schemaIndexDelta(d) : null; },
             _setDiscoveryErrors: function (e) { discoveryErrors = e; },
             _setUrls: function (u, st) { serverUrls = u; connectionStatuses = st || {}; },
             _setInterval: function (v) { if (v === null) delete _ls['bowire_watch_interval']; else localStorage.setItem('bowire_watch_interval', v); }
@@ -311,4 +318,57 @@ test('schemaWatchPollUsable: an embedded-discovery failure counts too', () => {
     sb._setUrls([], {});
     sb._setDiscoveryErrors({ '(embedded)': 'discovery timed out' });
     assert.equal(sb.schemaWatchPollUsable(), false);
+});
+
+// ---- the delta index (render-path cost) ----
+
+test('schemaIndexDelta: marker lookup is a set membership test, not a scan', () => {
+    const sb = loadWatch();
+    const before = sb.schemaSnapshot([service('S', [method('Keep'), method('Drop'), method('Morph')])]);
+    const after = sb.schemaSnapshot([service('S', [
+        method('Keep'), method('Morph', { httpMethod: 'POST' }), method('Fresh')])]);
+    const d = sb.schemaDiff(before, after);
+    sb._publishDelta(d);
+
+    assert.ok(d.addedKeys instanceof Set);
+    assert.ok(d.changedKeys instanceof Set);
+    assert.equal(sb.schemaWatchMarkerFor('S', method('Fresh')), 'added');
+    assert.equal(sb.schemaWatchMarkerFor('S', method('Morph')), 'changed');
+    assert.equal(sb.schemaWatchMarkerFor('S', method('Keep')), null);
+});
+
+test('schemaIndexDelta: every method of a new service is marked added', () => {
+    const sb = loadWatch();
+    const d = sb.schemaDiff(
+        sb.schemaSnapshot([]),
+        sb.schemaSnapshot([service('Fresh', [method('A'), method('B')])]));
+    sb._publishDelta(d);
+    assert.equal(sb.schemaWatchMarkerFor('Fresh', method('A')), 'added');
+});
+
+test('schemaServiceDelta: tallies come from the index', () => {
+    const sb = loadWatch();
+    const before = sb.schemaSnapshot([service('S', [method('Keep'), method('Drop'), method('Morph')])]);
+    const after = sb.schemaSnapshot([service('S', [
+        method('Keep'), method('Morph', { httpMethod: 'POST' }), method('Fresh')])]);
+    sb._publishDelta(sb.schemaDiff(before, after));
+
+    const t = sb.schemaServiceDelta('S');
+    assert.equal(t.label, '+1 −1 ~1');
+    assert.equal(sb.schemaServiceDelta('Untouched'), null);
+});
+
+test('stopSchemaWatch: drops the delta so it stops taxing later renders', () => {
+    // It used to survive: the marker lookup runs once per method row on the
+    // render path, so a sticky delta kept every render paying for a watch
+    // that had been switched off.
+    const sb = loadWatch();
+    sb._publishDelta(sb.schemaDiff(
+        sb.schemaSnapshot([service('S', [method('A')])]),
+        sb.schemaSnapshot([service('S', [method('A'), method('B')])])));
+    assert.equal(sb.schemaWatchMarkerFor('S', method('B')), 'added');
+
+    sb.stopSchemaWatch({ quiet: true });
+    assert.equal(sb.schemaWatchMarkerFor('S', method('B')), null);
+    assert.equal(sb.schemaServiceDelta('S'), null);
 });
