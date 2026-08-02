@@ -25,6 +25,8 @@
 const { chromium } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
+// Canonical sidebar helpers — see scripts/lib/sidebar.cjs (#551).
+const sidebar = require('../lib/sidebar.cjs');
 
 const BOWIRE_URL = 'https://localhost:5101/bowire';
 // __dirname is scripts/screenshots. Two .. hops land at the repo
@@ -110,31 +112,18 @@ async function waitForAny(page, selectors, timeoutMs) {
         }, { t: THEME, sampleUrl: BOWIRE_URL.replace(/\/bowire\/?$/, '/') });
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
-        // Wait for method items to be ATTACHED (services may render
-        // collapsed by default so no item is visible until we expand).
-        // Bumped timeout to 45s since discovery now also walks the
-        // operator-supplied URL on first paint.
-        await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 45000 });
+        // Wait for the SERVICE TREE, not for method rows: since #551 a
+        // collapsed group builds no `.bowire-method-item` children at
+        // all, so the old row-based wait hangs until it times out.
+        // 45s because discovery also walks the operator-supplied URL on
+        // first paint.
+        await sidebar.waitForCatalogue(page, { timeout: 45000 });
         await page.waitForTimeout(1500);
         log('Services discovered.');
 
-        // Expand every collapsed service group so methods are visible
-        // and clickable. The expanded state lives on the chevron span
-        // (.bowire-service-chevron.expanded), not on the group div, so
-        // the previous .bowire-service-group.collapsed selector never
-        // matched anything and the demo silently moved on with all
-        // services still folded. Click the header of every group whose
-        // chevron lacks the expanded class.
-        const groups = await page.locator('.bowire-service-group').all();
-        for (const group of groups) {
-            const chev = group.locator('.bowire-service-chevron').first();
-            const cls = await chev.getAttribute('class').catch(() => '');
-            if (!cls || !cls.includes('expanded')) {
-                const header = group.locator('.bowire-service-header').first();
-                await header.click().catch(() => {});
-                await page.waitForTimeout(120);
-            }
-        }
+        // Expand every collapsed service group so the rows get built and
+        // become clickable.
+        await sidebar.openCatalogue(page, { timeout: 45000 });
         await page.waitForTimeout(500);
 
         // ---- Beat 1: unary REST call → response ----
@@ -293,19 +282,11 @@ async function waitForAny(page, selectors, timeoutMs) {
         const servicesTab = page.locator('#bowire-view-pill-services').first();
         if (await servicesTab.isVisible().catch(() => false)) {
             await servicesTab.click();
-            await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 5000 })
+            // Service groups can come back collapsed when we leave and
+            // return, and a collapsed group has no method rows at all —
+            // so re-open the catalogue rather than waiting on a row.
+            await sidebar.openCatalogue(page, { timeout: 5000, methodTimeout: 5000, stepMs: 80 })
                 .catch(() => log('  services view never re-rendered'));
-            // Service groups collapse again when we leave + return, so
-            // re-expand any that closed up.
-            const groupsAgain = await page.locator('.bowire-service-group').all();
-            for (const group of groupsAgain) {
-                const chev = group.locator('.bowire-service-chevron').first();
-                const cls = await chev.getAttribute('class').catch(() => '');
-                if (!cls || !cls.includes('expanded')) {
-                    await group.locator('.bowire-service-header').first().click().catch(() => {});
-                    await page.waitForTimeout(80);
-                }
-            }
             await page.waitForTimeout(400);
         }
         // Pre-select a method BEFORE starting recording so the

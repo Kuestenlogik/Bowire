@@ -17,6 +17,8 @@ const { chromium } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
+// Canonical sidebar helpers — see scripts/lib/sidebar.cjs (#551).
+const sidebar = require('../lib/sidebar.cjs');
 
 // Node-side traffic generators (currently only the GraphQL mutation below)
 // hit local sample servers over https with self-signed dev certs. Use a
@@ -75,27 +77,17 @@ async function capture(target) {
     // Combined sample with SignalR + WebSocket open) keep an idle
     // socket open on page load and `networkidle` never resolves —
     // wait for DOM ready instead and let the sidebar populate via the
-    // .bowire-method-item attached check below.
+    // catalogue check below.
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await page.evaluate((theme) => { try { localStorage.setItem('bowire-theme', theme); } catch (_) {} }, THEME);
     await page.reload({ waitUntil: 'domcontentloaded' });
 
-    // Wait for the sidebar to render method items into the DOM. We use
-    // 'attached' rather than the default 'visible' because some sample
-    // hosts ship more than 5 services and Bowire keeps groups collapsed
-    // by default — the items are in the DOM but display:none.
-    await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 30000 });
+    // Wait for the service tree, then expand every group. Since #551 a
+    // collapsed group renders no method rows at all, so waiting on
+    // `.bowire-method-item` first would hang on any sample host that
+    // ships more than 5 services.
+    await sidebar.openCatalogue(page, { timeout: 30000 });
     log('  sidebar populated');
-
-    // Expand every service group so the target method is visible. Cheap
-    // and idempotent: clicking a header that's already expanded toggles
-    // it shut, but we click before any expanded state has been set.
-    const headers = await page.locator('.bowire-service-header').all();
-    for (const h of headers) {
-        const expanded = await h.locator('.bowire-service-chevron.expanded').count();
-        if (expanded === 0) await h.click().catch(() => {});
-    }
-    await page.waitForTimeout(300);
 
     await page.locator('.bowire-method-item', { hasText: methodText }).first().click();
     await page.waitForTimeout(400);

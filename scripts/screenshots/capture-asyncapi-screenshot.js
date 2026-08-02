@@ -20,6 +20,8 @@
 const { chromium } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
+// Canonical sidebar helpers — see scripts/lib/sidebar.cjs (#551).
+const sidebar = require('../lib/sidebar.cjs');
 
 const OUT = path.resolve(__dirname, '..', '..', 'site', 'assets', 'images', 'screenshots');
 const DOCS_OUT = path.resolve(__dirname, '..', '..', 'docs', 'images', 'screenshots');
@@ -53,11 +55,19 @@ function log(m) { console.log(new Date().toISOString().slice(11, 19), m); }
 
     // The AsyncAPI sample declares two channels (craneStatus,
     // publisherStatus); each becomes a service node with one
-    // receive-direction method. Wait for the second one to appear so
-    // we know discovery finished, not just the first frame.
-    await page.waitForSelector('.bowire-method-item', { timeout: 30000 });
+    // receive-direction method. Wait for the SECOND service group so we
+    // know discovery finished, not just the first frame — and do it
+    // before expanding, because a group discovered after the expand
+    // sweep would stay shut (the api.js <= 5-service auto-expand only
+    // fires while nothing is persisted, which our clicks undo).
     await page.waitForFunction(
-        () => document.querySelectorAll('.bowire-method-item').length >= 2,
+        (sel) => document.querySelectorAll(sel).length >= 2,
+        sidebar.SERVICE_GROUP_SELECTOR,
+        { timeout: 30000 });
+    await sidebar.openCatalogue(page, { timeout: 30000 });
+    await page.waitForFunction(
+        (sel) => document.querySelectorAll(sel).length >= 2,
+        sidebar.METHOD_ITEM_SELECTOR,
         { timeout: 30000 });
     log('sidebar populated — at least two methods visible');
 

@@ -15,6 +15,8 @@
 
 const path = require('path');
 const fs = require('fs');
+// Canonical sidebar helpers — see scripts/lib/sidebar.cjs (#551).
+const sidebar = require('../lib/sidebar.cjs');
 
 let chromium;
 try {
@@ -79,20 +81,6 @@ async function seed(page, sampleUrl, railMode, opts) {
 /** Seeds workspace state then forces a /-rooted reload (Tool standalone). */
 async function seedAtRoot(page, sampleUrl, railMode, opts) {
     return seed(page, sampleUrl, railMode, opts);
-}
-
-async function expandAllServices(page) {
-    const groups = await page.locator('.bowire-service-group').all();
-    for (const group of groups) {
-        const chev = group.locator('.bowire-service-chevron').first();
-        const cls = await chev.getAttribute('class').catch(() => '');
-        if (!cls || !cls.includes('expanded')) {
-            const header = group.locator('.bowire-service-header').first();
-            await header.click().catch(() => {});
-            await page.waitForTimeout(120);
-        }
-    }
-    await page.waitForTimeout(400);
 }
 
 /** workspaces-switcher: open the topbar workspace switcher dropdown. */
@@ -177,9 +165,9 @@ async function captureMapWidgetPins(page) {
         } catch { /* ignore */ }
     });
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 25000 });
+    await sidebar.waitForCatalogue(page, { timeout: 25000 });
     await page.waitForTimeout(1500);
-    await expandAllServices(page);
+    await sidebar.openCatalogue(page, { timeout: 25000 });
     let picked = page.locator('.bowire-method-item:has-text("Locations")').first();
     if (!(await picked.isVisible().catch(() => false))) {
         picked = page.locator('.bowire-method-item:has-text("locations")').first();
