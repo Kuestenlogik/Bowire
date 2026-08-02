@@ -291,7 +291,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [538](https://github.com/Kuestenlogik/Bowire/issues/538) | Bowire | [Show the CLI equivalent of every request (Copy as Bowire CLI)](#issue-kuestenlogik-bowire-538) | ⬜ Backlog |  |
 | [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ⬜ Backlog |  |
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog |  |
-| [548](https://github.com/Kuestenlogik/Bowire/issues/548) | Bowire | [Release cascade skips Kuestenlogik.Bowire.Protocol.* — the bump regex allows only one dot-segment](#issue-kuestenlogik-bowire-548) | ⬜ Backlog |  |
 | [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins](#issue-kuestenlogik-bowire-549) | ⬜ Backlog |  |
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ⬜ Backlog |  |
 | [556](https://github.com/Kuestenlogik/Bowire/issues/556) | Bowire | [McpDiscoveryWireTests is flaky: FreePort() releases the port before HttpListener binds it](#issue-kuestenlogik-bowire-556) | ⬜ Backlog |  |
@@ -1201,10 +1200,6 @@ Ship a "Correlated timeline" as a second tab inside the existing Recordings deta
 #### <a id="issue-kuestenlogik-bowire-547"></a>⬜ Backlog · [#547](https://github.com/Kuestenlogik/Bowire/issues/547) Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one
 
 `RecordingCorrelationScanner.ScanStep` documents itself as walking "every JSON-bearing surface of one step", but it misses one: the interpretations. [[more]](https://github.com/Kuestenlogik/Bowire/issues/547)
-
-#### <a id="issue-kuestenlogik-bowire-548"></a>⬜ Backlog · [#548](https://github.com/Kuestenlogik/Bowire/issues/548) Release cascade skips Kuestenlogik.Bowire.Protocol.* — the bump regex allows only one dot-segment
-
-The release cascade bumps `Kuestenlogik.Bowire` and `Kuestenlogik.Bowire.<One>` in every sibling, and silently skips `Kuestenlogik.Bowire.<Two>.<Segments>`. The bump regex in `.github/sibling-templates/bowire-released.yml` allows exactly one dot-segment past the prefix: [[more]](https://github.com/Kuestenlogik/Bowire/issues/548)
 
 #### <a id="issue-kuestenlogik-bowire-549"></a>⬜ Backlog · [#549](https://github.com/Kuestenlogik/Bowire/issues/549) Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins
 
