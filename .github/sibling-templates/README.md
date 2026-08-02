@@ -4,7 +4,7 @@ These three workflow files together implement the **Bowire release cascade**: wh
 
 | File | Purpose | Drop at |
 |---|---|---|
-| `bowire-released.yml` | Listens for `repository_dispatch: bowire-released`, bumps `Kuestenlogik.Bowire*` PackageVersion entries, opens PR | `.github/workflows/bowire-released.yml` |
+| `bowire-released.yml` | Listens for `repository_dispatch: bowire-released`, bumps the `Kuestenlogik.Bowire*` packages that release published, opens PR | `.github/workflows/bowire-released.yml` |
 | `auto-tag-on-bowire-merge.yml` | On merge of `bowire-cascade`-labelled PRs, patch-bumps the sibling's own version and pushes the tag | `.github/workflows/auto-tag-on-bowire-merge.yml` |
 | `post-release-floor-bump.yml` | On a successful `Release` run (tag push), raises the sibling's own `Directory.Build.props` `<Version>`/`<AssemblyVersion>`/`<FileVersion>` floor to the just-released version + `-dev` via an auto-merging PR | `.github/workflows/post-release-floor-bump.yml` |
 
@@ -14,13 +14,30 @@ These three workflow files together implement the **Bowire release cascade**: wh
 2. **Each sibling** — three things, all in the sibling repo:
    - Drop the three workflow files above into `.github/workflows/`. No per-repo edits needed; all three are sibling-agnostic.
    - Add the GitHub topic `bowire-cascade` via the repo's **About → ⚙ → Topics**. This is the opt-in marker — without it, Bowire's release.yml won't dispatch to this repo.
-   - Make sure `Directory.Packages.props` exists at the repo root with the `Kuestenlogik.Bowire*` `<PackageVersion>` entries — the bump step's `sed` operates on that file.
+   - Nothing else. The bump walks every `*.csproj` and every `Directory.Packages.props` in the repo (`bin/`, `obj/` excluded), so CPM repos, per-project `PackageReference` repos, and mixtures all work without configuration.
 3. **Secrets** — both files use the org-secret `BOWIRE_DISPATCH_TOKEN` (Contents R/W + Pull requests R/W). Already in place from the consolidation step.
 4. **Auto-merge** — handled by the sibling's existing `dependabot-auto-merge.yml`; the cascade PRs are labelled `dependencies` (matching that workflow's filter) and `bowire-cascade` (so the auto-tag step can identify them).
 
 ### Adding a new sibling later
 
 Open the new repo on GitHub → **About** (right column on the repo's main page) → ⚙ → **Topics** → add `bowire-cascade` → save. Drop in the two workflow files. Done — no PR against Bowire main needed.
+
+## Which packages get bumped
+
+The dispatch carries the exact list of package ids the release pushed to nuget.org, derived from the `.nupkg` filenames themselves (`release.yml`, step *Collect published package ids*). The sibling bumps those ids and nothing else.
+
+Prefix matching cannot do this job, in either direction:
+
+- Too narrow, which is what shipped until #548: the regex allowed one dot-segment past `Kuestenlogik.Bowire`, so `Kuestenlogik.Bowire.Interceptor` moved and `Kuestenlogik.Bowire.Protocol.Mcp` did not. Bowire.Samples sat three minors behind on five protocol packages for months, and the PRs merged green because nothing checked.
+- Too wide: `Kuestenlogik.Bowire.Protocol.Amqp` is owned by the Bowire.Protocol.Amqp sibling on its own version line (0.2.1 while main is 2.3.0). Bumping it to the main repo's version pins something that was never published, and the restore fails with `NU1102`.
+
+The question is never *how many dots* — it is *did this release publish that id*.
+
+Two shapes are deliberately left alone, and the guard that protects them is the `Version="[0-9]…"` match: values that do not start with a digit are not versions. That covers `dotnet new` template parameters (Bowire.Templates ships `Version="MY_BOWIRE_VERSION"`) and MSBuild indirections like `Version="$(BowireVersion)"`.
+
+A final step asserts the postcondition: every published id this repo pins at a numeric version must now read the new version, or the job fails. Half-done silently is the failure this cascade already shipped once.
+
+The logic is covered by `tests/Kuestenlogik.Bowire.Tests/ci/cascade-bump.test.mjs` in the main repo, which extracts these step scripts out of the YAML and runs them against fixtures of every sibling's real reference shapes — so edit the template, run `npm run test:ci-workflows`, then propagate.
 
 ## Versioning model
 
@@ -35,3 +52,5 @@ Each sibling's `bowire-released.yml` also accepts `workflow_dispatch` with a `ve
 ```bash
 gh workflow run bowire-released.yml -R Kuestenlogik/Bowire.Protocol.Kafka -f version=1.7.0
 ```
+
+With no `packages` input the workflow resolves the id list itself: it takes every `Kuestenlogik.Bowire*` id the repo references and keeps the ones nuget.org actually has at that version. That is the same guarantee the dispatch payload gives, so a manual run bumps the same set a real cascade would. Pass `-f packages=Kuestenlogik.Bowire,Kuestenlogik.Bowire.Protocol.Rest` to pin the list explicitly instead.
