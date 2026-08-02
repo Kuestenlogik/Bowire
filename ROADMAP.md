@@ -263,7 +263,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [6](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6) | Bootcamp | [Bootcamp landing renders inconsistent breadcrumb based on arrival path](#issue-kuestenlogik-bowire-bootcamp-6) | ⬜ Backlog |  |
 | [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Backlog |  |
 | [21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21) | Protocol.Dis | [probeDuration setting is ignored by DiscoverAsync](#issue-kuestenlogik-bowire-protocol-dis-21) | ⬜ Backlog |  |
-| [21](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/21) | Bootcamp | [main requires a 'build' check no workflow produces — every cascade PR is permanently blocked](#issue-kuestenlogik-bowire-bootcamp-21) | ⬜ Backlog |  |
 | [22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) | Protocol.Dis | [Typed PDU envelope decoding beyond EntityState](#issue-kuestenlogik-bowire-protocol-dis-22) | ⬜ Backlog |  |
 | [23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) | Protocol.Dis | [Entity-filtered stream drops non-EntityState PDUs](#issue-kuestenlogik-bowire-protocol-dis-23) | ⬜ Backlog |  |
 | [24](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24) | Protocol.Dis | [Typed / re-decoded mock replay in DisMockEmitter](#issue-kuestenlogik-bowire-protocol-dis-24) | ⬜ Backlog |  |
@@ -295,6 +294,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [548](https://github.com/Kuestenlogik/Bowire/issues/548) | Bowire | [Release cascade skips Kuestenlogik.Bowire.Protocol.* — the bump regex allows only one dot-segment](#issue-kuestenlogik-bowire-548) | ⬜ Backlog |  |
 | [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins](#issue-kuestenlogik-bowire-549) | ⬜ Backlog |  |
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ⬜ Backlog |  |
+| [556](https://github.com/Kuestenlogik/Bowire/issues/556) | Bowire | [McpDiscoveryWireTests is flaky: FreePort() releases the port before HttpListener binds it](#issue-kuestenlogik-bowire-556) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1090,10 +1090,6 @@ Tracks the Surgewave-lane work split out of Kuestenlogik/Bowire#33 so protocol-s
 
 The plugin exposes a `probeDuration` setting (`BowireDisProtocol.Settings`, default 3s) and the README advertises it as configurable ("configurable via the plugin's `probeDuration` setting"). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21)
 
-#### <a id="issue-kuestenlogik-bowire-bootcamp-21"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#21](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/21) main requires a 'build' check no workflow produces — every cascade PR is permanently blocked
-
-`main` requires the status check `build`. No workflow in this repository produces one. [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/21)
-
 #### <a id="issue-kuestenlogik-bowire-protocol-dis-22"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) Typed PDU envelope decoding beyond EntityState
 
 `TryBuildEnvelope` only decodes **EntityState** into typed fields; every other PDU kind is surfaced as header + base64 `raw` only (`src/Kuestenlogik.Bowire.Protocol.Dis/BowireDisProtocol.cs:294-350`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22)
@@ -1217,6 +1213,10 @@ Start the workbench with `--plugin-dir X`, install a plugin from **Settings → 
 #### <a id="issue-kuestenlogik-bowire-551"></a>⬜ Backlog · [#551](https://github.com/Kuestenlogik/Bowire/issues/551) render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row
 
 `render()` rebuilds the entire workbench tree off-screen and morphdom-diffs it. There is no debounce, no dirty flag, no coalescing â€” a grep for `scheduleRender` / `renderPending` / any batching wrapper across `wwwroot/js/` returns nothing, and there are ~685 `render()` call sites. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/551)
+
+#### <a id="issue-kuestenlogik-bowire-556"></a>⬜ Backlog · [#556](https://github.com/Kuestenlogik/Bowire/issues/556) McpDiscoveryWireTests is flaky: FreePort() releases the port before HttpListener binds it
+
+`McpDiscoveryWireTests` picks a port by binding one and letting go of it again: [[more]](https://github.com/Kuestenlogik/Bowire/issues/556)
 
 ---
 
