@@ -17,6 +17,8 @@
 
 const path = require('path');
 const fs = require('fs');
+// Canonical sidebar helpers — see scripts/lib/sidebar.cjs (#551).
+const sidebar = require('../lib/sidebar.cjs');
 
 let chromium;
 try { chromium = require('@playwright/test').chromium; }
@@ -54,28 +56,14 @@ async function seed(page, sampleUrl, railMode, theme) {
     await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
 }
 
-async function expandAllServices(page) {
-    const groups = await page.locator('.bowire-service-group').all();
-    for (const group of groups) {
-        const chev = group.locator('.bowire-service-chevron').first();
-        const cls = await chev.getAttribute('class').catch(() => '');
-        if (!cls || !cls.includes('expanded')) {
-            const header = group.locator('.bowire-service-header').first();
-            await header.click().catch(() => {});
-            await page.waitForTimeout(120);
-        }
-    }
-    await page.waitForTimeout(400);
-}
-
 /** Full workbench shot — anchor screenshot on index.md. */
 async function captureWorkbench(page, theme) {
     log(`workbench [${theme}]: navigate + seed`);
     await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
     await seed(page, COMBINED_ROOT, 'discover', theme);
-    await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 30000 });
+    await sidebar.waitForCatalogue(page, { timeout: 30000 });
     await page.waitForTimeout(800);
-    await expandAllServices(page);
+    await sidebar.openCatalogue(page, { timeout: 30000 });
     await page.screenshot({ path: outPath('workbench', theme) });
     log(`workbench [${theme}]: OK`);
 }
@@ -100,9 +88,9 @@ async function captureSidebar(page, theme) {
     log(`sidebar [${theme}]: navigate + seed`);
     await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
     await seed(page, COMBINED_ROOT, 'discover', theme);
-    await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 30000 });
+    await sidebar.waitForCatalogue(page, { timeout: 30000 });
     await page.waitForTimeout(600);
-    await expandAllServices(page);
+    await sidebar.openCatalogue(page, { timeout: 30000 });
     await page.waitForTimeout(400);
     await page.screenshot({
         path: outPath('sidebar', theme),
@@ -117,9 +105,9 @@ async function captureRequestPane(page, theme) {
     log(`request-pane [${theme}]: navigate + seed`);
     await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
     await seed(page, COMBINED_ROOT, 'discover', theme);
-    await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 30000 });
+    await sidebar.waitForCatalogue(page, { timeout: 30000 });
     await page.waitForTimeout(600);
-    await expandAllServices(page);
+    await sidebar.openCatalogue(page, { timeout: 30000 });
     const m = page.locator('.bowire-method-item').first();
     await m.click();
     await page.waitForTimeout(800);
@@ -138,9 +126,9 @@ async function captureResponsePane(page, theme) {
     log(`response-pane [${theme}]: navigate + seed`);
     await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
     await seed(page, COMBINED_ROOT, 'discover', theme);
-    await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 30000 });
+    await sidebar.waitForCatalogue(page, { timeout: 30000 });
     await page.waitForTimeout(600);
-    await expandAllServices(page);
+    await sidebar.openCatalogue(page, { timeout: 30000 });
     const list = page.locator('.bowire-method-item', { hasText: 'List' }).first();
     if (!(await list.isVisible().catch(() => false))) {
         const fallback = page.locator('.bowire-method-item').first();
@@ -167,9 +155,9 @@ async function captureActionBar(page, theme) {
     log(`action-bar [${theme}]: navigate + seed`);
     await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
     await seed(page, COMBINED_ROOT, 'discover', theme);
-    await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 30000 });
+    await sidebar.waitForCatalogue(page, { timeout: 30000 });
     await page.waitForTimeout(600);
-    await expandAllServices(page);
+    await sidebar.openCatalogue(page, { timeout: 30000 });
     const m = page.locator('.bowire-method-item').first();
     await m.click();
     await page.waitForTimeout(800);

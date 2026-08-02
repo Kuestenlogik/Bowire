@@ -15,6 +15,11 @@
 const { chromium } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
+// Canonical sidebar helpers — see scripts/lib/sidebar.cjs. Since #551 a
+// collapsed service group renders NO method rows at all, so the
+// catalogue-loaded signal is `.bowire-service-group` and every group
+// must be expanded before touching a `.bowire-method-item`.
+const sidebar = require('../lib/sidebar.cjs');
 
 // Two `..` — this script lives in scripts/screenshots/, so the repo root
 // is two levels up (was a single `..` writing to the phantom
@@ -162,22 +167,13 @@ async function resetToSidebar(page) {
     await page.waitForTimeout(200);
     // Switch back to Discover rail so the sidebar shows the services tree.
     await clickRail(page, 'discover');
-    await expandAllGroups(page);
-}
-
-// Click every collapsed-group header. Idempotent — running it twice in
-// a row is a no-op for groups that are already expanded.
-async function expandAllGroups(page) {
-    for (const g of await page.locator('.bowire-service-group.collapsed .bowire-service-group-header').all()) {
-        await g.click().catch(() => {});
-    }
-    await page.waitForTimeout(300);
+    await sidebar.expandAllServices(page);
 }
 
 // Click a method-item by name, robust against the post-view-switch
-// race where the item is DOM-attached but hidden behind a
-// `display: none` group ancestor or scrolled out of the sidebar
-// viewport. Three escalating strategies:
+// race where the item is scrolled out of the sidebar viewport or its
+// group re-collapsed across the rail switch. Three escalating
+// strategies:
 //   1. Re-expand groups + scroll into view + normal Playwright click.
 //   2. Playwright force-click (bypasses actionability checks).
 //   3. Direct DOM .click() via page.evaluate — bypasses Playwright's
@@ -185,7 +181,7 @@ async function expandAllGroups(page) {
 //      with addEventListener('click'), so the synthetic event fires
 //      the same way a user click would.
 async function clickMethodItem(page, text) {
-    await expandAllGroups(page);
+    await sidebar.expandAllServices(page);
     const item = page.locator('.bowire-method-item', { hasText: text }).first();
     await item.waitFor({ state: 'attached', timeout: 10000 });
     try { await item.scrollIntoViewIfNeeded({ timeout: 5000 }); } catch { /* fine */ }
@@ -286,18 +282,6 @@ async function captureWorkbenchSurfaces(browser) {
         await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
     }
 
-    async function wbsExpandAll(page) {
-        for (const group of await page.locator('.bowire-service-group').all()) {
-            const chev = group.locator('.bowire-service-chevron').first();
-            const cls = await chev.getAttribute('class').catch(() => '');
-            if (!cls || !cls.includes('expanded')) {
-                await group.locator('.bowire-service-header').first().click().catch(() => {});
-                await page.waitForTimeout(120);
-            }
-        }
-        await page.waitForTimeout(400);
-    }
-
     // ── surface: rail-strip — clip the activity rail column. ──
     async function railStrip(page) {
         await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
@@ -311,9 +295,9 @@ async function captureWorkbenchSurfaces(browser) {
     async function discoverWithResponse(page) {
         await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
         await wbsSeed(page, COMBINED_ROOT, 'discover');
-        await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 45000 });
+        await sidebar.waitForCatalogue(page, { timeout: 45000 });
         await page.waitForTimeout(1000);
-        await wbsExpandAll(page);
+        await sidebar.openCatalogue(page, { timeout: 45000 });
         const list = page.locator('.bowire-method-item', { hasText: 'List' }).first();
         if (!(await list.isVisible().catch(() => false))) throw new Error('no "List" method visible after expand');
         await list.click();
@@ -376,9 +360,9 @@ async function captureWorkbenchSurfaces(browser) {
             } catch { /* ignore */ }
         }, THEME);
         await page.reload({ waitUntil: 'domcontentloaded' });
-        await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 25000 });
+        await sidebar.waitForCatalogue(page, { timeout: 25000 });
         await page.waitForTimeout(1500);
-        await wbsExpandAll(page);
+        await sidebar.openCatalogue(page, { timeout: 25000 });
         let picked = page.locator('.bowire-method-item:has-text("Locations")').first();
         if (!(await picked.isVisible().catch(() => false))) {
             picked = page.locator('.bowire-method-item:has-text("locations")').first();
@@ -443,9 +427,9 @@ async function captureWorkbenchSurfaces(browser) {
     async function streamingBadge(page) {
         await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
         await wbsSeed(page, COMBINED_ROOT, 'discover');
-        await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 45000 });
+        await sidebar.waitForCatalogue(page, { timeout: 45000 });
         await page.waitForTimeout(1000);
-        await wbsExpandAll(page);
+        await sidebar.openCatalogue(page, { timeout: 45000 });
         let picked = null;
         for (const text of ['WatchCrane', 'Subscribe', 'Watch']) {
             const m = page.locator('.bowire-method-item', { hasText: text }).first();
@@ -632,13 +616,9 @@ async function captureWorkbenchSurfaces(browser) {
     }, THEME);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
-    // Items render inside collapsed groups, so wait for DOM attachment
-    // rather than visibility — the expand-loop below makes them visible.
-    await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 30000 });
-    // Expand every collapsed service group once.
-    for (const g of await page.locator('.bowire-service-group.collapsed .bowire-service-group-header').all()) {
-        await g.click().catch(() => {});
-    }
+    // Wait for the service tree, then expand every group — collapsed
+    // groups render no method rows at all since #551.
+    await sidebar.openCatalogue(page, { timeout: 30000 });
     await page.waitForTimeout(500);
 
     // ---- 1) flow-editor ----
@@ -1067,17 +1047,15 @@ async function captureWorkbenchSurfaces(browser) {
         });
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 15000 });
-        // Same DOM-attached / not-yet-visible distinction as the
-        // top-of-script wait — collapsed groups would block a
-        // visibility wait until expandAllGroups runs below.
-        await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 30000 });
-        await expandAllGroups(page);
+        // Same catalogue-first ordering as the top-of-script wait: the
+        // service tree lands before any method row exists.
+        await sidebar.openCatalogue(page, { timeout: 30000 });
         await page.waitForTimeout(800);
         await shotQuickstart(page, 'ready');
 
         // method-detail: pick the first method, full pane visible.
-        // Synthetic DOM .click() bypasses the collapsed-group visibility
-        // wall the same way clickMethodItem's last-resort branch does.
+        // Synthetic DOM .click() sidesteps any scroll/visibility wall
+        // the same way clickMethodItem's last-resort branch does.
         const clicked = await page.evaluate(() => {
             const first = document.querySelector('.bowire-method-item');
             if (!first) return false;
@@ -1148,7 +1126,10 @@ async function captureWorkbenchSurfaces(browser) {
         await page.goto(URL, { waitUntil: 'domcontentloaded' });
         await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 15000 });
         await page.waitForTimeout(500);
-        await expandAllGroups(page);
+        // Non-fatal: the AI surfaces below only want *some* method
+        // selected for context. If the catalogue never lands we still
+        // shoot the drawer — the isVisible() guard below handles it.
+        await sidebar.openCatalogue(page, { timeout: 30000 }).catch(() => {});
         const firstMethod = page.locator('.bowire-method-item').first();
         if (await firstMethod.isVisible().catch(() => false)) {
             await firstMethod.click().catch(() => {});

@@ -8,6 +8,8 @@
 // pane + .bowire-stream-detail-body to see if anything is mis-sized.
 
 import { chromium } from '@playwright/test';
+// Canonical sidebar helpers — see scripts/lib/sidebar.cjs (#551).
+import { openCatalogue } from '../lib/sidebar.cjs';
 
 const browser = await chromium.launch({
     headless: true,
@@ -30,18 +32,10 @@ await page.evaluate(() => {
 });
 await page.reload({ waitUntil: 'domcontentloaded' });
 await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
-await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 30000 });
-// Expand any collapsed service groups so the method items are visible/clickable.
-const groups = await page.locator('.bowire-service-group').all();
-for (const group of groups) {
-    const chev = group.locator('.bowire-service-chevron').first();
-    const cls = await chev.getAttribute('class').catch(() => '');
-    if (!cls || !cls.includes('expanded')) {
-        await group.locator('.bowire-service-header').first().click().catch(() => {});
-        await page.waitForTimeout(80);
-    }
-}
-await page.waitForTimeout(400);
+// Wait for the service tree, then expand every group — a collapsed
+// group builds no method rows at all since #551, so waiting on
+// `.bowire-method-item` first would just time out.
+await openCatalogue(page, { timeout: 30000, stepMs: 80 });
 
 const stream = page.locator('.bowire-method-item', { hasText: 'WatchCrane' }).first();
 await stream.scrollIntoViewIfNeeded();

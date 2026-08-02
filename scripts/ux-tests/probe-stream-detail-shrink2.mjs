@@ -1,4 +1,6 @@
 import { chromium } from '@playwright/test';
+// Canonical sidebar helpers — see scripts/lib/sidebar.cjs (#551).
+import { openCatalogue } from '../lib/sidebar.cjs';
 const browser = await chromium.launch({ headless: true, args: ['--ignore-certificate-errors'] });
 const page = await browser.newPage({ ignoreHTTPSErrors: true, viewport: { width: 1400, height: 900 } });
 await page.goto('https://localhost:5101/bowire', { waitUntil: 'domcontentloaded' });
@@ -11,13 +13,8 @@ await page.evaluate(() => {
 });
 await page.reload({ waitUntil: 'domcontentloaded' });
 await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20000 });
-await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 30000 });
-const groups = await page.locator('.bowire-service-group').all();
-for (const g of groups) {
-    const c = await g.locator('.bowire-service-chevron').first().getAttribute('class').catch(()=>'');
-    if (!c || !c.includes('expanded')) await g.locator('.bowire-service-header').first().click().catch(()=>{});
-}
-await page.waitForTimeout(400);
+// Collapsed groups build no method rows since #551 — expand first.
+await openCatalogue(page, { timeout: 30000 });
 await page.locator('.bowire-method-item', { hasText: 'WatchCrane' }).first().click();
 await page.waitForTimeout(800);
 await page.locator('input[data-field-key="craneId"]').first().fill('1').catch(()=>{});

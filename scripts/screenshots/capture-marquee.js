@@ -35,6 +35,8 @@
 
 const path = require('path');
 const fs = require('fs');
+// Canonical sidebar helpers — see scripts/lib/sidebar.cjs (#551).
+const sidebar = require('../lib/sidebar.cjs');
 
 let chromium;
 try {
@@ -92,23 +94,10 @@ async function seed(page, sampleUrl, railMode, theme) {
     }, { sampleUrl, railMode, theme });
     await page.reload({ waitUntil: 'domcontentloaded' });
     // Don't hard-fail on bowire-app-ready — Sample.Embedded has a known
-    // boot-error path that blocks it. Method-item attachment is the
-    // reliable signal that discovery finished.
+    // boot-error path that blocks it. Service-group attachment is the
+    // reliable signal that discovery finished (method rows only exist
+    // once a group is expanded — #551).
     await page.waitForSelector('#bowire-app', { timeout: 20000 });
-    await page.waitForTimeout(400);
-}
-
-async function expandAllServices(page) {
-    const groups = await page.locator('.bowire-service-group').all();
-    for (const group of groups) {
-        const chev = group.locator('.bowire-service-chevron').first();
-        const cls = await chev.getAttribute('class').catch(() => '');
-        if (!cls || !cls.includes('expanded')) {
-            const header = group.locator('.bowire-service-header').first();
-            await header.click().catch(() => {});
-            await page.waitForTimeout(120);
-        }
-    }
     await page.waitForTimeout(400);
 }
 
@@ -124,9 +113,9 @@ async function captureReady(page, host, theme) {
     // The Tool standalone has no /bowire prefix — the workbench is at /.
     // Sample URL is always the combined Harbor sample (richer surface).
     await seed(page, COMBINED_ROOT, 'discover', theme);
-    await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 45000 });
+    await sidebar.waitForCatalogue(page, { timeout: 45000 });
     await page.waitForTimeout(1000);
-    await expandAllServices(page);
+    await sidebar.openCatalogue(page, { timeout: 45000 });
 
     // Prefer a GET / List style method that returns a meaningful JSON
     // payload. Try a small ranked list of candidates.
@@ -169,9 +158,9 @@ async function captureStreamingGrpc(page, theme) {
     log(`streaming-grpc-${theme}: navigate Combined`);
     await page.goto(COMBINED_BOWIRE, { waitUntil: 'domcontentloaded' });
     await seed(page, COMBINED_ROOT, 'discover', theme);
-    await page.waitForSelector('.bowire-method-item', { state: 'attached', timeout: 45000 });
+    await sidebar.waitForCatalogue(page, { timeout: 45000 });
     await page.waitForTimeout(1000);
-    await expandAllServices(page);
+    await sidebar.openCatalogue(page, { timeout: 45000 });
 
     const candidates = ['WatchCrane', 'Subscribe', 'Watch'];
     let picked = null;
