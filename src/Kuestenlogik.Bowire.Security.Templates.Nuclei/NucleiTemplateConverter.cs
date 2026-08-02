@@ -186,6 +186,7 @@ public static class NucleiTemplateConverter
         var firstDns = template.Dns.FirstOrDefault();
         var firstNetwork = template.Network.FirstOrDefault();
         var firstSsl = template.Ssl.FirstOrDefault();
+        var firstCode = template.Code.FirstOrDefault();
 
         // http: wins when present; the non-HTTP blocks are mutually exclusive
         // in practice, and picking a fixed order keeps a hybrid template
@@ -196,6 +197,7 @@ public static class NucleiTemplateConverter
             : firstDns is not null ? "dns"
             : firstNetwork is not null ? "network"
             : firstSsl is not null ? "ssl"
+            : firstCode is not null ? "code"
             : "http";
 
         var recording = new BowireRecording
@@ -217,6 +219,7 @@ public static class NucleiTemplateConverter
                     "dns" => new List<string> { "dns" },
                     "network" => new List<string> { "network" },
                     "ssl" => new List<string> { "ssl" },
+                    "code" => new List<string> { "code" },
                     _ => new List<string> { "rest", "http" },
                 },
             },
@@ -242,6 +245,9 @@ public static class NucleiTemplateConverter
                 "ssl" when firstSsl is not null =>
                     NucleiMatcherTranslator.Translate(
                         firstSsl.Matchers, firstSsl.MatchersCondition, NucleiMatcherSurface.Ssl),
+                "code" when firstCode is not null =>
+                    NucleiMatcherTranslator.Translate(
+                        firstCode.Matchers, firstCode.MatchersCondition, NucleiMatcherSurface.Code),
                 _ => null,
             },
         };
@@ -355,6 +361,29 @@ public static class NucleiTemplateConverter
                 Service = address,
                 Method = "TLS",
                 MethodType = "Unary",
+                Status = "OK",
+            });
+        }
+        else if (firstCode is not null)
+        {
+            // #491 — Service names the runtime, Body carries the program.
+            // A javascript: block gets the sentinel engine so the scanner can
+            // report precisely what it cannot run rather than failing on a
+            // require() deep inside node.
+            var source = variableContext is null
+                ? firstCode.Source
+                : NucleiVariableResolver.Resolve(firstCode.Source, variableContext);
+
+            recording.Steps.Add(new BowireRecordingStep
+            {
+                Id = "probe-1",
+                Protocol = "code",
+                Service = firstCode.IsNucleiJavaScript
+                    ? "nuclei-javascript"
+                    : string.Join(',', firstCode.Engine),
+                Method = "RUN",
+                MethodType = "Unary",
+                Body = source,
                 Status = "OK",
             });
         }

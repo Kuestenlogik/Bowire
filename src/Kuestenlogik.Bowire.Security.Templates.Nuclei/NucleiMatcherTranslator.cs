@@ -49,6 +49,12 @@ public enum NucleiMatcherSurface
     /// word match the wrong field.
     /// </summary>
     Ssl,
+
+    /// <summary>
+    /// Matchers over a <c>code:</c> template's output (#491). One combined
+    /// stream, so the whole-response parts apply.
+    /// </summary>
+    Code,
 }
 
 public static class NucleiMatcherTranslator
@@ -260,6 +266,10 @@ public static class NucleiMatcherTranslator
             // subject that happens to contain it. Same rule as the DNS
             // sections — refusing costs a detection, widening invents one.
             NucleiMatcherSurface.Ssl =>
+                IsUnsetOrWholeResponse(part) || part.Equals("response", StringComparison.OrdinalIgnoreCase),
+
+            // The program's output is one stream by the time a matcher sees it.
+            NucleiMatcherSurface.Code =>
                 IsUnsetOrWholeResponse(part) || part.Equals("response", StringComparison.OrdinalIgnoreCase),
 
             _ => string.IsNullOrEmpty(part)

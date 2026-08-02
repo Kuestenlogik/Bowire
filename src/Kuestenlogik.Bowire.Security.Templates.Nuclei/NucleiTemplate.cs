@@ -33,6 +33,46 @@ public sealed class NucleiTemplate
     /// <summary>The <c>ssl:</c> block — TLS handshake plus certificate
     /// inspection. Empty unless the template carries one.</summary>
     public List<NucleiSslRequest> Ssl { get; init; } = [];
+
+    /// <summary>The <c>code:</c> and <c>javascript:</c> blocks. These run
+    /// arbitrary code on the scanning machine, so they only ever execute
+    /// behind an explicit opt-in.</summary>
+    public List<NucleiCodeRequest> Code { get; init; } = [];
+}
+
+/// <summary>
+/// One entry in the <c>code:</c> or <c>javascript:</c> array (#491,
+/// #35 Phase 2g).
+/// </summary>
+/// <remarks>
+/// The two block names are NOT the same thing and are deliberately not
+/// flattened together. <c>code:</c> names an interpreter and hands it source,
+/// which a subprocess can run. <c>javascript:</c> runs inside Nuclei's own
+/// embedded JS runtime and calls its <c>nuclei/*</c> module library
+/// (<c>require("nuclei/mysql")</c> and friends); handing that to node would
+/// fail on the very first require. Both are read so the scanner can account
+/// for them, and <see cref="IsNucleiJavaScript"/> is what lets it say which
+/// one it is refusing and why.
+/// </remarks>
+public sealed class NucleiCodeRequest
+{
+    /// <summary>Interpreter candidates, in the template's order of preference
+    /// (<c>py</c>, <c>python3</c>, <c>bash</c>, …). Empty for a
+    /// <c>javascript:</c> block.</summary>
+    public List<string> Engine { get; init; } = [];
+
+    /// <summary>The program to run.</summary>
+    public string Source { get; set; } = "";
+
+    /// <summary>True when this came from a <c>javascript:</c> block, which
+    /// needs Nuclei's embedded runtime rather than an interpreter.</summary>
+    public bool IsNucleiJavaScript { get; set; }
+
+    /// <summary>How matchers compose: <c>and</c> / <c>or</c> (default).</summary>
+    public string MatchersCondition { get; set; } = "or";
+
+    /// <summary>Matchers over the program's output.</summary>
+    public List<NucleiMatcher> Matchers { get; init; } = [];
 }
 
 /// <summary>
