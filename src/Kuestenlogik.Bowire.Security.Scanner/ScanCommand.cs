@@ -31,11 +31,13 @@ namespace Kuestenlogik.Bowire.Security.Scanner;
 /// <c>mcp</c>). These are HTTP-class because the request the template
 /// probes is a plain HTTP call: SignalR's negotiate, Socket.IO's
 /// Engine.IO polling handshake, and MCP's Streamable-HTTP JSON-RPC POST.
-/// WebSocket / MQTT / raw-gRPC probes still surface as
-/// <see cref="ScanFindingStatus.Skipped"/> with a "transport not yet
-/// supported by scanner" message — the templates still load, they just
-/// don't run yet. Later iterations route non-HTTP probes through the
-/// corresponding protocol plugin's invoke path.
+/// WebSocket runs through its own handshake probe, and <c>dns</c>
+/// through <see cref="DnsProbeExecutor"/> (#491). MQTT / raw-gRPC and
+/// the remaining Nuclei transports (<c>network</c>/<c>tcp</c>,
+/// <c>ssl</c>) still surface as <see cref="ScanFindingStatus.Skipped"/>
+/// with a "transport not yet supported by scanner" message — the
+/// templates load, they just don't run yet. Later iterations route them
+/// through the corresponding protocol plugin's invoke path.
 /// </para>
 /// </remarks>
 public static class ScanCommand
@@ -317,6 +319,12 @@ public static class ScanCommand
         // Out-of-band templates whose verdict has to wait for the poll below.
         var deferredOast = new List<(LoadedTemplate Tmpl, AttackProbeResponse Response)>();
 
+        // #491 — built on first use. Constructing a LookupClient reads the
+        // machine's resolver configuration, and a corpus with no dns:
+        // templates has no business touching it.
+        var dnsSource = new Lazy<IDnsAnswerSource>(
+            () => new DnsClientAnswerSource(options.TimeoutSeconds, options.DnsResolver));
+
         foreach (var tmpl in templates)
         {
             var severity = tmpl.Recording.Vulnerability?.Severity ?? "medium";
@@ -350,6 +358,30 @@ public static class ScanCommand
                     findings.Add(wsMatched
                         ? ScanFinding.Vulnerable(tmpl, wsResponse)
                         : ScanFinding.Safe(tmpl, wsResponse));
+                }
+                catch (Exception ex)
+                {
+                    findings.Add(ScanFinding.Error(tmpl, ex.Message));
+                }
+                continue;
+            }
+
+            // #491 (#35 Phase 2g) — a dns: template resolves a name instead of
+            // calling the target, so it runs whatever the target's scheme is:
+            // the {{FQDN}}/{{Host}} substitution already folded the target host
+            // into the query when the template was converted. Gating it on
+            // isHttpTarget would skip exactly the subdomain-takeover templates
+            // this transport exists for.
+            if (protocol is "DNS")
+            {
+                try
+                {
+                    var dnsResponse = await DnsProbeExecutor
+                        .ExecuteAsync(probe, dnsSource.Value, ct).ConfigureAwait(false);
+                    var dnsMatched = AttackPredicateEvaluator.Evaluate(tmpl.Recording.VulnerableWhen!, dnsResponse);
+                    findings.Add(dnsMatched
+                        ? ScanFinding.Vulnerable(tmpl, dnsResponse)
+                        : ScanFinding.Safe(tmpl, dnsResponse));
                 }
                 catch (Exception ex)
                 {
@@ -1346,6 +1378,16 @@ public sealed class ScanOptions
     public string? OutSarif { get; init; }
     public string? MinSeverity { get; init; }
     public int TimeoutSeconds { get; init; } = 30;
+
+    /// <summary>
+    /// Resolver address for Nuclei <c>dns:</c> templates (#491). Null uses the
+    /// machine's configured nameservers. Naming one matters when the scan runs
+    /// somewhere with a split-horizon or filtering resolver, because those
+    /// answer differently from the public view a takeover template assumes —
+    /// and a wrong answer here reads as "not vulnerable".
+    /// </summary>
+    public string? DnsResolver { get; init; }
+
     public bool AllowSelfSignedCerts { get; init; }
     public bool RunBuiltins { get; init; } = true;
     /// <summary>

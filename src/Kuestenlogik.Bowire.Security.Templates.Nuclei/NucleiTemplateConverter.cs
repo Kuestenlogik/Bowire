@@ -214,7 +214,8 @@ public static class NucleiTemplateConverter
             VulnerableWhen = template.Http.FirstOrDefault() is { } firstReq
                 ? NucleiMatcherTranslator.Translate(firstReq)
                 : firstDns is not null
-                    ? NucleiMatcherTranslator.Translate(firstDns.Matchers, firstDns.MatchersCondition)
+                    ? NucleiMatcherTranslator.Translate(
+                        firstDns.Matchers, firstDns.MatchersCondition, NucleiMatcherSurface.Dns)
                     : null,
         };
 
@@ -251,10 +252,10 @@ public static class NucleiTemplateConverter
             // #35 Phase 2g — the dns: query becomes a single step whose
             // Service carries the name to resolve and Method the record
             // type. Nuclei {{FQDN}}/{{Host}} placeholders resolve the
-            // same way http paths do once a target is bound. Wire-level
-            // execution of the DNS query is a scoped follow-up; the
-            // scanner currently loads dns recordings and skips the
-            // non-http step (visible, non-silent) until then.
+            // same way http paths do once a target is bound. The scanner
+            // executes this step through DnsProbeExecutor (#491); the
+            // step shape below is the contract between the two, so
+            // Service/Method must keep carrying name/record-type.
             var rawName = firstDns.Name;
             var name = variableContext is null
                 ? rawName
