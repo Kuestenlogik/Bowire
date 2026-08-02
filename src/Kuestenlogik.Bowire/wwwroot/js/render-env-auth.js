@@ -1222,8 +1222,12 @@
     function attachSidebarSplitterDrag() {
         var splitter = document.getElementById('bowire-sidebar-splitter');
         var app = document.getElementById('bowire-app');
-        if (!splitter || !app || splitter.dataset.dragHooked === '1') return;
-        splitter.dataset.dragHooked = '1';
+        // Expando property, not a dataset attribute — morphdom preserves
+        // the node and removes attributes the fresh tree lacks, so a
+        // data-* marker set after render never survives to guard the
+        // next one. This is called unconditionally from render().
+        if (!splitter || !app || splitter._bowireDragHooked) return;
+        splitter._bowireDragHooked = true;
         // Helper — the collapsed marker lives on #bowire-app-body
         // (the app's inner row container), NOT document.body. Reading
         // it live keeps the handlers in sync with the latest render.
