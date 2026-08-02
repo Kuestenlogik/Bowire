@@ -396,6 +396,22 @@
         return null;
     }
 
+    // A poll that failed says nothing about the schema. Without this
+    // guard a single unreachable moment — a restarting server, a blipped
+    // connection, a gateway 502 — empties `services` and the diff
+    // faithfully reports "−N services", as though the API had been
+    // deleted. A watch that cries wolf on every hiccup is a watch you
+    // learn to ignore, which costs more than the feature adds.
+    function schemaWatchPollUsable() {
+        for (var key in discoveryErrors) {
+            if (Object.prototype.hasOwnProperty.call(discoveryErrors, key)) return false;
+        }
+        for (var i = 0; i < serverUrls.length; i++) {
+            if (connectionStatuses[serverUrls[i]] === 'error') return false;
+        }
+        return true;
+    }
+
     function startSchemaWatch(intervalMs) {
         stopSchemaWatch({ quiet: true });
         intervalMs = intervalMs || schemaWatchSeconds() * 1000;
@@ -403,6 +419,7 @@
         schemaWatchInterval = setInterval(async function () {
             var before = schemaSnapshot(services);
             await fetchServices();
+            if (!schemaWatchPollUsable()) return;
             var delta = schemaDiff(before, schemaSnapshot(services));
             if (delta) {
                 delta.at = new Date();

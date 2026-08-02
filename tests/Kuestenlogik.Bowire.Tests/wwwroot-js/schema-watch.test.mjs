@@ -71,6 +71,9 @@ function loadWatch() {
             schemaDiff: schemaDiff,
             schemaDeltaSummary: schemaDeltaSummary,
             schemaWatchSeconds: schemaWatchSeconds,
+            schemaWatchPollUsable: schemaWatchPollUsable,
+            _setDiscoveryErrors: function (e) { discoveryErrors = e; },
+            _setUrls: function (u, st) { serverUrls = u; connectionStatuses = st || {}; },
             _setInterval: function (v) { if (v === null) delete _ls['bowire_watch_interval']; else localStorage.setItem('bowire_watch_interval', v); }
         };
     `;
@@ -272,4 +275,40 @@ test('schemaDeltaSummary: every bucket in one line', () => {
     const d = sb.schemaDiff(before, after);
     assert.equal(sb.schemaDeltaSummary(d),
         '+1 service, −1 service, +1 method, −1 method, ~1 changed');
+});
+
+// ---- failed polls must not produce a delta ----
+
+test('schemaWatchPollUsable: a clean poll is usable', () => {
+    const sb = loadWatch();
+    sb._setUrls(['http://a'], { 'http://a': 'connected' });
+    sb._setDiscoveryErrors({});
+    assert.equal(sb.schemaWatchPollUsable(), true);
+});
+
+test('schemaWatchPollUsable: a discovery error makes the poll unusable', () => {
+    // Reproduces what a live run showed: the workbench answered 502,
+    // `services` emptied, and the diff reported "−2 services" as though
+    // the API had been deleted. The observation was real; the conclusion
+    // was not.
+    const sb = loadWatch();
+    sb._setUrls(['http://a'], { 'http://a': 'connected' });
+    sb._setDiscoveryErrors({ 'http://a': 'HTTP 502 Bad Gateway' });
+    assert.equal(sb.schemaWatchPollUsable(), false);
+});
+
+test('schemaWatchPollUsable: a URL in error state makes the poll unusable', () => {
+    const sb = loadWatch();
+    sb._setUrls(['http://a', 'http://b'], { 'http://a': 'connected', 'http://b': 'error' });
+    sb._setDiscoveryErrors({});
+    assert.equal(sb.schemaWatchPollUsable(), false);
+});
+
+test('schemaWatchPollUsable: an embedded-discovery failure counts too', () => {
+    // fetchServices files the embedded probe under '(embedded)', which is
+    // not in serverUrls — so the URL loop alone would miss it.
+    const sb = loadWatch();
+    sb._setUrls([], {});
+    sb._setDiscoveryErrors({ '(embedded)': 'discovery timed out' });
+    assert.equal(sb.schemaWatchPollUsable(), false);
 });
