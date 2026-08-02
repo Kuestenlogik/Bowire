@@ -83,6 +83,9 @@
                 } catch (err) { /* drop malformed frame */ }
             });
             interceptedEventSource.onerror = function () {
+                // Render on the transition only — see proxy-view.js's twin
+                // and #552. Every reconnect attempt fires this again.
+                if (interceptedConnectionState === 'error') return;
                 interceptedConnectionState = 'error';
                 interceptedConnectionError = 'live stream disconnected';
                 render();
