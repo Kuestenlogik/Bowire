@@ -261,7 +261,29 @@ jobs:
           # use per-project PackageReference, or both.
           git add -A
           git commit -m "chore(deps): bump Kuestenlogik.Bowire to ${NEW_V}"
-          git push --force-with-lease origin "$BRANCH"
+          # actions/checkout fetches only the default branch, so this
+          # branch has no remote-tracking ref -- and a bare
+          # --force-with-lease derives its expected value from exactly
+          # that. Without one git refuses outright:
+          #   ! [rejected]  chore/bump-bowire-2.3.0 -> ... (stale info)
+          # which is every re-run for the same version (including the
+          # manual dry-run this workflow documents) and every run after
+          # a bump branch outlives its merge.
+          #
+          # Fetching the ref by hand does NOT fix it: the lease only
+          # honours tracking refs covered by the clone's configured
+          # refspec, and a single-branch clone covers exactly one. So
+          # read the remote tip and pass it as an explicit lease value.
+          # Checked both ways in a scratch repo -- this pushes where the
+          # bare form is rejected, and it still refuses when a concurrent
+          # writer moved the branch in between. A plain --force would
+          # have silenced the error by throwing that away.
+          remote_tip=$(git ls-remote origin "refs/heads/$BRANCH" | awk '{print $1}')
+          if [ -n "$remote_tip" ]; then
+            git push --force-with-lease="refs/heads/$BRANCH:$remote_tip" origin "$BRANCH"
+          else
+            git push origin "$BRANCH"
+          fi
           # Spell out which ids moved. Auto-merge means nobody reads this
           # before it lands, but it is the record that says what the
           # cascade believed it was doing on the day it ran.
