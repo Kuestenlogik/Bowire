@@ -189,12 +189,19 @@ public static class SslProbeExecutor
         foreach (var extension in certificate.Extensions)
         {
             if (extension.Oid?.Value != "2.5.29.17") continue;
-            // FormatMultiline yields one entry per line as "DNS Name=host".
-            foreach (var line in extension.Format(multiLine: true)
-                         .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+
+            // Parse the ASN.1, never X509Extension.Format(). That method
+            // returns a DISPLAY string produced by the platform's crypto stack:
+            // Windows writes "DNS Name=host", Linux does not, so scraping it
+            // rendered SAN lines on one operating system and silently none on
+            // the other. A template matching a subject-alternative name would
+            // simply have found nothing on Linux and reported clean.
+            var san = extension as X509SubjectAlternativeNameExtension
+                ?? new X509SubjectAlternativeNameExtension(extension.RawData, extension.Critical);
+
+            foreach (var name in san.EnumerateDnsNames())
             {
-                var eq = line.IndexOf('=', StringComparison.Ordinal);
-                yield return eq >= 0 ? line[(eq + 1)..].Trim() : line;
+                yield return name;
             }
         }
     }
