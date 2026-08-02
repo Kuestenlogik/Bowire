@@ -68,16 +68,38 @@
     }
 
     // ---- Favorites ----
+    // isFavorite is called once per method row on the render path, and
+    // every call used to re-read and re-parse the whole favorites list
+    // (#551). It is cached against the RAW string, which means a write
+    // from anywhere — this tab, another tab, a restore — invalidates it
+    // by itself on the next read, with no broadcast to wire up.
+    var _favoritesCache = null;
+    var _favoritesRaw = null;
+    var _favoritesIndex = null;
+
     function getFavorites() {
+        var raw;
+        try { raw = localStorage.getItem(wsKey(FAVORITES_KEY)) || '[]'; }
+        catch { return []; }
+        if (_favoritesCache && _favoritesRaw === raw) return _favoritesCache;
+        var list;
         try {
-            return JSON.parse(localStorage.getItem(wsKey(FAVORITES_KEY)) || '[]');
-        } catch {
-            return [];
-        }
+            var parsed = JSON.parse(raw);
+            list = Array.isArray(parsed) ? parsed : [];
+        } catch { list = []; }
+        _favoritesRaw = raw;
+        _favoritesCache = list;
+        // Membership set built alongside, so the per-row lookup is not a
+        // linear scan of every favourite.
+        _favoritesIndex = new Set(list.map(function (f) {
+            return (f && f.service) + '::' + (f && f.method);
+        }));
+        return list;
     }
 
     function isFavorite(service, method) {
-        return getFavorites().some(function (f) { return f.service === service && f.method === method; });
+        getFavorites();
+        return !!_favoritesIndex && _favoritesIndex.has(service + '::' + method);
     }
 
     // #194 — internal flag: when true, _toggleFavoriteRaw does the

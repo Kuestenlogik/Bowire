@@ -573,6 +573,29 @@
         return shell;
     }
 
+    // Coalesced render for callers that fire at event rate rather than at
+    // user rate — an inbound WebSocket / SSE / MQTT frame, a reconnect
+    // attempt, a poll completing. render() is a full detached-tree build
+    // plus a morphdom diff of the entire workbench, so calling it once per
+    // frame puts the repaint rate under the remote peer's control (#551).
+    //
+    // Deliberately NOT the default. render() stays synchronous because
+    // callers all over the tree render and then read the DOM back; making
+    // that asynchronous everywhere would break them in ways a test would
+    // not catch. This is the opt-in for the hot paths.
+    var _renderScheduled = false;
+    function scheduleRender() {
+        if (_renderScheduled) return;
+        _renderScheduled = true;
+        var frame = (typeof requestAnimationFrame === 'function')
+            ? requestAnimationFrame
+            : function (fn) { return setTimeout(fn, 16); };
+        frame(function () {
+            _renderScheduled = false;
+            render();
+        });
+    }
+
     function render() {
         const app = document.getElementById('bowire-app');
         if (!app) return;

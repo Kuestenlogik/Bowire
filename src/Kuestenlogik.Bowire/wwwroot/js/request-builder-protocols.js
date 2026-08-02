@@ -555,7 +555,9 @@
                 src.onmessage = function (ev) {
                     rbConnState.mqttFrames.push({ data: ev.data, ts: Date.now() });
                     if (rbConnState.mqttFrames.length > 500) rbConnState.mqttFrames.shift();
-                    render();
+                    // Coalesced: a busy topic must not set the repaint
+                    // rate of the whole workbench (#551).
+                    scheduleRender();
                 };
                 src.onerror = function () {
                     rbConnState.mqttFrames.push({ data: '[stream error]', ts: Date.now(), err: true });
@@ -725,7 +727,9 @@
             ws.onmessage = function (ev) {
                 rbConnState.wsFrames.push({ dir: 'recv', data: String(ev.data || ''), ts: Date.now() });
                 if (rbConnState.wsFrames.length > 500) rbConnState.wsFrames.shift();
-                render();
+                // Coalesced — a chatty socket must not set the repaint
+                // rate of the whole workbench (#551).
+                scheduleRender();
             };
             ws.onerror = function () {
                 rbConnState.wsFrames.push({ dir: 'error', data: '[socket error]', ts: Date.now() });
@@ -822,7 +826,8 @@
                     id: ev.lastEventId || null, ts: Date.now()
                 });
                 if (rbConnState.sseEvents.length > 500) rbConnState.sseEvents.shift();
-                render();
+                // Coalesced — one repaint per frame, not per event (#551).
+                scheduleRender();
             };
             // EventSource reconnects on its own after a drop and fires
             // onerror again on every attempt — at a cadence the REMOTE
