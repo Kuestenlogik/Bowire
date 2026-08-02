@@ -71,7 +71,89 @@ public static class NucleiTemplateReader
             }
         }
 
+        // #491 — network:/tcp: are the same block under two names; Nuclei
+        // accepts either and templates in the corpus use both.
+        foreach (var key in new[] { "network", "tcp" })
+        {
+            if (!TryGetSequence(root, key, out var netSeq)) continue;
+            foreach (var entry in netSeq!.Children)
+            {
+                if (entry is not YamlMappingNode netMapping) continue;
+                template.Network.Add(ReadNetworkRequest(netMapping));
+            }
+        }
+
+        // #491 — the ssl: transport block.
+        if (TryGetSequence(root, "ssl", out var sslSeq))
+        {
+            foreach (var entry in sslSeq!.Children)
+            {
+                if (entry is not YamlMappingNode sslMapping) continue;
+                template.Ssl.Add(ReadSslRequest(sslMapping));
+            }
+        }
+
         return template;
+    }
+
+    private static NucleiNetworkRequest ReadNetworkRequest(YamlMappingNode mapping)
+    {
+        var req = new NucleiNetworkRequest
+        {
+            MatchersCondition = GetScalar(mapping, "matchers-condition") ?? "or",
+        };
+        CollectStringList(mapping, "host", req.Host);
+
+        if (int.TryParse(
+                GetScalar(mapping, "read-size"),
+                System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var readSize)
+            && readSize > 0)
+        {
+            req.ReadSize = readSize;
+        }
+
+        if (TryGetSequence(mapping, "inputs", out var inputsSeq))
+        {
+            foreach (var entry in inputsSeq!.Children)
+            {
+                if (entry is not YamlMappingNode inputMapping) continue;
+                req.Inputs.Add(new NucleiNetworkInput
+                {
+                    Data = GetScalar(inputMapping, "data") ?? "",
+                    Type = GetScalar(inputMapping, "type") ?? "",
+                });
+            }
+        }
+
+        if (TryGetSequence(mapping, "matchers", out var netMatchers))
+        {
+            foreach (var entry in netMatchers!.Children)
+            {
+                if (entry is not YamlMappingNode matcherMapping) continue;
+                req.Matchers.Add(ReadMatcher(matcherMapping));
+            }
+        }
+        return req;
+    }
+
+    private static NucleiSslRequest ReadSslRequest(YamlMappingNode mapping)
+    {
+        var req = new NucleiSslRequest
+        {
+            Address = GetScalar(mapping, "address") ?? "",
+            MatchersCondition = GetScalar(mapping, "matchers-condition") ?? "or",
+        };
+        if (TryGetSequence(mapping, "matchers", out var matchersSeq))
+        {
+            foreach (var entry in matchersSeq!.Children)
+            {
+                if (entry is not YamlMappingNode matcherMapping) continue;
+                req.Matchers.Add(ReadMatcher(matcherMapping));
+            }
+        }
+        return req;
     }
 
     private static NucleiDnsRequest ReadDnsRequest(YamlMappingNode mapping)

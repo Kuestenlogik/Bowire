@@ -35,6 +35,20 @@ public enum NucleiMatcherSurface
     /// <c>DnsProbeExecutor</c> fills it with the answer section alone.
     /// </summary>
     Dns,
+
+    /// <summary>
+    /// Matchers over what came back on a raw socket (#491). One response, one
+    /// body — nothing to disambiguate.
+    /// </summary>
+    Network,
+
+    /// <summary>
+    /// Matchers over a TLS certificate (#491). <c>SslProbeExecutor</c> renders
+    /// the whole certificate into the body, so parts naming a single field
+    /// (<c>issuer</c>, <c>subject</c>, …) cannot be honoured without letting a
+    /// word match the wrong field.
+    /// </summary>
+    Ssl,
 }
 
 public static class NucleiMatcherTranslator
@@ -231,10 +245,40 @@ public static class NucleiMatcherTranslator
     /// </summary>
     private static bool IsBodyPart(string part, NucleiMatcherSurface surface)
     {
-        if (surface == NucleiMatcherSurface.Dns) return IsDnsAnswerPart(part);
+        return surface switch
+        {
+            NucleiMatcherSurface.Dns => IsDnsAnswerPart(part),
 
+            // A socket reply is one blob. `data` is Nuclei's name for it.
+            NucleiMatcherSurface.Network =>
+                IsUnsetOrWholeResponse(part) || part.Equals("data", StringComparison.OrdinalIgnoreCase),
+
+            // The certificate renders into one body, so only whole-response
+            // parts translate. A part naming one field (issuer / subject /
+            // serial / …) is refused: evaluating it against the whole
+            // rendering would let "Let's Encrypt" under `part: issuer` match a
+            // subject that happens to contain it. Same rule as the DNS
+            // sections — refusing costs a detection, widening invents one.
+            NucleiMatcherSurface.Ssl =>
+                IsUnsetOrWholeResponse(part) || part.Equals("response", StringComparison.OrdinalIgnoreCase),
+
+            _ => string.IsNullOrEmpty(part)
+                || part.Equals("body", StringComparison.OrdinalIgnoreCase)
+                || part.Equals("all", StringComparison.OrdinalIgnoreCase),
+        };
+    }
+
+    /// <summary>
+    /// The parts that mean "whatever came back". <c>body</c> is in here on
+    /// every surface because <see cref="NucleiMatcher.Part"/> defaults to it —
+    /// an unset part is indistinguishable from a literal one by the time the
+    /// translator sees it.
+    /// </summary>
+    private static bool IsUnsetOrWholeResponse(string part)
+    {
         return string.IsNullOrEmpty(part)
             || part.Equals("body", StringComparison.OrdinalIgnoreCase)
+            || part.Equals("raw", StringComparison.OrdinalIgnoreCase)
             || part.Equals("all", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -259,15 +303,7 @@ public static class NucleiMatcherTranslator
     /// </summary>
     private static bool IsDnsAnswerPart(string part)
     {
-        // `body` is not a DNS part — it is what NucleiMatcher.Part defaults to
-        // when the template says nothing, so at this layer it is
-        // indistinguishable from unset and has to be treated as such. A DNS
-        // template that writes `part: body` literally means nothing either
-        // way, so accepting it costs nothing.
-        return string.IsNullOrEmpty(part)
-            || part.Equals("body", StringComparison.OrdinalIgnoreCase)
-            || part.Equals("answer", StringComparison.OrdinalIgnoreCase)
-            || part.Equals("raw", StringComparison.OrdinalIgnoreCase)
-            || part.Equals("all", StringComparison.OrdinalIgnoreCase);
+        return IsUnsetOrWholeResponse(part)
+            || part.Equals("answer", StringComparison.OrdinalIgnoreCase);
     }
 }
