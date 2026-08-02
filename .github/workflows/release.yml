@@ -422,6 +422,48 @@ jobs:
           done
           echo "nuget.org resolves Kuestenlogik.Bowire $NEW_V — safe to dispatch the cascade."
 
+      # The cascade must bump exactly the ids THIS release published --
+      # not every id matching a `Kuestenlogik.Bowire*` prefix. Siblings
+      # own `Kuestenlogik.Bowire.Protocol.<X>` ids on their own version
+      # lines (Protocol.Amqp sits at 0.2.1 while main is at 2.3.0), so a
+      # prefix bump would rewrite a sibling-owned id to a version that
+      # was never pushed and its restore would NU1102. Conversely the
+      # old one-dot-segment regex silently skipped every
+      # Kuestenlogik.Bowire.Protocol.* we DO publish (#548).
+      #
+      # The .nupkg filenames we just pushed are the only source that
+      # cannot drift -- no hand-maintained list anyone can forget to
+      # extend. Filenames are `<id>.<version>.nupkg`; because the
+      # version is known we strip it as a fixed suffix instead of
+      # guessing where the id ends and the version begins (ids like
+      # Kuestenlogik.Bowire.Protocol.Rest.OpenApi2 make that guess
+      # ambiguous). Comma-separated so the consumer never has to split
+      # on whitespace.
+      - name: Collect published package ids
+        id: pkgs
+        if: ${{ github.ref_type == 'tag' && env.NUGET_API_KEY != '' }}
+        env:
+          V: ${{ steps.version.outputs.VERSION }}
+        run: |
+          suffix=".$V.nupkg"
+          ids=""
+          for f in artifacts/packages/*.nupkg; do
+            [ -e "$f" ] || continue
+            b=$(basename "$f")
+            case "$b" in
+              *"$suffix") ids="$ids${b%"$suffix"}"$'\n' ;;
+              *) echo "::warning::Unexpected package filename '$b' -- not '<id>.$V.nupkg', skipped." ;;
+            esac
+          done
+          ids=$(printf '%s' "$ids" | grep -v '^$' | sort -u || true)
+          if [ -z "$ids" ]; then
+            echo "::warning::No .nupkg matched '*$suffix' -- siblings will fall back to resolving ids against nuget.org."
+          else
+            echo "Published $(printf '%s\n' "$ids" | wc -l) package id(s):"
+            printf '%s\n' "$ids" | sed 's/^/  /'
+          fi
+          echo "ids=$(printf '%s' "$ids" | paste -sd,)" >> "$GITHUB_OUTPUT"
+
       # Fan a `bowire-released` repository_dispatch out to every sibling
       # repo that consumes Kuestenlogik.Bowire. The sibling list is
       # *discovered dynamically* by querying the Kuestenlogik org for
@@ -440,6 +482,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
           NEW_V: ${{ steps.version.outputs.VERSION }}
+          PKG_IDS: ${{ steps.pkgs.outputs.ids }}
         run: |
           siblings=$(gh api 'orgs/Kuestenlogik/repos?per_page=100' --paginate \
             --jq '.[] | select(.topics | index("bowire-cascade")) | .name')
@@ -457,6 +500,7 @@ jobs:
               --method POST \
               -f event_type=bowire-released \
               -f "client_payload[version]=$NEW_V" \
+              -f "client_payload[packages]=$PKG_IDS" \
               || echo "  (dispatch failed for $repo -- skipping, not fatal)"
           done <<< "$siblings"
 

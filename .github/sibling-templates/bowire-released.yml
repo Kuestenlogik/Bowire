@@ -1,8 +1,9 @@
 # Listens for a `bowire-released` repository_dispatch fired by
 # Kuestenlogik/Bowire's release.yml after a successful nuget.org push.
-# Bumps every Kuestenlogik.Bowire* PackageVersion in this repo to the
-# new version and opens a PR. The PR's CI gates the auto-merge; an
-# auto-tag workflow then bumps this repo's own version on merge.
+# Bumps the Kuestenlogik.Bowire* packages THAT RELEASE ACTUALLY
+# PUBLISHED to the new version and opens a PR. The PR's CI gates the
+# auto-merge; an auto-tag workflow then bumps this repo's own version
+# on merge.
 #
 # Drop verbatim into .github/workflows/bowire-released.yml on every
 # sibling repo that consumes the Kuestenlogik.Bowire NuGets.
@@ -14,18 +15,32 @@
 # Versioning is async by design: this workflow only changes the
 # upstream dependency. Sibling's own version is bumped by the
 # auto-tag workflow that fires on the merge of the PR this opens.
+#
+# Which ids get bumped (#548). The dispatch carries the exact list of
+# package ids the release pushed to nuget.org. Prefix matching cannot
+# do this job: `Kuestenlogik.Bowire.Protocol.Amqp` is owned by the
+# Bowire.Protocol.Amqp sibling on its own version line, so bumping it
+# to the main repo's version would pin a version that does not exist,
+# while the previous one-dot-segment regex silently skipped every
+# `Kuestenlogik.Bowire.Protocol.*` the main repo DOES publish. The
+# question is never "how many dots" -- it is "did this release publish
+# that id".
 
 name: Bowire upstream release
 
 on:
   repository_dispatch:
     types: [bowire-released]
-  # Manual dispatch for testing / rerun:
+  # Manual dispatch for testing / rerun. Leave `packages` blank to have
+  # the workflow resolve the id list against nuget.org itself.
   workflow_dispatch:
     inputs:
       version:
         description: 'Kuestenlogik.Bowire version to bump to'
         required: true
+      packages:
+        description: 'Comma-separated package ids (blank = resolve against nuget.org)'
+        required: false
 
 permissions:
   contents: write
@@ -37,8 +52,17 @@ concurrency:
 
 jobs:
   bump:
-    name: Bump Kuestenlogik.Bowire dependency
+    name: Bump Kuestenlogik.Bowire dependencies
     runs-on: ubuntu-latest
+
+    # Payload values are interpolated into `env:` exactly once, never
+    # inside a `run:` block. A `${{ }}` inside `run:` is pasted into the
+    # script text before bash ever sees it, so a crafted payload would
+    # run as shell; reaching it through the environment keeps it data.
+    env:
+      PAYLOAD_V: ${{ github.event.client_payload.version || github.event.inputs.version }}
+      PAYLOAD_PKGS: ${{ github.event.client_payload.packages || github.event.inputs.packages }}
+
     steps:
       - uses: actions/checkout@v6
         with:
@@ -47,18 +71,65 @@ jobs:
       - name: Resolve version
         id: ver
         run: |
-          V="${{ github.event.client_payload.version || github.event.inputs.version }}"
-          if [ -z "$V" ]; then
+          if [ -z "$PAYLOAD_V" ]; then
             echo "::error::no version provided"
             exit 1
           fi
-          echo "version=$V" >> "$GITHUB_OUTPUT"
-          echo "Target version: $V"
+          echo "version=$PAYLOAD_V" >> "$GITHUB_OUTPUT"
+          echo "Target version: $PAYLOAD_V"
 
-      - name: Bump Kuestenlogik.Bowire* references
+      # The dispatch normally carries the list. A manual run (or a
+      # dispatch from a main repo predating #548) may not, so fall back
+      # to asking nuget.org directly: take every Kuestenlogik.Bowire*
+      # id this repo references and keep only those that actually have
+      # this version published. That is the same guarantee the payload
+      # gives, bought with one HTTP call per id -- an id that was never
+      # published at this version can never be written into a project
+      # file either way.
+      - name: Resolve package ids
+        id: ids
         env:
           NEW_V: ${{ steps.ver.outputs.version }}
         run: |
+          if [ -n "$PAYLOAD_PKGS" ]; then
+            ids=$(printf '%s' "$PAYLOAD_PKGS" | tr ',' '\n' | grep -v '^$' | sort -u || true)
+            echo "Package list supplied by the release:"
+          else
+            echo "::notice::No package list in the payload -- resolving against nuget.org."
+            discovered=$(grep -rhoE 'Include="Kuestenlogik\.Bowire[^"]*"' \
+                  --include='*.csproj' --include='Directory.Packages.props' \
+                  --exclude-dir=bin --exclude-dir=obj . 2>/dev/null \
+                | sed -E 's/.*Include="([^"]+)".*/\1/' | sort -u || true)
+            ids=""
+            for id in $discovered; do
+              lower=$(printf '%s' "$id" | tr '[:upper:]' '[:lower:]')
+              if curl -fsSL -H 'Cache-Control: no-cache' \
+                   "https://api.nuget.org/v3-flatcontainer/$lower/index.json" 2>/dev/null \
+                   | tr ',' '\n' | grep -qF "\"$NEW_V\""; then
+                ids="$ids$id"$'\n'
+              else
+                echo "  skip $id -- nuget.org has no $NEW_V for it (sibling-owned or unpublished)."
+              fi
+            done
+            ids=$(printf '%s' "$ids" | grep -v '^$' | sort -u || true)
+            echo "Resolved package list:"
+          fi
+          if [ -z "$ids" ]; then
+            echo "::warning::No Kuestenlogik.Bowire* package ids to bump -- nothing to do."
+          else
+            printf '%s\n' "$ids" | sed 's/^/  /'
+          fi
+          echo "ids=$(printf '%s' "$ids" | paste -sd,)" >> "$GITHUB_OUTPUT"
+
+      - name: Bump the published Kuestenlogik.Bowire* references
+        env:
+          NEW_V: ${{ steps.ver.outputs.version }}
+          PKG_IDS: ${{ steps.ids.outputs.ids }}
+        run: |
+          if [ -z "$PKG_IDS" ]; then
+            echo "Nothing to bump."
+            exit 0
+          fi
           # Two reference shapes can carry Kuestenlogik.Bowire* versions:
           #   1. <PackageVersion> in Directory.Packages.props (CPM repos --
           #      every Bowire.Protocol.* plugin, Bowire main, &c).
@@ -66,26 +137,94 @@ jobs:
           #      files (sample repos and templates keep these per-project
           #      so a learner can copy one csproj and have it build
           #      standalone without also taking Directory.Packages.props).
-          # Walk both. Idempotent / no-op when nothing matches.
-          touched=0
-          if [ -f Directory.Packages.props ]; then
-            n=$(grep -c 'Include="Kuestenlogik\.Bowire' Directory.Packages.props || true)
-            sed -i -E 's|(<PackageVersion[^>]*Include="Kuestenlogik\.Bowire(\.[A-Za-z]+)?"[^>]*Version=")[^"]+|\1'"${NEW_V}"'|g' Directory.Packages.props
-            touched=$((touched + n))
-            echo "Directory.Packages.props: touched $n PackageVersion line(s)."
-          fi
-          # Per-csproj PackageReference Version="..." -- skip ones that
-          # already point at the target version so the diff stays clean.
-          while IFS= read -r -d '' csproj; do
-            n=$(grep -cE 'PackageReference[^/]*Include="Kuestenlogik\.Bowire[^"]*"[^>]*Version="[^"]+' "$csproj" 2>/dev/null || echo 0)
-            if [ "$n" -gt 0 ]; then
-              sed -i -E 's|(<PackageReference[^>]*Include="Kuestenlogik\.Bowire(\.[A-Za-z]+)?"[^>]*Version=")[^"]+|\1'"${NEW_V}"'|g' "$csproj"
-              touched=$((touched + n))
-              echo "$csproj: touched $n PackageReference line(s)."
+          #
+          # One sed program covering every id, applied to every candidate
+          # file. Building the program up front is what removes the old
+          # per-file `grep -c ... || echo 0` counting -- `grep -c` prints
+          # its own 0 AND exits 1 when there is no match, so the fallback
+          # fired too and every run logged `[: 0\n0: integer expression
+          # expected`. Nothing counts per file any more, so the noise is
+          # gone by construction rather than patched.
+          #
+          # `Version="[0-9][^"]*` is deliberate, not cosmetic: it only
+          # rewrites values that already look like a version number.
+          # Bowire.Templates ships
+          #   <PackageVersion Include="Kuestenlogik.Bowire" Version="MY_BOWIRE_VERSION" />
+          # as a `dotnet new` parameter (see its template.json
+          # "replaces"), and MSBuild property indirections like
+          # Version="$(BowireVersion)" are legitimate too. Both must
+          # survive the cascade. Today the placeholder is spared only by
+          # the accident of living in a NESTED Directory.Packages.props
+          # that the old root-only walk never reached -- this walk does
+          # reach it, so the guard is what keeps it intact.
+          #
+          # One rule per id: an ADDRESS narrows to lines declaring that
+          # package, the substitution then rewrites the version
+          # attribute literally. No capture groups anywhere, which is
+          # deliberate on two counts.
+          #
+          # First, `\1` immediately followed by a version number is read
+          # by sed as backreference \12, so the obvious
+          # `s|(…Version=")[0-9][^"]*|\1NEW|` silently eats the start of
+          # the line. Second, writing `\1` through printf is its own
+          # trap: bash's printf reads `\1` as the octal escape for 0x01.
+          # Having no backslashes to place makes both impossible.
+          #
+          # Because the address spans the whole element, `Include`
+          # before `Version` and `Version` before `Include` both match --
+          # MSBuild does not care about attribute order, so neither may
+          # we. A hand-edited file in the other order being skipped
+          # silently is precisely the failure this ticket is about.
+          sed_program=$(mktemp)
+          for id in $(printf '%s' "$PKG_IDS" | tr ',' '\n'); do
+            esc=$(printf '%s' "$id" | sed 's/[.]/\\./g')
+            printf '/<Package(Version|Reference)[^>]*Include="%s"/ s|Version="[0-9][^"]*"|Version="%s"|g\n' \
+              "$esc" "$NEW_V" >> "$sed_program"
+          done
+          while IFS= read -r -d '' f; do
+            sed -i -E -f "$sed_program" "$f"
+          done < <(find . \( -name '*.csproj' -o -name 'Directory.Packages.props' \) \
+                     -not -path '*/bin/*' -not -path '*/obj/*' -print0)
+          rm -f "$sed_program"
+          echo "Files changed:"
+          git diff --stat
+
+      # The bug this workflow shipped for months was not that it did the
+      # wrong thing loudly -- it was that it did half the job silently
+      # and the PR merged green. So assert the postcondition: every id
+      # the release published that this repo pins at a numeric version
+      # must now read the new version. A leftover means the file uses a
+      # reference shape the bump program does not cover -- an element
+      # or file kind not walked here -- and needs a human, not a green
+      # check.
+      - name: Verify no published id was left behind
+        env:
+          NEW_V: ${{ steps.ver.outputs.version }}
+          PKG_IDS: ${{ steps.ids.outputs.ids }}
+        run: |
+          stale=""
+          for id in $(printf '%s' "$PKG_IDS" | tr ',' '\n'); do
+            esc=$(printf '%s' "$id" | sed 's/[.]/\\./g')
+            # Same shape as the bump program's address, so the check
+            # cannot pass on a line the bump could not reach: select
+            # declarations of this id, keep those pinning a numeric
+            # version, drop those already on the target.
+            hits=$(grep -rnE "<Package(Version|Reference)[^>]*Include=\"$esc\"" \
+                     --include='*.csproj' --include='Directory.Packages.props' \
+                     --exclude-dir=bin --exclude-dir=obj . 2>/dev/null \
+                   | grep -E 'Version="[0-9]' \
+                   | grep -vF "Version=\"$NEW_V\"" || true)
+            if [ -n "$hits" ]; then
+              stale="$stale$hits"$'\n'
             fi
-          done < <(find . -name '*.csproj' -not -path './bin/*' -not -path './obj/*' -print0)
-          echo "Total Kuestenlogik.Bowire* lines bumped: $touched"
-          git diff --shortstat
+          done
+          if [ -n "$stale" ]; then
+            echo "::error::These references were published at $NEW_V but are still pinned elsewhere:"
+            printf '%s\n' "$stale" | grep -v '^$' | sed 's/^/  /'
+            echo "The bump step does not understand these lines. Fix the file shape or extend the sed program."
+            exit 1
+          fi
+          echo "All published ids resolve to $NEW_V."
 
       - name: Ensure labels exist
         env:
@@ -107,6 +246,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
           NEW_V: ${{ steps.ver.outputs.version }}
+          PKG_IDS: ${{ steps.ids.outputs.ids }}
         run: |
           if git diff --quiet; then
             echo "No changes -- already on $NEW_V or no matching lines."
@@ -122,12 +262,22 @@ jobs:
           git add -A
           git commit -m "chore(deps): bump Kuestenlogik.Bowire to ${NEW_V}"
           git push --force-with-lease origin "$BRANCH"
+          # Spell out which ids moved. Auto-merge means nobody reads this
+          # before it lands, but it is the record that says what the
+          # cascade believed it was doing on the day it ran.
+          {
+            echo "Automated bump triggered by [Bowire v${NEW_V}](https://github.com/Kuestenlogik/Bowire/releases/tag/v${NEW_V})."
+            echo
+            echo "Package ids bumped to \`${NEW_V}\`:"
+            echo
+            printf '%s' "$PKG_IDS" | tr ',' '\n' | grep -v '^$' | sed 's/^/- `/; s/$/`/'
+          } > /tmp/pr-body.md
           # Existing PR for this branch? Reuse it; otherwise create.
           PR_NUMBER=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
           if [ -z "$PR_NUMBER" ]; then
             PR_URL=$(gh pr create \
               --title "chore(deps): bump Kuestenlogik.Bowire to ${NEW_V}" \
-              --body "Automated bump triggered by [Bowire v${NEW_V}](https://github.com/Kuestenlogik/Bowire/releases/tag/v${NEW_V})." \
+              --body-file /tmp/pr-body.md \
               --label "dependencies" \
               --label "bowire-cascade" \
               --base main \

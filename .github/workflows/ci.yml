@@ -39,6 +39,15 @@ jobs:
       - name: JS unit tests
         run: node --test tests/Kuestenlogik.Bowire.Tests/wwwroot-js/*.test.mjs
 
+      # #548 — the release cascade's shell only ever runs during a
+      # release, in eleven repos we do not control the checkout of, so
+      # a mistake in it stays invisible until it has already shipped a
+      # half-bumped dependency set. These tests extract the actual step
+      # scripts out of .github/sibling-templates/ and run them against
+      # fixtures of every sibling's real reference shapes.
+      - name: Release-cascade workflow tests
+        run: node --test tests/Kuestenlogik.Bowire.Tests/ci/*.test.mjs
+
       - name: Determine version
         run: |
           COMMIT_COUNT=$(git rev-list --count HEAD)
