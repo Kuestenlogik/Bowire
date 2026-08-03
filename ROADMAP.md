@@ -294,6 +294,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins](#issue-kuestenlogik-bowire-549) | ⬜ Backlog |  |
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ⬜ Backlog |  |
 | [556](https://github.com/Kuestenlogik/Bowire/issues/556) | Bowire | [McpDiscoveryWireTests is flaky: FreePort() releases the port before HttpListener binds it](#issue-kuestenlogik-bowire-556) | ⬜ Backlog |  |
+| [557](https://github.com/Kuestenlogik/Bowire/issues/557) | Bowire | [ScanCommandTests reads the developer's vulndb cache and fails once you have used the tool](#issue-kuestenlogik-bowire-557) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1212,6 +1213,10 @@ Start the workbench with `--plugin-dir X`, install a plugin from **Settings → 
 #### <a id="issue-kuestenlogik-bowire-556"></a>⬜ Backlog · [#556](https://github.com/Kuestenlogik/Bowire/issues/556) McpDiscoveryWireTests is flaky: FreePort() releases the port before HttpListener binds it
 
 `McpDiscoveryWireTests` picks a port by binding one and letting go of it again: [[more]](https://github.com/Kuestenlogik/Bowire/issues/556)
+
+#### <a id="issue-kuestenlogik-bowire-557"></a>⬜ Backlog · [#557](https://github.com/Kuestenlogik/Bowire/issues/557) ScanCommandTests reads the developer's vulndb cache and fails once you have used the tool
+
+`ScanCommandTests.RunAsync_NoTemplatesAndNoBuiltins_ReturnsUsageError` reads the developer's home directory. It passes on a machine that has never run `bowire vulndb update` and fails on one that has. [[more]](https://github.com/Kuestenlogik/Bowire/issues/557)
 
 ---
 
