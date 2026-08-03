@@ -316,6 +316,25 @@ public static class NucleiTemplateConverter
                 ? rawHost
                 : NucleiVariableResolver.Resolve(rawHost, variableContext);
 
+            // An explicit `port:` wins. {{Hostname}} resolves to the scan
+            // TARGET's port, so without this a template pinned to 4786 would be
+            // fired at whatever port the target happens to serve — a probe
+            // against the wrong service, judged by the right template.
+            if (firstNetwork.Port > 0)
+            {
+                var colon = host.LastIndexOf(':');
+                var withoutPort = colon > 0 && int.TryParse(
+                    host.AsSpan(colon + 1),
+                    System.Globalization.NumberStyles.Integer,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out _)
+                        ? host[..colon]
+                        : host;
+                host = string.Create(
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    $"{withoutPort}:{firstNetwork.Port}");
+            }
+
             var step = new BowireRecordingStep
             {
                 Id = "probe-1",

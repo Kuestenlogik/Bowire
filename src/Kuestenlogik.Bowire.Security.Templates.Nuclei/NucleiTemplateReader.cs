@@ -156,6 +156,16 @@ public static class NucleiTemplateReader
             req.ReadSize = readSize;
         }
 
+        if (int.TryParse(
+                GetScalar(mapping, "port"),
+                System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var port)
+            && port is > 0 and <= 65535)
+        {
+            req.Port = port;
+        }
+
         if (TryGetSequence(mapping, "inputs", out var inputsSeq))
         {
             foreach (var entry in inputsSeq!.Children)
@@ -267,6 +277,7 @@ public static class NucleiTemplateReader
             Condition = GetScalar(mapping, "condition") ?? "or",
             Part = GetScalar(mapping, "part") ?? "body",
             Negative = string.Equals(GetScalar(mapping, "negative"), "true", StringComparison.OrdinalIgnoreCase),
+            Internal = string.Equals(GetScalar(mapping, "internal"), "true", StringComparison.OrdinalIgnoreCase),
         };
 
         // `status:` is a list of integers.

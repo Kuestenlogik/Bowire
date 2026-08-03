@@ -93,6 +93,14 @@ public sealed class NucleiNetworkRequest
     /// <summary>Bytes to read back. Nuclei's default is 1024.</summary>
     public int ReadSize { get; set; } = 1024;
 
+    /// <summary>
+    /// Explicit <c>port:</c>. When set it wins over any port carried by
+    /// <see cref="Host"/> — <c>{{Hostname}}</c> resolves to the scan target's
+    /// port, and a template that names 4786 means 4786, not whatever the
+    /// target happened to be. 0 means unset.
+    /// </summary>
+    public int Port { get; set; }
+
     /// <summary>How matchers compose: <c>and</c> / <c>or</c> (default).</summary>
     public string MatchersCondition { get; set; } = "or";
 
@@ -230,4 +238,14 @@ public sealed class NucleiMatcher
     /// <summary>True flips the matcher's polarity — the predicate
     /// fires when the values DON'T match. Nuclei: <c>negative: true</c>.</summary>
     public bool Negative { get; set; }
+
+    /// <summary>
+    /// Nuclei's <c>internal: true</c>. Such a matcher steers a multi-step
+    /// <c>flow:</c> — "did step 1 get far enough to try step 2" — and is NOT a
+    /// finding condition. Nuclei never reports on one. Treating it as a
+    /// verdict is how CVE-2018-0171 reported critical against a plain HTTP
+    /// file server: its only tcp matcher is internal, and it matches the empty
+    /// string on purpose.
+    /// </summary>
+    public bool Internal { get; set; }
 }

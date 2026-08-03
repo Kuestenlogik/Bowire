@@ -242,6 +242,144 @@ public sealed class NucleiTransportBlockTests
         Assert.Equal("+PONG", predicate.BodyContains);
     }
 
+    [Fact]
+    public void Fqdn_Resolves_So_Dns_Templates_Can_Actually_Run()
+    {
+        // Every dns: template in the projectdiscovery corpus addresses
+        // {{FQDN}}. Until this resolved, the DNS transport could not run one of
+        // them — it shipped "done" and was inert against real templates. A
+        // corpus run found that; no unit test in this file would have.
+        var template = NucleiTemplateReader.ReadText("""
+            id: caa-fingerprint
+            dns:
+              - name: "{{FQDN}}"
+                type: CAA
+                matchers:
+                  - type: word
+                    words: ["issue"]
+            """);
+        var context = NucleiVariableContext.FromTarget("https://example.com");
+
+        var step = Assert.Single(NucleiTemplateConverter.ToBowireRecording(template, context).Steps);
+
+        Assert.Equal("example.com", step.Service);
+        Assert.DoesNotContain("{{", step.Service, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Fqdn_Resolves_Inside_A_Prefixed_Name()
+    {
+        // Several templates prefix it, e.g. _acme-challenge.{{FQDN}}.
+        var template = NucleiTemplateReader.ReadText("""
+            id: acme-challenge-detect
+            dns:
+              - name: "_acme-challenge.{{FQDN}}"
+                type: TXT
+                matchers:
+                  - type: word
+                    words: ["token"]
+            """);
+        var context = NucleiVariableContext.FromTarget("https://example.com");
+
+        var step = Assert.Single(NucleiTemplateConverter.ToBowireRecording(template, context).Steps);
+
+        Assert.Equal("_acme-challenge.example.com", step.Service);
+    }
+
+    [Fact]
+    public void An_Internal_Matcher_Is_Not_A_Finding_Condition()
+    {
+        // Regression for a CRITICAL false positive found by running the real
+        // corpus: CVE-2018-0171's only tcp matcher is `internal: true` with
+        // `words: [""]`. Both halves independently make it fire against any
+        // reachable port, and it reported critical against a plain HTTP file
+        // server on localhost.
+        var matcher = new NucleiMatcher { Type = "word", Part = "raw", Internal = true };
+        matcher.Words.Add("anything");
+
+        Assert.Null(NucleiMatcherTranslator.Translate(
+            [matcher], "or", NucleiMatcherSurface.Network));
+    }
+
+    [Fact]
+    public void An_Empty_Word_Does_Not_Become_A_Predicate_That_Always_Fires()
+    {
+        // AttackPredicateEvaluator reads an empty BodyContains as "no
+        // constraint", so translating `words: [""]` yields a predicate true
+        // against every target.
+        var matcher = new NucleiMatcher { Type = "word", Part = "raw" };
+        matcher.Words.Add("");
+
+        Assert.Null(NucleiMatcherTranslator.Translate(
+            [matcher], "or", NucleiMatcherSurface.Network));
+    }
+
+    [Fact]
+    public void An_Empty_Word_Is_Dropped_But_Real_Ones_Survive()
+    {
+        var matcher = new NucleiMatcher { Type = "word", Part = "raw" };
+        matcher.Words.Add("");
+        matcher.Words.Add("+PONG");
+
+        var predicate = NucleiMatcherTranslator.Translate(
+            [matcher], "or", NucleiMatcherSurface.Network);
+
+        Assert.NotNull(predicate);
+        Assert.Equal("+PONG", predicate.BodyContains);
+    }
+
+    [Fact]
+    public void The_Cve_2018_0171_Template_Now_Yields_No_Predicate()
+    {
+        // The whole shape, end to end: internal matcher, empty word, explicit
+        // port. Nothing about it may produce a verdict.
+        var template = NucleiTemplateReader.ReadText("""
+            id: CVE-2018-0171
+            info:
+              name: Cisco Smart Install - Configuration Download
+              severity: critical
+            tcp:
+              - inputs:
+                  - data: "0000000100000001"
+                    type: hex
+                host:
+                  - "{{Hostname}}"
+                port: 4786
+                matchers:
+                  - type: word
+                    part: raw
+                    words:
+                      - ""
+                    internal: true
+            """);
+
+        var recording = NucleiTemplateConverter.ToBowireRecording(template);
+
+        Assert.Null(recording.VulnerableWhen);
+    }
+
+    [Fact]
+    public void An_Explicit_Port_Overrides_The_One_Carried_By_The_Host()
+    {
+        // {{Hostname}} resolves to the scan target's port; a template pinned to
+        // 4786 means 4786. Probing the wrong service and judging it with the
+        // right template is how false positives are made.
+        var template = NucleiTemplateReader.ReadText("""
+            id: smart-install
+            network:
+              - host: ["{{Hostname}}"]
+                port: 4786
+                matchers:
+                  - type: word
+                    words: ["marker"]
+            """);
+        var context = NucleiVariableContext.FromTarget("http://127.0.0.1:8099");
+
+        var step = Assert.Single(NucleiTemplateConverter.ToBowireRecording(template, context).Steps);
+
+        Assert.Equal("127.0.0.1:4786", step.Service);
+    }
+
     [Theory]
     [InlineData("issuer")]
     [InlineData("subject")]
