@@ -92,6 +92,14 @@ public static class NucleiVariableResolver
             "BaseURL" => context.BaseUrl,
             "Hostname" => context.Hostname,
             "Host" => context.Host,
+            // #491 — the name a dns: template resolves. Nuclei distinguishes
+            // FQDN (the full name) from Host, but for a bound target they are
+            // the same string, and Host is what the URL gives us. Leaving it
+            // unresolved was not a cosmetic gap: EVERY dns: template in the
+            // projectdiscovery corpus addresses {{FQDN}}, so the DNS transport
+            // shipped unable to run a single real template — a corpus run is
+            // what surfaced that, no unit test could have.
+            "FQDN" => context.Host,
             "Port" => context.Port,
             "Path" => context.Path,
             _ => ResolveRandom(name, context),

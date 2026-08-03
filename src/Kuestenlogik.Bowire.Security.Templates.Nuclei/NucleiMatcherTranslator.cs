@@ -124,6 +124,15 @@ public static class NucleiMatcherTranslator
 
     private static AttackPredicate? TranslateMatcher(NucleiMatcher matcher, NucleiMatcherSurface surface)
     {
+        // `internal: true` steers a multi-step flow — "did step 1 get far
+        // enough to try step 2" — and Nuclei never reports on it. Translating
+        // one into a verdict is how CVE-2018-0171 came back critical against a
+        // plain HTTP file server: its lone tcp matcher is internal and matches
+        // the empty string deliberately. Refusing it means an `and` group
+        // declines the whole template, which is the honest outcome for a
+        // template whose real condition lives in a step we cannot run.
+        if (matcher.Internal) return null;
+
         var predicate = matcher.Type switch
         {
             // On the DNS surface a `status` matcher reads the RCODE that
@@ -160,6 +169,19 @@ public static class NucleiMatcherTranslator
     private static AttackPredicate? TranslateWord(NucleiMatcher matcher, NucleiMatcherSurface surface)
     {
         if (matcher.Words.Count == 0) return null;
+
+        // An empty word asserts nothing, and AttackPredicateEvaluator treats an
+        // empty BodyContains as "no constraint" — so translating one produces a
+        // predicate that is true against every target. Templates really do
+        // carry `words: [""]` (see CVE-2018-0171), so this is not theoretical:
+        // it turned a plain HTTP file server into a critical finding. Drop the
+        // empty entries; if that leaves nothing, the matcher does not translate.
+        if (matcher.Words.Any(string.IsNullOrEmpty))
+        {
+            var meaningful = matcher.Words.Where(w => !string.IsNullOrEmpty(w)).ToList();
+            if (meaningful.Count == 0) return null;
+            matcher = CloneWithWords(matcher, meaningful);
+        }
 
         // #35 Phase 2f — the OAST parts assert on the out-of-band callback,
         // not on the response, so they translate onto the interaction axis
@@ -220,10 +242,40 @@ public static class NucleiMatcherTranslator
             : new AttackPredicate { AnyOf = leaves };
     }
 
+    /// <summary>
+    /// Copy a word matcher with a different value list. <see cref="NucleiMatcher.Words"/>
+    /// is init-only, and mutating the caller's template to sanitise it would
+    /// change what a later reader sees.
+    /// </summary>
+    private static NucleiMatcher CloneWithWords(NucleiMatcher source, IEnumerable<string> words)
+    {
+        var clone = new NucleiMatcher
+        {
+            Type = source.Type,
+            Condition = source.Condition,
+            Part = source.Part,
+            Negative = source.Negative,
+            Internal = source.Internal,
+        };
+        foreach (var w in words) clone.Words.Add(w);
+        return clone;
+    }
+
     private static AttackPredicate? TranslateRegex(NucleiMatcher matcher, NucleiMatcherSurface surface)
     {
         if (matcher.Regex.Count == 0) return null;
         if (!IsBodyPart(matcher.Part, surface)) return null;
+
+        // Same reasoning as the empty word: an empty pattern matches
+        // everything, so it is a constraint that constrains nothing.
+        var patterns = matcher.Regex.Where(r => !string.IsNullOrEmpty(r)).ToList();
+        if (patterns.Count == 0) return null;
+        if (patterns.Count != matcher.Regex.Count)
+        {
+            return patterns.Count == 1
+                ? new AttackPredicate { BodyMatches = patterns[0] }
+                : Compose(matcher.Condition, patterns.Select(r => new AttackPredicate { BodyMatches = r }).ToList());
+        }
 
         if (matcher.Regex.Count == 1)
         {
@@ -249,6 +301,16 @@ public static class NucleiMatcherTranslator
     /// their own translation pass; until then they're filtered out so
     /// the matcher contributes nothing.
     /// </summary>
+    /// <summary>Compose leaves under a matcher's own <c>condition</c>
+    /// (Nuclei's default is <c>or</c>).</summary>
+    private static AttackPredicate Compose(string condition, List<AttackPredicate> leaves)
+    {
+        if (leaves.Count == 1) return leaves[0];
+        return string.Equals(condition, "and", StringComparison.OrdinalIgnoreCase)
+            ? new AttackPredicate { AllOf = leaves }
+            : new AttackPredicate { AnyOf = leaves };
+    }
+
     private static bool IsBodyPart(string part, NucleiMatcherSurface surface)
     {
         return surface switch
