@@ -326,11 +326,51 @@ internal sealed class RawJsonRpcMcpServer : IDisposable
     public RawJsonRpcMcpServer(Func<string, string?> dispatch)
     {
         _dispatch = dispatch;
-        Url = $"http://localhost:{FreePort()}/";
-        _listener = new HttpListener();
-        _listener.Prefixes.Add(Url);
-        _listener.Start();
+        (_listener, Url) = StartOnAFreePort();
         _ = Task.Run(AcceptLoopAsync);
+    }
+
+    /// <summary>
+    /// Bind a listener, retrying on a port that got taken between the probe
+    /// and the bind.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="FreePort"/> asks the OS for a port and then lets it go, so
+    /// between that and <see cref="HttpListener.Start"/> the port belongs to
+    /// nobody and anything on the machine may take it — <c>dotnet test</c>
+    /// runs several assemblies at once, so the competition is real. That race
+    /// made this class's tests fail intermittently on CI three times in one
+    /// day (#556), always as <c>Assert.Single() Failure: The collection was
+    /// empty</c>, which points at the plugin rather than at the port and cost
+    /// more to diagnose than to fix.
+    /// </para>
+    /// <para>
+    /// The window cannot be closed — <see cref="HttpListener"/> has no
+    /// "bind to any free port" — so this detects the collision instead of
+    /// pretending it cannot happen, and retries. Losing the race five times
+    /// running is not a flake any more; it is a machine with no free ports,
+    /// and the exception says so.
+    /// </para>
+    /// </remarks>
+    private static (HttpListener Listener, string Url) StartOnAFreePort()
+    {
+        const int attempts = 5;
+        for (var attempt = 1; ; attempt++)
+        {
+            var url = $"http://localhost:{FreePort()}/";
+            var listener = new HttpListener();
+            listener.Prefixes.Add(url);
+            try
+            {
+                listener.Start();
+                return (listener, url);
+            }
+            catch (HttpListenerException) when (attempt < attempts)
+            {
+                listener.Close();
+            }
+        }
     }
 
     /// <summary>Base URL, with the trailing slash the plugin trims off.</summary>
