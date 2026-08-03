@@ -28,8 +28,20 @@ public sealed class CodeProbeExecutorTests
         Status = "OK",
     };
 
-    /// <summary>Claims every engine is installed, without running one.</summary>
-    private static string? AllInstalled(string engine) => "/usr/bin/" + engine;
+    /// <summary>
+    /// Claims every engine is installed while pointing at a path that cannot
+    /// exist on any platform.
+    /// <para>
+    /// Every test using this is expected to refuse before the executor reaches
+    /// Process.Start, so the path should never be used — but "should never" is
+    /// an ordering accident that one edit can undo, and on a Linux runner a
+    /// plausible path like /usr/bin/bash is a real binary. Making the path
+    /// unusable means a refusal test cannot start a process even when it stops
+    /// refusing.
+    /// </para>
+    /// </summary>
+    private static string? AllInstalled(string engine) =>
+        "/bowire-test-no-such-dir/" + engine + ".not-an-executable";
 
     private static string? NoneInstalled(string engine) => null;
 
@@ -65,20 +77,27 @@ public sealed class CodeProbeExecutorTests
     {
         // A mixed list must not be refused wholesale — nuclei templates
         // commonly name several interpreters as fallbacks.
+        //
+        // The claim under test is WHICH engines get considered, and `seen`
+        // carries that. An earlier version handed back "/usr/bin/python3" to
+        // make the run fail on a missing binary; that path does not exist on
+        // Windows but does on a Linux runner, where the child process then
+        // started and ran the source. A refusal test that executes code on CI
+        // is the wrong shape twice over, so nothing here resolves to a real
+        // executable.
         var seen = new List<string>();
         string? Resolve(string engine)
         {
             seen.Add(engine);
-            return engine == "python3" ? "/usr/bin/python3" : null;
+            return null;
         }
 
-        // Nothing is installed for the allowed candidates other than python3,
-        // and `curl` must never be considered at all.
-        await Assert.ThrowsAnyAsync<Exception>(() => CodeProbeExecutor.ExecuteAsync(
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => CodeProbeExecutor.ExecuteAsync(
             Step("curl,python3", "print(1)"),
             resolveEngine: Resolve,
             ct: TestContext.Current.CancellationToken));
 
+        Assert.Contains("installed", ex.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("python3", seen);
         Assert.DoesNotContain("curl", seen);
     }
