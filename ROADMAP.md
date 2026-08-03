@@ -126,11 +126,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**14/27 done** · 13 backlog
+**16/27 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [48](https://github.com/Kuestenlogik/Bowire/issues/48) | Bowire | [Schema watch mode](#issue-kuestenlogik-bowire-48) | ⬜ Backlog | `area:workbench` |
 | [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
 | [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ⬜ Backlog |  |
 | [179](https://github.com/Kuestenlogik/Bowire/issues/179) | Bowire | [Mock from schema — generate a running mock without a recording](#issue-kuestenlogik-bowire-179) | ⬜ Backlog |  |
@@ -142,9 +141,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | ⬜ Backlog |  |
 | [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ⬜ Backlog |  |
 | [253](https://github.com/Kuestenlogik/Bowire/issues/253) | Bowire | [Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override](#issue-kuestenlogik-bowire-253) | ⬜ Backlog |  |
-| [491](https://github.com/Kuestenlogik/Bowire/issues/491) | Bowire | [Nuclei template compat — non-HTTP transports (Phase 2g)](#issue-kuestenlogik-bowire-491) | ⬜ Backlog |  |
+| [491](https://github.com/Kuestenlogik/Bowire/issues/491) | Bowire | [Nuclei template compat — non-HTTP transports (Phase 2g)](#issue-kuestenlogik-bowire-491) | ✅ Done |  |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
+| [48](https://github.com/Kuestenlogik/Bowire/issues/48) | Bowire | [Schema watch mode](#issue-kuestenlogik-bowire-48) | ✅ Done | `area:workbench` |
 | [401](https://github.com/Kuestenlogik/Bowire/issues/401) | Bowire | [Mock-server maturity — WireMock feature parity (epic)](#issue-kuestenlogik-bowire-401) | ✅ Done |  |
 | [402](https://github.com/Kuestenlogik/Bowire/issues/402) | Bowire | [Mock request matching: query / header / cookie predicates + regex/glob paths + stub priority](#issue-kuestenlogik-bowire-402) | ✅ Done |  |
 | [403](https://github.com/Kuestenlogik/Bowire/issues/403) | Bowire | [Mock request-body matchers (equalToJson / JSONPath / XPath / JSON-schema / regex)](#issue-kuestenlogik-bowire-403) | ✅ Done |  |
@@ -706,12 +706,6 @@ Discovered during the #346 second-pass fix. Separate bug — same morphdom-stale
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-#### <a id="issue-kuestenlogik-bowire-48"></a>⬜ Backlog · [#48](https://github.com/Kuestenlogik/Bowire/issues/48) Schema watch mode
-
-> `area:workbench`
-
-Re-discover the active server URL(s) every N seconds and show a \"+ added, − removed, ~ changed\" delta in the sidebar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/48)
-
 #### <a id="issue-kuestenlogik-bowire-49"></a>⬜ Backlog · [#49](https://github.com/Kuestenlogik/Bowire/issues/49) Programmatic environment provisioning in embedded mode
 
 > `area:workbench`
@@ -758,7 +752,7 @@ A visible, in-app **shelf** (working name) — a drag-and-drop holding area for 
 
 Bowire conflates two distinct URL concepts under a single "Server URL" field: [[more]](https://github.com/Kuestenlogik/Bowire/issues/253)
 
-#### <a id="issue-kuestenlogik-bowire-491"></a>⬜ Backlog · [#491](https://github.com/Kuestenlogik/Bowire/issues/491) Nuclei template compat — non-HTTP transports (Phase 2g)
+#### <a id="issue-kuestenlogik-bowire-491"></a>✅ Done · [#491](https://github.com/Kuestenlogik/Bowire/issues/491) Nuclei template compat — non-HTTP transports (Phase 2g)
 
 Split out of #35 (Nuclei template compatibility). Phases 2a–2f shipped across the v2.3 cycle: [[more]](https://github.com/Kuestenlogik/Bowire/issues/491)
 
@@ -773,6 +767,12 @@ AsyncAPI loader + most bindings shipped (MQTT / Kafka / WebSocket / HTTP / AMQP 
 > `area:mock`
 
 > **Status:** shipped. The body previously marked this "deferred unless demand picks up" — it has since been built in full. This body reflects the IST state; the original deferral note is preserved in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/36)
+
+#### <a id="issue-kuestenlogik-bowire-48"></a>✅ Done · [#48](https://github.com/Kuestenlogik/Bowire/issues/48) Schema watch mode
+
+> `area:workbench`
+
+Re-discover the active server URL(s) every N seconds and show a \"+ added, − removed, ~ changed\" delta in the sidebar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/48)
 
 #### <a id="issue-kuestenlogik-bowire-401"></a>✅ Done · [#401](https://github.com/Kuestenlogik/Bowire/issues/401) Mock-server maturity — WireMock feature parity (epic)
 
