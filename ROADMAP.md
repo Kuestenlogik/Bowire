@@ -141,7 +141,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | ⬜ Backlog |  |
 | [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ⬜ Backlog |  |
 | [253](https://github.com/Kuestenlogik/Bowire/issues/253) | Bowire | [Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override](#issue-kuestenlogik-bowire-253) | ⬜ Backlog |  |
-| [491](https://github.com/Kuestenlogik/Bowire/issues/491) | Bowire | [Nuclei template compat — non-HTTP transports (Phase 2g)](#issue-kuestenlogik-bowire-491) | ✅ Done |  |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
 | [48](https://github.com/Kuestenlogik/Bowire/issues/48) | Bowire | [Schema watch mode](#issue-kuestenlogik-bowire-48) | ✅ Done | `area:workbench` |
@@ -157,6 +156,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [410](https://github.com/Kuestenlogik/Bowire/issues/410) | Bowire | [Mock: HTTPS/TLS on the standalone server (+ Docker image)](#issue-kuestenlogik-bowire-410) | ✅ Done |  |
 | [411](https://github.com/Kuestenlogik/Bowire/issues/411) | Bowire | [Mock fault injection: malformed-response-chunk + faults on unmatched requests](#issue-kuestenlogik-bowire-411) | ✅ Done |  |
 | [430](https://github.com/Kuestenlogik/Bowire/issues/430) | Bowire | [Mock response templating: expression/helper engine + record-through capture (follow-up)](#issue-kuestenlogik-bowire-430) | ✅ Done |  |
+| [491](https://github.com/Kuestenlogik/Bowire/issues/491) | Bowire | [Nuclei template compat — non-HTTP transports (Phase 2g)](#issue-kuestenlogik-bowire-491) | ✅ Done |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
@@ -293,7 +293,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog |  |
 | [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins](#issue-kuestenlogik-bowire-549) | ⬜ Backlog |  |
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ⬜ Backlog |  |
-| [556](https://github.com/Kuestenlogik/Bowire/issues/556) | Bowire | [McpDiscoveryWireTests is flaky: FreePort() releases the port before HttpListener binds it](#issue-kuestenlogik-bowire-556) | ⬜ Backlog |  |
 | [557](https://github.com/Kuestenlogik/Bowire/issues/557) | Bowire | [ScanCommandTests reads the developer's vulndb cache and fails once you have used the tool](#issue-kuestenlogik-bowire-557) | ⬜ Backlog |  |
 
 ## Details
@@ -752,10 +751,6 @@ A visible, in-app **shelf** (working name) — a drag-and-drop holding area for 
 
 Bowire conflates two distinct URL concepts under a single "Server URL" field: [[more]](https://github.com/Kuestenlogik/Bowire/issues/253)
 
-#### <a id="issue-kuestenlogik-bowire-491"></a>✅ Done · [#491](https://github.com/Kuestenlogik/Bowire/issues/491) Nuclei template compat — non-HTTP transports (Phase 2g)
-
-Split out of #35 (Nuclei template compatibility). Phases 2a–2f shipped across the v2.3 cycle: [[more]](https://github.com/Kuestenlogik/Bowire/issues/491)
-
 #### <a id="issue-kuestenlogik-bowire-34"></a>✅ Done · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
 
 > `area:plugin-sdk`
@@ -821,6 +816,10 @@ Part of the mock-server WireMock-parity effort. (Small — fault-injection is ot
 #### <a id="issue-kuestenlogik-bowire-430"></a>✅ Done · [#430](https://github.com/Kuestenlogik/Bowire/issues/430) Mock response templating: expression/helper engine + record-through capture (follow-up)
 
 Follow-up from #406 (mock-server WireMock parity, epic #401). The response templating shipped in #406 covers `${faker.*}` generators, `bodyFileName`, and a response-transformer hook. Two richer pieces were deliberately deferred: [[more]](https://github.com/Kuestenlogik/Bowire/issues/430)
+
+#### <a id="issue-kuestenlogik-bowire-491"></a>✅ Done · [#491](https://github.com/Kuestenlogik/Bowire/issues/491) Nuclei template compat — non-HTTP transports (Phase 2g)
+
+Split out of #35 (Nuclei template compatibility). Phases 2a–2f shipped across the v2.3 cycle: [[more]](https://github.com/Kuestenlogik/Bowire/issues/491)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
@@ -1209,10 +1208,6 @@ Start the workbench with `--plugin-dir X`, install a plugin from **Settings → 
 #### <a id="issue-kuestenlogik-bowire-551"></a>⬜ Backlog · [#551](https://github.com/Kuestenlogik/Bowire/issues/551) render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row
 
 `render()` rebuilds the entire workbench tree off-screen and morphdom-diffs it. There is no debounce, no dirty flag, no coalescing â€” a grep for `scheduleRender` / `renderPending` / any batching wrapper across `wwwroot/js/` returns nothing, and there are ~685 `render()` call sites. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/551)
-
-#### <a id="issue-kuestenlogik-bowire-556"></a>⬜ Backlog · [#556](https://github.com/Kuestenlogik/Bowire/issues/556) McpDiscoveryWireTests is flaky: FreePort() releases the port before HttpListener binds it
-
-`McpDiscoveryWireTests` picks a port by binding one and letting go of it again: [[more]](https://github.com/Kuestenlogik/Bowire/issues/556)
 
 #### <a id="issue-kuestenlogik-bowire-557"></a>⬜ Backlog · [#557](https://github.com/Kuestenlogik/Bowire/issues/557) ScanCommandTests reads the developer's vulndb cache and fails once you have used the tool
 
