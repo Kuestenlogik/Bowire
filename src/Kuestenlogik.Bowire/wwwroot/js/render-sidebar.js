@@ -1315,6 +1315,22 @@
         }
     }
 
+    // #185 — does this rail want the "unread attention" pulse? Only
+    // Discover today: unread entries in the workspace's schema-change
+    // log pulse the rail icon until the operator opens the change log
+    // (statusbar pill) — the count badge next to it keeps meaning
+    // "how many services", so the two signals stay distinct.
+    function _railModeAttention(modeId) {
+        if (modeId !== 'discover') return false;
+        // Embedded hosts hide the statusbar, and with it the pill that
+        // opens (= reads) the change log — a pulse that can never be
+        // cleared is worse than none.
+        if (typeof uiMode !== 'undefined' && uiMode === 'embedded') return false;
+        if (typeof ensureSchemaChangeLogLoaded === 'function') ensureSchemaChangeLogLoaded();
+        return typeof schemaChangeUnreadCount === 'function'
+            && schemaChangeUnreadCount() > 0;
+    }
+
     // #363 — rail-strip drop targets for true cross-rail DnD. Rails
     // aren't co-visible, so an operator can drag an item (a discovered
     // method, a recording) onto a rail ICON to hand it off to that
@@ -1612,6 +1628,10 @@
                 hasCount ? el('span', {
                     className: 'bowire-rail-btn-badge',
                     textContent: count > 99 ? '99+' : String(count)
+                }) : null,
+                _railModeAttention(m.id) ? el('span', {
+                    className: 'bowire-rail-btn-attention',
+                    title: 'Unread schema changes — open the change log in the statusbar'
                 }) : null
             );
             if (acceptsDrop) {
@@ -1721,6 +1741,10 @@
                     hasCount ? el('span', {
                         className: 'bowire-rail-overflow-popover-badge',
                         textContent: count > 99 ? '99+' : String(count)
+                    }) : null,
+                    _railModeAttention(m.id) ? el('span', {
+                        className: 'bowire-rail-btn-attention bowire-rail-overflow-popover-attention',
+                        title: 'Unread schema changes'
                     }) : null
                 ));
             });

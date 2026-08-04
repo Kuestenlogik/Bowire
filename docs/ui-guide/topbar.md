@@ -1,21 +1,26 @@
 ---
-title: Topbar
-summary: "The topbar runs across the top of the workbench: brand, command palette, and the right-side cluster of session controls."
+title: Topbar & statusbar
+summary: "The two chrome strips of the workbench: topbar (brand, command palette, session controls) on top, statusbar (connection, watch, ambient telemetry) at the bottom."
 ---
 
-# Topbar
+# Topbar & statusbar
 
-The topbar runs across the top of the workbench above the sidebar, request pane, and response pane. It hosts the brand, the command palette / global search, and the right-side cluster of session controls.
+The topbar runs across the top of the workbench above the sidebar, request pane, and response pane. It hosts the brand, the command palette / global search, and the right-side cluster of session controls. Since [#138](https://github.com/Kuestenlogik/Bowire/issues/138) the *status*-class items — connection state, schema watch, save state — live in a thin **statusbar** pinned to the bottom instead, IDE-style, so the topbar reads as navigation + identity.
 
 ## Layout
 
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│  🟢 Bowire   |   ⌕ Search methods, services, hints…   |   ●  api.…  │  │
-│                                                          ⓘ env  ⟲ watch │
-│                                                          ☼ theme  ✨ AI  │
-│                                                          ?  about  ⚙ set │
-└──────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph topbar ["Topbar"]
+        direction LR
+        brand["Brand"] ~~~ palette["⌕ Command palette (Ctrl/Cmd+K)"] ~~~ tright["Workspace chip · Env · Undo/Redo · AI · Theme · About · Settings"]
+    end
+    topbar ~~~ body["Rail · Sidebar · Request/Response panes"]
+    body ~~~ statusbar
+    subgraph statusbar ["Statusbar (28 px)"]
+        direction LR
+        sleft["Save pill · Subscriptions"] ~~~ sright["Console/Activity/Tests · Pane layout · Watch · Schema changes · Connection"]
+    end
 ```
 
 ### Left — brand
@@ -33,17 +38,32 @@ The topbar runs across the top of the workbench above the sidebar, request pane,
 
 ### Right — session controls
 
-The right cluster is the at-a-glance status row plus the per-session toggles.
+The right cluster carries the per-session toggles. (Connection state and schema watch moved to the statusbar in [#138](https://github.com/Kuestenlogik/Bowire/issues/138) — see below.)
 
 | Control | Purpose |
 |---|---|
-| **Connection pill** | Aggregate state of every configured discovery URL — green when all are connected, amber when partial / connecting, red when any failed. Hover for a per-URL breakdown with service counts + retry. ([#93](https://github.com/Kuestenlogik/Bowire/issues/93)) |
+| **Workspace chip** | Active workspace name; click for the switch / create / manage menu. |
 | **Environment selector** | Switch active environment; click to manage variables. |
-| **Schema watch** | Toggle the background re-discovery loop. The interval comes from **Settings → General → Schema Watch interval** (15 s by default); the button tooltip states the value in force. Each poll is diffed against the last, and what moved is marked in the Discover sidebar -- see [Settings](../features/settings.md#schema-watch-interval). Useful when developing against a service whose proto / OpenAPI / schema is changing under you. |
 | **Theme toggle** | Cycle auto → dark → light → auto. Keyboard shortcut: `t`. |
 | **AI drawer** | Open / close the right-side AI assistant. Badge shows live hint-engine count. Keyboard shortcut: `Ctrl/Cmd+Shift+A`. |
 | **About** | Standalone dialog with version, open-source notices, and Küstenlogik credit. |
 | **Settings** | Settings dialog (General / Shortcuts / Data / AI / Plugins). |
+
+## Statusbar
+
+The 28 px strip at the bottom of the workbench carries ambient telemetry the operator glances at rather than works in. Left to right:
+
+| Control | Purpose |
+|---|---|
+| **Save pill** | #127 auto-save state — "Saved to <workspace>" flash, sticky on failure; click opens the workspace folder where the host allows it. |
+| **Subscriptions pill** | Active streaming subscriptions with per-state dot; click for the list. |
+| **Console / Activity / Tests** | Toggle the bottom console drawer, the activity (undo) drawer, and the tests drawer. |
+| **Pane layout** | Request-only / split / response-only switcher plus the split-orientation toggle. |
+| **Schema watch** | Toggle the background re-discovery loop. The interval comes from **Settings → General → Schema Watch interval** (15 s by default, per-workspace override in the workspace's General tab); the button tooltip states the value in force. Each poll is diffed against the last and what moved is marked in the Discover sidebar. See [Settings](../features/settings.md#schema-watch-interval). |
+| **Schema changes pill** | The workspace's 7-day change log ([#185](https://github.com/Kuestenlogik/Bowire/issues/185)): "3 changes since 14:30" while unread (with a pulsing dot on the Discover rail icon), a quiet "12 changes · 7d" once read. Click for the chronological log; opening marks it read; clicking a change navigates to the affected method. |
+| **Connection pill** | Aggregate state of every configured discovery URL — details below. ([#93](https://github.com/Kuestenlogik/Bowire/issues/93)) |
+
+Embedded hosts hide the whole statusbar (`display:none`) — the host owns that chrome.
 
 ## Connection pill — at-a-glance health
 
@@ -69,9 +89,9 @@ Embedded mode hides the pill — the host owns the URL and there's no operator-f
 
 ## Behavior in different modes
 
-- **Standalone (`bowire` CLI without `--url`)** — full topbar including the command palette, brand, and all right-side controls.
+- **Standalone (`bowire` CLI without `--url`)** — full topbar and statusbar.
 - **Standalone locked (`bowire --url …`)** — same layout, but the connection pill shows the locked URL and the editing affordance in the popover is hidden.
-- **Embedded (`app.MapBowire(...)` inside the host)** — connection pill hidden (host-managed); other controls unchanged.
+- **Embedded (`app.MapBowire(...)` inside the host)** — the statusbar (and with it the connection pill, watch toggle and schema-changes pill) is hidden; topbar controls unchanged apart from the host-titled brand.
 
 ## See also
 

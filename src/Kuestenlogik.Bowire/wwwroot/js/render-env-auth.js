@@ -3318,6 +3318,14 @@
             var wb = renderWatchButton();
             if (wb) systemGroup.appendChild(wb);
         }
+        // #185 — schema-change pill sits between the watch toggle and
+        // the connection pill: it reports what the watch found, so it
+        // reads as part of the same system cluster. Hidden while the
+        // workspace's 7-day change log is empty.
+        if (typeof renderSchemaChangePill === 'function') {
+            var scp = renderSchemaChangePill();
+            if (scp) systemGroup.appendChild(scp);
+        }
         systemGroup.appendChild(renderConnectionPill());
         right.appendChild(systemGroup);
         bar.appendChild(right);

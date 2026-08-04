@@ -3992,7 +3992,12 @@
         // bowire_vars_dollar_snoozed — toast-suppression flag
         // (vars-deprecation.js); per-workspace because the deprecation
         // banner targets workspace content.
-        'bowire_vars_dollar_snoozed'
+        'bowire_vars_dollar_snoozed',
+        // #185 — per-workspace Schema Watch interval override
+        // (workspace-detail General tab). A per-browser preference,
+        // not project content: the .bww travels without it, and the
+        // delete cascade reclaims the key.
+        'bowire_watch_interval'
     ];
     // Modes that store per-method presets via the presets framework.
     // Each maps to a `bowire_presets_<mode>` key under wsKey().

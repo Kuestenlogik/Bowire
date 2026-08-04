@@ -155,6 +155,12 @@ public static class BowireServiceCollectionExtensions
         // state was browser localStorage-only; MCP couldn't reach it.
         services.TryAddSingleton<BowireRecordingSession>();
 
+        // #185 — durable per-workspace schema-change log. The schema
+        // watch diffs in the browser; the singleton store is what lets
+        // "what changed since I last looked" survive reloads and reach
+        // other clients of the same workspace.
+        services.TryAddSingleton<SchemaChangeLogStore>();
+
         // #153 — Bowire-as-transparent-interceptor (flow store +
         // mock store + reverse-proxy registry) moved out of Core into
         // Kuestenlogik.Bowire.Interceptor (v2.1, #325). The package's

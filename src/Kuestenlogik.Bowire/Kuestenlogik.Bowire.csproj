@@ -143,6 +143,7 @@
          rails can take over their sidebar/main pane at runtime
          without core needing a hardcoded switch arm. -->
     <BowireJsFragment Include="wwwroot\js\api.js" />
+    <BowireJsFragment Include="wwwroot\js\schema-changes.js" />
     <BowireJsFragment Include="wwwroot\js\protocols.js" />
     <!-- #126 — protocol-typed pre/post-request script sandbox.
          Defines the `ctx.*` runtime (env / vars / assert / log + per-
