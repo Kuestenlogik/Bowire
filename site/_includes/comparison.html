@@ -166,7 +166,7 @@
                 <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
               </button>
             </td>
-            <td class="comparison-bowire" data-detail="gRPC (native HTTP/2 + gRPC-Web), REST, SOAP, GraphQL, SignalR, MCP, JSON-RPC, SSE, WebSocket, MQTT, AMQP (0.9.1 + 1.0), NATS (core + JetStream + Services API), Socket.IO, OData, AsyncAPI (discovery source), Kafka, Apache Pulsar, Surgewave, DIS, UDP, Akka.NET, TacticalAPI — plus any custom protocol via plugin">20+</td>
+            <td class="comparison-bowire" data-detail="gRPC (native HTTP/2 + gRPC-Web), REST, SOAP, GraphQL, SignalR, MCP, JSON-RPC, SSE, WebSocket, MQTT, AMQP (0.9.1 + 1.0), NATS (core + JetStream + Services API), Socket.IO, OData, AsyncAPI (discovery source), OTLP (OpenTelemetry passive listener), Kafka, Apache Pulsar, Surgewave, DIS, UDP, Akka.NET, TacticalAPI — plus any custom protocol via plugin">20+</td>
             <td data-detail="REST, GraphQL, gRPC, WebSocket, MQTT, Socket.IO, MCP">7</td>
             <td data-detail="REST via OpenAPI / Swagger import">1</td>
             <td data-detail="REST via ASP.NET OpenAPI document">1</td>
@@ -176,7 +176,7 @@
           <!-- Sub-rows for the Multi-protocol row — one line per protocol with
                concrete ✓/✗ per tool. Hidden by default; JS toggles visibility
                when the parent row's chevron is clicked. Values reflect core
-               (non-beta) support as of 2026-04; verify against each tool's
+               (non-beta) support as of 2026-08; verify against each tool's
                docs before publishing. -->
           <tr class="comparison-row-sub" data-group="protocols">
             <td class="comparison-feature comparison-feature-sub">gRPC</td>
@@ -225,7 +225,7 @@
           </tr>
           <tr class="comparison-row-sub" data-group="protocols">
             <td class="comparison-feature comparison-feature-sub">MCP</td>
-            <td class="comparison-bowire c-yes">✓</td>
+            <td class="comparison-bowire c-yes" data-detail="Four roles on the official MCP C# SDK 2.0 (revision 2026-07-28): first-class client (tools / resources / prompts discovery + invoke over streamable HTTP), Bowire itself as MCP server (stdio + HTTP — 15 tools, 8 resources, 4 prompts), adapter exposing any discovered API as MCP tools, and MCP security probes in bowire scan">✓</td>
             <td class="c-yes">✓</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -381,9 +381,18 @@
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
           </tr>
+          <tr class="comparison-row-sub" data-group="protocols">
+            <td class="comparison-feature comparison-feature-sub">OTLP (OpenTelemetry listener)</td>
+            <td class="comparison-bowire c-yes" data-detail="Passive listener — receive traces / metrics / logs from the services under test; first-party opt-in package">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
           <tr>
             <td class="comparison-feature">Custom protocol plugins</td>
-            <td class="comparison-bowire c-yes">✓</td>
+            <td class="comparison-bowire c-yes" data-detail=".NET plugin SDK ([BowirePlugin] protocols plus UI rails / modules as packages) and language-agnostic sidecar plugins — Go / Node / Python / Rust zip via bowire plugin install">✓</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -441,9 +450,18 @@
             <td class="c-no">✗</td>
           </tr>
           <tr class="comparison-row-sub" data-group="discovery">
-            <td class="comparison-feature comparison-feature-sub">Schema registry lookup</td>
-            <td class="comparison-bowire">planned</td>
+            <td class="comparison-feature comparison-feature-sub">Service catalogue (Consul / Kubernetes)</td>
+            <td class="comparison-bowire c-yes" data-detail="Built-in catalogue with local file / HTTP / Consul / Kubernetes API-server / Agent providers — browsable in the workbench, scriptable via bowire catalogue list|providers|use|clear">✓</td>
+            <td class="c-partial" data-detail="Private API Network — paid cloud tiers">paid cloud</td>
             <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="discovery">
+            <td class="comparison-feature comparison-feature-sub">Schema drift watch</td>
+            <td class="comparison-bowire c-yes" data-detail="Watch mode re-polls schemas on an interval and diffs at the AST level — added / removed / signature change / deprecation, a 7-day per-workspace change log, statusbar pill + rail badge, click-through to the changed method">✓</td>
+            <td class="c-partial" data-detail="Spec-version diffing in API Builder — paid cloud tiers">paid cloud</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -597,6 +615,15 @@
             <td class="c-no">✗</td>
           </tr>
           <tr class="comparison-row-sub" data-group="recorder">
+            <td class="comparison-feature comparison-feature-sub">Correlated multi-protocol timeline</td>
+            <td class="comparison-bowire c-yes" data-detail="One lane per protocol on a shared time axis with per-step verdicts; correlation via header → shared id → derived second-edge bridges; same analysis as bowire recording correlate">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr class="comparison-row-sub" data-group="recorder">
             <td class="comparison-feature comparison-feature-sub">Native export format</td>
             <td class="comparison-bowire">.bwr</td>
             <td>Collection JSON</td>
@@ -612,6 +639,24 @@
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
             <td class="c-partial" data-detail="1,000 mock requests/month in the Essentials (free) tier; 10,000 in Pro; unlimited in Enterprise">Free tier (1k req/mo)</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Mock from schema (no recording)</td>
+            <td class="comparison-bowire c-yes" data-detail="bowire mock --schema (OpenAPI 3 doc), --grpc-schema (FileDescriptorSet), or --graphql-schema (SDL) → running mock, no traffic capture needed">✓</td>
+            <td class="c-partial" data-detail="Example-based mock servers; schema-derived examples">examples</td>
+            <td class="c-partial" data-detail="@scalar/mock-server generates REST mocks from OpenAPI">REST only</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Mock engine depth</td>
+            <td class="comparison-bowire c-yes" data-detail="WireMock feature parity: request matchers incl. JSONPath / XPath / JSON-schema / regex + stub priority, response templating with helpers + faker, named scenario state machine, selective upstream proxy (forward-on-miss), fault injection, verification API, HTTPS, admin CRUD">✓</td>
+            <td class="c-partial" data-detail="Example matching + basic templating; no scenarios / faults / verification API">basic</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-partial" data-detail="Static example responses">basic</td>
             <td class="c-no">✗</td>
           </tr>
           <tr>
@@ -691,11 +736,92 @@
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
           </tr>
+          <tr>
+            <td class="comparison-feature">CI test runner (JUnit / SARIF / HTML)</td>
+            <td class="comparison-bowire c-yes" data-detail="bowire test — runs recordings or flows headless with JUnit, SARIF and HTML reports, GitHub annotations, --fail-on gates">✓</td>
+            <td class="c-yes" data-detail="Postman CLI / Newman with JUnit reporters">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-partial" data-detail="Inso CLI">Inso CLI</td>
+            <td class="c-yes" data-detail="Bruno CLI with reporter output">✓</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Contract testing (consumer / provider)</td>
+            <td class="comparison-bowire c-yes" data-detail="bowire contract publish|verify — a recording becomes a Pact-style consumer contract, provider verification with structural matching; broker opt-in via --broker-url, nothing egresses by default">✓</td>
+            <td class="c-partial" data-detail="Schema validation inside collections; no Pact-style consumer/provider flow">schema checks</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Snapshot testing</td>
+            <td class="comparison-bowire c-yes" data-detail="exact | structural modes, __snapshots__ baselines committed to git, --update-snapshots re-baselining">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Data-driven test runs</td>
+            <td class="comparison-bowire c-yes" data-detail="Per-step datasets — inline rows, CSV, or generator">✓</td>
+            <td class="c-yes" data-detail="Collection Runner data files (CSV/JSON)">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-partial" data-detail="Via the Inso CLI">Inso CLI</td>
+            <td class="c-partial" data-detail="CLI datasets">CLI</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Endpoint test coverage</td>
+            <td class="comparison-bowire c-yes" data-detail="Per-method run history + coverage chips in the Discover sidebar — see which endpoints regression runs actually touch">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
 
           <tr>
             <td class="comparison-feature">Security scanning</td>
-            <td class="comparison-bowire c-yes" data-detail="bowire scan — built-in passive checks (TLS, version-disclosing headers, verbose errors) + Nuclei community templates (8000+) via --nuclei + Bowire.VulnDb baseline. Emits SARIF 2.1.0 for GitHub Code Scanning / GitLab Security Dashboard / Azure DevOps.">✓</td>
+            <td class="comparison-bowire c-yes" data-detail="bowire scan — full OWASP API Top 10 (2023) suite covering 10/10 incl. business-flow abuse, protocol probes for GraphQL / gRPC / WebSocket / SSE / MQTT / MCP, an opt-in --active attack tier (budgeted), Nuclei templates via --nuclei + the curated Bowire.VulnDb cache (bowire vulndb update). Emits SARIF 2.1.0 with an OWASP / CWE / CVSS compliance overview.">✓ OWASP API Top 10</td>
             <td class="c-partial" data-detail="Secret Scanner + governance rules + automated compliance scanning. No vulnerability templates or SARIF output.">secrets + governance</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Out-of-band (OAST) detection</td>
+            <td class="comparison-bowire c-yes" data-detail="interactsh-wire-compatible client + self-hosted bowire oast serve DNS+HTTP catcher; strictly opt-in, fails closed — blind findings are skipped, never reported clean">✓</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">API monitoring / scheduled probes</td>
+            <td class="comparison-bowire c-yes" data-detail="Saved recordings run as scheduled health probes — Monitoring rail + bowire monitor run, append-only outcome ledger, pass↔fail transition signals to Slack / PagerDuty / OTLP (opt-in packages), all local — no cloud">✓ local</td>
+            <td class="c-partial" data-detail="Monitors — cloud-run, seat/usage limited">cloud</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">Traffic interception / reverse proxy</td>
+            <td class="comparison-bowire c-yes" data-detail="In-process app.UseBowireInterceptor() middleware plus a YARP-based standalone reverse proxy; Intercept rail with Captured | Live overrides | Mock servers">✓</td>
+            <td class="c-partial" data-detail="Proxy capture + Interceptor browser extension — capture only">capture only</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+            <td class="c-no">✗</td>
+          </tr>
+          <tr>
+            <td class="comparison-feature">AI assistant (local-first, BYOK)</td>
+            <td class="comparison-bowire c-yes" data-detail="Side-panel chat with Ollama / LM Studio auto-detect plus optional OpenAI / Anthropic / OpenRouter / MCP providers; read-only tools by default, invoke gated behind a session-only toggle with an audit log; AI security layer (threat model, JWT analyzer, one-button OWASP scan)">✓</td>
+            <td class="c-partial" data-detail="Postbot / Agent Mode — cloud, account-gated">cloud</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -713,7 +839,7 @@
           </tr>
           <tr>
             <td class="comparison-feature">Git-native workspace</td>
-            <td class="c-yes" data-detail="Workspaces persist as a single .bww file (or per-entity directory layout) that round-trips through git — recordings + flows + plugin pins included">✓</td>
+            <td class="comparison-bowire c-yes" data-detail="A workspace is a committable project folder — bowire workspace init, one JSON per entity, secrets in a gitignored sibling tree, FileSystemWatcher live-reload, a stale-pid-aware .bowire.lock writer guard; .bww remains as the portable single-file export">✓</td>
             <td class="c-yes" data-detail="Native Git access advertised on the Free tier (2026)">✓</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -727,7 +853,7 @@
                 <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
               </button>
             </td>
-            <td class="comparison-bowire">via Surgewave Registry</td>
+            <td class="comparison-bowire c-partial" data-detail="Internal catalogue built in (browsable in the workbench + bowire catalogue list|providers|use|clear); public hosted docs via the Surgewave Registry">internal ✓ / public via Registry</td>
             <td class="c-yes-text">Public Workspaces</td>
             <td class="c-yes">✓</td>
             <td class="c-partial" data-detail="Hosted Swagger UI at /swagger">Swagger UI</td>
@@ -772,7 +898,7 @@
           </tr>
           <tr class="comparison-row-sub" data-group="catalog">
             <td class="comparison-feature comparison-feature-sub">Catalog / search</td>
-            <td class="comparison-bowire">via Surgewave Registry</td>
+            <td class="comparison-bowire c-yes" data-detail="Built-in catalogue — local file / HTTP / Consul / Kubernetes / Agent providers (bowire catalogue); public sharing via the Surgewave Registry">✓ built-in</td>
             <td class="c-partial" data-detail="Postman Public API Network">Public API Network</td>
             <td class="c-yes">✓</td>
             <td class="c-no">✗</td>
@@ -786,7 +912,7 @@
                 <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
               </button>
             </td>
-            <td class="comparison-bowire c-yes" data-detail="Tools + Resources + Prompts across every protocol Bowire discovers — gRPC, MQTT, NATS, AsyncAPI, REST, the whole set. Streamable-HTTP transport tracked separately (issue #43).">✓ every protocol</td>
+            <td class="comparison-bowire c-yes" data-detail="Tools + Resources + Prompts across every protocol Bowire discovers — gRPC, MQTT, NATS, AsyncAPI, REST, the whole set. Streamable-HTTP + stdio both shipped (official MCP C# SDK 2.0, revision 2026-07-28); mutating tools behind a two-step confirmation gate; URL allowlist on by default.">✓ every protocol</td>
             <td class="c-partial" data-detail="Tools + Resources + Prompts, REST collections only">REST only</td>
             <td class="c-partial" data-detail="REST docs only, via OpenAPI">REST docs only</td>
             <td class="c-no">✗</td>
@@ -804,7 +930,7 @@
           </tr>
           <tr class="comparison-row-sub" data-group="mcp">
             <td class="comparison-feature comparison-feature-sub">Resources capability</td>
-            <td class="comparison-bowire c-yes" data-detail="bowire://recordings, bowire://environments, per-service schema dumps">✓</td>
+            <td class="comparison-bowire c-yes" data-detail="8 resources: bowire://environments, bowire://recordings (+/{id}), bowire://collections (+/{id}), bowire://flows (+/{id}), bowire://plugins">✓</td>
             <td class="c-yes">✓</td>
             <td class="c-partial" data-detail="Docs content exposed as MCP resources">docs-as-resources</td>
             <td class="c-no">✗</td>
@@ -813,7 +939,7 @@
           </tr>
           <tr class="comparison-row-sub" data-group="mcp">
             <td class="comparison-feature comparison-feature-sub">Prompts capability</td>
-            <td class="comparison-bowire c-yes" data-detail="replay-recording, scan-service, and other canned workflows as MCP prompts">✓</td>
+            <td class="comparison-bowire c-yes" data-detail="4 prompts: replay-recording, compare-responses, fuzz-method, scan-service">✓</td>
             <td class="c-yes">✓</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -830,17 +956,8 @@
             <td class="c-no">✗</td>
           </tr>
           <tr class="comparison-row-sub" data-group="mcp">
-            <td class="comparison-feature comparison-feature-sub">SSE transport</td>
-            <td class="comparison-bowire">planned</td>
-            <td class="c-yes">✓</td>
-            <td class="c-no">✗</td>
-            <td class="c-no">✗</td>
-            <td class="c-no">✗</td>
-            <td class="c-no">✗</td>
-          </tr>
-          <tr class="comparison-row-sub" data-group="mcp">
-            <td class="comparison-feature comparison-feature-sub">HTTP transport</td>
-            <td class="comparison-bowire">planned</td>
+            <td class="comparison-feature comparison-feature-sub">Streamable HTTP transport</td>
+            <td class="comparison-bowire c-yes" data-detail="The current MCP spec transport. Embedded MapBowireMcp() mounts streamable-HTTP (default /bowire/mcp); standalone bowire mcp serve --bind http serves /mcp with optional --token bearer auth. The legacy SSE+POST split is deliberately unsupported.">✓</td>
             <td class="c-yes">✓</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -854,7 +971,7 @@
                 <svg class="comparison-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
               </button>
             </td>
-            <td class="comparison-bowire c-yes" data-detail="bowire.discover, bowire.invoke, bowire.subscribe, bowire.env.list, bowire.record.{list,start,stop,replay}, bowire.mock.{start,stop,list}, bowire.allowlist.show">✓</td>
+            <td class="comparison-bowire c-yes" data-detail="15 tools: bowire.discover, bowire.invoke, bowire.subscribe, bowire.assert, bowire.har.import, bowire.env.list, bowire.record.{list,start,stop,replay}, bowire.mock.{start,stop,list}, bowire.allowlist.{show,permit}">✓ 15 tools</td>
             <td class="c-yes">✓</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -872,7 +989,7 @@
           </tr>
           <tr class="comparison-row-sub" data-group="platformops">
             <td class="comparison-feature comparison-feature-sub">Environment list</td>
-            <td class="comparison-bowire c-yes" data-detail="bowire.env.list — read-only enumeration; switch-as-tool on the 0.10 roadmap">✓</td>
+            <td class="comparison-bowire c-yes" data-detail="bowire.env.list — read-only enumeration; an environment-switch tool is tracked in the v2.9 MCP-completion milestone">✓</td>
             <td class="c-yes">✓</td>
             <td class="c-no">✗</td>
             <td class="c-no">✗</td>
@@ -929,7 +1046,7 @@
     </div>
 
     <p class="comparison-footnote">
-      Comparison reflects the public feature matrix as of 2026-04. Postman, Scalar, Swashbuckle, Insomnia and Bruno are excellent tools in their own niches &mdash; Bowire is designed for the .NET ecosystem and devs who want every protocol in one place, embeddable into their own service, with zero account walls.
+      Comparison reflects the public feature matrix as of 2026-08. Postman, Scalar, Swashbuckle, Insomnia and Bruno are excellent tools in their own niches &mdash; Bowire is designed for the .NET ecosystem and devs who want every protocol in one place, embeddable into their own service, with zero account walls.
     </p>
     <p class="comparison-footnote comparison-footnote-correction">
       Spotted something wrong? Tools move fast &mdash; if we&rsquo;ve misrepresented a feature or missed one that has since shipped, please <a href="https://github.com/Kuestenlogik/Bowire/issues/new?labels=comparison-table" target="_blank" rel="noopener">open an issue</a> and we&rsquo;ll update the matrix.

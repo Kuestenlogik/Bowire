@@ -14,99 +14,62 @@
       {% include picture.html src="/assets/images/course.png" alt="" %}
     </div>
 
-    <!-- No "Recently shipped" label above the first grid: the checkmark
-         badge on each shipped card already names the state, and the
-         "Up next" divider below provides the contrast. Dropping the
-         label keeps the section heading-to-content path shorter. -->
+    <!-- Card grain is the themed pillar release, not individual
+         features: pillars stay accurate for months, feature cards
+         rotted within weeks (this section once celebrated v1.5-era
+         news half a year on). Shipped cards link to the GitHub
+         release notes; ROADMAP.md is generated from the project
+         board and drops closed milestones, so NEVER deep-link
+         shipped work into it — anchors die on the next sync. -->
     <div class="roadmap-grid">
 
-      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="{{ '/#protocols' | relative_url }}">
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire/releases/tag/v2.3.0" target="_blank" rel="noopener">
         <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
         </div>
         <div class="roadmap-card-body">
-          <h3>AsyncAPI discovery source <span class="roadmap-card-tag">v1.5.0</span></h3>
-          <p>Point Bowire at an AsyncAPI 2.x or 3.0 document and channels show up in the sidebar, routed through whichever wire plugin the doc&rsquo;s bindings declare.</p>
+          <h3>The Security pillar <span class="roadmap-card-tag">v2.3</span></h3>
+          <p><code>bowire scan</code> runs the full <strong>OWASP API Security Top 10</strong> &mdash; 10/10, with protocol-specific probes for GraphQL, gRPC, WebSocket, SSE, MQTT and MCP &mdash; plus an opt-in <strong>active attack tier</strong> and a complete <strong>out-of-band (OAST)</strong> chain with a self-hosted <code>bowire oast serve</code> catcher. <code>bowire vulndb update</code> keeps the curated template corpus fresh, and the new <strong>Monitoring</strong> rail runs saved recordings as scheduled health probes with Slack / PagerDuty / OTLP signalers.</p>
         </div>
       </a>
 
-      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="{{ '/solutions/security.html' | relative_url }}">
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire/releases/tag/v2.2.0" target="_blank" rel="noopener">
         <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
         </div>
         <div class="roadmap-card-body">
-          <h3>Nuclei template runner <span class="roadmap-card-tag">v1.5.1</span></h3>
-          <p>The 8000+ Nuclei community templates feed the existing SARIF-emitting scan engine via <code>bowire scan --nuclei</code>. (v1.5.1 ships the CLI surface the engine has been waiting for.)</p>
+          <h3>The Test pillar <span class="roadmap-card-tag">v2.2</span></h3>
+          <p>Flow expectations, snapshot testing (<code>exact | structural</code>, git-committed baselines), data-driven runs (inline / CSV / generator), Pact-style <strong>contract testing</strong> (<code>bowire contract publish|verify</code>), and the headless CI runner <code>bowire test</code> with JUnit / SARIF / HTML reports and <code>--fail-on</code> gates. Regression-coverage chips in the sidebar show which endpoints your runs actually touch.</p>
         </div>
       </a>
 
-      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/releases/tag/v1.0.0" target="_blank" rel="noopener">
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire/releases/tag/v2.1.0" target="_blank" rel="noopener">
         <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
         </div>
         <div class="roadmap-card-body">
-          <h3>AMQP plugin reaches 1.0 <span class="roadmap-card-tag">v1.0.0</span></h3>
-          <p>First sibling plugin to clear stable. One plugin, two wires (0.9.1 + 1.0) via URL scheme. Structured receive envelope, shared <code>__bowireMtls__</code> + SASL marker, <code>IBowireMockEmitter</code> for recording replay, Testcontainers RabbitMQ integration suite covering publish + replay end-to-end. AsyncAPI <code>bindings.amqp</code> / <code>bindings.amqp1</code> dispatch through it.</p>
+          <h3>Compose + the pluggable workbench <span class="roadmap-card-tag">v2.1</span></h3>
+          <p>The <strong>Compose</strong> rail builds free-form requests next to the discovered tree, and the workbench itself became plugins all the way down: <code>Bundle.Workbench</code> for the full tool, <code>Bundle.Minimal</code> for a tiny embedded probe, UI rails and heavy dependencies in installable sibling packages. <code>app.UseBowireInterceptor()</code> turns any ASP.NET host into a transparent traffic tap.</p>
         </div>
       </a>
 
-      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/releases/tag/v1.0.0" target="_blank" rel="noopener">
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire/releases/tag/v2.0.0" target="_blank" rel="noopener">
         <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
         </div>
         <div class="roadmap-card-body">
-          <h3>TacticalAPI plugin reaches 1.0 <span class="roadmap-card-tag">v1.0.0</span></h3>
-          <p>Second sibling plugin out of RC. Rheinmetall situational-awareness gRPC, bundled-schema discovery, unary CRUD + server-streaming pump, shared <code>__bowireMtls__</code> marker, <code>TacticalApiMockEmitter</code> for recording replay (unary + server-streaming) covered by in-process gRPC E2E suite. Sample server with MIL-2525C symbols + background mover.</p>
+          <h3>Workbench 2.0 + git-backed workspaces <span class="roadmap-card-tag">v2.0</span></h3>
+          <p>The IDE-shaped workbench &mdash; rail strip, command palette, statusbar &mdash; on top of <strong>committable workspaces</strong>: <code>bowire workspace init</code> materialises a project as a folder of per-entity JSON files that your team reviews, diffs and merges like any other code, secrets kept in a gitignored sibling tree.</p>
         </div>
       </a>
 
-      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md#bowiremcp--remaining-tools" target="_blank" rel="noopener">
+      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="{{ '/docs/protocols/mcp.html' | relative_url }}">
         <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
         </div>
         <div class="roadmap-card-body">
-          <h3>Full MCP spec — resources + prompts <span class="roadmap-card-tag">v1.6.x</span></h3>
-          <p>The MCP adapter now exposes Bowire&rsquo;s primitives across all three MCP halves &mdash; <em>tools</em> (the actions: <code>bowire.invoke</code>, <code>bowire.mock.start</code>, &hellip;), <em>resources</em> (<code>bowire://recordings</code>, <code>bowire://environments</code>, per-service schema dumps), and <em>prompts</em> (canned AI workflows like <code>replay-recording</code>, <code>scan-service</code>).</p>
-        </div>
-      </a>
-
-      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md#auth-provider-extension-spi-phase-a--core-seam" target="_blank" rel="noopener">
-        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
-        </div>
-        <div class="roadmap-card-body">
-          <h3>Auth-provider extension SPI <span class="roadmap-card-tag">v1.6.x</span></h3>
-          <p>Third extension type next to <code>IBowireProtocol</code> and <code>IBowireUiExtension</code> &mdash; <code>IBowireAuthProvider</code>, registered via assembly scan; <code>--auth-provider &lt;id&gt;</code> gates every workbench endpoint. First concrete impl: <code>Kuestenlogik.Bowire.Auth.Oidc</code> on Microsoft.Identity.Web, separate NuGet so the OIDC weight only lands when needed.</p>
-        </div>
-      </a>
-
-      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="{{ '/#protocols' | relative_url }}">
-        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
-        </div>
-        <div class="roadmap-card-body">
-          <h3>SOAP, NATS, JSON-RPC, Pulsar plugins</h3>
-          <p>Four new in-tree wires shipped together. <strong>SOAP</strong> — WSDL 1.1 discovery + SOAP 1.1/1.2 envelopes, no WCF dependency. <strong>NATS</strong> — pub/sub, JetStream streams, Services API + queue groups on the official NATS.Net 2.x client. <strong>JSON-RPC</strong> — OpenRPC <code>rpc.discover</code> with named/positional params. <strong>Pulsar</strong> — topic discovery + produce/subscribe on DotPulsar 3.5.x.</p>
-        </div>
-      </a>
-
-      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/sidecar-plugins.md" target="_blank" rel="noopener">
-        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
-        </div>
-        <div class="roadmap-card-body">
-          <h3>Polyglot plugins via sidecar bridge</h3>
-          <p>Plugins no longer have to be .NET assemblies. Run them as sidecar processes speaking JSON-RPC 2.0 over <strong>stdio (NDJSON)</strong> or <strong>HTTP + SSE</strong> &mdash; same dual-transport story as MCP. Install from a local zip, an <code>http(s)://</code> URL, or straight from an OCI registry (<code>oci://ghcr.io/&hellip;</code>). Python SDK out now (<code>pip install bowire-plugin</code>); Node / Go / Rust SDKs queued.</p>
-        </div>
-      </a>
-
-      <a class="roadmap-card roadmap-card-link roadmap-card-shipped" href="{{ '/docs/features/mock-server.html' | relative_url }}#mock-as-stand-in-recording-carries-the-original-contract">
-        <div class="roadmap-number roadmap-number-shipped" aria-label="Shipped">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
-        </div>
-        <div class="roadmap-card-body">
-          <h3>Mock as stand-in for the real service</h3>
-          <p>Recordings now carry the <strong>original</strong> source schema (OpenAPI for REST, AsyncAPI for messaging, proto descriptors for gRPC). The mock serves the full contract back at <code>/openapi.json</code>, <code>/asyncapi.yaml</code>, or gRPC reflection &mdash; so peer Bowire (or any spec-aware tool) discovers the whole declared surface, not just the recorded slice. <code>bowire export openapi|asyncapi</code> turns it the other way: a live target back to a portable schema, with <code>x-bowire-coverage</code> showing which operations the recording replays deterministically vs. schema-generated.</p>
+          <h3>MCP, all four roles <span class="roadmap-card-tag">SDK 2.0</span></h3>
+          <p>On the official MCP C# SDK 2.0 (revision 2026-07-28): Bowire is an MCP <em>client</em> (discover + invoke tools, resources and prompts over streamable HTTP), an MCP <em>server</em> (<code>bowire mcp serve</code>, stdio + HTTP &mdash; 15 tools, 8 resources, 4 prompts, mutating actions behind a confirmation gate), an <em>adapter</em> that exposes any discovered API as MCP tools for your agents, and <code>bowire scan</code> ships OWASP-mapped <em>MCP security probes</em>.</p>
         </div>
       </a>
 
@@ -114,7 +77,7 @@
 
     <div class="roadmap-divider" aria-hidden="true">
       <span class="roadmap-divider-line"></span>
-      <span class="roadmap-divider-label">Up next</span>
+      <span class="roadmap-divider-label">Now &amp; next</span>
       <span class="roadmap-divider-line"></span>
     </div>
 
@@ -123,32 +86,32 @@
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">1</div>
         <div class="roadmap-card-body">
-          <h3>Connect (Buf) — server-streaming + bidi</h3>
-          <p>Phase 1 (unary) shipped &mdash; <code>connect@</code> URL hint routes the gRPC plugin's invoke path through a hand-rolled Connect POST. Phase 2 adds server-streaming via the <code>application/connect+proto</code> length-prefixed envelope; phase 3 the bidi handshake.</p>
+          <h3>Now: the Dev pillar <span class="roadmap-card-tag">v2.4</span></h3>
+          <p>Nearly through (17 of 20 done). Already on <code>main</code>: <strong>schema-watch diff view</strong> &mdash; a 7-day per-workspace change log of what moved in your API while you were away; mock-from-schema (<code>bowire mock --schema | --grpc-schema | --graphql-schema</code>); the <strong>correlated multi-protocol timeline</strong> for recordings; a browsable service catalogue; and <code>bowire call</code> speaking every protocol. Remaining: side-by-side service version diff.</p>
         </div>
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">2</div>
         <div class="roadmap-card-body">
-          <h3>Surgewave tap-stream browser</h3>
-          <p>Sibling repo and plugin scaffolding ready. Blocked on the <code>Kuestenlogik.Surgewave.Client</code> SDK going public.</p>
+          <h3>Continuous integration <span class="roadmap-card-tag">v2.5</span></h3>
+          <p>The PR bot that comments schema diffs on your pull requests (fed by the same AST diff the schema watch uses), a checked-in project file for reproducible CI runs, and an org-wide dashboard.</p>
         </div>
       </a>
 
       <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">3</div>
         <div class="roadmap-card-body">
-          <h3>Sidecar SDKs for Node / Go / Rust</h3>
-          <p>The Python SDK (<code>pip install bowire-plugin</code>) is out; the same surface in <code>@bowire/plugin</code> (Node), <code>bowire/go/plugin</code> (Go), and the <code>bowire-plugin</code> crate (Rust) is queued so any of those ecosystems can ship a sidecar protocol without writing the JSON-RPC wire by hand.</p>
+          <h3>Multi-tenancy <span class="roadmap-card-tag">v2.6</span></h3>
+          <p>Per-identity state, SCIM provisioning and per-user plugins &mdash; the hosted-team shape of the workbench.</p>
         </div>
       </a>
 
-      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/docs/architecture/frame-semantics-framework.md" target="_blank" rel="noopener">
+      <a class="roadmap-card roadmap-card-link" href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">
         <div class="roadmap-number" aria-hidden="true">4</div>
         <div class="roadmap-card-body">
-          <h3>Editor side of the visual viewers</h3>
-          <p>Viewers ship for coordinates on a live map (MapLibre), DIS PDUs, Surgewave tap streams, and image / audio payloads. The next step is the request-side <em>editor</em> that pairs with each viewer &mdash; pin a marker, draw a polygon, drop an audio clip &mdash; through the same annotation seam.</p>
+          <h3>Geospatial map <span class="roadmap-card-tag">v2.7</span></h3>
+          <p>Building on the live map viewer: trajectory LineStrings, a time-scrubber with playback, and entity grouping for dense situation pictures.</p>
         </div>
       </a>
 
