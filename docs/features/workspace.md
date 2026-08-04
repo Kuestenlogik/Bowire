@@ -116,12 +116,16 @@ my-workspace/
     Pets.GetById.assert.js
   flows/
     smoke.json
+  schema-changes/
+    log.json                       7-day schema-watch change log (#185) — rolling telemetry, gitignore-worthy
   secrets/                         workspace-wide secret values
     GH_TOKEN                       one file per named secret (gitignored body)
     DB_PASSWORD
 ```
 
 The directory layout decouples the workspace state into reviewable units — renaming an environment touches one file, editing a script's JavaScript is a normal `.js` diff, adding a request creates a new file rather than mutating a bundle.
+
+`schema-changes/log.json` is the odd one out: it is a rolling 7-day log ([#185](https://github.com/Kuestenlogik/Bowire/issues/185)), rewritten on every schema-watch delta — committing it means constant churn. Leave it in the checkout if you want teammates on the same clone to share the "what changed" pill; add `schema-changes/` to the workspace `.gitignore` if you don't want the noise in review.
 
 ### Secret separation (#151)
 

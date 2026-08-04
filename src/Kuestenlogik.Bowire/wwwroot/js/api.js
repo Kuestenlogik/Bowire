@@ -246,8 +246,18 @@
     // before #48, so the control was documented as working and did
     // nothing; the button hardcoded 15s. Clamped to the same bounds the
     // input advertises, because localStorage is user-editable.
+    //
+    // #185 — a workspace can override the global interval (set in the
+    // workspace-detail General tab). The override rides the wsKey()
+    // namespace, so it follows the active workspace automatically.
     function schemaWatchSeconds() {
-        var raw = parseInt(localStorage.getItem('bowire_watch_interval'), 10);
+        var raw = NaN;
+        if (typeof wsKey === 'function') {
+            raw = parseInt(localStorage.getItem(wsKey('bowire_watch_interval')), 10);
+        }
+        if (!isFinite(raw)) {
+            raw = parseInt(localStorage.getItem('bowire_watch_interval'), 10);
+        }
         if (!isFinite(raw)) return SCHEMA_WATCH_DEFAULT_SECONDS;
         return Math.min(SCHEMA_WATCH_MAX_SECONDS, Math.max(SCHEMA_WATCH_MIN_SECONDS, raw));
     }
@@ -260,28 +270,22 @@
         return (svc.name || '') + ' ' + (m.fullName || m.name || '');
     }
 
-    // Everything about a method that changes what a caller has to send
-    // or can expect back. Two methods with the same key but different
-    // signatures are "~ changed".
-    function schemaMethodSignature(m) {
-        return [
-            m.httpMethod || '',
-            m.httpPath || '',
-            m.methodType || '',
-            m.clientStreaming ? 'cs' : '',
-            m.serverStreaming ? 'ss' : '',
-            m.deprecated ? 'dep' : '',
-            schemaMessageShape(m.inputType, 0),
-            schemaMessageShape(m.outputType, 0)
-        ].join('|');
-    }
-
     // Field shape, one line per field. Depth-bounded: a schema may
     // reference itself (a Node with children of its own type), and an
     // unbounded walk would never return.
+    //
+    // Fields are sorted by name before serialising: a swagger-gen /
+    // protoc rebuild that merely reorders properties emits the same
+    // set in a different order, and reporting that as "~ changed" is
+    // exactly the false alarm #185's AST-level criterion forbids.
+    // (What identifies a field is its name — for protobuf its number —
+    // never its position.)
     function schemaMessageShape(msg, depth) {
         if (!msg || depth > 3) return '';
-        var fields = msg.fields || [];
+        var fields = (msg.fields || []).slice().sort(function (a, b) {
+            var an = a.name || '', bn = b.name || '';
+            return an < bn ? -1 : (an > bn ? 1 : 0);
+        });
         var parts = new Array(fields.length);
         for (var i = 0; i < fields.length; i++) {
             var f = fields[i];
@@ -294,6 +298,40 @@
         return (msg.name || '') + '(' + parts.join(',') + ')';
     }
 
+    // Everything about a method that changes what a caller has to send
+    // or can expect back, split into named facets (#185) so a changed
+    // method can be CLASSIFIED — signature vs deprecation vs
+    // annotation — and the change log can say which facet moved
+    // instead of a bare "~ changed". Two methods with the same key but
+    // different callable facets are "~ changed".
+    function schemaMethodRecord(m) {
+        return {
+            route: ((m.httpMethod || '') + ' ' + (m.httpPath || '')).trim(),
+            kind: (m.methodType || '')
+                + (m.clientStreaming ? '|cs' : '')
+                + (m.serverStreaming ? '|ss' : ''),
+            input: schemaMessageShape(m.inputType, 0),
+            output: schemaMessageShape(m.outputType, 0),
+            deprecated: !!m.deprecated,
+            // Prose. Deliberately NOT part of the callable surface —
+            // an edit here reaches the change log but never the toast
+            // or the sidebar markers (#48's discipline stands).
+            note: (m.summary || '') + '\n' + (m.description || '')
+        };
+    }
+
+    // Which facets of the callable surface moved, as a short human
+    // line for the change log ('route GET /a → PUT /a, request shape
+    // changed'). Empty string when the callable surface is identical.
+    function schemaChangeDetail(b, a) {
+        var bits = [];
+        if (b.route !== a.route) bits.push('route ' + (b.route || '—') + ' → ' + (a.route || '—'));
+        if (b.kind !== a.kind) bits.push('invocation type changed');
+        if (b.input !== a.input) bits.push('request shape changed');
+        if (b.output !== a.output) bits.push('response shape changed');
+        return bits.join(', ');
+    }
+
     function schemaSnapshot(list) {
         var snap = Object.create(null);
         for (var i = 0; i < (list || []).length; i++) {
@@ -301,7 +339,7 @@
             var methods = Object.create(null);
             var ms = svc.methods || [];
             for (var j = 0; j < ms.length; j++) {
-                methods[schemaMethodKey(svc, ms[j])] = schemaMethodSignature(ms[j]);
+                methods[schemaMethodKey(svc, ms[j])] = schemaMethodRecord(ms[j]);
             }
             snap[svc.name] = { source: svc.source || '', methods: methods };
         }
@@ -310,10 +348,19 @@
 
     // Returns null when nothing moved, so callers can treat "no delta"
     // and "no change" as the same thing.
+    //
+    // changedMethods entries carry a type — 'signature' (callable
+    // surface) or 'deprecation' (flag flipped, surface intact) — plus
+    // a facet-level detail line. Prose-only edits land in the separate
+    // annotatedMethods bucket: they set callableMoved = false when
+    // they are the only movement, and the watch tick uses that flag to
+    // keep them out of the toast / banner / sidebar markers while the
+    // change log (#185) still records them.
     function schemaDiff(before, after) {
         var d = {
             addedServices: [], removedServices: [],
             addedMethods: [], removedMethods: [], changedMethods: [],
+            annotatedMethods: [],
             at: null
         };
         var name;
@@ -326,8 +373,21 @@
             }
             var b = before[name].methods, a = after[name].methods, key;
             for (key in a) {
-                if (!(key in b)) d.addedMethods.push({ service: name, key: key });
-                else if (a[key] !== b[key]) d.changedMethods.push({ service: name, key: key });
+                if (!(key in b)) {
+                    d.addedMethods.push({ service: name, key: key });
+                } else {
+                    var detail = schemaChangeDetail(b[key], a[key]);
+                    if (detail) {
+                        d.changedMethods.push({ service: name, key: key, type: 'signature', detail: detail });
+                    } else if (a[key].deprecated !== b[key].deprecated) {
+                        d.changedMethods.push({
+                            service: name, key: key, type: 'deprecation',
+                            detail: a[key].deprecated ? 'marked deprecated' : 'deprecation removed'
+                        });
+                    } else if (a[key].note !== b[key].note) {
+                        d.annotatedMethods.push({ service: name, key: key, detail: 'description updated' });
+                    }
+                }
             }
             for (key in b) {
                 if (!(key in a)) d.removedMethods.push({ service: name, key: key });
@@ -338,7 +398,8 @@
         }
         var moved = d.addedServices.length + d.removedServices.length
             + d.addedMethods.length + d.removedMethods.length + d.changedMethods.length;
-        return moved === 0 ? null : d;
+        d.callableMoved = moved > 0;
+        return (moved + d.annotatedMethods.length) === 0 ? null : d;
     }
 
     function schemaDeltaSummary(d) {
@@ -348,6 +409,11 @@
         if (d.addedMethods.length) parts.push('+' + d.addedMethods.length + ' method' + (d.addedMethods.length !== 1 ? 's' : ''));
         if (d.removedMethods.length) parts.push('−' + d.removedMethods.length + ' method' + (d.removedMethods.length !== 1 ? 's' : ''));
         if (d.changedMethods.length) parts.push('~' + d.changedMethods.length + ' changed');
+        // Annotation edits are logged, not alerted — mentioned here only
+        // when they ride along with a callable-surface change.
+        if (d.annotatedMethods && d.annotatedMethods.length) {
+            parts.push('±' + d.annotatedMethods.length + ' note' + (d.annotatedMethods.length !== 1 ? 's' : ''));
+        }
         return parts.join(', ');
     }
 
@@ -463,13 +529,26 @@
                 var delta = schemaDiff(before, schemaSnapshot(services));
                 if (delta) {
                     delta.at = new Date();
-                    schemaWatchDelta = schemaIndexDelta(delta);
-                    var summary = schemaDeltaSummary(delta);
-                    toast('Schema changed: ' + summary, 'info');
-                    addConsoleEntry({
-                        type: 'response', method: 'Schema Watch', status: 'Changed',
-                        body: summary + '\n' + schemaDeltaDetail(delta)
-                    });
+                    // Toast / banner / sidebar markers only when the
+                    // CALLABLE surface moved. An annotation-only delta
+                    // still reaches the change log below — that's the
+                    // whole point of the ± bucket — but alerting on
+                    // prose would train the operator to ignore the
+                    // alert (#48's discipline).
+                    if (delta.callableMoved) {
+                        schemaWatchDelta = schemaIndexDelta(delta);
+                        var summary = schemaDeltaSummary(delta);
+                        toast('Schema changed: ' + summary, 'info');
+                        addConsoleEntry({
+                            type: 'response', method: 'Schema Watch', status: 'Changed',
+                            body: summary + '\n' + schemaDeltaDetail(delta)
+                        });
+                    }
+                    // #185 — durable per-workspace change log feeding
+                    // the statusbar pill + Discover rail badge.
+                    if (typeof schemaChangeLogRecord === 'function') {
+                        schemaChangeLogRecord(delta);
+                    }
                     render();
                 }
             } finally {
@@ -491,7 +570,12 @@
         d.removedServices.forEach(function (s) { lines.push('− service ' + s); });
         d.addedMethods.forEach(function (m) { lines.push('+ ' + m.key.replace(' ', ' / ')); });
         d.removedMethods.forEach(function (m) { lines.push('− ' + m.key.replace(' ', ' / ')); });
-        d.changedMethods.forEach(function (m) { lines.push('~ ' + m.key.replace(' ', ' / ')); });
+        d.changedMethods.forEach(function (m) {
+            lines.push('~ ' + m.key.replace(' ', ' / ') + (m.detail ? ' (' + m.detail + ')' : ''));
+        });
+        (d.annotatedMethods || []).forEach(function (m) {
+            lines.push('± ' + m.key.replace(' ', ' / ') + ' (description updated)');
+        });
         return lines.join('\n');
     }
 

@@ -425,6 +425,45 @@ depend on scheduling; the contract version is now an option on the loader.
 Nothing here changes a public API. `IBowireProtocol` is untouched, plugins
 keep compiling, and `PluginManager` was internal to the CLI.
 
+### Schema watch tells you what changed since you last looked (#185)
+
+Schema Watch (#48) could already re-discover on a timer and mark what
+moved in the sidebar — but the delta was ephemeral: dismissed, reloaded,
+gone. The "I came back from lunch, what's new in this API?" workflow
+didn't exist.
+
+Every detected change now lands in a per-workspace **change log**, kept
+for **7 days** on the server, so it survives reloads and reaches every
+client of the workspace. Three surfaces feed off it: a statusbar pill
+next to the watch toggle ("3 changes since 14:30", decaying to a quiet
+"12 changes · 7d" once read), a gently pulsing dot on the Discover rail
+icon while anything is unread, and the pill's dropdown — the
+chronological log itself, where clicking a change navigates straight to
+the affected method in Discover. Opening the log marks it read; the
+read watermark is server-side, so it holds across browsers.
+
+The diff itself got sharper on the way. A changed method is now
+classified instead of being a bare `~`: a **signature** change names the
+facet that moved ("route GET /pets → POST /pets", "request shape
+changed"), a **deprecation** flip is its own type, and prose-only edits
+— which #48 deliberately refused to alert on, because descriptions move
+constantly under development — are recorded as the quiet `±`
+**annotation** type: in the log, never in a toast or a sidebar marker.
+
+The watch interval finally stops being global-only: a workspace can
+override it in its General tab, read the next time the watch starts.
+New endpoints: `GET`/`POST /api/schema-changes` +
+`POST /api/schema-changes/read`, workspace-scoped like the preset
+endpoints, backed by `workspaces/<id>/schema-changes/log.json`. The
+server is the clock authority (entries are re-stamped on append, so a
+skewed browser clock can't produce changes that are born read or can
+never be read), duplicate observations from two watching clients
+collapse into one entry, the log caps at 500 entries, and a
+browser-only (#212) workspace keeps its log session-local — nothing
+touches the server's disk. In a git-backed workspace the file lands
+inside the checkout; it's a rolling log, so gitignore it unless you
+want teammates on the same clone to share the pill.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor

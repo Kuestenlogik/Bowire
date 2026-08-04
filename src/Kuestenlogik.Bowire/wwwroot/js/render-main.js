@@ -2518,6 +2518,58 @@
         );
         main.appendChild(descRow);
 
+        // #185 — per-workspace Schema Watch interval. The global value
+        // lives in Settings → General (bowire_watch_interval); this
+        // field overrides it for THIS workspace only, via the wsKeyFor
+        // namespace that schemaWatchSeconds() consults first. Empty =
+        // inherit the global. Read at watch-START time, so a change
+        // applies to the next start without a reload.
+        (function () {
+            var overrideKey = (typeof wsKeyFor === 'function')
+                ? wsKeyFor(ws.id, 'bowire_watch_interval') : null;
+            if (!overrideKey) return;
+            var stored = '';
+            try { stored = localStorage.getItem(overrideKey) || ''; } catch (_) { /* ignore */ }
+            var globalStored = '';
+            try { globalStored = localStorage.getItem('bowire_watch_interval') || ''; } catch (_) { /* ignore */ }
+            var input = el('input', {
+                type: 'number',
+                className: 'bowire-settings-input',
+                value: stored,
+                min: '5',
+                max: '300',
+                placeholder: globalStored || '15',
+                style: 'width:80px',
+                'aria-label': 'Schema Watch interval for this workspace',
+                onChange: function (e) {
+                    var t = _liveWs();
+                    if (!t || typeof wsKeyFor !== 'function') return;
+                    var key = wsKeyFor(t.id, 'bowire_watch_interval');
+                    var v = String(e.target.value || '').trim();
+                    try {
+                        if (v) localStorage.setItem(key, v);
+                        else localStorage.removeItem(key);
+                    } catch (_) { /* ignore */ }
+                }
+            });
+            main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+                el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Schema watch' }),
+                el('div', { style: 'display:flex;align-items:center;gap:6px' },
+                    input,
+                    el('span', {
+                        textContent: 'seconds between polls',
+                        style: 'font-size:12px;color:var(--bowire-text-tertiary)'
+                    })
+                ),
+                el('div', {
+                    className: 'bowire-ws-detail-stat-hint',
+                    textContent: 'Overrides the global Settings → General interval for this '
+                        + 'workspace. Leave empty to inherit (' + (globalStored || '15') + ' s). '
+                        + 'Detected changes land in the 7-day change log on the statusbar.'
+                })
+            ));
+        })();
+
         // Stats grid — counts of what's in this workspace. Each tile is
         // clickable for the ACTIVE workspace: jumps to the matching rail
         // mode so the operator can drill in. Non-active tiles render as

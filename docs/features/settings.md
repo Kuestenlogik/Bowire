@@ -44,11 +44,24 @@ Schema Watch is useful during active development -- your server's service defini
 | Mark | Where | Meaning |
 |---|---|---|
 | `+` | on the method row | The method appeared since the last poll. |
-| `~` | on the method row | The name stayed put but the shape moved -- a parameter, a required flag, an HTTP verb or path, a streaming direction. A saved request still opens and still sends, and fails at the far end. |
+| `~` | on the method row | The name stayed put but the shape moved -- a parameter, a required flag, an HTTP verb or path, a streaming direction, the `deprecated` flag. A saved request still opens and still sends, and fails at the far end. |
 | `+n −n ~n` | on the service header | Per-service tally, so a change is findable without expanding every group. |
 | summary banner | above the tree | One line for the whole delta, plus the removals -- a method that is gone has no row left to mark, so this is the only place it appears. Dismiss with the `×`. |
 
-Prose-only edits (a changed summary or description) are deliberately **not** reported: descriptions move constantly while a schema is under development, and marking them would train you to ignore the marker.
+Prose-only edits (a changed summary or description) are deliberately **not** toasted or marked: descriptions move constantly while a schema is under development, and alerting on them would train you to ignore the alert. They ARE recorded in the change log below, as the quiet `±` annotation type.
+
+#### The change log ([#185](https://github.com/Kuestenlogik/Bowire/issues/185))
+
+Every detected change is also appended to a per-workspace **change log**, kept for **7 days** on the server (`workspaces/<id>/schema-changes/log.json`, capped at 500 entries, oldest out first; entries are stamped with the server clock, and two clients observing the same transition within two minutes count as one change), so "what changed while I was at lunch" survives a reload and reaches every client of the workspace:
+
+- A **statusbar pill** next to the watch toggle reads "3 changes since 14:30" while there are unread changes, and decays to a quiet "12 changes · 7d" once read. Click it for the chronological log; opening the log marks it read.
+- The **Discover rail icon** carries a gently pulsing dot while unread changes exist.
+- Each logged change is classified: `+` added (green), `−` removed (red), `~` signature change (yellow, with the facet that moved -- "route GET /pets → POST /pets", "request shape changed"), `!` deprecation (yellow), `±` annotation (muted).
+- **Clicking a change navigates** to the affected method in Discover. Removed entries are inert -- there is nothing left to open.
+
+#### Per-workspace interval
+
+The interval above is the global default. A workspace can override it in **Workspaces → (workspace) → General → Schema watch**; the override is read the next time the watch starts, same as the global. Leave the field empty to inherit.
 
 ## Shortcuts
 

@@ -1,7 +1,7 @@
 // #48 — schema-watch diff unit tests.
 //
 // Targets the pure helpers behind "+ added, − removed, ~ changed":
-//   * schemaMethodSignature  — what counts as a shape change
+//   * schemaMethodRecord     — what counts as a shape change (#185: faceted)
 //   * schemaSnapshot         — service/method map keyed for comparison
 //   * schemaDiff             — the set diff itself (null when nothing moved)
 //   * schemaDeltaSummary     — the one-line sidebar wording
@@ -28,8 +28,14 @@ const SRC = readFileSync(
     'utf8'
 );
 
-function loadWatch() {
-    const prelude = `
+function loadWatch(opts) {
+    // #185 — the per-workspace interval override rides wsKey(); the
+    // production wsKey lives in prologue.js, so tests inject a
+    // deterministic stand-in only when they exercise the override.
+    const wsKeyDecl = (opts && opts.withWsKey)
+        ? "function wsKey(k) { return 'bowire_ws_t1_' + String(k).replace(/^bowire_/, ''); }"
+        : '';
+    const prelude = wsKeyDecl + `
         var _ls = {};
         var localStorage = {
             getItem: function (k) { return Object.prototype.hasOwnProperty.call(_ls, k) ? _ls[k] : null; },
@@ -66,7 +72,7 @@ function loadWatch() {
     `;
     const postlude = `
         return {
-            schemaMethodSignature: schemaMethodSignature,
+            schemaMethodRecord: schemaMethodRecord,
             schemaSnapshot: schemaSnapshot,
             schemaDiff: schemaDiff,
             schemaDeltaSummary: schemaDeltaSummary,
@@ -81,7 +87,8 @@ function loadWatch() {
             _publishDelta: function (d) { schemaWatchDelta = d ? schemaIndexDelta(d) : null; },
             _setDiscoveryErrors: function (e) { discoveryErrors = e; },
             _setUrls: function (u, st) { serverUrls = u; connectionStatuses = st || {}; },
-            _setInterval: function (v) { if (v === null) delete _ls['bowire_watch_interval']; else localStorage.setItem('bowire_watch_interval', v); }
+            _setInterval: function (v) { if (v === null) delete _ls['bowire_watch_interval']; else localStorage.setItem('bowire_watch_interval', v); },
+            _setWsInterval: function (v) { if (v === null) delete _ls['bowire_ws_t1_watch_interval']; else localStorage.setItem('bowire_ws_t1_watch_interval', v); }
         };
     `;
     return new Function(prelude + '\n' + SRC + '\n' + postlude)();
@@ -236,15 +243,23 @@ test('schemaDiff: an HTTP verb or path move is a change', () => {
     assert.equal(d.changedMethods.length, 1);
 });
 
-test('schemaDiff: a description-only edit is NOT a change', () => {
+test('schemaDiff: a description-only edit does not touch the callable facets', () => {
     // Prose moves constantly in a schema under development. Reporting it
-    // would train the operator to ignore the marker.
+    // as a shape change would train the operator to ignore the marker;
+    // it lives in the separate `note` facet (annotation bucket, #185).
     const sb = loadWatch();
     const a = method('Get');
     const b = method('Get');
     b.summary = 'A much better summary';
     b.description = 'Now with prose.';
-    assert.equal(sb.schemaMethodSignature(a), sb.schemaMethodSignature(b));
+    const ra = sb.schemaMethodRecord(a);
+    const rb = sb.schemaMethodRecord(b);
+    assert.equal(ra.route, rb.route);
+    assert.equal(ra.kind, rb.kind);
+    assert.equal(ra.input, rb.input);
+    assert.equal(ra.output, rb.output);
+    assert.equal(ra.deprecated, rb.deprecated);
+    assert.notEqual(ra.note, rb.note, 'the prose difference is visible to the change log');
 });
 
 test('schemaDiff: streaming direction is part of the signature', () => {
@@ -255,15 +270,46 @@ test('schemaDiff: streaming direction is part of the signature', () => {
     assert.equal(d.changedMethods.length, 1);
 });
 
-test('schemaMethodSignature: a self-referencing type terminates', () => {
+test('schemaDiff: reordering fields is NOT a change — required flips still are', () => {
+    // #185 acceptance criterion, verbatim: the diff is AST-level, "so
+    // reordering a field doesn't show as a change but moving it from
+    // optional to required does." swagger-gen / protoc rebuilds
+    // reorder properties constantly; alarming on that would drown the
+    // real signal. Nested messages reorder too.
+    const sb = loadWatch();
+    const fieldA = { name: 'alpha', type: 'string', source: 'query' };
+    const fieldB = { name: 'beta', type: 'int32', source: 'query', messageType: {
+        name: 'Inner', fields: [
+            { name: 'x', type: 'string' },
+            { name: 'y', type: 'bool' }
+        ] } };
+    const fieldBReordered = { name: 'beta', type: 'int32', source: 'query', messageType: {
+        name: 'Inner', fields: [
+            { name: 'y', type: 'bool' },
+            { name: 'x', type: 'string' }
+        ] } };
+    const before = sb.schemaSnapshot([service('S', [
+        method('Find', { inputType: { name: 'In', fields: [fieldA, fieldB] } })])]);
+    const reordered = sb.schemaSnapshot([service('S', [
+        method('Find', { inputType: { name: 'In', fields: [fieldBReordered, fieldA] } })])]);
+    assert.equal(sb.schemaDiff(before, reordered), null, 'same set, different order — silence');
+
+    const required = sb.schemaSnapshot([service('S', [
+        method('Find', { inputType: { name: 'In', fields: [
+            { name: 'alpha', type: 'string', source: 'query', required: true }, fieldB] } })])]);
+    const d = sb.schemaDiff(before, required);
+    assert.equal(d.changedMethods.length, 1, 'optional → required must still be reported');
+});
+
+test('schemaMethodRecord: a self-referencing type terminates', () => {
     // A tree node whose children are the same type. An unbounded walk
-    // would never return; the signature is depth-bounded on purpose.
+    // would never return; the shape facets are depth-bounded on purpose.
     const sb = loadWatch();
     const node = { name: 'Node', fields: [] };
     node.fields.push({ name: 'child', type: 'Node', messageType: node });
-    const sig = sb.schemaMethodSignature(method('Walk', { inputType: node }));
-    assert.equal(typeof sig, 'string');
-    assert.ok(sig.length > 0);
+    const rec = sb.schemaMethodRecord(method('Walk', { inputType: node }));
+    assert.equal(typeof rec.input, 'string');
+    assert.ok(rec.input.length > 0);
 });
 
 // ---- summary wording ----
@@ -371,4 +417,103 @@ test('stopSchemaWatch: drops the delta so it stops taxing later renders', () => 
     sb.stopSchemaWatch({ quiet: true });
     assert.equal(sb.schemaWatchMarkerFor('S', method('B')), null);
     assert.equal(sb.schemaServiceDelta('S'), null);
+});
+
+// ---- #185 — change classification (signature / deprecation / annotation) ----
+
+test('schemaDiff: a shape change is a signature change with a facet detail', () => {
+    const sb = loadWatch();
+    const d = sb.schemaDiff(
+        sb.schemaSnapshot([service('S', [method('Find', { inputType: { name: 'In', fields: [] } })])]),
+        sb.schemaSnapshot([service('S', [method('Find', {
+            inputType: { name: 'In', fields: [{ name: 'q', type: 'string', source: 'query' }] }
+        })])]));
+    assert.equal(d.changedMethods.length, 1);
+    assert.equal(d.changedMethods[0].type, 'signature');
+    assert.match(d.changedMethods[0].detail, /request shape changed/);
+    assert.equal(d.callableMoved, true);
+});
+
+test('schemaDiff: an HTTP verb move names the old and new route', () => {
+    const sb = loadWatch();
+    const d = sb.schemaDiff(
+        sb.schemaSnapshot([service('S', [method('Save', { httpMethod: 'POST', httpPath: '/save' })])]),
+        sb.schemaSnapshot([service('S', [method('Save', { httpMethod: 'PUT', httpPath: '/save' })])]));
+    assert.equal(d.changedMethods[0].type, 'signature');
+    assert.match(d.changedMethods[0].detail, /route POST \/save → PUT \/save/);
+});
+
+test('schemaDiff: a deprecation flip alone is a deprecation change, not a signature change', () => {
+    const sb = loadWatch();
+    const d = sb.schemaDiff(
+        sb.schemaSnapshot([service('S', [method('Get')])]),
+        sb.schemaSnapshot([service('S', [method('Get', { deprecated: true })])]));
+    assert.equal(d.changedMethods.length, 1);
+    assert.equal(d.changedMethods[0].type, 'deprecation');
+    assert.equal(d.changedMethods[0].detail, 'marked deprecated');
+    // Still a callable-surface event: it marks the row and toasts.
+    assert.equal(d.callableMoved, true);
+    assert.equal(sb.schemaDeltaSummary(d), '~1 changed');
+});
+
+test('schemaDiff: removing the deprecated flag says so', () => {
+    const sb = loadWatch();
+    const d = sb.schemaDiff(
+        sb.schemaSnapshot([service('S', [method('Get', { deprecated: true })])]),
+        sb.schemaSnapshot([service('S', [method('Get')])]));
+    assert.equal(d.changedMethods[0].detail, 'deprecation removed');
+});
+
+test('schemaDiff: a description-only edit lands in the annotation bucket without moving the callable surface', () => {
+    const sb = loadWatch();
+    const a = method('Get');
+    const b = method('Get');
+    b.summary = 'A much better summary';
+    const d = sb.schemaDiff(
+        sb.schemaSnapshot([service('S', [a])]),
+        sb.schemaSnapshot([service('S', [b])]));
+    assert.ok(d, 'the change log wants to see prose edits');
+    assert.equal(d.callableMoved, false, 'but the toast / banner / markers must not fire');
+    assert.equal(d.changedMethods.length, 0);
+    assert.equal(d.annotatedMethods.length, 1);
+    assert.equal(sb.schemaDeltaSummary(d), '±1 note');
+});
+
+test('schemaDiff: an annotation riding along with a signature change stays one changed entry', () => {
+    const sb = loadWatch();
+    const after = method('Get', { httpMethod: 'POST' });
+    after.summary = 'also new prose';
+    const d = sb.schemaDiff(
+        sb.schemaSnapshot([service('S', [method('Get')])]),
+        sb.schemaSnapshot([service('S', [after])]));
+    assert.equal(d.changedMethods.length, 1);
+    assert.equal(d.changedMethods[0].type, 'signature');
+    assert.equal(d.annotatedMethods.length, 0, 'no double count for the same method');
+});
+
+test('schemaIndexDelta: a deprecation change still marks the method row', () => {
+    const sb = loadWatch();
+    const d = sb.schemaDiff(
+        sb.schemaSnapshot([service('S', [method('Get')])]),
+        sb.schemaSnapshot([service('S', [method('Get', { deprecated: true })])]));
+    sb._publishDelta(d);
+    assert.equal(sb.schemaWatchMarkerFor('S', method('Get')), 'changed');
+});
+
+// ---- #185 — per-workspace interval override ----
+
+test('schemaWatchSeconds: the per-workspace override wins over the global setting', () => {
+    const sb = loadWatch({ withWsKey: true });
+    sb._setInterval('45');
+    assert.equal(sb.schemaWatchSeconds(), 45, 'global applies while no override exists');
+    sb._setWsInterval('90');
+    assert.equal(sb.schemaWatchSeconds(), 90, 'the workspace override wins');
+    sb._setWsInterval(null);
+    assert.equal(sb.schemaWatchSeconds(), 45, 'clearing the override falls back to the global');
+});
+
+test('schemaWatchSeconds: the per-workspace override is clamped like the global', () => {
+    const sb = loadWatch({ withWsKey: true });
+    sb._setWsInterval('99999');
+    assert.equal(sb.schemaWatchSeconds(), 300);
 });

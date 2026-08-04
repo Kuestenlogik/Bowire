@@ -25473,6 +25473,183 @@ not as the
     background: color-mix(in srgb, var(--bowire-bg-elevated) 80%, var(--bowire-accent) 16%);
 }
 
+/* ---------- #185 — Schema-change log (statusbar pill + dropdown +
+   Discover rail attention) ---------- */
+
+/* Statusbar pill. Same silhouette as the subscriptions pill so the
+   statusbar's pills read as one family; the unread variant borrows
+   the warning tint (something moved that the operator hasn't seen). */
+.bowire-schema-changes-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    color: var(--bowire-text-secondary);
+    font-size: 11px;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+    font-family: var(--bowire-font-sans);
+}
+.bowire-schema-changes-pill:hover {
+    background: color-mix(in srgb, var(--bowire-bg-elevated) 80%, var(--bowire-accent) 20%);
+    border-color: var(--bowire-accent);
+    color: var(--bowire-text);
+}
+.bowire-schema-changes-pill-unread {
+    color: var(--bowire-text);
+    border-color: color-mix(in srgb, var(--bowire-warning) 55%, var(--bowire-border));
+    background: color-mix(in srgb, var(--bowire-warning) 10%, var(--bowire-bg-elevated));
+}
+.bowire-schema-changes-pill-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bowire-text-tertiary);
+    flex-shrink: 0;
+}
+.bowire-schema-changes-pill-dot-unread {
+    background: var(--bowire-warning);
+    animation: bowire-schema-attention-pulse 2.4s ease-in-out infinite;
+}
+.bowire-schema-changes-pill-label {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+/* Dropdown — body-appended, opens upward above the statusbar (same
+   geometry as the subscriptions dropdown). */
+.bowire-schema-changes-dropdown {
+    position: fixed;
+    z-index: 12000;
+    min-width: 380px;
+    max-width: 560px;
+    max-height: 60vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    font-family: var(--bowire-font-sans);
+    font-size: 12px;
+}
+.bowire-schema-changes-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid var(--bowire-border);
+    color: var(--bowire-text);
+    font-weight: 600;
+}
+.bowire-schema-changes-dropdown-count {
+    color: var(--bowire-text-tertiary);
+    font-weight: 400;
+}
+.bowire-schema-changes-dropdown-empty {
+    padding: 14px;
+    color: var(--bowire-text-tertiary);
+    font-style: italic;
+}
+.bowire-schema-changes-dropdown-list {
+    overflow-y: auto;
+    padding: 4px 0;
+    flex: 1;
+}
+.bowire-schema-changes-row {
+    display: grid;
+    grid-template-columns: 16px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: background 100ms ease;
+}
+.bowire-schema-changes-row:hover {
+    background: color-mix(in srgb, var(--bowire-bg-elevated) 80%, var(--bowire-accent) 12%);
+}
+/* Removed entries have nothing to navigate to — inert row. */
+.bowire-schema-changes-row.is-gone {
+    cursor: default;
+}
+.bowire-schema-changes-row.is-gone:hover {
+    background: transparent;
+}
+/* Rows the operator hadn't seen when the log was opened keep a
+   subtle accent edge while the dropdown stays open. */
+.bowire-schema-changes-row.is-unread {
+    box-shadow: inset 2px 0 0 var(--bowire-warning);
+}
+.bowire-schema-changes-row-glyph {
+    font-weight: 700;
+    text-align: center;
+    justify-self: center;
+    font-size: 12px;
+}
+/* Issue #185 colour semantics: added green, removed red, signature /
+   deprecation yellow, annotation muted — matching the diff palette
+   (.bowire-diff-add/-del) + --bowire-warning. */
+.bowire-schema-changes-type-added { color: var(--bowire-success); }
+.bowire-schema-changes-type-removed { color: var(--bowire-error); }
+.bowire-schema-changes-type-signature { color: var(--bowire-warning); }
+.bowire-schema-changes-type-deprecation { color: var(--bowire-warning); }
+.bowire-schema-changes-type-annotation { color: var(--bowire-text-tertiary); }
+.bowire-schema-changes-row-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-schema-changes-row-service { color: var(--bowire-text-secondary); }
+.bowire-schema-changes-row-sep { color: var(--bowire-text-tertiary); }
+.bowire-schema-changes-row-method { color: var(--bowire-text); font-weight: 500; }
+.bowire-schema-changes-row-detail { color: var(--bowire-text-tertiary); }
+.bowire-schema-changes-row-meta {
+    color: var(--bowire-text-tertiary);
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.bowire-schema-changes-dropdown-footer {
+    padding: 8px 12px;
+    border-top: 1px solid var(--bowire-border);
+    color: var(--bowire-text-tertiary);
+    font-size: 11px;
+}
+
+/* Discover rail attention dot — top-right of the rail icon, opposite
+   corner from the count badge so the two never collide. A gentle
+   opacity pulse (not the hard streaming pulse): ambient "something
+   changed", not "something is live right now". */
+.bowire-rail-btn-attention {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bowire-warning);
+    box-shadow: 0 0 0 1px var(--bowire-bg, #000);
+    pointer-events: none;
+    animation: bowire-schema-attention-pulse 2.4s ease-in-out infinite;
+}
+/* Inside the overflow popover the item is a flex row, not a 48px
+   icon tile — let the dot sit inline instead of absolute. */
+.bowire-rail-overflow-popover-attention {
+    position: static;
+    flex-shrink: 0;
+    margin-left: 6px;
+    box-shadow: none;
+}
+@keyframes bowire-schema-attention-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
 /* ===== v2.2 T3 — Regression Coverage chip (Discover sidebar) ===== */
 
 /* Per-method chip on the Discover sidebar. Color-blind-friendly:
