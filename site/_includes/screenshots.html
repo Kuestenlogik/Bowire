@@ -106,7 +106,7 @@
           {% include themed-img.html src="/assets/images/screenshots/json-chaining.png" alt="Click any JSON value in a response to copy the chaining variable expression" %}
           <div class="screenshot-card-body">
             <h4>Click any JSON value to chain</h4>
-            <p>Hover a leaf or key in the response, click it, paste <code>${response.path.to.value}</code> into the next request's body or URL.</p>
+            <p>Hover a leaf or key in the response, click it, paste <code>{% raw %}{{prev.path.to.value}}{% endraw %}</code> into the next request's body or URL.</p>
           </div>
         </a>
 

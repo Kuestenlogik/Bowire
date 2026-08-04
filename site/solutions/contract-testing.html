@@ -1,13 +1,13 @@
 ---
 layout: page
 title: API contract & regression testing — Bowire
-description: Capture real traffic across every protocol, replay it against Dev / Staging / Prod, turn payloads into assertions that live next to the request. Cross-protocol recording timeline, environment diff, Newman-style assertions, CI via bowire call --recording.
+description: Capture real traffic across every protocol, replay it against Dev / Staging / Prod, turn payloads into assertions that live next to the request. Cross-protocol recording timeline, environment diff, Newman-style assertions, Pact-style contracts, snapshot + data-driven testing, CI via bowire test.
 ---
 
 <section class="features-page-hero">
   <h1>From a session to a regression</h1>
   <p class="features-page-tagline">Capture real traffic once. Replay it anywhere. Turn the responses into assertions that ship with the request.</p>
-  <p class="features-page-note">Same recording format every protocol Bowire knows produces. Same replay engine the mock server and the security scanner use. <code>bowire scan</code> with a recording = vulnerability template; <code>bowire mock</code> with a recording = live fixture; <code>bowire call --recording</code> in CI = regression test.</p>
+  <p class="features-page-note">Same recording format every protocol Bowire knows produces. Same replay engine the mock server and the security scanner use. <code>bowire scan</code> with a recording = vulnerability template; <code>bowire mock</code> with a recording = live fixture; <code>bowire test</code> in CI = regression test.</p>
 </section>
 
 <section class="features-group features-group-alt">
@@ -17,7 +17,7 @@ description: Capture real traffic across every protocol, replay it against Dev /
   </header>
   <div class="features-block features-block-text-only">
     <div class="features-block-text">
-      <p>The recording format (<code>.bwr</code>) is plain JSON. Version it in Git, review it in a PR, diff it across releases. Bowire writes one file per session by default; <code>bowire call --recording &lt;file&gt;</code> + the <em>Replay</em> button + <code>bowire mock</code> all read the same shape.</p>
+      <p>The recording format (<code>.bwr</code>) is plain JSON. Version it in Git, review it in a PR, diff it across releases. Bowire writes one file per session by default; the <em>Replay</em> button, <code>bowire test &lt;recording&gt;</code> in CI, and <code>bowire mock</code> all read the same shape.</p>
       <p>Cross-protocol on purpose: one capture against a service that uses gRPC for internal calls + SignalR for live updates + REST for client APIs ends up as one timeline you can replay end-to-end, not three separate test fixtures glued together by a script.</p>
       <a class="features-block-docs-link" href="{{ '/features.html#recording' | relative_url }}">Recording feature reference &rarr;</a>
     </div>
@@ -31,8 +31,8 @@ description: Capture real traffic across every protocol, replay it against Dev /
   </header>
   <div class="features-block">
     <div class="features-block-text">
-      <p>Variables in the recording substitute against whatever environment you replay against (<code>${env.baseUrl}</code>, <code>${env.token}</code>, &hellip;). The diff highlights status changes, response-shape drift, missing fields, latency spikes &mdash; you see immediately whether Staging still behaves like Prod or where the rollout broke something.</p>
-      <p>For long-running comparisons (week-over-week regression suites): drop the recording in CI behind <code>bowire call --recording</code>, point at <code>--env staging</code>, fail the build on any diff that crosses a configured threshold.</p>
+      <p>Variables in the recording substitute against whatever environment you replay against (<code>{% raw %}{{env.baseUrl}}{% endraw %}</code>, <code>{% raw %}{{env.token}}{% endraw %}</code>, &hellip;). The diff highlights status changes, response-shape drift, missing fields, latency spikes &mdash; you see immediately whether Staging still behaves like Prod or where the rollout broke something.</p>
+      <p>For long-running comparisons (week-over-week regression suites): drop the recording in CI behind <code>bowire test</code>, point at <code>--env staging</code>, fail the build on any diff that crosses a configured threshold with <code>--fail-on</code>.</p>
       <a class="features-block-docs-link" href="{{ '/features.html#environments' | relative_url }}">Environments feature reference &rarr;</a>
     </div>
     <div class="features-block-screenshot">
@@ -64,7 +64,7 @@ flowchart LR
     Ops -->|"all match"| Pass(["pass"])
     Ops -->|"any miss"| Fail(["fail CI"])
         </pre>
-        <figcaption class="features-diagram-caption">One <code>.bwr</code> file drives three replays across environments; the same Newman-style assertion set runs against each. <code>bowire call --recording</code> wires the same loop into CI &mdash; <code>fail</code> exit code on any miss.</figcaption>
+        <figcaption class="features-diagram-caption">One <code>.bwr</code> file drives three replays across environments; the same Newman-style assertion set runs against each. <code>bowire test</code> wires the same loop into CI &mdash; non-zero exit code on any miss, with <code>--report</code> / <code>--junit</code> / <code>--sarif</code> artifacts.</figcaption>
       </figure>
     </div>
   </div>
@@ -78,8 +78,27 @@ flowchart LR
   <div class="features-block features-block-text-only">
     <div class="features-block-text">
       <p>Streaming responses get assertions on the accumulated frames &mdash; &ldquo;expect at least 3 frames of type TICK within 2 s&rdquo; is one rule. No plugins, no pipeline, just a test that lives next to the request and ships in the same recording file.</p>
-      <p>Export the recording (including its assertions) into your repo, run it from CI, fail the build when an assertion flips. The same file drives the interactive workbench replay and the headless CI run &mdash; no second test fixture to maintain.</p>
+      <p>Export the recording (including its assertions) into your repo, run <code>bowire test</code> in CI, fail the build when an assertion flips. The same file drives the interactive workbench replay and the headless CI run &mdash; no second test fixture to maintain.</p>
       <a class="features-block-docs-link" href="{{ '/features.html#test-assertions' | relative_url }}">Test-assertions feature reference &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="features-group">
+  <header class="features-group-header">
+    <h2 class="features-group-title">Beyond replay &mdash; the v2.2 Test pillar</h2>
+    <p class="features-group-lede">Record &rarr; replay &rarr; assert is the floor. The Test pillar adds consumer-driven contracts, snapshots, and data-driven runs so one recording covers a whole class of inputs, not a single captured path.</p>
+  </header>
+  <div class="features-block features-block-text-only">
+    <div class="features-block-text">
+      <h3>Pact-style contracts &mdash; <code>bowire contract publish | verify</code></h3>
+      <p>Turn a recording into a consumer-driven contract: the consumer side runs <code>bowire contract publish</code>, the provider side runs <code>bowire contract verify</code> against its live endpoint and fails when it no longer satisfies the agreed shape. A broker stays opt-in &mdash; point at one with <code>--broker-url</code> to share contracts across teams, or keep them as files in the repo when you don't want the infrastructure.</p>
+      <h3>Snapshot testing &mdash; <code>exact</code> or <code>structural</code></h3>
+      <p>Lock a response the first time you see it: Bowire writes it to <code>__snapshots__/</code> next to the recording and diffs every later run against it. Choose <code>exact</code> (byte-for-byte) or <code>structural</code> (shape and types, ignoring volatile values like ids and timestamps). When a change is intentional, re-baseline with <code>--update-snapshots</code> &mdash; the diff shows up in the PR just like source.</p>
+      <h3>Data-driven steps &mdash; one recording, many rows</h3>
+      <p>Parameterise a step and feed it a table: inline rows, a CSV file, or a generator. Each row substitutes into the request via <code>{% raw %}{{...}}{% endraw %}</code> variables and runs the assertions independently, so &ldquo;this endpoint holds for 200 fixtures&rdquo; is one recording, not 200 copies.</p>
+      <p>Regression coverage chips summarise the run at a glance &mdash; how many steps asserted, how many snapshots matched, how many contract obligations held &mdash; both inline in the workbench and in the <code>bowire test --report</code> HTML.</p>
+      <a class="features-block-docs-link" href="{{ '/features.html#test-assertions' | relative_url }}">Test pillar feature reference &rarr;</a>
     </div>
   </div>
 </section>

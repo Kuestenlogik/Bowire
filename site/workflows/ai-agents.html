@@ -9,7 +9,7 @@ permalink: /workflows/ai-agents.html
   <p class="workflow-hero-eyebrow">Workflow &middot; AI agent builders</p>
   <h1>Knot your API to any AI agent</h1>
   <p class="features-page-tagline">You want Claude / Cursor / Copilot to call your internal services with the right shape of arguments, not a free-text prompt you have to keep fixing.</p>
-  <p class="features-page-note">Bowire&rsquo;s MCP adapter turns every discovered method into an MCP tool with JSON Schema input, validates arguments before invocation, and streams results back over SSE or stdio &mdash; zero hand-written adapter code.</p>
+  <p class="features-page-note">Bowire&rsquo;s MCP adapter turns every discovered method into an MCP tool with JSON Schema input, validates arguments before invocation, and returns results over stateless streamable HTTP (POST-only) &mdash; zero hand-written adapter code.</p>
 </section>
 
 <section class="features-group features-group-alt">
@@ -27,7 +27,7 @@ bowire --url https://api.example.com --enable-mcp-adapter
 
 # Then in Claude Desktop config:
 # "my-api": {
-#   "url": "http://localhost:5000/bowire/mcp"
+#   "url": "http://localhost:5080/mcp"
 # }</code></pre>
       <p>Bowire hosts the MCP endpoint at <code>{prefix}/mcp</code>, responds to <code>initialize</code>, <code>tools/list</code>, <code>tools/call</code>, and <code>ping</code>. Every unary method Bowire discovers &mdash; across gRPC, REST, SignalR, GraphQL, any protocol plugin &mdash; becomes a typed tool.</p>
       <a class="features-block-docs-link" href="{{ '/solutions/ai-agent-surface.html' | relative_url }}">Your API as an MCP tool surface &mdash; full writeup &rarr;</a>
@@ -66,7 +66,7 @@ sequenceDiagram
       <h3>Inspect tools published by other agents</h3>
       <p class="features-block-lead">Your agent doesn&rsquo;t work? Bowire becomes a debug probe for the same MCP server it&rsquo;s hitting.</p>
       <p><code>bowire --url http://localhost:5000/mcp</code> runs the discovery pass against an MCP server, surfaces <code>tools</code>, <code>resources</code>, and <code>prompts</code> as separate service categories in the sidebar, maps each tool&rsquo;s <code>inputSchema</code> to Bowire&rsquo;s form UI, and dispatches invocations through the same JSON-RPC client an agent would use.</p>
-      <p>Streaming tools (SSE transport, chunked responses) render in the same Wireshark-style message view as gRPC streams.</p>
+      <p>Streaming tools (streamable-HTTP transport, chunked responses) render in the same Wireshark-style message view as gRPC streams.</p>
       <a class="features-block-docs-link" href="{{ '/features.html#streaming' | relative_url }}">Streaming view in detail &rarr;</a>
     </div>
     <div class="features-block-screenshot">

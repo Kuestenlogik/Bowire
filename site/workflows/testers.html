@@ -41,7 +41,7 @@ permalink: /workflows/testers.html
     <div class="features-block-text">
       <h3>Side-by-side environment diff</h3>
       <p class="features-block-lead">Pick any two configured environments, get a colour-coded diff of every variable and header. Catch the stale secret before it burns your afternoon.</p>
-      <p>Equal rows fold away, changed rows highlight, only-in-A / only-in-B rows are clearly flagged. Works across the envs you use in recordings (Dev/Staging/Prod) and the per-URL overrides that Bowire applies at request time via <code>${variable}</code> substitution.</p>
+      <p>Equal rows fold away, changed rows highlight, only-in-A / only-in-B rows are clearly flagged. Works across the envs you use in recordings (Dev/Staging/Prod) and the per-URL overrides that Bowire applies at request time via <code>{% raw %}{{variable}}{% endraw %}</code> substitution.</p>
       <a class="features-block-docs-link" href="{{ '/features.html#env-diff' | relative_url }}">Environment diff in detail &rarr;</a>
     </div>
     <div class="features-block-screenshot">
@@ -60,7 +60,7 @@ permalink: /workflows/testers.html
     <div class="features-block-text">
       <h3>Newman-style assertions &mdash; next to the request, not in a separate file</h3>
       <p class="features-block-lead">Eleven comparison operators, JSONPath-style targeting, pass / fail badges inline.</p>
-      <p>Pick a value in a recorded response, add an <code>eq</code> / <code>gt</code> / <code>contains</code> / <code>matches</code> / <code>type</code> check. Run the recording, every assertion lights up green or red inline. Export to HAR for the bug tracker, or drive the whole set from <code>bowire call --recording</code> in CI.</p>
+      <p>Pick a value in a recorded response, add an <code>eq</code> / <code>gt</code> / <code>contains</code> / <code>matches</code> / <code>type</code> check. Run the recording, every assertion lights up green or red inline. Export to HAR for the bug tracker, or drive the whole set from <code>bowire test</code> in CI &mdash; it auto-detects the recording, gates on <code>--fail-on</code>, and emits <code>--junit</code> / <code>--sarif</code> / <code>--report</code> artifacts.</p>
       <a class="features-block-docs-link" href="{{ '/solutions/contract-testing.html' | relative_url }}">From a session to a regression &mdash; full writeup &rarr;</a>
       <a class="features-block-docs-link" href="{{ '/features.html#test-assertions' | relative_url }}">Test assertions in detail &rarr;</a>
     </div>
