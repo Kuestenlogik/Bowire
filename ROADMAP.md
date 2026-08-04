@@ -126,20 +126,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**16/27 done** · 11 backlog
+**16/20 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
-| [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ⬜ Backlog |  |
 | [179](https://github.com/Kuestenlogik/Bowire/issues/179) | Bowire | [Mock from schema — generate a running mock without a recording](#issue-kuestenlogik-bowire-179) | ⬜ Backlog |  |
 | [182](https://github.com/Kuestenlogik/Bowire/issues/182) | Bowire | [Side-by-side service version diff — schema + response comparison](#issue-kuestenlogik-bowire-182) | ⬜ Backlog |  |
 | [185](https://github.com/Kuestenlogik/Bowire/issues/185) | Bowire | [Schema-watch diff view — show what changed since last visit](#issue-kuestenlogik-bowire-185) | ⬜ Backlog |  |
-| [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ⬜ Backlog |  |
-| [247](https://github.com/Kuestenlogik/Bowire/issues/247) | Bowire | [Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas](#issue-kuestenlogik-bowire-247) | ⬜ Backlog |  |
-| [249](https://github.com/Kuestenlogik/Bowire/issues/249) | Bowire | [Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module](#issue-kuestenlogik-bowire-249) | ⬜ Backlog |  |
-| [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | ⬜ Backlog |  |
-| [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ⬜ Backlog |  |
 | [253](https://github.com/Kuestenlogik/Bowire/issues/253) | Bowire | [Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override](#issue-kuestenlogik-bowire-253) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
@@ -160,7 +153,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**0/12 done** · 12 backlog
+**0/13 done** · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -168,6 +161,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ⬜ Backlog |  |
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ Backlog |  |
 | [188](https://github.com/Kuestenlogik/Bowire/issues/188) | Bowire | [Org-level Bowire dashboard — rollup across services](#issue-kuestenlogik-bowire-188) | ⬜ Backlog |  |
+| [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ⬜ Backlog |  |
 | [232](https://github.com/Kuestenlogik/Bowire/issues/232) | Bowire | [Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)](#issue-kuestenlogik-bowire-232) | ⬜ Backlog |  |
 | [236](https://github.com/Kuestenlogik/Bowire/issues/236) | Bowire | [Release cascade: wait for nuget.org indexing before dispatching to siblings](#issue-kuestenlogik-bowire-236) | ⬜ Backlog |  |
 | [237](https://github.com/Kuestenlogik/Bowire/issues/237) | Bowire | [WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+](#issue-kuestenlogik-bowire-237) | ⬜ Backlog |  |
@@ -179,11 +173,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**0/5 done** · 1 next up · 4 backlog
+**0/6 done** · 1 next up · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [28](https://github.com/Kuestenlogik/Bowire/issues/28) | Bowire | [Multi-tenant data model + SCIM (Phase B)](#issue-kuestenlogik-bowire-28) | 🟢 Next up | `area:workbench` |
+| [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
 | [96](https://github.com/Kuestenlogik/Bowire/issues/96) | Bowire | [Multi-tenant Phase C — SCIM 2.0 provisioning endpoints](#issue-kuestenlogik-bowire-96) | ⬜ Backlog |  |
 | [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ⬜ Backlog |  |
 | [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ⬜ Backlog |  |
@@ -201,7 +196,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
-**2/11 done** · 9 backlog
+**2/15 done** · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -209,6 +204,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ⬜ Backlog |  |
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog |  |
 | [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog |  |
+| [247](https://github.com/Kuestenlogik/Bowire/issues/247) | Bowire | [Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas](#issue-kuestenlogik-bowire-247) | ⬜ Backlog |  |
+| [249](https://github.com/Kuestenlogik/Bowire/issues/249) | Bowire | [Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module](#issue-kuestenlogik-bowire-249) | ⬜ Backlog |  |
+| [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | ⬜ Backlog |  |
+| [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ⬜ Backlog |  |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ⬜ Backlog |  |
 | [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ⬜ Backlog |  |
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog |  |
@@ -219,7 +218,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.9 — MCP completion + agent hub
 
-**0/5 done** · 5 backlog
+**0/6 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -227,6 +226,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via SDK notification handlers](#issue-kuestenlogik-bowire-46) | ⬜ Backlog | `area:mcp` |
 | [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ⬜ Backlog |  |
 | [128](https://github.com/Kuestenlogik/Bowire/issues/128) | Bowire | [Bowire Agent — register embedded instances with a central hub](#issue-kuestenlogik-bowire-128) | ⬜ Backlog |  |
+| [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ⬜ Backlog |  |
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ⬜ Backlog |  |
 
 ### v3.0 — Cleanups + breaking-change cuts
@@ -704,16 +704,6 @@ Discovered during the #346 second-pass fix. Separate bug — same morphdom-stale
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-#### <a id="issue-kuestenlogik-bowire-49"></a>⬜ Backlog · [#49](https://github.com/Kuestenlogik/Bowire/issues/49) Programmatic environment provisioning in embedded mode
-
-> `area:workbench`
-
-Surface IServiceCollection.AddBowireEnvironment(name, configure) (or a fluent builder on AddBowire()) so the host can pre-seed environments with variables derived from the running appʼs own IConfiguration / IOptions<T>. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/49)
-
-#### <a id="issue-kuestenlogik-bowire-177"></a>⬜ Backlog · [#177](https://github.com/Kuestenlogik/Bowire/issues/177) AI-assisted service scaffolding — schema + stub + collection + test
-
-The AI assistant today is reactive: it answers questions, surfaces hints, helps explain. The natural next step for a "build APIs faster" tool is generative — "scaffold a CRUD service for this Entity" → out drops a `.proto` + handler stubs + an example collection + a smoke-test. [[more]](https://github.com/Kuestenlogik/Bowire/issues/177)
-
 #### <a id="issue-kuestenlogik-bowire-179"></a>⬜ Backlog · [#179](https://github.com/Kuestenlogik/Bowire/issues/179) Mock from schema — generate a running mock without a recording
 
 Mocks today require a Recording: capture traffic against a real server, replay against the mock. That's great for fidelity but bad for parallel development where the consumer team starts BEFORE the provider exists. Today the consumer has to hand-write stubs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/179)
@@ -725,26 +715,6 @@ When an API is versioned (`v1`, `v2`), or when a server is being migrated, the o
 #### <a id="issue-kuestenlogik-bowire-185"></a>⬜ Backlog · [#185](https://github.com/Kuestenlogik/Bowire/issues/185) Schema-watch diff view — show what changed since last visit
 
 Bowire already has Schema-Watch (#138) that re-runs discovery on a configurable interval. What it doesn't do is TELL the operator what changed. The natural "I came back from lunch, what's new in this API?" workflow doesn't exist. [[more]](https://github.com/Kuestenlogik/Bowire/issues/185)
-
-#### <a id="issue-kuestenlogik-bowire-189"></a>⬜ Backlog · [#189](https://github.com/Kuestenlogik/Bowire/issues/189) API design-time validation — typed rule engine over schemas
-
-Most API design issues — inconsistent naming, returning passwords, returning unbounded result lists, missing pagination, missing versioning — are caught by code review IF the reviewer is sharp. They scale exactly with reviewer attention, which doesn't scale. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/189)
-
-#### <a id="issue-kuestenlogik-bowire-247"></a>⬜ Backlog · [#247](https://github.com/Kuestenlogik/Bowire/issues/247) Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas
-
-Bowire today renders a discovered schema as a flat tree (services → methods → request / response shapes) and a JSON form for each method's parameters. That works for small APIs. It breaks down when: [[more]](https://github.com/Kuestenlogik/Bowire/issues/247)
-
-#### <a id="issue-kuestenlogik-bowire-249"></a>⬜ Backlog · [#249](https://github.com/Kuestenlogik/Bowire/issues/249) Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module
-
-Phase 2 of the optional-rail-modules effort (Phase 1 in #248 lands the plumbing in v2.1). After the toggle mechanic exists, v2.4 uses it for its FIRST real default-off rail module: the Schema Designer (#247). [[more]](https://github.com/Kuestenlogik/Bowire/issues/249)
-
-#### <a id="issue-kuestenlogik-bowire-250"></a>⬜ Backlog · [#250](https://github.com/Kuestenlogik/Bowire/issues/250) Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop
-
-#135 shipped in v2.0 as a **within-tab** request/response split (vertical ↔ horizontal toggle). That feature predates the workbench tab system (#123). Now that tabs are first-class, the "split" concept has TWO orthogonal axes that operators need at different times, and #135 only covers one of them. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/250)
-
-#### <a id="issue-kuestenlogik-bowire-251"></a>⬜ Backlog · [#251](https://github.com/Kuestenlogik/Bowire/issues/251) Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)
-
-A visible, in-app **shelf** (working name) — a drag-and-drop holding area for arbitrary fragments the operator wants to move between surfaces. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/251)
 
 #### <a id="issue-kuestenlogik-bowire-253"></a>⬜ Backlog · [#253](https://github.com/Kuestenlogik/Bowire/issues/253) Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override
 
@@ -838,6 +808,10 @@ Bowire runs locally on the developer's machine. When the developer pushes a PR, 
 
 Once Bowire ships in multiple services across an org, "what's the state of our APIs?" is a portfolio-level question. Per-service findings are useful to the service team; rolled-up findings are what a platform / security team needs. Without a multi-service surface, Bowire stays a per-repo tool. [[more]](https://github.com/Kuestenlogik/Bowire/issues/188)
 
+#### <a id="issue-kuestenlogik-bowire-189"></a>⬜ Backlog · [#189](https://github.com/Kuestenlogik/Bowire/issues/189) API design-time validation — typed rule engine over schemas
+
+Most API design issues — inconsistent naming, returning passwords, returning unbounded result lists, missing pagination, missing versioning — are caught by code review IF the reviewer is sharp. They scale exactly with reviewer attention, which doesn't scale. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/189)
+
 #### <a id="issue-kuestenlogik-bowire-232"></a>⬜ Backlog · [#232](https://github.com/Kuestenlogik/Bowire/issues/232) Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)
 
 Add the **scheduled** run shape to Benchmarks — a saved envelope can be set to fire on a cron schedule, the workbench (or a CLI / embedded host) runs it without operator interaction, and results land in the saved-runs history. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/232)
@@ -877,6 +851,12 @@ Follow-up to #356. JS tests now gate CI (`node --test` over wwwroot-js) and JS c
 > `area:workbench`
 
 **Builds on:** #31, #32 — multi-tenant SCIM extends the auth foundation. [[more]](https://github.com/Kuestenlogik/Bowire/issues/28)
+
+#### <a id="issue-kuestenlogik-bowire-49"></a>⬜ Backlog · [#49](https://github.com/Kuestenlogik/Bowire/issues/49) Programmatic environment provisioning in embedded mode
+
+> `area:workbench`
+
+Surface IServiceCollection.AddBowireEnvironment(name, configure) (or a fluent builder on AddBowire()) so the host can pre-seed environments with variables derived from the running appʼs own IConfiguration / IOptions<T>. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/49)
 
 #### <a id="issue-kuestenlogik-bowire-96"></a>⬜ Backlog · [#96](https://github.com/Kuestenlogik/Bowire/issues/96) Multi-tenant Phase C — SCIM 2.0 provisioning endpoints
 
@@ -928,6 +908,22 @@ Bowire's UI is English-only today. Every label, every button, every tooltip, eve
 
 `Mock.Replay.UnaryReplayer` (~226 uncovered lines) and `Endpoints.BowireInvokeEndpoints` (~58 uncovered lines) together carry the largest single coverage hole in the repo. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/216)
 
+#### <a id="issue-kuestenlogik-bowire-247"></a>⬜ Backlog · [#247](https://github.com/Kuestenlogik/Bowire/issues/247) Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas
+
+Bowire today renders a discovered schema as a flat tree (services → methods → request / response shapes) and a JSON form for each method's parameters. That works for small APIs. It breaks down when: [[more]](https://github.com/Kuestenlogik/Bowire/issues/247)
+
+#### <a id="issue-kuestenlogik-bowire-249"></a>⬜ Backlog · [#249](https://github.com/Kuestenlogik/Bowire/issues/249) Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module
+
+Phase 2 of the optional-rail-modules effort (Phase 1 in #248 lands the plumbing in v2.1). After the toggle mechanic exists, v2.4 uses it for its FIRST real default-off rail module: the Schema Designer (#247). [[more]](https://github.com/Kuestenlogik/Bowire/issues/249)
+
+#### <a id="issue-kuestenlogik-bowire-250"></a>⬜ Backlog · [#250](https://github.com/Kuestenlogik/Bowire/issues/250) Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop
+
+#135 shipped in v2.0 as a **within-tab** request/response split (vertical ↔ horizontal toggle). That feature predates the workbench tab system (#123). Now that tabs are first-class, the "split" concept has TWO orthogonal axes that operators need at different times, and #135 only covers one of them. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/250)
+
+#### <a id="issue-kuestenlogik-bowire-251"></a>⬜ Backlog · [#251](https://github.com/Kuestenlogik/Bowire/issues/251) Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)
+
+A visible, in-app **shelf** (working name) — a drag-and-drop holding area for arbitrary fragments the operator wants to move between surfaces. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/251)
+
 #### <a id="issue-kuestenlogik-bowire-256"></a>⬜ Backlog · [#256](https://github.com/Kuestenlogik/Bowire/issues/256) Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style
 
 The freeform request builder today requires a `service` + `method` name even when the operator just wants to `POST https://api.example.com/foo` with a body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/256)
@@ -977,6 +973,10 @@ v1.9 ships the AI workbench in a real way — chat grounded in workbench state (
 #### <a id="issue-kuestenlogik-bowire-128"></a>⬜ Backlog · [#128](https://github.com/Kuestenlogik/Bowire/issues/128) Bowire Agent — register embedded instances with a central hub
 
 **One-liner.** Bowire instances embedded in apps (e.g. a Surgewave broker) register themselves with a central Bowire **hub** so an operator sees every discovery / call / mock across the fleet in one UI, instead of poking around N per-app endpoints. [[more]](https://github.com/Kuestenlogik/Bowire/issues/128)
+
+#### <a id="issue-kuestenlogik-bowire-177"></a>⬜ Backlog · [#177](https://github.com/Kuestenlogik/Bowire/issues/177) AI-assisted service scaffolding — schema + stub + collection + test
+
+The AI assistant today is reactive: it answers questions, surfaces hints, helps explain. The natural next step for a "build APIs faster" tool is generative — "scaffold a CRUD service for this Entity" → out drops a `.proto` + handler stubs + an example collection + a smoke-test. [[more]](https://github.com/Kuestenlogik/Bowire/issues/177)
 
 #### <a id="issue-kuestenlogik-bowire-313"></a>⬜ Backlog · [#313](https://github.com/Kuestenlogik/Bowire/issues/313) Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)
 
