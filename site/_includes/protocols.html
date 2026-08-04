@@ -29,7 +29,7 @@
                 <li>Client-streaming</li>
                 <li>Bidi</li>
                 <li>gRPC-Web</li>
-                <li>Connect (planned)</li>
+                <li>Connect Phase 2 (shipped v1.7.0)</li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/grpc.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -157,11 +157,11 @@
             <div class="features-block-text">
               <h3>MCP</h3>
               <p class="features-block-lead">Bowire is an MCP client and server &mdash; inspect what Claude Desktop / Cursor / Copilot expose, or surface your own services as tools to them.</p>
-              <p>Each discovered Bowire method becomes an MCP tool with JSON Schema input, so any MCP-aware agent can call your services. The browser side connects over stdio today (with SSE and HTTP transports planned), enumerates remote tools, and lets you invoke them with the same typed-form UI used for everything else.</p>
+              <p>Each discovered Bowire method becomes an MCP tool with JSON Schema input, so any MCP-aware agent can call your services. The browser side connects over streamable HTTP today (<code>bowire --url mcp@http://host/mcp</code>), enumerates remote tools, and lets you invoke them with the same typed-form UI used for everything else. The legacy SSE + POST split is deliberately unsupported; stdio is reserved for Bowire acting as a server via <code>bowire mcp serve</code>.</p>
               <ul class="features-block-capabilities">
-                <li>Tool invocation (unary) over stdio</li>
-                <li>SSE</li>
-                <li>HTTP (planned)</li>
+                <li>Tool invocation (unary) over streamable HTTP</li>
+                <li>Remote tool discovery</li>
+                <li>stdio via <code>bowire mcp serve</code></li>
               </ul>
               <a class="features-block-docs-link" href="{{ '/docs/protocols/mcp.html' | relative_url }}">Read the full docs &rarr;</a>
             </div>
@@ -823,7 +823,7 @@
         </div>
         <div class="protocol-content">
           <h3>Coming soon</h3>
-          <p>OTLP for OpenTelemetry receive-side, Surgewave tap-stream subscription, Connect (Buf) phases 1 + 3 (unary + bidi-streaming over HTTP/2). More on the <span class="protocol-coming-link">roadmap &rarr;</span></p>
+          <p>Surgewave tap-stream subscription, Connect (Buf) phases 1 + 3 (unary + bidi-streaming over HTTP/2). OTLP receive-side has already shipped as a first-party plugin (<code>Kuestenlogik.Bowire.Protocol.Otlp</code>). More on the <span class="protocol-coming-link">roadmap &rarr;</span></p>
           <span class="protocol-tag protocol-tag-dim">Planned plugins</span>
         </div>
       </a>

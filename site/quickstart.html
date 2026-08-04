@@ -36,7 +36,7 @@ any service URL without code changes.
       "@type": "HowToStep",
       "position": 2,
       "name": "Add protocol plugins (optional)",
-      "text": "Pull sibling plugins like Kafka, Surgewave, DIS, or UDP via `bowire plugin install`. The CLI bundle ships every first-party protocol pre-installed, so this step is only needed for protocols outside the built-in set.",
+      "text": "Pull sibling plugins like Kafka, Surgewave, DIS, or UDP via `bowire plugin install`. The CLI bundle ships 12 protocols pre-installed (REST, gRPC, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP, JSON-RPC, AsyncAPI), so this step is only needed for protocols outside that set. NATS, SOAP, Pulsar, and OTLP are first-party too but install via `bowire plugin install`.",
       "url": "{{ '/quickstart.html#plugins' | absolute_url }}"
     },
     {
@@ -159,7 +159,7 @@ any service URL without code changes.
 
         <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="dotnet">
 <pre><code class="lang-bash">dotnet tool install -g Kuestenlogik.Bowire.Tool</code></pre>
-          <p class="qs-install-tab-note">Cross-platform path that ships every first-party protocol plugin pre-bundled. Requires the .NET 10 SDK on the host. Update with <code>dotnet tool update -g Kuestenlogik.Bowire.Tool</code>.</p>
+          <p class="qs-install-tab-note">Cross-platform path that ships all 12 bundled protocol plugins. Requires the .NET 10 SDK on the host. Update with <code>dotnet tool update -g Kuestenlogik.Bowire.Tool</code>.</p>
         </div>
 
         <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="docker" hidden>
@@ -185,10 +185,10 @@ brew install bowire</code></pre>
 
         <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="linux" hidden>
 <pre><code class="lang-bash"># Debian / Ubuntu / Mint
-sudo apt install ./bowire_0.9.4_amd64.deb
+sudo apt install ./bowire_2.3.0_amd64.deb
 
 # Fedora / RHEL / openSUSE
-sudo dnf install ./bowire-0.9.4.x86_64.rpm
+sudo dnf install ./bowire-2.3.0.x86_64.rpm
 
 # Arch / Manjaro
 yay -S bowire
@@ -199,7 +199,7 @@ brew tap kuestenlogik/bowire &amp;&amp; brew install bowire</code></pre>
         </div>
       </div>
 
-      <p>Every package ships <strong>every first-party protocol plugin</strong> bundled (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP). Sibling plugins (Surgewave, Kafka, DIS, UDP) install separately &mdash; see step 5.</p>
+      <p>Every package ships the <strong>12 bundled protocol plugins</strong> (REST, gRPC, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP, JSON-RPC, AsyncAPI). NATS, SOAP, Pulsar, and OTLP are first-party too but install via <code>bowire plugin install</code>, as do sibling plugins (Surgewave, Kafka, DIS, UDP) &mdash; see step 5.</p>
       <p class="quickstart-page-step-links">
         <a class="features-block-docs-link" href="{{ '/downloads.html' | relative_url }}">Every install path on the downloads page &rarr;</a>
         <a class="features-block-docs-link" href="{{ '/docs/setup/standalone.html' | relative_url }}">Configuration options (port, plugin dir, theme) &rarr;</a>
@@ -216,7 +216,7 @@ brew tap kuestenlogik/bowire &amp;&amp; brew install bowire</code></pre>
     <div class="quickstart-page-step-num">3</div>
     <div class="quickstart-page-step-body">
       <h2>Add protocol plugins <span class="quickstart-page-step-tag">optional</span></h2>
-      <p class="features-block-lead">The CLI bundle ships every first-party protocol pre-installed (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP). Skip this step if those cover you &mdash; add a sibling plugin (Surgewave, Kafka, DIS, UDP) only when you need it.</p>
+      <p class="features-block-lead">The CLI bundle ships 12 protocols pre-installed (REST, gRPC, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP, JSON-RPC, AsyncAPI). Skip this step if those cover you &mdash; NATS, SOAP, Pulsar, and OTLP are first-party but install via <code>bowire plugin install</code>, as does any sibling plugin (Surgewave, Kafka, DIS, UDP).</p>
 
       <!-- Live plugin picker — same combobox the launch stepper uses on
            the home page (Step 2 in CLI mode). Selections become `bowire
@@ -248,7 +248,7 @@ bowire plugin install Kuestenlogik.Bowire.Protocol.Udp</code></pre>
 bowire plugin download Kuestenlogik.Bowire.Protocol.Kafka --output ./bundle/
 
 # On the offline host (after transferring ./bundle/)
-bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
+bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.2.3.0.nupkg \
                        --source ./bundle/</code></pre>
 
       <p><strong>UI extensions go through the same channel.</strong> The MapLibre extension (geographic visualisation for fields tagged <code>coordinate.wgs84</code>) and other payload-semantic widgets install with the exact same <code>bowire plugin install</code> subcommand &mdash; e.g. <code>bowire plugin install Kuestenlogik.Bowire.Map</code>.</p>
@@ -357,14 +357,14 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
       <div class="code-block">
         <div class="code-block-header">
           <span class="code-block-lang">bash</span>
-          <button class="copy-btn" data-copy="bowire mock --recording session.bwr --port 5099 --hot-reload" aria-label="Copy">
+          <button class="copy-btn" data-copy="bowire mock --recording session.bwr --port 5099" aria-label="Copy">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
           </button>
         </div>
         <pre><code>$ bowire mock --recording session.bwr \
-              --port 5099 --hot-reload</code></pre>
+              --port 5099</code></pre>
       </div>
-      <p><code>--hot-reload</code> picks up edits to the recording without a restart. Add <code>--capture-on-miss &lt;target-url&gt;</code> to transparently forward unrecorded requests to a fallback target and capture them for next time.</p>
+      <p>Hot-reload is on by default &mdash; edits to the recording are picked up without a restart (disable with <code>--no-watch</code>). Add <code>--capture-on-miss &lt;target-url&gt;</code> to transparently forward unrecorded requests to a fallback target and capture them for next time.</p>
     </div>
   </article>
 
@@ -406,7 +406,7 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
     <div class="quickstart-page-step-num">2</div>
     <div class="quickstart-page-step-body">
       <h2>Pull the image</h2>
-      <p class="features-block-lead">Multi-arch image (<code>linux/amd64</code> + <code>linux/arm64</code>), every first-party protocol plugin pre-bundled. Same image regardless of how you'll wire it in next &mdash; <code>compose</code>, <code>kubectl apply</code>, or a one-off <code>docker run</code>.</p>
+      <p class="features-block-lead">Multi-arch image (<code>linux/amd64</code> + <code>linux/arm64</code>), all 12 bundled protocol plugins pre-installed. Same image regardless of how you'll wire it in next &mdash; <code>compose</code>, <code>kubectl apply</code>, or a one-off <code>docker run</code>.</p>
       <div class="code-block">
         <div class="code-block-header">
           <span class="code-block-lang">bash</span>
@@ -517,7 +517,7 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.0.9.4.nupkg \
 <pre><code class="lang-bash" data-qs-embed-recipe># Add Bowire core
 dotnet add package Kuestenlogik.Bowire</code></pre>
 
-      <p>Every first-party protocol (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP) is its own package &mdash; same versioning, same release cadence. Sibling plugins from separate repositories (Surgewave, Kafka, DIS, UDP) are in the same picker; tick them and they appear as <code>dotnet add package</code> lines too. The plugin host loads each package into its own <code>AssemblyLoadContext</code>, so transitive-dependency conflicts between plugins can't reach your app.</p>
+      <p>Every first-party protocol (REST, gRPC, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP, JSON-RPC, AsyncAPI, NATS, SOAP, Pulsar, OTLP) is its own package &mdash; same versioning, same release cadence. Sibling plugins from separate repositories (Surgewave, Kafka, DIS, UDP) are in the same picker; tick them and they appear as <code>dotnet add package</code> lines too. The plugin host loads each package into its own <code>AssemblyLoadContext</code>, so transitive-dependency conflicts between plugins can't reach your app.</p>
       <p>UI extensions like the MapLibre map widget (for fields tagged <code>coordinate.wgs84</code>) install through the same path &mdash; <code>dotnet add package Kuestenlogik.Bowire.Map</code> &mdash; and activate automatically when the workbench sees a matching semantic kind.</p>
       <p class="quickstart-page-step-links">
         <a class="features-block-docs-link" href="{{ '/downloads.html' | relative_url }}">Every package on the downloads page &rarr;</a>

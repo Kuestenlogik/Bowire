@@ -7,7 +7,7 @@ description: Multi-protocol API security testing, self-hosted. Burp for the non-
 <section class="features-page-hero">
   <h1>Multi-protocol API security testing</h1>
   <p class="features-page-tagline">Multi-protocol API security testing, self-hosted.<br>Burp for the non-HTTP protocols &mdash; schema-aware, Apache-2.0, Nuclei-compatible.</p>
-  <p class="features-page-note">Bowire's discovery, recording, and replay primitives extend into vulnerability scanning. Four CLI subcommands (<code>scan</code> / <code>fuzz</code> / <code>jwt</code> / <code>proxy</code>), three template sources fed through one engine, SARIF 2.1.0 out to GitHub Code Scanning / GitLab / Azure DevOps.</p>
+  <p class="features-page-note">Bowire's discovery, recording, and replay primitives extend into vulnerability scanning. The v2.3 Security pillar ships the full OWASP API Top&nbsp;10 (2023) suite &mdash; <code>bowire scan --suite owasp-api</code> covers 10/10 incl. BOLA / BFLA / business-flow &mdash; protocol probes for GraphQL / gRPC / WebSocket / SSE / MQTT / MCP, an opt-in <code>--active</code> mutating-attack tier, a full OAST chain (<code>bowire scan --oast-server</code> + self-hosted <code>bowire oast serve</code>), a curated vuln cache via <code>bowire vulndb update|list</code>, and an AI security layer (threat model, JWT analyzer, OWASP panel, one-button scan, markdown report from SARIF). Alongside the four CLI subcommands (<code>scan</code> / <code>fuzz</code> / <code>jwt</code> / <code>proxy</code>), template sources fed through one engine, SARIF 2.1.0 out to GitHub Code Scanning / GitLab / Azure DevOps.</p>
 </section>
 
 <!-- ================================================================ -->
@@ -296,7 +296,7 @@ jobs:
 <section class="features-group features-group-alt">
   <header class="features-group-header">
     <h2 class="features-group-title">Roadmap</h2>
-    <p class="features-group-lede">Four capability tiers from the ADR. Bowire is Apache 2.0 and free / open source &mdash; the tiers describe scope and direction, not pricing. Tiers 1 + 2 are shipped; Tier 3 is mostly shipped; Tier 4 is the differentiator pipeline.</p>
+    <p class="features-group-lede">Four capability tiers from the ADR. Bowire is Apache 2.0 and free / open source &mdash; the tiers describe scope and direction, not pricing. Tiers 1 + 2 are shipped; Tier 3 is mostly shipped; Tier 4 shipped with the v2.3 Security pillar.</p>
   </header>
 
   <div class="features-block features-block-text-only">
@@ -328,18 +328,18 @@ jobs:
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
           </span>
           <div class="security-roadmap-body">
-            <h3>Tier 3 &mdash; Pro-grade catch-up <span class="roadmap-card-tag">partial &mdash; proxy + Action shipped</span></h3>
-            <p>Shipped: intercepting proxy with HTTPS MITM via a self-minted root CA (CONNECT-tunnel hijack, raw <code>TcpListener</code> + <code>SslStream</code>, leaf-cert cache), workbench Proxy view with live SSE flow stream + one-click "send to recording", and the reusable <code>scan-template.yml</code> GitHub Action. Still on the list: sensitive-data scanner (PII / API keys / JWTs in responses), proxy-level breakpoints with conditional pass-through, BOLA / BFLA two-token tests, and broader protocol-specific templates (SignalR brute-force, MQTT topic-enumeration).</p>
+            <h3>Tier 3 &mdash; Pro-grade catch-up <span class="roadmap-card-tag">mostly shipped &mdash; OWASP suite + probes in v2.3</span></h3>
+            <p>Shipped: intercepting proxy with HTTPS MITM via a self-minted root CA (CONNECT-tunnel hijack, raw <code>TcpListener</code> + <code>SslStream</code>, leaf-cert cache), workbench Proxy view with live SSE flow stream + one-click "send to recording", and the reusable <code>scan-template.yml</code> GitHub Action. The v2.3 Security pillar closes the rest: the OWASP API Top&nbsp;10 suite (<code>bowire scan --suite owasp-api</code>) with API1 BOLA / API5 BFLA two-token tests, protocol probes for GraphQL / gRPC / WebSocket / SSE / MQTT / MCP (SignalR brute-force, MQTT topic-enumeration and beyond), and an opt-in <code>--active</code> mutating-attack tier. Still on the list: sensitive-data scanner (PII / API keys / JWTs in responses) and proxy-level breakpoints with conditional pass-through.</p>
           </div>
         </li>
 
         <li class="security-roadmap-item">
-          <span class="security-roadmap-indicator security-roadmap-indicator-partial" aria-label="In progress">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+          <span class="security-roadmap-indicator security-roadmap-indicator-done" aria-label="Shipped">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 8"/></svg>
           </span>
           <div class="security-roadmap-body">
-            <h3>Tier 4 &mdash; Differentiation <span class="roadmap-card-tag">partial &mdash; MCP surface shipped</span></h3>
-            <p>Shipped: MCP adapter + <code>bowire mcp serve</code>, so an AI agent can chain <em>discover &rarr; record &rarr; mark vulnerable &rarr; scan</em> through the same primitives a human uses. Still on the list: AI-assisted threat modeling on top of the MCP surface, recording-driven security regression tests as a first-class workflow, multi-protocol attack chains as recordings, automatic OWASP API Top 10 / CWE / CVSS scoring in the SARIF and HTML reports.</p>
+            <h3>Tier 4 &mdash; Differentiation <span class="roadmap-card-tag">shipped in v2.3</span></h3>
+            <p>Shipped: MCP adapter + <code>bowire mcp serve</code>, so an AI agent can chain <em>discover &rarr; record &rarr; mark vulnerable &rarr; scan</em> through the same primitives a human uses. The v2.3 Security pillar lands the rest: the AI security layer (AI-assisted threat modeling, JWT analyzer, OWASP panel, one-button scan, markdown report generated from SARIF), recording-driven security regression as a first-class workflow, multi-protocol attack chains as recordings, and automatic OWASP API Top 10 / CWE / CVSS scoring surfaced in the SARIF / HTML reports and a dedicated Compliance tab.</p>
           </div>
         </li>
 

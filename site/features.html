@@ -157,7 +157,7 @@ flowchart LR
     <div class="features-block-text">
       <h3>Bowire's own ops as MCP tools</h3>
       <p class="features-block-lead"><code>bowire mcp serve</code> exposes Bowire itself as an MCP server. The agent can chain <em>discover &rarr; invoke &rarr; assert &rarr; switch env &rarr; replay</em> the same way a human would in the workbench, just with more parallelism.</p>
-      <p>Primitives exposed: <code>bowire.discover</code>, <code>bowire.invoke</code>, <code>bowire.subscribe</code>, <code>bowire.env.list</code>, <code>bowire.record.{list, start, stop, replay}</code>, <code>bowire.mock.{start, stop, list}</code>, <code>bowire.allowlist.show</code>. Two transport modes: stdio for desktop clients (Claude Desktop, Cursor) and HTTP for remote agents (Copilot in CI, custom MCP runners).</p>
+      <p>The server exposes <strong>15 tools, 8 resources, and 4 prompts</strong>. Tools include <code>bowire.discover</code>, <code>bowire.invoke</code>, <code>bowire.subscribe</code>, <code>bowire.assert</code>, <code>bowire.env.list</code>, <code>bowire.har.import</code>, <code>bowire.record.{list, start, stop, replay}</code>, <code>bowire.mock.{start, stop, list}</code>, <code>bowire.allowlist.{show, permit}</code>. Two transport modes: stdio for desktop clients (Claude Desktop, Cursor) and HTTP for remote agents (Copilot in CI, custom MCP runners).</p>
       <p>Auth piggy-backs on whichever provider the workbench runs under, so the agent never sees a second credentials store. Tools are gated by the same allow-list the workbench uses &mdash; an agent can't reach a method a human couldn't.</p>
       <a class="features-block-docs-link" href="{{ '/docs/protocols/mcp.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
@@ -194,7 +194,7 @@ $ bowire mcp serve --bind http --port 5097</code></pre>
     <div class="features-block-text">
       <h3>Visual flow editor</h3>
       <p class="features-block-lead">Chain API calls into branching pipelines &mdash; visually, not in a YAML file you can&rsquo;t read three months later.</p>
-      <p>Drag requests onto a canvas, forward response values into the next call with <code>${response.path.to.value}</code>, branch on status or body content, loop over arrays, sleep, assert. Every node has its own response viewer so you can step through a failing flow like a debugger.</p>
+      <p>Drag requests onto a canvas, forward response values into the next call with <code>{% raw %}{{prev.path.to.value}}{% endraw %}</code>, branch on status or body content, loop over arrays, sleep, assert. Every node has its own response viewer so you can step through a failing flow like a debugger.</p>
       <p>All of it is local to your machine. No seat-counted cloud subscription, no hand-maintained Postman Collections &mdash; flows are JSON files you can commit, review, and replay.</p>
       <a class="features-block-docs-link" href="{{ '/docs/features/flows.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
@@ -208,7 +208,7 @@ $ bowire mcp serve --bind http --port 5097</code></pre>
     <div class="features-block-text">
       <h3>Click any JSON value to chain</h3>
       <p class="features-block-lead">The response from one call is the input for the next. Bowire skips the copy-paste round-trip.</p>
-      <p>Hover any value or key in a rendered JSON response, click it, and Bowire places the chaining expression on your clipboard &mdash; ready to paste into the next request&rsquo;s body, URL path, or headers. Works on every supported protocol, not just REST: gRPC response fields, GraphQL query results, SignalR hub return values, MQTT payloads, SSE events all use the same <code>${response.path.to.value}</code> grammar.</p>
+      <p>Hover any value or key in a rendered JSON response, click it, and Bowire places the chaining expression on your clipboard &mdash; ready to paste into the next request&rsquo;s body, URL path, or headers. Works on every supported protocol, not just REST: gRPC response fields, GraphQL query results, SignalR hub return values, MQTT payloads, SSE events all use the same <code>{% raw %}{{prev.path.to.value}}{% endraw %}</code> grammar.</p>
       <a class="features-block-docs-link" href="{{ '/docs/features/response-chaining.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
@@ -296,7 +296,7 @@ Esc           <span class="c">close modal</span>
       <p class="features-block-lead"><code>bowire mock --recording session.bwr --port 5099</code> turns any captured recording into a live endpoint at the same shape as the original &mdash; so dev / test runs don't have to stand up the real backend.</p>
       <p><strong>The real backend is friction.</strong> The third-party API needs an OAuth flow + a paid subscription that burns credits on every test run. Your own service is a 12-container <code>docker-compose</code> with a 5-minute boot. The CI runner sits behind a corporate VPN that doesn't reach the upstream at all. A captured recording cuts all of that out of the loop &mdash; the fixture is the JSON file, drop it on a USB stick, drop it in a Git repo, hit replay.</p>
       <p>Every protocol your recording captured replays through the same listener &mdash; REST verbs on the same paths, gRPC unary + server-streaming + bidi with the captured frames, WebSocket / SSE / SignalR / Socket.IO pushing the same sequence, MQTT publishes hitting the same topics, GraphQL subscriptions streaming the same events. Protocol semantics stay intact (status codes, frame timing, headers) instead of collapsing everything to a JSON stub.</p>
-      <p>Optional layers on top: <strong>hot-reload</strong> &mdash; rewriting the recording file refreshes the mock without restart; <strong>chaos injection</strong> &mdash; configurable latency / 5xx rate / dropped-frame ratio for resilience tests; <strong>schema-only mode</strong> (<code>--from-spec openapi.yaml</code>) &mdash; plausible responses from an OpenAPI / gRPC descriptor / GraphQL schema with no recording at all; <strong>capture-on-miss</strong> &mdash; unrecorded request transparently forwards to a fallback target, captures the response, serves it back next time.</p>
+      <p>Layers on top: <strong>hot-reload</strong> (on by default; <code>--no-watch</code> to disable) &mdash; rewriting the recording file refreshes the mock without restart; <strong>chaos injection</strong> &mdash; configurable latency / 5xx rate / dropped-frame ratio for resilience tests; <strong>schema-only mode</strong> (<code>--schema openapi.yaml</code>, or <code>--grpc-schema</code> / <code>--graphql-schema</code>) &mdash; plausible responses from an OpenAPI / gRPC descriptor / GraphQL schema with no recording at all; <strong>capture-on-miss</strong> &mdash; unrecorded request transparently forwards to a fallback target, captures the response, serves it back next time.</p>
       <a class="features-block-docs-link" href="{{ '/solutions/service-mocking.html' | relative_url }}">Develop without the real backend &mdash; full writeup &rarr;</a>
       <a class="features-block-docs-link" href="{{ '/docs/features/mock-server.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
@@ -305,13 +305,13 @@ Esc           <span class="c">close modal</span>
         <div class="code-block-header">
           <span class="code-block-lang">bash</span>
           <span class="code-block-hint">$ bowire mock</span>
-          <button class="copy-btn" data-copy="bowire mock --recording session.bwr --port 5099 --hot-reload" aria-label="Copy">
+          <button class="copy-btn" data-copy="bowire mock --recording session.bwr --port 5099" aria-label="Copy">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
           </button>
         </div>
         <pre><code><span class="c">$ bowire mock \</span>
     --recording session.bwr \
-    --port 5099 --hot-reload
+    --port 5099
 
    <span class="c"># mock listening on 0.0.0.0:5099</span>
    <span class="c"># 42 calls loaded across gRPC, REST, WebSocket</span></code></pre>
@@ -451,9 +451,9 @@ body.items[0]     type "object"   <span class="check-pass">&#10003;</span></code
   <div class="features-block features-block-reverse" id="environments">
     <div class="features-block-text">
       <h3>Globals and Environments</h3>
-      <p class="features-block-lead">A typed variable store per environment, plus a Globals layer everyone inherits &mdash; the same <code>${name}</code> you'd reach for in any HTTP client, scoped properly.</p>
-      <p>Define <strong>Globals</strong> once (machine-wide constants you never change &mdash; timeouts, retry-counts, the base URL of your local Docker registry) and per-environment named scopes on top of them (<em>Dev</em>, <em>Staging</em>, <em>Production</em>, …). Variables surface as <code>${api_url}</code>, <code>${timeout_ms}</code>, <code>${prod_token}</code> in any request body, metadata header, URL field, script &mdash; the workbench substitutes at request time with the resolution chain Globals &rarr; active environment, per-environment overrides winning by name.</p>
-      <p>Variables persist to <code>~/.bowire/environments.json</code> on disk (the workbench mirrors them to <code>localStorage</code> for instant access). Export / Import buttons round-trip the full env set as a <code>.bwe</code> file &mdash; commit it to your repo, share it with a colleague, restore it on a fresh laptop. Switching the active environment from the topbar instantly re-resolves every <code>${...}</code> in the request editor so a single keystroke flips between dev and prod without a single textual edit.</p>
+      <p class="features-block-lead">A typed variable store per environment, plus a Globals layer everyone inherits &mdash; the same <code>{% raw %}{{name}}{% endraw %}</code> you'd reach for in any HTTP client, scoped properly.</p>
+      <p>Define <strong>Globals</strong> once (machine-wide constants you never change &mdash; timeouts, retry-counts, the base URL of your local Docker registry) and per-environment named scopes on top of them (<em>Dev</em>, <em>Staging</em>, <em>Production</em>, …). Variables surface as <code>{% raw %}{{api_url}}{% endraw %}</code>, <code>{% raw %}{{timeout_ms}}{% endraw %}</code>, <code>{% raw %}{{prod_token}}{% endraw %}</code> in any request body, metadata header, URL field, script &mdash; the workbench substitutes at request time with the resolution chain Globals &rarr; active environment, per-environment overrides winning by name.</p>
+      <p>Variables persist to <code>~/.bowire/environments.json</code> on disk (the workbench mirrors them to <code>localStorage</code> for instant access). Export / Import buttons round-trip the full env set as a <code>.bwe</code> file &mdash; commit it to your repo, share it with a colleague, restore it on a fresh laptop. Switching the active environment from the topbar instantly re-resolves every <code>{% raw %}{{...}}{% endraw %}</code> in the request editor so a single keystroke flips between dev and prod without a single textual edit.</p>
       <a class="features-block-docs-link" href="{{ '/docs/features/environments.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
@@ -603,7 +603,7 @@ bowire plugin list --verbose" aria-label="Copy">
     <div class="features-block-text">
       <h3>One binary, three modes</h3>
       <p class="features-block-lead">Run as a .NET global tool and get three flavours of the same workbench &mdash; CLI subcommands for scripts, an HTTP-served UI for interactive use, and embedded middleware for teams that want the UI inside their own app.</p>
-      <p><code>bowire list &lt;url&gt;</code> enumerates services, <code>bowire describe &lt;service.method&gt;</code> prints the full schema, <code>bowire call &lt;service.method&gt; --body '{...}'</code> invokes it &mdash; same output shape as the UI uses, so the CLI is scriptable against CI. Add <code>--format json</code> for machine-readable piping, or <code>--recording</code> to capture an output for later replay.</p>
+      <p><code>bowire list &lt;url&gt;</code> enumerates services, <code>bowire describe &lt;service.method&gt;</code> prints the full schema, <code>bowire call &lt;service.method&gt; -d '{...}'</code> invokes it &mdash; same output shape as the UI uses, so the CLI is scriptable against CI. Add <code>--format json</code> for machine-readable piping, or <code>--recording</code> to capture an output for later replay.</p>
       <p>The standalone UI is just <code>bowire --url https://api.example.com</code> &mdash; the UI runs locally, hits the API with your auth, zero host-side changes. Plugin management (<code>bowire plugin install / list / uninstall</code>) shares the same state with the embedded mode.</p>
       <a class="features-block-docs-link" href="{{ '/docs/features/cli-mode.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>

@@ -61,7 +61,7 @@ flowchart LR
       <ul class="features-block-bullets">
         <li><strong>Hot-reload</strong> &mdash; rewriting the recording file refreshes the mock without restart.</li>
         <li><strong>Chaos injection</strong> &mdash; configurable latency / 5xx rate / dropped-frame ratio for resilience tests.</li>
-        <li><strong>Schema-only mode</strong> &mdash; <code>--from-spec openapi.yaml</code> serves plausible responses from an OpenAPI / gRPC descriptor / GraphQL schema with no recording at all.</li>
+        <li><strong>Schema-only mode</strong> &mdash; <code>--schema openapi.yaml</code> (or <code>--grpc-schema</code> for a gRPC descriptor set, <code>--graphql-schema</code> for a GraphQL SDL) serves plausible responses with no recording at all.</li>
         <li><strong>Stateful cursors</strong> &mdash; a recording with multiple captures of the same call replays them in order, so the fifth call sees the fifth response.</li>
         <li><strong>Capture-on-miss</strong> &mdash; unrecorded request transparently forwards to a fallback target, captures the response, serves it back next time. Useful for incrementally growing a mock as your test suite grows.</li>
       </ul>
