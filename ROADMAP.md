@@ -1215,4 +1215,4 @@ Start the workbench with `--plugin-dir X`, install a plugin from **Settings → 
 
 ---
 
-*Generated 2026-08-03 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-08-04 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
