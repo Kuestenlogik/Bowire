@@ -14,6 +14,12 @@
  */
 :root,
 :root[data-theme="dark"] {
+    /* color-scheme drives the UA canvas — the colour the browser
+       paints between two pages while the next page's render-blocking
+       stylesheets load. Without it that canvas is white, and every
+       navigation in dark mode risks a white flash. Also switches
+       scrollbars + form controls to their dark variants. */
+    color-scheme: dark;
     --bg: #0f0f17;
     --bg-elevated: #161621;
     --bg-footer: #08080d;
@@ -39,6 +45,7 @@
 }
 
 :root[data-theme="light"] {
+    color-scheme: light;
     --bg: #fafaff;
     --bg-elevated: #f4f4fa;
     --bg-footer: #eaeaf0;
@@ -62,6 +69,7 @@
 /* Auto mode: defer to the OS color scheme */
 @media (prefers-color-scheme: light) {
     :root[data-theme="auto"] {
+        color-scheme: light;
         --bg: #fafaff;
         --bg-elevated: #f4f4fa;
         --bg-footer: #eaeaf0;

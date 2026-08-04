@@ -66,10 +66,29 @@
         :root[data-bs-theme="dark"] {
           background: #0f0f17;
           color: #e8e8f0;
+          /* color-scheme drives the UA canvas — the colour Chromium
+             paints in the gap between two pages once paint-holding
+             ends while render-blocking stylesheets are still loading.
+             Without it that canvas is WHITE, so every docs navigation
+             in dark mode flashed white before the dark preloader
+             appeared. Mirrors site/_layouts/default.html. */
+          color-scheme: dark;
         }
         :root[data-bs-theme="light"] {
           background: #fafaff;
           color: #1a1a2e;
+          color-scheme: light;
+        }
+        /* First-frame safety net: before the theme bootstrap above has
+           run (or with JS off) there is no data-bs-theme attribute at
+           all — a dark-OS user must still get a dark canvas, or the
+           very first frame is the same white flash. */
+        @media (prefers-color-scheme: dark) {
+          :root:not([data-bs-theme]) {
+            background: #0f0f17;
+            color: #e8e8f0;
+            color-scheme: dark;
+          }
         }
         html, body {
           margin: 0;
@@ -203,12 +222,31 @@
       </div>
     </div>
     <script>
-      window.addEventListener('load', function () {
-        var pre = document.getElementById('bowire-loading');
-        if (!pre) return;
-        pre.classList.add('is-hidden');
-        setTimeout(function () { pre.remove(); }, 300);
-      });
+      // Hide the preloader as soon as the parser is done with the
+      // initial DOM — the site layout's pattern (site/_layouts/
+      // default.html). Waiting on `window.load` kept the spinner up
+      // through every image / module / font fetch, which turned every
+      // internal docs navigation into a full splash screen while the
+      // marketing site's pages swapped instantly — and `load` can be
+      // deferred indefinitely by lazy images. DOMContentLoaded is the
+      // moment the article text is readable; everything later
+      // enhances in place.
+      (function () {
+        function hide() {
+          var pre = document.getElementById('bowire-loading');
+          if (!pre || pre.classList.contains('is-hidden')) return;
+          pre.classList.add('is-hidden');
+          setTimeout(function () { pre.remove(); }, 300);
+        }
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+          hide();
+        } else {
+          document.addEventListener('DOMContentLoaded', hide, { once: true });
+        }
+        // Belt-and-braces: recover in tabs that miss DOMContentLoaded
+        // (back/forward cache, &c) — same as the site layout.
+        window.addEventListener('load', hide, { once: true });
+      })();
 
       // Mirror site/assets/js/main.js: toggle the header's `.scrolled`
       // class after 20px of scroll so it fades from transparent to a
