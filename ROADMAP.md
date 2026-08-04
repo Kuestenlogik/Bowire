@@ -126,17 +126,17 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**16/20 done** · 4 backlog
+**17/20 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [179](https://github.com/Kuestenlogik/Bowire/issues/179) | Bowire | [Mock from schema — generate a running mock without a recording](#issue-kuestenlogik-bowire-179) | ⬜ Backlog |  |
 | [182](https://github.com/Kuestenlogik/Bowire/issues/182) | Bowire | [Side-by-side service version diff — schema + response comparison](#issue-kuestenlogik-bowire-182) | ⬜ Backlog |  |
-| [185](https://github.com/Kuestenlogik/Bowire/issues/185) | Bowire | [Schema-watch diff view — show what changed since last visit](#issue-kuestenlogik-bowire-185) | ⬜ Backlog |  |
 | [253](https://github.com/Kuestenlogik/Bowire/issues/253) | Bowire | [Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override](#issue-kuestenlogik-bowire-253) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
 | [48](https://github.com/Kuestenlogik/Bowire/issues/48) | Bowire | [Schema watch mode](#issue-kuestenlogik-bowire-48) | ✅ Done | `area:workbench` |
+| [185](https://github.com/Kuestenlogik/Bowire/issues/185) | Bowire | [Schema-watch diff view — show what changed since last visit](#issue-kuestenlogik-bowire-185) | ✅ Done |  |
 | [401](https://github.com/Kuestenlogik/Bowire/issues/401) | Bowire | [Mock-server maturity — WireMock feature parity (epic)](#issue-kuestenlogik-bowire-401) | ✅ Done |  |
 | [402](https://github.com/Kuestenlogik/Bowire/issues/402) | Bowire | [Mock request matching: query / header / cookie predicates + regex/glob paths + stub priority](#issue-kuestenlogik-bowire-402) | ✅ Done |  |
 | [403](https://github.com/Kuestenlogik/Bowire/issues/403) | Bowire | [Mock request-body matchers (equalToJson / JSONPath / XPath / JSON-schema / regex)](#issue-kuestenlogik-bowire-403) | ✅ Done |  |
@@ -712,10 +712,6 @@ Mocks today require a Recording: capture traffic against a real server, replay a
 
 When an API is versioned (`v1`, `v2`), or when a server is being migrated, the operator needs to compare side-by-side: does `v2.GetUser` return the same shape as `v1.GetUser`? Today the only way is to invoke each separately and eyeball the responses. [[more]](https://github.com/Kuestenlogik/Bowire/issues/182)
 
-#### <a id="issue-kuestenlogik-bowire-185"></a>⬜ Backlog · [#185](https://github.com/Kuestenlogik/Bowire/issues/185) Schema-watch diff view — show what changed since last visit
-
-Bowire already has Schema-Watch (#138) that re-runs discovery on a configurable interval. What it doesn't do is TELL the operator what changed. The natural "I came back from lunch, what's new in this API?" workflow doesn't exist. [[more]](https://github.com/Kuestenlogik/Bowire/issues/185)
-
 #### <a id="issue-kuestenlogik-bowire-253"></a>⬜ Backlog · [#253](https://github.com/Kuestenlogik/Bowire/issues/253) Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override
 
 Bowire conflates two distinct URL concepts under a single "Server URL" field: [[more]](https://github.com/Kuestenlogik/Bowire/issues/253)
@@ -737,6 +733,10 @@ AsyncAPI loader + most bindings shipped (MQTT / Kafka / WebSocket / HTTP / AMQP 
 > `area:workbench`
 
 Re-discover the active server URL(s) every N seconds and show a \"+ added, − removed, ~ changed\" delta in the sidebar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/48)
+
+#### <a id="issue-kuestenlogik-bowire-185"></a>✅ Done · [#185](https://github.com/Kuestenlogik/Bowire/issues/185) Schema-watch diff view — show what changed since last visit
+
+Bowire already has Schema-Watch (#138) that re-runs discovery on a configurable interval. What it doesn't do is TELL the operator what changed. The natural "I came back from lunch, what's new in this API?" workflow doesn't exist. [[more]](https://github.com/Kuestenlogik/Bowire/issues/185)
 
 #### <a id="issue-kuestenlogik-bowire-401"></a>✅ Done · [#401](https://github.com/Kuestenlogik/Bowire/issues/401) Mock-server maturity — WireMock feature parity (epic)
 
