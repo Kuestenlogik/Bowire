@@ -30,6 +30,30 @@ namespace Kuestenlogik.Bowire.Tests.Security;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1861:Prefer static readonly fields over constant array arguments", Justification = "Test scope — array allocations are negligible")]
 public sealed class ScanCommandTests
 {
+    /// <summary>
+    /// A cache root that is never created, for every test here that names no
+    /// template source of its own.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="ScanCommand"/> treats "no --template / --templates /
+    /// --nuclei / --suite" as an invitation to fall back to the vulndb cache,
+    /// and without <see cref="ScanOptions.VulnDbCacheRoot"/> that resolves to
+    /// the machine's home directory. So these tests read state belonging to
+    /// whoever runs them: they pass on a machine that has never run
+    /// `bowire vulndb update` and fail on one that has (#557). CI stays green
+    /// because a fresh runner has no cache, which is what makes it the
+    /// unpleasant kind — it only breaks for people who have used the tool.
+    /// </para>
+    /// <para>
+    /// The seam already existed; VulnDbCommandTests has been passing this
+    /// option all along. Only this class forgot, in five places, of which
+    /// exactly one had an assertion sharp enough to notice.
+    /// </para>
+    /// </remarks>
+    private static readonly string NoTemplateCache =
+        Path.Combine(Path.GetTempPath(), "bowire-tests-absent-vulndb-" + Guid.NewGuid().ToString("N"));
+
     // Hands a fresh StringWriter pair to the test body and harvests
     // whatever it wrote — no Console.SetOut / Console.SetError, no
     // process-global state touched. Each test gets its own writer pair,
@@ -91,6 +115,7 @@ public sealed class ScanCommandTests
         var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
         {
             Target = "mqtt://broker.example.com:1883",
+            VulnDbCacheRoot = NoTemplateCache,
         }, ct, @out, err));
 
         Assert.Equal(0, code);
@@ -105,9 +130,41 @@ public sealed class ScanCommandTests
         {
             Target = "https://example.invalid",
             RunBuiltins = false,
+            VulnDbCacheRoot = NoTemplateCache,
         }, ct, @out, err));
         Assert.Equal(2, code);
         Assert.Contains("No vulnerability templates", stderr, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunAsync_NoExplicitSource_FallsBackToTheTemplateCache()
+    {
+        // The other direction, which nothing covered: pinning VulnDbCacheRoot
+        // in the tests above must not amount to switching the fallback off in
+        // the suite. Here a populated root is handed over and the run has to
+        // find it — same code path, opposite expectation.
+        var ct = TestContext.Current.CancellationToken;
+        var root = Path.Combine(Path.GetTempPath(), "bowire-cache-test-" + Guid.NewGuid().ToString("N"));
+        var templates = Path.Combine(root, "templates");
+        Directory.CreateDirectory(templates);
+        try
+        {
+            await File.WriteAllTextAsync(
+                Path.Combine(templates, "cached.json"),
+                JsonSerializer.Serialize(AttackRecording()), ct);
+
+            var (_, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
+            {
+                Target = "https://example.invalid",
+                RunBuiltins = false,
+                TimeoutSeconds = 2,
+                VulnDbCacheRoot = root,
+            }, ct, @out, err));
+
+            Assert.Contains("Using template cache at", stdout, StringComparison.Ordinal);
+            Assert.Contains("(1 templates)", stdout, StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(root, recursive: true); }
     }
 
     [Fact]
@@ -431,6 +488,7 @@ public sealed class ScanCommandTests
             ActiveDurationSeconds = 2,
             ActiveConcurrency = 5,
             RunBuiltins = false,
+            VulnDbCacheRoot = NoTemplateCache,
         }, ct, @out, err));
 
         Assert.NotEqual(2, code);
@@ -641,6 +699,7 @@ public sealed class ScanCommandTests
             Target = upstream.Urls.First(),
             RunBuiltins = true,  // hits the builtin-merge branch
             TimeoutSeconds = 5,
+            VulnDbCacheRoot = NoTemplateCache,
         }, ct, @out, err));
         Assert.Equal(0, code);
         Assert.Contains("[VULN]", stdout, StringComparison.Ordinal);
@@ -659,6 +718,7 @@ public sealed class ScanCommandTests
             RunBuiltins = true,
             MinSeverity = "critical",   // every finding is below this, including the high-sev plaintext-http
             TimeoutSeconds = 5,
+            VulnDbCacheRoot = NoTemplateCache,
         }, ct, @out, err));
         Assert.Equal(0, code);
         Assert.Contains("below severity threshold", stdout, StringComparison.Ordinal);
