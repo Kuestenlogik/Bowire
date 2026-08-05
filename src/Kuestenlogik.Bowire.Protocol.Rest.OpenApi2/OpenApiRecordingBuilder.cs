@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json.Nodes;
 using Kuestenlogik.Bowire.Mocking;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
@@ -92,7 +93,7 @@ public static class OpenApiRecordingBuilder
 
             foreach (var (verb, operation) in pathItem.Operations)
             {
-                var (schema, statusCode) = PickSuccessResponseSchema(operation);
+                var (schema, example, statusCode) = PickSuccessResponseSchema(operation);
 
                 var step = new BowireRecordingStep
                 {
@@ -106,11 +107,13 @@ public static class OpenApiRecordingBuilder
                     HttpPath = path,
                     HttpVerb = verb.ToString().ToUpperInvariant(),
                     Status = statusCode,
-                    // No schema on the success response (204 endpoints,
-                    // handlers that only declare a status code, ...) —
-                    // leave the body empty so the replayer doesn't
-                    // emit text into a no-body status like 204.
-                    Response = schema is null ? null : OpenApiSampleGenerator.Generate(schema)
+                    // A declared media-type example wins over schema-generation.
+                    // Otherwise synthesise from the schema; when there's neither
+                    // (204 endpoints, status-only handlers) leave the body empty
+                    // so the replayer doesn't emit text into a no-body status.
+                    Response = example is not null
+                        ? example.ToJsonString()
+                        : (schema is null ? null : OpenApiSampleGenerator.Generate(schema))
                 };
 
                 recording.Steps.Add(step);
@@ -127,13 +130,16 @@ public static class OpenApiRecordingBuilder
         return recording;
     }
 
-    // Pick the first 2xx response with a JSON-shaped schema. Falls back
-    // to the first 2xx response regardless of content-type (so an empty
-    // 204 still produces a step), and finally to "200" with no schema.
-    private static (IOpenApiSchema? Schema, string Status)
+    // Pick the first 2xx response with a JSON-shaped schema or example.
+    // Falls back to the first 2xx response regardless of content-type (so an
+    // empty 204 still produces a step), and finally to "200" with no body.
+    // A media-type-level `example`/`examples` is the canonical place operators
+    // put a full response body; it's carried alongside the schema and wins
+    // over schema-generation (#559).
+    private static (IOpenApiSchema? Schema, JsonNode? Example, string Status)
         PickSuccessResponseSchema(OpenApiOperation operation)
     {
-        if (operation.Responses is null) return (null, "OK");
+        if (operation.Responses is null) return (null, null, "OK");
 
         foreach (var (code, response) in operation.Responses)
         {
@@ -142,17 +148,43 @@ public static class OpenApiRecordingBuilder
 
             foreach (var (contentType, mediaType) in response.Content)
             {
-                if (mediaType.Schema is null) continue;
-                if (string.Equals(contentType, "application/json", StringComparison.OrdinalIgnoreCase) ||
-                    contentType.Contains("+json", StringComparison.OrdinalIgnoreCase))
+                var mediaExample = MediaTypeExample(mediaType);
+                if (mediaType.Schema is null && mediaExample is null) continue;
+                if (IsJsonContentType(contentType))
                 {
-                    return (mediaType.Schema, code);
+                    return (mediaType.Schema, mediaExample, code);
                 }
             }
         }
 
         var fallbackCode = operation.Responses.Keys.FirstOrDefault(c => c.StartsWith('2'));
-        return fallbackCode is null ? (null, "OK") : (null, fallbackCode);
+        return fallbackCode is null ? (null, null, "OK") : (null, null, fallbackCode);
+    }
+
+    // JSON content type, tolerant of media-type parameters — a key like
+    // `application/json; charset=utf-8` must still be picked (#559), so strip
+    // the `;`-parameters before comparing type/subtype.
+    private static bool IsJsonContentType(string contentType)
+    {
+        var semicolon = contentType.IndexOf(';');
+        var bare = (semicolon >= 0 ? contentType[..semicolon] : contentType).Trim();
+        return string.Equals(bare, "application/json", StringComparison.OrdinalIgnoreCase)
+            || bare.Contains("+json", StringComparison.OrdinalIgnoreCase);
+    }
+
+    // Media-type-level response example: the singular `example`, else the
+    // first entry of the `examples` map. Wins over schema-driven generation.
+    private static JsonNode? MediaTypeExample(OpenApiMediaType mediaType)
+    {
+        if (mediaType.Example is JsonNode ex) return ex;
+        if (mediaType.Examples is { Count: > 0 } examples)
+        {
+            foreach (var (_, example) in examples)
+            {
+                if (example?.Value is JsonNode v) return v;
+            }
+        }
+        return null;
     }
 
     // Pass the format explicitly so the reader doesn't have to sniff the

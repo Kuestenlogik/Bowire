@@ -52,9 +52,16 @@ public static class OpenApiSampleGenerator
         if (schema is null || depth >= MaxDepth)
             return JsonValue.Create("sample");
 
-        // Explicit example / default on the schema wins over the
-        // type-driven guess. OpenAPI lets both live as JsonNode values.
+        // A declared example wins over the type-driven guess (#559). Precedence:
+        // the singular `example`, then the OpenAPI 3.1 / JSON Schema 2020-12
+        // `examples` array, then `default` — `default` is a fallback value, not
+        // a representative example, so an author's `examples[0]` outranks it.
         if (schema.Example is JsonNode example) return example.DeepClone();
+        if (schema.Examples is { Count: > 0 } schemaExamples)
+        {
+            var first = schemaExamples.FirstOrDefault(e => e is not null);
+            if (first is not null) return first.DeepClone();
+        }
         if (schema.Default is JsonNode def) return def.DeepClone();
 
         // Enum: always pick the first value. Clone so the caller can't

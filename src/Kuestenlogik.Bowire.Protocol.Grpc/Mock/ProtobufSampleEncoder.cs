@@ -109,6 +109,11 @@ public static class ProtobufSampleEncoder
 
     private static void EncodeSingleValue(CodedOutputStream output, FieldDescriptor field, int depth)
     {
+        // #559: a proto2 field default (`[default = ...]`) is a value the
+        // schema author declared — emit it in preference to the type-driven
+        // sample. proto3 has no field-level defaults, so this is a no-op there.
+        if (TryWriteDeclaredDefault(output, field)) return;
+
         switch (field.FieldType)
         {
             case FieldType.Int32:
@@ -188,6 +193,138 @@ public static class ProtobufSampleEncoder
             case FieldType.Group:
                 // Proto2-only, not worth supporting in a mock — fall through.
                 break;
+        }
+    }
+
+    // Emit a proto2 field's declared default value (#559). Returns false when
+    // the field has no default (proto3, or an undefaulted proto2 field) or the
+    // declared value can't be parsed for the field type — the caller then
+    // falls back to the type-driven sample.
+    private static bool TryWriteDeclaredDefault(CodedOutputStream output, FieldDescriptor field)
+    {
+        var proto = field.ToProto();
+        if (!proto.HasDefaultValue || string.IsNullOrEmpty(proto.DefaultValue)) return false;
+        var raw = proto.DefaultValue;
+        var ci = System.Globalization.CultureInfo.InvariantCulture;
+        const System.Globalization.NumberStyles Int = System.Globalization.NumberStyles.Integer;
+
+        switch (field.FieldType)
+        {
+            case FieldType.Int32:
+            case FieldType.Int64:
+            case FieldType.UInt32:
+                if (!long.TryParse(raw, Int, ci, out var i)) return false;
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.Varint);
+                output.WriteInt64(i);
+                return true;
+
+            case FieldType.UInt64:
+                // Unsigned 64-bit defaults can exceed long.MaxValue.
+                if (!ulong.TryParse(raw, Int, ci, out var u)) return false;
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.Varint);
+                output.WriteUInt64(u);
+                return true;
+
+            case FieldType.SInt32:
+                // sint* are zigzag-encoded on the wire — WriteInt64 would ship a
+                // value a conforming client decodes to the wrong number.
+                if (!int.TryParse(raw, Int, ci, out var si32)) return false;
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.Varint);
+                output.WriteSInt32(si32);
+                return true;
+
+            case FieldType.SInt64:
+                if (!long.TryParse(raw, Int, ci, out var si64)) return false;
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.Varint);
+                output.WriteSInt64(si64);
+                return true;
+
+            case FieldType.Bool:
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.Varint);
+                output.WriteBool(string.Equals(raw, "true", StringComparison.OrdinalIgnoreCase));
+                return true;
+
+            case FieldType.Enum:
+                // proto2 enum defaults are declared by value NAME.
+                var value = field.EnumType?.FindValueByName(raw);
+                if (value is null) return false;
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.Varint);
+                output.WriteInt32(value.Number);
+                return true;
+
+            case FieldType.Fixed32:
+            case FieldType.SFixed32:
+                if (!long.TryParse(raw, Int, ci, out var f32)) return false;
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.Fixed32);
+                output.WriteFixed32(unchecked((uint)f32));
+                return true;
+
+            case FieldType.SFixed64:
+                if (!long.TryParse(raw, Int, ci, out var sf64)) return false;
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.Fixed64);
+                output.WriteFixed64(unchecked((ulong)sf64));
+                return true;
+
+            case FieldType.Fixed64:
+                // Unsigned 64-bit fixed can exceed long.MaxValue.
+                if (!ulong.TryParse(raw, Int, ci, out var uf64)) return false;
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.Fixed64);
+                output.WriteFixed64(uf64);
+                return true;
+
+            case FieldType.Float:
+                if (!TryParseProtoFloat(raw, ci, out var fl)) return false;
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.Fixed32);
+                output.WriteFloat(fl);
+                return true;
+
+            case FieldType.Double:
+                if (!TryParseProtoDouble(raw, ci, out var d)) return false;
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.Fixed64);
+                output.WriteDouble(d);
+                return true;
+
+            case FieldType.String:
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.LengthDelimited);
+                output.WriteString(raw);
+                return true;
+
+            case FieldType.Bytes:
+                // proto2 bytes defaults are C-escaped octet strings; a mock
+                // ships the UTF-8 bytes of the declared literal, which covers
+                // the common ASCII case.
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.LengthDelimited);
+                output.WriteBytes(ByteString.CopyFromUtf8(raw));
+                return true;
+
+            default:
+                // Message / Group can't carry a default — fall back.
+                return false;
+        }
+    }
+
+    // protoc stores non-finite float/double defaults as the literals "inf" /
+    // "-inf" / "nan"; .NET's TryParse recognises "nan" but not "inf"/"-inf",
+    // so map those two explicitly before falling back to the numeric parse.
+    private static bool TryParseProtoDouble(string raw, IFormatProvider ci, out double value)
+    {
+        switch (raw)
+        {
+            case "inf": value = double.PositiveInfinity; return true;
+            case "-inf": value = double.NegativeInfinity; return true;
+            default:
+                return double.TryParse(raw, System.Globalization.NumberStyles.Float, ci, out value);
+        }
+    }
+
+    private static bool TryParseProtoFloat(string raw, IFormatProvider ci, out float value)
+    {
+        switch (raw)
+        {
+            case "inf": value = float.PositiveInfinity; return true;
+            case "-inf": value = float.NegativeInfinity; return true;
+            default:
+                return float.TryParse(raw, System.Globalization.NumberStyles.Float, ci, out value);
         }
     }
 }

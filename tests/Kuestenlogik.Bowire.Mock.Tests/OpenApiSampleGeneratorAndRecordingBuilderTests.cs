@@ -198,6 +198,54 @@ public sealed class OpenApiSampleGeneratorTests
     }
 
     [Fact]
+    public void Generate_31_Examples_Array_Wins_Over_Type_Driven_Guess()
+    {
+        // OpenAPI 3.1 / JSON Schema 2020-12 `examples` array (#559) — the
+        // first entry wins over the "sample" default.
+        var json = OpenApiSampleGenerator.Generate(GetPropertySchema("""
+            {
+              "openapi": "3.1.0",
+              "info": { "title": "T", "version": "1" },
+              "paths": { "/x": { "get": { "operationId": "g", "responses": { "200": { "description": "ok" } } } } },
+              "components": {
+                "schemas": {
+                  "Sample": {
+                    "type": "object",
+                    "properties": { "v": { "type": "string", "examples": ["from-array"] } }
+                  }
+                }
+              }
+            }
+            """, "Sample", "v"));
+
+        Assert.Equal("\"from-array\"", json);
+    }
+
+    [Fact]
+    public void Generate_31_Examples_Array_Wins_Over_Default()
+    {
+        // #559 precedence: a declared `examples` array outranks `default`
+        // (default is a fallback value, not a representative example).
+        var json = OpenApiSampleGenerator.Generate(GetPropertySchema("""
+            {
+              "openapi": "3.1.0",
+              "info": { "title": "T", "version": "1" },
+              "paths": { "/x": { "get": { "operationId": "g", "responses": { "200": { "description": "ok" } } } } },
+              "components": {
+                "schemas": {
+                  "Sample": {
+                    "type": "object",
+                    "properties": { "v": { "type": "string", "default": "d", "examples": ["e"] } }
+                  }
+                }
+              }
+            }
+            """, "Sample", "v"));
+
+        Assert.Equal("\"e\"", json);
+    }
+
+    [Fact]
     public void Generate_Default_Wins_When_No_Example()
     {
         var json = OpenApiSampleGenerator.Generate(GetPropertySchema("""
@@ -544,6 +592,119 @@ public sealed class OpenApiRecordingBuilderTests
         var step = Assert.Single(rec.Steps);
         Assert.Equal("OK", step.Status);
         Assert.Null(step.Response);
+    }
+
+    [Fact]
+    public void Build_MediaType_Example_Wins_Over_Schema_Generation()
+    {
+        // #559: a media-type-level `example` is the canonical place operators
+        // put a full response body; it must win over schema generation
+        // (which would emit `{"status":"sample"}`).
+        const string doc = """
+            {
+              "openapi": "3.0.0",
+              "info": { "title": "T", "version": "1" },
+              "paths": {
+                "/o": {
+                  "get": {
+                    "operationId": "getO",
+                    "tags": ["O"],
+                    "responses": {
+                      "200": {
+                        "description": "ok",
+                        "content": {
+                          "application/json": {
+                            "schema": { "type": "object", "properties": { "status": { "type": "string" } } },
+                            "example": { "status": "shipped", "id": 42 }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """;
+        var rec = OpenApiRecordingBuilder.Build(LoadDoc(doc), "inline");
+
+        var step = Assert.Single(rec.Steps);
+        using var body = JsonDocument.Parse(step.Response!);
+        Assert.Equal("shipped", body.RootElement.GetProperty("status").GetString());
+        Assert.Equal(42, body.RootElement.GetProperty("id").GetInt32());
+    }
+
+    [Fact]
+    public void Build_MediaType_Examples_Map_Wins_Over_Schema_Generation()
+    {
+        // #559: the first entry of the `examples` map (named examples) wins.
+        const string doc = """
+            {
+              "openapi": "3.0.0",
+              "info": { "title": "T", "version": "1" },
+              "paths": {
+                "/o": {
+                  "get": {
+                    "operationId": "getO",
+                    "tags": ["O"],
+                    "responses": {
+                      "200": {
+                        "description": "ok",
+                        "content": {
+                          "application/json": {
+                            "schema": { "type": "object", "properties": { "status": { "type": "string" } } },
+                            "examples": { "sample": { "value": { "status": "delivered" } } }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """;
+        var rec = OpenApiRecordingBuilder.Build(LoadDoc(doc), "inline");
+
+        var step = Assert.Single(rec.Steps);
+        using var body = JsonDocument.Parse(step.Response!);
+        Assert.Equal("delivered", body.RootElement.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public void Build_MediaType_Example_On_Parameterized_ContentType_Is_Picked()
+    {
+        // #559: a JSON content type with media-type parameters
+        // (`application/json; charset=utf-8`) must still be recognised so its
+        // declared example is served.
+        const string doc = """
+            {
+              "openapi": "3.0.0",
+              "info": { "title": "T", "version": "1" },
+              "paths": {
+                "/o": {
+                  "get": {
+                    "operationId": "getO",
+                    "tags": ["O"],
+                    "responses": {
+                      "200": {
+                        "description": "ok",
+                        "content": {
+                          "application/json; charset=utf-8": {
+                            "example": { "status": "shipped" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """;
+        var rec = OpenApiRecordingBuilder.Build(LoadDoc(doc), "inline");
+
+        var step = Assert.Single(rec.Steps);
+        Assert.NotNull(step.Response);
+        using var body = JsonDocument.Parse(step.Response!);
+        Assert.Equal("shipped", body.RootElement.GetProperty("status").GetString());
     }
 
     private static OpenApiDocument LoadDoc(string json)
