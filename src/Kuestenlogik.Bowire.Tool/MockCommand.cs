@@ -76,6 +76,21 @@ internal static class MockCommand
             return 2;
         }
 
+        MockConfiguration? mockConfig = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(cli.MockConfigPath))
+            {
+                mockConfig = MockConfiguration.Parse(
+                    await File.ReadAllTextAsync(cli.MockConfigPath, ct).ConfigureAwait(false));
+            }
+        }
+        catch (Exception ex) when (ex is System.Text.Json.JsonException or IOException or UnauthorizedAccessException)
+        {
+            await io.Err.WriteLineAsync("bowire mock: --mock-config: " + ex.Message).ConfigureAwait(false);
+            return 2;
+        }
+
         try
         {
             // Load installed protocol plugins (if any) and pull their
@@ -159,7 +174,8 @@ internal static class MockCommand
                 TransportHosts = transportHosts,
                 SchemaSources = schemaSources,
                 LiveSchemaHandlers = liveSchemaHandlers,
-                HostingExtensions = hostingExtensions
+                HostingExtensions = hostingExtensions,
+                MockConfig = mockConfig
                 // TransportPorts left at default — per-transport ports
                 // can be exposed as future CLI flags (e.g. --mqtt-port)
                 // routed into this dictionary, but for now every host

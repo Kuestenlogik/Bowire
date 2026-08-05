@@ -267,4 +267,21 @@ public sealed class MockServerOptions
     /// no-op branch.
     /// </summary>
     public Management.IMockRequestObserver? RequestObserver { get; init; }
+
+    /// <summary>
+    /// #558: operator-authored refinement layer applied onto the
+    /// schema-synthesised recording at startup. Today this evaluates
+    /// per-field response overrides via <see cref="MockConfigApplier"/>;
+    /// the conditional rules and auth-requirement it also carries are
+    /// model-only until the sibling slices consume them. Null (default) =
+    /// no refinement. CLI: <c>--mock-config &lt;file&gt;</c>.
+    /// <para>
+    /// Applied to the in-memory recording, so it refines the schema-only
+    /// modes (<c>--schema</c> / <c>--grpc-schema</c> / <c>--graphql-schema</c>).
+    /// A recording-file mock (<c>--recording</c>) mounts the middleware
+    /// straight from disk for hot-reload, so overrides do not affect it in
+    /// this slice.
+    /// </para>
+    /// </summary>
+    public MockConfiguration? MockConfig { get; init; }
 }

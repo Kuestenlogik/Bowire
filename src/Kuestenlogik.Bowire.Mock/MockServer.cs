@@ -213,6 +213,16 @@ public sealed class MockServer : IAsyncDisposable
             {
                 recording = Loading.RecordingLoader.Load(_options.RecordingPath!, _options.Select);
             }
+
+            // #558: apply the operator's per-field response overrides onto the
+            // synthesised recording before it's served. No-op when no config is
+            // set or it carries no field overrides. Only reaches the schema-only
+            // modes — a recording-file mock mounts the middleware from disk below.
+            if (_options.MockConfig is not null)
+            {
+                recording = MockConfigApplier.Apply(recording, _options.MockConfig);
+            }
+
             var needsHttp2 = _options.HostingExtensions.Any(e => e.RequiresHttp2(recording));
 
             // #410: HTTPS listener. Source the cert once (supplied PFX/PEM, or a

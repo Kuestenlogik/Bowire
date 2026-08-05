@@ -84,6 +84,9 @@ internal sealed class MockCliOptions
     /// <summary>Path to a <c>mock-faults.json</c> per-method fault-rule sidecar (#170). Parsed by <c>FaultRuleSet.LoadJson</c>.</summary>
     public string? FaultsPath { get; set; }
 
+    /// <summary>#558: path to a mock-configuration JSON (per-field response overrides + rules + auth) refining a schema mock. Parsed by <c>MockConfiguration.Parse</c>.</summary>
+    public string? MockConfigPath { get; set; }
+
     /// <summary>Target file for captured misses (Phase 3c).</summary>
     public string? CaptureMissPath { get; set; }
 

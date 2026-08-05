@@ -309,6 +309,66 @@ public sealed class MockCommandTests
         }
     }
 
+    [Fact]
+    public async Task RunAsync_MockConfigMalformedJson_ReturnsUsageExit()
+    {
+        // #558: --mock-config points at a syntactically-broken JSON file →
+        // MockConfiguration.Parse throws JsonException → the mock-config
+        // catch writes `bowire mock: --mock-config: …` and returns exit 2
+        // (usage), before any schema/plugin IO.
+        var dir = Directory.CreateTempSubdirectory("bowire-mock-cfg-").FullName;
+        var cfg = SafePath.Combine(dir, "bad-config.json");
+        try
+        {
+            await File.WriteAllTextAsync(cfg, "{ not json", TestContext.Current.CancellationToken);
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+            var cli = new MockCliOptions { SchemaPath = "openapi.yml", MockConfigPath = cfg };
+            var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), stdout, stderr, TestContext.Current.CancellationToken);
+
+            Assert.Equal(2, rc);
+            Assert.Contains("bowire mock: --mock-config:", stderr.ToString());
+        }
+        finally
+        {
+            try { Directory.Delete(dir, recursive: true); } catch { /* best-effort */ }
+        }
+    }
+
+    [Fact]
+    public async Task RunAsync_ValidMockConfig_PassesParseGate_ThenFailsDownstream()
+    {
+        // #558: a well-formed --mock-config is read + parsed without error
+        // (it does NOT trip the exit-2 config-parse catch). The command then
+        // fails downstream at schema load — no schema source is registered
+        // under TestPluginLoaders.None() — with exit 1. Proves the valid
+        // config passed the parse gate rather than being rejected.
+        var dir = Directory.CreateTempSubdirectory("bowire-mock-cfg-ok-").FullName;
+        var cfg = SafePath.Combine(dir, "config.json");
+        try
+        {
+            await File.WriteAllTextAsync(cfg,
+                """{"configFormatVersion":1,"fieldOverrides":[{"jsonPath":"$.x","value":1}]}""",
+                TestContext.Current.CancellationToken);
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+            var cli = new MockCliOptions
+            {
+                SchemaPath = SafePath.Combine(dir, "missing-openapi.yml"),
+                MockConfigPath = cfg,
+            };
+            var rc = await MockCommand.RunAsync(cli, TestPluginLoaders.None(), stdout, stderr, TestContext.Current.CancellationToken);
+
+            Assert.Equal(1, rc);
+            // The failure is downstream of the config parse, not the config itself.
+            Assert.DoesNotContain("--mock-config", stderr.ToString());
+        }
+        finally
+        {
+            try { Directory.Delete(dir, recursive: true); } catch { /* best-effort */ }
+        }
+    }
+
     private static string MakeRecordingJson(string protocolId) => $$"""
         {
           "id": "rec_test",
