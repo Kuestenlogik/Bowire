@@ -54,7 +54,7 @@ public sealed class BrowserUiHostTests
         try
         {
             BrowserUiHost.OpenBrowserAsync = (_, _) => { Interlocked.Increment(ref openCount); return Task.CompletedTask; };
-            BrowserUiHost.HostRunner = (_, ui, _) => { seenOptions = ui; return Task.FromResult(42); };
+            BrowserUiHost.HostRunner = (_, ui, _, _) => { seenOptions = ui; return Task.FromResult(42); };
 
             var rc = await BrowserUiHost.RunAsync(
                 [],
@@ -80,6 +80,35 @@ public sealed class BrowserUiHostTests
     }
 
     [Fact]
+    public async Task RunAsync_Forwards_The_Plugin_Loader_To_HostRunner()
+    {
+        // #560 — the schema-mock wiring depends on RunAsync threading the
+        // already-Load()ed plugin loader into DefaultHostRunner (where the
+        // schema sources are enumerated into AddBowireMockManagement). Pin
+        // that the exact instance passed to RunAsync reaches HostRunner.
+        var prevRunner = BrowserUiHost.HostRunner;
+        object? seenLoader = null;
+        var passed = TestPluginLoaders.None();
+        try
+        {
+            BrowserUiHost.HostRunner = (_, _, loader, _) => { seenLoader = loader; return Task.FromResult(0); };
+
+            var rc = await BrowserUiHost.RunAsync(
+                [],
+                BuildConfig(new() { ["Bowire:NoBrowser"] = "true" }),
+                plugins: passed,
+                ct: CancellationToken.None);
+
+            Assert.Equal(0, rc);
+            Assert.Same(passed, seenLoader);
+        }
+        finally
+        {
+            BrowserUiHost.HostRunner = prevRunner;
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_BrowserEnabled_LaunchesAtBoundUrl()
     {
         var prevOpen = BrowserUiHost.OpenBrowserAsync;
@@ -91,7 +120,7 @@ public sealed class BrowserUiHostTests
             // Hold the runner open until the browser launch fires so the
             // background Task.Run has a chance to schedule before we
             // unblock RunAsync and tear the seams down.
-            BrowserUiHost.HostRunner = async (_, _, ct) =>
+            BrowserUiHost.HostRunner = async (_, _, _, ct) =>
             {
                 await captured.Task.WaitAsync(TimeSpan.FromSeconds(5), ct).ConfigureAwait(false);
                 return 0;
@@ -163,7 +192,7 @@ public sealed class BrowserUiHostTests
         {
             BrowserUiHost.OpenBrowserAsync = (_, _) =>
                 throw new InvalidOperationException("simulated browser failure");
-            BrowserUiHost.HostRunner = (_, _, _) =>
+            BrowserUiHost.HostRunner = (_, _, _, _) =>
             {
                 hostStarted.TrySetResult(true);
                 return Task.FromResult(0);
@@ -205,7 +234,7 @@ public sealed class BrowserUiHostTests
         try
         {
             BrowserUiHost.OpenBrowserAsync = (_, _) => Task.CompletedTask;
-            BrowserUiHost.HostRunner = (_, ui, _) => { seen = ui; return Task.FromResult(0); };
+            BrowserUiHost.HostRunner = (_, ui, _, _) => { seen = ui; return Task.FromResult(0); };
 
             var rc = await BrowserUiHost.RunAsync(
                 ["--url", "http://api.local"],
@@ -240,7 +269,7 @@ public sealed class BrowserUiHostTests
         try
         {
             BrowserUiHost.OpenBrowserAsync = (_, _) => Task.CompletedTask;
-            BrowserUiHost.HostRunner = (_, ui, _) => { seen = ui; return Task.FromResult(0); };
+            BrowserUiHost.HostRunner = (_, ui, _, _) => { seen = ui; return Task.FromResult(0); };
 
             var rc = await BrowserUiHost.RunAsync(
                 ["--url", "http://a", "--url", "http://b"],
@@ -322,7 +351,7 @@ public sealed class BrowserUiHostTests
         try
         {
             BrowserUiHost.OpenBrowserAsync = (_, _) => Task.CompletedTask;
-            BrowserUiHost.HostRunner = (_, ui, _) => { seen = ui; return Task.FromResult(0); };
+            BrowserUiHost.HostRunner = (_, ui, _, _) => { seen = ui; return Task.FromResult(0); };
 
             var rc = await BrowserUiHost.RunAsync(
                 [],

@@ -105,7 +105,24 @@ public sealed class MockServer : IAsyncDisposable
             sp.GetRequiredService<MockKestrelHostedService>());
 
         var host = builder.Build();
-        await host.StartAsync(ct);
+        try
+        {
+            await host.StartAsync(ct);
+        }
+        catch
+        {
+            // Startup failed — e.g. a malformed schema (#560's workbench paste
+            // box routes that here), a busy port, or a bad recording. Dispose
+            // the built host so its ServiceProvider + the SimpleConsole logger's
+            // background processor thread don't leak; ownership hasn't reached
+            // the returned MockServer yet. IHost is only IDisposable on the
+            // interface; the concrete host is IAsyncDisposable.
+            if (host is IAsyncDisposable asyncDisposable)
+                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+            else
+                host.Dispose();
+            throw;
+        }
         var kestrel = host.Services.GetRequiredService<MockKestrelHostedService>();
         return new MockServer(host, kestrel, options.Faults);
     }

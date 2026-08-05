@@ -90,14 +90,43 @@ public static class BowireMockManagementEndpoints
                     JsonOptions, statusCode: 400);
             }
 
-            // Two start shapes; pick based on which field arrived.
-            //   { recording, name?, port? }    — inline payload (legacy + embedded)
-            //   { recordingId, label? }        — lookup via IRecordingJsonProvider ("Use as mock")
-            string? recordingJson;
-            string recordingId;
-            string label;
+            var port = req.Port ?? 0; // 0 = OS-assigned via the rolling allocator
 
-            if (!string.IsNullOrWhiteSpace(req.RecordingId))
+            // Three start shapes; pick based on which field arrived.
+            //   { schemaKind, schemaInline | schemaPath, label?, port? }  — #560 schema mock
+            //   { recording, name?, port? }                              — inline payload (legacy + embedded)
+            //   { recordingId, label? }                                  — lookup via IRecordingJsonProvider
+            Func<Task<MockHostHandle>> start;
+
+            if (!string.IsNullOrWhiteSpace(req.SchemaKind))
+            {
+                if (!BowireMockHostManager.IsSupportedSchemaKind(req.SchemaKind))
+                {
+                    return Results.Json(
+                        new { error = "schemaKind must be one of: openapi, protobuf, graphql." },
+                        JsonOptions, statusCode: 400);
+                }
+                // A recognised kind still needs a wired source in THIS host — a
+                // recording-only embedded host (or a partial source list) can't
+                // serve it. Answer with a precise 400 rather than letting the
+                // manager's InvalidOperationException surface as a 500.
+                if (!manager.SchemaKinds.Contains(req.SchemaKind!.Trim(), StringComparer.OrdinalIgnoreCase))
+                {
+                    return Results.Json(
+                        new { error = $"schemaKind '{req.SchemaKind!.Trim()}' isn't available on this host — no matching mock schema source is registered." },
+                        JsonOptions, statusCode: 400);
+                }
+                if (string.IsNullOrWhiteSpace(req.SchemaInline) && string.IsNullOrWhiteSpace(req.SchemaPath))
+                {
+                    return Results.Json(
+                        new { error = "A schema mock needs `schemaInline` (schema text) or `schemaPath`." },
+                        JsonOptions, statusCode: 400);
+                }
+                var schemaLabel = FirstNonBlank(req.Label, req.Name) ?? (req.SchemaKind!.Trim() + "-mock");
+                start = () => manager.StartFromSchemaAsync(
+                    req.SchemaKind!, req.SchemaInline, req.SchemaPath, schemaLabel, port, ctx.RequestAborted);
+            }
+            else if (!string.IsNullOrWhiteSpace(req.RecordingId))
             {
                 var lookup = ctx.RequestServices.GetService<IRecordingJsonProvider>();
                 if (lookup is null)
@@ -106,6 +135,7 @@ public static class BowireMockManagementEndpoints
                         new { error = "No IRecordingJsonProvider registered — embedded hosts must pass `recording` inline." },
                         JsonOptions, statusCode: 500);
                 }
+                string? recordingJson;
                 try { recordingJson = lookup.TryGetRecordingJson(req.RecordingId); }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
                 {
@@ -119,28 +149,25 @@ public static class BowireMockManagementEndpoints
                         new { error = $"No recording with id '{req.RecordingId}'" },
                         JsonOptions, statusCode: 404);
                 }
-                recordingId = req.RecordingId;
-                label = string.IsNullOrWhiteSpace(req.Label) ? req.RecordingId : req.Label!;
+                var label = string.IsNullOrWhiteSpace(req.Label) ? req.RecordingId : req.Label!;
+                start = () => manager.StartAsync(recordingJson!, req.RecordingId!, label, port, ctx.RequestAborted);
             }
             else if (!string.IsNullOrWhiteSpace(req.Recording))
             {
-                recordingJson = req.Recording;
-                recordingId = string.Empty;
-                label = string.IsNullOrWhiteSpace(req.Name) ? "unnamed" : req.Name!;
+                var label = string.IsNullOrWhiteSpace(req.Name) ? "unnamed" : req.Name!;
+                start = () => manager.StartAsync(req.Recording!, string.Empty, label, port, ctx.RequestAborted);
             }
             else
             {
                 return Results.Json(
-                    new { error = "Body must carry either `recording` (inline JSON) or `recordingId` (lookup)." },
+                    new { error = "Body must carry `schemaKind` (schema mock), `recording` (inline JSON), or `recordingId` (lookup)." },
                     JsonOptions, statusCode: 400);
             }
-
-            var port = req.Port ?? 0; // 0 = OS-assigned via the rolling allocator
 
 #pragma warning disable CA1031 // mock-start spawns the full host pipeline; unbounded failure surface
             try
             {
-                var handle = await manager.StartAsync(recordingJson!, recordingId, label, port, ctx.RequestAborted);
+                var handle = await start();
                 return Results.Json(MockSummary.From(handle), JsonOptions, statusCode: 201);
             }
             catch (Exception ex)
@@ -394,12 +421,19 @@ public static class BowireMockManagementEndpoints
 
     private sealed record ScenarioStateRequest(string? State);
 
+    private static string? FirstNonBlank(params string?[] candidates) =>
+        candidates.FirstOrDefault(c => !string.IsNullOrWhiteSpace(c));
+
     private sealed record StartMockRequest(
         string? Recording,
         string? Name,
         int? Port,
         string? RecordingId,
-        string? Label);
+        string? Label,
+        // #560 — schema-mock start shape.
+        string? SchemaKind,
+        string? SchemaInline,
+        string? SchemaPath);
 
     /// <summary>
     /// JSON-friendly projection of a <see cref="MockHostHandle"/>. Same
