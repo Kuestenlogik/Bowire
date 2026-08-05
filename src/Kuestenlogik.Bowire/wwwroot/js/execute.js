@@ -154,7 +154,12 @@
                 headers: Object.assign({}, metadata),
                 query: {},
                 method: selectedMethod.httpMethod || '',
-                url: selectedService.originUrl || ''
+                // #253 — a pre-request script signs / inspects the URL the
+                // call actually hits, so give it the resolved invocation URL
+                // with {{vars}} substituted (the send path substitutes too).
+                url: (typeof invocationUrlFor === 'function'
+                    ? invocationUrlFor(selectedService, selectedMethod)
+                    : (selectedService && selectedService.originUrl)) || ''
             };
             // Snapshot env vars + write-through callback. ctx.env.set
             // updates the active environment (or workspace defaults

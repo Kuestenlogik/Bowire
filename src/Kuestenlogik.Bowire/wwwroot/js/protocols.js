@@ -396,9 +396,15 @@
         }
         channelMetadata = await applyAuth(channelMetadata);
         var hasMetadata = Object.keys(channelMetadata).length > 0;
+        // #253 — snapshot the invocation URL at channel-open; the recorder
+        // step below runs when the channel closes, long after any method
+        // switch, and must label the host the channel actually opened on.
+        var _sentInvocationUrl = (typeof invocationUrlFor === 'function'
+            ? invocationUrlFor(selectedService, selectedMethod)
+            : (selectedService && selectedService.originUrl)) || (serverUrls[0] || null);
 
         try {
-            var resp = await fetch(config.prefix + '/api/channel/open' + serverUrlParamForService(selectedService, false), {
+            var resp = await fetch(config.prefix + '/api/channel/open' + serverUrlParamForService(selectedService, false, selectedMethod), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -543,7 +549,7 @@
                     service: selectedService.name,
                     method: selectedMethod.name,
                     methodType: selectedMethod.methodType,
-                    serverUrl: (selectedService && selectedService.originUrl) || (serverUrls[0] || null),
+                    serverUrl: _sentInvocationUrl,
                     body: '(channel: ' + sentCount + ' sent, ' + receivedCount + ' received)',
                     messages: [],
                     metadata: (channelMetadata && Object.keys(channelMetadata).length > 0) ? channelMetadata : null,

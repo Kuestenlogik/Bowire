@@ -546,6 +546,20 @@
             }
         ));
 
+        // #253 — always-expand the invocation-URL override on discovered
+        // methods (for operators who routinely call a different host than
+        // the schema came from). Machine-wide UI preference, default off.
+        var alwaysShowInvocationUrl = localStorage.getItem('bowire_always_show_invocation_url') === 'true';
+        section.appendChild(renderSettingsToggle(
+            'Always show invocation URL override',
+            'Expand the “Invocation URL” disclosure on every discovered method, instead of only when you open it. Handy when the API you call lives at a different host than its schema.',
+            alwaysShowInvocationUrl,
+            function (val) {
+                localStorage.setItem('bowire_always_show_invocation_url', val ? 'true' : 'false');
+                render();
+            }
+        ));
+
         // Schema Watch interval
         section.appendChild(renderSettingsRow(
             'Schema Watch interval',

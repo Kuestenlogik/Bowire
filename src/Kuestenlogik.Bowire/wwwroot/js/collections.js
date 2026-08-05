@@ -1334,37 +1334,20 @@
             }))
             : null;
 
-        // #252 — Resolve URL at execute time. For urlMode='source'
-        // items the snapshot's serverUrl is treated as a HINT — we
-        // re-check against the current workspace's Source URL list
-        // so a rename / retire propagates to the saved item. When
-        // the hint is no longer in the list, fall back to the
-        // current first Source URL and emit a console warning (the
-        // operator's hint that something they pinned to a Source
-        // has drifted; toast would be too noisy for batch runs).
-        var serverUrl;
+        // #252 — resolve the SCHEMA url (where the item was saved against)
+        // at execute time. For urlMode='source' the snapshot's serverUrl is a
+        // HINT re-checked against the live workspace Source list so a rename /
+        // retire propagates (resolveSourceUrl, invocation-url.js — the shared
+        // drift helper). 'inline'/unset uses the self-contained url as-is.
+        var schemaUrl;
         if (item.urlMode === 'source') {
-            if (Array.isArray(serverUrls) && serverUrls.length > 0) {
-                if (item.serverUrl && serverUrls.indexOf(item.serverUrl) >= 0) {
-                    serverUrl = item.serverUrl;
-                } else {
-                    serverUrl = serverUrls[0];
-                    if (item.serverUrl && item.serverUrl !== serverUrl) {
-                        console.warn('[#252] collection item bound to source URL "'
-                            + item.serverUrl + '" no longer in workspace — replaying against "'
-                            + serverUrl + '"');
-                    }
-                }
-            } else {
-                // No sources at all → best-effort fall back to the
-                // hint so the call still has SOMETHING to hit.
-                serverUrl = item.serverUrl || '';
-            }
+            schemaUrl = resolveSourceUrl(item.serverUrl, 'collection item');
         } else {
-            // urlMode='inline' (or unset, pre-#252) — self-contained
-            // URL on the item. Use as-is.
-            serverUrl = item.serverUrl || (serverUrls.length > 0 ? serverUrls[0] : '');
+            schemaUrl = item.serverUrl || (serverUrls.length > 0 ? serverUrls[0] : '');
         }
+        // #253 — the invocation url may override the schema url per item
+        // (same-as-schema default reproduces #252's behaviour).
+        var serverUrl = resolveItemInvocationUrl(item, schemaUrl);
         var body = {
             service: item.service,
             method: item.method,
@@ -1373,8 +1356,13 @@
             protocol: item.protocol || null
         };
 
+        // #253 — substitute {{vars}} in the resolved URL, matching the live
+        // invoke path (serverUrlParam does this) so an inline override or a
+        // Source URL containing {{baseUrl}} replays against the real host,
+        // not the literal template.
+        var sentUrl = (serverUrl && typeof substituteVars === 'function') ? substituteVars(serverUrl) : serverUrl;
         var url = config.prefix + '/api/invoke'
-            + (serverUrl ? '?serverUrl=' + encodeURIComponent(serverUrl) : '');
+            + (sentUrl ? '?serverUrl=' + encodeURIComponent(sentUrl) : '');
 
         return fetch(url, {
             method: 'POST',

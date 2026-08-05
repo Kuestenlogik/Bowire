@@ -6486,8 +6486,9 @@
         var method = selectedMethod.name;
         var fullName = service + '/' + method;
         var protocolId = selectedService.source || selectedProtocol || undefined;
-        // Snapshot the originUrl so each iteration routes to the right URL
-        var serviceUrlParam = serverUrlParamForService(selectedService, false);
+        // Snapshot the invocation URL so each iteration routes to the right
+        // host — honours the #253 per-method override, not just originUrl.
+        var serviceUrlParam = serverUrlParamForService(selectedService, false, selectedMethod);
 
         resetBenchmark({ n: n, concurrency: Math.max(1, Math.min(concurrency, 20)) });
         benchmark.running = true;

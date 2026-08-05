@@ -741,7 +741,12 @@
     function _mergeUrlHeaders(svc, metadata) {
         try {
             if (typeof getUrlHeaders !== 'function') return metadata;
-            var u = (svc && svc.originUrl) || (typeof serverUrls !== 'undefined' && serverUrls[0]) || null;
+            // #253 — per-URL headers belong to the host the call actually
+            // hits (override-aware, {{vars}} substituted so the lookup key
+            // matches the real target host, not a template).
+            var u = (typeof invocationUrlFor === 'function'
+                ? invocationUrlFor(svc, selectedMethod) : (svc && svc.originUrl))
+                || (typeof serverUrls !== 'undefined' && serverUrls[0]) || null;
             if (!u) return metadata;
             var bag = getUrlHeaders(u);
             if (!bag || Object.keys(bag).length === 0) return metadata;
@@ -752,6 +757,13 @@
 
     async function invokeUnary(service, method, messages, metadata) {
         metadata = _mergeUrlHeaders(selectedService, metadata);
+        // #253 — snapshot the resolved (substituted) invocation URL AT FIRE
+        // time. The recorder step runs after the await, by when the operator
+        // may have switched methods; reading the override then would label
+        // the recording with a different host than the call actually hit.
+        var _sentInvocationUrl = (typeof invocationUrlFor === 'function'
+            ? invocationUrlFor(selectedService, selectedMethod)
+            : (selectedService && selectedService.originUrl)) || (serverUrls[0] || null);
         isExecuting = true;
         markJobActive(service, method);
         responseData = null;
@@ -789,7 +801,7 @@
             }
 
             // Route to the URL the service was discovered from (multi-URL safety)
-            const resp = await fetch(`${config.prefix}/api/invoke${serverUrlParamForService(selectedService, false)}`, {
+            const resp = await fetch(`${config.prefix}/api/invoke${serverUrlParamForService(selectedService, false, selectedMethod)}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -887,7 +899,7 @@
                 service,
                 method,
                 methodType: selectedMethod?.methodType || 'Unary',
-                serverUrl: (selectedService && selectedService.originUrl) || (serverUrls[0] || null),
+                serverUrl: _sentInvocationUrl,
                 body: messages[0] || '{}',
                 messages: messages.slice(),
                 metadata: metadata || null,
@@ -964,6 +976,11 @@
 
     function invokeStreaming(service, method, messages, metadata) {
         metadata = _mergeUrlHeaders(selectedService, metadata);
+        // #253 — snapshot the invocation URL at fire time; a server-stream's
+        // 'done' handler can run long after the operator switched methods.
+        var _sentInvocationUrl = (typeof invocationUrlFor === 'function'
+            ? invocationUrlFor(selectedService, selectedMethod)
+            : (selectedService && selectedService.originUrl)) || (serverUrls[0] || null);
         isExecuting = true;
         markJobActive(service, method);
         responseData = null;
@@ -988,7 +1005,7 @@
         var metadataParam = metadata && Object.keys(metadata).length > 0
             ? `&metadata=${encodeURIComponent(JSON.stringify(metadata))}`
             : '';
-        const url = `${config.prefix}/api/invoke/stream?service=${encodeURIComponent(service)}&method=${encodeURIComponent(method)}&messages=${encodeURIComponent(messagesJson)}${protocolParam}${metadataParam}${serverUrlParamForService(selectedService, true)}`;
+        const url = `${config.prefix}/api/invoke/stream?service=${encodeURIComponent(service)}&method=${encodeURIComponent(method)}&messages=${encodeURIComponent(messagesJson)}${protocolParam}${metadataParam}${serverUrlParamForService(selectedService, true, selectedMethod)}`;
 
         var fullName = service + '/' + method;
         addConsoleEntry({ type: 'request', method: fullName, status: 'Streaming', body: messages[0] || '{}' });
@@ -1126,7 +1143,7 @@
                 service,
                 method,
                 methodType: selectedMethod?.methodType || 'ServerStreaming',
-                serverUrl: (selectedService && selectedService.originUrl) || (serverUrls[0] || null),
+                serverUrl: _sentInvocationUrl,
                 body: messages[0] || '{}',
                 messages: messages.slice(),
                 metadata: metadata || null,
