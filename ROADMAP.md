@@ -126,12 +126,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**19/25 done** · 6 backlog
+**20/25 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [179](https://github.com/Kuestenlogik/Bowire/issues/179) | Bowire | [Mock from schema — generate a running mock without a recording](#issue-kuestenlogik-bowire-179) | ⬜ Backlog |  |
-| [558](https://github.com/Kuestenlogik/Bowire/issues/558) | Bowire | [Add a persisted mock-configuration workspace artifact: model, store, and apply-at-startup seam](#issue-kuestenlogik-bowire-558) | ⬜ Backlog |  |
 | [559](https://github.com/Kuestenlogik/Bowire/issues/559) | Bowire | [Honour declared schema examples across OpenAPI, Protobuf, and GraphQL mock sources](#issue-kuestenlogik-bowire-559) | ⬜ Backlog |  |
 | [560](https://github.com/Kuestenlogik/Bowire/issues/560) | Bowire | [Start a schema mock from the workbench and create its mock-configuration artifact](#issue-kuestenlogik-bowire-560) | ⬜ Backlog |  |
 | [561](https://github.com/Kuestenlogik/Bowire/issues/561) | Bowire | [Add per-field response-override and per-method conditional-rule editors to the schema-mock detail pane](#issue-kuestenlogik-bowire-561) | ⬜ Backlog |  |
@@ -155,6 +154,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [411](https://github.com/Kuestenlogik/Bowire/issues/411) | Bowire | [Mock fault injection: malformed-response-chunk + faults on unmatched requests](#issue-kuestenlogik-bowire-411) | ✅ Done |  |
 | [430](https://github.com/Kuestenlogik/Bowire/issues/430) | Bowire | [Mock response templating: expression/helper engine + record-through capture (follow-up)](#issue-kuestenlogik-bowire-430) | ✅ Done |  |
 | [491](https://github.com/Kuestenlogik/Bowire/issues/491) | Bowire | [Nuclei template compat — non-HTTP transports (Phase 2g)](#issue-kuestenlogik-bowire-491) | ✅ Done |  |
+| [558](https://github.com/Kuestenlogik/Bowire/issues/558) | Bowire | [Add a persisted mock-configuration workspace artifact: model, store, and apply-at-startup seam](#issue-kuestenlogik-bowire-558) | ✅ Done |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
@@ -713,10 +713,6 @@ Discovered during the #346 second-pass fix. Separate bug — same morphdom-stale
 
 Mocks today require a Recording: capture traffic against a real server, replay against the mock. That's great for fidelity but bad for parallel development where the consumer team starts BEFORE the provider exists. Today the consumer has to hand-write stubs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/179)
 
-#### <a id="issue-kuestenlogik-bowire-558"></a>⬜ Backlog · [#558](https://github.com/Kuestenlogik/Bowire/issues/558) Add a persisted mock-configuration workspace artifact: model, store, and apply-at-startup seam
-
-Schema mocks today synthesise an in-memory `BowireRecording` at startup and persist nothing; the only rule-typed config on `MockServerOptions` is `Chaos`/`Faults` (error injection, explicitly out of scope for #179). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/558)
-
 #### <a id="issue-kuestenlogik-bowire-559"></a>⬜ Backlog · [#559](https://github.com/Kuestenlogik/Bowire/issues/559) Honour declared schema examples across OpenAPI, Protobuf, and GraphQL mock sources
 
 "Reads schema examples when present" is genuinely shipped for OpenAPI only, and partially there: `OpenApiSampleGenerator.BuildNode` honours inline `schema.Example`/`schema.Default` but `PickSuccessResponseSchema` extracts only `mediaType.Schema`, so media-type-level examples are silently ignored. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/559)
@@ -814,6 +810,10 @@ Follow-up from #406 (mock-server WireMock parity, epic #401). The response templ
 #### <a id="issue-kuestenlogik-bowire-491"></a>✅ Done · [#491](https://github.com/Kuestenlogik/Bowire/issues/491) Nuclei template compat — non-HTTP transports (Phase 2g)
 
 Split out of #35 (Nuclei template compatibility). Phases 2a–2f shipped across the v2.3 cycle: [[more]](https://github.com/Kuestenlogik/Bowire/issues/491)
+
+#### <a id="issue-kuestenlogik-bowire-558"></a>✅ Done · [#558](https://github.com/Kuestenlogik/Bowire/issues/558) Add a persisted mock-configuration workspace artifact: model, store, and apply-at-startup seam
+
+Schema mocks today synthesise an in-memory `BowireRecording` at startup and persist nothing; the only rule-typed config on `MockServerOptions` is `Chaos`/`Faults` (error injection, explicitly out of scope for #179). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/558)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
