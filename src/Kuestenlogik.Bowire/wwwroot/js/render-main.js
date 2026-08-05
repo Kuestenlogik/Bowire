@@ -6598,6 +6598,14 @@
         // another tab-content pane by position accidentally.
         const bodyContent = el('div', { id: 'bowire-request-tab-body-content', className: `bowire-tab-content ${activeRequestTab === 'body' ? 'active' : ''}` });
 
+        // #253 — invocation-URL override disclosure, above the request body.
+        // Collapsed by default (signals "we call the schema URL"); lets the
+        // operator point this call at a Source or a custom host instead.
+        if (typeof renderInvocationUrlOverride === 'function' && selectedService && selectedMethod) {
+            var _invUrlBlock = renderInvocationUrlOverride(selectedService, selectedMethod);
+            if (_invUrlBlock) bodyContent.appendChild(_invUrlBlock);
+        }
+
         // Sub-tabs within the Body pane (#85). For GraphQL methods the
         // historical layout stacked Selection set + Query + Variables
         // form vertically; that eats screen real-estate when users

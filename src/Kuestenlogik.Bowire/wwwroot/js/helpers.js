@@ -57,9 +57,20 @@
      * Per-service variant: routes invocations to the URL the service was
      * discovered from. Multi-URL setups depend on this so a method from
      * "https://api-a.com" doesn't accidentally fire against "https://api-b.com".
+     *
+     * #253 — when a `method` is passed, the per-method invocation-URL
+     * override (resolveInvocationUrl, invocation-url.js) gets to redirect
+     * the call to a different host than the schema came from. Callers that
+     * pass no method (or before that slice loads) keep the plain
+     * discovery-URL behaviour.
      */
-    function serverUrlParamForService(service, prefix) {
-        var url = (service && service.originUrl) || getPrimaryServerUrl();
+    function serverUrlParamForService(service, prefix, method) {
+        var url;
+        if (method && typeof resolveInvocationUrl === 'function') {
+            url = resolveInvocationUrl(service, method);
+        } else {
+            url = service && service.originUrl;
+        }
         return serverUrlParam(prefix, url);
     }
 

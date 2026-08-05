@@ -1419,7 +1419,7 @@
     // method (same shape the Compose drop + Postman import produce).
     function _methodToCollectionItem(svc, m) {
         var body = _methodDefaultBody(m);
-        return {
+        var item = {
             protocol: svc.source || 'grpc',
             service: svc.name || '',
             method: m.name,
@@ -1427,8 +1427,20 @@
             body: body,
             messages: [body],
             metadata: null,
-            serverUrl: (typeof serverUrl !== 'undefined' ? serverUrl : null) || (svc.url || null)
+            // The schema URL the method was discovered from.
+            serverUrl: svc.originUrl
+                || (typeof serverUrls !== 'undefined' && serverUrls.length ? serverUrls[0] : null)
         };
+        // #253 — carry the method's live invocation override into the saved
+        // item so it replays against the same host, not the schema URL.
+        if (typeof getInvocationOverride === 'function') {
+            var ov = getInvocationOverride(svc.name, m.name);
+            if (ov && ov.mode !== 'schema') {
+                item.invocationUrlMode = ov.mode;
+                item.invocationUrl = ov.url || null;
+            }
+        }
+        return item;
     }
 
     // #363 — second-stage picker: choose which collection to add the
