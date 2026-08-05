@@ -1018,6 +1018,31 @@
     }
 
     /**
+     * Canonical "save this string to a file" helper (#182). The workbench
+     * repeats the Blob → a[download] → click → revoke idiom in ~10 places;
+     * new download sites should call this instead of inlining an 11th copy.
+     * Uses the append-to-body + deferred-cleanup shape that dodges the
+     * Firefox revoke race.
+     */
+    function downloadTextFile(content, filename, mime) {
+        try {
+            var blob = new Blob([content == null ? '' : String(content)],
+                { type: (mime || 'text/plain') + ';charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = filename || 'download.txt';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function () {
+                try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch {}
+            }, 0);
+        } catch (_) {
+            if (typeof toast === 'function') toast('Download failed', 'error');
+        }
+    }
+
+    /**
      * Trigger a browser download of the response body. Caller may
      * pass a base filename + content-type hint; otherwise we sniff
      * for JSON shape and fall back to .txt.

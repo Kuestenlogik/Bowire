@@ -79,6 +79,158 @@
         }
     }
 
+    // ---- #182 — field-level, type-aware JSON diff ----
+    //
+    // computeLineDiff above is a text LCS: it tells you a line moved, not
+    // that a field changed TYPE (string → number) or was added/removed as
+    // a field. The side-by-side service comparison (#182) needs the
+    // structural answer, so this is a port of the server-side
+    // FlowSnapshotComparer.Walk / KindOf (Kuestenlogik.Bowire.Flows) into a
+    // pure client helper — that comparer lives in an optional package Core
+    // can't reference, so the algorithm is re-homed here rather than reached
+    // over the wire for an interactive diff.
+
+    // The six JSON kinds the diff distinguishes. A change from one to
+    // another is the headline "the shape moved" signal.
+    function jsonKindOf(v) {
+        if (v === null || v === undefined) return 'null';
+        if (Array.isArray(v)) return 'array';
+        var t = typeof v;
+        if (t === 'object') return 'object';
+        if (t === 'boolean') return 'boolean';
+        if (t === 'number') return 'number';
+        if (t === 'string') return 'string';
+        return 'value';
+    }
+
+    // Short, safe one-line rendering of a leaf value for the report /
+    // markers. Objects and arrays collapse to their kind so a leaf change
+    // line stays a single line.
+    function jsonLeafText(v) {
+        var k = jsonKindOf(v);
+        if (k === 'object') return '{…}';
+        if (k === 'array') return '[' + v.length + ']';
+        if (k === 'string') {
+            var s = v.length > 60 ? v.slice(0, 59) + '…' : v;
+            return JSON.stringify(s);
+        }
+        return String(v);
+    }
+
+    // Recursive walk producing a flat, ordered list of structured
+    // differences between two already-parsed JSON values. Each entry:
+    //   { path, change, aKind, bKind, aText, bText }
+    // change ∈ 'kind-changed' | 'added' | 'removed' | 'array-length' |
+    //          'value-changed'.  path is a JSONPath-ish '$.a.b.0'.
+    // A caller renders these or serialises them into the markdown report.
+    // Depth ceiling: deep enough for any realistic API response, low
+    // enough that a self-referential type (tree / linked list / threaded
+    // comments) rendered thousands of levels deep can't overflow the V8
+    // stack. Beyond it we compare the two subtrees as opaque text so the
+    // diff still terminates.
+    var JSON_DIFF_MAX_DEPTH = 24;
+
+    function _walkJsonDiff(a, b, path, out, depth) {
+        var ak = jsonKindOf(a), bk = jsonKindOf(b);
+        if (ak !== bk) {
+            out.push({ path: path, change: 'kind-changed', aKind: ak, bKind: bk,
+                aText: jsonLeafText(a), bText: jsonLeafText(b) });
+            return;
+        }
+        if (depth >= JSON_DIFF_MAX_DEPTH) {
+            // Stop recursing; treat the two subtrees as leaves.
+            if (JSON.stringify(a) !== JSON.stringify(b)) {
+                out.push({ path: path, change: 'value-changed', aKind: ak, bKind: bk,
+                    aText: jsonLeafText(a), bText: jsonLeafText(b) });
+            }
+            return;
+        }
+        if (ak === 'object') {
+            // Stable key order: A's keys first (in A order), then B-only.
+            var seen = Object.create(null);
+            var ka = Object.keys(a);
+            for (var i = 0; i < ka.length; i++) {
+                var key = ka[i];
+                seen[key] = true;
+                var child = path + '.' + key;
+                if (!Object.prototype.hasOwnProperty.call(b, key)) {
+                    out.push({ path: child, change: 'removed', aKind: jsonKindOf(a[key]),
+                        bKind: 'absent', aText: jsonLeafText(a[key]), bText: '' });
+                } else {
+                    _walkJsonDiff(a[key], b[key], child, out, depth + 1);
+                }
+            }
+            var kb = Object.keys(b);
+            for (var j = 0; j < kb.length; j++) {
+                if (!seen[kb[j]]) {
+                    out.push({ path: path + '.' + kb[j], change: 'added', aKind: 'absent',
+                        bKind: jsonKindOf(b[kb[j]]), aText: '', bText: jsonLeafText(b[kb[j]]) });
+                }
+            }
+            return;
+        }
+        if (ak === 'array') {
+            if (a.length !== b.length) {
+                out.push({ path: path, change: 'array-length', aKind: 'array', bKind: 'array',
+                    aText: '[' + a.length + ']', bText: '[' + b.length + ']' });
+            }
+            var n = Math.min(a.length, b.length);
+            for (var idx = 0; idx < n; idx++) {
+                _walkJsonDiff(a[idx], b[idx], path + '.' + idx, out, depth + 1);
+            }
+            return;
+        }
+        // Leaf — compare by value (kinds already equal here).
+        if (JSON.stringify(a) !== JSON.stringify(b)) {
+            out.push({ path: path, change: 'value-changed', aKind: ak, bKind: bk,
+                aText: jsonLeafText(a), bText: jsonLeafText(b) });
+        }
+    }
+
+    // Structured field diff between two response bodies. Accepts either
+    // parsed values or JSON text; returns { kind:'json', entries:[...] }
+    // when BOTH sides parse as JSON, or { kind:'text' } when either does
+    // not (the caller then falls back to computeLineDiff, mirroring
+    // prettyJson's own try/catch tolerance for non-JSON payloads).
+    function diffJsonStructured(aText, bText) {
+        var a, b;
+        try {
+            a = typeof aText === 'string' ? JSON.parse(aText) : aText;
+            b = typeof bText === 'string' ? JSON.parse(bText) : bText;
+        } catch (e) {
+            return { kind: 'text' };
+        }
+        var out = [];
+        try {
+            _walkJsonDiff(a, b, '$', out, 0);
+        } catch (e) {
+            // Defensive — a pathological structure past the depth cap
+            // shouldn't wedge the compare; fall back to the text diff.
+            return { kind: 'text' };
+        }
+        return { kind: 'json', entries: out };
+    }
+
+    // Markdown lines for a structured field diff — one bullet per entry,
+    // for the #182 compare report / PR-bot content. Empty array when the
+    // two bodies are field-identical.
+    function jsonDiffToMarkdown(entries) {
+        return (entries || []).map(function (e) {
+            switch (e.change) {
+                case 'kind-changed':
+                    return '- `' + e.path + '`: type ' + e.aKind + ' → ' + e.bKind;
+                case 'added':
+                    return '- `' + e.path + '`: added (' + e.bKind + ' ' + e.bText + ')';
+                case 'removed':
+                    return '- `' + e.path + '`: removed (' + e.aKind + ' ' + e.aText + ')';
+                case 'array-length':
+                    return '- `' + e.path + '`: array length ' + e.aText + ' → ' + e.bText;
+                default:
+                    return '- `' + e.path + '`: ' + e.aText + ' → ' + e.bText;
+            }
+        });
+    }
+
     // ---- Performance Tab ----
 
     function renderPerformanceTab() {

@@ -4693,6 +4693,20 @@
             }
         }
 
+        // #182 — the side-by-side service compare surface is a full-pane
+        // mode toggled from the Discover toolbar. Dispatched here (before
+        // the rail arms) so it owns the whole pane with its own root id;
+        // morphdom fully swaps in/out because bowire-main-compare differs
+        // from the request/response layout's id. Gated on railMode ===
+        // 'discover' so switching to another rail can't leave the compare
+        // surface shadowing that rail's main pane — the rail button and
+        // openTab also clear the flag, but this keeps the guard local.
+        if (typeof serviceCompareOpen !== 'undefined' && serviceCompareOpen
+                && railMode === 'discover'
+                && typeof renderServiceCompareMain === 'function') {
+            return renderServiceCompareMain();
+        }
+
         // Honest empty state when there's no active workspace (first
         // run, or last workspace just deleted). Every other rail
         // would either render against stale in-memory state or against

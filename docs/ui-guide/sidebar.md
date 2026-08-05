@@ -47,6 +47,7 @@ The Discover sidebar is the only one that walks a tree (services → methods) in
 - **Filter button** (`⛛`) in the toolbar opens a popup with three sections — **Favorites only**, **Filter by protocol**, **Filter by type** (Unary / Server-Streaming / Client-Streaming / Duplex), **Filter by URL** (when ≥ 2 discovery URLs are loaded). The favorites toggle lives inside this popup as its first option — there's no separate star button on the strip.
 - **Name-filter input** below the toolbar — types narrow the visible tree in real time. `Esc` clears.
 - **Chip strip** appears only when at least one filter is active — visualises the current narrowing as removable pills.
+- **Compare button** — appears when there are two services (or two discovery URLs) to set against each other; opens the [side-by-side service compare](../features/service-compare.md) surface (#182).
 - **Service groups** are expandable tree nodes per protocol. Each method row shows its **call-type badge** (Unary, Server-Streaming, Client-Streaming, Duplex), name, and a hover-reveal **star** for favoriting. Drag a method to drop it into a Collection picker (#431).
 
 The protocol-tab strip from v1.x has been retired in favour of the filter-popup-with-multi-select approach — one place to slice the tree by any dimension, not three competing strips.
