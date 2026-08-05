@@ -464,6 +464,31 @@ touches the server's disk. In a git-backed workspace the file lands
 inside the checkout; it's a rolling log, so gitignore it unless you
 want teammates on the same clone to share the pill.
 
+### Side-by-side service version diff (#182)
+
+Set two versions or deployments of a service against each other and see
+what moved. A **Compare** button in the Discover toolbar opens a
+full-pane surface: pick a source and a service on each side —
+*Baseline* and *Target* — and Bowire aligns their methods (matching
+version markers, so `GetUser` pairs with `GetUser_v2` and `GET
+/v1/users` with `GET /v2/users`), then splits them into added /
+removed / signature-changed, reusing the same AST diff as the schema
+watch (#185).
+
+For any aligned unary method, **Diff response** invokes it on both
+sides and diffs the two bodies **field by field, type-aware** — `$.total:
+type number → string`, `$.items.0.sku: added` — not a line diff; a new
+`diffJsonStructured` ports the Flows snapshot comparer's walk into a
+pure client helper. **Export markdown** writes the whole thing as a
+report ready for a PR comment, which is exactly what the v2.5 PR bot
+will post.
+
+Each side discovers its chosen URL independently, which is the point:
+discovery de-dupes services by name, so the *same* service at two
+deployments collapses to one row in the tree — the compare surface
+reaches both anyway, and the toolbar button shows whenever there are
+two services OR two discovery URLs to set against each other.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor

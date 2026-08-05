@@ -20,6 +20,8 @@
       href: auto-discovery.md
     - name: Service catalogue
       href: catalogue.md
+    - name: Side-by-side service compare
+      href: service-compare.md
     - name: Compose
       href: compose.md
     - name: Form & JSON input

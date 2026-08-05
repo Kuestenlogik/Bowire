@@ -35,6 +35,9 @@ function loadPerfDiff(state) {
             getResponseSnapshots: getResponseSnapshots,
             computeLineDiff: computeLineDiff,
             prettyJson: prettyJson,
+            diffJsonStructured: diffJsonStructured,
+            jsonDiffToMarkdown: jsonDiffToMarkdown,
+            jsonKindOf: jsonKindOf,
             formatMs: formatMs,
             _setSelected: function (svc, mth) { selectedService = svc; selectedMethod = mth; },
             _getSnapshots: function () { return responseSnapshots; },
@@ -166,6 +169,110 @@ test('prettyJson: pretty-print normalises whitespace differences', () => {
     const a = sb.prettyJson('{"a":1, "b":2}');
     const b = sb.prettyJson('{ "a"  : 1, "b" :2 }');
     assert.equal(a, b);
+});
+
+// ---- #182 diffJsonStructured (field-level, type-aware) ----
+
+test('diffJsonStructured: identical objects → no entries', () => {
+    const sb = loadPerfDiff();
+    const d = sb.diffJsonStructured('{"a":1,"b":"x"}', '{"a":1,"b":"x"}');
+    assert.equal(d.kind, 'json');
+    assert.equal(d.entries.length, 0);
+});
+
+test('diffJsonStructured: key order does not matter', () => {
+    const sb = loadPerfDiff();
+    const d = sb.diffJsonStructured('{"a":1,"b":2}', '{"b":2,"a":1}');
+    assert.equal(d.entries.length, 0);
+});
+
+test('diffJsonStructured: a field turning string→number is a kind change', () => {
+    const sb = loadPerfDiff();
+    const d = sb.diffJsonStructured('{"id":"7"}', '{"id":7}');
+    assert.equal(d.entries.length, 1);
+    assert.equal(d.entries[0].path, '$.id');
+    assert.equal(d.entries[0].change, 'kind-changed');
+    assert.equal(d.entries[0].aKind, 'string');
+    assert.equal(d.entries[0].bKind, 'number');
+});
+
+test('diffJsonStructured: added and removed fields are reported at their path', () => {
+    const sb = loadPerfDiff();
+    const d = sb.diffJsonStructured('{"a":1,"gone":true}', '{"a":1,"fresh":9}');
+    const byChange = Object.fromEntries(d.entries.map(e => [e.change, e]));
+    assert.equal(byChange.removed.path, '$.gone');
+    assert.equal(byChange.added.path, '$.fresh');
+    assert.equal(byChange.added.bKind, 'number');
+});
+
+test('diffJsonStructured: nested value change carries the deep path', () => {
+    const sb = loadPerfDiff();
+    const d = sb.diffJsonStructured('{"user":{"age":30}}', '{"user":{"age":31}}');
+    assert.equal(d.entries.length, 1);
+    assert.equal(d.entries[0].path, '$.user.age');
+    assert.equal(d.entries[0].change, 'value-changed');
+});
+
+test('diffJsonStructured: array length change plus element diff', () => {
+    const sb = loadPerfDiff();
+    const d = sb.diffJsonStructured('{"xs":[1,2]}', '{"xs":[1,2,3]}');
+    const kinds = d.entries.map(e => e.change);
+    assert.ok(kinds.includes('array-length'));
+    // only the length differs; the shared prefix is equal
+    assert.equal(d.entries.filter(e => e.change === 'value-changed').length, 0);
+});
+
+test('diffJsonStructured: non-JSON on either side falls back to text kind', () => {
+    const sb = loadPerfDiff();
+    assert.equal(sb.diffJsonStructured('not json', '{"a":1}').kind, 'text');
+    assert.equal(sb.diffJsonStructured('{"a":1}', '<xml/>').kind, 'text');
+});
+
+test('diffJsonStructured: accepts already-parsed values', () => {
+    const sb = loadPerfDiff();
+    const d = sb.diffJsonStructured({ a: 1 }, { a: 2 });
+    assert.equal(d.kind, 'json');
+    assert.equal(d.entries[0].change, 'value-changed');
+});
+
+test('jsonDiffToMarkdown: renders one bullet per entry with the path', () => {
+    const sb = loadPerfDiff();
+    const d = sb.diffJsonStructured('{"id":"7","gone":1}', '{"id":7,"fresh":2}');
+    const md = sb.jsonDiffToMarkdown(d.entries);
+    assert.ok(md.every(l => l.startsWith('- `$.')));
+    assert.ok(md.some(l => /type string → number/.test(l)));
+    assert.ok(md.some(l => /`\$\.gone`: removed/.test(l)));
+    assert.ok(md.some(l => /`\$\.fresh`: added/.test(l)));
+});
+
+test('diffJsonStructured: a very deep structure terminates instead of overflowing (review #3)', () => {
+    const sb = loadPerfDiff();
+    // Build two structures ~200 levels deep — past the depth cap — that
+    // differ at a leaf below the cap.
+    function nest(depth, leaf) {
+        let o = leaf;
+        for (let i = 0; i < depth; i++) o = { child: o };
+        return o;
+    }
+    const a = nest(200, { v: 1 });
+    const b = nest(200, { v: 2 });
+    let d;
+    assert.doesNotThrow(() => { d = sb.diffJsonStructured(a, b); }, 'must not blow the stack');
+    assert.equal(d.kind, 'json');
+    // The difference is beyond the cap, so it surfaces as a single
+    // value-changed at the cap boundary rather than at $.child…(x200).v
+    assert.ok(d.entries.length >= 1);
+    assert.ok(d.entries.every(e => e.change === 'value-changed'));
+});
+
+test('jsonKindOf: null / array / object / scalars', () => {
+    const sb = loadPerfDiff();
+    assert.equal(sb.jsonKindOf(null), 'null');
+    assert.equal(sb.jsonKindOf([1]), 'array');
+    assert.equal(sb.jsonKindOf({}), 'object');
+    assert.equal(sb.jsonKindOf(true), 'boolean');
+    assert.equal(sb.jsonKindOf(3), 'number');
+    assert.equal(sb.jsonKindOf('s'), 'string');
 });
 
 // ---- formatMs ----

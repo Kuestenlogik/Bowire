@@ -5162,6 +5162,9 @@
      */
     function openTab(svc, method, opts) {
         opts = opts || {};
+        // #182 — opening a method means the operator is done with the
+        // compare surface; close it so the request/response layout shows.
+        if (typeof serviceCompareOpen !== 'undefined') serviceCompareOpen = false;
         // De-dupe by (service, method): ONLY when there is no active
         // tab to repurpose (landing page, every tab closed). In that
         // case we fall back to switching to an existing tab that
@@ -5569,6 +5572,13 @@
     let diffViewOpen = false;
     let diffSnapshotA = null;     // index into responseSnapshots[key]
     let diffSnapshotB = null;     // index into responseSnapshots[key]
+
+    // ---- #182 — Side-by-side service compare surface ----
+    // Full-pane compare mode, toggled from the Discover toolbar. State
+    // owned by service-compare.js (_freshCompareState); declared here so
+    // the render-main dispatch and the toolbar button can read the flag.
+    let serviceCompareOpen = false;
+    let serviceCompareState = null;
 
     // ---- Keyboard Shortcuts Overlay State ----
     let showShortcutsOverlay = false;

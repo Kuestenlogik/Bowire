@@ -1595,6 +1595,10 @@
                     if (railMode === m.id) return;
                     railMode = m.id;
                     try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
+                    // #182 — leaving the rail (or re-entering Discover via
+                    // its button) closes the compare surface, so it never
+                    // lingers behind another rail.
+                    if (typeof serviceCompareOpen !== 'undefined') serviceCompareOpen = false;
                     // Modes that piggyback on the legacy
                     // sidebarView state (Environments, Flows, Proxy,
                     // Discover) also flip sidebarView so the existing
@@ -4135,6 +4139,32 @@
         // the wrapper so the dropdown-build logic doesn't get dropped
         // by a future dead-code sweep.
         void newBtnWrapper;
+
+        // #182 — "Compare…" opens the side-by-side service version diff
+        // in the main pane. Shown when there is something to compare: at
+        // least two services (two versions side by side), OR at least two
+        // discovery URLs (the SAME service at two deployments — which
+        // collapses to a single row in this tree because discovery de-dupes
+        // by source+name, so a services.length check alone would hide the
+        // button in exactly that flagship scenario).
+        var _canCompare = typeof services !== 'undefined' && Array.isArray(services) && services.length >= 1
+            && (services.length >= 2
+                || (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls) && serverUrls.length >= 2));
+        if (sidebarView === 'services' && _canCompare) {
+            viewSwitch.appendChild(el('button', {
+                id: 'bowire-compare-btn',
+                className: 'bowire-sidebar-toolbar-btn',
+                title: 'Compare two services side by side — schema + response diff',
+                'aria-label': 'Compare services',
+                onClick: function () {
+                    if (typeof openServiceCompare === 'function') openServiceCompare(null);
+                }
+            },
+                el('span', { innerHTML: svgIcon('splitHorizontal'),
+                    style: 'width:14px;height:14px;display:flex' }),
+                el('span', { textContent: 'Compare', style: 'margin-left:5px' })
+            ));
+        }
 
         sidebar.appendChild(viewSwitch);
 
