@@ -553,9 +553,273 @@
         }
         wrap.appendChild(logCard);
 
+        // #561 — schema-mock refinement editors (per-field overrides +
+        // per-method conditional rules). Only for schema-started mocks
+        // (recordingId empty); they apply to a REST schema mock's stubs.
+        if (!selected.recordingId) {
+            wrap.appendChild(renderOverridesCard(selected));
+            wrap.appendChild(renderRulesCard(selected));
+        }
         wrap.appendChild(renderFaultCard(selected, url));
         pane.appendChild(wrap);
         return pane;
+    }
+
+    // ---------- #561 schema-mock refinement editors ----------
+    // Two cards on the schema-mock detail pane: per-field response overrides
+    // and per-method conditional-response rules. Both edit one mock-config
+    // artifact; Apply persists it (PUT /config) AND applies it live to the
+    // running mock (POST /config/apply), reusing the mock matcher (a rule
+    // becomes a higher-priority match stub — no restart).
+
+    var mockConfigState_ = {};
+    var mockRowSeq_ = 0;
+
+    function mockConfigState(mockId) {
+        return mockConfigState_[mockId] || (mockConfigState_[mockId] = {
+            config: { configFormatVersion: 1, fieldOverrides: [], conditionalRules: [] },
+            overridesOpen: false, rulesOpen: false, dirty: false, error: '', loaded: false
+        });
+    }
+
+    function mockConfigQs() {
+        var wsId = (typeof activeWorkspaceId !== 'undefined' && activeWorkspaceId) ? activeWorkspaceId : '';
+        return wsId ? ('?workspaceId=' + encodeURIComponent(wsId)) : '';
+    }
+
+    // Stable per-row id so edit handlers re-resolve their target at event time.
+    // morphdom reuses row DOM nodes positionally on re-render; a closure over the
+    // array element would mutate a stale / removed object after add/remove (the
+    // documented morphdom stale-handler pitfall), so every handler looks the row
+    // up by _rid instead.
+    function ridOf(item) { if (!item._rid) item._rid = 'row' + (++mockRowSeq_); return item._rid; }
+    function findRow(list, rid) { return list.find(function (x) { return x._rid === rid; }); }
+
+    function normalizeMockConfig(data) {
+        data = data || {};
+        var overrides = Array.isArray(data.fieldOverrides) ? data.fieldOverrides : [];
+        var rules = Array.isArray(data.conditionalRules) ? data.conditionalRules : [];
+        // Give each row a stable id + a raw-text edit buffer for its JSON value
+        // (so a string like "12345" isn't silently retyped to a number).
+        overrides.forEach(function (o) { ridOf(o); o._valueText = jsonDisplay(o.value); });
+        rules.forEach(function (r) { ridOf(r); r.when = r.when || {}; r._responseText = jsonDisplay(r.response); });
+        return {
+            configFormatVersion: data.configFormatVersion || 1,
+            source: data.source,
+            fieldOverrides: overrides,
+            conditionalRules: rules,
+            auth: data.auth
+        };
+    }
+
+    function loadMockConfig(mockId) {
+        var st = mockConfigState(mockId);
+        return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId) + '/config' + mockConfigQs())
+            .then(function (r) { return r.ok ? r.json() : {}; })
+            .then(function (data) { st.config = normalizeMockConfig(data); st.loaded = true; st.dirty = false; return st; })
+            .catch(function () { st.loaded = true; return st; });
+    }
+
+    // Build the clean config to persist/apply: parse the raw-text buffers back
+    // to JSON and drop the client-only fields (_rid / _valueText / _responseText).
+    function serializeMockConfig(st) {
+        return JSON.stringify({
+            configFormatVersion: st.config.configFormatVersion || 1,
+            source: st.config.source,
+            auth: st.config.auth,
+            fieldOverrides: st.config.fieldOverrides.map(function (o) {
+                return { service: o.service, method: o.method, jsonPath: o.jsonPath, value: parseJsonLoose(o._valueText) };
+            }),
+            conditionalRules: st.config.conditionalRules.map(function (r) {
+                var w = r.when || {};
+                var when = { jsonPath: w.jsonPath };
+                if (w.matches != null) when.matches = w.matches;
+                else if (w.contains != null) when.contains = w.contains;
+                else when.equals = w.equals != null ? w.equals : '';
+                return { service: r.service, method: r.method, when: when, response: parseJsonLoose(r._responseText) };
+            })
+        });
+    }
+
+    function applyMockConfig(mockId) {
+        var st = mockConfigState(mockId);
+        var body = serializeMockConfig(st);
+        // Persist to the workspace store, then apply live to the running mock.
+        return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId) + '/config' + mockConfigQs(), {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: body
+        }).then(function (r) {
+            if (!r.ok) return r.json().catch(function () { return { error: 'Save failed (' + r.status + ')' }; })
+                .then(function (e) { throw new Error(e.error || 'Save failed'); });
+            return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId) + '/config/apply', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body
+            });
+        }).then(function (r) {
+            if (r && !r.ok) return r.json().catch(function () { return { error: 'Apply failed (' + r.status + ')' }; })
+                .then(function (e) { throw new Error(e.error || 'Apply failed'); });
+            st.dirty = false; st.error = '';
+            if (typeof toast === 'function') toast('Mock configuration applied', 'success');
+            render();
+        }).catch(function (err) { st.error = err.message || String(err); render(); });
+    }
+
+    // The value/response text buffer holds exactly what the operator typed;
+    // parse to JSON on apply, or fall back to the raw string when it isn't valid
+    // JSON (so a bare `shipped` becomes the JSON string "shipped").
+    function parseJsonLoose(s) {
+        if (s === '' || s == null) return undefined;
+        try { return JSON.parse(s); } catch (e) { return s; }
+    }
+    function jsonDisplay(v) {
+        if (v === undefined || v === null) return '';
+        return (typeof v === 'string') ? v : JSON.stringify(v);
+    }
+
+    function cfgInput(value, placeholder, onInput) {
+        var input = el('input', { className: 'bowire-flow-field-input', type: 'text', placeholder: placeholder || '', value: value == null ? '' : value });
+        input.oninput = function () { onInput(input.value); };
+        return input;
+    }
+
+    function cfgRemoveBtn(onClick) {
+        var b = el('button', { className: 'bowire-empty-card-action bowire-recording-action-danger', textContent: 'Remove' });
+        b.onclick = onClick;
+        return b;
+    }
+
+    function cfgActions(st, mockId, onAdd, addLabel) {
+        var actions = el('div', { style: 'display:flex;gap:8px;margin-top:10px;align-items:center' });
+        var addBtn = el('button', { className: 'bowire-empty-card-action', textContent: '+ Add ' + addLabel });
+        addBtn.onclick = onAdd;
+        actions.appendChild(addBtn);
+        // Always clickable — an in-place field edit sets dirty WITHOUT a render,
+        // so a disabled-when-clean button would strand the edit.
+        var applyBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: 'Apply' });
+        applyBtn.onclick = function () { applyMockConfig(mockId); };
+        actions.appendChild(applyBtn);
+        if (st.dirty) actions.appendChild(el('span', { className: 'bowire-sources-hint', textContent: 'unsaved changes' }));
+        return actions;
+    }
+
+    function cfgCardHead(title, count, unit, isOpen, onToggle) {
+        return el('div', { className: 'bowire-sources-section', style: 'display:flex;align-items:center;gap:8px' },
+            el('span', { textContent: title }),
+            el('span', { className: 'bowire-home-section-count', textContent: count + ' ' + unit + (count === 1 ? '' : 's') }),
+            (function () { var b = el('button', { className: 'bowire-empty-card-action', textContent: isOpen ? 'Hide' : 'Edit' }); b.onclick = onToggle; return b; })()
+        );
+    }
+
+    // The editors apply to a REST (OpenAPI) schema mock's stubs; GraphQL/gRPC
+    // schema mocks serve via a live handler that bypasses the stub middleware,
+    // so an override/rule would silently no-op. The kind is known once the
+    // config (with source.kind, seeded at start) has loaded.
+    function isRestConfig(st) {
+        var k = st.config.source && st.config.source.kind;
+        return !k || k === 'openapi';
+    }
+    function restOnlyNotice() {
+        return el('p', { className: 'bowire-sources-hint',
+            textContent: 'Response overrides and conditional rules apply to REST (OpenAPI) schema mocks. This mock uses a different schema kind.' });
+    }
+    function markDirty(st) { st.dirty = true; }
+
+    function renderOverridesCard(selected) {
+        var st = mockConfigState(selected.mockId);
+        var card = el('div', { className: 'bowire-mocks-log-card', style: 'margin-top:16px' });
+        card.appendChild(cfgCardHead('Response overrides', st.config.fieldOverrides.length, 'field', st.overridesOpen, function () {
+            st.overridesOpen = !st.overridesOpen;
+            if (st.overridesOpen && !st.loaded) loadMockConfig(selected.mockId).then(render);
+            render();
+        }));
+        if (!st.overridesOpen) return card;
+        if (!st.loaded) { card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: 'Loading…' })); return card; }
+        if (!isRestConfig(st)) { card.appendChild(restOnlyNotice()); return card; }
+        if (st.error) card.appendChild(el('p', { className: 'bowire-sources-hint', style: 'color:var(--bowire-danger)', textContent: st.error }));
+        card.appendChild(el('p', { className: 'bowire-sources-hint',
+            textContent: 'Override individual response field values by (service, method) and JSON path. Applies live to the REST schema mock.' }));
+        if (!st.config.fieldOverrides.length) {
+            card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: 'No overrides — the mock serves the schema-generated response.' }));
+        } else {
+            st.config.fieldOverrides.forEach(function (ov) { card.appendChild(renderOverrideRow(st, ridOf(ov))); });
+        }
+        card.appendChild(cfgActions(st, selected.mockId, function () {
+            var ov = { service: '*', method: '*', jsonPath: '$.field', _valueText: '' }; ridOf(ov);
+            st.config.fieldOverrides.push(ov); markDirty(st); render();
+        }, 'field override'));
+        return card;
+    }
+
+    function renderOverrideRow(st, rid) {
+        var ov = findRow(st.config.fieldOverrides, rid);
+        var row = el('div', { className: 'bowire-mocks-fault-rule', style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--bowire-border-subtle)' });
+        row.appendChild(cfgInput(ov.service, 'service (* = any)', function (v) { var o = findRow(st.config.fieldOverrides, rid); if (o) { o.service = v; markDirty(st); } }));
+        row.appendChild(cfgInput(ov.method, 'method (* = any)', function (v) { var o = findRow(st.config.fieldOverrides, rid); if (o) { o.method = v; markDirty(st); } }));
+        row.appendChild(cfgInput(ov.jsonPath, '$.path', function (v) { var o = findRow(st.config.fieldOverrides, rid); if (o) { o.jsonPath = v; markDirty(st); } }));
+        row.appendChild(cfgInput(ov._valueText, 'value (JSON or text)', function (v) { var o = findRow(st.config.fieldOverrides, rid); if (o) { o._valueText = v; markDirty(st); } }));
+        row.appendChild(cfgRemoveBtn(function () { st.config.fieldOverrides = st.config.fieldOverrides.filter(function (x) { return x._rid !== rid; }); markDirty(st); render(); }));
+        return row;
+    }
+
+    function renderRulesCard(selected) {
+        var st = mockConfigState(selected.mockId);
+        var card = el('div', { className: 'bowire-mocks-log-card', style: 'margin-top:16px' });
+        card.appendChild(cfgCardHead('Conditional rules', st.config.conditionalRules.length, 'rule', st.rulesOpen, function () {
+            st.rulesOpen = !st.rulesOpen;
+            if (st.rulesOpen && !st.loaded) loadMockConfig(selected.mockId).then(render);
+            render();
+        }));
+        if (!st.rulesOpen) return card;
+        if (!st.loaded) { card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: 'Loading…' })); return card; }
+        if (!isRestConfig(st)) { card.appendChild(restOnlyNotice()); return card; }
+        if (st.error) card.appendChild(el('p', { className: 'bowire-sources-hint', style: 'color:var(--bowire-danger)', textContent: st.error }));
+        card.appendChild(el('p', { className: 'bowire-sources-hint',
+            textContent: 'When a request to (service, method) matches a body predicate, serve a response variant instead of the default. Distinct from fault injection — a real response, chosen by a higher-priority match.' }));
+        if (!st.config.conditionalRules.length) {
+            card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: 'No conditional rules — every request gets the default (overridden) response.' }));
+        } else {
+            st.config.conditionalRules.forEach(function (rule) { card.appendChild(renderRuleRow(st, ridOf(rule))); });
+        }
+        card.appendChild(cfgActions(st, selected.mockId, function () {
+            var rule = { service: '*', method: '*', when: { jsonPath: '$.field', equals: '' }, _responseText: '' }; ridOf(rule);
+            st.config.conditionalRules.push(rule); markDirty(st); render();
+        }, 'rule'));
+        return card;
+    }
+
+    var RULE_OPS = [
+        { value: 'equals', label: 'equals' },
+        { value: 'contains', label: 'contains' },
+        { value: 'matches', label: 'matches (regex)' }
+    ];
+    function currentRuleOp(when) { when = when || {}; return when.matches != null ? 'matches' : (when.contains != null ? 'contains' : 'equals'); }
+
+    function renderRuleRow(st, rid) {
+        var rule = findRow(st.config.conditionalRules, rid);
+        rule.when = rule.when || {};
+        var op = currentRuleOp(rule.when);
+        var row = el('div', { className: 'bowire-mocks-fault-rule', style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--bowire-border-subtle)' });
+        row.appendChild(cfgInput(rule.service, 'service (* = any)', function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { r.service = v; markDirty(st); } }));
+        row.appendChild(cfgInput(rule.method, 'method (* = any)', function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { r.method = v; markDirty(st); } }));
+        row.appendChild(el('span', { className: 'bowire-mocks-fault-field-label', textContent: 'when' }));
+        row.appendChild(cfgInput(rule.when.jsonPath, '$.path', function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { (r.when = r.when || {}).jsonPath = v; markDirty(st); } }));
+        row.appendChild(faultSelect(op, RULE_OPS, function (newOp) {
+            var r = findRow(st.config.conditionalRules, rid); if (!r) return;
+            var w = r.when || (r.when = {});
+            var val = w.matches != null ? w.matches : (w.contains != null ? w.contains : (w.equals != null ? w.equals : ''));
+            delete w.equals; delete w.contains; delete w.matches;
+            w[newOp] = val;
+            markDirty(st); render();
+        }));
+        // Re-read the CURRENT op live so an op switch (which re-keys `when`) can't
+        // strand this handler on a deleted predicate key.
+        row.appendChild(cfgInput(rule.when[op], 'value', function (v) {
+            var r = findRow(st.config.conditionalRules, rid); if (!r) return;
+            var w = r.when || (r.when = {});
+            w[currentRuleOp(w)] = v; markDirty(st);
+        }));
+        row.appendChild(el('span', { className: 'bowire-mocks-fault-field-label', textContent: 'serve' }));
+        row.appendChild(cfgInput(rule._responseText, 'response (JSON)', function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { r._responseText = v; markDirty(st); } }));
+        row.appendChild(cfgRemoveBtn(function () { st.config.conditionalRules = st.config.conditionalRules.filter(function (x) { return x._rid !== rid; }); markDirty(st); render(); }));
+        return row;
     }
 
     // ---------- #170 fault-injection editor ----------

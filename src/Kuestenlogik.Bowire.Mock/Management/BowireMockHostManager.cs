@@ -153,6 +153,23 @@ public sealed class BowireMockHostManager : IAsyncDisposable
         return true;
     }
 
+    /// <summary>
+    /// #561: re-apply a mock configuration to a RUNNING mock. Recomputes the
+    /// stub set from the baseline — field overrides mutate the base responses,
+    /// each conditional rule becomes a higher-priority match stub — and swaps
+    /// it in live. Recomputing from the baseline means re-applying an edited
+    /// config never compounds on a previous apply. False when not running.
+    /// </summary>
+    public bool ApplyConfig(string mockId, Mocking.MockConfiguration config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        var handler = HandlerFor(mockId);
+        if (handler is null) return false;
+        var stubs = Mocking.MockConfigApplier.ApplyToStubs(handler.BaselineStubs(), config);
+        handler.ReplaceStubs(stubs);
+        return true;
+    }
+
     // #408: named-scenario state on a running mock.
 
     /// <summary>Current state of every scenario in a running mock (name → state). Null when not running.</summary>

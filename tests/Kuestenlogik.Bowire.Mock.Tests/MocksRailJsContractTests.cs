@@ -50,6 +50,19 @@ public sealed class MocksRailJsContractTests
         Assert.Contains("workspaceId=", js, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Ships_The_Schema_Mock_Refinement_Editors()
+    {
+        // #561: the two editor cards + the apply flow (persist to the store
+        // AND apply live to the running mock). Dropping either card or the
+        // /config/apply POST silently breaks the editors.
+        var js = Fragment.Value;
+        Assert.Contains("function renderOverridesCard", js, StringComparison.Ordinal);
+        Assert.Contains("function renderRulesCard", js, StringComparison.Ordinal);
+        Assert.Contains("function applyMockConfig", js, StringComparison.Ordinal);
+        Assert.Contains("'/config/apply'", js, StringComparison.Ordinal);
+    }
+
     private static string LoadFragment()
     {
         var assembly = typeof(BowireMockManagementEndpoints).Assembly;

@@ -131,6 +131,22 @@ public sealed class MockManagementSchemaEndpointTests
         Assert.Contains("no matching mock schema source", body, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task POST_config_apply_on_unknown_mock_returns_404()
+    {
+        // #561: the runtime config-apply endpoint 404s when the mock isn't
+        // running (the happy path is covered end-to-end by the manager tests).
+        using var host = await BuildHost();
+        var client = host.GetTestClient();
+
+        using var content = new StringContent("{}", Encoding.UTF8, "application/json");
+        using var resp = await client.PostAsync(
+            new Uri("/api/mocks/no-such-mock/config/apply", UriKind.Relative),
+            content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
     private static async Task<HttpResponseMessage> Post(HttpClient client, string json)
     {
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
