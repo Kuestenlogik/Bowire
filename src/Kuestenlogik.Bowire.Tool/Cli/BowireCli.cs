@@ -871,6 +871,17 @@ internal static class BowireCli
             Description = "Persist unmatched requests to this file.",
             DefaultValueFactory = _ => cfg["Bowire:Mock:CaptureMissPath"]
         };
+        var mockConfig = new Option<string?>("--mock-config")
+        {
+            Description = "Path to a mock-configuration JSON (per-field response overrides refining a schema mock).",
+            DefaultValueFactory = _ => cfg["Bowire:Mock:MockConfigPath"]
+        };
+        mockConfig.Validators.Add(result =>
+        {
+            var path = result.GetValueOrDefault<string?>();
+            if (!string.IsNullOrEmpty(path) && !File.Exists(path))
+                result.AddError($"--mock-config: file not found: '{path}'.");
+        });
         var controlToken = new Option<string?>("--control-token")
         {
             Description = "Auth token for the runtime-scenario-switch control endpoint.",
@@ -907,7 +918,7 @@ internal static class BowireCli
         cmd.Add(port); cmd.Add(host); cmd.Add(https); cmd.Add(httpsPort);
         cmd.Add(cert); cmd.Add(certPassword); cmd.Add(proxy); cmd.Add(proxyRecord); cmd.Add(select); cmd.Add(noWatch);
         cmd.Add(stateful); cmd.Add(statefulOnce); cmd.Add(loop); cmd.Add(autoInstall);
-        cmd.Add(chaos); cmd.Add(faults); cmd.Add(captureMiss); cmd.Add(controlToken);
+        cmd.Add(chaos); cmd.Add(faults); cmd.Add(captureMiss); cmd.Add(controlToken); cmd.Add(mockConfig);
         cmd.SetAction(async (pr, ct) =>
         {
             var positional = pr.GetValue(positionalPath);
@@ -965,7 +976,8 @@ internal static class BowireCli
                 Chaos = pr.GetValue(chaos),
                 FaultsPath = pr.GetValue(faults),
                 CaptureMissPath = pr.GetValue(captureMiss),
-                ControlToken = pr.GetValue(controlToken)
+                ControlToken = pr.GetValue(controlToken),
+                MockConfigPath = pr.GetValue(mockConfig)
             };
             return await MockCommand.RunAsync(options, plugins,
                 pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false);
