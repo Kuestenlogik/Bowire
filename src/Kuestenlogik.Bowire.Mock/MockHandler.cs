@@ -150,6 +150,27 @@ public sealed class MockHandler
         lock (_cursorLock) { _cursor = 0; }
     }
 
+    /// <summary>
+    /// #561: the original baseline stubs (as loaded / last hot-reloaded).
+    /// The runtime config-apply path recomputes the stub set from this each
+    /// time, so re-applying an edited config never compounds on a prior apply.
+    /// </summary>
+    public IReadOnlyList<BowireRecordingStep> BaselineStubs() => _baseline.Steps.ToArray();
+
+    /// <summary>
+    /// #561: swap the entire live stub set in one shot. The baseline is left
+    /// untouched, so <see cref="ResetStubs"/> still restores the original.
+    /// </summary>
+    public void ReplaceStubs(IEnumerable<BowireRecordingStep> stubs)
+    {
+        ArgumentNullException.ThrowIfNull(stubs);
+        lock (_stubLock)
+        {
+            _recording = CloneWithSteps(_recording, stubs.ToList());
+        }
+        lock (_cursorLock) { _cursor = 0; }
+    }
+
     // Shallow-clone a recording with a fresh step list (copy-on-write). Copies
     // the scalar metadata the mock cares about; a new field on BowireRecording
     // that must survive stub CRUD needs adding here.

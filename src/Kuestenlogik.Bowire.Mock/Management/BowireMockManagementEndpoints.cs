@@ -329,6 +329,34 @@ public static class BowireMockManagementEndpoints
                 : Results.NotFound(new { error = $"Mock {mockId} not running." });
         }).ExcludeFromDescription();
 
+        // #561: apply a mock configuration (per-field response overrides +
+        // per-method conditional rules) to a RUNNING mock. The workbench
+        // editors POST the edited config here so it takes effect live —
+        // recomputed from the baseline each time — alongside persisting the
+        // artifact via the workspace store (PUT /config, main package).
+        endpoints.MapPost($"{basePath}/api/mocks/{{mockId}}/config/apply",
+            async (string mockId, HttpContext ctx, BowireMockHostManager manager) =>
+        {
+            if (manager.Get(mockId) is null)
+                return Results.NotFound(new { error = $"Mock {mockId} not running." });
+
+            Kuestenlogik.Bowire.Mocking.MockConfiguration config;
+            try
+            {
+                using var reader = new StreamReader(ctx.Request.Body);
+                config = Kuestenlogik.Bowire.Mocking.MockConfiguration.Parse(
+                    await reader.ReadToEndAsync(ctx.RequestAborted));
+            }
+            catch (JsonException ex)
+            {
+                return Results.Json(new { error = "Invalid JSON: " + ex.Message }, JsonOptions, statusCode: 400);
+            }
+
+            return manager.ApplyConfig(mockId, config)
+                ? Results.Json(new { mockId, stubs = manager.GetStubs(mockId) }, JsonOptions)
+                : Results.NotFound(new { error = $"Mock {mockId} not running." });
+        }).ExcludeFromDescription();
+
         // #408: named-scenario state on a RUNNING mock.
         endpoints.MapGet($"{basePath}/api/mocks/{{mockId}}/scenarios",
             (string mockId, BowireMockHostManager manager) =>

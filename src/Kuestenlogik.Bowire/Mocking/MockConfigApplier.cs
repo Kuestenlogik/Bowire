@@ -15,15 +15,24 @@ namespace Kuestenlogik.Bowire.Mocking;
 /// override's path is set, and the response is written back.
 /// </summary>
 /// <remarks>
-/// Only <see cref="MockConfiguration.FieldOverrides"/> is evaluated here.
-/// <see cref="MockConfiguration.ConditionalRules"/> and
-/// <see cref="MockConfiguration.Auth"/> are model-only in the foundation
-/// slice and are consumed by the sibling editor / auth slices. The applier
-/// lives in the shared <c>Mocking</c> namespace so both the standalone
-/// <c>MockServer</c> and the embedded workbench mock host reuse one copy.
+/// <para>
+/// <see cref="Apply"/> evaluates <see cref="MockConfiguration.FieldOverrides"/>
+/// at generation time (#558). <see cref="ApplyToStubs"/> (#561) additionally
+/// compiles <see cref="MockConfiguration.ConditionalRules"/> into extra
+/// higher-priority stubs so the existing mock matcher serves a response
+/// variant when the request predicate matches — no new serve-time path.
+/// </para>
+/// <para>
+/// The applier lives in the shared <c>Mocking</c> namespace so the standalone
+/// <c>MockServer</c>, the workbench mock host, and the runtime config-apply
+/// endpoint all reuse one copy.
+/// </para>
 /// </remarks>
 public static class MockConfigApplier
 {
+    /// <summary>Priority given to a compiled conditional-rule stub so it outranks the base (priority-0) stub.</summary>
+    private const int RuleStubPriority = 10;
+
     /// <summary>
     /// Return <paramref name="recording"/> with every applicable per-field
     /// override applied to its steps' responses. Mutates the passed
@@ -41,37 +50,150 @@ public static class MockConfigApplier
 
         foreach (var step in recording.Steps)
         {
-            if (string.IsNullOrEmpty(step.Response)) continue;
-
-            var applicable = config.FieldOverrides
-                .Where(o => Matches(o, step))
-                .ToList();
-            if (applicable.Count == 0) continue;
-
-            JsonNode? root;
-            try { root = JsonNode.Parse(step.Response); }
-            catch (JsonException) { continue; }
-            if (root is null) continue;
-
-            var changed = false;
-            foreach (var ov in applicable)
-            {
-                // A null / absent / undefined value is a no-op: JSON `null`
-                // round-trips to a CLR null through JsonElement?, so absent and
-                // "value": null are indistinguishable — both mean "no override".
-                if (ov.Value is not { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) } value
-                    || string.IsNullOrWhiteSpace(ov.JsonPath))
-                {
-                    continue;
-                }
-                if (SetAtPath(root, ov.JsonPath, value)) changed = true;
-            }
-
-            if (changed) step.Response = root.ToJsonString();
+            var applicable = config.FieldOverrides.Where(o => Matches(o, step)).ToList();
+            if (applicable.Count > 0) ApplyFieldOverridesToStep(step, applicable);
         }
 
         return recording;
     }
+
+    /// <summary>
+    /// #561: apply a configuration onto a fresh copy of a mock's baseline
+    /// stubs and return the new stub set — used to re-apply the config to a
+    /// RUNNING mock. Never mutates <paramref name="baseline"/> (the caller's
+    /// stubs share instances with the mock's restore baseline): every step is
+    /// cloned first. Field overrides mutate the clones' responses; each
+    /// conditional rule is compiled into an additional stub that rides the
+    /// matching base stub's route, carries the rule's request predicate as a
+    /// higher-priority match, and serves the rule's response variant.
+    /// </summary>
+    public static IReadOnlyList<BowireRecordingStep> ApplyToStubs(
+        IReadOnlyList<BowireRecordingStep> baseline, MockConfiguration? config)
+    {
+        ArgumentNullException.ThrowIfNull(baseline);
+        var result = baseline.Select(CloneStep).ToList();
+        if (config is null) return result;
+
+        if (config.FieldOverrides is { Count: > 0 } overrides)
+        {
+            foreach (var step in result)
+            {
+                var applicable = overrides.Where(o => Matches(o, step)).ToList();
+                if (applicable.Count > 0) ApplyFieldOverridesToStep(step, applicable);
+            }
+        }
+
+        if (config.ConditionalRules is { Count: > 0 } rules)
+        {
+            // Snapshot the base clones before appending any rule stubs so a rule
+            // rides the BASE routes only (never another rule stub).
+            var baseClones = result.ToList();
+            foreach (var rule in rules)
+            {
+                // A conditional rule needs a discriminating predicate AND a
+                // response variant. A null/empty predicate would match every
+                // request and — at priority 10 — permanently shadow the base
+                // response, so it is skipped (consistent with the null case).
+                if (rule.When is null
+                    || !HasEffectivePredicate(rule.When)
+                    || rule.Response is not { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) } response)
+                {
+                    continue;
+                }
+                // Fan out over EVERY matching base stub (a `*` rule spans all its
+                // routes, matching how field overrides fan out).
+                foreach (var target in baseClones.Where(s => RuleTargets(rule, s)))
+                {
+                    result.Add(CompileRuleStub(rule.When, response, target));
+                }
+            }
+        }
+
+        return result;
+    }
+
+    // Apply the matching field overrides onto one step's JSON response,
+    // in place. Returns whether anything changed. A null / absent / undefined
+    // override value is a no-op (a JSON `null` round-trips to a CLR null
+    // through JsonElement?, so absent and "value": null are indistinguishable).
+    private static bool ApplyFieldOverridesToStep(BowireRecordingStep step, IReadOnlyList<MockFieldOverride> overrides)
+    {
+        if (string.IsNullOrEmpty(step.Response)) return false;
+
+        JsonNode? root;
+        try { root = JsonNode.Parse(step.Response); }
+        catch (JsonException) { return false; }
+        if (root is null) return false;
+
+        var changed = false;
+        foreach (var ov in overrides)
+        {
+            if (ov.Value is not { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) } value
+                || string.IsNullOrWhiteSpace(ov.JsonPath))
+            {
+                continue;
+            }
+            if (SetAtPath(root, ov.JsonPath, value)) changed = true;
+        }
+
+        if (changed) step.Response = root.ToJsonString();
+        return changed;
+    }
+
+    // Compile one conditional rule into a REST stub that rides the base stub's
+    // verb+path, carries the rule's request-body predicate at higher priority,
+    // and serves the rule's response variant.
+    private static BowireRecordingStep CompileRuleStub(
+        MockRulePredicate when, JsonElement response, BowireRecordingStep baseStep)
+        => new()
+        {
+            Id = "rule_" + Guid.NewGuid().ToString("N")[..8],
+            Protocol = baseStep.Protocol,
+            Service = baseStep.Service,
+            Method = baseStep.Method,
+            MethodType = baseStep.MethodType,
+            HttpVerb = baseStep.HttpVerb,
+            HttpPath = baseStep.HttpPath,
+            Status = baseStep.Status,
+            Response = response.GetRawText(),
+            Match = new BowireStepMatch
+            {
+                Priority = RuleStubPriority,
+                Body = new List<BowireBodyMatcher>
+                {
+                    new()
+                    {
+                        JsonPath = when.JsonPath,
+                        // Keep EqualTo verbatim ("" is a real "equals empty"
+                        // constraint); drop an empty Contains/Matches — an empty
+                        // one matches every request. With a JsonPath still set,
+                        // an emptied op degrades to a path-present check.
+                        EqualTo = when.EqualTo,
+                        Contains = string.IsNullOrEmpty(when.Contains) ? null : when.Contains,
+                        Matches = string.IsNullOrEmpty(when.Matches) ? null : when.Matches,
+                    },
+                },
+            },
+        };
+
+    // A rule's predicate is effective (discriminating) when it carries a
+    // JsonPath (a path/presence check), or an EqualTo (incl. the empty string —
+    // matches only an empty value), or a NON-empty Contains / Matches. An empty
+    // Contains / Matches without a JsonPath matches every request, so such a
+    // rule is skipped rather than compiled into a route-shadowing stub.
+    private static bool HasEffectivePredicate(MockRulePredicate when)
+        => !string.IsNullOrWhiteSpace(when.JsonPath)
+           || when.EqualTo is not null
+           || !string.IsNullOrEmpty(when.Contains)
+           || !string.IsNullOrEmpty(when.Matches);
+
+    // Deep clone via a JSON round-trip so a step's Response / Match / headers
+    // are independent copies — the baseline must never be mutated.
+    private static BowireRecordingStep CloneStep(BowireRecordingStep step)
+        => JsonSerializer.Deserialize<BowireRecordingStep>(JsonSerializer.Serialize(step))!;
+
+    private static bool RuleTargets(MockConditionalRule rule, BowireRecordingStep step)
+        => WildcardEquals(rule.Service, step.Service) && WildcardEquals(rule.Method, step.Method);
 
     private static bool Matches(MockFieldOverride ov, BowireRecordingStep step)
         => WildcardEquals(ov.Service, step.Service) && WildcardEquals(ov.Method, step.Method);

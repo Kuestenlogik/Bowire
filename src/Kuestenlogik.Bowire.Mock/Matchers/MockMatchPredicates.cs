@@ -305,10 +305,21 @@ internal static class MockMatchPredicates
     private static bool RegexMatches(string pattern, string value, bool caseInsensitive)
     {
         var key = caseInsensitive ? "i:" + pattern : pattern;
-        var regex = s_predicateRegexCache.GetOrAdd(key, _ => new Regex(
-            pattern,
-            RegexOptions.CultureInvariant | RegexOptions.Compiled
-                | (caseInsensitive ? RegexOptions.IgnoreCase : RegexOptions.None)));
+        Regex regex;
+        try
+        {
+            regex = s_predicateRegexCache.GetOrAdd(key, _ => new Regex(
+                pattern,
+                RegexOptions.CultureInvariant | RegexOptions.Compiled
+                    | (caseInsensitive ? RegexOptions.IgnoreCase : RegexOptions.None)));
+        }
+        catch (ArgumentException)
+        {
+            // A malformed predicate regex must not 500 the mock — a matcher (or
+            // a #561 conditional rule) with a bad pattern simply doesn't match,
+            // degrading to the base stub / next candidate.
+            return false;
+        }
         return regex.IsMatch(value);
     }
 
