@@ -24,6 +24,9 @@
     var mockLogOpenFor = null;       // mockId currently expanded in the manager
     // #170 fault-editor state: mockId -> { rules:[...], open:bool, dirty:bool, error:string }
     var mockFaultState = {};
+    // #560 schema-mock start draft — module-scope so the paste survives a
+    // re-render (log polling / list refresh) instead of clearing mid-edit.
+    var schemaMockDraft = { kind: 'openapi', text: '', open: false };
 
     function loadMocks() {
         if (mocksLoadInFlight) return Promise.resolve(mocksList);
@@ -112,6 +115,69 @@
             toast(err.message || 'Mock start failed', 'error');
             throw err;
         });
+    }
+
+    // #560 — start a mock straight from a schema (OpenAPI / GraphQL SDL),
+    // no recording needed. POSTs the { schemaKind, schemaInline } start
+    // shape to the same /api/mocks endpoint, then seeds the mock-config
+    // artifact so the refinement editors (#561) have a target.
+    function startMockFromSchema(schemaKind, schemaInline, port) {
+        if (!schemaKind) {
+            if (typeof toast === 'function') toast('Pick a schema kind', 'error');
+            return Promise.reject(new Error('Pick a schema kind'));
+        }
+        if (!schemaInline || !schemaInline.trim()) {
+            if (typeof toast === 'function') toast('Paste a schema first', 'error');
+            return Promise.reject(new Error('Paste a schema first'));
+        }
+        return fetch(config.prefix + '/api/mocks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ schemaKind: schemaKind, schemaInline: schemaInline, port: port || 0 })
+        }).then(function (r) {
+            if (!r.ok) {
+                return r.json().catch(function () { return { title: 'Schema mock start failed (' + r.status + ')' }; })
+                    .then(function (err) { throw new Error(problemTitle(err, 'Schema mock start failed')); });
+            }
+            return r.json();
+        }).then(function (summary) {
+            mocksList = [summary].concat(mocksList.filter(function (m) { return m.mockId !== summary.mockId; }));
+            mockSelectedId = summary.mockId;
+            // Seed the config artifact (records the schema provenance) so the
+            // per-field / conditional editors have a target. Non-fatal.
+            seedMockConfig(summary.mockId, schemaKind);
+            if (typeof window !== 'undefined'
+                && typeof window.bowireFireTourEvent === 'function') {
+                window.bowireFireTourEvent('mock-started', { mockId: summary.mockId, port: summary.port });
+            }
+            // Clear the draft on success so the card resets for the next one.
+            schemaMockDraft.text = '';
+            if (typeof toast === 'function') {
+                var startedId = summary.mockId;
+                toast('Schema mock running on port ' + summary.port, 'success', {
+                    undo: function () { stopMock(startedId); }
+                });
+            }
+            if (railMode === 'intercept') render();
+            return summary;
+        }).catch(function (err) {
+            if (typeof toast === 'function') toast(err.message || 'Schema mock start failed', 'error');
+            throw err;
+        });
+    }
+
+    // #560 — write an initial mock-configuration so GET/PUT
+    // /api/mocks/{id}/config has a persisted target, recording which schema
+    // the mock came from. Best-effort: a failure is harmless because the GET
+    // falls back to a default envelope until the operator first edits.
+    function seedMockConfig(mockId, schemaKind) {
+        var wsId = (typeof activeWorkspaceId !== 'undefined' && activeWorkspaceId) ? activeWorkspaceId : '';
+        var qs = wsId ? ('?workspaceId=' + encodeURIComponent(wsId)) : '';
+        return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId) + '/config' + qs, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ configFormatVersion: 1, source: { kind: schemaKind }, fieldOverrides: [] })
+        }).catch(function () { /* non-fatal */ });
     }
 
     // #57: pull a window of the per-mock request log. Poll loop keeps
@@ -206,6 +272,66 @@
     // same pane (or a replacement node). When the Mock package isn't
     // referenced this shim simply isn't installed and the Intercept
     // sub-tab renders the "Mock package not loaded" empty state.
+    // #560 — the "Start a schema mock" affordance at the top of the Mocks
+    // rail. Collapsed by default; expands to a schema-kind picker + a paste
+    // box + Start. Draft state lives in schemaMockDraft so a re-render (log
+    // poll / list refresh) doesn't wipe an in-progress paste.
+    function renderSchemaMockCard() {
+        var card = el('div', {
+            className: 'bowire-mocks-schema-card',
+            style: 'margin-bottom:16px;padding:12px;border:1px solid var(--bowire-border-subtle);border-radius:8px'
+        });
+        var head = el('div', { style: 'display:flex;align-items:center;gap:8px;cursor:pointer' },
+            el('span', { className: 'bowire-sources-section', style: 'margin:0', textContent: 'Start a schema mock' }),
+            el('span', { className: 'bowire-home-section-count', textContent: schemaMockDraft.open ? 'hide' : 'new' })
+        );
+        head.onclick = function () { schemaMockDraft.open = !schemaMockDraft.open; render(); };
+        card.appendChild(head);
+        if (!schemaMockDraft.open) return card;
+
+        card.appendChild(el('p', {
+            className: 'bowire-sources-hint',
+            textContent: 'Spin up a mock straight from a schema — no recording needed. Paste an OpenAPI document or a GraphQL SDL, then Start.'
+        }));
+
+        var kindSel = el('select', {
+            className: 'bowire-mocks-schema-kind',
+            style: 'margin:4px 0 8px;padding:4px'
+        },
+            el('option', { value: 'openapi', textContent: 'OpenAPI (YAML / JSON)' }),
+            el('option', { value: 'graphql', textContent: 'GraphQL (SDL)' })
+        );
+        kindSel.value = schemaMockDraft.kind;
+        kindSel.onchange = function () { schemaMockDraft.kind = kindSel.value; };
+
+        var ta = el('textarea', {
+            className: 'bowire-mocks-schema-input',
+            rows: 7,
+            placeholder: 'Paste your OpenAPI document or GraphQL SDL…',
+            style: 'width:100%;box-sizing:border-box;font-family:var(--bowire-font-mono);font-size:12px'
+        });
+        ta.value = schemaMockDraft.text;
+        ta.oninput = function () { schemaMockDraft.text = ta.value; };
+
+        var startBtn = el('button', {
+            className: 'bowire-empty-card-action',
+            style: 'margin-top:8px',
+            textContent: 'Start mock'
+        });
+        startBtn.onclick = function () {
+            // Rejection already surfaced a toast inside startMockFromSchema;
+            // swallow it here so it doesn't bubble as an unhandled rejection.
+            startMockFromSchema(schemaMockDraft.kind, ta.value).catch(function () { });
+        };
+
+        card.appendChild(el('label', { className: 'bowire-mocks-schema-field', style: 'display:block' },
+            el('span', { style: 'display:block;font-size:12px;margin-bottom:2px', textContent: 'Schema kind' }),
+            kindSel));
+        card.appendChild(ta);
+        card.appendChild(startBtn);
+        return card;
+    }
+
     function renderMocksRailMain(pane) {
         if (!pane) return pane;
         // Workspace-prereq guard mirrors the legacy railMode='mocks'
@@ -261,6 +387,10 @@
             } catch (e) { /* presets.js not loaded — skip */ }
         }
 
+        // #560 — schema-mock start affordance, always available at the top
+        // of the rail (works with zero recordings, unlike "Run as mock").
+        wrap.appendChild(renderSchemaMockCard());
+
         var selected = (mocksList || []).find(function (m) { return m.mockId === mockSelectedId; });
         if (!selected) {
             wrap.appendChild(renderEmptyCard({
@@ -268,7 +398,7 @@
                 headline: hasAny ? 'Pick a mock server' : 'No mock servers running',
                 body: hasAny
                     ? 'Pick a running mock from the sidebar to see its URL, live request log, and stop control.'
-                    : 'Mock servers are standalone replay hosts spun up from a recording — switch to the Recordings rail and use "Run as mock" on any session. Looking for one-line response substitution inside the proxy / middleware pipeline? Use this rail’s Live overrides sub-tab.',
+                    : 'Mock servers are standalone replay hosts. Start one from a schema with "Start a schema mock" above (no recording needed), or switch to the Recordings rail and use "Run as mock" on a captured session. Looking for one-line response substitution inside the proxy / middleware pipeline? Use this rail’s Live overrides sub-tab.',
                 actions: hasAny ? [] : [
                     {
                         label: 'Go to Recordings',
@@ -638,6 +768,7 @@
         list: function () { return mocksList; },
         load: loadMocks,
         startFromRecording: startMockFromRecording,
+        startFromSchema: startMockFromSchema,
         stop: stopMock,
         open: openMocksManager,
         renderRailMain: renderMocksRailMain

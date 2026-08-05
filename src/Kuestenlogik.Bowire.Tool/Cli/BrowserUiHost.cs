@@ -38,7 +38,7 @@ internal static class BrowserUiHost
     // captures the configured port + URL list instead of binding a real
     // socket. The default builds the live WebApplication exactly as the
     // original inline code did.
-    internal static Func<string[], BrowserUiOptions, CancellationToken, Task<int>> HostRunner { get; set; } = DefaultHostRunner;
+    internal static Func<string[], BrowserUiOptions, IBowirePluginLoader, CancellationToken, Task<int>> HostRunner { get; set; } = DefaultHostRunner;
 
     public static async Task<int> RunAsync(string[] args, IConfiguration bootstrapConfig, IBowirePluginLoader plugins,
         TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken ct = default)
@@ -108,7 +108,7 @@ internal static class BrowserUiHost
             }, ct);
         }
 
-        return await HostRunner(args, ui, ct).ConfigureAwait(false);
+        return await HostRunner(args, ui, plugins, ct).ConfigureAwait(false);
     }
 
     private static async Task DefaultOpenBrowser(string url, CancellationToken ct)
@@ -121,7 +121,7 @@ internal static class BrowserUiHost
         });
     }
 
-    private static async Task<int> DefaultHostRunner(string[] args, BrowserUiOptions ui, CancellationToken ct)
+    private static async Task<int> DefaultHostRunner(string[] args, BrowserUiOptions ui, IBowirePluginLoader plugins, CancellationToken ct)
     {
         var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
         // #537 — expand bare boolean flags before handing the args to a
@@ -174,11 +174,18 @@ internal static class BrowserUiHost
         // as before.
         builder.Services.AddBowireCatalogue(builder.Configuration);
 
-        // Mock-management surface (#56). Registers MockRegistry +
+        // Mock-management surface (#56). Registers the host manager +
         // mounts /api/mocks endpoints so the workbench's Mocks panel
         // can start / stop / list UI-driven mocks without shelling
-        // out to `bowire mock --recording`.
-        builder.Services.AddBowireMockManagement();
+        // out to `bowire mock --recording`. #560 — wire the manager with
+        // the plugin-contributed schema sources (Protocol.Rest / Grpc /
+        // GraphQL) so the rail can also start a schema-only mock. `plugins`
+        // is already Load()ed by RunAsync; the built-in enumeration is
+        // cheap and independent of any plugin-directory install.
+        builder.Services.AddBowireMockManagement(
+            plugins.EnumerateServices<Kuestenlogik.Bowire.Mocking.IBowireMockSchemaSource>(),
+            plugins.EnumerateServices<Kuestenlogik.Bowire.Mocking.IBowireMockLiveSchemaHandler>(),
+            plugins.EnumerateServices<Kuestenlogik.Bowire.Mocking.IBowireMockHostingExtension>());
 
         // #94 — IRecordingJsonProvider adapter that bridges the
         // Mock-package endpoints to the workbench's RecordingStore

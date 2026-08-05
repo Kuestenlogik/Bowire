@@ -46,10 +46,13 @@ $ curl -s localhost:6000/orders | jq .status
 
 The override reaches the schema-only modes (`--schema` / `--grpc-schema` / `--graphql-schema`). A recording-file mock (`--recording`) mounts its middleware straight from disk for hot-reload, so overrides don't apply there in this slice.
 
+**From the workbench** ([#560](https://github.com/Kuestenlogik/Bowire/issues/560)) — the Mocks rail has a **Start a schema mock** card: pick a kind (OpenAPI / GraphQL), paste the schema, and Start. It POSTs the `{ schemaKind, schemaInline }` shape to `POST /api/mocks` (the same `MockServer` schema-load path the CLI uses), and on success seeds the mock's configuration artifact so the refinement editors have a target. The started mock shows up in the rail alongside recording-derived mocks. The DI wiring gives the workbench the plugin-contributed schema sources **and** hosting extensions, so a workbench-started mock is reachable at CLI parity (gRPC reflection, REST schema-discovery endpoints).
+
 **Workspace artifact** — the workbench persists a mock's configuration per (workspace, mock) at `workspaces/<wsId>/mocks/<mockId>.json` and reads/writes it over `GET` / `PUT /api/mocks/{mockId}/config`. Persisting to disk (not browser storage) lets the config survive a browser reset, ride the workspace export, and sync via git.
 
 ## Not yet
 
-- The workbench UI to author overrides and rules (a picker to start a schema mock, per-field and conditional-rule cards) ships in [#560](https://github.com/Kuestenlogik/Bowire/issues/560) / [#561](https://github.com/Kuestenlogik/Bowire/issues/561).
+- The per-field override and per-method conditional-rule **editors** (cards on the schema-mock detail pane) ship in [#561](https://github.com/Kuestenlogik/Bowire/issues/561). #560 shipped the schema-mock **start** + config-artifact seam they build on.
 - Serve-time evaluation of `conditionalRules` and enforcement of the `auth` requirement are deferred to those slices and [#562](https://github.com/Kuestenlogik/Bowire/issues/562).
+- The workbench schema-mock picker offers OpenAPI + GraphQL (paste); protobuf needs a binary `FileDescriptorSet`, reachable via `POST /api/mocks` with `schemaPath`.
 - Overriding a field *to* JSON `null` (or removing it) is not expressed — a `null` value is treated as "no override".
