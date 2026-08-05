@@ -307,6 +307,29 @@ public sealed class OpenApiSampleGeneratorTests
         Assert.Equal(1, doc.RootElement.GetProperty("x").GetInt32());
     }
 
+    [Fact]
+    public void Generate_31_Examples_Array_Wins_Over_Type_Driven_Guess()
+    {
+        // #559 (OpenApi2 parity): the 3.1 `examples` array wins over the default.
+        var json = OpenApiSampleGenerator.Generate(GetPropertySchema("""
+            {
+              "openapi": "3.1.0",
+              "info": { "title": "T", "version": "1" },
+              "paths": { "/x": { "get": { "operationId": "g", "responses": { "200": { "description": "ok" } } } } },
+              "components": {
+                "schemas": {
+                  "Sample": {
+                    "type": "object",
+                    "properties": { "v": { "type": "string", "examples": ["from-array"] } }
+                  }
+                }
+              }
+            }
+            """, "Sample", "v"));
+
+        Assert.Equal("\"from-array\"", json);
+    }
+
     private static IOpenApiSchema? GetPropertySchema(string openApiJson, string componentName, string propertyName)
     {
         // Resolve a $ref'd schema's property by parsing through the official
@@ -544,6 +567,79 @@ public sealed class OpenApiRecordingBuilderTests
         var step = Assert.Single(rec.Steps);
         Assert.Equal("OK", step.Status);
         Assert.Null(step.Response);
+    }
+
+    [Fact]
+    public void Build_MediaType_Example_Wins_Over_Schema_Generation()
+    {
+        // #559: a media-type-level `example` wins over schema generation.
+        const string doc = """
+            {
+              "openapi": "3.0.0",
+              "info": { "title": "T", "version": "1" },
+              "paths": {
+                "/o": {
+                  "get": {
+                    "operationId": "getO",
+                    "tags": ["O"],
+                    "responses": {
+                      "200": {
+                        "description": "ok",
+                        "content": {
+                          "application/json": {
+                            "schema": { "type": "object", "properties": { "status": { "type": "string" } } },
+                            "example": { "status": "shipped", "id": 42 }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """;
+        var rec = OpenApiRecordingBuilder.Build(LoadDoc(doc), "inline");
+
+        var step = Assert.Single(rec.Steps);
+        using var body = JsonDocument.Parse(step.Response!);
+        Assert.Equal("shipped", body.RootElement.GetProperty("status").GetString());
+        Assert.Equal(42, body.RootElement.GetProperty("id").GetInt32());
+    }
+
+    [Fact]
+    public void Build_MediaType_Examples_Map_Wins_Over_Schema_Generation()
+    {
+        // #559: the first entry of the `examples` map wins.
+        const string doc = """
+            {
+              "openapi": "3.0.0",
+              "info": { "title": "T", "version": "1" },
+              "paths": {
+                "/o": {
+                  "get": {
+                    "operationId": "getO",
+                    "tags": ["O"],
+                    "responses": {
+                      "200": {
+                        "description": "ok",
+                        "content": {
+                          "application/json": {
+                            "schema": { "type": "object", "properties": { "status": { "type": "string" } } },
+                            "examples": { "sample": { "value": { "status": "delivered" } } }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """;
+        var rec = OpenApiRecordingBuilder.Build(LoadDoc(doc), "inline");
+
+        var step = Assert.Single(rec.Steps);
+        using var body = JsonDocument.Parse(step.Response!);
+        Assert.Equal("delivered", body.RootElement.GetProperty("status").GetString());
     }
 
     private static OpenApiDocument LoadDoc(string json)

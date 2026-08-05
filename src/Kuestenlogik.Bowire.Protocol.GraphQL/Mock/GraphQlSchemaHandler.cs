@@ -219,6 +219,11 @@ public sealed class GraphQlSchemaHandler
     {
         if (depth >= MaxDepth) return null;
 
+        // #559: a declared `@example(value: ...)` on the field wins over the
+        // type-driven sample — the operator said exactly what to serve. A
+        // declared JSON null is served as null (HasExample true, Example null).
+        if (field.HasExample) return field.Example?.DeepClone();
+
         if (field.IsList)
         {
             var arr = new JsonArray();
@@ -299,10 +304,79 @@ public sealed class GraphQlSchemaHandler
             foreach (var f in obj.Fields)
             {
                 var (namedType, isList) = FlattenType(f.Type);
-                fields[f.Name.StringValue] = new FieldInfo(f.Name.StringValue, namedType, isList);
+                var hasExample = TryReadExampleDirective(f, out var example);
+                fields[f.Name.StringValue] = new FieldInfo(
+                    f.Name.StringValue, namedType, isList, example, hasExample);
             }
         }
         return new TypeInfo(obj.Name.StringValue, IsInterface: false, fields.ToFrozenDictionary(StringComparer.Ordinal), EnumValues: null);
+    }
+
+    // #559: read a `@example(value: ...)` directive off a field definition and
+    // convert its literal to JSON. Returns null when the field carries no such
+    // directive (the common case). A named `value:` argument is preferred; the
+    // first argument is the fallback so bare `@example("...")`-style usage works.
+    private static bool TryReadExampleDirective(GraphQLFieldDefinition field, out JsonNode? example)
+    {
+        example = null;
+        if (field.Directives is null) return false;
+        foreach (var directive in field.Directives)
+        {
+            if (!string.Equals(directive.Name.StringValue, "example", StringComparison.Ordinal)) continue;
+            var args = directive.Arguments;
+            var arg = args?.FirstOrDefault(a => string.Equals(a.Name.StringValue, "value", StringComparison.Ordinal));
+            // Fallback: a bare `@example("...")` with an unnamed first argument.
+            if (arg is null && args is { Count: > 0 }) arg = args[0];
+            if (arg is not null)
+            {
+                example = GraphQlValueToJson(arg.Value);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Convert a GraphQL literal (from a directive argument) to a JsonNode.
+    private static JsonNode? GraphQlValueToJson(GraphQLValue value)
+    {
+        var ci = System.Globalization.CultureInfo.InvariantCulture;
+        switch (value)
+        {
+            case GraphQLStringValue s:
+                return JsonValue.Create(s.Value.ToString());
+            case GraphQLIntValue i:
+                return long.TryParse(i.Value.Span, System.Globalization.NumberStyles.Integer, ci, out var l)
+                    ? JsonValue.Create(l) : JsonValue.Create(i.Value.ToString());
+            case GraphQLFloatValue f:
+                return double.TryParse(f.Value.Span, System.Globalization.NumberStyles.Float, ci, out var d)
+                    ? JsonValue.Create(d) : JsonValue.Create(f.Value.ToString());
+            case GraphQLBooleanValue b:
+                return JsonValue.Create(b.BoolValue);
+            case GraphQLEnumValue e:
+                return JsonValue.Create(e.Name.StringValue);
+            case GraphQLNullValue:
+                return null;
+            case GraphQLListValue list:
+            {
+                var arr = new JsonArray();
+                if (list.Values is not null)
+                {
+                    foreach (var item in list.Values) arr.Add(GraphQlValueToJson(item));
+                }
+                return arr;
+            }
+            case GraphQLObjectValue obj:
+            {
+                var node = new JsonObject();
+                if (obj.Fields is not null)
+                {
+                    foreach (var objField in obj.Fields) node[objField.Name.StringValue] = GraphQlValueToJson(objField.Value);
+                }
+                return node;
+            }
+            default:
+                return JsonValue.Create(value.ToString());
+        }
     }
 
     // Strip the NonNullType / ListType wrappers off a GraphQL type
@@ -343,5 +417,8 @@ public sealed class GraphQlSchemaHandler
         FrozenDictionary<string, FieldInfo> Fields,
         string[]? EnumValues);
 
-    private sealed record FieldInfo(string Name, string NamedType, bool IsList);
+    // HasExample distinguishes "no @example directive" from "@example(value: null)"
+    // (the latter must serve an explicit JSON null, which JsonNode? can't
+    // represent on its own — a JSON null is a C# null node).
+    private sealed record FieldInfo(string Name, string NamedType, bool IsList, JsonNode? Example = null, bool HasExample = false);
 }

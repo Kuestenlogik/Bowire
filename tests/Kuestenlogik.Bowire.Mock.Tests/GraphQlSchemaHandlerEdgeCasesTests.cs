@@ -245,6 +245,78 @@ public sealed class GraphQlSchemaHandlerEdgeCasesTests : IDisposable
         Assert.Equal("sample", data.GetProperty("custom").GetString());
     }
 
+    [Fact]
+    public async Task TryHandleAsync_ExampleDirective_Wins_Over_Type_Sample()
+    {
+        // #559: a field-level @example(value: ...) is served in preference to
+        // the type-driven "sample" / 1 / etc.
+        var handler = await LoadHandler("""
+            directive @example(value: String) on FIELD_DEFINITION
+            type Query {
+              status: String @example(value: "shipped")
+              count: Int @example(value: 7)
+              plain: String
+            }
+            """);
+        var ctx = BuildContext("POST", "/graphql",
+            body: """{"query":"{ status count plain }"}""");
+
+        var handled = await handler.TryHandleAsync(ctx, TestContext.Current.CancellationToken);
+
+        Assert.True(handled);
+        var body = ReadResponseBody(ctx);
+        using var doc = JsonDocument.Parse(body);
+        var data = doc.RootElement.GetProperty("data");
+        Assert.Equal("shipped", data.GetProperty("status").GetString());
+        Assert.Equal(7, data.GetProperty("count").GetInt32());
+        // A field without @example still gets the type-driven sample.
+        Assert.Equal("sample", data.GetProperty("plain").GetString());
+    }
+
+    [Fact]
+    public async Task TryHandleAsync_ExampleDirective_Null_Serves_Json_Null()
+    {
+        // #559: @example(value: null) serves an explicit JSON null — the
+        // declared example wins over the non-null "sample" type default.
+        var handler = await LoadHandler("""
+            directive @example(value: String) on FIELD_DEFINITION
+            type Query {
+              note: String @example(value: null)
+            }
+            """);
+        var ctx = BuildContext("POST", "/graphql", body: """{"query":"{ note }"}""");
+
+        var handled = await handler.TryHandleAsync(ctx, TestContext.Current.CancellationToken);
+
+        Assert.True(handled);
+        using var doc = JsonDocument.Parse(ReadResponseBody(ctx));
+        Assert.Equal(JsonValueKind.Null,
+            doc.RootElement.GetProperty("data").GetProperty("note").ValueKind);
+    }
+
+    [Fact]
+    public async Task TryHandleAsync_ExampleDirective_Object_Served_Verbatim()
+    {
+        // #559: an object @example is served exactly as declared (the operator
+        // said what to serve; it bypasses the type-driven object generation).
+        var handler = await LoadHandler("""
+            directive @example(value: String) on FIELD_DEFINITION
+            type User { name: String }
+            type Query {
+              user: User @example(value: { name: "Ada", role: "admin" })
+            }
+            """);
+        var ctx = BuildContext("POST", "/graphql", body: """{"query":"{ user { name } }"}""");
+
+        var handled = await handler.TryHandleAsync(ctx, TestContext.Current.CancellationToken);
+
+        Assert.True(handled);
+        using var doc = JsonDocument.Parse(ReadResponseBody(ctx));
+        var user = doc.RootElement.GetProperty("data").GetProperty("user");
+        Assert.Equal("Ada", user.GetProperty("name").GetString());
+        Assert.Equal("admin", user.GetProperty("role").GetString());
+    }
+
     // ---- helpers ----
 
     private async Task<GraphQlSchemaHandler> LoadHandler(string sdl)
