@@ -126,12 +126,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**22/25 done** · 3 backlog
+**23/25 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [179](https://github.com/Kuestenlogik/Bowire/issues/179) | Bowire | [Mock from schema — generate a running mock without a recording](#issue-kuestenlogik-bowire-179) | ⬜ Backlog |  |
-| [561](https://github.com/Kuestenlogik/Bowire/issues/561) | Bowire | [Add per-field response-override and per-method conditional-rule editors to the schema-mock detail pane](#issue-kuestenlogik-bowire-561) | ⬜ Backlog |  |
 | [562](https://github.com/Kuestenlogik/Bowire/issues/562) | Bowire | [Let a schema mock require authentication, composed from a #sec-04 auth recording](#issue-kuestenlogik-bowire-562) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
@@ -155,6 +154,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [558](https://github.com/Kuestenlogik/Bowire/issues/558) | Bowire | [Add a persisted mock-configuration workspace artifact: model, store, and apply-at-startup seam](#issue-kuestenlogik-bowire-558) | ✅ Done |  |
 | [559](https://github.com/Kuestenlogik/Bowire/issues/559) | Bowire | [Honour declared schema examples across OpenAPI, Protobuf, and GraphQL mock sources](#issue-kuestenlogik-bowire-559) | ✅ Done |  |
 | [560](https://github.com/Kuestenlogik/Bowire/issues/560) | Bowire | [Start a schema mock from the workbench and create its mock-configuration artifact](#issue-kuestenlogik-bowire-560) | ✅ Done |  |
+| [561](https://github.com/Kuestenlogik/Bowire/issues/561) | Bowire | [Add per-field response-override and per-method conditional-rule editors to the schema-mock detail pane](#issue-kuestenlogik-bowire-561) | ✅ Done |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
@@ -713,10 +713,6 @@ Discovered during the #346 second-pass fix. Separate bug — same morphdom-stale
 
 Mocks today require a Recording: capture traffic against a real server, replay against the mock. That's great for fidelity but bad for parallel development where the consumer team starts BEFORE the provider exists. Today the consumer has to hand-write stubs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/179)
 
-#### <a id="issue-kuestenlogik-bowire-561"></a>⬜ Backlog · [#561](https://github.com/Kuestenlogik/Bowire/issues/561) Add per-field response-override and per-method conditional-rule editors to the schema-mock detail pane
-
-No per-field response-override editor and no per-method conditional-response editor exist for schema mocks. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/561)
-
 #### <a id="issue-kuestenlogik-bowire-562"></a>⬜ Backlog · [#562](https://github.com/Kuestenlogik/Bowire/issues/562) Let a schema mock require authentication, composed from a #sec-04 auth recording
 
 There is no auth gate on the mock's serving surface: `MockServer.StartAsync` builds `UseRouting -> UseWebSockets -> UseBowireMock -> UseEndpoints` with no authentication middleware and no 401 before replay. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/562)
@@ -814,6 +810,10 @@ Schema mocks today synthesise an in-memory `BowireRecording` at startup and pers
 #### <a id="issue-kuestenlogik-bowire-560"></a>✅ Done · [#560](https://github.com/Kuestenlogik/Bowire/issues/560) Start a schema mock from the workbench and create its mock-configuration artifact
 
 Schema mocks have no UI entry point today: the only workbench start path is `startMockFromRecording` (mocks.js), and there are zero schema-mock references in any workbench JS. `POST {basePath}/api/mocks` accepts only recording shapes. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/560)
+
+#### <a id="issue-kuestenlogik-bowire-561"></a>✅ Done · [#561](https://github.com/Kuestenlogik/Bowire/issues/561) Add per-field response-override and per-method conditional-rule editors to the schema-mock detail pane
+
+No per-field response-override editor and no per-method conditional-response editor exist for schema mocks. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/561)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
