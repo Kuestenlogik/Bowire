@@ -65,8 +65,11 @@ public sealed class MockAuthGateTests
     [Fact]
     public void Basic_Scheme_Strips_The_Prefix_And_Matches()
     {
-        var gate = new MockAuthGate { Current = new MockAuthRequirement { Required = true, Scheme = "basic", Credential = "dXNlcjpwYXNz" } };
-        Assert.True(gate.IsAuthorized(Ctx("Basic dXNlcjpwYXNz")));
+        // The gate treats the credential as an opaque string (it never decodes
+        // basic auth), so use a plainly-fake, non-base64 fixture — a realistic
+        // base64 `user:pass` blob trips generic secret scanning for no benefit.
+        var gate = new MockAuthGate { Current = new MockAuthRequirement { Required = true, Scheme = "basic", Credential = "basic-fixture" } };
+        Assert.True(gate.IsAuthorized(Ctx("Basic basic-fixture")));
         Assert.False(gate.IsAuthorized(Ctx("Basic wrong")));
     }
 
