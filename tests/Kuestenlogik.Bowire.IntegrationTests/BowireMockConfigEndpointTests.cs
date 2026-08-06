@@ -1,11 +1,13 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Endpoints;
+using Kuestenlogik.Bowire.Mocking;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
@@ -189,6 +191,47 @@ public sealed class BowireMockConfigEndpointTests : IDisposable
             TestContext.Current.CancellationToken);
         var bBody = await getB.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.DoesNotContain("graphql", bBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GET_auth_recordings_lists_credential_free_summaries()
+    {
+        // #563: seed two recordings into the temp workspace store, then list them.
+        AuthRecordingStore.Save("ws-1", null, new AuthRecording { Id = "login", Name = "Login", Scheme = "bearer", Credential = "super-secret" });
+        AuthRecordingStore.Save("ws-1", null, new AuthRecording { Id = "apikey", Name = "API key", Scheme = "apikey", Credential = "k-123" });
+
+        using var host = await BuildHost();
+        var client = host.GetTestClient();
+
+        using var resp = await client.GetAsync(
+            new Uri("/api/auth-recordings?workspaceId=ws-1", UriKind.Relative), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+
+        // The listing carries ids/names but NEVER the credential value.
+        Assert.DoesNotContain("super-secret", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("k-123", body, StringComparison.Ordinal);
+
+        using var doc = JsonDocument.Parse(body);
+        var ids = doc.RootElement.GetProperty("recordings").EnumerateArray()
+            .Select(r => r.GetProperty("id").GetString()).ToList();
+        Assert.Contains("login", ids);
+        Assert.Contains("apikey", ids);
+    }
+
+    [Fact]
+    public async Task GET_auth_recordings_empty_workspace_returns_empty_list()
+    {
+        using var host = await BuildHost();
+        var client = host.GetTestClient();
+
+        using var resp = await client.GetAsync(
+            new Uri("/api/auth-recordings?workspaceId=nobody", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(body);
+        Assert.Empty(doc.RootElement.GetProperty("recordings").EnumerateArray());
     }
 
     private static async Task<IHost> BuildHost()

@@ -61,6 +61,17 @@ internal static class BowireMockConfigEndpoints
             }
         }).ExcludeFromDescription();
 
+        // #563: list a workspace's captured auth recordings for the auth-card
+        // picker — credential-free summaries only (the token never leaves the
+        // store). List never throws; a missing directory yields an empty list.
+        endpoints.MapGet($"{basePath}/api/auth-recordings", (HttpContext ctx) =>
+        {
+            var (workspaceId, storageRoot) = ReadWorkspace(ctx);
+            var recordings = AuthRecordingStore.List(workspaceId, storageRoot)
+                .Select(r => new { id = r.Id, name = r.Name, scheme = r.Scheme, capturedAt = r.CapturedAt });
+            return Results.Json(new { recordings }, BowireEndpointHelpers.JsonOptions);
+        }).ExcludeFromDescription();
+
         return endpoints;
     }
 
