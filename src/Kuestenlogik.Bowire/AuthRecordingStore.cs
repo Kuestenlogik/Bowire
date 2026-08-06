@@ -166,6 +166,29 @@ internal static partial class AuthRecordingStore
         }
     }
 
+    /// <summary>
+    /// Delete a recording by id. Returns true when a file was removed, false
+    /// when none existed. Never throws — an unsafe/empty id or an IO error is
+    /// treated as "nothing to delete" (false).
+    /// </summary>
+    public static bool Delete(string workspaceId, string? storageRoot, string recordingId)
+    {
+        lock (FileLock)
+        {
+            try
+            {
+                var path = GetStorePath(workspaceId, storageRoot, recordingId);
+                if (!File.Exists(path)) return false;
+                File.Delete(path);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+
     private static string SanitiseRecordingId(string recordingId)
     {
         if (string.IsNullOrWhiteSpace(recordingId))

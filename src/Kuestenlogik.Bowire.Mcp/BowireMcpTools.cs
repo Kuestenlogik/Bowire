@@ -281,6 +281,78 @@ public sealed class BowireMcpTools
         }
     }
 
+    // #563 — auth-recording management. Parity with `bowire auth-recording …`
+    // and the workbench auth-card picker: the same AuthRecordingStore backs all
+    // three surfaces, so a recording captured via MCP is immediately selectable
+    // in the UI and resolvable by a running mock.
+
+    [McpServerTool(Name = "bowire.auth-recording.list")]
+    [Description("List captured auth recordings (credential-free) that a mock's auth requirement can resolve by id. Returns { workspace, recordings: [{ id, name, scheme, capturedAt }] }. The credential value is never returned.")]
+    public static string AuthRecordingList(
+        [Description("Workspace to list from. Empty = the shared, unscoped store.")] string? workspace = null)
+    {
+        var recordings = AuthRecordingStore.List(workspace ?? string.Empty, storageRoot: null)
+            .Select(r => new { id = r.Id, name = r.Name, scheme = r.Scheme, capturedAt = r.CapturedAt });
+        return JsonSerializer.Serialize(new { workspace = workspace ?? string.Empty, recordings }, JsonOpts);
+    }
+
+    [McpServerTool(Name = "bowire.auth-recording.capture")]
+    [Description("Store a credential as a named auth recording so a mock's auth requirement can resolve it by id — parity with `bowire auth-recording capture` and the workbench picker. Two-step by default: the first call returns { pending, confirmationToken, plan }; re-invoke with confirm=true or the token to store it. The credential is written to the local store only and is never echoed back.")]
+    public string AuthRecordingCapture(
+        [Description("Recording id, referenced by a mock's auth.authRecordingId.")] string id,
+        [Description("The credential value to store (bearer/basic token or api-key). Written to the local store, never returned.")] string credential,
+        [Description("Human label for the picker (default: the id).")] string? name = null,
+        [Description("Credential scheme: bearer / basic / apikey. Default bearer.")] string? scheme = null,
+        [Description("Header the credential is presented in (default: Authorization).")] string? header = null,
+        [Description("Workspace to store under. Empty = the shared, unscoped store.")] string? workspace = null,
+        [Description("Skip the pending-confirmation step.")] bool confirm = false,
+        [Description("Confirmation token returned by a prior pending call.")] string? confirmationToken = null)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return "bowire.auth-recording.capture: id is required.";
+        if (string.IsNullOrEmpty(credential)) return "bowire.auth-recording.capture: credential is required.";
+
+        var effectiveScheme = string.IsNullOrWhiteSpace(scheme) ? "bearer" : scheme;
+        var plan = $"Store auth recording '{id}' ({effectiveScheme}) in workspace '{workspace ?? string.Empty}'.";
+        if (TryConfirmOrPark("bowire.auth-recording.capture", plan, confirm, confirmationToken, out var pending))
+            return pending!;
+
+        var recording = new AuthRecording
+        {
+            Id = id,
+            Name = name,
+            Scheme = effectiveScheme,
+            Header = header,
+            Credential = credential,
+            CapturedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+        };
+        try
+        {
+            AuthRecordingStore.Save(workspace ?? string.Empty, storageRoot: null, recording);
+            return JsonSerializer.Serialize(
+                new { captured = true, id, scheme = effectiveScheme, workspace = workspace ?? string.Empty }, JsonOpts);
+        }
+        catch (ArgumentException ex)
+        {
+            return $"bowire.auth-recording.capture failed: {ex.Message}";
+        }
+    }
+
+    [McpServerTool(Name = "bowire.auth-recording.remove")]
+    [Description("Delete a captured auth recording. Idempotent — reports whether a file was removed. Two-step by default (confirm=true or confirmationToken).")]
+    public string AuthRecordingRemove(
+        [Description("Recording id to remove.")] string id,
+        [Description("Workspace the recording is in. Empty = the shared, unscoped store.")] string? workspace = null,
+        [Description("Skip the pending-confirmation step.")] bool confirm = false,
+        [Description("Confirmation token returned by a prior pending call.")] string? confirmationToken = null)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return "bowire.auth-recording.remove: id is required.";
+        var plan = $"Delete auth recording '{id}' from workspace '{workspace ?? string.Empty}'.";
+        if (TryConfirmOrPark("bowire.auth-recording.remove", plan, confirm, confirmationToken, out var pending))
+            return pending!;
+        var removed = AuthRecordingStore.Delete(workspace ?? string.Empty, storageRoot: null, id);
+        return JsonSerializer.Serialize(new { removed, id }, JsonOpts);
+    }
+
     [McpServerTool(Name = "bowire.har.import")]
     [Description("Convert a HAR 1.2 trace into a Bowire recording. Reads the HAR file at `harPath`, optionally writes the recording JSON to `outPath` (use \"-\" or omit to return the JSON inline), and returns a summary { recordingId, stepCount, authHeaders, redacted, outPath?, recording? }. Set `redactSecrets` to strip credential headers (Authorization, Cookie, X-Api-Key, …) before import. Pair with bowire.mock.start { recording: <outPath> } to serve the trace back.")]
     public static async Task<string> HarImport(

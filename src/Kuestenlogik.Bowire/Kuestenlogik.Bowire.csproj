@@ -10,6 +10,9 @@
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Grpc" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.SignalR" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Mcp" />
+    <!-- #563 — the MCP *server* package exposes Bowire-management tools
+         (bowire.auth-recording.*) that call the internal AuthRecordingStore. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Mcp" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Sse" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Ai" />
     <!-- #325 (v2.1) — the interceptor surface (middleware,

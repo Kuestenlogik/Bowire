@@ -196,4 +196,34 @@ public sealed class AuthRecordingStoreTests : IDisposable
         var only = Assert.Single(list);
         Assert.Equal("good", only.Id);
     }
+
+    [Fact]
+    public void Delete_Existing_Returns_True_And_Removes_The_File()
+    {
+        AuthRecordingStore.OverrideStorePathForTesting(null);
+        AuthRecordingStore.Save("ws1", _tempDir, "gone", Rec("gone", "tok"));
+
+        Assert.True(AuthRecordingStore.Delete("ws1", _tempDir, "gone"));
+        Assert.Null(AuthRecordingStore.LoadRecording("ws1", _tempDir, "gone"));
+        // Idempotent — a second delete just reports "nothing removed".
+        Assert.False(AuthRecordingStore.Delete("ws1", _tempDir, "gone"));
+    }
+
+    [Fact]
+    public void Delete_Missing_Returns_False()
+    {
+        AuthRecordingStore.OverrideStorePathForTesting(null);
+        Assert.False(AuthRecordingStore.Delete("ws1", _tempDir, "never"));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("!!!")]
+    public void Delete_Unsafe_Id_Never_Throws(string recordingId)
+    {
+        // An unsafe id makes GetStorePath throw; Delete's never-throws contract
+        // turns that into "nothing to delete" (false), not a propagated exception.
+        AuthRecordingStore.OverrideStorePathForTesting(null);
+        Assert.False(AuthRecordingStore.Delete("ws1", _tempDir, recordingId));
+    }
 }

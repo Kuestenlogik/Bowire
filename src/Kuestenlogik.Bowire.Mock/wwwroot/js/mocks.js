@@ -632,6 +632,25 @@
             .catch(function () { return []; });
     }
 
+    // #563 — create/update a recording (parity with the CLI + MCP capture). The
+    // credential is written to the workspace store; only the id is kept in the
+    // mock config that references it.
+    function saveAuthRecording(rec) {
+        return fetch(config.prefix + '/api/auth-recordings/' + encodeURIComponent(rec.id) + mockConfigQs(), {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: rec.id, name: rec.name, scheme: rec.scheme, header: rec.header, credential: rec.credential })
+        }).then(function (r) {
+            if (!r.ok) return r.json().catch(function () { return { error: 'Save failed (' + r.status + ')' }; })
+                .then(function (e) { throw new Error(e.error || 'Save failed'); });
+            return r.json();
+        });
+    }
+
+    function deleteAuthRecording(id) {
+        return fetch(config.prefix + '/api/auth-recordings/' + encodeURIComponent(id) + mockConfigQs(), { method: 'DELETE' })
+            .then(function (r) { return r.ok ? r.json() : { deleted: false }; });
+    }
+
     // Build the clean config to persist/apply: parse the raw-text buffers back
     // to JSON and drop the client-only fields (_rid / _valueText / _responseText).
     function serializeMockConfig(st) {
@@ -896,7 +915,48 @@
                 if (v) st.config.auth.credential = '';
                 markDirty(st); render();
             }));
+            // #563 — create/remove recordings inline (CLI/UI/MCP parity: same store).
+            var newBtn = el('button', { className: 'bowire-empty-card-action', textContent: st.newRecOpen ? 'Cancel' : '+ New recording' });
+            newBtn.onclick = function () {
+                st.newRecOpen = !st.newRecOpen;
+                if (st.newRecOpen && !st.newRec) st.newRec = { id: '', name: '', scheme: 'bearer', header: '', credential: '' };
+                render();
+            };
+            recRow.appendChild(newBtn);
+            if (auth.authRecordingId) {
+                recRow.appendChild(cfgRemoveBtn(function () {
+                    var target = auth.authRecordingId;
+                    deleteAuthRecording(target).then(function () {
+                        st.config.auth.authRecordingId = null;
+                        st.authRecordings = undefined; // force a reload of the picker
+                        markDirty(st); render();
+                    });
+                }));
+            }
             card.appendChild(recRow);
+
+            if (st.newRecOpen) {
+                var nr = st.newRec || (st.newRec = { id: '', name: '', scheme: 'bearer', header: '', credential: '' });
+                var form = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 8px 0' });
+                form.appendChild(cfgInput(nr.id, 'id (referenced by authRecordingId)', function (v) { nr.id = v; }));
+                form.appendChild(cfgInput(nr.name, 'name (optional)', function (v) { nr.name = v; }));
+                form.appendChild(faultSelect(nr.scheme || 'bearer', AUTH_SCHEMES, function (v) { nr.scheme = v; }));
+                form.appendChild(cfgInput(nr.header, 'header (default Authorization)', function (v) { nr.header = v; }));
+                form.appendChild(cfgInput(nr.credential, 'credential (stored locally)', function (v) { nr.credential = v; }));
+                var saveRecBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: 'Save recording' });
+                saveRecBtn.onclick = function () {
+                    if (!nr.id || !nr.credential) { st.error = 'A recording needs an id and a credential.'; render(); return; }
+                    saveAuthRecording(nr).then(function () {
+                        st.config.auth.authRecordingId = nr.id;
+                        st.config.auth.credential = '';
+                        st.newRec = null; st.newRecOpen = false; st.error = null;
+                        st.authRecordings = undefined; // force reload so the new id appears
+                        markDirty(st); render();
+                    }).catch(function (e) { st.error = e.message || 'Save failed'; render(); });
+                };
+                form.appendChild(saveRecBtn);
+                card.appendChild(form);
+            }
 
             var usingRecording = !!auth.authRecordingId;
             card.appendChild(el('p', { className: 'bowire-sources-hint',

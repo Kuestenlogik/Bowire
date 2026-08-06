@@ -47,6 +47,23 @@ public sealed class BowireCliActionTests : IDisposable
     }
 
     [Fact]
+    public async Task AuthRecordingSubcommand_ListEmptyWorkspace_ExitsOk()
+    {
+        // #563 — the auth-recording command is registered and dispatches to the
+        // store (parse → CommandIo → AuthRecordingStore.List → format). A
+        // never-written unique workspace lists empty; read-only, no ~/.bowire
+        // write, so no BowireUserContext redirect is needed.
+        using var stdout = new StringWriter();
+        var rc = await BowireCli.RunAsync(
+            ["auth-recording", "list", "--workspace", "authrec-cli-" + Guid.NewGuid().ToString("N")],
+            EmptyConfig(),
+            plugins: TestPluginLoaders.None(),
+            stdout: stdout, stderr: null);
+        Assert.Equal(0, rc);
+        Assert.Contains("No auth recordings", stdout.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task DescribeSubcommand_AgainstDeadUrl_ReturnsErrorExit()
     {
         var rc = await BowireCli.RunAsync(
