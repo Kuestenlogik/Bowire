@@ -137,7 +137,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**26/26 done**
+**32/32 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -162,6 +162,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [430](https://github.com/Kuestenlogik/Bowire/issues/430) | Bowire | [Mock response templating: expression/helper engine + record-through capture (follow-up)](#issue-kuestenlogik-bowire-430) | ✅ Done |  |
 | [491](https://github.com/Kuestenlogik/Bowire/issues/491) | Bowire | [Nuclei template compat — non-HTTP transports (Phase 2g)](#issue-kuestenlogik-bowire-491) | ✅ Done |  |
 | [510](https://github.com/Kuestenlogik/Bowire/issues/510) | Bowire | [SignalR: standalone --url signalr@<hub-url> has no discovery/invocation surface](#issue-kuestenlogik-bowire-510) | ✅ Done |  |
+| [511](https://github.com/Kuestenlogik/Bowire/issues/511) | Bowire | [mock: recording replay only matches HTTP-path steps — GraphQL/gRPC/streaming steps unreachable](#issue-kuestenlogik-bowire-511) | ✅ Done |  |
+| [514](https://github.com/Kuestenlogik/Bowire/issues/514) | Bowire | [REST plugin: embedded discovery crashes on duplicate operation keys (CacheEmbeddedSchemas ToDictionary)](#issue-kuestenlogik-bowire-514) | ✅ Done |  |
+| [528](https://github.com/Kuestenlogik/Bowire/issues/528) | Bowire | [GraphQL sample throws SchemaException on every request (HotChocolate cannot resolve Query/Mutation/Subscription)](#issue-kuestenlogik-bowire-528) | ✅ Done |  |
+| [543](https://github.com/Kuestenlogik/Bowire/issues/543) | Bowire | [MockCommandAutoInstallTests reads the developer's real plugin directory](#issue-kuestenlogik-bowire-543) | ✅ Done |  |
+| [544](https://github.com/Kuestenlogik/Bowire/issues/544) | Bowire | [Discovery cannot report a partial fault: results and diagnostics are mutually exclusive](#issue-kuestenlogik-bowire-544) | ✅ Done |  |
+| [545](https://github.com/Kuestenlogik/Bowire/issues/545) | Bowire | [Correlated timeline: join across renamed identifiers (multi-key)](#issue-kuestenlogik-bowire-545) | ✅ Done |  |
 | [558](https://github.com/Kuestenlogik/Bowire/issues/558) | Bowire | [Add a persisted mock-configuration workspace artifact: model, store, and apply-at-startup seam](#issue-kuestenlogik-bowire-558) | ✅ Done |  |
 | [559](https://github.com/Kuestenlogik/Bowire/issues/559) | Bowire | [Honour declared schema examples across OpenAPI, Protobuf, and GraphQL mock sources](#issue-kuestenlogik-bowire-559) | ✅ Done |  |
 | [560](https://github.com/Kuestenlogik/Bowire/issues/560) | Bowire | [Start a schema mock from the workbench and create its mock-configuration artifact](#issue-kuestenlogik-bowire-560) | ✅ Done |  |
@@ -856,6 +862,30 @@ Split out of #35 (Nuclei template compatibility). Phases 2a–2f shipped across 
 #### <a id="issue-kuestenlogik-bowire-510"></a>✅ Done · [#510](https://github.com/Kuestenlogik/Bowire/issues/510) SignalR: standalone --url signalr@<hub-url> has no discovery/invocation surface
 
 `bowire --url signalr@http://host/hub` is documented (`docs/setup/standalone.md`, SignalR sample README) but dead-ends: the SignalR plugin's `DiscoverAsync` only reflects over the *local* `EndpointDataSource` behind a self-origin gate (`SignalRHubDiscovery.cs`), so an external hub URL yields zero se … [[more]](https://github.com/Kuestenlogik/Bowire/issues/510)
+
+#### <a id="issue-kuestenlogik-bowire-511"></a>✅ Done · [#511](https://github.com/Kuestenlogik/Bowire/issues/511) mock: recording replay only matches HTTP-path steps — GraphQL/gRPC/streaming steps unreachable
+
+`bowire mock --recording <file>` only replays steps that carry `httpPath` + `httpVerb` — i.e. REST and OData. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/511)
+
+#### <a id="issue-kuestenlogik-bowire-514"></a>✅ Done · [#514](https://github.com/Kuestenlogik/Bowire/issues/514) REST plugin: embedded discovery crashes on duplicate operation keys (CacheEmbeddedSchemas ToDictionary)
+
+Embedded discovery against a host that serves ASP.NET Core 10's `AddOpenApi()` document fails entirely: [[more]](https://github.com/Kuestenlogik/Bowire/issues/514)
+
+#### <a id="issue-kuestenlogik-bowire-528"></a>✅ Done · [#528](https://github.com/Kuestenlogik/Bowire/issues/528) GraphQL sample throws SchemaException on every request (HotChocolate cannot resolve Query/Mutation/Subscription)
+
+`samples/Kuestenlogik.Bowire.Sample.GraphQL` starts and serves `/bowire`, but **every** GraphQL request — including the introspection query Bowire's discovery sends — fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/528)
+
+#### <a id="issue-kuestenlogik-bowire-543"></a>✅ Done · [#543](https://github.com/Kuestenlogik/Bowire/issues/543) MockCommandAutoInstallTests reads the developer's real plugin directory
+
+`MockCommandAutoInstallTests.RunAsync_AutoInstall_MultipleMissing_InstallsEach` fails on a developer machine that has any protocol plugin installed: [[more]](https://github.com/Kuestenlogik/Bowire/issues/543)
+
+#### <a id="issue-kuestenlogik-bowire-544"></a>✅ Done · [#544](https://github.com/Kuestenlogik/Bowire/issues/544) Discovery cannot report a partial fault: results and diagnostics are mutually exclusive
+
+A discovery probe is all-or-nothing. If any surface of a server faults, the plugin's entire contribution is dropped — including the surfaces that answered perfectly. [[more]](https://github.com/Kuestenlogik/Bowire/issues/544)
+
+#### <a id="issue-kuestenlogik-bowire-545"></a>✅ Done · [#545](https://github.com/Kuestenlogik/Bowire/issues/545) Correlated timeline: join across renamed identifiers (multi-key)
+
+The correlated timeline (#539) keys a recording on **one** value. A business transaction that changes its identifier as it crosses services therefore lights up only the lanes that happen to speak the chosen key. [[more]](https://github.com/Kuestenlogik/Bowire/issues/545)
 
 #### <a id="issue-kuestenlogik-bowire-558"></a>✅ Done · [#558](https://github.com/Kuestenlogik/Bowire/issues/558) Add a persisted mock-configuration workspace artifact: model, store, and apply-at-startup seam
 
