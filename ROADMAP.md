@@ -202,7 +202,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
-**2/23 done** · 21 backlog
+**2/24 done** · 22 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -219,6 +219,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog |  |
 | [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog |  |
 | [366](https://github.com/Kuestenlogik/Bowire/issues/366) | Bowire | [Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults](#issue-kuestenlogik-bowire-366) | ⬜ Backlog |  |
+| [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ⬜ Backlog |  |
 | [534](https://github.com/Kuestenlogik/Bowire/issues/534) | Bowire | [Explain why discovery failed instead of just reporting 0 services](#issue-kuestenlogik-bowire-534) | ⬜ Backlog |  |
 | [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ⬜ Backlog |  |
 | [536](https://github.com/Kuestenlogik/Bowire/issues/536) | Bowire | [Offer next-step handoffs directly from a successful response](#issue-kuestenlogik-bowire-536) | ⬜ Backlog |  |
@@ -245,7 +246,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts
 
-**0/20 done** · 20 backlog
+**0/23 done** · 23 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -267,7 +268,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [418](https://github.com/Kuestenlogik/Bowire/issues/418) | Bowire | [Re-sync language SDKs (Go/Node/Python/Rust) to the current sidecar contract + version handshake](#issue-kuestenlogik-bowire-418) | ⬜ Backlog |  |
 | [421](https://github.com/Kuestenlogik/Bowire/issues/421) | Bowire | [v3.0: rename Kuestenlogik.Bowire.* -> Bowire.* (assemblies, namespaces, NuGet ids)](#issue-kuestenlogik-bowire-421) | ⬜ Backlog |  |
 | [445](https://github.com/Kuestenlogik/Bowire/issues/445) | Bowire | [refactor: centralise connection-options (mTLS / gRPC transport / AWS SigV4) behind one seam instead of magic metadata markers](#issue-kuestenlogik-bowire-445) | ⬜ Backlog |  |
+| [485](https://github.com/Kuestenlogik/Bowire/issues/485) | Bowire | [Infra: stand up oast.bowire.io — the hosted OAST interaction server (#35 Phase 2f)](#issue-kuestenlogik-bowire-485) | ⬜ Backlog |  |
 | [487](https://github.com/Kuestenlogik/Bowire/issues/487) | Bowire | [v3.0: rename Kuestenlogik.Bowire.Security.Scanner → …Security — the package is the Security rail, not just a scanner](#issue-kuestenlogik-bowire-487) | ⬜ Backlog |  |
+| [488](https://github.com/Kuestenlogik/Bowire/issues/488) | Bowire | [RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench](#issue-kuestenlogik-bowire-488) | ⬜ Backlog |  |
+| [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog |  |
 | [529](https://github.com/Kuestenlogik/Bowire/issues/529) | Bowire | [OData plugin: EDM functions and actions are never discovered (class doc claims they are)](#issue-kuestenlogik-bowire-529) | ⬜ Backlog |  |
 
 ### Backlog (not yet scheduled)
@@ -294,10 +298,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) | Protocol.Akka | [Docs drift: TappedMessage envelope field names & payload shape](#issue-kuestenlogik-bowire-protocol-akka-34) | ⬜ Backlog |  |
 | [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog |  |
 | [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ⬜ Backlog |  |
-| [485](https://github.com/Kuestenlogik/Bowire/issues/485) | Bowire | [Infra: stand up oast.bowire.io — the hosted OAST interaction server (#35 Phase 2f)](#issue-kuestenlogik-bowire-485) | ⬜ Backlog |  |
-| [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ⬜ Backlog |  |
-| [488](https://github.com/Kuestenlogik/Bowire/issues/488) | Bowire | [RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench](#issue-kuestenlogik-bowire-488) | ⬜ Backlog |  |
-| [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog |  |
 
 ## Details
 
@@ -973,6 +973,10 @@ Follow-up to #306. Phase G's descriptor-by-package extraction shipped in 0b76086
 
 Follow-ups collecting the workbench-UI remainders from the shipped test-pillar features (#170/#171/#174). The CLI + engine + authoring editors are done; these are read-side / streaming refinements. [[more]](https://github.com/Kuestenlogik/Bowire/issues/366)
 
+#### <a id="issue-kuestenlogik-bowire-486"></a>⬜ Backlog · [#486](https://github.com/Kuestenlogik/Bowire/issues/486) Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live
+
+The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the workflow the OAST work so far does not cover. [[more]](https://github.com/Kuestenlogik/Bowire/issues/486)
+
 #### <a id="issue-kuestenlogik-bowire-534"></a>⬜ Backlog · [#534](https://github.com/Kuestenlogik/Bowire/issues/534) Explain why discovery failed instead of just reporting 0 services
 
 The `attempts` data does exist server-side, but the claim that "the UI simply does not show it" understates the problem: the UI never even *reads* the body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/534)
@@ -1125,9 +1129,21 @@ For the v3.0 breaking-change release, rename the Bowire .NET surface from `Kuest
 
 Several connection/request-level features are woven into **every** protocol plugin's connect/invoke/channel method via "magic" metadata-string markers plus repeated parse-then-strip boilerplate. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/445)
 
+#### <a id="issue-kuestenlogik-bowire-485"></a>⬜ Backlog · [#485](https://github.com/Kuestenlogik/Bowire/issues/485) Infra: stand up oast.bowire.io — the hosted OAST interaction server (#35 Phase 2f)
+
+Operational follow-up to #35 Phase 2f. The **code** side needs nothing from this — `bowire scan --oast-server <url>` already points at any interactsh-compatible instance, and `bowire oast serve` (tracked in #35) will let anyone self-host. This ticket is purely the hosted convenience instance. [[more]](https://github.com/Kuestenlogik/Bowire/issues/485)
+
 #### <a id="issue-kuestenlogik-bowire-487"></a>⬜ Backlog · [#487](https://github.com/Kuestenlogik/Bowire/issues/487) v3.0: rename Kuestenlogik.Bowire.Security.Scanner → …Security — the package is the Security rail, not just a scanner
 
 The `.Scanner` suffix under-describes what the package has become. It started as the `bowire scan` engine, but it is now the **home of the whole Security rail**: the rail contribution + `security.js`, the OWASP API Top-10 suite, the endpoint spider, and (as of #486) the manual OAST pen-test panel. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/487)
+
+#### <a id="issue-kuestenlogik-bowire-488"></a>⬜ Backlog · [#488](https://github.com/Kuestenlogik/Bowire/issues/488) RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench
+
+> **Status: DRAFT / RFC — needs refinement before implementation.** Captures a direction from the #486 discussion; the design sketch and open questions below are starting points, not decisions. [[more]](https://github.com/Kuestenlogik/Bowire/issues/488)
+
+#### <a id="issue-kuestenlogik-bowire-489"></a>⬜ Backlog · [#489](https://github.com/Kuestenlogik/Bowire/issues/489) RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)
+
+> **Status: DRAFT / RFC — needs refinement before implementation.** Direction from the #486 discussion; specifics below are starting points. [[more]](https://github.com/Kuestenlogik/Bowire/issues/489)
 
 #### <a id="issue-kuestenlogik-bowire-529"></a>⬜ Backlog · [#529](https://github.com/Kuestenlogik/Bowire/issues/529) OData plugin: EDM functions and actions are never discovered (class doc claims they are)
 
@@ -1216,22 +1232,6 @@ When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` 
 #### <a id="issue-kuestenlogik-bowire-samples-54"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) harbor-demo: MQTT crane telemetry should name the container it lifts
 
 The harbor demo is the reference recording for Bowire's correlated timeline (Kuestenlogik/Bowire#539, #545). Seven of its eight protocol steps now join into one flow. The eighth — the MQTT crane telemetry — stays dark, and the sample is the reason. [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/54)
-
-#### <a id="issue-kuestenlogik-bowire-485"></a>⬜ Backlog · [#485](https://github.com/Kuestenlogik/Bowire/issues/485) Infra: stand up oast.bowire.io — the hosted OAST interaction server (#35 Phase 2f)
-
-Operational follow-up to #35 Phase 2f. The **code** side needs nothing from this — `bowire scan --oast-server <url>` already points at any interactsh-compatible instance, and `bowire oast serve` (tracked in #35) will let anyone self-host. This ticket is purely the hosted convenience instance. [[more]](https://github.com/Kuestenlogik/Bowire/issues/485)
-
-#### <a id="issue-kuestenlogik-bowire-486"></a>⬜ Backlog · [#486](https://github.com/Kuestenlogik/Bowire/issues/486) Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live
-
-The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the workflow the OAST work so far does not cover. [[more]](https://github.com/Kuestenlogik/Bowire/issues/486)
-
-#### <a id="issue-kuestenlogik-bowire-488"></a>⬜ Backlog · [#488](https://github.com/Kuestenlogik/Bowire/issues/488) RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench
-
-> **Status: DRAFT / RFC — needs refinement before implementation.** Captures a direction from the #486 discussion; the design sketch and open questions below are starting points, not decisions. [[more]](https://github.com/Kuestenlogik/Bowire/issues/488)
-
-#### <a id="issue-kuestenlogik-bowire-489"></a>⬜ Backlog · [#489](https://github.com/Kuestenlogik/Bowire/issues/489) RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)
-
-> **Status: DRAFT / RFC — needs refinement before implementation.** Direction from the #486 discussion; specifics below are starting points. [[more]](https://github.com/Kuestenlogik/Bowire/issues/489)
 
 ---
 
