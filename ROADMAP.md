@@ -178,7 +178,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**0/6 done** · 1 next up · 5 backlog
+**0/7 done** · 1 next up · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -188,6 +188,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ⬜ Backlog |  |
 | [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ⬜ Backlog |  |
 | [284](https://github.com/Kuestenlogik/Bowire/issues/284) | Bowire | [Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)](#issue-kuestenlogik-bowire-284) | ⬜ Backlog |  |
+| [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins](#issue-kuestenlogik-bowire-549) | ⬜ Backlog |  |
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
@@ -201,7 +202,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
-**2/15 done** · 13 backlog
+**2/18 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -218,6 +219,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog |  |
 | [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog |  |
 | [366](https://github.com/Kuestenlogik/Bowire/issues/366) | Bowire | [Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults](#issue-kuestenlogik-bowire-366) | ⬜ Backlog |  |
+| [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ⬜ Backlog |  |
+| [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog |  |
+| [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ⬜ Backlog |  |
 | [362](https://github.com/Kuestenlogik/Bowire/issues/362) | Bowire | [Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern](#issue-kuestenlogik-bowire-362) | ✅ Done |  |
 | [363](https://github.com/Kuestenlogik/Bowire/issues/363) | Bowire | [Sidebar UX round 2: rail-strip drop targets + uniform 'select → assign → save as preset' toolbar affordance](#issue-kuestenlogik-bowire-363) | ✅ Done |  |
 
@@ -294,10 +298,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [536](https://github.com/Kuestenlogik/Bowire/issues/536) | Bowire | [Offer next-step handoffs directly from a successful response](#issue-kuestenlogik-bowire-536) | ⬜ Backlog |  |
 | [537](https://github.com/Kuestenlogik/Bowire/issues/537) | Bowire | [Make the catalogue a primary entry point, not a side path](#issue-kuestenlogik-bowire-537) | ⬜ Backlog |  |
 | [538](https://github.com/Kuestenlogik/Bowire/issues/538) | Bowire | [Show the CLI equivalent of every request (Copy as Bowire CLI)](#issue-kuestenlogik-bowire-538) | ⬜ Backlog |  |
-| [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ⬜ Backlog |  |
-| [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog |  |
-| [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins](#issue-kuestenlogik-bowire-549) | ⬜ Backlog |  |
-| [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ⬜ Backlog |  |
 
 ## Details
 
@@ -899,6 +899,10 @@ Phase F of the multi-tenant rollout — the UI affordances that turn "multi-user
 
 Extracted from #28 — **Phase D** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/284)
 
+#### <a id="issue-kuestenlogik-bowire-549"></a>⬜ Backlog · [#549](https://github.com/Kuestenlogik/Bowire/issues/549) Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins
+
+Start the workbench with `--plugin-dir X`, install a plugin from **Settings → Plugins**, and it lands in `~/.bowire/plugins` instead. The list you are looking at reads from `~/.bowire/plugins` too, so the plugin you just installed does appear — in the directory the host is not loading from. [[more]](https://github.com/Kuestenlogik/Bowire/issues/549)
+
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
 #### <a id="issue-kuestenlogik-bowire-238"></a>⬜ Backlog · [#238](https://github.com/Kuestenlogik/Bowire/issues/238) Map widget: trajectory LineString between sequential frames
@@ -968,6 +972,18 @@ Follow-up to #306. Phase G's descriptor-by-package extraction shipped in 0b76086
 #### <a id="issue-kuestenlogik-bowire-366"></a>⬜ Backlog · [#366](https://github.com/Kuestenlogik/Bowire/issues/366) Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults
 
 Follow-ups collecting the workbench-UI remainders from the shipped test-pillar features (#170/#171/#174). The CLI + engine + authoring editors are done; these are read-side / streaming refinements. [[more]](https://github.com/Kuestenlogik/Bowire/issues/366)
+
+#### <a id="issue-kuestenlogik-bowire-539"></a>⬜ Backlog · [#539](https://github.com/Kuestenlogik/Bowire/issues/539) Cross-protocol correlated timeline for recordings
+
+Ship a "Correlated timeline" as a second tab inside the existing Recordings detail pane (`renderRecordingDetail` in `src/Kuestenlogik.Bowire.Recordings/wwwroot/js/recording.js`), rendering one lane per protocol with one bar per step and per-frame ticks for streaming steps, all placed on a shared tim … [[more]](https://github.com/Kuestenlogik/Bowire/issues/539)
+
+#### <a id="issue-kuestenlogik-bowire-547"></a>⬜ Backlog · [#547](https://github.com/Kuestenlogik/Bowire/issues/547) Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one
+
+`RecordingCorrelationScanner.ScanStep` documents itself as walking "every JSON-bearing surface of one step", but it misses one: the interpretations. [[more]](https://github.com/Kuestenlogik/Bowire/issues/547)
+
+#### <a id="issue-kuestenlogik-bowire-551"></a>⬜ Backlog · [#551](https://github.com/Kuestenlogik/Bowire/issues/551) render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row
+
+`render()` rebuilds the entire workbench tree off-screen and morphdom-diffs it. There is no debounce, no dirty flag, no coalescing â€” a grep for `scheduleRender` / `renderPending` / any batching wrapper across `wwwroot/js/` returns nothing, and there are ~685 `render()` call sites. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/551)
 
 #### <a id="issue-kuestenlogik-bowire-362"></a>✅ Done · [#362](https://github.com/Kuestenlogik/Bowire/issues/362) Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern
 
@@ -1216,22 +1232,6 @@ The catalogue seam is fully built server-side (IBowireCatalogueProvider + local/
 #### <a id="issue-kuestenlogik-bowire-538"></a>⬜ Backlog · [#538](https://github.com/Kuestenlogik/Bowire/issues/538) Show the CLI equivalent of every request (Copy as Bowire CLI)
 
 Feasible, but the proposal's sample line is not a real command today: `bowire call` in `src/Kuestenlogik.Bowire.Tool/CliHandler.cs` is hard-wired to gRPC (`GrpcReflectionClient` + `GrpcInvoker`), there is no positional-URL form, no `proto@url` on the CLI, no `--protocol`, no `--stream`, and no `--va … [[more]](https://github.com/Kuestenlogik/Bowire/issues/538)
-
-#### <a id="issue-kuestenlogik-bowire-539"></a>⬜ Backlog · [#539](https://github.com/Kuestenlogik/Bowire/issues/539) Cross-protocol correlated timeline for recordings
-
-Ship a "Correlated timeline" as a second tab inside the existing Recordings detail pane (`renderRecordingDetail` in `src/Kuestenlogik.Bowire.Recordings/wwwroot/js/recording.js`), rendering one lane per protocol with one bar per step and per-frame ticks for streaming steps, all placed on a shared tim … [[more]](https://github.com/Kuestenlogik/Bowire/issues/539)
-
-#### <a id="issue-kuestenlogik-bowire-547"></a>⬜ Backlog · [#547](https://github.com/Kuestenlogik/Bowire/issues/547) Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one
-
-`RecordingCorrelationScanner.ScanStep` documents itself as walking "every JSON-bearing surface of one step", but it misses one: the interpretations. [[more]](https://github.com/Kuestenlogik/Bowire/issues/547)
-
-#### <a id="issue-kuestenlogik-bowire-549"></a>⬜ Backlog · [#549](https://github.com/Kuestenlogik/Bowire/issues/549) Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins
-
-Start the workbench with `--plugin-dir X`, install a plugin from **Settings → Plugins**, and it lands in `~/.bowire/plugins` instead. The list you are looking at reads from `~/.bowire/plugins` too, so the plugin you just installed does appear — in the directory the host is not loading from. [[more]](https://github.com/Kuestenlogik/Bowire/issues/549)
-
-#### <a id="issue-kuestenlogik-bowire-551"></a>⬜ Backlog · [#551](https://github.com/Kuestenlogik/Bowire/issues/551) render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row
-
-`render()` rebuilds the entire workbench tree off-screen and morphdom-diffs it. There is no debounce, no dirty flag, no coalescing â€” a grep for `scheduleRender` / `renderPending` / any batching wrapper across `wwwroot/js/` returns nothing, and there are ~685 `render()` call sites. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/551)
 
 ---
 
