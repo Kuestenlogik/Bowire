@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**75/75 done**
+**78/78 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -80,8 +80,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [303](https://github.com/Kuestenlogik/Bowire/issues/303) | Bowire | [Guided tour: per-rail empty-state secondary tours](#issue-kuestenlogik-bowire-303) | ✅ Done |  |
 | [304](https://github.com/Kuestenlogik/Bowire/issues/304) | Bowire | [Compose rail: hide standalone Collections rail tree node now that Compose hosts it](#issue-kuestenlogik-bowire-304) | ✅ Done |  |
 | [305](https://github.com/Kuestenlogik/Bowire/issues/305) | Bowire | [Source catalogue providers: kubernetes + agent (Phase D+E)](#issue-kuestenlogik-bowire-305) | ✅ Done |  |
+| [307](https://github.com/Kuestenlogik/Bowire/issues/307) | Bowire | [Bowire interceptor: standalone reverse-proxy mode (Phase C)](#issue-kuestenlogik-bowire-307) | ✅ Done |  |
+| [308](https://github.com/Kuestenlogik/Bowire/issues/308) | Bowire | [Bowire interceptor: mock injection (Phase D)](#issue-kuestenlogik-bowire-308) | ✅ Done |  |
 | [309](https://github.com/Kuestenlogik/Bowire/issues/309) | Bowire | [UI: configure URL catalogue providers from Settings (#136 follow-up)](#issue-kuestenlogik-bowire-309) | ✅ Done |  |
 | [310](https://github.com/Kuestenlogik/Bowire/issues/310) | Bowire | [UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up](#issue-kuestenlogik-bowire-310) | ✅ Done |  |
+| [314](https://github.com/Kuestenlogik/Bowire/issues/314) | Bowire | [Pluggable workbench: extract remaining rail JS slices (Phase G remainder)](#issue-kuestenlogik-bowire-314) | ✅ Done |  |
 | [324](https://github.com/Kuestenlogik/Bowire/issues/324) | Bowire | [Help: convert from drawer-tab to its own rail (plugin-contributed)](#issue-kuestenlogik-bowire-324) | ✅ Done |  |
 | [325](https://github.com/Kuestenlogik/Bowire/issues/325) | Bowire | [refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)](#issue-kuestenlogik-bowire-325) | ✅ Done |  |
 | [327](https://github.com/Kuestenlogik/Bowire/issues/327) | Bowire | [fix(registry): BowireProtocolRegistry.Discover thread-safety race under parallel xUnit](#issue-kuestenlogik-bowire-327) | ✅ Done |  |
@@ -94,7 +97,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**30/30 done**
+**33/33 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -112,6 +115,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | ✅ Done |  |
 | [312](https://github.com/Kuestenlogik/Bowire/issues/312) | Bowire | [Test coverage gap report — v2.1 audit kickoff](#issue-kuestenlogik-bowire-312) | ✅ Done |  |
 | [315](https://github.com/Kuestenlogik/Bowire/issues/315) | Bowire | [Unify Proxy + Intercepted into 'Traffic' rail (Standalone / Embedded sub-modes); Mocks stays separate](#issue-kuestenlogik-bowire-315) | ✅ Done |  |
+| [316](https://github.com/Kuestenlogik/Bowire/issues/316) | Bowire | [substituteMessages([...]) passes Array.map index as cycle-guard set, crashes on 2nd+ entry](#issue-kuestenlogik-bowire-316) | ✅ Done |  |
 | [323](https://github.com/Kuestenlogik/Bowire/issues/323) | Bowire | [interceptor reverse-proxy: swap hand-rolled HttpClient forwarder for YARP IHttpForwarder](#issue-kuestenlogik-bowire-323) | ✅ Done |  |
 | [334](https://github.com/Kuestenlogik/Bowire/issues/334) | Bowire | [feat(v2.2): merge Mocks + Traffic into Intercept rail with four sub-tabs](#issue-kuestenlogik-bowire-334) | ✅ Done |  |
 | [335](https://github.com/Kuestenlogik/Bowire/issues/335) | Bowire | [feat(v2.2): cross-rail transition CTAs](#issue-kuestenlogik-bowire-335) | ✅ Done |  |
@@ -128,6 +132,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [347](https://github.com/Kuestenlogik/Bowire/issues/347) | Bowire | [feat(v2.2): Bootcamp lessons — Intercept / Flow Assertions / bowire test CLI / Coverage / Plugin lifecycle / Workspace deletion (G)](#issue-kuestenlogik-bowire-347) | ✅ Done |  |
 | [348](https://github.com/Kuestenlogik/Bowire/issues/348) | Bowire | [feat(v2.2): Settings → Workspace… expanded into 4 sub-pages (E)](#issue-kuestenlogik-bowire-348) | ✅ Done |  |
 | [349](https://github.com/Kuestenlogik/Bowire/issues/349) | Bowire | [fix(compose): Parameter → Header sub-tab preserves Parameter row inputs — mistakes 'X-Test' as params[0].key](#issue-kuestenlogik-bowire-349) | ✅ Done |  |
+| [356](https://github.com/Kuestenlogik/Bowire/issues/356) | Bowire | [JS test safety net: unit-test infra for wwwroot fragments + lift the codecov wwwroot ignore](#issue-kuestenlogik-bowire-356) | ✅ Done |  |
+| [368](https://github.com/Kuestenlogik/Bowire/issues/368) | Bowire | [Cleanup: retire legacy proxy/intercepted core render fns + consolidate Workspaces descriptor (#306 tail)](#issue-kuestenlogik-bowire-368) | ✅ Done |  |
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
@@ -564,6 +570,14 @@ Phase A-F of #295 landed in 5160a3a — the Compose rail now hosts Collections +
 
 Follow-up to #136. The provider seam (`IBowireCatalogueProvider` + `BowireCatalogueProviderRegistry`) and the three built-in providers (`local`, `http`, `consul`) shipped in ab8042fbe92611ccb41926af3be48d2947339282. The remaining two providers each need extra weight that doesn't belong in core: [[more]](https://github.com/Kuestenlogik/Bowire/issues/305)
 
+#### <a id="issue-kuestenlogik-bowire-307"></a>✅ Done · [#307](https://github.com/Kuestenlogik/Bowire/issues/307) Bowire interceptor: standalone reverse-proxy mode (Phase C)
+
+Follow-up to #153 — Phases A + B (embedded middleware + record-session integration) shipped in commit b2b92483de079ef1f1701ce261ba1c9b1463e4b3. This issue tracks **Phase C — standalone reverse-proxy mode**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/307)
+
+#### <a id="issue-kuestenlogik-bowire-308"></a>✅ Done · [#308](https://github.com/Kuestenlogik/Bowire/issues/308) Bowire interceptor: mock injection (Phase D)
+
+Follow-up to #153 — Phases A + B (embedded middleware + record-session integration) shipped in commit b2b92483de079ef1f1701ce261ba1c9b1463e4b3. This issue tracks **Phase D — mock injection** for both embedded and standalone modes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/308)
+
 #### <a id="issue-kuestenlogik-bowire-309"></a>✅ Done · [#309](https://github.com/Kuestenlogik/Bowire/issues/309) UI: configure URL catalogue providers from Settings (#136 follow-up)
 
 #136 shipped the URL catalogue provider interface (local / http / consul). Provider selection + configuration goes through appsettings (Bowire:Discovery:Catalogue:*) today — there's NO UI affordance to pick + configure a provider from the workbench. [[more]](https://github.com/Kuestenlogik/Bowire/issues/309)
@@ -571,6 +585,10 @@ Follow-up to #136. The provider seam (`IBowireCatalogueProvider` + `BowireCatalo
 #### <a id="issue-kuestenlogik-bowire-310"></a>✅ Done · [#310](https://github.com/Kuestenlogik/Bowire/issues/310) UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up
 
 #294 introduced IBowireModuleContribution + BowireModuleRegistry — modules (AI, Assistant, Variable resolver, &c) are now contributable from external packages. But the Settings → Modules SECTION that would let an operator turn an installed module ON / OFF doesn't exist. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/310)
+
+#### <a id="issue-kuestenlogik-bowire-314"></a>✅ Done · [#314](https://github.com/Kuestenlogik/Bowire/issues/314) Pluggable workbench: extract remaining rail JS slices (Phase G remainder)
+
+Follow-up to #311. The first wave shipped the five heaviest rail JS slices (Recordings, Mocks, Flows, Compose, Intercepted) as embedded resources on their respective `Kuestenlogik.Bowire.Rail.*` packages, and added the runtime stitching machinery in `BowireHtmlGenerator` that splices per-assembly JS … [[more]](https://github.com/Kuestenlogik/Bowire/issues/314)
 
 #### <a id="issue-kuestenlogik-bowire-324"></a>✅ Done · [#324](https://github.com/Kuestenlogik/Bowire/issues/324) Help: convert from drawer-tab to its own rail (plugin-contributed)
 
@@ -670,6 +688,10 @@ Recon report for the v2.2 test pillar lands at [`docs/testing/coverage-gaps-v2.1
 
 Three rails exist today that all touch "request flowing through Bowire": [[more]](https://github.com/Kuestenlogik/Bowire/issues/315)
 
+#### <a id="issue-kuestenlogik-bowire-316"></a>✅ Done · [#316](https://github.com/Kuestenlogik/Bowire/issues/316) substituteMessages([...]) passes Array.map index as cycle-guard set, crashes on 2nd+ entry
+
+Found by coverage-wave-2 (#312) while wiring up node-tests for history-env.js. [[more]](https://github.com/Kuestenlogik/Bowire/issues/316)
+
 #### <a id="issue-kuestenlogik-bowire-323"></a>✅ Done · [#323](https://github.com/Kuestenlogik/Bowire/issues/323) interceptor reverse-proxy: swap hand-rolled HttpClient forwarder for YARP IHttpForwarder
 
 Follow-up to #153 / #307 — the standalone reverse-proxy listener (`bowire interceptor --upstream <url>`) shipped in 67197f2 forwards every request via a hand-rolled `BowireReverseProxyMiddleware` over plain `HttpClient`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/323)
@@ -733,6 +755,14 @@ v2.1 shipped the Settings IA with a single "Workspace…" leaf, deferring the su
 #### <a id="issue-kuestenlogik-bowire-349"></a>✅ Done · [#349](https://github.com/Kuestenlogik/Bowire/issues/349) fix(compose): Parameter → Header sub-tab preserves Parameter row inputs — mistakes 'X-Test' as params[0].key
 
 Discovered during the #346 second-pass fix. Separate bug — same morphdom-stale-closure family but different site. [[more]](https://github.com/Kuestenlogik/Bowire/issues/349)
+
+#### <a id="issue-kuestenlogik-bowire-356"></a>✅ Done · [#356](https://github.com/Kuestenlogik/Bowire/issues/356) JS test safety net: unit-test infra for wwwroot fragments + lift the codecov wwwroot ignore
+
+2026-07-03 architecture audit, highest-risk finding: the frontend is ~72 000 LOC of vanilla JS (41 Core fragments = 60 286 LOC + ~12k LOC of plugin fragments) sharing one closure, and it is **almost entirely untested and invisible to coverage**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/356)
+
+#### <a id="issue-kuestenlogik-bowire-368"></a>✅ Done · [#368](https://github.com/Kuestenlogik/Bowire/issues/368) Cleanup: retire legacy proxy/intercepted core render fns + consolidate Workspaces descriptor (#306 tail)
+
+Two low-priority cleanups left after #306's rail cut-over (all 7 optional feature rails now use the #314 renderer-key seam): [[more]](https://github.com/Kuestenlogik/Bowire/issues/368)
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
