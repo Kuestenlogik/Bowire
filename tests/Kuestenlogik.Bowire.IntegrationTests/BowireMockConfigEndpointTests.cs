@@ -318,7 +318,38 @@ public sealed class BowireMockConfigEndpointTests : IDisposable
         Assert.Empty(listDoc.RootElement.GetProperty("recordings").EnumerateArray());
     }
 
-    private static async Task<IHost> BuildHost()
+    [Fact]
+    public async Task POST_capture_with_a_flow_capturer_stores_the_credential()
+    {
+        using var host = await BuildHost(new FakeCapturer("flow-tok", "bearer", null));
+        var client = host.GetTestClient();
+
+        using var content = new StringContent("""{"steps":[]}""", Encoding.UTF8, "application/json");
+        using var resp = await client.PostAsync(
+            new Uri("/api/auth-recordings/login/capture?workspaceId=ws-1", UriKind.Relative), content, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        using var get = await client.GetAsync(
+            new Uri("/api/auth-recordings?workspaceId=ws-1", UriKind.Relative), TestContext.Current.CancellationToken);
+        var listing = await get.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.DoesNotContain("flow-tok", listing, StringComparison.Ordinal);   // captured credential never listed
+        Assert.Contains("login", listing, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task POST_capture_without_a_capturer_returns_501()
+    {
+        using var host = await BuildHost();   // no IAuthFlowCapturer registered
+        var client = host.GetTestClient();
+
+        using var content = new StringContent("""{"steps":[]}""", Encoding.UTF8, "application/json");
+        using var resp = await client.PostAsync(
+            new Uri("/api/auth-recordings/x/capture?workspaceId=ws-1", UriKind.Relative), content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotImplemented, resp.StatusCode);
+    }
+
+    private static async Task<IHost> BuildHost(IAuthFlowCapturer? capturer = null)
     {
         var host = new HostBuilder()
             .ConfigureWebHost(web =>
@@ -329,11 +360,21 @@ public sealed class BowireMockConfigEndpointTests : IDisposable
                        app.UseRouting();
                        app.UseEndpoints(e => e.MapBowireMockConfigEndpoints(basePath: string.Empty));
                    })
-                   .ConfigureServices(s => s.AddRouting());
+                   .ConfigureServices(s =>
+                   {
+                       s.AddRouting();
+                       if (capturer is not null) s.AddSingleton(capturer);
+                   });
             })
             .Build();
         await host.StartAsync();
         return host;
+    }
+
+    private sealed class FakeCapturer(string credential, string? scheme, string? header) : IAuthFlowCapturer
+    {
+        public Task<AuthFlowCaptureResult> CaptureAsync(string flowJson, CancellationToken ct = default)
+            => Task.FromResult(new AuthFlowCaptureResult(credential, scheme, header));
     }
 
     private sealed class TempStore(string root) : IBowireUserStore

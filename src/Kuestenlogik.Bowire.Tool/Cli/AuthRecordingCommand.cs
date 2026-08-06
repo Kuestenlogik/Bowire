@@ -19,6 +19,7 @@ internal static class AuthRecordingCommand
     private const int ExitOk = 0;
     private const int ExitUsage = 64;
     private const int ExitDataErr = 65;
+    private const int ExitNoInput = 66;
 
     public static Command Build()
     {
@@ -40,58 +41,99 @@ internal static class AuthRecordingCommand
         var idOpt = new Option<string>("--id") { Description = "Recording id, referenced by a mock's auth.authRecordingId." };
         var credEnvOpt = new Option<string?>("--credential-env")
         {
-            Description = "Name of the environment variable holding the credential to store. Read from the environment so the secret never lands in shell history or process args.",
+            Description = "Static capture: name of the environment variable holding the credential to store. Read from the environment so the secret never lands in shell history or process args.",
+        };
+        var flowOpt = new Option<string?>("--flow")
+        {
+            Description = "Flow capture: path to an auth-flow definition JSON (a scriptable login → token chain). Bowire RUNS it (outbound HTTP) and stores the captured token. Secrets in the flow come from {{env.NAME}}. Mutually exclusive with --credential-env.",
         };
         var nameOpt = new Option<string?>("--name") { Description = "Human label shown in the picker (default: the id)." };
-        var schemeOpt = new Option<string>("--scheme") { Description = "Credential scheme: bearer / basic / apikey.", DefaultValueFactory = _ => "bearer" };
+        var schemeOpt = new Option<string>("--scheme") { Description = "Credential scheme for static capture: bearer / basic / apikey (flow capture derives it from the flow).", DefaultValueFactory = _ => "bearer" };
         schemeOpt.CompletionSources.Add("bearer", "basic", "apikey");
         var headerOpt = new Option<string?>("--header") { Description = "Header the credential is presented in (default: Authorization)." };
         var wsOpt = WorkspaceOption();
 
         var capture = new Command("capture",
-            "Store a credential as a named auth recording. The value is read from --credential-env, never a raw flag. Exit 0 ok, 64 bad args, 65 store error.");
+            "Store a credential as a named auth recording — statically from --credential-env, or by running an auth flow with --flow. Exit 0 ok, 64 bad args, 65 store/flow error, 66 flow file not found.");
         capture.Add(idOpt);
         capture.Add(credEnvOpt);
+        capture.Add(flowOpt);
         capture.Add(nameOpt);
         capture.Add(schemeOpt);
         capture.Add(headerOpt);
         capture.Add(wsOpt);
-        capture.SetAction((pr, _) =>
+        capture.SetAction(async (pr, ct) =>
         {
             var io = CommandIo.Resolve(pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error);
-            return Task.FromResult(RunCapture(
-                pr.GetValue(idOpt), pr.GetValue(credEnvOpt), pr.GetValue(nameOpt),
-                pr.GetValue(schemeOpt), pr.GetValue(headerOpt), pr.GetValue(wsOpt), io));
+            return await RunCapture(
+                pr.GetValue(idOpt), pr.GetValue(credEnvOpt), pr.GetValue(flowOpt), pr.GetValue(nameOpt),
+                pr.GetValue(schemeOpt), pr.GetValue(headerOpt), pr.GetValue(wsOpt), io, ct).ConfigureAwait(false);
         });
         return capture;
     }
 
-    private static int RunCapture(
-        string? id, string? credentialEnv, string? name, string? scheme, string? header, string? workspace, CommandIo io)
+    private static async Task<int> RunCapture(
+        string? id, string? credentialEnv, string? flowPath, string? name, string? scheme, string? header,
+        string? workspace, CommandIo io, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(id))
         {
             io.ErrLine("bowire auth-recording capture: --id is required.");
             return ExitUsage;
         }
-        if (string.IsNullOrWhiteSpace(credentialEnv))
+        var haveFlow = !string.IsNullOrWhiteSpace(flowPath);
+        var haveEnv = !string.IsNullOrWhiteSpace(credentialEnv);
+        if (haveFlow == haveEnv)
         {
-            io.ErrLine("bowire auth-recording capture: --credential-env is required (the env var holding the credential).");
+            io.ErrLine("bowire auth-recording capture: provide exactly one of --credential-env (static) or --flow (run a login chain).");
             return ExitUsage;
         }
-        var credential = Environment.GetEnvironmentVariable(credentialEnv);
-        if (string.IsNullOrEmpty(credential))
+
+        string credential;
+        var effectiveScheme = scheme;
+        var effectiveHeader = header;
+
+        if (haveFlow)
         {
-            io.ErrLine($"bowire auth-recording capture: environment variable '{credentialEnv}' is not set or empty.");
-            return ExitUsage;
+            string flowJson;
+            try
+            {
+                flowJson = await File.ReadAllTextAsync(flowPath!, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                io.ErrLine($"bowire auth-recording capture: can't read flow file '{flowPath}': {ex.Message}");
+                return ExitNoInput;
+            }
+            try
+            {
+                var result = await new AuthFlowCapturer().CaptureAsync(flowJson, ct).ConfigureAwait(false);
+                credential = result.Credential;
+                effectiveScheme = result.Scheme ?? scheme;
+                effectiveHeader = result.Header ?? header;
+            }
+            catch (AuthFlowCaptureException ex)
+            {
+                io.ErrLine($"bowire auth-recording capture: auth flow failed: {ex.Message}");
+                return ExitDataErr;
+            }
+        }
+        else
+        {
+            credential = Environment.GetEnvironmentVariable(credentialEnv!) ?? string.Empty;
+            if (string.IsNullOrEmpty(credential))
+            {
+                io.ErrLine($"bowire auth-recording capture: environment variable '{credentialEnv}' is not set or empty.");
+                return ExitUsage;
+            }
         }
 
         var recording = new AuthRecording
         {
             Id = id,
             Name = name,
-            Scheme = string.IsNullOrWhiteSpace(scheme) ? "bearer" : scheme,
-            Header = header,
+            Scheme = string.IsNullOrWhiteSpace(effectiveScheme) ? "bearer" : effectiveScheme,
+            Header = effectiveHeader,
             Credential = credential,
             CapturedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
         };

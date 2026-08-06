@@ -47,6 +47,7 @@ public sealed class BowireMcpTools
     private readonly BowireRecordingSession _recordingSession;
     private readonly BowireMcpOptions _options;
     private readonly ILogger<BowireMcpTools> _logger;
+    private readonly Kuestenlogik.Bowire.Mocking.IAuthFlowCapturer? _flowCapturer;
 
     public BowireMcpTools(
         BowireProtocolRegistry registry,
@@ -54,7 +55,8 @@ public sealed class BowireMcpTools
         BowireMcpConfirmationStore confirmations,
         BowireRecordingSession recordingSession,
         IOptions<BowireMcpOptions> options,
-        ILogger<BowireMcpTools> logger)
+        ILogger<BowireMcpTools> logger,
+        Kuestenlogik.Bowire.Mocking.IAuthFlowCapturer? flowCapturer = null)
     {
         _registry = registry;
         _mockHandles = mockHandles;
@@ -62,6 +64,7 @@ public sealed class BowireMcpTools
         _recordingSession = recordingSession;
         _options = options.Value;
         _logger = logger;
+        _flowCapturer = flowCapturer;
 
         // Seeding is idempotent on repeated DI activations because the
         // helper checks `seen` before adding. Tool-class lifetime is
@@ -351,6 +354,57 @@ public sealed class BowireMcpTools
             return pending!;
         var removed = AuthRecordingStore.Delete(workspace ?? string.Empty, storageRoot: null, id);
         return JsonSerializer.Serialize(new { removed, id }, JsonOpts);
+    }
+
+    [McpServerTool(Name = "bowire.auth-recording.capture-flow")]
+    [Description("Run an auth flow (a scriptable login → token chain) and store the captured token as a named auth recording. Bowire EXECUTES the flow — an outbound HTTP call — so this is two-step by default (confirm=true / confirmationToken). Secrets in the flow are read from {{env.NAME}}, never inlined. Requires a host with flow-capture enabled; returns an error otherwise. Parity with `bowire auth-recording capture --flow` and the workbench's flow-capture.")]
+    public async Task<string> AuthRecordingCaptureFlow(
+        [Description("Recording id, referenced by a mock's auth.authRecordingId.")] string id,
+        [Description("The auth-flow definition as JSON (ordered request steps + a token capture). Same shape as `bowire scan --auth-flow`.")] string flow,
+        [Description("Human label for the picker (default: the id).")] string? name = null,
+        [Description("Workspace to store under. Empty = the shared, unscoped store.")] string? workspace = null,
+        [Description("Skip the pending-confirmation step.")] bool confirm = false,
+        [Description("Confirmation token returned by a prior pending call.")] string? confirmationToken = null,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return "bowire.auth-recording.capture-flow: id is required.";
+        if (string.IsNullOrWhiteSpace(flow)) return "bowire.auth-recording.capture-flow: flow is required.";
+        if (_flowCapturer is null)
+            return "bowire.auth-recording.capture-flow: flow-capture is not available on this host — use bowire.auth-recording.capture with a static credential.";
+
+        var plan = $"Run the auth flow (outbound HTTP) and store the captured token as recording '{id}' in workspace '{workspace ?? string.Empty}'.";
+        if (TryConfirmOrPark("bowire.auth-recording.capture-flow", plan, confirm, confirmationToken, out var pending))
+            return pending!;
+
+        AuthFlowCaptureResult captured;
+        try
+        {
+            captured = await _flowCapturer.CaptureAsync(flow, ct).ConfigureAwait(false);
+        }
+        catch (AuthFlowCaptureException ex)
+        {
+            return $"bowire.auth-recording.capture-flow failed: {ex.Message}";
+        }
+
+        var recording = new AuthRecording
+        {
+            Id = id,
+            Name = name,
+            Scheme = captured.Scheme,
+            Header = captured.Header,
+            Credential = captured.Credential,
+            CapturedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+        };
+        try
+        {
+            AuthRecordingStore.Save(workspace ?? string.Empty, storageRoot: null, recording);
+            return JsonSerializer.Serialize(
+                new { captured = true, id, scheme = captured.Scheme, workspace = workspace ?? string.Empty }, JsonOpts);
+        }
+        catch (ArgumentException ex)
+        {
+            return $"bowire.auth-recording.capture-flow failed: {ex.Message}";
+        }
     }
 
     [McpServerTool(Name = "bowire.har.import")]
