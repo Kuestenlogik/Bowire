@@ -126,14 +126,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**24/25 done** · 1 backlog
+**25/25 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [179](https://github.com/Kuestenlogik/Bowire/issues/179) | Bowire | [Mock from schema — generate a running mock without a recording](#issue-kuestenlogik-bowire-179) | ⬜ Backlog |  |
 | [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
 | [48](https://github.com/Kuestenlogik/Bowire/issues/48) | Bowire | [Schema watch mode](#issue-kuestenlogik-bowire-48) | ✅ Done | `area:workbench` |
+| [179](https://github.com/Kuestenlogik/Bowire/issues/179) | Bowire | [Mock from schema — generate a running mock without a recording](#issue-kuestenlogik-bowire-179) | ✅ Done |  |
 | [182](https://github.com/Kuestenlogik/Bowire/issues/182) | Bowire | [Side-by-side service version diff — schema + response comparison](#issue-kuestenlogik-bowire-182) | ✅ Done |  |
 | [185](https://github.com/Kuestenlogik/Bowire/issues/185) | Bowire | [Schema-watch diff view — show what changed since last visit](#issue-kuestenlogik-bowire-185) | ✅ Done |  |
 | [253](https://github.com/Kuestenlogik/Bowire/issues/253) | Bowire | [Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override](#issue-kuestenlogik-bowire-253) | ✅ Done |  |
@@ -710,10 +710,6 @@ Discovered during the #346 second-pass fix. Separate bug — same morphdom-stale
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-#### <a id="issue-kuestenlogik-bowire-179"></a>⬜ Backlog · [#179](https://github.com/Kuestenlogik/Bowire/issues/179) Mock from schema — generate a running mock without a recording
-
-Mocks today require a Recording: capture traffic against a real server, replay against the mock. That's great for fidelity but bad for parallel development where the consumer team starts BEFORE the provider exists. Today the consumer has to hand-write stubs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/179)
-
 #### <a id="issue-kuestenlogik-bowire-34"></a>✅ Done · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
 
 > `area:plugin-sdk`
@@ -731,6 +727,10 @@ AsyncAPI loader + most bindings shipped (MQTT / Kafka / WebSocket / HTTP / AMQP 
 > `area:workbench`
 
 Re-discover the active server URL(s) every N seconds and show a \"+ added, − removed, ~ changed\" delta in the sidebar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/48)
+
+#### <a id="issue-kuestenlogik-bowire-179"></a>✅ Done · [#179](https://github.com/Kuestenlogik/Bowire/issues/179) Mock from schema — generate a running mock without a recording
+
+Mocks today require a Recording: capture traffic against a real server, replay against the mock. That's great for fidelity but bad for parallel development where the consumer team starts BEFORE the provider exists. Today the consumer has to hand-write stubs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/179)
 
 #### <a id="issue-kuestenlogik-bowire-182"></a>✅ Done · [#182](https://github.com/Kuestenlogik/Bowire/issues/182) Side-by-side service version diff — schema + response comparison
 
