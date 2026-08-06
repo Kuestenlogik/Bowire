@@ -202,7 +202,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
-**2/18 done** · 16 backlog
+**2/22 done** · 20 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -219,6 +219,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog |  |
 | [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog |  |
 | [366](https://github.com/Kuestenlogik/Bowire/issues/366) | Bowire | [Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults](#issue-kuestenlogik-bowire-366) | ⬜ Backlog |  |
+| [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ⬜ Backlog |  |
+| [536](https://github.com/Kuestenlogik/Bowire/issues/536) | Bowire | [Offer next-step handoffs directly from a successful response](#issue-kuestenlogik-bowire-536) | ⬜ Backlog |  |
+| [537](https://github.com/Kuestenlogik/Bowire/issues/537) | Bowire | [Make the catalogue a primary entry point, not a side path](#issue-kuestenlogik-bowire-537) | ⬜ Backlog |  |
+| [538](https://github.com/Kuestenlogik/Bowire/issues/538) | Bowire | [Show the CLI equivalent of every request (Copy as Bowire CLI)](#issue-kuestenlogik-bowire-538) | ⬜ Backlog |  |
 | [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ⬜ Backlog |  |
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog |  |
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ⬜ Backlog |  |
@@ -294,10 +298,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog |  |
 | [529](https://github.com/Kuestenlogik/Bowire/issues/529) | Bowire | [OData plugin: EDM functions and actions are never discovered (class doc claims they are)](#issue-kuestenlogik-bowire-529) | ⬜ Backlog |  |
 | [534](https://github.com/Kuestenlogik/Bowire/issues/534) | Bowire | [Explain why discovery failed instead of just reporting 0 services](#issue-kuestenlogik-bowire-534) | ⬜ Backlog |  |
-| [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ⬜ Backlog |  |
-| [536](https://github.com/Kuestenlogik/Bowire/issues/536) | Bowire | [Offer next-step handoffs directly from a successful response](#issue-kuestenlogik-bowire-536) | ⬜ Backlog |  |
-| [537](https://github.com/Kuestenlogik/Bowire/issues/537) | Bowire | [Make the catalogue a primary entry point, not a side path](#issue-kuestenlogik-bowire-537) | ⬜ Backlog |  |
-| [538](https://github.com/Kuestenlogik/Bowire/issues/538) | Bowire | [Show the CLI equivalent of every request (Copy as Bowire CLI)](#issue-kuestenlogik-bowire-538) | ⬜ Backlog |  |
 
 ## Details
 
@@ -973,6 +973,22 @@ Follow-up to #306. Phase G's descriptor-by-package extraction shipped in 0b76086
 
 Follow-ups collecting the workbench-UI remainders from the shipped test-pillar features (#170/#171/#174). The CLI + engine + authoring editors are done; these are read-side / streaming refinements. [[more]](https://github.com/Kuestenlogik/Bowire/issues/366)
 
+#### <a id="issue-kuestenlogik-bowire-535"></a>⬜ Backlog · [#535](https://github.com/Kuestenlogik/Bowire/issues/535) Embedded first run should land on Discover, not on a workspace-creation gate
+
+Feasible and small. Everything the proposal assumes already exists: `BowireOptions.AutoCreateInitialWorkspace` (BowireOptions.cs:133) is emitted into `window.__BOWIRE_CONFIG__` by BowireHtmlGenerator.cs:271 and consumed by the boot seed in prologue.js:1999-2017; embedded-vs-standalone is decided onc … [[more]](https://github.com/Kuestenlogik/Bowire/issues/535)
+
+#### <a id="issue-kuestenlogik-bowire-536"></a>⬜ Backlog · [#536](https://github.com/Kuestenlogik/Bowire/issues/536) Offer next-step handoffs directly from a successful response
+
+Every follow-up action the proposal names already exists as a callable function; what's missing is a path FROM the response. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/536)
+
+#### <a id="issue-kuestenlogik-bowire-537"></a>⬜ Backlog · [#537](https://github.com/Kuestenlogik/Bowire/issues/537) Make the catalogue a primary entry point, not a side path
+
+The catalogue seam is fully built server-side (IBowireCatalogueProvider + local/http/consul in core, kubernetes/agent as sibling packages, GET/POST /api/catalogue/{info,entries,refresh,config}, BowireCatalogueOverrideStore persisting ~/.bowire/catalogue-config.json) but is effectively invisible in t … [[more]](https://github.com/Kuestenlogik/Bowire/issues/537)
+
+#### <a id="issue-kuestenlogik-bowire-538"></a>⬜ Backlog · [#538](https://github.com/Kuestenlogik/Bowire/issues/538) Show the CLI equivalent of every request (Copy as Bowire CLI)
+
+Feasible, but the proposal's sample line is not a real command today: `bowire call` in `src/Kuestenlogik.Bowire.Tool/CliHandler.cs` is hard-wired to gRPC (`GrpcReflectionClient` + `GrpcInvoker`), there is no positional-URL form, no `proto@url` on the CLI, no `--protocol`, no `--stream`, and no `--va … [[more]](https://github.com/Kuestenlogik/Bowire/issues/538)
+
 #### <a id="issue-kuestenlogik-bowire-539"></a>⬜ Backlog · [#539](https://github.com/Kuestenlogik/Bowire/issues/539) Cross-protocol correlated timeline for recordings
 
 Ship a "Correlated timeline" as a second tab inside the existing Recordings detail pane (`renderRecordingDetail` in `src/Kuestenlogik.Bowire.Recordings/wwwroot/js/recording.js`), rendering one lane per protocol with one bar per step and per-frame ticks for streaming steps, all placed on a shared tim … [[more]](https://github.com/Kuestenlogik/Bowire/issues/539)
@@ -1216,22 +1232,6 @@ The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the w
 #### <a id="issue-kuestenlogik-bowire-534"></a>⬜ Backlog · [#534](https://github.com/Kuestenlogik/Bowire/issues/534) Explain why discovery failed instead of just reporting 0 services
 
 The `attempts` data does exist server-side, but the claim that "the UI simply does not show it" understates the problem: the UI never even *reads* the body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/534)
-
-#### <a id="issue-kuestenlogik-bowire-535"></a>⬜ Backlog · [#535](https://github.com/Kuestenlogik/Bowire/issues/535) Embedded first run should land on Discover, not on a workspace-creation gate
-
-Feasible and small. Everything the proposal assumes already exists: `BowireOptions.AutoCreateInitialWorkspace` (BowireOptions.cs:133) is emitted into `window.__BOWIRE_CONFIG__` by BowireHtmlGenerator.cs:271 and consumed by the boot seed in prologue.js:1999-2017; embedded-vs-standalone is decided onc … [[more]](https://github.com/Kuestenlogik/Bowire/issues/535)
-
-#### <a id="issue-kuestenlogik-bowire-536"></a>⬜ Backlog · [#536](https://github.com/Kuestenlogik/Bowire/issues/536) Offer next-step handoffs directly from a successful response
-
-Every follow-up action the proposal names already exists as a callable function; what's missing is a path FROM the response. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/536)
-
-#### <a id="issue-kuestenlogik-bowire-537"></a>⬜ Backlog · [#537](https://github.com/Kuestenlogik/Bowire/issues/537) Make the catalogue a primary entry point, not a side path
-
-The catalogue seam is fully built server-side (IBowireCatalogueProvider + local/http/consul in core, kubernetes/agent as sibling packages, GET/POST /api/catalogue/{info,entries,refresh,config}, BowireCatalogueOverrideStore persisting ~/.bowire/catalogue-config.json) but is effectively invisible in t … [[more]](https://github.com/Kuestenlogik/Bowire/issues/537)
-
-#### <a id="issue-kuestenlogik-bowire-538"></a>⬜ Backlog · [#538](https://github.com/Kuestenlogik/Bowire/issues/538) Show the CLI equivalent of every request (Copy as Bowire CLI)
-
-Feasible, but the proposal's sample line is not a real command today: `bowire call` in `src/Kuestenlogik.Bowire.Tool/CliHandler.cs` is hard-wired to gRPC (`GrpcReflectionClient` + `GrpcInvoker`), there is no positional-URL form, no `proto@url` on the CLI, no `--protocol`, no `--stream`, and no `--va … [[more]](https://github.com/Kuestenlogik/Bowire/issues/538)
 
 ---
 
