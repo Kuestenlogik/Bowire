@@ -352,6 +352,39 @@ public static class BowireMockManagementEndpoints
                 return Results.Json(new { error = "Invalid JSON: " + ex.Message }, JsonOptions, statusCode: 400);
             }
 
+            // #563: when the auth block references a captured auth recording,
+            // resolve it to a concrete credential before the gate is set. The
+            // gate only reads Credential, so populate it here; a referenced-but-
+            // unresolvable id is an error, not a silent fall-through to a weaker
+            // (presence-only) gate.
+            if (!string.IsNullOrEmpty(config.Auth?.AuthRecordingId))
+            {
+                var resolver = ctx.RequestServices.GetService<IAuthRecordingResolver>();
+                var workspaceId = ctx.Request.Query["workspaceId"].ToString();
+                MockAuthRecordingResolution.Outcome resolution;
+                try
+                {
+                    resolution = MockAuthRecordingResolution.Apply(config, resolver, workspaceId);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
+                {
+                    return Results.Json(new { error = "Couldn't read the auth recording: " + ex.Message }, JsonOptions, statusCode: 500);
+                }
+                switch (resolution)
+                {
+                    case MockAuthRecordingResolution.Outcome.NoResolver:
+                        return Results.Json(
+                            new { error = "No auth-recording resolver registered — set `auth.credential` directly." },
+                            JsonOptions, statusCode: 500);
+                    case MockAuthRecordingResolution.Outcome.NotFound:
+                        return Results.Json(
+                            new { error = $"No auth recording with id '{config.Auth!.AuthRecordingId}'" },
+                            JsonOptions, statusCode: 404);
+                    default:
+                        break;
+                }
+            }
+
             return manager.ApplyConfig(mockId, config)
                 ? Results.Json(new { mockId, stubs = manager.GetStubs(mockId) }, JsonOptions)
                 : Results.NotFound(new { error = $"Mock {mockId} not running." });

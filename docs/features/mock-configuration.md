@@ -32,7 +32,7 @@ A mock configuration is a JSON document:
   - `jsonPath` — the path into the response body, using the same syntax as the mock body matchers: `$.status`, `user.role`, `items[0].sku`. Missing intermediate objects are created; an out-of-range array index is a no-op (arrays are never grown). A `null` / absent value is a no-op.
   - `value` — the override value, as arbitrary JSON (string, number, object, array).
 - **`conditionalRules`** — per-method `request-predicate → response-variant` rules, evaluated by the conditional-rules editor.
-- **`auth`** — the auth-requirement block: `required` (bool), `scheme` (`bearer` / `basic` / `apikey`, default bearer), `credential` (the exact accepted value; empty = presence-only), `header` (the header to read; default `Authorization`), and `authRecordingId` (a forward hook, not yet resolved). Enforced by the auth gate: when `required`, an HTTP/WebSocket request that presents no credential — or the wrong one — gets a **401 before replay**.
+- **`auth`** — the auth-requirement block: `required` (bool), `scheme` (`bearer` / `basic` / `apikey`, default bearer), `credential` (the exact accepted value; empty = presence-only), `header` (the header to read; default `Authorization`), and `authRecordingId` (resolves to a captured credential from the auth-recording store, [#563](https://github.com/Kuestenlogik/Bowire/issues/563)). Enforced by the auth gate: when `required`, an HTTP/WebSocket request that presents no credential — or the wrong one — gets a **401 before replay**.
 
 ## Using it
 
@@ -65,10 +65,13 @@ $ curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer s3cret' local
 
 The gate answers **401 before replay** and exempts the mock's own control surface (`/__bowire/mock/*`). It covers HTTP and WebSocket replay; plugin transports (MQTT, DIS, …) run on their own sockets and are **not** gated.
 
+**Auth recordings** ([#563](https://github.com/Kuestenlogik/Bowire/issues/563)) — instead of pasting a token, an `auth` block can reference a captured credential by id via `authRecordingId`. The credential is resolved **at apply-time** from the per-workspace auth-recording store (`workspaces/<wsId>/auth-recordings/<id>.json`, a `{ id, name, scheme, header, credential }` document) and populated into the gate — so the token itself never has to live in the mock-config sidecar (only the id does). Resolution is scoped to the mock's own workspace, and a referenced id that can't be resolved (no recording, or an empty credential) fails the apply rather than silently weakening the gate. For now a recording is seeded by writing that JSON file; the interactive capture UI is a follow-up (see below).
+
 **Workspace artifact** — the workbench persists a mock's configuration per (workspace, mock) at `workspaces/<wsId>/mocks/<mockId>.json` and reads/writes it over `GET` / `PUT /api/mocks/{mockId}/config`. Persisting to disk (not browser storage) lets the config survive a browser reset, ride the workspace export, and sync via git.
 
 ## Not yet
 
-- The auth gate covers HTTP/WebSocket replay only; the plugin transports (MQTT, DIS, …) are not gated. `authRecordingId` is persisted but not yet resolved to a credential — set `credential` directly for now.
+- The auth gate covers HTTP/WebSocket replay only; the plugin transports (MQTT, DIS, …) are not gated.
+- `authRecordingId` resolves a **statically captured** credential from the store. Interactively capturing a recording (a picker in the workbench card; re-running a `#sec-04` auth flow on resolve, which would be an opt-in outbound call) is a follow-up — recordings are seeded manually for now.
 - The workbench schema-mock picker offers OpenAPI + GraphQL (paste); protobuf needs a binary `FileDescriptorSet`, reachable via `POST /api/mocks` with `schemaPath`. Conditional rules + overrides apply to the REST (OpenAPI) schema-mock path only.
 - Overriding a field *to* JSON `null` (or removing it) is not expressed — a `null` value is treated as "no override".
