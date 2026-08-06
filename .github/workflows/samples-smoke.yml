@@ -27,6 +27,11 @@ concurrency:
   group: samples-smoke-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege: the job only checks out and builds. Artifact upload uses
+# the runtime token, not GITHUB_TOKEN, so read-only contents is enough.
+permissions:
+  contents: read
+
 jobs:
   smoke:
     runs-on: ubuntu-latest

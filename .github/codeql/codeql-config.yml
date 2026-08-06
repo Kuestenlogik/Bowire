@@ -33,6 +33,17 @@ packs:
   - ./.github/codeql/extensions
 
 paths-ignore:
+  # Sample servers (samples/**) are demo TARGETS the workbench drives —
+  # in-memory Northwind/OData/etc. stores that the samples-smoke workflow
+  # invokes UNAUTHENTICATED on purpose. cs/web/missing-function-level-
+  # access-control fires on every demo CRUD action (e.g. the OData
+  # Delete methods, alerts #1811/#1812); adding [Authorize] would defeat
+  # the sample's whole point. Same "threat model assumes production code"
+  # rationale as the dev-tooling paths below — samples are reference code,
+  # not shipped product or a production attack surface. They still COMPILE
+  # in CI and RUN in samples-smoke; only security scanning is skipped.
+  - 'samples/**'
+
   # Playwright drivers for screenshots + the recorded demo. They
   # hit localhost dev samples over https with self-signed dev certs
   # (rejectUnauthorized:false) which is correct in this scope but

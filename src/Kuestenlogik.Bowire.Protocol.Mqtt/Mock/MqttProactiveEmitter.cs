@@ -239,11 +239,11 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
 
             _logger.LogInformation(
                 "mqtt-emit(step={StepId}, topic={Topic}, qos={Qos}, retain={Retain}, bytes={Bytes})",
-                emission.StepId, LogSanitizer.Strip(topic), (int)qos, retain, payloadBytes.Length);
+                LogSanitizer.Strip(emission.StepId), LogSanitizer.Strip(topic), (int)qos, retain, payloadBytes.Length);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to inject MQTT message for step '{StepId}'; scheduler continues.", emission.StepId);
+            _logger.LogWarning(ex, "Failed to inject MQTT message for step '{StepId}'; scheduler continues.", LogSanitizer.Strip(emission.StepId));
         }
     }
 

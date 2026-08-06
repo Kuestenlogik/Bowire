@@ -1,10 +1,18 @@
 # Barrier model for LogSanitizer.Strip(string?).
 #
 # Closes CodeQL alerts #1786-#1791 (cs/log-forging in
-# BowireInterceptorMiddleware + BowireReverseProxyMiddleware). The
-# helper strips CR + LF from any user-controlled value before it
-# reaches an ILogger structured-param renderer — see
-# src/Kuestenlogik.Bowire.Interceptor/LogSanitizer.cs.
+# BowireInterceptorMiddleware + BowireReverseProxyMiddleware) and #1809
+# (cs/log-forging in MqttProactiveEmitter). The helper strips CR + LF
+# from any user-controlled value before it reaches an ILogger
+# structured-param renderer.
+#
+# There are TWO copies of the helper, each modelled below: the original in
+# src/Kuestenlogik.Bowire.Interceptor/LogSanitizer.cs, and a deliberate
+# leaf-utility copy in src/Kuestenlogik.Bowire.Protocol.Mqtt/LogSanitizer.cs
+# (the MQTT protocol plugin keeps a local copy so it stays self-contained
+# rather than depend on the interceptor assembly for a 10-line helper).
+# Both are the same barrier; a separate copy needs a separate model entry
+# because the barrierModel is keyed on the fully-qualified namespace+type.
 #
 # There is no `sanitizerModel` extensible predicate — CodeQL models
 # sanitizers/validators via `barrierModel` (+ `barrierGuardModel`),
@@ -30,3 +38,4 @@ extensions:
       extensible: barrierModel
     data:
       - ["Kuestenlogik.Bowire.Interceptor", "LogSanitizer", false, "Strip", "(System.String)", "", "ReturnValue", "log-injection", "manual"]
+      - ["Kuestenlogik.Bowire.Protocol.Mqtt", "LogSanitizer", false, "Strip", "(System.String)", "", "ReturnValue", "log-injection", "manual"]
