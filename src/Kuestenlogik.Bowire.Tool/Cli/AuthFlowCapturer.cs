@@ -34,19 +34,32 @@ internal sealed class AuthFlowCapturer : IAuthFlowCapturer
         }
 
         using var http = new HttpClient();
+        AuthFlowResult result;
         try
         {
-            var result = await AuthFlowRunner.RunAsync(flow, http, ct).ConfigureAwait(false);
-            return new AuthFlowCaptureResult(result.Token, SchemeFromPrefix(flow.InjectPrefix), flow.InjectHeader);
+            result = await AuthFlowRunner.RunAsync(flow, http, ct).ConfigureAwait(false);
         }
-        catch (AuthFlowException ex)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            throw new AuthFlowCaptureException(ex.Message, ex);
+            throw;   // the caller cancelled — not a flow failure, don't swallow it
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (
+            ex is AuthFlowException or HttpRequestException or InvalidOperationException
+               or UriFormatException or IOException or TaskCanceledException or FormatException)
         {
-            throw new AuthFlowCaptureException("Auth flow request failed: " + ex.Message, ex);
+            // A relative/malformed step URL (InvalidOperationException /
+            // UriFormatException), the HttpClient timeout (TaskCanceledException),
+            // and transport faults (HttpRequestException / IOException) all become
+            // the Core-visible capture error so no surface leaks a raw 500 / stack.
+            throw new AuthFlowCaptureException("Auth flow failed: " + ex.Message, ex);
         }
+
+        // Fail closed (the documented contract): a captured empty/blank token
+        // would arm #562's gate in presence-only mode — never return one.
+        if (string.IsNullOrWhiteSpace(result.Token))
+            throw new AuthFlowCaptureException("Auth flow captured an empty token.");
+
+        return new AuthFlowCaptureResult(result.Token, SchemeFromPrefix(flow.InjectPrefix), flow.InjectHeader);
     }
 
     // The flow's inject prefix tells us how the token is presented: "Bearer " →

@@ -329,6 +329,14 @@ public sealed class BowireMockConfigEndpointTests : IDisposable
             new Uri("/api/auth-recordings/login/capture?workspaceId=ws-1", UriKind.Relative), content, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
 
+        // The captured credential + scheme/header are actually persisted (the
+        // listing is credential-free, so read the stored recording back to prove
+        // the endpoint's AuthFlowCaptureResult -> AuthRecording mapping).
+        var stored = AuthRecordingStore.LoadRecording("ws-1", storageRoot: null, "login");
+        Assert.NotNull(stored);
+        Assert.Equal("flow-tok", stored!.Credential);
+        Assert.Equal("bearer", stored.Scheme);
+
         using var get = await client.GetAsync(
             new Uri("/api/auth-recordings?workspaceId=ws-1", UriKind.Relative), TestContext.Current.CancellationToken);
         var listing = await get.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);

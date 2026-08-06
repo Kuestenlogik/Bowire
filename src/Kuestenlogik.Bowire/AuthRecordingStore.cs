@@ -101,7 +101,10 @@ internal static partial class AuthRecordingStore
 
         // Validates JSON syntax + recording shape; throws JsonException on either.
         var parsed = AuthRecording.Parse(json);
-        if (string.IsNullOrEmpty(parsed.Credential))
+        // Whitespace-only counts as empty: the gate trims every presented token,
+        // so a " " credential would be permanently un-satisfiable (a dead
+        // recording) — reject it here, in parity with the JSON guard above.
+        if (string.IsNullOrWhiteSpace(parsed.Credential))
             throw new ArgumentException("An auth recording must carry a non-empty credential.", nameof(json));
 
         var path = GetStorePath(workspaceId, storageRoot, recordingId);

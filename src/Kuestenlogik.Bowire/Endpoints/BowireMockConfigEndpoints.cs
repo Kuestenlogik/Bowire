@@ -92,6 +92,9 @@ internal static class BowireMockConfigEndpoints
                 return Problem(ctx, "Invalid JSON", 400, ex.Message);
             }
             rec.Id = id; // the URL owns the id, not the body
+            // Stamp the capture time when the client didn't (the workbench form
+            // doesn't send it) — parity with the CLI / MCP / flow-capture paths.
+            if (rec.CapturedAt == 0) rec.CapturedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             try
             {
                 AuthRecordingStore.Save(workspaceId, storageRoot, rec);
