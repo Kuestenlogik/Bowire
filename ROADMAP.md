@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**71/71 done**
+**72/72 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -65,6 +65,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [286](https://github.com/Kuestenlogik/Bowire/issues/286) | Bowire | [mcp serve --attach: MCP-over-MCP forwarder for connecting to a parent Bowire process](#issue-kuestenlogik-bowire-286) | ✅ Done |  |
 | [287](https://github.com/Kuestenlogik/Bowire/issues/287) | Bowire | [Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on](#issue-kuestenlogik-bowire-287) | ✅ Done |  |
 | [289](https://github.com/Kuestenlogik/Bowire/issues/289) | Bowire | [Hoppscotch-style single-line request bar: method + URL + params + execute, no workspace required](#issue-kuestenlogik-bowire-289) | ✅ Done |  |
+| [290](https://github.com/Kuestenlogik/Bowire/issues/290) | Bowire | [Hopp bar: history persistence + benchmark + binary upload (follow-up to #289)](#issue-kuestenlogik-bowire-290) | ✅ Done |  |
 | [291](https://github.com/Kuestenlogik/Bowire/issues/291) | Bowire | [Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout](#issue-kuestenlogik-bowire-291) | ✅ Done |  |
 | [293](https://github.com/Kuestenlogik/Bowire/issues/293) | Bowire | [New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover](#issue-kuestenlogik-bowire-293) | ✅ Done |  |
 | [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ✅ Done |  |
@@ -499,6 +500,10 @@ Today `app.MapBowireMcp()` and `app.MapBowireMcpAdapter()` are mutually exclusiv
 #### <a id="issue-kuestenlogik-bowire-289"></a>✅ Done · [#289](https://github.com/Kuestenlogik/Bowire/issues/289) Hoppscotch-style single-line request bar: method + URL + params + execute, no workspace required
 
 Bowire's strength is the protocol-aware workbench — discover a schema, pick a method, execute. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/289)
+
+#### <a id="issue-kuestenlogik-bowire-290"></a>✅ Done · [#290](https://github.com/Kuestenlogik/Bowire/issues/290) Hopp bar: history persistence + benchmark + binary upload (follow-up to #289)
+
+Follow-up to #289 — Phase F leftovers + two deferrals from Phase A/C. [[more]](https://github.com/Kuestenlogik/Bowire/issues/290)
 
 #### <a id="issue-kuestenlogik-bowire-291"></a>✅ Done · [#291](https://github.com/Kuestenlogik/Bowire/issues/291) Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout
 
