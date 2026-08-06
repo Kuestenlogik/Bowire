@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Kuestenlogik.Bowire.Mocking;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -70,6 +71,44 @@ internal static class BowireMockConfigEndpoints
             var recordings = AuthRecordingStore.List(workspaceId, storageRoot)
                 .Select(r => new { id = r.Id, name = r.Name, scheme = r.Scheme, capturedAt = r.CapturedAt });
             return Results.Json(new { recordings }, BowireEndpointHelpers.JsonOptions);
+        }).ExcludeFromDescription();
+
+        // #563: create/update a captured auth recording (static-credential
+        // capture). The URL owns the id; Save rejects a missing/empty credential
+        // so the gate can't be silently weakened to presence-only.
+        endpoints.MapPut($"{basePath}/api/auth-recordings/{{id}}", async (string id, HttpContext ctx) =>
+        {
+            var (workspaceId, storageRoot) = ReadWorkspace(ctx);
+            using var reader = new StreamReader(ctx.Request.Body);
+            var body = await reader.ReadToEndAsync(ctx.RequestAborted);
+            AuthRecording rec;
+            try
+            {
+                rec = AuthRecording.Parse(body);
+            }
+            catch (JsonException ex)
+            {
+                return Problem(ctx, "Invalid JSON", 400, ex.Message);
+            }
+            rec.Id = id; // the URL owns the id, not the body
+            try
+            {
+                AuthRecordingStore.Save(workspaceId, storageRoot, rec);
+                return Results.Json(new { saved = true, id }, BowireEndpointHelpers.JsonOptions);
+            }
+            catch (ArgumentException ex)
+            {
+                return Problem(ctx, "Invalid auth-recording payload", 400, ex.Message);
+            }
+        }).ExcludeFromDescription();
+
+        // #563: delete a captured auth recording. Idempotent — reports whether a
+        // file was actually removed.
+        endpoints.MapDelete($"{basePath}/api/auth-recordings/{{id}}", (string id, HttpContext ctx) =>
+        {
+            var (workspaceId, storageRoot) = ReadWorkspace(ctx);
+            var deleted = AuthRecordingStore.Delete(workspaceId, storageRoot, id);
+            return Results.Json(new { deleted, id }, BowireEndpointHelpers.JsonOptions);
         }).ExcludeFromDescription();
 
         return endpoints;

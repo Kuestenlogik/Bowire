@@ -234,6 +234,90 @@ public sealed class BowireMockConfigEndpointTests : IDisposable
         Assert.Empty(doc.RootElement.GetProperty("recordings").EnumerateArray());
     }
 
+    [Fact]
+    public async Task PUT_auth_recording_then_GET_lists_it_without_the_credential()
+    {
+        using var host = await BuildHost();
+        var client = host.GetTestClient();
+
+        const string body = """{"id":"login","name":"Login","scheme":"bearer","credential":"tok-xyz"}""";
+        using var content = new StringContent(body, Encoding.UTF8, "application/json");
+        using var put = await client.PutAsync(
+            new Uri("/api/auth-recordings/login?workspaceId=ws-1", UriKind.Relative), content, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+
+        using var get = await client.GetAsync(
+            new Uri("/api/auth-recordings?workspaceId=ws-1", UriKind.Relative), TestContext.Current.CancellationToken);
+        var listing = await get.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.DoesNotContain("tok-xyz", listing, StringComparison.Ordinal);   // credential never leaves the store
+        using var doc = JsonDocument.Parse(listing);
+        var ids = doc.RootElement.GetProperty("recordings").EnumerateArray().Select(r => r.GetProperty("id").GetString()).ToList();
+        Assert.Contains("login", ids);
+    }
+
+    [Fact]
+    public async Task PUT_auth_recording_the_url_owns_the_id()
+    {
+        using var host = await BuildHost();
+        var client = host.GetTestClient();
+
+        // The body carries a different id; the URL id wins so the filename and
+        // the stored id stay consistent.
+        const string body = """{"id":"ignored","credential":"tok"}""";
+        using var content = new StringContent(body, Encoding.UTF8, "application/json");
+        using var put = await client.PutAsync(
+            new Uri("/api/auth-recordings/real-id?workspaceId=ws-1", UriKind.Relative), content, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+
+        using var get = await client.GetAsync(
+            new Uri("/api/auth-recordings?workspaceId=ws-1", UriKind.Relative), TestContext.Current.CancellationToken);
+        var listing = await get.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("real-id", listing, StringComparison.Ordinal);
+        Assert.DoesNotContain("ignored", listing, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PUT_auth_recording_without_a_credential_returns_400()
+    {
+        using var host = await BuildHost();
+        var client = host.GetTestClient();
+
+        using var content = new StringContent("""{"scheme":"bearer"}""", Encoding.UTF8, "application/json");
+        using var put = await client.PutAsync(
+            new Uri("/api/auth-recordings/x?workspaceId=ws-1", UriKind.Relative), content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, put.StatusCode);
+    }
+
+    [Fact]
+    public async Task DELETE_auth_recording_removes_it()
+    {
+        using var host = await BuildHost();
+        var client = host.GetTestClient();
+
+        using (var content = new StringContent("""{"credential":"tok"}""", Encoding.UTF8, "application/json"))
+        {
+            using var put = await client.PutAsync(
+                new Uri("/api/auth-recordings/gone?workspaceId=ws-1", UriKind.Relative), content, TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+        }
+
+        using var del = await client.DeleteAsync(
+            new Uri("/api/auth-recordings/gone?workspaceId=ws-1", UriKind.Relative), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, del.StatusCode);
+        var delBody = await del.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using (var doc = JsonDocument.Parse(delBody))
+        {
+            Assert.True(doc.RootElement.GetProperty("deleted").GetBoolean());
+        }
+
+        using var get = await client.GetAsync(
+            new Uri("/api/auth-recordings?workspaceId=ws-1", UriKind.Relative), TestContext.Current.CancellationToken);
+        var listing = await get.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var listDoc = JsonDocument.Parse(listing);
+        Assert.Empty(listDoc.RootElement.GetProperty("recordings").EnumerateArray());
+    }
+
     private static async Task<IHost> BuildHost()
     {
         var host = new HostBuilder()

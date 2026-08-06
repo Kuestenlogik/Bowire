@@ -90,6 +90,18 @@ public sealed class MocksRailJsContractTests
         Assert.Contains("st.config.auth.authRecordingId = v", js, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Ships_Inline_Auth_Recording_Create_And_Remove()
+    {
+        // #563 CLI/UI/MCP parity: the auth card can create + remove recordings
+        // inline (no hand-writing JSON), PUT/DELETE-ing the same store the CLI
+        // and MCP tools use.
+        var js = Fragment.Value;
+        Assert.Contains("function saveAuthRecording", js, StringComparison.Ordinal);
+        Assert.Contains("function deleteAuthRecording", js, StringComparison.Ordinal);
+        Assert.Contains("'+ New recording'", js, StringComparison.Ordinal);
+    }
+
     private static string LoadFragment()
     {
         var assembly = typeof(BowireMockManagementEndpoints).Assembly;
