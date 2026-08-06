@@ -157,6 +157,7 @@ internal static class BowireCli
         root.Add(CatalogueCommand.Build());
         root.Add(RecordingCommand.Build());
         root.Add(ContractCommand.Build());
+        root.Add(BuildVersionCommand(plugins));
 
         // Auto-discovered CLI commands — scanner today, fuzz / proxy /
         // jwt will follow as they extract out of Tool into their own
@@ -452,6 +453,34 @@ internal static class BowireCli
         });
 
         return fuzz;
+    }
+
+    // -------------------- version --------------------
+
+    // `bowire version [--plugins]` — the running version (same value as the
+    // root's --version option) plus, optionally, the loaded protocol plugins
+    // and their versions. `bowire plugin list` covers directory-installed
+    // packages in more detail.
+    private static Command BuildVersionCommand(IBowirePluginLoader plugins)
+    {
+        var pluginsOpt = new Option<bool>("--plugins")
+        {
+            Description = "Also list the loaded protocol plugins and their versions.",
+        };
+        var version = new Command("version",
+            "Print the Bowire version and runtime; with --plugins, also the loaded protocol plugins and their versions.");
+        version.Add(pluginsOpt);
+        version.SetAction(async (pr, _) =>
+        {
+            var includePlugins = pr.GetValue(pluginsOpt);
+            IEnumerable<IBowireProtocol> protocols = includePlugins
+                ? plugins.EnumerateServices<IBowireProtocol>()
+                : Array.Empty<IBowireProtocol>();
+            await pr.InvocationConfiguration.Output.WriteLineAsync(
+                BowireVersionReport.Render(includePlugins, protocols)).ConfigureAwait(false);
+            return 0;
+        });
+        return version;
     }
 
     // -------------------- jwt --------------------
