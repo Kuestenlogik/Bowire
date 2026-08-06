@@ -137,7 +137,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**25/25 done**
+**26/26 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -161,6 +161,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [411](https://github.com/Kuestenlogik/Bowire/issues/411) | Bowire | [Mock fault injection: malformed-response-chunk + faults on unmatched requests](#issue-kuestenlogik-bowire-411) | ✅ Done |  |
 | [430](https://github.com/Kuestenlogik/Bowire/issues/430) | Bowire | [Mock response templating: expression/helper engine + record-through capture (follow-up)](#issue-kuestenlogik-bowire-430) | ✅ Done |  |
 | [491](https://github.com/Kuestenlogik/Bowire/issues/491) | Bowire | [Nuclei template compat — non-HTTP transports (Phase 2g)](#issue-kuestenlogik-bowire-491) | ✅ Done |  |
+| [510](https://github.com/Kuestenlogik/Bowire/issues/510) | Bowire | [SignalR: standalone --url signalr@<hub-url> has no discovery/invocation surface](#issue-kuestenlogik-bowire-510) | ✅ Done |  |
 | [558](https://github.com/Kuestenlogik/Bowire/issues/558) | Bowire | [Add a persisted mock-configuration workspace artifact: model, store, and apply-at-startup seam](#issue-kuestenlogik-bowire-558) | ✅ Done |  |
 | [559](https://github.com/Kuestenlogik/Bowire/issues/559) | Bowire | [Honour declared schema examples across OpenAPI, Protobuf, and GraphQL mock sources](#issue-kuestenlogik-bowire-559) | ✅ Done |  |
 | [560](https://github.com/Kuestenlogik/Bowire/issues/560) | Bowire | [Start a schema mock from the workbench and create its mock-configuration artifact](#issue-kuestenlogik-bowire-560) | ✅ Done |  |
@@ -851,6 +852,10 @@ Follow-up from #406 (mock-server WireMock parity, epic #401). The response templ
 #### <a id="issue-kuestenlogik-bowire-491"></a>✅ Done · [#491](https://github.com/Kuestenlogik/Bowire/issues/491) Nuclei template compat — non-HTTP transports (Phase 2g)
 
 Split out of #35 (Nuclei template compatibility). Phases 2a–2f shipped across the v2.3 cycle: [[more]](https://github.com/Kuestenlogik/Bowire/issues/491)
+
+#### <a id="issue-kuestenlogik-bowire-510"></a>✅ Done · [#510](https://github.com/Kuestenlogik/Bowire/issues/510) SignalR: standalone --url signalr@<hub-url> has no discovery/invocation surface
+
+`bowire --url signalr@http://host/hub` is documented (`docs/setup/standalone.md`, SignalR sample README) but dead-ends: the SignalR plugin's `DiscoverAsync` only reflects over the *local* `EndpointDataSource` behind a self-origin gate (`SignalRHubDiscovery.cs`), so an external hub URL yields zero se … [[more]](https://github.com/Kuestenlogik/Bowire/issues/510)
 
 #### <a id="issue-kuestenlogik-bowire-558"></a>✅ Done · [#558](https://github.com/Kuestenlogik/Bowire/issues/558) Add a persisted mock-configuration workspace artifact: model, store, and apply-at-startup seam
 
