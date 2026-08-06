@@ -887,6 +887,11 @@ internal static class BowireCli
             Description = "Auth token for the runtime-scenario-switch control endpoint.",
             DefaultValueFactory = _ => cfg["Bowire:Mock:ControlToken"]
         };
+        var requireAuth = new Option<string?>("--require-auth")
+        {
+            Description = "Require a bearer token equal to this value on every HTTP/WebSocket mocked request (401 otherwise). Plugin transports (MQTT/DIS/…) are not gated.",
+            DefaultValueFactory = _ => cfg["Bowire:Mock:RequireAuth"]
+        };
 
         // #211 — positional shape `bowire mock foo.bwr`. The option form
         // (--recording / -r) stays for back-compat + script flexibility;
@@ -918,7 +923,7 @@ internal static class BowireCli
         cmd.Add(port); cmd.Add(host); cmd.Add(https); cmd.Add(httpsPort);
         cmd.Add(cert); cmd.Add(certPassword); cmd.Add(proxy); cmd.Add(proxyRecord); cmd.Add(select); cmd.Add(noWatch);
         cmd.Add(stateful); cmd.Add(statefulOnce); cmd.Add(loop); cmd.Add(autoInstall);
-        cmd.Add(chaos); cmd.Add(faults); cmd.Add(captureMiss); cmd.Add(controlToken); cmd.Add(mockConfig);
+        cmd.Add(chaos); cmd.Add(faults); cmd.Add(captureMiss); cmd.Add(controlToken); cmd.Add(mockConfig); cmd.Add(requireAuth);
         cmd.SetAction(async (pr, ct) =>
         {
             var positional = pr.GetValue(positionalPath);
@@ -977,7 +982,8 @@ internal static class BowireCli
                 FaultsPath = pr.GetValue(faults),
                 CaptureMissPath = pr.GetValue(captureMiss),
                 ControlToken = pr.GetValue(controlToken),
-                MockConfigPath = pr.GetValue(mockConfig)
+                MockConfigPath = pr.GetValue(mockConfig),
+                RequireAuth = pr.GetValue(requireAuth)
             };
             return await MockCommand.RunAsync(options, plugins,
                 pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false);

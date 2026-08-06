@@ -94,6 +94,69 @@ public sealed class MockConfigApplyRuntimeTests
         await manager.StopAsync(handle.MockId, TestContext.Current.CancellationToken);
     }
 
+    [Fact]
+    public async Task ApplyConfig_Require_Auth_Gates_Requests_With_401()
+    {
+        await using var manager = NewManager();
+        var handle = await manager.StartFromSchemaAsync(
+            "openapi", OrdersOpenApi, schemaPath: null, "orders", port: 0,
+            TestContext.Current.CancellationToken);
+
+        var config = new MockConfiguration
+        {
+            Auth = new MockAuthRequirement { Required = true, Scheme = "bearer", Credential = "s3cret" },
+        };
+        Assert.True(manager.ApplyConfig(handle.MockId, config));
+
+        using var http = new HttpClient();
+
+        // No credential → 401 before replay.
+        using (var noAuth = new StringContent("{}", Encoding.UTF8, "application/json"))
+        {
+            var resp = await http.PostAsync(new Uri($"{handle.Url}/orders"), noAuth, TestContext.Current.CancellationToken);
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, resp.StatusCode);
+        }
+
+        // Correct bearer token → 200 (replayed).
+        using (var req = new HttpRequestMessage(HttpMethod.Post, new Uri($"{handle.Url}/orders")))
+        {
+            req.Content = new StringContent("{}", Encoding.UTF8, "application/json");
+            req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "s3cret");
+            var resp = await http.SendAsync(req, TestContext.Current.CancellationToken);
+            Assert.Equal(System.Net.HttpStatusCode.OK, resp.StatusCode);
+        }
+
+        // Wrong token → 401.
+        using (var req = new HttpRequestMessage(HttpMethod.Post, new Uri($"{handle.Url}/orders")))
+        {
+            req.Content = new StringContent("{}", Encoding.UTF8, "application/json");
+            req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "nope");
+            var resp = await http.SendAsync(req, TestContext.Current.CancellationToken);
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, resp.StatusCode);
+        }
+
+        // The control surface stays reachable while auth is on — the gate
+        // exempts /__bowire/mock/* so scenario control keeps working. No control
+        // token is set here, so the only 401 that could appear is the auth gate's;
+        // asserting it is absent proves the exemption fires (the endpoint itself
+        // answers 404/200, not our 401).
+        using (var ctrl = new HttpRequestMessage(HttpMethod.Get, new Uri($"{handle.Url}/__bowire/mock/status")))
+        {
+            var resp = await http.SendAsync(ctrl, TestContext.Current.CancellationToken);
+            Assert.NotEqual(System.Net.HttpStatusCode.Unauthorized, resp.StatusCode);
+        }
+
+        // Toggle auth off (empty config clears it) → 200 without a credential.
+        Assert.True(manager.ApplyConfig(handle.MockId, new MockConfiguration()));
+        using (var off = new StringContent("{}", Encoding.UTF8, "application/json"))
+        {
+            var resp = await http.PostAsync(new Uri($"{handle.Url}/orders"), off, TestContext.Current.CancellationToken);
+            Assert.Equal(System.Net.HttpStatusCode.OK, resp.StatusCode);
+        }
+
+        await manager.StopAsync(handle.MockId, TestContext.Current.CancellationToken);
+    }
+
     private static async Task<string?> PostStatus(HttpClient http, string baseUrl, string body)
     {
         using var content = new StringContent(body, Encoding.UTF8, "application/json");

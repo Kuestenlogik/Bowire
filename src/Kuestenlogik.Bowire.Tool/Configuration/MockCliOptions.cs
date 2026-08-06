@@ -118,6 +118,13 @@ internal sealed class MockCliOptions
     public string? ControlToken { get; set; }
 
     /// <summary>
+    /// #562: require a bearer token equal to this value on every mocked request
+    /// (401 otherwise). Null (default) = no auth gate. Bound from
+    /// <c>--require-auth</c> / <c>Bowire:Mock:RequireAuth</c>.
+    /// </summary>
+    public string? RequireAuth { get; set; }
+
+    /// <summary>
     /// When <c>true</c>, the MQTT proactive emitter replays the
     /// recording on repeat (default is one-shot). Bound from
     /// <c>--loop</c> / <c>Bowire:Mock:Loop</c>.
