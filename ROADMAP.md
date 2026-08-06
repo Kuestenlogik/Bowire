@@ -90,11 +90,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
 
-**29/29 done**
+**30/30 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [38](https://github.com/Kuestenlogik/Bowire/issues/38) | Bowire | [CLI — Phase 3 polish (completion + validators + error rendering)](#issue-kuestenlogik-bowire-38) | ✅ Done | `area:cli` |
+| [40](https://github.com/Kuestenlogik/Bowire/issues/40) | Bowire | [Freeform Request Builder](#issue-kuestenlogik-bowire-40) | ✅ Done | `area:workbench` |
 | [100](https://github.com/Kuestenlogik/Bowire/issues/100) | Bowire | [Ferry — CI/CD runner (collection / recording → headless run + JUnit report)](#issue-kuestenlogik-bowire-100) | ✅ Done |  |
 | [170](https://github.com/Kuestenlogik/Bowire/issues/170) | Bowire | [Mock-server fault injection — latency / errors / drops / partial responses](#issue-kuestenlogik-bowire-170) | ✅ Done |  |
 | [171](https://github.com/Kuestenlogik/Bowire/issues/171) | Bowire | [Snapshot testing — capture-once, diff-on-change response baselines](#issue-kuestenlogik-bowire-171) | ✅ Done |  |
@@ -594,6 +595,12 @@ Three sidebar UX bugs operator surfaced in one session: [[more]](https://github.
 > `area:cli`
 
 - [x] **Tab-completion via dotnet-suggest** — bash / PowerShell / zsh users get free completion. - [x] **Per-option validators** — `--port` validated 1..65535, `--recording` validated as FileInfo that exists, `--chaos` parsed ahead of dispatch. - [x] **Pretty-printed System.CommandLine errors** — co … [[more]](https://github.com/Kuestenlogik/Bowire/issues/38)
+
+#### <a id="issue-kuestenlogik-bowire-40"></a>✅ Done · [#40](https://github.com/Kuestenlogik/Bowire/issues/40) Freeform Request Builder
+
+> `area:workbench`
+
+Bowire today is discovery-first. Freeform flips this — the user creates a request from scratch without a discovered schema. [[more]](https://github.com/Kuestenlogik/Bowire/issues/40)
 
 #### <a id="issue-kuestenlogik-bowire-100"></a>✅ Done · [#100](https://github.com/Kuestenlogik/Bowire/issues/100) Ferry — CI/CD runner (collection / recording → headless run + JUnit report)
 
