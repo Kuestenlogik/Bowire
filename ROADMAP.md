@@ -137,7 +137,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**38/38 done**
+**40/40 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -179,6 +179,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [560](https://github.com/Kuestenlogik/Bowire/issues/560) | Bowire | [Start a schema mock from the workbench and create its mock-configuration artifact](#issue-kuestenlogik-bowire-560) | ✅ Done |  |
 | [561](https://github.com/Kuestenlogik/Bowire/issues/561) | Bowire | [Add per-field response-override and per-method conditional-rule editors to the schema-mock detail pane](#issue-kuestenlogik-bowire-561) | ✅ Done |  |
 | [562](https://github.com/Kuestenlogik/Bowire/issues/562) | Bowire | [Let a schema mock require authentication, composed from a #sec-04 auth recording](#issue-kuestenlogik-bowire-562) | ✅ Done |  |
+| [563](https://github.com/Kuestenlogik/Bowire/issues/563) | Bowire | [Resolve a mock's auth requirement from a #sec-04 auth recording](#issue-kuestenlogik-bowire-563) | ✅ Done |  |
+| [564](https://github.com/Kuestenlogik/Bowire/issues/564) | Bowire | [Add a `bowire version` command (with optional --plugins)](#issue-kuestenlogik-bowire-564) | ✅ Done |  |
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
@@ -936,6 +938,14 @@ No per-field response-override editor and no per-method conditional-response edi
 #### <a id="issue-kuestenlogik-bowire-562"></a>✅ Done · [#562](https://github.com/Kuestenlogik/Bowire/issues/562) Let a schema mock require authentication, composed from a #sec-04 auth recording
 
 There is no auth gate on the mock's serving surface: `MockServer.StartAsync` builds `UseRouting -> UseWebSockets -> UseBowireMock -> UseEndpoints` with no authentication middleware and no 401 before replay. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/562)
+
+#### <a id="issue-kuestenlogik-bowire-563"></a>✅ Done · [#563](https://github.com/Kuestenlogik/Bowire/issues/563) Resolve a mock's auth requirement from a #sec-04 auth recording
+
+[#562](https://github.com/Kuestenlogik/Bowire/issues/562) shipped the mock auth gate — `bowire mock --require-auth <token>` and the workbench *Require authentication* card — but a mock can only demand a **directly-configured** credential today. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/563)
+
+#### <a id="issue-kuestenlogik-bowire-564"></a>✅ Done · [#564](https://github.com/Kuestenlogik/Bowire/issues/564) Add a `bowire version` command (with optional --plugins)
+
+`bowire --version` prints the app version, but there's no first-class, discoverable `version` subcommand, and no way to see the installed protocol plugins **and their versions** in one place. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/564)
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
