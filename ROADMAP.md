@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
 
-**72/72 done**
+**75/75 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -77,6 +77,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [300](https://github.com/Kuestenlogik/Bowire/issues/300) | Bowire | [Benchmark: switching mode works once, then becomes inert](#issue-kuestenlogik-bowire-300) | ✅ Done |  |
 | [301](https://github.com/Kuestenlogik/Bowire/issues/301) | Bowire | [Home/Welcome formatting inconsistency: Benchmarks + Workspaces rails differ from others](#issue-kuestenlogik-bowire-301) | ✅ Done |  |
 | [302](https://github.com/Kuestenlogik/Bowire/issues/302) | Bowire | [Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)](#issue-kuestenlogik-bowire-302) | ✅ Done |  |
+| [303](https://github.com/Kuestenlogik/Bowire/issues/303) | Bowire | [Guided tour: per-rail empty-state secondary tours](#issue-kuestenlogik-bowire-303) | ✅ Done |  |
+| [304](https://github.com/Kuestenlogik/Bowire/issues/304) | Bowire | [Compose rail: hide standalone Collections rail tree node now that Compose hosts it](#issue-kuestenlogik-bowire-304) | ✅ Done |  |
+| [305](https://github.com/Kuestenlogik/Bowire/issues/305) | Bowire | [Source catalogue providers: kubernetes + agent (Phase D+E)](#issue-kuestenlogik-bowire-305) | ✅ Done |  |
 | [309](https://github.com/Kuestenlogik/Bowire/issues/309) | Bowire | [UI: configure URL catalogue providers from Settings (#136 follow-up)](#issue-kuestenlogik-bowire-309) | ✅ Done |  |
 | [310](https://github.com/Kuestenlogik/Bowire/issues/310) | Bowire | [UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up](#issue-kuestenlogik-bowire-310) | ✅ Done |  |
 | [324](https://github.com/Kuestenlogik/Bowire/issues/324) | Bowire | [Help: convert from drawer-tab to its own rail (plugin-contributed)](#issue-kuestenlogik-bowire-324) | ✅ Done |  |
@@ -548,6 +551,18 @@ Rails already collapse into an overflow `⋮` button when the vertical space run
 #### <a id="issue-kuestenlogik-bowire-302"></a>✅ Done · [#302](https://github.com/Kuestenlogik/Bowire/issues/302) Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)
 
 User feedback (Phase 2 walkthrough): "response darstellung auf und einklappen sowie zeilennummern so wie bei hoppscotch" (Hoppscotch screenshot supplied). [[more]](https://github.com/Kuestenlogik/Bowire/issues/302)
+
+#### <a id="issue-kuestenlogik-bowire-303"></a>✅ Done · [#303](https://github.com/Kuestenlogik/Bowire/issues/303) Guided tour: per-rail empty-state secondary tours
+
+Phase A (tour engine + spotlight + page-navigation) and Phase B (Getting-started tour) shipped in b899d7007e904ffec2b3be7fc1ebcfea4595137f. Phase C — per-rail empty-state secondary tours — remains. [[more]](https://github.com/Kuestenlogik/Bowire/issues/303)
+
+#### <a id="issue-kuestenlogik-bowire-304"></a>✅ Done · [#304](https://github.com/Kuestenlogik/Bowire/issues/304) Compose rail: hide standalone Collections rail tree node now that Compose hosts it
+
+Phase A-F of #295 landed in 5160a3a — the Compose rail now hosts Collections + Presets in a side panel, and saves from any surface (Discover 'Add to', request-builder 'Save to collection', recording steps 'Open in Compose') land in the same buckets. [[more]](https://github.com/Kuestenlogik/Bowire/issues/304)
+
+#### <a id="issue-kuestenlogik-bowire-305"></a>✅ Done · [#305](https://github.com/Kuestenlogik/Bowire/issues/305) Source catalogue providers: kubernetes + agent (Phase D+E)
+
+Follow-up to #136. The provider seam (`IBowireCatalogueProvider` + `BowireCatalogueProviderRegistry`) and the three built-in providers (`local`, `http`, `consul`) shipped in ab8042fbe92611ccb41926af3be48d2947339282. The remaining two providers each need extra weight that doesn't belong in core: [[more]](https://github.com/Kuestenlogik/Bowire/issues/305)
 
 #### <a id="issue-kuestenlogik-bowire-309"></a>✅ Done · [#309](https://github.com/Kuestenlogik/Bowire/issues/309) UI: configure URL catalogue providers from Settings (#136 follow-up)
 
