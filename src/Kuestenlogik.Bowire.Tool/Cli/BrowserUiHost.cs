@@ -192,6 +192,11 @@ internal static class BrowserUiHost
         // (internal in core; reachable here via InternalsVisibleTo).
         builder.Services.AddSingleton<IRecordingJsonProvider, WorkbenchRecordingJsonProvider>();
 
+        // #563 — resolve a mock auth requirement's authRecordingId into a
+        // captured credential from the per-workspace AuthRecordingStore, so an
+        // operator can gate a mock behind a recording instead of a pasted token.
+        builder.Services.AddSingleton<IAuthRecordingResolver, WorkbenchAuthRecordingResolver>();
+
         // Self-telemetry seam (#29). Off by default -- opted in via
         // --telemetry / Bowire:Telemetry:Enabled=true. When on, wires
         // the OTLP exporter against the canonical Kuestenlogik.Bowire

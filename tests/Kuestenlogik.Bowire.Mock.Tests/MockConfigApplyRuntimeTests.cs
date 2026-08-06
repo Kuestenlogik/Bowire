@@ -157,6 +157,64 @@ public sealed class MockConfigApplyRuntimeTests
         await manager.StopAsync(handle.MockId, TestContext.Current.CancellationToken);
     }
 
+    [Fact]
+    public async Task AuthRecordingId_Resolves_To_A_Captured_Credential_That_Gates_Live()
+    {
+        await using var manager = NewManager();
+        var handle = await manager.StartFromSchemaAsync(
+            "openapi", OrdersOpenApi, schemaPath: null, "orders", port: 0,
+            TestContext.Current.CancellationToken);
+
+        // The config references a captured recording, not a typed token.
+        var config = new MockConfiguration
+        {
+            Auth = new MockAuthRequirement { Required = true, AuthRecordingId = "rec-1" },
+        };
+
+        // Resolve exactly the way the /config/apply endpoint does, then apply.
+        var resolver = new StubAuthResolver("rec-1", new MockAuthResolution("captured-tok", "bearer", null));
+        Assert.Equal(MockAuthRecordingResolution.Outcome.Resolved,
+            MockAuthRecordingResolution.Apply(config, resolver, workspaceId: null));
+        Assert.Equal("captured-tok", config.Auth!.Credential);
+
+        Assert.True(manager.ApplyConfig(handle.MockId, config));
+
+        using var http = new HttpClient();
+
+        // No credential → 401.
+        using (var noAuth = new StringContent("{}", Encoding.UTF8, "application/json"))
+        {
+            var resp = await http.PostAsync(new Uri($"{handle.Url}/orders"), noAuth, TestContext.Current.CancellationToken);
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, resp.StatusCode);
+        }
+
+        // The captured credential → 200.
+        using (var req = new HttpRequestMessage(HttpMethod.Post, new Uri($"{handle.Url}/orders")))
+        {
+            req.Content = new StringContent("{}", Encoding.UTF8, "application/json");
+            req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "captured-tok");
+            var resp = await http.SendAsync(req, TestContext.Current.CancellationToken);
+            Assert.Equal(System.Net.HttpStatusCode.OK, resp.StatusCode);
+        }
+
+        // A different token → 401.
+        using (var req = new HttpRequestMessage(HttpMethod.Post, new Uri($"{handle.Url}/orders")))
+        {
+            req.Content = new StringContent("{}", Encoding.UTF8, "application/json");
+            req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "nope");
+            var resp = await http.SendAsync(req, TestContext.Current.CancellationToken);
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, resp.StatusCode);
+        }
+
+        await manager.StopAsync(handle.MockId, TestContext.Current.CancellationToken);
+    }
+
+    private sealed class StubAuthResolver(string id, MockAuthResolution resolution) : IAuthRecordingResolver
+    {
+        public MockAuthResolution? TryResolve(string authRecordingId, string? workspaceId) =>
+            string.Equals(authRecordingId, id, StringComparison.Ordinal) ? resolution : null;
+    }
+
     private static async Task<string?> PostStatus(HttpClient http, string baseUrl, string body)
     {
         using var content = new StringContent(body, Encoding.UTF8, "application/json");

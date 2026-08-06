@@ -653,7 +653,9 @@
         }).then(function (r) {
             if (!r.ok) return r.json().catch(function () { return { error: 'Save failed (' + r.status + ')' }; })
                 .then(function (e) { throw new Error(e.error || 'Save failed'); });
-            return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId) + '/config/apply', {
+            // Carry the workspace so #563 auth-recording resolution scopes to
+            // this mock's own workspace instead of scanning arbitrarily.
+            return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId) + '/config/apply' + mockConfigQs(), {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body
             });
         }).then(function (r) {
