@@ -32,12 +32,21 @@ public sealed class MockServer : IAsyncDisposable
     private readonly IHost _host;
     private readonly MockKestrelHostedService _kestrel;
 
-    private MockServer(IHost host, MockKestrelHostedService kestrel, Chaos.FaultRuleSet faults)
+    private MockServer(IHost host, MockKestrelHostedService kestrel, Chaos.FaultRuleSet faults, MockAuthGate authGate)
     {
         _host = host;
         _kestrel = kestrel;
         Faults = faults;
+        AuthGate = authGate;
     }
+
+    /// <summary>
+    /// #562: the live auth gate — the same instance the request pipeline reads,
+    /// so swapping <see cref="MockAuthGate.Current"/> on it toggles the 401
+    /// requirement on a RUNNING mock (management endpoint / UI toggle) without
+    /// a restart. Mirrors <see cref="Faults"/>.
+    /// </summary>
+    public MockAuthGate AuthGate { get; }
 
     /// <summary>
     /// Live fault-injection rules (#170) — the same instance the request
@@ -124,7 +133,7 @@ public sealed class MockServer : IAsyncDisposable
             throw;
         }
         var kestrel = host.Services.GetRequiredService<MockKestrelHostedService>();
-        return new MockServer(host, kestrel, options.Faults);
+        return new MockServer(host, kestrel, options.Faults, options.AuthGate);
     }
 
     /// <summary>Block until the host shuts down (Ctrl+C, explicit stop).</summary>
@@ -292,6 +301,31 @@ public sealed class MockServer : IAsyncDisposable
             // accept upgrade requests. Cheap enough to turn on unconditionally;
             // recordings without WS steps never trigger the upgrade path.
             _app.UseWebSockets();
+
+            // #562: auth gate — 401 before ANY replay (including the GraphQL
+            // live handler) when the current requirement demands a credential
+            // the request doesn't present. The control surface
+            // (/__bowire/mock/*) has its own token and is exempt.
+            var authGate = _options.AuthGate;
+            _app.Use(async (ctx, next) =>
+            {
+                // Exempt the control surface case-SENSITIVELY: MockHandler
+                // short-circuits it with an Ordinal StartsWith, so a broader
+                // (case-insensitive) exemption here would wave mixed-case
+                // /__bowire/Mock/* paths past the gate that then fall through to
+                // the replay matcher / forward-on-miss proxy unauthenticated.
+                if (!ctx.Request.Path.StartsWithSegments("/__bowire/mock", StringComparison.Ordinal)
+                    && !authGate.IsAuthorized(ctx))
+                {
+                    ctx.Response.StatusCode = 401;
+                    ctx.Response.Headers["WWW-Authenticate"] = "Bearer";
+                    ctx.Response.ContentType = "application/json; charset=utf-8";
+                    await ctx.Response.WriteAsync(
+                        "{\"error\":\"Authentication required.\"}", ctx.RequestAborted).ConfigureAwait(false);
+                    return;
+                }
+                await next().ConfigureAwait(false);
+            });
 
             // Two mount paths:
             //   - recording on disk: the file-path overload wires in the

@@ -163,10 +163,29 @@ public sealed class BowireMockHostManager : IAsyncDisposable
     public bool ApplyConfig(string mockId, Mocking.MockConfiguration config)
     {
         ArgumentNullException.ThrowIfNull(config);
-        var handler = HandlerFor(mockId);
+        if (!_entries.TryGetValue(mockId, out var entry)) return false;
+        var handler = entry.Server.Handler;
         if (handler is null) return false;
         var stubs = Mocking.MockConfigApplier.ApplyToStubs(handler.BaselineStubs(), config);
+        // #562: raise the auth requirement BEFORE swapping in the new stubs (null
+        // clears it). Doing it in this order means the only observable in-between
+        // state is (old stubs, new auth), which over-protects harmlessly — the
+        // reverse order would briefly serve the new (possibly sensitive) stubs
+        // under the old, weaker gate.
+        entry.Server.AuthGate.Current = config.Auth;
         handler.ReplaceStubs(stubs);
+        return true;
+    }
+
+    /// <summary>Live auth requirement of a running mock (#562). Null when not running or auth isn't required.</summary>
+    public Mocking.MockAuthRequirement? GetAuth(string mockId) =>
+        _entries.TryGetValue(mockId, out var entry) ? entry.Server.AuthGate.Current : null;
+
+    /// <summary>Swap the auth requirement of a RUNNING mock (#562 — the UI toggle). False when not running.</summary>
+    public bool TrySetAuth(string mockId, Mocking.MockAuthRequirement? requirement)
+    {
+        if (!_entries.TryGetValue(mockId, out var entry)) return false;
+        entry.Server.AuthGate.Current = requirement;
         return true;
     }
 

@@ -234,6 +234,16 @@ public sealed class MockServerOptions
     public string? ControlToken { get; init; }
 
     /// <summary>
+    /// #562: the optional auth gate. A request is 401ed before replay when the
+    /// gate's current requirement demands a credential the request doesn't
+    /// present. Holding the gate (not a bare requirement) lets the workbench
+    /// toggle auth live by swapping <see cref="MockAuthGate.Current"/> — the
+    /// same shared-instance pattern as <see cref="Faults"/>. The default gate
+    /// requires nothing. CLI: <c>--require-auth &lt;token&gt;</c>.
+    /// </summary>
+    public MockAuthGate AuthGate { get; init; } = new();
+
+    /// <summary>
     /// When <c>true</c>, the MQTT proactive emitter replays the
     /// recording on repeat while the mock is up — the schedule loops
     /// back to step 0 after emitting the last publish. Useful for

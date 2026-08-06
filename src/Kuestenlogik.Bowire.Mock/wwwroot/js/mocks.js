@@ -559,6 +559,9 @@
         if (!selected.recordingId) {
             wrap.appendChild(renderOverridesCard(selected));
             wrap.appendChild(renderRulesCard(selected));
+            // The auth gate is pipeline-level, so it also covers GraphQL/gRPC
+            // schema mocks (unlike the stub-based override/rule cards).
+            wrap.appendChild(renderAuthCard(selected));
         }
         wrap.appendChild(renderFaultCard(selected, url));
         pane.appendChild(wrap);
@@ -820,6 +823,58 @@
         row.appendChild(cfgInput(rule._responseText, 'response (JSON)', function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { r._responseText = v; markDirty(st); } }));
         row.appendChild(cfgRemoveBtn(function () { st.config.conditionalRules = st.config.conditionalRules.filter(function (x) { return x._rid !== rid; }); markDirty(st); render(); }));
         return row;
+    }
+
+    // ---------- #562 require-auth toggle ----------
+    var AUTH_SCHEMES = [
+        { value: 'bearer', label: 'Bearer token' },
+        { value: 'apikey', label: 'API key' },
+        { value: 'basic', label: 'Basic' }
+    ];
+
+    function renderAuthCard(selected) {
+        var st = mockConfigState(selected.mockId);
+        var auth = st.config.auth || (st.config.auth = {});
+        var card = el('div', { className: 'bowire-mocks-log-card', style: 'margin-top:16px' });
+        var toggleBtn = el('button', { className: 'bowire-empty-card-action', textContent: st.authOpen ? 'Hide' : 'Edit' });
+        toggleBtn.onclick = function () {
+            st.authOpen = !st.authOpen;
+            if (st.authOpen && !st.loaded) loadMockConfig(selected.mockId).then(render);
+            render();
+        };
+        card.appendChild(el('div', { className: 'bowire-sources-section', style: 'display:flex;align-items:center;gap:8px' },
+            el('span', { textContent: 'Authentication' }),
+            el('span', { className: 'bowire-home-section-count', textContent: auth.required ? 'required' : 'open' }),
+            toggleBtn));
+        if (!st.authOpen) return card;
+        if (!st.loaded) { card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: 'Loading…' })); return card; }
+        if (st.error) card.appendChild(el('p', { className: 'bowire-sources-hint', style: 'color:var(--bowire-danger)', textContent: st.error }));
+
+        var reqLabel = el('label', { style: 'display:flex;align-items:center;gap:6px;margin:4px 0' });
+        var reqCheck = el('input', { type: 'checkbox' });
+        reqCheck.checked = !!auth.required;
+        reqCheck.onchange = function () { st.config.auth.required = reqCheck.checked; markDirty(st); render(); };
+        reqLabel.appendChild(reqCheck);
+        reqLabel.appendChild(el('span', { textContent: 'Require authentication — 401 before replay without a valid credential' }));
+        card.appendChild(reqLabel);
+
+        if (auth.required) {
+            card.appendChild(el('p', { className: 'bowire-sources-hint',
+                textContent: 'Bearer/Basic read the Authorization header; an API key reads the named header. Leave the credential blank to accept any credential of the scheme.' }));
+            var row = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center' });
+            row.appendChild(faultSelect(auth.scheme || 'bearer', AUTH_SCHEMES, function (v) { st.config.auth.scheme = v; markDirty(st); render(); }));
+            row.appendChild(cfgInput(auth.header, 'header (default Authorization)', function (v) { st.config.auth.header = v; markDirty(st); }));
+            row.appendChild(cfgInput(auth.credential, 'expected credential (blank = any)', function (v) { st.config.auth.credential = v; markDirty(st); }));
+            card.appendChild(row);
+        }
+
+        var actions = el('div', { style: 'display:flex;gap:8px;margin-top:10px;align-items:center' });
+        var applyBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: 'Apply' });
+        applyBtn.onclick = function () { applyMockConfig(selected.mockId); };
+        actions.appendChild(applyBtn);
+        if (st.dirty) actions.appendChild(el('span', { className: 'bowire-sources-hint', textContent: 'unsaved changes' }));
+        card.appendChild(actions);
+        return card;
     }
 
     // ---------- #170 fault-injection editor ----------

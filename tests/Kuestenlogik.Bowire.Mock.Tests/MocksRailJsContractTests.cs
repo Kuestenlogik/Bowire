@@ -63,6 +63,22 @@ public sealed class MocksRailJsContractTests
         Assert.Contains("'/config/apply'", js, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Ships_The_Require_Auth_Toggle()
+    {
+        // #562: the require-auth card + toggle, applied through the #561 flow.
+        var js = Fragment.Value;
+        Assert.Contains("function renderAuthCard", js, StringComparison.Ordinal);
+        Assert.Contains("Require authentication", js, StringComparison.Ordinal);
+
+        // The card is only wired up if it is mounted into the detail pane AND
+        // serializeMockConfig actually carries `auth` to the wire — dropping
+        // either silently disables the toggle while every backend test stays
+        // green, so pin both glue points here (the only automated guard).
+        Assert.Contains("wrap.appendChild(renderAuthCard(selected))", js, StringComparison.Ordinal);
+        Assert.Contains("auth: st.config.auth", js, StringComparison.Ordinal);
+    }
+
     private static string LoadFragment()
     {
         var assembly = typeof(BowireMockManagementEndpoints).Assembly;

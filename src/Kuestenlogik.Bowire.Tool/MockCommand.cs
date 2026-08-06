@@ -175,7 +175,12 @@ internal static class MockCommand
                 SchemaSources = schemaSources,
                 LiveSchemaHandlers = liveSchemaHandlers,
                 HostingExtensions = hostingExtensions,
-                MockConfig = mockConfig
+                MockConfig = mockConfig,
+                // #562: --require-auth <token> gates every HTTP/WebSocket mocked
+                // request behind a matching bearer token (plugin transports —
+                // MQTT/DIS/… — run on their own sockets and are not gated);
+                // absent = no auth gate.
+                AuthGate = MockAuthGate.RequireBearer(cli.RequireAuth)
                 // TransportPorts left at default — per-transport ports
                 // can be exposed as future CLI flags (e.g. --mqtt-port)
                 // routed into this dictionary, but for now every host

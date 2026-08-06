@@ -92,6 +92,7 @@ public sealed class CliCommandOptionsTests
         Assert.False(o.StatefulOnce);
         Assert.Equal(1.0, o.ReplaySpeed);
         Assert.Null(o.ControlToken);
+        Assert.Null(o.RequireAuth);
         Assert.False(o.Loop);
         Assert.False(o.AutoInstall);
     }
@@ -115,6 +116,7 @@ public sealed class CliCommandOptionsTests
             StatefulOnce = true,
             ReplaySpeed = 2.5,
             ControlToken = "secret",
+            RequireAuth = "s3cret-token",
             Loop = true,
             AutoInstall = true,
         };
@@ -133,6 +135,7 @@ public sealed class CliCommandOptionsTests
         Assert.True(o.StatefulOnce);
         Assert.Equal(2.5, o.ReplaySpeed);
         Assert.Equal("secret", o.ControlToken);
+        Assert.Equal("s3cret-token", o.RequireAuth);
         Assert.True(o.Loop);
         Assert.True(o.AutoInstall);
     }

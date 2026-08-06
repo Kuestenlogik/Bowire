@@ -202,10 +202,9 @@ public sealed class MockRulePredicate
 }
 
 /// <summary>
-/// Auth-requirement block (#558 model; enforced by #562). Declares that the
-/// mock should require authentication and, optionally, which captured
-/// #sec-04 auth recording supplies the accepted credential. Model-only in
-/// the foundation slice — the 401 gate ships with the auth slice.
+/// Auth-requirement block (#558 model; enforced by #562's 401 gate). Declares
+/// that the mock should require authentication and how the accepted credential
+/// is presented.
 /// </summary>
 public sealed class MockAuthRequirement
 {
@@ -213,15 +212,28 @@ public sealed class MockAuthRequirement
     [JsonPropertyName("required")]
     public bool Required { get; set; }
 
-    /// <summary>Expected credential scheme — <c>"bearer"</c> / <c>"apikey"</c> / <c>"basic"</c>.</summary>
+    /// <summary>Expected credential scheme — <c>"bearer"</c> / <c>"apikey"</c> / <c>"basic"</c> (default <c>bearer</c>).</summary>
     [JsonPropertyName("scheme")]
     public string? Scheme { get; set; }
 
-    /// <summary>Recording id of a captured #sec-04 auth flow that sources the accepted credential.</summary>
-    [JsonPropertyName("authRecordingId")]
-    public string? AuthRecordingId { get; set; }
+    /// <summary>
+    /// The exact accepted credential value (bearer/basic token or api-key). When
+    /// set, the gate requires an exact match; when empty, the gate requires only
+    /// that <em>some</em> credential of the scheme is present.
+    /// </summary>
+    [JsonPropertyName("credential")]
+    public string? Credential { get; set; }
 
     /// <summary>Header the credential is carried in (default <c>Authorization</c> for bearer/basic).</summary>
     [JsonPropertyName("header")]
     public string? Header { get; set; }
+
+    /// <summary>
+    /// Forward hook (#562): id of a captured auth recording that would source
+    /// the accepted credential. Persisted + round-tripped but not yet resolved —
+    /// there is no id-addressable auth-recording store today, so the credential
+    /// comes from <see cref="Credential"/>.
+    /// </summary>
+    [JsonPropertyName("authRecordingId")]
+    public string? AuthRecordingId { get; set; }
 }
