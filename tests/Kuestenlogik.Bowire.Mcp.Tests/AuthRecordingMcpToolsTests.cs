@@ -29,7 +29,7 @@ public sealed class AuthRecordingMcpToolsTests : IAsyncDisposable
         GC.SuppressFinalize(this);
     }
 
-    private BowireMcpTools Tools(bool requireConfirmation = false)
+    private BowireMcpTools Tools(bool requireConfirmation = false, Kuestenlogik.Bowire.Mocking.IAuthFlowCapturer? capturer = null)
     {
         var handles = new BowireMockHandleRegistry();
         _registries.Add(handles);
@@ -43,7 +43,40 @@ public sealed class AuthRecordingMcpToolsTests : IAsyncDisposable
                 LoadAllowlistFromEnvironments = false,
                 RequireConfirmationForMutations = requireConfirmation,
             }),
-            NullLogger<BowireMcpTools>.Instance);
+            NullLogger<BowireMcpTools>.Instance,
+            capturer);
+    }
+
+    private sealed class FakeCapturer : Kuestenlogik.Bowire.Mocking.IAuthFlowCapturer
+    {
+        public Task<Kuestenlogik.Bowire.Mocking.AuthFlowCaptureResult> CaptureAsync(string flowJson, CancellationToken ct = default)
+            => Task.FromResult(new Kuestenlogik.Bowire.Mocking.AuthFlowCaptureResult("captured-tok", "bearer", null));
+    }
+
+    [Fact]
+    public async Task CaptureFlow_Without_A_Capturer_Is_Not_Available()
+    {
+        var result = await Tools().AuthRecordingCaptureFlow("rec-1", "{}", ct: TestContext.Current.CancellationToken);
+        Assert.Contains("not available", result, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CaptureFlow_Rejects_Empty_Id_And_Flow()
+    {
+        var tools = Tools(capturer: new FakeCapturer());
+        Assert.Contains("id is required", await tools.AuthRecordingCaptureFlow(id: string.Empty, flow: "{}", ct: TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Contains("flow is required", await tools.AuthRecordingCaptureFlow(id: "rec", flow: string.Empty, ct: TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CaptureFlow_Parks_A_Confirmation_When_Gated()
+    {
+        // The gate must fire BEFORE the outbound flow runs.
+        var json = await Tools(requireConfirmation: true, capturer: new FakeCapturer())
+            .AuthRecordingCaptureFlow("rec-1", "{}", confirm: false, ct: TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(json);
+        Assert.True(doc.RootElement.GetProperty("pending").GetBoolean());
+        Assert.Equal("bowire.auth-recording.capture-flow", doc.RootElement.GetProperty("kind").GetString());
     }
 
     [Fact]

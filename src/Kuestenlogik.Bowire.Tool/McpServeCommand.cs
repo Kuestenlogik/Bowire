@@ -166,6 +166,9 @@ internal static class McpServeCommand
         }
         else
         {
+            // #563 — flow-capture seam so bowire.auth-recording.capture-flow can
+            // run a login chain (outbound, confirm-gated) and store the token.
+            builder.Services.AddSingleton<Kuestenlogik.Bowire.Mocking.IAuthFlowCapturer, Kuestenlogik.Bowire.App.Cli.AuthFlowCapturer>();
             builder.Services
                 .AddBowireMcp(cfg.ConfigureOptions)
                 .WithStdioServerTransport()
@@ -202,6 +205,8 @@ internal static class McpServeCommand
         }
         else
         {
+            // #563 — flow-capture seam (see the stdio path).
+            builder.Services.AddSingleton<Kuestenlogik.Bowire.Mocking.IAuthFlowCapturer, Kuestenlogik.Bowire.App.Cli.AuthFlowCapturer>();
             builder.Services
                 .AddBowireMcp(cfg.ConfigureOptions)
                 .WithHttpTransport(o => o.Stateless = true)

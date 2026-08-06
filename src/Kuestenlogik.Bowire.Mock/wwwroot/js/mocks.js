@@ -651,6 +651,20 @@
             .then(function (r) { return r.ok ? r.json() : { deleted: false }; });
     }
 
+    // #563 — flow capture: Bowire RUNS the auth-flow definition (outbound HTTP)
+    // and stores the captured token. Parity with `--flow` and the MCP tool.
+    function captureAuthRecordingFromFlow(id, name, flowJson) {
+        var qs = mockConfigQs();
+        var url = config.prefix + '/api/auth-recordings/' + encodeURIComponent(id) + '/capture' + qs;
+        if (name) url += (qs ? '&' : '?') + 'name=' + encodeURIComponent(name);
+        return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: flowJson })
+            .then(function (r) {
+                if (!r.ok) return r.json().catch(function () { return { error: 'Capture failed (' + r.status + ')' }; })
+                    .then(function (e) { throw new Error(e.error || 'Capture failed'); });
+                return r.json();
+            });
+    }
+
     // Build the clean config to persist/apply: parse the raw-text buffers back
     // to JSON and drop the client-only fields (_rid / _valueText / _responseText).
     function serializeMockConfig(st) {
@@ -936,25 +950,50 @@
             card.appendChild(recRow);
 
             if (st.newRecOpen) {
-                var nr = st.newRec || (st.newRec = { id: '', name: '', scheme: 'bearer', header: '', credential: '' });
-                var form = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 8px 0' });
-                form.appendChild(cfgInput(nr.id, 'id (referenced by authRecordingId)', function (v) { nr.id = v; }));
-                form.appendChild(cfgInput(nr.name, 'name (optional)', function (v) { nr.name = v; }));
-                form.appendChild(faultSelect(nr.scheme || 'bearer', AUTH_SCHEMES, function (v) { nr.scheme = v; }));
-                form.appendChild(cfgInput(nr.header, 'header (default Authorization)', function (v) { nr.header = v; }));
-                form.appendChild(cfgInput(nr.credential, 'credential (stored locally)', function (v) { nr.credential = v; }));
-                var saveRecBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: 'Save recording' });
-                saveRecBtn.onclick = function () {
-                    if (!nr.id || !nr.credential) { st.error = 'A recording needs an id and a credential.'; render(); return; }
-                    saveAuthRecording(nr).then(function () {
-                        st.config.auth.authRecordingId = nr.id;
-                        st.config.auth.credential = '';
-                        st.newRec = null; st.newRecOpen = false; st.error = null;
-                        st.authRecordings = undefined; // force reload so the new id appears
-                        markDirty(st); render();
-                    }).catch(function (e) { st.error = e.message || 'Save failed'; render(); });
+                var nr = st.newRec || (st.newRec = { id: '', name: '', scheme: 'bearer', header: '', credential: '', flow: '', mode: 'static' });
+                var onCaptured = function () {
+                    st.config.auth.authRecordingId = nr.id;
+                    st.config.auth.credential = '';
+                    st.newRec = null; st.newRecOpen = false; st.error = null;
+                    st.authRecordings = undefined; // force reload so the new id appears
+                    markDirty(st); render();
                 };
-                form.appendChild(saveRecBtn);
+                var form = el('div', { style: 'display:flex;flex-direction:column;gap:6px;margin:4px 0 8px 0' });
+                var topRow = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center' });
+                topRow.appendChild(cfgInput(nr.id, 'id (referenced by authRecordingId)', function (v) { nr.id = v; }));
+                topRow.appendChild(cfgInput(nr.name, 'name (optional)', function (v) { nr.name = v; }));
+                topRow.appendChild(faultSelect(nr.scheme || 'bearer', AUTH_SCHEMES, function (v) { nr.scheme = v; }));
+                topRow.appendChild(cfgInput(nr.header, 'header (default Authorization)', function (v) { nr.header = v; }));
+                topRow.appendChild(faultSelect(nr.mode || 'static',
+                    [{ value: 'static', label: 'Static credential' }, { value: 'flow', label: 'From auth flow' }],
+                    function (v) { nr.mode = v; render(); }));
+                form.appendChild(topRow);
+
+                if ((nr.mode || 'static') === 'flow') {
+                    var ta = el('textarea', { className: 'bowire-flow-field-input',
+                        placeholder: 'auth-flow definition JSON — Bowire runs it (outbound HTTP) and stores the captured token',
+                        style: 'min-height:80px;font-family:monospace' });
+                    ta.value = nr.flow || '';
+                    ta.oninput = function () { nr.flow = ta.value; };
+                    form.appendChild(ta);
+                    var flowBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: 'Run flow & capture' });
+                    flowBtn.onclick = function () {
+                        if (!nr.id || !nr.flow) { st.error = 'A flow capture needs an id and the flow JSON.'; render(); return; }
+                        captureAuthRecordingFromFlow(nr.id, nr.name, nr.flow).then(onCaptured)
+                            .catch(function (e) { st.error = e.message || 'Capture failed'; render(); });
+                    };
+                    form.appendChild(flowBtn);
+                } else {
+                    var credRow = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center' });
+                    credRow.appendChild(cfgInput(nr.credential, 'credential (stored locally)', function (v) { nr.credential = v; }));
+                    var saveRecBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: 'Save recording' });
+                    saveRecBtn.onclick = function () {
+                        if (!nr.id || !nr.credential) { st.error = 'A recording needs an id and a credential.'; render(); return; }
+                        saveAuthRecording(nr).then(onCaptured).catch(function (e) { st.error = e.message || 'Save failed'; render(); });
+                    };
+                    credRow.appendChild(saveRecBtn);
+                    form.appendChild(credRow);
+                }
                 card.appendChild(form);
             }
 

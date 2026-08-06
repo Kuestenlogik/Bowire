@@ -197,6 +197,13 @@ internal static class BrowserUiHost
         // operator can gate a mock behind a recording instead of a pasted token.
         builder.Services.AddSingleton<IAuthRecordingResolver, WorkbenchAuthRecordingResolver>();
 
+        // #563 — flow-capture seam: run a scriptable login → token chain (via the
+        // Security.Scanner sibling) and store the captured credential as an auth
+        // recording. Outbound HTTP only ever fires on an explicit operator
+        // capture action. Registered here so the workbench + MCP surfaces can
+        // offer flow-capture; embedded hosts that skip it keep static capture.
+        builder.Services.AddSingleton<Kuestenlogik.Bowire.Mocking.IAuthFlowCapturer, AuthFlowCapturer>();
+
         // Self-telemetry seam (#29). Off by default -- opted in via
         // --telemetry / Bowire:Telemetry:Enabled=true. When on, wires
         // the OTLP exporter against the canonical Kuestenlogik.Bowire

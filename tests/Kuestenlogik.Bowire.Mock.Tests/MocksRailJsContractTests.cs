@@ -102,6 +102,17 @@ public sealed class MocksRailJsContractTests
         Assert.Contains("'+ New recording'", js, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Ships_Flow_Capture_In_The_Auth_Card()
+    {
+        // #563 flow capture: the new-recording form has a "From auth flow" mode
+        // that POSTs the flow to /capture and stores the captured token.
+        var js = Fragment.Value;
+        Assert.Contains("function captureAuthRecordingFromFlow", js, StringComparison.Ordinal);
+        Assert.Contains("'/capture'", js, StringComparison.Ordinal);
+        Assert.Contains("From auth flow", js, StringComparison.Ordinal);
+    }
+
     private static string LoadFragment()
     {
         var assembly = typeof(BowireMockManagementEndpoints).Assembly;

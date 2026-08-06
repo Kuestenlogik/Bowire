@@ -64,6 +64,18 @@ public sealed class BowireCliActionTests : IDisposable
     }
 
     [Fact]
+    public async Task AuthRecordingCapture_WithNeitherSource_ExitsUsage()
+    {
+        // capture requires exactly one of --credential-env / --flow; neither is
+        // a usage error (64), caught before any store write or outbound call.
+        var rc = await BowireCli.RunAsync(
+            ["auth-recording", "capture", "--id", "x"],
+            EmptyConfig(),
+            plugins: TestPluginLoaders.None());
+        Assert.Equal(64, rc);
+    }
+
+    [Fact]
     public async Task DescribeSubcommand_AgainstDeadUrl_ReturnsErrorExit()
     {
         var rc = await BowireCli.RunAsync(
