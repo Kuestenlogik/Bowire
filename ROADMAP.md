@@ -137,7 +137,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
 
-**32/32 done**
+**38/38 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -168,6 +168,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [543](https://github.com/Kuestenlogik/Bowire/issues/543) | Bowire | [MockCommandAutoInstallTests reads the developer's real plugin directory](#issue-kuestenlogik-bowire-543) | ✅ Done |  |
 | [544](https://github.com/Kuestenlogik/Bowire/issues/544) | Bowire | [Discovery cannot report a partial fault: results and diagnostics are mutually exclusive](#issue-kuestenlogik-bowire-544) | ✅ Done |  |
 | [545](https://github.com/Kuestenlogik/Bowire/issues/545) | Bowire | [Correlated timeline: join across renamed identifiers (multi-key)](#issue-kuestenlogik-bowire-545) | ✅ Done |  |
+| [546](https://github.com/Kuestenlogik/Bowire/issues/546) | Bowire | [Make plugin management DI-friendly: retire the static PluginManager and its duplicate ledger](#issue-kuestenlogik-bowire-546) | ✅ Done |  |
+| [548](https://github.com/Kuestenlogik/Bowire/issues/548) | Bowire | [Release cascade skips Kuestenlogik.Bowire.Protocol.* — the bump regex allows only one dot-segment](#issue-kuestenlogik-bowire-548) | ✅ Done |  |
+| [550](https://github.com/Kuestenlogik/Bowire/issues/550) | Bowire | [morphdom strips the data-* idempotence markers — four sites leak a ResizeObserver + MutationObserver per render](#issue-kuestenlogik-bowire-550) | ✅ Done |  |
+| [552](https://github.com/Kuestenlogik/Bowire/issues/552) | Bowire | [SSE panel never closes its EventSource on error — a dead endpoint drives a full-app render loop](#issue-kuestenlogik-bowire-552) | ✅ Done |  |
+| [556](https://github.com/Kuestenlogik/Bowire/issues/556) | Bowire | [McpDiscoveryWireTests is flaky: FreePort() releases the port before HttpListener binds it](#issue-kuestenlogik-bowire-556) | ✅ Done |  |
+| [557](https://github.com/Kuestenlogik/Bowire/issues/557) | Bowire | [ScanCommandTests reads the developer's vulndb cache and fails once you have used the tool](#issue-kuestenlogik-bowire-557) | ✅ Done |  |
 | [558](https://github.com/Kuestenlogik/Bowire/issues/558) | Bowire | [Add a persisted mock-configuration workspace artifact: model, store, and apply-at-startup seam](#issue-kuestenlogik-bowire-558) | ✅ Done |  |
 | [559](https://github.com/Kuestenlogik/Bowire/issues/559) | Bowire | [Honour declared schema examples across OpenAPI, Protobuf, and GraphQL mock sources](#issue-kuestenlogik-bowire-559) | ✅ Done |  |
 | [560](https://github.com/Kuestenlogik/Bowire/issues/560) | Bowire | [Start a schema mock from the workbench and create its mock-configuration artifact](#issue-kuestenlogik-bowire-560) | ✅ Done |  |
@@ -886,6 +892,30 @@ A discovery probe is all-or-nothing. If any surface of a server faults, the plug
 #### <a id="issue-kuestenlogik-bowire-545"></a>✅ Done · [#545](https://github.com/Kuestenlogik/Bowire/issues/545) Correlated timeline: join across renamed identifiers (multi-key)
 
 The correlated timeline (#539) keys a recording on **one** value. A business transaction that changes its identifier as it crosses services therefore lights up only the lanes that happen to speak the chosen key. [[more]](https://github.com/Kuestenlogik/Bowire/issues/545)
+
+#### <a id="issue-kuestenlogik-bowire-546"></a>✅ Done · [#546](https://github.com/Kuestenlogik/Bowire/issues/546) Make plugin management DI-friendly: retire the static PluginManager and its duplicate ledger
+
+Plugin management is static end to end: `PluginManager` is a `static class` holding `s_pluginContexts` (the load contexts) and `s_loadedSubdirs` (a hand-maintained record of what has been loaded), and `BowireProtocolRegistry.Discover()` is a static call with side effects — it runs `Assembly.LoadFrom` while scanning. [[more]](https://github.com/Kuestenlogik/Bowire/issues/546)
+
+#### <a id="issue-kuestenlogik-bowire-548"></a>✅ Done · [#548](https://github.com/Kuestenlogik/Bowire/issues/548) Release cascade skips Kuestenlogik.Bowire.Protocol.* — the bump regex allows only one dot-segment
+
+The release cascade bumps `Kuestenlogik.Bowire` and `Kuestenlogik.Bowire.<One>` in every sibling, and silently skips `Kuestenlogik.Bowire.<Two>.<Segments>`. The bump regex in `.github/sibling-templates/bowire-released.yml` allows exactly one dot-segment past the prefix: [[more]](https://github.com/Kuestenlogik/Bowire/issues/548)
+
+#### <a id="issue-kuestenlogik-bowire-550"></a>✅ Done · [#550](https://github.com/Kuestenlogik/Bowire/issues/550) morphdom strips the data-* idempotence markers — four sites leak a ResizeObserver + MutationObserver per render
+
+Four sites use a `data-*` attribute as the "already wired" marker for imperative DOM work. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/550)
+
+#### <a id="issue-kuestenlogik-bowire-552"></a>✅ Done · [#552](https://github.com/Kuestenlogik/Bowire/issues/552) SSE panel never closes its EventSource on error — a dead endpoint drives a full-app render loop
+
+The SSE request panel's `onerror` renders and leaves the `EventSource` open. The browser then auto-reconnects forever, at a cadence the **remote** server's `retry:` directive controls, and each attempt costs one full-app `render()`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/552)
+
+#### <a id="issue-kuestenlogik-bowire-556"></a>✅ Done · [#556](https://github.com/Kuestenlogik/Bowire/issues/556) McpDiscoveryWireTests is flaky: FreePort() releases the port before HttpListener binds it
+
+`McpDiscoveryWireTests` picks a port by binding one and letting go of it again: [[more]](https://github.com/Kuestenlogik/Bowire/issues/556)
+
+#### <a id="issue-kuestenlogik-bowire-557"></a>✅ Done · [#557](https://github.com/Kuestenlogik/Bowire/issues/557) ScanCommandTests reads the developer's vulndb cache and fails once you have used the tool
+
+`ScanCommandTests.RunAsync_NoTemplatesAndNoBuiltins_ReturnsUsageError` reads the developer's home directory. It passes on a machine that has never run `bowire vulndb update` and fails on one that has. [[more]](https://github.com/Kuestenlogik/Bowire/issues/557)
 
 #### <a id="issue-kuestenlogik-bowire-558"></a>✅ Done · [#558](https://github.com/Kuestenlogik/Bowire/issues/558) Add a persisted mock-configuration workspace artifact: model, store, and apply-at-startup seam
 
