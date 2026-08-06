@@ -298,6 +298,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog |  |
 | [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins](#issue-kuestenlogik-bowire-549) | ⬜ Backlog |  |
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ⬜ Backlog |  |
+| [563](https://github.com/Kuestenlogik/Bowire/issues/563) | Bowire | [Resolve a mock's auth requirement from a #sec-04 auth recording](#issue-kuestenlogik-bowire-563) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1232,6 +1233,10 @@ Start the workbench with `--plugin-dir X`, install a plugin from **Settings → 
 #### <a id="issue-kuestenlogik-bowire-551"></a>⬜ Backlog · [#551](https://github.com/Kuestenlogik/Bowire/issues/551) render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row
 
 `render()` rebuilds the entire workbench tree off-screen and morphdom-diffs it. There is no debounce, no dirty flag, no coalescing â€” a grep for `scheduleRender` / `renderPending` / any batching wrapper across `wwwroot/js/` returns nothing, and there are ~685 `render()` call sites. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/551)
+
+#### <a id="issue-kuestenlogik-bowire-563"></a>⬜ Backlog · [#563](https://github.com/Kuestenlogik/Bowire/issues/563) Resolve a mock's auth requirement from a #sec-04 auth recording
+
+[#562](https://github.com/Kuestenlogik/Bowire/issues/562) shipped the mock auth gate — `bowire mock --require-auth <token>` and the workbench *Require authentication* card — but a mock can only demand a **directly-configured** credential today. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/563)
 
 ---
 
