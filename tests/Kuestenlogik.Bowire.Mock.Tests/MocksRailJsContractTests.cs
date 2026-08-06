@@ -79,6 +79,17 @@ public sealed class MocksRailJsContractTests
         Assert.Contains("auth: st.config.auth", js, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Ships_The_Auth_Recording_Picker()
+    {
+        // #563: the auth-card recording picker fetches the workspace's
+        // recordings and binds the selection to auth.authRecordingId.
+        var js = Fragment.Value;
+        Assert.Contains("function loadAuthRecordings", js, StringComparison.Ordinal);
+        Assert.Contains("'/api/auth-recordings'", js, StringComparison.Ordinal);
+        Assert.Contains("st.config.auth.authRecordingId = v", js, StringComparison.Ordinal);
+    }
+
     private static string LoadFragment()
     {
         var assembly = typeof(BowireMockManagementEndpoints).Assembly;

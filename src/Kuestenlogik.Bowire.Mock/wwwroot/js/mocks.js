@@ -623,6 +623,15 @@
             .catch(function () { st.loaded = true; return st; });
     }
 
+    // #563 — credential-free list of the workspace's captured auth recordings,
+    // for the auth-card picker. Degrades to an empty list on any error.
+    function loadAuthRecordings() {
+        return fetch(config.prefix + '/api/auth-recordings' + mockConfigQs())
+            .then(function (r) { return r.ok ? r.json() : { recordings: [] }; })
+            .then(function (d) { return Array.isArray(d.recordings) ? d.recordings : []; })
+            .catch(function () { return []; });
+    }
+
     // Build the clean config to persist/apply: parse the raw-text buffers back
     // to JSON and drop the client-only fields (_rid / _valueText / _responseText).
     function serializeMockConfig(st) {
@@ -861,12 +870,45 @@
         card.appendChild(reqLabel);
 
         if (auth.required) {
+            // #563 — pick a captured auth recording (credential resolved
+            // server-side at apply-time) or supply an inline credential. Lazy-
+            // load the workspace's recordings once; null marks the fetch in-flight.
+            if (st.authRecordings === undefined) {
+                st.authRecordings = null;
+                loadAuthRecordings().then(function (list) { st.authRecordings = list; render(); });
+            }
+            var recs = Array.isArray(st.authRecordings) ? st.authRecordings : [];
+            var recOpts = [{ value: '', label: 'Inline credential' }];
+            var listed = false;
+            recs.forEach(function (r) {
+                recOpts.push({ value: r.id, label: r.name || r.id });
+                if (r.id === auth.authRecordingId) listed = true;
+            });
+            // Keep a selected-but-not-yet-loaded id visible while the list loads.
+            if (auth.authRecordingId && !listed) recOpts.push({ value: auth.authRecordingId, label: auth.authRecordingId });
+
+            var recRow = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0' });
+            recRow.appendChild(el('span', { className: 'bowire-sources-hint', textContent: 'Credential source' }));
+            recRow.appendChild(faultSelect(auth.authRecordingId || '', recOpts, function (v) {
+                st.config.auth.authRecordingId = v || null;
+                // Selecting a recording clears any stale inline credential so the
+                // token is never persisted alongside the recording reference.
+                if (v) st.config.auth.credential = '';
+                markDirty(st); render();
+            }));
+            card.appendChild(recRow);
+
+            var usingRecording = !!auth.authRecordingId;
             card.appendChild(el('p', { className: 'bowire-sources-hint',
-                textContent: 'Bearer/Basic read the Authorization header; an API key reads the named header. Leave the credential blank to accept any credential of the scheme.' }));
+                textContent: usingRecording
+                    ? 'The credential is resolved from the selected recording at apply-time; the scheme/header below apply unless the recording overrides them.'
+                    : 'Bearer/Basic read the Authorization header; an API key reads the named header. Leave the credential blank to accept any credential of the scheme.' }));
             var row = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center' });
             row.appendChild(faultSelect(auth.scheme || 'bearer', AUTH_SCHEMES, function (v) { st.config.auth.scheme = v; markDirty(st); render(); }));
             row.appendChild(cfgInput(auth.header, 'header (default Authorization)', function (v) { st.config.auth.header = v; markDirty(st); }));
-            row.appendChild(cfgInput(auth.credential, 'expected credential (blank = any)', function (v) { st.config.auth.credential = v; markDirty(st); }));
+            if (!usingRecording) {
+                row.appendChild(cfgInput(auth.credential, 'expected credential (blank = any)', function (v) { st.config.auth.credential = v; markDirty(st); }));
+            }
             card.appendChild(row);
         }
 
