@@ -1,7 +1,6 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Globalization;
 using System.Text;
 using Kuestenlogik.Bowire.Mocking;
 using Microsoft.Extensions.Logging;
@@ -211,16 +210,14 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
             var retain = false;
             if (emission.Metadata is not null)
             {
-                if (emission.Metadata.TryGetValue("qos", out var qosStr) &&
-                    Enum.TryParse<MqttQualityOfServiceLevel>(qosStr, ignoreCase: true, out var q))
+                // Enum.TryParse also accepts the numeric forms "0"/"1"/"2" (the
+                // underlying value), so a single parse covers both the named and
+                // integer QoS spellings; IsDefined rejects out-of-range numbers.
+                if (emission.Metadata.TryGetValue("qos", out var qosStr)
+                    && Enum.TryParse<MqttQualityOfServiceLevel>(qosStr, ignoreCase: true, out var q)
+                    && Enum.IsDefined(q))
                 {
                     qos = q;
-                }
-                else if (emission.Metadata.TryGetValue("qos", out qosStr) &&
-                    int.TryParse(qosStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var qi) &&
-                    qi is >= 0 and <= 2)
-                {
-                    qos = (MqttQualityOfServiceLevel)qi;
                 }
 
                 if (emission.Metadata.TryGetValue("retain", out var retainStr))
@@ -251,12 +248,13 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
         string.Equals(step.Protocol, "mqtt", StringComparison.OrdinalIgnoreCase) &&
         string.Equals(step.MethodType, "Unary", StringComparison.OrdinalIgnoreCase);
 
-    private bool _disposed;
+    private int _disposeSignaled;
 
     public async ValueTask DisposeAsync()
     {
-        if (_disposed) return;
-        _disposed = true;
+        // Atomic guard: concurrent DisposeAsync calls must not both pass and
+        // double-cancel / double-dispose _cts.
+        if (Interlocked.Exchange(ref _disposeSignaled, 1) == 1) return;
 
         // Detach the broker-event handler before tearing down so a
         // subscription happening during shutdown doesn't poke a
