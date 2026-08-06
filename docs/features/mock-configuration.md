@@ -65,13 +65,21 @@ $ curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer s3cret' local
 
 The gate answers **401 before replay** and exempts the mock's own control surface (`/__bowire/mock/*`). It covers HTTP and WebSocket replay; plugin transports (MQTT, DIS, …) run on their own sockets and are **not** gated.
 
-**Auth recordings** ([#563](https://github.com/Kuestenlogik/Bowire/issues/563)) — instead of pasting a token, an `auth` block can reference a captured credential by id via `authRecordingId`. The credential is resolved **at apply-time** from the per-workspace auth-recording store (`workspaces/<wsId>/auth-recordings/<id>.json`, a `{ id, name, scheme, header, credential }` document) and populated into the gate — so the token itself never has to live in the mock-config sidecar (only the id does). Resolution is scoped to the mock's own workspace, and a referenced id that can't be resolved (no recording, or an empty credential) fails the apply rather than silently weakening the gate. The Require-authentication card has a **Credential source** picker that lists the workspace's recordings (`GET /api/auth-recordings`, credential-free summaries) and binds the choice to `authRecordingId`; picking one replaces the inline-credential field. Creating a recording is still manual for now — write the JSON file (interactive capture is a follow-up, see below).
+**Auth recordings** ([#563](https://github.com/Kuestenlogik/Bowire/issues/563)) — instead of pasting a token, an `auth` block can reference a captured credential by id via `authRecordingId`. The credential is resolved **at apply-time** from the per-workspace auth-recording store (`workspaces/<wsId>/auth-recordings/<id>.json`, a `{ id, name, scheme, header, credential }` document) and populated into the gate — so the token itself never has to live in the mock-config sidecar (only the id does). Resolution is scoped to the mock's own workspace, and a referenced id that can't be resolved (no recording, or an empty credential) fails the apply rather than silently weakening the gate. The Require-authentication card has a **Credential source** picker that lists the workspace's recordings (`GET /api/auth-recordings`, credential-free summaries) and binds the choice to `authRecordingId`; picking one replaces the inline-credential field.
+
+**Capturing recordings** — create / list / remove recordings from any of the three co-equal surfaces (the same store backs all of them):
+
+- **CLI** — `bowire auth-recording capture --id <id> --credential-env <VAR>` (static, reads the credential from an env var so it never lands in shell history), or `--flow <flow.json>` (Bowire runs a scriptable login → token chain and stores the captured token); plus `list` and `remove`.
+- **Workbench** — a **＋ New recording** form in the auth card, with a *Static credential* / *From auth flow* mode, and a per-recording remove.
+- **MCP** — `bowire.auth-recording.capture` / `.capture-flow` / `.list` / `.remove` tools (the mutators sit behind the two-step confirmation gate; the credential is never echoed back).
+
+Flow capture runs the login chain — an **outbound HTTP call** — only ever as a direct, explicit operator action; secrets in the flow file come from `{{env.NAME}}`, never inlined.
 
 **Workspace artifact** — the workbench persists a mock's configuration per (workspace, mock) at `workspaces/<wsId>/mocks/<mockId>.json` and reads/writes it over `GET` / `PUT /api/mocks/{mockId}/config`. Persisting to disk (not browser storage) lets the config survive a browser reset, ride the workspace export, and sync via git.
 
 ## Not yet
 
 - The auth gate covers HTTP/WebSocket replay only; the plugin transports (MQTT, DIS, …) are not gated.
-- `authRecordingId` resolves a **statically captured** credential from the store, and the card can pick one. **Capturing** a recording is still manual (write the JSON file); a first-class capture flow — re-running a `#sec-04` auth flow on resolve, which would be an opt-in outbound call — is a follow-up.
+- Flow capture runs the login chain **once** at capture time and stores the resulting token; it does not auto-refresh an expired token — re-run the capture when it expires.
 - The workbench schema-mock picker offers OpenAPI + GraphQL (paste); protobuf needs a binary `FileDescriptorSet`, reachable via `POST /api/mocks` with `schemaPath`. Conditional rules + overrides apply to the REST (OpenAPI) schema-mock path only.
 - Overriding a field *to* JSON `null` (or removing it) is not expressed — a `null` value is treated as "no override".

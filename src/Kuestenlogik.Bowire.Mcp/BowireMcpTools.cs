@@ -372,7 +372,11 @@ public sealed class BowireMcpTools
         if (_flowCapturer is null)
             return "bowire.auth-recording.capture-flow: flow-capture is not available on this host — use bowire.auth-recording.capture with a static credential.";
 
-        var plan = $"Run the auth flow (outbound HTTP) and store the captured token as recording '{id}' in workspace '{workspace ?? string.Empty}'.";
+        // Surface WHERE the outbound calls go and that {{env.NAME}} expands from
+        // THIS host's environment, so the human confirming an agent-supplied flow
+        // can vet it (an unvetted flow could exfiltrate host env secrets to an
+        // arbitrary URL).
+        var plan = $"Run the auth flow — outbound HTTP to {SummarizeFlowTargets(flow)}, expanding any {{{{env.NAME}}}} from THIS host's environment — and store the captured token as recording '{id}' in workspace '{workspace ?? string.Empty}'.";
         if (TryConfirmOrPark("bowire.auth-recording.capture-flow", plan, confirm, confirmationToken, out var pending))
             return pending!;
 
@@ -405,6 +409,41 @@ public sealed class BowireMcpTools
         {
             return $"bowire.auth-recording.capture-flow failed: {ex.Message}";
         }
+    }
+
+    // The step URLs an auth flow will hit — surfaced in the confirm plan so the
+    // human can see where the outbound calls go before approving.
+    private static string SummarizeFlowTargets(string flowJson)
+    {
+        var hosts = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            using var doc = JsonDocument.Parse(flowJson);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object
+                && doc.RootElement.TryGetProperty("steps", out var steps)
+                && steps.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var step in steps.EnumerateArray())
+                {
+                    if (step.TryGetProperty("url", out var u) && u.ValueKind == JsonValueKind.String)
+                    {
+                        var url = u.GetString();
+                        if (!string.IsNullOrWhiteSpace(url))
+                        {
+                            hosts.Add(Uri.TryCreate(url, UriKind.Absolute, out var parsed)
+                                ? parsed.GetLeftPart(UriPartial.Authority)
+                                : url);
+                        }
+                    }
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Malformed flow — the capture itself will fail cleanly; the plan just
+            // can't enumerate targets.
+        }
+        return hosts.Count == 0 ? "(no step URLs found)" : string.Join(", ", hosts);
     }
 
     [McpServerTool(Name = "bowire.har.import")]
