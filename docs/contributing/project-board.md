@@ -9,7 +9,7 @@ The roadmap, in-flight work, and bug triage all live on the [Bowire Project boar
 
 ## Fields
 
-Concrete values live on the [Project board's field configuration](https://github.com/orgs/Kuestenlogik/projects/2/settings/fields) — what's documented here is what each field is **for**, not which options happen to exist today. The values drift over time (new areas added, new tracks spun up, finished tracks closed); the purpose stays the same.
+Concrete values live on the [Project board's field configuration](https://github.com/orgs/Kuestenlogik/projects/2/settings/fields) — what's documented here is what each field is **for**, not which options happen to exist today. The values drift over time (new areas added as the product grows); the purpose stays the same.
 
 | Field | Used for |
 |---|---|
@@ -64,7 +64,7 @@ The board ships with the default *All items* view. The four views below are the 
 ### 🐛 Bugs
 
 - **Layout**: Table
-- **Filter**: `label:kind:bug` (labels are queryable in the Project filter)
+- **Filter**: issue `Type` = `Bug` (the native GitHub issue type)
 - **Sort by**: `Status` ↑ then `Updated` ↓
 - **Use for**: Triage backlog, regardless of milestone
 
