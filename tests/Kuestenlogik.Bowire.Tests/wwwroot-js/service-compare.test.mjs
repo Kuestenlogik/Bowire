@@ -5,8 +5,8 @@
 // / schemaMessageShape) and its response diff reuses perf-diff.js
 // (diffJsonStructured). In production all three are one concatenated IIFE,
 // so the harness loads api.js + perf-diff.js + service-compare.js into one
-// `new Function` scope — the realistic wiring — with the host globals both
-// upstream fragments close over stubbed in the prelude.
+// compiled scope — the realistic wiring — with the host globals both
+// upstream fragments close over stubbed in the appended block.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
