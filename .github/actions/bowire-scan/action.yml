@@ -1,0 +1,101 @@
+name: 'Bowire security scan'
+description: 'Run `bowire scan` (vulnerability templates + built-in TLS/disclosure checks + OWASP API probes) against a target URL and upload SARIF 2.1.0 to GitHub Code Scanning.'
+author: 'Küstenlogik'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+# Composite action wrapper around `bowire scan`. Consumers add one step:
+#
+#   - uses: actions/checkout@v7            # only needed for repo-local templates
+#   - uses: Kuestenlogik/Bowire/.github/actions/bowire-scan@<ref>
+#     with:
+#       target: https://api.example.com
+#
+# The calling JOB must grant `security-events: write` for the Code Scanning
+# upload (a no-op / 403 without it). Unlike a reusable workflow this action
+# does NOT check out the caller's repo — do that yourself if you point
+# `templates` at an in-repo directory.
+#
+# Exit-code contract: `bowire scan` exits 0 whenever the scan ran end-to-end
+# (findings are the *product*, not a failure). The scan step only fails when
+# the tool itself blew up (template parse fault, scope rejection, …), which
+# should surface loudly.
+
+inputs:
+  target:
+    description: 'Target URL to scan (https://... or grpc://...). Required.'
+    required: true
+  templates:
+    description: "Directory of vulnerability-template files (relative to the caller's checkout). Skipped with a notice if the directory doesn't exist — built-in checks still run."
+    required: false
+    default: 'docs/security/examples'
+  severity:
+    description: 'Minimum severity to report (low | medium | high | critical).'
+    required: false
+    default: 'low'
+  dotnet-version:
+    description: '.NET SDK version used to install + run the bowire CLI.'
+    required: false
+    default: '10.0.x'
+  tool-version:
+    description: 'Specific version of Kuestenlogik.Bowire.Tool to install. Default: latest published.'
+    required: false
+    default: ''
+  upload-to-code-scanning:
+    description: "Upload the SARIF into the caller's Security tab ('true'/'false'). Set 'false' when scanning an external target whose findings don't belong to the caller. Requires `security-events: write` on the calling job."
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up .NET ${{ inputs.dotnet-version }}
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Install Bowire CLI
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.tool-version }}" ]; then
+          dotnet tool install -g Kuestenlogik.Bowire.Tool --version "${{ inputs.tool-version }}"
+        else
+          dotnet tool install -g Kuestenlogik.Bowire.Tool
+        fi
+        echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+    - name: Print bowire version
+      shell: bash
+      run: bowire --version
+
+    - name: Run bowire scan
+      shell: bash
+      run: |
+        ARGS=(
+          scan
+          --target "${{ inputs.target }}"
+          --out findings.sarif
+          --severity "${{ inputs.severity }}"
+        )
+        if [ -d "${{ inputs.templates }}" ]; then
+          ARGS+=(--templates "${{ inputs.templates }}")
+        else
+          echo "::notice::Templates directory '${{ inputs.templates }}' not found — running built-in checks only."
+        fi
+        bowire "${ARGS[@]}"
+
+    - name: Upload SARIF as build artifact
+      if: always() && hashFiles('findings.sarif') != ''
+      uses: actions/upload-artifact@v7
+      with:
+        name: bowire-findings
+        path: findings.sarif
+        if-no-files-found: warn
+
+    - name: Upload SARIF to GitHub Code Scanning
+      if: always() && inputs.upload-to-code-scanning == 'true' && hashFiles('findings.sarif') != ''
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: findings.sarif
+        category: bowire-scan

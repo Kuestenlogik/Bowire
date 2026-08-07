@@ -94,7 +94,7 @@ The features that turn Bowire into a "single tool" choice for a pen-tester inste
 **Shipped:**
 - **Intercepting proxy** (`bowire proxy`) — Kestrel-hosted forward proxy with capture store + SSE live feed, HTTPS MITM via auto-generated CA + on-the-fly leaf-cert minting, workbench Proxy view that streams captured flows and converts them into recordings.
 - **Active fuzzer** — CLI `bowire fuzz` ships with built-in wordlists per category (sqli / xss / pathtrav / cmdinj). Workbench right-click UI exposes the same engine.
-- **CI/CD integration** — reusable `scan-template.yml` workflow, first-class GitHub Action exit-code semantics (findings are output, not failure), SARIF + GitHub Code Scanning compatibility chain (severity-label → CVSS midpoint mapping, `logicalLocations` for non-https URIs, `physicalLocation` pointing at the scan workflow, `partialFingerprints` for cross-run alert tracking).
+- **CI/CD integration** — `bowire-scan` composite Action (`.github/actions/bowire-scan`), first-class GitHub Action exit-code semantics (findings are output, not failure), SARIF + GitHub Code Scanning compatibility chain (severity-label → CVSS midpoint mapping, `logicalLocations` for non-https URIs, `physicalLocation` pointing at the scan workflow, `partialFingerprints` for cross-run alert tracking).
 
 **Open:**
 - [ ] **Curated payload library at scale** — beyond the built-in seed wordlists, pull from FuzzDB / SecLists, statistical timing analysis (blind-SQL-injection oracle).
