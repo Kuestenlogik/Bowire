@@ -194,7 +194,7 @@ function compareKeys(a, b) {
     return 0;
 }
 
-// An item's roadmap version. The board's "Product milestone" single-select
+// An item's roadmap version. The board's "Release" single-select
 // field is the canonical axis — it spans every repo (the cross-repo grouping
 // that a native, repo-scoped milestone can't express) and is decoupled from
 // each repo's own semver line (a sibling still tags its own patch via the
@@ -202,7 +202,7 @@ function compareKeys(a, b) {
 // A repo milestone is only the fallback for an item not yet carrying the
 // field. "Backlog" (or unset + no milestone) → null (unscheduled).
 function itemVersion(item) {
-    const field = fieldValue(item, "Product milestone");
+    const field = fieldValue(item, "Release");
     if (field === "Backlog") return null;
     if (field) return parseMilestoneTitle(field).version || field;
     const ms = item.content.milestone;
