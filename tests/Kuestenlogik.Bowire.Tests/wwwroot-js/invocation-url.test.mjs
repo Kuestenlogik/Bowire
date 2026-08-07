@@ -3,7 +3,7 @@
 // The resolver is the pure, cross-cutting core: given a (service, method)
 // and the per-method override store, it returns the raw invocation URL,
 // honouring schema / source / inline modes with #252's rename-tolerant
-// source drift. Same new Function wrap-trick harness as the sibling suites.
+// source drift. Same compileFragment harness as the sibling suites (#367).
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
