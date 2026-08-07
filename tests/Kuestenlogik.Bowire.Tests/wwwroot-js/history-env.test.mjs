@@ -14,19 +14,14 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/history-env.js'),
-    'utf8'
-);
-
-function loadHistoryEnv(state) {
-    state = state || {};
-    const prelude = `
+// Host stubs live in the appended block (hoisted); the fragment is
+// compiled alone with its real filename so V8 attributes coverage to
+// history-env.js (#367). `activeWorkspace` is injected as a parameter so
+// tests that don't wire it up see `typeof activeWorkspace === 'undefined'`
+// (the production-realistic shape) without recompiling per call.
+const _prelude = `
         // In-memory localStorage.
         var _ls = {};
         var localStorage = {
@@ -61,9 +56,10 @@ function loadHistoryEnv(state) {
         var _testWorkspaceVars = state.workspaceVars || null;
         // The fragment defines its own getEnvironments / saveEnvironments
         // off localStorage. Leave those untouched.
-        // activeWorkspace is referenced via typeof check so we can
-        // selectively expose it.
-        ${state.activeWorkspace ? 'function activeWorkspace() { return _testWorkspaceVars ? { vars: _testWorkspaceVars } : null; }' : ''}
+        // activeWorkspace is referenced via a typeof check; it arrives as
+        // a parameter (undefined unless the test opted in via
+        // state.activeWorkspace), so the fragment's guard resolves the
+        // same way it does in production.
         function resolveResponseVar(_path) { return null; }
         function resolveSecret(_n) { return null; }
         function resolveAiVar(_n) { return null; }
@@ -73,7 +69,7 @@ function loadHistoryEnv(state) {
     // Override getGlobalVars and getActiveEnv AFTER the fragment defines
     // them, so tests can plug in synthetic env vars without standing up
     // the entire workspace machinery.
-    const postlude = `
+    const _postlude = `
         // Replace getGlobalVars / getActiveEnv with the test-provided
         // shims (capturing _testGlobals / _testActiveEnv from this
         // scope). The fragment's definitions are wholesale replaced —
@@ -99,9 +95,21 @@ function loadHistoryEnv(state) {
             _getRawStorage: function () { return _ls; }
         };
     `;
-    const body = prelude + '\n' + SRC + '\n' + postlude;
-    const fn = new Function('state', body);
-    return fn(state);
+const _loadHistoryEnv = compileFragment(
+    '../../../src/Kuestenlogik.Bowire/wwwroot/js/history-env.js',
+    ['state', 'activeWorkspace'],
+    _prelude + '\n' + _postlude
+);
+
+function loadHistoryEnv(state) {
+    state = state || {};
+    // `activeWorkspace` is only exposed to the fragment when the test opts
+    // in; otherwise it stays undefined (typeof check fails, as in prod).
+    const _testWorkspaceVars = state.workspaceVars || null;
+    const activeWorkspace = state.activeWorkspace
+        ? () => (_testWorkspaceVars ? { vars: _testWorkspaceVars } : null)
+        : undefined;
+    return _loadHistoryEnv({ state, activeWorkspace });
 }
 
 // ---- resolveSystemVar ----

@@ -12,26 +12,22 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SCRIPTS_SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/scripts.js'),
-    'utf8'
+// scripts.js registers itself on the `window` it is handed. compileFragment
+// hands it `window` as a parameter (the same shape the production IIFE
+// gives it) and compiles it alone with its real filename, so V8 attributes
+// coverage to scripts.js (#367). No prelude/postlude: the fragment's whole
+// output is what it hangs off `window`.
+const _loadScripts = compileFragment(
+    '../../../src/Kuestenlogik.Bowire/wwwroot/js/scripts.js',
+    ['window'],
+    ''
 );
 
 function loadSandbox() {
-    // Wrap the fragment in a stand-alone IIFE that gives the
-    // declarations a fresh module scope, exposing them via the
-    // synthetic `window` object the script registers against.
     const fakeWindow = {};
-    const wrap = '(function (window) {\n' + SCRIPTS_SRC + '\n})(__fakeWindow__);';
-    // Use indirect eval so the wrap evaluates at module scope of
-    // the new Function, not at the test's scope.
-    const fn = new Function('__fakeWindow__', wrap);
-    fn(fakeWindow);
+    _loadScripts({ window: fakeWindow });
     if (!fakeWindow.__bowireScripts) {
         throw new Error('scripts.js did not register window.__bowireScripts — wrap broken?');
     }

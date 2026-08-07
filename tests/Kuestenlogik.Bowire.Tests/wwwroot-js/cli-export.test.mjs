@@ -22,12 +22,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { compileFragment, readFragment } from './_load-fragment.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const FRAGMENT = (name) => readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/' + name), 'utf8');
-const SRC = FRAGMENT('cli-export.js');
-const CODE_EXPORT_SRC = FRAGMENT('code-export.js');
+// cli-export.js is the target (first, line-aligned, filename = cli-export.js
+// for #367); code-export.js genuinely provides escapeShellSingleQuote, so
+// it is appended after — covered by its own path and dropped beyond EOF.
+const _RELPATH = (name) => '../../../src/Kuestenlogik.Bowire/wwwroot/js/' + name;
+const CODE_EXPORT_SRC = readFragment(_RELPATH('code-export.js'));
 
 const GOLDEN = JSON.parse(readFileSync(
     resolve(__dirname, '../Cli/cli-export-golden.json'), 'utf8'));
@@ -78,8 +80,13 @@ function loadCliExport(state) {
             CODE_EXPORT_GENERATORS: CODE_EXPORT_GENERATORS
         };
     `;
-    return new Function('state',
-        prelude + '\n' + CODE_EXPORT_SRC + '\n' + SRC + '\n' + postlude)(state);
+    // Target fragment first (line-aligned); code-export.js + stubs appended
+    // (hoisted, so cli-export.js's function bodies still see them).
+    return compileFragment(
+        _RELPATH('cli-export.js'),
+        ['state'],
+        CODE_EXPORT_SRC + '\n' + prelude + '\n' + postlude
+    )({ state });
 }
 
 // ---- the golden fixture ----

@@ -14,15 +14,13 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/schema-changes.js'),
-    'utf8'
-);
+// The fragment is compiled alone with its real filename so V8 attributes
+// coverage to schema-changes.js (#367). Host stubs live in the appended
+// block (hoisted). The optional DOM shim is a per-call variant, so this
+// loader compiles on demand.
+const _RELPATH = '../../../src/Kuestenlogik.Bowire/wwwroot/js/schema-changes.js';
 
 function load(opts) {
     // opts.dom swaps in a minimal DOM (fake nodes + a pill anchor) so
@@ -126,7 +124,7 @@ function load(opts) {
             }
         };
     `;
-    return new Function(prelude + '\n' + SRC + '\n' + postlude)();
+    return compileFragment(_RELPATH, [], prelude + '\n' + postlude)();
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0));

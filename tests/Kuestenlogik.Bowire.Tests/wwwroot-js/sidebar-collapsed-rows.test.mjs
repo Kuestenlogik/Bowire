@@ -13,21 +13,15 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SRC_DIR = resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js');
-const SIDEBAR = readFileSync(resolve(SRC_DIR, 'render-sidebar.js'), 'utf8');
+import { compileFragment } from './_load-fragment.mjs';
 
 // render-sidebar.js is one fragment of the shared IIFE. It declares no
 // top-level side effects beyond a `window`-guarded rail table, so it
 // loads standalone once the collaborators the row builder reads at
 // BUILD time (not the ones it only reads inside event handlers) are
-// stubbed in the enclosing scope.
-function load() {
-    const prelude = `
+// stubbed in the appended block. Compiled alone with its real filename so
+// V8 attributes coverage to render-sidebar.js (#367).
+const _prelude = `
         var window = { __BOWIRE_CONFIG__: { rails: [] } };
 
         var _elCalls = 0;
@@ -62,8 +56,8 @@ function load() {
             return el('span', { className: 'bowire-coverage-chip' });
         }
         function schemaWatchMarkerFor() { _lookups.watchMark++; return null; }
-    `;
-    const postlude = `
+`;
+const _postlude = `
         return {
             buildServiceMethodList: buildServiceMethodList,
             buildMethodRow: buildMethodRow,
@@ -78,7 +72,14 @@ function load() {
             }
         };
     `;
-    return new Function(prelude + '\n' + SIDEBAR + '\n' + postlude)();
+const _load = compileFragment(
+    '../../../src/Kuestenlogik.Bowire/wwwroot/js/render-sidebar.js',
+    [],
+    _prelude + '\n' + _postlude
+);
+
+function load() {
+    return _load();
 }
 
 // A catalogue of `services` services with `methods` methods each.

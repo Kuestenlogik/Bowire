@@ -9,52 +9,55 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SRC = readFileSync(resolve(
-    __dirname,
-    '../../../src/Kuestenlogik.Bowire.Recordings/wwwroot/js/recording-correlation.js'), 'utf8');
+import { compileFragment } from './_load-fragment.mjs';
 
 // The fragment is spliced into core's IIFE, so it is evaluated with
-// core's globals already in scope. Stub the handful it reads.
+// core's globals already in scope. Stub the handful it reads in the
+// appended block (hoisted), and compile it alone with its real filename
+// so V8 attributes coverage to recording-correlation.js (#367).
+const _prelude = `
+    var recordingsList = (state.recordingsList || []);
+    var recordingManagerSelectedId = state.selectedId || null;
+    var config = { prefix: '/bowire' };
+    var calls = { render: 0, persist: 0, fetch: 0 };
+    function render() { calls.render++; }
+    function persistRecordings() { calls.persist++; }
+    function hydrateRecording(r) { return Promise.resolve(r); }
+    function toast() {}
+    function svgIcon() { return ''; }
+    var fetch = function () { calls.fetch++; return Promise.reject(new Error('not stubbed')); };
+`;
+const _postlude = `
+    return {
+        calls: calls,
+        correlationCacheKey: correlationCacheKey,
+        correlationKeyOf: correlationKeyOf,
+        correlationModelFor: correlationModelFor,
+        correlationIsPending: correlationIsPending,
+        currentCorrelationRecording: currentCorrelationRecording,
+        recordingActiveDetailTab: recordingActiveDetailTab,
+        setRecordingDetailTab: setRecordingDetailTab,
+        parseEnvelope: _parseRecordingEnvelope,
+        fmtOffset: _fmtOffset,
+        fmtDuration: _fmtDuration,
+        matchWord: _matchWord,
+        eventFailed: _correlationEventFailed,
+        cache: function () { return recordingCorrelationCache; },
+        keyMenuOpen: function () { return recordingCorrelationKeyMenuOpen; }
+    };
+`;
+const _load = compileFragment(
+    '../../../src/Kuestenlogik.Bowire.Recordings/wwwroot/js/recording-correlation.js',
+    ['state'],
+    _prelude + '\n' + _postlude
+);
+
 function load(state) {
-    state = state || {};
-    const prelude = `
-        var recordingsList = (state.recordingsList || []);
-        var recordingManagerSelectedId = state.selectedId || null;
-        var config = { prefix: '/bowire' };
-        var calls = { render: 0, persist: 0, fetch: 0 };
-        function render() { calls.render++; }
-        function persistRecordings() { calls.persist++; }
-        function hydrateRecording(r) { return Promise.resolve(r); }
-        function toast() {}
-        function svgIcon() { return ''; }
-        var fetch = function () { calls.fetch++; return Promise.reject(new Error('not stubbed')); };
-    `;
-    const postlude = `
-        return {
-            calls: calls,
-            correlationCacheKey: correlationCacheKey,
-            correlationKeyOf: correlationKeyOf,
-            correlationModelFor: correlationModelFor,
-            correlationIsPending: correlationIsPending,
-            currentCorrelationRecording: currentCorrelationRecording,
-            recordingActiveDetailTab: recordingActiveDetailTab,
-            setRecordingDetailTab: setRecordingDetailTab,
-            parseEnvelope: _parseRecordingEnvelope,
-            fmtOffset: _fmtOffset,
-            fmtDuration: _fmtDuration,
-            matchWord: _matchWord,
-            eventFailed: _correlationEventFailed,
-            cache: function () { return recordingCorrelationCache; },
-            keyMenuOpen: function () { return recordingCorrelationKeyMenuOpen; }
-        };
-    `;
-    return new Function('state', prelude + '\n' + SRC + '\n' + postlude)(state);
+    return _load({ state: state || {} });
 }
+
+// A couple of tests below inspect the raw fragment text.
+const SRC = _load.source;
 
 // Comments name the very symbols the contract forbids, so strip them
 // before searching or the assertions pass/fail for the wrong reason.

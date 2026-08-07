@@ -7,54 +7,54 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/invocation-url.js'),
-    'utf8'
+// Host stubs live in the appended block (hoisted); the fragment is
+// compiled alone with its real filename so V8 attributes coverage to
+// invocation-url.js (#367).
+const _prelude = `
+    var _ls = {};
+    var localStorage = {
+        getItem: function (k) { return Object.prototype.hasOwnProperty.call(_ls, k) ? _ls[k] : null; },
+        setItem: function (k, v) { _ls[k] = String(v); },
+        removeItem: function (k) { delete _ls[k]; }
+    };
+    var serverUrls = opts.serverUrls || [];
+    var _saved = [];
+    function markSaved(what) { _saved.push(what); }
+    function wsKey(k) { return 'bowire_ws_t_' + String(k).replace(/^bowire_/, ''); }
+    function methodStateKey(svc, m) { return String(svc) + '::' + String(m); }
+    var console = { warn: function () { _warns.push(Array.prototype.join.call(arguments, ' ')); } };
+    var _warns = [];
+    // Minimal {{var}} substituter — expands {{host}} to the test value.
+    var _vars = opts.vars || {};
+    function substituteVars(s) {
+        return String(s == null ? '' : s).replace(/\\{\\{([^}]+)\\}\\}/g, function (m, k) {
+            return Object.prototype.hasOwnProperty.call(_vars, k.trim()) ? _vars[k.trim()] : m;
+        });
+    }
+`;
+const _postlude = `
+    return {
+        getInvocationOverride: getInvocationOverride,
+        setInvocationOverride: setInvocationOverride,
+        resolveSourceUrl: resolveSourceUrl,
+        resolveInvocationUrl: resolveInvocationUrl,
+        invocationUrlFor: invocationUrlFor,
+        resolveItemInvocationUrl: resolveItemInvocationUrl,
+        _setServerUrls: function (u) { serverUrls = u; },
+        _warns: function () { return _warns; },
+        _raw: function () { return _ls['bowire_ws_t_method_invocation_url']; }
+    };
+`;
+const _load = compileFragment(
+    '../../../src/Kuestenlogik.Bowire/wwwroot/js/invocation-url.js',
+    ['opts'],
+    _prelude + '\n' + _postlude
 );
 
 function load(opts) {
-    opts = opts || {};
-    const prelude = `
-        var _ls = {};
-        var localStorage = {
-            getItem: function (k) { return Object.prototype.hasOwnProperty.call(_ls, k) ? _ls[k] : null; },
-            setItem: function (k, v) { _ls[k] = String(v); },
-            removeItem: function (k) { delete _ls[k]; }
-        };
-        var serverUrls = ${JSON.stringify(opts.serverUrls || [])};
-        var _saved = [];
-        function markSaved(what) { _saved.push(what); }
-        function wsKey(k) { return 'bowire_ws_t_' + String(k).replace(/^bowire_/, ''); }
-        function methodStateKey(svc, m) { return String(svc) + '::' + String(m); }
-        var console = { warn: function () { _warns.push(Array.prototype.join.call(arguments, ' ')); } };
-        var _warns = [];
-        // Minimal {{var}} substituter — expands {{host}} to the test value.
-        var _vars = ${JSON.stringify(opts.vars || {})};
-        function substituteVars(s) {
-            return String(s == null ? '' : s).replace(/\\{\\{([^}]+)\\}\\}/g, function (m, k) {
-                return Object.prototype.hasOwnProperty.call(_vars, k.trim()) ? _vars[k.trim()] : m;
-            });
-        }
-    `;
-    const postlude = `
-        return {
-            getInvocationOverride: getInvocationOverride,
-            setInvocationOverride: setInvocationOverride,
-            resolveSourceUrl: resolveSourceUrl,
-            resolveInvocationUrl: resolveInvocationUrl,
-            invocationUrlFor: invocationUrlFor,
-            resolveItemInvocationUrl: resolveItemInvocationUrl,
-            _setServerUrls: function (u) { serverUrls = u; },
-            _warns: function () { return _warns; },
-            _raw: function () { return _ls['bowire_ws_t_method_invocation_url']; }
-        };
-    `;
-    return new Function(prelude + '\n' + SRC + '\n' + postlude)();
+    return _load({ opts: opts || {} });
 }
 
 const svc = (name, originUrl) => ({ name: name, originUrl: originUrl });

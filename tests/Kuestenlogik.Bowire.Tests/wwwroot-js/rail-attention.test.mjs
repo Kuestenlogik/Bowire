@@ -12,36 +12,36 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SIDEBAR = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/render-sidebar.js'),
-    'utf8'
+// Host stubs live in the appended block (hoisted); the fragment is
+// compiled alone with its real filename so V8 attributes coverage to
+// render-sidebar.js (#367).
+const _prelude = `
+    var window = { __BOWIRE_CONFIG__: { rails: [] } };
+    function el() { return { appendChild: function () {} }; }
+    function svgIcon() { return ''; }
+    var uiMode = opts.uiMode || 'standalone';
+    var _unread = opts.unread || 0;
+    var _hydrateKicks = 0;
+    function schemaChangeUnreadCount() { return _unread; }
+    function ensureSchemaChangeLogLoaded() { _hydrateKicks++; }
+`;
+const _postlude = `
+    return {
+        _railModeAttention: _railModeAttention,
+        _setUnread: function (n) { _unread = n; },
+        _hydrateKicks: function () { return _hydrateKicks; }
+    };
+`;
+const _load = compileFragment(
+    '../../../src/Kuestenlogik.Bowire/wwwroot/js/render-sidebar.js',
+    ['opts'],
+    _prelude + '\n' + _postlude
 );
 
 function load(opts) {
-    opts = opts || {};
-    const prelude = `
-        var window = { __BOWIRE_CONFIG__: { rails: [] } };
-        function el() { return { appendChild: function () {} }; }
-        function svgIcon() { return ''; }
-        var uiMode = ${JSON.stringify(opts.uiMode || 'standalone')};
-        var _unread = ${JSON.stringify(opts.unread || 0)};
-        var _hydrateKicks = 0;
-        function schemaChangeUnreadCount() { return _unread; }
-        function ensureSchemaChangeLogLoaded() { _hydrateKicks++; }
-    `;
-    const postlude = `
-        return {
-            _railModeAttention: _railModeAttention,
-            _setUnread: function (n) { _unread = n; },
-            _hydrateKicks: function () { return _hydrateKicks; }
-        };
-    `;
-    return new Function(prelude + '\n' + SIDEBAR + '\n' + postlude)();
+    return _load({ opts: opts || {} });
 }
 
 test('attention: only the Discover rail pulses, and only while unread changes exist', () => {

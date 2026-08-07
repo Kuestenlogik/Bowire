@@ -11,33 +11,26 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/catalogue.js'),
-    'utf8'
-);
-
-function loadCatalogue(state) {
-    state = state || {};
-    const prelude = `
-        var serverUrls = (state.serverUrls || []).slice();
-        var connectionStatuses = Object.assign({}, state.connectionStatuses || {});
-        var config = { prefix: '/bowire' };
-        function render() {}
-        // fetch is provided by the test (per-call). Tests override it
-        // by reassigning _fetchImpl before calling the loader fns.
-        var _fetchImpl = function () { return Promise.reject(new Error('fetch not stubbed')); };
-        var fetch = function () { return _fetchImpl.apply(this, arguments); };
-        // #537 — initialCatalogueLoad now kicks discovery for the URLs it
-        // merged in. Counted, not stubbed away, so the tests can pin it.
-        var _fetchServicesCalls = 0;
-        function fetchServices() { _fetchServicesCalls++; }
-    `;
-    const postlude = `
+// Host stubs live in the appended block (hoisted); the fragment is
+// compiled alone with its real filename so V8 attributes coverage to
+// catalogue.js (#367).
+const _prelude = `
+    var serverUrls = (state.serverUrls || []).slice();
+    var connectionStatuses = Object.assign({}, state.connectionStatuses || {});
+    var config = { prefix: '/bowire' };
+    function render() {}
+    // fetch is provided by the test (per-call). Tests override it
+    // by reassigning _fetchImpl before calling the loader fns.
+    var _fetchImpl = function () { return Promise.reject(new Error('fetch not stubbed')); };
+    var fetch = function () { return _fetchImpl.apply(this, arguments); };
+    // #537 — initialCatalogueLoad now kicks discovery for the URLs it
+    // merged in. Counted, not stubbed away, so the tests can pin it.
+    var _fetchServicesCalls = 0;
+    function fetchServices() { _fetchServicesCalls++; }
+`;
+const _postlude = `
         return {
             applyCatalogueToServerUrls: applyCatalogueToServerUrls,
             fetchCatalogueInfo: fetchCatalogueInfo,
@@ -69,9 +62,14 @@ function loadCatalogue(state) {
             _getCatalogueEntries: function () { return catalogueEntries; }
         };
     `;
-    const body = prelude + '\n' + SRC + '\n' + postlude;
-    const fn = new Function('state', body);
-    return fn(state);
+const _loadCatalogue = compileFragment(
+    '../../../src/Kuestenlogik.Bowire/wwwroot/js/catalogue.js',
+    ['state'],
+    _prelude + '\n' + _postlude
+);
+
+function loadCatalogue(state) {
+    return _loadCatalogue({ state: state || {} });
 }
 
 // ---- applyCatalogueToServerUrls ----

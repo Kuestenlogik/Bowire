@@ -10,20 +10,13 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SRC = readFileSync(
-    // benchmarks.js moved to the Benchmarking rail package during the
-    // #294 extraction; the test path follows it.
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire.Benchmarking/wwwroot/js/benchmarks.js'),
-    'utf8'
-);
-
-function loadBenchmarks() {
-    const prelude = `
+// Host stubs live in the appended block (hoisted); the fragment — which
+// moved to the Benchmarking rail package during the #294 extraction — is
+// compiled alone with its real filename so V8 attributes coverage to
+// benchmarks.js (#367).
+const _prelude = `
         // Module-shared host state — only the names the fragment touches
         // at parse time + the pure-data helpers' call paths.
         var benchmarksList = null;
@@ -57,8 +50,8 @@ function loadBenchmarks() {
         function importEnvelopeFromArtillery() { return null; }
         function importEnvelopeFromPostman() { return null; }
         var config = { prefix: '' };
-    `;
-    const postlude = `
+`;
+const _postlude = `
         return {
             defaultEnvelopePhase: defaultEnvelopePhase,
             targetFromLegacySeed: targetFromLegacySeed,
@@ -85,9 +78,14 @@ function loadBenchmarks() {
             _setBenchmarksList: function (l) { benchmarksList = l; }
         };
     `;
-    const body = prelude + '\n' + SRC + '\n' + postlude;
-    const fn = new Function(body);
-    return fn();
+const _loadBenchmarks = compileFragment(
+    '../../../src/Kuestenlogik.Bowire.Benchmarking/wwwroot/js/benchmarks.js',
+    [],
+    _prelude + '\n' + _postlude
+);
+
+function loadBenchmarks() {
+    return _loadBenchmarks();
 }
 
 // ---- defaultEnvelopePhase ----

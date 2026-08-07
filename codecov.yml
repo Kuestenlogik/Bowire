@@ -9,12 +9,22 @@ coverage:
         # before flagging. Hard floors live on individual flags below.
         target: auto
         threshold: 1%
+        # #367 — the default project gate is the C# signal only. Scoping
+        # it to the `unittests` flag keeps this number driven by the
+        # dotnet Cobertura, so the separate `javascript` flag (JS lcov)
+        # can be tracked without moving this gate.
+        flags:
+          - unittests
     patch:
       default:
         # New code on a PR should hit at least this much coverage to
         # pass the patch check. Tolerates the no-tests-for-DTOs cases.
         target: 70%
         threshold: 5%
+        # Same rationale as project.default: the C# patch gate stays a
+        # C#-only signal; JS patches are informational under `javascript`.
+        flags:
+          - unittests
 
 comment:
   layout: "reach, diff, flags, files"
@@ -33,14 +43,45 @@ ignore:
   # The vanilla-JS frontend under wwwroot is not covered by the C#
   # Cobertura report (dotnet doesn't run JS), so it stays ignored here
   # to keep the C# coverage number honest — otherwise ~72k uncovered JS
-  # lines would tank the repo-wide %. JS coverage is tracked separately
-  # via node:test (#356): `npm run test:js:coverage` /
-  # `node --test --experimental-test-coverage`, and the JS tests now gate
-  # CI. A dedicated `javascript` codecov flag (lcov upload) is a
-  # follow-up — it needs a per-flag ignore so the global one above
-  # doesn't also hide the JS lcov.
+  # lines would tank the repo-wide % and every `core`/plugin component
+  # (whose paths span src/Kuestenlogik.Bowire*/**, wwwroot included).
+  # This global ignore is load-bearing for the C# signal and MUST stay.
+  #
+  # #367 — JS coverage is now a real lcov (node:test +
+  # vm.compileFunction attributes it to the true wwwroot paths) uploaded
+  # under the dedicated `javascript` flag defined in `flag_management`
+  # below, with `paths: [src/**/wwwroot/**]` re-scoping those files back
+  # in for that flag only. Caveat verified + recorded for the reviewer:
+  # Codecov applies this top-level `ignore` while parsing every upload,
+  # BEFORE flag `paths` (an inclusion filter) run, so if the first
+  # `javascript` upload lands empty, the wwwroot exclusion must move off
+  # this global list and onto the `unittests` flag instead (the C#
+  # Cobertura already omits wwwroot via ReportGenerator's `-**/wwwroot/**`
+  # filter, so scoping it there costs the C# number nothing). Keeping the
+  # global ignore here first is the zero-risk step: it cannot regress the
+  # existing C# / component signal.
   - "src/**/wwwroot/**"
   - "scripts/**"
+
+# #367 — two coverage streams, two flags:
+#   * unittests — the merged dotnet Cobertura (C#). Drives the default
+#     project/patch statuses above.
+#   * javascript — the node:test lcov for the vanilla-JS frontend under
+#     wwwroot. `paths` re-scopes those files in for this flag (see the
+#     ignore note above); no status is attached yet, so it is tracked and
+#     shown in the PR comment without gating the build while the numbers
+#     settle. carryforward keeps a flag's last coverage when a given CI
+#     run does not re-upload it (e.g. a docs-only change).
+flag_management:
+  default_rules:
+    carryforward: true
+  individual_flags:
+    - name: unittests
+      carryforward: true
+    - name: javascript
+      carryforward: true
+      paths:
+        - "src/**/wwwroot/**"
 
 parsers:
   # Count Cobertura branch-partials (lines with `if (a || b)` where only

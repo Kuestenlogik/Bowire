@@ -18,68 +18,70 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment, readFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-// Source order matches prologue.js bundle: request-builder.js first
-// so the protocol fragment's `rbActiveLayout` / `rbProtoState` / etc.
-// are in scope.
-const RB_SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/request-builder.js'),
-    'utf8'
+// request-builder.js MUST load first: request-builder-protocols.js runs
+// its `rbLayouts[...] = …` registrations at parse time and reads the
+// layout store request-builder.js initialises. So for #367 the FIRST
+// (line-aligned) source is request-builder.js — that is the filename V8
+// attributes to; the protocol fragment is appended after it. Both files
+// are also exercised by their integration paths; this keeps the attributed
+// line data honest rather than mislabelling the offset protocol fragment.
+const PROTO_SRC = readFragment(
+    '../../../src/Kuestenlogik.Bowire/wwwroot/js/request-builder-protocols.js'
 );
-const PROTO_SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/request-builder-protocols.js'),
-    'utf8'
+
+const _prelude = `
+    var _ls = {};
+    var localStorage = {
+        getItem: function (k) { return Object.prototype.hasOwnProperty.call(_ls, k) ? _ls[k] : null; },
+        setItem: function (k, v) { _ls[k] = String(v); },
+        removeItem: function (k) { delete _ls[k]; }
+    };
+    function wsKey(k) { return 'ws::' + k; }
+    function el() { return { appendChild: function () {}, classList: { add: function () {}, remove: function () {} }, addEventListener: function () {} }; }
+    function render() {}
+    function toast() {}
+    function markSaved() {}
+    function recordAction() {}
+    function substituteVars(s) { return s; }
+    function substituteMetadata(m) { return m; }
+    function svgIcon() { return ''; }
+    function activeWorkspace() { return null; }
+    var workspaceId = 'ws1';
+    var freeformRequest = {};
+    var services = [];
+    var responseLastJson = null;
+    var isExecuting = false;
+    function markJobStart() {}
+    function markJobDone() {}
+`;
+const _postlude = `
+    return {
+        _safeParseJsonObject: _safeParseJsonObject,
+        _getLayouts: function () { return rbLayouts; }
+    };
+`;
+const _loadProtocols = compileFragment(
+    '../../../src/Kuestenlogik.Bowire/wwwroot/js/request-builder.js',
+    ['document'],
+    PROTO_SRC + '\n' + _prelude + '\n' + _postlude
 );
 
 function loadProtocols() {
-    const prelude = `
-        var _ls = {};
-        var localStorage = {
-            getItem: function (k) { return Object.prototype.hasOwnProperty.call(_ls, k) ? _ls[k] : null; },
-            setItem: function (k, v) { _ls[k] = String(v); },
-            removeItem: function (k) { delete _ls[k]; }
-        };
-        function wsKey(k) { return 'ws::' + k; }
-        function el() { return { appendChild: function () {}, classList: { add: function () {}, remove: function () {} }, addEventListener: function () {} }; }
-        function render() {}
-        function toast() {}
-        function markSaved() {}
-        function recordAction() {}
-        function substituteVars(s) { return s; }
-        function substituteMetadata(m) { return m; }
-        function svgIcon() { return ''; }
-        function activeWorkspace() { return null; }
-        var workspaceId = 'ws1';
-        var freeformRequest = {};
-        var services = [];
-        var responseLastJson = null;
-        var isExecuting = false;
-        function markJobStart() {}
-        function markJobDone() {}
-        var document = {
-            addEventListener: function () {},
-            removeEventListener: function () {},
-            getElementById: function () { return null; },
-            querySelector: function () { return null; },
-            querySelectorAll: function () { return []; },
-            createElement: function () { return { appendChild: function () {} }; },
-            body: { appendChild: function () {}, removeChild: function () {} },
-            activeElement: null
-        };
-    `;
-    const postlude = `
-        return {
-            _safeParseJsonObject: _safeParseJsonObject,
-            _getLayouts: function () { return rbLayouts; }
-        };
-    `;
-    const body = prelude + '\n' + RB_SRC + '\n' + PROTO_SRC + '\n' + postlude;
-    const fn = new Function(body);
-    return fn();
+    // request-builder.js reads `document` at its top level, so it arrives
+    // as a parameter (defined before the body runs), not a hoisted var.
+    const document = {
+        addEventListener() {},
+        removeEventListener() {},
+        getElementById() { return null; },
+        querySelector() { return null; },
+        querySelectorAll() { return []; },
+        createElement() { return { appendChild() {} }; },
+        body: { appendChild() {}, removeChild() {} },
+        activeElement: null,
+    };
+    return _loadProtocols({ document });
 }
 
 // ---- _safeParseJsonObject ----

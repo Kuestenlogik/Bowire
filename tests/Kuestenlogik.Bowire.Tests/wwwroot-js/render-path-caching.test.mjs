@@ -13,50 +13,52 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SRC_DIR = resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js');
-const COVERAGE = readFileSync(resolve(SRC_DIR, 'coverage.js'), 'utf8');
-const HISTORY = readFileSync(resolve(SRC_DIR, 'history-env.js'), 'utf8');
+const SRC_DIR = '../../../src/Kuestenlogik.Bowire/wwwroot/js';
+const COVERAGE = SRC_DIR + '/coverage.js';
+const HISTORY = SRC_DIR + '/history-env.js';
 
-// A counting JSON shim plus an in-memory localStorage, wrapped around a
-// fragment the way the concat bundle does.
-function load(src, exportsExpr, seed) {
-    const prelude = `
-        var _ls = ${JSON.stringify(seed || {})};
-        var _parses = 0;
-        var _gets = 0;
-        var localStorage = {
-            getItem: function (k) { _gets++; return Object.prototype.hasOwnProperty.call(_ls, k) ? _ls[k] : null; },
-            setItem: function (k, v) { _ls[k] = String(v); },
-            removeItem: function (k) { delete _ls[k]; }
-        };
-        // Read the real parser off globalThis: the JSON shim declared
-        // below shadows the global for this whole scope and is hoisted,
-        // so reading JSON.parse here would hit the unassigned local.
-        var _realParse = globalThis.JSON.parse;
-        var _realStringify = globalThis.JSON.stringify;
-        var JSON = {
-            parse: function (s) { _parses++; return _realParse(s); },
-            stringify: _realStringify
-        };
-        function wsKey(k) { return k; }
-        // Declared in prologue.js in production; the fragments share one
-        // IIFE scope, so history-env.js closes over it.
-        var FAVORITES_KEY = 'bowire_favorites';
-        var HISTORY_KEY = 'bowire_history';
-        var MAX_HISTORY = 100;
-        var historySearchQuery = '';
-        var historyStatusFilter = 'all';
-        function render() {}
-        function el() { return null; }
-        function svgIcon() { return ''; }
-        var window = {};
-        var services = [];
-    `;
+// A counting JSON shim plus an in-memory localStorage, hoisted in the
+// appended block the way the concat bundle sees them. `seed` arrives as a
+// parameter; the fragment is compiled alone with its real filename so V8
+// attributes coverage to the source (#367). These two fragments are also
+// covered by their dedicated suites — this file pins the render-path
+// cost, so per-call compilation is fine.
+const _prelude = `
+    var _ls = seed || {};
+    var _parses = 0;
+    var _gets = 0;
+    var localStorage = {
+        getItem: function (k) { _gets++; return Object.prototype.hasOwnProperty.call(_ls, k) ? _ls[k] : null; },
+        setItem: function (k, v) { _ls[k] = String(v); },
+        removeItem: function (k) { delete _ls[k]; }
+    };
+    // Read the real parser off globalThis: the JSON shim declared
+    // below shadows the global for this whole scope and is hoisted,
+    // so reading JSON.parse here would hit the unassigned local.
+    var _realParse = globalThis.JSON.parse;
+    var _realStringify = globalThis.JSON.stringify;
+    var JSON = {
+        parse: function (s) { _parses++; return _realParse(s); },
+        stringify: _realStringify
+    };
+    function wsKey(k) { return k; }
+    // Declared in prologue.js in production; the fragments share one
+    // IIFE scope, so history-env.js closes over it.
+    var FAVORITES_KEY = 'bowire_favorites';
+    var HISTORY_KEY = 'bowire_history';
+    var MAX_HISTORY = 100;
+    var historySearchQuery = '';
+    var historyStatusFilter = 'all';
+    function render() {}
+    function el() { return null; }
+    function svgIcon() { return ''; }
+    var window = {};
+    var services = [];
+`;
+
+function load(relPath, exportsExpr, seed) {
     const postlude = `
         return Object.assign(${exportsExpr}, {
             _parses: function () { return _parses; },
@@ -64,7 +66,9 @@ function load(src, exportsExpr, seed) {
             _write: function (k, v) { _ls[k] = v; }
         });
     `;
-    return new Function(prelude + '\n' + src + '\n' + postlude)();
+    return compileFragment(relPath, ['seed'], _prelude + '\n' + postlude)({
+        seed: seed || {},
+    });
 }
 
 function runHistory(n) {

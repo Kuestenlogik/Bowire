@@ -11,18 +11,13 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/request-builder.js'),
-    'utf8'
-);
-
-function loadWithRecordingEl() {
-    const prelude = `
+// Host stubs live in the appended block (hoisted); the fragment is
+// compiled alone with its real filename so V8 attributes coverage to
+// request-builder.js (#367). `document` is read at the fragment's top
+// level, so it arrives as a parameter (defined before the body runs).
+const _prelude = `
         var _ls = {};
         var localStorage = {
             getItem: function (k) { return Object.prototype.hasOwnProperty.call(_ls, k) ? _ls[k] : null; },
@@ -65,26 +60,32 @@ function loadWithRecordingEl() {
         var freeformRequest = {};
         var responseLastJson = null;
         function persistHoppHistory() {}
-        var document = {
-            addEventListener: function () {},
-            removeEventListener: function () {},
-            getElementById: function () { return null; },
-            querySelector: function () { return null; },
-            querySelectorAll: function () { return []; },
-            createElement: function () { return { appendChild: function () {} }; },
-            body: { appendChild: function () {}, removeChild: function () {} },
-            activeElement: null
-        };
-    `;
-    const postlude = `
-        return {
-            ensureHoppState: ensureHoppState,
-            _newHoppState: _newHoppState,
-            _renderHoppTabBody: _renderHoppTabBody
-        };
-    `;
-    const fn = new Function(prelude + '\n' + SRC + '\n' + postlude);
-    return fn();
+`;
+const _postlude = `
+    return {
+        ensureHoppState: ensureHoppState,
+        _newHoppState: _newHoppState,
+        _renderHoppTabBody: _renderHoppTabBody
+    };
+`;
+const _load = compileFragment(
+    '../../../src/Kuestenlogik.Bowire/wwwroot/js/request-builder.js',
+    ['document'],
+    _prelude + '\n' + _postlude
+);
+
+function loadWithRecordingEl() {
+    const document = {
+        addEventListener() {},
+        removeEventListener() {},
+        getElementById() { return null; },
+        querySelector() { return null; },
+        querySelectorAll() { return []; },
+        createElement() { return { appendChild() {} }; },
+        body: { appendChild() {}, removeChild() {} },
+        activeElement: null,
+    };
+    return _load({ document });
 }
 
 function freshRest(activeTab) {

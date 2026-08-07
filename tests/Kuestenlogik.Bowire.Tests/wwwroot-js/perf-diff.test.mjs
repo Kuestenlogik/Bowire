@@ -5,48 +5,47 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/perf-diff.js'),
-    'utf8'
+// The host stubs are declared in the appended block (hoisted so the
+// fragment sees them) and the fragment is compiled alone via
+// vm.compileFunction with its real filename, so V8 attributes coverage
+// to perf-diff.js with aligned line numbers (#367).
+const _prelude = `
+    var responseSnapshots = state.snapshots || {};
+    var MAX_RESPONSE_SNAPSHOTS = state.cap || 50;
+    var selectedService = state.selectedService || null;
+    var selectedMethod = state.selectedMethod || null;
+    var benchmark = state.benchmark || {};
+    function el() { return { appendChild: function () {}, className: '' }; }
+    function render() {}
+    function stopBenchmark() {}
+    function runBenchmark() {}
+    var connectionStatuses = {};
+`;
+const _postlude = `
+    return {
+        captureResponseForDiff: captureResponseForDiff,
+        getResponseSnapshots: getResponseSnapshots,
+        computeLineDiff: computeLineDiff,
+        prettyJson: prettyJson,
+        diffJsonStructured: diffJsonStructured,
+        jsonDiffToMarkdown: jsonDiffToMarkdown,
+        jsonKindOf: jsonKindOf,
+        formatMs: formatMs,
+        _setSelected: function (svc, mth) { selectedService = svc; selectedMethod = mth; },
+        _getSnapshots: function () { return responseSnapshots; },
+        _cap: function () { return MAX_RESPONSE_SNAPSHOTS; }
+    };
+`;
+const _loadPerfDiff = compileFragment(
+    '../../../src/Kuestenlogik.Bowire/wwwroot/js/perf-diff.js',
+    ['state'],
+    _prelude + '\n' + _postlude
 );
 
 function loadPerfDiff(state) {
-    state = state || {};
-    const prelude = `
-        var responseSnapshots = state.snapshots || {};
-        var MAX_RESPONSE_SNAPSHOTS = state.cap || 50;
-        var selectedService = state.selectedService || null;
-        var selectedMethod = state.selectedMethod || null;
-        var benchmark = state.benchmark || {};
-        function el() { return { appendChild: function () {}, className: '' }; }
-        function render() {}
-        function stopBenchmark() {}
-        function runBenchmark() {}
-        var connectionStatuses = {};
-    `;
-    const postlude = `
-        return {
-            captureResponseForDiff: captureResponseForDiff,
-            getResponseSnapshots: getResponseSnapshots,
-            computeLineDiff: computeLineDiff,
-            prettyJson: prettyJson,
-            diffJsonStructured: diffJsonStructured,
-            jsonDiffToMarkdown: jsonDiffToMarkdown,
-            jsonKindOf: jsonKindOf,
-            formatMs: formatMs,
-            _setSelected: function (svc, mth) { selectedService = svc; selectedMethod = mth; },
-            _getSnapshots: function () { return responseSnapshots; },
-            _cap: function () { return MAX_RESPONSE_SNAPSHOTS; }
-        };
-    `;
-    const body = prelude + '\n' + SRC + '\n' + postlude;
-    const fn = new Function('state', body);
-    return fn(state);
+    return _loadPerfDiff({ state: state || {} });
 }
 
 // ---- captureResponseForDiff + getResponseSnapshots ring buffer ----
