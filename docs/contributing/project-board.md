@@ -16,15 +16,14 @@ Concrete values live on the [Project board's field configuration](https://github
 | **Status** | Kanban swim-lane: `Backlog` → `Next up` → `In progress` → `In review` → `Done`. The only field whose values are pinned by convention; everything else is editable. |
 | **Release** *(single-select, **mandatory**)* | The **cross-repo grouping** the roadmap is bucketed by ([`generate-roadmap.mjs`](../../scripts/ci/generate-roadmap.mjs)) — `vX.Y` (the **product** release the work targets) or `Backlog`. It spans **every repo** on the board, which a native (repo-scoped) `Milestone` can't: a sibling issue (Akka, Dis, …) rides the same product version as main-repo work, even though that repo tags its *own* patch version autonomously via the release cascade. It's a grouping key — it has **no lifecycle** (see `Milestone` for open/closed). Never empty — see [Release is mandatory](#release-is-mandatory). |
 | **Milestone** *(built-in)* | The per-repo native milestone. On the **main repo** it is the product release's **lifecycle anchor + definition**: `open` = planned, **`closed` = shipped**, plus the version's *theme + due date*. Closing the main-repo `vX.Y` milestone drops the **whole cross-repo version** (main + siblings, grouped via the field) off the roadmap — one close ships the lot. The generator also reads it as a *fallback* version for any item missing a Release. Siblings need no native milestone (their version lives in the field); add one only where a repo genuinely wants its own native milestone view. |
-| **Area** | Which component an issue belongs to (the workbench UI, the CLI, the security surface, …). Use it as the *primary* axis for "show me everything affecting X". Stable enough that the value list barely changes between releases. |
-| **Track** | Groups a multi-release initiative that spans several milestones. Use when an issue is part of a long-running theme — examples that have lived as tracks: the auth-provider rebuild, the protocol-plugin wave, the security-tier ladder, the AI integration. Leave blank when the issue is one-shot. New tracks get added when a new long-running theme starts; tracks close when the theme ships. |
+| **Area** *(single-select, **mandatory**)* | Which component an issue belongs to (`workbench`, `cli`, `security`, `mcp`, `plugin-sdk`, `mock`, `docs`, `site`, `bootcamp`, `multi`). The *primary* axis for "show me everything affecting X" — should be set on every item (use `multi` only for genuinely cross-cutting work). Replaced the old `Track` field, which overlapped with it. |
 | **Effort** *(actual)* | `Low` / `Medium` / `High`. Same scale as the org-level `Issue.Effort` so the Project mirror carries the *actual* size of the work next to the *plan*. Used to spot oversized issues (`High` = consider splitting before starting) and to right-size milestones. Not a commitment, just a sanity check. |
 | **Start date** *(actual)* | First commit referencing `#N`. Backfilled by the roadmap-sync job from git history. Drives the Roadmap layout's left edge. |
 | **Target date** *(actual)* | Issue's `closedAt`. Backfilled by the roadmap-sync job. Drives the Roadmap layout's right edge. |
 
 > **Priority** lives on the org-level **Issue** field (`Urgent` / `High` / `Medium` / `Low`), not on the Project board — it travels with the issue across every project that picks it up. Set it on the issue itself (right sidebar → Fields → Priority).
 >
-> **Kind** is carried on the issue as a `kind:*` label rather than a duplicate Project field. See the [Labels](#labels) section below for the kind taxonomy.
+> **Kind** is the native GitHub issue **Type** (`Bug` / `Feature` / `Task`), set on the issue itself — not a label or a Project field. (The old `kind:*` labels were retired in favour of issue Types.)
 >
 > The `Start date`, `Target date`, and `Effort` Project fields are **mirrored** by org-level Issue fields with the *same scale*. Issue-layer carries the **plan** (estimate / planned start / planned ship); Project-layer carries the **actual** (when work began, when it shipped, what size it turned out to be). Plan-vs-actual divergence is visible per issue.
 
@@ -34,9 +33,6 @@ Labels live on the GitHub issue itself (not on the Project board). They're the s
 
 | Label namespace | Purpose |
 |---|---|
-| **`area:*`** | Mirror of the Project's `Area` field — same purpose, but searchable from `gh issue list` without the Projects API. Use one. |
-| **`track:*`** | Mirror of the Project's `Track` field. Issues without a track don't get a `track:*` label — there's no `track:none`. |
-| **`kind:*`** | What kind of work, where `bug` / `feature` is the default unspoken kind that doesn't need a label. Use `kind:concept` for ADR / design discussion, `kind:debt` for refactor / cleanup, `kind:docs` for documentation work. `kind:rfc` is retired — use `kind:concept`, both meant the same thing. |
 | **`roadmap`** | Marks an issue as tracked on the Project board. Throwaway bug reports don't need it. |
 | **`community-vote`** | Feature requests where reactions are read as priority signal. Don't comment "+1" — react with 👍. |
 
@@ -74,7 +70,7 @@ The board ships with the default *All items* view. The four views below are the 
 
 ## Conventions
 
-- **One field per concept**: `Milestone` is the *when*, `Track` is the *grouped initiative across releases*, `Area` is the *component*. They overlap deliberately — Milestone is enforced (the bar for shipping), Track is editorial (Auth Phase A / B / C).
+- **One field per concept**: `Release` is the *when* (which product version), `Area` is the *component*, the issue **Type** is the *kind* (Bug / Feature / Task). `Area` and `Release` are both mandatory. (The old `Track` field was dropped — it overlapped with `Area`.)
 - **Labels duplicate fields on purpose**: GitHub issue search needs labels (`is:open label:area:security`). Project filters need fields. The two are kept in sync so an issue is findable from either side.
 - **`roadmap` label** flags items that are tracked on the board. Throwaway bug reports don't need it.
 - **`community-vote` label** marks feature requests where reactions on the issue are read as priority signal. Don't comment "+1" — react with 👍.
