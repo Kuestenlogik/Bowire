@@ -1,16 +1,16 @@
 name: Roadmap field guard
 
-# "Product milestone" is a mandatory board field — the roadmap
+# "Release" is a mandatory board field — the roadmap
 # (scripts/ci/generate-roadmap.mjs) buckets every item by it, so an item
 # with an empty field silently drops off the versioned roadmap. Projects v2
 # has no native required-field, so this is the enforcement:
 #   * add-to-project.yml seeds new items to "Backlog" (never empty at birth)
 #   * this guard is the backstop — it fails if any OPEN board issue has NO
-#     Product milestone at all (Backlog is a valid value, not a violation),
+#     Release at all (Backlog is a valid value, not a violation),
 #     catching items added outside the automation or fields cleared by hand.
 #
 # Runs daily + on demand. A red run is the signal to triage the listed
-# items on the board (set Product milestone to a version or Backlog).
+# items on the board (set Release to a version or Backlog).
 
 on:
   schedule:
@@ -22,12 +22,12 @@ permissions:
 
 jobs:
   guard:
-    name: Every board item has a Product milestone
+    name: Every board item has a Release
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
     steps:
-      - name: Find OPEN board issues missing Product milestone
+      - name: Find OPEN board issues missing Release
         run: |
           gh api graphql --paginate -f query='
             query($endCursor: String) {
@@ -40,7 +40,7 @@ jobs:
                         __typename
                         ... on Issue { number state url repository { nameWithOwner } }
                       }
-                      fieldValueByName(name: "Product milestone") {
+                      fieldValueByName(name: "Release") {
                         ... on ProjectV2ItemFieldSingleSelectValue { name }
                       }
                     }
@@ -59,14 +59,14 @@ jobs:
 
           COUNT=$(grep -c . offenders.txt || true)
           if [ "${COUNT:-0}" -eq 0 ]; then
-            echo "✅ Every open board item has a Product milestone." >> "$GITHUB_STEP_SUMMARY"
+            echo "✅ Every open board item has a Release." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
           {
-            echo "## ❌ $COUNT open board item(s) missing a Product milestone"
+            echo "## ❌ $COUNT open board item(s) missing a Release"
             echo ""
-            echo "\"Product milestone\" is mandatory. Triage each item on the board"
+            echo "\"Release\" is mandatory. Triage each item on the board"
             echo "(set a version or **Backlog**):"
             echo ""
             while IFS=$'\t' read -r ref url; do
