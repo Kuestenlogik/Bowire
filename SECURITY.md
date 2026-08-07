@@ -4,7 +4,7 @@
 
 If you've found a security issue in Bowire, please report it privately so we can fix it before it's discussed publicly.
 
-**Email:** security@kuestenlogik.de
+**Email:** info@kuestenlogik.de
 
 Please include:
 
