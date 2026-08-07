@@ -194,14 +194,15 @@ function compareKeys(a, b) {
     return 0;
 }
 
-// An item's roadmap version. The board's "Target release" single-select
-// field is the canonical axis — it spans every repo and is decoupled from
+// An item's roadmap version. The board's "Product milestone" single-select
+// field is the canonical axis — it spans every repo (the cross-repo grouping
+// that a native, repo-scoped milestone can't express) and is decoupled from
 // each repo's own semver line (a sibling still tags its own patch via the
-// release cascade; the field carries the *product-train* target). A repo
-// milestone is only the fallback for an item not yet carrying the field.
-// "Backlog" (or unset + no milestone) → null (unscheduled).
+// release cascade; the field carries the *product* release the work targets).
+// A repo milestone is only the fallback for an item not yet carrying the
+// field. "Backlog" (or unset + no milestone) → null (unscheduled).
 function itemVersion(item) {
-    const field = fieldValue(item, "Target release");
+    const field = fieldValue(item, "Product milestone");
     if (field === "Backlog") return null;
     if (field) return parseMilestoneTitle(field).version || field;
     const ms = item.content.milestone;

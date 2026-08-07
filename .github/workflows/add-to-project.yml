@@ -54,14 +54,14 @@ jobs:
           project-url: https://github.com/orgs/Kuestenlogik/projects/2
           github-token: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
 
-      # "Target release" is a mandatory board field (the roadmap is
+      # "Product milestone" is a mandatory board field (the roadmap is
       # bucketed by it — see scripts/ci/generate-roadmap.mjs). Projects v2
       # has no native default/required, so seed it to "Backlog" the moment
       # an item is added — but only when it's still empty, so a re-fire on
       # a later `labeled` event never resets a value someone has already
       # triaged to a real version. Field id + option id are looked up by
       # name at runtime so recreating the field doesn't break this.
-      - name: Default "Target release" to Backlog (when unset)
+      - name: Default "Product milestone" to Backlog (when unset)
         if: steps.add.outputs.itemId != ''
         env:
           GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
@@ -70,13 +70,13 @@ jobs:
           read -r PID FID OID < <(gh api graphql -f query='
             query { organization(login: "Kuestenlogik") { projectV2(number: 2) {
               id
-              field(name: "Target release") { ... on ProjectV2SingleSelectField { id options { id name } } }
+              field(name: "Product milestone") { ... on ProjectV2SingleSelectField { id options { id name } } }
             } } }' --jq '.data.organization.projectV2 as $p
               | "\($p.id) \($p.field.id) \(($p.field.options[] | select(.name == "Backlog")).id)"')
 
           CUR=$(gh api graphql -f query='
             query($i: ID!) { node(id: $i) { ... on ProjectV2Item {
-              fieldValueByName(name: "Target release") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
+              fieldValueByName(name: "Product milestone") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
             } } }' -F i="$ITEM_ID" --jq '.data.node.fieldValueByName.name // ""')
 
           if [ -z "$CUR" ]; then
@@ -86,7 +86,7 @@ jobs:
                   projectId: $p, itemId: $i, fieldId: $f, value: { singleSelectOptionId: $o }
                 }) { projectV2Item { id } } }' \
               -F p="$PID" -F i="$ITEM_ID" -F f="$FID" -F o="$OID" >/dev/null
-            echo "Seeded Target release=Backlog for $ITEM_ID"
+            echo "Seeded Product milestone=Backlog for $ITEM_ID"
           else
-            echo "Target release already set ($CUR) — leaving as-is"
+            echo "Product milestone already set ($CUR) — leaving as-is"
           fi
