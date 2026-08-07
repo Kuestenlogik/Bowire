@@ -13,48 +13,57 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment, readFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const FRAGMENT = (name) => readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/' + name), 'utf8');
-const SRC = FRAGMENT('catalogue.js');
+// A couple of tests slice raw fragment text (catalogue.js's boot loader,
+// init.js's boot sequencing).
+const FRAGMENT = (name) =>
+    readFragment('../../../src/Kuestenlogik.Bowire/wwwroot/js/' + name);
 
 // Same sandbox shape as catalogue.test.mjs, minus the fetch stub: none
-// of the helpers under test touch the network.
+// of the helpers under test touch the network. Host stubs live in the
+// appended block (hoisted) and the fragment is compiled alone with its
+// real filename so V8 attributes coverage to catalogue.js (#367).
+const _prelude = `
+    var serverUrls = (state.serverUrls || []).slice();
+    var connectionStatuses = {};
+    var config = { prefix: '/bowire' };
+    function render() {}
+    var fetch = function () { return Promise.reject(new Error('not stubbed')); };
+`;
+const _postlude = `
+    if (state.info) catalogueInfo = state.info;
+    if (state.entries) catalogueEntries = state.entries;
+    return {
+        catalogueEntryUrl: catalogueEntryUrl,
+        catalogueFilterEntries: catalogueFilterEntries,
+        catalogueAllTags: catalogueAllTags,
+        catalogueEntryByUrl: catalogueEntryByUrl,
+        catalogueIsAvailable: catalogueIsAvailable,
+        catalogueHasEntries: catalogueHasEntries,
+        catalogueEntryCount: catalogueEntryCount,
+        catalogueProviderLabel: catalogueProviderLabel,
+        catalogueVisibility: catalogueVisibility,
+        catalogueProviderIds: catalogueProviderIds,
+        catalogueOriginFor: catalogueOriginFor,
+        isCatalogueUrl: isCatalogueUrl,
+        _entries: function () { return catalogueEntries; },
+        _serverUrls: function () { return serverUrls; }
+    };
+`;
+const _loadHelpers = compileFragment(
+    '../../../src/Kuestenlogik.Bowire/wwwroot/js/catalogue.js',
+    ['state'],
+    _prelude + '\n' + _postlude
+);
+
 function loadHelpers(state) {
-    state = state || {};
-    const prelude = `
-        var serverUrls = (state.serverUrls || []).slice();
-        var connectionStatuses = {};
-        var config = { prefix: '/bowire' };
-        function render() {}
-        var fetch = function () { return Promise.reject(new Error('not stubbed')); };
-    `;
-    const postlude = `
-        if (state.info) catalogueInfo = state.info;
-        if (state.entries) catalogueEntries = state.entries;
-        return {
-            catalogueEntryUrl: catalogueEntryUrl,
-            catalogueFilterEntries: catalogueFilterEntries,
-            catalogueAllTags: catalogueAllTags,
-            catalogueEntryByUrl: catalogueEntryByUrl,
-            catalogueIsAvailable: catalogueIsAvailable,
-            catalogueHasEntries: catalogueHasEntries,
-            catalogueEntryCount: catalogueEntryCount,
-            catalogueProviderLabel: catalogueProviderLabel,
-            catalogueVisibility: catalogueVisibility,
-            catalogueProviderIds: catalogueProviderIds,
-            catalogueOriginFor: catalogueOriginFor,
-            isCatalogueUrl: isCatalogueUrl,
-            _entries: function () { return catalogueEntries; },
-            _serverUrls: function () { return serverUrls; }
-        };
-    `;
-    return new Function('state', prelude + '\n' + SRC + '\n' + postlude)(state);
+    return _loadHelpers({ state: state || {} });
 }
+
+// One test below slices the raw fragment text (the initialCatalogueLoad
+// boot path).
+const SRC = _loadHelpers.source;
 
 // ---- catalogueEntryUrl ----
 

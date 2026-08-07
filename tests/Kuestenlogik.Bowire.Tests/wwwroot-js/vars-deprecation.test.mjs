@@ -12,23 +12,16 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/vars-deprecation.js'),
-    'utf8'
-);
+import { compileFragment } from './_load-fragment.mjs';
 
 // Build a sandbox that:
 //   - declares the host-provided names + the workspace state arrays
-//   - inlines the fragment under test
+//     (in the appended block, hoisted so the fragment sees them)
+//   - compiles the fragment alone with its real filename so V8 attributes
+//     coverage to vars-deprecation.js (#367)
 //   - returns the migrate functions + a setter for each piece of state
 //     so each test can prime a scenario before calling them.
-function loadDeprecation(state) {
-    const prelude = `
+const _prelude = `
         var recordingsList = state.recordingsList || [];
         var collectionsList = state.collectionsList || [];
         var freeformRequest = state.freeformRequest || null;
@@ -53,8 +46,8 @@ function loadDeprecation(state) {
         function render() { _persistCalls.push('render'); }
         function toast() { /* swallow */ return null; }
         function el() { return {}; }
-    `;
-    const postlude = `
+`;
+const _postlude = `
         return {
             migrateString: migrateString,
             migrateLegacyVars: migrateLegacyVars,
@@ -75,9 +68,14 @@ function loadDeprecation(state) {
             }
         };
     `;
-    const body = prelude + '\n' + SRC + '\n' + postlude;
-    const fn = new Function('state', body);
-    return fn(state || {});
+const _loadDeprecation = compileFragment(
+    '../../../src/Kuestenlogik.Bowire/wwwroot/js/vars-deprecation.js',
+    ['state'],
+    _prelude + '\n' + _postlude
+);
+
+function loadDeprecation(state) {
+    return _loadDeprecation({ state: state || {} });
 }
 
 // ---- migrateString — pure, per-string rewriter ----

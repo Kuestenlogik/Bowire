@@ -15,57 +15,58 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/coverage.js'),
-    'utf8'
+// The fragment is concatenated into prologue.js's IIFE in production, so
+// we recreate that scope by declaring the host-provided names (wsKey,
+// render, el, services) — plus an in-memory localStorage shim — in the
+// appended block below. It lands AFTER the fragment (via vm.compileFunction
+// with the real `filename`), so V8 attributes coverage to coverage.js with
+// aligned line numbers instead of an anonymous evalmachine script.
+const _prelude = `
+    // In-memory localStorage shim.
+    var _ls = {};
+    var localStorage = {
+        getItem: function (k) { return Object.prototype.hasOwnProperty.call(_ls, k) ? _ls[k] : null; },
+        setItem: function (k, v) { _ls[k] = String(v); },
+        removeItem: function (k) { delete _ls[k]; }
+    };
+    function wsKey(k) { return 'ws::' + k; }
+    function render() {}
+    // helpers.js' \`el\` is referenced from the DOM-side renderers
+    // (renderCoverageChip, renderRunHistoryView). Tests only touch
+    // the pure-data helpers — provide a tolerant stub.
+    function el() { return null; }
+    // services[] is read by getCoverageSummary. Tests inject their
+    // own via _setServices below.
+    var services = (state && state.services) ? state.services : [];
+    // Tour-event no-op so the coverage layer never explodes if a
+    // future enhancement hooks into bowireFireTourEvent.
+    var window = (typeof globalThis.window !== 'undefined') ? globalThis.window : {};
+`;
+const _postlude = `
+    return {
+        recordMethodRun: recordMethodRun,
+        safeRecordMethodRun: safeRecordMethodRun,
+        getRunHistory: getRunHistory,
+        clearRunHistory: clearRunHistory,
+        getMethodCoverage: getMethodCoverage,
+        coverageState: coverageState,
+        getCoverageSummary: getCoverageSummary,
+        methodIdFor: methodIdFor,
+        _setServices: function (s) { services = s; _invalidateCoverageCache(); },
+        _setRunHistoryCap: function (n) { localStorage.setItem(RUN_HISTORY_CAP_KEY, String(n)); },
+        _getRawStorage: function () { return _ls; }
+    };
+`;
+const _loadCoverage = compileFragment(
+    '../../../src/Kuestenlogik.Bowire/wwwroot/js/coverage.js',
+    ['state'],
+    _prelude + '\n' + _postlude
 );
 
 function loadCoverage(state) {
-    state = state || {};
-    const prelude = `
-        // In-memory localStorage shim.
-        var _ls = {};
-        var localStorage = {
-            getItem: function (k) { return Object.prototype.hasOwnProperty.call(_ls, k) ? _ls[k] : null; },
-            setItem: function (k, v) { _ls[k] = String(v); },
-            removeItem: function (k) { delete _ls[k]; }
-        };
-        function wsKey(k) { return 'ws::' + k; }
-        function render() {}
-        // helpers.js' \`el\` is referenced from the DOM-side renderers
-        // (renderCoverageChip, renderRunHistoryView). Tests only touch
-        // the pure-data helpers — provide a tolerant stub.
-        function el() { return null; }
-        // services[] is read by getCoverageSummary. Tests inject their
-        // own via _setServices below.
-        var services = ${JSON.stringify(state.services || [])};
-        // Tour-event no-op so the coverage layer never explodes if a
-        // future enhancement hooks into bowireFireTourEvent.
-        var window = (typeof globalThis.window !== 'undefined') ? globalThis.window : {};
-    `;
-    const postlude = `
-        return {
-            recordMethodRun: recordMethodRun,
-            safeRecordMethodRun: safeRecordMethodRun,
-            getRunHistory: getRunHistory,
-            clearRunHistory: clearRunHistory,
-            getMethodCoverage: getMethodCoverage,
-            coverageState: coverageState,
-            getCoverageSummary: getCoverageSummary,
-            methodIdFor: methodIdFor,
-            _setServices: function (s) { services = s; _invalidateCoverageCache(); },
-            _setRunHistoryCap: function (n) { localStorage.setItem(RUN_HISTORY_CAP_KEY, String(n)); },
-            _getRawStorage: function () { return _ls; }
-        };
-    `;
-    const body = prelude + '\n' + SRC + '\n' + postlude;
-    const fn = new Function(body);
-    return fn();
+    return _loadCoverage({ state: state || {} });
 }
 
 // ---- methodIdFor ----

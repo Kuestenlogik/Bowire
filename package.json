@@ -3,6 +3,7 @@
     "optimize-images": "node scripts/site/optimize-images.mjs",
     "test:js": "node --test tests/Kuestenlogik.Bowire.Tests/wwwroot-js/*.test.mjs",
     "test:js:coverage": "node --test --experimental-test-coverage tests/Kuestenlogik.Bowire.Tests/wwwroot-js/*.test.mjs",
+    "test:js:coverage:lcov": "node -e \"require('fs').mkdirSync('artifacts/coverage',{recursive:true})\" && node --test --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=artifacts/coverage/js-lcov.info tests/Kuestenlogik.Bowire.Tests/wwwroot-js/*.test.mjs",
     "test:ci-workflows": "node --test tests/Kuestenlogik.Bowire.Tests/ci/*.test.mjs",
     "test:e2e": "playwright test"
   },

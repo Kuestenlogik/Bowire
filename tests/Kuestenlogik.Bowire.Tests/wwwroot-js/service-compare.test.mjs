@@ -10,15 +10,16 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment, readFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const JS = (f) => readFileSync(resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/' + f), 'utf8');
-const API = JS('api.js');
-const PERF = JS('perf-diff.js');
-const SRC = JS('service-compare.js');
+// service-compare.js is NOT self-contained (see header): its diff reuses
+// pure helpers from api.js + perf-diff.js. Those two are covered by their
+// own suites, so for #367 the target fragment goes FIRST (line-aligned,
+// filename = service-compare.js) and the upstream fragments + host stubs
+// are appended after it — the appended lines land beyond the file and are
+// dropped by Codecov, while service-compare.js's own lines stay accurate.
+const JS = (f) => '../../../src/Kuestenlogik.Bowire/wwwroot/js/' + f;
+const _upstream = readFragment(JS('api.js')) + '\n' + readFragment(JS('perf-diff.js'));
 
 function load() {
     const prelude = `
@@ -85,7 +86,14 @@ function load() {
             _lastDownload: function () { return _lastDownload; }
         };
     `;
-    return new Function(prelude + '\n' + API + '\n' + PERF + '\n' + SRC + '\n' + postlude)();
+    // Target fragment first (line-aligned); upstream fragments + stubs
+    // appended (hoisted, so service-compare.js's function bodies still see
+    // them). Compiled per call because the whole blob is cheap here.
+    return compileFragment(
+        JS('service-compare.js'),
+        [],
+        _upstream + '\n' + prelude + '\n' + postlude
+    )();
 }
 
 // Minimal method / service shapes matching /api/services.
