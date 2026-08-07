@@ -1,4 +1,4 @@
-name: Bowire scan (reusable)
+name: "Scan: reusable"
 
 # Reusable security-scan workflow. Other repositories call this via
 # `uses: Kuestenlogik/Bowire/.github/workflows/scan-template.yml@<ref>`,
