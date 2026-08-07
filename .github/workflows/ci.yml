@@ -37,7 +37,23 @@ jobs:
       # before, which is how benchmarks.test.mjs drifted to a moved
       # path). No npm install needed — the harness is dependency-free.
       - name: JS unit tests
-        run: node --test tests/Kuestenlogik.Bowire.Tests/wwwroot-js/*.test.mjs
+        # #367 — dual reporter: the `spec` stream on stdout still gates
+        # the build (a failing JS test fails the step and prints why),
+        # while the `lcov` stream writes real per-fragment coverage to a
+        # file for the Codecov `javascript` upload below. The suite is
+        # compiled via vm.compileFunction with each fragment's real
+        # filename (tests/.../_load-fragment.mjs), so V8 attributes
+        # coverage to src/**/wwwroot/** instead of the anonymous
+        # evalmachine script node's reporter used to drop.
+        # node's lcov reporter does not create its destination directory,
+        # and this step runs before the dotnet coverage steps that make
+        # artifacts/coverage/, so create it first.
+        run: |
+          mkdir -p artifacts/coverage
+          node --test --experimental-test-coverage \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            --test-reporter=lcov --test-reporter-destination=artifacts/coverage/js-lcov.info \
+            tests/Kuestenlogik.Bowire.Tests/wwwroot-js/*.test.mjs
 
       # #548 — the release cascade's shell only ever runs during a
       # release, in eleven repos we do not control the checkout of, so
@@ -110,6 +126,21 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: artifacts/coverage/merged/Cobertura.xml
           flags: unittests
+          fail_ci_if_error: false
+
+      - name: Upload JS coverage to Codecov
+        # #367 — the vanilla-JS frontend under wwwroot is run through
+        # node:test, not dotnet, so it needs its own lcov upload under a
+        # dedicated `javascript` flag. The global `ignore: src/**/wwwroot/**`
+        # in codecov.yml keeps the C# number honest; the flag's `paths:`
+        # entry re-includes exactly those files for this upload only.
+        # Same fork guard as the C# upload above.
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: artifacts/coverage/js-lcov.info
+          flags: javascript
           fail_ci_if_error: false
 
       - name: Pack

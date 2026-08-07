@@ -18,15 +18,13 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { compileFragment } from './_load-fragment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/api.js'),
-    'utf8'
-);
+// The fragment is compiled alone with its real filename so V8 attributes
+// coverage to api.js (#367). Host stubs live in the appended block
+// (hoisted). The optional wsKey shim is a per-call variant, so this loader
+// compiles on demand.
+const _RELPATH = '../../../src/Kuestenlogik.Bowire/wwwroot/js/api.js';
 
 function loadWatch(opts) {
     // #185 — the per-workspace interval override rides wsKey(); the
@@ -91,7 +89,7 @@ function loadWatch(opts) {
             _setWsInterval: function (v) { if (v === null) delete _ls['bowire_ws_t1_watch_interval']; else localStorage.setItem('bowire_ws_t1_watch_interval', v); }
         };
     `;
-    return new Function(prelude + '\n' + SRC + '\n' + postlude)();
+    return compileFragment(_RELPATH, [], prelude + '\n' + postlude)();
 }
 
 // Minimal service/method shapes matching what /api/services returns.
