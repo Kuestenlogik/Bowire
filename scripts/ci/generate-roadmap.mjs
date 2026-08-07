@@ -194,34 +194,67 @@ function compareKeys(a, b) {
     return 0;
 }
 
-// Group items by open milestone. Closed milestones drop out (their
-// items are part of a shipped release — changelog lives in GH
-// Releases). Items without any milestone go to the "Backlog" bucket
-// at the bottom.
+// An item's roadmap version. The board's "Target release" single-select
+// field is the canonical axis — it spans every repo and is decoupled from
+// each repo's own semver line (a sibling still tags its own patch via the
+// release cascade; the field carries the *product-train* target). A repo
+// milestone is only the fallback for an item not yet carrying the field.
+// "Backlog" (or unset + no milestone) → null (unscheduled).
+function itemVersion(item) {
+    const field = fieldValue(item, "Target release");
+    if (field === "Backlog") return null;
+    if (field) return parseMilestoneTitle(field).version || field;
+    const ms = item.content.milestone;
+    if (ms) return parseMilestoneTitle(ms.title).version || ms.title;
+    return null;
+}
+
+// Group items by their Target-release version. Only *future* versions
+// render: a version is "open" when a matching OPEN milestone exists, which
+// also supplies that version's theme + due date (the product milestones in
+// the main repo carry the theme). Shipped versions drop out — their
+// changelog lives in GitHub Releases — even though every item is backfilled
+// with the field for data completeness. Unscheduled items (Backlog / unset)
+// go to the "Backlog" bucket at the bottom.
 function classify(items) {
-    const byMs = new Map(); // milestone title → { title, dueOn, issues: [] }
+    // Seed theme + due date per version from open milestones.
+    const meta = new Map(); // version → { theme, dueOn }
+    for (const item of items) {
+        const ms = item.content?.milestone;
+        if (!ms || ms.state !== "OPEN") continue;
+        const { version, theme } = parseMilestoneTitle(ms.title);
+        if (!version) continue;
+        const m = meta.get(version) || {};
+        if (theme && !m.theme) m.theme = theme;
+        if (ms.dueOn && !m.dueOn) m.dueOn = ms.dueOn;
+        meta.set(version, m);
+    }
+    const openVersions = new Set(meta.keys());
+
+    const byVer = new Map(); // version → { version, theme, dueOn, issues: [] }
     const noMs = [];
 
     for (const item of items) {
         if (!item.content || item.content.__typename !== "Issue") continue;
-        const ms = item.content.milestone;
+        const version = itemVersion(item);
 
-        if (!ms) {
+        if (!version) {
             // Truly unscheduled — only surface open ones; closed
-            // un-milestoned issues are noise (would otherwise pile up).
+            // un-scheduled issues are noise (would otherwise pile up).
             if (item.content.state === "OPEN") noMs.push(item);
             continue;
         }
+        // Shipped / non-future versions drop out (see GitHub Releases).
+        if (!openVersions.has(version)) continue;
 
-        if (ms.state === "CLOSED") continue; // shipped — see Releases
-
-        if (!byMs.has(ms.title)) {
-            byMs.set(ms.title, { title: ms.title, dueOn: ms.dueOn, issues: [] });
+        if (!byVer.has(version)) {
+            const m = meta.get(version) || {};
+            byVer.set(version, { version, theme: m.theme || null, dueOn: m.dueOn || null, issues: [] });
         }
-        byMs.get(ms.title).issues.push(item);
+        byVer.get(version).issues.push(item);
     }
 
-    // Sort issues inside each milestone: open first (in In-progress /
+    // Sort issues inside each version: open first (in In-progress /
     // Next-up / Backlog order), closed last. Within a status, by
     // ascending issue number so the order is stable.
     const statusOrder = { "In progress": 0, "Next up": 1, "Backlog": 2 };
@@ -230,12 +263,12 @@ function classify(items) {
         const ps = fieldValue(item, "Status") || "Backlog";
         return [closed, statusOrder[ps] ?? 99, item.content.number];
     }
-    for (const ms of byMs.values()) {
+    for (const ms of byVer.values()) {
         ms.issues.sort((a, b) => compareKeys(issueSortKey(a), issueSortKey(b)));
     }
     noMs.sort((a, b) => compareKeys(issueSortKey(a), issueSortKey(b)));
 
-    return { byMilestone: byMs, noMilestone: noMs };
+    return { byMilestone: byVer, noMilestone: noMs };
 }
 
 // Build the tag chip list — area / track / kind / priority. Shared
@@ -403,11 +436,10 @@ function firstContentParagraph(body) {
     return { excerpt: para, truncated };
 }
 
-function milestoneHeading(ms) {
-    const { version, theme } = parseMilestoneTitle(ms.title);
-    const label = version || ms.title;
-    const due = ms.dueOn ? ` *(due ${ms.dueOn.slice(0, 10)})*` : "";
-    return theme ? `### ${label} — ${theme}${due}` : `### ${label}${due}`;
+function milestoneHeading(bucket) {
+    const label = bucket.version;
+    const due = bucket.dueOn ? ` *(due ${bucket.dueOn.slice(0, 10)})*` : "";
+    return bucket.theme ? `### ${label} — ${bucket.theme}${due}` : `### ${label}${due}`;
 }
 
 function render(groups) {
@@ -423,10 +455,9 @@ function render(groups) {
     lines.push("**Status legend:** ✅ Done · 🟡 In progress · 🟢 Next up · ⬜ Backlog");
     lines.push("");
 
-    // Sort milestones by version
+    // Sort version buckets by semver
     const milestones = [...groups.byMilestone.values()].sort((a, b) =>
-        compareKeys(semverKey(parseMilestoneTitle(a.title).version),
-                    semverKey(parseMilestoneTitle(b.title).version)));
+        compareKeys(semverKey(a.version), semverKey(b.version)));
 
     // ---- Pass 1: Overview ----
     // Per milestone, just a flat status + #ref + title list so you can

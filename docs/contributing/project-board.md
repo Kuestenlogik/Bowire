@@ -14,7 +14,8 @@ Concrete values live on the [Project board's field configuration](https://github
 | Field | Used for |
 |---|---|
 | **Status** | Kanban swim-lane: `Backlog` → `Next up` → `In progress` → `In review` → `Done`. The only field whose values are pinned by convention; everything else is editable. |
-| **Milestone** *(built-in)* | Version-targeting — the same Milestone the GitHub issue carries. Unset = unscheduled / no concrete release yet (rendered as "Backlog (not yet scheduled)" in `ROADMAP.md`). |
+| **Target release** *(single-select, **mandatory**)* | The canonical version axis — `vX.Y` (the **product-train** release the work targets) or `Backlog` (not yet scheduled). `ROADMAP.md` is bucketed by this field ([`generate-roadmap.mjs`](../../scripts/ci/generate-roadmap.mjs)). It spans **every repo** on the board, so a sibling issue (Akka, Dis, …) rides the same axis as main-repo work even though the sibling tags its *own* patch version autonomously via the release cascade. Never empty — see [Target release is mandatory](#target-release-is-mandatory). |
+| **Milestone** *(built-in, legacy fallback)* | Per-repo version milestone. Still read as a **fallback** by the roadmap generator when an item has no Target release, and the main repo's open milestones supply each version's *theme + due date*. Not the primary axis anymore — set **Target release** instead. |
 | **Area** | Which component an issue belongs to (the workbench UI, the CLI, the security surface, …). Use it as the *primary* axis for "show me everything affecting X". Stable enough that the value list barely changes between releases. |
 | **Track** | Groups a multi-release initiative that spans several milestones. Use when an issue is part of a long-running theme — examples that have lived as tracks: the auth-provider rebuild, the protocol-plugin wave, the security-tier ladder, the AI integration. Leave blank when the issue is one-shot. New tracks get added when a new long-running theme starts; tracks close when the theme ships. |
 | **Effort** *(actual)* | `Low` / `Medium` / `High`. Same scale as the org-level `Issue.Effort` so the Project mirror carries the *actual* size of the work next to the *plan*. Used to spot oversized issues (`High` = consider splitting before starting) and to right-size milestones. Not a commitment, just a sanity check. |
@@ -46,7 +47,7 @@ The board ships with the default *All items* view. The four views below are the 
 ### 🗺 Roadmap
 
 - **Layout**: Roadmap
-- **Group by**: `Milestone`
+- **Group by**: `Target release`
 - **Filter**: `Status` ≠ `Done`
 - **Use for**: "What is targeted for the next few releases?" — the public-facing release plan
 
@@ -84,6 +85,22 @@ The board ships with the default *All items* view. The four views below are the 
 - New issue created via *Convert from Markdown* (in the issue editor) or *Create issue* — the board adds it as `Backlog` by default.
 - Status transitions: `Backlog` → `Next up` → `In progress` → `In review` → `Done`. The last two are driven by PR state where possible.
 - Milestones are managed in [Settings → Issues → Milestones](https://github.com/Kuestenlogik/Bowire/milestones). When a milestone closes, its issues move out of the `Roadmap` view automatically and the milestone drops out of `ROADMAP.md` (whose changelog moves to GitHub Releases).
+
+### Target release is mandatory
+
+`Target release` is the **canonical version axis** of the roadmap — [`generate-roadmap.mjs`](../../scripts/ci/generate-roadmap.mjs) buckets every board item by it. An item with an **empty** field silently drops off the versioned roadmap, so the field is treated as **required**.
+
+**What the value means.** `Target release` carries the **product-train** version the work is planned around — `v2.6`, `v2.7`, … — or `Backlog` when it isn't scheduled yet. This is deliberately *one axis across every repo on the board*: a sibling-repo issue (Akka, Dis, Surgewave, Samples) gets the **Bowire product version** it rides, even though that repo tags its **own** independent patch version autonomously via the [release cascade](../../.github/workflows/release.yml). This is why we don't use per-repo milestones for versioning anymore — a sibling's private `v1.1`/`v0.2` line is noise on a shared roadmap; the field is the shared train.
+
+**Mandatory, enforced in two places** (Projects v2 has no native required-field):
+- [`add-to-project.yml`](../../.github/workflows/add-to-project.yml) seeds a newly-added item to `Backlog` immediately, so nothing is ever empty at birth. It only seeds when the field is still unset, so a later `labeled` re-fire never resets a value someone already triaged.
+- [`roadmap-field-guard.yml`](../../.github/workflows/roadmap-field-guard.yml) is the backstop — a daily (and on-demand) check that **fails** if any *open* board issue has no `Target release` at all (`Backlog` counts as set). A red run is the signal to triage the listed items.
+
+**When you create an issue/ticket:** set `Target release` (or leave the seeded `Backlog` and triage it in the next planning pass). Don't leave it unset.
+
+**At release time:** the field is the planning source of truth — the shipping version's items already carry it (set at creation + triage; history was backfilled for completeness). Closing a version's work is a matter of the items reaching `Done`, not of re-stamping the field.
+
+**Relationship to `Milestone`.** The repo `Milestone` is now a *fallback* only: the generator reads it when an item has no `Target release`, and — importantly — the main repo's **open milestones still supply each version's theme + due date** for the roadmap section heading (see below). So keep the main-repo milestone titles themed; siblings need no milestone at all.
 
 ### Milestone title = release theme
 
