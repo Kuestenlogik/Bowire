@@ -1,0 +1,77 @@
+name: Roadmap field guard
+
+# "Target release" is a mandatory board field — the roadmap
+# (scripts/ci/generate-roadmap.mjs) buckets every item by it, so an item
+# with an empty field silently drops off the versioned roadmap. Projects v2
+# has no native required-field, so this is the enforcement:
+#   * add-to-project.yml seeds new items to "Backlog" (never empty at birth)
+#   * this guard is the backstop — it fails if any OPEN board issue has NO
+#     Target release at all (Backlog is a valid value, not a violation),
+#     catching items added outside the automation or fields cleared by hand.
+#
+# Runs daily + on demand. A red run is the signal to triage the listed
+# items on the board (set Target release to a version or Backlog).
+
+on:
+  schedule:
+    - cron: "17 6 * * *"   # daily, 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Every board item has a Target release
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
+    steps:
+      - name: Find OPEN board issues missing Target release
+        run: |
+          gh api graphql --paginate -f query='
+            query($endCursor: String) {
+              organization(login: "Kuestenlogik") {
+                projectV2(number: 2) {
+                  items(first: 100, after: $endCursor) {
+                    pageInfo { hasNextPage endCursor }
+                    nodes {
+                      content {
+                        __typename
+                        ... on Issue { number state url repository { nameWithOwner } }
+                      }
+                      fieldValueByName(name: "Target release") {
+                        ... on ProjectV2ItemFieldSingleSelectValue { name }
+                      }
+                    }
+                  }
+                }
+              }
+            }' > pages.json
+
+          # Backlog counts as set; a violation is a completely unset field on
+          # an OPEN issue. jq -s slurps the per-page objects into one array.
+          jq -rs '[ .[].data.organization.projectV2.items.nodes[]
+                    | select(.content.__typename == "Issue" and .content.state == "OPEN")
+                    | select(.fieldValueByName == null)
+                    | "\(.content.repository.nameWithOwner)#\(.content.number)\t\(.content.url)" ]
+                  | .[]' pages.json > offenders.txt || true
+
+          COUNT=$(grep -c . offenders.txt || true)
+          if [ "${COUNT:-0}" -eq 0 ]; then
+            echo "✅ Every open board item has a Target release." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          {
+            echo "## ❌ $COUNT open board item(s) missing a Target release"
+            echo ""
+            echo "\"Target release\" is mandatory. Triage each item on the board"
+            echo "(set a version or **Backlog**):"
+            echo ""
+            while IFS=$'\t' read -r ref url; do
+              [ -z "$ref" ] && continue
+              echo "- [\`$ref\`]($url)"
+            done < offenders.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1

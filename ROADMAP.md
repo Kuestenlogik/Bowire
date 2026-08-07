@@ -10,184 +10,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
-
-**78/78 done**
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [126](https://github.com/Kuestenlogik/Bowire/issues/126) | Bowire | [Pre-/post-scripts with a protocol-typed sandbox](#issue-kuestenlogik-bowire-126) | ✅ Done |  |
-| [132](https://github.com/Kuestenlogik/Bowire/issues/132) | Bowire | [Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)](#issue-kuestenlogik-bowire-132) | ✅ Done |  |
-| [136](https://github.com/Kuestenlogik/Bowire/issues/136) | Bowire | [URL / service catalogue providers (local / http / consul / kubernetes / agent)](#issue-kuestenlogik-bowire-136) | ✅ Done |  |
-| [140](https://github.com/Kuestenlogik/Bowire/issues/140) | Bowire | [Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)](#issue-kuestenlogik-bowire-140) | ✅ Done |  |
-| [144](https://github.com/Kuestenlogik/Bowire/issues/144) | Bowire | [Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale](#issue-kuestenlogik-bowire-144) | ✅ Done |  |
-| [145](https://github.com/Kuestenlogik/Bowire/issues/145) | Bowire | [Deprecate ${name} in favour of {{name}} (multi-phase migration)](#issue-kuestenlogik-bowire-145) | ✅ Done |  |
-| [153](https://github.com/Kuestenlogik/Bowire/issues/153) | Bowire | [Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy](#issue-kuestenlogik-bowire-153) | ✅ Done |  |
-| [194](https://github.com/Kuestenlogik/Bowire/issues/194) | Bowire | [Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces](#issue-kuestenlogik-bowire-194) | ✅ Done |  |
-| [197](https://github.com/Kuestenlogik/Bowire/issues/197) | Bowire | [Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships](#issue-kuestenlogik-bowire-197) | ✅ Done |  |
-| [231](https://github.com/Kuestenlogik/Bowire/issues/231) | Bowire | [Benchmarks: 'random' run shape — pick N random endpoints per iteration](#issue-kuestenlogik-bowire-231) | ✅ Done |  |
-| [233](https://github.com/Kuestenlogik/Bowire/issues/233) | Bowire | [Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)](#issue-kuestenlogik-bowire-233) | ✅ Done |  |
-| [234](https://github.com/Kuestenlogik/Bowire/issues/234) | Bowire | [Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics](#issue-kuestenlogik-bowire-234) | ✅ Done |  |
-| [242](https://github.com/Kuestenlogik/Bowire/issues/242) | Bowire | [User-defined workspace templates — save current workspace as a template, surface in create dialog](#issue-kuestenlogik-bowire-242) | ✅ Done |  |
-| [243](https://github.com/Kuestenlogik/Bowire/issues/243) | Bowire | [Failed REST / gRPC invocation logs show only 'Error' — surface status code + response body + exception message](#issue-kuestenlogik-bowire-243) | ✅ Done |  |
-| [244](https://github.com/Kuestenlogik/Bowire/issues/244) | Bowire | [Discover rail toolbar: drop the '+ New' button — ad-hoc requests don't belong on the discovered-tree surface](#issue-kuestenlogik-bowire-244) | ✅ Done |  |
-| [245](https://github.com/Kuestenlogik/Bowire/issues/245) | Bowire | [Execute-button dropdown: add 'As new request' to clone a discovered method's call into an editable ad-hoc copy](#issue-kuestenlogik-bowire-245) | ✅ Done |  |
-| [246](https://github.com/Kuestenlogik/Bowire/issues/246) | Bowire | [Ad-hoc requests — informal cousin of Presets, lives under Collections (not a new rail, not a Design surface)](#issue-kuestenlogik-bowire-246) | ✅ Done |  |
-| [248](https://github.com/Kuestenlogik/Bowire/issues/248) | Bowire | [Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor](#issue-kuestenlogik-bowire-248) | ✅ Done |  |
-| [252](https://github.com/Kuestenlogik/Bowire/issues/252) | Bowire | [Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)](#issue-kuestenlogik-bowire-252) | ✅ Done |  |
-| [254](https://github.com/Kuestenlogik/Bowire/issues/254) | Bowire | [Freeform builder: auto-discover prompt after first successful invoke](#issue-kuestenlogik-bowire-254) | ✅ Done |  |
-| [257](https://github.com/Kuestenlogik/Bowire/issues/257) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-257) | ✅ Done |  |
-| [259](https://github.com/Kuestenlogik/Bowire/issues/259) | Bowire | [richErrorDetail picks up problem+json status / type / instance](#issue-kuestenlogik-bowire-259) | ✅ Done |  |
-| [260](https://github.com/Kuestenlogik/Bowire/issues/260) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-260) | ✅ Done |  |
-| [261](https://github.com/Kuestenlogik/Bowire/issues/261) | Bowire | [Tab persistence for 'As new request' freeform clone](#issue-kuestenlogik-bowire-261) | ✅ Done |  |
-| [262](https://github.com/Kuestenlogik/Bowire/issues/262) | Bowire | [Force-home rule retired — rails clickable again after deleting last workspace](#issue-kuestenlogik-bowire-262) | ✅ Done |  |
-| [263](https://github.com/Kuestenlogik/Bowire/issues/263) | Bowire | [Settings tree: list every enabled plugin, not just those with configurable settings](#issue-kuestenlogik-bowire-263) | ✅ Done |  |
-| [264](https://github.com/Kuestenlogik/Bowire/issues/264) | Bowire | [Save-as-template button: SVG save icon (was emoji fallback)](#issue-kuestenlogik-bowire-264) | ✅ Done |  |
-| [265](https://github.com/Kuestenlogik/Bowire/issues/265) | Bowire | [Apostrophe in Save-as-template tooltip broke JS parser](#issue-kuestenlogik-bowire-265) | ✅ Done |  |
-| [266](https://github.com/Kuestenlogik/Bowire/issues/266) | Bowire | [Ad-hoc REST — Postman-style URL + verb + body](#issue-kuestenlogik-bowire-266) | ✅ Done |  |
-| [267](https://github.com/Kuestenlogik/Bowire/issues/267) | Bowire | [Ad-hoc REST: URL is the call URL, not pre-filled discovery source](#issue-kuestenlogik-bowire-267) | ✅ Done |  |
-| [268](https://github.com/Kuestenlogik/Bowire/issues/268) | Bowire | [Ad-hoc REST: executeFreeformRequest validation no longer requires service](#issue-kuestenlogik-bowire-268) | ✅ Done |  |
-| [269](https://github.com/Kuestenlogik/Bowire/issues/269) | Bowire | [Freeform builder: layout parity with discovered-method pane](#issue-kuestenlogik-bowire-269) | ✅ Done |  |
-| [270](https://github.com/Kuestenlogik/Bowire/issues/270) | Bowire | [Workspaces: 'Show all workspaces' / 'Manage workspaces' entry-points](#issue-kuestenlogik-bowire-270) | ✅ Done |  |
-| [271](https://github.com/Kuestenlogik/Bowire/issues/271) | Bowire | [Workspace create label unified — 'New workspace' everywhere](#issue-kuestenlogik-bowire-271) | ✅ Done |  |
-| [272](https://github.com/Kuestenlogik/Bowire/issues/272) | Bowire | [Assistant drawer: useless hint 'Pick a method in the sidebar' when no workspace exists](#issue-kuestenlogik-bowire-272) | ✅ Done |  |
-| [273](https://github.com/Kuestenlogik/Bowire/issues/273) | Bowire | [Topbar workspace dropdown: + and list icons appear left-aligned instead of vertically centered](#issue-kuestenlogik-bowire-273) | ✅ Done |  |
-| [274](https://github.com/Kuestenlogik/Bowire/issues/274) | Bowire | [Workspaces label inconsistency: 4 names for the same destination (overview) + ellipsis convention](#issue-kuestenlogik-bowire-274) | ✅ Done |  |
-| [275](https://github.com/Kuestenlogik/Bowire/issues/275) | Bowire | [Workspace-detail dead-end: 'No workspace selected. Pick one in the sidebar' when sidepanel collapsed](#issue-kuestenlogik-bowire-275) | ✅ Done |  |
-| [276](https://github.com/Kuestenlogik/Bowire/issues/276) | Bowire | [Workspaces sidebar: tool parity with Recordings/Benchmarks rails (per-row + toolbar + context menu)](#issue-kuestenlogik-bowire-276) | ✅ Done |  |
-| [277](https://github.com/Kuestenlogik/Bowire/issues/277) | Bowire | [Workspace sidebar: 'Switch to active' button uses '+' icon instead of checkmark](#issue-kuestenlogik-bowire-277) | ✅ Done |  |
-| [278](https://github.com/Kuestenlogik/Bowire/issues/278) | Bowire | [Save-as-template button: floppy-disk icon reads as 'save current state', not 'snapshot as template'](#issue-kuestenlogik-bowire-278) | ✅ Done |  |
-| [279](https://github.com/Kuestenlogik/Bowire/issues/279) | Bowire | [Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview](#issue-kuestenlogik-bowire-279) | ✅ Done |  |
-| [280](https://github.com/Kuestenlogik/Bowire/issues/280) | Bowire | [Assistant hints: actionable inline buttons / links (not just descriptive text)](#issue-kuestenlogik-bowire-280) | ✅ Done |  |
-| [281](https://github.com/Kuestenlogik/Bowire/issues/281) | Bowire | [Guided tour: page-navigation + element spotlight + interactive flow](#issue-kuestenlogik-bowire-281) | ✅ Done |  |
-| [282](https://github.com/Kuestenlogik/Bowire/issues/282) | Bowire | [Unified .bww format: UI export + CLI export converge on one canonical schema](#issue-kuestenlogik-bowire-282) | ✅ Done |  |
-| [285](https://github.com/Kuestenlogik/Bowire/issues/285) | Bowire | [Lift active recording state from browser localStorage into a server-side BowireRecordingSession](#issue-kuestenlogik-bowire-285) | ✅ Done |  |
-| [286](https://github.com/Kuestenlogik/Bowire/issues/286) | Bowire | [mcp serve --attach: MCP-over-MCP forwarder for connecting to a parent Bowire process](#issue-kuestenlogik-bowire-286) | ✅ Done |  |
-| [287](https://github.com/Kuestenlogik/Bowire/issues/287) | Bowire | [Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on](#issue-kuestenlogik-bowire-287) | ✅ Done |  |
-| [289](https://github.com/Kuestenlogik/Bowire/issues/289) | Bowire | [Hoppscotch-style single-line request bar: method + URL + params + execute, no workspace required](#issue-kuestenlogik-bowire-289) | ✅ Done |  |
-| [290](https://github.com/Kuestenlogik/Bowire/issues/290) | Bowire | [Hopp bar: history persistence + benchmark + binary upload (follow-up to #289)](#issue-kuestenlogik-bowire-290) | ✅ Done |  |
-| [291](https://github.com/Kuestenlogik/Bowire/issues/291) | Bowire | [Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout](#issue-kuestenlogik-bowire-291) | ✅ Done |  |
-| [293](https://github.com/Kuestenlogik/Bowire/issues/293) | Bowire | [New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover](#issue-kuestenlogik-bowire-293) | ✅ Done |  |
-| [294](https://github.com/Kuestenlogik/Bowire/issues/294) | Bowire | [Pluggable workbench: rails + modules as package contributions + meta-bundles](#issue-kuestenlogik-bowire-294) | ✅ Done |  |
-| [295](https://github.com/Kuestenlogik/Bowire/issues/295) | Bowire | [Compose rail: integrate Collections + Presets — three sources, one organized destination](#issue-kuestenlogik-bowire-295) | ✅ Done |  |
-| [296](https://github.com/Kuestenlogik/Bowire/issues/296) | Bowire | [Topbar: global Trash drawer + Undo / Redo buttons (aggregate across rails)](#issue-kuestenlogik-bowire-296) | ✅ Done |  |
-| [297](https://github.com/Kuestenlogik/Bowire/issues/297) | Bowire | [Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip](#issue-kuestenlogik-bowire-297) | ✅ Done |  |
-| [298](https://github.com/Kuestenlogik/Bowire/issues/298) | Bowire | [Flows: protocol + service selection doesn't populate the request's dropdowns](#issue-kuestenlogik-bowire-298) | ✅ Done |  |
-| [299](https://github.com/Kuestenlogik/Bowire/issues/299) | Bowire | [Embedded mode: Proxy rail surfaces 'Proxy not reachable' — proxy needs an embedded-mode story](#issue-kuestenlogik-bowire-299) | ✅ Done |  |
-| [300](https://github.com/Kuestenlogik/Bowire/issues/300) | Bowire | [Benchmark: switching mode works once, then becomes inert](#issue-kuestenlogik-bowire-300) | ✅ Done |  |
-| [301](https://github.com/Kuestenlogik/Bowire/issues/301) | Bowire | [Home/Welcome formatting inconsistency: Benchmarks + Workspaces rails differ from others](#issue-kuestenlogik-bowire-301) | ✅ Done |  |
-| [302](https://github.com/Kuestenlogik/Bowire/issues/302) | Bowire | [Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)](#issue-kuestenlogik-bowire-302) | ✅ Done |  |
-| [303](https://github.com/Kuestenlogik/Bowire/issues/303) | Bowire | [Guided tour: per-rail empty-state secondary tours](#issue-kuestenlogik-bowire-303) | ✅ Done |  |
-| [304](https://github.com/Kuestenlogik/Bowire/issues/304) | Bowire | [Compose rail: hide standalone Collections rail tree node now that Compose hosts it](#issue-kuestenlogik-bowire-304) | ✅ Done |  |
-| [305](https://github.com/Kuestenlogik/Bowire/issues/305) | Bowire | [Source catalogue providers: kubernetes + agent (Phase D+E)](#issue-kuestenlogik-bowire-305) | ✅ Done |  |
-| [307](https://github.com/Kuestenlogik/Bowire/issues/307) | Bowire | [Bowire interceptor: standalone reverse-proxy mode (Phase C)](#issue-kuestenlogik-bowire-307) | ✅ Done |  |
-| [308](https://github.com/Kuestenlogik/Bowire/issues/308) | Bowire | [Bowire interceptor: mock injection (Phase D)](#issue-kuestenlogik-bowire-308) | ✅ Done |  |
-| [309](https://github.com/Kuestenlogik/Bowire/issues/309) | Bowire | [UI: configure URL catalogue providers from Settings (#136 follow-up)](#issue-kuestenlogik-bowire-309) | ✅ Done |  |
-| [310](https://github.com/Kuestenlogik/Bowire/issues/310) | Bowire | [UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up](#issue-kuestenlogik-bowire-310) | ✅ Done |  |
-| [314](https://github.com/Kuestenlogik/Bowire/issues/314) | Bowire | [Pluggable workbench: extract remaining rail JS slices (Phase G remainder)](#issue-kuestenlogik-bowire-314) | ✅ Done |  |
-| [324](https://github.com/Kuestenlogik/Bowire/issues/324) | Bowire | [Help: convert from drawer-tab to its own rail (plugin-contributed)](#issue-kuestenlogik-bowire-324) | ✅ Done |  |
-| [325](https://github.com/Kuestenlogik/Bowire/issues/325) | Bowire | [refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)](#issue-kuestenlogik-bowire-325) | ✅ Done |  |
-| [327](https://github.com/Kuestenlogik/Bowire/issues/327) | Bowire | [fix(registry): BowireProtocolRegistry.Discover thread-safety race under parallel xUnit](#issue-kuestenlogik-bowire-327) | ✅ Done |  |
-| [328](https://github.com/Kuestenlogik/Bowire/issues/328) | Bowire | [fix(security): close CodeQL alerts — log-forging, incomplete sanitisation, XSS-through-exception](#issue-kuestenlogik-bowire-328) | ✅ Done |  |
-| [329](https://github.com/Kuestenlogik/Bowire/issues/329) | Bowire | [ci(security): switch CodeQL to Advanced Setup — sanitiser model + paths-ignore](#issue-kuestenlogik-bowire-329) | ✅ Done |  |
-| [330](https://github.com/Kuestenlogik/Bowire/issues/330) | Bowire | [docs: v2.1 docs + screenshots refresh (audit, marquee assets, UI guide, features, API reference)](#issue-kuestenlogik-bowire-330) | ✅ Done |  |
-| [331](https://github.com/Kuestenlogik/Bowire/issues/331) | Bowire | [docs: extension + embedding developer guides](#issue-kuestenlogik-bowire-331) | ✅ Done |  |
-| [332](https://github.com/Kuestenlogik/Bowire/issues/332) | Bowire | [fix(ui): streaming response container honours parent height — detail pane no longer crushed](#issue-kuestenlogik-bowire-332) | ✅ Done |  |
-| [333](https://github.com/Kuestenlogik/Bowire/issues/333) | Bowire | [fix(sidebar): visual consistency — phantom border, uniform toolbar height, shared empty-state](#issue-kuestenlogik-bowire-333) | ✅ Done |  |
-
-### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
-
-**33/33 done**
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [38](https://github.com/Kuestenlogik/Bowire/issues/38) | Bowire | [CLI — Phase 3 polish (completion + validators + error rendering)](#issue-kuestenlogik-bowire-38) | ✅ Done | `area:cli` |
-| [40](https://github.com/Kuestenlogik/Bowire/issues/40) | Bowire | [Freeform Request Builder](#issue-kuestenlogik-bowire-40) | ✅ Done | `area:workbench` |
-| [100](https://github.com/Kuestenlogik/Bowire/issues/100) | Bowire | [Ferry — CI/CD runner (collection / recording → headless run + JUnit report)](#issue-kuestenlogik-bowire-100) | ✅ Done |  |
-| [170](https://github.com/Kuestenlogik/Bowire/issues/170) | Bowire | [Mock-server fault injection — latency / errors / drops / partial responses](#issue-kuestenlogik-bowire-170) | ✅ Done |  |
-| [171](https://github.com/Kuestenlogik/Bowire/issues/171) | Bowire | [Snapshot testing — capture-once, diff-on-change response baselines](#issue-kuestenlogik-bowire-171) | ✅ Done |  |
-| [174](https://github.com/Kuestenlogik/Bowire/issues/174) | Bowire | [Data-driven tests — CSV / JSON / generator parameterisation](#issue-kuestenlogik-bowire-174) | ✅ Done |  |
-| [180](https://github.com/Kuestenlogik/Bowire/issues/180) | Bowire | [Assertion DSL for collection / recording replay](#issue-kuestenlogik-bowire-180) | ✅ Done |  |
-| [181](https://github.com/Kuestenlogik/Bowire/issues/181) | Bowire | [bowire test CLI runner with JUnit / SARIF / TTY output](#issue-kuestenlogik-bowire-181) | ✅ Done |  |
-| [191](https://github.com/Kuestenlogik/Bowire/issues/191) | Bowire | [Contract testing — Pact-style publish / verify CLI](#issue-kuestenlogik-bowire-191) | ✅ Done |  |
-| [208](https://github.com/Kuestenlogik/Bowire/issues/208) | Bowire | [Variable resolver — Phase 5: OS keyring + AI re-roll + streaming](#issue-kuestenlogik-bowire-208) | ✅ Done |  |
-| [213](https://github.com/Kuestenlogik/Bowire/issues/213) | Bowire | [Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage](#issue-kuestenlogik-bowire-213) | ✅ Done |  |
-| [306](https://github.com/Kuestenlogik/Bowire/issues/306) | Bowire | [Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)](#issue-kuestenlogik-bowire-306) | ✅ Done |  |
-| [312](https://github.com/Kuestenlogik/Bowire/issues/312) | Bowire | [Test coverage gap report — v2.1 audit kickoff](#issue-kuestenlogik-bowire-312) | ✅ Done |  |
-| [315](https://github.com/Kuestenlogik/Bowire/issues/315) | Bowire | [Unify Proxy + Intercepted into 'Traffic' rail (Standalone / Embedded sub-modes); Mocks stays separate](#issue-kuestenlogik-bowire-315) | ✅ Done |  |
-| [316](https://github.com/Kuestenlogik/Bowire/issues/316) | Bowire | [substituteMessages([...]) passes Array.map index as cycle-guard set, crashes on 2nd+ entry](#issue-kuestenlogik-bowire-316) | ✅ Done |  |
-| [323](https://github.com/Kuestenlogik/Bowire/issues/323) | Bowire | [interceptor reverse-proxy: swap hand-rolled HttpClient forwarder for YARP IHttpForwarder](#issue-kuestenlogik-bowire-323) | ✅ Done |  |
-| [334](https://github.com/Kuestenlogik/Bowire/issues/334) | Bowire | [feat(v2.2): merge Mocks + Traffic into Intercept rail with four sub-tabs](#issue-kuestenlogik-bowire-334) | ✅ Done |  |
-| [335](https://github.com/Kuestenlogik/Bowire/issues/335) | Bowire | [feat(v2.2): cross-rail transition CTAs](#issue-kuestenlogik-bowire-335) | ✅ Done |  |
-| [336](https://github.com/Kuestenlogik/Bowire/issues/336) | Bowire | [feat(v2.2): Interceptor activation empty-state with Reverse-Proxy CTA](#issue-kuestenlogik-bowire-336) | ✅ Done |  |
-| [337](https://github.com/Kuestenlogik/Bowire/issues/337) | Bowire | [feat(v2.2): workspace deletion hardening — cascade purge + Soft/Hard toggle + Action-Log decouple](#issue-kuestenlogik-bowire-337) | ✅ Done |  |
-| [338](https://github.com/Kuestenlogik/Bowire/issues/338) | Bowire | [fix(bundle): guard rail-load calls for embedded hosts that don't reference every rail package](#issue-kuestenlogik-bowire-338) | ✅ Done |  |
-| [340](https://github.com/Kuestenlogik/Bowire/issues/340) | Bowire | [feat(v2.2): plugin lifecycle backend — Restart / Unload / Load / Reset-storage / Health](#issue-kuestenlogik-bowire-340) | ✅ Done |  |
-| [341](https://github.com/Kuestenlogik/Bowire/issues/341) | Bowire | [feat(v2.2): swap reverse-proxy forwarding to YARP IHttpForwarder](#issue-kuestenlogik-bowire-341) | ✅ Done |  |
-| [342](https://github.com/Kuestenlogik/Bowire/issues/342) | Bowire | [feat(v2.2): Flow Assertions — expectations schema + runtime evaluator + UI editor (T1 — Test Pillar foundation)](#issue-kuestenlogik-bowire-342) | ✅ Done |  |
-| [343](https://github.com/Kuestenlogik/Bowire/issues/343) | Bowire | [feat(v2.2): Regression Coverage surface — per-method run history + Discover sidebar chips (T3)](#issue-kuestenlogik-bowire-343) | ✅ Done |  |
-| [344](https://github.com/Kuestenlogik/Bowire/issues/344) | Bowire | [feat(v2.2): bowire test CLI — flow runner + JUnit XML + HTML report (T2)](#issue-kuestenlogik-bowire-344) | ✅ Done |  |
-| [345](https://github.com/Kuestenlogik/Bowire/issues/345) | Bowire | [feat(v2.2): pluggable field-detector auto-discovery via [BowireExtension] attribute (D)](#issue-kuestenlogik-bowire-345) | ✅ Done |  |
-| [346](https://github.com/Kuestenlogik/Bowire/issues/346) | Bowire | [fix(v2.2): Compose tab Duplicate deep-copies request state — morphdom stale-closure fix (F)](#issue-kuestenlogik-bowire-346) | ✅ Done |  |
-| [347](https://github.com/Kuestenlogik/Bowire/issues/347) | Bowire | [feat(v2.2): Bootcamp lessons — Intercept / Flow Assertions / bowire test CLI / Coverage / Plugin lifecycle / Workspace deletion (G)](#issue-kuestenlogik-bowire-347) | ✅ Done |  |
-| [348](https://github.com/Kuestenlogik/Bowire/issues/348) | Bowire | [feat(v2.2): Settings → Workspace… expanded into 4 sub-pages (E)](#issue-kuestenlogik-bowire-348) | ✅ Done |  |
-| [349](https://github.com/Kuestenlogik/Bowire/issues/349) | Bowire | [fix(compose): Parameter → Header sub-tab preserves Parameter row inputs — mistakes 'X-Test' as params[0].key](#issue-kuestenlogik-bowire-349) | ✅ Done |  |
-| [356](https://github.com/Kuestenlogik/Bowire/issues/356) | Bowire | [JS test safety net: unit-test infra for wwwroot fragments + lift the codecov wwwroot ignore](#issue-kuestenlogik-bowire-356) | ✅ Done |  |
-| [368](https://github.com/Kuestenlogik/Bowire/issues/368) | Bowire | [Cleanup: retire legacy proxy/intercepted core render fns + consolidate Workspaces descriptor (#306 tail)](#issue-kuestenlogik-bowire-368) | ✅ Done |  |
-
-### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
-
-**40/40 done**
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [34](https://github.com/Kuestenlogik/Bowire/issues/34) | Bowire | [AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser](#issue-kuestenlogik-bowire-34) | ✅ Done | `area:plugin-sdk` |
-| [36](https://github.com/Kuestenlogik/Bowire/issues/36) | Bowire | [Replay-Mock — HTTPS MITM / record mode](#issue-kuestenlogik-bowire-36) | ✅ Done | `area:mock` |
-| [48](https://github.com/Kuestenlogik/Bowire/issues/48) | Bowire | [Schema watch mode](#issue-kuestenlogik-bowire-48) | ✅ Done | `area:workbench` |
-| [179](https://github.com/Kuestenlogik/Bowire/issues/179) | Bowire | [Mock from schema — generate a running mock without a recording](#issue-kuestenlogik-bowire-179) | ✅ Done |  |
-| [182](https://github.com/Kuestenlogik/Bowire/issues/182) | Bowire | [Side-by-side service version diff — schema + response comparison](#issue-kuestenlogik-bowire-182) | ✅ Done |  |
-| [185](https://github.com/Kuestenlogik/Bowire/issues/185) | Bowire | [Schema-watch diff view — show what changed since last visit](#issue-kuestenlogik-bowire-185) | ✅ Done |  |
-| [253](https://github.com/Kuestenlogik/Bowire/issues/253) | Bowire | [Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override](#issue-kuestenlogik-bowire-253) | ✅ Done |  |
-| [401](https://github.com/Kuestenlogik/Bowire/issues/401) | Bowire | [Mock-server maturity — WireMock feature parity (epic)](#issue-kuestenlogik-bowire-401) | ✅ Done |  |
-| [402](https://github.com/Kuestenlogik/Bowire/issues/402) | Bowire | [Mock request matching: query / header / cookie predicates + regex/glob paths + stub priority](#issue-kuestenlogik-bowire-402) | ✅ Done |  |
-| [403](https://github.com/Kuestenlogik/Bowire/issues/403) | Bowire | [Mock request-body matchers (equalToJson / JSONPath / XPath / JSON-schema / regex)](#issue-kuestenlogik-bowire-403) | ✅ Done |  |
-| [404](https://github.com/Kuestenlogik/Bowire/issues/404) | Bowire | [Hand-authored stub mappings + per-stub admin CRUD API](#issue-kuestenlogik-bowire-404) | ✅ Done |  |
-| [405](https://github.com/Kuestenlogik/Bowire/issues/405) | Bowire | [Mock: replay & override response headers (honour recorded Content-Type)](#issue-kuestenlogik-bowire-405) | ✅ Done |  |
-| [406](https://github.com/Kuestenlogik/Bowire/issues/406) | Bowire | [Mock response templating: helpers / math / faker + bodyFileName + transformer hook](#issue-kuestenlogik-bowire-406) | ✅ Done |  |
-| [407](https://github.com/Kuestenlogik/Bowire/issues/407) | Bowire | [Mock: selective upstream proxy (proxyBaseUrl) for partial mocking](#issue-kuestenlogik-bowire-407) | ✅ Done |  |
-| [408](https://github.com/Kuestenlogik/Bowire/issues/408) | Bowire | [Mock: named scenario state machine (states + transitions)](#issue-kuestenlogik-bowire-408) | ✅ Done |  |
-| [409](https://github.com/Kuestenlogik/Bowire/issues/409) | Bowire | [Mock: request verification / assertion API (verify + findAll + near-misses)](#issue-kuestenlogik-bowire-409) | ✅ Done |  |
-| [410](https://github.com/Kuestenlogik/Bowire/issues/410) | Bowire | [Mock: HTTPS/TLS on the standalone server (+ Docker image)](#issue-kuestenlogik-bowire-410) | ✅ Done |  |
-| [411](https://github.com/Kuestenlogik/Bowire/issues/411) | Bowire | [Mock fault injection: malformed-response-chunk + faults on unmatched requests](#issue-kuestenlogik-bowire-411) | ✅ Done |  |
-| [430](https://github.com/Kuestenlogik/Bowire/issues/430) | Bowire | [Mock response templating: expression/helper engine + record-through capture (follow-up)](#issue-kuestenlogik-bowire-430) | ✅ Done |  |
-| [491](https://github.com/Kuestenlogik/Bowire/issues/491) | Bowire | [Nuclei template compat — non-HTTP transports (Phase 2g)](#issue-kuestenlogik-bowire-491) | ✅ Done |  |
-| [510](https://github.com/Kuestenlogik/Bowire/issues/510) | Bowire | [SignalR: standalone --url signalr@<hub-url> has no discovery/invocation surface](#issue-kuestenlogik-bowire-510) | ✅ Done |  |
-| [511](https://github.com/Kuestenlogik/Bowire/issues/511) | Bowire | [mock: recording replay only matches HTTP-path steps — GraphQL/gRPC/streaming steps unreachable](#issue-kuestenlogik-bowire-511) | ✅ Done |  |
-| [514](https://github.com/Kuestenlogik/Bowire/issues/514) | Bowire | [REST plugin: embedded discovery crashes on duplicate operation keys (CacheEmbeddedSchemas ToDictionary)](#issue-kuestenlogik-bowire-514) | ✅ Done |  |
-| [528](https://github.com/Kuestenlogik/Bowire/issues/528) | Bowire | [GraphQL sample throws SchemaException on every request (HotChocolate cannot resolve Query/Mutation/Subscription)](#issue-kuestenlogik-bowire-528) | ✅ Done |  |
-| [543](https://github.com/Kuestenlogik/Bowire/issues/543) | Bowire | [MockCommandAutoInstallTests reads the developer's real plugin directory](#issue-kuestenlogik-bowire-543) | ✅ Done |  |
-| [544](https://github.com/Kuestenlogik/Bowire/issues/544) | Bowire | [Discovery cannot report a partial fault: results and diagnostics are mutually exclusive](#issue-kuestenlogik-bowire-544) | ✅ Done |  |
-| [545](https://github.com/Kuestenlogik/Bowire/issues/545) | Bowire | [Correlated timeline: join across renamed identifiers (multi-key)](#issue-kuestenlogik-bowire-545) | ✅ Done |  |
-| [546](https://github.com/Kuestenlogik/Bowire/issues/546) | Bowire | [Make plugin management DI-friendly: retire the static PluginManager and its duplicate ledger](#issue-kuestenlogik-bowire-546) | ✅ Done |  |
-| [548](https://github.com/Kuestenlogik/Bowire/issues/548) | Bowire | [Release cascade skips Kuestenlogik.Bowire.Protocol.* — the bump regex allows only one dot-segment](#issue-kuestenlogik-bowire-548) | ✅ Done |  |
-| [550](https://github.com/Kuestenlogik/Bowire/issues/550) | Bowire | [morphdom strips the data-* idempotence markers — four sites leak a ResizeObserver + MutationObserver per render](#issue-kuestenlogik-bowire-550) | ✅ Done |  |
-| [552](https://github.com/Kuestenlogik/Bowire/issues/552) | Bowire | [SSE panel never closes its EventSource on error — a dead endpoint drives a full-app render loop](#issue-kuestenlogik-bowire-552) | ✅ Done |  |
-| [556](https://github.com/Kuestenlogik/Bowire/issues/556) | Bowire | [McpDiscoveryWireTests is flaky: FreePort() releases the port before HttpListener binds it](#issue-kuestenlogik-bowire-556) | ✅ Done |  |
-| [557](https://github.com/Kuestenlogik/Bowire/issues/557) | Bowire | [ScanCommandTests reads the developer's vulndb cache and fails once you have used the tool](#issue-kuestenlogik-bowire-557) | ✅ Done |  |
-| [558](https://github.com/Kuestenlogik/Bowire/issues/558) | Bowire | [Add a persisted mock-configuration workspace artifact: model, store, and apply-at-startup seam](#issue-kuestenlogik-bowire-558) | ✅ Done |  |
-| [559](https://github.com/Kuestenlogik/Bowire/issues/559) | Bowire | [Honour declared schema examples across OpenAPI, Protobuf, and GraphQL mock sources](#issue-kuestenlogik-bowire-559) | ✅ Done |  |
-| [560](https://github.com/Kuestenlogik/Bowire/issues/560) | Bowire | [Start a schema mock from the workbench and create its mock-configuration artifact](#issue-kuestenlogik-bowire-560) | ✅ Done |  |
-| [561](https://github.com/Kuestenlogik/Bowire/issues/561) | Bowire | [Add per-field response-override and per-method conditional-rule editors to the schema-mock detail pane](#issue-kuestenlogik-bowire-561) | ✅ Done |  |
-| [562](https://github.com/Kuestenlogik/Bowire/issues/562) | Bowire | [Let a schema mock require authentication, composed from a #sec-04 auth recording](#issue-kuestenlogik-bowire-562) | ✅ Done |  |
-| [563](https://github.com/Kuestenlogik/Bowire/issues/563) | Bowire | [Resolve a mock's auth requirement from a #sec-04 auth recording](#issue-kuestenlogik-bowire-563) | ✅ Done |  |
-| [564](https://github.com/Kuestenlogik/Bowire/issues/564) | Bowire | [Add a `bowire version` command (with optional --plugins)](#issue-kuestenlogik-bowire-564) | ✅ Done |  |
-
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**0/13 done** · 13 backlog
+**0/14 done** · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ⬜ Backlog |  |
 | [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code + JetBrains workbench extension](#issue-kuestenlogik-bowire-101) | ⬜ Backlog |  |
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ⬜ Backlog |  |
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ Backlog |  |
@@ -204,11 +33,27 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**0/7 done** · 1 next up · 6 backlog
+**0/23 done** · 1 next up · 22 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [28](https://github.com/Kuestenlogik/Bowire/issues/28) | Bowire | [Multi-tenant data model + SCIM (Phase B)](#issue-kuestenlogik-bowire-28) | 🟢 Next up | `area:workbench` |
+| [21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21) | Protocol.Dis | [probeDuration setting is ignored by DiscoverAsync](#issue-kuestenlogik-bowire-protocol-dis-21) | ⬜ Backlog |  |
+| [22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) | Protocol.Dis | [Typed PDU envelope decoding beyond EntityState](#issue-kuestenlogik-bowire-protocol-dis-22) | ⬜ Backlog |  |
+| [23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) | Protocol.Dis | [Entity-filtered stream drops non-EntityState PDUs](#issue-kuestenlogik-bowire-protocol-dis-23) | ⬜ Backlog |  |
+| [24](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24) | Protocol.Dis | [Typed / re-decoded mock replay in DisMockEmitter](#issue-kuestenlogik-bowire-protocol-dis-24) | ⬜ Backlog |  |
+| [25](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/25) | Protocol.Dis | [Minefield Data (ID 39): type the DataFilter-gated per-mine arrays](#issue-kuestenlogik-bowire-protocol-dis-25) | ⬜ Backlog |  |
+| [26](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/26) | Protocol.Dis | [Live Entity family: flag-gated compressed payload decoding](#issue-kuestenlogik-bowire-protocol-dis-26) | ⬜ Backlog |  |
+| [27](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27) | Protocol.Akka | [ClusterClient transport for the standalone bowire CLI](#issue-kuestenlogik-bowire-protocol-akka-27) | ⬜ Backlog |  |
+| [28](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28) | Protocol.Akka | [Mailbox-snapshot inspection (size + head messages)](#issue-kuestenlogik-bowire-protocol-akka-28) | ⬜ Backlog |  |
+| [29](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29) | Protocol.Akka | [Per-actor throughput stats](#issue-kuestenlogik-bowire-protocol-akka-29) | ⬜ Backlog |  |
+| [30](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30) | Protocol.Akka | [Typed payload via Akka serializer roundtrip](#issue-kuestenlogik-bowire-protocol-akka-30) | ⬜ Backlog |  |
+| [31](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31) | Protocol.Akka | [Opt-in filter API from the Bowire UI (per actor path / message type)](#issue-kuestenlogik-bowire-protocol-akka-31) | ⬜ Backlog |  |
+| [32](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/32) | Protocol.Surgewave | [Embedded mode: resolve SDK from host DI + drop direct Confluent path](#issue-kuestenlogik-bowire-protocol-surgewave-32) | ⬜ Backlog |  |
+| [32](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32) | Protocol.Akka | [Tell-from-Bowire — interactive duplex via OpenChannelAsync](#issue-kuestenlogik-bowire-protocol-akka-32) | ⬜ Backlog |  |
+| [33](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33) | Protocol.Akka | [DeadLetter capture under the global default mailbox](#issue-kuestenlogik-bowire-protocol-akka-33) | ⬜ Backlog |  |
+| [34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) | Protocol.Akka | [Docs drift: TappedMessage envelope field names & payload shape](#issue-kuestenlogik-bowire-protocol-akka-34) | ⬜ Backlog |  |
+| [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog |  |
 | [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
 | [96](https://github.com/Kuestenlogik/Bowire/issues/96) | Bowire | [Multi-tenant Phase C — SCIM 2.0 provisioning endpoints](#issue-kuestenlogik-bowire-96) | ⬜ Backlog |  |
 | [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ⬜ Backlog |  |
@@ -300,654 +145,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog |  |
 | [529](https://github.com/Kuestenlogik/Bowire/issues/529) | Bowire | [OData plugin: EDM functions and actions are never discovered (class doc claims they are)](#issue-kuestenlogik-bowire-529) | ⬜ Backlog |  |
 
-### Backlog (not yet scheduled)
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) | Templates | [Plugin project template — `dotnet new bowire-plugin`](#issue-kuestenlogik-bowire-templates-3) | ⬜ Backlog | `area:plugin-sdk` |
-| [6](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6) | Bootcamp | [Bootcamp landing renders inconsistent breadcrumb based on arrival path](#issue-kuestenlogik-bowire-bootcamp-6) | ⬜ Backlog |  |
-| [11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) | Protocol.Surgewave | [Light up Surgewave protocol plugin](#issue-kuestenlogik-bowire-protocol-surgewave-11) | ⬜ Backlog |  |
-| [21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21) | Protocol.Dis | [probeDuration setting is ignored by DiscoverAsync](#issue-kuestenlogik-bowire-protocol-dis-21) | ⬜ Backlog |  |
-| [22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) | Protocol.Dis | [Typed PDU envelope decoding beyond EntityState](#issue-kuestenlogik-bowire-protocol-dis-22) | ⬜ Backlog |  |
-| [23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) | Protocol.Dis | [Entity-filtered stream drops non-EntityState PDUs](#issue-kuestenlogik-bowire-protocol-dis-23) | ⬜ Backlog |  |
-| [24](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24) | Protocol.Dis | [Typed / re-decoded mock replay in DisMockEmitter](#issue-kuestenlogik-bowire-protocol-dis-24) | ⬜ Backlog |  |
-| [25](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/25) | Protocol.Dis | [Minefield Data (ID 39): type the DataFilter-gated per-mine arrays](#issue-kuestenlogik-bowire-protocol-dis-25) | ⬜ Backlog |  |
-| [26](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/26) | Protocol.Dis | [Live Entity family: flag-gated compressed payload decoding](#issue-kuestenlogik-bowire-protocol-dis-26) | ⬜ Backlog |  |
-| [27](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27) | Protocol.Akka | [ClusterClient transport for the standalone bowire CLI](#issue-kuestenlogik-bowire-protocol-akka-27) | ⬜ Backlog |  |
-| [28](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28) | Protocol.Akka | [Mailbox-snapshot inspection (size + head messages)](#issue-kuestenlogik-bowire-protocol-akka-28) | ⬜ Backlog |  |
-| [29](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29) | Protocol.Akka | [Per-actor throughput stats](#issue-kuestenlogik-bowire-protocol-akka-29) | ⬜ Backlog |  |
-| [30](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30) | Protocol.Akka | [Typed payload via Akka serializer roundtrip](#issue-kuestenlogik-bowire-protocol-akka-30) | ⬜ Backlog |  |
-| [31](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31) | Protocol.Akka | [Opt-in filter API from the Bowire UI (per actor path / message type)](#issue-kuestenlogik-bowire-protocol-akka-31) | ⬜ Backlog |  |
-| [32](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/32) | Protocol.Surgewave | [Embedded mode: resolve SDK from host DI + drop direct Confluent path](#issue-kuestenlogik-bowire-protocol-surgewave-32) | ⬜ Backlog |  |
-| [32](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32) | Protocol.Akka | [Tell-from-Bowire — interactive duplex via OpenChannelAsync](#issue-kuestenlogik-bowire-protocol-akka-32) | ⬜ Backlog |  |
-| [33](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33) | Protocol.Akka | [DeadLetter capture under the global default mailbox](#issue-kuestenlogik-bowire-protocol-akka-33) | ⬜ Backlog |  |
-| [34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) | Protocol.Akka | [Docs drift: TappedMessage envelope field names & payload shape](#issue-kuestenlogik-bowire-protocol-akka-34) | ⬜ Backlog |  |
-| [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog |  |
-| [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ⬜ Backlog |  |
-
 ## Details
 
-### v2.1 — Scripting, variable resolver, throughput surface *(due 2026-06-30)*
-
-#### <a id="issue-kuestenlogik-bowire-126"></a>✅ Done · [#126](https://github.com/Kuestenlogik/Bowire/issues/126) Pre-/post-scripts with a protocol-typed sandbox
-
-Real testing workflows have steps that are too dynamic for a static template: sign the body with a per-request HMAC, refresh an access token if it's about to expire, capture a value from one response into a header on the next, encode a binary blob, assert on a complex shape after send. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/126)
-
-#### <a id="issue-kuestenlogik-bowire-132"></a>✅ Done · [#132](https://github.com/Kuestenlogik/Bowire/issues/132) Parallel sessions for recordings / collections (phase 1 local, phase 2 distributed)
-
-Today a recording or collection runs sequentially: step 1 → step 2 → step 3, one session, one request in flight at a time. Useful for **functional** testing ("does the flow still work?") but unable to answer the parallel-shaped questions: [[more]](https://github.com/Kuestenlogik/Bowire/issues/132)
-
-#### <a id="issue-kuestenlogik-bowire-136"></a>✅ Done · [#136](https://github.com/Kuestenlogik/Bowire/issues/136) URL / service catalogue providers (local / http / consul / kubernetes / agent)
-
-Today every Bowire instance maintains its own URL list — manually typed in the sidebar, persisted to localStorage / disk. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/136)
-
-#### <a id="issue-kuestenlogik-bowire-140"></a>✅ Done · [#140](https://github.com/Kuestenlogik/Bowire/issues/140) Per-mode 'Saved Configs' / Presets (distinct from cross-workflow favorites)
-
-Two concepts have been conflated under "favorites" in the workbench's evolution: [[more]](https://github.com/Kuestenlogik/Bowire/issues/140)
-
-#### <a id="issue-kuestenlogik-bowire-144"></a>✅ Done · [#144](https://github.com/Kuestenlogik/Bowire/issues/144) Large-recording capture/replay — chunked disk layout, lazy step-load, GB-scale
-
-Recordings today scale to KB-to-single-digit-MB before the architecture pushes back: [[more]](https://github.com/Kuestenlogik/Bowire/issues/144)
-
-#### <a id="issue-kuestenlogik-bowire-145"></a>✅ Done · [#145](https://github.com/Kuestenlogik/Bowire/issues/145) Deprecate ${name} in favour of {{name}} (multi-phase migration)
-
-After #125 v1 landed, Bowire has two interpolation syntaxes that resolve identically: - `${name}` — Bowire's original Bash-style syntax (escape: `$${name}`) - `{{name}}` — Postman / Mustache convention (escape: `{{{{name}}}}`) [[more]](https://github.com/Kuestenlogik/Bowire/issues/145)
-
-#### <a id="issue-kuestenlogik-bowire-153"></a>✅ Done · [#153](https://github.com/Kuestenlogik/Bowire/issues/153) Bowire as transparent interceptor — embedded middleware + standalone reverse-proxy
-
-Today Bowire watches traffic in two narrow ways: - **Discover / Recording / Benchmarks** — the operator drives a call FROM Bowire's workbench and Bowire sees both sides. - **MITM Proxy view (#36)** — read-only inspection of traffic flowing through an external Bowire-as-proxy listener. [[more]](https://github.com/Kuestenlogik/Bowire/issues/153)
-
-#### <a id="issue-kuestenlogik-bowire-194"></a>✅ Done · [#194](https://github.com/Kuestenlogik/Bowire/issues/194) Action log Phase 2 — remaining mutation sites + cross-reload undo + soft-delete workspaces
-
-Phase 1 shipped in e084bc3 — central `actionLog`, Statusbar pill, Activity drawer tab, Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z global shortcuts, `toast({undo, logAction})` helper. The first five mutation sites (collection-delete, flow-delete, env-delete, history-clear, favorites-clear) write to the log. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/194)
-
-#### <a id="issue-kuestenlogik-bowire-197"></a>✅ Done · [#197](https://github.com/Kuestenlogik/Bowire/issues/197) Deprecate + unlist Kuestenlogik.Bowire.Extension.MapLibre on nuget.org after v2.0 ships
-
-`Kuestenlogik.Bowire.Extension.MapLibre` 1.3.0-rc.1 was renamed to `Kuestenlogik.Bowire.Map` ahead of v2.0 (commit 75c8d1f). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/197)
-
-#### <a id="issue-kuestenlogik-bowire-231"></a>✅ Done · [#231](https://github.com/Kuestenlogik/Bowire/issues/231) Benchmarks: 'random' run shape — pick N random endpoints per iteration
-
-Add the **random** run shape to the Benchmarks envelope — picks N random endpoints from the active workspace's discovered services on each iteration. Useful for chaos / fuzz-flavored load tests where the operator wants to hit "anything reachable" rather than a fixed list. [[more]](https://github.com/Kuestenlogik/Bowire/issues/231)
-
-#### <a id="issue-kuestenlogik-bowire-233"></a>✅ Done · [#233](https://github.com/Kuestenlogik/Bowire/issues/233) Benchmarks: previous-run diff banner on repeat (p95 ▲ / ▼ / status histogram delta)
-
-When the operator hits Run on a benchmark envelope that already has a previous run on file, surface a small diff banner: `p95 142 ms (-8 ms vs. previous · -5%)`, status histogram delta, throughput delta. So regressions jump out without reading two numbers side by side. [[more]](https://github.com/Kuestenlogik/Bowire/issues/233)
-
-#### <a id="issue-kuestenlogik-bowire-234"></a>✅ Done · [#234](https://github.com/Kuestenlogik/Bowire/issues/234) Benchmarks: result exports — CSV + k6-summary JSON + OTLP metrics
-
-Round out the Benchmarks export surface so result data can leave Bowire in the formats the surrounding tooling actually consumes: [[more]](https://github.com/Kuestenlogik/Bowire/issues/234)
-
-#### <a id="issue-kuestenlogik-bowire-242"></a>✅ Done · [#242](https://github.com/Kuestenlogik/Bowire/issues/242) User-defined workspace templates — save current workspace as a template, surface in create dialog
-
-Workspace templates ship hardcoded in `wwwroot/js/workspace-templates.js` — `BOWIRE_WORKSPACE_TEMPLATES` is a static array of five built-ins (`empty`, `rest`, `grpc`, `mock`, `multiproto`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/242)
-
-#### <a id="issue-kuestenlogik-bowire-243"></a>✅ Done · [#243](https://github.com/Kuestenlogik/Bowire/issues/243) Failed REST / gRPC invocation logs show only 'Error' — surface status code + response body + exception message
-
-When a manually-created REST request fails (in this case via the New-request flow against the seeded Petstore template), the response log shows nothing useful: [[more]](https://github.com/Kuestenlogik/Bowire/issues/243)
-
-#### <a id="issue-kuestenlogik-bowire-244"></a>✅ Done · [#244](https://github.com/Kuestenlogik/Bowire/issues/244) Discover rail toolbar: drop the '+ New' button — ad-hoc requests don't belong on the discovered-tree surface
-
-The `+` button in the Discover rail's sidebar toolbar opens the "create new request" form. But Discover is the surface for **discovered services** — the toolbar already lists discovered method nodes, the `+` sits next to them, and the user expects "add to *what's being shown here*". … [[more]](https://github.com/Kuestenlogik/Bowire/issues/244)
-
-#### <a id="issue-kuestenlogik-bowire-245"></a>✅ Done · [#245](https://github.com/Kuestenlogik/Bowire/issues/245) Execute-button dropdown: add 'As new request' to clone a discovered method's call into an editable ad-hoc copy
-
-When you're on a discovered method and want to experiment — try a tweaked URL, a slightly different method name, a custom header — there's no clean path. Today's options: [[more]](https://github.com/Kuestenlogik/Bowire/issues/245)
-
-#### <a id="issue-kuestenlogik-bowire-246"></a>✅ Done · [#246](https://github.com/Kuestenlogik/Bowire/issues/246) Ad-hoc requests — informal cousin of Presets, lives under Collections (not a new rail, not a Design surface)
-
-Ad-hoc requests in v2.0 are homeless. The `+ New` button in the Discover rail (see sibling issue) opens a one-shot form that doesn't persist, isn't co-located with the related saved-calls surfaces, and has no obvious entry point if you start somewhere other than Discover. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/246)
-
-#### <a id="issue-kuestenlogik-bowire-248"></a>✅ Done · [#248](https://github.com/Kuestenlogik/Bowire/issues/248) Optional rail modules — plumbing (Phase 1): toggle mechanic + always-on set + Settings editor
-
-Bowire's rail catalogue (`_railModes` in `render-sidebar.js`) is fixed at compile time: Home, Discover, Recordings, Mocks, Flows, Proxy, Benchmarks, Security, Workspaces. Every operator gets every rail. Pain points: [[more]](https://github.com/Kuestenlogik/Bowire/issues/248)
-
-#### <a id="issue-kuestenlogik-bowire-252"></a>✅ Done · [#252](https://github.com/Kuestenlogik/Bowire/issues/252) Compose-request entry points: '+ Compose' (self-contained) + 'New from source…' (workspace-managed URL)
-
-After landing #244 (drop `+ New` from Discover toolbar) + #245 (As new request from Execute dropdown) + the #246 cleanup (ad-hoc → freeform builder + `+ Add to…` parity), two design gaps remain around **how an operator starts composing a new request**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/252)
-
-#### <a id="issue-kuestenlogik-bowire-254"></a>✅ Done · [#254](https://github.com/Kuestenlogik/Bowire/issues/254) Freeform builder: auto-discover prompt after first successful invoke
-
-Last unchecked acceptance item from the parent **#40** Freeform Request Builder ticket. After a freeform request hits a 2xx response, prompt the operator: [[more]](https://github.com/Kuestenlogik/Bowire/issues/254)
-
-#### <a id="issue-kuestenlogik-bowire-257"></a>✅ Done · [#257](https://github.com/Kuestenlogik/Bowire/issues/257) richErrorDetail picks up problem+json status / type / instance
-
-Failed REST/gRPC invocations were showing just 'Error' in the console because richErrorDetail looked for `status_code`/`statusCode`/`httpStatus`/`http_status` while the server's problem+json carries the HTTP code on a bare `status` field. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/257)
-
-#### <a id="issue-kuestenlogik-bowire-259"></a>✅ Done · [#259](https://github.com/Kuestenlogik/Bowire/issues/259) richErrorDetail picks up problem+json status / type / instance
-
-Failed REST/gRPC invocations were showing just 'Error' in the console because richErrorDetail looked for status_code/statusCode/httpStatus/http_status while the server's problem+json carries the HTTP code on a bare status field. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/259)
-
-#### <a id="issue-kuestenlogik-bowire-260"></a>✅ Done · [#260](https://github.com/Kuestenlogik/Bowire/issues/260) Console toolbar: distinct icons for Clear selection / Clear all / Close
-
-All three buttons used the same X glyph or text 'Clear'. New selectionClear SVG (dashed rectangle + interior X) for Clear selection so the three actions read as three different intents. i18n-safe — no labels to translate.
-
-#### <a id="issue-kuestenlogik-bowire-261"></a>✅ Done · [#261](https://github.com/Kuestenlogik/Bowire/issues/261) Tab persistence for 'As new request' freeform clone
-
-Switching to another method tab + back lost the freeform clone because switchTab() unconditionally set freeformRequest = null. Now the clone is stashed on the outgoing tab's freeform field + rehydrated from the incoming tab on switch. Sibling fix: closeTab also rehydrates from neighbor (commit 7979ffa).
-
-#### <a id="issue-kuestenlogik-bowire-262"></a>✅ Done · [#262](https://github.com/Kuestenlogik/Bowire/issues/262) Force-home rule retired — rails clickable again after deleting last workspace
-
-User report: every rail icon hovered as clickable but the click did nothing. The force-home rule (added earlier to fix DOM/state divergence) had become the trap itself — every click to leave Home re-fired the guard. Removed both copies (render-env-auth.js + render-main.js).
-
-#### <a id="issue-kuestenlogik-bowire-263"></a>✅ Done · [#263](https://github.com/Kuestenlogik/Bowire/issues/263) Settings tree: list every enabled plugin, not just those with configurable settings
-
-Plugins tree filter dropped entries whose p.settings array was empty or unset, hiding REST/gRPC/MCP/GraphQL/etc. from the tree entirely — only MQTT + WebSocket survived. renderPluginSettings handles the empty-settings case gracefully, so the filter was pure loss.
-
-#### <a id="issue-kuestenlogik-bowire-264"></a>✅ Done · [#264](https://github.com/Kuestenlogik/Bowire/issues/264) Save-as-template button: SVG save icon (was emoji fallback)
-
-Workspaces-overview row tool referenced svgIcon('save') which the catalogue didn't expose, so the button fell through to the floppy-disk emoji string. Mixing emoji with SVG-rendered neighbours looked broken. Added a floppy-disk SVG to the catalogue.
-
-#### <a id="issue-kuestenlogik-bowire-265"></a>✅ Done · [#265](https://github.com/Kuestenlogik/Bowire/issues/265) Apostrophe in Save-as-template tooltip broke JS parser
-
-Uncaught SyntaxError: Unexpected identifier 'Your'. The tooltip 'Shows up in 'Your templates' on the next dialog' closed the outer single-quoted string at the first inner apostrophe. Switched inner quotes to double.
-
-#### <a id="issue-kuestenlogik-bowire-266"></a>✅ Done · [#266](https://github.com/Kuestenlogik/Bowire/issues/266) Ad-hoc REST — Postman-style URL + verb + body
-
-Closes #256. RestInvoker.InvokeAdHocAsync (server-side plain HttpClient call); BowireRestProtocol routes empty-service + verb-method to the ad-hoc path. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/266)
-
-#### <a id="issue-kuestenlogik-bowire-267"></a>✅ Done · [#267](https://github.com/Kuestenlogik/Bowire/issues/267) Ad-hoc REST: URL is the call URL, not pre-filled discovery source
-
-startFreeformRequest pre-filled serverUrl from workspace's sources[0] (the OpenAPI source URL), conflating discovery with invocation. For protocol=rest the field now starts empty; operator types the full request URL. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/267)
-
-#### <a id="issue-kuestenlogik-bowire-268"></a>✅ Done · [#268](https://github.com/Kuestenlogik/Bowire/issues/268) Ad-hoc REST: executeFreeformRequest validation no longer requires service
-
-Validation guard 'Enter a service and method name' silently blocked every ad-hoc REST click — fr.service is intentionally empty in ad-hoc mode. Now REST mode requires URL + verb only; other protocols still require service + method. Console label reads 'POST https://…' instead of '/POST'. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/268)
-
-#### <a id="issue-kuestenlogik-bowire-269"></a>✅ Done · [#269](https://github.com/Kuestenlogik/Bowire/issues/269) Freeform builder: layout parity with discovered-method pane
-
-Multi-commit rewrite: freeform builder now produces .bowire-main → .bowire-header → .bowire-content[data-split] → .bowire-action-bar — the same chrome a discovered method's pane uses. Editable method-style header (protocol picker + service/method inputs inline). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/269)
-
-#### <a id="issue-kuestenlogik-bowire-270"></a>✅ Done · [#270](https://github.com/Kuestenlogik/Bowire/issues/270) Workspaces: 'Show all workspaces' / 'Manage workspaces' entry-points
-
-Topbar workspace-chip dropdown gained 'Show all workspaces…' / 'Manage workspaces…' entry below '+ New workspace…'. Welcome card empty state gained 'Manage workspaces' secondary action. Workspaces overview empty-state gained '+ New workspace' primary CTA (was a dead-end text hint). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/270)
-
-#### <a id="issue-kuestenlogik-bowire-271"></a>✅ Done · [#271](https://github.com/Kuestenlogik/Bowire/issues/271) Workspace create label unified — 'New workspace' everywhere
-
-Welcome card said 'Create workspace', topbar dropdown said '+ New workspace…' — same affordance, two labels. Unified on 'New workspace' to match the '+ New X' pattern Bowire uses across collections / envs / sources. 'Create workspace' stays as the dialog HEADER (describes the dialog's job, not a trigger).
-
-#### <a id="issue-kuestenlogik-bowire-272"></a>✅ Done · [#272](https://github.com/Kuestenlogik/Bowire/issues/272) Assistant drawer: useless hint 'Pick a method in the sidebar' when no workspace exists
-
-In the no-workspace empty state (fresh install, last workspace just deleted), the Assistant drawer shows: [[more]](https://github.com/Kuestenlogik/Bowire/issues/272)
-
-#### <a id="issue-kuestenlogik-bowire-273"></a>✅ Done · [#273](https://github.com/Kuestenlogik/Bowire/issues/273) Topbar workspace dropdown: + and list icons appear left-aligned instead of vertically centered
-
-In the topbar workspace-chip dropdown, the '+' (new workspace) and three-lines list icon (Manage workspaces…) appear left-aligned within their icon column rather than vertically centered alongside their label text. [[more]](https://github.com/Kuestenlogik/Bowire/issues/273)
-
-#### <a id="issue-kuestenlogik-bowire-274"></a>✅ Done · [#274](https://github.com/Kuestenlogik/Bowire/issues/274) Workspaces label inconsistency: 4 names for the same destination (overview) + ellipsis convention
-
-Same destination (workspaces overview list), four different labels across surfaces: [[more]](https://github.com/Kuestenlogik/Bowire/issues/274)
-
-#### <a id="issue-kuestenlogik-bowire-275"></a>✅ Done · [#275](https://github.com/Kuestenlogik/Bowire/issues/275) Workspace-detail dead-end: 'No workspace selected. Pick one in the sidebar' when sidepanel collapsed
-
-After clicking 'Manage workspaces' with the sidepanel collapsed, the operator lands on: [[more]](https://github.com/Kuestenlogik/Bowire/issues/275)
-
-#### <a id="issue-kuestenlogik-bowire-276"></a>✅ Done · [#276](https://github.com/Kuestenlogik/Bowire/issues/276) Workspaces sidebar: tool parity with Recordings/Benchmarks rails (per-row + toolbar + context menu)
-
-The sidebar / rail STRUCTURE is already consistent across every rail (Workspaces, Recordings, Mocks, Flows, Benchmarks, Security) — same toolbar shape, same tree/list layout, same icon column, same right-click empty-area handler. So the master-list pattern itself is settled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/276)
-
-#### <a id="issue-kuestenlogik-bowire-277"></a>✅ Done · [#277](https://github.com/Kuestenlogik/Bowire/issues/277) Workspace sidebar: 'Switch to active' button uses '+' icon instead of checkmark
-
-When hovering a workspace row in the Workspaces sidebar, the activate/switch button shows a '+' icon. The '+' universally reads as 'add something here' — operator's first thought is 'what can I add?'. [[more]](https://github.com/Kuestenlogik/Bowire/issues/277)
-
-#### <a id="issue-kuestenlogik-bowire-278"></a>✅ Done · [#278](https://github.com/Kuestenlogik/Bowire/issues/278) Save-as-template button: floppy-disk icon reads as 'save current state', not 'snapshot as template'
-
-The 'Save as template' button uses the floppy-disk SVG (added in commit 4f4f477). Operator's expectation when seeing a floppy: [[more]](https://github.com/Kuestenlogik/Bowire/issues/278)
-
-#### <a id="issue-kuestenlogik-bowire-279"></a>✅ Done · [#279](https://github.com/Kuestenlogik/Bowire/issues/279) Workspace ordering: configurable (creation date / alphabetical / manual drag-drop), respected across sidebar + dropdown + overview
-
-When a workspace is switched to active, it 'jumps to the top' of the list — currently the sidebar's sort uses 'Last used' (added in #276) which auto-promotes the active workspace. Operator finds this confusing — the list rearranges under them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/279)
-
-#### <a id="issue-kuestenlogik-bowire-280"></a>✅ Done · [#280](https://github.com/Kuestenlogik/Bowire/issues/280) Assistant hints: actionable inline buttons / links (not just descriptive text)
-
-The Assistant drawer's context-aware hints describe what the operator should do but don't expose the action itself. Example from the no-workspace state (post-#272 fix): [[more]](https://github.com/Kuestenlogik/Bowire/issues/280)
-
-#### <a id="issue-kuestenlogik-bowire-281"></a>✅ Done · [#281](https://github.com/Kuestenlogik/Bowire/issues/281) Guided tour: page-navigation + element spotlight + interactive flow
-
-The existing guided tour reads more like inline help text than a tour. Operator's complaints: - Pages aren't navigated to — the tour says 'click X' but X isn't visible - Hints don't highlight the item being discussed - No spotlight / no darkening of the rest of the page so the eye lands on the right element [[more]](https://github.com/Kuestenlogik/Bowire/issues/281)
-
-#### <a id="issue-kuestenlogik-bowire-282"></a>✅ Done · [#282](https://github.com/Kuestenlogik/Bowire/issues/282) Unified .bww format: UI export + CLI export converge on one canonical schema
-
-Two divergent .bww shapes shipped in v2.0: [[more]](https://github.com/Kuestenlogik/Bowire/issues/282)
-
-#### <a id="issue-kuestenlogik-bowire-285"></a>✅ Done · [#285](https://github.com/Kuestenlogik/Bowire/issues/285) Lift active recording state from browser localStorage into a server-side BowireRecordingSession
-
-#37 shipped four of seven planned MCP tools. The three remaining items — `bowire.record.start`, `bowire.record.stop`, `bowire.record.replay` — can't land cleanly today because the active-recording state lives in the **browser's** localStorage (`bowire_recording_active`, `bowire_recording_buffer`, &c … [[more]](https://github.com/Kuestenlogik/Bowire/issues/285)
-
-#### <a id="issue-kuestenlogik-bowire-286"></a>✅ Done · [#286](https://github.com/Kuestenlogik/Bowire/issues/286) mcp serve --attach: MCP-over-MCP forwarder for connecting to a parent Bowire process
-
-`bowire mcp serve --attach` would let a child Bowire MCP server forward tool calls to a parent Bowire process's own MCP endpoint — useful when a remote AI agent talks to a thin Bowire process that delegates the actual work to a heavier Bowire running on the operator's workstation. [[more]](https://github.com/Kuestenlogik/Bowire/issues/286)
-
-#### <a id="issue-kuestenlogik-bowire-287"></a>✅ Done · [#287](https://github.com/Kuestenlogik/Bowire/issues/287) Dual-MCP endpoint: MapBowireMcp + MapBowireMcpAdapter coexistence when --enable-mcp-adapter is on
-
-Today `app.MapBowireMcp()` and `app.MapBowireMcpAdapter()` are mutually exclusive — calling both either errors at startup or one silently shadows the other. #37 left this open because the adapter mode was a v2.0 late add and the routing-resolution between the two endpoints wasn't reconciled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/287)
-
-#### <a id="issue-kuestenlogik-bowire-289"></a>✅ Done · [#289](https://github.com/Kuestenlogik/Bowire/issues/289) Hoppscotch-style single-line request bar: method + URL + params + execute, no workspace required
-
-Bowire's strength is the protocol-aware workbench — discover a schema, pick a method, execute. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/289)
-
-#### <a id="issue-kuestenlogik-bowire-290"></a>✅ Done · [#290](https://github.com/Kuestenlogik/Bowire/issues/290) Hopp bar: history persistence + benchmark + binary upload (follow-up to #289)
-
-Follow-up to #289 — Phase F leftovers + two deferrals from Phase A/C. [[more]](https://github.com/Kuestenlogik/Bowire/issues/290)
-
-#### <a id="issue-kuestenlogik-bowire-291"></a>✅ Done · [#291](https://github.com/Kuestenlogik/Bowire/issues/291) Hopp-bar: protocol picker (REST / gRPC / MQTT / WebSocket / SSE / GraphQL / MCP) with per-protocol sub-tab layout
-
-The hopp-bar (#289 + #290) ships today as a REST-only experience: HTTP method dropdown + URL + Parameter/Body/Header/Auth/Scripts/Vars sub-tabs. Bowire's whole point is multi-protocol — the bar should expose every wire Bowire speaks, not just REST. [[more]](https://github.com/Kuestenlogik/Bowire/issues/291)
-
-#### <a id="issue-kuestenlogik-bowire-293"></a>✅ Done · [#293](https://github.com/Kuestenlogik/Bowire/issues/293) New 'Design' rail for the request-builder — separate ad-hoc crafting from schema-driven Discover
-
-The request-builder (renamed from hopp-bar in commit 5d7b21a, multi-protocol since #291) currently piggy-backs on whatever tab is active in the Discover rail. Two consequences: 1. When no source/tab exists, the builder gets stuck off-frame. 2. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/293)
-
-#### <a id="issue-kuestenlogik-bowire-294"></a>✅ Done · [#294](https://github.com/Kuestenlogik/Bowire/issues/294) Pluggable workbench: rails + modules as package contributions + meta-bundles
-
-Bowire today hardcodes: - An 'always-on' rail set (Home, Discover, Workspaces) — fixed in the rail-rendering code - A 'toggleable' rail set (Recordings, Mocks, Flows, Proxy, Benchmarks, Security) — toggleable in Settings, but the LIST itself is hardcoded - Cross-cutting modules (AI/Assistant, MCP, v … [[more]](https://github.com/Kuestenlogik/Bowire/issues/294)
-
-#### <a id="issue-kuestenlogik-bowire-295"></a>✅ Done · [#295](https://github.com/Kuestenlogik/Bowire/issues/295) Compose rail: integrate Collections + Presets — three sources, one organized destination
-
-The **Compose** rail (renamed from Design in commit `e52f7a9`) is now the home for the request-builder — ad-hoc requests live there. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/295)
-
-#### <a id="issue-kuestenlogik-bowire-296"></a>✅ Done · [#296](https://github.com/Kuestenlogik/Bowire/issues/296) Topbar: global Trash drawer + Undo / Redo buttons (aggregate across rails)
-
-User feedback (Phase 2 walkthrough): "wo ist der Papierkorb und Undo/Redo übergeordnet erreichbar? das log kann ich im status erreichen. Papierkorb hätte ich in der Top bar oder Status bar erwartet." [[more]](https://github.com/Kuestenlogik/Bowire/issues/296)
-
-#### <a id="issue-kuestenlogik-bowire-297"></a>✅ Done · [#297](https://github.com/Kuestenlogik/Bowire/issues/297) Topbar: responsive horizontal overflow — collapse low-priority buttons into a ⋮ menu, mirror the rail strip
-
-Rails already collapse into an overflow `⋮` button when the vertical space runs out (`bowire-rail-overflow-btn` in `render-sidebar.js`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/297)
-
-#### <a id="issue-kuestenlogik-bowire-298"></a>✅ Done · [#298](https://github.com/Kuestenlogik/Bowire/issues/298) Flows: protocol + service selection doesn't populate the request's dropdowns
-
-1. Open the Flows rail 2. Create / edit a flow step 3. Pick a protocol (e.g. REST) → pick a service from the discovered list 4. **Expected:** the request panel below the step inherits the picked protocol + service; method dropdown, URL, etc. fill in. 5. **Actual:** dropdowns stay empty / unchanged. [[more]](https://github.com/Kuestenlogik/Bowire/issues/298)
-
-#### <a id="issue-kuestenlogik-bowire-299"></a>✅ Done · [#299](https://github.com/Kuestenlogik/Bowire/issues/299) Embedded mode: Proxy rail surfaces 'Proxy not reachable' — proxy needs an embedded-mode story
-
-1. Build the embedded sample (`samples/Kuestenlogik.Bowire.Sample.Embedded`) and run on port 5181 2. Visit `http://localhost:5181/bowire` 3. Open the Proxy rail 4. **Expected:** something usable — either run a proxy in-process OR a clear 'not available in embedded mode' state with a doc link 5. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/299)
-
-#### <a id="issue-kuestenlogik-bowire-300"></a>✅ Done · [#300](https://github.com/Kuestenlogik/Bowire/issues/300) Benchmark: switching mode works once, then becomes inert
-
-1. Open the Benchmarks rail 2. Pick a benchmark / create one 3. Switch the mode (e.g. constant-rate → ramp) — visual UI updates correctly 4. Try to switch again → nothing happens; the mode is stuck [[more]](https://github.com/Kuestenlogik/Bowire/issues/300)
-
-#### <a id="issue-kuestenlogik-bowire-301"></a>✅ Done · [#301](https://github.com/Kuestenlogik/Bowire/issues/301) Home/Welcome formatting inconsistency: Benchmarks + Workspaces rails differ from others
-
-1. Open each rail in turn (Home → Discover → Compose → Recordings → Mocks → Flows → Proxy → Benchmarks → Security → Workspaces) 2. Compare the empty-state / welcome cards in the main pane 3. **Most rails** follow a consistent shape: glyph + headline + body + primary CTA button 4. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/301)
-
-#### <a id="issue-kuestenlogik-bowire-302"></a>✅ Done · [#302](https://github.com/Kuestenlogik/Bowire/issues/302) Response viewer: line numbers + collapsible JSON + path breadcrumb + raw tab + download (Hoppscotch parity)
-
-User feedback (Phase 2 walkthrough): "response darstellung auf und einklappen sowie zeilennummern so wie bei hoppscotch" (Hoppscotch screenshot supplied). [[more]](https://github.com/Kuestenlogik/Bowire/issues/302)
-
-#### <a id="issue-kuestenlogik-bowire-303"></a>✅ Done · [#303](https://github.com/Kuestenlogik/Bowire/issues/303) Guided tour: per-rail empty-state secondary tours
-
-Phase A (tour engine + spotlight + page-navigation) and Phase B (Getting-started tour) shipped in b899d7007e904ffec2b3be7fc1ebcfea4595137f. Phase C — per-rail empty-state secondary tours — remains. [[more]](https://github.com/Kuestenlogik/Bowire/issues/303)
-
-#### <a id="issue-kuestenlogik-bowire-304"></a>✅ Done · [#304](https://github.com/Kuestenlogik/Bowire/issues/304) Compose rail: hide standalone Collections rail tree node now that Compose hosts it
-
-Phase A-F of #295 landed in 5160a3a — the Compose rail now hosts Collections + Presets in a side panel, and saves from any surface (Discover 'Add to', request-builder 'Save to collection', recording steps 'Open in Compose') land in the same buckets. [[more]](https://github.com/Kuestenlogik/Bowire/issues/304)
-
-#### <a id="issue-kuestenlogik-bowire-305"></a>✅ Done · [#305](https://github.com/Kuestenlogik/Bowire/issues/305) Source catalogue providers: kubernetes + agent (Phase D+E)
-
-Follow-up to #136. The provider seam (`IBowireCatalogueProvider` + `BowireCatalogueProviderRegistry`) and the three built-in providers (`local`, `http`, `consul`) shipped in ab8042fbe92611ccb41926af3be48d2947339282. The remaining two providers each need extra weight that doesn't belong in core: [[more]](https://github.com/Kuestenlogik/Bowire/issues/305)
-
-#### <a id="issue-kuestenlogik-bowire-307"></a>✅ Done · [#307](https://github.com/Kuestenlogik/Bowire/issues/307) Bowire interceptor: standalone reverse-proxy mode (Phase C)
-
-Follow-up to #153 — Phases A + B (embedded middleware + record-session integration) shipped in commit b2b92483de079ef1f1701ce261ba1c9b1463e4b3. This issue tracks **Phase C — standalone reverse-proxy mode**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/307)
-
-#### <a id="issue-kuestenlogik-bowire-308"></a>✅ Done · [#308](https://github.com/Kuestenlogik/Bowire/issues/308) Bowire interceptor: mock injection (Phase D)
-
-Follow-up to #153 — Phases A + B (embedded middleware + record-session integration) shipped in commit b2b92483de079ef1f1701ce261ba1c9b1463e4b3. This issue tracks **Phase D — mock injection** for both embedded and standalone modes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/308)
-
-#### <a id="issue-kuestenlogik-bowire-309"></a>✅ Done · [#309](https://github.com/Kuestenlogik/Bowire/issues/309) UI: configure URL catalogue providers from Settings (#136 follow-up)
-
-#136 shipped the URL catalogue provider interface (local / http / consul). Provider selection + configuration goes through appsettings (Bowire:Discovery:Catalogue:*) today — there's NO UI affordance to pick + configure a provider from the workbench. [[more]](https://github.com/Kuestenlogik/Bowire/issues/309)
-
-#### <a id="issue-kuestenlogik-bowire-310"></a>✅ Done · [#310](https://github.com/Kuestenlogik/Bowire/issues/310) UI: Settings → Modules toggle (mirror Rail modes pattern) — #294 follow-up
-
-#294 introduced IBowireModuleContribution + BowireModuleRegistry — modules (AI, Assistant, Variable resolver, &c) are now contributable from external packages. But the Settings → Modules SECTION that would let an operator turn an installed module ON / OFF doesn't exist. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/310)
-
-#### <a id="issue-kuestenlogik-bowire-314"></a>✅ Done · [#314](https://github.com/Kuestenlogik/Bowire/issues/314) Pluggable workbench: extract remaining rail JS slices (Phase G remainder)
-
-Follow-up to #311. The first wave shipped the five heaviest rail JS slices (Recordings, Mocks, Flows, Compose, Intercepted) as embedded resources on their respective `Kuestenlogik.Bowire.Rail.*` packages, and added the runtime stitching machinery in `BowireHtmlGenerator` that splices per-assembly JS … [[more]](https://github.com/Kuestenlogik/Bowire/issues/314)
-
-#### <a id="issue-kuestenlogik-bowire-324"></a>✅ Done · [#324](https://github.com/Kuestenlogik/Bowire/issues/324) Help: convert from drawer-tab to its own rail (plugin-contributed)
-
-Help moves out of the right-side drawer into a full rail with the standard left-sidebar + main-pane shape every other rail uses. Browsing + searching topics gets the workbench's room to breathe; the Assistant drawer stops width-jumping every time the operator switches tabs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/324)
-
-#### <a id="issue-kuestenlogik-bowire-325"></a>✅ Done · [#325](https://github.com/Kuestenlogik/Bowire/issues/325) refactor: drop Rail.* package prefix + reorganize Settings IA (Welle 2)
-
-Welle 2 of the v2.1 pre-release cleanup. Welle 1 already folded the Mock + Help rail-fragments into their topic packages (#311 follow-up + #324). This issue tracks the remaining eleven `Rail.*` packages. [[more]](https://github.com/Kuestenlogik/Bowire/issues/325)
-
-#### <a id="issue-kuestenlogik-bowire-327"></a>✅ Done · [#327](https://github.com/Kuestenlogik/Bowire/issues/327) fix(registry): BowireProtocolRegistry.Discover thread-safety race under parallel xUnit
-
-`MockCommandTests.RunAsync_RecordingWithUnknownProtocol_ReturnsErrorExit` failed CI with `Collection was modified; enumeration operation may not execute` instead of the expected 'Recording references' diagnostic. [[more]](https://github.com/Kuestenlogik/Bowire/issues/327)
-
-#### <a id="issue-kuestenlogik-bowire-328"></a>✅ Done · [#328](https://github.com/Kuestenlogik/Bowire/issues/328) fix(security): close CodeQL alerts — log-forging, incomplete sanitisation, XSS-through-exception
-
-Three security fixes batched to clear the CodeQL alert queue: [[more]](https://github.com/Kuestenlogik/Bowire/issues/328)
-
-#### <a id="issue-kuestenlogik-bowire-329"></a>✅ Done · [#329](https://github.com/Kuestenlogik/Bowire/issues/329) ci(security): switch CodeQL to Advanced Setup — sanitiser model + paths-ignore
-
-Replaces GitHub's Default Setup with an explicit Advanced configuration so we can: [[more]](https://github.com/Kuestenlogik/Bowire/issues/329)
-
-#### <a id="issue-kuestenlogik-bowire-330"></a>✅ Done · [#330](https://github.com/Kuestenlogik/Bowire/issues/330) docs: v2.1 docs + screenshots refresh (audit, marquee assets, UI guide, features, API reference)
-
-Comprehensive post-v2.1 docs refresh based on the staleness inventory: [[more]](https://github.com/Kuestenlogik/Bowire/issues/330)
-
-#### <a id="issue-kuestenlogik-bowire-331"></a>✅ Done · [#331](https://github.com/Kuestenlogik/Bowire/issues/331) docs: extension + embedding developer guides
-
-Two new top-level docs sections for the Developer audience: [[more]](https://github.com/Kuestenlogik/Bowire/issues/331)
-
-#### <a id="issue-kuestenlogik-bowire-332"></a>✅ Done · [#332](https://github.com/Kuestenlogik/Bowire/issues/332) fix(ui): streaming response container honours parent height — detail pane no longer crushed
-
-Operator: 'bei mehreren messages als antwort (subscribe) scheint es so zu sein, dass die liste der nachrichten dann die anzeige des inhalts einer message (JSON etc.) verdrängt.' [[more]](https://github.com/Kuestenlogik/Bowire/issues/332)
-
-#### <a id="issue-kuestenlogik-bowire-333"></a>✅ Done · [#333](https://github.com/Kuestenlogik/Bowire/issues/333) fix(sidebar): visual consistency — phantom border, uniform toolbar height, shared empty-state
-
-Three sidebar UX bugs operator surfaced in one session: [[more]](https://github.com/Kuestenlogik/Bowire/issues/333)
-
-### v2.2 — Test pillar: assertions, CI runner, regression coverage *(due 2026-07-10)*
-
-#### <a id="issue-kuestenlogik-bowire-38"></a>✅ Done · [#38](https://github.com/Kuestenlogik/Bowire/issues/38) CLI — Phase 3 polish (completion + validators + error rendering)
-
-> `area:cli`
-
-- [x] **Tab-completion via dotnet-suggest** — bash / PowerShell / zsh users get free completion. - [x] **Per-option validators** — `--port` validated 1..65535, `--recording` validated as FileInfo that exists, `--chaos` parsed ahead of dispatch. - [x] **Pretty-printed System.CommandLine errors** — co … [[more]](https://github.com/Kuestenlogik/Bowire/issues/38)
-
-#### <a id="issue-kuestenlogik-bowire-40"></a>✅ Done · [#40](https://github.com/Kuestenlogik/Bowire/issues/40) Freeform Request Builder
-
-> `area:workbench`
-
-Bowire today is discovery-first. Freeform flips this — the user creates a request from scratch without a discovered schema. [[more]](https://github.com/Kuestenlogik/Bowire/issues/40)
-
-#### <a id="issue-kuestenlogik-bowire-100"></a>✅ Done · [#100](https://github.com/Kuestenlogik/Bowire/issues/100) Ferry — CI/CD runner (collection / recording → headless run + JUnit report)
-
-The five shipping boats (#28 Cruise ship preview included) cover *interactive* use — operator opens a workbench, looks at responses, decides what to do next. They don't cover the CI/CD shape: "every commit, run this collection of calls + assertions, fail the build if anything regresses." [[more]](https://github.com/Kuestenlogik/Bowire/issues/100)
-
-#### <a id="issue-kuestenlogik-bowire-170"></a>✅ Done · [#170](https://github.com/Kuestenlogik/Bowire/issues/170) Mock-server fault injection — latency / errors / drops / partial responses
-
-Mocks (#94) replay captured responses faithfully. But "code that works against the happy path" is not the same as "code that works under failure". Your client should handle 503s, timeouts, slow responses, partial streams, dropped WebSocket frames. Today there's no easy way to test that against a Bowire mock. [[more]](https://github.com/Kuestenlogik/Bowire/issues/170)
-
-#### <a id="issue-kuestenlogik-bowire-171"></a>✅ Done · [#171](https://github.com/Kuestenlogik/Bowire/issues/171) Snapshot testing — capture-once, diff-on-change response baselines
-
-Regression-testing API responses is hard without a baseline. A real assertion DSL covers structural checks ("status is OK", "body.id matches"), but doesn't catch "the response shape changed in a way nobody intended". Jest-style snapshot testing fills that gap: record the response once, fail if it changes unexpectedly. [[more]](https://github.com/Kuestenlogik/Bowire/issues/171)
-
-#### <a id="issue-kuestenlogik-bowire-174"></a>✅ Done · [#174](https://github.com/Kuestenlogik/Bowire/issues/174) Data-driven tests — CSV / JSON / generator parameterisation
-
-Same request, N different inputs is a standard testing pattern. Today an operator would have to clone a collection item N times or write a script. Both flows lose the structured "same test, different data" semantics that test reporters expect. [[more]](https://github.com/Kuestenlogik/Bowire/issues/174)
-
-#### <a id="issue-kuestenlogik-bowire-180"></a>✅ Done · [#180](https://github.com/Kuestenlogik/Bowire/issues/180) Assertion DSL for collection / recording replay
-
-Recordings + Mocks let an operator capture and replay traffic, but nothing in the workbench can answer "did the response match what I expected?" Today the only assertion is "the call returned without throwing" — fine for a developer probing, useless as a regression suite. [[more]](https://github.com/Kuestenlogik/Bowire/issues/180)
-
-#### <a id="issue-kuestenlogik-bowire-181"></a>✅ Done · [#181](https://github.com/Kuestenlogik/Bowire/issues/181) bowire test CLI runner with JUnit / SARIF / TTY output
-
-Bowire is currently a UI tool. The "shift-left" / "build safer apps through continuous testing" positioning needs a headless surface that runs in CI and emits CI-friendly output (JUnit-XML, SARIF, GitHub annotations). Without it, the workbench stays a one-developer-at-a-time explorer. [[more]](https://github.com/Kuestenlogik/Bowire/issues/181)
-
-#### <a id="issue-kuestenlogik-bowire-191"></a>✅ Done · [#191](https://github.com/Kuestenlogik/Bowire/issues/191) Contract testing — Pact-style publish / verify CLI
-
-Microservice teams break each other when one team changes an API without consulting the consumers. Contract testing (Pact-style) catches that at build time: the consumer team declares "I expect these requests + responses", the provider's CI runs the contracts, fails the build if anything doesn't match. [[more]](https://github.com/Kuestenlogik/Bowire/issues/191)
-
-#### <a id="issue-kuestenlogik-bowire-208"></a>✅ Done · [#208](https://github.com/Kuestenlogik/Bowire/issues/208) Variable resolver — Phase 5: OS keyring + AI re-roll + streaming
-
-The variable resolver (phases 1-4, #125/#145) resolves `{{name}}` from environments, workspace vars, and system generators. Three sources from the original design are still missing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/208)
-
-#### <a id="issue-kuestenlogik-bowire-213"></a>✅ Done · [#213](https://github.com/Kuestenlogik/Bowire/issues/213) Test infra: finish SidecarFake JSON-RPC handshake to unlock SidecarBowireProtocol coverage
-
-> **Status:** shipped. The SidecarFake handshake is complete; the method names diverged from the `tools/list` / `tools/call` nomenclature in the original body. This body reflects the IST state; the original plan is preserved in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/213)
-
-#### <a id="issue-kuestenlogik-bowire-306"></a>✅ Done · [#306](https://github.com/Kuestenlogik/Bowire/issues/306) Pluggable workbench: extract every remaining rail / module to packages + Bundle.Workbench (Phase G follow-up to #294)
-
-Follow-up to #294. Phases A-F shipped the descriptor architecture + extracted Security (rail) and AI (module) as proof. Phase G is the remaining package-mechanics work — no architectural decisions left to make, just `mv` + csproj wiring. [[more]](https://github.com/Kuestenlogik/Bowire/issues/306)
-
-#### <a id="issue-kuestenlogik-bowire-312"></a>✅ Done · [#312](https://github.com/Kuestenlogik/Bowire/issues/312) Test coverage gap report — v2.1 audit kickoff
-
-Recon report for the v2.2 test pillar lands at [`docs/testing/coverage-gaps-v2.1.md`](https://github.com/Kuestenlogik/Bowire/blob/main/docs/testing/coverage-gaps-v2.1.md). This issue tracks the kickoff; per-gap follow-ups should reference back to this one. [[more]](https://github.com/Kuestenlogik/Bowire/issues/312)
-
-#### <a id="issue-kuestenlogik-bowire-315"></a>✅ Done · [#315](https://github.com/Kuestenlogik/Bowire/issues/315) Unify Proxy + Intercepted into 'Traffic' rail (Standalone / Embedded sub-modes); Mocks stays separate
-
-Three rails exist today that all touch "request flowing through Bowire": [[more]](https://github.com/Kuestenlogik/Bowire/issues/315)
-
-#### <a id="issue-kuestenlogik-bowire-316"></a>✅ Done · [#316](https://github.com/Kuestenlogik/Bowire/issues/316) substituteMessages([...]) passes Array.map index as cycle-guard set, crashes on 2nd+ entry
-
-Found by coverage-wave-2 (#312) while wiring up node-tests for history-env.js. [[more]](https://github.com/Kuestenlogik/Bowire/issues/316)
-
-#### <a id="issue-kuestenlogik-bowire-323"></a>✅ Done · [#323](https://github.com/Kuestenlogik/Bowire/issues/323) interceptor reverse-proxy: swap hand-rolled HttpClient forwarder for YARP IHttpForwarder
-
-Follow-up to #153 / #307 — the standalone reverse-proxy listener (`bowire interceptor --upstream <url>`) shipped in 67197f2 forwards every request via a hand-rolled `BowireReverseProxyMiddleware` over plain `HttpClient`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/323)
-
-#### <a id="issue-kuestenlogik-bowire-334"></a>✅ Done · [#334](https://github.com/Kuestenlogik/Bowire/issues/334) feat(v2.2): merge Mocks + Traffic into Intercept rail with four sub-tabs
-
-Operator audit identified Phase-3 rail bloat: `Mocks` + `Traffic` (Interceptor) + 2 legacy contributions (`Intercepted`, `Proxy`) competed for the same conceptual surface ("what do I do with live traffic"). Plus "Flows" had two meanings (Flows rail vs Traffic's request-log sub-tab). [[more]](https://github.com/Kuestenlogik/Bowire/issues/334)
-
-#### <a id="issue-kuestenlogik-bowire-335"></a>✅ Done · [#335](https://github.com/Kuestenlogik/Bowire/issues/335) feat(v2.2): cross-rail transition CTAs
-
-Surface implicit operator workflows between rails as concrete UI affordances: [[more]](https://github.com/Kuestenlogik/Bowire/issues/335)
-
-#### <a id="issue-kuestenlogik-bowire-336"></a>✅ Done · [#336](https://github.com/Kuestenlogik/Bowire/issues/336) feat(v2.2): Interceptor activation empty-state with Reverse-Proxy CTA
-
-Operator: 'live overrides machen ja nur sinn bei embedded, oder?' Confirmed: Intercept rail's Captured + Live overrides + Settings sub-tabs are meaningful only when EITHER `app.UseBowireInterceptor()` ran (embedded) OR the standalone Tool's Reverse-Proxy is running. [[more]](https://github.com/Kuestenlogik/Bowire/issues/336)
-
-#### <a id="issue-kuestenlogik-bowire-337"></a>✅ Done · [#337](https://github.com/Kuestenlogik/Bowire/issues/337) feat(v2.2): workspace deletion hardening — cascade purge + Soft/Hard toggle + Action-Log decouple
-
-Three-part refactor in one PR. Closes the workspace-delete leaks operator surfaced + adds operator-controlled deletion semantics + decouples Undo from Trash. [[more]](https://github.com/Kuestenlogik/Bowire/issues/337)
-
-#### <a id="issue-kuestenlogik-bowire-338"></a>✅ Done · [#338](https://github.com/Kuestenlogik/Bowire/issues/338) fix(bundle): guard rail-load calls for embedded hosts that don't reference every rail package
-
-**Hypothesis confirmed.** Sample.Embedded crashed during boot with `ReferenceError: loadFlows is not defined`. `loadFlows` is defined ONLY in `Kuestenlogik.Bowire.Flows/wwwroot/js/flows.js`. Sample.Embedded's csproj references Core + Protocol.Rest + Map + Interceptor — but NOT Flows. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/338)
-
-#### <a id="issue-kuestenlogik-bowire-340"></a>✅ Done · [#340](https://github.com/Kuestenlogik/Bowire/issues/340) feat(v2.2): plugin lifecycle backend — Restart / Unload / Load / Reset-storage / Health
-
-Replaces the 501-stub lifecycle endpoint with real per-action handlers. Closes the gap operator surfaced after the v2.1 Settings IA work: clicking a per-plugin lifecycle button used to just toast 'Not implemented'. [[more]](https://github.com/Kuestenlogik/Bowire/issues/340)
-
-#### <a id="issue-kuestenlogik-bowire-341"></a>✅ Done · [#341](https://github.com/Kuestenlogik/Bowire/issues/341) feat(v2.2): swap reverse-proxy forwarding to YARP IHttpForwarder
-
-Migrates Bowire's reverse-proxy host from raw `HttpClient` to YARP's `IHttpForwarder` (v2.1 audit follow-up #323). Closes the deferred-from-v2.1 work. [[more]](https://github.com/Kuestenlogik/Bowire/issues/341)
-
-#### <a id="issue-kuestenlogik-bowire-342"></a>✅ Done · [#342](https://github.com/Kuestenlogik/Bowire/issues/342) feat(v2.2): Flow Assertions — expectations schema + runtime evaluator + UI editor (T1 — Test Pillar foundation)
-
-Foundation of the v2.2 Test Pillar milestone. Each Flow step gains an optional `expectations` array; runtime evaluates after each step's request; UI editor inline with per-kind operator menus. [[more]](https://github.com/Kuestenlogik/Bowire/issues/342)
-
-#### <a id="issue-kuestenlogik-bowire-343"></a>✅ Done · [#343](https://github.com/Kuestenlogik/Bowire/issues/343) feat(v2.2): Regression Coverage surface — per-method run history + Discover sidebar chips (T3)
-
-Independent Test Pillar stream. Per-method run-history aggregation surface: every direct invoke / Compose request / flow execution / benchmark / recording-replay logs a run; Discover sidebar method-items pick up a coverage chip; Settings → Data carries the full history view. [[more]](https://github.com/Kuestenlogik/Bowire/issues/343)
-
-#### <a id="issue-kuestenlogik-bowire-344"></a>✅ Done · [#344](https://github.com/Kuestenlogik/Bowire/issues/344) feat(v2.2): bowire test CLI — flow runner + JUnit XML + HTML report (T2)
-
-v2.2 Test Pillar middle stream — depends on T1 (#342) for the assertion model. Sits on top of the existing in-process `TestRunner` so the CLI is self-contained (no sidecar Bowire UI required). [[more]](https://github.com/Kuestenlogik/Bowire/issues/344)
-
-#### <a id="issue-kuestenlogik-bowire-345"></a>✅ Done · [#345](https://github.com/Kuestenlogik/Bowire/issues/345) feat(v2.2): pluggable field-detector auto-discovery via [BowireExtension] attribute (D)
-
-Closes the extension-point asymmetry noted in `docs/extending/ui-extension.md`: UI extensions were auto-discovered via `[BowireExtension]`, but field detectors landed only via manual `AddSingleton<IBowireFieldDetector, ...>`. Operators wanting to ship custom semantic-kind detectors (e.g. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/345)
-
-#### <a id="issue-kuestenlogik-bowire-346"></a>✅ Done · [#346](https://github.com/Kuestenlogik/Bowire/issues/346) fix(v2.2): Compose tab Duplicate deep-copies request state — morphdom stale-closure fix (F)
-
-v2.1 release notes claimed the Compose Duplicate-tab action fanned out a request without losing the original. Post-v2.2 audit revealed the feature was **broken in production**: editing the duplicated tab mutated the source tab's state. [[more]](https://github.com/Kuestenlogik/Bowire/issues/346)
-
-#### <a id="issue-kuestenlogik-bowire-347"></a>✅ Done · [#347](https://github.com/Kuestenlogik/Bowire/issues/347) feat(v2.2): Bootcamp lessons — Intercept / Flow Assertions / bowire test CLI / Coverage / Plugin lifecycle / Workspace deletion (G)
-
-Six new Bowire.Bootcamp lessons covering the v2.2 features that ship in main Bowire since Bootcamp PR #12 (Kuestenlogik/Bowire.Bootcamp#13). [[more]](https://github.com/Kuestenlogik/Bowire/issues/347)
-
-#### <a id="issue-kuestenlogik-bowire-348"></a>✅ Done · [#348](https://github.com/Kuestenlogik/Bowire/issues/348) feat(v2.2): Settings → Workspace… expanded into 4 sub-pages (E)
-
-v2.1 shipped the Settings IA with a single "Workspace…" leaf, deferring the sub-tree expansion for v2.2. This closes that gap. [[more]](https://github.com/Kuestenlogik/Bowire/issues/348)
-
-#### <a id="issue-kuestenlogik-bowire-349"></a>✅ Done · [#349](https://github.com/Kuestenlogik/Bowire/issues/349) fix(compose): Parameter → Header sub-tab preserves Parameter row inputs — mistakes 'X-Test' as params[0].key
-
-Discovered during the #346 second-pass fix. Separate bug — same morphdom-stale-closure family but different site. [[more]](https://github.com/Kuestenlogik/Bowire/issues/349)
-
-#### <a id="issue-kuestenlogik-bowire-356"></a>✅ Done · [#356](https://github.com/Kuestenlogik/Bowire/issues/356) JS test safety net: unit-test infra for wwwroot fragments + lift the codecov wwwroot ignore
-
-2026-07-03 architecture audit, highest-risk finding: the frontend is ~72 000 LOC of vanilla JS (41 Core fragments = 60 286 LOC + ~12k LOC of plugin fragments) sharing one closure, and it is **almost entirely untested and invisible to coverage**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/356)
-
-#### <a id="issue-kuestenlogik-bowire-368"></a>✅ Done · [#368](https://github.com/Kuestenlogik/Bowire/issues/368) Cleanup: retire legacy proxy/intercepted core render fns + consolidate Workspaces descriptor (#306 tail)
-
-Two low-priority cleanups left after #306's rail cut-over (all 7 optional feature rails now use the #314 renderer-key seam): [[more]](https://github.com/Kuestenlogik/Bowire/issues/368)
-
-### v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side *(due 2026-08-03)*
-
-#### <a id="issue-kuestenlogik-bowire-34"></a>✅ Done · [#34](https://github.com/Kuestenlogik/Bowire/issues/34) AsyncAPI discovery source — remaining bindings + V2 overloads + YAML pre-normaliser
-
-> `area:plugin-sdk`
-
-AsyncAPI loader + most bindings shipped (MQTT / Kafka / WebSocket / HTTP / AMQP / NATS / MQTT5 + schema export). Open: [[more]](https://github.com/Kuestenlogik/Bowire/issues/34)
-
-#### <a id="issue-kuestenlogik-bowire-36"></a>✅ Done · [#36](https://github.com/Kuestenlogik/Bowire/issues/36) Replay-Mock — HTTPS MITM / record mode
-
-> `area:mock`
-
-> **Status:** shipped. The body previously marked this "deferred unless demand picks up" — it has since been built in full. This body reflects the IST state; the original deferral note is preserved in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/36)
-
-#### <a id="issue-kuestenlogik-bowire-48"></a>✅ Done · [#48](https://github.com/Kuestenlogik/Bowire/issues/48) Schema watch mode
-
-> `area:workbench`
-
-Re-discover the active server URL(s) every N seconds and show a \"+ added, − removed, ~ changed\" delta in the sidebar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/48)
-
-#### <a id="issue-kuestenlogik-bowire-179"></a>✅ Done · [#179](https://github.com/Kuestenlogik/Bowire/issues/179) Mock from schema — generate a running mock without a recording
-
-Mocks today require a Recording: capture traffic against a real server, replay against the mock. That's great for fidelity but bad for parallel development where the consumer team starts BEFORE the provider exists. Today the consumer has to hand-write stubs. [[more]](https://github.com/Kuestenlogik/Bowire/issues/179)
-
-#### <a id="issue-kuestenlogik-bowire-182"></a>✅ Done · [#182](https://github.com/Kuestenlogik/Bowire/issues/182) Side-by-side service version diff — schema + response comparison
-
-When an API is versioned (`v1`, `v2`), or when a server is being migrated, the operator needs to compare side-by-side: does `v2.GetUser` return the same shape as `v1.GetUser`? Today the only way is to invoke each separately and eyeball the responses. [[more]](https://github.com/Kuestenlogik/Bowire/issues/182)
-
-#### <a id="issue-kuestenlogik-bowire-185"></a>✅ Done · [#185](https://github.com/Kuestenlogik/Bowire/issues/185) Schema-watch diff view — show what changed since last visit
-
-Bowire already has Schema-Watch (#138) that re-runs discovery on a configurable interval. What it doesn't do is TELL the operator what changed. The natural "I came back from lunch, what's new in this API?" workflow doesn't exist. [[more]](https://github.com/Kuestenlogik/Bowire/issues/185)
-
-#### <a id="issue-kuestenlogik-bowire-253"></a>✅ Done · [#253](https://github.com/Kuestenlogik/Bowire/issues/253) Separate discovery URL from invocation URL — schema source (upload / URL / source) + per-call invocation URL override
-
-Bowire conflates two distinct URL concepts under a single "Server URL" field: [[more]](https://github.com/Kuestenlogik/Bowire/issues/253)
-
-#### <a id="issue-kuestenlogik-bowire-401"></a>✅ Done · [#401](https://github.com/Kuestenlogik/Bowire/issues/401) Mock-server maturity — WireMock feature parity (epic)
-
-Tracking epic for closing the mock-server feature gaps versus **WireMock**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/401)
-
-#### <a id="issue-kuestenlogik-bowire-402"></a>✅ Done · [#402](https://github.com/Kuestenlogik/Bowire/issues/402) Mock request matching: query / header / cookie predicates + regex/glob paths + stub priority
-
-Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/402)
-
-#### <a id="issue-kuestenlogik-bowire-403"></a>✅ Done · [#403](https://github.com/Kuestenlogik/Bowire/issues/403) Mock request-body matchers (equalToJson / JSONPath / XPath / JSON-schema / regex)
-
-Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/403)
-
-#### <a id="issue-kuestenlogik-bowire-404"></a>✅ Done · [#404](https://github.com/Kuestenlogik/Bowire/issues/404) Hand-authored stub mappings + per-stub admin CRUD API
-
-Part of the mock-server WireMock-parity effort. (Epic-sized — foundational.) [[more]](https://github.com/Kuestenlogik/Bowire/issues/404)
-
-#### <a id="issue-kuestenlogik-bowire-405"></a>✅ Done · [#405](https://github.com/Kuestenlogik/Bowire/issues/405) Mock: replay & override response headers (honour recorded Content-Type)
-
-Part of the mock-server WireMock-parity effort. (High value — near-bug.) [[more]](https://github.com/Kuestenlogik/Bowire/issues/405)
-
-#### <a id="issue-kuestenlogik-bowire-406"></a>✅ Done · [#406](https://github.com/Kuestenlogik/Bowire/issues/406) Mock response templating: helpers / math / faker + bodyFileName + transformer hook
-
-Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/406)
-
-#### <a id="issue-kuestenlogik-bowire-407"></a>✅ Done · [#407](https://github.com/Kuestenlogik/Bowire/issues/407) Mock: selective upstream proxy (proxyBaseUrl) for partial mocking
-
-Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/407)
-
-#### <a id="issue-kuestenlogik-bowire-408"></a>✅ Done · [#408](https://github.com/Kuestenlogik/Bowire/issues/408) Mock: named scenario state machine (states + transitions)
-
-Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/408)
-
-#### <a id="issue-kuestenlogik-bowire-409"></a>✅ Done · [#409](https://github.com/Kuestenlogik/Bowire/issues/409) Mock: request verification / assertion API (verify + findAll + near-misses)
-
-Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/409)
-
-#### <a id="issue-kuestenlogik-bowire-410"></a>✅ Done · [#410](https://github.com/Kuestenlogik/Bowire/issues/410) Mock: HTTPS/TLS on the standalone server (+ Docker image)
-
-Part of the mock-server WireMock-parity effort. [[more]](https://github.com/Kuestenlogik/Bowire/issues/410)
-
-#### <a id="issue-kuestenlogik-bowire-411"></a>✅ Done · [#411](https://github.com/Kuestenlogik/Bowire/issues/411) Mock fault injection: malformed-response-chunk + faults on unmatched requests
-
-Part of the mock-server WireMock-parity effort. (Small — fault-injection is otherwise ahead of WireMock.) [[more]](https://github.com/Kuestenlogik/Bowire/issues/411)
-
-#### <a id="issue-kuestenlogik-bowire-430"></a>✅ Done · [#430](https://github.com/Kuestenlogik/Bowire/issues/430) Mock response templating: expression/helper engine + record-through capture (follow-up)
-
-Follow-up from #406 (mock-server WireMock parity, epic #401). The response templating shipped in #406 covers `${faker.*}` generators, `bodyFileName`, and a response-transformer hook. Two richer pieces were deliberately deferred: [[more]](https://github.com/Kuestenlogik/Bowire/issues/430)
-
-#### <a id="issue-kuestenlogik-bowire-491"></a>✅ Done · [#491](https://github.com/Kuestenlogik/Bowire/issues/491) Nuclei template compat — non-HTTP transports (Phase 2g)
-
-Split out of #35 (Nuclei template compatibility). Phases 2a–2f shipped across the v2.3 cycle: [[more]](https://github.com/Kuestenlogik/Bowire/issues/491)
-
-#### <a id="issue-kuestenlogik-bowire-510"></a>✅ Done · [#510](https://github.com/Kuestenlogik/Bowire/issues/510) SignalR: standalone --url signalr@<hub-url> has no discovery/invocation surface
-
-`bowire --url signalr@http://host/hub` is documented (`docs/setup/standalone.md`, SignalR sample README) but dead-ends: the SignalR plugin's `DiscoverAsync` only reflects over the *local* `EndpointDataSource` behind a self-origin gate (`SignalRHubDiscovery.cs`), so an external hub URL yields zero se … [[more]](https://github.com/Kuestenlogik/Bowire/issues/510)
-
-#### <a id="issue-kuestenlogik-bowire-511"></a>✅ Done · [#511](https://github.com/Kuestenlogik/Bowire/issues/511) mock: recording replay only matches HTTP-path steps — GraphQL/gRPC/streaming steps unreachable
-
-`bowire mock --recording <file>` only replays steps that carry `httpPath` + `httpVerb` — i.e. REST and OData. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/511)
-
-#### <a id="issue-kuestenlogik-bowire-514"></a>✅ Done · [#514](https://github.com/Kuestenlogik/Bowire/issues/514) REST plugin: embedded discovery crashes on duplicate operation keys (CacheEmbeddedSchemas ToDictionary)
-
-Embedded discovery against a host that serves ASP.NET Core 10's `AddOpenApi()` document fails entirely: [[more]](https://github.com/Kuestenlogik/Bowire/issues/514)
-
-#### <a id="issue-kuestenlogik-bowire-528"></a>✅ Done · [#528](https://github.com/Kuestenlogik/Bowire/issues/528) GraphQL sample throws SchemaException on every request (HotChocolate cannot resolve Query/Mutation/Subscription)
-
-`samples/Kuestenlogik.Bowire.Sample.GraphQL` starts and serves `/bowire`, but **every** GraphQL request — including the introspection query Bowire's discovery sends — fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/528)
-
-#### <a id="issue-kuestenlogik-bowire-543"></a>✅ Done · [#543](https://github.com/Kuestenlogik/Bowire/issues/543) MockCommandAutoInstallTests reads the developer's real plugin directory
-
-`MockCommandAutoInstallTests.RunAsync_AutoInstall_MultipleMissing_InstallsEach` fails on a developer machine that has any protocol plugin installed: [[more]](https://github.com/Kuestenlogik/Bowire/issues/543)
-
-#### <a id="issue-kuestenlogik-bowire-544"></a>✅ Done · [#544](https://github.com/Kuestenlogik/Bowire/issues/544) Discovery cannot report a partial fault: results and diagnostics are mutually exclusive
-
-A discovery probe is all-or-nothing. If any surface of a server faults, the plugin's entire contribution is dropped — including the surfaces that answered perfectly. [[more]](https://github.com/Kuestenlogik/Bowire/issues/544)
-
-#### <a id="issue-kuestenlogik-bowire-545"></a>✅ Done · [#545](https://github.com/Kuestenlogik/Bowire/issues/545) Correlated timeline: join across renamed identifiers (multi-key)
-
-The correlated timeline (#539) keys a recording on **one** value. A business transaction that changes its identifier as it crosses services therefore lights up only the lanes that happen to speak the chosen key. [[more]](https://github.com/Kuestenlogik/Bowire/issues/545)
-
-#### <a id="issue-kuestenlogik-bowire-546"></a>✅ Done · [#546](https://github.com/Kuestenlogik/Bowire/issues/546) Make plugin management DI-friendly: retire the static PluginManager and its duplicate ledger
-
-Plugin management is static end to end: `PluginManager` is a `static class` holding `s_pluginContexts` (the load contexts) and `s_loadedSubdirs` (a hand-maintained record of what has been loaded), and `BowireProtocolRegistry.Discover()` is a static call with side effects — it runs `Assembly.LoadFrom` while scanning. [[more]](https://github.com/Kuestenlogik/Bowire/issues/546)
-
-#### <a id="issue-kuestenlogik-bowire-548"></a>✅ Done · [#548](https://github.com/Kuestenlogik/Bowire/issues/548) Release cascade skips Kuestenlogik.Bowire.Protocol.* — the bump regex allows only one dot-segment
-
-The release cascade bumps `Kuestenlogik.Bowire` and `Kuestenlogik.Bowire.<One>` in every sibling, and silently skips `Kuestenlogik.Bowire.<Two>.<Segments>`. The bump regex in `.github/sibling-templates/bowire-released.yml` allows exactly one dot-segment past the prefix: [[more]](https://github.com/Kuestenlogik/Bowire/issues/548)
-
-#### <a id="issue-kuestenlogik-bowire-550"></a>✅ Done · [#550](https://github.com/Kuestenlogik/Bowire/issues/550) morphdom strips the data-* idempotence markers — four sites leak a ResizeObserver + MutationObserver per render
-
-Four sites use a `data-*` attribute as the "already wired" marker for imperative DOM work. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/550)
-
-#### <a id="issue-kuestenlogik-bowire-552"></a>✅ Done · [#552](https://github.com/Kuestenlogik/Bowire/issues/552) SSE panel never closes its EventSource on error — a dead endpoint drives a full-app render loop
-
-The SSE request panel's `onerror` renders and leaves the `EventSource` open. The browser then auto-reconnects forever, at a cadence the **remote** server's `retry:` directive controls, and each attempt costs one full-app `render()`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/552)
-
-#### <a id="issue-kuestenlogik-bowire-556"></a>✅ Done · [#556](https://github.com/Kuestenlogik/Bowire/issues/556) McpDiscoveryWireTests is flaky: FreePort() releases the port before HttpListener binds it
-
-`McpDiscoveryWireTests` picks a port by binding one and letting go of it again: [[more]](https://github.com/Kuestenlogik/Bowire/issues/556)
-
-#### <a id="issue-kuestenlogik-bowire-557"></a>✅ Done · [#557](https://github.com/Kuestenlogik/Bowire/issues/557) ScanCommandTests reads the developer's vulndb cache and fails once you have used the tool
-
-`ScanCommandTests.RunAsync_NoTemplatesAndNoBuiltins_ReturnsUsageError` reads the developer's home directory. It passes on a machine that has never run `bowire vulndb update` and fails on one that has. [[more]](https://github.com/Kuestenlogik/Bowire/issues/557)
-
-#### <a id="issue-kuestenlogik-bowire-558"></a>✅ Done · [#558](https://github.com/Kuestenlogik/Bowire/issues/558) Add a persisted mock-configuration workspace artifact: model, store, and apply-at-startup seam
-
-Schema mocks today synthesise an in-memory `BowireRecording` at startup and persist nothing; the only rule-typed config on `MockServerOptions` is `Chaos`/`Faults` (error injection, explicitly out of scope for #179). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/558)
-
-#### <a id="issue-kuestenlogik-bowire-559"></a>✅ Done · [#559](https://github.com/Kuestenlogik/Bowire/issues/559) Honour declared schema examples across OpenAPI, Protobuf, and GraphQL mock sources
-
-"Reads schema examples when present" is genuinely shipped for OpenAPI only, and partially there: `OpenApiSampleGenerator.BuildNode` honours inline `schema.Example`/`schema.Default` but `PickSuccessResponseSchema` extracts only `mediaType.Schema`, so media-type-level examples are silently ignored. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/559)
-
-#### <a id="issue-kuestenlogik-bowire-560"></a>✅ Done · [#560](https://github.com/Kuestenlogik/Bowire/issues/560) Start a schema mock from the workbench and create its mock-configuration artifact
-
-Schema mocks have no UI entry point today: the only workbench start path is `startMockFromRecording` (mocks.js), and there are zero schema-mock references in any workbench JS. `POST {basePath}/api/mocks` accepts only recording shapes. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/560)
-
-#### <a id="issue-kuestenlogik-bowire-561"></a>✅ Done · [#561](https://github.com/Kuestenlogik/Bowire/issues/561) Add per-field response-override and per-method conditional-rule editors to the schema-mock detail pane
-
-No per-field response-override editor and no per-method conditional-response editor exist for schema mocks. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/561)
-
-#### <a id="issue-kuestenlogik-bowire-562"></a>✅ Done · [#562](https://github.com/Kuestenlogik/Bowire/issues/562) Let a schema mock require authentication, composed from a #sec-04 auth recording
-
-There is no auth gate on the mock's serving surface: `MockServer.StartAsync` builds `UseRouting -> UseWebSockets -> UseBowireMock -> UseEndpoints` with no authentication middleware and no 401 before replay. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/562)
-
-#### <a id="issue-kuestenlogik-bowire-563"></a>✅ Done · [#563](https://github.com/Kuestenlogik/Bowire/issues/563) Resolve a mock's auth requirement from a #sec-04 auth recording
-
-[#562](https://github.com/Kuestenlogik/Bowire/issues/562) shipped the mock auth gate — `bowire mock --require-auth <token>` and the workbench *Require authentication* card — but a mock can only demand a **directly-configured** credential today. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/563)
-
-#### <a id="issue-kuestenlogik-bowire-564"></a>✅ Done · [#564](https://github.com/Kuestenlogik/Bowire/issues/564) Add a `bowire version` command (with optional --plugins)
-
-`bowire --version` prints the app version, but there's no first-class, discoverable `version` subcommand, and no way to see the installed protocol plugins **and their versions** in one place. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/564)
-
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
+
+#### <a id="issue-kuestenlogik-bowire-samples-54"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) harbor-demo: MQTT crane telemetry should name the container it lifts
+
+The harbor demo is the reference recording for Bowire's correlated timeline (Kuestenlogik/Bowire#539, #545). Seven of its eight protocol steps now join into one flow. The eighth — the MQTT crane telemetry — stays dark, and the sample is the reason. [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/54)
 
 #### <a id="issue-kuestenlogik-bowire-101"></a>⬜ Backlog · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code + JetBrains workbench extension
 
@@ -1008,6 +212,70 @@ Follow-up to #356. JS tests now gate CI (`node --test` over wwwroot-js) and JS c
 > `area:workbench`
 
 **Builds on:** #31, #32 — multi-tenant SCIM extends the auth foundation. [[more]](https://github.com/Kuestenlogik/Bowire/issues/28)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-21"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21) probeDuration setting is ignored by DiscoverAsync
+
+The plugin exposes a `probeDuration` setting (`BowireDisProtocol.Settings`, default 3s) and the README advertises it as configurable ("configurable via the plugin's `probeDuration` setting"). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-22"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) Typed PDU envelope decoding beyond EntityState
+
+`TryBuildEnvelope` only decodes **EntityState** into typed fields; every other PDU kind is surfaced as header + base64 `raw` only (`src/Kuestenlogik.Bowire.Protocol.Dis/BowireDisProtocol.cs:294-350`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-23"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) Entity-filtered stream drops non-EntityState PDUs
+
+On an entity-scoped subscription, any PDU that is not EntityState is dropped (`src/Kuestenlogik.Bowire.Protocol.Dis/BowireDisProtocol.cs:326-332` — "we don't attempt to route every PDU type by id here"). So a Fire/Detonation/Collision originating from the filtered entity never shows up in that entity's feed. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-24"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#24](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24) Typed / re-decoded mock replay in DisMockEmitter
+
+`DisMockEmitter` currently ships captured PDU bytes verbatim (raw byte replay only — README "Status": "the emitter doesn't re-decode"). That is correct for faithful replay but blocks any replay-time manipulation. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-25"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#25](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/25) Minefield Data (ID 39): type the DataFilter-gated per-mine arrays
+
+Minefield Data currently keeps the DataFilter-gated optional per-mine arrays as an opaque `OptionalFieldsBlob` (`COVERAGE.md`, Family 8, ID 39): "bit-to-array mapping needs SISO test vectors to type safely." The rest of the PDU roundtrips typed. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/25)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-26"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#26](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/26) Live Entity family: flag-gated compressed payload decoding
+
+TSPI (66), Appearance (99), LE Fire (101) and LE Detonation (102) currently type the header + `LiveEntityId` and round-trip the compressed, bit-packed, flag-gated payload verbatim (`COVERAGE.md`, Family 11 — "flag-gated field decoding deferred; opendis7 reference impl also doesn't decode"). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/26)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-27"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#27](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27) ClusterClient transport for the standalone bowire CLI
+
+**Roadmap:** 1.1.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-28"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#28](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28) Mailbox-snapshot inspection (size + head messages)
+
+**Roadmap:** 1.1.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-29"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#29](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29) Per-actor throughput stats
+
+**Roadmap:** 1.1.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-30"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#30](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30) Typed payload via Akka serializer roundtrip
+
+**Roadmap:** 1.2.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-31"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#31](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31) Opt-in filter API from the Bowire UI (per actor path / message type)
+
+**Roadmap:** 1.2.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-32"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#32](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/32) Embedded mode: resolve SDK from host DI + drop direct Confluent path
+
+Make this plugin drift-free against the Surgewave wire protocol in **both** deployment modes, and remove its direct `Confluent.*` dependency. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/32)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-32"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#32](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32) Tell-from-Bowire — interactive duplex via OpenChannelAsync
+
+**Roadmap:** 1.2.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-33"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#33](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33) DeadLetter capture under the global default mailbox
+
+When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` spawn happens during root-guardian bootstrap and is swallowed (try/catch in the `BowireAkkaExtension` ctor), so dead-letter capture is silently disabled in that mode (documented in README + the sample `Program.cs`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-34"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) Docs drift: TappedMessage envelope field names & payload shape
+
+`COVERAGE.md` (envelope table) and `SMOKE.md` (sample JSON frame) show fields `RecipientPath` / `SenderPath` and a JSON-object `Payload`, but the actual record is `Recipient` / `Sender` (string) with a string `Payload` (`src/Kuestenlogik.Bowire.Protocol.Akka/TappedMessage.cs`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-36"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) Multi-subscriber + mixed-mode integration tests
+
+`COVERAGE.md` calls out the branch gap: the 0/1/many-subscriber paths in `BowireAkkaExtension` and the mixed mode (global default mailbox + per-actor `WithMailbox` override) are only covered by single-mode tests. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36)
 
 #### <a id="issue-kuestenlogik-bowire-49"></a>⬜ Backlog · [#49](https://github.com/Kuestenlogik/Bowire/issues/49) Programmatic environment provisioning in embedded mode
 
@@ -1280,90 +548,6 @@ The `.Scanner` suffix under-describes what the package has become. It started as
 #### <a id="issue-kuestenlogik-bowire-529"></a>⬜ Backlog · [#529](https://github.com/Kuestenlogik/Bowire/issues/529) OData plugin: EDM functions and actions are never discovered (class doc claims they are)
 
 `BowireODataProtocol.DiscoverAsync` emits exactly five methods per entity set — GET, GET_BY_KEY, POST, PATCH, DELETE. EDM **functions and actions** are parsed into the model but never surfaced, so they cannot be invoked from the workbench. [[more]](https://github.com/Kuestenlogik/Bowire/issues/529)
-
-### Backlog (not yet scheduled)
-
-#### <a id="issue-kuestenlogik-bowire-templates-3"></a>⬜ Backlog · [Kuestenlogik/Bowire.Templates#3](https://github.com/Kuestenlogik/Bowire.Templates/issues/3) Plugin project template — `dotnet new bowire-plugin`
-
-> `area:plugin-sdk`
-
-\`dotnet new bowire-plugin\` in the separate [Templates repo](https://github.com/Kuestenlogik/Bowire.Templates). The polyglot sidecar variants (Python / Node / Rust / Go) shipped via \`--Sidecar\`; this is the .NET-native variant. [[more]](https://github.com/Kuestenlogik/Bowire.Templates/issues/3)
-
-#### <a id="issue-kuestenlogik-bowire-bootcamp-6"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#6](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6) Bootcamp landing renders inconsistent breadcrumb based on arrival path
-
-Navigating to the Bootcamp landing via the top-bar **Bootcamp** link renders the page **without** a breadcrumb. Navigating to the same page via the B-logo click path (see linked issue) renders **with** a breadcrumb showing `Bootcamp > Home`. Same destination, two different chromes. [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/6)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-11"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#11](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11) Light up Surgewave protocol plugin
-
-Tracks the Surgewave-lane work split out of Kuestenlogik/Bowire#33 so protocol-specific tickets live with the protocol-specific repo. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/11)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-21"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21) probeDuration setting is ignored by DiscoverAsync
-
-The plugin exposes a `probeDuration` setting (`BowireDisProtocol.Settings`, default 3s) and the README advertises it as configurable ("configurable via the plugin's `probeDuration` setting"). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-22"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) Typed PDU envelope decoding beyond EntityState
-
-`TryBuildEnvelope` only decodes **EntityState** into typed fields; every other PDU kind is surfaced as header + base64 `raw` only (`src/Kuestenlogik.Bowire.Protocol.Dis/BowireDisProtocol.cs:294-350`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-23"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) Entity-filtered stream drops non-EntityState PDUs
-
-On an entity-scoped subscription, any PDU that is not EntityState is dropped (`src/Kuestenlogik.Bowire.Protocol.Dis/BowireDisProtocol.cs:326-332` — "we don't attempt to route every PDU type by id here"). So a Fire/Detonation/Collision originating from the filtered entity never shows up in that entity's feed. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-24"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#24](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24) Typed / re-decoded mock replay in DisMockEmitter
-
-`DisMockEmitter` currently ships captured PDU bytes verbatim (raw byte replay only — README "Status": "the emitter doesn't re-decode"). That is correct for faithful replay but blocks any replay-time manipulation. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-25"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#25](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/25) Minefield Data (ID 39): type the DataFilter-gated per-mine arrays
-
-Minefield Data currently keeps the DataFilter-gated optional per-mine arrays as an opaque `OptionalFieldsBlob` (`COVERAGE.md`, Family 8, ID 39): "bit-to-array mapping needs SISO test vectors to type safely." The rest of the PDU roundtrips typed. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/25)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-26"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#26](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/26) Live Entity family: flag-gated compressed payload decoding
-
-TSPI (66), Appearance (99), LE Fire (101) and LE Detonation (102) currently type the header + `LiveEntityId` and round-trip the compressed, bit-packed, flag-gated payload verbatim (`COVERAGE.md`, Family 11 — "flag-gated field decoding deferred; opendis7 reference impl also doesn't decode"). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/26)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-27"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#27](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27) ClusterClient transport for the standalone bowire CLI
-
-**Roadmap:** 1.1.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-28"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#28](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28) Mailbox-snapshot inspection (size + head messages)
-
-**Roadmap:** 1.1.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-29"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#29](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29) Per-actor throughput stats
-
-**Roadmap:** 1.1.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-30"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#30](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30) Typed payload via Akka serializer roundtrip
-
-**Roadmap:** 1.2.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-31"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#31](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31) Opt-in filter API from the Bowire UI (per actor path / message type)
-
-**Roadmap:** 1.2.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-32"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#32](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/32) Embedded mode: resolve SDK from host DI + drop direct Confluent path
-
-Make this plugin drift-free against the Surgewave wire protocol in **both** deployment modes, and remove its direct `Confluent.*` dependency. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/32)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-32"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#32](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32) Tell-from-Bowire — interactive duplex via OpenChannelAsync
-
-**Roadmap:** 1.2.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-33"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#33](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33) DeadLetter capture under the global default mailbox
-
-When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` spawn happens during root-guardian bootstrap and is swallowed (try/catch in the `BowireAkkaExtension` ctor), so dead-letter capture is silently disabled in that mode (documented in README + the sample `Program.cs`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-34"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) Docs drift: TappedMessage envelope field names & payload shape
-
-`COVERAGE.md` (envelope table) and `SMOKE.md` (sample JSON frame) show fields `RecipientPath` / `SenderPath` and a JSON-object `Payload`, but the actual record is `Recipient` / `Sender` (string) with a string `Payload` (`src/Kuestenlogik.Bowire.Protocol.Akka/TappedMessage.cs`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-36"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) Multi-subscriber + mixed-mode integration tests
-
-`COVERAGE.md` calls out the branch gap: the 0/1/many-subscriber paths in `BowireAkkaExtension` and the mixed mode (global default mailbox + per-actor `WithMailbox` override) are only covered by single-mode tests. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36)
-
-#### <a id="issue-kuestenlogik-bowire-samples-54"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) harbor-demo: MQTT crane telemetry should name the container it lifts
-
-The harbor demo is the reference recording for Bowire's correlated timeline (Kuestenlogik/Bowire#539, #545). Seven of its eight protocol steps now join into one flow. The eighth — the MQTT crane telemetry — stays dark, and the sample is the reason. [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/54)
 
 ---
 
