@@ -33,7 +33,7 @@
 # release — the Windows ZIPs are still attached to the GitHub release,
 # users just won't get the winget channel until the secret is set.
 
-name: winget
+name: "Publish: Winget"
 
 # Auto-publish on every published GitHub release. The release.yml
 # pipeline uploads the win-x64 / win-arm64 ZIPs as part of its asset

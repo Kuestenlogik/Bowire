@@ -1,4 +1,4 @@
-name: Lighthouse + Image Optimization
+name: Lighthouse + image optimization
 
 on:
   pull_request:

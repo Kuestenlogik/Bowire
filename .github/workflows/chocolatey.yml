@@ -1,4 +1,4 @@
-name: chocolatey
+name: "Publish: Chocolatey"
 
 # Auto-publishes Bowire to the Chocolatey community feed whenever a
 # stable GitHub release is published.

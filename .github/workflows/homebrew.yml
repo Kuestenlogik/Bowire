@@ -24,7 +24,7 @@
 # the tarballs are still attached to the GitHub release, users just
 # don't get the brew channel until the secret is set.
 
-name: homebrew
+name: "Publish: Homebrew"
 
 # Temporarily manual-trigger only. Auto-tap-update waits until the
 # release.yml pipeline that produces the linux/macOS tarballs is back

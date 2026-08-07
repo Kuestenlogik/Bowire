@@ -1,4 +1,4 @@
-name: Bowire scan (self-smoke)
+name: "Scan: self-smoke"
 
 # Self-smoke for the reusable scan workflow. Calls scan-template.yml
 # against a known-stable public target (example.com) so we can verify
