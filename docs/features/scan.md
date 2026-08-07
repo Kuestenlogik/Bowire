@@ -123,13 +123,20 @@ Each mutation carries a label and the behaviour a correctly-validating server sh
 
 ## CI integration
 
-Drop into any workflow that ingests SARIF. The reusable [`scan-template.yml`](https://github.com/Kuestenlogik/Bowire/blob/main/.github/workflows/scan-template.yml) Action wraps `scan` + SARIF upload behind one `uses:` line:
+Drop into any job that ingests SARIF. The [`bowire-scan`](https://github.com/Kuestenlogik/Bowire/tree/main/.github/actions/bowire-scan) composite action wraps `scan` + SARIF upload behind one `uses:` step:
 
 ```yaml
-- uses: Kuestenlogik/Bowire/.github/workflows/scan-template.yml@v1
-  with:
-    target: https://staging.example.com/api
-    severity: medium
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write            # for the Code Scanning upload
+    steps:
+      - uses: actions/checkout@v7        # only needed for in-repo templates
+      - uses: Kuestenlogik/Bowire/.github/actions/bowire-scan@v1
+        with:
+          target: https://staging.example.com/api
+          severity: medium
 ```
 
 For GitLab CI / Azure DevOps see the [security architecture ADR](../architecture/security-testing.md).
