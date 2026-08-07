@@ -20,6 +20,15 @@ namespace Kuestenlogik.Bowire.Protocol.Rest.Tests;
 ///     missing-servers fall-back.</item>
 /// </list>
 /// </summary>
+// Shares the process-wide BowireOpenApiAdapterRegistry (Register /
+// ResetForTests) + RestProbeLog with OpenApiProbeDiscoveryTests and
+// BowireRestProtocolTests. Without joining their collection this class
+// runs in parallel and its ResetForTests()/Register() clobbers an adapter
+// another class just registered — which flaked
+// OpenApiProbeDiscoveryTests.Winning_Probe_Writes_Info_Log_Entry (the
+// stubbed /openapi.json probe vanished, so it logged "no document found"
+// instead of the expected winning-probe Info entry).
+[Collection(nameof(OpenApiUploadStoreTestGroup))]
 public sealed class CoverageTo95Tests
 {
     [Fact]
