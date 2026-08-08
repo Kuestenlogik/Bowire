@@ -12,13 +12,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**1/14 done** · 13 backlog
+**1/14 done** · 1 in progress · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | 🟡 In progress | `area:workbench` |
 | [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ⬜ Backlog | `area:multi` |
 | [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code + JetBrains workbench extension](#issue-kuestenlogik-bowire-101) | ⬜ Backlog | `area:workbench` |
-| [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ⬜ Backlog | `area:workbench` |
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ Backlog | `area:workbench` |
 | [188](https://github.com/Kuestenlogik/Bowire/issues/188) | Bowire | [Org-level Bowire dashboard — rollup across services](#issue-kuestenlogik-bowire-188) | ⬜ Backlog | `area:workbench` |
 | [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ⬜ Backlog | `area:workbench` |
@@ -149,6 +149,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
+#### <a id="issue-kuestenlogik-bowire-172"></a>🟡 In progress · [#172](https://github.com/Kuestenlogik/Bowire/issues/172) .bowire/project.json convention — checked-in workspace configuration
+
+> `area:workbench`
+
+Workspaces today live in `~/.bowire/workspaces/<id>/` (per-user, machine-local). The Export/Import (#159) exists but is opt-in. For Bowire to be the source of truth for "what this repo's API looks like", every repo needs a Bowire configuration checked-in. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/172)
+
 #### <a id="issue-kuestenlogik-bowire-samples-54"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) harbor-demo: MQTT crane telemetry should name the container it lifts
 
 > `area:multi`
@@ -160,12 +166,6 @@ The harbor demo is the reference recording for Bowire's correlated timeline (Kue
 > `area:workbench`
 
 Thunder Client proved there's a real audience for "I want to test an API without leaving my IDE." It's REST-only and limited; the *category* it occupies is uncontested for multi-protocol. [[more]](https://github.com/Kuestenlogik/Bowire/issues/101)
-
-#### <a id="issue-kuestenlogik-bowire-172"></a>⬜ Backlog · [#172](https://github.com/Kuestenlogik/Bowire/issues/172) .bowire/project.json convention — checked-in workspace configuration
-
-> `area:workbench`
-
-Workspaces today live in `~/.bowire/workspaces/<id>/` (per-user, machine-local). The Export/Import (#159) exists but is opt-in. For Bowire to be the source of truth for "what this repo's API looks like", every repo needs a Bowire configuration checked-in. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/172)
 
 #### <a id="issue-kuestenlogik-bowire-183"></a>⬜ Backlog · [#183](https://github.com/Kuestenlogik/Bowire/issues/183) GitHub Action — Bowire PR-comment bot with delta + findings + perf
 
