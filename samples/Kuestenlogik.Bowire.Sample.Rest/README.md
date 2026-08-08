@@ -23,3 +23,15 @@ dotnet run --project samples/Kuestenlogik.Bowire.Sample.Rest
   ```pwsh
   bowire --url rest@http://localhost:5181
   ```
+
+## Checked-in project manifest
+
+This sample ships a `.bowire/project.json` (the #172 convention) that declares
+its source and security posture in version control, so CI and the PR bot resolve
+the setup without per-job flags. Validate it with:
+
+```pwsh
+bowire project validate --file samples/Kuestenlogik.Bowire.Sample.Rest/.bowire/project.json
+```
+
+The samples-smoke workflow runs exactly this check for every sample manifest.

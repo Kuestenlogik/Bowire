@@ -22,14 +22,24 @@ namespace Kuestenlogik.Bowire.Projects;
 /// version, an absolute path where a project-relative one is expected, an empty
 /// source URL — are surfaced by <see cref="Validate"/> as a list of messages so
 /// a caller can report every problem at once rather than one-throw-at-a-time.
-/// No network access: the hosted <c>$schema</c> is never fetched.
+/// No network access: the hosted <c>$schema</c> (<see cref="SchemaUrl"/>) is
+/// never fetched.
 /// </remarks>
 public sealed class BowireProjectFile
 {
     /// <summary>The current (and only) supported manifest version.</summary>
     public const int SupportedVersion = 1;
 
-    /// <summary>Optional JSON-Schema hint (<c>https://bowire.io/schema/project.v1.json</c>). Never fetched.</summary>
+    /// <summary>
+    /// Canonical served URL of the published JSON Schema for this manifest —
+    /// the value writers emit as <c>$schema</c> so an editor can offer
+    /// completion/validation. Matches the <c>$id</c> of
+    /// <c>site/schemas/project.v1.json</c> and the served convention the
+    /// sidecar schema uses (<c>bowire.io/schemas/…</c>). Never fetched at load.
+    /// </summary>
+    public const string SchemaUrl = "https://bowire.io/schemas/project.v1.json";
+
+    /// <summary>Optional JSON-Schema hint (<c>https://bowire.io/schemas/project.v1.json</c>). Never fetched.</summary>
     [JsonPropertyName("$schema")]
     public string? Schema { get; set; }
 

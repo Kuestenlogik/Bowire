@@ -76,11 +76,11 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
     [Fact]
     public void Build_returns_workspace_command_with_full_subcommand_set()
     {
-        // Pins the parent-command shape: name, description hint, and
-        // the four known subcommands as of #149 closeout (init +
-        // migrate-format + export + import). When a future phase adds
-        // a new verb, this assertion is the forcing function for an
-        // updated subcommand inventory.
+        // Pins the parent-command shape: name, description hint, and the
+        // known subcommands — init + migrate-format + export + import (#149),
+        // plus migrate (#172, --to-project). When a future phase adds a new
+        // verb, this assertion is the forcing function for an updated
+        // subcommand inventory.
         var workspace = WorkspaceCommand.Build();
 
         Assert.Equal("workspace", workspace.Name);
@@ -90,7 +90,8 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         Assert.Contains("migrate-format", names);
         Assert.Contains("export", names);
         Assert.Contains("import", names);
-        Assert.Equal(4, workspace.Subcommands.Count);
+        Assert.Contains("migrate", names);
+        Assert.Equal(5, workspace.Subcommands.Count);
     }
 
     [Fact]

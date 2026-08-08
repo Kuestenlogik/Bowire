@@ -5,6 +5,8 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Text.Json;
+using Kuestenlogik.Bowire.Auth;
+using Kuestenlogik.Bowire.Projects;
 using Kuestenlogik.Bowire.Workspace.Git;
 
 namespace Kuestenlogik.Bowire.App.Cli;
@@ -68,9 +70,10 @@ internal static class WorkspaceCommand
     public static Command Build()
     {
         var workspace = new Command("workspace",
-            "Manage Bowire workspaces — init a git-backed workspace directory (#147 / #149), migrate a legacy bundle-shaped workspace to the per-entity file layout (#196 Phase 2.2), or export/import the workspace state as a single JSON file (#149).");
+            "Manage Bowire workspaces — init a git-backed workspace directory (#147 / #149), migrate a legacy bundle-shaped workspace to the per-entity file layout (#196 Phase 2.2), migrate a workspace to a checked-in .bowire/project.json manifest (#172), or export/import the workspace state as a single JSON file (#149).");
         workspace.Add(BuildInitCommand());
         workspace.Add(BuildMigrateFormatCommand());
+        workspace.Add(BuildMigrateToProjectCommand());
         workspace.Add(BuildExportCommand());
         workspace.Add(BuildImportCommand());
         return workspace;
@@ -634,6 +637,326 @@ internal static class WorkspaceCommand
         await stdout.WriteLineAsync("  → legacy bundles renamed to *.legacy; remove after verifying the per-entity files.").ConfigureAwait(false);
 
         return 0;
+    }
+
+    // ---------- migrate --to-project (#172) ----------
+
+    // sysexits.h-style exit codes, matching the project / recording commands
+    // so a CI shell can branch on the failure mode without scraping stderr.
+    private const int MigrateOk = 0;
+    private const int MigrateUsage = 64;     // EX_USAGE — ambiguous / missing --workspace
+    private const int MigrateNoInput = 66;   // EX_NOINPUT — workspace not found
+    private const int MigrateCantCreat = 73; // EX_CANTCREAT — output exists (no --force) / write failed
+
+    private static Command BuildMigrateToProjectCommand()
+    {
+        var migrate = new Command("migrate",
+            "Convert an existing per-user workspace (~/.bowire/workspaces/<id>) into a checked-in .bowire/project.json manifest (#172). Captures what maps cleanly from the workspace onto the version-controlled convention: sources (distinct server URLs seen across recordings), suites (one per saved collection), and security.auth (the workspace's captured auth recording). Fields with no clean workspace source (a rules file, scan profiles) are reported and omitted rather than invented.");
+
+        var toProjectOpt = new Option<bool>("--to-project")
+        {
+            Description = "Required verb-flag selecting the project-manifest migration (mirrors the issue's `workspace migrate --to-project`). Present for forward-compatibility with future migrate targets.",
+        };
+        var workspaceOpt = new Option<string?>("--workspace")
+        {
+            Description = "Workspace id under ~/.bowire/workspaces/ to migrate. Defaults to the only workspace when exactly one exists; required when several do.",
+        };
+        var outOpt = new Option<string?>("--out")
+        {
+            Description = "Directory to write the manifest into (as <out>/.bowire/project.json). Defaults to the current directory.",
+        };
+        var forceOpt = new Option<bool>("--force")
+        {
+            Description = "Overwrite an existing <out>/.bowire/project.json. Without it, migrate refuses to clobber and exits 73.",
+        };
+        migrate.Add(toProjectOpt);
+        migrate.Add(workspaceOpt);
+        migrate.Add(outOpt);
+        migrate.Add(forceOpt);
+
+        migrate.SetAction(async (pr, ct) =>
+        {
+            if (!pr.GetValue(toProjectOpt))
+            {
+                await pr.InvocationConfiguration.Error.WriteLineAsync(
+                    "workspace migrate: pass --to-project to migrate a workspace to a .bowire/project.json manifest.")
+                    .ConfigureAwait(false);
+                return MigrateUsage;
+            }
+            return await RunMigrateToProjectAsync(
+                pr.GetValue(workspaceOpt),
+                pr.GetValue(outOpt) ?? Directory.GetCurrentDirectory(),
+                pr.GetValue(forceOpt),
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct)
+                .ConfigureAwait(false);
+        });
+
+        return migrate;
+    }
+
+    // Resolves the workspace directory from ~/.bowire (via BowireUserContext),
+    // then delegates to the path-based core so the mapping logic is unit-
+    // testable against a temp directory without touching the real ~/.bowire.
+    internal static async Task<int> RunMigrateToProjectAsync(
+        string? workspaceId,
+        string outDir,
+        bool force,
+        TextWriter stdout,
+        TextWriter stderr,
+        CancellationToken ct)
+    {
+        string workspacesRoot;
+        try
+        {
+            workspacesRoot = BowireUserContext.GetUserPath("workspaces");
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            await stderr.WriteLineAsync($"workspace migrate: couldn't resolve the workspaces root: {ex.Message}").ConfigureAwait(false);
+            return MigrateNoInput;
+        }
+
+        if (!Directory.Exists(workspacesRoot))
+        {
+            await stderr.WriteLineAsync($"workspace migrate: no workspaces found at {workspacesRoot}.").ConfigureAwait(false);
+            return MigrateNoInput;
+        }
+
+        string resolvedId;
+        if (!string.IsNullOrWhiteSpace(workspaceId))
+        {
+            resolvedId = workspaceId.Trim();
+        }
+        else
+        {
+            var candidates = Directory.EnumerateDirectories(workspacesRoot)
+                .Select(Path.GetFileName)
+                .Where(n => !string.IsNullOrEmpty(n))
+                .ToList();
+            if (candidates.Count == 0)
+            {
+                await stderr.WriteLineAsync($"workspace migrate: no workspaces found under {workspacesRoot}.").ConfigureAwait(false);
+                return MigrateNoInput;
+            }
+            if (candidates.Count > 1)
+            {
+                await stderr.WriteLineAsync(
+                    $"workspace migrate: {candidates.Count} workspaces exist — pass --workspace <id> to pick one ({string.Join(", ", candidates)}).").ConfigureAwait(false);
+                return MigrateUsage;
+            }
+            resolvedId = candidates[0]!;
+        }
+
+        // Anchor the entity subdirectories under the resolved workspace via the
+        // same GetWorkspacePath seam the stores use; the workspace root is the
+        // parent of any one of them.
+        var probe = BowireUserContext.GetWorkspacePath(resolvedId, storageRoot: null, "collections");
+        var wsRoot = Path.GetDirectoryName(probe)!;
+        if (!Directory.Exists(wsRoot))
+        {
+            await stderr.WriteLineAsync($"workspace migrate: workspace '{resolvedId}' not found at {wsRoot}.").ConfigureAwait(false);
+            return MigrateNoInput;
+        }
+
+        return await MigrateWorkspaceToProjectAsync(wsRoot, resolvedId, outDir, force, stdout, stderr, ct).ConfigureAwait(false);
+    }
+
+    // Path-based core: read a workspace directory, build the manifest, write it.
+    // Internal so tests exercise the mapping against a temp workspace tree.
+    internal static async Task<int> MigrateWorkspaceToProjectAsync(
+        string wsRoot,
+        string workspaceId,
+        string outDir,
+        bool force,
+        TextWriter stdout,
+        TextWriter stderr,
+        CancellationToken ct)
+    {
+        if (!Directory.Exists(wsRoot))
+        {
+            await stderr.WriteLineAsync($"workspace migrate: workspace directory '{wsRoot}' does not exist.").ConfigureAwait(false);
+            return MigrateNoInput;
+        }
+
+        var outPath = Path.Combine(Path.GetFullPath(outDir), BowireProjectLoader.ConventionDirName, BowireProjectLoader.ConventionFileName);
+        if (File.Exists(outPath) && !force)
+        {
+            await stderr.WriteLineAsync($"workspace migrate: '{outPath}' already exists. Re-run with --force to overwrite.").ConfigureAwait(false);
+            return MigrateCantCreat;
+        }
+
+        var project = new BowireProjectFile
+        {
+            Schema = BowireProjectFile.SchemaUrl,
+            Version = BowireProjectFile.SupportedVersion,
+            Name = await ResolveWorkspaceNameAsync(wsRoot, workspaceId, ct).ConfigureAwait(false),
+        };
+
+        // sources ← distinct base URLs seen across the workspace's recordings.
+        var sourceUrls = await CollectRecordingServerUrlsAsync(wsRoot, ct).ConfigureAwait(false);
+        foreach (var url in sourceUrls)
+            project.Sources.Add(new BowireProjectSource { Url = url });
+
+        // suites ← one per saved collection, keyed by collection id.
+        var collections = await new FileEntityStore(wsRoot).ListAsync("collections", ct).ConfigureAwait(false);
+        foreach (var id in collections)
+            project.Suites[id] = $"./bowire/suites/{id}.collection.json";
+
+        // security.auth ← the workspace's captured auth recording (first when several).
+        var authIds = ListAuthRecordingIds(wsRoot);
+        if (authIds.Count > 0)
+        {
+            project.Security = new BowireProjectSecurity { Auth = $"./bowire/auth/{authIds[0]}.flow.json" };
+        }
+
+        // Persist. Validate() should be clean for a machine-authored manifest;
+        // surface any problem rather than write a manifest the loader rejects.
+        var errors = project.Validate();
+        if (errors.Count > 0)
+        {
+            await stderr.WriteLineAsync("workspace migrate: the migrated manifest failed validation:").ConfigureAwait(false);
+            foreach (var error in errors)
+                await stderr.WriteLineAsync($"  - {error}").ConfigureAwait(false);
+            return MigrateCantCreat;
+        }
+
+        try
+        {
+            var outFolder = Path.GetDirectoryName(outPath)!;
+            Directory.CreateDirectory(outFolder);
+            await File.WriteAllTextAsync(outPath, project.ToJson() + Environment.NewLine, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException or NotSupportedException or PathTooLongException)
+        {
+            await stderr.WriteLineAsync($"workspace migrate: cannot write '{outPath}': {ex.Message}").ConfigureAwait(false);
+            return MigrateCantCreat;
+        }
+
+        await stdout.WriteLineAsync($"Migrated workspace '{workspaceId}' → {outPath}").ConfigureAwait(false);
+        await stdout.WriteLineAsync($"  → sources: {project.Sources.Count} (distinct server URL(s) from recordings)").ConfigureAwait(false);
+        await stdout.WriteLineAsync($"  → suites:  {project.Suites.Count} (one per collection)").ConfigureAwait(false);
+        await stdout.WriteLineAsync($"  → security.auth: {(project.Security?.Auth is { } auth ? auth : "(none)")}").ConfigureAwait(false);
+
+        // Fields with no clean workspace source — noted here, not smuggled into
+        // the strict-JSON manifest (project.json disallows unknown fields).
+        if (authIds.Count > 1)
+            await stdout.WriteLineAsync($"  · note: {authIds.Count} auth recordings found; referenced the first ('{authIds[0]}').").ConfigureAwait(false);
+        if (project.Sources.Count == 0)
+            await stdout.WriteLineAsync("  · note: no recordings carried a server URL — 'sources' left empty.").ConfigureAwait(false);
+        await stdout.WriteLineAsync("  · note: 'rules' and 'security.scan' have no workspace source — omit/author them in the manifest as needed.").ConfigureAwait(false);
+        await stdout.WriteLineAsync("  · Referenced suite/auth paths are project-relative placeholders; export the collection/auth files into .bowire/ to make them resolve.").ConfigureAwait(false);
+
+        return MigrateOk;
+    }
+
+    private static async Task<string?> ResolveWorkspaceNameAsync(string wsRoot, string workspaceId, CancellationToken ct)
+    {
+        var manifestPath = Path.Combine(wsRoot, "workspace.json");
+        if (File.Exists(manifestPath))
+        {
+            try
+            {
+                var raw = await File.ReadAllTextAsync(manifestPath, ct).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(raw);
+                if (doc.RootElement.ValueKind == JsonValueKind.Object
+                    && doc.RootElement.TryGetProperty("name", out var nameEl)
+                    && nameEl.ValueKind == JsonValueKind.String
+                    && !string.IsNullOrWhiteSpace(nameEl.GetString()))
+                {
+                    return nameEl.GetString();
+                }
+            }
+            catch (JsonException)
+            {
+                // Malformed manifest — fall back to the id below.
+            }
+        }
+        return string.IsNullOrWhiteSpace(workspaceId) ? null : workspaceId;
+    }
+
+    private static List<string> ListAuthRecordingIds(string wsRoot)
+    {
+        var dir = Path.Combine(wsRoot, "auth-recordings");
+        if (!Directory.Exists(dir)) return [];
+        return Directory.EnumerateFiles(dir, "*.json", SearchOption.TopDirectoryOnly)
+            .Select(Path.GetFileNameWithoutExtension)
+            .Where(n => !string.IsNullOrEmpty(n))
+            .Select(n => n!)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    // Scan every recording JSON in the workspace and collect the distinct base
+    // URLs (scheme://host[:port]) that each captured step targeted. Robust to
+    // both the flat and chunked on-disk recording layouts — it walks the JSON
+    // for any "serverUrl" string rather than binding to one recording shape.
+    private static async Task<List<string>> CollectRecordingServerUrlsAsync(string wsRoot, CancellationToken ct)
+    {
+        var recordingsDir = Path.Combine(wsRoot, "recordings");
+        var found = new SortedSet<string>(StringComparer.Ordinal);
+        if (!Directory.Exists(recordingsDir)) return [];
+
+        foreach (var file in Directory.EnumerateFiles(recordingsDir, "*.json", SearchOption.AllDirectories))
+        {
+            string raw;
+            try
+            {
+                raw = await File.ReadAllTextAsync(file, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                continue;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(raw);
+                CollectServerUrls(doc.RootElement, found);
+            }
+            catch (JsonException)
+            {
+                // Skip a corrupt recording file rather than fail the migration.
+            }
+        }
+
+        return found.ToList();
+    }
+
+    private static void CollectServerUrls(JsonElement element, SortedSet<string> into)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+                foreach (var prop in element.EnumerateObject())
+                {
+                    if (string.Equals(prop.Name, "serverUrl", StringComparison.Ordinal)
+                        && prop.Value.ValueKind == JsonValueKind.String)
+                    {
+                        var value = prop.Value.GetString();
+                        if (!string.IsNullOrWhiteSpace(value))
+                            into.Add(ToBaseUrl(value));
+                    }
+                    else
+                    {
+                        CollectServerUrls(prop.Value, into);
+                    }
+                }
+                break;
+            case JsonValueKind.Array:
+                foreach (var item in element.EnumerateArray())
+                    CollectServerUrls(item, into);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private static string ToBaseUrl(string raw)
+    {
+        var trimmed = raw.Trim();
+        return Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
+            ? uri.GetLeftPart(UriPartial.Authority)
+            : trimmed;
     }
 
     private static Command BuildInitCommand()
