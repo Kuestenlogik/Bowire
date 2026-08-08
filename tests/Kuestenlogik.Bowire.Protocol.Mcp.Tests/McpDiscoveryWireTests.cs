@@ -333,7 +333,7 @@ internal sealed class RawJsonRpcMcpServer : IDisposable
     }
 
     /// <summary>
-    /// Block until the server actually answers one round-trip. <see cref="Start"/>
+    /// Block until the server actually answers one round-trip. <see cref="HttpListener.Start"/>
     /// only binds the port; the <see cref="AcceptLoopAsync"/> that drains the
     /// queue is fire-and-forget, so under heavy <c>dotnet test</c> parallelism a
     /// client that connects the instant the ctor returns has occasionally read
@@ -345,18 +345,27 @@ internal sealed class RawJsonRpcMcpServer : IDisposable
     private void WaitUntilServing()
     {
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+        var target = new Uri(Url);
         var deadline = DateTime.UtcNow.AddSeconds(10);
         while (DateTime.UtcNow < deadline)
         {
             try
             {
-                using var content = new StringContent(
-                    """{"jsonrpc":"2.0","id":0,"method":"__ready_probe__"}""",
-                    Encoding.UTF8, "application/json");
-                using var resp = http.PostAsync(Url, content).GetAwaiter().GetResult();
+                using var req = new HttpRequestMessage(HttpMethod.Post, target)
+                {
+                    Content = new StringContent(
+                        """{"jsonrpc":"2.0","id":0,"method":"__ready_probe__"}""",
+                        Encoding.UTF8, "application/json"),
+                };
+                using var resp = http.Send(req);   // synchronous — no async/Dispose analyzer traps
                 if (resp.IsSuccessStatusCode) break;
             }
-            catch (Exception) { /* not up yet — retry until the deadline */ }
+            catch (Exception ex) when (
+                ex is HttpRequestException or System.IO.IOException or SocketException
+                   or TaskCanceledException or InvalidOperationException)
+            {
+                // Not accepting yet — retry until the deadline.
+            }
             System.Threading.Thread.Sleep(25);
         }
         lock (_gate) { _received.Clear(); }
