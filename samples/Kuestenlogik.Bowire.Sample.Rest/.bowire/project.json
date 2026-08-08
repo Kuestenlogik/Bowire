@@ -1,0 +1,14 @@
+{
+  "$schema": "https://bowire.io/schemas/project.v1.json",
+  "version": 1,
+  "name": "bowire-sample-rest",
+  "sources": [
+    {
+      "url": "http://localhost:5181"
+    }
+  ],
+  "suites": {},
+  "security": {
+    "scan": ["owasp-api"]
+  }
+}

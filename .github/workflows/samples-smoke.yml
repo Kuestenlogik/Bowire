@@ -59,6 +59,21 @@ jobs:
             echo "::endgroup::"
           done
 
+      # #172 — a sample's checked-in .bowire/project.json is the version-
+      # controlled source of truth for its sources/suites/security. Loading
+      # config from the manifest (instead of inline flags) is the convention
+      # CI + the PR bot rely on; a `project validate` pass proves each sample's
+      # manifest is real + schema-valid before the smoke run uses it.
+      - name: Validate sample .bowire/project.json manifests
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for manifest in samples/*/.bowire/project.json; do
+            echo "::group::$manifest"
+            dotnet run --project src/Kuestenlogik.Bowire.Tool -c Release -- project validate --file "$manifest"
+            echo "::endgroup::"
+          done
+
       - name: Smoke-test samples
         env:
           BOWIRE_SMOKE_CONFIG: Release
