@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bowire.io/schemas/project.v1.json",
+  "title": "Bowire project manifest",
+  "description": "The checked-in .bowire/project.json convention (#172) — a version-controlled MANIFEST that makes a repository the source of truth for what its API looks like. It points (with project-relative paths) at the sources, test suites/collections, an auth flow, scan profiles, and a rules file so CI, the PR bot, and onboarding all resolve the same setup automatically. See docs and Kuestenlogik.Bowire.Projects.BowireProjectFile.",
+  "type": "object",
+  "required": ["version"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional pointer to this schema for editor tooling. Never fetched by Bowire."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Manifest schema version. The only supported value today is 1."
+    },
+    "name": {
+      "type": "string",
+      "description": "Human project name (e.g. order-service).",
+      "examples": ["order-service"]
+    },
+    "sources": {
+      "type": "array",
+      "description": "The API sources this project exposes — each a base URL plus zero or more schema files.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Base URL of the service (e.g. https://api.example.com).",
+            "examples": ["https://api.example.com"]
+          },
+          "schemas": {
+            "type": "array",
+            "description": "Project-relative schema files describing the source (e.g. ./proto/orders.proto).",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "suites": {
+      "type": "object",
+      "description": "Named test suites/collections, keyed by a short id (e.g. smoke), each a project-relative path.",
+      "additionalProperties": { "type": "string" }
+    },
+    "security": {
+      "type": "object",
+      "description": "Security configuration — the auth flow to run and the scan profiles to apply.",
+      "additionalProperties": false,
+      "properties": {
+        "auth": {
+          "type": "string",
+          "description": "Project-relative path to an auth-flow definition (e.g. ./bowire/auth/login.flow.json)."
+        },
+        "scan": {
+          "type": "array",
+          "description": "Scan profiles to run (e.g. owasp-api, cve, protocol).",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "rules": {
+      "type": "string",
+      "description": "Project-relative path to a rules file."
+    }
+  }
+}

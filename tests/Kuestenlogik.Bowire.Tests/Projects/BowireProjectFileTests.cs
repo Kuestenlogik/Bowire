@@ -30,7 +30,7 @@ public sealed class BowireProjectFileTests : IDisposable
 
     private const string ValidManifest = """
         {
-          "$schema": "https://bowire.io/schema/project.v1.json",
+          "$schema": "https://bowire.io/schemas/project.v1.json",
           "version": 1,
           "name": "order-service",
           "sources": [
