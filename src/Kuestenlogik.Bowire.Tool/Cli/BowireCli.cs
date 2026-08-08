@@ -158,6 +158,7 @@ internal static class BowireCli
         root.Add(RecordingCommand.Build());
         root.Add(ContractCommand.Build());
         root.Add(AuthRecordingCommand.Build());
+        root.Add(ProjectCommand.Build());
         root.Add(BuildVersionCommand(plugins));
 
         // Auto-discovered CLI commands — scanner today, fuzz / proxy /
