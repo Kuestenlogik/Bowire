@@ -173,8 +173,11 @@ docker run --rm -p 5080:5080 \
         </div>
 
         <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="windows" hidden>
-<pre><code class="lang-bash">winget install KuestenLogik.Bowire</code></pre>
-          <p class="qs-install-tab-note">One-line install via the Windows Package Manager. <code>bowire</code> lands on PATH; uninstall via "Apps &amp; Features" or <code>winget uninstall KuestenLogik.Bowire</code>.</p>
+<pre><code class="lang-bash">winget install KuestenLogik.Bowire
+
+# ...or via Chocolatey
+choco install bowire</code></pre>
+          <p class="qs-install-tab-note">One-line install via the Windows Package Manager or <a href="https://community.chocolatey.org/packages/bowire" target="_blank" rel="noopener">Chocolatey</a>. <code>bowire</code> lands on PATH; uninstall via "Apps &amp; Features", <code>winget uninstall KuestenLogik.Bowire</code>, or <code>choco uninstall bowire</code>.</p>
         </div>
 
         <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="macos" hidden>
