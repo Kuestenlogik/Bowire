@@ -121,12 +121,12 @@
          HotChocolate.Language affects >= 15.0.0, < 15.1.14; the fix
          ships in 15.1.14. Earlier 15.1.x (e.g. 15.1.10) still trips the
          NuGet audit. -->
-    <PackageVersion Include="HotChocolate.AspNetCore" Version="16.5.1" />
+    <PackageVersion Include="HotChocolate.AspNetCore" Version="16.6.0" />
     <!-- HotChocolate.Subscriptions.InMemory — the in-process pub/sub
          backend behind the GraphQL sample's bookAdded subscription
          (Kuestenlogik.Bowire.Sample.GraphQL). Sample-only, same as the
          line above; kept on the 15.1.x floor for the same CVE reason. -->
-    <PackageVersion Include="HotChocolate.Subscriptions.InMemory" Version="16.5.1" />
+    <PackageVersion Include="HotChocolate.Subscriptions.InMemory" Version="16.6.0" />
     <PackageVersion Include="SocketIOClient" Version="4.0.5" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
