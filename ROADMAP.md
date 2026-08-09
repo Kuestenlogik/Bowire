@@ -12,11 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**1/14 done** · 1 in progress · 12 backlog
+**2/14 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | 🟡 In progress | `area:workbench` |
 | [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ⬜ Backlog | `area:multi` |
 | [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code + JetBrains workbench extension](#issue-kuestenlogik-bowire-101) | ⬜ Backlog | `area:workbench` |
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ Backlog | `area:workbench` |
@@ -29,6 +28,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ⬜ Backlog | `area:security` |
 | [364](https://github.com/Kuestenlogik/Bowire/issues/364) | Bowire | [Contract testing: workbench matrix view (consumer × provider pass/fail)](#issue-kuestenlogik-bowire-364) | ⬜ Backlog | `area:workbench` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
+| [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ✅ Done | `area:workbench` |
 | [367](https://github.com/Kuestenlogik/Bowire/issues/367) | Bowire | [codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)](#issue-kuestenlogik-bowire-367) | ✅ Done | `area:multi` |
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
@@ -149,12 +149,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-#### <a id="issue-kuestenlogik-bowire-172"></a>🟡 In progress · [#172](https://github.com/Kuestenlogik/Bowire/issues/172) .bowire/project.json convention — checked-in workspace configuration
-
-> `area:workbench`
-
-Workspaces today live in `~/.bowire/workspaces/<id>/` (per-user, machine-local). The Export/Import (#159) exists but is opt-in. For Bowire to be the source of truth for "what this repo's API looks like", every repo needs a Bowire configuration checked-in. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/172)
-
 #### <a id="issue-kuestenlogik-bowire-samples-54"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) harbor-demo: MQTT crane telemetry should name the container it lifts
 
 > `area:multi`
@@ -226,6 +220,12 @@ Follow-up to #191 (CLI pillar shipped in b252e419). The one remaining acceptance
 > `area:workbench`
 
 Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in a **git-native workspace directory**. The original #181 sketch also listed `--workspace-id` — running a workspace addressed by its id from the workbench's `~/.bowire/` per-user storage. [[more]](https://github.com/Kuestenlogik/Bowire/issues/365)
+
+#### <a id="issue-kuestenlogik-bowire-172"></a>✅ Done · [#172](https://github.com/Kuestenlogik/Bowire/issues/172) .bowire/project.json convention — checked-in workspace configuration
+
+> `area:workbench`
+
+Workspaces today live in `~/.bowire/workspaces/<id>/` (per-user, machine-local). The Export/Import (#159) exists but is opt-in. For Bowire to be the source of truth for "what this repo's API looks like", every repo needs a Bowire configuration checked-in. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/172)
 
 #### <a id="issue-kuestenlogik-bowire-367"></a>✅ Done · [#367](https://github.com/Kuestenlogik/Bowire/issues/367) codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)
 
