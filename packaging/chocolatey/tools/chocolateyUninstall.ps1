@@ -31,6 +31,6 @@ if ($key.Count -eq 1) {
 } elseif ($key.Count -eq 0) {
     Write-Warning "$($packageArgs.packageName) was not found via the Apps & Features registry. It may have been uninstalled outside chocolatey already; nothing to do."
 } else {
-    Write-Warning "Multiple installs of $($packageArgs.packageName) found. Skipping uninstall — remove them manually from Apps & Features."
+    Write-Warning "Multiple installs of $($packageArgs.packageName) found. Skipping uninstall - remove them manually from Apps and Features."
     $key | ForEach-Object { Write-Warning "  - $($_.DisplayName) $($_.DisplayVersion)" }
 }
