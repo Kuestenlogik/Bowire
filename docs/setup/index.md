@@ -38,6 +38,8 @@ dotnet tool install -g Kuestenlogik.Bowire.Tool
 bowire --url https://your-server
 ```
 
+Prefer a native package manager? On Windows use `winget install Kuestenlogik.Bowire` or `choco install bowire`; otherwise grab an MSI, ZIP, DEB, or RPM from the [Downloads page](https://bowire.io/downloads.html) (a Homebrew tap is still pending).
+
 Best when the target service isn't yours or you don't want to modify it. Also works offline against a schema file (`.proto`, OpenAPI, GraphQL SDL) if no server is reachable.
 
 See [Standalone tool](standalone.md) for the CLI command set and how to restrict loaded plugins.

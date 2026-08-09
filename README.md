@@ -18,7 +18,7 @@
 dotnet tool install -g Kuestenlogik.Bowire.Tool
 ```
 
-Windows MSIs, portable ZIPs, Docker images, and pending winget / Homebrew / Chocolatey distributions — all listed on the [Downloads page](https://bowire.io/downloads.html). It's the source of truth for what's available right now.
+Windows MSIs, portable ZIPs, Docker images, `winget install Kuestenlogik.Bowire`, and `choco install bowire` — with a Homebrew tap still pending — all listed on the [Downloads page](https://bowire.io/downloads.html). It's the source of truth for what's available right now.
 
 → **[5-minute Quickstart](https://bowire.io/quickstart.html)** for the first call against your own service.
 
