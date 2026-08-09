@@ -37,21 +37,25 @@
     <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
 
-  <!-- Version is the *floor* for local + CI-without-tag builds. The
-       release pipeline derives the real version from the git tag (see
-       .github/workflows/release.yml: `-p:Version=${VERSION}`) and that
-       always wins for the published nupkg + binaries. The "-dev" suffix
-       on this default is deliberate: any artefact built outside the
-       tag-driven release pipeline carries it, so a crash report or
-       "About" dialog from such a build immediately admits it is not a
-       released version. Only bump this when the *next* target major /
-       minor changes — e.g. 1.x → 2.x. Per-release patch bumps happen
-       on the git tag, not here. -->
+  <!-- Versioning is derived from the nearest git tag by MinVer — there is
+       no hand-maintained floor. A checkout AT a tag `vX.Y.Z` stamps exactly
+       X.Y.Z; any untagged build (local dev, PR CI) gets an auto-prerelease
+       like X.Y.(Z+1)-alpha.0.<height> that self-identifies as not-a-release.
+       MinVer sets Version, AssemblyVersion, FileVersion and PackageVersion
+       consistently from that single source, so the release pipeline no
+       longer passes `-p:Version` and the post-release floor-bump workflow is
+       gone. This fixes the class of bug where release AssemblyVersion /
+       FileVersion lagged the tag by a minor (a 2.4.0 MSI shipped a
+       bowire.exe whose Win32 FileVersion still read 2.3.0) — `-p:Version`
+       only ever overrode Version, never the hardcoded Assembly/File floor.
+       Requires full git history (fetch-depth: 0) in CI; degrades to a
+       0.0.0-prerelease on a shallow clone without failing the build. -->
   <PropertyGroup Condition="'$(IsPackable)' != 'false'">
-    <Version>2.4.0-dev</Version>
-    <AssemblyVersion>2.4.0</AssemblyVersion>
-    <FileVersion>2.4.0</FileVersion>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
+  <ItemGroup Condition="'$(IsPackable)' != 'false'">
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+  </ItemGroup>
 
   <!-- Mark all Kuestenlogik.Bowire.Protocol.* projects as Bowire plugins so
        NuGet consumers and the in-UI marketplace can identify them. -->

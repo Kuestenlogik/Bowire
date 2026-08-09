@@ -33,9 +33,9 @@ releases with attached files.
 
 The post-release rename is intentionally a separate PR so the release
 itself doesn't carry a `main` commit that depends on `release.yml`
-output. The post-release-floor-bump workflow already handles other
-post-publish bookkeeping; the rename can ride on it later if we
-automate it.
+output. (Versioning itself needs no post-publish bookkeeping — MinVer
+derives every version from the git tag at build time; see
+`Directory.Build.props`.)
 
 ## Front-matter
 
