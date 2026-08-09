@@ -1,0 +1,23 @@
+# Dependabot-PRs mergen sich selbst — Trunk-Workflow ohne PR-Zeremonie.
+# Dependabot kennt keinen Direkt-Commit; der PR ist sein einziger Weg. Dieser
+# Workflow squash-merged ihn sofort nach dem Öffnen, die Validierung passiert
+# wie bei jedem direkten Push durch den CI-Lauf auf main. Bricht ein Bump den
+# Build, sieht man es dort — derselbe Deal wie bei Hand-Commits.
+name: Dependabot auto-merge
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge sofort (squash)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --squash "$PR_URL"
