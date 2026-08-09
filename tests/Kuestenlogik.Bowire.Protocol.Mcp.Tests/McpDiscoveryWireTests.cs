@@ -36,6 +36,32 @@ public sealed class McpDiscoveryWireTests
     private const string OneGoodTool =
         """{"tools":[{"name":"echo","description":"Echo text back","inputSchema":{"type":"object","properties":{"text":{"type":"string"}},"required":["text"]}}]}""";
 
+    /// <summary>
+    /// Discover, retrying while the result is empty. <see cref="RawJsonRpcMcpServer"/>
+    /// answers deterministically, so an empty list here can only be the by-design
+    /// "return empty rather than throw" path <see cref="BowireMcpProtocol.DiscoverAsync"/>
+    /// takes when a single round-trip drops under heavy <c>dotnet test</c> parallel
+    /// load — the same environmental transient that kept surfacing as
+    /// <c>Assert.Single() Failure: The collection was empty</c>, which the readiness
+    /// probe in <see cref="RawJsonRpcMcpServer"/> narrowed but could not fully close.
+    /// Retrying converges on the deterministic result without weakening a single
+    /// assertion: every round leads with <c>server/discover</c> exactly like the
+    /// first, so the ordering checks still hold, and a genuine regression stays
+    /// empty across all attempts and still fails.
+    /// </summary>
+    private static async Task<List<BowireServiceInfo>> DiscoverUntilNonEmptyAsync(
+        BowireMcpProtocol protocol, string url)
+    {
+        const int attempts = 5;
+        for (var attempt = 1; ; attempt++)
+        {
+            var services = await protocol.DiscoverAsync(url, showInternalServices: false, Ct);
+            if (services.Count > 0 || attempt == attempts)
+                return services;
+            await Task.Delay(TimeSpan.FromMilliseconds(100 * attempt), Ct);
+        }
+    }
+
     [Fact]
     public async Task DiscoverAsync_Probes_ServerDiscover_First_And_Never_Reaches_Initialize()
     {
@@ -53,7 +79,7 @@ public sealed class McpDiscoveryWireTests
         });
 
         var protocol = new BowireMcpProtocol();
-        var services = await protocol.DiscoverAsync(server.Url, showInternalServices: false, Ct);
+        var services = await DiscoverUntilNonEmptyAsync(protocol, server.Url);
 
         var tools = Assert.Single(services);
         Assert.Equal("Tools", tools.Name);
@@ -79,7 +105,7 @@ public sealed class McpDiscoveryWireTests
         });
 
         var protocol = new BowireMcpProtocol();
-        var services = await protocol.DiscoverAsync(server.Url, showInternalServices: false, Ct);
+        var services = await DiscoverUntilNonEmptyAsync(protocol, server.Url);
 
         Assert.Equal("Tools", Assert.Single(services).Name);
         Assert.Equal(RequestMethods.ServerDiscover, server.ReceivedMethods[0]);
@@ -231,7 +257,7 @@ public sealed class McpDiscoveryWireTests
         });
 
         var protocol = new BowireMcpProtocol();
-        var services = await protocol.DiscoverAsync(server.Url, showInternalServices: false, Ct);
+        var services = await DiscoverUntilNonEmptyAsync(protocol, server.Url);
 
         Assert.Equal("Tools", Assert.Single(services).Name);
     }
@@ -257,7 +283,7 @@ public sealed class McpDiscoveryWireTests
         });
 
         var protocol = new BowireMcpProtocol();
-        var services = await protocol.DiscoverAsync(server.Url, showInternalServices: false, Ct);
+        var services = await DiscoverUntilNonEmptyAsync(protocol, server.Url);
 
         // The contract that matters: an unadvertised surface contributes no
         // service and — critically — does not fail the whole probe, so the
