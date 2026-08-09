@@ -144,6 +144,12 @@
          built from. Only takes effect for packable projects (gated
          in Directory.Build.props). -->
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.301" />
+    <!-- MinVer: derives Version/AssemblyVersion/FileVersion/PackageVersion
+         from the nearest git tag at build time. Build-time only
+         (PrivateAssets=all in Directory.Build.props) — never flows to
+         consumers. Replaces the hand-maintained version floor + the
+         post-release-floor-bump workflow. -->
+    <PackageVersion Include="MinVer" Version="7.0.0" />
     <!-- GraphQL-Parser: SDL + query parser for the GraphQL schema-only
          mock mode. Lightweight, focused package from the graphql-dotnet
          team; only parsing (not execution) which is all we need. -->

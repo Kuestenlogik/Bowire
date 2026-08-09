@@ -161,11 +161,11 @@ jobs:
 
       - name: Build & Test
         run: |
-          dotnet build Kuestenlogik.Bowire.slnx -c Release --no-restore -p:Version=${{ steps.version.outputs.VERSION }}
+          dotnet build Kuestenlogik.Bowire.slnx -c Release --no-restore
           dotnet test Kuestenlogik.Bowire.slnx -c Release --no-build -v normal
 
       - name: Pack (NuGet)
-        run: dotnet pack Kuestenlogik.Bowire.slnx -c Release --no-build -o artifacts/packages -p:Version=${{ steps.version.outputs.VERSION }}
+        run: dotnet pack Kuestenlogik.Bowire.slnx -c Release --no-build -o artifacts/packages
 
       # Quick-download bundle: every official Küstenlogik NuGet for
       # this release, zipped into a single asset. Saves consumers
@@ -196,8 +196,7 @@ jobs:
           for rid in linux-x64 linux-arm64 win-x64 win-arm64 osx-x64 osx-arm64; do
             dotnet publish src/Kuestenlogik.Bowire.Tool \
               -c Release -r "$rid" --self-contained \
-              -o "publish/bowire-$rid" \
-              -p:Version=$V
+              -o "publish/bowire-$rid"
           done
 
       # tar.gz for unix-y RIDs, zip for Windows. Filenames match what
@@ -338,7 +337,6 @@ jobs:
             -c Release \
             -t:PublishContainer \
             --no-restore \
-            -p:Version=$V \
             "-p:ContainerRuntimeIdentifiers=\"linux-x64;linux-arm64\"" \
             "-p:ContainerImageTags=\"$V;latest\"" \
             -p:ContainerRegistry=ghcr.io
@@ -363,7 +361,6 @@ jobs:
             -c Release \
             -t:PublishContainer \
             --no-restore \
-            -p:Version=$V \
             "-p:ContainerRuntimeIdentifiers=\"linux-x64;linux-arm64\"" \
             "-p:ContainerImageTags=\"$V;latest\"" \
             -p:ContainerRegistry=docker.io
@@ -554,8 +551,7 @@ jobs:
           for rid in win-x64 win-arm64; do
             dotnet publish src/Kuestenlogik.Bowire.Tool \
               -c Release -r "$rid" --self-contained \
-              -o "publish/bowire-$rid" \
-              -p:Version=$V
+              -o "publish/bowire-$rid"
           done
 
       # Pinned to v5: WiX v7 added an OSMF EULA gate that blocks

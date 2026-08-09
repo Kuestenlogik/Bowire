@@ -64,17 +64,15 @@ jobs:
       - name: Release-cascade workflow tests
         run: node --test tests/Kuestenlogik.Bowire.Tests/ci/*.test.mjs
 
-      - name: Determine version
-        run: |
-          COMMIT_COUNT=$(git rev-list --count HEAD)
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          echo "VERSION=0.9.4-ci.${COMMIT_COUNT}.${SHORT_SHA}" >> $GITHUB_ENV
-
+      # No version step needed — MinVer derives the version from git for
+      # every build (untagged CI => an X.Y.Z-alpha.N prerelease). CI packages
+      # are inspection-only artefacts and never published, so the exact
+      # prerelease string is immaterial here.
       - name: Restore
         run: dotnet restore Kuestenlogik.Bowire.slnx
 
       - name: Build
-        run: dotnet build Kuestenlogik.Bowire.slnx -c Release --no-restore -p:Version=$VERSION
+        run: dotnet build Kuestenlogik.Bowire.slnx -c Release --no-restore
 
       - name: Test
         # XPlat Code Coverage drops one coverage.cobertura.xml per test
@@ -144,7 +142,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Pack
-        run: dotnet pack Kuestenlogik.Bowire.slnx -c Release --no-build -o artifacts/packages -p:Version=$VERSION
+        run: dotnet pack Kuestenlogik.Bowire.slnx -c Release --no-build -o artifacts/packages
 
       # CI artefacts are uploaded for inspection but NOT published to
       # any feed — release.yml owns the publish path on tag push.
