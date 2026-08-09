@@ -4357,6 +4357,12 @@
     // makes zero sense). Standalone tool: true.
     let canOpenWorkspaceFolder = false;
 
+    // #172 — the .bowire/project.json manifest discovered at boot (or
+    // null when the host serves no project). Populated by the /api/project
+    // probe in init.js; carries { name, sources, suites, security, rules }
+    // so surfaces can name the repo's declared API config. Null → no-op.
+    let discoveredProject = null;
+
     // #154 Phase 1 — in-app help capability. Set once at boot from
     // /api/help/available. true = IBowireHelpProvider is registered
     // (the Kuestenlogik.Bowire.Help package was installed); false =

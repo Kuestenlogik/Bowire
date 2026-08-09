@@ -799,6 +799,29 @@
             })
             .catch(function () { /* leave false */ });
 
+        // #172 — .bowire/project.json auto-discovery probe. When the
+        // standalone tool serves a repository that ships a checked-in
+        // project manifest, the host walks UP from its working directory
+        // and returns the declared sources / suites / security. We surface
+        // a single non-blocking toast naming the project + its source
+        // count so the operator knows the repo's own API config was
+        // picked up. No manifest → 404 → r.ok is false → silent no-op,
+        // exactly like the sibling capability probes above.
+        fetch(config.prefix + '/api/project')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data || !data.found) return;
+                discoveredProject = data;
+                var srcCount = Array.isArray(data.sources) ? data.sources.length : 0;
+                var label = data.name ? ('“' + data.name + '”') : 'this repository';
+                var noun = srcCount === 1 ? 'source' : 'sources';
+                if (typeof toast === 'function') {
+                    toast('Loaded project ' + label + ' from .bowire/project.json ('
+                        + srcCount + ' ' + noun + ').', 'info');
+                }
+            })
+            .catch(function () { /* no manifest / offline host → no-op */ });
+
         // #154 Phase 1 — in-app help capability probe. Returns true
         // when an IBowireHelpProvider is registered (i.e. the
         // Kuestenlogik.Bowire.Help package is installed). When
