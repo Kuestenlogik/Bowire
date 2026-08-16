@@ -18,8 +18,8 @@
          on HTTP/1.1. Not pulled in by the plugin itself. -->
     <PackageVersion Include="Grpc.AspNetCore.Web" Version="2.83.0" />
     <PackageVersion Include="Google.Protobuf" Version="3.35.1" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.10" />
-    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.11" />
     <PackageVersion Include="Grpc.AspNetCore" Version="2.83.0" />
     <PackageVersion Include="Grpc.Tools" Version="2.83.0" />
     <!-- Kuestenlogik.Bowire.Protocol.TacticalApi — Rheinmetall TacticalAPI
@@ -30,7 +30,7 @@
          stays here so downstream consumers that DO opt in still get a
          known-good version. -->
     <PackageVersion Include="Kuestenlogik.Bowire.Protocol.TacticalApi" Version="1.0.4" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Identity.Web" Version="4.14.2" />
     <!-- Held at 3.8.0: 3.9.0 makes IOpenApiMediaType.Example read-only,
          which breaks the code the Microsoft.AspNetCore.OpenApi (10.0.10)
@@ -128,7 +128,7 @@
          line above; kept on the 15.1.x floor for the same CVE reason. -->
     <PackageVersion Include="HotChocolate.Subscriptions.InMemory" Version="16.6.0" />
     <PackageVersion Include="SocketIOClient" Version="4.0.5" />
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
@@ -190,11 +190,11 @@
          implements IChatClient against the local Ollama HTTP API
          (auto-detect on 127.0.0.1:11434). Cloud providers slot in via
          the same abstraction once Phase 3 wires Microsoft.Extensions.AI.OpenAI. -->
-    <PackageVersion Include="Microsoft.Extensions.AI" Version="10.8.3" />
+    <PackageVersion Include="Microsoft.Extensions.AI" Version="10.9.0" />
     <!-- Microsoft.Extensions.AI.OpenAI: IChatClient for OpenAI + any
          OpenAI-compatible endpoint (OpenRouter, Azure OpenAI, &c.).
          Phase 3 of #25 routes cloud BYOK through this. -->
-    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.8.3" />
+    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.9.0" />
     <!-- Anthropic.SDK: community-maintained SDK with first-class
          Microsoft.Extensions.AI integration (the AnthropicClient().Messages
          property returns IChatClient directly). Phase 3 of #25 uses this
