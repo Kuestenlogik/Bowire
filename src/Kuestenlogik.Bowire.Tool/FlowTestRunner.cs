@@ -179,6 +179,26 @@ internal static class FlowTestRunner
             SeedAiVars(flow, env, cli.AiSeed);
         }
 
+        // #361 — run-scoped secret redactor. The --secret / --secret-file
+        // names resolve against the same merged env (after --env-file,
+        // --env, keyring, and ai seeding), so a secret sourced from any of
+        // those channels registers its value for masking. Built here, after
+        // env is final, so every CI sink downstream masks consistently.
+        var secretNames = new List<string>(cli.Secrets);
+        if (!string.IsNullOrEmpty(cli.SecretFile))
+        {
+            try
+            {
+                secretNames.AddRange(SecretRedactor.ReadNamesFile(cli.SecretFile));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                await stderr.WriteLineAsync($"error: Failed to read --secret-file '{cli.SecretFile}': {ex.Message}").ConfigureAwait(false);
+                return 2;
+            }
+        }
+        var redactor = SecretRedactor.FromNames(secretNames, env);
+
         var sw = Stopwatch.StartNew();
         var anyError = false;
         var anyExpectationFailed = false;
@@ -201,7 +221,7 @@ internal static class FlowTestRunner
             if (!string.IsNullOrEmpty(stepResult.Error)) anyError = true;
             if (stepResult.Expectations.Any(e => !e.Passed)) anyExpectationFailed = true;
 
-            await PrintStepAsync(stdout, stepResult).ConfigureAwait(false);
+            await PrintStepAsync(stdout, stepResult, redactor).ConfigureAwait(false);
         }
 
         foreach (var step in flow.Nodes)
@@ -230,7 +250,7 @@ internal static class FlowTestRunner
                     };
                     report.Steps.Add(invalid);
                     anyError = true;
-                    await PrintStepAsync(stdout, invalid).ConfigureAwait(false);
+                    await PrintStepAsync(stdout, invalid, redactor).ConfigureAwait(false);
                     continue;
                 }
 
@@ -289,7 +309,7 @@ internal static class FlowTestRunner
         {
             try
             {
-                await File.WriteAllTextAsync(cli.JUnitPath, FlowJUnitReport.Render(report), ct).ConfigureAwait(false);
+                await File.WriteAllTextAsync(cli.JUnitPath, FlowJUnitReport.Render(report, redactor), ct).ConfigureAwait(false);
                 await stdout.WriteLineAsync($"  JUnit XML written to {cli.JUnitPath}").ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PathTooLongException)
@@ -301,7 +321,7 @@ internal static class FlowTestRunner
         {
             try
             {
-                await File.WriteAllTextAsync(cli.SarifPath, TestSarifReport.Render(report), ct).ConfigureAwait(false);
+                await File.WriteAllTextAsync(cli.SarifPath, TestSarifReport.Render(report, redactor), ct).ConfigureAwait(false);
                 await stdout.WriteLineAsync($"  SARIF written to {cli.SarifPath}").ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PathTooLongException)
@@ -311,7 +331,7 @@ internal static class FlowTestRunner
         }
         if (cli.Annotations)
         {
-            await GitHubAnnotations.WriteAsync(stdout, report).ConfigureAwait(false);
+            await GitHubAnnotations.WriteAsync(stdout, report, redactor).ConfigureAwait(false);
         }
 
         // #181 — --fail-on gates the exit code. 'never' runs + reports but
@@ -678,7 +698,7 @@ internal static class FlowTestRunner
         return string.Create(CultureInfo.InvariantCulture, $"{name}-{hash:x8}");
     }
 
-    private static async Task PrintStepAsync(TextWriter stdout, FlowStepRunResult step)
+    private static async Task PrintStepAsync(TextWriter stdout, FlowStepRunResult step, SecretRedactor redactor)
     {
         var useColor = UseColor(stdout);
         if (step.Skipped)
@@ -692,13 +712,13 @@ internal static class FlowTestRunner
         await stdout.WriteLineAsync($"  {marker}  {step.StepId}   {endpoint}   {step.Status ?? ""} · {step.LatencyMs}ms").ConfigureAwait(false);
         if (!string.IsNullOrEmpty(step.Error))
         {
-            await stdout.WriteLineAsync($"        {Red("error: " + step.Error, useColor)}").ConfigureAwait(false);
+            await stdout.WriteLineAsync($"        {Red("error: " + redactor.Redact(step.Error), useColor)}").ConfigureAwait(false);
             return;
         }
         foreach (var e in step.Expectations)
         {
             var icon = e.Passed ? Green("✓", useColor) : Red("✗", useColor);
-            await stdout.WriteLineAsync($"        {icon} {e.Message}").ConfigureAwait(false);
+            await stdout.WriteLineAsync($"        {icon} {redactor.Redact(e.Message)}").ConfigureAwait(false);
         }
     }
 
@@ -750,6 +770,18 @@ internal sealed class FlowTestCliOptions
     /// resolves them via a model; the CLI has none).
     /// </summary>
     public string? AiSeed { get; set; }
+
+    /// <summary>
+    /// #361 — <c>--secret KEY</c> (repeatable): names of variables whose
+    /// resolved values are masked in every CI output sink.
+    /// </summary>
+    public IReadOnlyList<string> Secrets { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    /// #361 — <c>--secret-file</c>: file listing one secret variable name per
+    /// line (blank lines / <c>#</c> comments ignored).
+    /// </summary>
+    public string? SecretFile { get; set; }
 }
 
 // ---- Run-report record types — consumed by FlowJUnitReport + FlowHtmlReport ----

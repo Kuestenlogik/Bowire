@@ -1284,12 +1284,23 @@ internal static class BowireCli
             Description = "Deterministic seed for {{ai.*}} refs. In the workbench ai refs resolve via a model; the CLI has none, so a seed pins each ref to a stable value derived from the seed + ref name (no model call), making CI runs byte-reproducible. Unset leaves ai refs unresolved. Flow files only. Maps to Bowire:Test:AiSeed.",
             DefaultValueFactory = _ => cfg["Bowire:Test:AiSeed"],
         };
+        var secret = new Option<string[]>("--secret")
+        {
+            Description = "Name of a variable whose resolved value must be redacted from all CI outputs (TTY, JUnit, SARIF, ::error annotations). The variable resolves normally; only its value is masked. Repeatable.",
+            AllowMultipleArgumentsPerToken = false,
+        };
+        var secretFile = new Option<string?>("--secret-file")
+        {
+            Description = "File listing one secret variable name per line (blank lines and # comments ignored). Same effect as repeating --secret; keeps a long secret list off the command line. Names only — values resolve from the run's variable scope, never from this file.",
+            DefaultValueFactory = _ => cfg["Bowire:Test:SecretFile"],
+        };
 
         var cmd = new Command("test", "Run an assertion-based test suite. Accepts a recording JSON (v2.1 test-collection format) or a Flow JSON document (v2.2 — the T2 CI runner). Format auto-detected.");
         cmd.Add(collectionPath); cmd.Add(url); cmd.Add(report); cmd.Add(junit);
         cmd.Add(sarif); cmd.Add(annotations); cmd.Add(updateSnapshots);
         cmd.Add(failOn); cmd.Add(workspaceDir);
         cmd.Add(baseUrl); cmd.Add(env); cmd.Add(envFile); cmd.Add(keyring); cmd.Add(aiSeed);
+        cmd.Add(secret); cmd.Add(secretFile);
         cmd.SetAction(async (pr, _) =>
         {
             var options = new TestCliOptions
@@ -1306,6 +1317,8 @@ internal static class BowireCli
                 EnvFiles = pr.GetValue(envFile) ?? Array.Empty<string>(),
                 Keyring = pr.GetValue(keyring),
                 AiSeed = pr.GetValue(aiSeed),
+                Secrets = pr.GetValue(secret) ?? Array.Empty<string>(),
+                SecretFile = pr.GetValue(secretFile),
             };
             var stdout = pr.InvocationConfiguration.Output;
             var stderr = pr.InvocationConfiguration.Error;

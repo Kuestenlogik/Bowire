@@ -31,9 +31,10 @@ namespace Kuestenlogik.Bowire.App;
 /// </remarks>
 internal static class FlowJUnitReport
 {
-    public static string Render(FlowRunReport report)
+    public static string Render(FlowRunReport report, SecretRedactor? redactor = null)
     {
         ArgumentNullException.ThrowIfNull(report);
+        redactor ??= SecretRedactor.Empty;
 
         var settings = new XmlWriterSettings
         {
@@ -69,7 +70,7 @@ internal static class FlowJUnitReport
 
             foreach (var step in report.Steps)
             {
-                WriteStepCases(w, step, report.FlowName);
+                WriteStepCases(w, step, report.FlowName, redactor);
             }
 
             w.WriteEndElement(); // testsuite
@@ -78,7 +79,7 @@ internal static class FlowJUnitReport
         return sb.ToString();
     }
 
-    private static void WriteStepCases(XmlWriter w, FlowStepRunResult step, string flowName)
+    private static void WriteStepCases(XmlWriter w, FlowStepRunResult step, string flowName, SecretRedactor redactor)
     {
         var stepSeconds = (step.LatencyMs / 1000.0).ToString("F3", CultureInfo.InvariantCulture);
 
@@ -87,14 +88,15 @@ internal static class FlowJUnitReport
         // invocation never happened.
         if (!string.IsNullOrEmpty(step.Error))
         {
+            var err = redactor.Redact(step.Error);
             w.WriteStartElement("testcase");
             w.WriteAttributeString("classname", flowName);
             w.WriteAttributeString("name", step.StepId + " :: invocation");
             w.WriteAttributeString("time", stepSeconds);
             w.WriteStartElement("error");
-            w.WriteAttributeString("message", step.Error);
+            w.WriteAttributeString("message", err);
             w.WriteAttributeString("type", "StepError");
-            w.WriteString(step.Error);
+            w.WriteString(err);
             w.WriteEndElement();
             w.WriteEndElement();
             return;
@@ -139,12 +141,12 @@ internal static class FlowJUnitReport
             if (!exp.Passed)
             {
                 w.WriteStartElement("failure");
-                w.WriteAttributeString("message", exp.Message);
+                w.WriteAttributeString("message", redactor.Redact(exp.Message));
                 w.WriteAttributeString("type", "AssertionFailed");
                 var detail = new StringBuilder()
-                    .Append(exp.Message).Append('\n')
-                    .Append("  expected: ").Append(exp.Expected ?? "<null>").Append('\n')
-                    .Append("  actual:   ").Append(exp.Actual ?? "<null>")
+                    .Append(redactor.Redact(exp.Message)).Append('\n')
+                    .Append("  expected: ").Append(redactor.Redact(exp.Expected) ?? "<null>").Append('\n')
+                    .Append("  actual:   ").Append(redactor.Redact(exp.Actual) ?? "<null>")
                     .ToString();
                 w.WriteString(detail);
                 w.WriteEndElement();

@@ -22,9 +22,10 @@ internal static class JUnitReport
     /// invocation errors both map to <c>&lt;failure&gt;</c> children with
     /// a human-readable message attribute and the diff details inside.
     /// </summary>
-    public static string Render(RunReport report)
+    public static string Render(RunReport report, SecretRedactor? redactor = null)
     {
         ArgumentNullException.ThrowIfNull(report);
+        redactor ??= SecretRedactor.Empty;
 
         var settings = new XmlWriterSettings
         {
@@ -60,7 +61,7 @@ internal static class JUnitReport
 
             foreach (var test in report.Tests)
             {
-                WriteTestCase(w, test, suiteName);
+                WriteTestCase(w, test, suiteName, redactor);
             }
 
             w.WriteEndElement(); // testsuite
@@ -70,7 +71,7 @@ internal static class JUnitReport
         return sb.ToString();
     }
 
-    private static void WriteTestCase(XmlWriter w, TestResult test, string suiteName)
+    private static void WriteTestCase(XmlWriter w, TestResult test, string suiteName, SecretRedactor redactor)
     {
         // classname doubles as the service name (Jenkins / GitLab group
         // tests by classname in their UI). Method goes into the test name.
@@ -87,10 +88,11 @@ internal static class JUnitReport
         // distinct from an assertion failure).
         if (!string.IsNullOrEmpty(test.Error))
         {
+            var err = redactor.Redact(test.Error);
             w.WriteStartElement("error");
-            w.WriteAttributeString("message", test.Error);
+            w.WriteAttributeString("message", err);
             w.WriteAttributeString("type", "InvocationError");
-            w.WriteString(test.Error);
+            w.WriteString(err);
             w.WriteEndElement();
         }
         else
@@ -99,13 +101,13 @@ internal static class JUnitReport
             // testcase are valid per the schema and many tools render them.
             foreach (var a in test.Assertions.Where(a => !a.Passed))
             {
-                var msg = $"{a.Path} {a.Op} {Truncate(a.Expected, 80)}";
+                var msg = redactor.Redact($"{a.Path} {a.Op} {Truncate(a.Expected, 80)}");
                 w.WriteStartElement("failure");
                 w.WriteAttributeString("message", msg);
                 w.WriteAttributeString("type", "AssertionFailed");
                 var detail = a.Error is not null
-                    ? $"{msg}\n  error: {a.Error}"
-                    : $"{msg}\n  expected: {a.Expected}\n  actual:   {a.ActualText}";
+                    ? $"{msg}\n  error: {redactor.Redact(a.Error)}"
+                    : $"{msg}\n  expected: {redactor.Redact(a.Expected)}\n  actual:   {redactor.Redact(a.ActualText)}";
                 w.WriteString(detail);
                 w.WriteEndElement();
             }

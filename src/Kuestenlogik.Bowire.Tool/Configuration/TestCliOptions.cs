@@ -107,4 +107,21 @@ internal sealed class TestCliOptions
     /// Flow codepath only.
     /// </summary>
     public string? AiSeed { get; set; }
+
+    /// <summary>
+    /// #361 — <c>--secret KEY</c> (repeatable): names of variables whose
+    /// resolved values must be redacted from every CI output sink (TTY,
+    /// JUnit, SARIF, GitHub <c>::error</c> annotations). The variable itself
+    /// resolves normally; only its value registers in the run-scoped
+    /// redaction set.
+    /// </summary>
+    public IReadOnlyList<string> Secrets { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    /// #361 — <c>--secret-file</c>: a file listing one secret variable name
+    /// per line (blank lines and <c>#</c> comments ignored). Same semantics
+    /// as repeating <see cref="Secrets"/>; keeps a long secret list out of
+    /// the command line.
+    /// </summary>
+    public string? SecretFile { get; set; }
 }
