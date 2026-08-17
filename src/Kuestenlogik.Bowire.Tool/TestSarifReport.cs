@@ -33,9 +33,10 @@ internal static class TestSarifReport
     private const string RuleStepError = "step-error";
 
     /// <summary>Render the legacy recording / test-collection run.</summary>
-    public static string Render(RunReport report)
+    public static string Render(RunReport report, SecretRedactor? redactor = null)
     {
         ArgumentNullException.ThrowIfNull(report);
+        redactor ??= SecretRedactor.Empty;
         var uri = ToArtifactUri(report.CollectionPath);
         var results = new List<TestSarifResult>();
 
@@ -45,7 +46,7 @@ internal static class TestSarifReport
             {
                 results.Add(MakeResult(
                     RuleInvocationError, uri,
-                    $"{test.Name}: invocation failed — {test.Error}",
+                    redactor.Redact($"{test.Name}: invocation failed — {test.Error}"),
                     fingerprint: $"{RuleInvocationError}@{report.CollectionPath}#{test.Name}"));
                 continue;
             }
@@ -56,7 +57,7 @@ internal static class TestSarifReport
                     : $"{a.Path} {a.Op} {a.Expected} — actual: {a.ActualText}";
                 results.Add(MakeResult(
                     RuleAssertionFailed, uri,
-                    $"{test.Name}: {detail}",
+                    redactor.Redact($"{test.Name}: {detail}"),
                     fingerprint: $"{RuleAssertionFailed}@{report.CollectionPath}#{test.Name}/{a.Path} {a.Op}"));
             }
         }
@@ -65,9 +66,10 @@ internal static class TestSarifReport
     }
 
     /// <summary>Render the v2.2 Flow run.</summary>
-    public static string Render(FlowRunReport report)
+    public static string Render(FlowRunReport report, SecretRedactor? redactor = null)
     {
         ArgumentNullException.ThrowIfNull(report);
+        redactor ??= SecretRedactor.Empty;
         var uri = ToArtifactUri(report.FlowPath);
         var results = new List<TestSarifResult>();
 
@@ -78,7 +80,7 @@ internal static class TestSarifReport
             {
                 results.Add(MakeResult(
                     RuleStepError, uri,
-                    $"{report.FlowName} / {step.StepId}: step errored — {step.Error}",
+                    redactor.Redact($"{report.FlowName} / {step.StepId}: step errored — {step.Error}"),
                     fingerprint: $"{RuleStepError}@{report.FlowPath}#{step.StepId}"));
                 continue;
             }
@@ -86,8 +88,8 @@ internal static class TestSarifReport
             {
                 results.Add(MakeResult(
                     RuleExpectationFailed, uri,
-                    $"{report.FlowName} / {step.StepId}: {e.Message}",
-                    fingerprint: $"{RuleExpectationFailed}@{report.FlowPath}#{step.StepId}/{e.Message}"));
+                    redactor.Redact($"{report.FlowName} / {step.StepId}: {e.Message}"),
+                    fingerprint: redactor.Redact($"{RuleExpectationFailed}@{report.FlowPath}#{step.StepId}/{e.Message}")));
             }
         }
 
@@ -187,15 +189,16 @@ internal static class TestSarifReport
 /// </summary>
 internal static class GitHubAnnotations
 {
-    public static async Task WriteAsync(TextWriter stdout, RunReport report)
+    public static async Task WriteAsync(TextWriter stdout, RunReport report, SecretRedactor? redactor = null)
     {
         ArgumentNullException.ThrowIfNull(report);
+        redactor ??= SecretRedactor.Empty;
         var file = TestSarifReport.ToArtifactUri(report.CollectionPath);
         foreach (var test in report.Tests)
         {
             if (!string.IsNullOrEmpty(test.Error))
             {
-                await WriteErrorAsync(stdout, file, test.Name, $"invocation failed — {test.Error}").ConfigureAwait(false);
+                await WriteErrorAsync(stdout, file, test.Name, $"invocation failed — {test.Error}", redactor).ConfigureAwait(false);
                 continue;
             }
             foreach (var a in test.Assertions.Where(a => !a.Passed))
@@ -203,33 +206,34 @@ internal static class GitHubAnnotations
                 var detail = a.Error is not null
                     ? $"{a.Path} {a.Op} {a.Expected} — error: {a.Error}"
                     : $"{a.Path} {a.Op} {a.Expected} — actual: {a.ActualText}";
-                await WriteErrorAsync(stdout, file, test.Name, detail).ConfigureAwait(false);
+                await WriteErrorAsync(stdout, file, test.Name, detail, redactor).ConfigureAwait(false);
             }
         }
     }
 
-    public static async Task WriteAsync(TextWriter stdout, FlowRunReport report)
+    public static async Task WriteAsync(TextWriter stdout, FlowRunReport report, SecretRedactor? redactor = null)
     {
         ArgumentNullException.ThrowIfNull(report);
+        redactor ??= SecretRedactor.Empty;
         var file = TestSarifReport.ToArtifactUri(report.FlowPath);
         foreach (var step in report.Steps)
         {
             if (step.Skipped) continue;
             if (!string.IsNullOrEmpty(step.Error))
             {
-                await WriteErrorAsync(stdout, file, step.StepId, $"step errored — {step.Error}").ConfigureAwait(false);
+                await WriteErrorAsync(stdout, file, step.StepId, $"step errored — {step.Error}", redactor).ConfigureAwait(false);
                 continue;
             }
             foreach (var e in step.Expectations.Where(e => !e.Passed))
             {
-                await WriteErrorAsync(stdout, file, step.StepId, e.Message).ConfigureAwait(false);
+                await WriteErrorAsync(stdout, file, step.StepId, e.Message, redactor).ConfigureAwait(false);
             }
         }
     }
 
-    private static Task WriteErrorAsync(TextWriter stdout, string file, string title, string message)
+    private static Task WriteErrorAsync(TextWriter stdout, string file, string title, string message, SecretRedactor redactor)
         => stdout.WriteLineAsync(
-            $"::error file={EscapeProperty(file)},title={EscapeProperty(title)}::{EscapeData(message)}");
+            $"::error file={EscapeProperty(file)},title={EscapeProperty(redactor.Redact(title))}::{EscapeData(redactor.Redact(message))}");
 
     private static string EscapeData(string s) => s
         .Replace("%", "%25", StringComparison.Ordinal)

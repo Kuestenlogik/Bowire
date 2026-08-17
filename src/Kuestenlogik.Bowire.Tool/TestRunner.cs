@@ -95,6 +95,8 @@ internal static class TestRunner
                 EnvFiles = cli.EnvFiles,
                 Keyring = cli.Keyring,
                 AiSeed = cli.AiSeed,
+                Secrets = cli.Secrets,
+                SecretFile = cli.SecretFile,
             };
             var rc = await RunAsync(perFlow, stdout, stderr).ConfigureAwait(false);
             // Worst-of: 2 (error) beats 1 (fail) beats 0 (pass).
@@ -175,6 +177,8 @@ internal static class TestRunner
                 EnvFiles = cli.EnvFiles,
                 Keyring = cli.Keyring,
                 AiSeed = cli.AiSeed,
+                Secrets = cli.Secrets,
+                SecretFile = cli.SecretFile,
             };
             return await FlowTestRunner.RunAsync(flowCli, stdout, stderr).ConfigureAwait(false);
         }
@@ -194,6 +198,34 @@ internal static class TestRunner
         {
             await WriteErrorAsync(stderr, "Collection has no tests.").ConfigureAwait(false);
             return 2;
+        }
+
+        // #361 — resolve the run-scoped secret redactor. The named
+        // variables (--secret / --secret-file) resolve normally into the
+        // request/assertion text; their *values* — collected from the
+        // collection- and test-level environment blocks — register here so
+        // every CI sink (TTY, JUnit, SARIF, ::error) masks them before the
+        // text is written. Values that don't resolve are simply absent.
+        var secretNames = new List<string>(cli.Secrets);
+        if (!string.IsNullOrEmpty(cli.SecretFile))
+        {
+            try
+            {
+                secretNames.AddRange(SecretRedactor.ReadNamesFile(cli.SecretFile));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                await WriteErrorAsync(stderr, $"Failed to read --secret-file '{cli.SecretFile}': {ex.Message}").ConfigureAwait(false);
+                return 2;
+            }
+        }
+        var redactor = SecretRedactor.Empty;
+        if (secretNames.Count > 0)
+        {
+            var secretValues = new List<string>();
+            CollectSecretValues(collection.Environment, secretNames, secretValues);
+            foreach (var t in collection.Tests) CollectSecretValues(t.Environment, secretNames, secretValues);
+            if (secretValues.Count > 0) redactor = new SecretRedactor(secretValues);
         }
 
         // Initialize the protocol registry once and reuse for every test
@@ -232,7 +264,7 @@ internal static class TestRunner
             passedAssertions += passed;
             if (anyFailed || !string.IsNullOrEmpty(result.Error)) failedTests++;
 
-            await PrintTestResultAsync(stdout, result).ConfigureAwait(false);
+            await PrintTestResultAsync(stdout, result, redactor).ConfigureAwait(false);
         }
 
         sw.Stop();
@@ -267,7 +299,7 @@ internal static class TestRunner
         {
             try
             {
-                await File.WriteAllTextAsync(cli.JUnitPath, JUnitReport.Render(report));
+                await File.WriteAllTextAsync(cli.JUnitPath, JUnitReport.Render(report, redactor));
                 await stdout.WriteLineAsync($"  JUnit XML written to {cli.JUnitPath}").ConfigureAwait(false);
                 await stdout.WriteLineAsync().ConfigureAwait(false);
             }
@@ -281,7 +313,7 @@ internal static class TestRunner
         {
             try
             {
-                await File.WriteAllTextAsync(cli.SarifPath, TestSarifReport.Render(report));
+                await File.WriteAllTextAsync(cli.SarifPath, TestSarifReport.Render(report, redactor));
                 await stdout.WriteLineAsync($"  SARIF written to {cli.SarifPath}").ConfigureAwait(false);
                 await stdout.WriteLineAsync().ConfigureAwait(false);
             }
@@ -293,7 +325,7 @@ internal static class TestRunner
 
         if (cli.Annotations)
         {
-            await GitHubAnnotations.WriteAsync(stdout, report).ConfigureAwait(false);
+            await GitHubAnnotations.WriteAsync(stdout, report, redactor).ConfigureAwait(false);
         }
 
         // #181 — --fail-on gates the exit code. 'never' runs + reports
@@ -616,30 +648,46 @@ internal static class TestRunner
 
     // ---- Console output ----
 
-    private static async Task PrintTestResultAsync(TextWriter stdout, TestResult result)
+    private static async Task PrintTestResultAsync(TextWriter stdout, TestResult result, SecretRedactor redactor)
     {
         var useColor = UseColor(stdout);
         var status = result.Error is null && result.Assertions.All(a => a.Passed) ? Green("PASS", useColor) : Red("FAIL", useColor);
-        await stdout.WriteLineAsync($"  {status}  {Bold(result.Name, useColor)}   {Dim(result.Status + " · " + result.DurationMs + "ms", useColor)}").ConfigureAwait(false);
+        await stdout.WriteLineAsync($"  {status}  {Bold(redactor.Redact(result.Name), useColor)}   {Dim(result.Status + " · " + result.DurationMs + "ms", useColor)}").ConfigureAwait(false);
 
         if (result.Error is not null)
         {
-            await stdout.WriteLineAsync($"        {Red("error: " + result.Error, useColor)}").ConfigureAwait(false);
+            await stdout.WriteLineAsync($"        {Red("error: " + redactor.Redact(result.Error), useColor)}").ConfigureAwait(false);
             return;
         }
 
         foreach (var a in result.Assertions)
         {
             var icon = a.Passed ? Green("✓", useColor) : Red("✗", useColor);
-            await stdout.WriteAsync($"        {icon} {Dim(a.Path + " " + a.Op + " " + Quote(a.Expected), useColor)}").ConfigureAwait(false);
+            await stdout.WriteAsync($"        {icon} {Dim(a.Path + " " + a.Op + " " + Quote(redactor.Redact(a.Expected)), useColor)}").ConfigureAwait(false);
             if (!a.Passed)
             {
                 if (a.Error is not null)
-                    await stdout.WriteAsync($"   {Red(a.Error, useColor)}").ConfigureAwait(false);
+                    await stdout.WriteAsync($"   {Red(redactor.Redact(a.Error), useColor)}").ConfigureAwait(false);
                 else
-                    await stdout.WriteAsync($"   {Red("actual: " + Quote(a.ActualText), useColor)}").ConfigureAwait(false);
+                    await stdout.WriteAsync($"   {Red("actual: " + Quote(redactor.Redact(a.ActualText)), useColor)}").ConfigureAwait(false);
             }
             await stdout.WriteLineAsync().ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// #361 — collect the resolved values of the <paramref name="names"/>
+    /// found in <paramref name="env"/> into <paramref name="into"/>. Both a
+    /// collection-level and each test-level environment are scanned so a
+    /// secret defined at either scope registers for redaction.
+    /// </summary>
+    private static void CollectSecretValues(
+        Dictionary<string, string>? env, IReadOnlyList<string> names, List<string> into)
+    {
+        if (env is null) return;
+        foreach (var name in names)
+        {
+            if (env.TryGetValue(name, out var v)) into.Add(v);
         }
     }
 

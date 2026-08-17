@@ -27,8 +27,34 @@ bowire test --workspace ./bowire --junit results.xml
 | `--fail-on any \| never` | `any` (default) exits non-zero on any failed check; `never` runs + reports but always exits 0 (a step **error** still exits 2, so a broken backend is never masked). |
 | `--workspace <dir>` | Run every Flow JSON in a workspace directory's `flows/` folder; per-flow reports are written as `<report>.<flow>.<ext>` so a glob picks them all up. |
 | `--env-file <f>` / `--env KEY=VAL` | Feed the `{{var}}` resolver; secrets stay in env vars, never in checked-in files. |
+| `--secret <NAME>` / `--secret-file <f>` | Mark variables whose resolved values must be redacted from every output (see [Secrets](#redacting-secrets)). |
 
 Exit codes: **0** all passed · **1** an assertion / expectation failed · **2** a step errored before evaluation (backend down, malformed file).
+
+## Redacting secrets
+
+A failing assertion prints the expected + actual values, and those land verbatim in the TTY log, the JUnit failure text, the SARIF message, and the GitHub `::error` annotation. If a token or password flows through a request or a response, mark the variable that carries it as a secret and Bowire masks its **value** everywhere it would otherwise appear:
+
+```bash
+# resolve DEPLOY_TOKEN normally, but redact its value from every output
+bowire test ./flows/smoke.json \
+  --env-file .env.ci \
+  --secret DEPLOY_TOKEN --secret API_KEY \
+  --junit results.xml --sarif results.sarif --annotations
+```
+
+- `--secret <NAME>` is repeatable; `--secret-file <file>` reads one variable **name** per line (blank lines and `#` comments ignored) so a long list stays off the command line. The file holds names, never values — the value is resolved from the run's variable scope (`--env`, `--env-file`, `--keyring`), so **secret values never live in a checked-in file**.
+- The variable still resolves normally into the request/assertion — only its rendered value is masked in the output. A value longer than eight characters renders as `***` plus its last four (e.g. `***c5f9`) so two different secrets stay distinguishable in a diff; a shorter value collapses to a bare `***`. The mask is stable across a run.
+- Empty / whitespace values are never redacted (masking `""` would blank every line).
+
+Feed the actual value in from your CI's secret store through `--env` / `--env-file` (or `--keyring`), exactly as you already do for any other variable — the checked-in flow file only references `{{DEPLOY_TOKEN}}`:
+
+```yaml
+      - run: >-
+          bowire test ./flows/smoke.json --junit results.xml --annotations
+          --env DEPLOY_TOKEN=${{ secrets.DEPLOY_TOKEN }}
+          --secret DEPLOY_TOKEN
+```
 
 ## GitHub Actions
 
