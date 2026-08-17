@@ -1,0 +1,325 @@
+name: 'Bowire PR report'
+description: 'Run `bowire diff` (API schema delta) + `bowire test` + `bowire scan` on a PR and post one updating comment with the API / test / security impact.'
+author: 'Küstenlogik'
+branding:
+  icon: 'git-pull-request'
+  color: 'blue'
+
+# Composite action wrapper that turns a PR into a Bowire report. The caller
+# starts their service at the head commit, points `target` at it, and (for the
+# API-delta section) passes a `base-snapshot` captured on the base branch.
+#
+#   - uses: actions/checkout@v7
+#   - uses: Kuestenlogik/Bowire/.github/actions/bowire-pr@<ref>
+#     with:
+#       target: http://localhost:5080
+#       base-snapshot: base.snapshot.json   # optional; skips API delta if unset
+#
+# The calling JOB needs `pull-requests: write` for the comment upsert. When the
+# run is not a pull_request (e.g. workflow_dispatch), the report is written to
+# the run summary instead of posted — so the same action self-tests without a PR.
+#
+# Everything runs inside the runner: bowire hits `target` locally, no callback
+# to Bowire infrastructure, no secrets leave the job.
+#
+# NOTE (prototype, #183): the Perf section is not wired yet; API + Tests +
+# Security are. This action lives in-repo while it stabilises and will move to
+# its own `kuestenlogik/bowire-action` repo per the ticket's acceptance.
+
+inputs:
+  target:
+    description: 'URL of the running head service (scan target + head schema snapshot). Required.'
+    required: true
+  protocol:
+    description: 'Protocol plugin id for schema discovery (rest, grpc, graphql, ...). Empty = guess from the URL scheme.'
+    required: false
+    default: ''
+  base-snapshot:
+    description: 'Path to a base-branch schema snapshot JSON (from `bowire diff snapshot`). Empty = skip the API-delta section.'
+    required: false
+    default: ''
+  test:
+    description: 'Path to a recording / flow JSON for `bowire test`. Empty = skip the Tests section.'
+    required: false
+    default: ''
+  scan:
+    description: "Run `bowire scan` against the target ('true'/'false')."
+    required: false
+    default: 'true'
+  scan-templates:
+    description: "Vulnerability-template directory for `bowire scan`. Empty = built-in checks only."
+    required: false
+    default: ''
+  scan-baseline:
+    description: 'Path to a base scan SARIF so the report shows new/fixed findings. Optional.'
+    required: false
+    default: ''
+  fail-on-schema:
+    description: "Fail the check on: 'none' (default), 'breaking' (removed surface / signature change), or 'any' (any callable change)."
+    required: false
+    default: 'none'
+  fail-on-tests:
+    description: "Fail the check on a test failure: 'any' (default) or 'never'."
+    required: false
+    default: 'any'
+  fail-on-scan:
+    description: "Fail the check on a scan finding: 'never' (default) or 'any'."
+    required: false
+    default: 'never'
+  dotnet-version:
+    description: '.NET SDK version used to install / build + run the bowire CLI.'
+    required: false
+    default: '10.0.x'
+  tool-version:
+    description: 'Specific Kuestenlogik.Bowire.Tool version to install. Default: latest published. Ignored when build-from-source is true.'
+    required: false
+    default: ''
+  build-from-source:
+    description: "Build the CLI from the checked-out repo instead of installing the NuGet tool ('true'/'false'). Needed while `bowire diff` is unreleased and for this repo's own self-test."
+    required: false
+    default: 'false'
+  github-token:
+    description: 'Token used to upsert the PR comment. Defaults to the workflow token.'
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  report-path:
+    description: 'Path to the assembled markdown report.'
+    value: ${{ steps.assemble.outputs.report-path }}
+  schema-status:
+    description: "Schema gate result: 'pass' or 'fail'."
+    value: ${{ steps.schema.outputs.status }}
+  overall-status:
+    description: "Overall gate result: 'pass' or 'fail'."
+    value: ${{ steps.enforce.outputs.status }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up .NET ${{ inputs.dotnet-version }}
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Install Bowire CLI (published tool)
+      if: inputs.build-from-source != 'true'
+      shell: bash
+      env:
+        TOOL_VERSION: ${{ inputs.tool-version }}
+      run: |
+        if [ -n "$TOOL_VERSION" ]; then
+          dotnet tool install -g Kuestenlogik.Bowire.Tool --version "$TOOL_VERSION"
+        else
+          dotnet tool install -g Kuestenlogik.Bowire.Tool
+        fi
+        echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+    - name: Build Bowire CLI (from source)
+      if: inputs.build-from-source == 'true'
+      shell: bash
+      run: |
+        dotnet build src/Kuestenlogik.Bowire.Tool/Kuestenlogik.Bowire.Tool.csproj -c Release --nologo
+        dll="$GITHUB_WORKSPACE/artifacts/bin/Kuestenlogik.Bowire.Tool/Release/bowire.dll"
+        if [ ! -f "$dll" ]; then echo "::error::built bowire.dll not found at $dll"; exit 1; fi
+        shim="$RUNNER_TEMP/bowire"
+        printf '#!/usr/bin/env bash\nexec dotnet "%s" "$@"\n' "$dll" > "$shim"
+        chmod +x "$shim"
+        echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+    - name: Print bowire version
+      shell: bash
+      run: bowire --version
+
+    # ---- API schema delta ------------------------------------------------
+    - name: Schema delta
+      id: schema
+      shell: bash
+      env:
+        TARGET: ${{ inputs.target }}
+        PROTOCOL: ${{ inputs.protocol }}
+        BASE_SNAPSHOT: ${{ inputs.base-snapshot }}
+        FAIL_ON: ${{ inputs.fail-on-schema }}
+      run: |
+        echo "status=pass" >> "$GITHUB_OUTPUT"
+        if [ -z "$BASE_SNAPSHOT" ]; then
+          echo "::notice::No base-snapshot provided — skipping the API-delta section."
+          exit 0
+        fi
+        if [ ! -f "$BASE_SNAPSHOT" ]; then
+          echo "::warning::base-snapshot '$BASE_SNAPSHOT' not found — skipping the API-delta section."
+          exit 0
+        fi
+        PROTO_ARGS=()
+        [ -n "$PROTOCOL" ] && PROTO_ARGS=(--protocol "$PROTOCOL")
+        bowire diff snapshot "$TARGET" "${PROTO_ARGS[@]}" -o head.snapshot.json
+        bowire diff --base "$BASE_SNAPSHOT" --head head.snapshot.json --format markdown -o schema.md
+        # Separate call for the gate so the markdown render is never gated away.
+        if bowire diff --base "$BASE_SNAPSHOT" --head head.snapshot.json --fail-on "$FAIL_ON" -o schema.json; then
+          echo "status=pass" >> "$GITHUB_OUTPUT"
+        else
+          echo "status=fail" >> "$GITHUB_OUTPUT"
+          echo "::warning::Schema gate (fail-on=$FAIL_ON) tripped."
+        fi
+
+    # ---- Tests -----------------------------------------------------------
+    - name: Tests
+      id: tests
+      shell: bash
+      env:
+        TEST: ${{ inputs.test }}
+        FAIL_ON: ${{ inputs.fail-on-tests }}
+      run: |
+        echo "status=pass" >> "$GITHUB_OUTPUT"
+        if [ -z "$TEST" ]; then
+          echo "::notice::No test input — skipping the Tests section."
+          exit 0
+        fi
+        # Never let the tool's own exit gate the step; we compute status from
+        # the JUnit counts so the comment always posts.
+        bowire test "$TEST" --junit test.xml --annotations --fail-on never || true
+        if [ ! -f test.xml ]; then
+          echo "::warning::bowire test produced no JUnit output."
+          exit 0
+        fi
+        total=$(grep -oE 'tests="[0-9]+"' test.xml | head -1 | grep -oE '[0-9]+' || echo 0)
+        failed=$(grep -oE 'failures="[0-9]+"' test.xml | head -1 | grep -oE '[0-9]+' || echo 0)
+        [ -z "$total" ] && total=0
+        [ -z "$failed" ] && failed=0
+        passed=$((total - failed))
+        {
+          echo "**Tests:** ${passed}/${total} passed, ${failed} failed."
+          echo ""
+        } > test-summary.md
+        echo "total=$total" >> "$GITHUB_OUTPUT"
+        echo "failed=$failed" >> "$GITHUB_OUTPUT"
+        if [ "$failed" -gt 0 ] && [ "$FAIL_ON" = "any" ]; then
+          echo "status=fail" >> "$GITHUB_OUTPUT"
+          echo "::warning::$failed test(s) failed."
+        fi
+
+    # ---- Security scan ---------------------------------------------------
+    - name: Security scan
+      id: scan
+      shell: bash
+      env:
+        RUN_SCAN: ${{ inputs.scan }}
+        TARGET: ${{ inputs.target }}
+        TEMPLATES: ${{ inputs.scan-templates }}
+        BASELINE: ${{ inputs.scan-baseline }}
+        FAIL_ON: ${{ inputs.fail-on-scan }}
+      run: |
+        echo "status=pass" >> "$GITHUB_OUTPUT"
+        if [ "$RUN_SCAN" != "true" ]; then
+          echo "::notice::scan input is not 'true' — skipping the Security section."
+          exit 0
+        fi
+        ARGS=(scan --target "$TARGET" --out scan.sarif)
+        if [ -n "$TEMPLATES" ] && [ -d "$TEMPLATES" ]; then
+          ARGS+=(--templates "$TEMPLATES")
+        fi
+        bowire "${ARGS[@]}"
+        REPORT_ARGS=(scan report --in scan.sarif)
+        if [ -n "$BASELINE" ] && [ -f "$BASELINE" ]; then
+          REPORT_ARGS+=(--baseline "$BASELINE")
+        fi
+        bowire "${REPORT_ARGS[@]}" > scan.md || true
+        # 'error'-level SARIF results are the vulnerable findings.
+        findings=$(grep -oE '"level"[[:space:]]*:[[:space:]]*"error"' scan.sarif 2>/dev/null | wc -l | tr -d ' ')
+        [ -z "$findings" ] && findings=0
+        echo "findings=$findings" >> "$GITHUB_OUTPUT"
+        if [ "$findings" -gt 0 ] && [ "$FAIL_ON" = "any" ]; then
+          echo "status=fail" >> "$GITHUB_OUTPUT"
+          echo "::warning::$findings scan finding(s) at error level."
+        fi
+
+    # ---- Assemble the single comment body --------------------------------
+    - name: Assemble report
+      id: assemble
+      shell: bash
+      env:
+        SCHEMA_STATUS: ${{ steps.schema.outputs.status }}
+        TESTS_STATUS: ${{ steps.tests.outputs.status }}
+        SCAN_STATUS: ${{ steps.scan.outputs.status }}
+      run: |
+        icon() { [ "$1" = "fail" ] && printf '🔴' || printf '🟢'; }
+        {
+          echo "<!-- bowire-pr-bot -->"
+          echo "## Bowire PR report"
+          echo ""
+          echo "| Section | Status |"
+          echo "| --- | --- |"
+          [ -f schema.md ]       && echo "| API schema | $(icon "$SCHEMA_STATUS") |"
+          [ -f test-summary.md ] && echo "| Tests | $(icon "$TESTS_STATUS") |"
+          [ -f scan.md ]         && echo "| Security | $(icon "$SCAN_STATUS") |"
+          echo ""
+          if [ -f schema.md ]; then cat schema.md; echo ""; fi
+          if [ -f test-summary.md ]; then cat test-summary.md; echo ""; fi
+          if [ -f scan.md ]; then echo "## Security"; echo ""; cat scan.md; echo ""; fi
+          echo "---"
+          echo "<sub>Generated by \`bowire\` — API / test / security impact of this PR.</sub>"
+        } > bowire-report.md
+        echo "report-path=bowire-report.md" >> "$GITHUB_OUTPUT"
+
+    # ---- Post (PR) or summarise (no PR) ----------------------------------
+    - name: Upsert PR comment
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const fs = require('fs');
+          const marker = '<!-- bowire-pr-bot -->';
+          const body = fs.readFileSync('bowire-report.md', 'utf8');
+          const pr = context.payload.pull_request?.number;
+          if (!pr) {
+            core.info('No pull_request context — writing the report to the run summary.');
+            await core.summary.addRaw(body).write();
+            return;
+          }
+          const comments = await github.paginate(github.rest.issues.listComments, {
+            ...context.repo, issue_number: pr, per_page: 100,
+          });
+          const existing = comments.find(c => c.body && c.body.includes(marker));
+          if (existing) {
+            await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body });
+            core.info(`Updated comment ${existing.id}.`);
+          } else {
+            await github.rest.issues.createComment({ ...context.repo, issue_number: pr, body });
+            core.info('Created a new comment.');
+          }
+
+    - name: Upload report + artifacts
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: bowire-pr-report
+        path: |
+          bowire-report.md
+          schema.md
+          schema.json
+          head.snapshot.json
+          test.xml
+          scan.sarif
+          scan.md
+        if-no-files-found: ignore
+
+    # ---- Enforce the gate ------------------------------------------------
+    - name: Enforce thresholds
+      id: enforce
+      shell: bash
+      env:
+        SCHEMA_STATUS: ${{ steps.schema.outputs.status }}
+        TESTS_STATUS: ${{ steps.tests.outputs.status }}
+        SCAN_STATUS: ${{ steps.scan.outputs.status }}
+      run: |
+        fail=0
+        for s in "$SCHEMA_STATUS" "$TESTS_STATUS" "$SCAN_STATUS"; do
+          [ "$s" = "fail" ] && fail=1
+        done
+        if [ "$fail" -eq 1 ]; then
+          echo "status=fail" >> "$GITHUB_OUTPUT"
+          echo "::error::Bowire PR gate failed — see the PR comment / run summary."
+          exit 1
+        fi
+        echo "status=pass" >> "$GITHUB_OUTPUT"
+        echo "Bowire PR gate passed."
