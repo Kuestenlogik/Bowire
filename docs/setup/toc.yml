@@ -6,6 +6,8 @@
   href: standalone.md
 - name: Bowire in CI
   href: ci.md
+- name: PR report bot
+  href: pr-bot.md
 - name: Docker
   href: docker.md
 - name: Updating Bowire and its plugins
