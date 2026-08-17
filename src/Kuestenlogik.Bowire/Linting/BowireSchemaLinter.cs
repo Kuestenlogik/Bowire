@@ -44,8 +44,15 @@ public sealed class BowireSchemaLinter
     /// Lint every service with every rule. Findings come back grouped by
     /// service in input order, then by rule in registration order — a stable
     /// order so a report or a diff of two runs reads the same each time.
+    /// <para>
+    /// An optional <paramref name="config"/> (from <c>.bowire/rules.json</c>)
+    /// skips rules turned <c>enabled: false</c> and remaps a finding's severity
+    /// when the rule carries a severity override. A null config runs every rule
+    /// at its built-in severity.
+    /// </para>
     /// </summary>
-    public IReadOnlyList<BowireLintFinding> Lint(IReadOnlyList<BowireServiceInfo> services)
+    public IReadOnlyList<BowireLintFinding> Lint(
+        IReadOnlyList<BowireServiceInfo> services, BowireLintConfig? config = null)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -54,7 +61,15 @@ public sealed class BowireSchemaLinter
         {
             foreach (var rule in _rules)
             {
-                findings.AddRange(rule.Inspect(service));
+                if (config is not null && !config.IsEnabled(rule.Id)) continue;
+
+                var overrideSeverity = config?.SeverityOverride(rule.Id);
+                foreach (var finding in rule.Inspect(service))
+                {
+                    findings.Add(overrideSeverity is { } severity && severity != finding.Severity
+                        ? finding with { Severity = severity }
+                        : finding);
+                }
             }
         }
 

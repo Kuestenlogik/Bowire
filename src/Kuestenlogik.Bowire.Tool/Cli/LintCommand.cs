@@ -52,12 +52,17 @@ internal static class LintCommand
         {
             Description = "Protocol plugin id for live-URL discovery (rest, grpc, graphql, ...). Ignored for snapshot files. Guessed from the URL scheme when unset.",
         };
+        var rulesOpt = new Option<string?>("--rules")
+        {
+            Description = "Path to a .bowire/rules.json config (rule on/off + severity overrides). Auto-discovered by walking up from the current directory when unset.",
+        };
 
         lint.Add(sourceArg);
         lint.Add(formatOpt);
         lint.Add(outputOpt);
         lint.Add(failOnOpt);
         lint.Add(protocolOpt);
+        lint.Add(rulesOpt);
         lint.SetAction(async (pr, ct) =>
             await RunAsync(
                 pr.GetValue(sourceArg) ?? "",
@@ -65,6 +70,7 @@ internal static class LintCommand
                 pr.GetValue(outputOpt),
                 pr.GetValue(failOnOpt) ?? "none",
                 pr.GetValue(protocolOpt),
+                pr.GetValue(rulesOpt),
                 ct,
                 pr.InvocationConfiguration.Output,
                 pr.InvocationConfiguration.Error).ConfigureAwait(false));
@@ -74,6 +80,7 @@ internal static class LintCommand
 
     internal static async Task<int> RunAsync(
         string source, string? format, string? output, string failOn, string? protocolId,
+        string? rulesPath,
         CancellationToken ct, TextWriter? stdout = null, TextWriter? stderr = null)
     {
         var outW = stdout ?? Console.Out;
@@ -81,14 +88,17 @@ internal static class LintCommand
 
         if (string.IsNullOrWhiteSpace(source))
         {
-            await errW.WriteLineAsync("Usage: bowire lint <snapshot|url> [--format text|json|markdown] [--fail-on none|info|low|medium|high]").ConfigureAwait(false);
+            await errW.WriteLineAsync("Usage: bowire lint <snapshot|url> [--format text|json|markdown] [--fail-on none|info|low|medium|high] [--rules <file>]").ConfigureAwait(false);
             return 2;
         }
+
+        var (config, configFailed) = await LoadConfigAsync(rulesPath, errW).ConfigureAwait(false);
+        if (configFailed) return 1;
 
         var services = await CliSchemaSnapshot.ResolveAsync(source, protocolId, errW, ct).ConfigureAwait(false);
         if (services is null) return 1;
 
-        var findings = BowireSchemaLinter.CreateDefault().Lint(services);
+        var findings = BowireSchemaLinter.CreateDefault().Lint(services, config);
 
         var rendered = format?.ToUpperInvariant() switch
         {
@@ -99,6 +109,43 @@ internal static class LintCommand
         await WriteResultAsync(rendered, output, outW, ct).ConfigureAwait(false);
 
         return ExitCodeFor(findings, failOn);
+    }
+
+    /// <summary>
+    /// Resolve the lint config: an explicit <paramref name="rulesPath"/> (error
+    /// if it doesn't exist), else the auto-discovered <c>.bowire/rules.json</c>
+    /// (silent when none is found). Returns the config (or null) and whether it
+    /// failed to load.
+    /// </summary>
+    private static async Task<(BowireLintConfig? Config, bool Failed)> LoadConfigAsync(string? rulesPath, TextWriter errW)
+    {
+        string? path;
+        if (!string.IsNullOrWhiteSpace(rulesPath))
+        {
+            if (!File.Exists(rulesPath))
+            {
+                await errW.WriteLineAsync($"bowire lint: rules file not found: '{rulesPath}'.").ConfigureAwait(false);
+                return (null, true);
+            }
+
+            path = rulesPath;
+        }
+        else
+        {
+            path = BowireLintConfigLoader.DiscoverPath();
+        }
+
+        if (path is null) return (null, false);
+
+        try
+        {
+            return (BowireLintConfigLoader.Load(path), false);
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or ArgumentException or NotSupportedException or UnauthorizedAccessException)
+        {
+            await errW.WriteLineAsync($"bowire lint: failed to read rules config '{path}': {ex.Message}").ConfigureAwait(false);
+            return (null, true);
+        }
     }
 
     // ---- gate -----------------------------------------------------------
