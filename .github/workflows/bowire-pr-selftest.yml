@@ -1,0 +1,78 @@
+name: "Self-test: PR report action"
+
+# Exercises the in-repo .github/actions/bowire-pr composite action end-to-end
+# against a local `bowire mock` target, so the action's wiring is validated
+# without needing an external service or a live PR. On workflow_dispatch (no PR
+# context) the assembled report lands in the run summary; on a PR that touches
+# the action it also posts the comment.
+#
+# Uses build-from-source so the still-unreleased `bowire diff` command is
+# available — external consumers will pin the published tool instead.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/actions/bowire-pr/**'
+      - '.github/workflows/bowire-pr-selftest.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  selftest:
+    name: Run bowire-pr against a local mock
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build bowire (for the mock + base snapshot)
+        run: dotnet build src/Kuestenlogik.Bowire.Tool/Kuestenlogik.Bowire.Tool.csproj -c Release --nologo
+
+      - name: Put a bowire shim on PATH
+        run: |
+          dll="$GITHUB_WORKSPACE/artifacts/bin/Kuestenlogik.Bowire.Tool/Release/bowire.dll"
+          test -f "$dll" || { echo "::error::bowire.dll not found at $dll"; exit 1; }
+          printf '#!/usr/bin/env bash\nexec dotnet "%s" "$@"\n' "$dll" > "$RUNNER_TEMP/bowire"
+          chmod +x "$RUNNER_TEMP/bowire"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+      - name: Start the mock target
+        run: |
+          nohup bowire mock \
+            --schema tests/Kuestenlogik.Bowire.Mock.Tests/Fixtures/weather.openapi.yaml \
+            --port 6000 --host 127.0.0.1 > mock.log 2>&1 &
+          echo "MOCK_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            if curl -s -o /dev/null http://127.0.0.1:6000/ 2>/dev/null; then
+              echo "mock accepting connections after ${i}s"; break
+            fi
+            sleep 1
+          done
+          curl -s -o /dev/null http://127.0.0.1:6000/ 2>/dev/null || { echo "::error::mock never came up"; cat mock.log; exit 1; }
+
+      - name: Capture the base snapshot
+        run: bowire diff snapshot http://127.0.0.1:6000 --protocol rest -o base.snapshot.json
+
+      - name: Run the PR-report action
+        uses: ./.github/actions/bowire-pr
+        with:
+          target: http://127.0.0.1:6000
+          protocol: rest
+          base-snapshot: base.snapshot.json
+          scan: 'true'
+          build-from-source: 'true'
+          fail-on-schema: none
+          fail-on-tests: never
+          fail-on-scan: never
+
+      - name: Stop the mock
+        if: always()
+        run: kill "${MOCK_PID}" 2>/dev/null || true
