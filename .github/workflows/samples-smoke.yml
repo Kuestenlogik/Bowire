@@ -70,7 +70,10 @@ jobs:
           shopt -s nullglob
           for manifest in samples/*/.bowire/project.json; do
             echo "::group::$manifest"
-            dotnet run --project src/Kuestenlogik.Bowire.Tool -c Release -- project validate --file "$manifest"
+            # Absolute path: `dotnet run --project` launches the app with its CWD
+            # set to the project directory, not the repo root, so a relative
+            # --file would resolve under src/Kuestenlogik.Bowire.Tool/ and miss.
+            dotnet run --project src/Kuestenlogik.Bowire.Tool -c Release -- project validate --file "$PWD/$manifest"
             echo "::endgroup::"
           done
 
