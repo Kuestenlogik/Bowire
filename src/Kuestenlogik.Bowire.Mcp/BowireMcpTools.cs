@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Kuestenlogik.Bowire;
+using Kuestenlogik.Bowire.Linting;
 using Kuestenlogik.Bowire.Mock;
 using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Recording;
@@ -136,6 +137,65 @@ public sealed class BowireMcpTools
 
         return JsonSerializer.Serialize(
             new { url, services = collected, attempts = probe.Attempts }, JsonOpts);
+    }
+
+    [McpServerTool(Name = "bowire.lint")]
+    [Description("Discover a server URL and run Bowire's design-time linter over the API surface — the same rules `bowire lint` and the workbench Lint rail use. Flags design smells (secrets or PII in responses, unbounded list responses, missing versioning, string-typed timestamps, ...) each with a severity, honouring the workspace's .bowire/rules.json. Returns { findings: [{ ruleId, severity, service, method, field, message }], summary: { total, high, medium, low, info } }.")]
+    public async Task<string> Lint(
+        [Description("Server URL to discover + lint (must be on the allowlist unless arbitrary URLs are allowed).")] string url,
+        [Description("Optional protocol id (grpc, rest, graphql, signalr, mqtt, ws, sse, mcp, odata, socketio) to pin one plugin.")] string? protocol = null,
+        CancellationToken ct = default)
+    {
+        if (!IsUrlAllowed(url)) return AllowlistDeniedMessage(url);
+
+        var probe = await BowireDiscoveryProbe.RunAsync(
+            _registry,
+            url,
+            pluginHint: string.IsNullOrWhiteSpace(protocol) ? null : protocol,
+            showInternalServices: false,
+            perProbeCeiling: TimeSpan.FromSeconds(20),
+            logger: _logger,
+            ct: ct).ConfigureAwait(false);
+
+        var config = TryLoadLintConfig();
+        var findings = BowireSchemaLinter.CreateDefault().Lint(probe.Services, config);
+
+        var payload = new
+        {
+            findings = findings.Select(f => new
+            {
+                ruleId = f.RuleId,
+                severity = f.Severity.ToString(),
+                service = f.Service,
+                method = f.Method,
+                field = f.Field,
+                message = f.Message,
+            }).ToArray(),
+            summary = new
+            {
+                total = findings.Count,
+                high = findings.Count(f => f.Severity == BowireLintSeverity.High),
+                medium = findings.Count(f => f.Severity == BowireLintSeverity.Medium),
+                low = findings.Count(f => f.Severity == BowireLintSeverity.Low),
+                info = findings.Count(f => f.Severity == BowireLintSeverity.Info),
+            },
+        };
+        return JsonSerializer.Serialize(payload, JsonOpts);
+    }
+
+    private static BowireLintConfig? TryLoadLintConfig()
+    {
+        var path = BowireLintConfigLoader.DiscoverPath();
+        if (path is null) return null;
+        try
+        {
+            return BowireLintConfigLoader.Load(path);
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or ArgumentException or NotSupportedException or UnauthorizedAccessException)
+        {
+            _ = ex;
+            return null;
+        }
     }
 
     [McpServerTool(Name = "bowire.invoke")]
