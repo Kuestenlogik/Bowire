@@ -3,7 +3,7 @@
 
 using System.Text;
 
-namespace Kuestenlogik.Bowire.Schema;
+namespace Kuestenlogik.Bowire.Schemas;
 
 /// <summary>
 /// A reference to one method inside a service, used in the added/removed

@@ -4,7 +4,7 @@
 using System.Text;
 using Kuestenlogik.Bowire.Models;
 
-namespace Kuestenlogik.Bowire.Schema;
+namespace Kuestenlogik.Bowire.Schemas;
 
 /// <summary>
 /// Computes the <see cref="BowireSchemaDelta"/> between two API discovery
