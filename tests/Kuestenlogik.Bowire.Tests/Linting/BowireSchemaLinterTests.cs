@@ -97,6 +97,96 @@ public sealed class BowireSchemaLinterTests
         Assert.Empty(new MissingPaginationRule().Inspect(svc));
     }
 
+    [Fact]
+    public void List_response_with_an_output_cursor_is_clean()
+    {
+        var svc = Svc("Users", methods:
+            Method("ListUsers",
+                input: Msg("Req"),
+                output: Msg("Res", Repeated("users"), Field("nextPageToken"))));
+
+        Assert.Empty(new MissingPaginationRule().Inspect(svc));
+    }
+
+    // ---- PiiResponseFieldRule -------------------------------------------
+
+    [Fact]
+    public void Pii_response_field_is_flagged_medium()
+    {
+        var svc = Svc("Users", methods:
+            Method("GetUser", output: Msg("User", Field("id"), Field("email"))));
+
+        var finding = Assert.Single(new PiiResponseFieldRule().Inspect(svc));
+
+        Assert.Equal("BWR-LINT-PII-RESPONSE", finding.RuleId);
+        Assert.Equal(BowireLintSeverity.Medium, finding.Severity);
+        Assert.Equal("email", finding.Field);
+        Assert.Equal("GetUser", finding.Method);
+    }
+
+    [Fact]
+    public void Clean_response_produces_no_pii_finding()
+    {
+        var svc = Svc("Users", methods:
+            Method("GetUser", output: Msg("User", Field("id"), Field("displayName"))));
+
+        Assert.Empty(new PiiResponseFieldRule().Inspect(svc));
+    }
+
+    // ---- StringTimestampFieldRule ---------------------------------------
+
+    [Fact]
+    public void String_typed_time_field_is_flagged_low()
+    {
+        var svc = Svc("Users", methods:
+            Method("GetUser", output: Msg("User", Field("created_at", "string"))));
+
+        var finding = Assert.Single(new StringTimestampFieldRule().Inspect(svc));
+
+        Assert.Equal("BWR-LINT-STRING-TIMESTAMP", finding.RuleId);
+        Assert.Equal(BowireLintSeverity.Low, finding.Severity);
+        Assert.Equal("created_at", finding.Field);
+    }
+
+    [Fact]
+    public void Typed_timestamp_field_is_not_flagged()
+    {
+        var svc = Svc("Users", methods:
+            Method("GetUser", output: Msg("User", Field("created_at", "timestamp"))));
+
+        Assert.Empty(new StringTimestampFieldRule().Inspect(svc));
+    }
+
+    [Fact]
+    public void A_word_ending_in_at_is_not_a_false_positive()
+    {
+        var svc = Svc("Users", methods:
+            Method("GetUser", output: Msg("User", Field("format", "string"))));
+
+        Assert.Empty(new StringTimestampFieldRule().Inspect(svc));
+    }
+
+    [Theory]
+    [InlineData("timezone")]
+    [InlineData("timeout")]
+    public void A_leading_time_word_is_not_a_false_positive(string fieldName)
+    {
+        var svc = Svc("Users", methods:
+            Method("GetUser", output: Msg("User", Field(fieldName, "string"))));
+
+        Assert.Empty(new StringTimestampFieldRule().Inspect(svc));
+    }
+
+    [Fact]
+    public void A_suffix_time_string_field_is_flagged()
+    {
+        var svc = Svc("Bookings", methods:
+            Method("GetBooking", output: Msg("Booking", Field("start_time", "string"))));
+
+        var finding = Assert.Single(new StringTimestampFieldRule().Inspect(svc));
+        Assert.Equal("start_time", finding.Field);
+    }
+
     // ---- MissingVersioningRule ------------------------------------------
 
     [Fact]
@@ -138,6 +228,8 @@ public sealed class BowireSchemaLinterTests
         Assert.Contains("BWR-LINT-SENSITIVE-RESPONSE", linter.RuleIds);
         Assert.Contains("BWR-LINT-MISSING-PAGINATION", linter.RuleIds);
         Assert.Contains("BWR-LINT-MISSING-VERSIONING", linter.RuleIds);
+        Assert.Contains("BWR-LINT-PII-RESPONSE", linter.RuleIds);
+        Assert.Contains("BWR-LINT-STRING-TIMESTAMP", linter.RuleIds);
     }
 
     [Fact]

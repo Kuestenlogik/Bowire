@@ -26,6 +26,15 @@ public sealed class MissingPaginationRule : IBowireLintRule
         "pagetoken", "top", "skip", "first", "after",
     ];
 
+    // Names (separators removed) on the response that signal a cursor /
+    // continuation token — a page-out affordance that clears the rule even
+    // when the request carries no paging parameter.
+    private static readonly string[] ResponseCursorTokens =
+    [
+        "pagetoken", "nexttoken", "nextpagetoken", "cursor", "nextcursor",
+        "next", "continuationtoken",
+    ];
+
     public IEnumerable<BowireLintFinding> Inspect(BowireServiceInfo service)
     {
         foreach (var method in service.Methods ?? [])
@@ -39,6 +48,11 @@ public sealed class MissingPaginationRule : IBowireLintRule
             var hasPagination = (method.InputType?.Fields ?? []).Any(f => IsPaginationField(f.Name));
             if (hasPagination) continue;
 
+            // An output cursor / continuation field is also a valid paging
+            // affordance: the caller pages by echoing it back.
+            var hasResponseCursor = (method.OutputType?.Fields ?? []).Any(f => IsResponseCursorField(f.Name));
+            if (hasResponseCursor) continue;
+
             yield return new BowireLintFinding(
                 Id, Severity, service.Name, method.Name, null,
                 $"Method '{method.Name}' returns a list but takes no pagination parameter (page / limit / offset / cursor). Unbounded list responses are a scaling and denial-of-service risk.");
@@ -46,10 +60,16 @@ public sealed class MissingPaginationRule : IBowireLintRule
     }
 
     private static bool IsPaginationField(string name)
+        => MatchesToken(name, PaginationTokens);
+
+    private static bool IsResponseCursorField(string name)
+        => MatchesToken(name, ResponseCursorTokens);
+
+    private static bool MatchesToken(string name, string[] tokens)
     {
         var normalized = name.Replace("_", "", StringComparison.Ordinal)
                              .Replace("-", "", StringComparison.Ordinal);
-        return PaginationTokens.Any(token =>
+        return tokens.Any(token =>
             normalized.Contains(token, StringComparison.OrdinalIgnoreCase));
     }
 }
