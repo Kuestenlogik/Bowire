@@ -30,6 +30,8 @@ public sealed class BowireSchemaLinter
         new SensitiveResponseFieldRule(),
         new MissingPaginationRule(),
         new MissingVersioningRule(),
+        new PiiResponseFieldRule(),
+        new StringTimestampFieldRule(),
     ];
 
     /// <summary>A linter loaded with the built-in <see cref="DefaultRules"/>.</summary>
