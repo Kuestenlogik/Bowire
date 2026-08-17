@@ -134,6 +134,7 @@ internal static class BowireApiEndpoints
             .MapBowirePresetEndpoints(basePath)
             .MapBowireMockConfigEndpoints(basePath)
             .MapBowireProjectEndpoints(basePath)
+            .MapBowireLintEndpoints(basePath)
             .MapBowireSchemaChangeEndpoints(basePath)
             .MapBowireAuthEndpoints(options, basePath)
             .MapBowireWorkspaceEndpoints(basePath)

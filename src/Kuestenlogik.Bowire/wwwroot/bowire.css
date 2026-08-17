@@ -26234,3 +26234,20 @@ not as the
     word-break: break-all;
 }
 .bowire-invoke-url-hint { font-size: 11px; color: var(--bowire-text-tertiary); }
+
+/* #189 — design-time Lint rail */
+.bowire-lint-sub { color: var(--bowire-text-tertiary); margin: 4px 0 14px; max-width: 72ch; line-height: 1.5; }
+.bowire-lint-controls { display: flex; align-items: center; gap: 12px; margin: 10px 0 16px; }
+.bowire-lint-count { color: var(--bowire-text-tertiary); font-size: 12px; }
+.bowire-lint-summary { font-weight: 600; margin: 6px 0 10px; }
+.bowire-lint-list { display: flex; flex-direction: column; gap: 6px; }
+.bowire-lint-row { display: flex; gap: 12px; padding: 9px 12px; border-radius: 6px; background: var(--bowire-bg-subtle); border: 1px solid var(--bowire-border); }
+.bowire-lint-sev { flex: 0 0 64px; font-size: 11px; font-weight: 700; letter-spacing: .4px; padding-top: 1px; }
+.bowire-lint-high .bowire-lint-sev { color: var(--bowire-danger); }
+.bowire-lint-medium .bowire-lint-sev { color: var(--bowire-warning); }
+.bowire-lint-low .bowire-lint-sev { color: var(--bowire-text-tertiary); }
+.bowire-lint-info .bowire-lint-sev { color: var(--bowire-accent); }
+.bowire-lint-body { min-width: 0; }
+.bowire-lint-loc { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.bowire-lint-rule { font-size: 11px; color: var(--bowire-text-tertiary); }
+.bowire-lint-msg { font-size: 13px; margin-top: 3px; line-height: 1.4; color: var(--bowire-text); }
