@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**2/14 done** · 12 backlog
+**3/14 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -20,7 +20,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code + JetBrains workbench extension](#issue-kuestenlogik-bowire-101) | ⬜ Backlog | `area:workbench` |
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ Backlog | `area:workbench` |
 | [188](https://github.com/Kuestenlogik/Bowire/issues/188) | Bowire | [Org-level Bowire dashboard — rollup across services](#issue-kuestenlogik-bowire-188) | ⬜ Backlog | `area:workbench` |
-| [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ⬜ Backlog | `area:workbench` |
 | [232](https://github.com/Kuestenlogik/Bowire/issues/232) | Bowire | [Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)](#issue-kuestenlogik-bowire-232) | ⬜ Backlog | `area:workbench` |
 | [236](https://github.com/Kuestenlogik/Bowire/issues/236) | Bowire | [Release cascade: wait for nuget.org indexing before dispatching to siblings](#issue-kuestenlogik-bowire-236) | ⬜ Backlog | `area:multi` |
 | [237](https://github.com/Kuestenlogik/Bowire/issues/237) | Bowire | [WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+](#issue-kuestenlogik-bowire-237) | ⬜ Backlog | `area:cli` |
@@ -29,6 +28,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [364](https://github.com/Kuestenlogik/Bowire/issues/364) | Bowire | [Contract testing: workbench matrix view (consumer × provider pass/fail)](#issue-kuestenlogik-bowire-364) | ⬜ Backlog | `area:workbench` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ✅ Done | `area:workbench` |
+| [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ✅ Done | `area:workbench` |
 | [367](https://github.com/Kuestenlogik/Bowire/issues/367) | Bowire | [codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)](#issue-kuestenlogik-bowire-367) | ✅ Done | `area:multi` |
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
@@ -180,12 +180,6 @@ Bowire runs locally on the developer's machine. When the developer pushes a PR, 
 
 Once Bowire ships in multiple services across an org, "what's the state of our APIs?" is a portfolio-level question. Per-service findings are useful to the service team; rolled-up findings are what a platform / security team needs. Without a multi-service surface, Bowire stays a per-repo tool. [[more]](https://github.com/Kuestenlogik/Bowire/issues/188)
 
-#### <a id="issue-kuestenlogik-bowire-189"></a>⬜ Backlog · [#189](https://github.com/Kuestenlogik/Bowire/issues/189) API design-time validation — typed rule engine over schemas
-
-> `area:workbench`
-
-Most API design issues — inconsistent naming, returning passwords, returning unbounded result lists, missing pagination, missing versioning — are caught by code review IF the reviewer is sharp. They scale exactly with reviewer attention, which doesn't scale. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/189)
-
 #### <a id="issue-kuestenlogik-bowire-232"></a>⬜ Backlog · [#232](https://github.com/Kuestenlogik/Bowire/issues/232) Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)
 
 > `area:workbench`
@@ -233,6 +227,12 @@ Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in
 > `area:workbench`
 
 Workspaces today live in `~/.bowire/workspaces/<id>/` (per-user, machine-local). The Export/Import (#159) exists but is opt-in. For Bowire to be the source of truth for "what this repo's API looks like", every repo needs a Bowire configuration checked-in. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/172)
+
+#### <a id="issue-kuestenlogik-bowire-189"></a>✅ Done · [#189](https://github.com/Kuestenlogik/Bowire/issues/189) API design-time validation — typed rule engine over schemas
+
+> `area:workbench`
+
+Most API design issues — inconsistent naming, returning passwords, returning unbounded result lists, missing pagination, missing versioning — are caught by code review IF the reviewer is sharp. They scale exactly with reviewer attention, which doesn't scale. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/189)
 
 #### <a id="issue-kuestenlogik-bowire-367"></a>✅ Done · [#367](https://github.com/Kuestenlogik/Bowire/issues/367) codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)
 
