@@ -4,6 +4,10 @@
 using System.Xml;
 using Kuestenlogik.Bowire.App;
 
+// Disambiguate from Xunit.TestResult (both are in scope via the usings above +
+// the test SDK's global usings); this file means the Bowire test-run result.
+using TestResult = Kuestenlogik.Bowire.App.TestResult;
+
 namespace Kuestenlogik.Bowire.Tests;
 
 /// <summary>
