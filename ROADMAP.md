@@ -150,6 +150,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [582](https://github.com/Kuestenlogik/Bowire/issues/582) | Bowire | [Split bowire-pr into its own public kuestenlogik/bowire-action repo](#issue-kuestenlogik-bowire-582) | ⬜ Backlog |  |
+| [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog |  |
 
 ## Details
 
@@ -728,6 +729,10 @@ The `.Scanner` suffix under-describes what the package has become. It started as
 #### <a id="issue-kuestenlogik-bowire-582"></a>⬜ Backlog · [#582](https://github.com/Kuestenlogik/Bowire/issues/582) Split bowire-pr into its own public kuestenlogik/bowire-action repo
 
 The PR-report bot was prototyped **in-repo** under `.github/actions/bowire-pr/` (see #183) so it could stabilise against the real CLI. Once it settles, it should live in its own repository and be publishable as a reusable/Marketplace action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/582)
+
+#### <a id="issue-kuestenlogik-bowire-583"></a>⬜ Backlog · [#583](https://github.com/Kuestenlogik/Bowire/issues/583) Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint
+
+#189 shipped the design-time lint core across **all three surfaces** — CLI (`bowire lint`), Web-UI (workbench Lint rail + `/api/lint`), and MCP (`bowire.lint`) — with a typed rule engine, 5 built-in rules, `.bowire/rules.json` config (toggles + severity overrides), and a plugin SPI (`IBowireLintRule … [[more]](https://github.com/Kuestenlogik/Bowire/issues/583)
 
 ---
 
