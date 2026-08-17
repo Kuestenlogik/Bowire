@@ -145,6 +145,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog | `area:security` |
 | [529](https://github.com/Kuestenlogik/Bowire/issues/529) | Bowire | [OData plugin: EDM functions and actions are never discovered (class doc claims they are)](#issue-kuestenlogik-bowire-529) | ⬜ Backlog | `area:plugin-sdk` |
 
+### Backlog (not yet scheduled)
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [582](https://github.com/Kuestenlogik/Bowire/issues/582) | Bowire | [Split bowire-pr into its own public kuestenlogik/bowire-action repo](#issue-kuestenlogik-bowire-582) | ⬜ Backlog |  |
+
 ## Details
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
@@ -716,6 +722,12 @@ The `.Scanner` suffix under-describes what the package has become. It started as
 > `area:plugin-sdk`
 
 `BowireODataProtocol.DiscoverAsync` emits exactly five methods per entity set — GET, GET_BY_KEY, POST, PATCH, DELETE. EDM **functions and actions** are parsed into the model but never surfaced, so they cannot be invoked from the workbench. [[more]](https://github.com/Kuestenlogik/Bowire/issues/529)
+
+### Backlog (not yet scheduled)
+
+#### <a id="issue-kuestenlogik-bowire-582"></a>⬜ Backlog · [#582](https://github.com/Kuestenlogik/Bowire/issues/582) Split bowire-pr into its own public kuestenlogik/bowire-action repo
+
+The PR-report bot was prototyped **in-repo** under `.github/actions/bowire-pr/` (see #183) so it could stabilise against the real CLI. Once it settles, it should live in its own repository and be publishable as a reusable/Marketplace action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/582)
 
 ---
 
