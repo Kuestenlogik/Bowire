@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire.Models;
-using Kuestenlogik.Bowire.Schema;
+using Kuestenlogik.Bowire.Schemas;
 
-namespace Kuestenlogik.Bowire.Tests.Schema;
+namespace Kuestenlogik.Bowire.Tests.Schemas;
 
 /// <summary>
 /// Unit coverage for <see cref="BowireSchemaDiff"/> — the base→head schema

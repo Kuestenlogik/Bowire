@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kuestenlogik.Bowire;
 using Kuestenlogik.Bowire.Models;
-using Kuestenlogik.Bowire.Schema;
+using Kuestenlogik.Bowire.Schemas;
 
 namespace Kuestenlogik.Bowire.App.Cli;
 
