@@ -719,4 +719,4 @@ The `.Scanner` suffix under-describes what the package has become. It started as
 
 ---
 
-*Generated 2026-08-16 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-08-17 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
