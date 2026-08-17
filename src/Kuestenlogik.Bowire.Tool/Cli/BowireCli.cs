@@ -154,6 +154,7 @@ internal static class BowireCli
         root.Add(BuildInterceptorCommand());
         root.Add(ExportCommand.Build());
         root.Add(DiffCommand.Build());
+        root.Add(LintCommand.Build());
         root.Add(WorkspaceCommand.Build());
         root.Add(CatalogueCommand.Build());
         root.Add(RecordingCommand.Build());
