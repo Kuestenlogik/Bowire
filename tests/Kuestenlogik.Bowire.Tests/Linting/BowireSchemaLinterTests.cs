@@ -250,6 +250,73 @@ public sealed class BowireSchemaLinterTests
         Assert.Contains(findings, f => f.RuleId == "BWR-LINT-MISSING-VERSIONING");
     }
 
+    // ---- config (.bowire/rules.json) ------------------------------------
+
+    [Fact]
+    public void Config_disables_a_rule()
+    {
+        var config = BowireLintConfig.Parse(
+            """{ "rules": { "BWR-LINT-MISSING-VERSIONING": { "enabled": false } } }""");
+        var services = new[] { Svc("Users", methods: Method("GetUser", httpPath: "/users")) };
+
+        var findings = BowireSchemaLinter.CreateDefault().Lint(services, config);
+
+        Assert.DoesNotContain(findings, f => f.RuleId == "BWR-LINT-MISSING-VERSIONING");
+    }
+
+    [Fact]
+    public void Config_overrides_a_rule_severity()
+    {
+        var config = BowireLintConfig.Parse(
+            """{ "rules": { "BWR-LINT-MISSING-VERSIONING": { "severity": "high" } } }""");
+        var services = new[] { Svc("Users", methods: Method("GetUser", httpPath: "/users")) };
+
+        var finding = Assert.Single(
+            BowireSchemaLinter.CreateDefault().Lint(services, config),
+            f => f.RuleId == "BWR-LINT-MISSING-VERSIONING");
+        Assert.Equal(BowireLintSeverity.High, finding.Severity);
+    }
+
+    [Fact]
+    public void Unlisted_rule_keeps_default_severity_and_stays_on()
+    {
+        var config = BowireLintConfig.Parse("""{ "rules": {} }""");
+
+        Assert.True(config.IsEnabled("BWR-LINT-PII-RESPONSE"));
+        Assert.Null(config.SeverityOverride("BWR-LINT-PII-RESPONSE"));
+    }
+
+    [Fact]
+    public void Config_matches_rule_ids_case_insensitively()
+    {
+        var config = BowireLintConfig.Parse(
+            """{ "rules": { "bwr-lint-pii-response": { "enabled": false } } }""");
+
+        Assert.False(config.IsEnabled("BWR-LINT-PII-RESPONSE"));
+    }
+
+    [Fact]
+    public void ConfigLoader_discovers_rules_json_by_walking_up()
+    {
+        var root = Directory.CreateTempSubdirectory("bowire-lint-test");
+        try
+        {
+            var bowireDir = Directory.CreateDirectory(Path.Combine(root.FullName, ".bowire"));
+            var rulesPath = Path.Combine(bowireDir.FullName, "rules.json");
+            File.WriteAllText(rulesPath, """{ "rules": {} }""");
+            var nested = Directory.CreateDirectory(Path.Combine(root.FullName, "a", "b"));
+
+            var found = BowireLintConfigLoader.DiscoverPath(nested.FullName);
+
+            Assert.NotNull(found);
+            Assert.Equal(Path.GetFullPath(rulesPath), Path.GetFullPath(found));
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
     // ---- builders -------------------------------------------------------
 
     private static BowireServiceInfo Svc(string name, string? version = null, params BowireMethodInfo[] methods)
