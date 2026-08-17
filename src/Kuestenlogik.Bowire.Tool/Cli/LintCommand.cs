@@ -98,7 +98,7 @@ internal static class LintCommand
         var services = await CliSchemaSnapshot.ResolveAsync(source, protocolId, errW, ct).ConfigureAwait(false);
         if (services is null) return 1;
 
-        var findings = BowireSchemaLinter.CreateDefault().Lint(services, config);
+        var findings = BowireSchemaLinter.CreateWithDiscoveredRules().Lint(services, config);
 
         var rendered = format?.ToUpperInvariant() switch
         {
