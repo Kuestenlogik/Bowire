@@ -3,6 +3,7 @@
 
 using Kuestenlogik.Bowire.Linting.Rules;
 using Kuestenlogik.Bowire.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Kuestenlogik.Bowire.Linting;
 
@@ -36,6 +37,64 @@ public sealed class BowireSchemaLinter
 
     /// <summary>A linter loaded with the built-in <see cref="DefaultRules"/>.</summary>
     public static BowireSchemaLinter CreateDefault() => new(DefaultRules);
+
+    /// <summary>
+    /// Build the rule set from the built-in <see cref="DefaultRules"/> plus every
+    /// <see cref="IBowireLintRule"/> with a public parameterless constructor found
+    /// in a loaded <c>Kuestenlogik.Bowire*</c> assembly — the plugin SPI (#189):
+    /// a sibling package or host drops in a rule type and it shows up in
+    /// <c>bowire lint</c>, the workbench Lint rail, and the <c>bowire.lint</c> MCP
+    /// tool alike. Duplicate rule ids are dropped (first wins), so the built-ins
+    /// are never double-counted when Core is scanned. Defensive — a single bad
+    /// assembly or rule type is skipped, not fatal.
+    /// </summary>
+    public static IReadOnlyList<IBowireLintRule> DiscoverRules(ILogger? logger = null)
+    {
+        var rules = new List<IBowireLintRule>(DefaultRules);
+        var seen = new HashSet<string>(rules.Select(r => r.Id), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => a.FullName?.Contains("Bowire", StringComparison.Ordinal) == true))
+        {
+            Type[] types;
+            try
+            {
+                types = assembly.GetTypes();
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException and not OutOfMemoryException)
+            {
+                logger?.LogWarning(ex, "Skipped assembly during lint-rule scan: {Assembly}", assembly.FullName);
+                continue;
+            }
+
+            foreach (var type in types)
+            {
+                if (type.IsAbstract || type.IsInterface) continue;
+                if (!typeof(IBowireLintRule).IsAssignableFrom(type)) continue;
+                if (type.GetConstructor(Type.EmptyTypes) is null) continue;
+
+                try
+                {
+                    if (Activator.CreateInstance(type) is IBowireLintRule rule && seen.Add(rule.Id))
+                        rules.Add(rule);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException and not OutOfMemoryException)
+                {
+                    logger?.LogWarning(ex, "Failed to instantiate lint rule {Type}", type.FullName);
+                }
+            }
+        }
+
+        return rules;
+    }
+
+    /// <summary>
+    /// A linter loaded with the built-ins plus any plugin rules discovered via
+    /// <see cref="DiscoverRules"/>. The CLI / endpoint / MCP surfaces use this so
+    /// a custom rule lights up on every surface at once.
+    /// </summary>
+    public static BowireSchemaLinter CreateWithDiscoveredRules(ILogger? logger = null)
+        => new(DiscoverRules(logger));
 
     /// <summary>The ids of the rules this linter runs.</summary>
     public IReadOnlyList<string> RuleIds => [.. _rules.Select(r => r.Id)];

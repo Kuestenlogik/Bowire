@@ -317,6 +317,25 @@ public sealed class BowireSchemaLinterTests
         }
     }
 
+    // ---- plugin SPI -----------------------------------------------------
+
+    [Fact]
+    public void DiscoverRules_includes_built_ins_plus_plugin_rules_without_duplicates()
+    {
+        var rules = BowireSchemaLinter.DiscoverRules();
+        var ids = rules.Select(r => r.Id).ToList();
+
+        // Built-ins are present.
+        Assert.Contains("BWR-LINT-SENSITIVE-RESPONSE", ids);
+        Assert.Contains("BWR-LINT-MISSING-VERSIONING", ids);
+        // A rule type in a loaded Kuestenlogik.Bowire* assembly (this test one)
+        // is picked up — the plugin SPI.
+        Assert.Contains(SpiProbeRule.RuleId, ids);
+        // No id appears twice — the built-ins are not double-counted when Core
+        // itself gets scanned.
+        Assert.Equal(ids.Count, ids.Distinct().Count());
+    }
+
     // ---- builders -------------------------------------------------------
 
     private static BowireServiceInfo Svc(string name, string? version = null, params BowireMethodInfo[] methods)
@@ -345,4 +364,23 @@ public sealed class BowireSchemaLinterTests
 
     private static BowireFieldInfo FieldMsg(string name, BowireMessageInfo messageType)
         => new(name, 0, "message", "", IsMap: false, IsRepeated: false, MessageType: messageType, EnumValues: null);
+}
+
+/// <summary>
+/// A no-op lint rule that exists only so <see cref="BowireSchemaLinter.DiscoverRules"/>
+/// has a plugin rule to find in a loaded <c>Kuestenlogik.Bowire*</c> assembly (this
+/// test assembly). Public with a parameterless constructor — the shape the SPI
+/// discovers. It yields no findings, so it never perturbs a discovered-rules lint.
+/// </summary>
+internal sealed class SpiProbeRule : IBowireLintRule
+{
+    public const string RuleId = "BWR-LINT-SPI-PROBE-TEST";
+
+    public string Id => RuleId;
+
+    public string Title => "SPI probe (test only)";
+
+    public BowireLintSeverity Severity => BowireLintSeverity.Info;
+
+    public IEnumerable<BowireLintFinding> Inspect(BowireServiceInfo service) => [];
 }

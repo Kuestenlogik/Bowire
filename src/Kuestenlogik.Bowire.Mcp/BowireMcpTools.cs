@@ -158,7 +158,7 @@ public sealed class BowireMcpTools
             ct: ct).ConfigureAwait(false);
 
         var config = TryLoadLintConfig();
-        var findings = BowireSchemaLinter.CreateDefault().Lint(probe.Services, config);
+        var findings = BowireSchemaLinter.CreateWithDiscoveredRules(_logger).Lint(probe.Services, config);
 
         var payload = new
         {

@@ -42,7 +42,7 @@ internal static class BowireLintEndpoints
 
             var services = request?.Services ?? [];
             var config = TryLoadConfig();
-            var findings = BowireSchemaLinter.CreateDefault().Lint(services, config);
+            var findings = BowireSchemaLinter.CreateWithDiscoveredRules().Lint(services, config);
 
             return Results.Json(new
             {
