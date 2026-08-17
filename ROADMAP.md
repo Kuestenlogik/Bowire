@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**3/14 done** · 11 backlog
+**4/14 done** · 10 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -21,7 +21,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ Backlog | `area:workbench` |
 | [188](https://github.com/Kuestenlogik/Bowire/issues/188) | Bowire | [Org-level Bowire dashboard — rollup across services](#issue-kuestenlogik-bowire-188) | ⬜ Backlog | `area:workbench` |
 | [232](https://github.com/Kuestenlogik/Bowire/issues/232) | Bowire | [Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)](#issue-kuestenlogik-bowire-232) | ⬜ Backlog | `area:workbench` |
-| [236](https://github.com/Kuestenlogik/Bowire/issues/236) | Bowire | [Release cascade: wait for nuget.org indexing before dispatching to siblings](#issue-kuestenlogik-bowire-236) | ⬜ Backlog | `area:multi` |
 | [237](https://github.com/Kuestenlogik/Bowire/issues/237) | Bowire | [WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+](#issue-kuestenlogik-bowire-237) | ⬜ Backlog | `area:cli` |
 | [360](https://github.com/Kuestenlogik/Bowire/issues/360) | Bowire | [Benchmarks: k6-style thresholds as CI gates — fail bowire test / bench runs on latency budgets](#issue-kuestenlogik-bowire-360) | ⬜ Backlog | `area:cli` |
 | [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ⬜ Backlog | `area:security` |
@@ -29,6 +28,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ✅ Done | `area:workbench` |
 | [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ✅ Done | `area:workbench` |
+| [236](https://github.com/Kuestenlogik/Bowire/issues/236) | Bowire | [Release cascade: wait for nuget.org indexing before dispatching to siblings](#issue-kuestenlogik-bowire-236) | ✅ Done | `area:multi` |
 | [367](https://github.com/Kuestenlogik/Bowire/issues/367) | Bowire | [codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)](#issue-kuestenlogik-bowire-367) | ✅ Done | `area:multi` |
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
@@ -186,12 +186,6 @@ Once Bowire ships in multiple services across an org, "what's the state of our A
 
 Add the **scheduled** run shape to Benchmarks — a saved envelope can be set to fire on a cron schedule, the workbench (or a CLI / embedded host) runs it without operator interaction, and results land in the saved-runs history. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/232)
 
-#### <a id="issue-kuestenlogik-bowire-236"></a>⬜ Backlog · [#236](https://github.com/Kuestenlogik/Bowire/issues/236) Release cascade: wait for nuget.org indexing before dispatching to siblings
-
-> `area:multi`
-
-When the Bowire `Release` workflow finishes a new version, it does these steps back-to-back: [[more]](https://github.com/Kuestenlogik/Bowire/issues/236)
-
 #### <a id="issue-kuestenlogik-bowire-237"></a>⬜ Backlog · [#237](https://github.com/Kuestenlogik/Bowire/issues/237) WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+
 
 > `area:cli`
@@ -233,6 +227,12 @@ Workspaces today live in `~/.bowire/workspaces/<id>/` (per-user, machine-local).
 > `area:workbench`
 
 Most API design issues — inconsistent naming, returning passwords, returning unbounded result lists, missing pagination, missing versioning — are caught by code review IF the reviewer is sharp. They scale exactly with reviewer attention, which doesn't scale. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/189)
+
+#### <a id="issue-kuestenlogik-bowire-236"></a>✅ Done · [#236](https://github.com/Kuestenlogik/Bowire/issues/236) Release cascade: wait for nuget.org indexing before dispatching to siblings
+
+> `area:multi`
+
+When the Bowire `Release` workflow finishes a new version, it does these steps back-to-back: [[more]](https://github.com/Kuestenlogik/Bowire/issues/236)
 
 #### <a id="issue-kuestenlogik-bowire-367"></a>✅ Done · [#367](https://github.com/Kuestenlogik/Bowire/issues/367) codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)
 
