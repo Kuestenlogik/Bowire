@@ -151,6 +151,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 |---|---|---|---|---|
 | [582](https://github.com/Kuestenlogik/Bowire/issues/582) | Bowire | [Split bowire-pr into its own public kuestenlogik/bowire-action repo](#issue-kuestenlogik-bowire-582) | ⬜ Backlog |  |
 | [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog |  |
+| [584](https://github.com/Kuestenlogik/Bowire/issues/584) | Bowire | [Secrets redaction: extend to HTML report, snapshot files, and recordings](#issue-kuestenlogik-bowire-584) | ⬜ Backlog |  |
 
 ## Details
 
@@ -734,6 +735,10 @@ The PR-report bot was prototyped **in-repo** under `.github/actions/bowire-pr/` 
 
 #189 shipped the design-time lint core across **all three surfaces** — CLI (`bowire lint`), Web-UI (workbench Lint rail + `/api/lint`), and MCP (`bowire.lint`) — with a typed rule engine, 5 built-in rules, `.bowire/rules.json` config (toggles + severity overrides), and a plugin SPI (`IBowireLintRule … [[more]](https://github.com/Kuestenlogik/Bowire/issues/583)
 
+#### <a id="issue-kuestenlogik-bowire-584"></a>⬜ Backlog · [#584](https://github.com/Kuestenlogik/Bowire/issues/584) Secrets redaction: extend to HTML report, snapshot files, and recordings
+
+#361 shipped run-scoped secrets redaction (`--secret`/`--secret-file` + `SecretRedactor`, `***`+last-4 masking) applied at the **primary CI-artifact sinks**: TTY step output, JUnit failure texts (v2.1 `JUnitReport` + v2.2 `FlowJUnitReport`), SARIF messages (`TestSarifReport`), and GitHub `::error` a … [[more]](https://github.com/Kuestenlogik/Bowire/issues/584)
+
 ---
 
-*Generated 2026-08-17 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-08-18 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
