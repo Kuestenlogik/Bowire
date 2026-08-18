@@ -32,6 +32,22 @@ namespace Kuestenlogik.Bowire.App.Cli;
 /// </summary>
 internal static class BowireCli
 {
+    /// <summary>
+    /// True when the invocation is a <c>plugin</c> management verb (install /
+    /// uninstall / update / download / list / inspect). Program.cs skips the
+    /// pre-dispatch <see cref="IBowirePluginLoader.Load"/> for these: those
+    /// verbs act on the plugin <em>directory</em> through PluginManager, never
+    /// on loaded protocol instances, and eager-loading a plugin assembly here
+    /// memory-maps its DLL so Windows refuses the delete a subsequent
+    /// uninstall / update needs — the verb meant to remove a plugin would be
+    /// blocked by having just loaded it.
+    /// </summary>
+    public static bool IsPluginManagementCommand(string[] args)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        return args.Length > 0 && string.Equals(args[0], "plugin", StringComparison.Ordinal);
+    }
+
     public static async Task<int> RunAsync(string[] args, IConfiguration cfg, IBowirePluginLoader plugins,
         TextWriter? stdout = null, TextWriter? stderr = null)
     {

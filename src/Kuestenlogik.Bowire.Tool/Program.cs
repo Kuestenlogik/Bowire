@@ -40,7 +40,19 @@ var plugins = new BowirePluginLoader(
 // Load plugin assemblies before subcommand dispatch — plugins must be
 // in the AppDomain before any DiscoverProtocolRegistry pass runs
 // (browser UI, mcp serve, list/describe/call, etc.).
-plugins.Load();
+//
+// EXCEPT the `plugin` management group (install / uninstall / update /
+// download / list / inspect): those operate on the plugin *directory*
+// through PluginManager, never on loaded protocol instances. Eager-loading
+// a plugin assembly here memory-maps its DLL — Windows then refuses the
+// delete a subsequent `plugin uninstall` / `update` needs, so the verb
+// that is meant to remove a plugin is blocked by having just loaded it.
+// Skipping the load for this group keeps those verbs able to touch their
+// own files (and drops the reflection-scan warnings from their output).
+if (!BowireCli.IsPluginManagementCommand(args))
+{
+    plugins.Load();
+}
 
 // All subcommand routing + the default browser-UI action are declared
 // in BowireCli using System.CommandLine 2.0.7. Auto-generated help,
