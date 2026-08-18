@@ -14,24 +14,28 @@ namespace Kuestenlogik.Bowire.Tests;
 /// </summary>
 public sealed class BowirePluginLoadGuardTests
 {
+    // InlineData carries only constants (a first token + the expected
+    // decision); the args array is built in the body via a collection
+    // expression, which sidesteps the attribute-constant restriction that
+    // an array-creation InlineData argument trips (CS0182).
     [Theory]
-    [InlineData(new[] { "plugin" })]                          // bare group -> help, no protocols needed
-    [InlineData(new[] { "plugin", "uninstall", "Some.Pkg" })]
-    [InlineData(new[] { "plugin", "update" })]
-    [InlineData(new[] { "plugin", "install", "Some.Pkg" })]
-    [InlineData(new[] { "plugin", "list" })]
-    public void PluginVerbs_SkipEagerLoad(string[] args)
-        => Assert.True(BowireCli.IsPluginManagementCommand(args));
+    [InlineData("plugin", true)]       // the `plugin` group skips the eager load
+    [InlineData("discover", false)]    // everything else needs protocols loaded
+    [InlineData("mock", false)]
+    [InlineData("mcp", false)]
+    [InlineData("call", false)]
+    [InlineData("pluginish", false)]   // not the exact `plugin` token
+    [InlineData("", false)]
+    public void FirstToken_DecidesEagerLoad(string firstToken, bool skipsLoad)
+        => Assert.Equal(skipsLoad, BowireCli.IsPluginManagementCommand([firstToken]));
 
-    [Theory]
-    [InlineData(new string[0])]                               // no args -> browser UI, needs plugins loaded
-    [InlineData(new[] { "discover", "http://localhost:6000" })]
-    [InlineData(new[] { "mock", "--schema", "s.yaml" })]
-    [InlineData(new[] { "mcp", "serve" })]
-    [InlineData(new[] { "call", "Svc/Method" })]
-    [InlineData(new[] { "pluginish" })]                       // not the exact `plugin` token
-    public void NonPluginVerbs_EagerLoad(string[] args)
-        => Assert.False(BowireCli.IsPluginManagementCommand(args));
+    [Fact]
+    public void MultiTokenPluginVerb_SkipsLoad()
+        => Assert.True(BowireCli.IsPluginManagementCommand(["plugin", "uninstall", "Some.Pkg"]));
+
+    [Fact]
+    public void NoArgs_EagerLoad()  // bare `bowire` -> browser UI, needs plugins loaded
+        => Assert.False(BowireCli.IsPluginManagementCommand([]));
 
     [Fact]
     public void NullArgs_Throws()
