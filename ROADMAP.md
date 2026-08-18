@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**4/14 done** · 10 backlog
+**5/14 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -23,12 +23,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [232](https://github.com/Kuestenlogik/Bowire/issues/232) | Bowire | [Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)](#issue-kuestenlogik-bowire-232) | ⬜ Backlog | `area:workbench` |
 | [237](https://github.com/Kuestenlogik/Bowire/issues/237) | Bowire | [WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+](#issue-kuestenlogik-bowire-237) | ⬜ Backlog | `area:cli` |
 | [360](https://github.com/Kuestenlogik/Bowire/issues/360) | Bowire | [Benchmarks: k6-style thresholds as CI gates — fail bowire test / bench runs on latency budgets](#issue-kuestenlogik-bowire-360) | ⬜ Backlog | `area:cli` |
-| [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ⬜ Backlog | `area:security` |
 | [364](https://github.com/Kuestenlogik/Bowire/issues/364) | Bowire | [Contract testing: workbench matrix view (consumer × provider pass/fail)](#issue-kuestenlogik-bowire-364) | ⬜ Backlog | `area:workbench` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ✅ Done | `area:workbench` |
 | [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ✅ Done | `area:workbench` |
 | [236](https://github.com/Kuestenlogik/Bowire/issues/236) | Bowire | [Release cascade: wait for nuget.org indexing before dispatching to siblings](#issue-kuestenlogik-bowire-236) | ✅ Done | `area:multi` |
+| [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ✅ Done | `area:security` |
 | [367](https://github.com/Kuestenlogik/Bowire/issues/367) | Bowire | [codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)](#issue-kuestenlogik-bowire-367) | ✅ Done | `area:multi` |
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
@@ -199,12 +199,6 @@ During the v2.0.0 release publish on 2026-06-21, the `winget` workflow failed at
 
 Competitive-research input (mid-2026): k6's thresholds (`p95 < 200ms` → non-zero exit) are the load-testing table stake, and k6 2.0 doubled down (OTel output, threshold gates unchanged at the core). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/360)
 
-#### <a id="issue-kuestenlogik-bowire-361"></a>⬜ Backlog · [#361](https://github.com/Kuestenlogik/Bowire/issues/361) Secrets redaction across all test/CI outputs — Hurl-grade
-
-> `area:security`
-
-Competitive-research input (mid-2026): Hurl 8.0 sets the bar here — values marked secret are redacted in logs, reports, and even curl-export output. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/361)
-
 #### <a id="issue-kuestenlogik-bowire-364"></a>⬜ Backlog · [#364](https://github.com/Kuestenlogik/Bowire/issues/364) Contract testing: workbench matrix view (consumer × provider pass/fail)
 
 > `area:workbench`
@@ -234,6 +228,12 @@ Most API design issues — inconsistent naming, returning passwords, returning u
 > `area:multi`
 
 When the Bowire `Release` workflow finishes a new version, it does these steps back-to-back: [[more]](https://github.com/Kuestenlogik/Bowire/issues/236)
+
+#### <a id="issue-kuestenlogik-bowire-361"></a>✅ Done · [#361](https://github.com/Kuestenlogik/Bowire/issues/361) Secrets redaction across all test/CI outputs — Hurl-grade
+
+> `area:security`
+
+Competitive-research input (mid-2026): Hurl 8.0 sets the bar here — values marked secret are redacted in logs, reports, and even curl-export output. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/361)
 
 #### <a id="issue-kuestenlogik-bowire-367"></a>✅ Done · [#367](https://github.com/Kuestenlogik/Bowire/issues/367) codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)
 
