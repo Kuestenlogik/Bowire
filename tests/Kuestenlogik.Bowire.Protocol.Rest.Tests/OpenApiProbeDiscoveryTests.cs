@@ -120,10 +120,14 @@ public sealed class OpenApiProbeDiscoveryTests : IDisposable
     }
 
     [Fact]
-    public async Task Probe_Stops_At_First_Hit_Walking_Past_Earlier_Misses()
+    public async Task Probe_Returns_Highest_Priority_Hit_Even_When_A_Later_Path_Also_Matches()
     {
-        // /openapi.json + /openapi/v1.json miss; /swagger/v1/swagger.json wins.
-        // The 4th, 5th, … probes must not fire.
+        // /openapi.json + /openapi/v1.json miss; both /swagger/v1/swagger.json
+        // AND /swagger.json would parse. The sweep now fires every candidate
+        // concurrently (#585), so the later path IS attempted — but the result
+        // still honours most-common-first priority: the earlier winning path
+        // (/swagger/v1/swagger.json) is the one that surfaces, never the later
+        // one that happened to also match.
         const string origin = "http://probe-test-4.invalid";
         var adapter = new ProgrammableAdapter
         {
@@ -133,8 +137,8 @@ public sealed class OpenApiProbeDiscoveryTests : IDisposable
                 [origin + "/openapi.json"] = null,
                 [origin + "/openapi/v1.json"] = null,
                 [origin + "/swagger/v1/swagger.json"] = StubResult("via-swagger"),
-                // Later probes would steal the win if the sweep didn't stop:
-                [origin + "/swagger.json"] = StubResult("should-not-be-reached"),
+                // A later path that also matches must not win over the earlier one.
+                [origin + "/swagger.json"] = StubResult("lower-priority-match"),
             }
         };
         BowireOpenApiAdapterRegistry.Register(adapter);
@@ -147,9 +151,10 @@ public sealed class OpenApiProbeDiscoveryTests : IDisposable
         var svc = Assert.Single(services);
         Assert.Equal("via-swagger", svc.Name);
 
-        // Sweep stopped after the winning probe — `/swagger.json` was never
-        // attempted even though it would have matched too.
-        Assert.DoesNotContain(origin + "/swagger.json", adapter.SeenUrls);
+        // Concurrent dispatch: the lower-priority `/swagger.json` was attempted
+        // too — the sweep no longer stops at the first hit — it just lost the
+        // priority tie-break.
+        Assert.Contains(origin + "/swagger.json", adapter.SeenUrls);
     }
 
     [Fact]
@@ -187,12 +192,13 @@ public sealed class OpenApiProbeDiscoveryTests : IDisposable
             {
                 [origin] = null,
                 [origin + "/openapi.json"] = null,
-            },
-            ThrowOnUrls = { origin + "/openapi/v1.json" },
-            Responses_After_Throw =
-            {
                 [origin + "/swagger/v1/swagger.json"] = StubResult("after-throw"),
-            }
+            },
+            // One probe throws; because the sweep fires every candidate
+            // concurrently the assertion must hold whatever order they settle
+            // in — the throwing path is simply isolated and the matching path
+            // still wins.
+            ThrowOnUrls = { origin + "/openapi/v1.json" },
         };
         BowireOpenApiAdapterRegistry.Register(adapter);
 
@@ -326,6 +332,33 @@ public sealed class OpenApiProbeDiscoveryTests : IDisposable
             Assert.StartsWith("https://", url, StringComparison.Ordinal));
     }
 
+    [Fact]
+    public async Task Probe_Fires_All_Candidates_Concurrently_Not_One_Timeout_At_A_Time()
+    {
+        // #585 — the sweep must dispatch every well-known path at once rather
+        // than awaiting each in turn (8 paths × 3s = 24s worst case, past
+        // core's discovery ceiling). The gate adapter releases a probe only
+        // once ALL of them have arrived: a sequential sweep leaves every probe
+        // but the first unstarted, the gate never reaches its arrival count,
+        // the winning path times out to null and the test sees zero services.
+        // Concurrent dispatch lets all probes arrive, opens the gate, and the
+        // winner resolves — proving concurrency with no wall-clock assertion.
+        const string origin = "http://probe-test-11.invalid";
+        var adapter = new ConcurrencyGateAdapter(
+            origin,
+            expectedProbes: 8,
+            winUrl: origin + "/swagger/v1/swagger.json");
+        BowireOpenApiAdapterRegistry.Register(adapter);
+
+        using var protocol = new BowireRestProtocol();
+        var services = await protocol.DiscoverAsync(
+            origin, showInternalServices: false,
+            TestContext.Current.CancellationToken);
+
+        var svc = Assert.Single(services);
+        Assert.Equal("concurrent-hit", svc.Name);
+    }
+
     private static BowireOpenApiDiscoveryResult StubResult(string serviceName)
     {
         var method = new BowireMethodInfo(
@@ -359,13 +392,10 @@ public sealed class OpenApiProbeDiscoveryTests : IDisposable
         public int OpenApiLibraryMajorVersion => 99;
         public Dictionary<string, BowireOpenApiDiscoveryResult?> Responses { get; }
             = new(StringComparer.Ordinal);
-        public Dictionary<string, BowireOpenApiDiscoveryResult?> Responses_After_Throw { get; }
-            = new(StringComparer.Ordinal);
         public HashSet<string> ThrowOnUrls { get; } = new(StringComparer.Ordinal);
         public List<string> SeenUrls { get; } = [];
 
         private readonly System.Threading.Lock _gate = new();
-        private bool _hasThrown;
 
         public Task<BowireOpenApiDiscoveryResult?> FetchAndDiscoverAsync(
             string docUrl, HttpClient http, CancellationToken ct)
@@ -375,17 +405,69 @@ public sealed class OpenApiProbeDiscoveryTests : IDisposable
                 SeenUrls.Add(docUrl);
 
                 if (ThrowOnUrls.Contains(docUrl))
-                {
-                    _hasThrown = true;
                     throw new HttpRequestException($"stub-throw at {docUrl}");
-                }
-
-                if (_hasThrown && Responses_After_Throw.TryGetValue(docUrl, out var post))
-                    return Task.FromResult(post);
 
                 Responses.TryGetValue(docUrl, out var result);
                 return Task.FromResult(result);
             }
+        }
+
+        public Task<BowireOpenApiDiscoveryResult?> ParseAndDiscoverAsync(
+            string content, string sourceLabel, CancellationToken ct) =>
+            Task.FromResult<BowireOpenApiDiscoveryResult?>(null);
+
+        public Task<BowireRecording> BuildMockRecordingFromFileAsync(
+            string path, CancellationToken ct) =>
+            Task.FromResult(new BowireRecording { Id = "stub", Name = "stub" });
+    }
+
+    /// <summary>
+    /// Adapter that releases each probe only once every well-known path has
+    /// been dispatched. Proves the sweep fires them concurrently: a sequential
+    /// sweep would leave all but the first probe unstarted, the gate would
+    /// never reach its arrival count, and the winning probe would time out to
+    /// null. Under concurrent dispatch every probe arrives, the gate opens,
+    /// and the winning URL resolves.
+    /// </summary>
+    private sealed class ConcurrencyGateAdapter : IBowireOpenApiAdapter
+    {
+        private readonly string _origin;
+        private readonly int _expectedProbes;
+        private readonly string _winUrl;
+        private readonly TaskCompletionSource _allArrived =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _arrived;
+
+        public ConcurrencyGateAdapter(string origin, int expectedProbes, string winUrl)
+        {
+            _origin = origin;
+            _expectedProbes = expectedProbes;
+            _winUrl = winUrl;
+        }
+
+        public int OpenApiLibraryMajorVersion => 99;
+
+        public async Task<BowireOpenApiDiscoveryResult?> FetchAndDiscoverAsync(
+            string docUrl, HttpClient http, CancellationToken ct)
+        {
+            // The bare origin fetch runs first and on its own — never gate it,
+            // or it would block the sweep it precedes.
+            if (string.Equals(docUrl, _origin, StringComparison.Ordinal))
+                return null;
+
+            if (System.Threading.Interlocked.Increment(ref _arrived) >= _expectedProbes)
+                _allArrived.TrySetResult();
+
+            // Wait for the whole cohort to arrive, with a safety net so a
+            // regression to sequential dispatch fails as empty services rather
+            // than hanging the run forever.
+            var released = await Task.WhenAny(
+                _allArrived.Task,
+                Task.Delay(TimeSpan.FromSeconds(10), ct)).ConfigureAwait(false) == _allArrived.Task;
+
+            return released && string.Equals(docUrl, _winUrl, StringComparison.Ordinal)
+                ? StubResult("concurrent-hit")
+                : null;
         }
 
         public Task<BowireOpenApiDiscoveryResult?> ParseAndDiscoverAsync(
