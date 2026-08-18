@@ -228,7 +228,7 @@ public sealed class BowireRestProtocol
             && _probeResolved.TryGetValue(fastOrigin, out var cachedUrl)
             && !string.Equals(cachedUrl, docUrl, StringComparison.Ordinal))
         {
-            var fromCache = await TryDiscoverAtAsync(adapter, cachedUrl, details: null, ct).ConfigureAwait(false);
+            var (fromCache, _) = await TryDiscoverAtAsync(adapter, cachedUrl, ct).ConfigureAwait(false);
             // CommitDiscovery uses cachedUrl as the cache key + base for
             // apiBaseUrl resolution, but the SERVICES' OriginUrl must
             // carry the operator-supplied docUrl so the workbench groups
@@ -396,12 +396,42 @@ public sealed class BowireRestProtocol
     private async Task<(string ProbeUrl, BowireOpenApiDiscoveryResult? Result)> ProbeWellKnownPathsAsync(
         IBowireOpenApiAdapter adapter, string origin, List<string>? details, CancellationToken ct)
     {
-        foreach (var path in WellKnownOpenApiPaths)
+        // Fire every candidate at once instead of walking them one 3s timeout
+        // at a time. A single slow or hanging path used to serialise onto all
+        // the others — worst case 8 paths × ProbeTimeout = 24s, comfortably
+        // past core's 8s discovery ceiling, so a served-but-late origin got
+        // dropped as "no services" under load (#585). Concurrent dispatch
+        // bounds the whole sweep to a single ProbeTimeout window.
+        var probes = new (string ProbeUrl, Task<(BowireOpenApiDiscoveryResult? Result, string? Detail)> Pending)[
+            WellKnownOpenApiPaths.Length];
+        for (var i = 0; i < WellKnownOpenApiPaths.Length; i++)
         {
-            var probeUrl = origin + path;
-            var result = await TryDiscoverAtAsync(adapter, probeUrl, details, ct).ConfigureAwait(false);
-            if (result is not null) return (probeUrl, result);
+            var probeUrl = origin + WellKnownOpenApiPaths[i];
+            probes[i] = (probeUrl, TryDiscoverAtAsync(adapter, probeUrl, ct));
         }
+
+        // Observe the results in most-common-first order so the earliest path
+        // that yields a parseable spec wins deterministically, even when a
+        // later path happened to answer sooner. Misses come back fast (a 404,
+        // not the full timeout), so the walk seldom waits past the winner.
+        for (var i = 0; i < probes.Length; i++)
+        {
+            var (result, _) = await probes[i].Pending.ConfigureAwait(false);
+            if (result is not null) return (probes[i].ProbeUrl, result);
+        }
+
+        // Nothing parsed. Drain each already-completed probe in priority order
+        // and record its miss line, so the #544 breakdown reads the same way
+        // regardless of which probe happened to settle first.
+        if (details is not null)
+        {
+            foreach (var (_, pending) in probes)
+            {
+                var (_, detail) = await pending.ConfigureAwait(false);
+                if (detail is not null) details.Add(detail);
+            }
+        }
+
         return (string.Empty, null);
     }
 
@@ -410,36 +440,28 @@ public sealed class BowireRestProtocol
     /// per-probe timeout + try/catch so a single misbehaving probe URL
     /// (timeout, DNS failure, 500…) can't take down the rest of the sweep.
     /// </summary>
-    private async Task<BowireOpenApiDiscoveryResult?> TryDiscoverAtAsync(
-        IBowireOpenApiAdapter adapter, string probeUrl, List<string>? details, CancellationToken ct)
+    private async Task<(BowireOpenApiDiscoveryResult? Result, string? Detail)> TryDiscoverAtAsync(
+        IBowireOpenApiAdapter adapter, string probeUrl, CancellationToken ct)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(ProbeTimeout);
         try
         {
             var result = await adapter.FetchAndDiscoverAsync(probeUrl, _http, cts.Token).ConfigureAwait(false);
-            if (result is null)
-            {
-                // The quiet miss, and the common one. Both shipped adapters
-                // funnel a non-success status, a network error and a parse
-                // failure through OpenApiDiscovery.FetchAndParseAsync, which
-                // answers `null` rather than throwing — so without this line
-                // the catch arms below almost never run and the breakdown
-                // stays empty. "Every path the sweep tried" has to include
-                // the ones that simply were not there, otherwise the detail
-                // list is a list of crashes, not of what was attempted.
-                details?.Add($"no document at {probeUrl}");
-            }
-            return result;
+            // The quiet miss, and the common one. Both shipped adapters funnel
+            // a non-success status, a network error and a parse failure through
+            // OpenApiDiscovery.FetchAndParseAsync, which answers `null` rather
+            // than throwing. Hand the miss line back to the sweep — running
+            // concurrently, the probes must not share-mutate the accumulator,
+            // so the caller records them in priority order (#544).
+            return result is null ? (null, $"no document at {probeUrl}") : (result, null);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            // Per-probe timeout fired — try the next candidate. Recorded
-            // twice on purpose: the ring buffer keeps its own consumers,
-            // the accumulator is what reaches core (#544).
+            // Per-probe timeout fired (the linked CancelAfter, not the caller's
+            // token) — this path is out, the concurrent walk moves on.
             RestProbeLog.Debug($"probe timeout: {probeUrl}");
-            details?.Add($"probe timeout: {probeUrl}");
-            return null;
+            return (null, $"probe timeout: {probeUrl}");
         }
         catch (Exception ex)
         {
@@ -447,8 +469,7 @@ public sealed class BowireRestProtocol
             // 5xx that the adapter surfaces as a throw, JSON / YAML parse
             // crash — record at debug level so the sweep keeps going.
             RestProbeLog.Debug($"probe failed: {probeUrl} ({ex.GetType().Name})");
-            details?.Add($"probe failed: {probeUrl} ({ex.GetType().Name})");
-            return null;
+            return (null, $"probe failed: {probeUrl} ({ex.GetType().Name})");
         }
     }
 
