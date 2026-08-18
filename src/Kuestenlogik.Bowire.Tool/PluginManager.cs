@@ -993,7 +993,17 @@ internal static class PluginManager
             return 1;
         }
 
-        Directory.Delete(pluginSubDir, recursive: true);
+        try { Directory.Delete(pluginSubDir, recursive: true); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
+        {
+            // A running Bowire process (workbench / mock) that loaded this
+            // plugin holds its DLL open — Windows then refuses the delete.
+            // Report it cleanly instead of crashing with an unhandled
+            // UnauthorizedAccessException + stack trace.
+            io.ErrLine($"  Failed to remove {packageId}: {ex.Message}");
+            io.ErrLine("  A running Bowire instance may still have the plugin loaded — stop the workbench / mock and retry.");
+            return 1;
+        }
         io.OutLine($"  Uninstalled {packageId}.");
         return 0;
     }

@@ -126,6 +126,34 @@ public sealed class PluginManagerTests : IDisposable
     }
 
     [Fact]
+    public void Uninstall_LockedPluginFile_ReportsErrorAndReturnsOne()
+    {
+        // A running Bowire process that loaded the plugin holds its DLL
+        // open; on Windows Directory.Delete then fails. Uninstall must
+        // report it cleanly (exit 1) instead of crashing with an unhandled
+        // UnauthorizedAccessException. POSIX unlink lets the delete succeed
+        // even with an open handle, so this failure mode is Windows-only.
+        Assert.SkipUnless(OperatingSystem.IsWindows(),
+            "Open-handle blocks directory delete only on Windows (POSIX unlink succeeds).");
+
+        var pluginSub = SafePath.Combine(_tempDir, "locked");
+        Directory.CreateDirectory(pluginSub);
+        var dll = SafePath.Combine(pluginSub, "locked.dll");
+        File.WriteAllText(dll, "stub");
+
+        using var sw = new StringWriter();
+        using (File.Open(dll, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            var rc = PluginManager.Uninstall("locked", _tempDir, stdout: sw, stderr: sw);
+            Assert.Equal(1, rc); // graceful, not a thrown exception
+        }
+
+        // The failed delete left the plugin dir in place.
+        Assert.True(Directory.Exists(pluginSub));
+        Assert.Contains("Failed to remove", sw.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task InstallAsync_EmptyPackageId_ReturnsUsageExit()
     {
         var rc = await PluginManager.InstallAsync(
