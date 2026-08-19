@@ -5,7 +5,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
-namespace Kuestenlogik.Bowire.App;
+namespace Kuestenlogik.Bowire.Contracts;
 
 /// <summary>
 /// Minimal Pact Broker REST client (#191). Only two operations —
@@ -18,7 +18,7 @@ namespace Kuestenlogik.Bowire.App;
 /// calls stay opt-in, never a default.
 /// </para>
 /// </summary>
-internal static class ContractBroker
+public static class ContractBroker
 {
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -108,7 +108,7 @@ internal static class ContractBroker
 }
 
 /// <summary>Broker interaction failed (non-success status or unparseable body).</summary>
-internal sealed class ContractBrokerException : Exception
+public sealed class ContractBrokerException : Exception
 {
     public ContractBrokerException(string message) : base(message) { }
     public ContractBrokerException(string message, Exception inner) : base(message, inner) { }

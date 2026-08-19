@@ -4,6 +4,7 @@
 using System.CommandLine;
 using System.Text.Json;
 using Kuestenlogik.Bowire.App;
+using Kuestenlogik.Bowire.Contracts;
 using Kuestenlogik.Bowire.Mock.Loading;
 
 namespace Kuestenlogik.Bowire.App.Cli;
@@ -40,10 +41,102 @@ internal static class ContractCommand
     public static Command Build()
     {
         var contract = new Command("contract",
-            "Pact-style consumer contract testing. `publish` builds a contract from a recording (+ optional broker push); `verify` replays it against a live provider.");
+            "Pact-style consumer contract testing. `publish` builds a contract from a recording (+ optional broker push); `verify` replays it against a live provider; `matrix` rolls stored results up into a consumer x provider grid.");
         contract.Add(BuildPublishCommand());
         contract.Add(BuildVerifyCommand());
+        contract.Add(BuildMatrixCommand());
         return contract;
+    }
+
+    // -------------------- matrix --------------------
+
+    /// <summary>
+    /// #364 — the CLI half of the workbench's contract matrix. Reads the
+    /// results <c>verify</c> stored and prints the consumer × provider
+    /// grid, so CI can gate on the same rollup the workbench renders.
+    /// </summary>
+    private static Command BuildMatrixCommand()
+    {
+        var cmd = new Command("matrix",
+            "Roll stored contract-verification results up into a consumer x provider matrix.");
+        var jsonOpt = new Option<bool>("--json")
+        {
+            Description = "Emit the matrix as JSON instead of a text grid.",
+        };
+        var failOnMissingOpt = new Option<bool>("--fail-on-failures")
+        {
+            Description = "Exit non-zero when any cell is failing (CI gate).",
+        };
+        cmd.Add(jsonOpt);
+        cmd.Add(failOnMissingOpt);
+        cmd.SetAction(async (pr, ct) =>
+        {
+            var io = pr.InvocationConfiguration;
+            return await RunMatrixAsync(
+                pr.GetValue(jsonOpt), pr.GetValue(failOnMissingOpt),
+                io.Output, io.Error, ct).ConfigureAwait(false);
+        });
+        return cmd;
+    }
+
+    private static async Task<int> RunMatrixAsync(
+        bool asJson, bool failOnFailures, TextWriter stdout, TextWriter stderr, CancellationToken ct)
+    {
+        var reports = await ContractResultStore.LoadAllAsync(rootPath: null, ct).ConfigureAwait(false);
+        if (reports.Count == 0)
+        {
+            await stderr.WriteLineAsync(
+                $"bowire contract matrix: no stored results in {ContractResultStore.ResolveDirectory()} — run `bowire contract verify` first.").ConfigureAwait(false);
+            return ExitOk;
+        }
+
+        var matrix = BowireContractMatrix.Build(reports);
+
+        if (asJson)
+        {
+            await stdout.WriteLineAsync(JsonSerializer.Serialize(matrix, WriteOpts)).ConfigureAwait(false);
+        }
+        else
+        {
+            await PrintMatrixAsync(stdout, matrix).ConfigureAwait(false);
+        }
+
+        return failOnFailures && matrix.FailedCells > 0 ? ExitFail : ExitOk;
+    }
+
+    private static async Task PrintMatrixAsync(TextWriter stdout, ContractMatrix matrix)
+    {
+        // Column width follows the widest provider name so the grid lines
+        // up whatever the parties are called.
+        var rowWidth = matrix.Consumers.Count == 0 ? 8 : matrix.Consumers.Max(c => c.Length);
+        var colWidth = matrix.Providers.Count == 0 ? 8 : Math.Max(8, matrix.Providers.Max(p => p.Length));
+
+        await stdout.WriteLineAsync().ConfigureAwait(false);
+        var header = new string(' ', rowWidth + 2)
+            + string.Join("  ", matrix.Providers.Select(p => p.PadRight(colWidth)));
+        await stdout.WriteLineAsync(header).ConfigureAwait(false);
+
+        foreach (var consumer in matrix.Consumers)
+        {
+            var cells = matrix.Providers.Select(provider =>
+            {
+                var cell = matrix.Cells.FirstOrDefault(
+                    c => string.Equals(c.Consumer, consumer, StringComparison.Ordinal)
+                        && string.Equals(c.Provider, provider, StringComparison.Ordinal));
+                var text = cell?.Status switch
+                {
+                    ContractCellStatus.Pass => $"PASS {cell.PassedInteractions}/{cell.TotalInteractions}",
+                    ContractCellStatus.Fail => $"FAIL {cell.PassedInteractions}/{cell.TotalInteractions}",
+                    _ => "—",
+                };
+                return text.PadRight(colWidth);
+            });
+            await stdout.WriteLineAsync($"{consumer.PadRight(rowWidth)}  {string.Join("  ", cells)}").ConfigureAwait(false);
+        }
+
+        await stdout.WriteLineAsync().ConfigureAwait(false);
+        await stdout.WriteLineAsync(
+            $"  {matrix.PassedCells} passing · {matrix.FailedCells} failing").ConfigureAwait(false);
     }
 
     // -------------------- publish --------------------
@@ -240,19 +333,36 @@ internal static class ContractCommand
 
         await stdout.WriteLineAsync().ConfigureAwait(false);
         await stdout.WriteLineAsync(
-            $"  {report.Tests.Count - report.FailedTests}/{report.Tests.Count} interactions held   "
+            $"  {report.Interactions.Count - report.FailedInteractions}/{report.Interactions.Count} interactions held   "
             + $"{report.PassedAssertions}/{report.TotalAssertions} checks   in {report.DurationMs} ms").ConfigureAwait(false);
 
+        // #364 — persist the result so the workbench matrix (and a later
+        // `contract matrix` run) can show this verdict. Storing is local
+        // and best-effort: a read-only working directory must not turn a
+        // passing verification into a failed command.
+        try
+        {
+            var stored = await ContractResultStore.SaveAsync(report, rootPath: null, ct).ConfigureAwait(false);
+            await stdout.WriteLineAsync($"  Result stored at {stored}").ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PathTooLongException)
+        {
+            await stderr.WriteLineAsync($"  (could not store result for the matrix: {ex.Message})").ConfigureAwait(false);
+        }
+
+        // JUnit / SARIF go through the same emitters as `bowire test`, so
+        // the engine report is projected onto the generic RunReport shape.
+        var runReport = ContractReportAdapter.ToRunReport(report);
         if (!string.IsNullOrWhiteSpace(junitPath))
         {
-            await SafeWriteAsync(junitPath!, JUnitReport.Render(report), "JUnit", stdout, stderr).ConfigureAwait(false);
+            await SafeWriteAsync(junitPath!, JUnitReport.Render(runReport), "JUnit", stdout, stderr).ConfigureAwait(false);
         }
         if (!string.IsNullOrWhiteSpace(sarifPath))
         {
-            await SafeWriteAsync(sarifPath!, TestSarifReport.Render(report), "SARIF", stdout, stderr).ConfigureAwait(false);
+            await SafeWriteAsync(sarifPath!, TestSarifReport.Render(runReport), "SARIF", stdout, stderr).ConfigureAwait(false);
         }
 
-        return report.FailedTests > 0 ? ExitFail : ExitOk;
+        return report.FailedInteractions > 0 ? ExitFail : ExitOk;
     }
 
     private static async Task SafeWriteAsync(string path, string content, string kind, TextWriter stdout, TextWriter stderr)

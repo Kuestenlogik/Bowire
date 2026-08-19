@@ -3,12 +3,11 @@
 
 using System.Diagnostics;
 using System.Globalization;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Nodes;
 using Kuestenlogik.Bowire.Flows.Expectations;
 
-namespace Kuestenlogik.Bowire.App;
+namespace Kuestenlogik.Bowire.Contracts;
 
 /// <summary>
 /// Provider-side contract verification (#191). Replays every interaction
@@ -17,27 +16,35 @@ namespace Kuestenlogik.Bowire.App;
 /// must match, and the response body must satisfy the expected shape
 /// (structural match — the provider may add fields / vary values, but
 /// every field the consumer relies on must be present with the same JSON
-/// kind). Results project into a <see cref="RunReport"/> so the JUnit /
-/// SARIF / HTML emitters and exit-code contract are shared verbatim with
-/// <c>bowire test</c>.
+/// kind).
 /// </summary>
-internal static class ContractVerifier
+/// <remarks>
+/// #364 — moved out of the CLI into this shared package so the workbench
+/// endpoint and the MCP tool verify through the same engine as
+/// <c>bowire contract verify</c>. It now returns the engine-native
+/// <see cref="ContractVerificationReport"/> (structured consumer/provider
+/// + timestamp for the matrix); the CLI adapter maps that onto its generic
+/// <c>RunReport</c> for the shared JUnit / SARIF emitters.
+/// </remarks>
+public static class ContractVerifier
 {
     /// <summary>
     /// Verify <paramref name="contract"/> against <paramref name="baseUrl"/>.
-    /// Returns a report; <see cref="RunReport.FailedTests"/> &gt; 0 means
-    /// the provider broke the contract.
+    /// <see cref="ContractVerificationReport.FailedInteractions"/> &gt; 0
+    /// means the provider broke the contract. <paramref name="stdout"/> is
+    /// optional — the CLI passes its console for the live PASS/FAIL log;
+    /// the endpoint and MCP callers pass <c>null</c>.
     /// </summary>
-    public static async Task<RunReport> VerifyAsync(
-        HttpClient http, PactContract contract, string baseUrl, TextWriter stdout, CancellationToken ct)
+    public static async Task<ContractVerificationReport> VerifyAsync(
+        HttpClient http, PactContract contract, string baseUrl, TextWriter? stdout, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(http);
         ArgumentNullException.ThrowIfNull(contract);
 
-        var report = new RunReport
+        var report = new ContractVerificationReport
         {
-            CollectionName = $"{contract.Consumer.Name} → {contract.Provider.Name}",
-            CollectionPath = string.Empty,
+            Consumer = contract.Consumer.Name,
+            Provider = contract.Provider.Name,
             StartedAt = DateTime.UtcNow,
         };
         var sw = Stopwatch.StartNew();
@@ -46,7 +53,7 @@ internal static class ContractVerifier
         foreach (var interaction in contract.Interactions)
         {
             var result = await VerifyInteractionAsync(http, interaction, baseTrim, ct).ConfigureAwait(false);
-            report.Tests.Add(result);
+            report.Interactions.Add(result);
             report.TotalAssertions += result.Assertions.Count;
             var anyFailed = false;
             foreach (var a in result.Assertions)
@@ -54,9 +61,9 @@ internal static class ContractVerifier
                 if (a.Passed) report.PassedAssertions++;
                 else anyFailed = true;
             }
-            if (anyFailed || !string.IsNullOrEmpty(result.Error)) report.FailedTests++;
+            if (anyFailed || !string.IsNullOrEmpty(result.Error)) report.FailedInteractions++;
 
-            await PrintAsync(stdout, result).ConfigureAwait(false);
+            if (stdout is not null) await PrintAsync(stdout, result).ConfigureAwait(false);
         }
 
         sw.Stop();
@@ -64,12 +71,12 @@ internal static class ContractVerifier
         return report;
     }
 
-    private static async Task<TestResult> VerifyInteractionAsync(
+    private static async Task<ContractInteractionResult> VerifyInteractionAsync(
         HttpClient http, PactInteraction interaction, string baseUrl, CancellationToken ct)
     {
-        var result = new TestResult
+        var result = new ContractInteractionResult
         {
-            Name = interaction.Description,
+            Description = interaction.Description,
             Method = interaction.Request.Method,
         };
 
@@ -104,7 +111,7 @@ internal static class ContractVerifier
         resp.Dispose();
 
         // Status assertion.
-        result.Assertions.Add(new AssertionResult
+        result.Assertions.Add(new ContractAssertion
         {
             Path = "status",
             Op = "eq",
@@ -119,7 +126,7 @@ internal static class ContractVerifier
         {
             var diffs = FlowSnapshotComparer.Compare(
                 expected.ToJsonString(), actualBody, FlowSnapshotMode.Structural);
-            result.Assertions.Add(new AssertionResult
+            result.Assertions.Add(new ContractAssertion
             {
                 Path = "body",
                 Op = "matches-shape",
@@ -162,10 +169,10 @@ internal static class ContractVerifier
         return req;
     }
 
-    private static async Task PrintAsync(TextWriter stdout, TestResult result)
+    private static async Task PrintAsync(TextWriter stdout, ContractInteractionResult result)
     {
         var ok = string.IsNullOrEmpty(result.Error) && result.Assertions.TrueForAll(a => a.Passed);
-        await stdout.WriteLineAsync($"  {(ok ? "PASS" : "FAIL")}  {result.Method}  {result.Name}   {result.Status} · {result.DurationMs}ms").ConfigureAwait(false);
+        await stdout.WriteLineAsync($"  {(ok ? "PASS" : "FAIL")}  {result.Method}  {result.Description}   {result.Status} · {result.DurationMs}ms").ConfigureAwait(false);
         if (!string.IsNullOrEmpty(result.Error))
         {
             await stdout.WriteLineAsync($"        error: {result.Error}").ConfigureAwait(false);

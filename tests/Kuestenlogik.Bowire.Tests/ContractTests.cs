@@ -4,6 +4,7 @@
 using System.Net;
 using System.Text;
 using Kuestenlogik.Bowire.App;
+using Kuestenlogik.Bowire.Contracts;
 using Kuestenlogik.Bowire.Mocking;
 
 namespace Kuestenlogik.Bowire.Tests;
@@ -116,7 +117,7 @@ public sealed class ContractTests
         using var sw = new StringWriter();
         var report = await ContractVerifier.VerifyAsync(http, contract, provider.Url, sw, TestContext.Current.CancellationToken);
 
-        Assert.Equal(0, report.FailedTests);
+        Assert.Equal(0, report.FailedInteractions);
         Assert.Equal(2, report.TotalAssertions); // status + body
         Assert.Equal(2, report.PassedAssertions);
     }
@@ -133,8 +134,8 @@ public sealed class ContractTests
         using var sw = new StringWriter();
         var report = await ContractVerifier.VerifyAsync(http, contract, provider.Url, sw, TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, report.FailedTests);
-        var body = report.Tests[0].Assertions.First(a => a.Path == "body");
+        Assert.Equal(1, report.FailedInteractions);
+        var body = report.Interactions[0].Assertions.First(a => a.Path == "body");
         Assert.False(body.Passed);
         Assert.Contains("status", body.Error ?? "", StringComparison.Ordinal);
     }
@@ -149,8 +150,8 @@ public sealed class ContractTests
         using var sw = new StringWriter();
         var report = await ContractVerifier.VerifyAsync(http, contract, provider.Url, sw, TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, report.FailedTests);
-        var status = report.Tests[0].Assertions.First(a => a.Path == "status");
+        Assert.Equal(1, report.FailedInteractions);
+        var status = report.Interactions[0].Assertions.First(a => a.Path == "status");
         Assert.False(status.Passed);
         Assert.Equal("200", status.Expected);
         Assert.Equal("500", status.ActualText);
