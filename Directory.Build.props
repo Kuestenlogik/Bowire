@@ -83,6 +83,24 @@
     </PropertyGroup>
   </Target>
 
+  <!-- Drift guard: fail the build if AssemblyVersion ever stops tracking
+       Major.Minor.0.0 of the tag — e.g. PinAssemblyVersionToMajorMinor above
+       gets removed and MinVer's {Major}.0.0.0 default (the 2.0.0.0 regression)
+       comes back, or a project hardcodes its own <AssemblyVersion>. Recomputes
+       the expected value from MinVer independently and asserts against the
+       final AssemblyVersion just before compile, so it catches a missing or
+       overridden setter. Runs in every build, CI included — the guarantee the
+       tag is the single source of truth is enforced on the server, not left to
+       reviewer vigilance. -->
+  <Target Name="GuardAssemblyVersionTracksTag" BeforeTargets="CoreCompile"
+          Condition="'$(MinVerVersion)' != ''">
+    <PropertyGroup>
+      <_ExpectedAssemblyVersion>$(MinVerMajor).$(MinVerMinor).0.0</_ExpectedAssemblyVersion>
+    </PropertyGroup>
+    <Error Condition="'$(AssemblyVersion)' != '$(_ExpectedAssemblyVersion)'"
+           Text="AssemblyVersion drift: got '$(AssemblyVersion)' but the tag-derived value is '$(_ExpectedAssemblyVersion)' (Major.Minor.0.0 of MinVer version '$(MinVerVersion)'). AssemblyVersion must track the tag — do not hardcode it, and keep PinAssemblyVersionToMajorMinor in Directory.Build.props." />
+  </Target>
+
   <!-- Mark all Kuestenlogik.Bowire.Protocol.* projects as Bowire plugins so
        NuGet consumers and the in-UI marketplace can identify them. -->
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Kuestenlogik.Bowire.Protocol.'))">
