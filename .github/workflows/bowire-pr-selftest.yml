@@ -11,6 +11,15 @@ name: "Self-test: PR report action"
 
 on:
   workflow_dispatch:
+  # Bowire's own work lands straight on main rather than through PRs, so a
+  # pull_request-only trigger meant every change to the action shipped
+  # unexercised. The same paths on push keep the self-test honest for the
+  # way this repo actually commits.
+  push:
+    branches: [main]
+    paths:
+      - '.github/actions/bowire-pr/**'
+      - '.github/workflows/bowire-pr-selftest.yml'
   pull_request:
     paths:
       - '.github/actions/bowire-pr/**'
