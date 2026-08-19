@@ -37,6 +37,13 @@ place on every push — with what changed.
 | **API schema** | `bowire diff` — a base snapshot vs. a head snapshot captured from the running target | `fail-on-schema: none \| breaking \| any` |
 | **Tests** | `bowire test --junit` | `fail-on-tests: any \| never` |
 | **Security** | `bowire scan` + `bowire scan report --baseline` | `fail-on-scan: never \| any` |
+| **Perf** | the head JUnit report's per-test timings vs. a base-branch JUnit (`test-baseline`) | `fail-on-perf: never \| any` |
+
+The Perf section needs no separate benchmark run: `bowire test --junit` already
+times every test case, so the latency delta is a diff over two reports you
+already produce. A test is only listed when it moved past **both** thresholds —
+relative (`perf-threshold-pct`) and absolute (`perf-threshold-ms`) — so a 2 ms
+test drifting to 4 ms doesn't fill the comment with runner noise.
 
 Everything runs inside the runner — the action hits your service on `localhost`,
 never calls back to Bowire infrastructure, and no secrets leave the job.
@@ -96,9 +103,13 @@ and Security sections still run against `target`.
 | `scan` | `true` | Run `bowire scan` against the target. |
 | `scan-templates` | *(none)* | Vulnerability-template directory. |
 | `scan-baseline` | *(none)* | Base scan SARIF, for new/fixed findings. |
+| `test-baseline` | *(none)* | Base-branch JUnit XML, for the per-test latency delta; empty skips Perf. |
+| `perf-threshold-pct` | `20` | Only report a test whose latency moved more than this percentage. |
+| `perf-threshold-ms` | `5` | Absolute floor a move must also clear — keeps runner noise on very fast tests out. |
 | `fail-on-schema` | `none` | `none` \| `breaking` \| `any`. |
 | `fail-on-tests` | `any` | `any` \| `never`. |
 | `fail-on-scan` | `never` | `never` \| `any`. |
+| `fail-on-perf` | `never` | `never` \| `any`. |
 | `tool-version` | *(latest)* | Pin a specific `Kuestenlogik.Bowire.Tool`. |
 
 When the workflow is not a `pull_request` (e.g. `workflow_dispatch`), the report
