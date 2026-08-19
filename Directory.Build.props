@@ -20,6 +20,20 @@
     <PublishDir>$(ArtifactsPath)publish\$(MSBuildProjectName)\$(Configuration)\</PublishDir>
   </PropertyGroup>
 
+  <!-- Was gehoert auf nuget.org?
+       Ein Projekt ist paketierbar, solange es etwas ist, das jemand REFERENZIEREN kann - das ist
+       der Default und gilt hier fuer alles unter src/ ausser dem Tool. Genau eine Kategorie
+       faellt sonst raus: HOSTS, also Exe-/Web-SDK-Projekte, die gestartet und nicht referenziert
+       werden; ein Paket davon waere eine ID, die niemand installieren kann. Die setzen
+       `IsPackable=false` und gehen ueber Publish/Container raus.
+
+       Bowire hat davon aktuell keines. Das einzige Exe-Projekt ist Tool, und das ist mit
+       `PackAsTool=true` ein dotnet-Global-Tool - also gerade doch etwas, das ueber NuGet
+       installiert wird, und damit zu Recht paketierbar.
+
+       Beim Anlegen eines neuen Projekts also nur die Frage: Host ohne PackAsTool? Dann
+       IsPackable=false. -->
+
   <PropertyGroup Condition="'$(IsPackable)' != 'false'">
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
