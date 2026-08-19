@@ -18,6 +18,13 @@
          on HTTP/1.1. Not pulled in by the plugin itself. -->
     <PackageVersion Include="Grpc.AspNetCore.Web" Version="2.83.0" />
     <PackageVersion Include="Google.Protobuf" Version="3.35.1" />
+    <!-- Cron parsing for scheduled benchmark runs (#232). Referenced only
+         by the optional Kuestenlogik.Bowire.Benchmarking package, never by
+         Core. Hand-rolling this was the alternative, and the schedule block
+         carries a named timezone — DST-correct next-occurrence arithmetic
+         across a spring-forward gap is exactly the kind of thing a
+         maintained library gets right and a hand-rolled parser does not. -->
+    <PackageVersion Include="Cronos" Version="0.13.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.11" />
     <PackageVersion Include="Grpc.AspNetCore" Version="2.83.0" />
