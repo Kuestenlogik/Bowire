@@ -39,5 +39,13 @@
          core fragment in the IIFE. -->
     <EmbeddedResource Include="wwwroot\js\benchmarks.js"
                       LogicalName="Kuestenlogik.Bowire.Benchmarking.wwwroot.js.benchmarks.js" />
+    <!-- #232 — the scheduled-runs panel. A separate fragment rather than
+         more lines in benchmarks.js: it is the only part of the rail that
+         talks to /api/benchmarks/schedules, and schedules are server-side
+         state while the rest of the rail is browser state. Splice order is
+         ordinal by resource name, which puts this file first — harmless,
+         because it declares only `var`s and hoisted functions. -->
+    <EmbeddedResource Include="wwwroot\js\benchmark-schedules.js"
+                      LogicalName="Kuestenlogik.Bowire.Benchmarking.wwwroot.js.benchmark-schedules.js" />
   </ItemGroup>
 </Project>
