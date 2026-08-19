@@ -17,6 +17,15 @@
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <!-- #232 — cron parsing for scheduled runs. Lives here rather than in
+         Core so an embedded host that doesn't reference the Benchmarking
+         rail doesn't take the dependency. -->
+    <PackageReference Include="Cronos" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Benchmarking.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
   </ItemGroup>
   <ItemGroup>
