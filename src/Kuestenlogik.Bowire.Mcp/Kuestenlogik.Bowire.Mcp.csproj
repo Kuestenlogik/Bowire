@@ -28,6 +28,10 @@
          (bowire.mock.start / bowire.mock.stop). Without it the Mcp
          tools class can't drive MockServer.StartAsync. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Mock\Kuestenlogik.Bowire.Mock.csproj" />
+    <!-- #364 — the contract matrix tool reads the same stored results the
+         workbench rail and `bowire contract matrix` render, so an agent
+         gets the same view as the CLI and the UI. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Contracts\Kuestenlogik.Bowire.Contracts.csproj" />
     <PackageReference Include="ModelContextProtocol" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
   </ItemGroup>

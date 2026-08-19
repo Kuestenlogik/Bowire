@@ -43,6 +43,12 @@
          Kuestenlogik.Bowire.Mock (see below). The provisional
          Kuestenlogik.Bowire.Rail.Mocks package was folded in for v2.1. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Flows\Kuestenlogik.Bowire.Flows.csproj" />
+    <!-- #364 — Contracts rail: the shared contract-verification engine
+         (moved out of the CLI so endpoint + MCP reach it too) plus the
+         consumer x provider matrix. In the bundle so the standalone tool
+         keeps `bowire contract` and gains the matrix rail out of the box;
+         embedded hosts opt in by referencing the package, like any rail. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Contracts\Kuestenlogik.Bowire.Contracts.csproj" />
     <!-- v2.1 (#325): the Proxy + Intercepted + Traffic rails AND the
          interceptor middleware + reverse-proxy host + /api/intercepted
          endpoints were lifted into a single Kuestenlogik.Bowire.Interceptor

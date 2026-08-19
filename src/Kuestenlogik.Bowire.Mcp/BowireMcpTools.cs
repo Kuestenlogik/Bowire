@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Kuestenlogik.Bowire;
+using Kuestenlogik.Bowire.Contracts;
 using Kuestenlogik.Bowire.Linting;
 using Kuestenlogik.Bowire.Mock;
 using Kuestenlogik.Bowire.Mocking;
@@ -178,6 +179,55 @@ public sealed class BowireMcpTools
                 medium = findings.Count(f => f.Severity == BowireLintSeverity.Medium),
                 low = findings.Count(f => f.Severity == BowireLintSeverity.Low),
                 info = findings.Count(f => f.Severity == BowireLintSeverity.Info),
+            },
+        };
+        return JsonSerializer.Serialize(payload, JsonOpts);
+    }
+
+    [McpServerTool(Name = "bowire.contract.matrix")]
+    [Description("Read the contract-verification results stored under .bowire/contract-results (written by `bowire contract verify`) and roll them up into the same consumer x provider matrix the workbench Contracts rail and `bowire contract matrix` render. Purely local: it reports stored verdicts and never calls a provider itself. Returns { consumers: [...], providers: [...], cells: [{ consumer, provider, status: pass|fail|notRun, lastRun, passedInteractions, totalInteractions, failures: [{ description, method, error }] }], summary: { passed, failed } }.")]
+    // Static: the matrix is assembled purely from the on-disk store, with
+    // no discovery probe, allowlist check or logger to reach for — unlike
+    // the tools that touch a live URL.
+    public static async Task<string> ContractMatrix(CancellationToken ct = default)
+    {
+        var reports = await ContractResultStore.LoadAllAsync(rootPath: null, ct).ConfigureAwait(false);
+        var matrix = BowireContractMatrix.Build(reports);
+
+        var payload = new
+        {
+            consumers = matrix.Consumers,
+            providers = matrix.Providers,
+            cells = matrix.Cells.Select(c => new
+            {
+                consumer = c.Consumer,
+                provider = c.Provider,
+                status = c.Status switch
+                {
+                    ContractCellStatus.Pass => "pass",
+                    ContractCellStatus.Fail => "fail",
+                    _ => "notRun",
+                },
+                lastRun = c.LastRun,
+                passedInteractions = c.PassedInteractions,
+                totalInteractions = c.TotalInteractions,
+                // Only the failures: an agent asking "what broke?" gets the
+                // answer without the full passing transcript.
+                failures = c.Report is null
+                    ? []
+                    : c.Report.Interactions.Where(i => !i.Passed).Select(i => new
+                    {
+                        description = i.Description,
+                        method = i.Method,
+                        error = i.Error ?? string.Join("; ",
+                            i.Assertions.Where(a => !a.Passed)
+                                .Select(a => $"{a.Path} {a.Op}: {a.Error ?? $"expected {a.Expected}, got {a.ActualText}"}")),
+                    }).ToArray(),
+            }).ToArray(),
+            summary = new
+            {
+                passed = matrix.PassedCells,
+                failed = matrix.FailedCells,
             },
         };
         return JsonSerializer.Serialize(payload, JsonOpts);

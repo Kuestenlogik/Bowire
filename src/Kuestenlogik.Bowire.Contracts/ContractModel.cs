@@ -7,7 +7,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Kuestenlogik.Bowire.Mocking;
 
-namespace Kuestenlogik.Bowire.App;
+namespace Kuestenlogik.Bowire.Contracts;
 
 /// <summary>
 /// Pact-compatible consumer contract (#191). A deliberately small subset
@@ -17,7 +17,12 @@ namespace Kuestenlogik.Bowire.App;
 /// wire shape matches what brokers expect
 /// (<c>consumer.name</c> / <c>provider.name</c> / <c>interactions[]</c>).
 /// </summary>
-internal sealed class PactContract
+/// <remarks>
+/// #364 — moved from the CLI (Kuestenlogik.Bowire.Tool) into this shared
+/// package so the workbench endpoint + MCP tool verify through the same
+/// engine as the CLI, and made public for those cross-assembly callers.
+/// </remarks>
+public sealed class PactContract
 {
     [JsonPropertyName("consumer")]
     public PactParty Consumer { get; set; } = new();
@@ -25,8 +30,11 @@ internal sealed class PactContract
     [JsonPropertyName("provider")]
     public PactParty Provider { get; set; } = new();
 
+    // `init` rather than a full setter: CA2227 forbids settable collection
+    // properties on public types, but System.Text.Json still populates an
+    // init-only collection when deserialising a broker-fetched contract.
     [JsonPropertyName("interactions")]
-    public List<PactInteraction> Interactions { get; set; } = [];
+    public List<PactInteraction> Interactions { get; init; } = [];
 
     /// <summary>
     /// Pact metadata block. Carries the spec version brokers key off plus
@@ -152,13 +160,13 @@ internal sealed class PactContract
     }
 }
 
-internal sealed class PactParty
+public sealed class PactParty
 {
     [JsonPropertyName("name")]
     public string Name { get; set; } = "";
 }
 
-internal sealed class PactInteraction
+public sealed class PactInteraction
 {
     [JsonPropertyName("description")]
     public string Description { get; set; } = "";
@@ -170,7 +178,7 @@ internal sealed class PactInteraction
     public PactResponse Response { get; set; } = new();
 }
 
-internal sealed class PactRequest
+public sealed class PactRequest
 {
     [JsonPropertyName("method")]
     public string Method { get; set; } = "GET";
@@ -178,26 +186,28 @@ internal sealed class PactRequest
     [JsonPropertyName("path")]
     public string Path { get; set; } = "/";
 
+    // init-only — see the note on PactContract.Interactions (CA2227).
     [JsonPropertyName("headers")]
-    public Dictionary<string, string>? Headers { get; set; }
+    public Dictionary<string, string>? Headers { get; init; }
 
     [JsonPropertyName("body")]
     public JsonNode? Body { get; set; }
 }
 
-internal sealed class PactResponse
+public sealed class PactResponse
 {
     [JsonPropertyName("status")]
     public int Status { get; set; } = 200;
 
+    // init-only — see the note on PactContract.Interactions (CA2227).
     [JsonPropertyName("headers")]
-    public Dictionary<string, string>? Headers { get; set; }
+    public Dictionary<string, string>? Headers { get; init; }
 
     [JsonPropertyName("body")]
     public JsonNode? Body { get; set; }
 }
 
-internal sealed class PactMetadata
+public sealed class PactMetadata
 {
     [JsonPropertyName("pactSpecification")]
     public PactSpecification PactSpecification { get; set; } = new();
@@ -206,13 +216,13 @@ internal sealed class PactMetadata
     public PactBowireStamp Bowire { get; set; } = new();
 }
 
-internal sealed class PactSpecification
+public sealed class PactSpecification
 {
     [JsonPropertyName("version")]
     public string Version { get; set; } = "3.0.0";
 }
 
-internal sealed class PactBowireStamp
+public sealed class PactBowireStamp
 {
     [JsonPropertyName("generatedBy")]
     public string GeneratedBy { get; set; } = "bowire contract publish";

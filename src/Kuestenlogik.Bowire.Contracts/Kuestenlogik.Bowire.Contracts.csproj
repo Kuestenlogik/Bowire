@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #364 — Contract-testing rail package. Hosts the shared provider-
+         verification engine (moved out of the CLI so the workbench endpoint
+         and MCP can reach it too, not just `bowire contract`) plus the
+         consumer x provider matrix rail. Sits above Kuestenlogik.Bowire.Flows
+         because verification reuses FlowSnapshotComparer for the structural
+         response-body match. Hosts that don't reference this package ship
+         none of it — engine and JS fragment alike. -->
+    <Description>Bowire Contracts rail — Pact-style consumer/provider contract verification plus the consumer x provider result matrix. Adds the Contracts rail descriptor + per-rail JS fragment to the workbench.</Description>
+    <PackageId>Kuestenlogik.Bowire.Contracts</PackageId>
+    <PackageTags>bowire;rail;contract-testing;pact;workbench;plugin</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Flows\Kuestenlogik.Bowire.Flows.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Per-rail JS fragment. The core HTML generator discovers every
+         embedded resource whose LogicalName matches
+         `Kuestenlogik.Bowire.*.wwwroot.js.*.js`, concatenates the payloads,
+         and stitches them into the workbench bundle's IIFE before init.js. -->
+    <EmbeddedResource Include="wwwroot\js\contract-matrix.js"
+                      LogicalName="Kuestenlogik.Bowire.Contracts.wwwroot.js.contract-matrix.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Contracts.Tests" />
+    <!-- The pre-existing ContractTests live in the shared test project and
+         cover the internal Pact helpers (StatusCodeOf / FilterHttpHeaders /
+         PathOf); they moved with the engine rather than being rewritten. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+  </ItemGroup>
+</Project>
