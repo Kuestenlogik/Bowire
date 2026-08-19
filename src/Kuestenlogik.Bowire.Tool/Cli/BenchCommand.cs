@@ -3,6 +3,7 @@
 
 using System.CommandLine;
 using System.Globalization;
+using System.Text.Json;
 using Kuestenlogik.Bowire.Benchmarking;
 
 namespace Kuestenlogik.Bowire.App.Cli;
@@ -27,10 +28,211 @@ internal static class BenchCommand
     public static Command Build()
     {
         var bench = new Command("bench",
-            "Load-test a method and gate on latency budgets. `run` measures p50/p95/p99, error rate and throughput, and can fail the build on a threshold.");
+            "Load-test a method and gate on latency budgets. `run` measures p50/p95/p99, error rate and throughput and can fail the build on a threshold; `schedule` manages recurring runs.");
         bench.Add(BuildRunCommand());
+        bench.Add(BuildScheduleCommand());
         return bench;
     }
+
+    // -------------------- schedule --------------------
+
+    /// <summary>
+    /// #232 — the CLI half of scheduled runs. Authoring lives here rather
+    /// than in the workbench because a schedule carries a target the server
+    /// then calls unattended; the browser reads and pauses.
+    /// </summary>
+    private static Command BuildScheduleCommand()
+    {
+        var schedule = new Command("schedule",
+            "Manage recurring benchmark runs. Entries are stored under .bowire/benchmark-schedules and fire from the running workbench / host.");
+        schedule.Add(BuildScheduleListCommand());
+        schedule.Add(BuildScheduleAddCommand());
+        schedule.Add(BuildSchedulePauseCommand(pause: true));
+        schedule.Add(BuildSchedulePauseCommand(pause: false));
+        schedule.Add(BuildScheduleRemoveCommand());
+        return schedule;
+    }
+
+    private static Command BuildScheduleListCommand()
+    {
+        var cmd = new Command("list", "List stored schedules with their next firing time and last result.");
+        var jsonOpt = new Option<bool>("--json") { Description = "Emit JSON instead of a table." };
+        cmd.Add(jsonOpt);
+        cmd.SetAction(async (pr, ct) =>
+        {
+            var io = pr.InvocationConfiguration;
+            var store = new BowireBenchmarkScheduleStore();
+            var schedules = await store.LoadAllAsync(ct).ConfigureAwait(false);
+            if (schedules.Count == 0)
+            {
+                await io.Output.WriteLineAsync(
+                    $"  No schedules in {store.Directory}. Add one with `bowire bench schedule add`.").ConfigureAwait(false);
+                return ExitOk;
+            }
+
+            var now = DateTime.UtcNow;
+            if (pr.GetValue(jsonOpt))
+            {
+                var rows = new List<object>(schedules.Count);
+                foreach (var s in schedules)
+                {
+                    var runs = await store.LoadRunsAsync(s.Id, ct).ConfigureAwait(false);
+                    rows.Add(BowireBenchmarkScheduleEndpoints.ToPayload(s, runs, now));
+                }
+                await io.Output.WriteLineAsync(JsonSerializer.Serialize(rows, ScheduleJsonOpts)).ConfigureAwait(false);
+                return ExitOk;
+            }
+
+            await io.Output.WriteLineAsync().ConfigureAwait(false);
+            foreach (var s in schedules)
+            {
+                var runs = await store.LoadRunsAsync(s.Id, ct).ConfigureAwait(false);
+                var next = s.NextOccurrenceUtc(now);
+                // A paused or unparseable schedule has no next time; say which
+                // rather than printing a blank column.
+                var nextText = !s.Enabled ? "paused"
+                    : next is null ? "invalid cron"
+                    : next.Value.ToString("u", CultureInfo.InvariantCulture);
+                var last = runs.Count > 0 ? runs[0] : null;
+                var lastText = last is null
+                    ? "never run"
+                    : $"{(last.Passed ? "PASS" : "FAIL")} p95 {Ms(last.P95)} · {last.StartedAt:u} ({last.TriggeredBy})";
+
+                await io.Output.WriteLineAsync($"  {s.Id}   {s.Name}").ConfigureAwait(false);
+                await io.Output.WriteLineAsync($"      {s.Cron} [{(string.IsNullOrWhiteSpace(s.Timezone) ? "UTC" : s.Timezone)}]   {s.Service}/{s.Method} @ {s.ServerUrl}").ConfigureAwait(false);
+                await io.Output.WriteLineAsync($"      next: {nextText}   last: {lastText}").ConfigureAwait(false);
+                await io.Output.WriteLineAsync().ConfigureAwait(false);
+            }
+            return ExitOk;
+        });
+        return cmd;
+    }
+
+    private static Command BuildScheduleAddCommand()
+    {
+        var cmd = new Command("add", "Store a recurring benchmark run.");
+        var idArg = new Argument<string>("id") { Description = "Schedule id — the handle for pause / remove." };
+        var cronOpt = new Option<string>("--cron") { Description = "Cron expression (5 fields), e.g. \"0 3 * * *\".", Required = true };
+        var tzOpt = new Option<string?>("--timezone") { Description = "IANA timezone the cron is read in (e.g. Europe/Berlin). Default UTC." };
+        var nameOpt = new Option<string?>("--name") { Description = "Display name." };
+        var targetOpt = new Option<string>("--target") { Description = "service/method to call.", Required = true };
+        var urlOpt = new Option<string>("-url", "--url") { Description = "Target server URL (protocol@url form accepted).", Required = true };
+        var protocolOpt = new Option<string?>("--protocol") { Description = "Protocol plugin id." };
+        var dataOpt = new Option<string?>("-d", "--data") { Description = "JSON request body (or @filename)." };
+        var iterationsOpt = new Option<int>("-n", "--iterations") { Description = "Calls per run.", DefaultValueFactory = _ => 50 };
+        var concurrencyOpt = new Option<int>("-c", "--concurrency") { Description = "Calls in flight at once.", DefaultValueFactory = _ => 1 };
+        var warmupOpt = new Option<int>("--warmup") { Description = "Discarded calls before measuring.", DefaultValueFactory = _ => 0 };
+        var thresholdOpt = new Option<string[]>("--threshold") { Description = "Budget checked after each run. Repeatable.", AllowMultipleArgumentsPerToken = false };
+
+        cmd.Add(idArg); cmd.Add(cronOpt); cmd.Add(tzOpt); cmd.Add(nameOpt); cmd.Add(targetOpt);
+        cmd.Add(urlOpt); cmd.Add(protocolOpt); cmd.Add(dataOpt);
+        cmd.Add(iterationsOpt); cmd.Add(concurrencyOpt); cmd.Add(warmupOpt); cmd.Add(thresholdOpt);
+
+        cmd.SetAction(async (pr, ct) =>
+        {
+            var io = pr.InvocationConfiguration;
+            var target = pr.GetValue(targetOpt) ?? "";
+            var slash = target.IndexOf('/', StringComparison.Ordinal);
+            if (slash <= 0 || slash == target.Length - 1)
+            {
+                await io.Error.WriteLineAsync("bowire bench schedule add: --target must be service/method.").ConfigureAwait(false);
+                return ExitUsage;
+            }
+
+            var (url, protocolId) = SplitProtocolHint(pr.GetValue(urlOpt) ?? "", pr.GetValue(protocolOpt));
+            if (string.IsNullOrWhiteSpace(protocolId))
+            {
+                await io.Error.WriteLineAsync("bowire bench schedule add: --protocol is required (or use the protocol@url form).").ConfigureAwait(false);
+                return ExitUsage;
+            }
+
+            var schedule = new BowireBenchmarkSchedule
+            {
+                Id = pr.GetValue(idArg) ?? "",
+                Name = pr.GetValue(nameOpt) ?? pr.GetValue(idArg) ?? "",
+                Cron = pr.GetValue(cronOpt) ?? "",
+                Timezone = pr.GetValue(tzOpt) ?? "",
+                ServerUrl = url,
+                Protocol = protocolId!,
+                Service = target[..slash],
+                Method = target[(slash + 1)..],
+                Body = await ReadBodyAsync(pr.GetValue(dataOpt), ct).ConfigureAwait(false),
+                Iterations = pr.GetValue(iterationsOpt),
+                Concurrency = pr.GetValue(concurrencyOpt),
+                Warmup = pr.GetValue(warmupOpt),
+            };
+            schedule.Thresholds.AddRange(pr.GetValue(thresholdOpt) ?? []);
+
+            // Validate before storing: a schedule that can never fire is
+            // worse than a rejected one, because nothing reports it later.
+            if (!schedule.TryGetCronExpression(out _, out var cronError))
+            {
+                await io.Error.WriteLineAsync($"bowire bench schedule add: bad --cron: {cronError}").ConfigureAwait(false);
+                return ExitUsage;
+            }
+            foreach (var spec in schedule.Thresholds)
+            {
+                if (!BowireBenchmarkThreshold.TryParse(spec, out _, out var thresholdError))
+                {
+                    await io.Error.WriteLineAsync($"bowire bench schedule add: bad --threshold {thresholdError}.").ConfigureAwait(false);
+                    return ExitUsage;
+                }
+            }
+
+            var store = new BowireBenchmarkScheduleStore();
+            var path = await store.SaveAsync(schedule, ct).ConfigureAwait(false);
+            var next = schedule.NextOccurrenceUtc(DateTime.UtcNow);
+            await io.Output.WriteLineAsync($"  Stored {schedule.Id} at {path}").ConfigureAwait(false);
+            await io.Output.WriteLineAsync(
+                $"  Next run: {(next is null ? "—" : next.Value.ToString("u", CultureInfo.InvariantCulture))}").ConfigureAwait(false);
+            return ExitOk;
+        });
+        return cmd;
+    }
+
+    private static Command BuildSchedulePauseCommand(bool pause)
+    {
+        var cmd = new Command(pause ? "pause" : "resume",
+            pause ? "Stop a schedule from firing (the entry is kept)." : "Let a paused schedule fire again.");
+        var idArg = new Argument<string>("id") { Description = "Schedule id." };
+        cmd.Add(idArg);
+        cmd.SetAction(async (pr, ct) =>
+        {
+            var io = pr.InvocationConfiguration;
+            var id = pr.GetValue(idArg) ?? "";
+            var store = new BowireBenchmarkScheduleStore();
+            var schedule = await store.LoadAsync(id, ct).ConfigureAwait(false);
+            if (schedule is null)
+            {
+                await io.Error.WriteLineAsync($"bowire bench schedule: '{id}' is not stored.").ConfigureAwait(false);
+                return ExitUsage;
+            }
+            schedule.Enabled = !pause;
+            await store.SaveAsync(schedule, ct).ConfigureAwait(false);
+            await io.Output.WriteLineAsync($"  {id} is now {(pause ? "paused" : "active")}.").ConfigureAwait(false);
+            return ExitOk;
+        });
+        return cmd;
+    }
+
+    private static Command BuildScheduleRemoveCommand()
+    {
+        var cmd = new Command("remove", "Delete a schedule and its run history.");
+        var idArg = new Argument<string>("id") { Description = "Schedule id." };
+        cmd.Add(idArg);
+        cmd.SetAction(async (pr, _) =>
+        {
+            var io = pr.InvocationConfiguration;
+            var id = pr.GetValue(idArg) ?? "";
+            var removed = new BowireBenchmarkScheduleStore().Delete(id);
+            await io.Output.WriteLineAsync(
+                removed ? $"  Removed {id}." : $"  '{id}' is not stored.").ConfigureAwait(false);
+            return removed ? ExitOk : ExitUsage;
+        });
+        return cmd;
+    }
+
+    private static readonly JsonSerializerOptions ScheduleJsonOpts = new() { WriteIndented = true };
 
     private static Command BuildRunCommand()
     {
