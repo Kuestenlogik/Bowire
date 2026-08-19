@@ -61,17 +61,56 @@ jobs:
       - name: Capture the base snapshot
         run: bowire diff snapshot http://127.0.0.1:6000 --protocol rest -o base.snapshot.json
 
+      # A one-step flow against the mock, so the action's Tests section has
+      # something to run and the Perf section has timings to diff.
+      - name: Write the flow + capture the base timings
+        run: |
+          cat > flow.json <<'JSON'
+          {
+            "id": "selftest",
+            "name": "weather smoke",
+            "nodes": [
+              {
+                "id": "get-weather",
+                "type": "request",
+                "protocol": "rest",
+                "service": "Weather",
+                "method": "getCurrent",
+                "serverUrl": "http://127.0.0.1:6000",
+                "expectations": [
+                  { "kind": "status", "op": "eq", "value": "200" }
+                ]
+              }
+            ]
+          }
+          JSON
+          # The base-branch report the Perf section diffs against. Same run
+          # against the same mock, so the selftest asserts the plumbing, not
+          # a synthetic regression.
+          bowire test flow.json --junit base-test.xml --fail-on never || true
+          test -f base-test.xml || { echo "::error::no baseline JUnit produced"; exit 1; }
+
       - name: Run the PR-report action
         uses: ./.github/actions/bowire-pr
         with:
           target: http://127.0.0.1:6000
           protocol: rest
           base-snapshot: base.snapshot.json
+          test: flow.json
+          test-baseline: base-test.xml
           scan: 'true'
           build-from-source: 'true'
           fail-on-schema: none
           fail-on-tests: never
           fail-on-scan: never
+          fail-on-perf: never
+
+      - name: The report carries every section
+        run: |
+          test -f bowire-report.md || { echo "::error::no report produced"; exit 1; }
+          cat bowire-report.md
+          grep -q '## Perf' bowire-report.md || { echo "::error::Perf section missing from the report"; exit 1; }
+          grep -q '| Perf |' bowire-report.md || { echo "::error::Perf row missing from the status table"; exit 1; }
 
       - name: Stop the mock
         if: always()
