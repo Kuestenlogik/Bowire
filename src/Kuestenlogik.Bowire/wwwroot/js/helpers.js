@@ -4129,6 +4129,19 @@
             // (#277). The previous '+' read as 'add' and confused
             // the operator about what gets added.
             check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+            // Rail glyphs for the two quality rails. They used to share
+            // the plain `check` above, which made them indistinguishable
+            // in the rail and said nothing about what either one does.
+            // Operator feedback: 'lint und contracts haben in der rail das
+            // gleiche symbol. das passt nicht. das checkmark als symbol ist
+            // auch etwas simpel und langweilig bzw. auch unklar.'
+            //
+            // handshake — two clasping hands: an agreement between a
+            // consumer and a provider, which is what a contract IS.
+            handshake: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17l-2.5-2.5"/><path d="M2 12l3.5-3.5a2 2 0 0 1 2.8 0L12 12l-2.1 2.1a1.5 1.5 0 0 1-2.1 0z"/><path d="M22 12l-3.5-3.5a2 2 0 0 0-2.8 0L12 12l4.2 4.2a1.5 1.5 0 0 0 2.1 0z"/><path d="M12 12l2.5 2.5"/></svg>',
+            // inspect — a magnifier over lines of a document: reading the
+            // API surface for design smells, which is what the linter does.
+            inspect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="5" x2="14" y2="5"/><line x1="4" y1="10" x2="10" y2="10"/><line x1="4" y1="15" x2="8" y2="15"/><circle cx="15" cy="14" r="5"/><line x1="18.5" y1="17.5" x2="22" y2="21"/></svg>',
             // Toast type leading-icons. Operator feedback: 'es wäre
             // gut, wenn man bei den toast infos von warnungen und
             // fehlern gut unterscheiden kann.' Each toast type now
