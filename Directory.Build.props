@@ -57,6 +57,32 @@
     <PackageReference Include="MinVer" PrivateAssets="all" />
   </ItemGroup>
 
+  <!-- AssemblyVersion tracks Major.Minor of the tag and NOTHING is typed by
+       hand — it is derived from MinVer's parsed tag values on every build
+       (CI server included), so the tag is the single source of truth and the
+       "2.5 here / 2.7 at the tag" drift cannot happen.
+
+       Why Major.Minor.0.0 and not the full Major.Minor.Patch:
+       AssemblyVersion is the binding identity. A PATCH (2.4.0 -> 2.4.1) is a
+       drop-in bugfix — anything compiled against 2.4.0 must keep binding
+       without a rebuild — so the patch must NOT move the AssemblyVersion.
+       Only a minor/major does. The full Major.Minor.Patch(+pre) still lands
+       in FileVersion / PackageVersion / InformationalVersion via MinVer.
+
+       Why override MinVer's default at all: MinVer's default AssemblyVersion
+       is {Major}.0.0.0 (= 2.0.0.0 for all of 2.x), which is LOWER than the
+       2.3.0.0 already shipped by core 2.4.0 — a backwards jump that breaks
+       every assembly compiled against the older AssemblyVersion. Major.Minor
+       moves forward monotonically and never regresses. Runs after the MinVer
+       target so MinVerMajor/MinVerMinor are populated; guarded so non-MinVer
+       (IsPackable=false) projects keep their default. -->
+  <Target Name="PinAssemblyVersionToMajorMinor" AfterTargets="MinVer"
+          Condition="'$(MinVerVersion)' != ''">
+    <PropertyGroup>
+      <AssemblyVersion>$(MinVerMajor).$(MinVerMinor).0.0</AssemblyVersion>
+    </PropertyGroup>
+  </Target>
+
   <!-- Mark all Kuestenlogik.Bowire.Protocol.* projects as Bowire plugins so
        NuGet consumers and the in-UI marketplace can identify them. -->
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Kuestenlogik.Bowire.Protocol.'))">
