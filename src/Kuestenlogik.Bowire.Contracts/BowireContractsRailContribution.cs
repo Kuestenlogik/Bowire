@@ -20,8 +20,12 @@ public sealed class BowireContractsRailContribution : IBowireRailContribution
     /// <inheritdoc />
     public string DisplayName => "Contracts";
 
-    /// <inheritdoc />
-    public string IconKey => "check";
+    /// <summary>
+    /// A handshake — the agreement between a consumer and a provider.
+    /// Deliberately not the plain checkmark the Lint rail used to share:
+    /// two rails with the same glyph are indistinguishable in the rail.
+    /// </summary>
+    public string IconKey => "handshake";
 
     /// <inheritdoc />
     public int SortIndex => 910;

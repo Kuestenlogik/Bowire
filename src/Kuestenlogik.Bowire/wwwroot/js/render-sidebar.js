@@ -1804,6 +1804,18 @@
     // populates _railOverflowHidden so the next render with
     // railOverflowOpen=true can build the popover. Idempotent — running
     // it multiple times in a row is a no-op once layout is stable.
+    // Border-box height PLUS vertical margins. getBoundingClientRect()
+    // reports the border box only, so any element with a vertical margin
+    // (the rail's group dividers) measures smaller than the space it
+    // actually occupies in the column.
+    function _railOuterHeight(node, fallback) {
+        if (!node) return fallback || 0;
+        var box = node.getBoundingClientRect().height || fallback || 0;
+        var cs = window.getComputedStyle ? window.getComputedStyle(node) : null;
+        if (!cs) return box;
+        return box + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+    }
+
     function _layoutActivityRail() {
         var rail = document.getElementById('bowire-activity-rail');
         if (!rail) return;
@@ -1817,10 +1829,18 @@
         overflowBtn.classList.remove('has-overflow');
 
         var railHeight = rail.clientHeight;
-        var settingsHeight = settings.getBoundingClientRect().height || 44;
+        var settingsHeight = _railOuterHeight(settings, 44);
         var overflowHeight = 44; // reserved when we actually need the button
         var dividers = rail.querySelectorAll('.bowire-rail-divider');
-        var dividerHeight = dividers.length > 0 ? (dividers[0].getBoundingClientRect().height || 1) : 1;
+        // Dividers carry a vertical margin (6px top + bottom) that
+        // getBoundingClientRect() does NOT report — it measures the 1px
+        // border box only. Ignoring it under-counted the rail by 12px per
+        // group divider, so the layout believed everything fitted while
+        // Settings was already clipped by the bottom bar. Operator
+        // feedback: 'der umbruch bei den rails kommt etwas zu spät bzw.
+        // der einstellungs button ist angeschnitten von der unteren
+        // leiste.' _railOuterHeight() adds the margins back.
+        var dividerHeight = dividers.length > 0 ? _railOuterHeight(dividers[0], 1) : 1;
 
         // Build an in-order list of [el, height, modeId|null (null=divider)].
         var slots = [];
@@ -1832,11 +1852,16 @@
             if (ch.classList.contains('bowire-rail-divider')) {
                 slots.push({ el: ch, h: dividerHeight, modeId: null });
             } else if (ch.dataset && ch.dataset.railModeId) {
-                slots.push({ el: ch, h: ch.getBoundingClientRect().height || 44, modeId: ch.dataset.railModeId });
+                slots.push({ el: ch, h: _railOuterHeight(ch, 44), modeId: ch.dataset.railModeId });
             }
         }
 
-        var available = railHeight - settingsHeight;
+        // One button's worth of breathing room below the last mode: sub-
+        // pixel rounding across a dozen measured children can still add up
+        // to a hairline, and clipping Settings is a far worse failure than
+        // overflowing one mode early. Err toward breaking sooner.
+        var RAIL_SAFETY_MARGIN = 8;
+        var available = railHeight - settingsHeight - RAIL_SAFETY_MARGIN;
         var natural = slots.reduce(function (a, s) { return a + s.h; }, 0);
         if (natural <= available) {
             _railOverflowHidden = [];

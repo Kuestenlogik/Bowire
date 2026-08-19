@@ -18,7 +18,10 @@ public sealed class BowireLintRailContribution : IBowireRailContribution
 
     public string DisplayName => "Lint";
 
-    public string IconKey => "check";
+    // A magnifier over document lines: reading the API surface for design
+    // smells. The plain checkmark it used before said nothing about what
+    // the rail does, and the Contracts rail carried the same glyph.
+    public string IconKey => "inspect";
 
     public int SortIndex => 900;
 
