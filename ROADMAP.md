@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**5/14 done** · 9 backlog
+**7/15 done** · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -23,13 +23,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [232](https://github.com/Kuestenlogik/Bowire/issues/232) | Bowire | [Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)](#issue-kuestenlogik-bowire-232) | ⬜ Backlog | `area:workbench` |
 | [237](https://github.com/Kuestenlogik/Bowire/issues/237) | Bowire | [WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+](#issue-kuestenlogik-bowire-237) | ⬜ Backlog | `area:cli` |
 | [360](https://github.com/Kuestenlogik/Bowire/issues/360) | Bowire | [Benchmarks: k6-style thresholds as CI gates — fail bowire test / bench runs on latency budgets](#issue-kuestenlogik-bowire-360) | ⬜ Backlog | `area:cli` |
-| [364](https://github.com/Kuestenlogik/Bowire/issues/364) | Bowire | [Contract testing: workbench matrix view (consumer × provider pass/fail)](#issue-kuestenlogik-bowire-364) | ⬜ Backlog | `area:workbench` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ✅ Done | `area:workbench` |
 | [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ✅ Done | `area:workbench` |
 | [236](https://github.com/Kuestenlogik/Bowire/issues/236) | Bowire | [Release cascade: wait for nuget.org indexing before dispatching to siblings](#issue-kuestenlogik-bowire-236) | ✅ Done | `area:multi` |
 | [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ✅ Done | `area:security` |
+| [364](https://github.com/Kuestenlogik/Bowire/issues/364) | Bowire | [Contract testing: workbench matrix view (consumer × provider pass/fail)](#issue-kuestenlogik-bowire-364) | ✅ Done | `area:workbench` |
 | [367](https://github.com/Kuestenlogik/Bowire/issues/367) | Bowire | [codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)](#issue-kuestenlogik-bowire-367) | ✅ Done | `area:multi` |
+| [585](https://github.com/Kuestenlogik/Bowire/issues/585) | Bowire | [REST OpenAPI discovery is slow (~5-8s) and flakes near the 8s probe ceiling](#issue-kuestenlogik-bowire-585) | ✅ Done |  |
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
@@ -199,12 +200,6 @@ During the v2.0.0 release publish on 2026-06-21, the `winget` workflow failed at
 
 Competitive-research input (mid-2026): k6's thresholds (`p95 < 200ms` → non-zero exit) are the load-testing table stake, and k6 2.0 doubled down (OTel output, threshold gates unchanged at the core). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/360)
 
-#### <a id="issue-kuestenlogik-bowire-364"></a>⬜ Backlog · [#364](https://github.com/Kuestenlogik/Bowire/issues/364) Contract testing: workbench matrix view (consumer × provider pass/fail)
-
-> `area:workbench`
-
-Follow-up to #191 (CLI pillar shipped in b252e419). The one remaining acceptance item from #191 is a UI surface rather than CI plumbing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/364)
-
 #### <a id="issue-kuestenlogik-bowire-365"></a>⬜ Backlog · [#365](https://github.com/Kuestenlogik/Bowire/issues/365) Contract testing + workspace-id: run a workbench-stored workspace's suite by id
 
 > `area:workbench`
@@ -235,11 +230,21 @@ When the Bowire `Release` workflow finishes a new version, it does these steps b
 
 Competitive-research input (mid-2026): Hurl 8.0 sets the bar here — values marked secret are redacted in logs, reports, and even curl-export output. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/361)
 
+#### <a id="issue-kuestenlogik-bowire-364"></a>✅ Done · [#364](https://github.com/Kuestenlogik/Bowire/issues/364) Contract testing: workbench matrix view (consumer × provider pass/fail)
+
+> `area:workbench`
+
+Follow-up to #191 (CLI pillar shipped in b252e419). The one remaining acceptance item from #191 is a UI surface rather than CI plumbing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/364)
+
 #### <a id="issue-kuestenlogik-bowire-367"></a>✅ Done · [#367](https://github.com/Kuestenlogik/Bowire/issues/367) codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)
 
 > `area:multi`
 
 Follow-up to #356. JS tests now gate CI (`node --test` over wwwroot-js) and JS coverage is *runnable* locally (`npm run test:js:coverage` / `node --test --experimental-test-coverage`), but it isn't uploaded to Codecov yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/367)
+
+#### <a id="issue-kuestenlogik-bowire-585"></a>✅ Done · [#585](https://github.com/Kuestenlogik/Bowire/issues/585) REST OpenAPI discovery is slow (~5-8s) and flakes near the 8s probe ceiling
+
+Found during v2.5 hands-on testing (CLI, against a local `bowire mock --schema` REST target). [[more]](https://github.com/Kuestenlogik/Bowire/issues/585)
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
