@@ -26251,3 +26251,61 @@ not as the
 .bowire-lint-loc { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
 .bowire-lint-rule { font-size: 11px; color: var(--bowire-text-tertiary); }
 .bowire-lint-msg { font-size: 13px; margin-top: 3px; line-height: 1.4; color: var(--bowire-text); }
+
+/* ---- Contract matrix (#364) ------------------------------------------
+   The consumer x provider grid in the Contracts rail. Cells carry their
+   verdict as a colour AND as text (PASS / FAIL / em dash), so the grid
+   stays readable without colour — the same reason the lint severities
+   above pair a colour with a label. */
+.bowire-contract-main { padding: 16px; }
+.bowire-contract-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.bowire-contract-summary { font-size: 13px; color: var(--bowire-text-secondary); margin-bottom: 10px; }
+.bowire-contract-empty,
+.bowire-contract-error { font-size: 13px; color: var(--bowire-text-tertiary); padding: 12px 0; }
+.bowire-contract-error { color: var(--bowire-danger); }
+.bowire-contract-matrix { border-collapse: collapse; font-size: 12px; }
+.bowire-contract-matrix th,
+.bowire-contract-matrix td { border: 1px solid var(--bowire-border-subtle); padding: 6px 10px; text-align: left; }
+.bowire-contract-corner { color: var(--bowire-text-tertiary); font-weight: 400; }
+.bowire-contract-col,
+.bowire-contract-row { color: var(--bowire-text-secondary); font-weight: 500; white-space: nowrap; }
+.bowire-contract-cell { white-space: nowrap; }
+.bowire-contract-cell[role="button"] { cursor: pointer; }
+.bowire-contract-cell[role="button"]:hover { background: var(--bowire-surface-hover); }
+.bowire-contract-cell-pass .bowire-contract-verdict { color: var(--bowire-success); font-weight: 600; }
+.bowire-contract-cell-fail .bowire-contract-verdict { color: var(--bowire-danger); font-weight: 600; }
+.bowire-contract-cell-notrun { color: var(--bowire-text-tertiary); }
+.bowire-contract-counts { color: var(--bowire-text-tertiary); margin-left: 6px; }
+.bowire-contract-drillin { margin-top: 16px; border-top: 1px solid var(--bowire-border-subtle); padding-top: 12px; }
+.bowire-contract-drillin-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.bowire-contract-interactions { list-style: none; margin: 0; padding: 0; }
+.bowire-contract-interaction { padding: 8px 0; border-bottom: 1px solid var(--bowire-border-subtle); }
+.bowire-contract-interaction-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: 12px; }
+.bowire-contract-verdict-pass { color: var(--bowire-success); font-weight: 600; }
+.bowire-contract-verdict-fail { color: var(--bowire-danger); font-weight: 600; }
+.bowire-contract-method { color: var(--bowire-text-secondary); }
+.bowire-contract-duration { color: var(--bowire-text-tertiary); margin-left: auto; }
+.bowire-contract-assertion,
+.bowire-contract-error { font-size: 12px; margin-top: 4px; color: var(--bowire-danger); }
+
+/* ---- Scheduled benchmark runs (#232) ---------------------------------
+   Server-side schedules listed under the Benchmarks detail pane. The next
+   firing time is the headline because that is the question an operator
+   opens this panel with. */
+.bowire-schedule-panel { margin-top: 8px; }
+.bowire-schedule-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.bowire-schedule-empty,
+.bowire-schedule-error { font-size: 12px; color: var(--bowire-text-tertiary); padding: 8px 0; }
+.bowire-schedule-error { color: var(--bowire-danger); }
+.bowire-schedule-list { list-style: none; margin: 0; padding: 0; }
+.bowire-schedule-row { padding: 10px 0; border-bottom: 1px solid var(--bowire-border-subtle); }
+.bowire-schedule-head { display: flex; align-items: baseline; gap: 12px; }
+.bowire-schedule-name { font-weight: 600; font-size: 13px; }
+.bowire-schedule-next { font-size: 12px; color: var(--bowire-accent); }
+.bowire-schedule-next.bowire-schedule-paused { color: var(--bowire-text-tertiary); }
+.bowire-schedule-toggle { margin-left: auto; }
+.bowire-schedule-meta { font-size: 11px; color: var(--bowire-text-tertiary); margin-top: 3px; }
+.bowire-schedule-last { font-size: 12px; color: var(--bowire-text-secondary); margin-top: 4px; }
+.bowire-schedule-verdict-pass { color: var(--bowire-success); font-weight: 600; }
+.bowire-schedule-verdict-fail { color: var(--bowire-danger); font-weight: 600; }
+.bowire-schedule-breach { font-size: 12px; color: var(--bowire-danger); margin-top: 2px; }

@@ -2630,6 +2630,16 @@
             }));
         }
 
+        // ---- Scheduled runs (#232) ----
+        // Server-side state, unlike everything above it: a cron entry has to
+        // fire with no browser open. Rendered by the benchmark-schedules.js
+        // fragment, which ships in this same package; the guard keeps the
+        // pane working if that fragment ever fails to splice.
+        if (typeof renderBenchmarkSchedules === 'function') {
+            main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
+                renderBenchmarkSchedules()));
+        }
+
         return main;
     }
 
