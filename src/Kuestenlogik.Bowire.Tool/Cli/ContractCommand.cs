@@ -94,7 +94,12 @@ internal static class ContractCommand
 
         if (asJson)
         {
-            await stdout.WriteLineAsync(JsonSerializer.Serialize(matrix, WriteOpts)).ConfigureAwait(false);
+            // The shared wire shape, not the raw object graph: serialising
+            // ContractMatrix directly emits the cell status as an enum
+            // ordinal ("status": 1) while the HTTP endpoint and the MCP tool
+            // emit "pass" / "fail" / "notRun".
+            await stdout.WriteLineAsync(
+                JsonSerializer.Serialize(BowireContractMatrix.ToWirePayload(matrix), WriteOpts)).ConfigureAwait(false);
         }
         else
         {

@@ -202,12 +202,7 @@ public sealed class BowireMcpTools
             {
                 consumer = c.Consumer,
                 provider = c.Provider,
-                status = c.Status switch
-                {
-                    ContractCellStatus.Pass => "pass",
-                    ContractCellStatus.Fail => "fail",
-                    _ => "notRun",
-                },
+                status = BowireContractMatrix.StatusText(c.Status),
                 lastRun = c.LastRun,
                 passedInteractions = c.PassedInteractions,
                 totalInteractions = c.TotalInteractions,

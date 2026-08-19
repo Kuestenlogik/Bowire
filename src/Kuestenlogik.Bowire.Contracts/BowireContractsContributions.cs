@@ -47,70 +47,12 @@ public static class BowireContractsEndpoints
         {
             var reports = await ContractResultStore.LoadAllAsync(rootPath: null, ct).ConfigureAwait(false);
             var matrix = BowireContractMatrix.Build(reports);
-            return Results.Ok(ToPayload(matrix));
+            // Shared wire shape — same JSON the CLI's --json and the MCP
+            // tool emit, so a script can treat every surface alike.
+            return Results.Ok(BowireContractMatrix.ToWirePayload(matrix));
         })
         .ExcludeFromDescription();
 
         return endpoints;
     }
-
-    /// <summary>
-    /// Wire shape for the rail JS. Enum values are lower-cased ("pass" /
-    /// "fail" / "notRun") to match the strings <c>contract-matrix.js</c>
-    /// switches on, and the drill-in report is carried inline so opening a
-    /// cell needs no second round-trip.
-    /// </summary>
-    internal static object ToPayload(ContractMatrix matrix)
-    {
-        ArgumentNullException.ThrowIfNull(matrix);
-        return new
-        {
-            consumers = matrix.Consumers,
-            providers = matrix.Providers,
-            passedCells = matrix.PassedCells,
-            failedCells = matrix.FailedCells,
-            cells = matrix.Cells.Select(c => new
-            {
-                consumer = c.Consumer,
-                provider = c.Provider,
-                status = StatusText(c.Status),
-                lastRun = c.LastRun,
-                passedInteractions = c.PassedInteractions,
-                totalInteractions = c.TotalInteractions,
-                report = c.Report is null ? null : new
-                {
-                    consumer = c.Report.Consumer,
-                    provider = c.Report.Provider,
-                    startedAt = c.Report.StartedAt,
-                    durationMs = c.Report.DurationMs,
-                    passed = c.Report.Passed,
-                    interactions = c.Report.Interactions.Select(i => new
-                    {
-                        description = i.Description,
-                        method = i.Method,
-                        status = i.Status,
-                        error = i.Error,
-                        durationMs = i.DurationMs,
-                        passed = i.Passed,
-                        assertions = i.Assertions.Select(a => new
-                        {
-                            path = a.Path,
-                            op = a.Op,
-                            expected = a.Expected,
-                            actualText = a.ActualText,
-                            passed = a.Passed,
-                            error = a.Error,
-                        }),
-                    }),
-                },
-            }),
-        };
-    }
-
-    private static string StatusText(ContractCellStatus status) => status switch
-    {
-        ContractCellStatus.Pass => "pass",
-        ContractCellStatus.Fail => "fail",
-        _ => "notRun",
-    };
 }

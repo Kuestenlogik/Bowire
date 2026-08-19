@@ -122,6 +122,43 @@ public sealed class BowireContractMatrixTests
         Assert.Equal(expected, actual);
     }
 
+    [Theory]
+    [InlineData(ContractCellStatus.Pass, "pass")]
+    [InlineData(ContractCellStatus.Fail, "fail")]
+    [InlineData(ContractCellStatus.NotRun, "notRun")]
+    public void StatusText_IsTheWireSpelling(ContractCellStatus status, string expected)
+        => Assert.Equal(expected, BowireContractMatrix.StatusText(status));
+
+    [Fact]
+    public void ToWirePayload_EmitsStatusAsStringNotEnumOrdinal()
+    {
+        // Regression guard: serialising ContractMatrix directly emitted
+        // "status": 1 from the CLI while the endpoint and MCP emitted
+        // "pass", so a script could not treat the surfaces alike. Every
+        // surface now goes through ToWirePayload.
+        var matrix = BowireContractMatrix.Build([Report("web", "orders", passed: true)]);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(BowireContractMatrix.ToWirePayload(matrix));
+
+        Assert.Contains("\"status\":\"pass\"", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"status\":1", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ToWirePayload_NotRunCell_CarriesNoReport()
+    {
+        var matrix = BowireContractMatrix.Build(
+        [
+            Report("web", "orders", passed: true),
+            Report("mobile", "billing", passed: true),
+        ]);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(BowireContractMatrix.ToWirePayload(matrix));
+
+        Assert.Contains("\"status\":\"notRun\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"report\":null", json, StringComparison.Ordinal);
+    }
+
     private static ContractVerificationReport Report(
         string consumer, string provider, bool passed, DateTime? startedAt = null)
     {
