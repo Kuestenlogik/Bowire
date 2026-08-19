@@ -471,3 +471,11 @@ scripts/ux-tests/*.png
 # (see src/Kuestenlogik.Bowire.Tool/Properties/launchSettings.json) because F5
 # debugging the workbench is a real workflow.
 tests/Kuestenlogik.Bowire.IntegrationTests/Properties/launchSettings.json
+
+# Contract-verification results (#364). `.bowire/` itself IS committed —
+# project.json and rules.json are shared project config — but these are
+# per-run verdicts written by `bowire contract verify`, carrying machine
+# timestamps and whatever provider that run happened to reach. The matrix
+# rebuilds them by re-running verify; committing them would mean reviewing
+# a diff every time anyone verifies anything.
+.bowire/contract-results/

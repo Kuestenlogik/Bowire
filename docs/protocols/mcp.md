@@ -215,6 +215,8 @@ Both transports expose the same toolset. Top-level tools include:
 | `bowire.har.import` | Convert a HAR 1.2 trace into a Bowire recording — optionally writes it to disk for use with `bowire.mock.start`. |
 | `bowire.assert` | Append a Newman-style assertion (`{ path, op, expected }`) onto a step inside a recording. Ops: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `contains`, `matches`, `exists`, `notexists`, `type`. |
 | `bowire.allowlist.show` / `bowire.allowlist.permit` | Diagnose the active URL allowlist + extend it at runtime (the latter also persists to `~/.bowire/typed-urls.json`). |
+| `bowire.lint` | Discover a URL and run the design-time linter over the API surface — the same rules as `bowire lint` and the Lint rail, honouring `.bowire/rules.json`. |
+| `bowire.contract.matrix` | Roll the stored contract-verification results up into the consumer × provider matrix (see [contract testing](../features/contract-testing.md)). Local-only: it reads what `bowire contract verify` stored and never contacts a provider. |
 
 The full tool list is generated from the discovered `BowireMcpTools` class via the ModelContextProtocol C# SDK — call `tools/list` on the running server to see the current schemas.
 

@@ -83,6 +83,42 @@ Verification is **structural**, matching Pact's intent: the provider may add fie
 
 Exit codes match `bowire test`: **0** = every interaction held, **1** = a mismatch.
 
+## The matrix — consumer × provider at a glance
+
+Every `bowire contract verify` run stores its verdict under `.bowire/contract-results/` (one file per consumer × provider pair, newest run wins). The matrix rolls those stored results up into a grid: rows are consumers, columns are providers, each cell carries pass/fail, how many interactions held, and when it last ran.
+
+```bash
+bowire contract matrix
+```
+
+```
+            weather-service
+dashboard   PASS 1/1
+mobile-app  FAIL 0/1
+
+  1 passing · 1 failing
+```
+
+| Flag | Meaning |
+|------|---------|
+| `--json` | Emit the matrix as JSON instead of the text grid. |
+| `--fail-on-failures` | Exit **1** when any cell is failing — the CI gate. |
+
+Pairs nobody verified appear as `—`: the grid is the full cross-product, so a missing verification is visible rather than silently absent.
+
+The same rollup is available from all four surfaces, from one shared engine:
+
+| Surface | How |
+|---------|-----|
+| CLI | `bowire contract matrix` (text grid, `--json`, `--fail-on-failures`) |
+| Workbench | the **Contracts** rail — the grid, with drill-in to a failing interaction's shape diff |
+| HTTP | `GET /api/contracts/matrix` |
+| MCP | the `bowire.contract.matrix` tool — returns each cell plus, for failing cells, only what broke |
+
+Reading the matrix **never contacts a provider**. It reports what `verify` already stored, so opening the workbench rail cannot trigger outbound calls; verification stays an explicit act on the CLI or in CI.
+
+In the workbench, the Contracts rail ships in `Kuestenlogik.Bowire.Contracts`. The standalone tool bundles it; an embedded host opts in by referencing the package.
+
 ## In CI
 
 ```yaml
@@ -94,6 +130,9 @@ Exit codes match `bowire test`: **0** = every interaction held, **1** = a mismat
 - run: bowire contract verify --broker-url ${{ secrets.PACT_BROKER_URL }} \
        --provider order-service --tag main --provider-url http://localhost:8080 \
        --junit contract-results.xml
+
+# gate on the rollup after verifying several contracts
+- run: bowire contract matrix --fail-on-failures
 ```
 
 The broker path (publish push / verify pull) is always **opt-in** via an explicit `--broker-url` — Bowire never reaches the network on its own.

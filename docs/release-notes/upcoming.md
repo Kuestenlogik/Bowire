@@ -489,6 +489,34 @@ deployments collapses to one row in the tree — the compare surface
 reaches both anyway, and the toolbar button shows whenever there are
 two services OR two discovery URLs to set against each other.
 
+### The contract matrix — consumer × provider at a glance (#364)
+
+`bowire contract verify` told you about one contract at a time. With a
+handful of consumers against a handful of providers, "is anything broken
+right now?" meant reading a pile of CI logs. Every verify run now stores
+its verdict under `.bowire/contract-results/`, and that store backs a
+matrix: rows are consumers, columns providers, each cell carries
+pass/fail, how many interactions held, and when it last ran. Pairs nobody
+verified show as blanks rather than silently missing.
+
+The rollup is available from all four surfaces off one shared engine: the
+**Contracts** rail in the workbench (grid plus drill-in to a failing
+interaction's shape diff), `bowire contract matrix` (text grid, `--json`,
+and `--fail-on-failures` as a CI gate), `GET /api/contracts/matrix`, and
+the `bowire.contract.matrix` MCP tool, which hands an agent only what
+broke per failing cell. Reading the matrix never contacts a provider — it
+reports what verify already stored, so opening the rail cannot trigger an
+outbound call.
+
+Getting there meant lifting the verification engine out of the CLI
+assembly, where it was `internal` and unreachable for the endpoint and
+MCP, into a new **`Kuestenlogik.Bowire.Contracts`** package. It sits above
+`Kuestenlogik.Bowire.Flows` (verification reuses the structural snapshot
+comparer), ships the rail descriptor and its JS fragment, and is bundled
+into the standalone tool — so `bowire contract` is unchanged and the rail
+is simply there. Embedded hosts opt in by referencing the package, like
+every other rail.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor
