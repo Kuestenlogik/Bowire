@@ -156,4 +156,72 @@ public static class BowireContractMatrix
             FailedCells = failed,
         };
     }
+
+    /// <summary>
+    /// The canonical JSON shape of a matrix, shared by every surface that
+    /// emits one: <c>GET /api/contracts/matrix</c>, <c>bowire contract
+    /// matrix --json</c> and the <c>bowire.contract.matrix</c> MCP tool.
+    /// <para>
+    /// It exists so the cell status is the string the rail JS switches on
+    /// ("pass" / "fail" / "notRun") on every surface. Serialising
+    /// <see cref="ContractCellStatus"/> directly emits the raw enum ordinal
+    /// (<c>"status": 1</c>), which is what the CLI did before #364's
+    /// end-to-end check caught it — a script could not treat CLI output and
+    /// API output alike.
+    /// </para>
+    /// </summary>
+    public static object ToWirePayload(ContractMatrix matrix)
+    {
+        ArgumentNullException.ThrowIfNull(matrix);
+        return new
+        {
+            consumers = matrix.Consumers,
+            providers = matrix.Providers,
+            passedCells = matrix.PassedCells,
+            failedCells = matrix.FailedCells,
+            cells = matrix.Cells.Select(c => new
+            {
+                consumer = c.Consumer,
+                provider = c.Provider,
+                status = StatusText(c.Status),
+                lastRun = c.LastRun,
+                passedInteractions = c.PassedInteractions,
+                totalInteractions = c.TotalInteractions,
+                report = c.Report is null ? null : new
+                {
+                    consumer = c.Report.Consumer,
+                    provider = c.Report.Provider,
+                    startedAt = c.Report.StartedAt,
+                    durationMs = c.Report.DurationMs,
+                    passed = c.Report.Passed,
+                    interactions = c.Report.Interactions.Select(i => new
+                    {
+                        description = i.Description,
+                        method = i.Method,
+                        status = i.Status,
+                        error = i.Error,
+                        durationMs = i.DurationMs,
+                        passed = i.Passed,
+                        assertions = i.Assertions.Select(a => new
+                        {
+                            path = a.Path,
+                            op = a.Op,
+                            expected = a.Expected,
+                            actualText = a.ActualText,
+                            passed = a.Passed,
+                            error = a.Error,
+                        }),
+                    }),
+                },
+            }),
+        };
+    }
+
+    /// <summary>The wire spelling of a cell status.</summary>
+    public static string StatusText(ContractCellStatus status) => status switch
+    {
+        ContractCellStatus.Pass => "pass",
+        ContractCellStatus.Fail => "fail",
+        _ => "notRun",
+    };
 }
