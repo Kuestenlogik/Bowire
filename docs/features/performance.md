@@ -97,7 +97,58 @@ For sequential runs (concurrency = 1) the X axis is also a time axis. With concu
 
 Bowire keeps **only the per-call latency numbers**, never the response bodies, so memory stays bounded even for very large N. A 10 000-call run uses roughly 80 KB of latency data plus the SVG render.
 
-The benchmark state is **in memory only** and is reset whenever you start a new run. There's no export today -- copy the stats values manually if you need to log them somewhere.
+The benchmark state is **in memory only** and is reset whenever you start a new run. Export a finished run as CSV, k6-summary JSON or OTLP metrics JSON from the run's menu if you need to keep it.
+
+## From the CLI -- gating a pipeline on latency
+
+The rail measures; `bowire bench run` measures **and gates**. Same method call, same percentile arithmetic (nearest-rank, so the number you read in the rail is the number CI compares against):
+
+```bash
+bowire bench run Weather/getCurrent -url rest@http://localhost:6000 \
+  -n 500 -c 8 --warmup 20 \
+  --threshold "p95 < 200" \
+  --threshold "error-rate < 0.01" \
+  --fail-on-threshold
+```
+
+```
+  20 ok · 0 failed · 59.2 req/s · 337 ms total
+  min 0.25ms   p50 0.5ms   p90 0.87ms   p95 3.96ms   p99 322ms   max 322ms   avg 16.74ms
+
+  Thresholds
+    FAIL  p95<0.001   (actual 3.96ms)
+```
+
+| Flag | Meaning |
+|------|---------|
+| `-n`, `--iterations` | How many calls to make (default 50). |
+| `-c`, `--concurrency` | Calls in flight at once (default 1). |
+| `--warmup` | Calls made and discarded first, so JIT and connection setup stay out of the percentiles. |
+| `--threshold` | A budget: `metric operator value`. Repeatable. |
+| `--fail-on-threshold` | Exit non-zero when any budget is breached -- the CI gate. |
+| `--k6-summary <file>` | Write the run as k6-summary JSON, thresholds included. |
+
+Metrics you can set a budget on: `p50`, `p90`, `p95`, `p99`, `avg`, `min`, `max`, `error-rate` (0..1) and `throughput` (calls/second). k6's own `p(95)` spelling parses too, so a budget can be copied straight out of a k6 script.
+
+The `--k6-summary` export carries each budget the way k6 reports its own -- keyed by its source text inside the metric it constrains:
+
+```json
+"http_req_duration": {
+  "values": { "p(95)": 3.9571, "…": 0 },
+  "thresholds": { "p95<200": { "ok": true } }
+}
+```
+
+so a dashboard that already ingests k6 summaries finds Bowire's budgets where it looks for k6's.
+
+### Per-request budget or aggregate budget?
+
+Both exist, and they answer different questions:
+
+- A **flow expectation** (`kind: latency`) is a **per-request** budget: *this specific call must answer within N ms*, checked on every execution of that step in `bowire test`. Use it when one slow call is a functional failure.
+- A **benchmark threshold** is an **aggregate** budget over many calls: *the p95 across 500 calls must stay under N ms*. Use it when the distribution is what matters -- a single slow call is noise, a shifted p95 is a regression.
+
+Reach for the flow expectation inside a functional suite, and for the benchmark threshold in a performance job.
 
 ## Tips
 

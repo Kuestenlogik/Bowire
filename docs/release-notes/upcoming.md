@@ -517,6 +517,37 @@ into the standalone tool — so `bowire contract` is unchanged and the rail
 is simply there. Embedded hosts opt in by referencing the package, like
 every other rail.
 
+### Latency budgets that fail a pipeline (#360)
+
+Benchmarks were informational: the workbench rail measured p50/p95/p99 and
+drew the graphs, but the numbers lived in the browser, so no pipeline could
+fail on a latency regression — the one thing k6 gets reached for. `bowire
+bench run` puts the same measurement on the command line and adds budgets:
+
+```bash
+bowire bench run Weather/getCurrent -url rest@http://localhost:6000 \
+  -n 500 -c 8 --warmup 20 \
+  --threshold "p95 < 200" --threshold "error-rate < 0.01" \
+  --fail-on-threshold
+```
+
+A breached budget is marked in the summary with what it actually measured,
+and `--fail-on-threshold` turns that into a non-zero exit. Budgets read
+`metric operator value` over p50/p90/p95/p99/avg/min/max/error-rate/
+throughput; k6's own `p(95)` spelling parses too, so a threshold can be
+copied straight out of a k6 script.
+
+`--k6-summary` writes the run in the shape the rail already exports (#234),
+with each budget attached the way k6 reports its own — keyed by source text
+inside the metric it constrains, with an `ok` flag — so a dashboard that
+ingests k6 summaries finds Bowire's budgets where it looks for k6's.
+
+The measurement itself is deliberately not a second implementation: the
+runner drives `IBowireProtocol.InvokeAsync`, the same path `bowire call` and
+`bowire test` take, percentiles use the rail's nearest-rank method, and
+success/failure follows the same rule the workbench history uses. A p95 read
+in the rail is the p95 CI compares against.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor

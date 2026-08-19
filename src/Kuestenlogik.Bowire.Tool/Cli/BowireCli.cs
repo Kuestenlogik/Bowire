@@ -175,6 +175,7 @@ internal static class BowireCli
         root.Add(CatalogueCommand.Build());
         root.Add(RecordingCommand.Build());
         root.Add(ContractCommand.Build());
+        root.Add(BenchCommand.Build());
         root.Add(AuthRecordingCommand.Build());
         root.Add(ProjectCommand.Build());
         root.Add(BuildVersionCommand(plugins));
