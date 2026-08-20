@@ -26,6 +26,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const {
     resolveCli,
+    describeSpawnError,
     readCliVersion,
     checkCliVersion,
     buildArgs,
@@ -38,6 +39,8 @@ const {
 /** The single panel and the process behind it. */
 let panel = null;
 let child = null;
+/** URL of the running workbench, exposed through the extension's exports. */
+let currentUrl = null;
 
 function log(channel, line) {
     if (channel) channel.appendLine(line);
@@ -77,7 +80,7 @@ function startWorkbench(cli, cwd, port, channel) {
         proc.stdout?.on('data', onData);
         proc.stderr?.on('data', onData);
 
-        proc.on('error', (err) => finish(reject, new Error(`Could not start Bowire: ${err.message}`)));
+        proc.on('error', (err) => finish(reject, new Error(describeSpawnError(err, { cli, cwd }))));
         proc.on('exit', (code) =>
             finish(reject, new Error(`Bowire exited with code ${code} before it started serving.`)));
 
@@ -96,10 +99,22 @@ async function openWorkbench(context, channel) {
     }
 
     const folder = vscode.workspace.workspaceFolders?.[0];
-    // No folder open: fall back to the extension's own storage so the CLI
-    // still has somewhere to put `.bowire/` rather than the process CWD,
-    // which in VS Code is wherever the editor happened to launch from.
+    // No folder open: fall back to the extension's own storage, so the CLI
+    // gets a real directory rather than the process CWD, which in VS Code is
+    // wherever the editor happened to launch from.
+    //
+    // VS Code does not create globalStorageUri — the extension has to. Left
+    // alone it is a path to a directory that does not exist, and Node reports
+    // a missing working directory as ENOENT against the *command*: "Could not
+    // spawn …\bowire.exe ENOENT" for an executable sitting right there.
     const cwd = folder ? folder.uri.fsPath : context.globalStorageUri.fsPath;
+    try {
+        fs.mkdirSync(cwd, { recursive: true });
+    } catch (err) {
+        await vscode.window.showErrorMessage(
+            `Bowire needs a working directory it can use, but ${cwd} could not be created: ${err.message}`);
+        return;
+    }
     const port = portForWorkspace(cwd);
 
     // The folder has to be known first: `bowire.cliPath` may be written
@@ -146,6 +161,7 @@ async function openWorkbench(context, channel) {
         return;
     }
 
+    currentUrl = url;
     const actualPort = Number(new URL(url).port || port);
     panel = vscode.window.createWebviewPanel(
         'bowire.workbench',
@@ -171,6 +187,7 @@ async function openWorkbench(context, channel) {
     // than leaving a server listening for the rest of the session.
     panel.onDidDispose(() => {
         panel = null;
+        currentUrl = null;
         stopProcess(channel);
     }, null, context.subscriptions);
 }
@@ -183,6 +200,11 @@ function activate(context) {
         vscode.commands.registerCommand('bowire.openWorkbench', () => openWorkbench(context, channel)));
 
     context.subscriptions.push({ dispose: () => stopProcess(channel) });
+
+    // The extension's public API. It exists so the smoke test can find the
+    // workbench without a workspace folder to derive the port from — that
+    // case has no other way to learn where the CLI bound.
+    return { currentUrl: () => currentUrl };
 }
 
 function deactivate() {

@@ -68,52 +68,77 @@ if (!code) {
     process.exit(2);
 }
 
-const workspace = makeWorkspace();
-const profile = mkdtempSync(join(tmpdir(), 'bowire-smoke-profile-'));
-const resultFile = join(profile, 'smoke-result.txt');
+/**
+ * One run of the smoke test. `withFolder: false` opens VS Code with no
+ * workspace at all, which is its own code path: the working directory then
+ * comes from globalStorageUri, a directory VS Code does not create. That case
+ * failed with "ENOENT" naming an executable that was plainly present, so it is
+ * worth a scenario of its own rather than an assumption.
+ */
+function runScenario({ withFolder }) {
+    const label = withFolder ? 'with a workspace folder' : 'without a workspace folder';
+    const profile = mkdtempSync(join(tmpdir(), 'bowire-smoke-profile-'));
+    const resultFile = join(profile, 'smoke-result.txt');
+    const workspace = withFolder ? makeWorkspace() : null;
 
-const args = [
-    `--extensionDevelopmentPath=${extensionPath}`,
-    `--extensionTestsPath=${resolve(extensionPath, 'test', 'smoke.js')}`,
-    // Isolation — see the header. Also what makes stray processes from this
-    // run identifiable without touching the developer's own editor.
-    `--user-data-dir=${profile}`,
-    `--extensions-dir=${join(profile, 'extensions')}`,
-    '--disable-workspace-trust',
-    '--disable-gpu',
-    '--skip-welcome',
-    '--skip-release-notes',
-    workspace,
+    const args = [
+        `--extensionDevelopmentPath=${extensionPath}`,
+        `--extensionTestsPath=${resolve(extensionPath, 'test', 'smoke.js')}`,
+        // Isolation — see the header. Also what makes stray processes from
+        // this run identifiable without touching the developer's own editor.
+        `--user-data-dir=${profile}`,
+        `--extensions-dir=${join(profile, 'extensions')}`,
+        '--disable-workspace-trust',
+        '--disable-gpu',
+        '--skip-welcome',
+        '--skip-release-notes',
+        ...(workspace ? [workspace] : []),
+    ];
+
+    process.stdout.write(`\n=== ${label} ===\nProfile: ${profile}\n`);
+    if (workspace) process.stdout.write(`Workspace: ${workspace}\n`);
+    process.stdout.write('\n');
+
+    const run = spawnSync(code, args, {
+        encoding: 'utf8',
+        stdio: 'inherit',
+        // The extension host can wedge — a panel that never disposes keeps
+        // VS Code alive forever. A bounded run that fails is worth more than
+        // one that hangs a CI job or a terminal.
+        timeout: 5 * 60_000,
+        env: { ...process.env, BOWIRE_SMOKE_LOG: resultFile },
+    });
+
+    const passed = run.status === 0 && existsSync(resultFile);
+    if (existsSync(resultFile)) process.stdout.write('\n' + readFileSync(resultFile, 'utf8'));
+
+    if (run.error?.code === 'ETIMEDOUT') {
+        process.stdout.write('\nVS Code did not exit within 5 minutes.\n');
+    } else if (!passed) {
+        process.stdout.write(`\nVS Code exited with ${run.status}, and no result file was written.\n`);
+    }
+
+    // Leave the profile behind on failure — it holds the logs that explain why.
+    if (passed) {
+        rmSync(profile, { recursive: true, force: true });
+        if (workspace) rmSync(workspace, { recursive: true, force: true });
+    } else {
+        process.stdout.write(`Logs kept at ${profile}\n`);
+    }
+
+    process.stdout.write(`${label}: ${passed ? 'PASS' : 'FAIL'}\n`);
+    return passed;
+}
+
+process.stdout.write(`VS Code: ${code}\n`);
+
+// Sequential on purpose. Two editors starting at once on a cold machine race
+// for CPU and make the 5-minute bound mean something different each run.
+const results = [
+    runScenario({ withFolder: true }),
+    runScenario({ withFolder: false }),
 ];
 
-process.stdout.write(`VS Code:   ${code}\nWorkspace: ${workspace}\nProfile:   ${profile}\n\n`);
-
-const run = spawnSync(code, args, {
-    encoding: 'utf8',
-    stdio: 'inherit',
-    // The extension host can wedge — a panel that never disposes keeps VS Code
-    // alive forever. A bounded run that fails is worth more than one that
-    // hangs a CI job or a terminal.
-    timeout: 5 * 60_000,
-    env: { ...process.env, BOWIRE_SMOKE_LOG: resultFile },
-});
-
-const passed = run.status === 0 && existsSync(resultFile);
-if (existsSync(resultFile)) process.stdout.write('\n' + readFileSync(resultFile, 'utf8'));
-
-if (run.error?.code === 'ETIMEDOUT') {
-    process.stdout.write('\nVS Code did not exit within 5 minutes.\n');
-} else if (!passed) {
-    process.stdout.write(`\nVS Code exited with ${run.status}, and no result file was written.\n`);
-}
-
-// Leave the profile behind on failure — it holds the logs that explain why.
-if (passed) {
-    rmSync(profile, { recursive: true, force: true });
-    rmSync(workspace, { recursive: true, force: true });
-} else {
-    process.stdout.write(`Logs kept at ${profile}\n`);
-}
-
-process.stdout.write(passed ? '\nsmoke: PASS\n' : '\nsmoke: FAIL\n');
-process.exit(passed ? 0 : 1);
+const allPassed = results.every(Boolean);
+process.stdout.write(allPassed ? '\nsmoke: PASS\n' : '\nsmoke: FAIL\n');
+process.exit(allPassed ? 0 : 1);

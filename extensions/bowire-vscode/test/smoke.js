@@ -58,26 +58,40 @@ async function run() {
         'bowire.openWorkbench is not registered even after activation');
     step('command registered');
 
-    // 2. A workspace folder is what the extension derives its port and the
-    //    CLI's working directory from.
+    // 2. The working directory — and with it the port — comes from the
+    //    workspace folder, or from the extension's own storage when there is
+    //    none. Both are exercised: the runner launches this file twice, once
+    //    with a folder and once without.
+    //
+    //    The no-folder case is not a curiosity. globalStorageUri is a path
+    //    VS Code does not create, so before the extension started creating it
+    //    the spawn failed with ENOENT naming the executable — which exists.
     const folder = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0];
-    assert.ok(folder, 'the smoke test needs a workspace folder open');
-    const expectedPort = portForWorkspace(folder.uri.fsPath);
-    step('workspace folder open', `port ${expectedPort}`);
+    const expectedPort = folder ? portForWorkspace(folder.uri.fsPath) : null;
+    step(folder ? 'workspace folder open' : 'no workspace folder — storage fallback',
+        expectedPort ? `port ${expectedPort}` : 'port derived from extension storage');
 
     // 3. Invoking the command must start the CLI and open the panel. This is
     //    the step the unit tests structurally cannot reach.
     await vscode.commands.executeCommand('bowire.openWorkbench');
     step('command executed');
 
-    // 4. …and a Bowire server must actually be answering on the port the
-    //    extension derived. This is the real proof: the panel could render an
-    //    empty frame and look fine while nothing was listening.
-    const resp = await waitForServer(`http://127.0.0.1:${expectedPort}/`);
+    // 4. …and a Bowire server must actually be answering. This is the real
+    //    proof: the panel could render an empty frame and look fine while
+    //    nothing was listening.
+    const reported = extension.exports.currentUrl();
+    assert.ok(reported, 'the extension started no workbench');
+    if (expectedPort) {
+        // With a folder the port is derived, so this also pins that the
+        // derivation and the process agree rather than merely both existing.
+        assert.equal(new URL(reported).port, String(expectedPort),
+            'the CLI bound a different port than the extension derived');
+    }
+    const resp = await waitForServer(`${reported}/`);
     const body = await resp.text();
     assert.ok(body.includes('__BOWIRE_CONFIG__'),
         'the server answered but did not serve the Bowire workbench');
-    step('workbench served', `${body.length} bytes on ${expectedPort}`);
+    step('workbench served', `${body.length} bytes on ${reported}`);
 
     // 5. Storage location is deliberately NOT asserted here.
     //
@@ -113,11 +127,18 @@ async function run() {
  * rather than an exit code taken on faith.
  */
 function report(text) {
-    console.log('\n' + text + '\n');
     const target = process.env.BOWIRE_SMOKE_LOG;
-    if (!target) return;
-    try { require('node:fs').writeFileSync(target, text + '\n', 'utf8'); }
-    catch { /* the console line already carried it */ }
+    if (!target) {
+        console.log('\n' + text + '\n');
+        return;
+    }
+    try {
+        // The runner prints the file, and its stdio is inherited — logging as
+        // well would show every result twice, which reads like two runs.
+        require('node:fs').writeFileSync(target, text + '\n', 'utf8');
+    } catch {
+        console.log('\n' + text + '\n');
+    }
 }
 
 module.exports = { run };
