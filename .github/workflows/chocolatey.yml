@@ -40,6 +40,8 @@ on:
 
 permissions:
   contents: read
+  # The publish-failure reporter files a tracking issue when this job fails.
+  issues: write
 
 # Lifted to workflow-level so step-level if: conditions can reference
 # env.CHOCOLATEY_API_KEY. GitHub Actions disallows the secrets context
@@ -140,3 +142,12 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "::warning::CHOCOLATEY_API_KEY not set — package built but not pushed. Download the chocolatey-package workflow artefact and push manually with: choco push bowire.$env:VERSION.nupkg --source https://push.chocolatey.org/ --api-key <YOUR_KEY>"
+
+      # A failing publish must not rot silently beside a green release (#237).
+      - name: Report the failure
+        if: failure()
+        uses: ./.github/actions/publish-failure-issue
+        with:
+          channel: chocolatey
+          hint: >-
+            the `CHOCO_API_KEY` secret and whether the community feed accepted the package (moderation can also reject a push).
