@@ -35,7 +35,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**0/23 done** · 1 next up · 22 backlog
+**0/24 done** · 1 next up · 23 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -62,6 +62,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ⬜ Backlog | `area:workbench` |
 | [284](https://github.com/Kuestenlogik/Bowire/issues/284) | Bowire | [Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)](#issue-kuestenlogik-bowire-284) | ⬜ Backlog | `area:plugin-sdk` |
 | [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins](#issue-kuestenlogik-bowire-549) | ⬜ Backlog | `area:workbench` |
+| [588](https://github.com/Kuestenlogik/Bowire/issues/588) | Bowire | [Tugboat — JetBrains plugin (IntelliJ platform)](#issue-kuestenlogik-bowire-588) | ⬜ Backlog |  |
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
@@ -390,6 +391,10 @@ Extracted from #28 — **Phase D** of the multi-tenant rollout. Tracked separate
 > `area:workbench`
 
 Start the workbench with `--plugin-dir X`, install a plugin from **Settings → Plugins**, and it lands in `~/.bowire/plugins` instead. The list you are looking at reads from `~/.bowire/plugins` too, so the plugin you just installed does appear — in the directory the host is not loading from. [[more]](https://github.com/Kuestenlogik/Bowire/issues/549)
+
+#### <a id="issue-kuestenlogik-bowire-588"></a>⬜ Backlog · [#588](https://github.com/Kuestenlogik/Bowire/issues/588) Tugboat — JetBrains plugin (IntelliJ platform)
+
+Split out of #101, which now covers the VS Code extension only. [[more]](https://github.com/Kuestenlogik/Bowire/issues/588)
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
