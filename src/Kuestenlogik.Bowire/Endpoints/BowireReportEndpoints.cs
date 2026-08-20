@@ -37,13 +37,73 @@ public static class BowireReportEndpoints
         endpoints.MapPost($"{basePath}/api/report/rollup",
             async (BowireRollupRequest? body, CancellationToken ct) =>
             {
-                var roots = body?.From is { Count: > 0 } from ? from : [DefaultRoot];
+                var requested = body?.From is { Count: > 0 } from ? from : [DefaultRoot];
+                if (!TryConfine(requested, out var roots, out var rejected))
+                {
+                    return Results.Json(
+                        new { error = $"Path is outside the workspace: {rejected}" },
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+
                 var rollup = await BowireReportReader.ReadAsync(roots, body?.Service, ct).ConfigureAwait(false);
                 return Results.Ok(BowireRollupPayload.ToWirePayload(rollup));
             })
             .ExcludeFromDescription();
 
         return endpoints;
+    }
+
+    /// <summary>
+    /// Anchor every requested path under the workspace, or reject the request.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The paths arrive in a POST body, so they are attacker-controlled
+    /// wherever the workbench is reachable by more than its own operator —
+    /// which is precisely the case <c>MapBowire()</c> exists for. Unconfined,
+    /// <c>{"from":["/"]}</c> walks the host, reads every <c>.json</c>,
+    /// <c>.sarif</c> and <c>.xml</c> it can open, and hands back both the paths
+    /// and what could be parsed out of them.
+    /// </para>
+    /// <para>
+    /// The CLI is deliberately not constrained this way: <c>bowire report
+    /// rollup --from /var/ci</c> is an operator naming a directory with their
+    /// own rights, and confining it would break the CI case the rollup was
+    /// built for. The difference is the trust boundary, not the operation.
+    /// </para>
+    /// </remarks>
+    private static bool TryConfine(
+        IReadOnlyList<string> requested,
+        out IReadOnlyList<string> confined,
+        out string? rejected)
+    {
+        var root = Directory.GetCurrentDirectory();
+        var result = new List<string>(requested.Count);
+
+        foreach (var candidate in requested)
+        {
+            string safe;
+            try
+            {
+                safe = SafePath.Combine(root, candidate);
+            }
+            catch (ArgumentException)
+            {
+                // Absolute paths and `../` escapes both land here. Naming the
+                // offending entry beats a bare 400: the caller is usually the
+                // workbench's own path field, and the operator needs to know
+                // which one it objected to.
+                confined = [];
+                rejected = candidate;
+                return false;
+            }
+
+            result.Add(safe);
+        }
+
+        confined = result;
+        rejected = null;
+        return true;
     }
 }
 
