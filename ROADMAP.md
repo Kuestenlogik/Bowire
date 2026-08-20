@@ -34,7 +34,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**0/24 done** · 1 next up · 23 backlog
+**0/26 done** · 1 next up · 25 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -62,6 +62,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [284](https://github.com/Kuestenlogik/Bowire/issues/284) | Bowire | [Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)](#issue-kuestenlogik-bowire-284) | ⬜ Backlog | `area:plugin-sdk` |
 | [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins](#issue-kuestenlogik-bowire-549) | ⬜ Backlog | `area:workbench` |
 | [588](https://github.com/Kuestenlogik/Bowire/issues/588) | Bowire | [Tugboat — JetBrains plugin (IntelliJ platform)](#issue-kuestenlogik-bowire-588) | ⬜ Backlog |  |
+| [589](https://github.com/Kuestenlogik/Bowire/issues/589) | Bowire | [VS Code: resolve the CLI from a workspace tool manifest](#issue-kuestenlogik-bowire-589) | ⬜ Backlog |  |
+| [590](https://github.com/Kuestenlogik/Bowire/issues/590) | Bowire | [VS Code: offer to download a matching CLI when none is installed](#issue-kuestenlogik-bowire-590) | ⬜ Backlog |  |
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
@@ -389,6 +391,14 @@ Start the workbench with `--plugin-dir X`, install a plugin from **Settings → 
 #### <a id="issue-kuestenlogik-bowire-588"></a>⬜ Backlog · [#588](https://github.com/Kuestenlogik/Bowire/issues/588) Tugboat — JetBrains plugin (IntelliJ platform)
 
 Split out of #101, which now covers the VS Code extension only. [[more]](https://github.com/Kuestenlogik/Bowire/issues/588)
+
+#### <a id="issue-kuestenlogik-bowire-589"></a>⬜ Backlog · [#589](https://github.com/Kuestenlogik/Bowire/issues/589) VS Code: resolve the CLI from a workspace tool manifest
+
+Resolve the CLI from a workspace-local .NET tool manifest, so the Bowire version a project is tested with is pinned in the repo rather than left to whatever each developer happens to have installed. [[more]](https://github.com/Kuestenlogik/Bowire/issues/589)
+
+#### <a id="issue-kuestenlogik-bowire-590"></a>⬜ Backlog · [#590](https://github.com/Kuestenlogik/Bowire/issues/590) VS Code: offer to download a matching CLI when none is installed
+
+Offer to fetch a matching CLI into the extension's own storage when none is found, so a first-time user reaches a working workbench without leaving the editor. [[more]](https://github.com/Kuestenlogik/Bowire/issues/590)
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
