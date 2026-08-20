@@ -56,9 +56,11 @@ Run **Bowire: Open workbench** from the command palette. The extension starts Bo
 
 ## Where your work is stored
 
-In `.bowire/` inside the workspace — collections, environments, recordings, contract results, benchmark schedules. It is plain JSON, so it is diff-able, reviewable and shared with everyone who clones the repo. Nothing lives in IDE-proprietary storage.
+In `~/.bowire/` — collections, environments, recordings and presets, as plain JSON. Nothing lives in IDE-proprietary storage, and nothing is locked to VS Code: the same data is what the standalone tool and the CLI use, so a collection you build in the editor replays unchanged in CI.
 
-That falls out of how the extension works rather than being a feature bolted on: the Bowire process owns the workspace folder as its working directory, so it reads and writes those files itself. The webview only speaks HTTP to it, which is also why no file-system bridge is needed.
+**It is not yet stored per repository.** The storage root is a user-profile path, so two repos open in two windows currently share one set of collections. Making a workspace's data live inside that workspace — the version that would let collections be committed and reviewed — is tracked in [#591](https://github.com/Kuestenlogik/Bowire/issues/591).
+
+No file-system bridge is involved either way: the Bowire process reads and writes those files itself, and the webview only speaks HTTP to it.
 
 ## Ports
 
