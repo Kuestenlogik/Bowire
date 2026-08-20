@@ -479,3 +479,9 @@ tests/Kuestenlogik.Bowire.IntegrationTests/Properties/launchSettings.json
 # rebuilds them by re-running verify; committing them would mean reviewing
 # a diff every time anyone verifies anything.
 .bowire/contract-results/
+
+# VS Code marketplace icon (#101). Copied from images/bowire_logo_small.png
+# at package time by extensions/bowire-vscode/scripts/copy-icon.mjs — vsce
+# needs it inside the extension folder, but a committed second copy of the
+# logo would be a duplicate to keep in step by hand.
+extensions/bowire-vscode/icon.png
