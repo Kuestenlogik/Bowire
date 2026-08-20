@@ -228,6 +228,38 @@ jobs:
           }
           throw "winget validate reported errors — see output above"
 
+      # `wingetcreate submit` pushes a branch to the token owner's fork of
+      # microsoft/winget-pkgs and opens a PR from it. That upstream takes
+      # thousands of commits a day, so between two Bowire releases the fork
+      # drifts far enough that GitHub's own fork-sync gives up:
+      #
+      #   The forked repository could not be synced with the upstream
+      #   commits. Sync your fork manually and try again.
+      #
+      # which is how the v2.4.0 submission failed (#237) even with a valid
+      # token — a manual sync was needed before it would go through. Syncing
+      # here makes the job self-healing rather than needing a human every
+      # time the fork ages. A fork with no commits of its own (this one) is a
+      # pure fast-forward, so there is nothing to lose; if it ever did carry
+      # local work the sync fails and we fall through to the submit, which
+      # reports the same message as before rather than discarding anything.
+      - name: Sync the winget-pkgs fork with upstream
+        shell: pwsh
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          $owner = gh api user --jq .login
+          if ([string]::IsNullOrWhiteSpace($owner)) {
+            Write-Host "::warning::Could not resolve the token owner — skipping the fork sync."
+            exit 0
+          }
+          Write-Host "Syncing $owner/winget-pkgs with microsoft/winget-pkgs…"
+          gh repo sync "$owner/winget-pkgs" --source microsoft/winget-pkgs
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::warning::Fork sync did not succeed — submitting anyway; wingetcreate will report if the fork is unusable."
+          }
+
       - name: Submit PR to microsoft/winget-pkgs
         shell: pwsh
         env:
