@@ -34,7 +34,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**0/26 done** · 1 next up · 25 backlog
+**0/27 done** · 1 next up · 26 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -64,6 +64,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [588](https://github.com/Kuestenlogik/Bowire/issues/588) | Bowire | [Tugboat — JetBrains plugin (IntelliJ platform)](#issue-kuestenlogik-bowire-588) | ⬜ Backlog |  |
 | [589](https://github.com/Kuestenlogik/Bowire/issues/589) | Bowire | [VS Code: resolve the CLI from a workspace tool manifest](#issue-kuestenlogik-bowire-589) | ⬜ Backlog |  |
 | [590](https://github.com/Kuestenlogik/Bowire/issues/590) | Bowire | [VS Code: offer to download a matching CLI when none is installed](#issue-kuestenlogik-bowire-590) | ⬜ Backlog |  |
+| [591](https://github.com/Kuestenlogik/Bowire/issues/591) | Bowire | [Workspace-local storage: collections must travel with the repo, not the user profile](#issue-kuestenlogik-bowire-591) | ⬜ Backlog |  |
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
@@ -399,6 +400,10 @@ Resolve the CLI from a workspace-local .NET tool manifest, so the Bowire version
 #### <a id="issue-kuestenlogik-bowire-590"></a>⬜ Backlog · [#590](https://github.com/Kuestenlogik/Bowire/issues/590) VS Code: offer to download a matching CLI when none is installed
 
 Offer to fetch a matching CLI into the extension's own storage when none is found, so a first-time user reaches a working workbench without leaving the editor. [[more]](https://github.com/Kuestenlogik/Bowire/issues/590)
+
+#### <a id="issue-kuestenlogik-bowire-591"></a>⬜ Backlog · [#591](https://github.com/Kuestenlogik/Bowire/issues/591) Workspace-local storage: collections must travel with the repo, not the user profile
+
+Make the VS Code extension store a workspace's Bowire data inside that workspace, so collections and environments actually travel with the repo. [[more]](https://github.com/Kuestenlogik/Bowire/issues/591)
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
