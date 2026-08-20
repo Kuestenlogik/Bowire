@@ -39,13 +39,26 @@
     <PackageVersion Include="Kuestenlogik.Bowire.Protocol.TacticalApi" Version="1.0.4" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Identity.Web" Version="4.14.2" />
-    <!-- Held at 3.8.0: 3.9.0 makes IOpenApiMediaType.Example read-only,
-         which breaks the code the Microsoft.AspNetCore.OpenApi (10.0.10)
-         XML-comment source generator emits — CS0200 in generated code
-         under Sample.Rest / Sample.Embedded, CI red without any code
-         change. Re-bump together with an AspNetCore.OpenApi release
-         whose generator targets the 3.9 surface (dependabot.yml carries
-         the matching ignore rule). -->
+    <!-- Held at 3.8.0. The original reason (CS0200 in the code the
+         Microsoft.AspNetCore.OpenApi XML-comment source generator emits)
+         is GONE as of AspNetCore.OpenApi 10.0.11: Sample.Rest and
+         Sample.Embedded both build clean against Microsoft.OpenApi 3.10.0.
+
+         A second, worse reason took its place. 3.9 deprecates
+         IOpenApiSchema.Example in favour of Examples, but the reader does
+         NOT fold a 3.0 document's `example:` into that collection — it
+         still lands only in the deprecated property. Dropping the
+         deprecated read to satisfy CS0618 therefore loses schema examples
+         for every OpenAPI 3.0 API, which is most of them. Measured, not
+         assumed: with 3.10.0 and the deprecated read removed,
+         OpenApiSampleGeneratorTests.Generate_Example_Wins_Over_Type_Driven_Guess
+         returns "sample" where the document says "custom".
+
+         So the choice is between a silent data loss and a suppression, and
+         neither is worth taking for a patch bump. Re-bump when upstream
+         either populates Examples from a 3.0 `example:` or un-deprecates
+         the singular. dependabot.yml ignores >= 3.9.0 (a range, because
+         the old exact-version rule let 3.10.0 through). -->
     <PackageVersion Include="Microsoft.OpenApi" Version="3.8.0" />
     <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="3.8.0" />
     <!-- Neuroglia.AsyncApi is the official AsyncAPI .NET SDK
