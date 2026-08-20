@@ -82,8 +82,9 @@ public static class BowireBenchmarkScheduleEndpoints
         ArgumentNullException.ThrowIfNull(endpoints);
 
         endpoints.MapGet($"{basePath}/api/benchmarks/schedules",
-            async (BowireBenchmarkScheduleStore store, CancellationToken ct) =>
+            async (HttpContext http, CancellationToken ct) =>
             {
+                var store = ResolveStore(http);
                 var now = DateTime.UtcNow;
                 var schedules = await store.LoadAllAsync(ct).ConfigureAwait(false);
                 var payload = new List<object>(schedules.Count);
@@ -97,8 +98,9 @@ public static class BowireBenchmarkScheduleEndpoints
             .ExcludeFromDescription();
 
         endpoints.MapPost($"{basePath}/api/benchmarks/schedules/{{id}}/enabled",
-            async (string id, BowireScheduleEnabledRequest body, BowireBenchmarkScheduleStore store, CancellationToken ct) =>
+            async (string id, BowireScheduleEnabledRequest body, HttpContext http, CancellationToken ct) =>
             {
+                var store = ResolveStore(http);
                 var schedule = await store.LoadAsync(id, ct).ConfigureAwait(false);
                 if (schedule is null) return Results.NotFound();
 
@@ -112,6 +114,23 @@ public static class BowireBenchmarkScheduleEndpoints
 
         return endpoints;
     }
+
+    /// <summary>
+    /// The store for this request. Taken from DI when the host registered the
+    /// scheduling services, otherwise constructed on the spot.
+    /// <para>
+    /// Deliberately NOT a handler parameter: a host that calls
+    /// <c>MapBowire()</c> without the scheduling service registration would
+    /// leave the type unknown to minimal-API binding, which then treats it as
+    /// a body parameter and throws while mapping — taking down the whole
+    /// route group, index page included. Resolving it here keeps the endpoint
+    /// self-sufficient, which is also what a rail package owes an embedded
+    /// host: degrade, never break the pane.
+    /// </para>
+    /// </summary>
+    private static BowireBenchmarkScheduleStore ResolveStore(HttpContext http)
+        => http.RequestServices.GetService(typeof(BowireBenchmarkScheduleStore)) as BowireBenchmarkScheduleStore
+            ?? new BowireBenchmarkScheduleStore();
 
     /// <summary>
     /// Wire shape for the rail: the schedule, when it fires next, and the
