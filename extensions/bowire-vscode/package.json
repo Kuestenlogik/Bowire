@@ -33,7 +33,18 @@
         "title": "Bowire: Open workbench",
         "category": "Bowire"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Bowire",
+      "properties": {
+        "bowire.cliPath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "markdownDescription": "Path to the `bowire` executable. Leave empty to search `PATH`. Supports `${workspaceFolder}`, so a project-local build can be committed to `.vscode/settings.json` and shared with the team."
+        }
+      }
+    }
   },
   "icon": "icon.png",
   "scripts": {

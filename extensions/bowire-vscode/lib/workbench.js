@@ -12,18 +12,30 @@
 'use strict';
 
 const { spawnSync } = require('node:child_process');
+const { existsSync } = require('node:fs');
 
 /** Name the CLI is installed under on each platform. */
 const BINARY = process.platform === 'win32' ? 'bowire.exe' : 'bowire';
 
 /**
+ * Oldest CLI whose command-line contract this extension can drive.
+ *
+ * `--port` together with `--auto-create-initial-workspace` — the two arguments
+ * buildArgs emits — have both existed since before 2.0.0, so that is the honest
+ * floor. Anything older does not fail cleanly: the CLI rejects the unknown
+ * argument and exits, and startWorkbench reports "exited before it started
+ * serving", which says nothing about the actual cause.
+ */
+const MINIMUM_CLI_VERSION = '2.0.0';
+
+/**
  * Is `bowire` reachable on PATH?
  *
  * The extension deliberately does not bundle Bowire: a self-contained build
- * per platform is ~100 MB per marketplace package, three builds to keep in
+ * per platform is ~120 MB per marketplace package, one per platform to keep in
  * step, and an extension release tied to every Bowire release. Requiring the
  * CLI keeps the extension thin and lets it host whichever Bowire the
- * developer already runs.
+ * developer already runs — the same one their CI and their terminal use.
  */
 function findCli(runner = spawnSync) {
     const probe = process.platform === 'win32' ? 'where' : 'which';
@@ -32,6 +44,112 @@ function findCli(runner = spawnSync) {
         if (result.status !== 0) return null;
         const first = String(result.stdout || '').split(/\r?\n/).find(l => l.trim().length > 0);
         return first ? first.trim() : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Substitute the variables VS Code users expect to work in a path setting.
+ *
+ * Without this a workspace-relative CLI has to be written as an absolute path,
+ * which cannot be committed to `.vscode/settings.json` and shared — the one
+ * place a per-project CLI path is actually worth putting.
+ */
+function expandPathVariables(value, variables = {}) {
+    return String(value ?? '').replace(/\$\{(\w+)\}/g, (whole, name) =>
+        (Object.hasOwn(variables, name) ? String(variables[name]) : whole));
+}
+
+/**
+ * Where the CLI comes from: the explicit setting if there is one, PATH
+ * otherwise.
+ *
+ * The setting wins deliberately. Someone who names a path has a reason — a
+ * local build, a portable copy, a second version alongside the installed one —
+ * and silently preferring PATH would run a different binary than the one they
+ * asked for.
+ *
+ * A configured path that does not exist is reported rather than skipped: a
+ * typo falling through to PATH would look like the setting was ignored, which
+ * is the harder failure to diagnose of the two.
+ */
+function resolveCli(options = {}) {
+    const {
+        configuredPath = '',
+        variables = {},
+        runner = spawnSync,
+        exists = existsSync,
+    } = options;
+
+    const configured = expandPathVariables(configuredPath, variables).trim();
+    if (configured) {
+        return exists(configured)
+            ? { path: configured, source: 'setting' }
+            : { path: null, source: 'setting', configured };
+    }
+
+    const found = findCli(runner);
+    return found ? { path: found, source: 'path' } : { path: null, source: 'path' };
+}
+
+/**
+ * Major/minor/patch and the prerelease tag out of `bowire --version`, whose
+ * output looks like `2.4.1-alpha.0.104+d86f781…`.
+ */
+function parseCliVersion(text) {
+    const match = String(text ?? '').match(/(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?/);
+    if (!match) return null;
+    return {
+        major: Number(match[1]),
+        minor: Number(match[2]),
+        patch: Number(match[3]),
+        prerelease: match[4] ?? null,
+        raw: match[0],
+    };
+}
+
+/**
+ * Order two parsed versions. Semver's rule that a prerelease sorts below the
+ * release it leads to matters here: 2.0.0-alpha is not yet 2.0.0, so it must
+ * not satisfy a 2.0.0 minimum.
+ */
+function compareCliVersions(a, b) {
+    for (const part of ['major', 'minor', 'patch']) {
+        if (a[part] !== b[part]) return a[part] < b[part] ? -1 : 1;
+    }
+    if (Boolean(a.prerelease) === Boolean(b.prerelease)) return 0;
+    return a.prerelease ? -1 : 1;
+}
+
+/**
+ * Decide whether a CLI is new enough, from the text it printed.
+ *
+ * Unreadable output is treated as acceptable on purpose. A future CLI could
+ * word its banner differently, and refusing to start over an unrecognised
+ * string would turn a cosmetic change into an outage; a version that is
+ * legibly too old is the only case worth blocking.
+ */
+function checkCliVersion(versionText, minimum = MINIMUM_CLI_VERSION) {
+    const found = parseCliVersion(versionText);
+    const floor = parseCliVersion(minimum);
+    if (!found) return { ok: true, version: null };
+    if (compareCliVersions(found, floor) >= 0) return { ok: true, version: found.raw };
+    return {
+        ok: false,
+        version: found.raw,
+        message: `Bowire ${found.raw} is too old for this extension, which needs ${minimum} or newer. `
+            + 'Update it (`winget upgrade Kuestenlogik.Bowire`, `choco upgrade bowire`, '
+            + 'or `dotnet tool update -g Kuestenlogik.Bowire.Tool`), or point `bowire.cliPath` at a newer build.',
+    };
+}
+
+/** Ask a CLI for its version; null when it cannot be run. */
+function readCliVersion(cli, runner = spawnSync) {
+    try {
+        const result = runner(cli, ['--version'], { encoding: 'utf8', timeout: 15_000 });
+        if (result.status !== 0) return null;
+        return `${result.stdout ?? ''}${result.stderr ?? ''}`.trim() || null;
     } catch {
         return null;
     }
@@ -129,16 +247,36 @@ function buildWebviewHtml(url) {
 </html>`;
 }
 
-/** The message shown when the CLI is missing, with the install routes that work today. */
-function missingCliMessage() {
+/**
+ * What to say when there is no CLI to run.
+ *
+ * The two cases need different answers. A CLI that is simply not installed
+ * needs install routes; a configured path that does not resolve needs the path
+ * quoted back, because the fault is a typo or a moved file and no amount of
+ * installing will fix it. The earlier single message offered install commands
+ * to both, which is advice that cannot help the second.
+ */
+function missingCliMessage(resolution = { source: 'path' }) {
+    if (resolution && resolution.source === 'setting') {
+        return `Bowire was not found at \`${resolution.configured}\`, the path set in \`bowire.cliPath\`. `
+            + 'Correct the setting, or clear it to search PATH instead.';
+    }
     return 'Bowire was not found on your PATH. Install it with '
         + '`winget install Kuestenlogik.Bowire`, `choco install bowire`, '
-        + 'or `dotnet tool install -g Kuestenlogik.Bowire.Tool`.';
+        + 'or `dotnet tool install -g Kuestenlogik.Bowire.Tool` — '
+        + 'or set `bowire.cliPath` if it is already installed somewhere else.';
 }
 
 module.exports = {
     BINARY,
+    MINIMUM_CLI_VERSION,
     findCli,
+    resolveCli,
+    expandPathVariables,
+    parseCliVersion,
+    compareCliVersions,
+    checkCliVersion,
+    readCliVersion,
     normaliseWorkbenchUrl,
     buildArgs,
     parseListeningUrl,

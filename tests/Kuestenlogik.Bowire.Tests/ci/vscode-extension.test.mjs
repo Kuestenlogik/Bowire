@@ -48,6 +48,106 @@ describe('findCli', () => {
     });
 });
 
+describe('resolveCli', () => {
+    const never = () => { throw new Error('PATH must not be probed when a path is configured'); };
+
+    it('prefers the configured path over PATH', () => {
+        // Someone who names a path has a reason — a local build, a second
+        // version alongside the installed one. Silently preferring PATH would
+        // run a different binary than the one they asked for.
+        const r = workbench.resolveCli({ configuredPath: '/opt/bowire', runner: never, exists: () => true });
+        assert.deepEqual(r, { path: '/opt/bowire', source: 'setting' });
+    });
+
+    it('reports a configured path that does not exist instead of falling back', () => {
+        // Falling through to PATH on a typo would look like the setting was
+        // ignored — the harder of the two failures to diagnose.
+        const r = workbench.resolveCli({ configuredPath: '/nope/bowire', runner: never, exists: () => false });
+        assert.equal(r.path, null);
+        assert.equal(r.source, 'setting');
+        assert.equal(r.configured, '/nope/bowire');
+    });
+
+    it('expands ${workspaceFolder} so the setting can be committed and shared', () => {
+        const r = workbench.resolveCli({
+            configuredPath: '${workspaceFolder}/tools/bowire',
+            variables: { workspaceFolder: '/repo' },
+            runner: never,
+            exists: p => p === '/repo/tools/bowire',
+        });
+        assert.equal(r.path, '/repo/tools/bowire');
+    });
+
+    it('searches PATH when the setting is empty or whitespace', () => {
+        for (const configuredPath of ['', '   ', undefined]) {
+            const r = workbench.resolveCli({
+                configuredPath,
+                runner: () => ({ status: 0, stdout: '/usr/bin/bowire\n' }),
+            });
+            assert.deepEqual(r, { path: '/usr/bin/bowire', source: 'path' });
+        }
+    });
+
+    it('reports source path when nothing is found at all', () => {
+        const r = workbench.resolveCli({ runner: () => ({ status: 1, stdout: '' }) });
+        assert.deepEqual(r, { path: null, source: 'path' });
+    });
+});
+
+describe('checkCliVersion', () => {
+    it('accepts the minimum and anything newer', () => {
+        for (const v of ['2.0.0', '2.4.1-alpha.0.104+d86f781', '3.0.0', '2.10.0']) {
+            assert.equal(workbench.checkCliVersion(v).ok, true, v);
+        }
+    });
+
+    it('rejects a CLI older than the arguments the extension passes', () => {
+        const result = workbench.checkCliVersion('1.9.3');
+        assert.equal(result.ok, false);
+        assert.equal(result.version, '1.9.3');
+        // The message has to name a way out, not just the problem.
+        assert.match(result.message, /2\.0\.0 or newer/);
+        assert.match(result.message, /bowire\.cliPath/);
+    });
+
+    it('treats a prerelease as below the release it leads to', () => {
+        // 2.0.0-alpha is not yet 2.0.0, and the arguments may not be there yet.
+        assert.equal(workbench.checkCliVersion('2.0.0-alpha.1').ok, false);
+    });
+
+    it('accepts output it cannot parse rather than blocking on it', () => {
+        // A reworded banner is cosmetic; refusing to start over one would turn
+        // it into an outage.
+        for (const v of ['Bowire (dev build)', '', null, undefined]) {
+            assert.equal(workbench.checkCliVersion(v).ok, true);
+        }
+    });
+});
+
+describe('missingCliMessage', () => {
+    it('offers install routes when nothing is on PATH', () => {
+        const msg = workbench.missingCliMessage({ source: 'path' });
+        // The extension requires the CLI rather than bundling ~120 MB per
+        // platform, so this message is the whole onboarding path.
+        assert.match(msg, /winget install/);
+        assert.match(msg, /choco install/);
+        assert.match(msg, /dotnet tool install/);
+        assert.match(msg, /bowire\.cliPath/);
+    });
+
+    it('quotes the bad path back when the setting is wrong', () => {
+        // Install commands cannot fix a typo, so this case must not get them.
+        const msg = workbench.missingCliMessage({ source: 'setting', configured: '/nope/bowire' });
+        assert.match(msg, /\/nope\/bowire/);
+        assert.match(msg, /bowire\.cliPath/);
+        assert.doesNotMatch(msg, /winget install/);
+    });
+
+    it('defaults to the PATH wording', () => {
+        assert.match(workbench.missingCliMessage(), /winget install/);
+    });
+});
+
 describe('buildArgs', () => {
     it('passes the port and seeds a workspace', () => {
         assert.deepEqual(workbench.buildArgs(5123), ['--port', '5123', '--auto-create-initial-workspace']);
@@ -171,13 +271,18 @@ describe('marketplace icon', () => {
     });
 });
 
-describe('missingCliMessage', () => {
-    it('names every install route that works today', () => {
-        const msg = workbench.missingCliMessage();
-        // The extension requires the CLI rather than bundling ~100 MB per
-        // platform, so this message is the whole onboarding path.
-        assert.match(msg, /winget install/);
-        assert.match(msg, /choco install/);
-        assert.match(msg, /dotnet tool install/);
+describe('manifest', () => {
+    it('declares bowire.cliPath, or the setting is unreachable from the UI', () => {
+        // resolveCli reading a setting VS Code never renders would leave the
+        // escape hatch working only for people who hand-edit settings.json.
+        const pkg = require(resolve(__dirname, '../../../extensions/bowire-vscode/package.json'));
+        const prop = pkg.contributes.configuration.properties['bowire.cliPath'];
+        assert.ok(prop, 'bowire.cliPath is not contributed');
+        assert.equal(prop.type, 'string');
+        assert.equal(prop.default, '');
+        // Machine-overridable: the right path differs per machine even when
+        // the rest of the workspace settings are shared.
+        assert.equal(prop.scope, 'machine-overridable');
+        assert.match(prop.markdownDescription, /\$\{workspaceFolder\}/);
     });
 });

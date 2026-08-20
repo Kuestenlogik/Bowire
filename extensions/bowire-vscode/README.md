@@ -6,7 +6,7 @@ gRPC, REST, GraphQL, SignalR, MQTT, NATS, WebSocket, SSE, SOAP, OData, MCP — t
 
 ## Requirements
 
-Bowire itself, on your `PATH`:
+Bowire itself, version 2.0 or newer:
 
 ```bash
 winget install Kuestenlogik.Bowire     # Windows
@@ -14,7 +14,41 @@ choco install bowire                   # Windows (Chocolatey)
 dotnet tool install -g Kuestenlogik.Bowire.Tool
 ```
 
-The extension does **not** bundle Bowire. Shipping a self-contained build per platform would mean roughly 100 MB per marketplace package, three builds to keep in step, and a new extension release for every Bowire release. Requiring the CLI keeps the extension small and lets it host whichever Bowire you already run.
+The extension does **not** bundle Bowire. A self-contained build is roughly 120 MB per platform, so bundling would mean one marketplace package per platform to keep in step and a new extension release for every Bowire release. It would also be a second, private copy of a CLI you most likely already have — the one your CI and your terminal use. Driving that same CLI keeps the extension small and keeps one Bowire in play instead of two.
+
+## How the extension finds Bowire
+
+Two places are checked, in this order:
+
+```mermaid
+flowchart TD
+    A["bowire.cliPath set?"] -->|yes| B{"exists?"}
+    B -->|yes| USE["use it"]
+    B -->|no| ERR["error naming the path<br/>— no fallback to PATH"]
+    A -->|no| C{"on PATH?"}
+    C -->|yes| USE
+    C -->|no| INSTALL["error offering the install routes"]
+    USE --> V{"version ≥ 2.0?"}
+    V -->|yes| RUN["start the workbench"]
+    V -->|no| OLD["error naming the upgrade commands"]
+```
+
+**`bowire.cliPath`** points at a `bowire` executable directly. Use it for a build that is not on `PATH` — a local checkout, a portable copy, a second version alongside the installed one. It supports `${workspaceFolder}`, so a project-local build can be committed to `.vscode/settings.json` and shared with the team:
+
+```jsonc
+{ "bowire.cliPath": "${workspaceFolder}/tools/bowire" }
+```
+
+Two details are deliberate. A configured path that does not resolve is reported as an error instead of quietly falling back to `PATH` — a typo that silently ran a different binary is harder to diagnose than one that says so. And the version is checked before the process starts: a CLI too old to understand the arguments the extension passes would otherwise just exit, and "Bowire exited before it started serving" says nothing about the actual cause.
+
+The **Bowire** output channel records which executable was chosen, where it came from, and what version it reported.
+
+Two further steps are planned for the same chain, each slotting in without changing the two above:
+
+| Step | What it adds | Tracked in |
+|---|---|---|
+| Workspace tool manifest | `.config/dotnet-tools.json` pins the Bowire version in the repo, so a team shares one version the way it already shares `.bowire/` | [#589](https://github.com/Kuestenlogik/Bowire/issues/589) |
+| Managed download | Offer to fetch a version-matched CLI into extension storage when nothing is found, instead of ending at install instructions | [#590](https://github.com/Kuestenlogik/Bowire/issues/590) |
 
 ## Use
 
