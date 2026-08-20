@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**10/15 done** · 5 backlog
+**10/16 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -20,6 +20,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code + JetBrains workbench extension](#issue-kuestenlogik-bowire-101) | ⬜ Backlog | `area:workbench` |
 | [188](https://github.com/Kuestenlogik/Bowire/issues/188) | Bowire | [Org-level Bowire dashboard — rollup across services](#issue-kuestenlogik-bowire-188) | ⬜ Backlog | `area:workbench` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
+| [587](https://github.com/Kuestenlogik/Bowire/issues/587) | Bowire | [Report rollup across services — one view over the artefacts Bowire already writes](#issue-kuestenlogik-bowire-587) | ⬜ Backlog |  |
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ In review | `area:workbench` |
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ✅ Done | `area:workbench` |
 | [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ✅ Done | `area:workbench` |
@@ -181,6 +182,10 @@ Once Bowire ships in multiple services across an org, "what's the state of our A
 > `area:workbench`
 
 Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in a **git-native workspace directory**. The original #181 sketch also listed `--workspace-id` — running a workspace addressed by its id from the workbench's `~/.bowire/` per-user storage. [[more]](https://github.com/Kuestenlogik/Bowire/issues/365)
+
+#### <a id="issue-kuestenlogik-bowire-587"></a>⬜ Backlog · [#587](https://github.com/Kuestenlogik/Bowire/issues/587) Report rollup across services — one view over the artefacts Bowire already writes
+
+Split out of #188, which stays as the hosted-platform epic (deployable, upload API, auth, multi-tenancy) and moved to v3.0. [[more]](https://github.com/Kuestenlogik/Bowire/issues/587)
 
 #### <a id="issue-kuestenlogik-bowire-183"></a>⬜ In review · [#183](https://github.com/Kuestenlogik/Bowire/issues/183) GitHub Action — Bowire PR-comment bot with delta + findings + perf
 
