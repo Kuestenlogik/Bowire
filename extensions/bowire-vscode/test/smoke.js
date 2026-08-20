@@ -91,7 +91,11 @@ async function run() {
     const body = await resp.text();
     assert.ok(body.includes('__BOWIRE_CONFIG__'),
         'the server answered but did not serve the Bowire workbench');
-    step('workbench served', `${body.length} bytes on ${reported}`);
+    // Deliberately nothing derived from the response body goes into the
+    // report: it is written to a file, and letting HTTP content reach a file
+    // write is a shape worth not having even in a test. The assertion above
+    // already establishes what the body had to contain.
+    step('workbench served', reported);
 
     // 5. Storage location is deliberately NOT asserted here.
     //
