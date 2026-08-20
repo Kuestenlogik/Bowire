@@ -25,7 +25,9 @@ const { spawn } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
 const {
-    findCli,
+    resolveCli,
+    readCliVersion,
+    checkCliVersion,
     buildArgs,
     parseListeningUrl,
     portForWorkspace,
@@ -93,22 +95,45 @@ async function openWorkbench(context, channel) {
         return;
     }
 
-    const cli = findCli();
-    if (!cli) {
-        const answer = await vscode.window.showErrorMessage(
-            missingCliMessage(), 'Open install docs');
-        if (answer === 'Open install docs') {
-            await vscode.env.openExternal(vscode.Uri.parse('https://bowire.io/docs/setup/install.html'));
-        }
-        return;
-    }
-
     const folder = vscode.workspace.workspaceFolders?.[0];
     // No folder open: fall back to the extension's own storage so the CLI
     // still has somewhere to put `.bowire/` rather than the process CWD,
     // which in VS Code is wherever the editor happened to launch from.
     const cwd = folder ? folder.uri.fsPath : context.globalStorageUri.fsPath;
     const port = portForWorkspace(cwd);
+
+    // The folder has to be known first: `bowire.cliPath` may be written
+    // relative to it via ${workspaceFolder}, which is the form that can be
+    // committed to `.vscode/settings.json` and shared with the team.
+    const configuredPath = vscode.workspace.getConfiguration('bowire').get('cliPath', '');
+    const resolution = resolveCli({
+        configuredPath,
+        variables: folder ? { workspaceFolder: folder.uri.fsPath } : {},
+    });
+    if (!resolution.path) {
+        const isSetting = resolution.source === 'setting';
+        const action = isSetting ? 'Open settings' : 'Open install docs';
+        const answer = await vscode.window.showErrorMessage(missingCliMessage(resolution), action);
+        if (answer === 'Open settings') {
+            await vscode.commands.executeCommand('workbench.action.openSettings', 'bowire.cliPath');
+        } else if (answer === 'Open install docs') {
+            await vscode.env.openExternal(vscode.Uri.parse('https://bowire.io/docs/setup/install.html'));
+        }
+        return;
+    }
+    const cli = resolution.path;
+    log(channel, `Using Bowire at ${cli} (from ${resolution.source === 'setting' ? 'bowire.cliPath' : 'PATH'}).`);
+
+    // Check the version before spawning. A CLI too old to understand the
+    // arguments below exits immediately, and the resulting "exited before it
+    // started serving" says nothing about why — which is exactly the kind of
+    // failure that costs an afternoon.
+    const version = checkCliVersion(readCliVersion(cli));
+    log(channel, `Version: ${version.version ?? 'not reported'}`);
+    if (!version.ok) {
+        await vscode.window.showErrorMessage(version.message);
+        return;
+    }
 
     let url;
     try {
