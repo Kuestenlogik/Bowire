@@ -232,6 +232,9 @@
     <BowireJsFragment Include="wwwroot\js\response-diff.js" />
     <BowireJsFragment Include="wwwroot\js\service-compare.js" />
     <BowireJsFragment Include="wwwroot\js\lint.js" />
+    <!-- #587 — the Rollup rail. After lint.js so the two quality surfaces sit
+         together; both only declare functions, so relative order is free. -->
+    <BowireJsFragment Include="wwwroot\js\rollup.js" />
     <!-- #536 — the response → rail handoff ("Use this…") menu. Mounted
          from renderResponsePane (render-main.js) and the Compose
          request-builder's response meta strip; every optional-package

@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using Kuestenlogik.Bowire;
 using Kuestenlogik.Bowire.Contracts;
 using Kuestenlogik.Bowire.Linting;
+using Kuestenlogik.Bowire.Reporting;
 using Kuestenlogik.Bowire.Mock;
 using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Recording;
@@ -226,6 +227,18 @@ public sealed class BowireMcpTools
             },
         };
         return JsonSerializer.Serialize(payload, JsonOpts);
+    }
+
+    [McpServerTool(Name = "bowire.report.rollup")]
+    [Description("Roll the reports Bowire writes up into one view across services — the portfolio question. Reads lint findings, contract-verification results, benchmark run histories, k6 summaries, scan SARIF and test JUnit from the given paths (directories are walked recursively) and returns one row per service. Purely local: it reads files that already exist and never calls a service. Returns { services: [{ service, worst: high|medium|low|info|null, lint, contracts, tests, benchmark, scanErrors, lastReportAt, sources }], summary: { services, atHigh, clean, skipped } }.")]
+    public static async Task<string> ReportRollup(
+        [Description("Files or directories holding Bowire reports. Defaults to the workspace's .bowire folder.")] string[]? from = null,
+        [Description("Attribute every report to this service instead of inferring it from the report and its path.")] string? service = null,
+        CancellationToken ct = default)
+    {
+        var roots = from is { Length: > 0 } ? from : [".bowire"];
+        var rollup = await BowireReportReader.ReadAsync(roots, service, ct).ConfigureAwait(false);
+        return JsonSerializer.Serialize(BowireRollupPayload.ToWirePayload(rollup), JsonOpts);
     }
 
     private static BowireLintConfig? TryLoadLintConfig()
