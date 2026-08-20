@@ -156,6 +156,32 @@ function readCliVersion(cli, runner = spawnSync) {
 }
 
 /**
+ * Turn a spawn failure into something that names the actual cause.
+ *
+ * Node reports a missing working directory as ENOENT against the *command*,
+ * so a perfectly present executable gets blamed for a directory that is not
+ * there — "Could not spawn C:\…\bowire.exe ENOENT" while that file plainly
+ * exists. Distinguishing the two costs one stat and saves the reader from
+ * checking the wrong thing entirely.
+ */
+function describeSpawnError(err, options = {}) {
+    const { cli = '', cwd = '', exists = existsSync } = options;
+    const code = err && err.code;
+
+    if (code === 'ENOENT' && cwd && !exists(cwd)) {
+        return `Could not start Bowire: its working directory does not exist (${cwd}).`;
+    }
+    if (code === 'ENOENT') {
+        return `Could not start Bowire: ${cli} could not be executed. `
+            + 'Check that the file exists and is not blocked by policy.';
+    }
+    if (code === 'EACCES') {
+        return `Could not start Bowire: ${cli} is not executable.`;
+    }
+    return `Could not start Bowire: ${err && err.message ? err.message : String(err)}`;
+}
+
+/**
  * Arguments for the hosted workbench.
  *
  * `--port 0` is not used: the CLI prints the port it bound, and parsing that
@@ -272,6 +298,7 @@ module.exports = {
     MINIMUM_CLI_VERSION,
     findCli,
     resolveCli,
+    describeSpawnError,
     expandPathVariables,
     parseCliVersion,
     compareCliVersions,

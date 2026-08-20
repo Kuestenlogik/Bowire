@@ -94,6 +94,45 @@ describe('resolveCli', () => {
     });
 });
 
+describe('describeSpawnError', () => {
+    const enoent = Object.assign(new Error('spawn C:\\tools\\bowire.exe ENOENT'), { code: 'ENOENT' });
+
+    it('blames the missing working directory, not the executable', () => {
+        // Node reports a missing cwd as ENOENT against the command, so the
+        // raw message names a file that is sitting right there — which sends
+        // the reader off checking entirely the wrong thing.
+        const msg = workbench.describeSpawnError(enoent, {
+            cli: 'C:\\tools\\bowire.exe',
+            cwd: 'C:\\gone',
+            exists: () => false,
+        });
+        assert.match(msg, /working directory does not exist/);
+        assert.match(msg, /C:\\gone/);
+    });
+
+    it('blames the executable when the working directory is fine', () => {
+        const msg = workbench.describeSpawnError(enoent, {
+            cli: 'C:\\tools\\bowire.exe',
+            cwd: 'C:\\here',
+            exists: () => true,
+        });
+        assert.match(msg, /bowire\.exe could not be executed/);
+        assert.doesNotMatch(msg, /working directory/);
+    });
+
+    it('names a permission problem as one', () => {
+        const err = Object.assign(new Error('spawn EACCES'), { code: 'EACCES' });
+        assert.match(
+            workbench.describeSpawnError(err, { cli: '/opt/bowire', cwd: '/tmp', exists: () => true }),
+            /not executable/);
+    });
+
+    it('passes anything else through rather than swallowing it', () => {
+        const err = Object.assign(new Error('something odd'), { code: 'EPERM' });
+        assert.match(workbench.describeSpawnError(err, { cli: 'bowire' }), /something odd/);
+    });
+});
+
 describe('checkCliVersion', () => {
     it('accepts the minimum and anything newer', () => {
         for (const v of ['2.0.0', '2.4.1-alpha.0.104+d86f781', '3.0.0', '2.10.0']) {
