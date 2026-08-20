@@ -21,11 +21,13 @@ public sealed class BowireContractsRailContribution : IBowireRailContribution
     public string DisplayName => "Contracts";
 
     /// <summary>
-    /// A handshake — the agreement between a consumer and a provider.
-    /// Deliberately not the plain checkmark the Lint rail used to share:
-    /// two rails with the same glyph are indistinguishable in the rail.
+    /// A sealed document — the signed agreement itself. The handshake this
+    /// rail wore before was the right idea and the wrong scale: clasping
+    /// hands turn to mush at rail size, a document with a wax seal reads
+    /// at any size. (Its predecessor, a plain checkmark, was shared with
+    /// the Lint rail and said nothing at all.)
     /// </summary>
-    public string IconKey => "handshake";
+    public string IconKey => "certificate";
 
     /// <inheritdoc />
     public int SortIndex => 910;

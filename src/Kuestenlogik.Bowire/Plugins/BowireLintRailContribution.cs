@@ -18,10 +18,11 @@ public sealed class BowireLintRailContribution : IBowireRailContribution
 
     public string DisplayName => "Lint";
 
-    // A magnifier over document lines: reading the API surface for design
-    // smells. The plain checkmark it used before said nothing about what
-    // the rail does, and the Contracts rail carried the same glyph.
-    public string IconKey => "inspect";
+    // Text lines with the wavy underline every IDE paints beneath a lint
+    // finding — the one glyph developers already associate with a linter.
+    // The magnifier-over-text it wore before read as 'search', and the
+    // plain checkmark before that was shared with the Contracts rail.
+    public string IconKey => "squiggle";
 
     public int SortIndex => 900;
 

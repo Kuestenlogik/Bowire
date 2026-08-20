@@ -4136,12 +4136,18 @@
             // gleiche symbol. das passt nicht. das checkmark als symbol ist
             // auch etwas simpel und langweilig bzw. auch unklar.'
             //
-            // handshake — two clasping hands: an agreement between a
-            // consumer and a provider, which is what a contract IS.
-            handshake: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17l-2.5-2.5"/><path d="M2 12l3.5-3.5a2 2 0 0 1 2.8 0L12 12l-2.1 2.1a1.5 1.5 0 0 1-2.1 0z"/><path d="M22 12l-3.5-3.5a2 2 0 0 0-2.8 0L12 12l4.2 4.2a1.5 1.5 0 0 0 2.1 0z"/><path d="M12 12l2.5 2.5"/></svg>',
+            // certificate — a document with a wax seal and ribbons: the
+            // signed agreement itself. The previous handshake glyph turned
+            // to mush at rail size ('contracts kann ich auch gar nicht
+            // erkennen was das sein soll') — clasping hands need more pixels
+            // than a rail offers, a sealed document reads at any size.
+            certificate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 22h9a2 2 0 0 0 2-2V7l-4-4H8a2 2 0 0 0-2 2v6"/><path d="M16 3v4h4"/><circle cx="6" cy="16" r="3"/><path d="M4.5 18.4 4 22l2-1.2L8 22l-.5-3.6"/></svg>',
             // inspect — a magnifier over lines of a document: reading the
             // API surface for design smells, which is what the linter does.
-            inspect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="5" x2="14" y2="5"/><line x1="4" y1="10" x2="10" y2="10"/><line x1="4" y1="15" x2="8" y2="15"/><circle cx="15" cy="14" r="5"/><line x1="18.5" y1="17.5" x2="22" y2="21"/></svg>',
+            // squiggle — two text lines with the wavy underline every IDE
+            // paints beneath a lint finding. The previous magnifier-over-text
+            // glyph read as 'search', not 'lint'.
+            squiggle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="11" x2="15" y2="11"/><path d="M4 17.5c1.33-2 2.67-2 4 0s2.67 2 4 0 2.67-2 4 0"/></svg>',
             // Toast type leading-icons. Operator feedback: 'es wäre
             // gut, wenn man bei den toast infos von warnungen und
             // fehlern gut unterscheiden kann.' Each toast type now

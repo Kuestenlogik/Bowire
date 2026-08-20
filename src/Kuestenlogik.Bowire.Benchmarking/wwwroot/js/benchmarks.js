@@ -2288,6 +2288,14 @@
                 ]
             }));
             emptyMain.appendChild(emptyWrap);
+            // Schedules are server-side and independent of any saved spec, so
+            // they belong here too: an operator with no benchmarks stored
+            // still has to see — and be able to pause — what the host is
+            // firing on a cron. Hanging this only off the populated branch
+            // hid running schedules behind "No benchmarks yet".
+            if (typeof renderBenchmarkSchedules === 'function') {
+                emptyWrap.appendChild(renderBenchmarkSchedules());
+            }
             return emptyMain;
         }
 
