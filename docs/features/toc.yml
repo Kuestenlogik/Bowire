@@ -54,6 +54,8 @@
       href: test-assertions.md
     - name: Contract testing
       href: contract-testing.md
+    - name: Report rollup
+      href: report-rollup.md
     - name: Interceptor
       href: interceptor.md
 

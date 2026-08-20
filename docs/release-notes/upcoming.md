@@ -548,6 +548,42 @@ runner drives `IBowireProtocol.InvokeAsync`, the same path `bowire call` and
 success/failure follows the same rule the workbench history uses. A p95 read
 in the rail is the p95 CI compares against.
 
+### One view over a portfolio of services (#587)
+
+Per-service findings answer "is this service healthy?" — the rollup answers
+it for a whole portfolio, and it needs nothing new to be produced. Every
+signal it shows is an artefact some Bowire command already writes: lint
+findings, contract-verification results, benchmark runs and k6 summaries,
+scan SARIF, test JUnit.
+
+```bash
+bowire report rollup --from reports/ --fail-on high
+```
+
+```
+  SERVICE      WORST    LINT (H/M/L)   CONTRACTS   TESTS       P95       LAST
+  billing-api  HIGH     —              0/1         —           312ms     2026-08-20
+  gateway      HIGH     —              —           —           —         —
+  orders-api   MEDIUM   0/1/1          1/1         42/42       —         2026-08-19
+```
+
+An em dash means **there is no such report**, never zero: a service nobody
+has linted must not read as a clean bill of health. In JSON the same
+distinction is `null` versus a number.
+
+Reports are attributed to services without configuration — a contract files
+under its **provider** (the service under test, not the consumer), and
+otherwise the first path segment that isn't storage layout decides, so a CI
+job that collects reports into `reports/<service>/` just works.
+
+The same rollup is in the workbench as the **Rollup** rail (click a row to
+see which files fed it) and as the `bowire.report.rollup` MCP tool, all three
+emitting the same JSON. Reading it never contacts a service; it reports what
+is already on disk.
+
+This is the read-and-aggregate half of the org dashboard. The hosted platform
+— upload endpoint, retained history, org login, admin actions — remains #188.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor
