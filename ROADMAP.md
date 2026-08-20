@@ -170,7 +170,7 @@ The harbor demo is the reference recording for Bowire's correlated timeline (Kue
 
 > `area:workbench`
 
-Thunder Client proved there's a real audience for "I want to test an API without leaving my IDE." It's REST-only and limited; the *category* it occupies is uncontested for multi-protocol. [[more]](https://github.com/Kuestenlogik/Bowire/issues/101)
+> **Scoped 2026-08-20.** This issue now covers the **VS Code extension only**; the JetBrains plugin moved to #588. The body below reflects the as-scoped plan — the original two-distribution sketch is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/101)
 
 #### <a id="issue-kuestenlogik-bowire-188"></a>⬜ Backlog · [#188](https://github.com/Kuestenlogik/Bowire/issues/188) Org-level Bowire dashboard — rollup across services
 
