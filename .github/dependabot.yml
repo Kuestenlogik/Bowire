@@ -24,16 +24,20 @@ updates:
       prefix: "chore(deps)"
       include: "scope"
     ignore:
-      # Microsoft.OpenApi 3.9.0 makes IOpenApiMediaType.Example
-      # read-only, which the Microsoft.AspNetCore.OpenApi 10.0.10
-      # XML-comment source generator still assigns to — the bump broke
-      # `main` with CS0200 in generated code (see the pin comment in
-      # Directory.Packages.props). Drop this rule when re-bumping both
-      # together against a fixed generator.
+      # Microsoft.OpenApi 3.9+ deprecates IOpenApiSchema.Example without
+      # its replacement carrying the data: a 3.0 document's `example:`
+      # does NOT appear in `Examples`, so dropping the deprecated read
+      # silently loses schema examples for every OpenAPI 3.0 API. Verified
+      # against 3.10.0 — see the pin comment in Directory.Packages.props.
+      #
+      # The range matters. This rule used to name the exact version
+      # ["3.9.0"], so 3.10.0 walked straight past it and re-opened the
+      # same broken bump under a new number (#578, #581). Pin the range,
+      # not the release.
       - dependency-name: "Microsoft.OpenApi"
-        versions: ["3.9.0"]
+        versions: [">= 3.9.0"]
       - dependency-name: "Microsoft.OpenApi.YamlReader"
-        versions: ["3.9.0"]
+        versions: [">= 3.9.0"]
       # OllamaSharp 5.4.26+ ships a Roslyn-5.6 source generator; no
       # released .NET 10 SDK carries that compiler yet (10.0.204 is on
       # 5.3), so the bump fails the build with CS9057. Drop this rule

@@ -358,7 +358,12 @@ public sealed class PulsarDiscoveryHttpFakeTests
         // exception message + non-null DurationMs (stopwatch was
         // started before the try).
         using var plugin = new BowirePulsarProtocol();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        // Linked to the test's own token, not standalone: the 2 s cancel is
+        // what drives the broker-connect failure this test is about, while the
+        // link means xUnit's 30 s Timeout actually reaches the operation
+        // instead of leaving it running past the deadline (xUnit1069).
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(2));
 
         InvokeResult result;
         try
@@ -400,7 +405,9 @@ public sealed class PulsarDiscoveryHttpFakeTests
         // those reads; the await-foreach surfaces the broker error
         // as an exception once enumeration begins.
         using var plugin = new BowirePulsarProtocol();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        // Linked for the same reason as the produce test above (xUnit1069).
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(2));
         var collected = new List<string>();
         Exception? caught = null;
         try
