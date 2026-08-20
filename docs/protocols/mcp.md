@@ -217,6 +217,7 @@ Both transports expose the same toolset. Top-level tools include:
 | `bowire.allowlist.show` / `bowire.allowlist.permit` | Diagnose the active URL allowlist + extend it at runtime (the latter also persists to `~/.bowire/typed-urls.json`). |
 | `bowire.lint` | Discover a URL and run the design-time linter over the API surface — the same rules as `bowire lint` and the Lint rail, honouring `.bowire/rules.json`. |
 | `bowire.contract.matrix` | Roll the stored contract-verification results up into the consumer × provider matrix (see [contract testing](../features/contract-testing.md)). Local-only: it reads what `bowire contract verify` stored and never contacts a provider. |
+| `bowire.report.rollup` | Roll the reports Bowire writes (lint, contract, benchmark, scan, test) up into one row per service across a portfolio — see [report rollup](../features/report-rollup.md). Local-only: it reads existing files and never calls a service. |
 
 The full tool list is generated from the discovered `BowireMcpTools` class via the ModelContextProtocol C# SDK — call `tools/list` on the running server to see the current schemas.
 
