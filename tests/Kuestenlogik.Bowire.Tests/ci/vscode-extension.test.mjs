@@ -149,6 +149,28 @@ describe('normaliseWorkbenchUrl', () => {
     });
 });
 
+describe('marketplace icon', () => {
+    it('reuses the one canonical logo and meets the marketplace rules', async () => {
+        // The icon is copied in at package time from images/bowire_logo_small.png
+        // — the same file NuGet packs — rather than committed a second time.
+        // If that image is moved or renamed, this fails here instead of
+        // publishing a blank marketplace tile nobody notices.
+        const mod = await import(
+            new URL('../../../extensions/bowire-vscode/scripts/copy-icon.mjs', import.meta.url).href);
+
+        const size = mod.pngSize(mod.SOURCE);
+        assert.ok(size, `${mod.SOURCE} is missing or not a PNG`);
+        assert.equal(size.width, size.height, 'marketplace art must be square');
+        assert.ok(size.width >= 128, `marketplace minimum is 128x128; got ${size.width}`);
+    });
+
+    it('package.json points at the copied icon', () => {
+        const pkg = require(resolve(__dirname, '../../../extensions/bowire-vscode/package.json'));
+        assert.equal(pkg.icon, 'icon.png');
+        assert.match(pkg.scripts['vscode:prepublish'], /copy-icon/);
+    });
+});
+
 describe('missingCliMessage', () => {
     it('names every install route that works today', () => {
         const msg = workbench.missingCliMessage();

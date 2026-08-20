@@ -23,6 +23,7 @@
 const vscode = require('vscode');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
+const fs = require('node:fs');
 const {
     findCli,
     buildArgs,
@@ -134,7 +135,12 @@ async function openWorkbench(context, channel) {
         });
 
     panel.webview.html = buildWebviewHtml(`http://localhost:${actualPort}`);
-    panel.iconPath = vscode.Uri.file(path.join(context.extensionPath, 'icon.png'));
+
+    // icon.png is copied in at package time from the repo's canonical logo,
+    // so it is absent when running straight from a checkout. A missing file
+    // would leave the tab icon blank; skipping keeps VS Code's default.
+    const icon = path.join(context.extensionPath, 'icon.png');
+    if (fs.existsSync(icon)) panel.iconPath = vscode.Uri.file(icon);
 
     // The process exists for this panel; closing the panel stops it rather
     // than leaving a server listening for the rest of the session.

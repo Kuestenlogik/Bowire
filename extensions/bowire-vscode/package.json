@@ -34,5 +34,9 @@
         "category": "Bowire"
       }
     ]
+  },
+  "icon": "icon.png",
+  "scripts": {
+    "vscode:prepublish": "node scripts/copy-icon.mjs"
   }
 }
