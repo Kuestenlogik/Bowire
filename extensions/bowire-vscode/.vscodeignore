@@ -3,3 +3,9 @@
 .vscode/**
 .gitignore
 **/*.map
+
+# The smoke test and its runner are development tooling. scripts/ is safe to
+# drop because vscode:prepublish runs copy-icon.mjs before packaging, so the
+# icon is already in place by the time this file is applied.
+test/**
+scripts/**
