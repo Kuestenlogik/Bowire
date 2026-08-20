@@ -1,0 +1,5 @@
+# Everything the marketplace package does not need. The extension is plain
+# CommonJS with no build step, so what ships is extension.js + lib/.
+.vscode/**
+.gitignore
+**/*.map

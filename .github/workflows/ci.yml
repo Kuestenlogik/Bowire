@@ -62,6 +62,9 @@ jobs:
       # scripts out of .github/sibling-templates/ and run them against
       # fixtures of every sibling's real reference shapes.
       - name: Release-cascade workflow tests
+        # Deckt auch die VS-Code-Extension ab (#101): deren testbare
+        # Logik liegt in extensions/bowire-vscode/lib und wird von
+        # ci/vscode-extension.test.mjs geprueft.
         run: node --test tests/Kuestenlogik.Bowire.Tests/ci/*.test.mjs
 
       # No version step needed — MinVer derives the version from git for
