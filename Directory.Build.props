@@ -10,14 +10,36 @@
     <NoWarn>$(NoWarn);NU1510;NU1902;NU1903;NU5104</NoWarn>
   </PropertyGroup>
 
+  <!-- Build output goes to artifacts/, never into per-project bin/ + obj/.
+       This is the SDK's own artifacts layout (`UseArtifactsOutput`, .NET 8+),
+       not a hand-rolled one — and that distinction is the whole point.
+
+       The previous version set BaseOutputPath / OutputPath /
+       BaseIntermediateOutputPath here by hand, appending $(Configuration).
+       Directory.Build.props is imported before the SDK defaults Configuration
+       to Debug, so on a plain `dotnet build` that variable was still EMPTY and
+       the path collapsed to `artifacts/bin/<Project>/` with no configuration
+       folder at all. Pass `-c Release` and Configuration arrives as a global
+       property, available immediately, and the same build wrote
+       `artifacts/bin/<Project>/Release/`.
+
+       So the two invocations wrote to different places, and every project
+       ended up holding three copies side by side: Debug/, Release/, and loose
+       assemblies in the parent. A stale one shadows the current one, which is
+       exactly the kind of thing that has you debugging a fix you already made.
+
+       Letting the SDK compute the layout fixes it at the root: it resolves the
+       pivot after Configuration is known, so `dotnet build` and
+       `dotnet build -c Release` land in `artifacts/bin/<Project>/debug/` and
+       `.../release/` respectively — lowercase, always present, one copy each.
+
+       Setting ArtifactsPath alone switches the feature on; the explicit
+       UseArtifactsOutput is here so the intent survives a future edit that
+       only touches the path. -->
   <PropertyGroup>
-    <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts\</ArtifactsPath>
-    <BaseIntermediateOutputPath>$(ArtifactsPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
-    <BaseOutputPath>$(ArtifactsPath)bin\$(MSBuildProjectName)\</BaseOutputPath>
-    <OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
-    <PackageOutputPath>$(ArtifactsPath)packages\</PackageOutputPath>
-    <PublishDir>$(ArtifactsPath)publish\$(MSBuildProjectName)\$(Configuration)\</PublishDir>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
+    <PackageOutputPath>$(ArtifactsPath)\packages</PackageOutputPath>
   </PropertyGroup>
 
   <!-- Was gehoert auf nuget.org?

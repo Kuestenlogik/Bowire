@@ -136,7 +136,7 @@ runs:
       shell: bash
       run: |
         dotnet build src/Kuestenlogik.Bowire.Tool/Kuestenlogik.Bowire.Tool.csproj -c Release --nologo
-        dll="$GITHUB_WORKSPACE/artifacts/bin/Kuestenlogik.Bowire.Tool/Release/bowire.dll"
+        dll="$GITHUB_WORKSPACE/artifacts/bin/Kuestenlogik.Bowire.Tool/release/bowire.dll"
         if [ ! -f "$dll" ]; then echo "::error::built bowire.dll not found at $dll"; exit 1; fi
         shim="$RUNNER_TEMP/bowire"
         printf '#!/usr/bin/env bash\nexec dotnet "%s" "$@"\n' "$dll" > "$shim"

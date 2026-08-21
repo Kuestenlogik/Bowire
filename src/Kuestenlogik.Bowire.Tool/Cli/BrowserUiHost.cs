@@ -48,7 +48,22 @@ internal static class BrowserUiHost
         ArgumentNullException.ThrowIfNull(plugins);
         var io = CommandIo.Resolve(stdout, stderr);
 
-        var ui = BowireConfiguration.BuildBrowserUiOptions(bootstrapConfig, args);
+        // Operator mistakes in the options — a --url-file that is not there,
+        // one with nothing usable in it — are reported as one line on stderr,
+        // not as an unhandled exception. #604 was about a flag that failed
+        // silently; answering that with a stack trace would swap one bad
+        // failure mode for another, because a crash reads as "Bowire is
+        // broken" rather than "that path is wrong".
+        BrowserUiOptions ui;
+        try
+        {
+            ui = BowireConfiguration.BuildBrowserUiOptions(bootstrapConfig, args);
+        }
+        catch (InvalidOperationException ex)
+        {
+            await io.Err.WriteLineAsync($"  {ex.Message}").ConfigureAwait(false);
+            return 1;
+        }
 
         // Plugins must be loaded before MapBowire's reflection scan sees
         // them. Program.cs already loaded them through this same loader;

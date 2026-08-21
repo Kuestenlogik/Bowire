@@ -37,7 +37,11 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const CONFIG = process.env.BOWIRE_SMOKE_CONFIG || 'Debug';
+// Lower-cased: the SDK's artifacts layout names the pivot folder `debug` /
+// `release`, not `Debug` / `Release`. Case matters on Linux, where CI runs —
+// the env var is still written the familiar way, so this normalises rather
+// than demanding callers know the on-disk spelling.
+const CONFIG = (process.env.BOWIRE_SMOKE_CONFIG || 'Debug').toLowerCase();
 const SAMPLES_DIR = join(REPO, 'samples');
 
 // Samples whose protocol needs a broker we do not start here. They are

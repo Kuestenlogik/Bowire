@@ -47,7 +47,7 @@ jobs:
 
       - name: Put a bowire shim on PATH
         run: |
-          dll="$GITHUB_WORKSPACE/artifacts/bin/Kuestenlogik.Bowire.Tool/Release/bowire.dll"
+          dll="$GITHUB_WORKSPACE/artifacts/bin/Kuestenlogik.Bowire.Tool/release/bowire.dll"
           test -f "$dll" || { echo "::error::bowire.dll not found at $dll"; exit 1; }
           printf '#!/usr/bin/env bash\nexec dotnet "%s" "$@"\n' "$dll" > "$RUNNER_TEMP/bowire"
           chmod +x "$RUNNER_TEMP/bowire"
