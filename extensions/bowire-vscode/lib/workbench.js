@@ -132,6 +132,24 @@ function findToolManifest(startDir, exists = existsSync, read = readFileSync) {
 }
 
 /**
+ * Can this machine run a manifest-pinned tool at all?
+ *
+ * `dotnet tool run` needs the SDK, not just the runtime, but the runtime alone
+ * still answers `--version` — so the probe asks for the SDK list instead, which
+ * a runtime-only install reports as empty or fails outright.
+ */
+function hasDotnetSdk(runner = spawnSync) {
+    try {
+        const result = runner('dotnet', ['--list-sdks'], { encoding: 'utf8', timeout: 15_000 });
+        if (result.status !== 0) return false;
+        return String(result.stdout || '').trim().length > 0;
+    } catch {
+        // No `dotnet` on this machine at all.
+        return false;
+    }
+}
+
+/**
  * How to start Bowire: the explicit setting, then a workspace tool manifest,
  * then PATH, then a CLI this extension downloaded earlier.
  *
@@ -165,7 +183,12 @@ function resolveCli(options = {}) {
     }
 
     const manifest = findToolManifest(workspaceDir, exists, read);
-    if (manifest) {
+    // A pin is only worth honouring if there is an SDK to honour it with.
+    // Without one the manifest names a version nothing on this machine can
+    // produce, and stopping there would refuse to start over a file the user
+    // may not even know is in the repo — while a perfectly good Bowire sits on
+    // PATH. Probing costs one spawn, and only when a manifest actually matched.
+    if (manifest && hasDotnetSdk(runner)) {
         // `dotnet` rather than a resolved path: the manifest pins a version,
         // and letting the SDK honour that pin is the point. It also means the
         // tool need not be installed yet — `dotnet tool restore` fetches it,
