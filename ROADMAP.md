@@ -34,7 +34,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**0/28 done** · 1 next up · 27 backlog
+**0/29 done** · 1 next up · 28 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -66,6 +66,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [590](https://github.com/Kuestenlogik/Bowire/issues/590) | Bowire | [VS Code: offer to download a matching CLI when none is installed](#issue-kuestenlogik-bowire-590) | ⬜ Backlog |  |
 | [591](https://github.com/Kuestenlogik/Bowire/issues/591) | Bowire | [Workspace-local storage: collections must travel with the repo, not the user profile](#issue-kuestenlogik-bowire-591) | ⬜ Backlog |  |
 | [601](https://github.com/Kuestenlogik/Bowire/issues/601) | Bowire | [Migrate the test run to Microsoft.Testing.Platform (unblocks xunit.v3 4.x)](#issue-kuestenlogik-bowire-601) | ⬜ Backlog |  |
+| [604](https://github.com/Kuestenlogik/Bowire/issues/604) | Bowire | [CLI: --url-file is declared and documented but never read](#issue-kuestenlogik-bowire-604) | ⬜ Backlog |  |
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
@@ -123,7 +124,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts
 
-**0/24 done** · 24 backlog
+**1/24 done** · 23 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -135,7 +136,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [130](https://github.com/Kuestenlogik/Bowire/issues/130) | Bowire | [Comparison table: add Hoppscotch + topic-based filtering](#issue-kuestenlogik-bowire-130) | ⬜ Backlog | `area:site` |
 | [188](https://github.com/Kuestenlogik/Bowire/issues/188) | Bowire | [Org-level Bowire dashboard — rollup across services](#issue-kuestenlogik-bowire-188) | ⬜ Backlog | `area:workbench` |
 | [214](https://github.com/Kuestenlogik/Bowire/issues/214) | Bowire | [Test infra: BaGet Testcontainer fixture for plugin install/activate coverage](#issue-kuestenlogik-bowire-214) | ⬜ Backlog | `area:plugin-sdk` |
-| [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ⬜ Backlog | `area:plugin-sdk` |
 | [283](https://github.com/Kuestenlogik/Bowire/issues/283) | Bowire | [Retire v1 .bww format migration shim (introduced in #282)](#issue-kuestenlogik-bowire-283) | ⬜ Backlog | `area:workbench` |
 | [288](https://github.com/Kuestenlogik/Bowire/issues/288) | Bowire | [IInlineSseSubscriber is an orphaned seam — give it a consumer or remove it](#issue-kuestenlogik-bowire-288) | ⬜ Backlog | `area:plugin-sdk` |
 | [355](https://github.com/Kuestenlogik/Bowire/issues/355) | Bowire | [Eliminate #pragma warning disable across the codebase — rewrite code so analyzer warnings don't fire](#issue-kuestenlogik-bowire-355) | ⬜ Backlog | `area:multi` |
@@ -151,6 +151,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [488](https://github.com/Kuestenlogik/Bowire/issues/488) | Bowire | [RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench](#issue-kuestenlogik-bowire-488) | ⬜ Backlog | `area:security` |
 | [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog | `area:security` |
 | [529](https://github.com/Kuestenlogik/Bowire/issues/529) | Bowire | [OData plugin: EDM functions and actions are never discovered (class doc claims they are)](#issue-kuestenlogik-bowire-529) | ⬜ Backlog | `area:plugin-sdk` |
+| [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
 ### Backlog (not yet scheduled)
 
@@ -410,6 +411,10 @@ Make the VS Code extension store a workspace's Bowire data inside that workspace
 
 Move the test run from the VSTest bridge to Microsoft.Testing.Platform, so xunit.v3 can be kept current. [[more]](https://github.com/Kuestenlogik/Bowire/issues/601)
 
+#### <a id="issue-kuestenlogik-bowire-604"></a>⬜ Backlog · [#604](https://github.com/Kuestenlogik/Bowire/issues/604) CLI: --url-file is declared and documented but never read
+
+`--url-file` is declared on the CLI and documented in the setup guide, but nothing ever reads it. Passing it is silently a no-op. [[more]](https://github.com/Kuestenlogik/Bowire/issues/604)
+
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
 #### <a id="issue-kuestenlogik-bowire-238"></a>⬜ Backlog · [#238](https://github.com/Kuestenlogik/Bowire/issues/238) Map widget: trajectory LineString between sequential frames
@@ -664,12 +669,6 @@ Once Bowire ships in multiple services across an org, "what's the state of our A
 
 `BowirePluginEndpoints` (install / activate routes) and `App.PluginManager` (NuGet download + extract paths) together carry ~134 uncovered lines because there's no NuGet feed in the test environment. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/214)
 
-#### <a id="issue-kuestenlogik-bowire-215"></a>⬜ Backlog · [#215](https://github.com/Kuestenlogik/Bowire/issues/215) Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths
-
-> `area:plugin-sdk`
-
-`App.PluginManager` shells out to `dotnet publish` / `dotnet nuget …` via `Process.Start` directly. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
-
 #### <a id="issue-kuestenlogik-bowire-283"></a>⬜ Backlog · [#283](https://github.com/Kuestenlogik/Bowire/issues/283) Retire v1 .bww format migration shim (introduced in #282)
 
 > `area:workbench`
@@ -759,6 +758,12 @@ The `.Scanner` suffix under-describes what the package has become. It started as
 > `area:plugin-sdk`
 
 `BowireODataProtocol.DiscoverAsync` emits exactly five methods per entity set — GET, GET_BY_KEY, POST, PATCH, DELETE. EDM **functions and actions** are parsed into the model but never surfaced, so they cannot be invoked from the workbench. [[more]](https://github.com/Kuestenlogik/Bowire/issues/529)
+
+#### <a id="issue-kuestenlogik-bowire-215"></a>✅ Done · [#215](https://github.com/Kuestenlogik/Bowire/issues/215) Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths
+
+> `area:plugin-sdk`
+
+> **Status:** obsolete, not done. The premise no longer holds — the body below records why; the original proposal is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
 
 ### Backlog (not yet scheduled)
 
