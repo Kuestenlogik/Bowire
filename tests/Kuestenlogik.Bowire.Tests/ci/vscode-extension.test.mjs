@@ -123,6 +123,17 @@ describe('tool manifest resolution (#589)', () => {
     const REPO = require('node:path').resolve('/repo');
     const manifestAt = dir => require('node:path').join(dir, '.config', 'dotnet-tools.json');
 
+    /**
+     * A runner that answers the two probes resolveCli makes, separately:
+     * `dotnet --list-sdks` and the PATH lookup. They have to be distinguishable
+     * — a single canned response makes "no SDK" and "nothing on PATH" the same
+     * state, which is precisely the pair these tests exist to tell apart.
+     */
+    const runner = ({ sdk = true, onPath = null } = {}) => (cmd) =>
+        cmd === 'dotnet'
+            ? { status: sdk ? 0 : 1, stdout: sdk ? '10.0.100 [/usr/share/dotnet/sdk]\n' : '' }
+            : { status: onPath ? 0 : 1, stdout: onPath ? `${onPath}\n` : '' };
+
     it('runs the pinned tool instead of whatever is on PATH', () => {
         // The point of the pin: the repo says which Bowire it is tested with,
         // and that beats whatever this machine happens to have installed.
@@ -216,9 +227,54 @@ describe('tool manifest resolution (#589)', () => {
             [manifestAt(REPO)]: JSON.stringify(MANIFEST),
             [require('node:path').join(REPO, 'dotnet-tools.json')]: JSON.stringify(MANIFEST),
         };
-        const r = workbench.resolveCli({ workspaceDir: REPO, ...fakeFs(files), runner: () => ({ status: 1 }) });
+        const r = workbench.resolveCli({ workspaceDir: REPO, ...fakeFs(files), runner: runner({ onPath: null }) });
 
         assert.equal(r.manifest, manifestAt(REPO));
+    });
+
+    it('falls through to PATH when there is no SDK to honour the pin with', () => {
+        // `dotnet tool run` needs the SDK, not just the runtime. Without one
+        // the manifest names a version nothing here can produce, and refusing
+        // to start over a file the user may not know is in the repo — while a
+        // working Bowire sits on PATH — is the wrong trade.
+        const files = { [manifestAt(REPO)]: JSON.stringify(MANIFEST) };
+        const r = workbench.resolveCli({
+            workspaceDir: REPO,
+            ...fakeFs(files),
+            runner: runner({ sdk: false, onPath: '/usr/bin/bowire' }),
+        });
+
+        assert.equal(r.source, 'path');
+        assert.equal(r.command, '/usr/bin/bowire');
+    });
+
+    it('a runtime-only install does not count as an SDK', () => {
+        // `dotnet --version` answers on a runtime-only machine, which is why
+        // the probe asks for the SDK list instead — it comes back empty there.
+        const files = { [manifestAt(REPO)]: JSON.stringify(MANIFEST) };
+        const r = workbench.resolveCli({
+            workspaceDir: REPO,
+            ...fakeFs(files),
+            runner: cmd => cmd === 'dotnet'
+                ? { status: 0, stdout: '   \n' }        // exit 0, nothing listed
+                : { status: 0, stdout: '/usr/bin/bowire\n' },
+        });
+
+        assert.equal(r.source, 'path');
+    });
+
+    it('no SDK and nothing on PATH still reports a plain miss', () => {
+        // Not an SDK complaint: the manifest was never usable here, so the
+        // answer is the same one a repo without a manifest would get.
+        const files = { [manifestAt(REPO)]: JSON.stringify(MANIFEST) };
+        const r = workbench.resolveCli({
+            workspaceDir: REPO,
+            ...fakeFs(files),
+            runner: runner({ sdk: false, onPath: null }),
+        });
+
+        assert.equal(r.command, null);
+        assert.equal(r.source, 'path');
     });
 
     it('no workspace folder means no manifest lookup', () => {
@@ -656,7 +712,11 @@ describe('managed download (#590)', () => {
             const resolution = workbench.resolveCli({
                 workspaceDir: '/repo',
                 managedRoot: '/store',
-                runner: () => ({ status: 1, stdout: '' }),
+                // An SDK has to be reported, or the manifest is skipped for a
+                // reason that has nothing to do with what this test asserts.
+                runner: cmd => cmd === 'dotnet'
+                    ? { status: 0, stdout: '10.0.100 [/usr/share/dotnet/sdk]\n' }
+                    : { status: 1, stdout: '' },
                 exists: p => String(p).replace(/\\/g, '/').endsWith('/repo/.config/dotnet-tools.json'),
                 read: () => JSON.stringify({ tools: { 'kuestenlogik.bowire.tool': { version: '2.4.0' } } }),
             });
