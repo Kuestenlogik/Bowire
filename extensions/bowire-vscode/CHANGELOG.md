@@ -13,6 +13,14 @@ hosts — it drives whatever CLI you have installed, from 2.0 upwards.
   build that is not on `PATH` — a local checkout, a portable copy, a second
   version beside the installed one. Supports `${workspaceFolder}`, so a
   project-local build can be committed to `.vscode/settings.json` and shared.
+- **Tool-manifest resolution.** A repo that pins Bowire in
+  `.config/dotnet-tools.json` (or a bare `dotnet-tools.json`) gets that
+  version, run as `dotnet tool run bowire` — so everyone who clones it drives
+  the version the repo is tested with rather than whatever their machine has.
+  Sits between `bowire.cliPath` and `PATH`: specific beats shared beats
+  ambient. A pinned-but-unrestored tool is told to run `dotnet tool restore`;
+  a machine with no .NET SDK falls through to `PATH` instead of being sent in
+  a circle ([#589](https://github.com/Kuestenlogik/Bowire/issues/589)).
 - **Version check before launch.** A CLI too old to understand the arguments
   the extension passes used to exit with "Bowire exited before it started
   serving", which named nothing. It now says which version it found and what
