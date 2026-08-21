@@ -78,25 +78,34 @@ jobs:
         run: dotnet build Kuestenlogik.Bowire.slnx -c Release --no-restore
 
       - name: Test
-        # XPlat Code Coverage drops one coverage.cobertura.xml per test
-        # project under artifacts/coverage/raw/<guid>/. We merge them in
-        # the next step before uploading — Codecov's server-side merge
-        # de-duplicates by file but doesn't union per-line hits across
-        # sessions, which under-counts lines that one project covers
-        # while another one doesn't (~6 pp gap measured on this repo).
+        # Runs under Microsoft.Testing.Platform, not VSTest (#601). The
+        # switch lives in global.json ("test": { "runner": ... }) — MTP 2.x
+        # removed the VSTest bridge on the .NET 10 SDK, so there is no
+        # opting out any more, only opting in. Consequences visible here:
+        # `--solution` instead of a positional path, `--filter-not-trait`
+        # instead of `--filter "Category!=Docker"`, and `--coverage` instead
+        # of the `--collect:"XPlat Code Coverage"` collector.
         #
-        # --filter "Category!=Docker" skips the Testcontainers-backed
-        # integration suites (NATS / Pulsar live-broker round-trips).
-        # They're tagged [Trait("Category","Docker")] precisely so they
-        # opt out here: the hosted runner's Docker Hub pulls are
-        # rate-limited / flaky (manifest fetch for nats:2-alpine fails
-        # intermittently), and these tests are meant for local / dev
-        # runs with a working Docker daemon. The pure-unit + in-process
-        # integration tests still run and gate the build.
+        # Coverage still lands as one cobertura file per test project under
+        # artifacts/coverage/raw/. We merge them in the next step before
+        # uploading — Codecov's server-side merge de-duplicates by file but
+        # doesn't union per-line hits across sessions, which under-counts
+        # lines that one project covers while another one doesn't (~6 pp gap
+        # measured on this repo).
+        #
+        # --filter-not-trait skips the Testcontainers-backed integration
+        # suites (NATS / Pulsar live-broker round-trips). They're tagged
+        # [Trait("Category","Docker")] precisely so they opt out here: the
+        # hosted runner's Docker Hub pulls are rate-limited / flaky (manifest
+        # fetch for nats:2-alpine fails intermittently), and these tests are
+        # meant for local / dev runs with a working Docker daemon. Measured
+        # after the switch: 480 of 494 integration tests run, the excluded 14
+        # are exactly the Docker-tagged ones.
         run: >
-          dotnet test Kuestenlogik.Bowire.slnx -c Release --no-build -v normal
-          --filter "Category!=Docker"
-          --collect:"XPlat Code Coverage"
+          dotnet test --solution Kuestenlogik.Bowire.slnx -c Release --no-build
+          --filter-not-trait "Category=Docker"
+          --coverage
+          --coverage-output-format cobertura
           --results-directory artifacts/coverage/raw
 
       - name: Merge coverage reports
@@ -110,7 +119,7 @@ jobs:
         run: |
           dotnet tool install -g dotnet-reportgenerator-globaltool
           reportgenerator \
-            -reports:'artifacts/coverage/raw/*/coverage.cobertura.xml' \
+            -reports:'artifacts/coverage/raw/*.cobertura.xml' \
             -targetdir:artifacts/coverage/merged \
             -reporttypes:Cobertura \
             -filefilters:'-**/obj/**;-**/wwwroot/**;-**/bin/**;-tests/**;-samples/**;-benchmarks/**'

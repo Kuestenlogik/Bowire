@@ -162,7 +162,11 @@ jobs:
       - name: Build & Test
         run: |
           dotnet build Kuestenlogik.Bowire.slnx -c Release --no-restore
-          dotnet test Kuestenlogik.Bowire.slnx -c Release --no-build -v normal
+          # Microsoft.Testing.Platform (#601): `--solution`, not a positional
+          # path. Migrating CI without this line would leave the release the
+          # one place that still tried the removed VSTest bridge — green in
+          # CI, red only when shipping.
+          dotnet test --solution Kuestenlogik.Bowire.slnx -c Release --no-build
 
       - name: Pack (NuGet)
         run: dotnet pack Kuestenlogik.Bowire.slnx -c Release --no-build -o artifacts/packages
