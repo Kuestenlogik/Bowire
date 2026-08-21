@@ -748,6 +748,58 @@ describe('managed download (#590)', () => {
             await rm(dir, { recursive: true, force: true });
         });
 
+        it('stops mid-download when cancelled, and installs nothing', async () => {
+            // The progress notification is cancellable, which is only true if
+            // the abort actually reaches the stream — a token wired to nothing
+            // still renders a Cancel button, and the download continues behind
+            // a dialog the user believes they dismissed.
+            const controller = new AbortController();
+            const dir = await mkdtemp(join(tmpdir(), 'bowire-590-'));
+            const asset = download.assetNameFor('linux-x64');
+            let extracted = false;
+
+            const fetchImpl = async (url) => {
+                if (url.endsWith('checksums.txt')) {
+                    return { ok: true, status: 200, text: async () => `${'e'.repeat(64)} *${asset}\n` };
+                }
+                return {
+                    ok: true,
+                    status: 200,
+                    headers: { get: () => '1000' },
+                    body: (async function* () {
+                        yield Buffer.from('first-chunk');
+                        controller.abort();          // the user hits Cancel here
+                        if (controller.signal.aborted) {
+                            const err = new Error('aborted');
+                            err.name = 'AbortError';
+                            throw err;
+                        }
+                        yield Buffer.from('never-sent');
+                    })(),
+                };
+            };
+
+            await assert.rejects(
+                () => download.installManagedCli({
+                    root: dir,
+                    version: '9.9.9',
+                    platform: 'linux',
+                    arch: 'x64',
+                    fetchImpl,
+                    signal: controller.signal,
+                    runner: () => { extracted = true; return { status: 0 }; },
+                }),
+                (err) => err.name === 'AbortError');
+
+            assert.equal(extracted, false, 'a cancelled download was still unpacked');
+            // The partial file may remain — it is named `.part` precisely so it
+            // cannot be mistaken for a finished download — but nothing that
+            // looks installed may exist.
+            const left = await readdir(join(dir, 'cli', '9.9.9'));
+            assert.deepEqual(left.filter(n => !n.endsWith('.part')), []);
+            await rm(dir, { recursive: true, force: true });
+        });
+
         it('refuses a platform with no published build', async () => {
             await assert.rejects(
                 () => download.installManagedCli({ root: '/store', platform: 'sunos', arch: 'x64' }),
