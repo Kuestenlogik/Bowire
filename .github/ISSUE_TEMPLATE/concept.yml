@@ -1,11 +1,14 @@
 name: Concept / Design doc
 description: ADR, design discussion, spec — discussable via issue comments + reactions
-labels: ["roadmap", "kind:concept"]
+# `kind:concept` dropped — the label does not exist in this repo and GitHub
+# discards unknown template labels silently. `roadmap` is what puts the issue
+# on the board; the kind lives in the native issue Type.
+labels: ["roadmap"]
 body:
   - type: markdown
     attributes:
       value: |
-        Replaces the old "drop a markdown into `docs/architecture/` and review via PR" workflow. Concept issues live on the Project board with `kind:concept`, get discussed with comments + reactions, and the canonical text can either stay inline here or move to `docs/architecture/` once the shape stabilises.
+        Replaces the old "drop a markdown into `docs/architecture/` and review via PR" workflow. Concept issues live on the Project board, get discussed with comments + reactions, and the canonical text can either stay inline here or move to `docs/architecture/` once the shape stabilises.
   - type: textarea
     attributes:
       label: Problem

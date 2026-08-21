@@ -1,6 +1,11 @@
 name: Feature Request
 description: Suggest a new feature
-labels: ["kind:feature", "community-vote"]
+# `roadmap` gets it onto the board (add-to-project.yml keys on it);
+# `community-vote` is what the voting view filters by. The old
+# `kind:feature` is gone — the label does not exist here, GitHub drops
+# unknown template labels silently, and the kind now lives in the native
+# issue Type rather than in a label.
+labels: ["roadmap", "community-vote"]
 body:
   - type: textarea
     attributes:
