@@ -765,6 +765,29 @@ jobs:
             echo "title=${TAG}" >> "$GITHUB_OUTPUT"
           fi
 
+      # SHA-256 for every asset this release ships. Until now a download
+      # could not be verified at all: the only sha256 in this workflow is
+      # the MSI's signature timestamp, which says nothing about the ZIPs,
+      # tarballs, RPMs or NuGets.
+      #
+      # Basenames, not paths. The file is consumed next to the downloaded
+      # assets — `sha256sum -c checksums.txt` in a directory holding the
+      # archives — and a stored `publish/archives/…` prefix would make
+      # that fail everywhere except this runner.
+      #
+      # Written to the repo root on purpose, so it lands outside both
+      # upload globs below and cannot end up hashing itself.
+      - name: Generate checksums
+        run: |
+          set -euo pipefail
+          for f in artifacts/packages/*.nupkg publish/archives/*; do
+            [[ -f "$f" ]] || continue
+            ( cd "$(dirname "$f")" && sha256sum "$(basename "$f")" )
+          done | LC_ALL=C sort -k 2 > checksums.txt
+          test -s checksums.txt   # an empty list means the downloads above failed
+          echo "----- checksums.txt ($(wc -l < checksums.txt) assets) -----"
+          cat checksums.txt
+
       # Token preference: RELEASE_PAT first, GITHUB_TOKEN fallback.
       # GitHub's anti-recursion rule means events fired by the default
       # GITHUB_TOKEN do NOT trigger other workflows — that's why the
@@ -790,3 +813,4 @@ jobs:
           files: |
             artifacts/packages/*.nupkg
             publish/archives/*
+            checksums.txt
