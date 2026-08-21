@@ -121,23 +121,24 @@ jobs:
           # ---- Highlights from closed milestone issues ----
           HIGHLIGHTS=""
           if [ -n "$MS_TITLE" ]; then
-            # Fetch closed issues in the milestone. JSON output keeps the
-            # label list intact so we can group by track / area / kind.
+            # Fetch closed issues in the milestone, oldest first.
             ISSUES_JSON=$(gh issue list --milestone "$MS_TITLE" --state closed \
-              --limit 100 --json number,title,labels)
-            # Use jq to bucket: track > area > "misc". For each bucket,
-            # emit `**<bucket>**` heading + `- #N title` lines.
+              --limit 100 --json number,title)
+            #
+            # A flat list on purpose. This used to bucket by a `track:` label,
+            # falling back to `area:`, falling back to "misc". Neither label
+            # namespace exists in this repo — `track:` was folded into the
+            # board's Area field and `area:` was never a label — so every
+            # issue landed in "misc" and the grouping produced one bucket
+            # called misc, which reads worse than no grouping at all.
+            #
+            # Bringing grouping back needs an axis that actually exists: the
+            # native issue Type, or the board's Area field. Neither is
+            # reachable from `gh issue list --json` (it has no issueType
+            # field), so it would take a GraphQL query — worth doing when
+            # someone wants grouped notes, not worth faking until then.
             HIGHLIGHTS=$(echo "$ISSUES_JSON" | jq -r '
-              def bucket(labels):
-                ( (labels | map(select(.name | startswith("track:")) | .name | sub("track:"; ""))[0])
-                  // (labels | map(select(.name | startswith("area:")) | .name | sub("area:"; ""))[0])
-                  // "misc" );
-              [ .[] | { bucket: bucket(.labels), entry: "- #\(.number) \(.title)" } ]
-              | group_by(.bucket)
-              | map({bucket: .[0].bucket, entries: map(.entry)})
-              | sort_by(.bucket)
-              | map("**\(.bucket)**\n\(.entries | join("\n"))\n")
-              | join("\n")
+              [ .[] | "- #\(.number) \(.title)" ] | join("\n")
             ')
           fi
 

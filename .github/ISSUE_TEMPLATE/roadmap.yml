@@ -39,30 +39,24 @@ body:
         - multi (cross-cutting)
     validations:
       required: true
-  - type: dropdown
-    attributes:
-      label: Kind
-      description: Type of work
-      options:
-        - feature
-        - debt (refactor / cleanup)
-        - docs
-        - rfc (pre-implementation design discussion)
-        - concept (design doc / ADR / spec)
-    validations:
-      required: true
-  - type: dropdown
-    attributes:
-      label: Target milestone
-      description: When should this ship?
-      options:
-        - v1.5
-        - v1.6
-        - v2.0
-        - Later
-    validations:
-      required: false
+  # Two dropdowns used to sit here and both had rotted:
+  #
+  #   "Kind" (feature / debt / docs / rfc / concept) predates the native
+  #   GitHub issue Type. The kind now lives in the Type field on the issue
+  #   itself (Bug / Feature / Task), so asking for it again in the body
+  #   produced a second answer that nothing read and nothing kept in step.
+  #
+  #   "Target milestone" offered v1.5 / v1.6 / v2.0 / Later — a hardcoded
+  #   list that was already three minors behind, so anyone filing an issue
+  #   could only pick versions that had shipped. It also contradicts how
+  #   scheduling works: `Release` stays empty until the item is pulled out
+  #   of Backlog, because pulling it IS the decision about when it ships.
+  #
+  # Both are triage decisions made on the board, where the values cannot go
+  # stale, rather than questions asked of the reporter at filing time.
   - type: markdown
     attributes:
       value: |
-        > **Triage will set** Status (Backlog / Next up / In progress / In review / Done), Priority (P0–P3), and Track on the Project board.
+        > **Triage will set** `Status` (Backlog → Next up → In progress → In review → Done) and `Area` on the Project board, plus `Release` once the item is pulled out of Backlog — an item still resting in Backlog carries no version, and that is correct.
+        >
+        > `Priority` and the issue **Type** (Bug / Feature / Task) live on the issue itself, in the right-hand sidebar — not on the board.
