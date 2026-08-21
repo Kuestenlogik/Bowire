@@ -163,7 +163,7 @@
          into Bowire source on the exact commit a given nupkg was
          built from. Only takes effect for packable projects (gated
          in Directory.Build.props). -->
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.301" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.400" />
     <!-- MinVer: derives Version/AssemblyVersion/FileVersion/PackageVersion
          from the nearest git tag at build time. Build-time only
          (PrivateAssets=all in Directory.Build.props) — never flows to
