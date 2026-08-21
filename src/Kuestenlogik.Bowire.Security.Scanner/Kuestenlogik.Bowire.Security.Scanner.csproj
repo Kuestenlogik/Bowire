@@ -25,6 +25,7 @@
          than complicating the shared BowireMqttProtocol connection interface. -->
     <PackageReference Include="MQTTnet" />
     <PackageReference Include="DnsClient" />
+    <PackageReference Include="System.CommandLine" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
