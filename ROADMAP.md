@@ -34,7 +34,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**0/27 done** · 1 next up · 26 backlog
+**0/28 done** · 1 next up · 27 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -65,6 +65,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [589](https://github.com/Kuestenlogik/Bowire/issues/589) | Bowire | [VS Code: resolve the CLI from a workspace tool manifest](#issue-kuestenlogik-bowire-589) | ⬜ Backlog |  |
 | [590](https://github.com/Kuestenlogik/Bowire/issues/590) | Bowire | [VS Code: offer to download a matching CLI when none is installed](#issue-kuestenlogik-bowire-590) | ⬜ Backlog |  |
 | [591](https://github.com/Kuestenlogik/Bowire/issues/591) | Bowire | [Workspace-local storage: collections must travel with the repo, not the user profile](#issue-kuestenlogik-bowire-591) | ⬜ Backlog |  |
+| [601](https://github.com/Kuestenlogik/Bowire/issues/601) | Bowire | [Migrate the test run to Microsoft.Testing.Platform (unblocks xunit.v3 4.x)](#issue-kuestenlogik-bowire-601) | ⬜ Backlog |  |
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
@@ -404,6 +405,10 @@ Offer to fetch a matching CLI into the extension's own storage when none is foun
 #### <a id="issue-kuestenlogik-bowire-591"></a>⬜ Backlog · [#591](https://github.com/Kuestenlogik/Bowire/issues/591) Workspace-local storage: collections must travel with the repo, not the user profile
 
 Make the VS Code extension store a workspace's Bowire data inside that workspace, so collections and environments actually travel with the repo. [[more]](https://github.com/Kuestenlogik/Bowire/issues/591)
+
+#### <a id="issue-kuestenlogik-bowire-601"></a>⬜ Backlog · [#601](https://github.com/Kuestenlogik/Bowire/issues/601) Migrate the test run to Microsoft.Testing.Platform (unblocks xunit.v3 4.x)
+
+Move the test run from the VSTest bridge to Microsoft.Testing.Platform, so xunit.v3 can be kept current. [[more]](https://github.com/Kuestenlogik/Bowire/issues/601)
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
