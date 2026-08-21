@@ -29,11 +29,12 @@ public sealed class BowireReportRollupEndpointTests
     // repeated calls rather than allocated per invocation.
     private static readonly string[] EscapingAndValid = [".bowire", "/etc"];
     private static readonly string[] WorkspaceRelative = ["reports"];
+    private static readonly string[] DriveRooted = ["C:\\Windows"];
 
     [Theory]
-    // Absolute paths on both platform shapes — the direct read-anything case.
+    // Rooted on every platform — Path.IsPathRooted("/etc") is true on Windows
+    // too, so this one case covers both.
     [InlineData("/etc")]
-    [InlineData("C:\\Windows")]
     // Traversal, including the form that only escapes after normalisation.
     [InlineData("../..")]
     [InlineData(".bowire/../../..")]
@@ -58,6 +59,27 @@ public sealed class BowireReportRollupEndpointTests
         // own path field, and a bare 400 leaves the operator guessing which of
         // several paths was objected to.
         Assert.Contains(path, payload!.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Rollup_RejectsADriveRootedPath_OnWindows()
+    {
+        // Windows-only on purpose. "C:\Windows" is rooted on Windows and a
+        // perfectly ordinary relative name on Linux, where Path.IsPathRooted
+        // returns false for it — so as a cross-platform case it asserted that
+        // a harmless relative path must be refused, and CI on ubuntu was right
+        // to fail it. Skipping beats asserting the wrong thing everywhere.
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "drive-rooted paths only exist on Windows");
+
+        await using var host = await CreateHost();
+        var client = host.GetTestClient();
+
+        var resp = await client.PostAsJsonAsync(
+            new Uri("/bowire/api/report/rollup", UriKind.Relative),
+            new { from = DriveRooted },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
 
     [Fact]
