@@ -38,6 +38,16 @@ updates:
         versions: [">= 3.9.0"]
       - dependency-name: "Microsoft.OpenApi.YamlReader"
         versions: [">= 3.9.0"]
+      # xunit.v3 4.x pulls Microsoft.Testing.Platform 2.x, which has
+      # removed the VSTest bridge on .NET 10 — every one of the 43 test
+      # projects then fails at Microsoft.Testing.Platform.MSBuild.targets
+      # before a single test runs. Taking it means migrating the whole
+      # test run (and its coverage collection) off VSTest, which is #601,
+      # not a dependency update. Drop this rule with that migration.
+      - dependency-name: "xunit.v3"
+        versions: [">= 4.0.0"]
+      - dependency-name: "xunit.runner.visualstudio"
+        versions: [">= 4.0.0"]
       # OllamaSharp 5.4.26+ ships a Roslyn-5.6 source generator; no
       # released .NET 10 SDK carries that compiler yet (10.0.204 is on
       # 5.3), so the bump fails the build with CS9057. Drop this rule
