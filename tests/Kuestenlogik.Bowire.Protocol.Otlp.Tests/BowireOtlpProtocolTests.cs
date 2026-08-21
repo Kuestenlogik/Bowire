@@ -169,16 +169,30 @@ public sealed class BowireOtlpProtocolTests
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var received = new List<string>();
+
+        // Signalled once the backlog item has been handed out. Because
+        // ReplayAndSubscribeAsync registers the subscriber BEFORE yielding the
+        // backlog, that arrival proves the subscription is already live.
+        //
+        // This was `await Task.Delay(50)` — a bet that 50 ms sufficed for the
+        // consumer to get that far. It held under VSTest and stopped holding
+        // once the suites ran as parallel processes: the append landed before
+        // the subscribe and was lost, giving 1 instead of 2. The sleep had
+        // been hiding a real gap in the store rather than merely being slow.
+        var replayed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
         var task = Task.Run(async () =>
         {
             await foreach (var x in sut.InvokeStreamAsync("u", "OtlpReceiver", "ReceiveTraces", [], false, ct: cts.Token))
             {
                 received.Add(x);
+                if (received.Count == 1) replayed.TrySetResult();
                 if (received.Count >= 2) await cts.CancelAsync();
             }
         }, cts.Token);
 
-        await Task.Delay(50, TestContext.Current.CancellationToken);
+        await replayed.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
         store.Append(new OtlpEnvelope(OtlpSignalKind.Traces, DateTimeOffset.UnixEpoch,
             "application/json", "{\"n\":3}", null, 7, null));
 

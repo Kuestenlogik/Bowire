@@ -146,6 +146,70 @@ public sealed class OtlpEnvelopeStore
         }
     }
 
+    /// <summary>
+    /// Yield the retained envelopes of one signal kind, then everything
+    /// published from that moment on — with no gap between the two.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The obvious composition — call <see cref="Snapshot(OtlpSignalKind)"/>,
+    /// then <see cref="SubscribeAsync"/> — has a hole in it. Between the two
+    /// calls the subscriber is not yet registered and the ring has already
+    /// been copied, so anything appended in that window reaches neither and
+    /// is lost outright. The window is small, which is exactly what makes it
+    /// nasty: a live OTLP tail silently drops the exporter's first envelopes
+    /// only under load, and the test that covered it papered over the race
+    /// with a 50 ms sleep until a more contended runner exposed it.
+    /// </para>
+    /// <para>
+    /// Registering the writer and copying the ring under ONE lock closes it:
+    /// an <see cref="Append"/> is then either already in the backlog or
+    /// delivered to the freshly-registered writer, never neither.
+    /// </para>
+    /// </remarks>
+    public async IAsyncEnumerable<OtlpEnvelope> ReplayAndSubscribeAsync(
+        OtlpSignalKind kind,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var ch = Channel.CreateUnbounded<OtlpEnvelope>(new UnboundedChannelOptions
+        {
+            SingleReader = true,
+            SingleWriter = false,
+            AllowSynchronousContinuations = false,
+        });
+
+        List<OtlpEnvelope> backlog;
+        lock (_gate)
+        {
+            backlog = _ring.Where(e => e.Kind == kind).ToList();
+            _subscribers.Add(ch.Writer);
+        }
+
+        try
+        {
+            foreach (var env in backlog)
+            {
+                yield return env;
+            }
+
+            await foreach (var env in ch.Reader.ReadAllAsync(ct).ConfigureAwait(false))
+            {
+                // The fan-out is kind-agnostic; filtering here keeps the
+                // subscriber list free of per-kind bookkeeping.
+                if (env.Kind != kind) continue;
+                yield return env;
+            }
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                _subscribers.Remove(ch.Writer);
+            }
+            ch.Writer.TryComplete();
+        }
+    }
+
     /// <summary>Reset the ring (test helper). Subscribers stay attached and continue receiving new envelopes.</summary>
     public void Clear()
     {

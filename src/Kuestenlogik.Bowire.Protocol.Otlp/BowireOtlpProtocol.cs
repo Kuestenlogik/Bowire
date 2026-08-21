@@ -163,17 +163,14 @@ public sealed class BowireOtlpProtocol : IBowireProtocol
             yield break;
         }
 
-        // Surface any envelopes already in the ring as historical
-        // context so the channel doesn't open empty after the
-        // subscriber attached late. Order preserved (oldest first).
-        foreach (var envelope in store.Snapshot(kind.Value))
+        // Backlog first (oldest first) so the channel doesn't open empty for
+        // a subscriber that attached late, then the live tail.
+        //
+        // One call rather than Snapshot()-then-SubscribeAsync(): the two-step
+        // version leaves a window between copying the ring and registering
+        // the subscriber, and an envelope arriving in it reaches neither.
+        await foreach (var envelope in store.ReplayAndSubscribeAsync(kind.Value, ct).ConfigureAwait(false))
         {
-            yield return EnvelopeToJson(envelope);
-        }
-
-        await foreach (var envelope in store.SubscribeAsync(ct).ConfigureAwait(false))
-        {
-            if (envelope.Kind != kind.Value) continue;
             yield return EnvelopeToJson(envelope);
         }
     }
