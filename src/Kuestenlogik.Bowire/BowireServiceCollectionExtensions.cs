@@ -6,6 +6,7 @@ using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Plugins;
+using Kuestenlogik.Bowire.Projects;
 using Kuestenlogik.Bowire.Recording;
 using Kuestenlogik.Bowire.Semantics;
 using Kuestenlogik.Bowire.Semantics.Detectors;
@@ -137,6 +138,18 @@ public static class BowireServiceCollectionExtensions
         // so assembly scanning finds protocol plugins that haven't been touched
         // by the CLR yet (same logic as BowireProtocolRegistry.Discover).
         ForceLoadBowireAssemblies();
+
+        // #591 — where collections, environments and recordings live. Resolved
+        // here rather than per surface so the standalone tool, an embedding
+        // host and an IDE extension all reach the same answer for the same
+        // checkout: the repo's own .bowire/ when its manifest opts in,
+        // ~/.bowire/ otherwise (the unchanged default).
+        //
+        // Before this, the root was a static readonly field computed from the
+        // user profile, which is why "run the CLI with the workspace as its
+        // working directory and the data lands next to the code" was never
+        // true — the working directory had no say in it at all.
+        BowireStorageRoot.Apply();
 
         // Materialise the bootstrap options. MapBowire builds its own
         // BowireOptions later — that's the one bound to the workbench

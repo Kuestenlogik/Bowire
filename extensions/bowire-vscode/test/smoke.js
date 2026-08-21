@@ -97,18 +97,40 @@ async function run() {
     // already establishes what the body had to contain.
     step('workbench served', reported);
 
-    // 5. Storage location is deliberately NOT asserted here.
+    // 5. Storage lands in the workspace when its manifest opts in (#591).
     //
-    //    This step used to require `.bowire/` in the workspace folder, on the
-    //    assumption that starting the CLI there was enough to put it there. It
-    //    is not: the storage root is computed once from the user profile
-    //    (Auth/IBowireUserStore.cs), so the working directory never affects it
-    //    and the directory is never created. The test was asserting a
-    //    documented intention rather than a behaviour — and it was right to
-    //    fail, which is how the gap was found.
+    //    This step once asserted the same thing on a false premise — that
+    //    starting the CLI in the workspace was enough. It never was: the root
+    //    was computed from the user profile and the working directory had no
+    //    say. The assertion was right to fail, and failing is how the gap got
+    //    found.
     //
-    //    #591 decides how a workspace's data gets rooted at the workspace.
-    //    When it lands, this step comes back as a real assertion.
+    //    What makes it true now is the repository, not the editor: the runner
+    //    writes `.bowire/project.json` with `"storage": "project"`, and the
+    //    same checkout resolves the same way from a terminal or from CI. Only
+    //    run when the runner set that up, so the no-folder scenario skips it.
+    if (folder) {
+        const manifest = vscode.Uri.joinPath(folder.uri, '.bowire', 'project.json');
+        let optedIn = true;
+        try { await vscode.workspace.fs.stat(manifest); } catch { optedIn = false; }
+
+        if (optedIn) {
+            // Writing is what creates the store — starting the server does not
+            // touch disk on its own, so asserting before a write would only
+            // prove the directory the manifest already lives in exists.
+            const put = await fetch(`${reported}/api/environments`, {
+                method: 'PUT',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify([{ name: 'smoke', variables: {} }]),
+                signal: AbortSignal.timeout(15_000),
+            });
+            assert.ok(put.ok, `storing an environment failed: HTTP ${put.status}`);
+
+            const stored = vscode.Uri.joinPath(folder.uri, '.bowire', 'environments.json');
+            await vscode.workspace.fs.stat(stored);
+            step('storage rooted at the workspace', '.bowire/environments.json');
+        }
+    }
 
     // 6. Leave nothing running. Closing the panel is also what a user does,
     //    and it is what tells the extension to stop the CLI — without it the

@@ -67,6 +67,43 @@ public sealed class BowireProjectFile
     [JsonPropertyName("rules")]
     public string? Rules { get; set; }
 
+    /// <summary>
+    /// Where this project's collections, environments, recordings and presets
+    /// live: <c>"user"</c> (the default — <c>~/.bowire/</c>, shared across every
+    /// workspace on the machine) or <c>"project"</c> (this repo's
+    /// <c>.bowire/</c> directory, so the data travels with the checkout).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Opt-in on purpose (#591). Rooting storage at the project the moment a
+    /// manifest exists would silently relocate the data of everyone who already
+    /// uses <c>.bowire/project.json</c> for sources and rules — their
+    /// collections would appear to vanish. One line in the manifest is a small
+    /// price for nobody being surprised.
+    /// </para>
+    /// <para>
+    /// This is a property of the REPO, not of whoever launched Bowire, which is
+    /// what makes it work the same from the CLI, the standalone tool and an IDE
+    /// extension without any per-surface wiring. The working directory has
+    /// never had a say in it — that assumption is precisely what made #101's
+    /// "collections travel with the repo" claim false for months.
+    /// </para>
+    /// </remarks>
+    public string? Storage { get; set; }
+
+    /// <summary>Manifest value selecting project-local storage.</summary>
+    public const string StorageProject = "project";
+
+    /// <summary>Manifest value selecting the machine-wide user profile (the default).</summary>
+    public const string StorageUser = "user";
+
+    /// <summary>
+    /// True when this manifest asks for its data to live beside the code.
+    /// Absent / <c>"user"</c> both mean the machine-wide default.
+    /// </summary>
+    public bool UsesProjectStorage =>
+        string.Equals(Storage, StorageProject, StringComparison.OrdinalIgnoreCase);
+
     private static readonly JsonSerializerOptions SerOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -132,6 +169,17 @@ public sealed class BowireProjectFile
             CheckRelativePath("security.auth", Security.Auth, errors);
 
         CheckRelativePath("rules", Rules, errors);
+
+        // A typo here is expensive and silent: an unrecognised value would fall
+        // through to the machine-wide default, so the operator would believe
+        // their collections live in the repo while they are somewhere else
+        // entirely. Better to say so at validate time.
+        if (!string.IsNullOrWhiteSpace(Storage)
+            && !string.Equals(Storage, StorageProject, StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(Storage, StorageUser, StringComparison.OrdinalIgnoreCase))
+        {
+            errors.Add($"storage: expected '{StorageProject}' or '{StorageUser}', got '{Storage}'.");
+        }
 
         return errors;
     }

@@ -53,11 +53,48 @@ function findVsCode() {
     return candidates.find(c => c && existsSync(c)) ?? null;
 }
 
-/** A throwaway workspace, so the run cannot touch anything that matters. */
+/**
+ * A throwaway workspace, so the run cannot touch anything that matters.
+ *
+ * It carries a `.bowire/project.json` opting into project-local storage
+ * (#591), which is what lets the smoke test assert where the data lands.
+ * Without the manifest the CLI would use the machine-wide `~/.bowire/` — the
+ * correct default, and the reason the assertion has to set this up rather than
+ * assume it.
+ */
 function makeWorkspace() {
     const dir = mkdtempSync(join(tmpdir(), 'bowire-smoke-'));
     mkdirSync(join(dir, 'reports'), { recursive: true });
     writeFileSync(join(dir, 'README.md'), '# Bowire smoke workspace\n', 'utf8');
+
+    mkdirSync(join(dir, '.bowire'), { recursive: true });
+    writeFileSync(
+        join(dir, '.bowire', 'project.json'),
+        JSON.stringify({ version: 1, name: 'bowire-smoke', storage: 'project' }, null, 2) + '\n',
+        'utf8');
+
+    // Point the extension at THIS checkout's CLI when one is built, via the
+    // `bowire.cliPath` setting.
+    //
+    // Otherwise the run silently tests whatever `bowire` happens to be
+    // installed on the machine — which is how this test first failed after the
+    // storage work landed: PATH still held a build from earlier the same day,
+    // so the assertion measured an old binary and reported a feature as
+    // broken. Pinning it also means the test exercises `bowire.cliPath`
+    // itself, which is otherwise only covered by unit tests.
+    const localCli = resolve(extensionPath, '..', '..', 'artifacts', 'bin',
+        'Kuestenlogik.Bowire.Tool', 'debug', process.platform === 'win32' ? 'bowire.exe' : 'bowire');
+    if (existsSync(localCli)) {
+        mkdirSync(join(dir, '.vscode'), { recursive: true });
+        writeFileSync(
+            join(dir, '.vscode', 'settings.json'),
+            JSON.stringify({ 'bowire.cliPath': localCli }, null, 2) + '\n',
+            'utf8');
+        process.stdout.write(`CLI:       ${localCli}\n`);
+    } else {
+        process.stdout.write(`CLI:       (not built here — falling back to PATH)\n`);
+    }
+
     return dir;
 }
 
