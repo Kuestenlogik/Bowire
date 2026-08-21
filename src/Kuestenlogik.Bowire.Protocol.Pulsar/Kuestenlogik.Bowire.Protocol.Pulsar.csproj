@@ -16,6 +16,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="DotPulsar" />
+    <PackageReference Include="Google.Protobuf" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
