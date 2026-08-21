@@ -260,7 +260,7 @@ internal static class NuGetPackageInstaller
         // Download the .nupkg into a memory stream so we can both
         // write it to disk and read its nuspec for deps without two
         // network round trips.
-        var downloader = await repo.GetResourceAsync<FindPackageByIdResource>(ct);
+        var downloader = await GetRequiredResourceAsync<FindPackageByIdResource>(repo, ct);
         using var pkgStream = new MemoryStream();
         var downloaded = await downloader.CopyNupkgToStreamAsync(
             packageId, resolvedVersion, pkgStream, cache, logger, ct);
@@ -365,7 +365,7 @@ internal static class NuGetPackageInstaller
         // Download the .nupkg into an in-memory stream so we can read
         // its nuspec (for deps) and copy its lib files without hitting
         // disk twice.
-        var downloader = await repo.GetResourceAsync<FindPackageByIdResource>(ct);
+        var downloader = await GetRequiredResourceAsync<FindPackageByIdResource>(repo, ct);
         using var pkgStream = new MemoryStream();
         var downloaded = await downloader.CopyNupkgToStreamAsync(
             packageId, resolvedVersion, pkgStream, cache, logger, ct);
@@ -588,6 +588,10 @@ internal static class NuGetPackageInstaller
         {
             try
             {
+                // Null here is not an error: this loop is looking for a source
+                // that CAN serve the package, so one that cannot is skipped.
+                // The download paths use GetRequiredResourceAsync instead,
+                // because by then a source has already been chosen.
                 var resource = await repo.GetResourceAsync<FindPackageByIdResource>(ct);
                 if (resource is null) continue;
 
@@ -667,4 +671,32 @@ internal static class NuGetPackageInstaller
     // version.
     private static bool IsHostProvidedAssembly(string assemblyName) =>
         IsHostProvided(assemblyName);
+
+    /// <summary>
+    /// Fetch a NuGet resource from a source that must be able to provide it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>GetResourceAsync</c> returns null when the source does not offer the
+    /// resource at all — a v2 feed asked for a v3-only resource, or a URL that
+    /// answers but is not a package feed. NuGet.Protocol 7.9 annotates that
+    /// nullability, which is what surfaced it here; the possibility was always
+    /// there, only unstated.
+    /// </para>
+    /// <para>
+    /// The download paths need this rather than the null-skip the source
+    /// search uses: by then a source has already been chosen, so there is
+    /// nothing left to fall back to and continuing would dereference null.
+    /// Naming the source beats a NullReferenceException from inside NuGet.
+    /// </para>
+    /// </remarks>
+    private static async Task<T> GetRequiredResourceAsync<T>(
+        SourceRepository repo, CancellationToken ct)
+        where T : class, INuGetResource
+    {
+        var resource = await repo.GetResourceAsync<T>(ct);
+        return resource ?? throw new InvalidOperationException(
+            $"Source '{repo.PackageSource.Source}' cannot provide {typeof(T).Name}; "
+            + "it is probably not a NuGet v3 package feed.");
+    }
 }
