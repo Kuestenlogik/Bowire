@@ -50,20 +50,24 @@ describe('findCli', () => {
 
 describe('resolveCli', () => {
     const never = () => { throw new Error('PATH must not be probed when a path is configured'); };
+    /** No tool manifest anywhere up the tree. */
+    const noManifest = () => false;
 
     it('prefers the configured path over PATH', () => {
         // Someone who names a path has a reason — a local build, a second
         // version alongside the installed one. Silently preferring PATH would
         // run a different binary than the one they asked for.
         const r = workbench.resolveCli({ configuredPath: '/opt/bowire', runner: never, exists: () => true });
-        assert.deepEqual(r, { path: '/opt/bowire', source: 'setting' });
+        assert.equal(r.command, '/opt/bowire');
+        assert.deepEqual(r.prefixArgs, []);
+        assert.equal(r.source, 'setting');
     });
 
     it('reports a configured path that does not exist instead of falling back', () => {
         // Falling through to PATH on a typo would look like the setting was
         // ignored — the harder of the two failures to diagnose.
         const r = workbench.resolveCli({ configuredPath: '/nope/bowire', runner: never, exists: () => false });
-        assert.equal(r.path, null);
+        assert.equal(r.command, null);
         assert.equal(r.source, 'setting');
         assert.equal(r.configured, '/nope/bowire');
     });
@@ -75,22 +79,168 @@ describe('resolveCli', () => {
             runner: never,
             exists: p => p === '/repo/tools/bowire',
         });
-        assert.equal(r.path, '/repo/tools/bowire');
+        assert.equal(r.command, '/repo/tools/bowire');
     });
 
     it('searches PATH when the setting is empty or whitespace', () => {
         for (const configuredPath of ['', '   ', undefined]) {
             const r = workbench.resolveCli({
                 configuredPath,
+                exists: noManifest,
                 runner: () => ({ status: 0, stdout: '/usr/bin/bowire\n' }),
             });
-            assert.deepEqual(r, { path: '/usr/bin/bowire', source: 'path' });
+            assert.equal(r.command, '/usr/bin/bowire');
+            assert.deepEqual(r.prefixArgs, []);
+            assert.equal(r.source, 'path');
         }
     });
 
     it('reports source path when nothing is found at all', () => {
-        const r = workbench.resolveCli({ runner: () => ({ status: 1, stdout: '' }) });
-        assert.deepEqual(r, { path: null, source: 'path' });
+        const r = workbench.resolveCli({ exists: noManifest, runner: () => ({ status: 1, stdout: '' }) });
+        assert.equal(r.command, null);
+        assert.equal(r.source, 'path');
+    });
+});
+
+describe('tool manifest resolution (#589)', () => {
+    const MANIFEST = { tools: { 'Kuestenlogik.Bowire.Tool': { version: '2.6.0', commands: ['bowire'] } } };
+
+    /** exists()/read() pair backed by a fake filesystem keyed by path. */
+    const fakeFs = files => ({
+        exists: p => Object.hasOwn(files, p),
+        read: p => files[p],
+    });
+
+    // Resolved, not literal: findToolManifest normalises its start directory
+    // (as it must, to walk parents), so on Windows "/repo" becomes "C:\repo".
+    // A fake filesystem keyed by the literal string would never be hit — which
+    // is exactly how the first version of these tests failed.
+    const REPO = require('node:path').resolve('/repo');
+    const manifestAt = dir => require('node:path').join(dir, '.config', 'dotnet-tools.json');
+
+    it('runs the pinned tool instead of whatever is on PATH', () => {
+        // The point of the pin: the repo says which Bowire it is tested with,
+        // and that beats whatever this machine happens to have installed.
+        const files = { [manifestAt(REPO)]: JSON.stringify(MANIFEST) };
+        const r = workbench.resolveCli({
+            workspaceDir: REPO,
+            ...fakeFs(files),
+            runner: () => ({ status: 0, stdout: '/usr/bin/bowire\n' }),
+        });
+
+        assert.equal(r.source, 'manifest');
+        assert.equal(r.command, 'dotnet');
+        assert.deepEqual(r.prefixArgs, ['tool', 'run', 'bowire']);
+    });
+
+    it('finds a manifest at the repo root from a subdirectory', () => {
+        // Same walk .NET itself does — a pin at the root governs a command run
+        // several directories down.
+        const files = { [manifestAt(REPO)]: JSON.stringify(MANIFEST) };
+        const found = workbench.findToolManifest(
+            require('node:path').join(REPO, 'src', 'inner'),
+            fakeFs(files).exists, fakeFs(files).read);
+
+        assert.equal(found, manifestAt(REPO));
+    });
+
+    it('ignores a manifest that does not list Bowire', () => {
+        // A repo pinning only, say, dotnet-ef has not expressed anything about
+        // Bowire — falling through to PATH is correct there.
+        const files = {
+            [manifestAt(REPO)]: JSON.stringify({ tools: { 'dotnet-ef': { version: '9.0.0' } } }),
+        };
+        const r = workbench.resolveCli({
+            workspaceDir: REPO,
+            ...fakeFs(files),
+            runner: () => ({ status: 0, stdout: '/usr/bin/bowire\n' }),
+        });
+
+        assert.equal(r.source, 'path');
+        assert.equal(r.command, '/usr/bin/bowire');
+    });
+
+    it('ignores a malformed manifest rather than failing the launch', () => {
+        // `dotnet tool restore` reports a broken manifest far better than this
+        // extension could. Refusing to start over one would be worse than
+        // starting with the machine's own Bowire.
+        const files = { [manifestAt(REPO)]: '{ not json' };
+        const r = workbench.resolveCli({
+            workspaceDir: REPO,
+            ...fakeFs(files),
+            runner: () => ({ status: 0, stdout: '/usr/bin/bowire\n' }),
+        });
+
+        assert.equal(r.source, 'path');
+    });
+
+    it('the explicit setting still wins over a manifest', () => {
+        // Specific beats shared: someone who named a path is debugging
+        // something, and a repo-wide pin must not override that.
+        const files = { [manifestAt(REPO)]: JSON.stringify(MANIFEST) };
+        const r = workbench.resolveCli({
+            configuredPath: '/opt/bowire',
+            workspaceDir: REPO,
+            exists: p => p === '/opt/bowire' || Object.hasOwn(files, p),
+            read: p => files[p],
+            runner: () => { throw new Error('PATH must not be probed'); },
+        });
+
+        assert.equal(r.source, 'setting');
+        assert.equal(r.command, '/opt/bowire');
+    });
+
+    it('accepts a bare dotnet-tools.json beside the .config variant', () => {
+        // `dotnet new tool-manifest` produced exactly this against a real SDK,
+        // and `dotnet tool run` resolves it. Looking only in .config/ missed a
+        // manifest the SDK itself honours.
+        const bare = require('node:path').join(REPO, 'dotnet-tools.json');
+        const files = { [bare]: JSON.stringify(MANIFEST) };
+        const r = workbench.resolveCli({
+            workspaceDir: REPO,
+            ...fakeFs(files),
+            runner: () => ({ status: 0, stdout: '/usr/bin/bowire\n' }),
+        });
+
+        assert.equal(r.source, 'manifest');
+        assert.equal(r.manifest, bare);
+    });
+
+    it('prefers .config/ when both exist, as .NET does', () => {
+        const files = {
+            [manifestAt(REPO)]: JSON.stringify(MANIFEST),
+            [require('node:path').join(REPO, 'dotnet-tools.json')]: JSON.stringify(MANIFEST),
+        };
+        const r = workbench.resolveCli({ workspaceDir: REPO, ...fakeFs(files), runner: () => ({ status: 1 }) });
+
+        assert.equal(r.manifest, manifestAt(REPO));
+    });
+
+    it('no workspace folder means no manifest lookup', () => {
+        const r = workbench.resolveCli({
+            workspaceDir: '',
+            exists: () => false,
+            runner: () => ({ status: 1, stdout: '' }),
+        });
+
+        assert.equal(r.source, 'path');
+    });
+});
+
+describe('manifestStartFailureMessage (#589)', () => {
+    it('offers restore when the tool is simply not fetched yet', () => {
+        const msg = workbench.manifestStartFailureMessage('/repo/.config/dotnet-tools.json', 'exited with code 1');
+        assert.match(msg, /dotnet tool restore/);
+        assert.match(msg, /dotnet-tools\.json/);
+    });
+
+    it('does not send someone without an SDK round in circles', () => {
+        // Telling them to run `restore` when there is nothing to restore with
+        // is advice that cannot succeed.
+        const msg = workbench.manifestStartFailureMessage(
+            '/repo/.config/dotnet-tools.json', "'dotnet' is not recognized as an internal or external command");
+        assert.match(msg, /\.NET SDK is not available/);
+        assert.doesNotMatch(msg, /dotnet tool restore/);
     });
 });
 

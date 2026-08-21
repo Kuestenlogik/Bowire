@@ -12,7 +12,8 @@
 'use strict';
 
 const { spawnSync } = require('node:child_process');
-const { existsSync } = require('node:fs');
+const { existsSync, readFileSync } = require('node:fs');
+const { join: joinPath, dirname: dirnamePath, resolve: resolvePath } = require('node:path');
 
 /** Name the CLI is installed under on each platform. */
 const BINARY = process.platform === 'win32' ? 'bowire.exe' : 'bowire';
@@ -74,23 +75,105 @@ function expandPathVariables(value, variables = {}) {
  * typo falling through to PATH would look like the setting was ignored, which
  * is the harder failure to diagnose of the two.
  */
+/**
+ * Where a .NET tool manifest can sit, relative to a directory, in the order
+ * .NET itself prefers.
+ *
+ * Both are real. `.config/dotnet-tools.json` is the documented location and
+ * what most repos have; a bare `dotnet-tools.json` beside it also resolves,
+ * and is what `dotnet new tool-manifest` produced when this was tested against
+ * a real SDK. Looking only in `.config/` silently missed a manifest the SDK
+ * itself honours — the kind of gap only an end-to-end run surfaces.
+ */
+const TOOL_MANIFEST_NAMES = [
+    ['.config', 'dotnet-tools.json'],
+    ['dotnet-tools.json'],
+];
+
+/** The package id a Bowire entry uses in a tool manifest. */
+const TOOL_PACKAGE_ID = 'kuestenlogik.bowire.tool';
+
+/**
+ * Walk up from `startDir` for a `.config/dotnet-tools.json` that lists Bowire.
+ *
+ * The same search .NET itself performs, for the same reason: a manifest at the
+ * repository root should govern a command run three directories down.
+ *
+ * Returns the manifest path when one lists Bowire, else null. A manifest that
+ * exists but lists other tools is not a match — falling through to PATH is
+ * right there, because the repo simply does not pin Bowire.
+ */
+function findToolManifest(startDir, exists = existsSync, read = readFileSync) {
+    if (!startDir) return null;
+
+    let dir = resolvePath(startDir);
+    for (;;) {
+        for (const parts of TOOL_MANIFEST_NAMES) {
+            const candidate = joinPath(dir, ...parts);
+            if (!exists(candidate)) continue;
+            try {
+                const manifest = JSON.parse(String(read(candidate, 'utf8')));
+                const tools = manifest?.tools ?? {};
+                const listed = Object.keys(tools)
+                    .some(id => id.toLowerCase() === TOOL_PACKAGE_ID);
+                if (listed) return candidate;
+            } catch {
+                // A malformed manifest is not this extension's problem to
+                // report — `dotnet tool restore` says it far better. Treat it
+                // as "no pin here" and keep looking.
+            }
+        }
+
+        const parent = dirnamePath(dir);
+        if (parent === dir) return null;
+        dir = parent;
+    }
+}
+
+/**
+ * How to start Bowire: the explicit setting, then a workspace tool manifest,
+ * then PATH.
+ *
+ * Each step answers a different question, which is why the order is not
+ * arbitrary. The setting is "this exact binary, because I said so". The
+ * manifest is "the version this repository is tested with", pinned in git and
+ * shared with everyone who clones it. PATH is "whatever this machine has".
+ * Specific beats shared beats ambient.
+ *
+ * Returns `{ command, prefixArgs, source }`. The manifest case runs
+ * `dotnet tool run bowire`, which is why the caller cannot assume the command
+ * is the CLI itself — that shape is the whole reason for `prefixArgs`.
+ */
 function resolveCli(options = {}) {
     const {
         configuredPath = '',
         variables = {},
+        workspaceDir = '',
         runner = spawnSync,
         exists = existsSync,
+        read = readFileSync,
     } = options;
 
     const configured = expandPathVariables(configuredPath, variables).trim();
     if (configured) {
         return exists(configured)
-            ? { path: configured, source: 'setting' }
-            : { path: null, source: 'setting', configured };
+            ? { command: configured, prefixArgs: [], source: 'setting' }
+            : { command: null, prefixArgs: [], source: 'setting', configured };
+    }
+
+    const manifest = findToolManifest(workspaceDir, exists, read);
+    if (manifest) {
+        // `dotnet` rather than a resolved path: the manifest pins a version,
+        // and letting the SDK honour that pin is the point. It also means the
+        // tool need not be installed yet — `dotnet tool restore` fetches it,
+        // which is what the caller offers when this fails to start.
+        return { command: 'dotnet', prefixArgs: ['tool', 'run', 'bowire'], source: 'manifest', manifest };
     }
 
     const found = findCli(runner);
-    return found ? { path: found, source: 'path' } : { path: null, source: 'path' };
+    return found
+        ? { command: found, prefixArgs: [], source: 'path' }
+        : { command: null, prefixArgs: [], source: 'path' };
 }
 
 /**
@@ -293,11 +376,32 @@ function missingCliMessage(resolution = { source: 'path' }) {
         + 'or set `bowire.cliPath` if it is already installed somewhere else.';
 }
 
+/**
+ * What to say when a manifest-pinned Bowire will not start.
+ *
+ * Almost always one of two things, and they need opposite answers: the tool is
+ * listed but not fetched yet (`dotnet tool restore`, one command), or there is
+ * no .NET SDK on this machine at all (nothing to restore with — install the
+ * CLI normally instead). Telling someone to run `restore` when they have no
+ * SDK sends them in a circle.
+ */
+function manifestStartFailureMessage(manifestPath, detail) {
+    const looksLikeMissingSdk = /not (recognized|found)|no such file|ENOENT/i.test(String(detail ?? ''));
+    if (looksLikeMissingSdk) {
+        return `\`${manifestPath}\` pins a Bowire version, but the .NET SDK is not available to run it. `
+            + 'Install the SDK, or install Bowire directly and clear the manifest entry.';
+    }
+    return `Bowire is pinned in \`${manifestPath}\` but is not restored yet. `
+        + 'Run `dotnet tool restore` in the workspace, then try again.';
+}
+
 module.exports = {
     BINARY,
     MINIMUM_CLI_VERSION,
     findCli,
     resolveCli,
+    findToolManifest,
+    manifestStartFailureMessage,
     describeSpawnError,
     expandPathVariables,
     parseCliVersion,

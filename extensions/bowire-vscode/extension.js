@@ -26,6 +26,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const {
     resolveCli,
+    manifestStartFailureMessage,
     describeSpawnError,
     readCliVersion,
     checkCliVersion,
@@ -57,10 +58,18 @@ function stopProcess(channel) {
  * Start the CLI and resolve with the URL it reports. Rejects if it exits or
  * never announces itself, so the panel is never opened onto a dead port.
  */
-function startWorkbench(cli, cwd, port, channel) {
+function startWorkbench(resolution, cwd, port, channel) {
     return new Promise((resolve, reject) => {
-        const proc = spawn(cli, buildArgs(port), { cwd, windowsHide: true });
+        // command + prefixArgs rather than a single path: a manifest-pinned
+        // Bowire runs as `dotnet tool run bowire`, so the thing being spawned
+        // is not always the CLI itself.
+        const cli = resolution.command;
+        const proc = spawn(cli, [...resolution.prefixArgs, ...buildArgs(port)], { cwd, windowsHide: true });
         child = proc;
+
+        // Kept so the failure paths below can name the manifest instead of
+        // blaming `dotnet`, which is never the actual problem.
+        let lastOutput = '';
 
         let settled = false;
         const finish = (fn, value) => {
@@ -72,6 +81,7 @@ function startWorkbench(cli, cwd, port, channel) {
 
         const onData = (buffer) => {
             const text = String(buffer);
+            lastOutput = text;
             log(channel, text.trimEnd());
             const url = parseListeningUrl(text);
             if (url) finish(resolve, url);
@@ -80,9 +90,19 @@ function startWorkbench(cli, cwd, port, channel) {
         proc.stdout?.on('data', onData);
         proc.stderr?.on('data', onData);
 
-        proc.on('error', (err) => finish(reject, new Error(describeSpawnError(err, { cli, cwd }))));
-        proc.on('exit', (code) =>
-            finish(reject, new Error(`Bowire exited with code ${code} before it started serving.`)));
+        proc.on('error', (err) => finish(reject, new Error(
+            resolution.source === 'manifest'
+                ? manifestStartFailureMessage(resolution.manifest, err.message)
+                : describeSpawnError(err, { cli, cwd }))));
+
+        proc.on('exit', (code) => finish(reject, new Error(
+            // A manifest-pinned tool that exits immediately has almost always
+            // not been restored. Saying "Bowire exited with code 1" would be
+            // true and useless; the fix is one command and belongs in the
+            // message.
+            resolution.source === 'manifest'
+                ? manifestStartFailureMessage(resolution.manifest, lastOutput)
+                : `Bowire exited with code ${code} before it started serving.`)));
 
         // Generous: a first run restores plugins and can take a while on a
         // cold machine. Failing here is better than a panel that never loads.
@@ -124,8 +144,11 @@ async function openWorkbench(context, channel) {
     const resolution = resolveCli({
         configuredPath,
         variables: folder ? { workspaceFolder: folder.uri.fsPath } : {},
+        // Where to look for `.config/dotnet-tools.json`. Only meaningful with
+        // a folder open — a manifest is a property of a checkout.
+        workspaceDir: folder ? folder.uri.fsPath : '',
     });
-    if (!resolution.path) {
+    if (!resolution.command) {
         const isSetting = resolution.source === 'setting';
         const action = isSetting ? 'Open settings' : 'Open install docs';
         const answer = await vscode.window.showErrorMessage(missingCliMessage(resolution), action);
@@ -136,25 +159,35 @@ async function openWorkbench(context, channel) {
         }
         return;
     }
-    const cli = resolution.path;
-    log(channel, `Using Bowire at ${cli} (from ${resolution.source === 'setting' ? 'bowire.cliPath' : 'PATH'}).`);
+    const origin = {
+        setting: 'bowire.cliPath',
+        manifest: resolution.manifest,
+        path: 'PATH',
+    }[resolution.source];
+    log(channel, `Using ${[resolution.command, ...resolution.prefixArgs].join(' ')} (from ${origin}).`);
 
     // Check the version before spawning. A CLI too old to understand the
     // arguments below exits immediately, and the resulting "exited before it
     // started serving" says nothing about why — which is exactly the kind of
     // failure that costs an afternoon.
-    const version = checkCliVersion(readCliVersion(cli));
-    log(channel, `Version: ${version.version ?? 'not reported'}`);
-    if (!version.ok) {
-        await vscode.window.showErrorMessage(version.message);
-        return;
+    //
+    // Skipped for a manifest: asking a not-yet-restored tool for its version
+    // fails for a reason that has nothing to do with the version, and the
+    // start path already reports that case with the command that fixes it.
+    if (resolution.source !== 'manifest') {
+        const version = checkCliVersion(readCliVersion(resolution.command));
+        log(channel, `Version: ${version.version ?? 'not reported'}`);
+        if (!version.ok) {
+            await vscode.window.showErrorMessage(version.message);
+            return;
+        }
     }
 
     let url;
     try {
         url = await vscode.window.withProgress(
             { location: vscode.ProgressLocation.Notification, title: 'Starting Bowire…' },
-            () => startWorkbench(cli, cwd, port, channel));
+            () => startWorkbench(resolution, cwd, port, channel));
     } catch (err) {
         stopProcess(channel);
         await vscode.window.showErrorMessage(err.message);
