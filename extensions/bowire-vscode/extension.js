@@ -36,6 +36,13 @@ const {
     buildWebviewHtml,
     missingCliMessage,
 } = require('./lib/workbench');
+const {
+    PINNED_CLI_VERSION,
+    ridFor,
+    installManagedCli,
+    unsupportedPlatformMessage,
+    downloadOfferMessage,
+} = require('./lib/download');
 
 /** The single panel and the process behind it. */
 let panel = null;
@@ -112,6 +119,80 @@ function startWorkbench(resolution, cwd, port, channel) {
     });
 }
 
+/**
+ * The fourth step of the chain (#590): offer to fetch a CLI when nothing else
+ * turned one up.
+ *
+ * "Offer" is the operative word. Pulling ~60 MB unannounced is not something an
+ * editor should do on a command someone ran to look at a UI, and some
+ * environments refuse outbound traffic outright — so the default asks, and
+ * `bowire.autoDownload: never` removes even the question.
+ *
+ * Returns a resolution the caller can start, or null when there is nothing on
+ * offer, the user declined, or the download failed. All three end up at the
+ * same place: today's not-found message, unchanged.
+ */
+async function offerManagedCli(context, channel) {
+    const mode = vscode.workspace.getConfiguration('bowire').get('autoDownload', 'prompt');
+    if (mode === 'never') return null;
+
+    // A platform with no published build has nothing to offer. Say so instead
+    // of asking a question whose yes cannot be honoured.
+    if (!ridFor()) {
+        log(channel, unsupportedPlatformMessage());
+        return null;
+    }
+
+    if (mode !== 'always') {
+        const answer = await vscode.window.showInformationMessage(
+            downloadOfferMessage(PINNED_CLI_VERSION),
+            'Download', 'Not now');
+        if (answer !== 'Download') return null;
+    }
+
+    const root = context.globalStorageUri.fsPath;
+    try {
+        const cli = await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: `Downloading Bowire ${PINNED_CLI_VERSION}…`,
+            cancellable: true,
+        }, async (progress, token) => {
+            const controller = new AbortController();
+            token.onCancellationRequested(() => controller.abort());
+
+            // VS Code's progress is incremental, so the absolute fraction has
+            // to be differenced. A release that reports no Content-Length gives
+            // a null fraction, and reporting nothing leaves the bar
+            // indeterminate — which is honest, rather than a bar that invents
+            // its own progress.
+            let reported = 0;
+            return await installManagedCli({
+                root,
+                signal: controller.signal,
+                onProgress: (fraction) => {
+                    if (fraction === null) return;
+                    const percent = fraction * 100;
+                    progress.report({ increment: percent - reported });
+                    reported = percent;
+                },
+            });
+        });
+
+        log(channel, `Downloaded Bowire ${PINNED_CLI_VERSION} to ${cli}.`);
+        return { command: cli, prefixArgs: [], source: 'managed' };
+    } catch (err) {
+        // Cancelling is a choice, not a fault: it belongs in the log, not in an
+        // error notification the user has to dismiss after asking for it.
+        if (err?.name === 'AbortError') {
+            log(channel, 'Download cancelled.');
+            return null;
+        }
+        log(channel, `Download failed: ${err?.message ?? err}`);
+        await vscode.window.showErrorMessage(`Could not download Bowire: ${err?.message ?? err}`);
+        return null;
+    }
+}
+
 async function openWorkbench(context, channel) {
     if (panel) {
         panel.reveal(vscode.ViewColumn.Beside);
@@ -141,13 +222,25 @@ async function openWorkbench(context, channel) {
     // relative to it via ${workspaceFolder}, which is the form that can be
     // committed to `.vscode/settings.json` and shared with the team.
     const configuredPath = vscode.workspace.getConfiguration('bowire').get('cliPath', '');
-    const resolution = resolveCli({
+    let resolution = resolveCli({
         configuredPath,
         variables: folder ? { workspaceFolder: folder.uri.fsPath } : {},
         // Where to look for `.config/dotnet-tools.json`. Only meaningful with
         // a folder open — a manifest is a property of a checkout.
         workspaceDir: folder ? folder.uri.fsPath : '',
+        // Where an earlier download would have landed. Passing it here rather
+        // than letting the library guess keeps the storage location the
+        // extension host's business, which is the only thing that knows it.
+        managedRoot: context.globalStorageUri.fsPath,
     });
+
+    // Nothing anywhere — but only a genuine miss is worth offering a download
+    // for. A `bowire.cliPath` that does not resolve is a typo, and downloading
+    // 60 MB is not the answer to a typo.
+    if (!resolution.command && resolution.source === 'path') {
+        resolution = (await offerManagedCli(context, channel)) ?? resolution;
+    }
+
     if (!resolution.command) {
         const isSetting = resolution.source === 'setting';
         const action = isSetting ? 'Open settings' : 'Open install docs';
@@ -163,6 +256,7 @@ async function openWorkbench(context, channel) {
         setting: 'bowire.cliPath',
         manifest: resolution.manifest,
         path: 'PATH',
+        managed: 'the extension\'s managed download',
     }[resolution.source];
     log(channel, `Using ${[resolution.command, ...resolution.prefixArgs].join(' ')} (from ${origin}).`);
 

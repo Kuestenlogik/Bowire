@@ -14,11 +14,15 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import fsp, { mkdtemp, rm, readdir } from 'node:fs/promises';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const workbench = require(resolve(__dirname, '../../../extensions/bowire-vscode/lib/workbench.js'));
+const download = require(resolve(__dirname, '../../../extensions/bowire-vscode/lib/download.js'));
 
 describe('findCli', () => {
     it('returns the first path the probe reports', () => {
@@ -498,5 +502,255 @@ describe('manifest', () => {
         // the rest of the workspace settings are shared.
         assert.equal(prop.scope, 'machine-overridable');
         assert.match(prop.markdownDescription, /\$\{workspaceFolder\}/);
+    });
+
+    it('declares bowire.autoDownload with prompt as the default (#590)', () => {
+        // The default is the feature's whole safety story: a download that
+        // happens without being asked for is the thing this setting exists to
+        // prevent, and `never` has to be reachable for environments that
+        // refuse outbound traffic.
+        const pkg = require(resolve(__dirname, '../../../extensions/bowire-vscode/package.json'));
+        const prop = pkg.contributes.configuration.properties['bowire.autoDownload'];
+        assert.ok(prop, 'bowire.autoDownload is not contributed');
+        assert.equal(prop.default, 'prompt');
+        assert.deepEqual(prop.enum, ['prompt', 'always', 'never']);
+        assert.equal(prop.enum.length, prop.enumDescriptions.length);
+    });
+});
+
+describe('managed download (#590)', () => {
+    describe('ridFor', () => {
+        it('maps the six published platform/arch pairs', () => {
+            assert.equal(download.ridFor('win32', 'x64'), 'win-x64');
+            assert.equal(download.ridFor('win32', 'arm64'), 'win-arm64');
+            assert.equal(download.ridFor('linux', 'x64'), 'linux-x64');
+            assert.equal(download.ridFor('linux', 'arm64'), 'linux-arm64');
+            assert.equal(download.ridFor('darwin', 'x64'), 'osx-x64');
+            assert.equal(download.ridFor('darwin', 'arm64'), 'osx-arm64');
+        });
+
+        it('returns null rather than guessing for platforms with no build', () => {
+            // A guessed RID becomes a 404 the user can do nothing about;
+            // "no build for this platform" is a complete answer.
+            assert.equal(download.ridFor('linux', 'arm'), null);
+            assert.equal(download.ridFor('freebsd', 'x64'), null);
+            assert.equal(download.ridFor('win32', 'ia32'), null);
+        });
+    });
+
+    describe('asset names', () => {
+        it('matches what the release workflow actually publishes', () => {
+            // These names are pinned by release.yml (zip for Windows RIDs,
+            // tar.gz for the rest) and linked by the marketing site through
+            // releases/latest/download. A rename here downloads nothing.
+            assert.equal(download.assetNameFor('win-x64'), 'bowire-win-x64.zip');
+            assert.equal(download.assetNameFor('win-arm64'), 'bowire-win-arm64.zip');
+            assert.equal(download.assetNameFor('linux-x64'), 'bowire-linux-x64.tar.gz');
+            assert.equal(download.assetNameFor('osx-arm64'), 'bowire-osx-arm64.tar.gz');
+        });
+
+        it('builds release URLs against the v-prefixed tag', () => {
+            const urls = download.downloadUrls('2.5.0', 'linux-x64');
+            assert.match(urls.archive, /\/releases\/download\/v2\.5\.0\/bowire-linux-x64\.tar\.gz$/);
+            assert.match(urls.checksums, /\/releases\/download\/v2\.5\.0\/checksums\.txt$/);
+        });
+    });
+
+    describe('expectedDigest', () => {
+        const hash = 'a'.repeat(64);
+        const other = 'b'.repeat(64);
+
+        it('reads the binary-mode form sha256sum writes on Windows runners', () => {
+            const manifest = `${other} *bowire-win-x64.zip\n${hash} *bowire-linux-x64.tar.gz\n`;
+            assert.equal(download.expectedDigest(manifest, 'bowire-linux-x64.tar.gz'), hash);
+        });
+
+        it('reads the text-mode form GNU coreutils writes on Linux', () => {
+            // Which form a release carries depends on the runner that produced
+            // it, so a parser that knows only one works until it doesn't.
+            const manifest = `${hash}  bowire-linux-x64.tar.gz\n`;
+            assert.equal(download.expectedDigest(manifest, 'bowire-linux-x64.tar.gz'), hash);
+        });
+
+        it('does not match an asset by prefix', () => {
+            // `bowire-win-x64.zip` must not satisfy a lookup for
+            // `bowire-win-x64.zip.sig` or vice versa.
+            const manifest = `${hash} *bowire-win-x64.zip.sig\n`;
+            assert.equal(download.expectedDigest(manifest, 'bowire-win-x64.zip'), null);
+        });
+
+        it('returns null when the release lists no digest for the asset', () => {
+            const manifest = `${hash} *bowire-osx-x64.tar.gz\n`;
+            assert.equal(download.expectedDigest(manifest, 'bowire-win-x64.zip'), null);
+        });
+
+        it('ignores lines that are not digests', () => {
+            const manifest = `# generated\n\n${hash} *bowire-win-x64.zip\n`;
+            assert.equal(download.expectedDigest(manifest, 'bowire-win-x64.zip'), hash);
+        });
+    });
+
+    describe('install paths', () => {
+        it('points inside the directory the archives carry', () => {
+            // The archives unpack to `bowire-<rid>/`, so the binary is one
+            // level down — assuming a flat archive would produce a path that
+            // never exists.
+            assert.equal(
+                download.managedCliPath('/store', '2.5.0', 'linux-x64', 'linux'),
+                join('/store', 'cli', '2.5.0', 'bowire-linux-x64', 'bowire'));
+            assert.equal(
+                download.managedCliPath('/store', '2.5.0', 'win-x64', 'win32'),
+                join('/store', 'cli', '2.5.0', 'bowire-win-x64', 'bowire.exe'));
+        });
+
+        it('keeps the pinned version and drops the rest', () => {
+            assert.deepEqual(
+                download.staleCliVersions(['2.3.0', '2.5.0', '2.4.0'], '2.5.0'),
+                ['2.3.0', '2.4.0']);
+            assert.deepEqual(download.staleCliVersions([], '2.5.0'), []);
+        });
+    });
+
+    describe('resolution order', () => {
+        it('prefers PATH over a CLI it downloaded earlier', () => {
+            // An installed Bowire is the one the terminal and CI use. Quietly
+            // preferring our private copy would have the editor drive a
+            // different version than everything else on the machine.
+            const managed = download.managedCliPath('/store', download.PINNED_CLI_VERSION,
+                download.ridFor() ?? 'linux-x64');
+            const resolution = workbench.resolveCli({
+                managedRoot: '/store',
+                runner: () => ({ status: 0, stdout: '/usr/bin/bowire\n' }),
+                exists: p => p === managed,
+            });
+            assert.equal(resolution.source, 'path');
+            assert.equal(resolution.command, '/usr/bin/bowire');
+        });
+
+        it('uses the downloaded CLI when PATH has nothing', () => {
+            const managed = download.managedCliPath('/store', download.PINNED_CLI_VERSION,
+                download.ridFor() ?? 'linux-x64');
+            const resolution = workbench.resolveCli({
+                managedRoot: '/store',
+                runner: () => ({ status: 1, stdout: '' }),
+                exists: p => p === managed,
+            });
+            assert.equal(resolution.source, 'managed');
+            assert.equal(resolution.command, managed);
+        });
+
+        it('reports a plain miss when the download is not there either', () => {
+            // Removing the storage folder has to restore the not-found state
+            // cleanly rather than leaving a path to a file that is gone.
+            const resolution = workbench.resolveCli({
+                managedRoot: '/store',
+                runner: () => ({ status: 1, stdout: '' }),
+                exists: () => false,
+            });
+            assert.equal(resolution.command, null);
+            assert.equal(resolution.source, 'path');
+        });
+
+        it('never reaches the download when a manifest pins Bowire', () => {
+            const resolution = workbench.resolveCli({
+                workspaceDir: '/repo',
+                managedRoot: '/store',
+                runner: () => ({ status: 1, stdout: '' }),
+                exists: p => String(p).replace(/\\/g, '/').endsWith('/repo/.config/dotnet-tools.json'),
+                read: () => JSON.stringify({ tools: { 'kuestenlogik.bowire.tool': { version: '2.4.0' } } }),
+            });
+            assert.equal(resolution.source, 'manifest');
+        });
+    });
+
+    describe('installManagedCli', () => {
+        // A tiny fake release: one text response for checksums.txt, one byte
+        // stream for the archive. Enough to drive the real ordering logic
+        // without touching the network.
+        function fakeRelease({ payload = 'archive-bytes', manifestFor = null } = {}) {
+            const bytes = Buffer.from(payload);
+            const digest = createHash('sha256').update(bytes).digest('hex');
+            const asset = download.assetNameFor(download.ridFor('linux', 'x64'));
+            const manifest = manifestFor ?? `${digest} *${asset}\n`;
+            const seen = [];
+            const fetchImpl = async (url) => {
+                seen.push(url);
+                if (url.endsWith('checksums.txt')) {
+                    return { ok: true, status: 200, text: async () => manifest };
+                }
+                return {
+                    ok: true,
+                    status: 200,
+                    headers: { get: () => String(bytes.length) },
+                    body: (async function* () { yield bytes; })(),
+                };
+            };
+            return { fetchImpl, digest, asset, seen };
+        }
+
+        it('fetches digests before the payload', async () => {
+            // Discovering a release cannot be verified after pulling 60 MB
+            // down a metered connection is a poor trade for one request.
+            const release = fakeRelease();
+            const dir = await mkdtemp(join(tmpdir(), 'bowire-590-'));
+            await download.installManagedCli({
+                root: dir,
+                version: '9.9.9',
+                platform: 'linux',
+                arch: 'x64',
+                fetchImpl: release.fetchImpl,
+                runner: () => ({ status: 0 }),
+                fs: { ...fsp, chmod: async () => {} },
+            });
+            assert.match(release.seen[0], /checksums\.txt$/);
+            await rm(dir, { recursive: true, force: true });
+        });
+
+        it('refuses a release that publishes no digest for the asset', async () => {
+            const release = fakeRelease({ manifestFor: `${'c'.repeat(64)} *something-else.zip\n` });
+            const dir = await mkdtemp(join(tmpdir(), 'bowire-590-'));
+            await assert.rejects(
+                () => download.installManagedCli({
+                    root: dir,
+                    version: '9.9.9',
+                    platform: 'linux',
+                    arch: 'x64',
+                    fetchImpl: release.fetchImpl,
+                    runner: () => ({ status: 0 }),
+                }),
+                /publishes no checksums\.txt/);
+            // And it stopped before spending the bandwidth.
+            assert.equal(release.seen.length, 1);
+            await rm(dir, { recursive: true, force: true });
+        });
+
+        it('unpacks nothing when the digest does not match', async () => {
+            const release = fakeRelease({ manifestFor: `${'d'.repeat(64)} *bowire-linux-x64.tar.gz\n` });
+            const dir = await mkdtemp(join(tmpdir(), 'bowire-590-'));
+            let extracted = false;
+            await assert.rejects(
+                () => download.installManagedCli({
+                    root: dir,
+                    version: '9.9.9',
+                    platform: 'linux',
+                    arch: 'x64',
+                    fetchImpl: release.fetchImpl,
+                    runner: () => { extracted = true; return { status: 0 }; },
+                }),
+                /does not match the checksum/);
+            assert.equal(extracted, false, 'the extractor ran on an unverified archive');
+
+            // And the partial file is gone rather than left to be mistaken for
+            // a finished download.
+            const left = await readdir(join(dir, 'cli', '9.9.9'));
+            assert.deepEqual(left, []);
+            await rm(dir, { recursive: true, force: true });
+        });
+
+        it('refuses a platform with no published build', async () => {
+            await assert.rejects(
+                () => download.installManagedCli({ root: '/store', platform: 'sunos', arch: 'x64' }),
+                /publishes no build for sunos\/x64/);
+        });
     });
 });

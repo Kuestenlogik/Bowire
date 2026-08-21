@@ -42,6 +42,22 @@
           "default": "",
           "scope": "machine-overridable",
           "markdownDescription": "Path to the `bowire` executable. Leave empty to search `PATH`. Supports `${workspaceFolder}`, so a project-local build can be committed to `.vscode/settings.json` and shared with the team."
+        },
+        "bowire.autoDownload": {
+          "type": "string",
+          "enum": [
+            "prompt",
+            "always",
+            "never"
+          ],
+          "enumDescriptions": [
+            "Ask before downloading a CLI when none is installed.",
+            "Download without asking.",
+            "Never download; show the install instructions instead."
+          ],
+          "default": "prompt",
+          "scope": "machine",
+          "markdownDescription": "What to do when no Bowire is found through `#bowire.cliPath#`, a tool manifest or `PATH`. A downloaded CLI is pinned to the version this extension was tested with, lands in the extension's own storage, and is never preferred over an installed Bowire."
         }
       }
     }
