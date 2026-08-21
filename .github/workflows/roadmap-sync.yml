@@ -15,7 +15,7 @@ name: Roadmap sync
 #     somehow bypasses the project_v2 event still gets picked up.
 #
 # Auth: reuses the org-secret BOWIRE_DISPATCH_TOKEN — the same PAT
-# that powers add-to-project.yml and Bowire.Bootcamp's notify
+# that powers roadmap-field-guard.yml and Bowire.Bootcamp's notify
 # workflow. Required scopes on top of repo (Contents R/W):
 #   - Organization projects: Read and write
 #   - Issues: Read and write

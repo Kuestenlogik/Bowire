@@ -1,6 +1,7 @@
 name: Bug Report
 description: Report a bug in Bowire
-# `roadmap` is the board's admission ticket — add-to-project.yml keys on it.
+# `roadmap` is the board's admission ticket — the Project's own "Auto-add to
+# project" rule filters on it.
 # The old `kind:bug` is gone: that label does not exist in this repo, and
 # GitHub drops unknown labels from a template SILENTLY, so bug reports were
 # arriving with no label at all, never reaching the board through the

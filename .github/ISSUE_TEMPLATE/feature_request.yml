@@ -1,6 +1,7 @@
 name: Feature Request
 description: Suggest a new feature
-# `roadmap` gets it onto the board (add-to-project.yml keys on it);
+# `roadmap` gets it onto the board (the Project's own "Auto-add to project"
+# rule filters on it);
 # `community-vote` is what the voting view filters by. The old
 # `kind:feature` is gone — the label does not exist here, GitHub drops
 # unknown template labels silently, and the kind now lives in the native

@@ -14,7 +14,7 @@ Concrete values live on the [Project board's field configuration](https://github
 | Field | Used for |
 |---|---|
 | **Status** | Kanban swim-lane: `Backlog` → `Next up` → `In progress` → `In review` → `Done`. The only field whose values are pinned by convention; everything else is editable. |
-| **Release** *(single-select, **mandatory**)* | The **cross-repo grouping** the roadmap is bucketed by ([`generate-roadmap.mjs`](../../scripts/ci/generate-roadmap.mjs)) — `vX.Y` (the **product** release the work targets) or `Backlog`. It spans **every repo** on the board, which a native (repo-scoped) `Milestone` can't: a sibling issue (Akka, Dis, …) rides the same product version as main-repo work, even though that repo tags its *own* patch version autonomously via the release cascade. It's a grouping key — it has **no lifecycle** (see `Milestone` for open/closed). Never empty — see [Release is mandatory](#release-is-mandatory). |
+| **Release** *(single-select)* | The **cross-repo grouping** the roadmap is bucketed by ([`generate-roadmap.mjs`](../../scripts/ci/generate-roadmap.mjs)) — `vX.Y`, the **product** release the work targets, or empty for work not yet assigned to one. It spans **every repo** on the board, which a native (repo-scoped) `Milestone` can't: a sibling issue (Akka, Dis, …) rides the same product version as main-repo work, even though that repo tags its *own* patch version autonomously via the release cascade. It's a grouping key — it has **no lifecycle** (see `Milestone` for open/closed), and it is **independent of `Status`**: an item can target `v2.6` and still rest in `Backlog`. Required once the item leaves `Backlog` — see [Release is mandatory](#release-is-mandatory). |
 | **Milestone** *(built-in)* | The per-repo native milestone. On the **main repo** it is the product release's **lifecycle anchor + definition**: `open` = planned, **`closed` = shipped**, plus the version's *theme + due date*. Closing the main-repo `vX.Y` milestone drops the **whole cross-repo version** (main + siblings, grouped via the field) off the roadmap — one close ships the lot. The generator also reads it as a *fallback* version for any item missing a Release. Siblings need no native milestone (their version lives in the field); add one only where a repo genuinely wants its own native milestone view. |
 | **Area** *(single-select, **mandatory**)* | Which component an issue belongs to (`workbench`, `cli`, `security`, `mcp`, `plugin-sdk`, `mock`, `docs`, `site`, `bootcamp`, `multi`). The *primary* axis for "show me everything affecting X" — should be set on every item (use `multi` only for genuinely cross-cutting work). Replaced the old `Track` field, which overlapped with it. |
 | **Effort** *(actual)* | `Low` / `Medium` / `High`. Same scale as the org-level `Issue.Effort` so the Project mirror carries the *actual* size of the work next to the *plan*. Used to spot oversized issues (`High` = consider splitting before starting) and to right-size milestones. Not a commitment, just a sanity check. |
@@ -70,7 +70,7 @@ The board ships with the default *All items* view. The four views below are the 
 
 ## Conventions
 
-- **One field per concept**: `Release` is the *when* (which product version), `Area` is the *component*, the issue **Type** is the *kind* (Bug / Feature / Task). `Area` and `Release` are both mandatory. (The old `Track` field was dropped — it overlapped with `Area`.)
+- **One field per concept**: `Status` is the *where in the flow*, `Release` is the *when* (which product version), `Area` is the *component*, the issue **Type** is the *kind* (Bug / Feature / Task). `Status` and `Release` are independent axes — an item can target `v2.6` and still rest in `Backlog`. `Area` is mandatory from the start; `Release` becomes mandatory when the item is pulled out of `Backlog`. (The old `Track` field was dropped — it overlapped with `Area`.)
 - **Labels duplicate fields on purpose**: GitHub issue search needs labels (`is:open label:area:security`). Project filters need fields. The two are kept in sync so an issue is findable from either side.
 - **`roadmap` label** flags items that are tracked on the board. Throwaway bug reports don't need it.
 - **`community-vote` label** marks feature requests where reactions on the issue are read as priority signal. Don't comment "+1" — react with 👍.
@@ -82,9 +82,11 @@ The board ships with the default *All items* view. The four views below are the 
 - Status transitions: `Backlog` → `Next up` → `In progress` → `In review` → `Done`. The last two are driven by PR state where possible.
 - Milestones are managed in [Settings → Issues → Milestones](https://github.com/Kuestenlogik/Bowire/milestones). When a milestone closes, its issues move out of the `Roadmap` view automatically and the milestone drops out of `ROADMAP.md` (whose changelog moves to GitHub Releases).
 
-### Release is mandatory
+### Release is required once an item is pulled
 
-`Release` is the **cross-repo grouping** the roadmap is bucketed by ([`generate-roadmap.mjs`](../../scripts/ci/generate-roadmap.mjs)). An item with an **empty** field silently drops off the versioned roadmap, so the field is treated as **required**.
+`Release` is the **cross-repo grouping** the roadmap is bucketed by ([`generate-roadmap.mjs`](../../scripts/ci/generate-roadmap.mjs)). Empty means *not assigned to a version yet*, which is the correct and expected state for anything still resting in `Backlog` — those items render in the unscheduled bucket rather than disappearing.
+
+What is **not** acceptable is an item in flight with no version: `Next up`, `In progress` or `In review` while `Release` is empty means the decision about when it ships was skipped.
 
 **Why a field and not a milestone.** A GitHub milestone is **repo-scoped** — it can only hold issues from one repo. The product spans repos (main + siblings), so the cross-repo "which product release is this planned for?" grouping *can't* be a native milestone; the idiomatic Projects v2 answer is a board field. `Release` carries the **product** version — `v2.6`, `v2.7`, … — or `Backlog` when unscheduled. A sibling issue (Akka, Dis, Surgewave, Samples) gets the **Bowire product version** it rides, even though that repo tags its **own** independent version autonomously via the [release cascade](../../.github/workflows/release.yml). Version divergence between repos is expected (different NuGets/plugins, third-party rhythm, security patches) and doesn't matter here — the field is the shared product axis, the repo tag is the artifact version.
 
@@ -93,11 +95,11 @@ The board ships with the default *All items* view. The four views below are the 
 - **`Milestone` (native, main repo)** → the product release's **lifecycle**: `open` = planned, **`closed` = shipped**, plus theme + due date. **Close the main-repo `vX.Y` milestone to ship the whole cross-repo version** — the generator renders only versions whose milestone is still open, so closing it drops that version (main + siblings) off the roadmap in one action. That's how you "close" a product milestone even though the field itself can't be closed.
 - **Repo tag / NuGet version** → the artifact version. The **release scripts use the repo's own version** for packaging + release notes — never the `Release` field.
 
-**Mandatory, enforced in two places** (Projects v2 has no native required-field):
-- [`add-to-project.yml`](../../.github/workflows/add-to-project.yml) seeds a newly-added item to `Backlog` immediately, so nothing is ever empty at birth — only when still unset, so a later `labeled` re-fire never resets a triaged value.
-- [`roadmap-field-guard.yml`](../../.github/workflows/roadmap-field-guard.yml) is the backstop — a daily (and on-demand) check that **fails** if any *open* board issue has no `Release` at all (`Backlog` counts as set).
+**Required once an item is pulled**, not before — enforced by [`roadmap-field-guard.yml`](../../.github/workflows/roadmap-field-guard.yml), a daily (and on-demand) check that **fails** for any *open* item whose `Status` has left `Backlog` while its `Release` is still empty. A failing run also files a tracking issue, because a red scheduled run on its own is not a notification.
 
-**When you create an issue/ticket:** set `Release` (or leave the seeded `Backlog` and triage it later). Don't leave it unset.
+**When you create an issue/ticket:** leave `Release` empty until you know. Set it when you pull the item to `Next up` — pulling *is* the decision about when it ships.
+
+> **Why not "always set"?** This used to demand a non-empty `Release` at all times, which forced a `Backlog` option onto the field. That was a category error: a release is a version, and "backlog" is a place in the flow — which is what `Status` already says. It also protected nothing (`generate-roadmap.mjs` treated the placeholder and an empty field identically) and made the guard vacuous, since seeding meant nothing was ever empty to catch. The rule now guards the transition, which is the moment the decision is actually due.
 
 **Grouping caveat:** group the board by `Release`, **not** the native `Milestone` — the latter shows every sibling under *No milestone* (siblings carry no native milestone; their version is in the field).
 
@@ -131,7 +133,7 @@ The roadmap is wired to maintain itself once an issue lands with `label:roadmap`
 
 | Event | What happens |
 |---|---|
-| New issue with `roadmap` label | `.github/workflows/add-to-project.yml` attaches it to the Project (Status defaults to `Backlog`) |
+| New issue with `roadmap` label | The Project's own **Auto-add to project** rule attaches it (Status defaults to `Backlog`, Release stays empty until triage) |
 | Issue closed | `roadmap-sync.yml` regenerates `ROADMAP.md` from the Project + commits |
 | Issue title / label / milestone change | same — `roadmap-sync.yml` re-renders |
 | PR merged that uses `Closes #N` | Status flips to `Done` via Project workflow (UI-side, see below) |
@@ -139,7 +141,7 @@ The roadmap is wired to maintain itself once an issue lands with `label:roadmap`
 
 ### One-time setup (single PAT, org-secret)
 
-`add-to-project.yml` and `Bowire.Bootcamp/notify-bowire.yml` share **one** organization secret `BOWIRE_DISPATCH_TOKEN`. The default `GITHUB_TOKEN` can't write to org-level Projects nor dispatch into sibling repos, so a PAT is required either way — but only one.
+`roadmap-field-guard.yml`, `roadmap-sync.yml` and `Bowire.Bootcamp/notify-bowire.yml` share **one** organization secret `BOWIRE_DISPATCH_TOKEN`. The default `GITHUB_TOKEN` can't write to org-level Projects nor dispatch into sibling repos, so a PAT is required either way — but only one.
 
 1. Create a fine-grained PAT — Settings → Developer settings → Personal access tokens → Fine-grained.
    - Resource owner: `Kuestenlogik`
