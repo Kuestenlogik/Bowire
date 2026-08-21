@@ -480,8 +480,10 @@ tests/Kuestenlogik.Bowire.IntegrationTests/Properties/launchSettings.json
 # a diff every time anyone verifies anything.
 .bowire/contract-results/
 
-# VS Code marketplace icon (#101). Copied from images/bowire_logo_small.png
-# at package time by extensions/bowire-vscode/scripts/copy-icon.mjs — vsce
-# needs it inside the extension folder, but a committed second copy of the
-# logo would be a duplicate to keep in step by hand.
+# VS Code marketplace assets (#101). Both are copied in at package time by
+# extensions/bowire-vscode/scripts/prepare-package.mjs — vsce only packs what
+# lives inside the extension folder, but the repo already has one canonical
+# copy of each (images/bowire_logo_small.png and LICENSE), and a committed
+# second copy would be a duplicate to keep in step by hand.
 extensions/bowire-vscode/icon.png
+extensions/bowire-vscode/LICENSE

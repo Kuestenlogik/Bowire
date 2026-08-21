@@ -1,0 +1,37 @@
+# Changelog
+
+All notable changes to the Bowire VS Code extension.
+
+The extension version is deliberately independent of the Bowire version it
+hosts — it drives whatever CLI you have installed, from 2.0 upwards.
+
+## [Unreleased]
+
+### Added
+
+- **`bowire.cliPath` setting.** Points at a `bowire` executable directly, for a
+  build that is not on `PATH` — a local checkout, a portable copy, a second
+  version beside the installed one. Supports `${workspaceFolder}`, so a
+  project-local build can be committed to `.vscode/settings.json` and shared.
+- **Version check before launch.** A CLI too old to understand the arguments
+  the extension passes used to exit with "Bowire exited before it started
+  serving", which named nothing. It now says which version it found and what
+  the minimum is.
+
+### Fixed
+
+- **Starting with no folder open.** `globalStorageUri` is a path VS Code does
+  not create, so the spawn failed with `ENOENT` naming an executable that was
+  plainly present — Node reports a missing working directory against the
+  *command*. The directory is created first, and the error message now
+  distinguishes a missing working directory from a missing binary.
+- **Error messages fit the case.** A wrong `bowire.cliPath` gets the offending
+  path quoted back and a button to the setting; only a genuinely absent CLI
+  gets install instructions, which cannot fix a typo.
+
+### Known limitations
+
+- **Collections are not yet stored per repository.** They live in `~/.bowire/`,
+  shared across every workspace — the same store the standalone tool and the
+  CLI use. Rooting a workspace's data at that workspace is tracked in
+  [#591](https://github.com/Kuestenlogik/Bowire/issues/591).

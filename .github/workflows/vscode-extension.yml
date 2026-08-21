@@ -1,0 +1,88 @@
+name: "VS Code extension"
+
+# Packages the extension on every change, and publishes it only when asked.
+#
+# The split matters. Packaging is the check: `vsce package` is what catches a
+# manifest that no longer parses, a missing icon, an absent licence, or files
+# that should not ship — and none of those are worth discovering during a
+# release. So it runs on every push that touches the extension, and the VSIX
+# is kept as an artifact you can install with `code --install-extension` to
+# try the exact bytes that would go to the marketplace.
+#
+# Publishing is a separate, deliberate act: `workflow_dispatch` with
+# `publish: true`. It is not wired to a tag, because the extension's version
+# is deliberately independent of Bowire's release cadence (#101) — tying it to
+# the release train would recreate the lockstep the design set out to avoid.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'extensions/bowire-vscode/**'
+      - '.github/workflows/vscode-extension.yml'
+  pull_request:
+    paths:
+      - 'extensions/bowire-vscode/**'
+      - '.github/workflows/vscode-extension.yml'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish to the VS Code Marketplace (otherwise: package only)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: vscode-extension-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: package (and publish on demand)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # The extension is plain CommonJS with no build step, so its logic is
+      # covered by node:test in the main test project rather than by anything
+      # under extensions/. Running it here as well means a broken manifest or
+      # a moved icon fails on the PR that causes it.
+      - name: Unit tests
+        run: node --test tests/Kuestenlogik.Bowire.Tests/ci/vscode-extension.test.mjs
+
+      - name: Package
+        working-directory: extensions/bowire-vscode
+        run: |
+          set -euo pipefail
+          npx --yes @vscode/vsce@latest package --no-dependencies --out bowire-vscode.vsix
+          ls -la bowire-vscode.vsix
+
+      - name: Upload VSIX
+        uses: actions/upload-artifact@v7
+        with:
+          name: bowire-vscode-vsix
+          path: extensions/bowire-vscode/bowire-vscode.vsix
+          retention-days: 30
+
+      # Deliberately not `continue-on-error`. If you asked for a publish and it
+      # cannot happen, that is a failure worth seeing — the winget channel
+      # taught us what silent publish failures cost (#237).
+      - name: Publish to Marketplace
+        if: github.event_name == 'workflow_dispatch' && inputs.publish
+        working-directory: extensions/bowire-vscode
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VSCE_PAT:-}" ]; then
+            echo "::error::VSCE_PAT is not set. Create a Personal Access Token with the Marketplace (Manage) scope in Azure DevOps for the 'kuestenlogik' publisher, then add it as the repository secret VSCE_PAT."
+            exit 1
+          fi
+          npx --yes @vscode/vsce@latest publish --no-dependencies --packagePath bowire-vscode.vsix
