@@ -176,7 +176,7 @@ The harbor demo is the reference recording for Bowire's correlated timeline (Kue
 
 > `area:workbench`
 
-> **Scoped 2026-08-20.** This issue now covers the **VS Code extension only**; the JetBrains plugin moved to #588. The body below reflects the as-scoped plan — the original two-distribution sketch is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/101)
+> **Scoped 2026-08-20.** This issue now covers the **VS Code extension only**; the JetBrains plugin moved to #588. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/101)
 
 #### <a id="issue-kuestenlogik-bowire-365"></a>⬜ Backlog · [#365](https://github.com/Kuestenlogik/Bowire/issues/365) Contract testing + workspace-id: run a workbench-stored workspace's suite by id
 
