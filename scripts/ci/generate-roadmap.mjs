@@ -281,17 +281,17 @@ function classify(items) {
 // Build the tag chip list — area / track / kind / priority. Shared
 // between the overview-row formatter and the detail-block formatter
 // so they stay consistent.
+// `Track`, `Priority` and `Kind` used to be read here as board fields. None
+// of the three is a board field any more: Track was folded into Area, and
+// Priority and Kind moved to the issue itself (the org-level Priority field
+// and the native issue Type). The lookups therefore always returned
+// undefined and the tags never rendered — dead branches that read as though
+// the roadmap still carried that information.
 function buildTags(item) {
     const c = item.content;
     const area = fieldValue(item, "Area");
-    const track = fieldValue(item, "Track");
-    const priority = fieldValue(item, "Priority");
-    const kind = fieldValue(item, "Kind");
     const tags = [];
-    if (kind) tags.push(`\`kind:${kind}\``);
     if (area) tags.push(`\`area:${area}\``);
-    if (track && track !== "none") tags.push(`\`track:${track}\``);
-    if (priority) tags.push(`\`${priority}\``);
     // Repo-cross-link: render as `org/repo#NNN` when the issue lives
     // outside the main Bowire repo. Doesn't add a tag to the chip
     // strip; just changes how the issue itself is referenced upstream.
