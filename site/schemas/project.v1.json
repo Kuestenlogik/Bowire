@@ -65,6 +65,12 @@
     "rules": {
       "type": "string",
       "description": "Project-relative path to a rules file."
+    },
+    "storage": {
+      "type": "string",
+      "enum": ["user", "project"],
+      "default": "user",
+      "description": "Where this project's collections, environments, recordings and presets live. 'user' (the default) is the machine-wide ~/.bowire/, shared by every workspace on the machine. 'project' is this repo's .bowire/ directory, so the data travels with the checkout and two repos open at once keep separate collections. Opt-in on purpose: a manifest that says nothing keeps the machine-wide store, so adopting project.json for sources or rules never relocates data you already have. Because the answer comes from the repo rather than a command-line flag, the CLI, the standalone tool and an IDE extension all resolve the same checkout to the same store."
     }
   }
 }

@@ -322,10 +322,13 @@ describe('marketplace assets', () => {
     });
 
     it('does not promise workspace-local storage in the marketplace blurb', () => {
-        // The description is the listing's subtitle. It used to claim
+        // The description is the listing's subtitle, and it used to claim
         // collections are "stored in the workspace so they travel with the
-        // repo" — which is not what happens (see #591), so publishing it
-        // would put a false promise on the storefront.
+        // repo". Since #591 that CAN be true — but only for a repo whose
+        // manifest opts in with `"storage": "project"`. Stating it as a flat
+        // fact on the storefront would still be a promise the default does not
+        // keep, so the blurb stays out of it and the README explains the
+        // choice.
         const pkg = require(resolve(__dirname, '../../../extensions/bowire-vscode/package.json'));
         assert.doesNotMatch(pkg.description, /stored in the workspace/i);
         assert.doesNotMatch(pkg.description, /travel with the repo/i);

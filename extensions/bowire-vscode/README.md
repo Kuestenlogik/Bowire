@@ -56,9 +56,24 @@ Run **Bowire: Open workbench** from the command palette. The extension starts Bo
 
 ## Where your work is stored
 
-In `~/.bowire/` — collections, environments, recordings and presets, as plain JSON. Nothing lives in IDE-proprietary storage, and nothing is locked to VS Code: the same data is what the standalone tool and the CLI use, so a collection you build in the editor replays unchanged in CI.
+Collections, environments, recordings and presets, as plain JSON. Nothing lives in IDE-proprietary storage, and nothing is locked to VS Code: the same data is what the standalone tool and the CLI use, so a collection you build in the editor replays unchanged in CI.
 
-**It is not yet stored per repository.** The storage root is a user-profile path, so two repos open in two windows currently share one set of collections. Making a workspace's data live inside that workspace — the version that would let collections be committed and reviewed — is tracked in [#591](https://github.com/Kuestenlogik/Bowire/issues/591).
+**Where** depends on the repository, not on the editor:
+
+| | |
+|---|---|
+| by default | `~/.bowire/` — machine-wide, shared by every workspace |
+| with the opt-in below | the repo's own `.bowire/` — travels with the checkout |
+
+To keep a project's data beside its code, add one line to that repo's `.bowire/project.json`:
+
+```jsonc
+{ "version": 1, "storage": "project" }
+```
+
+The collections then commit, diff and review like any other file, and two repos open in two windows keep separate sets.
+
+It is opt-in on purpose: a manifest that says nothing keeps the machine-wide store, so nobody's existing data moves under them. And because the answer comes from the repository, the same checkout resolves to the same store whether you opened it here, ran `bowire` in a terminal, or replayed it in CI — the editor is not a special case.
 
 No file-system bridge is involved either way: the Bowire process reads and writes those files itself, and the webview only speaks HTTP to it.
 

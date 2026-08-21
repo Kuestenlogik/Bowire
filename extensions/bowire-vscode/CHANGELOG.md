@@ -29,9 +29,9 @@ hosts — it drives whatever CLI you have installed, from 2.0 upwards.
   path quoted back and a button to the setting; only a genuinely absent CLI
   gets install instructions, which cannot fix a typo.
 
-### Known limitations
-
-- **Collections are not yet stored per repository.** They live in `~/.bowire/`,
-  shared across every workspace — the same store the standalone tool and the
-  CLI use. Rooting a workspace's data at that workspace is tracked in
-  [#591](https://github.com/Kuestenlogik/Bowire/issues/591).
+- **Per-repository storage.** A repo whose `.bowire/project.json` carries
+  `"storage": "project"` keeps its collections, environments and recordings
+  beside its code instead of in the machine-wide `~/.bowire/`. Opt-in, so
+  nothing you already have moves; and because it is read from the repository
+  rather than passed by the editor, the same checkout resolves to the same
+  store from a terminal or from CI ([#591](https://github.com/Kuestenlogik/Bowire/issues/591)).

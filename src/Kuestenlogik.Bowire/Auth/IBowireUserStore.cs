@@ -59,12 +59,40 @@ public interface IBowireUserStore
 /// </summary>
 public sealed class DefaultBowireUserStore : IBowireUserStore
 {
-    /// <summary>Singleton instance -- the store has no per-instance state.</summary>
-    public static readonly DefaultBowireUserStore Instance = new();
-
-    private static readonly string Root = Path.Combine(
+    // Declared before Instance on purpose: static initialisers run in
+    // declaration order, so the other way round hands the constructor a null.
+    /// <summary><c>~/.bowire</c>.</summary>
+    public static string UserProfileRoot { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         ".bowire");
+
+    /// <summary>
+    /// The machine-wide store: <c>~/.bowire/</c>, shared by every workspace on
+    /// this machine. Still the default — a host opts into anything else.
+    /// </summary>
+    public static readonly DefaultBowireUserStore Instance = new(UserProfileRoot);
+
+    private readonly string _root;
+
+    /// <summary>
+    /// A store rooted at <paramref name="root"/>.
+    /// </summary>
+    /// <remarks>
+    /// The root used to be a <c>static readonly</c> field, which made the
+    /// location a property of the process rather than of anything the operator
+    /// controls. That is what made "start the CLI in the workspace and
+    /// <c>.bowire/</c> lands next to the code" false: the working directory
+    /// never entered into it (#591). A constructor parameter lets a host root
+    /// the data at a project without the rest of the code knowing or caring.
+    /// </remarks>
+    public DefaultBowireUserStore(string root)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(root);
+        _root = root;
+    }
+
+    /// <summary>The directory this store resolves paths under.</summary>
+    public string Root => _root;
 
     public string GetUserPath(string filename)
     {
@@ -75,7 +103,7 @@ public sealed class DefaultBowireUserStore : IBowireUserStore
         // still lives under Root after normalisation. Callers pass
         // multi-segment relatives like "workspaces/<id>/recordings"
         // through here too — SafePath handles them the same way.
-        return SafePath.Combine(Root, filename);
+        return SafePath.Combine(_root, filename);
     }
 }
 
