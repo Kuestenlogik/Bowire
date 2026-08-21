@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**11/15 done** · 4 backlog
+**12/16 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [364](https://github.com/Kuestenlogik/Bowire/issues/364) | Bowire | [Contract testing: workbench matrix view (consumer × provider pass/fail)](#issue-kuestenlogik-bowire-364) | ✅ Done | `area:workbench` |
 | [367](https://github.com/Kuestenlogik/Bowire/issues/367) | Bowire | [codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)](#issue-kuestenlogik-bowire-367) | ✅ Done | `area:multi` |
 | [585](https://github.com/Kuestenlogik/Bowire/issues/585) | Bowire | [REST OpenAPI discovery is slow (~5-8s) and flakes near the 8s probe ceiling](#issue-kuestenlogik-bowire-585) | ✅ Done |  |
+| [586](https://github.com/Kuestenlogik/Bowire/issues/586) | Bowire | [verification-drill publish is failing for `v0.0.0-test`](#issue-kuestenlogik-bowire-586) | ✅ Done |  |
 | [587](https://github.com/Kuestenlogik/Bowire/issues/587) | Bowire | [Report rollup across services — one view over the artefacts Bowire already writes](#issue-kuestenlogik-bowire-587) | ✅ Done |  |
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
@@ -246,6 +247,10 @@ Follow-up to #356. JS tests now gate CI (`node --test` over wwwroot-js) and JS c
 #### <a id="issue-kuestenlogik-bowire-585"></a>✅ Done · [#585](https://github.com/Kuestenlogik/Bowire/issues/585) REST OpenAPI discovery is slow (~5-8s) and flakes near the 8s probe ceiling
 
 Found during v2.5 hands-on testing (CLI, against a local `bowire mock --schema` REST target). [[more]](https://github.com/Kuestenlogik/Bowire/issues/585)
+
+#### <a id="issue-kuestenlogik-bowire-586"></a>✅ Done · [#586](https://github.com/Kuestenlogik/Bowire/issues/586) verification-drill publish is failing for `v0.0.0-test`
+
+<!-- publish-failure:verification-drill --> The **verification-drill** publish failed for `v0.0.0-test`. - Run: https://github.com/Kuestenlogik/Bowire/actions/runs/32348578129 - Workflow: `Verify publish-failure reporter` - Commit: 938fd2938991d1cae684e3315401055bbc3c6eab [[more]](https://github.com/Kuestenlogik/Bowire/issues/586)
 
 #### <a id="issue-kuestenlogik-bowire-587"></a>✅ Done · [#587](https://github.com/Kuestenlogik/Bowire/issues/587) Report rollup across services — one view over the artefacts Bowire already writes
 
