@@ -17,8 +17,13 @@ on:
     - cron: "17 6 * * *"   # daily, 06:17 UTC
   workflow_dispatch:
 
+# `issues: write` is for the tracking issue the failure path files. The PAT
+# below carries its own scopes, but the job token still has to permit it —
+# a workflow-level `contents: read` alone makes the create call 403 and the
+# guard would then fail for the wrong reason.
 permissions:
   contents: read
+  issues: write
 
 jobs:
   guard:
@@ -27,7 +32,12 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
     steps:
+      # Needed for the local composite action below — a `uses: ./…` step has
+      # nothing to resolve without the repo on disk.
+      - uses: actions/checkout@v7
+
       - name: Find OPEN board issues missing Release
+        id: scan
         run: |
           gh api graphql --paginate -f query='
             query($endCursor: String) {
@@ -74,4 +84,43 @@ jobs:
               echo "- [\`$ref\`]($url)"
             done < offenders.txt
           } >> "$GITHUB_STEP_SUMMARY"
+
+          # Also hand the list to the next step, which files it where someone
+          # will actually see it.
+          {
+            while IFS=$'\t' read -r ref url; do
+              [ -z "$ref" ] && continue
+              echo "- $ref — $url"
+            done < offenders.txt
+          } > offenders.md
+          {
+            echo "count=$COUNT"
+            echo "offenders<<EOF"
+            cat offenders.md
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
           exit 1
+
+      # A red scheduled run is not a notification. This guard went red on four
+      # consecutive days in August 2026 with three untriaged items on the
+      # board, and nobody noticed — a daily cron failing in the Actions tab
+      # looks exactly like a daily cron nobody opened. The same lesson as the
+      # publish channels (#237), so the same remedy: leave a mark that
+      # outlives the run.
+      - name: File a tracking issue
+        if: failure() && steps.scan.outputs.count != ''
+        uses: ./.github/actions/publish-failure-issue
+        with:
+          channel: roadmap-release-field
+          hint: |
+            These open board items have no **Release** value, so
+            `scripts/ci/generate-roadmap.mjs` drops them from the versioned
+            roadmap entirely. Set a version or **Backlog** on each:
+
+            ${{ steps.scan.outputs.offenders }}
+
+            If they arrived without a `roadmap` label, check the issue
+            templates — GitHub discards template labels that do not exist in
+            the repo, silently, and `add-to-project.yml` (which seeds the
+            field) keys on that label.
+          token: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}

@@ -35,17 +35,20 @@ jobs:
   add-to-project:
     name: Attach to Project board
     runs-on: ubuntu-latest
-    # Run on items carrying any of our typed labels — roadmap items,
-    # bugs, and feature requests all land on the board so the Bugs
-    # view + Roadmap view see them. Items without any kind:* / roadmap
-    # label stay off the board until someone explicitly promotes them.
+    # `roadmap` is the single admission ticket. Items without it stay off the
+    # board until someone explicitly promotes them.
+    #
+    # The condition used to also accept kind:bug / kind:feature / kind:concept.
+    # Those labels do not exist in this repo — and GitHub drops unknown labels
+    # from an issue template SILENTLY, so a bug report filed from the template
+    # arrived with no label at all, this job skipped it, and the Release field
+    # was never seeded. The item still reached the board through the
+    # Project-side auto-add rule, with an empty Release, which is exactly what
+    # roadmap-field-guard.yml then flagged red for four days running.
+    # The templates now ask for `roadmap`; the kind lives in the native issue
+    # Type instead of a label.
     if: |
-      (github.event.issue && (
-        contains(github.event.issue.labels.*.name, 'roadmap') ||
-        contains(github.event.issue.labels.*.name, 'kind:bug') ||
-        contains(github.event.issue.labels.*.name, 'kind:feature') ||
-        contains(github.event.issue.labels.*.name, 'kind:concept')
-      )) ||
+      (github.event.issue && contains(github.event.issue.labels.*.name, 'roadmap')) ||
       (github.event.pull_request && contains(github.event.pull_request.labels.*.name, 'roadmap'))
     steps:
       - id: add
