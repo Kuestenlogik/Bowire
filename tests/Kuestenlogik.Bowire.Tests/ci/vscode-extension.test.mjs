@@ -16,6 +16,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
 import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import fsp, { mkdtemp, rm, readdir } from 'node:fs/promises';
 
@@ -751,6 +752,63 @@ describe('managed download (#590)', () => {
             await assert.rejects(
                 () => download.installManagedCli({ root: '/store', platform: 'sunos', arch: 'x64' }),
                 /publishes no build for sunos\/x64/);
+        });
+
+        it('leaves the binary executable on Unix', async (t) => {
+            // The one criterion that cannot be checked by reasoning: an archive
+            // that carries no mode — which is what a zip written on a Windows
+            // runner produces — extracts to a file nobody can run, and the
+            // failure surfaces as EACCES at spawn time rather than here.
+            //
+            // Windows has no mode bits to assert on, so this is the CI Linux
+            // runner's job. It also exercises the real tar.gz path end to end:
+            // a genuine archive in the layout release.yml produces, streamed
+            // through the digest check and unpacked by the system tar.
+            // `return`, not just `t.skip()` — node:test marks the result as
+            // skipped but keeps running the body, which on Windows meant six
+            // seconds of real work whose failure was then reported as a skip.
+            if (process.platform === 'win32') {
+                t.skip('no Unix mode bits on Windows');
+                return;
+            }
+
+            const rid = 'linux-x64';
+            const work = await mkdtemp(join(tmpdir(), 'bowire-590-exec-'));
+            const stage = join(work, 'stage', `bowire-${rid}`);
+            await fsp.mkdir(stage, { recursive: true });
+            // Deliberately not executable to begin with — otherwise the test
+            // would pass on a mode the archive supplied rather than one the
+            // installer set.
+            await fsp.writeFile(join(stage, 'bowire'), '#!/bin/sh\necho hi\n', { mode: 0o644 });
+
+            const asset = download.assetNameFor(rid);
+            const archive = join(work, asset);
+            const packed = spawnSync('tar', ['-czf', archive, `bowire-${rid}`],
+                { cwd: join(work, 'stage'), encoding: 'utf8' });
+            assert.equal(packed.status, 0, `packing failed: ${packed.stderr}`);
+
+            const bytes = await fsp.readFile(archive);
+            const digest = createHash('sha256').update(bytes).digest('hex');
+            const fetchImpl = async (url) => url.endsWith('checksums.txt')
+                ? { ok: true, status: 200, text: async () => `${digest} *${asset}\n` }
+                : {
+                    ok: true,
+                    status: 200,
+                    headers: { get: () => String(bytes.length) },
+                    body: (async function* () { yield bytes; })(),
+                };
+
+            const cli = await download.installManagedCli({
+                root: join(work, 'storage'),
+                version: '9.9.9',
+                platform: 'linux',
+                arch: 'x64',
+                fetchImpl,
+            });
+
+            const mode = (await fsp.stat(cli)).mode & 0o777;
+            assert.ok(mode & 0o111, `binary is not executable (mode 0${mode.toString(8)})`);
+            await rm(work, { recursive: true, force: true });
         });
     });
 });
