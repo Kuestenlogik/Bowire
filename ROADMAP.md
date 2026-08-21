@@ -79,7 +79,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
-**8/24 done** · 16 backlog
+**9/24 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -91,7 +91,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [249](https://github.com/Kuestenlogik/Bowire/issues/249) | Bowire | [Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module](#issue-kuestenlogik-bowire-249) | ⬜ Backlog | `area:workbench` |
 | [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | ⬜ Backlog | `area:workbench` |
 | [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ⬜ Backlog | `area:workbench` |
-| [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ⬜ Backlog | `area:workbench` |
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog | `area:workbench` |
 | [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog | `area:workbench` |
 | [366](https://github.com/Kuestenlogik/Bowire/issues/366) | Bowire | [Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults](#issue-kuestenlogik-bowire-366) | ⬜ Backlog | `area:workbench` |
@@ -99,6 +98,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ⬜ Backlog | `area:workbench` |
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog | `area:workbench` |
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ⬜ Backlog | `area:workbench` |
+| [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ✅ Done | `area:workbench` |
 | [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ✅ Done | `area:workbench` |
 | [362](https://github.com/Kuestenlogik/Bowire/issues/362) | Bowire | [Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern](#issue-kuestenlogik-bowire-362) | ✅ Done | `area:workbench` |
 | [363](https://github.com/Kuestenlogik/Bowire/issues/363) | Bowire | [Sidebar UX round 2: rail-strip drop targets + uniform 'select → assign → save as preset' toolbar affordance](#issue-kuestenlogik-bowire-363) | ✅ Done | `area:workbench` |
@@ -110,16 +110,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.9 — MCP completion + agent hub
 
-**0/6 done** · 6 backlog
+**1/6 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ⬜ Backlog | `area:mcp` |
 | [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via SDK notification handlers](#issue-kuestenlogik-bowire-46) | ⬜ Backlog | `area:mcp` |
 | [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ⬜ Backlog | `area:site` |
 | [128](https://github.com/Kuestenlogik/Bowire/issues/128) | Bowire | [Bowire Agent — register embedded instances with a central hub](#issue-kuestenlogik-bowire-128) | ⬜ Backlog | `area:multi` |
 | [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ⬜ Backlog | `area:workbench` |
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ⬜ Backlog | `area:security` |
+| [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ✅ Done | `area:mcp` |
 
 ### v3.0 — Cleanups + breaking-change cuts
 
@@ -480,12 +480,6 @@ Phase 2 of the optional-rail-modules effort (Phase 1 in #248 lands the plumbing 
 
 A visible, in-app **shelf** (working name) — a drag-and-drop holding area for arbitrary fragments the operator wants to move between surfaces. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/251)
 
-#### <a id="issue-kuestenlogik-bowire-256"></a>⬜ Backlog · [#256](https://github.com/Kuestenlogik/Bowire/issues/256) Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style
-
-> `area:workbench`
-
-The freeform request builder today requires a `service` + `method` name even when the operator just wants to `POST https://api.example.com/foo` with a body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/256)
-
 #### <a id="issue-kuestenlogik-bowire-292"></a>⬜ Backlog · [#292](https://github.com/Kuestenlogik/Bowire/issues/292) Request-builder: GraphQL layout (#291 Phase D follow-up)
 
 > `area:workbench`
@@ -527,6 +521,12 @@ Feasible and small. Everything the proposal assumes already exists: `BowireOptio
 > `area:workbench`
 
 `render()` rebuilds the entire workbench tree off-screen and morphdom-diffs it. There is no debounce, no dirty flag, no coalescing â€” a grep for `scheduleRender` / `renderPending` / any batching wrapper across `wwwroot/js/` returns nothing, and there are ~685 `render()` call sites. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/551)
+
+#### <a id="issue-kuestenlogik-bowire-256"></a>✅ Done · [#256](https://github.com/Kuestenlogik/Bowire/issues/256) Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style
+
+> `area:workbench`
+
+> **Status:** done. The architecture diverges from the original plan — the body below reflects what actually shipped; the historical plan is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/256)
 
 #### <a id="issue-kuestenlogik-bowire-258"></a>✅ Done · [#258](https://github.com/Kuestenlogik/Bowire/issues/258) Console toolbar: distinct icons for Clear selection / Clear all / Close
 
@@ -578,12 +578,6 @@ Ship a "Correlated timeline" as a second tab inside the existing Recordings deta
 
 ### v2.9 — MCP completion + agent hub
 
-#### <a id="issue-kuestenlogik-bowire-37"></a>⬜ Backlog · [#37](https://github.com/Kuestenlogik/Bowire/issues/37) Bowire.Mcp — remaining tools + adapter modes
-
-> `area:mcp`
-
-**Dependencies** - Related #56, #57 — Mock UI panel + request log will need MCP-tool counterparts (`bowire.mock.start/stop/list/requests`) from this set. - Related #43 — MCP SSE-transport support. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/37)
-
 #### <a id="issue-kuestenlogik-bowire-46"></a>⬜ Backlog · [#46](https://github.com/Kuestenlogik/Bowire/issues/46) MCP server-side notifications via SDK notification handlers
 
 > `area:mcp`
@@ -613,6 +607,12 @@ The AI assistant today is reactive: it answers questions, surfaces hints, helps 
 > `area:security`
 
 Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape — coordinator + per-host worker, ramp-up, env pool, failure policy, bearer auth — but deferred the hardening pieces called out on #132's security note. [[more]](https://github.com/Kuestenlogik/Bowire/issues/313)
+
+#### <a id="issue-kuestenlogik-bowire-37"></a>✅ Done · [#37](https://github.com/Kuestenlogik/Bowire/issues/37) Bowire.Mcp — remaining tools + adapter modes
+
+> `area:mcp`
+
+> **Status:** done. The architecture diverges from the original plan — the body below reflects what actually shipped; the historical plan is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/37)
 
 ### v3.0 — Cleanups + breaking-change cuts
 
