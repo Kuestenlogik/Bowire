@@ -184,7 +184,7 @@
          which is why every WithHttpTransport call site in this repo pins
          Stateless explicitly instead of inheriting it. On a stateless
          mount the SDK maps POST only; the standalone SSE GET is gone. -->
-    <PackageVersion Include="ModelContextProtocol" Version="2.1.0" />
+    <PackageVersion Include="ModelContextProtocol" Version="2.2.0" />
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.1.0" />
     <!-- System.CommandLine 2.0.7 — stable after the beta-to-stable
          API rework. Used by Kuestenlogik.Bowire.Tool to declare the CLI's
