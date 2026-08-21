@@ -14,6 +14,7 @@
 const { spawnSync } = require('node:child_process');
 const { existsSync, readFileSync } = require('node:fs');
 const { join: joinPath, dirname: dirnamePath, resolve: resolvePath } = require('node:path');
+const { ridFor, managedCliPath, PINNED_CLI_VERSION } = require('./download');
 
 /** Name the CLI is installed under on each platform. */
 const BINARY = process.platform === 'win32' ? 'bowire.exe' : 'bowire';
@@ -132,13 +133,14 @@ function findToolManifest(startDir, exists = existsSync, read = readFileSync) {
 
 /**
  * How to start Bowire: the explicit setting, then a workspace tool manifest,
- * then PATH.
+ * then PATH, then a CLI this extension downloaded earlier.
  *
  * Each step answers a different question, which is why the order is not
  * arbitrary. The setting is "this exact binary, because I said so". The
  * manifest is "the version this repository is tested with", pinned in git and
- * shared with everyone who clones it. PATH is "whatever this machine has".
- * Specific beats shared beats ambient.
+ * shared with everyone who clones it. PATH is "whatever this machine has". The
+ * managed download is "nothing else was here, so we brought our own".
+ * Specific beats shared beats ambient beats fallback.
  *
  * Returns `{ command, prefixArgs, source }`. The manifest case runs
  * `dotnet tool run bowire`, which is why the caller cannot assume the command
@@ -149,6 +151,7 @@ function resolveCli(options = {}) {
         configuredPath = '',
         variables = {},
         workspaceDir = '',
+        managedRoot = '',
         runner = spawnSync,
         exists = existsSync,
         read = readFileSync,
@@ -171,9 +174,21 @@ function resolveCli(options = {}) {
     }
 
     const found = findCli(runner);
-    return found
-        ? { command: found, prefixArgs: [], source: 'path' }
-        : { command: null, prefixArgs: [], source: 'path' };
+    if (found) return { command: found, prefixArgs: [], source: 'path' };
+
+    // Last: a CLI this extension downloaded earlier (#590). Below PATH on
+    // purpose — an installed Bowire is the one the developer's terminal and CI
+    // use, and quietly preferring our private copy would mean the editor
+    // silently drives a different version than everything else on the machine.
+    if (managedRoot) {
+        const rid = ridFor();
+        const managed = rid ? managedCliPath(managedRoot, PINNED_CLI_VERSION, rid) : null;
+        if (managed && exists(managed)) {
+            return { command: managed, prefixArgs: [], source: 'managed' };
+        }
+    }
+
+    return { command: null, prefixArgs: [], source: 'path' };
 }
 
 /**
