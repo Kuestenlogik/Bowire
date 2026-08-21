@@ -1,16 +1,24 @@
 name: Roadmap field guard
 
-# "Release" is a mandatory board field — the roadmap
-# (scripts/ci/generate-roadmap.mjs) buckets every item by it, so an item
-# with an empty field silently drops off the versioned roadmap. Projects v2
-# has no native required-field, so this is the enforcement:
-#   * add-to-project.yml seeds new items to "Backlog" (never empty at birth)
-#   * this guard is the backstop — it fails if any OPEN board issue has NO
-#     Release at all (Backlog is a valid value, not a violation),
-#     catching items added outside the automation or fields cleared by hand.
+# An item that has been PULLED must name the version it was pulled for.
 #
-# Runs daily + on demand. A red run is the signal to triage the listed
-# items on the board (set Release to a version or Backlog).
+# The board carries two independent axes: `Status` is where the work sits in
+# the flow, `Release` is which product version it targets. Backlog is the
+# reservoir — everything rests there, unassigned, until someone pulls it. So
+# an empty `Release` is perfectly correct while `Status` is still `Backlog`.
+# Moving an item to `Next up` IS the decision about when it ships, and an
+# item in flight with no version is the contradiction worth catching.
+#
+# This guard used to demand "never empty" instead. That forced a placeholder
+# `Backlog` option onto the Release field — a category error, since a release
+# is a version and "backlog" is a place in the flow — and it protected
+# nothing: generate-roadmap.mjs already treated the placeholder and an empty
+# field identically. Worse, seeding every new item made the check vacuous:
+# nothing was ever empty, so the guard passed while untriaged work piled up.
+# Guarding the transition means something; guarding the birth did not.
+#
+# Runs daily + on demand. A red run means: give the listed items a version,
+# or push them back to Backlog.
 
 on:
   schedule:
@@ -36,7 +44,7 @@ jobs:
       # nothing to resolve without the repo on disk.
       - uses: actions/checkout@v7
 
-      - name: Find OPEN board issues missing Release
+      - name: Find pulled items with no Release
         id: scan
         run: |
           gh api graphql --paginate -f query='
@@ -50,7 +58,10 @@ jobs:
                         __typename
                         ... on Issue { number state url repository { nameWithOwner } }
                       }
-                      fieldValueByName(name: "Release") {
+                      release: fieldValueByName(name: "Release") {
+                        ... on ProjectV2ItemFieldSingleSelectValue { name }
+                      }
+                      status: fieldValueByName(name: "Status") {
                         ... on ProjectV2ItemFieldSingleSelectValue { name }
                       }
                     }
@@ -59,38 +70,46 @@ jobs:
               }
             }' > pages.json
 
-          # Backlog counts as set; a violation is a completely unset field on
-          # an OPEN issue. jq -s slurps the per-page objects into one array.
+          # A violation is an OPEN issue that has left Backlog without being
+          # given a version. Still in Backlog with no Release is the normal
+          # resting state and must NOT be reported — that was the old rule,
+          # and it made the check vacuous once every item got seeded.
+          #
+          # A missing Status counts as pulled: the field is never empty in
+          # practice (GitHub seeds it), so an absent one means something
+          # unusual and is worth a look rather than a silent pass.
           jq -rs '[ .[].data.organization.projectV2.items.nodes[]
                     | select(.content.__typename == "Issue" and .content.state == "OPEN")
-                    | select(.fieldValueByName == null)
-                    | "\(.content.repository.nameWithOwner)#\(.content.number)\t\(.content.url)" ]
+                    | select(.release == null)
+                    | select((.status.name // "unset") != "Backlog")
+                    | "\(.content.repository.nameWithOwner)#\(.content.number)\t\(.content.url)\t\(.status.name // "unset")" ]
                   | .[]' pages.json > offenders.txt || true
 
           COUNT=$(grep -c . offenders.txt || true)
           if [ "${COUNT:-0}" -eq 0 ]; then
-            echo "✅ Every open board item has a Release." >> "$GITHUB_STEP_SUMMARY"
+            echo "✅ Every pulled item names a Release." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
           {
-            echo "## ❌ $COUNT open board item(s) missing a Release"
+            echo "## ❌ $COUNT item(s) pulled without a Release"
             echo ""
-            echo "\"Release\" is mandatory. Triage each item on the board"
-            echo "(set a version or **Backlog**):"
+            echo "These have left Backlog but name no version. Pulling an item"
+            echo "is the decision about when it ships — give each one a version,"
+            echo "or move it back to Backlog:"
             echo ""
-            while IFS=$'\t' read -r ref url; do
+            while IFS=$'\t' read -r ref url status; do
               [ -z "$ref" ] && continue
-              echo "- [\`$ref\`]($url)"
+              echo "- [\`$ref\`]($url) — Status: \`$status\`"
             done < offenders.txt
           } >> "$GITHUB_STEP_SUMMARY"
 
           # Also hand the list to the next step, which files it where someone
           # will actually see it.
           {
-            while IFS=$'\t' read -r ref url; do
+            while IFS=$'\t' read -r ref url status; do
               [ -z "$ref" ] && continue
-              echo "- $ref — $url"
+              echo "- $ref (Status: $status) — $url"
             done < offenders.txt
           } > offenders.md
           {
@@ -113,14 +132,18 @@ jobs:
         with:
           channel: roadmap-release-field
           hint: |
-            These open board items have no **Release** value, so
-            `scripts/ci/generate-roadmap.mjs` drops them from the versioned
-            roadmap entirely. Set a version or **Backlog** on each:
+            These items have left `Backlog` without naming a version. Pulling
+            an item is the decision about when it ships, so one in flight with
+            no `Release` is a decision that was skipped — and it will not
+            appear on the versioned roadmap `scripts/ci/generate-roadmap.mjs`
+            renders.
 
             ${{ steps.scan.outputs.offenders }}
 
-            If they arrived without a `roadmap` label, check the issue
-            templates — GitHub discards template labels that do not exist in
-            the repo, silently, and `add-to-project.yml` (which seeds the
-            field) keys on that label.
+            Give each one a version, or move it back to `Backlog` if it was
+            pulled by accident.
+
+            An item still resting in `Backlog` with no `Release` is **not** a
+            violation and is never listed here — that is the normal state of
+            unplanned work.
           token: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}

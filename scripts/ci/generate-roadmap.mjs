@@ -200,10 +200,16 @@ function compareKeys(a, b) {
 // each repo's own semver line (a sibling still tags its own patch via the
 // release cascade; the field carries the *product* release the work targets).
 // A repo milestone is only the fallback for an item not yet carrying the
-// field. "Backlog" (or unset + no milestone) → null (unscheduled).
+// field. Unset + no milestone → null (unscheduled).
+//
+// "Release" holds a version or nothing. It used to also offer a "Backlog"
+// option, which was a category error — a release is a version, and "Backlog"
+// is a place in the workflow, which is what the Status field is for. The
+// value existed only to keep the field non-empty for a guard that demanded
+// it, and it protected nothing: an unset field already landed in the same
+// unscheduled bucket, exactly as the line below it did. Both paths lead here.
 function itemVersion(item) {
     const field = fieldValue(item, "Release");
-    if (field === "Backlog") return null;
     if (field) return parseMilestoneTitle(field).version || field;
     const ms = item.content.milestone;
     if (ms) return parseMilestoneTitle(ms.title).version || ms.title;
