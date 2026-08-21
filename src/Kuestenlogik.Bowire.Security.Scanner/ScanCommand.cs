@@ -1255,11 +1255,9 @@ public static class ScanCommand
                             //       https:// URL (`SARIF URI scheme "https"
                             //       did not match the checkout URI scheme
                             //       "file"`).
-                            // The pragmatic intersection: point the physical
-                            // location at the .github/workflows/scan-self.yml
-                            // file (a real checkout-relative path that
-                            // describes what was scanned) and carry the
-                            // actual scan target via `logicalLocations`.
+                            // The pragmatic intersection: name the workflow
+                            // that ran the scan, and carry the actual scan
+                            // target via `logicalLocations`.
                             Locations =
                             [
                                 new SarifLocation
@@ -1268,7 +1266,7 @@ public static class ScanCommand
                                     {
                                         ArtifactLocation = new SarifArtifactLocation
                                         {
-                                            Uri = ".github/workflows/scan-self.yml",
+                                            Uri = SarifPlaceholderPath(),
                                         },
                                     },
                                     LogicalLocations =
@@ -1332,6 +1330,45 @@ public static class ScanCommand
         })
         .ToList();
 
+    /// <summary>
+    /// Checkout-relative path to put in every result's <c>physicalLocation</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A DAST finding is about a URL, not a file, but Code Scanning requires a
+    /// physical location and rejects an <c>https://</c> URI for it. The least
+    /// wrong file is the workflow that ran the scan, so this reads it from
+    /// <c>GITHUB_WORKFLOW_REF</c> — shaped
+    /// <c>owner/repo/.github/workflows/x.yml@refs/heads/main</c>.
+    /// </para>
+    /// <para>
+    /// This used to be the literal <c>.github/workflows/scan-self.yml</c>. That
+    /// was wrong in two directions: it named the wrong workflow as soon as a
+    /// second one scanned anything, and in any repo that merely uses the
+    /// composite action it named a file that does not exist there at all —
+    /// every alert pointing at a phantom path in someone else's Security tab.
+    /// </para>
+    /// <para>
+    /// Outside Actions there is no workflow to name. The fallback is a bare
+    /// token rather than an invented path, so it reads as the placeholder it
+    /// is instead of sending someone looking for a file. Either way the scan
+    /// target itself travels in <c>logicalLocations</c>, which is where it
+    /// belongs.
+    /// </para>
+    /// </remarks>
+    internal static string SarifPlaceholderPath()
+    {
+        var workflowRef = Environment.GetEnvironmentVariable("GITHUB_WORKFLOW_REF");
+        if (string.IsNullOrWhiteSpace(workflowRef)) return "bowire-scan";
+
+        // Drop the trailing "@ref", then the leading "owner/repo/".
+        var path = workflowRef.Split('@', 2)[0];
+        var parts = path.Split('/');
+        if (parts.Length <= 2) return "bowire-scan";
+
+        var relative = string.Join('/', parts.Skip(2));
+        return string.IsNullOrWhiteSpace(relative) ? "bowire-scan" : relative;
+    }
 }
 
 /// <summary>
