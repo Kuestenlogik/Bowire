@@ -82,7 +82,7 @@ jobs:
       - name: Start Sample.Rest
         run: |
           set -euo pipefail
-          nohup dotnet artifacts/bin/Kuestenlogik.Bowire.Sample.Rest/Release/Kuestenlogik.Bowire.Sample.Rest.dll \
+          nohup dotnet artifacts/bin/Kuestenlogik.Bowire.Sample.Rest/release/Kuestenlogik.Bowire.Sample.Rest.dll \
             > sample.log 2>&1 &
           echo $! > sample.pid
 

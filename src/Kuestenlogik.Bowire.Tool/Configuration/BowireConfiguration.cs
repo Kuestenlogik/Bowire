@@ -222,6 +222,7 @@ internal static class BowireConfiguration
         configuration.GetSection("Bowire").Bind(options);
 
         var cliUrls = ExtractRepeatedUrls(args);
+        cliUrls.AddRange(ReadUrlFiles(args));
         if (cliUrls.Count > 0)
         {
             // CLI wins — replace appsettings' list entirely so users
@@ -289,6 +290,66 @@ internal static class BowireConfiguration
                 urls.Add(args[++i]);
             }
         }
+        return urls;
+    }
+
+    /// <summary>
+    /// Read every <c>--url-file</c> and return the URLs inside, in order.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The option was declared on the root command and documented in
+    /// <c>docs/setup/sidecar.md</c> for months, but nothing ever read it
+    /// (#604). Passing it was silently a no-op: Bowire started, discovered
+    /// nothing, and the docs said it should have worked. A flag that does not
+    /// exist fails loudly and the operator moves on; one that parses and does
+    /// nothing costs an afternoon.
+    /// </para>
+    /// <para>
+    /// Blank lines and <c>#</c> comments are skipped so a list can be
+    /// annotated and sections commented out — the whole point of keeping URLs
+    /// in a file rather than on the command line. Everything else is taken
+    /// verbatim; validating URL shape belongs to discovery, which already
+    /// reports what it could not reach.
+    /// </para>
+    /// <para>
+    /// A missing file, an unreadable one, or one with no usable lines is a
+    /// hard error naming the path. Quiet is exactly the failure mode this
+    /// method exists to remove, so degrading to an empty list would
+    /// reintroduce it in a new place.
+    /// </para>
+    /// </remarks>
+    private static List<string> ReadUrlFiles(string[] args)
+    {
+        var urls = new List<string>();
+
+        foreach (var path in ExtractRepeatedTokens(args, "--url-file"))
+        {
+            string[] lines;
+            try
+            {
+                lines = File.ReadAllLines(path);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+            {
+                throw new InvalidOperationException(
+                    $"--url-file '{path}' could not be read: {ex.Message}", ex);
+            }
+
+            var found = lines
+                .Select(line => line.Trim())
+                .Where(line => line.Length > 0 && !line.StartsWith('#'))
+                .ToList();
+
+            if (found.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    $"--url-file '{path}' contains no URLs (blank lines and lines starting with '#' are ignored).");
+            }
+
+            urls.AddRange(found);
+        }
+
         return urls;
     }
 
