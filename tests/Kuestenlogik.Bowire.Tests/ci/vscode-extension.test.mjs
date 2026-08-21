@@ -288,14 +288,16 @@ describe('normaliseWorkbenchUrl', () => {
     });
 });
 
-describe('marketplace icon', () => {
+describe('marketplace assets', () => {
+    const prepare = () => import(
+        new URL('../../../extensions/bowire-vscode/scripts/prepare-package.mjs', import.meta.url).href);
+
     it('reuses the one canonical logo and meets the marketplace rules', async () => {
         // The icon is copied in at package time from images/bowire_logo_small.png
         // — the same file NuGet packs — rather than committed a second time.
         // If that image is moved or renamed, this fails here instead of
         // publishing a blank marketplace tile nobody notices.
-        const mod = await import(
-            new URL('../../../extensions/bowire-vscode/scripts/copy-icon.mjs', import.meta.url).href);
+        const mod = await prepare();
 
         const size = mod.pngSize(mod.SOURCE);
         assert.ok(size, `${mod.SOURCE} is missing or not a PNG`);
@@ -303,10 +305,30 @@ describe('marketplace icon', () => {
         assert.ok(size.width >= 128, `marketplace minimum is 128x128; got ${size.width}`);
     });
 
-    it('package.json points at the copied icon', () => {
+    it('finds a licence to pack', async () => {
+        // vsce warns when the extension folder has no LICENSE, and a listing
+        // with no licence is one nobody inside a company can adopt. Same
+        // copy-at-package-time treatment as the icon, so this catches the
+        // repo licence being moved.
+        const mod = await prepare();
+        const { existsSync } = await import('node:fs');
+        assert.ok(existsSync(mod.LICENSE_SOURCE), `${mod.LICENSE_SOURCE} is missing`);
+    });
+
+    it('package.json points at the copied icon and runs the prepare step', () => {
         const pkg = require(resolve(__dirname, '../../../extensions/bowire-vscode/package.json'));
         assert.equal(pkg.icon, 'icon.png');
-        assert.match(pkg.scripts['vscode:prepublish'], /copy-icon/);
+        assert.match(pkg.scripts['vscode:prepublish'], /prepare-package/);
+    });
+
+    it('does not promise workspace-local storage in the marketplace blurb', () => {
+        // The description is the listing's subtitle. It used to claim
+        // collections are "stored in the workspace so they travel with the
+        // repo" — which is not what happens (see #591), so publishing it
+        // would put a false promise on the storefront.
+        const pkg = require(resolve(__dirname, '../../../extensions/bowire-vscode/package.json'));
+        assert.doesNotMatch(pkg.description, /stored in the workspace/i);
+        assert.doesNotMatch(pkg.description, /travel with the repo/i);
     });
 });
 
