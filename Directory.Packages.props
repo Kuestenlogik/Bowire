@@ -17,7 +17,7 @@
          integration fixture host the GreeterService behind UseGrpcWeb()
          on HTTP/1.1. Not pulled in by the plugin itself. -->
     <PackageVersion Include="Grpc.AspNetCore.Web" Version="2.83.0" />
-    <PackageVersion Include="Google.Protobuf" Version="3.35.1" />
+    <PackageVersion Include="Google.Protobuf" Version="3.36.0" />
     <!-- Cron parsing for scheduled benchmark runs (#232). Referenced only
          by the optional Kuestenlogik.Bowire.Benchmarking package, never by
          Core. Hand-rolling this was the alternative, and the schedule block
