@@ -1,0 +1,30 @@
+{
+  "$comment": [
+    "What `bowire scan --suite owasp-api --severity medium` must find against a",
+    "freshly started Sample.Rest. Read by scripts/ci/assert-scan-findings.mjs from",
+    "the Scan: dogfood workflow.",
+    "",
+    "This is a fixture, not a security report. A finding listed here is one we",
+    "have looked at and decided is either an artefact of running a dev server in",
+    "CI, or a known property of a deliberately simple sample. Listing it means",
+    "'we know, and we want to be told if this changes' — in EITHER direction.",
+    "",
+    "Changing this file is the interesting moment. Adding an entry should mean a",
+    "new probe started firing; removing one should mean the sample was fixed. If",
+    "you find yourself editing it to make a red build green without knowing which",
+    "of the two happened, that is the bug."
+  ],
+  "target": "http://localhost:5181",
+  "expected": [
+    {
+      "ruleId": "BWR-BUILTIN-TLS-001",
+      "level": "error",
+      "why": "The sample binds plain http:// on localhost (samples/…/Program.cs: UseUrls). True of any dev server and not a property of Bowire — but if it ever STOPS firing, the built-in TLS check has regressed."
+    },
+    {
+      "ruleId": "BWR-OWASP-API4-RATELIMIT",
+      "level": "warning",
+      "why": "The sample has no rate limiting. Accurate, and worth keeping visible: an embedding host inherits this shape unless it adds its own."
+    }
+  ]
+}

@@ -1,41 +1,39 @@
 name: "Scan: dogfood"
 
-# Bowire's scanner against Bowire's own HTTP surface.
+# Bowire's scanner against a service Bowire ships — as an ASSERTION, not a
+# report. The expected findings live in scripts/ci/expected-scan-findings.json
+# and the job is green exactly while reality matches them.
 #
-# This is deliberately NOT the same job as `Scan: self-smoke` (scan-self.yml),
-# and the split is the point:
+# The first cut of this workflow uploaded its SARIF to Code Scanning, and that
+# was wrong. The target is a sample we start ourselves, so its findings
+# describe the harness: "serves plaintext http://" is true of any dev server on
+# localhost and says nothing about Bowire. Uploaded, it appears in Bowire's own
+# Security tab as a high-severity alert against Bowire, and a reader concludes
+# the product has a TLS problem. It does not — the CI scaffolding does, by
+# design. That is the same mistake scan-self.yml already avoids by not
+# uploading example.com's missing headers, made a second time.
 #
-#   * self-smoke answers "does the composite action still run end-to-end?".
-#     It scans example.com precisely because that target is stable and needs
-#     nothing started, and it does NOT upload — example.com's missing security
-#     headers belong to example.com, not to us.
-#   * this job answers "is our own surface clean?". It starts a sample we ship
-#     and uploads the findings, because those findings ARE ours.
+# The assertion is also the stricter test. An upload is satisfied by any output
+# at all, so a scanner that quietly stopped finding ANYTHING would stay green —
+# the precise regression this job exists to catch. Pinning the set fails both
+# ways: a finding that disappears means a probe broke; one that appears means
+# the sample regressed or a new probe fires. Both deserve a red build. Neither
+# deserves a security alert.
 #
-# Keeping them apart means a flaky sample start-up cannot masquerade as a
-# regression in the action, and a broken action cannot quietly stop reporting
-# on our own code.
+# Still deliberately separate from `Scan: self-smoke`:
 #
-# Sample.Rest is the target because it is a service we ship and it mounts the
-# workbench via `MapBowire("/bowire")`, so what gets probed is ours.
+#   * self-smoke answers "does the composite action still run end-to-end?" and
+#     scans example.com because that target is stable and needs nothing started.
+#   * this job answers "does the scanner still find what it should?" and needs a
+#     target we control, so it starts one.
 #
-# Measured, so the expectation is honest rather than hopeful: against the
-# current sample this produces exactly two findings at medium+, and both are
-# host-level rather than endpoint-specific. Pointing the scan at /bowire
-# directly yields the same two and exercises FEWER Top-10 entries (4 of 10
-# instead of 5), which is why the root is the target.
+# Apart, a flaky sample start-up cannot masquerade as a broken action, and a
+# broken action cannot quietly stop exercising the probes.
 #
-#   BWR-BUILTIN-TLS-001      high    plaintext http:// — an artefact of a dev
-#                                    server on localhost, not a defect. Dismiss
-#                                    it once in the Security tab with a reason.
-#   BWR-OWASP-API4-RATELIMIT medium  no rate limiting — true of the sample, and
-#                                    worth knowing for an embedding host.
-#
-# So the value here is a regression tripwire and a populated tool entry, not a
-# flood of insight. Triage belongs in the Security tab, where a dismissal is
-# visible and reversible — not in a severity flag here, where it would look
-# like the finding never happened. The floor below drops the tier that talks
-# about localhost rather than about Bowire; it is not a way to hide anything.
+# Sample.Rest is the target because it has real endpoints, binds a known port
+# and mounts the workbench via `MapBowire("/bowire")`. Measured: scanning
+# /bowire directly yields the same findings and exercises FEWER Top-10 entries
+# (4 of 10 instead of 5), so the root is the better target.
 
 on:
   push:
@@ -45,6 +43,8 @@ on:
       - 'samples/Kuestenlogik.Bowire.Sample.Rest/**'
       - '.github/actions/bowire-scan/**'
       - '.github/workflows/scan-dogfood.yml'
+      - 'scripts/ci/assert-scan-findings.mjs'
+      - 'scripts/ci/expected-scan-findings.json'
   # Weekly, so a finding that only appears with an updated template corpus or
   # a new probe surfaces without waiting for someone to touch src/.
   schedule:
@@ -55,11 +55,11 @@ concurrency:
   group: scan-dogfood-${{ github.ref }}
   cancel-in-progress: true
 
+# Read-only: this job asserts, it does not publish. `security-events: write`
+# would only be needed for a Code Scanning upload, and deliberately not doing
+# that upload is the whole design (see the header).
 permissions:
   contents: read
-  # Required for the Code Scanning upload — without it the upload is a no-op
-  # and the job stays green while reporting nothing.
-  security-events: write
 
 jobs:
   dogfood:
@@ -114,12 +114,24 @@ jobs:
           target: http://localhost:5181
           templates: docs/security/examples
           suite: owasp-api
-          # medium+ on purpose. The low tier here is dominated by findings
-          # about the harness rather than the code — no TLS on a localhost dev
-          # server, a Kestrel banner — and a Security tab that cries wolf is a
-          # Security tab nobody reads.
+          # medium+ keeps the expectation about findings that mean something.
+          # The low tier is dominated by banner-level noise whose presence
+          # depends on the runner image, which would make the assertion
+          # brittle for reasons unrelated to Bowire.
           severity: medium
-          upload-to-code-scanning: 'true'
+          # See the header: the findings describe the harness, so uploading
+          # them would put alerts against Bowire that Bowire has not earned.
+          upload-to-code-scanning: 'false'
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Assert the findings are exactly what we expect
+        run: >
+          node scripts/ci/assert-scan-findings.mjs
+          findings.sarif
+          scripts/ci/expected-scan-findings.json
 
       - name: Stop Sample.Rest
         if: always()
