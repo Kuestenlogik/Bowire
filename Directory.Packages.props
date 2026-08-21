@@ -105,12 +105,12 @@
          (4.12 at the time of writing) and lines up with the
          Testcontainers.Nats module Bowire uses for the JetStream +
          Services round-trip suite. -->
-    <PackageVersion Include="Testcontainers" Version="4.13.0" />
+    <PackageVersion Include="Testcontainers" Version="4.14.0" />
     <PackageVersion Include="Testcontainers.Nats" Version="4.13.0" />
     <!-- Testcontainers.Pulsar — Docker-managed apachepulsar/pulsar
          broker for the Bowire Pulsar plugin's live produce/subscribe
          integration suite. Same 4.12.x line as the NATS sibling. -->
-    <PackageVersion Include="Testcontainers.Pulsar" Version="4.13.0" />
+    <PackageVersion Include="Testcontainers.Pulsar" Version="4.14.0" />
     <!-- Microsoft.OData.Edm — held on the 8.4.x line, NOT bumped to 9.x.
          The OData sample hosts Microsoft.AspNetCore.OData next to the
          OData plugin, and every stable AspNetCore.OData (up to 9.5.0)
