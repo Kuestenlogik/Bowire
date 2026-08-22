@@ -109,6 +109,15 @@ public sealed class RecordingCorrelationAnalyzerTests
         // 7 of 8 since #545: five strong, one weak, and graphql joined
         // through a container id (see the derived-join tests below). mqtt
         // stays dark and is reported as such, not rounded up.
+        //
+        // This fixture is deliberately frozen at the pre-Bowire.Samples#54
+        // shape, where the crane telemetry carried only `craneId`. The shipped
+        // harbor sample now also names the container being lifted and reaches
+        // 8 of 8 — so the two files agree on everything except that one field,
+        // on purpose. Updating this copy to match would delete the only
+        // realistic case in which a whole lane is turned down for offering
+        // nothing but a coincidence, which is the property the strictness is
+        // there to protect.
         Assert.Equal(7, timeline.MatchedStepCount);
         Assert.Equal(7, timeline.MatchedProtocolCount);
         Assert.Equal(1, timeline.DerivedStepCount);

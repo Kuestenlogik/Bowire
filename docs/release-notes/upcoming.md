@@ -286,15 +286,16 @@ but because it calls the same transaction `portCall.id = 1`.
 The analyzer now walks a **second edge**. A step the key left unmatched
 is joined to the transaction when it shares a distinctive id-shaped value
 with a step the key *did* match. On the harbor recording that lights the
-GraphQL lane through the container ids it shares with the REST step
-(`id = MSCU1234567`), taking it to **seven of eight**:
+GraphQL lane through the container ids it shares with the REST step, and
+— once the sample was taught to name the container each crane is lifting
+— the MQTT lane too, taking it to **eight of eight**:
 
 | Protocol | Before | Now |
 |---|---|---|
 | `odata`, `rest`, `websocket`, `signalr`, `sse` | strong | strong |
 | `grpc` | weak | weak |
-| `graphql` | unmatched | **derived** — `id = MSCU1234567`, shared with `rest` |
-| `mqtt` | unmatched | unmatched |
+| `graphql` | unmatched | **derived** — container id shared with `rest` |
+| `mqtt` | unmatched | **derived** — `containerId = MSCU1234567`, shared with `rest` |
 
 **Which shared values count is the whole problem, and the rule is
 deliberately strict.** A bridge value must be id-shaped on *both* steps,
@@ -307,11 +308,20 @@ purpose: a seed is corroborated by two steps agreeing on the field
 *name*, a bridge gets no such corroboration, so the value has to carry
 its own weight. A short id can still be promoted to the seed by hand.
 
-**The eighth lane stays dark, and now says why.** The MQTT crane
-telemetry shares exactly one value with the rest of the capture — the
-number `1` — and joining on it would fuse four unrelated entities. The
-run reports `mqtt (craneId = 1)` as a rejected bridge instead of leaving
-the lane silently missing.
+**A lane that stays dark says why.** A step whose only shared value was
+turned down is reported as a rejected bridge rather than left silently
+missing. On the harbor recording that is `grpc (id = 101)` — the right
+value under a name too generic to be evidence.
+
+The MQTT crane telemetry used to be in that list too, for the same kind
+of reason: it shared exactly one value with the rest of the capture, the
+number `1`, and joining on it would have fused four unrelated entities.
+That was fixed where it belonged — in the sample. A crane that is lifting
+now names the container it has hold of
+([Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54)),
+which is a distinctive value the REST and GraphQL steps already carry.
+Loosening the gates to light the lane instead would have traded the
+property that makes the join trustworthy for a better screenshot.
 
 **Depth is two edges, fixed.** A step the key matched directly may bridge
 one hop further; a step reached *through* a bridge never bridges onward.
