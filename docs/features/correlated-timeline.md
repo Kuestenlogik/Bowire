@@ -158,7 +158,8 @@ gains a `linked via` field.
 
 A lane that stays dark **because** its only shared value was turned down
 says so as a note, naming the value it was offered. On the harbor
-recording that is `mqtt (craneId = 1)`.
+recording that is `grpc (id = 101)` — the right value under a name too
+generic to be evidence.
 
 Derived edges are computed on read. Nothing about them is persisted: the
 recording's `correlation` field still holds exactly one seed key, and the
@@ -184,22 +185,33 @@ spacing.
 ## What it looks like on the harbor sample
 
 The flagship `port-call-1` recording resolves `shipId = 101` and reports
-**7 of 8 steps across 7 protocols**:
+**8 of 8 steps across 8 protocols**:
 
 | Protocol | Verdict | Why |
 |---|---|---|
 | `odata`, `rest`, `websocket`, `signalr`, `sse` | strong | Carry `OccupiedByShipId` / `onShipId` / `ShipId` / `shipId` = 101 |
 | `grpc` | weak | Carries `"id": 101` — right value, generic name |
-| `graphql` | derived | Calls the same transaction `portCall.id = 1`, and shares `id = MSCU1234567` with the REST step |
-| `mqtt` | unmatched | Crane telemetry shares only the number `1`, on `craneId` |
+| `graphql` | derived | Calls the same transaction `portCall.id = 1`, and shares a container id with the REST step |
+| `mqtt` | derived | Crane telemetry names the container it is lifting: `containerId = MSCU1234567`, shared with the REST step |
 
-That is the honest number, and it is what the tab shows. The eighth lane
-is not a ranking failure: the crane telemetry carries no business
-linkage at all beyond `craneId = 1`, and that same `1` is also a dock
-`Number`, an SSE `Seq` and the `portCallId`. Accepting it would fuse four
-unrelated entities — exactly the coincidence the bridge rule exists to
-reject. Lighting it honestly needs the *sample* to say which container
-the crane is lifting, not a looser rule.
+The eighth lane is worth its own paragraph, because for a long time it
+stayed dark and that was the correct outcome. The crane telemetry used to
+share exactly one value with any correlated step: the integer `1`, on
+`craneId`. That same `1` is also a dock `Number`, an SSE `Seq` and the
+`portCallId`, so accepting it would have fused four unrelated entities —
+precisely the coincidence the bridge rule exists to reject.
+
+The fix was to the sample, not to the ranking
+([Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54)):
+a crane that is lifting now says *which* container it has hold of, which
+is a distinctive, id-shaped value the REST and GraphQL steps already
+carry. Loosening the gates instead would have traded the property that
+makes this feature trustworthy for one more lit lane in a screenshot.
+
+The rejection example did not disappear with it. `grpc (id = 101)` is
+still turned down for the same reason — the right value under a name too
+generic to count — so the recording still demonstrates both halves of the
+rule.
 
 ## Persisting the key
 
@@ -255,12 +267,14 @@ unjoined step is `–` in both.
 ```text
     OFFSET  PROTOCOL    SERVICE / METHOD                           DUR  STATUS  MATCH    VIA
     +300ms  rest        Containers / ListContainers                5ms  200     strong   –
-    +500ms  graphql     Query / portCall                          38ms  OK      derived  id = MSCU1234567 (rest)
-   +1300ms  mqtt        harbor/crane/1/status / receive      3000ms x3  OK      –        –
+    +500ms  graphql     Query / portCall                          38ms  OK      derived  id = HLBU2345678 (rest)
+   +1300ms  mqtt        harbor/crane/1/status / receive      3000ms x3  OK      derived  containerId = MSCU1234567 (rest)
 
 derived links (depth 2 — a step the key matched directly bridges one hop further, and no further):
   graphql Query / portCall
-    linked by id = MSCU1234567, shared with rest step 3 (Containers / ListContainers); 2 other shared value(s) would have served equally well
+    linked by id = HLBU2345678, shared with rest step 3 (Containers / ListContainers); 2 other shared value(s) would have served equally well
+  mqtt harbor/crane/1/status / receive
+    linked by containerId = MSCU1234567, shared with rest step 3 (Containers / ListContainers)
 ```
 
 ## Importing a recording
