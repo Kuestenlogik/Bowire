@@ -232,6 +232,33 @@ describe('tool manifest resolution (#589)', () => {
         assert.equal(r.manifest, manifestAt(REPO));
     });
 
+    it('reports the version the manifest pins', () => {
+        // The output channel names the manifest; without this it would then
+        // say nothing about what that manifest pins, because the version probe
+        // is deliberately skipped for this case — asking a tool that may not be
+        // restored yet fails for a reason that has nothing to do with versions.
+        const files = { [manifestAt(REPO)]: JSON.stringify(MANIFEST) };
+        const r = workbench.resolveCli({
+            workspaceDir: REPO,
+            ...fakeFs(files),
+            runner: runner({ onPath: '/usr/bin/bowire' }),
+        });
+
+        assert.equal(r.pinnedVersion, '2.6.0');
+    });
+
+    it('survives a manifest that pins Bowire without naming a version', () => {
+        const files = { [manifestAt(REPO)]: JSON.stringify({ tools: { 'Kuestenlogik.Bowire.Tool': {} } }) };
+        const r = workbench.resolveCli({
+            workspaceDir: REPO,
+            ...fakeFs(files),
+            runner: runner({ onPath: '/usr/bin/bowire' }),
+        });
+
+        assert.equal(r.source, 'manifest');
+        assert.equal(r.pinnedVersion, null);
+    });
+
     it('falls through to PATH when there is no SDK to honour the pin with', () => {
         // `dotnet tool run` needs the SDK, not just the runtime. Without one
         // the manifest names a version nothing here can produce, and refusing

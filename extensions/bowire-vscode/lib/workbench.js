@@ -132,6 +132,25 @@ function findToolManifest(startDir, exists = existsSync, read = readFileSync) {
 }
 
 /**
+ * The version a manifest pins Bowire to, or null when it cannot be read.
+ *
+ * Worth logging even though the version *check* is skipped for manifests:
+ * "which Bowire is this repo pinned to" is the question the manifest exists to
+ * answer, and reading it out of the file costs nothing — unlike asking a tool
+ * that may not be restored yet, which fails for an unrelated reason.
+ */
+function pinnedToolVersion(manifestPath, read = readFileSync) {
+    try {
+        const manifest = JSON.parse(String(read(manifestPath, 'utf8')));
+        const entry = Object.entries(manifest?.tools ?? {})
+            .find(([id]) => id.toLowerCase() === TOOL_PACKAGE_ID);
+        return entry?.[1]?.version ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Can this machine run a manifest-pinned tool at all?
  *
  * `dotnet tool run` needs the SDK, not just the runtime, but the runtime alone
@@ -193,7 +212,13 @@ function resolveCli(options = {}) {
         // and letting the SDK honour that pin is the point. It also means the
         // tool need not be installed yet — `dotnet tool restore` fetches it,
         // which is what the caller offers when this fails to start.
-        return { command: 'dotnet', prefixArgs: ['tool', 'run', 'bowire'], source: 'manifest', manifest };
+        return {
+            command: 'dotnet',
+            prefixArgs: ['tool', 'run', 'bowire'],
+            source: 'manifest',
+            manifest,
+            pinnedVersion: pinnedToolVersion(manifest, read),
+        };
     }
 
     const found = findCli(runner);
@@ -439,6 +464,8 @@ module.exports = {
     findCli,
     resolveCli,
     findToolManifest,
+    pinnedToolVersion,
+    hasDotnetSdk,
     manifestStartFailureMessage,
     describeSpawnError,
     expandPathVariables,

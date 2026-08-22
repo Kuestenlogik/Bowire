@@ -259,6 +259,13 @@ async function openWorkbench(context, channel) {
         managed: 'the extension\'s managed download',
     }[resolution.source];
     log(channel, `Using ${[resolution.command, ...resolution.prefixArgs].join(' ')} (from ${origin}).`);
+    // The version a manifest pins is read straight out of the file. It is the
+    // question the manifest exists to answer, and the probe below never runs
+    // for this case — so without this the channel would name the manifest and
+    // then say nothing about what it pins.
+    if (resolution.source === 'manifest') {
+        log(channel, `Pinned version: ${resolution.pinnedVersion ?? 'not stated in the manifest'}`);
+    }
 
     // Check the version before spawning. A CLI too old to understand the
     // arguments below exits immediately, and the resulting "exited before it
