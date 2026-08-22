@@ -97,7 +97,14 @@ To keep a project's data beside its code, add one line to that repo's `.bowire/p
 
 The collections then commit, diff and review like any other file, and two repos open in two windows keep separate sets.
 
-It is opt-in on purpose: a manifest that says nothing keeps the machine-wide store, so nobody's existing data moves under them. And because the answer comes from the repository, the same checkout resolves to the same store whether you opened it here, ran `bowire` in a terminal, or replayed it in CI — the editor is not a special case.
+It is opt-in on purpose: a manifest that says nothing keeps the machine-wide store, so nobody's existing data moves under them. Switching an existing setup over is a copy, not a migration — Bowire reads whatever is in the store it resolves to, so moving the files is the whole operation:
+
+```bash
+mkdir -p .bowire
+cp ~/.bowire/collections.json ~/.bowire/environments.json .bowire/   # whichever you want to share
+```
+
+Copy rather than move while you are deciding: the machine-wide store is left untouched, so nothing is lost if the repo turns out not to be the right home for it. And because the answer comes from the repository, the same checkout resolves to the same store whether you opened it here, ran `bowire` in a terminal, or replayed it in CI — the editor is not a special case.
 
 No file-system bridge is involved either way: the Bowire process reads and writes those files itself, and the webview only speaks HTTP to it.
 
