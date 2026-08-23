@@ -12,14 +12,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**12/16 done** · 4 backlog
+**13/16 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ⬜ Backlog | `area:multi` |
 | [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code + JetBrains workbench extension](#issue-kuestenlogik-bowire-101) | ⬜ Backlog | `area:workbench` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ In review | `area:workbench` |
+| [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ✅ Done | `area:multi` |
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ✅ Done | `area:workbench` |
 | [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ✅ Done | `area:workbench` |
 | [232](https://github.com/Kuestenlogik/Bowire/issues/232) | Bowire | [Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)](#issue-kuestenlogik-bowire-232) | ✅ Done | `area:workbench` |
@@ -166,12 +166,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-#### <a id="issue-kuestenlogik-bowire-samples-54"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) harbor-demo: MQTT crane telemetry should name the container it lifts
-
-> `area:multi`
-
-The harbor demo is the reference recording for Bowire's correlated timeline (Kuestenlogik/Bowire#539, #545). Seven of its eight protocol steps now join into one flow. The eighth — the MQTT crane telemetry — stays dark, and the sample is the reason. [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/54)
-
 #### <a id="issue-kuestenlogik-bowire-101"></a>⬜ Backlog · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code + JetBrains workbench extension
 
 > `area:workbench`
@@ -189,6 +183,12 @@ Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in
 > `area:workbench`
 
 Bowire runs locally on the developer's machine. When the developer pushes a PR, the reviewer sees the code diff — and nothing about the API impact. Bowire's value (regressions, security findings, perf deltas) stays invisible to reviewers. Without surfacing that on the PR, "continuous" stays aspirational. [[more]](https://github.com/Kuestenlogik/Bowire/issues/183)
+
+#### <a id="issue-kuestenlogik-bowire-samples-54"></a>✅ Done · [Kuestenlogik/Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) harbor-demo: MQTT crane telemetry should name the container it lifts
+
+> `area:multi`
+
+The harbor demo is the reference recording for Bowire's correlated timeline (Kuestenlogik/Bowire#539, #545). Seven of its eight protocol steps now join into one flow. The eighth — the MQTT crane telemetry — stays dark, and the sample is the reason. [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/54)
 
 #### <a id="issue-kuestenlogik-bowire-172"></a>✅ Done · [#172](https://github.com/Kuestenlogik/Bowire/issues/172) .bowire/project.json convention — checked-in workspace configuration
 
@@ -786,4 +786,4 @@ The PR-report bot was prototyped **in-repo** under `.github/actions/bowire-pr/` 
 
 ---
 
-*Generated 2026-08-22 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-08-23 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
