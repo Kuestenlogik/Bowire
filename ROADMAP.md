@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**14/18 done** · 4 backlog
+**14/19 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -20,6 +20,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [582](https://github.com/Kuestenlogik/Bowire/issues/582) | Bowire | [Split bowire-pr into its own public kuestenlogik/bowire-action repo](#issue-kuestenlogik-bowire-582) | ⬜ Backlog |  |
 | [610](https://github.com/Kuestenlogik/Bowire/issues/610) | Bowire | [Repair the eight rotted Phase 1-3 E2E tests](#issue-kuestenlogik-bowire-610) | ⬜ Backlog |  |
+| [612](https://github.com/Kuestenlogik/Bowire/issues/612) | Bowire | [REST workspace template: the starter collection never reaches the new workspace](#issue-kuestenlogik-bowire-612) | ⬜ Backlog |  |
 | [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ✅ Done | `area:multi` |
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ✅ Done | `area:workbench` |
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ✅ Done | `area:workbench` |
@@ -182,6 +183,10 @@ The PR-report bot was prototyped **in-repo** under `.github/actions/bowire-pr/` 
 #### <a id="issue-kuestenlogik-bowire-610"></a>⬜ Backlog · [#610](https://github.com/Kuestenlogik/Bowire/issues/610) Repair the eight rotted Phase 1-3 E2E tests
 
 Eight of the Phase 1–3 E2E tests under `tests/e2e/` fail against current `main`. They are marked `test.fixme` so the suite can gate CI (#see below) instead of being switched off wholesale; this issue is to repair and un-mark them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/610)
+
+#### <a id="issue-kuestenlogik-bowire-612"></a>⬜ Backlog · [#612](https://github.com/Kuestenlogik/Bowire/issues/612) REST workspace template: the starter collection never reaches the new workspace
+
+Creating a workspace from the **REST** template produces no starter collection. The template's `REST starter` entry — the one carrying the `findPetsByStatus` request — is not in the new workspace afterwards. [[more]](https://github.com/Kuestenlogik/Bowire/issues/612)
 
 #### <a id="issue-kuestenlogik-bowire-samples-54"></a>✅ Done · [Kuestenlogik/Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) harbor-demo: MQTT crane telemetry should name the container it lifts
 
