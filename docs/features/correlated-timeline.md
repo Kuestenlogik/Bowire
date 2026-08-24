@@ -146,9 +146,14 @@ id can still be promoted to the seed by hand from the key picker.
 
 When several values would serve equally well — the harbor recording
 shares three container ids between REST and GraphQL — the winner is the
-one whose field names agree most closely, then the longest, then the
-first in scan order, and the model reports how many runners-up there
-were so the UI does not present one arbitrary container as special.
+one whose two field names agree most closely (identical beats *is a
+suffix of*, and by a wide enough margin that nothing else overturns it),
+then the one with the better balance of value length against how many
+*different* jobs the value does elsewhere in the recording, then the
+first in scan order. Two spellings of the same identifier — `containerId`
+here, `id` there — are one job, not two, so corroboration never counts
+against a value. The model reports how many runners-up there were, so the
+UI does not present one arbitrary container as special.
 
 **Every derived lane names the value that linked it.** An unexplained
 match is worse than no match, because an operator cannot tell a real
@@ -157,9 +162,12 @@ under the lanes, one row per derived step, and the pinned inspect strip
 gains a `linked via` field.
 
 A lane that stays dark **because** its only shared value was turned down
-says so as a note, naming the value it was offered. On the harbor
-recording that is `grpc (id = 101)` — the right value under a name too
-generic to be evidence.
+says so as a note, naming the value it was offered. Only genuinely
+unmatched steps appear there: a weakly matched step is already on the
+timeline under its own verdict, so it is neither offered a bridge nor
+reported as having been refused one. The harbor recording has no such
+lane left — the MQTT crane telemetry was the last one, and the section
+below is the story of how it was lit.
 
 Derived edges are computed on read. Nothing about them is persisted: the
 recording's `correlation` field still holds exactly one seed key, and the
@@ -260,19 +268,22 @@ notes. No ASCII bar art: a terminal table is the honest CLI form of this
 view.
 
 `MATCH` and `VIA` together tell all four states apart without a fifth
-column: a directly matched step names its tier and shows `–` for `VIA`, a
-joined step reads `derived` plus the value that joined it, and an
-unjoined step is `–` in both.
+column: a directly matched step names its tier — `strong` or `weak` — and
+shows `–` for `VIA`, a joined step reads `derived` plus the value that
+joined it, and an unjoined step is `–` in both. The harbor recording no
+longer produces that last shape, so the excerpt below shows three of the
+four:
 
 ```text
     OFFSET  PROTOCOL    SERVICE / METHOD                           DUR  STATUS  MATCH    VIA
+      +0ms  grpc        harbor.fleet.v1.Fleet / GetShip            6ms  OK      weak     –
     +300ms  rest        Containers / ListContainers                5ms  200     strong   –
-    +500ms  graphql     Query / portCall                          38ms  OK      derived  id = HLBU2345678 (rest)
+    +500ms  graphql     Query / portCall                          38ms  OK      derived  id = MSCU1234567 (rest)
    +1300ms  mqtt        harbor/crane/1/status / receive      3000ms x3  OK      derived  containerId = MSCU1234567 (rest)
 
 derived links (depth 2 — a step the key matched directly bridges one hop further, and no further):
   graphql Query / portCall
-    linked by id = HLBU2345678, shared with rest step 3 (Containers / ListContainers); 2 other shared value(s) would have served equally well
+    linked by id = MSCU1234567, shared with rest step 3 (Containers / ListContainers); 2 other shared value(s) would have served equally well
   mqtt harbor/crane/1/status / receive
     linked by containerId = MSCU1234567, shared with rest step 3 (Containers / ListContainers)
 ```
