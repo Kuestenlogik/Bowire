@@ -21,6 +21,8 @@ items:
   href: extending/
 - name: Architecture
   href: architecture/
+- name: Decisions (ADR)
+  href: adr/
 - name: API Reference
   href: api/index.md
 - name: Brand guide

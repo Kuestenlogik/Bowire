@@ -1,0 +1,6 @@
+- name: About ADRs
+  href: README.md
+- name: ADR-0001 — Sidecar plugins speak JSON-RPC
+  href: 0001-sidecar-plugins-speak-json-rpc.md
+- name: ADR-0002 — gRPC as an additional sidecar transport
+  href: 0002-grpc-as-an-additional-sidecar-transport.md
