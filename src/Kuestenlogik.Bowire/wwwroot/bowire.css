@@ -18687,6 +18687,41 @@ button.bowire-ws-detail-action {
                 color var(--bowire-transition-fast),
                 border-color var(--bowire-transition-fast);
 }
+/* Icon-only variant of .bowire-pane-btn. The response action cluster is
+   the densest row in the workbench and every label there restates a
+   universally understood glyph — copy, download, expand/collapse. Dropping
+   the text buys back roughly 200px, which is the difference between the
+   cluster fitting beside the tab strip and wrapping. The label is not
+   deleted, it moves: `title` carries it on hover, `aria-label` carries it
+   for assistive tech, so nothing becomes unlabelled. Only use this where
+   the glyph is unambiguous on its own — the one primary action in the
+   cluster ("Use this…") keeps its text on purpose. */
+.bowire-pane-btn-icon {
+    width: 28px;
+    padding: 0;
+    justify-content: center;
+}
+
+.bowire-pane-btn-icon svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+}
+
+/* Dropdown triggers stay one button, so they need room for glyph + caret
+   rather than the square footprint. */
+.bowire-pane-btn-icon-caret {
+    width: auto;
+    padding: 0 6px;
+    gap: 2px;
+}
+
+.bowire-pane-btn-caret {
+    font-size: 9px;
+    line-height: 1;
+    opacity: 0.75;
+}
+
 .bowire-btn:hover:not(:disabled),
 .bowire-recording-action-btn:hover:not(:disabled),
 .bowire-env-editor-action-btn:hover:not(:disabled),

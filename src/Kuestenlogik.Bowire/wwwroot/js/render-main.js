@@ -7545,8 +7545,10 @@
             codeBox.textContent = snippet;
 
             var copyBtn = el('button', {
-                className: 'bowire-pane-btn',
-                textContent: 'Copy',
+                className: 'bowire-pane-btn bowire-pane-btn-icon',
+                title: 'Copy the generated snippet',
+                'aria-label': 'Copy the generated snippet',
+                innerHTML: svgIcon('copy'),
                 onClick: function () {
                     navigator.clipboard.writeText(snippet).then(function () {
                         toast('Snippet copied to clipboard', 'success');
@@ -10230,9 +10232,10 @@
                     if (!responseData || streamMessages.length > 0) return el('span');
                     return el('button', {
                         id: 'bowire-response-tree-expand-btn',
-                        className: 'bowire-pane-btn',
+                        className: 'bowire-pane-btn bowire-pane-btn-icon',
                         title: 'Expand all nodes',
-                        textContent: 'Expand all',
+                        'aria-label': 'Expand all nodes',
+                        innerHTML: svgIcon('expandAll'),
                         onClick: function () {
                             var nodes = document.querySelectorAll('.bowire-response-output .bowire-json-tree-node');
                             nodes.forEach(function (n) { n.open = true; });
@@ -10243,9 +10246,10 @@
                     if (!responseData || streamMessages.length > 0) return el('span');
                     return el('button', {
                         id: 'bowire-response-tree-collapse-btn',
-                        className: 'bowire-pane-btn',
+                        className: 'bowire-pane-btn bowire-pane-btn-icon',
                         title: 'Collapse all nodes',
-                        textContent: 'Collapse all',
+                        'aria-label': 'Collapse all nodes',
+                        innerHTML: svgIcon('collapseAll'),
                         onClick: function () {
                             var nodes = document.querySelectorAll('.bowire-response-output .bowire-json-tree-node');
                             nodes.forEach(function (n) {
@@ -10282,9 +10286,10 @@
 
                     var mainBtn = el('button', {
                         id: 'bowire-response-copy-main-btn',
-                        className: 'bowire-pane-btn bowire-split-btn-main',
+                        className: 'bowire-pane-btn bowire-split-btn-main bowire-pane-btn-icon',
                         title: 'Copy response body as-is',
-                        textContent: 'Copy',
+                        'aria-label': 'Copy response body as-is',
+                        innerHTML: svgIcon('copy'),
                         onClick: function () { copyRawResponse(); }
                     });
                     var caretBtn = el('button', {
@@ -10388,8 +10393,12 @@
                     var wrapper = el('div', { id: 'bowire-response-download-wrap', className: 'bowire-dropdown-wrapper' });
                     var btn = el('button', {
                         id: 'bowire-response-download-btn',
-                        className: 'bowire-pane-btn',
-                        textContent: 'Download \u25BE',
+                        className: 'bowire-pane-btn bowire-pane-btn-icon bowire-pane-btn-icon-caret',
+                        title: 'Download the response',
+                        'aria-label': 'Download the response',
+                        'aria-haspopup': 'menu',
+                        innerHTML: svgIcon('download')
+                            + '<span class="bowire-pane-btn-caret" aria-hidden="true">\u25BE</span>',
                         onClick: function (e) {
                             e.stopPropagation();
                             var menu = wrapper.querySelector('.bowire-dropdown-menu');

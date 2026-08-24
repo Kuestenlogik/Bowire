@@ -38,17 +38,28 @@ JSON responses are syntax-highlighted with colors for strings, numbers, booleans
 
 ## Actions
 
+Every action in this cluster except **Use this...** is an icon button. The
+cluster is the densest row in the workbench, and labels there restated
+glyphs that are understood without them -- copy, download, expand and
+collapse. The label is not gone, it moved: hover shows it as a tooltip, and
+each button carries the same text as its accessible name. **Use this...**
+keeps its label because it is the one primary action in the cluster.
+
 ### Copy
 
-Click the **Copy** button to copy the response body to your clipboard. For streaming responses, this copies all messages received so far.
+Click the **copy** icon to copy the response body to your clipboard. For streaming responses, this copies all messages received so far.
 
 ### Download
 
-Click the **Download** button to save the response as a JSON file. For streaming responses, all received messages are saved as a JSON array.
+Click the **download** icon to save the response as a JSON file; the caret next to it picks the format. For streaming responses, all received messages are saved as a JSON array.
+
+### Expand / collapse
+
+The two chevron buttons open and close every node of the JSON tree at once. They are hidden while a stream is running -- the streaming pane has its own controls.
 
 ### Copy as code
 
-The **Copy** button is a split button. The primary half copies the response body; the caret opens a protocol-aware code-export list -- REST offers curl / fetch / Python, gRPC offers grpcurl, WebSocket offers wscat, and so on. The old standalone **Export as grpcurl** button was folded into this dropdown, so the offered commands always match the protocol of the method you are looking at.
+The **copy** button is a split button. The primary half copies the response body; the caret opens a protocol-aware code-export list -- REST offers curl / fetch / Python, gRPC offers grpcurl, WebSocket offers wscat, and so on. The old standalone **Export as grpcurl** button was folded into this dropdown, so the offered commands always match the protocol of the method you are looking at.
 
 Every protocol's list ends with **Copy as Bowire CLI**, which renders the request as a runnable `bowire call ...` line rather than translating it into another tool. It is an entry in this dropdown rather than a button of its own -- the action cluster has exactly one primary button, and that one is **Use this...** below. MQTT, NATS and Socket.IO offer only this entry: they used to fall through to the REST list and be handed a curl command that could never reach a broker.
 
