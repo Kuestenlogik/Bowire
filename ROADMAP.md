@@ -786,4 +786,4 @@ The PR-report bot was prototyped **in-repo** under `.github/actions/bowire-pr/` 
 
 ---
 
-*Generated 2026-08-23 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-08-24 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
