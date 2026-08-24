@@ -16,7 +16,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code + JetBrains workbench extension](#issue-kuestenlogik-bowire-101) | ⬜ Backlog | `area:workbench` |
+| [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code workbench extension](#issue-kuestenlogik-bowire-101) | ⬜ Backlog | `area:workbench` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ In review | `area:workbench` |
 | [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ✅ Done | `area:multi` |
@@ -161,12 +161,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [582](https://github.com/Kuestenlogik/Bowire/issues/582) | Bowire | [Split bowire-pr into its own public kuestenlogik/bowire-action repo](#issue-kuestenlogik-bowire-582) | ⬜ Backlog |  |
 | [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog |  |
 | [584](https://github.com/Kuestenlogik/Bowire/issues/584) | Bowire | [Secrets redaction: extend to HTML report, snapshot files, and recordings](#issue-kuestenlogik-bowire-584) | ⬜ Backlog |  |
+| [610](https://github.com/Kuestenlogik/Bowire/issues/610) | Bowire | [Repair the eight rotted Phase 1-3 E2E tests](#issue-kuestenlogik-bowire-610) | ⬜ Backlog |  |
 
 ## Details
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-#### <a id="issue-kuestenlogik-bowire-101"></a>⬜ Backlog · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code + JetBrains workbench extension
+#### <a id="issue-kuestenlogik-bowire-101"></a>⬜ Backlog · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code workbench extension
 
 > `area:workbench`
 
@@ -783,6 +784,10 @@ The PR-report bot was prototyped **in-repo** under `.github/actions/bowire-pr/` 
 #### <a id="issue-kuestenlogik-bowire-584"></a>⬜ Backlog · [#584](https://github.com/Kuestenlogik/Bowire/issues/584) Secrets redaction: extend to HTML report, snapshot files, and recordings
 
 #361 shipped run-scoped secrets redaction (`--secret`/`--secret-file` + `SecretRedactor`, `***`+last-4 masking) applied at the **primary CI-artifact sinks**: TTY step output, JUnit failure texts (v2.1 `JUnitReport` + v2.2 `FlowJUnitReport`), SARIF messages (`TestSarifReport`), and GitHub `::error` a … [[more]](https://github.com/Kuestenlogik/Bowire/issues/584)
+
+#### <a id="issue-kuestenlogik-bowire-610"></a>⬜ Backlog · [#610](https://github.com/Kuestenlogik/Bowire/issues/610) Repair the eight rotted Phase 1-3 E2E tests
+
+Eight of the Phase 1–3 E2E tests under `tests/e2e/` fail against current `main`. They are marked `test.fixme` so the suite can gate CI (#see below) instead of being switched off wholesale; this issue is to repair and un-mark them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/610)
 
 ---
 
