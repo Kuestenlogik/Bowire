@@ -110,14 +110,17 @@ public sealed class RecordingCorrelationAnalyzerTests
         // through a container id (see the derived-join tests below). mqtt
         // stays dark and is reported as such, not rounded up.
         //
-        // This fixture is deliberately frozen at the pre-Bowire.Samples#54
+        // Fixtures/port-call-1.bwr.json is an independent copy, not a mirror
+        // of the shipped harbor sample: it is frozen at the pre-Bowire.Samples#54
         // shape, where the crane telemetry carried only `craneId`. The shipped
-        // harbor sample now also names the container being lifted and reaches
-        // 8 of 8 — so the two files agree on everything except that one field,
-        // on purpose. Updating this copy to match would delete the only
-        // realistic case in which a whole lane is turned down for offering
-        // nothing but a coincidence, which is the property the strictness is
-        // there to protect.
+        // sample now also names the container being lifted and reaches 8 of 8.
+        // Nothing enforces that the two stay otherwise identical — the sample
+        // lives in Kuestenlogik/Bowire.Samples and may drift further; that is
+        // expected and does not break this test. What this copy exists for is
+        // the 7-of-8 outcome asserted below: the only realistic case in which
+        // a whole lane is turned down for offering nothing but a coincidence,
+        // which is the property the strictness is there to protect. Do not
+        // "fix" it by re-syncing it with the sample.
         Assert.Equal(7, timeline.MatchedStepCount);
         Assert.Equal(7, timeline.MatchedProtocolCount);
         Assert.Equal(1, timeline.DerivedStepCount);
@@ -412,6 +415,62 @@ public sealed class RecordingCorrelationAnalyzerTests
         Assert.Equal(0, bff.Link.AlternativeCount);
         Assert.Equal(3, timeline.MatchedStepCount);
         Assert.Equal(1, timeline.DerivedStepCount);
+    }
+
+    [Fact]
+    public void Analyze_AWeaklyMatchedStep_IsNeitherBridgedNorReportedAsRejected()
+    {
+        // s3 is already on the timeline as `weak`: it carries the seed value
+        // on a generically named leaf. It ALSO carries a container id that
+        // would qualify as a bridge. Joining it would overwrite an honest
+        // `weak` verdict with `derived` and inflate DerivedStepCount, and
+        // the same step would be named in the rejected-bridge warning while
+        // its lane is visibly lit.
+        var rec = new BowireRecording { Id = "r", Name = "weak-bridge" };
+        rec.Steps.Add(Step("s1", "rest", 0,
+            response: """{"shipId":"9001","containers":[{"id":"MSCU1234567"}]}"""));
+        rec.Steps.Add(Step("s2", "odata", 10, response: """{"ShipId":"9001"}"""));
+        rec.Steps.Add(Step("s3", "grpc", 20,
+            response: """{"id":"9001","containerId":"MSCU1234567"}"""));
+
+        var timeline = RecordingCorrelationAnalyzer.Analyze(rec);
+
+        Assert.Equal("9001", timeline.Key!.Value);
+        var grpc = timeline.Events.Single(e => e.Protocol == "grpc");
+        Assert.Equal(RecordingCorrelationMatch.Weak, grpc.Match);
+        Assert.Null(grpc.Link);
+        Assert.Equal(0, timeline.DerivedStepCount);
+        Assert.DoesNotContain(timeline.Warnings, w => w.Contains("grpc (", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Analyze_TheSameIdUnderTwoSpellings_IsNotPenalisedAgainstAnIdCarriedByFewerSteps()
+    {
+        // Both containers are 11 characters and both reach the dark step,
+        // so the tiebreak decides. MSCU is corroborated by two lit steps
+        // and answers to `id` on one and `containerId` on the other —
+        // the same identifier under two spellings, which is exactly the
+        // shape gate 3 admits. Counting that as a spread of 2 would demote
+        // the best-corroborated value in favour of the least.
+        // Six steps so that a value on three of them clears gate 4's
+        // selectivity ceiling — this test is about the tiebreak, not that.
+        var rec = new BowireRecording { Id = "r", Name = "spread" };
+        rec.Steps.Add(Step("s1", "rest", 0,
+            response: """{"shipId":"9001","containers":[{"id":"MSCU1234567"},{"id":"HLBU2345678"}]}"""));
+        rec.Steps.Add(Step("s2", "odata", 10,
+            response: """{"ShipId":"9001","containerId":"MSCU1234567"}"""));
+        rec.Steps.Add(Step("s3", "websocket", 20, response: """{"shipId":"9001"}"""));
+        rec.Steps.Add(Step("s4", "signalr", 30, response: """{"ShipId":"9001"}"""));
+        rec.Steps.Add(Step("s5", "sse", 40, response: """{"shipId":"9001"}"""));
+        rec.Steps.Add(Step("s6", "graphql", 50,
+            response: """{"data":{"portCall":{"id":"77","containers":[{"id":"MSCU1234567"},{"id":"HLBU2345678"}]}}}"""));
+
+        var timeline = RecordingCorrelationAnalyzer.Analyze(rec);
+
+        var graphql = timeline.Events.Single(e => e.Protocol == "graphql");
+        Assert.Equal(RecordingCorrelationMatch.Derived, graphql.Match);
+        Assert.Equal("MSCU1234567", graphql.Link!.Value);
+        Assert.Equal(1, graphql.Link.AlternativeCount);
     }
 
     [Fact]

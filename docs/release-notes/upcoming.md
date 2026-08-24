@@ -310,8 +310,10 @@ its own weight. A short id can still be promoted to the seed by hand.
 
 **A lane that stays dark says why.** A step whose only shared value was
 turned down is reported as a rejected bridge rather than left silently
-missing. On the harbor recording that is `grpc (id = 101)` — the right
-value under a name too generic to be evidence.
+missing. Only genuinely unmatched steps are listed: a weakly matched step
+— `grpc` on the harbor recording — is already on the timeline under its
+own verdict, so it is neither offered a bridge nor reported as having
+been refused one. The harbor recording now leaves no lane dark at all.
 
 The MQTT crane telemetry used to be in that list too, for the same kind
 of reason: it shared exactly one value with the rest of the capture, the

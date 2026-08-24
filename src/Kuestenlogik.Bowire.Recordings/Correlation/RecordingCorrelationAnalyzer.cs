@@ -494,10 +494,13 @@ public static class RecordingCorrelationAnalyzer
         // transaction and present it as evidence. A bridge already gets no
         // name corroboration of its own; anchoring it to something that has
         // none either leaves the far end resting on nothing.
-        // Two different questions, deliberately two arrays: who may ANCHOR a
-        // bridge, and who is still dark enough to NEED one. A weakly matched
-        // step is neither — it is already on the timeline, and it is not
-        // solid enough to pull anyone else on.
+        // Two different questions, deliberately two tests: `seedLit` is who
+        // may ANCHOR a bridge (strong only, below), and the loop guard is who
+        // is still dark enough to NEED one (`none` only). A weakly matched
+        // step answers neither — it is already on the timeline, so joining it
+        // would overwrite an honest `weak` verdict with `derived` and report
+        // it as a rejected bridge in the same breath, and it is not solid
+        // enough to pull anyone else on.
         var seedLit = new bool[events.Count];
         var anySeedLit = false;
         var anyDark = false;
@@ -515,7 +518,7 @@ public static class RecordingCorrelationAnalyzer
 
         for (var i = 0; i < events.Count; i++)
         {
-            if (seedLit[i]) continue;
+            if (!string.Equals(events[i].Match, RecordingCorrelationMatch.None, StringComparison.Ordinal)) continue;
 
             var link = FindBridge(i, index, seedLit, events, out var nearMiss);
             if (link is not null)
@@ -630,6 +633,17 @@ public static class RecordingCorrelationAnalyzer
                 continue;
             }
 
+            // Spread for the ranking below, counted the same way gate 3 is
+            // judged: only names that are NOT this leaf's identifier under
+            // another spelling. A container that answers to `containerId`
+            // here and `id` there is doing ONE job under two names — the
+            // very shape gate 3 admits — so penalising it would demote the
+            // value carried by the most steps in favour of one carried by
+            // the fewest. `names.Count` would also reintroduce the
+            // non-locality gate 3 was moved per-edge to escape: an
+            // unrelated step reusing the value could reshuffle the winner.
+            var nameSpread = 1 + names.Count(n => !NamesCohere(leaf.NormalizedName, n));
+
             var admitted = false;
             foreach (var carrier in carriers)
             {
@@ -646,7 +660,7 @@ public static class RecordingCorrelationAnalyzer
 
                 admitted = true;
 
-                var strength = BridgeStrength(leaf.NormalizedName, carrier.NormalizedName, leaf.Value, names.Count);
+                var strength = BridgeStrength(leaf.NormalizedName, carrier.NormalizedName, leaf.Value, nameSpread);
                 if (strength <= bestStrength) continue;
                 var via = events[carrier.StepIndex];
                 bestStrength = strength;
@@ -705,6 +719,11 @@ public static class RecordingCorrelationAnalyzer
     /// across many field names is doing more than one job and is
     /// penalised for it.
     /// </summary>
+    /// <remarks>
+    /// <c>nameSpread</c> is how many DISTINCT jobs the value does, not how
+    /// many names it wears: names that cohere with the leaf's own (the same
+    /// identifier under another spelling) count as one. See the call site.
+    /// </remarks>
     private static int BridgeStrength(string darkName, string litName, string value, int nameSpread)
         => (string.Equals(darkName, litName, StringComparison.Ordinal) ? 200 : 100)
             + Math.Min(value.Length, 32)
