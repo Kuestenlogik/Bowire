@@ -12,12 +12,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**13/16 done** · 3 backlog
+**13/18 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code workbench extension](#issue-kuestenlogik-bowire-101) | ⬜ Backlog | `area:workbench` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
+| [582](https://github.com/Kuestenlogik/Bowire/issues/582) | Bowire | [Split bowire-pr into its own public kuestenlogik/bowire-action repo](#issue-kuestenlogik-bowire-582) | ⬜ Backlog |  |
+| [610](https://github.com/Kuestenlogik/Bowire/issues/610) | Bowire | [Repair the eight rotted Phase 1-3 E2E tests](#issue-kuestenlogik-bowire-610) | ⬜ Backlog |  |
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ In review | `area:workbench` |
 | [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ✅ Done | `area:multi` |
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ✅ Done | `area:workbench` |
@@ -81,7 +83,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
-**9/24 done** · 15 backlog
+**9/25 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -100,6 +102,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ⬜ Backlog | `area:workbench` |
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog | `area:workbench` |
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ⬜ Backlog | `area:workbench` |
+| [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog |  |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ✅ Done | `area:workbench` |
 | [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ✅ Done | `area:workbench` |
 | [362](https://github.com/Kuestenlogik/Bowire/issues/362) | Bowire | [Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern](#issue-kuestenlogik-bowire-362) | ✅ Done | `area:workbench` |
@@ -125,7 +128,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts
 
-**1/24 done** · 23 backlog
+**1/25 done** · 24 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -152,16 +155,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [488](https://github.com/Kuestenlogik/Bowire/issues/488) | Bowire | [RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench](#issue-kuestenlogik-bowire-488) | ⬜ Backlog | `area:security` |
 | [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog | `area:security` |
 | [529](https://github.com/Kuestenlogik/Bowire/issues/529) | Bowire | [OData plugin: EDM functions and actions are never discovered (class doc claims they are)](#issue-kuestenlogik-bowire-529) | ⬜ Backlog | `area:plugin-sdk` |
-| [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
-
-### Backlog (not yet scheduled)
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [582](https://github.com/Kuestenlogik/Bowire/issues/582) | Bowire | [Split bowire-pr into its own public kuestenlogik/bowire-action repo](#issue-kuestenlogik-bowire-582) | ⬜ Backlog |  |
-| [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog |  |
 | [584](https://github.com/Kuestenlogik/Bowire/issues/584) | Bowire | [Secrets redaction: extend to HTML report, snapshot files, and recordings](#issue-kuestenlogik-bowire-584) | ⬜ Backlog |  |
-| [610](https://github.com/Kuestenlogik/Bowire/issues/610) | Bowire | [Repair the eight rotted Phase 1-3 E2E tests](#issue-kuestenlogik-bowire-610) | ⬜ Backlog |  |
+| [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
 ## Details
 
@@ -178,6 +173,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 > `area:workbench`
 
 Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in a **git-native workspace directory**. The original #181 sketch also listed `--workspace-id` — running a workspace addressed by its id from the workbench's `~/.bowire/` per-user storage. [[more]](https://github.com/Kuestenlogik/Bowire/issues/365)
+
+#### <a id="issue-kuestenlogik-bowire-582"></a>⬜ Backlog · [#582](https://github.com/Kuestenlogik/Bowire/issues/582) Split bowire-pr into its own public kuestenlogik/bowire-action repo
+
+The PR-report bot was prototyped **in-repo** under `.github/actions/bowire-pr/` (see #183) so it could stabilise against the real CLI. Once it settles, it should live in its own repository and be publishable as a reusable/Marketplace action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/582)
+
+#### <a id="issue-kuestenlogik-bowire-610"></a>⬜ Backlog · [#610](https://github.com/Kuestenlogik/Bowire/issues/610) Repair the eight rotted Phase 1-3 E2E tests
+
+Eight of the Phase 1–3 E2E tests under `tests/e2e/` fail against current `main`. They are marked `test.fixme` so the suite can gate CI (#see below) instead of being switched off wholesale; this issue is to repair and un-mark them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/610)
 
 #### <a id="issue-kuestenlogik-bowire-183"></a>⬜ In review · [#183](https://github.com/Kuestenlogik/Bowire/issues/183) GitHub Action — Bowire PR-comment bot with delta + findings + perf
 
@@ -533,6 +536,10 @@ Feasible and small. Everything the proposal assumes already exists: `BowireOptio
 
 `render()` rebuilds the entire workbench tree off-screen and morphdom-diffs it. There is no debounce, no dirty flag, no coalescing â€” a grep for `scheduleRender` / `renderPending` / any batching wrapper across `wwwroot/js/` returns nothing, and there are ~685 `render()` call sites. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/551)
 
+#### <a id="issue-kuestenlogik-bowire-583"></a>⬜ Backlog · [#583](https://github.com/Kuestenlogik/Bowire/issues/583) Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint
+
+#189 shipped the design-time lint core across **all three surfaces** — CLI (`bowire lint`), Web-UI (workbench Lint rail + `/api/lint`), and MCP (`bowire.lint`) — with a typed rule engine, 5 built-in rules, `.bowire/rules.json` config (toggles + severity overrides), and a plugin SPI (`IBowireLintRule … [[more]](https://github.com/Kuestenlogik/Bowire/issues/583)
+
 #### <a id="issue-kuestenlogik-bowire-256"></a>✅ Done · [#256](https://github.com/Kuestenlogik/Bowire/issues/256) Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style
 
 > `area:workbench`
@@ -765,29 +772,15 @@ The `.Scanner` suffix under-describes what the package has become. It started as
 
 `BowireODataProtocol.DiscoverAsync` emits exactly five methods per entity set — GET, GET_BY_KEY, POST, PATCH, DELETE. EDM **functions and actions** are parsed into the model but never surfaced, so they cannot be invoked from the workbench. [[more]](https://github.com/Kuestenlogik/Bowire/issues/529)
 
+#### <a id="issue-kuestenlogik-bowire-584"></a>⬜ Backlog · [#584](https://github.com/Kuestenlogik/Bowire/issues/584) Secrets redaction: extend to HTML report, snapshot files, and recordings
+
+#361 shipped run-scoped secrets redaction (`--secret`/`--secret-file` + `SecretRedactor`, `***`+last-4 masking) applied at the **primary CI-artifact sinks**: TTY step output, JUnit failure texts (v2.1 `JUnitReport` + v2.2 `FlowJUnitReport`), SARIF messages (`TestSarifReport`), and GitHub `::error` a … [[more]](https://github.com/Kuestenlogik/Bowire/issues/584)
+
 #### <a id="issue-kuestenlogik-bowire-215"></a>✅ Done · [#215](https://github.com/Kuestenlogik/Bowire/issues/215) Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths
 
 > `area:plugin-sdk`
 
 > **Status:** obsolete, not done. The premise no longer holds — the body below records why; the original proposal is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
-
-### Backlog (not yet scheduled)
-
-#### <a id="issue-kuestenlogik-bowire-582"></a>⬜ Backlog · [#582](https://github.com/Kuestenlogik/Bowire/issues/582) Split bowire-pr into its own public kuestenlogik/bowire-action repo
-
-The PR-report bot was prototyped **in-repo** under `.github/actions/bowire-pr/` (see #183) so it could stabilise against the real CLI. Once it settles, it should live in its own repository and be publishable as a reusable/Marketplace action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/582)
-
-#### <a id="issue-kuestenlogik-bowire-583"></a>⬜ Backlog · [#583](https://github.com/Kuestenlogik/Bowire/issues/583) Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint
-
-#189 shipped the design-time lint core across **all three surfaces** — CLI (`bowire lint`), Web-UI (workbench Lint rail + `/api/lint`), and MCP (`bowire.lint`) — with a typed rule engine, 5 built-in rules, `.bowire/rules.json` config (toggles + severity overrides), and a plugin SPI (`IBowireLintRule … [[more]](https://github.com/Kuestenlogik/Bowire/issues/583)
-
-#### <a id="issue-kuestenlogik-bowire-584"></a>⬜ Backlog · [#584](https://github.com/Kuestenlogik/Bowire/issues/584) Secrets redaction: extend to HTML report, snapshot files, and recordings
-
-#361 shipped run-scoped secrets redaction (`--secret`/`--secret-file` + `SecretRedactor`, `***`+last-4 masking) applied at the **primary CI-artifact sinks**: TTY step output, JUnit failure texts (v2.1 `JUnitReport` + v2.2 `FlowJUnitReport`), SARIF messages (`TestSarifReport`), and GitHub `::error` a … [[more]](https://github.com/Kuestenlogik/Bowire/issues/584)
-
-#### <a id="issue-kuestenlogik-bowire-610"></a>⬜ Backlog · [#610](https://github.com/Kuestenlogik/Bowire/issues/610) Repair the eight rotted Phase 1-3 E2E tests
-
-Eight of the Phase 1–3 E2E tests under `tests/e2e/` fail against current `main`. They are marked `test.fixme` so the suite can gate CI (#see below) instead of being switched off wholesale; this issue is to repair and un-mark them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/610)
 
 ---
 
