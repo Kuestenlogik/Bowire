@@ -1,13 +1,17 @@
 name: "Self-test: PR report action"
 
-# Exercises the in-repo .github/actions/bowire-pr composite action end-to-end
-# against a local `bowire mock` target, so the action's wiring is validated
-# without needing an external service or a live PR. On workflow_dispatch (no PR
-# context) the assembled report lands in the run summary; on a PR that touches
-# the action it also posts the comment.
+# Exercises Kuestenlogik/bowire-action end-to-end against a local `bowire mock`
+# target. The action moved to its own repository (#582); this workflow stayed
+# behind on purpose and now points at the published action, which makes it the
+# integration test in the direction that matters here: a CLI change in THIS
+# repo breaking the action is caught before anyone else meets it.
 #
-# Uses build-from-source so the still-unreleased `bowire diff` command is
-# available — external consumers will pin the published tool instead.
+# The action's own repo tests that the action wires up; this one tests that the
+# CLI it drives still behaves. Neither replaces the other.
+#
+# build-from-source: true so the still-unreleased `bowire diff` is available —
+# that is also why this test cannot move to the action's repo, which has no
+# Bowire source tree. External consumers pin the published tool instead.
 
 on:
   workflow_dispatch:
@@ -18,11 +22,11 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/actions/bowire-pr/**'
+      - 'src/Kuestenlogik.Bowire.Tool/**'
       - '.github/workflows/bowire-pr-selftest.yml'
   pull_request:
     paths:
-      - '.github/actions/bowire-pr/**'
+      - 'src/Kuestenlogik.Bowire.Tool/**'
       - '.github/workflows/bowire-pr-selftest.yml'
 
 permissions:
@@ -100,7 +104,7 @@ jobs:
           test -f base-test.xml || { echo "::error::no baseline JUnit produced"; exit 1; }
 
       - name: Run the PR-report action
-        uses: ./.github/actions/bowire-pr
+        uses: Kuestenlogik/bowire-action@v1
         with:
           target: http://127.0.0.1:6000
           protocol: rest

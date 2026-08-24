@@ -24,11 +24,12 @@ place on every push — with what changed.
 ...
 ```
 
-> **Prototype (v2.5).** The action currently lives inside the Bowire repo at
-> `Kuestenlogik/Bowire/.github/actions/bowire-pr@main` while it stabilises, and
-> the Perf section is not wired yet. It will move to its own
-> `kuestenlogik/bowire-action` repo with a pinned `@v1` tag once it settles
-> (tracked in [#183](https://github.com/Kuestenlogik/Bowire/issues/183)).
+> **The API-delta section needs an unreleased CLI.** `bowire diff` landed after
+> the v2.4.0 tag, so no published `Kuestenlogik.Bowire.Tool` carries it yet.
+> Until the next release, that section only works with `build-from-source: true`
+> and a checked-out Bowire tree; leave `base-snapshot` unset to skip it. Every
+> other section works against the published CLI
+> (tracked in [#582](https://github.com/Kuestenlogik/Bowire/issues/582)).
 
 ## What it does
 
@@ -82,7 +83,7 @@ jobs:
       - uses: actions/checkout@v7
       - name: Start the head service
         run: ./scripts/start-service.sh &
-      - uses: Kuestenlogik/Bowire/.github/actions/bowire-pr@main
+      - uses: Kuestenlogik/bowire-action@v1
         with:
           target: http://localhost:8080
           base-snapshot: base.snapshot.json
