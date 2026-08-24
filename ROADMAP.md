@@ -35,7 +35,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**4/29 done** · 1 next up · 24 backlog
+**5/29 done** · 1 next up · 23 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -63,10 +63,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [284](https://github.com/Kuestenlogik/Bowire/issues/284) | Bowire | [Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)](#issue-kuestenlogik-bowire-284) | ⬜ Backlog | `area:plugin-sdk` |
 | [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins](#issue-kuestenlogik-bowire-549) | ⬜ Backlog | `area:workbench` |
 | [588](https://github.com/Kuestenlogik/Bowire/issues/588) | Bowire | [Tugboat — JetBrains plugin (IntelliJ platform)](#issue-kuestenlogik-bowire-588) | ⬜ Backlog |  |
-| [601](https://github.com/Kuestenlogik/Bowire/issues/601) | Bowire | [Migrate the test run to Microsoft.Testing.Platform (unblocks xunit.v3 4.x)](#issue-kuestenlogik-bowire-601) | ⬜ Backlog |  |
 | [589](https://github.com/Kuestenlogik/Bowire/issues/589) | Bowire | [VS Code: resolve the CLI from a workspace tool manifest](#issue-kuestenlogik-bowire-589) | ✅ Done |  |
 | [590](https://github.com/Kuestenlogik/Bowire/issues/590) | Bowire | [VS Code: offer to download a matching CLI when none is installed](#issue-kuestenlogik-bowire-590) | ✅ Done |  |
 | [591](https://github.com/Kuestenlogik/Bowire/issues/591) | Bowire | [Workspace-local storage: collections must travel with the repo, not the user profile](#issue-kuestenlogik-bowire-591) | ✅ Done |  |
+| [601](https://github.com/Kuestenlogik/Bowire/issues/601) | Bowire | [Migrate the test run to Microsoft.Testing.Platform (unblocks xunit.v3 4.x)](#issue-kuestenlogik-bowire-601) | ✅ Done |  |
 | [604](https://github.com/Kuestenlogik/Bowire/issues/604) | Bowire | [CLI: --url-file is declared and documented but never read](#issue-kuestenlogik-bowire-604) | ✅ Done |  |
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
@@ -401,10 +401,6 @@ Start the workbench with `--plugin-dir X`, install a plugin from **Settings → 
 
 Split out of #101, which now covers the VS Code extension only. [[more]](https://github.com/Kuestenlogik/Bowire/issues/588)
 
-#### <a id="issue-kuestenlogik-bowire-601"></a>⬜ Backlog · [#601](https://github.com/Kuestenlogik/Bowire/issues/601) Migrate the test run to Microsoft.Testing.Platform (unblocks xunit.v3 4.x)
-
-Move the test run from the VSTest bridge to Microsoft.Testing.Platform, so xunit.v3 can be kept current. [[more]](https://github.com/Kuestenlogik/Bowire/issues/601)
-
 #### <a id="issue-kuestenlogik-bowire-589"></a>✅ Done · [#589](https://github.com/Kuestenlogik/Bowire/issues/589) VS Code: resolve the CLI from a workspace tool manifest
 
 Resolve the CLI from a workspace-local .NET tool manifest, so the Bowire version a project is tested with is pinned in the repo rather than left to whatever each developer happens to have installed. [[more]](https://github.com/Kuestenlogik/Bowire/issues/589)
@@ -416,6 +412,10 @@ Offer to fetch a matching CLI into the extension's own storage when none is foun
 #### <a id="issue-kuestenlogik-bowire-591"></a>✅ Done · [#591](https://github.com/Kuestenlogik/Bowire/issues/591) Workspace-local storage: collections must travel with the repo, not the user profile
 
 Make the VS Code extension store a workspace's Bowire data inside that workspace, so collections and environments actually travel with the repo. [[more]](https://github.com/Kuestenlogik/Bowire/issues/591)
+
+#### <a id="issue-kuestenlogik-bowire-601"></a>✅ Done · [#601](https://github.com/Kuestenlogik/Bowire/issues/601) Migrate the test run to Microsoft.Testing.Platform (unblocks xunit.v3 4.x)
+
+> **Status:** erledigt. Die Migration ist vollzogen, aber ueber einen anderen > Mechanismus als unten geplant — der Body reflektiert den IST-Stand, der > urspruengliche Plan steht im Issue-Verlauf. [[more]](https://github.com/Kuestenlogik/Bowire/issues/601)
 
 #### <a id="issue-kuestenlogik-bowire-604"></a>✅ Done · [#604](https://github.com/Kuestenlogik/Bowire/issues/604) CLI: --url-file is declared and documented but never read
 
