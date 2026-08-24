@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**13/18 done** · 5 backlog
+**14/18 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -20,9 +20,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [582](https://github.com/Kuestenlogik/Bowire/issues/582) | Bowire | [Split bowire-pr into its own public kuestenlogik/bowire-action repo](#issue-kuestenlogik-bowire-582) | ⬜ Backlog |  |
 | [610](https://github.com/Kuestenlogik/Bowire/issues/610) | Bowire | [Repair the eight rotted Phase 1-3 E2E tests](#issue-kuestenlogik-bowire-610) | ⬜ Backlog |  |
-| [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ⬜ In review | `area:workbench` |
 | [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ✅ Done | `area:multi` |
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ✅ Done | `area:workbench` |
+| [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ✅ Done | `area:workbench` |
 | [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ✅ Done | `area:workbench` |
 | [232](https://github.com/Kuestenlogik/Bowire/issues/232) | Bowire | [Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)](#issue-kuestenlogik-bowire-232) | ✅ Done | `area:workbench` |
 | [236](https://github.com/Kuestenlogik/Bowire/issues/236) | Bowire | [Release cascade: wait for nuget.org indexing before dispatching to siblings](#issue-kuestenlogik-bowire-236) | ✅ Done | `area:multi` |
@@ -183,12 +183,6 @@ The PR-report bot was prototyped **in-repo** under `.github/actions/bowire-pr/` 
 
 Eight of the Phase 1–3 E2E tests under `tests/e2e/` fail against current `main`. They are marked `test.fixme` so the suite can gate CI (#see below) instead of being switched off wholesale; this issue is to repair and un-mark them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/610)
 
-#### <a id="issue-kuestenlogik-bowire-183"></a>⬜ In review · [#183](https://github.com/Kuestenlogik/Bowire/issues/183) GitHub Action — Bowire PR-comment bot with delta + findings + perf
-
-> `area:workbench`
-
-Bowire runs locally on the developer's machine. When the developer pushes a PR, the reviewer sees the code diff — and nothing about the API impact. Bowire's value (regressions, security findings, perf deltas) stays invisible to reviewers. Without surfacing that on the PR, "continuous" stays aspirational. [[more]](https://github.com/Kuestenlogik/Bowire/issues/183)
-
 #### <a id="issue-kuestenlogik-bowire-samples-54"></a>✅ Done · [Kuestenlogik/Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) harbor-demo: MQTT crane telemetry should name the container it lifts
 
 > `area:multi`
@@ -200,6 +194,12 @@ The harbor demo is the reference recording for Bowire's correlated timeline (Kue
 > `area:workbench`
 
 Workspaces today live in `~/.bowire/workspaces/<id>/` (per-user, machine-local). The Export/Import (#159) exists but is opt-in. For Bowire to be the source of truth for "what this repo's API looks like", every repo needs a Bowire configuration checked-in. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/172)
+
+#### <a id="issue-kuestenlogik-bowire-183"></a>✅ Done · [#183](https://github.com/Kuestenlogik/Bowire/issues/183) GitHub Action — Bowire PR-comment bot with delta + findings + perf
+
+> `area:workbench`
+
+Bowire runs locally on the developer's machine. When the developer pushes a PR, the reviewer sees the code diff — and nothing about the API impact. Bowire's value (regressions, security findings, perf deltas) stays invisible to reviewers. Without surfacing that on the PR, "continuous" stays aspirational. [[more]](https://github.com/Kuestenlogik/Bowire/issues/183)
 
 #### <a id="issue-kuestenlogik-bowire-189"></a>✅ Done · [#189](https://github.com/Kuestenlogik/Bowire/issues/189) API design-time validation — typed rule engine over schemas
 
