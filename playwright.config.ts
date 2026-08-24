@@ -44,10 +44,28 @@ export default defineConfig({
     // reuseExistingServer keeps a dev instance already on :5180 (local
     // iterations) rather than fighting over the port; in CI it always
     // spawns a fresh one.
-    webServer: process.env.BOWIRE_BASE_URL ? undefined : {
-        command: 'dotnet run --project src/Kuestenlogik.Bowire.Tool -c Release -- --port 5180 --no-browser',
-        url: BASE_URL,
-        timeout: 180_000,
-        reuseExistingServer: !process.env.CI
-    }
+    //
+    // The SSE sample is a second server because streaming-layout.spec.ts
+    // needs a live stream to fill the frame list, and the flagship
+    // harbor-demo lives in Bowire.Samples — not available in CI. This one
+    // is a slnx member, so CI already builds it. It starts even when the
+    // operator points the run at their own Tool via BOWIRE_BASE_URL: that
+    // variable says where the workbench is, not that the sample is
+    // running. Probing /bowire rather than /events on purpose — /events is
+    // an endless text/event-stream and the readiness check would never see
+    // the response close.
+    webServer: [
+        ...(process.env.BOWIRE_BASE_URL ? [] : [{
+            command: 'dotnet run --project src/Kuestenlogik.Bowire.Tool -c Release -- --port 5180 --no-browser',
+            url: BASE_URL,
+            timeout: 180_000,
+            reuseExistingServer: !process.env.CI
+        }]),
+        {
+            command: 'dotnet run --project samples/Kuestenlogik.Bowire.Sample.Sse -c Release',
+            url: 'http://localhost:5186/bowire',
+            timeout: 180_000,
+            reuseExistingServer: !process.env.CI
+        }
+    ]
 });
