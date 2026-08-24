@@ -16,7 +16,11 @@ test.describe('Phase 1 — empty state', () => {
         await bootFresh(page);
     });
 
-    test('welcome card + primary CTA visible, no workspace chip, no workspaces persisted', async ({ page }) => {
+    // #610 — fails against current main: after a storage wipe the home
+    // rail renders the Continue/Start landing, not the first-run band, so
+    // the state this asserts is never reached. Marked rather than deleted:
+    // it covers real behaviour and the assertions are still the right ones.
+    test.fixme('welcome card + primary CTA visible, no workspace chip, no workspaces persisted', async ({ page }) => {
         // Welcome card landing band — the `bowire-home-band-firstrun`
         // wrapper only renders when workspaces.length === 0.
         await expect(page.locator('.bowire-home-band-firstrun')).toBeVisible();

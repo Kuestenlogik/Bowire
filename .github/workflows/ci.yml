@@ -163,3 +163,54 @@ jobs:
         with:
           name: nuget-packages
           path: artifacts/packages/*.nupkg
+
+  # Browser-level regression gate. Separate job so a ~2-minute browser
+  # run never sits in front of the build/pack feedback above.
+  #
+  # tests/e2e/ existed since #356 but ran in no workflow at all — the only
+  # Playwright call in CI rendered the docs PDF. That gap is why the
+  # streaming-layout regression shipped twice: it was found by hand,
+  # verified by hand, and nothing held it afterwards.
+  e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Install Node deps
+        run: npm ci || npm install
+
+      - name: Install Playwright Chromium
+        run: npx --yes playwright install chromium --with-deps
+
+      # playwright.config.ts spawns both servers itself, but its 180s
+      # readiness budget is per server and a cold `dotnet run` would spend
+      # most of it restoring and compiling. Building first keeps the spawn
+      # inside the budget on a slow runner.
+      - name: Build Tool + SSE sample
+        run: |
+          dotnet build src/Kuestenlogik.Bowire.Tool/Kuestenlogik.Bowire.Tool.csproj -c Release
+          dotnet build samples/Kuestenlogik.Bowire.Sample.Sse/Kuestenlogik.Bowire.Sample.Sse.csproj -c Release
+
+      - name: E2E tests
+        run: npm run test:e2e
+
+      # trace / screenshot / video are configured retain-on-failure, so
+      # this is empty on a green run and carries the evidence on a red one.
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

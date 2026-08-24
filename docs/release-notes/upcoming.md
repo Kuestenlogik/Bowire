@@ -596,6 +596,34 @@ is already on disk.
 This is the read-and-aggregate half of the org dashboard. The hosted platform
 — upload endpoint, retained history, org login, admin actions — remains #188.
 
+### A long subscription no longer buries the message you are reading
+
+Watching a busy stream — a gRPC server-stream, an SSE ticker, an MQTT topic
+— used to get worse the longer you watched. Past a couple of dozen frames
+the message list stopped scrolling and simply grew, pushing the detail pane
+off the bottom of the window. There was no scrollbar to get back to it, so
+the one thing the list exists for — seeing what a message actually contains
+— became unreachable exactly when the stream was busiest.
+
+The list scrolls inside its own pane again and the detail pane stays put.
+The cause was a wrapper element in the default (non-split) streaming path
+that carried no sizing rules at all, which voided the height constraint on
+the stream output nested inside it; the previous fix for this symptom was
+applied one level too low to take effect there. A browser-level regression
+test now holds the geometry — output fits its pane, list scrolls, detail
+body stays on screen — and it is verified to fail when the rule is removed.
+
+### The response toolbar trades labels for icons
+
+**Copy**, **Download**, **Expand all** and **Collapse all** are now icon
+buttons. The response action row is the densest in the workbench, and those
+four labels restated glyphs that carry the meaning on their own; dropping
+the text gives the row roughly 200px back. The wording is not gone — it is
+the hover tooltip and the accessible name of each button, and Download in
+fact gained a tooltip it never had. **Use this...** keeps its label,
+because the cluster has exactly one primary action and it should still read
+as one.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor
