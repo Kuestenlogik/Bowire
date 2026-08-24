@@ -634,10 +634,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          # We only need RELEASE_NOTES.md, but checkout@v6 doesn't have
-          # a sparse-checkout shorthand; full clone is fine here, the
-          # release job has nothing else to do.
-          fetch-depth: 1
+          # Full history + tags: generate-changelog.mjs below walks
+          # `git log <previous-tag>..<tag>`, which a shallow clone cannot
+          # answer. It also has no tags to resolve the previous one from.
+          fetch-depth: 0
 
       - name: Download Linux artefacts
         uses: actions/download-artifact@v8
@@ -714,6 +714,35 @@ jobs:
             echo ""
           } > release-body.md
           echo "----- release-body.md -----"
+          cat release-body.md
+          echo "----- end -----"
+
+      # The change list under the curated body. GitHub's own
+      # `generate_release_notes` lists merged PRs, and Bowire is committed
+      # to straight on `main` — so that list was 100% Dependabot: all 41
+      # entries in v2.4.0, with none of the ~200 commits of real work in
+      # sight. This reads commits instead and groups them by the
+      # Conventional Commit prefix, which is what the prefix is for: a key
+      # the generator consumes and strips, not something a reader should
+      # have to look past. Chores, CI/test plumbing and dependency bumps
+      # collapse into one <details>.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Append the grouped change list
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          # Nearest tag reachable from this one's parent — the release this
+          # one follows, whatever its number.
+          PREV=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)
+          if [[ -z "$PREV" ]]; then
+            echo "No previous tag found; skipping the change list (first release?)."
+            exit 0
+          fi
+          echo "Change list: ${PREV}..${TAG}"
+          node scripts/ci/generate-changelog.mjs             --from "$PREV" --to "$TAG"             --repo-url "${{ github.server_url }}/${{ github.repository }}" >> release-body.md
+          echo "----- release-body.md (with change list) -----"
           cat release-body.md
           echo "----- end -----"
 
@@ -803,7 +832,10 @@ jobs:
           token: ${{ secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
           name: ${{ steps.title.outputs.title }}
           body_path: release-body.md
-          generate_release_notes: true
+          # false: the change list is generated above from commits. Leaving
+          # this on would append GitHub's PR-based list as well — which for
+          # this repo is the Dependabot wall the other one exists to fix.
+          generate_release_notes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
           # Auto-create a linked Discussion in the Announcements category for
           # every full release, so releases surface on GitHub Discussions (not
