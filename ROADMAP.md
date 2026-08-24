@@ -128,7 +128,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts
 
-**1/25 done** · 24 backlog
+**1/26 done** · 25 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -156,6 +156,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog | `area:security` |
 | [529](https://github.com/Kuestenlogik/Bowire/issues/529) | Bowire | [OData plugin: EDM functions and actions are never discovered (class doc claims they are)](#issue-kuestenlogik-bowire-529) | ⬜ Backlog | `area:plugin-sdk` |
 | [584](https://github.com/Kuestenlogik/Bowire/issues/584) | Bowire | [Secrets redaction: extend to HTML report, snapshot files, and recordings](#issue-kuestenlogik-bowire-584) | ⬜ Backlog |  |
+| [611](https://github.com/Kuestenlogik/Bowire/issues/611) | Bowire | [Sidecar: add gRPC as a third transport alongside stdio and HTTP](#issue-kuestenlogik-bowire-611) | ⬜ Backlog |  |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
 ## Details
@@ -775,6 +776,10 @@ The `.Scanner` suffix under-describes what the package has become. It started as
 #### <a id="issue-kuestenlogik-bowire-584"></a>⬜ Backlog · [#584](https://github.com/Kuestenlogik/Bowire/issues/584) Secrets redaction: extend to HTML report, snapshot files, and recordings
 
 #361 shipped run-scoped secrets redaction (`--secret`/`--secret-file` + `SecretRedactor`, `***`+last-4 masking) applied at the **primary CI-artifact sinks**: TTY step output, JUnit failure texts (v2.1 `JUnitReport` + v2.2 `FlowJUnitReport`), SARIF messages (`TestSarifReport`), and GitHub `::error` a … [[more]](https://github.com/Kuestenlogik/Bowire/issues/584)
+
+#### <a id="issue-kuestenlogik-bowire-611"></a>⬜ Backlog · [#611](https://github.com/Kuestenlogik/Bowire/issues/611) Sidecar: add gRPC as a third transport alongside stdio and HTTP
+
+Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `http` (POST + SSE). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/611)
 
 #### <a id="issue-kuestenlogik-bowire-215"></a>✅ Done · [#215](https://github.com/Kuestenlogik/Bowire/issues/215) Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths
 
