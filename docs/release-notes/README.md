@@ -37,6 +37,35 @@ output. (Versioning itself needs no post-publish bookkeeping — MinVer
 derives every version from the git tag at build time; see
 `Directory.Build.props`.)
 
+> **Step 3 is the one that slips.** `v2.3.0.md` and `v2.4.0.md` were both
+> written by hand as short summaries while `upcoming.md` was never reset,
+> so it grew to 750 lines carrying highlights from two already-shipped
+> versions. Nothing broke — the tag-time chain prefers
+> `docs/release-notes/<tag>.md` and that file existed both times — but the
+> fallback to `upcoming.md` would have published them again. If you skip
+> the rename, at least reset the file.
+
+## The change list under the body
+
+The curated body is only the top half. Below the `---`, `release.yml`
+appends a generated change list ([`scripts/ci/generate-changelog.mjs`](../../scripts/ci/generate-changelog.mjs))
+built from `git log <previous-tag>..<tag>`.
+
+It is generated from **commits, not pull requests**. GitHub's own
+`generate_release_notes` lists merged PRs, and since work is committed
+straight to `main`, that list was 100% Dependabot — all 41 entries in
+v2.4.0, with none of the ~200 commits of real work in it.
+
+The generator consumes the Conventional Commit prefix rather than printing
+it: `feat` / `fix` / `refactor` / `docs` become the section a line sits
+under, and the prefix itself is stripped. The scope stays as a bold lead-in
+because the heading says *what kind* of change it is and only the scope says
+*where*. Chores, CI/test plumbing (by scope as well as by type — a
+`fix(test):` is not a fix anyone reading a release has seen) and dependency
+bumps collapse into a single `<details>` block, so the visible list is the
+work. Rules are pinned by
+[`tests/…/ci/generate-changelog.test.mjs`](../../tests/Kuestenlogik.Bowire.Tests/ci/generate-changelog.test.mjs).
+
 ## Front-matter
 
 ```
