@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import {
     bootFresh,
     createWorkspaceViaDialog,
+    openRail,
     readActiveWorkspaceId,
     readWorkspaces
 } from './helpers';
@@ -40,13 +41,9 @@ test.describe('Phase 3 — workspace management', () => {
         expect((await readWorkspaces(page)).length).toBe(2);
     });
 
-    // #610 — fails against current main: after a storage wipe the home
-    // rail renders the Continue/Start landing, not the first-run band, so
-    // the state this asserts is never reached. Marked rather than deleted:
-    // it covers real behaviour and the assertions are still the right ones.
-    test.fixme('overview lists both workspaces with active marker', async ({ page }) => {
+    test('overview lists both workspaces with active marker', async ({ page }) => {
         // Reach the overview via the workspaces rail + sidebar title.
-        await page.locator('.bowire-rail-btn[data-rail-mode-id="workspaces"]').click();
+        await openRail(page, 'workspaces');
         await expect(page.locator('#bowire-main-workspaces')).toBeVisible();
         // Sidebar title is rendered as a clickable button by
         // renderSidebarToolbar — `onTitleClick` routes to
@@ -66,14 +63,10 @@ test.describe('Phase 3 — workspace management', () => {
         await expect(page.locator('.bowire-env-overview-check.is-active')).toHaveCount(1);
     });
 
-    // #610 — fails against current main: after a storage wipe the home
-    // rail renders the Continue/Start landing, not the first-run band, so
-    // the state this asserts is never reached. Marked rather than deleted:
-    // it covers real behaviour and the assertions are still the right ones.
-    test.fixme('switching active workspace via the overview updates the topbar chip', async ({ page }) => {
+    test('switching active workspace via the overview updates the topbar chip', async ({ page }) => {
         // Beta was created last → it's active. Switch to Alpha by
         // clicking its ghosted checkmark.
-        await page.locator('.bowire-rail-btn[data-rail-mode-id="workspaces"]').click();
+        await openRail(page, 'workspaces');
         await page.locator('.bowire-sidebar-mode').getByTitle('Open Workspaces overview').click();
 
         const ws = await readWorkspaces(page) as Array<{ id: string; name: string }>;
@@ -83,17 +76,21 @@ test.describe('Phase 3 — workspace management', () => {
 
         // Click the non-active row's check — switchWorkspace flips
         // activeWorkspaceId + render() repaints.
-        await page.locator(`.bowire-env-overview-row[data-ws-id="${alpha.id}"] .bowire-env-overview-check`).click();
+        //
+        // The check is hover-revealed: it holds a reserved-width slot via
+        // `visibility: hidden` and only becomes visible on row hover, except
+        // on the active row where `.is-active` keeps it painted. Alpha is the
+        // inactive one here, so the hover is not decoration — without it the
+        // click times out on an invisible element (#610).
+        const alphaRow = page.locator(`.bowire-env-overview-row[data-ws-id="${alpha.id}"]`);
+        await alphaRow.hover();
+        await alphaRow.locator('.bowire-env-overview-check').click();
         expect(await readActiveWorkspaceId(page)).toBe(alpha.id);
         await expect(page.locator('.bowire-workspace-chip-name')).toHaveText('Alpha');
     });
 
-    // #610 — fails against current main: after a storage wipe the home
-    // rail renders the Continue/Start landing, not the first-run band, so
-    // the state this asserts is never reached. Marked rather than deleted:
-    // it covers real behaviour and the assertions are still the right ones.
-    test.fixme('rename updates the row + persists to localStorage', async ({ page }) => {
-        await page.locator('.bowire-rail-btn[data-rail-mode-id="workspaces"]').click();
+    test('rename updates the row + persists to localStorage', async ({ page }) => {
+        await openRail(page, 'workspaces');
         await page.locator('.bowire-sidebar-mode').getByTitle('Open Workspaces overview').click();
 
         const ws = await readWorkspaces(page) as Array<{ id: string; name: string }>;
@@ -125,12 +122,8 @@ test.describe('Phase 3 — workspace management', () => {
         expect(after.find((w) => w.id === alpha.id)!.name).toBe('Alpha Renamed');
     });
 
-    // #610 — fails against current main: after a storage wipe the home
-    // rail renders the Continue/Start landing, not the first-run band, so
-    // the state this asserts is never reached. Marked rather than deleted:
-    // it covers real behaviour and the assertions are still the right ones.
-    test.fixme('duplicate adds a third workspace with the chosen name', async ({ page }) => {
-        await page.locator('.bowire-rail-btn[data-rail-mode-id="workspaces"]').click();
+    test('duplicate adds a third workspace with the chosen name', async ({ page }) => {
+        await openRail(page, 'workspaces');
         await page.locator('.bowire-sidebar-mode').getByTitle('Open Workspaces overview').click();
 
         const ws = await readWorkspaces(page) as Array<{ id: string; name: string }>;
@@ -150,12 +143,8 @@ test.describe('Phase 3 — workspace management', () => {
         expect(after.map((w) => w.name).sort()).toEqual(['Alpha', 'Alpha Clone', 'Beta']);
     });
 
-    // #610 — fails against current main: after a storage wipe the home
-    // rail renders the Continue/Start landing, not the first-run band, so
-    // the state this asserts is never reached. Marked rather than deleted:
-    // it covers real behaviour and the assertions are still the right ones.
-    test.fixme('save-as-template makes the workspace available in the create dialog', async ({ page }) => {
-        await page.locator('.bowire-rail-btn[data-rail-mode-id="workspaces"]').click();
+    test('save-as-template makes the workspace available in the create dialog', async ({ page }) => {
+        await openRail(page, 'workspaces');
         await page.locator('.bowire-sidebar-mode').getByTitle('Open Workspaces overview').click();
 
         const ws = await readWorkspaces(page) as Array<{ id: string; name: string }>;
@@ -199,12 +188,16 @@ test.describe('Phase 3 — workspace management', () => {
         ).toHaveCount(1);
     });
 
-    // #610 — fails against current main: after a storage wipe the home
-    // rail renders the Continue/Start landing, not the first-run band, so
-    // the state this asserts is never reached. Marked rather than deleted:
-    // it covers real behaviour and the assertions are still the right ones.
+    // #610 — still failing, but for a narrowed-down reason. The FIRST delete
+    // works: the row's tools are correct ("Delete workspace" is present), the
+    // confirm overlay opens, and `.bowire-confirm-dialog .bowire-confirm-btn
+    // :not(.cancel)` matches it exactly once (verified against a live app).
+    // The SECOND pass clicks Delete and no dialog appears, so the failure
+    // surfaces on the confirm button. Waiting for the row count to drop
+    // before the next pass did not fix it, which rules out a plain race and
+    // points at the delete handler itself when one workspace is left.
     test.fixme('deleting the last workspace returns to the empty state and rails stay clickable', async ({ page }) => {
-        await page.locator('.bowire-rail-btn[data-rail-mode-id="workspaces"]').click();
+        await openRail(page, 'workspaces');
         await page.locator('.bowire-sidebar-mode').getByTitle('Open Workspaces overview').click();
 
         // Delete both workspaces in turn. Each delete fires a
@@ -220,6 +213,12 @@ test.describe('Phase 3 — workspace management', () => {
             // Confirm dialog — danger button (still .bowire-confirm-btn).
             await page.locator('.bowire-confirm-dialog .bowire-confirm-btn:not(.cancel)').click();
             await expect(page.locator('.bowire-confirm-dialog')).toHaveCount(0);
+            // Wait for the overview to actually repaint before the next pass.
+            // Without this the second iteration reads workspaces that the
+            // delete has already removed and clicks a row morphdom is in the
+            // middle of replacing — the click lands, no dialog opens, and the
+            // failure surfaces one line later on the confirm button (#610).
+            await expect(page.locator('.bowire-env-overview-row')).toHaveCount(ws.length - 1);
         }
 
         // No workspaces left.

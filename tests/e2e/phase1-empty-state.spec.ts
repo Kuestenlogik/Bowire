@@ -16,14 +16,19 @@ test.describe('Phase 1 — empty state', () => {
         await bootFresh(page);
     });
 
-    // #610 — fails against current main: after a storage wipe the home
-    // rail renders the Continue/Start landing, not the first-run band, so
-    // the state this asserts is never reached. Marked rather than deleted:
-    // it covers real behaviour and the assertions are still the right ones.
-    test.fixme('welcome card + primary CTA visible, no workspace chip, no workspaces persisted', async ({ page }) => {
-        // Welcome card landing band — the `bowire-home-band-firstrun`
-        // wrapper only renders when workspaces.length === 0.
-        await expect(page.locator('.bowire-home-band-firstrun')).toBeVisible();
+    test('welcome card + primary CTA visible, workspace chip says "No workspace"', async ({ page }) => {
+        // Two branches render on Home and they are easy to confuse (#610):
+        //
+        //   workspaces.length === 0  -> bowire-main-pad > renderEmptyCard,
+        //                               the welcome card asserted here
+        //   detectLandingState() === 'first-run'
+        //                            -> .bowire-home-band-firstrun, which
+        //                               needs a workspace to EXIST while no
+        //                               service or URL is configured
+        //
+        // This spec used to assert the second selector for the first state,
+        // which cannot both be true. The welcome card is the right anchor.
+        await expect(page.locator('.bowire-empty-card')).toBeVisible();
         await expect(page.locator('.bowire-empty-card-headline'))
             .toHaveText('Create your first workspace');
         // Stable id wired in render-main.js (#281) — tour engine also
@@ -33,10 +38,11 @@ test.describe('Phase 1 — empty state', () => {
         // Take-a-tour secondary CTA from the same renderEmptyCard call.
         await expect(page.locator('#bowire-welcome-tour-btn')).toBeVisible();
 
-        // No workspace exists → no chip on the topbar. The chip's id
-        // is only present when render-env-auth.js painted it; absence
-        // here proves the no-workspace branch ran.
-        await expect(page.locator('#bowire-workspace-chip')).toHaveCount(0);
+        // The chip is always painted now and names the empty state rather
+        // than disappearing — a missing chip used to read as "the topbar
+        // failed to render". Asserting its TEXT is the stronger check
+        // anyway: absence proved only that something did not happen.
+        await expect(page.locator('#bowire-workspace-chip')).toHaveText('No workspace');
 
         // localStorage has not been seeded with a workspace yet.
         expect(await readWorkspaces(page)).toEqual([]);

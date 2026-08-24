@@ -96,3 +96,24 @@ export async function createWorkspaceViaDialog(
     // so the lookup tolerates layout tweaks.
     await page.locator('.bowire-ws-create-dialog .bowire-confirm-btn:not(.cancel)').click();
 }
+
+/**
+ * Switch to a rail by its mode id, wherever the button currently lives.
+ *
+ * The activity rail is height-constrained: modes that do not fit move into
+ * an overflow popover, so whether a given rail is directly clickable depends
+ * on the window height. A spec that clicks
+ * `.bowire-rail-btn[data-rail-mode-id="…"]` therefore passes or fails with
+ * the viewport rather than with the behaviour under test — which is how the
+ * Phase 3 specs came to fail on "element is not visible" while the button
+ * was present in the DOM (#610).
+ */
+export async function openRail(page: Page, modeId: string): Promise<void> {
+    const direct = page.locator(`.bowire-rail-btn[data-rail-mode-id="${modeId}"]`);
+    if (await direct.isVisible().catch(() => false)) {
+        await direct.click();
+        return;
+    }
+    await page.locator('#bowire-rail-overflow-btn').click();
+    await page.locator(`.bowire-rail-overflow-popover-item[data-rail-mode-id="${modeId}"]`).click();
+}

@@ -65,11 +65,7 @@ test.describe('Phase 2 — create workspace', () => {
         expect(await readActiveWorkspaceId(page)).toBe(ws.id);
     });
 
-    // #610 — fails against current main: after a storage wipe the home
-    // rail renders the Continue/Start landing, not the first-run band, so
-    // the state this asserts is never reached. Marked rather than deleted:
-    // it covers real behaviour and the assertions are still the right ones.
-    test.fixme('REST template seeds Petstore URL + starter collection', async ({ page }) => {
+    test('REST template seeds Petstore URL + starter collection', async ({ page }) => {
         await page.locator('#bowire-welcome-create-btn').click();
         await createWorkspaceViaDialog(page, 'Petstore Test', 'rest');
 
@@ -83,18 +79,30 @@ test.describe('Phase 2 — create workspace', () => {
         expect(ws.name).toBe('Petstore Test');
 
         // serverUrls seed — workspace-templates.js writes
-        // ['https://petstore.swagger.io/v2'] under the new
-        // workspace's bucket.
+        // ['https://petstore3.swagger.io/api/v3/openapi.json'] under the new
+        // workspace's bucket. Note the `3`: the old Swagger v2 petstore is
+        // gone, and `petstore.swagger.io` is not a substring of the current
+        // host, which is what made this assertion fail (#610).
         const urls = await readWorkspaceKey(page, ws.id, 'server_urls') as string[] | null;
         expect(urls).not.toBeNull();
-        expect(urls![0]).toContain('petstore.swagger.io');
+        expect(urls![0]).toContain('petstore3.swagger.io');
 
         // Starter collection lands with a non-empty items list.
+        //
+        // Found by NAME, not by index. The Bowire process keeps its store
+        // under the user profile (`SpecialFolder.UserProfile` + `.bowire`),
+        // which no CLI switch relocates, so a developer machine with older
+        // collections can seed additional entries into a fresh workspace.
+        // Indexing [0] then asserts against whichever of those sorted first
+        // — green on a clean CI runner, red locally, for reasons that have
+        // nothing to do with the REST template (#610).
         const collections = await readWorkspaceKey(page, ws.id, 'collections') as
             Array<{ name: string; items: unknown[] }> | null;
         expect(collections).not.toBeNull();
-        expect(collections!.length).toBeGreaterThanOrEqual(1);
-        expect(collections![0].items.length).toBeGreaterThanOrEqual(1);
+        const starter = collections!.find((c) => c.name === 'REST starter');
+        expect(starter, `expected a "REST starter" collection, got: ${collections!.map((c) => c.name).join(', ') || '(none)'}`)
+            .toBeDefined();
+        expect(starter!.items.length).toBeGreaterThanOrEqual(1);
 
         // Topbar workspace chip now exists — proves the active
         // workspace state hydrated post-reload.

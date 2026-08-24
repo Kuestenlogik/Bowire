@@ -1728,6 +1728,12 @@
                 popover.appendChild(el('button', {
                     type: 'button',
                     role: 'menuitem',
+                    // Same hook the rail button carries. Which modes sit in
+                    // the rail and which fall into this popover depends on
+                    // the window height, so anything addressing a mode has
+                    // to be able to find it in either place by id rather
+                    // than by position or label.
+                    'data-rail-mode-id': m.id,
                     disabled: poDisabled ? 'disabled' : null,
                     'aria-disabled': poDisabled ? 'true' : 'false',
                     title: poDisabled ? 'Create a workspace first to use this rail' : undefined,
