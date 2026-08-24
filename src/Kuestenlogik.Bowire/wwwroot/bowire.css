@@ -7720,6 +7720,42 @@ orange = coordination event). */
     color: var(--bowire-error);
 }
 
+/* The default (non-split) streaming path wraps the stream output plus the
+   plugin-discovery placeholder card in this container — and it carried no
+   rules at all, so it laid out as a block box at content height. That
+   silently voided the `height: 100%` / `max-height: 100%` below: a
+   percentage height resolves to auto against an auto-height parent. The
+   output then intrinsic-sized to its content, the frame list grew without
+   bound instead of scrolling, and the detail pane was pushed past the
+   bottom of the viewport. Operator, on harbor-demo WatchCrane: 'die
+   eingehenden messages verdrängen die anzeige ... ich habe keinen scrollbar
+   beim streaming'. Measured at 27 frames before this rule existed: pane
+   body 555 px, wrapper and output both 1229 px, list 902 px with
+   scrollHeight == clientHeight (no scrollbar), detail pane off-screen.
+   The split path (.bowire-widget-split-host) always had its own sizing;
+   this fallback was the one that did not, which is why the fix on
+   .bowire-response-output.streaming below could not take effect here. */
+.bowire-streaming-with-placeholders {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    /* Flex items floor at min-content by default — without this the
+       wrapper refuses to shrink below the list's intrinsic height and
+       re-creates the overflow it is here to prevent. */
+    min-height: 0;
+}
+
+.bowire-streaming-with-placeholders > .bowire-response-output.streaming {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* The discovery card is optional and folds away when there is no suggested
+   package; it must never compete with the stream for vertical space. */
+.bowire-streaming-with-placeholders > .bowire-placeholder-slot {
+    flex: 0 0 auto;
+}
+
 .bowire-response-output.streaming {
     border-left: none;
     padding: 0;
