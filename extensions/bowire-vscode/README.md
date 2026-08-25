@@ -4,6 +4,8 @@ The [Bowire](https://bowire.io/) multi-protocol API workbench, hosted in VS Code
 
 gRPC, REST, GraphQL, SignalR, MQTT, NATS, WebSocket, SSE, SOAP, OData, MCP — the same workbench you get from the standalone tool, in a side panel, with collections and environments stored in your workspace so they travel with the repo.
 
+![The Bowire workbench open beside a .proto file in VS Code](https://raw.githubusercontent.com/Kuestenlogik/Bowire/main/extensions/bowire-vscode/images/workbench-in-vscode.png)
+
 ## Requirements
 
 Bowire 2.0 or newer — and you do not have to install it first.
@@ -20,7 +22,7 @@ choco install bowire                   # Windows (Chocolatey)
 dotnet tool install -g Kuestenlogik.Bowire.Tool
 ```
 
-The extension does **not** bundle Bowire — a self-contained build is roughly 120 MB per platform, which would mean one marketplace package per platform to keep in step and a new extension release for every Bowire release.
+The extension does **not** bundle Bowire; it drives one, which is why the extension itself stays small.
 
 📖 **[How the extension finds Bowire →](https://bowire.io/docs/integrations/vscode.html)** — the four resolution steps, what each one is for, how to pin a specific build, and what the managed download does.
 

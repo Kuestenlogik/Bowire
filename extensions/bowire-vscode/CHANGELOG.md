@@ -44,9 +44,38 @@ hosts — it drives whatever CLI you have installed, from 2.0 upwards.
   right for someone running `bowire` in a terminal and wrong here. The
   operator got two windows, and the one they did not ask for took focus.
 
-## [Unreleased]
+## [0.2.0] — 2026-08-25
+
+Everything below has been in the repository for a while but never reached the
+Marketplace: the last thing published there was 0.1.0, and the workflow only
+publishes when asked. 0.1.1 through 0.1.3 ship with this release too.
+
+### Changed
+
+- **The workbench URL no longer comes from the console banner.** The extension
+  used to learn where Bowire was listening by matching "Bowire is running at:"
+  in its output. That is a log line, so it disappears at a quieter log level,
+  and it was printed before the bind was known to have worked — a Bowire
+  started on a taken port announced a URL and then threw. The CLI now reports
+  the address it actually bound through `--port-file`
+  ([#615](https://github.com/Kuestenlogik/Bowire/issues/615)), and the file
+  appears only once the server is listening.
+- **The extension no longer picks a port.** It asked for one derived from a
+  hash of the workspace path, which kept two different workspaces apart but
+  not two windows on the same folder. It now passes `--port 0` and lets the
+  OS assign a free one. A Bowire you started yourself is unaffected either
+  way: it keeps its port, its process and its lifetime, and the extension runs
+  its own alongside it.
 
 ### Added
+
+- **`Bowire: Show resolved CLI`.** Says which `bowire` would be used and which
+  resolution step produced it, without starting anything — the question that
+  comes up when you are trying to point the extension at a different build.
+- **`bowire.cliPath` is checked when you change it.** A path that does not
+  exist, names the folder rather than the executable, or points at a build too
+  old for this extension is reported at the setting, rather than surfacing
+  later as a spawn failure that blames the spawn.
 
 - **`bowire.cliPath` setting.** Points at a `bowire` executable directly, for a
   build that is not on `PATH` — a local checkout, a portable copy, a second
@@ -67,6 +96,11 @@ hosts — it drives whatever CLI you have installed, from 2.0 upwards.
 
 ### Fixed
 
+- **Uninstalling the extension now removes the CLI it downloaded.** The
+  managed copy is ~120 MB in a storage directory nobody browses, and VS Code
+  keeps extension storage when an extension is removed — so the one copy
+  nothing could use any more was also the one copy nothing cleaned up. A
+  Bowire you installed yourself is never touched.
 - **Starting with no folder open.** `globalStorageUri` is a path VS Code does
   not create, so the spawn failed with `ENOENT` naming an executable that was
   plainly present — Node reports a missing working directory against the
