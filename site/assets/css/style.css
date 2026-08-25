@@ -4546,14 +4546,22 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
 }
 .downloads-quick-picker-current {
     flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    min-width: 0;
     /* Force left alignment inside the 300px-wide toggle — the label
        otherwise centres via inherited rules when the text is shorter
        than the toggle's min-width. */
     text-align: left;
-    display: block;
+    /* Row, because the label carries the selected option's kind icon
+       alongside its text. Truncation therefore belongs on the text span
+       below: an ellipsis on a flex container does nothing. */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.downloads-quick-picker-current-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .downloads-quick-picker-chevron {
     color: var(--text-secondary);
@@ -4586,7 +4594,28 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     max-height: 60vh;
     overflow-y: auto;
 }
+/* Artefact-kind icons (#615-era downloads pass).
+   The list is nine entries that differ by a few words each, so scanning it
+   meant reading every line to the end. A glyph per kind — installer, archive,
+   library — sorts them before the text is read at all. */
+.downloads-quick-picker-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    color: var(--text-secondary);
+}
+.downloads-quick-picker-icon svg {
+    width: 16px;
+    height: 16px;
+}
+.downloads-quick-picker-menu li:hover .downloads-quick-picker-icon,
+.downloads-quick-picker-menu li:focus .downloads-quick-picker-icon,
+.downloads-quick-picker-menu li[aria-selected="true"] .downloads-quick-picker-icon {
+    color: currentColor;
+}
 .downloads-quick-picker-menu li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     padding: 10px 14px;
     border-radius: calc(var(--radius) - 2px);
     font-size: 0.9375rem;
@@ -4685,6 +4714,23 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
+}
+/* Section anchors for scanning.
+   The page runs to a dozen sections that all look alike from a distance —
+   a heading, a paragraph, a list of links — so scrolling to the one you
+   want meant reading every heading. A glyph per section is something the
+   eye can find without reading, and it says what kind of artefact the
+   section holds: a shell command, an installer, an archive, a library.
+   Muted by default so it anchors without competing with the heading. */
+.downloads-section-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--accent);
+    opacity: 0.75;
+}
+.downloads-section-icon svg {
+    width: 22px;
+    height: 22px;
 }
 .downloads-section-desc {
     color: var(--text-secondary);

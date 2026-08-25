@@ -20,19 +20,19 @@ description: All the ways to install and run Bowire — NuGet packages, global .
       </a>
       <div class="downloads-quick-picker-pop">
         <button type="button" id="quick-download-toggle" class="downloads-quick-picker-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="quick-download-list">
-          <span id="quick-download-label" class="downloads-quick-picker-current">Windows x64 &mdash; MSI installer</span>
+          <span id="quick-download-label" class="downloads-quick-picker-current"><span class="downloads-quick-picker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="downloads-quick-picker-current-text">Windows x64 &mdash; MSI installer</span></span>
           <svg class="downloads-quick-picker-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <ul id="quick-download-list" class="downloads-quick-picker-menu" role="listbox" hidden>
-          <li role="option" tabindex="-1" data-value="win-x64-msi" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-x64.msi" aria-selected="true">Windows x64 &mdash; MSI installer</li>
-          <li role="option" tabindex="-1" data-value="win-x64-zip" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-win-x64.zip">Windows x64 &mdash; portable zip</li>
-          <li role="option" tabindex="-1" data-value="deb" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire_amd64.deb">Debian / Ubuntu &mdash; DEB</li>
-          <li role="option" tabindex="-1" data-value="rpm" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire.x86_64.rpm">Fedora / RHEL / SUSE &mdash; RPM</li>
-          <li role="option" tabindex="-1" data-value="linux-x64" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-linux-x64.tar.gz">Linux x64 &mdash; tarball</li>
-          <li role="option" tabindex="-1" data-value="linux-arm64" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-linux-arm64.tar.gz">Linux ARM64 &mdash; tarball</li>
-          <li role="option" tabindex="-1" data-value="osx-arm64" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-osx-arm64.tar.gz">macOS Apple Silicon &mdash; tarball</li>
-          <li role="option" tabindex="-1" data-value="osx-x64" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-osx-x64.tar.gz">macOS Intel &mdash; tarball</li>
-          <li role="option" tabindex="-1" data-value="nugets-zip" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-nugets.zip">NuGet packages &mdash; zip</li>
+          <li role="option" tabindex="-1" data-value="win-x64-msi" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-x64.msi" aria-selected="true" data-kind="installer"><span class="downloads-quick-picker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="downloads-quick-picker-text">Windows x64 &mdash; MSI installer</span></li>
+          <li role="option" tabindex="-1" data-value="win-x64-zip" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-win-x64.zip" data-kind="archive"><span class="downloads-quick-picker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></span><span class="downloads-quick-picker-text">Windows x64 &mdash; portable zip</span></li>
+          <li role="option" tabindex="-1" data-value="deb" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire_amd64.deb" data-kind="installer"><span class="downloads-quick-picker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="downloads-quick-picker-text">Debian / Ubuntu &mdash; DEB</span></li>
+          <li role="option" tabindex="-1" data-value="rpm" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire.x86_64.rpm" data-kind="installer"><span class="downloads-quick-picker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="downloads-quick-picker-text">Fedora / RHEL / SUSE &mdash; RPM</span></li>
+          <li role="option" tabindex="-1" data-value="linux-x64" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-linux-x64.tar.gz" data-kind="archive"><span class="downloads-quick-picker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></span><span class="downloads-quick-picker-text">Linux x64 &mdash; tarball</span></li>
+          <li role="option" tabindex="-1" data-value="linux-arm64" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-linux-arm64.tar.gz" data-kind="archive"><span class="downloads-quick-picker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></span><span class="downloads-quick-picker-text">Linux ARM64 &mdash; tarball</span></li>
+          <li role="option" tabindex="-1" data-value="osx-arm64" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-osx-arm64.tar.gz" data-kind="archive"><span class="downloads-quick-picker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></span><span class="downloads-quick-picker-text">macOS Apple Silicon &mdash; tarball</span></li>
+          <li role="option" tabindex="-1" data-value="osx-x64" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-osx-x64.tar.gz" data-kind="archive"><span class="downloads-quick-picker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></span><span class="downloads-quick-picker-text">macOS Intel &mdash; tarball</span></li>
+          <li role="option" tabindex="-1" data-value="nugets-zip" data-url="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-nugets.zip" data-kind="library"><span class="downloads-quick-picker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span><span class="downloads-quick-picker-text">NuGet packages &mdash; zip</span></li>
         </ul>
       </div>
     </div>
@@ -49,7 +49,7 @@ description: All the ways to install and run Bowire — NuGet packages, global .
   </header>
 
   <div class="downloads-section">
-    <h3>Windows package managers</h3>
+    <h3><span class="downloads-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></span>Windows package managers</h3>
     <p class="downloads-section-desc">Install the standalone tool through the package manager you already use &mdash; no .NET tool chain on the host required.</p>
 
     <h4 class="downloads-sub">winget</h4>
@@ -72,7 +72,7 @@ description: All the ways to install and run Bowire — NuGet packages, global .
   </div>
 
   <div class="downloads-section">
-    <h3>.NET global tool &mdash; standalone CLI + UI</h3>
+    <h3><span class="downloads-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></span>.NET global tool &mdash; standalone CLI + UI</h3>
     <p class="downloads-section-desc">Install once, point at any running server. No code changes to your host app.</p>
 
     <div class="downloads-command">
@@ -92,7 +92,7 @@ description: All the ways to install and run Bowire — NuGet packages, global .
 
   <!-- ---- Native installers ---- -->
   <div class="downloads-section">
-    <h3>Native installers</h3>
+    <h3><span class="downloads-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>Native installers</h3>
     <p class="downloads-section-desc">MSI for Windows, DEB for Debian / Ubuntu, RPM for Fedora / RHEL / SUSE. For shops that prefer a platform-native install path over the .NET tool chain. <em>Unsigned for now &mdash; SmartScreen / Gatekeeper may prompt on first run.</em></p>
 
     <ul class="downloads-pkgs downloads-pkgs-icons">
@@ -131,36 +131,66 @@ description: All the ways to install and run Bowire — NuGet packages, global .
 
   <!-- ---- Self-contained / portable ---- -->
   <div class="downloads-section">
-    <h3>Self-contained / portable</h3>
+    <h3><span class="downloads-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></span>Self-contained / portable</h3>
     <p class="downloads-section-desc">Zip or tarball per platform with the .NET runtime bundled. Extract, run the <code>bowire</code> binary &mdash; no SDK, no installer, no registry entries, no system changes. Perfect for air-gapped networks, USB-stick installs, ephemeral CI runners, or anywhere you want an xcopy deployment.</p>
 
-    <ul class="downloads-pkgs">
+    <ul class="downloads-pkgs downloads-pkgs-icons">
       <li>
-        <a href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-win-x64.zip"><code>bowire-win-x64.zip</code></a>
-        <span class="downloads-pkg-desc">Windows x64 &mdash; unzip, run <code>bowire.exe</code>.</span>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <!-- Archive — Feather "archive": these are extract-and-run bundles, not installers, and the icon is the fastest way to say so. -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <a href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-win-x64.zip"><code>bowire-win-x64.zip</code></a>
+          <span class="downloads-pkg-desc">Windows x64 &mdash; unzip, run <code>bowire.exe</code>.</span>
+        </div>
       </li>
       <li>
-        <a href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-linux-x64.tar.gz"><code>bowire-linux-x64.tar.gz</code></a>
-        <span class="downloads-pkg-desc">Linux x64 &mdash; <code>tar -xzf</code>, run <code>./bowire/bowire</code>.</span>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <!-- Archive — Feather "archive": these are extract-and-run bundles, not installers, and the icon is the fastest way to say so. -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <a href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-linux-x64.tar.gz"><code>bowire-linux-x64.tar.gz</code></a>
+          <span class="downloads-pkg-desc">Linux x64 &mdash; <code>tar -xzf</code>, run <code>./bowire/bowire</code>.</span>
+        </div>
       </li>
       <li>
-        <a href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-linux-arm64.tar.gz"><code>bowire-linux-arm64.tar.gz</code></a>
-        <span class="downloads-pkg-desc">Linux ARM64 &mdash; Raspberry Pi 4+, AWS Graviton, etc.</span>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <!-- Archive — Feather "archive": these are extract-and-run bundles, not installers, and the icon is the fastest way to say so. -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <a href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-linux-arm64.tar.gz"><code>bowire-linux-arm64.tar.gz</code></a>
+          <span class="downloads-pkg-desc">Linux ARM64 &mdash; Raspberry Pi 4+, AWS Graviton, etc.</span>
+        </div>
       </li>
       <li>
-        <a href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-osx-arm64.tar.gz"><code>bowire-osx-arm64.tar.gz</code></a>
-        <span class="downloads-pkg-desc">macOS Apple Silicon (M1+).</span>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <!-- Archive — Feather "archive": these are extract-and-run bundles, not installers, and the icon is the fastest way to say so. -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <a href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-osx-arm64.tar.gz"><code>bowire-osx-arm64.tar.gz</code></a>
+          <span class="downloads-pkg-desc">macOS Apple Silicon (M1+).</span>
+        </div>
       </li>
       <li>
-        <a href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-osx-x64.tar.gz"><code>bowire-osx-x64.tar.gz</code></a>
-        <span class="downloads-pkg-desc">macOS Intel.</span>
+        <div class="downloads-pkg-icon" aria-hidden="true">
+          <!-- Archive — Feather "archive": these are extract-and-run bundles, not installers, and the icon is the fastest way to say so. -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+        </div>
+        <div class="downloads-pkg-body">
+          <a href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-osx-x64.tar.gz"><code>bowire-osx-x64.tar.gz</code></a>
+          <span class="downloads-pkg-desc">macOS Intel.</span>
+        </div>
       </li>
     </ul>
   </div>
 
   <!-- ---- GitHub Releases ---- -->
   <div class="downloads-section">
-    <h3>GitHub Releases</h3>
+    <h3><span class="downloads-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>GitHub Releases</h3>
     <p class="downloads-section-desc">Every tagged release is published with changelog, source archive, and all the self-contained bundles listed above. For air-gapped installs, reproducible builds, or when you want to compare release notes.</p>
     <a class="btn btn-secondary" href="https://github.com/Kuestenlogik/Bowire/releases" target="_blank" rel="noopener">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.37-12-12-12z"/></svg>
@@ -177,7 +207,7 @@ description: All the ways to install and run Bowire — NuGet packages, global .
   </header>
 
   <div class="downloads-section">
-    <h3>VS Code <span class="downloads-section-version">Marketplace</span></h3>
+    <h3><span class="downloads-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>VS Code <span class="downloads-section-version">Marketplace</span></h3>
     <p class="downloads-section-desc">The workbench in a side panel, driving the same CLI your terminal and CI run. It does not bundle Bowire &mdash; it uses one you already have, or offers to fetch one if it finds none.</p>
     <div class="downloads-command">
       <code><span class="downloads-prompt">$</span> ext install kuestenlogik.bowire-vscode</code>
@@ -203,7 +233,7 @@ description: All the ways to install and run Bowire — NuGet packages, global .
 
   <!-- ---- Docker / container ---- -->
   <div class="downloads-section">
-    <h3>Docker / container</h3>
+    <h3><span class="downloads-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg></span>Docker / container</h3>
     <p class="downloads-section-desc">Multi-arch OCI image (<code>linux/amd64</code> + <code>linux/arm64</code>) published on every tagged release. Drop it next to a non-.NET service as a sidecar &mdash; no .NET runtime on the host, one <code>docker run</code> to deploy.</p>
 
     <ul class="downloads-pkgs downloads-pkgs-icons">
@@ -257,10 +287,10 @@ description: All the ways to install and run Bowire — NuGet packages, global .
   </header>
 
   <div class="downloads-section">
-    <h3>NuGet packages</h3>
+    <h3><span class="downloads-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>NuGet packages</h3>
     <p class="downloads-section-desc">Every plugin ships as a standalone NuGet package so you install only what you need. All published by <a href="https://www.nuget.org/profiles/kuestenlogik" target="_blank" rel="noopener">Küstenlogik on nuget.org</a>. Plugins follow their own release cadence — see the <a href="{{ '/docs/architecture/compatibility.html' | relative_url }}">plugin compatibility matrix</a> for which plugin version goes with which Bowire host.</p>
     <p class="downloads-section-note">
-      Need them all at once? Grab
+      Need them all at once locally? Grab
       <a href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-nugets.zip"><code>bowire-nugets.zip</code></a>
       — every official Küstenlogik NuGet for this release in a single archive. Useful for air-gapped CI, offline installs, or seeding an internal feed.
     </p>
@@ -694,7 +724,7 @@ description: All the ways to install and run Bowire — NuGet packages, global .
 
   <!-- ---- Source ---- -->
   <div class="downloads-section">
-    <h3>Source code</h3>
+    <h3><span class="downloads-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 01-9 9"/></svg></span>Source code</h3>
     <p class="downloads-section-desc">Every protocol plugin, the host integration, the CLI &mdash; all published on GitHub. <a href="https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE" target="_blank" rel="noopener">Apache 2.0</a>, no strings attached.</p>
     <a class="btn btn-secondary" href="https://github.com/Kuestenlogik/Bowire" target="_blank" rel="noopener">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.37-12-12-12z"/></svg>
@@ -713,7 +743,7 @@ description: All the ways to install and run Bowire — NuGet packages, global .
 
   <!-- ---- Standalone HTML ---- -->
   <div class="downloads-section">
-    <h3>Standalone HTML <span class="downloads-section-version">offline-ready</span></h3>
+    <h3><span class="downloads-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Standalone HTML <span class="downloads-section-version">offline-ready</span></h3>
     <p class="downloads-section-desc">Unzip, open <code>index.html</code>, browse offline. Same layout as the online docs, minus the marketing site chrome so every outbound link stays self-contained.</p>
     <a class="btn btn-secondary" href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-docs.zip" target="_blank" rel="noopener">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -723,7 +753,7 @@ description: All the ways to install and run Bowire — NuGet packages, global .
 
   <!-- ---- PDF ---- -->
   <div class="downloads-section">
-    <h3>PDF <span class="downloads-section-version">single file</span></h3>
+    <h3><span class="downloads-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>PDF <span class="downloads-section-version">single file</span></h3>
     <p class="downloads-section-desc">Every article in one PDF. Useful for printing, archiving a specific version, or searching the whole reference inside a single reader.</p>
     <a class="btn btn-secondary" href="https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-docs.pdf" target="_blank" rel="noopener">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
