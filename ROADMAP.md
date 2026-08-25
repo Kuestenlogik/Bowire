@@ -12,16 +12,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**14/19 done** · 5 backlog
+**15/19 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code workbench extension](#issue-kuestenlogik-bowire-101) | ⬜ Backlog | `area:workbench` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [582](https://github.com/Kuestenlogik/Bowire/issues/582) | Bowire | [Split bowire-pr into its own public kuestenlogik/bowire-action repo](#issue-kuestenlogik-bowire-582) | ⬜ Backlog |  |
 | [610](https://github.com/Kuestenlogik/Bowire/issues/610) | Bowire | [Repair the eight rotted Phase 1-3 E2E tests](#issue-kuestenlogik-bowire-610) | ⬜ Backlog |  |
 | [612](https://github.com/Kuestenlogik/Bowire/issues/612) | Bowire | [Collections are not workspace-scoped on disk: the global store overwrites the workspace key on every boot](#issue-kuestenlogik-bowire-612) | ⬜ Backlog |  |
 | [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ✅ Done | `area:multi` |
+| [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code workbench extension](#issue-kuestenlogik-bowire-101) | ✅ Done | `area:workbench` |
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ✅ Done | `area:workbench` |
 | [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ✅ Done | `area:workbench` |
 | [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ✅ Done | `area:workbench` |
@@ -165,12 +165,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-#### <a id="issue-kuestenlogik-bowire-101"></a>⬜ Backlog · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code workbench extension
-
-> `area:workbench`
-
-> **Scoped 2026-08-20.** This issue now covers the **VS Code extension only**; the JetBrains plugin moved to #588. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/101)
-
 #### <a id="issue-kuestenlogik-bowire-365"></a>⬜ Backlog · [#365](https://github.com/Kuestenlogik/Bowire/issues/365) Contract testing + workspace-id: run a workbench-stored workspace's suite by id
 
 > `area:workbench`
@@ -194,6 +188,12 @@ Creating a workspace from the **REST** template produces no starter collection. 
 > `area:multi`
 
 The harbor demo is the reference recording for Bowire's correlated timeline (Kuestenlogik/Bowire#539, #545). Seven of its eight protocol steps now join into one flow. The eighth — the MQTT crane telemetry — stays dark, and the sample is the reason. [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/54)
+
+#### <a id="issue-kuestenlogik-bowire-101"></a>✅ Done · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code workbench extension
+
+> `area:workbench`
+
+> **Scoped 2026-08-20.** This issue now covers the **VS Code extension only**; the JetBrains plugin moved to #588. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/101)
 
 #### <a id="issue-kuestenlogik-bowire-172"></a>✅ Done · [#172](https://github.com/Kuestenlogik/Bowire/issues/172) .bowire/project.json convention — checked-in workspace configuration
 
