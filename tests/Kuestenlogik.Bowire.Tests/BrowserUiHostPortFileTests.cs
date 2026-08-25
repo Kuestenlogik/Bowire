@@ -237,4 +237,38 @@ public sealed class BrowserUiHostPortFileTests
             BrowserUiHost.OpenBrowserAsync = prevOpen;
         }
     }
+
+    // ---- what the server reports vs. what a caller can navigate to ----
+    //
+    // Whatever comes out of here goes into the port file, and from there
+    // straight into a browser. A wildcard that survives is a panel that
+    // cannot connect.
+
+    [Theory]
+    [InlineData("http://[::]:5080", "http://localhost:5080/")]
+    [InlineData("http://0.0.0.0:5080", "http://localhost:5080/")]
+    [InlineData("http://+:5080", "http://localhost:5080/")]
+    [InlineData("http://*:5080", "http://localhost:5080/")]
+    public void Wildcard_Bindings_Become_Something_Connectable(string reported, string expected)
+        => Assert.Equal(expected, BrowserUiHost.NormaliseBoundAddress(reported, 5080));
+
+    [Theory]
+    [InlineData("http://127.0.0.1:61234", "http://127.0.0.1:61234/")]
+    [InlineData("http://127.0.0.1:61234/", "http://127.0.0.1:61234/")]
+    [InlineData("http://localhost:5080", "http://localhost:5080/")]
+    public void A_Concrete_Address_Survives_With_One_Trailing_Slash(string reported, string expected)
+        => Assert.Equal(expected, BrowserUiHost.NormaliseBoundAddress(reported, 5080));
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void A_Host_That_Reports_Nothing_Falls_Back_To_The_Requested_Port(string? reported)
+    {
+        // A TestServer, most likely: it exposes no addresses feature. The
+        // port we asked for is then both the best answer available and the
+        // correct one — with --port 0 there is nothing to fall back to, but
+        // a host that binds no socket has no URL to report either.
+        Assert.Equal("http://localhost:5080/", BrowserUiHost.NormaliseBoundAddress(reported, 5080));
+    }
 }
