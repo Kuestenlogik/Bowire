@@ -399,7 +399,21 @@ if (toggle && nav) {
     function select(li) {
         items.forEach(i => i.setAttribute('aria-selected', 'false'));
         li.setAttribute('aria-selected', 'true');
-        label.textContent = li.textContent;
+
+        // Mirror the option's kind icon into the closed toggle, not just its
+        // text. The icon is there so the artefact type reads at a glance —
+        // installer, archive, library — and a toggle that drops it would put
+        // the reader back to parsing a sentence for the one thing the list
+        // just showed them without words.
+        const icon = li.querySelector('.downloads-quick-picker-icon');
+        const text = li.querySelector('.downloads-quick-picker-text');
+        label.replaceChildren();
+        if (icon) label.append(icon.cloneNode(true));
+        const span = document.createElement('span');
+        span.className = 'downloads-quick-picker-current-text';
+        span.textContent = (text || li).textContent.trim();
+        label.append(span);
+
         btn.setAttribute('href', li.dataset.url || '#');
     }
 
