@@ -6,9 +6,9 @@ gRPC, REST, GraphQL, SignalR, MQTT, NATS, WebSocket, SSE, SOAP, OData, MCP — t
 
 ## Requirements
 
-VS Code 1.90 or newer, and Bowire 2.0 or newer.
+Bowire 2.0 or newer.
 
-**You do not have to install Bowire first.** If the extension finds none, it
+**You do not have to install it first.** If the extension finds none, it
 offers to fetch one and manages that copy itself — nothing is downloaded
 without you saying yes, and the archive is verified against its digest before
 anything is unpacked.
