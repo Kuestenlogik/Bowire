@@ -169,8 +169,14 @@ internal static class LintCommand
     }
 
     // ---- renderers ------------------------------------------------------
+    //
+    // Internal rather than private, for the same reason RunAsync and
+    // ExitCodeFor above are: what these emit is what a CI job greps, a
+    // markdown comment shows on a PR, and a reviewer reads. That is a
+    // contract, and it is worth holding one directly rather than through a
+    // command invocation that first has to resolve a schema from somewhere.
 
-    private static string ToText(IReadOnlyList<BowireLintFinding> findings)
+    internal static string ToText(IReadOnlyList<BowireLintFinding> findings)
     {
         var sb = new StringBuilder();
         foreach (var f in findings)
@@ -185,7 +191,7 @@ internal static class LintCommand
         return sb.ToString();
     }
 
-    private static string ToMarkdown(IReadOnlyList<BowireLintFinding> findings)
+    internal static string ToMarkdown(IReadOnlyList<BowireLintFinding> findings)
     {
         var sb = new StringBuilder();
         sb.Append("**Design-time lint:** ").Append(Summary(findings)).Append(".\n");
