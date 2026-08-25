@@ -27,7 +27,7 @@ Best when the target service isn't yours or you don't want to modify it. Also wo
 **Installing it.** Four routes, all producing the same `bowire` on your `PATH`:
 
 ```bash
-winget install Kuestenlogik.Bowire        # Windows
+winget install KuestenLogik.Bowire        # Windows
 choco install bowire                      # Windows (Chocolatey)
 dotnet tool install -g Kuestenlogik.Bowire.Tool   # any platform with the .NET SDK
 ```

@@ -146,7 +146,7 @@ any service URL without code changes.
     <div class="quickstart-page-step-num">2</div>
     <div class="quickstart-page-step-body">
       <h2>Install Bowire</h2>
-      <p class="features-block-lead">Pick the package format for your platform. All five paths land at the same <code>bowire</code> CLI plus the embedded browser UI on port 5080.</p>
+      <p class="features-block-lead">Pick the package format for your platform. Every path lands at the same <code>bowire</code> CLI plus the browser UI on port 5080 &mdash; the VS Code extension drives that same CLI, in an editor panel instead of a browser tab.</p>
 
       <div class="qs-install-tabs" data-qs-install-tabs>
         <div class="qs-install-tabs-list" role="tablist" aria-label="Choose install path">
@@ -155,6 +155,7 @@ any service URL without code changes.
           <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="windows" aria-selected="false">Windows</button>
           <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="macos" aria-selected="false">macOS</button>
           <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="linux" aria-selected="false">Linux</button>
+          <button class="qs-install-tab" type="button" role="tab" data-qs-install-tab="vscode" aria-selected="false">VS Code</button>
         </div>
 
         <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="dotnet">
@@ -181,24 +182,33 @@ choco install bowire</code></pre>
         </div>
 
         <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="macos" hidden>
-<pre><code class="lang-bash">brew tap kuestenlogik/bowire
-brew install bowire</code></pre>
-          <p class="qs-install-tab-note">One-time tap, then <code>brew install</code>. The same formula serves both Apple Silicon and Intel Macs &mdash; Homebrew picks the right binary at install time.</p>
+<pre><code class="lang-bash"># Self-contained bundle — no .NET needed
+curl -LO https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-osx-arm64.tar.gz
+tar -xzf bowire-osx-arm64.tar.gz &amp;&amp; ./bowire/bowire
+
+# ...or via the .NET SDK
+dotnet tool install -g Kuestenlogik.Bowire.Tool</code></pre>
+          <p class="qs-install-tab-note">Use <code>bowire-osx-x64.tar.gz</code> on Intel Macs. The bundle carries its own runtime, so nothing else has to be installed. A Homebrew tap is prepared but not published yet &mdash; the formula lives in <code>packaging/macos/</code>.</p>
         </div>
 
         <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="linux" hidden>
 <pre><code class="lang-bash"># Debian / Ubuntu / Mint
-sudo apt install ./bowire_2.3.0_amd64.deb
+curl -LO https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire_amd64.deb
+sudo apt install ./bowire_amd64.deb
 
 # Fedora / RHEL / openSUSE
-sudo dnf install ./bowire-2.3.0.x86_64.rpm
+curl -LO https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire.x86_64.rpm
+sudo dnf install ./bowire.x86_64.rpm
 
-# Arch / Manjaro
-yay -S bowire
+# Any distro — self-contained bundle, no .NET needed
+curl -LO https://github.com/Kuestenlogik/Bowire/releases/latest/download/bowire-linux-x64.tar.gz
+tar -xzf bowire-linux-x64.tar.gz &amp;&amp; ./bowire/bowire</code></pre>
+          <p class="qs-install-tab-note">Distro-native packages on every GitHub release, always at <code>latest</code> so the command does not go stale. ARM64 builds are attached too &mdash; swap in <code>bowire-linux-arm64.tar.gz</code> for a Raspberry Pi or Graviton.</p>
+        </div>
 
-# Or Linuxbrew (cross-distro)
-brew tap kuestenlogik/bowire &amp;&amp; brew install bowire</code></pre>
-          <p class="qs-install-tab-note">Distro-native packages on every GitHub release. Both x86_64 and aarch64 builds are attached so ARM Linux works out of the box. The Linuxbrew path uses the same formula as macOS.</p>
+        <div class="qs-install-tab-panel" role="tabpanel" data-qs-install-panel="vscode" hidden>
+<pre><code class="lang-bash">ext install kuestenlogik.bowire-vscode</code></pre>
+          <p class="qs-install-tab-note">Opens the workbench in an editor panel beside your code. It does not bundle Bowire &mdash; it drives the CLI you already have (or offers to fetch a verified one), so the workbench in your editor, your terminal and your CI are the same binary reading the same collections. <a href="{{ '/docs/integrations/vscode.html' | relative_url }}">How it finds Bowire &rarr;</a></p>
         </div>
       </div>
 
