@@ -3,6 +3,8 @@
 
 using System.Text.Json;
 
+using Kuestenlogik.Bowire.Projects;
+
 namespace Kuestenlogik.Bowire.Sources;
 
 /// <summary>
@@ -107,12 +109,10 @@ public sealed class LocalCatalogueProvider : IBowireCatalogueProvider
         var envOverride = Environment.GetEnvironmentVariable("BOWIRE_CATALOGUE_PATH");
         if (!string.IsNullOrEmpty(envOverride)) return envOverride;
 
-        var home = Environment.GetFolderPath(
-            Environment.SpecialFolder.UserProfile,
-            Environment.SpecialFolderOption.None);
-        if (string.IsNullOrEmpty(home)) return string.Empty;
-
-        return Path.Combine(home, ".bowire", "catalogue.json");
+        // The narrower BOWIRE_CATALOGUE_PATH above still wins; what changes
+        // here is that the fallback goes through the one resolver instead of
+        // rebuilding ~/.bowire itself (#616).
+        return BowirePaths.Resolve(BowireStorageScope.Data, "catalogue.json");
     }
 
     /// <summary>

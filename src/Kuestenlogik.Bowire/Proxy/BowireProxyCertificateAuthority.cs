@@ -5,6 +5,8 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
+using Kuestenlogik.Bowire.Projects;
+
 namespace Kuestenlogik.Bowire.Proxy;
 
 /// <summary>
@@ -41,8 +43,7 @@ public sealed class BowireProxyCertificateAuthority : IDisposable
     private readonly object _diskLock = new();
 
     /// <summary>Default directory holding the persisted CA + leaf crt — <c>~/.bowire</c>.</summary>
-    public static string DefaultDirectory =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".bowire");
+    public static string DefaultDirectory => BowirePaths.Root(BowireStorageScope.Data);
 
     /// <summary>Path of the PKCS#12 file holding the CA private key.</summary>
     public string CaPfxPath { get; }

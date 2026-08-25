@@ -235,11 +235,12 @@ public sealed class BowireCatalogueOverrideTests : IDisposable
 
         var path = BowireCatalogueOverrideStore.ResolvePath();
 
-        // Empty only when the platform reports no user profile at all.
-        if (path.Length > 0)
-        {
-            Assert.EndsWith("catalogue-config.json", path, StringComparison.Ordinal);
-            Assert.Contains(".bowire", path, StringComparison.Ordinal);
-        }
+        // It used to return "" when the platform reported no user profile,
+        // which turned into a store that silently never persisted. Since #616
+        // the resolver always answers with a usable absolute root, so this can
+        // assert unconditionally.
+        Assert.NotEqual(string.Empty, path);
+        Assert.True(Path.IsPathRooted(path), path);
+        Assert.EndsWith("catalogue-config.json", path, StringComparison.Ordinal);
     }
 }

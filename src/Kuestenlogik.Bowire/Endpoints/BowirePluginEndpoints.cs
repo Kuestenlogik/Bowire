@@ -14,6 +14,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+using Kuestenlogik.Bowire.Projects;
+
 namespace Kuestenlogik.Bowire.Endpoints;
 
 /// <summary>
@@ -26,9 +28,7 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// </summary>
 internal static class BowirePluginEndpoints
 {
-    private static readonly string PluginDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        ".bowire", "plugins");
+    private static string PluginDir => BowirePaths.Resolve(BowireStorageScope.Data, "plugins");
 
     public static IEndpointRouteBuilder MapBowirePluginEndpoints(
         this IEndpointRouteBuilder endpoints, string basePath)
