@@ -35,26 +35,17 @@ there is no CLI to drive yet.
 
 Four places are checked, in this order — specific beats shared beats ambient beats fallback:
 
-```mermaid
-flowchart TD
-    A["bowire.cliPath set?"] -->|yes| B{"exists?"}
-    B -->|yes| USE["use it"]
-    B -->|no| ERR["error naming the path<br/>— no fallback"]
-    A -->|no| M{"tool manifest<br/>pinning Bowire?"}
-    M -->|yes| PIN["dotnet tool run bowire<br/>— the version this repo pins"]
-    M -->|no| C{"on PATH?"}
-    C -->|yes| USE
-    C -->|no| D{"downloaded<br/>earlier?"}
-    D -->|yes| USE
-    D -->|no| OFFER{"offer a download"}
-    OFFER -->|accepted| GET["verify checksum,<br/>unpack into extension storage"]
-    OFFER -->|declined| INSTALL["error offering the install routes"]
-    GET --> USE
-    USE --> V{"version ≥ 2.0?"}
-    V -->|yes| RUN["start the workbench"]
-    V -->|no| OLD["error naming the upgrade commands"]
-    PIN --> RUN
-```
+| # | Where it looks | Found | Not found |
+|---|---|---|---|
+| 1 | **`bowire.cliPath`** setting | use it | **error naming the path** — no fallback, on purpose |
+| 2 | **tool manifest** pinning Bowire | `dotnet tool run bowire` — the version this repo pins | try 3 |
+| 3 | **`PATH`** | use it | try 4 |
+| 4 | a copy **downloaded earlier** | use it | offer a download |
+
+If the download is accepted, the archive is checksum-verified and unpacked
+into the extension's storage; if it is declined, the error names the install
+routes. Whatever is resolved must then report **version 2.0 or newer**, or the
+error names the upgrade commands.
 
 Each step answers a different question. The setting is *this exact binary, because I said so*. The manifest is *the version this repository is tested with*, pinned in git and shared with everyone who clones it. `PATH` is *whatever this machine has*. The download is *nothing else was here, so we brought our own*.
 
