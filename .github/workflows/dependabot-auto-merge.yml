@@ -15,6 +15,15 @@
 # auto-merged: they typically carry breaking-change semver semantics
 # and deserve a manual review.
 
+# The single Dependabot auto-merge workflow. A second one
+# (dependabot-automerge.yml, note the missing hyphen) existed from 2026-08-09
+# until it was removed: it fired on `pull_request` and merged with `--squash`.
+# Neither worked here. `pull_request` hands a Dependabot PR a read-only
+# GITHUB_TOKEN, and the repository allows rebase only (squash and merge-commit
+# are both off), so its merges could not happen — the PRs that did merge came
+# through this file. It also skipped the metadata check below and would have
+# auto-merged MAJOR bumps.
+#
 name: Dependabot auto-merge
 
 on: pull_request_target
