@@ -54,11 +54,17 @@ public sealed class BowireToolsEndpointTests
                    });
             })
             .Build();
-        await host.StartAsync();
+        await host.StartAsync(TestContext.Current.CancellationToken);
         return host;
     }
 
-    private static StringContent Json(string body) => new(body, Encoding.UTF8, "application/json");
+    /// <summary>POST a JSON body, disposing the content the call created.</summary>
+    private static async Task<HttpResponseMessage> PostJson(IHost host, string path, string body)
+    {
+        using var content = new StringContent(body, Encoding.UTF8, "application/json");
+        return await host.GetTestClient().PostAsync(
+            new Uri(path, UriKind.Relative), content, TestContext.Current.CancellationToken);
+    }
 
     private static async Task<JsonDocument> ReadJson(HttpResponseMessage response)
         => JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
@@ -103,10 +109,7 @@ public sealed class BowireToolsEndpointTests
         // absent, and the operator can only fix it in the host.
         using var host = await BuildHost(withRegistry: false);
 
-        using var resp = await host.GetTestClient().PostAsync(
-            new Uri("/api/tools/reverse-proxy/start", UriKind.Relative),
-            Json("""{"upstream":"https://api.example.com","port":18080}"""),
-            TestContext.Current.CancellationToken);
+        using var resp = await PostJson(host, "/api/tools/reverse-proxy/start", """{"upstream":"https://api.example.com","port":18080}""");
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, resp.StatusCode);
         using var doc = await ReadJson(resp);
@@ -118,10 +121,7 @@ public sealed class BowireToolsEndpointTests
     {
         using var host = await BuildHost();
 
-        using var resp = await host.GetTestClient().PostAsync(
-            new Uri("/api/tools/reverse-proxy/start", UriKind.Relative),
-            Json("{ not json"),
-            TestContext.Current.CancellationToken);
+        using var resp = await PostJson(host, "/api/tools/reverse-proxy/start", "{ not json");
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         using var doc = await ReadJson(resp);
@@ -143,9 +143,7 @@ public sealed class BowireToolsEndpointTests
         // with, and guessing http:// would silently downgrade the connection.
         using var host = await BuildHost();
 
-        using var resp = await host.GetTestClient().PostAsync(
-            new Uri("/api/tools/reverse-proxy/start", UriKind.Relative), Json(body),
-            TestContext.Current.CancellationToken);
+        using var resp = await PostJson(host, "/api/tools/reverse-proxy/start", body);
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         using var doc = await ReadJson(resp);
@@ -160,10 +158,7 @@ public sealed class BowireToolsEndpointTests
     {
         using var host = await BuildHost();
 
-        using var resp = await host.GetTestClient().PostAsync(
-            new Uri("/api/tools/reverse-proxy/start", UriKind.Relative),
-            Json($$"""{"upstream":"https://api.example.com","port":{{port}}}"""),
-            TestContext.Current.CancellationToken);
+        using var resp = await PostJson(host, "/api/tools/reverse-proxy/start", $$"""{"upstream":"https://api.example.com","port":{{port}}}""");
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         using var doc = await ReadJson(resp);
@@ -177,41 +172,60 @@ public sealed class BowireToolsEndpointTests
     {
         using var host = await BuildHost();
 
-        using var resp = await host.GetTestClient().PostAsync(
-            new Uri("/api/tools/reverse-proxy/start", UriKind.Relative), Json("null"),
-            TestContext.Current.CancellationToken);
+        using var resp = await PostJson(host, "/api/tools/reverse-proxy/start", "null");
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
 
     // ---- stop ----
 
+    // Stop answers differently from start, and deliberately so: stopping is
+    // idempotent, so "there was nothing to stop" is the desired end state
+    // rather than an error. It says so in the body instead of the status —
+    // `stopped: false` — which is what lets the rail refresh a row without
+    // having to treat a race with another client as a failure.
+    //
+    // Worth noting the asymmetry: start on a registry-less host is a 503,
+    // stop on one is a 200. Defensible (nothing to stop either way), but not
+    // obvious, which is exactly why it is pinned here.
+
     [Fact]
-    public async Task Stopping_Without_A_Registry_Says_So()
+    public async Task Stopping_On_A_Host_Without_The_Registry_Reports_Nothing_Stopped()
     {
         using var host = await BuildHost(withRegistry: false);
 
-        using var resp = await host.GetTestClient().PostAsync(
-            new Uri("/api/tools/reverse-proxy/stop", UriKind.Relative),
-            Json("""{"port":18080}"""),
-            TestContext.Current.CancellationToken);
+        using var resp = await PostJson(host, "/api/tools/reverse-proxy/stop", """{"port":18080}""");
 
-        Assert.Equal(HttpStatusCode.ServiceUnavailable, resp.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        using var doc = await ReadJson(resp);
+        Assert.False(doc.RootElement.GetProperty("stopped").GetBoolean());
     }
 
     [Fact]
-    public async Task Stopping_A_Port_Nothing_Runs_On_Is_A_404_Not_A_Success()
+    public async Task Stopping_A_Port_Nothing_Runs_On_Reports_Nothing_Stopped()
     {
-        // Reporting success would tell the rail to drop a row that was never
-        // there, and hide a port the operator has genuinely mistyped.
         using var host = await BuildHost();
 
-        using var resp = await host.GetTestClient().PostAsync(
-            new Uri("/api/tools/reverse-proxy/stop", UriKind.Relative),
-            Json("""{"port":18081}"""),
-            TestContext.Current.CancellationToken);
+        using var resp = await PostJson(host, "/api/tools/reverse-proxy/stop", """{"port":18081}""");
 
-        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        using var doc = await ReadJson(resp);
+        Assert.False(doc.RootElement.GetProperty("stopped").GetBoolean());
+        // The port is echoed so a rail handling several at once can tell which
+        // request this answer belongs to.
+        Assert.Equal(18081, doc.RootElement.GetProperty("port").GetInt32());
+    }
+
+    [Fact]
+    public async Task Stopping_Without_A_Port_Is_A_400()
+    {
+        // The one stop-path that is an error: no port means the request
+        // cannot be acted on at all.
+        using var host = await BuildHost();
+
+        using var resp = await PostJson(host, "/api/tools/reverse-proxy/stop", """{"port":0}""");
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
 
     [Fact]
@@ -219,9 +233,7 @@ public sealed class BowireToolsEndpointTests
     {
         using var host = await BuildHost();
 
-        using var resp = await host.GetTestClient().PostAsync(
-            new Uri("/api/tools/reverse-proxy/stop", UriKind.Relative), Json("{ not json"),
-            TestContext.Current.CancellationToken);
+        using var resp = await PostJson(host, "/api/tools/reverse-proxy/stop", "{ not json");
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
@@ -242,7 +254,7 @@ public sealed class BowireToolsEndpointTests
                 })
                 .ConfigureServices(s => { s.AddRouting(); s.AddSingleton<ReverseProxyRegistry>(); }))
             .Build();
-        await host.StartAsync();
+        await host.StartAsync(TestContext.Current.CancellationToken);
 
         using (host)
         {
