@@ -6,7 +6,15 @@ gRPC, REST, GraphQL, SignalR, MQTT, NATS, WebSocket, SSE, SOAP, OData, MCP — t
 
 ## Requirements
 
-Bowire itself, version 2.0 or newer:
+VS Code 1.90 or newer, and Bowire 2.0 or newer.
+
+**You do not have to install Bowire first.** If the extension finds none, it
+offers to fetch one and manages that copy itself — nothing is downloaded
+without you saying yes, and the archive is verified against its digest before
+anything is unpacked.
+
+Bring your own if you prefer, which is the better choice when your CI already
+pins a version and you want the editor on the same one:
 
 ```bash
 winget install Kuestenlogik.Bowire     # Windows
@@ -14,7 +22,14 @@ choco install bowire                   # Windows (Chocolatey)
 dotnet tool install -g Kuestenlogik.Bowire.Tool
 ```
 
-The extension does **not** bundle Bowire. A self-contained build is roughly 120 MB per platform, so bundling would mean one marketplace package per platform to keep in step and a new extension release for every Bowire release. It would also be a second, private copy of a CLI you most likely already have — the one your CI and your terminal use. Driving that same CLI keeps the extension small and keeps one Bowire in play instead of two.
+The extension does **not** *bundle* Bowire, which is a different thing from
+fetching one on request. A self-contained build is roughly 120 MB per platform,
+so bundling would mean one marketplace package per platform to keep in step and
+a new extension release for every Bowire release. It would also be a second,
+private copy of a CLI you most likely already have — the one your CI and your
+terminal use. Driving that same CLI keeps the extension small and keeps one
+Bowire in play instead of two; the managed download exists for the case where
+there is no CLI to drive yet.
 
 ## How the extension finds Bowire
 
