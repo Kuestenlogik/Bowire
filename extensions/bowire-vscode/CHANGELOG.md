@@ -28,6 +28,16 @@ hosts — it drives whatever CLI you have installed, from 2.0 upwards.
   table, which reads the same in both places and, for a chain this linear,
   arguably better.
 
+## [0.1.3] — 2026-08-25
+
+### Fixed
+
+- **The workbench opened in a browser window as well as in the editor.** The
+  extension hosts a webview and always did, but it started the CLI without
+  `--no-browser` — and the CLI opens a browser on startup by default, which is
+  right for someone running `bowire` in a terminal and wrong here. The
+  operator got two windows, and the one they did not ask for took focus.
+
 ## [Unreleased]
 
 ### Added

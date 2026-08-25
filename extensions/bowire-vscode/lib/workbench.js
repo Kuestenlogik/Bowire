@@ -22,9 +22,9 @@ const BINARY = process.platform === 'win32' ? 'bowire.exe' : 'bowire';
 /**
  * Oldest CLI whose command-line contract this extension can drive.
  *
- * `--port` together with `--auto-create-initial-workspace` — the two arguments
- * buildArgs emits — have both existed since before 2.0.0, so that is the honest
- * floor. Anything older does not fail cleanly: the CLI rejects the unknown
+ * `--port`, `--auto-create-initial-workspace` and `--no-browser` — the three
+ * arguments buildArgs emits — have all existed since before 2.0.0, so that is
+ * the honest floor. Anything older does not fail cleanly: the CLI rejects the unknown
  * argument and exits, and startWorkbench reports "exited before it started
  * serving", which says nothing about the actual cause.
  */
@@ -330,12 +330,18 @@ function describeSpawnError(err, options = {}) {
 /**
  * Arguments for the hosted workbench.
  *
+ * `--no-browser` is not optional here. The CLI opens a browser window on
+ * startup by default, which is right when a human runs `bowire` in a terminal
+ * and wrong when the extension is about to show the same workbench in a
+ * webview: without it the operator gets both, and the one they did not ask for
+ * is the one that steals focus.
+ *
  * `--port 0` is not used: the CLI prints the port it bound, and parsing that
  * is more robust than pre-picking a free port and racing another process for
  * it between the check and the bind.
  */
 function buildArgs(port) {
-    return ['--port', String(port), '--auto-create-initial-workspace'];
+    return ['--port', String(port), '--auto-create-initial-workspace', '--no-browser'];
 }
 
 /**
