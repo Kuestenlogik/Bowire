@@ -28,27 +28,26 @@ internal static class BowireCollectionEndpoints
         // handed to all the others on their next load.
         endpoints.MapGet($"{basePath}/api/collections", (HttpContext ctx) =>
         {
-            var wsId = ctx.Request.Query["workspaceId"].ToString();
-            var storageRoot = ctx.Request.Query["storageRoot"].ToString();
+            var scope = WorkspaceScopeQuery.From(ctx);
+            if (scope.IsInvalid)
+                return Results.Json(new { error = scope.Error }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+
             return Results.Content(
-                CollectionStore.Load(
-                    string.IsNullOrEmpty(wsId) ? null : wsId,
-                    string.IsNullOrEmpty(storageRoot) ? null : storageRoot),
+                CollectionStore.Load(scope.WorkspaceId, scope.StorageRoot),
                 "application/json");
         }).ExcludeFromDescription();
 
         endpoints.MapPut($"{basePath}/api/collections", async (HttpContext ctx) =>
         {
-            var wsId = ctx.Request.Query["workspaceId"].ToString();
-            var storageRoot = ctx.Request.Query["storageRoot"].ToString();
+            var scope = WorkspaceScopeQuery.From(ctx);
+            if (scope.IsInvalid)
+                return Results.Json(new { error = scope.Error }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+
             using var reader = new StreamReader(ctx.Request.Body);
             var json = await reader.ReadToEndAsync(ctx.RequestAborted);
             try
             {
-                CollectionStore.Save(
-                    json,
-                    string.IsNullOrEmpty(wsId) ? null : wsId,
-                    string.IsNullOrEmpty(storageRoot) ? null : storageRoot);
+                CollectionStore.Save(json, scope.WorkspaceId, scope.StorageRoot);
                 return Results.Json(new { saved = true }, BowireEndpointHelpers.JsonOptions);
             }
             catch (JsonException ex)

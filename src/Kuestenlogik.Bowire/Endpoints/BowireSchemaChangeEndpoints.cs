@@ -91,12 +91,12 @@ internal static class BowireSchemaChangeEndpoints
         return endpoints;
     }
 
+    /// <summary>The validated workspace scope — see <see cref="WorkspaceScopeQuery"/>.</summary>
     private static (string workspaceId, string? storageRoot) ReadWorkspace(HttpContext ctx)
     {
-        var workspaceId = ctx.Request.Query["workspaceId"].FirstOrDefault() ?? string.Empty;
-        var storageRoot = ctx.Request.Query["storageRoot"].FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(storageRoot)) storageRoot = null;
-        return (workspaceId, storageRoot);
+        var scope = WorkspaceScopeQuery.From(ctx);
+        if (scope.IsInvalid) throw new BadHttpRequestException(scope.Error!, StatusCodes.Status400BadRequest);
+        return (scope.WorkspaceId ?? string.Empty, scope.StorageRoot);
     }
 
     private static IResult Problem(string title, int status, string detail)

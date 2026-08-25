@@ -40,9 +40,12 @@ internal static class BowireRecordingEndpoints
             // #196 Phase 2.3 — storageRoot, when present, anchors the
             // recordings folder under the operator's checked-out
             // workspace path instead of ~/.bowire/workspaces/<id>/.
-            var wsId = ctx.Request.Query["workspaceId"].ToString();
+            var scope = WorkspaceScopeQuery.From(ctx);
+            if (scope.IsInvalid)
+                return Results.Json(new { error = scope.Error }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+            var wsId = scope.WorkspaceId ?? string.Empty;
             var manifestOnly = ctx.Request.Query["manifestOnly"].ToString() == "1";
-            var storageRoot = ctx.Request.Query["storageRoot"].ToString();
+            var storageRoot = scope.StorageRoot;
             return Results.Content(
                 ChunkedRecordingStore.LoadAll(
                     string.IsNullOrEmpty(wsId) ? null : wsId,
@@ -64,8 +67,11 @@ internal static class BowireRecordingEndpoints
                 // Falls back to the raw JSON when enrichment fails so
                 // a parse hiccup never blocks a save.
                 var enriched = TryEnrichWithSourceSchema(json) ?? json;
-                var wsId = ctx.Request.Query["workspaceId"].ToString();
-                var storageRoot = ctx.Request.Query["storageRoot"].ToString();
+                var scope = WorkspaceScopeQuery.From(ctx);
+                if (scope.IsInvalid)
+                    return Results.Json(new { error = scope.Error }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                var wsId = scope.WorkspaceId ?? string.Empty;
+                var storageRoot = scope.StorageRoot;
                 ChunkedRecordingStore.SaveAll(
                     enriched,
                     string.IsNullOrEmpty(wsId) ? null : wsId,
@@ -101,8 +107,11 @@ internal static class BowireRecordingEndpoints
 
         endpoints.MapDelete($"{basePath}/api/recordings", (HttpContext ctx) =>
         {
-            var wsId = ctx.Request.Query["workspaceId"].ToString();
-            var storageRoot = ctx.Request.Query["storageRoot"].ToString();
+            var scope = WorkspaceScopeQuery.From(ctx);
+            if (scope.IsInvalid)
+                return Results.Json(new { error = scope.Error }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+            var wsId = scope.WorkspaceId ?? string.Empty;
+            var storageRoot = scope.StorageRoot;
             ChunkedRecordingStore.DeleteAll(
                 string.IsNullOrEmpty(wsId) ? null : wsId,
                 string.IsNullOrEmpty(storageRoot) ? null : storageRoot);
@@ -115,8 +124,11 @@ internal static class BowireRecordingEndpoints
         // path lazy-fetch a single step body on demand.
         endpoints.MapGet($"{basePath}/api/recordings/{{id}}/manifest", (string id, HttpContext ctx) =>
         {
-            var wsId = ctx.Request.Query["workspaceId"].ToString();
-            var storageRoot = ctx.Request.Query["storageRoot"].ToString();
+            var scope = WorkspaceScopeQuery.From(ctx);
+            if (scope.IsInvalid)
+                return Results.Json(new { error = scope.Error }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+            var wsId = scope.WorkspaceId ?? string.Empty;
+            var storageRoot = scope.StorageRoot;
             var json = ChunkedRecordingStore.LoadManifest(
                 id,
                 string.IsNullOrEmpty(wsId) ? null : wsId,
@@ -135,8 +147,11 @@ internal static class BowireRecordingEndpoints
 
         endpoints.MapGet($"{basePath}/api/recordings/{{id}}/step/{{n:int}}", (string id, int n, HttpContext ctx) =>
         {
-            var wsId = ctx.Request.Query["workspaceId"].ToString();
-            var storageRoot = ctx.Request.Query["storageRoot"].ToString();
+            var scope = WorkspaceScopeQuery.From(ctx);
+            if (scope.IsInvalid)
+                return Results.Json(new { error = scope.Error }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+            var wsId = scope.WorkspaceId ?? string.Empty;
+            var storageRoot = scope.StorageRoot;
             var json = ChunkedRecordingStore.LoadStep(
                 id, n,
                 string.IsNullOrEmpty(wsId) ? null : wsId,
@@ -192,8 +207,11 @@ internal static class BowireRecordingEndpoints
                 {
                     step = doc;
                 }
-                var wsId = ctx.Request.Query["workspaceId"].ToString();
-                var storageRoot = ctx.Request.Query["storageRoot"].ToString();
+                var scope = WorkspaceScopeQuery.From(ctx);
+                if (scope.IsInvalid)
+                    return Results.Json(new { error = scope.Error }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+                var wsId = scope.WorkspaceId ?? string.Empty;
+                var storageRoot = scope.StorageRoot;
                 var idx = ChunkedRecordingStore.AppendStep(id, step, metadata,
                     string.IsNullOrEmpty(wsId) ? null : wsId,
                     string.IsNullOrEmpty(storageRoot) ? null : storageRoot);
