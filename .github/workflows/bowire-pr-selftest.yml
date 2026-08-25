@@ -1,4 +1,4 @@
-name: "Self-test: PR report action"
+name: "Dogfood: PR report action"
 
 # Exercises Kuestenlogik/bowire-action end-to-end against a local `bowire mock`
 # target. The action moved to its own repository (#582); this workflow stayed
@@ -9,6 +9,13 @@ name: "Self-test: PR report action"
 # The action's own repo tests that the action wires up; this one tests that the
 # CLI it drives still behaves. Neither replaces the other.
 #
+# Pinned to a commit SHA, not to `@v1`. The moving alias is the right thing
+# for consumers — it is what the action's README recommends, and it carries
+# fixes automatically — but a workflow in this repo must not re-resolve to
+# whatever that tag points at today. Same rule every other third-party action
+# here follows, and code scanning flags the alias form (alert 1821).
+# Dependabot's github-actions ecosystem keeps the pin current.
+#
 # build-from-source: true so the still-unreleased `bowire diff` is available —
 # that is also why this test cannot move to the action's repo, which has no
 # Bowire source tree. External consumers pin the published tool instead.
@@ -16,18 +23,31 @@ name: "Self-test: PR report action"
 on:
   workflow_dispatch:
   # Bowire's own work lands straight on main rather than through PRs, so a
-  # pull_request-only trigger meant every change to the action shipped
-  # unexercised. The same paths on push keep the self-test honest for the
-  # way this repo actually commits.
+  # pull_request-only trigger meant every change shipped unexercised. The
+  # same paths on push keep this honest for the way the repo actually
+  # commits.
+  #
+  # No path filter. The action drives `bowire diff`, `test` and `scan`, which
+  # reach across most of the tree, and the filter that used to sit here named
+  # only the Tool project — so a change anywhere else could break the report
+  # and nothing would run. Deciding up front which paths can affect an
+  # end-to-end run is the guess that keeps being wrong; the run is a few
+  # minutes and catches what a filter would have to predict.
   push:
     branches: [main]
-    paths:
-      - 'src/Kuestenlogik.Bowire.Tool/**'
-      - '.github/workflows/bowire-pr-selftest.yml'
   pull_request:
-    paths:
-      - 'src/Kuestenlogik.Bowire.Tool/**'
-      - '.github/workflows/bowire-pr-selftest.yml'
+  # Weekly, and this is the trigger that matters since the action moved to
+  # its own repository (#582). A new action release changes nothing under
+  # `src/**`, so no path filter here can notice it — without a schedule, a
+  # break between the published action and this CLI would surface only when
+  # someone happened to touch the tree. Offset from scan-dogfood's Monday
+  # slot so the two do not contend for a runner.
+  schedule:
+    - cron: '23 7 * * 2'
+
+concurrency:
+  group: pr-report-dogfood-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -104,7 +124,7 @@ jobs:
           test -f base-test.xml || { echo "::error::no baseline JUnit produced"; exit 1; }
 
       - name: Run the PR-report action
-        uses: Kuestenlogik/bowire-action@v1
+        uses: Kuestenlogik/bowire-action@bb2b26379cac1a343cc8e12260112dd490e5ae01 # v1.0.1
         with:
           target: http://127.0.0.1:6000
           protocol: rest
