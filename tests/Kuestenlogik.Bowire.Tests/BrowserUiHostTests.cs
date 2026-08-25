@@ -54,7 +54,7 @@ public sealed class BrowserUiHostTests
         try
         {
             BrowserUiHost.OpenBrowserAsync = (_, _) => { Interlocked.Increment(ref openCount); return Task.CompletedTask; };
-            BrowserUiHost.HostRunner = (_, ui, _, _) => { seenOptions = ui; return Task.FromResult(42); };
+            BrowserUiHost.HostRunner = (_, ui, _, _, _) => { seenOptions = ui; return Task.FromResult(42); };
 
             var rc = await BrowserUiHost.RunAsync(
                 [],
@@ -91,7 +91,7 @@ public sealed class BrowserUiHostTests
         var passed = TestPluginLoaders.None();
         try
         {
-            BrowserUiHost.HostRunner = (_, _, loader, _) => { seenLoader = loader; return Task.FromResult(0); };
+            BrowserUiHost.HostRunner = (_, _, loader, _, _) => { seenLoader = loader; return Task.FromResult(0); };
 
             var rc = await BrowserUiHost.RunAsync(
                 [],
@@ -120,8 +120,14 @@ public sealed class BrowserUiHostTests
             // Hold the runner open until the browser launch fires so the
             // background Task.Run has a chance to schedule before we
             // unblock RunAsync and tear the seams down.
-            BrowserUiHost.HostRunner = async (_, _, _, ct) =>
+            BrowserUiHost.HostRunner = async (_, ui, _, onListening, ct) =>
             {
+                // The launch URL now comes from the host reporting what it
+                // bound, not from the requested port (#615) — which is the
+                // only way it can work under --port 0. Announcing the address
+                // a real host would land on for this port keeps the assertion
+                // below about the same thing it always was.
+                await onListening($"http://localhost:{ui.Port}/", ct).ConfigureAwait(false);
                 await captured.Task.WaitAsync(TimeSpan.FromSeconds(5), ct).ConfigureAwait(false);
                 return 0;
             };
@@ -192,7 +198,7 @@ public sealed class BrowserUiHostTests
         {
             BrowserUiHost.OpenBrowserAsync = (_, _) =>
                 throw new InvalidOperationException("simulated browser failure");
-            BrowserUiHost.HostRunner = (_, _, _, _) =>
+            BrowserUiHost.HostRunner = (_, _, _, _, _) =>
             {
                 hostStarted.TrySetResult(true);
                 return Task.FromResult(0);
@@ -234,7 +240,7 @@ public sealed class BrowserUiHostTests
         try
         {
             BrowserUiHost.OpenBrowserAsync = (_, _) => Task.CompletedTask;
-            BrowserUiHost.HostRunner = (_, ui, _, _) => { seen = ui; return Task.FromResult(0); };
+            BrowserUiHost.HostRunner = (_, ui, _, _, _) => { seen = ui; return Task.FromResult(0); };
 
             var rc = await BrowserUiHost.RunAsync(
                 ["--url", "http://api.local"],
@@ -269,7 +275,7 @@ public sealed class BrowserUiHostTests
         try
         {
             BrowserUiHost.OpenBrowserAsync = (_, _) => Task.CompletedTask;
-            BrowserUiHost.HostRunner = (_, ui, _, _) => { seen = ui; return Task.FromResult(0); };
+            BrowserUiHost.HostRunner = (_, ui, _, _, _) => { seen = ui; return Task.FromResult(0); };
 
             var rc = await BrowserUiHost.RunAsync(
                 ["--url", "http://a", "--url", "http://b"],
@@ -351,7 +357,7 @@ public sealed class BrowserUiHostTests
         try
         {
             BrowserUiHost.OpenBrowserAsync = (_, _) => Task.CompletedTask;
-            BrowserUiHost.HostRunner = (_, ui, _, _) => { seen = ui; return Task.FromResult(0); };
+            BrowserUiHost.HostRunner = (_, ui, _, _, _) => { seen = ui; return Task.FromResult(0); };
 
             var rc = await BrowserUiHost.RunAsync(
                 [],

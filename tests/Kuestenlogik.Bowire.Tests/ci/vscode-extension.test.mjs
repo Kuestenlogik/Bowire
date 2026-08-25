@@ -427,61 +427,120 @@ describe('missingCliMessage', () => {
 });
 
 describe('buildArgs', () => {
-    it('passes the port and seeds a workspace', () => {
-        assert.deepEqual(workbench.buildArgs(5123),
-            ['--port', '5123', '--auto-create-initial-workspace', '--no-browser']);
+    it('asks the OS for a port and names the file to report it in', () => {
+        // --port 0 rather than a number we picked: choosing one ourselves
+        // meant racing every other process between the choice and the bind,
+        // including a second window on the same folder.
+        assert.deepEqual(workbench.buildArgs('/tmp/run/wb.json'),
+            ['--port', '0', '--port-file', '/tmp/run/wb.json',
+             '--auto-create-initial-workspace', '--no-browser']);
     });
 });
 
-describe('parseListeningUrl', () => {
-    it('reads the URL out of the startup banner', () => {
-        assert.equal(
-            workbench.parseListeningUrl('  Bowire is running at:  http://localhost:5080/'),
-            'http://localhost:5080');
+describe('parsePortFile', () => {
+    const doc = (over = {}) => JSON.stringify({ version: 1, url: 'http://127.0.0.1:51234/', pid: 42, ...over });
+
+    it('reads the bound URL', () => {
+        assert.equal(workbench.parsePortFile(doc()), 'http://127.0.0.1:51234');
     });
 
-    it('accepts the loopback address too', () => {
-        assert.equal(
-            workbench.parseListeningUrl('Now listening on: http://127.0.0.1:5099'),
-            'http://127.0.0.1:5099');
+    it('accepts localhost as well as the loopback literal', () => {
+        assert.equal(workbench.parsePortFile(doc({ url: 'http://localhost:5080/' })), 'http://localhost:5080');
     });
 
-    it('reports the port the CLI actually bound, not the one we asked for', () => {
-        // The whole reason for parsing rather than assuming: a fallback bind
-        // would otherwise leave the panel pointed at a port nobody serves.
-        assert.equal(workbench.parseListeningUrl('Now listening on: http://localhost:5555'), 'http://localhost:5555');
+    // Everything below is the same rule stated four ways: this value is handed
+    // to a webview, and a file on disk is not trustworthy just because we
+    // named the path. Anything unexpected has to read as "not ready".
+    it('rejects a document it does not understand the version of', () => {
+        assert.equal(workbench.parsePortFile(doc({ version: 2 })), null);
+        assert.equal(workbench.parsePortFile(doc({ version: undefined })), null);
     });
 
-    it('returns null while the process is still starting', () => {
-        assert.equal(workbench.parseListeningUrl('Restoring plugins…'), null);
-        assert.equal(workbench.parseListeningUrl(''), null);
-        assert.equal(workbench.parseListeningUrl(undefined), null);
+    it('rejects a half-written or non-JSON file rather than throwing', () => {
+        assert.equal(workbench.parsePortFile('{"version":1,"url":"http://127.0'), null);
+        assert.equal(workbench.parsePortFile(''), null);
+        assert.equal(workbench.parsePortFile('null'), null);
     });
 
-    it('does not mistake an unrelated remote URL for the local workbench', () => {
-        assert.equal(workbench.parseListeningUrl('Discovering https://petstore3.swagger.io/api'), null);
+    it('refuses a port file that names a remote host', () => {
+        // A workbench we started is on loopback. Anything else is either not
+        // ours or someone steering the panel at a page of their choosing.
+        assert.equal(workbench.parsePortFile(doc({ url: 'https://evil.example.com/' })), null);
+        assert.equal(workbench.parsePortFile(doc({ url: 'http://10.0.0.5:5080/' })), null);
+    });
+
+    it('refuses a url that is not a string', () => {
+        assert.equal(workbench.parsePortFile(doc({ url: 5080 })), null);
+        assert.equal(workbench.parsePortFile(doc({ url: null })), null);
     });
 });
 
-describe('portForWorkspace', () => {
+describe('waitForPortFile (existence is the readiness signal)', () => {
+    const clock = (start = 0) => { let t = start; return { now: () => t, sleep: async (ms) => { t += ms; } }; };
+
+    it('returns the URL as soon as the file appears', async () => {
+        const { now, sleep } = clock();
+        let reads = 0;
+        const readFile = async () => {
+            // ENOENT until the CLI has bound — the normal startup shape.
+            if (++reads < 4) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+            return JSON.stringify({ version: 1, url: 'http://127.0.0.1:60001/', pid: 7 });
+        };
+
+        assert.equal(await workbench.waitForPortFile('/x', { readFile, now, sleep }),
+            'http://127.0.0.1:60001');
+        assert.equal(reads, 4);
+    });
+
+    it('keeps waiting through a file that is not yet valid', async () => {
+        // The CLI writes through a temp file and renames, so a torn read
+        // should not happen — but treating one as "not ready" costs a poll
+        // and treating it as fatal costs the panel.
+        const { now, sleep } = clock();
+        let reads = 0;
+        const readFile = async () => (++reads < 3
+            ? '{"version":1,"url":"http://127.'
+            : JSON.stringify({ version: 1, url: 'http://127.0.0.1:60002/', pid: 7 }));
+
+        assert.equal(await workbench.waitForPortFile('/x', { readFile, now, sleep }),
+            'http://127.0.0.1:60002');
+    });
+
+    it('gives up at the timeout instead of hanging', async () => {
+        const { now, sleep } = clock();
+        const readFile = async () => { throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' }); };
+
+        assert.equal(await workbench.waitForPortFile('/x', { readFile, now, sleep, timeoutMs: 1000 }), null);
+    });
+});
+
+describe('portFilePathFor', () => {
+    const root = '/storage';
+
     it('is stable for the same workspace', () => {
-        const a = workbench.portForWorkspace('/home/dev/orders-api');
-        const b = workbench.portForWorkspace('/home/dev/orders-api');
-        assert.equal(a, b);
+        assert.equal(workbench.portFilePathFor(root, '/home/dev/orders-api'),
+                     workbench.portFilePathFor(root, '/home/dev/orders-api'));
     });
 
-    it('differs between workspaces so two windows do not collide', () => {
-        assert.notEqual(
-            workbench.portForWorkspace('/home/dev/orders-api'),
-            workbench.portForWorkspace('/home/dev/billing-api'));
+    it('differs between workspaces so two windows do not share a file', () => {
+        assert.notEqual(workbench.portFilePathFor(root, '/home/dev/orders-api'),
+                        workbench.portFilePathFor(root, '/home/dev/billing-api'));
     });
 
-    it('stays clear of the CLI default so a hand-started workbench keeps 5080', () => {
-        for (const p of ['/a', '/b', 'C:\\work\\x', '']) {
-            const port = workbench.portForWorkspace(p);
-            assert.ok(port >= 5099 && port < 6099, `${port} out of range`);
-            assert.notEqual(port, 5080);
-        }
+    it('lives under the extension storage, not in the user\'s repo', () => {
+        // Otherwise it shows up in the explorer and in `git status` of the
+        // project being worked on — and a read-only workspace folder breaks.
+        // Split on anything that is not a name character, so the assertion
+        // reads the same whichever separator path.join emitted.
+        const seg = (x) => x.split(/[^A-Za-z0-9._-]+/).filter(Boolean);
+        const p = workbench.portFilePathFor(root, '/home/dev/orders-api');
+        assert.deepEqual(seg(p).slice(0, 2), ['storage', 'run'], p);
+        assert.ok(!p.includes('orders-api'), p);
+    });
+
+    it('still answers when there is no folder open', () => {
+        assert.ok(workbench.portFilePathFor(root, undefined));
+        assert.ok(workbench.portFilePathFor(root, ''));
     });
 });
 

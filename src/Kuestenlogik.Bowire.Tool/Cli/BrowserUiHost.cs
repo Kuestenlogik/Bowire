@@ -17,6 +17,7 @@ using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Protocol.Mcp;
 using Kuestenlogik.Bowire.Sources;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kuestenlogik.Bowire.App.Cli;
 
@@ -27,6 +28,26 @@ namespace Kuestenlogik.Bowire.App.Cli;
 /// monolithic Program.cs (multi-URL binding, plugin auto-load, optional
 /// MCP adapter, auto-open browser).
 /// </summary>
+/// <summary>
+/// Runs the workbench host and reports the address it bound.
+/// </summary>
+/// <param name="args">Raw command-line args, forwarded to the web host builder.</param>
+/// <param name="ui">Resolved browser-UI options.</param>
+/// <param name="plugins">Plugin loader, already loaded by the caller.</param>
+/// <param name="ct">Cancels the host.</param>
+/// <param name="onListening">
+/// Invoked once Kestrel is actually listening, with the URL it landed on —
+/// which is not knowable before that point when <c>--port 0</c> is in play.
+/// Everything the address feeds (the banner, the port file, auto-opening a
+/// browser) hangs off this rather than off the requested port (#615).
+/// </param>
+internal delegate Task<int> BrowserUiHostRunner(
+    string[] args,
+    BrowserUiOptions ui,
+    IBowirePluginLoader plugins,
+    Func<string, CancellationToken, Task> onListening,
+    CancellationToken ct);
+
 internal static class BrowserUiHost
 {
     // internal: lets tests swap the browser-launch + ASP.NET host without
@@ -38,7 +59,7 @@ internal static class BrowserUiHost
     // captures the configured port + URL list instead of binding a real
     // socket. The default builds the live WebApplication exactly as the
     // original inline code did.
-    internal static Func<string[], BrowserUiOptions, IBowirePluginLoader, CancellationToken, Task<int>> HostRunner { get; set; } = DefaultHostRunner;
+    internal static BrowserUiHostRunner HostRunner { get; set; } = DefaultHostRunner;
 
     public static async Task<int> RunAsync(string[] args, IConfiguration bootstrapConfig, IBowirePluginLoader plugins,
         TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken ct = default)
@@ -89,19 +110,64 @@ internal static class BrowserUiHost
             || Environment.GetEnvironmentVariable("CI") is not null
             || !Environment.UserInteractive;
 
-        io.OutLine();
-        io.OutLine($"  Bowire is running at:  http://localhost:{ui.Port}/");
-        if (ui.EnableMcpAdapter)
-            io.OutLine($"  MCP adapter (opt-in):   http://localhost:{ui.Port}/mcp");
-        foreach (var u in ui.ServerUrls)
-            io.OutLine($"  Connected to:           {u}");
-        io.OutLine();
-        io.OutLine("  Press Ctrl+C to stop.");
-        io.OutLine();
+        // A file from a previous run has to go before we bind, not after we
+        // succeed: until this returns, an existing file is somebody else's
+        // (or a dead process's) and could be read as ours by a caller that is
+        // already polling. Clearing it here is what makes "the file exists"
+        // mean "this run is bound" (#615).
+        PortFile.Clear(ui.PortFile);
 
-        if (!noBrowser)
+        // ProcessExit on top of the finally below, because they cover
+        // different exits: the finally catches a returning or throwing host,
+        // this catches Environment.Exit and a runtime shutdown that never
+        // unwinds our frame. Neither survives a TerminateProcess / SIGKILL —
+        // nothing in-process does — which is why the document carries a pid
+        // and why a caller that starts Bowire should clear the path itself
+        // before launching rather than trusting what it finds.
+        if (ui.PortFile is { Length: > 0 })
         {
-            var browserUrl = $"http://localhost:{ui.Port}/";
+            var portFilePath = ui.PortFile;
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => PortFile.Clear(portFilePath);
+        }
+
+        // Everything the operator and the caller learn about the address is
+        // deferred until Kestrel says it is listening. It used to be printed
+        // here, one line above the call that does the binding, which meant a
+        // Bowire started on a taken port announced a URL and then threw
+        // AddressInUseException — it advertised a workbench that never came
+        // up. It also could not have supported --port 0, because at this
+        // point the port genuinely is not known yet.
+        var announced = 0;
+        async Task OnListening(string url, CancellationToken token)
+        {
+            // Kestrel can report several addresses; the banner is for a
+            // human, so it says the first one once rather than all of them.
+            if (Interlocked.Exchange(ref announced, 1) == 1) return;
+
+            io.OutLine();
+            io.OutLine($"  Bowire is running at:  {url}");
+            if (ui.EnableMcpAdapter)
+                io.OutLine($"  MCP adapter (opt-in):   {url.TrimEnd('/')}/mcp");
+            foreach (var u in ui.ServerUrls)
+                io.OutLine($"  Connected to:           {u}");
+            io.OutLine();
+            io.OutLine("  Press Ctrl+C to stop.");
+            io.OutLine();
+
+            if (ui.PortFile is { Length: > 0 } portFile
+                && !PortFile.Write(portFile, url, Environment.ProcessId))
+            {
+                // Not fatal: the workbench is up and a human can use it. But
+                // the caller that asked for this file is waiting on it and
+                // will now time out, so the reason belongs on stderr rather
+                // than nowhere.
+                await io.Err.WriteLineAsync(
+                    $"  Could not write the port file at '{portFile}' — a caller waiting on it will not find the URL.")
+                    .ConfigureAwait(false);
+            }
+
+            if (noBrowser) return;
+
             // Capture the static delegate locally so a swap-back after
             // RunAsync returns (test seams, hot-reload) cannot redirect
             // the launch into a different implementation. The Task.Run
@@ -114,16 +180,27 @@ internal static class BrowserUiHost
             {
                 try
                 {
-                    await openBrowser(browserUrl, ct).ConfigureAwait(false);
+                    await openBrowser(url, token).ConfigureAwait(false);
                 }
                 catch
                 {
                     // Headless / CI / browser unavailable — silently swallow.
                 }
-            }, ct);
+            }, token);
         }
 
-        return await HostRunner(args, ui, plugins, ct).ConfigureAwait(false);
+        try
+        {
+            return await HostRunner(args, ui, plugins, OnListening, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            // Belt and braces around the runner's own shutdown hook: a bind
+            // that threw, a runner that returned early, an exception on the
+            // way out — all of them land here. A hard kill does not, which is
+            // why the document carries a pid for readers to check.
+            PortFile.Clear(ui.PortFile);
+        }
     }
 
     private static async Task DefaultOpenBrowser(string url, CancellationToken ct)
@@ -136,7 +213,8 @@ internal static class BrowserUiHost
         });
     }
 
-    private static async Task<int> DefaultHostRunner(string[] args, BrowserUiOptions ui, IBowirePluginLoader plugins, CancellationToken ct)
+    private static async Task<int> DefaultHostRunner(string[] args, BrowserUiOptions ui, IBowirePluginLoader plugins,
+        Func<string, CancellationToken, Task> onListening, CancellationToken ct)
     {
         var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
         // #537 — expand bare boolean flags before handing the args to a
@@ -168,7 +246,12 @@ internal static class BrowserUiHost
             ["--catalogue-consul"] = "Bowire:Discovery:Catalogue:Consul:Address",
         });
         InferCatalogueProvider(builder.Configuration);
-        builder.WebHost.UseUrls($"http://localhost:{ui.Port}");
+        // "localhost" is a two-address alias to Kestrel (127.0.0.1 and [::1]),
+        // and it refuses to bind that dynamically — "Dynamic port binding is
+        // not supported when binding to localhost". Port 0 therefore has to
+        // name a concrete loopback address. IPv4 rather than [::1] because it
+        // is the one every client on this machine can reach.
+        builder.WebHost.UseUrls(ui.Port == 0 ? "http://127.0.0.1:0" : $"http://localhost:{ui.Port}");
         builder.Services.AddResponseCompression(opts => opts.EnableForHttps = true);
         // Run every loaded plugin's IBowireProtocolServices.ConfigureServices
         // so prerequisites like services.AddGrpcReflection() actually land
@@ -370,8 +453,49 @@ internal static class BrowserUiHost
         // never-fires SSE.
         app.MapBowireGitWorkspaceEvents(basePath: string.Empty);
 
-        await app.RunAsync(ct).ConfigureAwait(false);
+        // Split rather than app.RunAsync(): the bound address only exists
+        // between StartAsync and shutdown, and with --port 0 it is the only
+        // place it exists at all. RunAsync collapses the two and leaves no
+        // seam to read it from.
+        await app.StartAsync(ct).ConfigureAwait(false);
+
+        await onListening(BoundUrl(app, ui.Port), ct).ConfigureAwait(false);
+
+        await app.WaitForShutdownAsync(ct).ConfigureAwait(false);
         return 0;
+    }
+
+    /// <summary>
+    /// The address Kestrel actually bound, preferring what the server reports
+    /// over what we asked for.
+    /// </summary>
+    /// <remarks>
+    /// With <c>--port 0</c> the requested port is meaningless and the server
+    /// feature is the only source. With a fixed port the two agree, and
+    /// reading the feature anyway keeps one code path instead of two. The
+    /// fallback covers a host whose server does not expose the feature — a
+    /// TestServer, most likely — where the requested port is the best answer
+    /// available and is also the correct one.
+    /// </remarks>
+    private static string BoundUrl(Microsoft.AspNetCore.Builder.WebApplication app, int requestedPort)
+    {
+        var addresses = app.Services
+            .GetService<Microsoft.AspNetCore.Hosting.Server.IServer>()?
+            .Features.Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>()?
+            .Addresses;
+
+        var bound = addresses?.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(bound))
+            return $"http://localhost:{requestedPort}/";
+
+        // Kestrel reports the wildcard forms literally, and neither is
+        // something a caller can navigate to. A reader of the port file is
+        // going to hand this straight to a browser or an HTTP client.
+        bound = bound.Replace("://[::]", "://localhost", StringComparison.Ordinal)
+                     .Replace("://0.0.0.0", "://localhost", StringComparison.Ordinal)
+                     .Replace("://+", "://localhost", StringComparison.Ordinal);
+
+        return bound.EndsWith('/') ? bound : bound + "/";
     }
 
     /// <summary>

@@ -1,0 +1,240 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
+using Kuestenlogik.Bowire.App.Cli;
+using Kuestenlogik.Bowire.Tests.Plugins;
+using Microsoft.Extensions.Configuration;
+
+namespace Kuestenlogik.Bowire.Tests;
+
+/// <summary>
+/// The <c>--port-file</c> handoff as seen from <see cref="BrowserUiHost"/> (#615).
+/// </summary>
+/// <remarks>
+/// <para>
+/// <see cref="PortFileTests"/> covers the writer on its own; this covers when
+/// it is called, which is the part with a contract attached: <b>the file
+/// exists if and only if this run is bound</b>. A caller polls for the path
+/// and navigates the moment it appears, so every way the file could exist and
+/// be wrong is a caller opening a dead page.
+/// </para>
+/// <para>
+/// Shares <see cref="BrowserUiHostTests.CollectionName"/> because the seams
+/// these drive are static.
+/// </para>
+/// </remarks>
+[Collection(BrowserUiHostTests.CollectionName)]
+public sealed class BrowserUiHostPortFileTests
+{
+    private static IConfiguration Config(string? portFile = null, string? port = null)
+    {
+        var entries = new Dictionary<string, string?> { ["Bowire:NoBrowser"] = "true" };
+        if (portFile is not null) entries["Bowire:PortFile"] = portFile;
+        if (port is not null) entries["Bowire:Port"] = port;
+        return new ConfigurationBuilder().AddInMemoryCollection(entries).Build();
+    }
+
+    private static string TempPath() =>
+        Path.Combine(Path.GetTempPath(), "bowire-host-" + Guid.NewGuid().ToString("N") + ".json");
+
+    private static void Cleanup(string path)
+    {
+        try { File.Delete(path); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+    }
+
+    [Fact]
+    public async Task Writes_The_PortFile_Only_Once_The_Host_Is_Listening()
+    {
+        var prevRunner = BrowserUiHost.HostRunner;
+        var prevOpen = BrowserUiHost.OpenBrowserAsync;
+        var path = TempPath();
+        try
+        {
+            BrowserUiHost.OpenBrowserAsync = (_, _) => Task.CompletedTask;
+
+            var existedBeforeListening = true;
+            string? whileRunning = null;
+            BrowserUiHost.HostRunner = async (_, _, _, onListening, ct) =>
+            {
+                // Before the callback the host is still binding; a file here
+                // would be a claim a caller acts on immediately.
+                existedBeforeListening = File.Exists(path);
+                await onListening("http://127.0.0.1:51999/", ct);
+                // Read inside the host's lifetime — RunAsync removes the file
+                // on the way out, which the next test is about.
+                whileRunning = await File.ReadAllTextAsync(path, ct);
+                return 0;
+            };
+
+            await BrowserUiHost.RunAsync(["--no-browser", "--port-file", path], Config(path),
+                plugins: TestPluginLoaders.None(), ct: CancellationToken.None);
+
+            Assert.False(existedBeforeListening);
+            Assert.NotNull(whileRunning);
+            Assert.Contains("51999", whileRunning, StringComparison.Ordinal);
+        }
+        finally
+        {
+            BrowserUiHost.HostRunner = prevRunner;
+            BrowserUiHost.OpenBrowserAsync = prevOpen;
+            Cleanup(path);
+        }
+    }
+
+    [Fact]
+    public async Task Removes_The_PortFile_On_An_Orderly_Shutdown()
+    {
+        var prevRunner = BrowserUiHost.HostRunner;
+        var prevOpen = BrowserUiHost.OpenBrowserAsync;
+        var path = TempPath();
+        try
+        {
+            BrowserUiHost.OpenBrowserAsync = (_, _) => Task.CompletedTask;
+            BrowserUiHost.HostRunner = async (_, _, _, onListening, ct) =>
+            {
+                await onListening("http://127.0.0.1:52000/", ct);
+                return 0;
+            };
+
+            await BrowserUiHost.RunAsync(["--no-browser", "--port-file", path], Config(path),
+                plugins: TestPluginLoaders.None(), ct: CancellationToken.None);
+
+            Assert.False(File.Exists(path));
+        }
+        finally
+        {
+            BrowserUiHost.HostRunner = prevRunner;
+            BrowserUiHost.OpenBrowserAsync = prevOpen;
+            Cleanup(path);
+        }
+    }
+
+    [Fact]
+    public async Task Removes_The_PortFile_When_The_Host_Throws()
+    {
+        // A host that dies after the address was announced. If the file
+        // outlived it, the next reader would get a port nothing serves.
+        var prevRunner = BrowserUiHost.HostRunner;
+        var prevOpen = BrowserUiHost.OpenBrowserAsync;
+        var path = TempPath();
+        try
+        {
+            BrowserUiHost.OpenBrowserAsync = (_, _) => Task.CompletedTask;
+            BrowserUiHost.HostRunner = async (_, _, _, onListening, ct) =>
+            {
+                await onListening("http://127.0.0.1:52001/", ct);
+                throw new InvalidOperationException("host died after announcing");
+            };
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                BrowserUiHost.RunAsync(["--no-browser", "--port-file", path], Config(path),
+                    plugins: TestPluginLoaders.None(), ct: CancellationToken.None));
+
+            Assert.False(File.Exists(path));
+        }
+        finally
+        {
+            BrowserUiHost.HostRunner = prevRunner;
+            BrowserUiHost.OpenBrowserAsync = prevOpen;
+            Cleanup(path);
+        }
+    }
+
+    [Fact]
+    public async Task Clears_A_Stale_PortFile_Before_Binding()
+    {
+        // What a hard-killed predecessor leaves behind — the one case no
+        // in-process cleanup can cover. It has to be gone before the bind is
+        // attempted rather than after it succeeds, because a caller may
+        // already be polling the path.
+        var prevRunner = BrowserUiHost.HostRunner;
+        var prevOpen = BrowserUiHost.OpenBrowserAsync;
+        var path = TempPath();
+        try
+        {
+            await File.WriteAllTextAsync(path, """{"version":1,"url":"http://127.0.0.1:1/","pid":999999}""", TestContext.Current.CancellationToken);
+            BrowserUiHost.OpenBrowserAsync = (_, _) => Task.CompletedTask;
+
+            var staleReachedTheRunner = true;
+            // Never announces — a host that fails during bind.
+            BrowserUiHost.HostRunner = (_, _, _, _, _) =>
+            {
+                staleReachedTheRunner = File.Exists(path);
+                return Task.FromResult(1);
+            };
+
+            await BrowserUiHost.RunAsync(["--no-browser", "--port-file", path], Config(path),
+                plugins: TestPluginLoaders.None(), ct: CancellationToken.None);
+
+            Assert.False(staleReachedTheRunner);
+            Assert.False(File.Exists(path));
+        }
+        finally
+        {
+            BrowserUiHost.HostRunner = prevRunner;
+            BrowserUiHost.OpenBrowserAsync = prevOpen;
+            Cleanup(path);
+        }
+    }
+
+    [Fact]
+    public async Task Banner_Reports_The_Bound_Url_Not_The_Requested_Port()
+    {
+        // With --port 0 the requested port says nothing. This is the same
+        // reason the banner moved behind the bind: printed before, it
+        // announced an address a failing bind never made real.
+        var prevRunner = BrowserUiHost.HostRunner;
+        var prevOpen = BrowserUiHost.OpenBrowserAsync;
+        using var stdout = new StringWriter();
+        try
+        {
+            BrowserUiHost.OpenBrowserAsync = (_, _) => Task.CompletedTask;
+            BrowserUiHost.HostRunner = async (_, _, _, onListening, ct) =>
+            {
+                await onListening("http://127.0.0.1:61234/", ct);
+                return 0;
+            };
+
+            await BrowserUiHost.RunAsync(["--no-browser", "--port", "0"], Config(port: "0"),
+                plugins: TestPluginLoaders.None(), stdout: stdout, ct: CancellationToken.None);
+
+            var text = stdout.ToString();
+            Assert.Contains("http://127.0.0.1:61234/", text, StringComparison.Ordinal);
+            Assert.DoesNotContain(":0/", text, StringComparison.Ordinal);
+        }
+        finally
+        {
+            BrowserUiHost.HostRunner = prevRunner;
+            BrowserUiHost.OpenBrowserAsync = prevOpen;
+        }
+    }
+
+    [Fact]
+    public async Task Opens_The_Browser_At_The_Bound_Url()
+    {
+        var prevRunner = BrowserUiHost.HostRunner;
+        var prevOpen = BrowserUiHost.OpenBrowserAsync;
+        var opened = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        try
+        {
+            BrowserUiHost.OpenBrowserAsync = (url, _) => { opened.TrySetResult(url); return Task.CompletedTask; };
+            BrowserUiHost.HostRunner = async (_, _, _, onListening, ct) =>
+            {
+                await onListening("http://127.0.0.1:61235/", ct);
+                // The launch is fire-and-forget; hold the host open for it.
+                await opened.Task.WaitAsync(TimeSpan.FromSeconds(10), ct);
+                return 0;
+            };
+
+            await BrowserUiHost.RunAsync([], new ConfigurationBuilder().Build(),
+                plugins: TestPluginLoaders.None(), ct: CancellationToken.None);
+
+            Assert.Equal("http://127.0.0.1:61235/", await opened.Task);
+        }
+        finally
+        {
+            BrowserUiHost.HostRunner = prevRunner;
+            BrowserUiHost.OpenBrowserAsync = prevOpen;
+        }
+    }
+}

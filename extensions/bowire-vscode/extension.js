@@ -24,6 +24,7 @@ const vscode = require('vscode');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
+const fsp = require('node:fs/promises');
 const {
     resolveCli,
     manifestStartFailureMessage,
@@ -31,7 +32,8 @@ const {
     readCliVersion,
     checkCliVersion,
     buildArgs,
-    portForWorkspace,
+    portFilePathFor,
+    waitForPortFile,
     buildWebviewHtml,
     missingCliMessage, waitUntilServing
 } = require('./lib/workbench');
@@ -64,13 +66,23 @@ function stopProcess(channel) {
  * Start the CLI and resolve with the URL it reports. Rejects if it exits or
  * never announces itself, so the panel is never opened onto a dead port.
  */
-function startWorkbench(resolution, cwd, port, channel) {
+async function startWorkbench(resolution, cwd, portFilePath, channel) {
+    // Clear it before spawning, not after succeeding. A Bowire that was hard
+    // killed — Task Manager, a crashed window, a machine that went down —
+    // leaves its port file behind, and nothing in that process could have
+    // cleaned it up. If it were still here when we start polling, we would
+    // read a dead port and open the panel onto nothing. The CLI clears it too;
+    // doing it here as well means we never depend on which of us got there
+    // first.
+    await fsp.rm(portFilePath, { force: true }).catch(() => { });
+    await fsp.mkdir(path.dirname(portFilePath), { recursive: true }).catch(() => { });
+
     return new Promise((resolve, reject) => {
         // command + prefixArgs rather than a single path: a manifest-pinned
         // Bowire runs as `dotnet tool run bowire`, so the thing being spawned
         // is not always the CLI itself.
         const cli = resolution.command;
-        const proc = spawn(cli, [...resolution.prefixArgs, ...buildArgs(port)], { cwd, windowsHide: true });
+        const proc = spawn(cli, [...resolution.prefixArgs, ...buildArgs(portFilePath)], { cwd, windowsHide: true });
         child = proc;
 
         // Kept so the failure paths below can name the manifest instead of
@@ -94,25 +106,33 @@ function startWorkbench(resolution, cwd, port, channel) {
             log(channel, text.trimEnd());
         };
 
-        // Readiness is decided by asking the port, not by reading the log.
+        // Two gates, because they answer two different questions.
         //
-        // The banner was the old signal and it is unreliable twice over: it
-        // disappears at a higher log level, and it is printed before the bind
-        // is known to have worked — a second Bowire on a taken port prints
-        // "Bowire is running at: …" and only then throws AddressInUse. The
-        // port cannot be wrong: the CLI binds the one it is given or exits,
-        // it never falls back to another, so there is nothing the log could
-        // tell us that we do not already know.
+        // The port file says WHERE: the CLI writes it only after Kestrel is
+        // listening, so its appearance is proof the bind worked and its
+        // contents are the address it actually got. This replaced scraping
+        // the startup banner, which is a log line — gone at a quieter log
+        // level — and which is printed before the bind is known to have
+        // succeeded, so it could name a URL that never served.
+        //
+        // waitUntilServing says WHEN: bound is not the same as ready, and a
+        // webview opened a beat too early shows an error page for a workbench
+        // that was fine a moment later. An empty panel is fine; a 404 looks
+        // broken.
         //
         // `proc.on('exit')` below still fires first if the process dies, so a
-        // failed bind surfaces as its real error instead of a 30 s wait.
-        // Generous: a first run restores plugins and can take a while on a
-        // cold machine. Failing here is better than a panel that never loads.
-        const url = `http://localhost:${port}`;
-        waitUntilServing(url, { timeoutMs: START_TIMEOUT_MS }).then((up) => {
+        // failed bind surfaces its real error instead of waiting out the
+        // deadline.
+        waitForPortFile(portFilePath, { timeoutMs: START_TIMEOUT_MS }).then(async (url) => {
+            if (!url) {
+                finish(reject, new Error(
+                    `Bowire did not report a workbench URL within ${START_TIMEOUT_MS / 1000} seconds.`));
+                return;
+            }
+            const up = await waitUntilServing(url, { timeoutMs: START_TIMEOUT_MS });
             if (up) finish(resolve, url);
             else finish(reject, new Error(
-                `Bowire did not serve a response at ${url} within `
+                `Bowire reported ${url} but did not serve a response there within `
                 + `${START_TIMEOUT_MS / 1000} seconds.`));
         });
 
@@ -233,7 +253,7 @@ async function openWorkbench(context, channel) {
             `Bowire needs a working directory it can use, but ${cwd} could not be created: ${err.message}`);
         return;
     }
-    const port = portForWorkspace(cwd);
+    const portFilePath = portFilePathFor(context.globalStorageUri.fsPath, cwd);
 
     // The folder has to be known first: `bowire.cliPath` may be written
     // relative to it via ${workspaceFolder}, which is the form that can be
@@ -305,7 +325,7 @@ async function openWorkbench(context, channel) {
     try {
         url = await vscode.window.withProgress(
             { location: vscode.ProgressLocation.Notification, title: 'Starting Bowire…' },
-            () => startWorkbench(resolution, cwd, port, channel));
+            () => startWorkbench(resolution, cwd, portFilePath, channel));
     } catch (err) {
         stopProcess(channel);
         await vscode.window.showErrorMessage(err.message);

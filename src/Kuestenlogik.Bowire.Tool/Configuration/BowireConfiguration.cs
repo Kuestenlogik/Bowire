@@ -55,6 +55,7 @@ internal static class BowireConfiguration
     {
         ["--plugin-dir"] = "Bowire:PluginDir",
         ["--port"] = "Bowire:Port",
+        ["--port-file"] = "Bowire:PortFile",
         ["-p"] = "Bowire:Port",
         ["--host"] = "Bowire:Host",
         ["--title"] = "Bowire:Title",

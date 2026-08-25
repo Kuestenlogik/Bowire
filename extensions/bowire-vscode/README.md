@@ -53,7 +53,9 @@ The collections then commit, diff and review like any other file, and two repos 
 
 ## Ports
 
-The extension asks for a port derived from the workspace path (5099–6098), so reopening the panel reuses the same one and two windows do not collide. It stays clear of Bowire's own default 5080, so a workbench you started by hand keeps working.
+The extension does not pick a port. It starts Bowire with `--port 0`, so the OS assigns a free one, and `--port-file`, so Bowire writes back the address it actually bound. That file appears only once the server is listening, which makes it both the address and the signal that the panel is safe to open.
+
+A Bowire you started yourself is left alone — its port, its process, its lifetime. The extension runs its own alongside it, which is what you want: yours has a different working directory, so it reads a different `.bowire/project.json`, and closing the panel stops only the process the panel started.
 
 ## Related
 
