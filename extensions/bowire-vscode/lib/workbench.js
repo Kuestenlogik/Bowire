@@ -358,6 +358,43 @@ function parseListeningUrl(line) {
 }
 
 /**
+ * Wait until the workbench actually answers, not merely until it said it
+ * would.
+ *
+ * The CLI prints its banner when Kestrel has bound the port, and the extension
+ * used to load the webview on that line alone. Binding is not serving: the
+ * first request can still arrive before the pipeline is ready, and what the
+ * operator then sees is a webview showing an error page for a workbench that
+ * came up fine a moment later. A panel that is briefly empty is fine; one
+ * showing 404 looks broken.
+ *
+ * Anything below 400 counts as up — a redirect is a served response, and the
+ * root may well be one.
+ *
+ * `fetchImpl`, `sleep` and `now` are injected so this is testable without a
+ * socket or a real clock.
+ */
+async function waitUntilServing(url, {
+    timeoutMs = 30_000,
+    intervalMs = 150,
+    fetchImpl = globalThis.fetch,
+    sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+    now = () => Date.now(),
+} = {}) {
+    const deadline = now() + timeoutMs;
+    for (;;) {
+        try {
+            const res = await fetchImpl(url, { method: 'GET' });
+            if (res && typeof res.status === 'number' && res.status < 400) return true;
+        } catch {
+            // Connection refused while it is still coming up — expected.
+        }
+        if (now() >= deadline) return false;
+        await sleep(intervalMs);
+    }
+}
+
+/**
  * Pick a port to ask for. Deterministic per workspace so reopening the panel
  * reuses the same one, which keeps a stale process from stacking up ports.
  */
@@ -481,6 +518,7 @@ module.exports = {
     readCliVersion,
     normaliseWorkbenchUrl,
     buildArgs,
+    waitUntilServing,
     parseListeningUrl,
     portForWorkspace,
     buildWebviewHtml,

@@ -34,7 +34,7 @@ const {
     parseListeningUrl,
     portForWorkspace,
     buildWebviewHtml,
-    missingCliMessage,
+    missingCliMessage, waitUntilServing
 } = require('./lib/workbench');
 const {
     PINNED_CLI_VERSION,
@@ -91,8 +91,24 @@ function startWorkbench(resolution, cwd, port, channel) {
             lastOutput = text;
             log(channel, text.trimEnd());
             const url = parseListeningUrl(text);
-            if (url) finish(resolve, url);
+            if (!url || probing) return;
+
+            // The banner says the port is bound, which is not the same as
+            // serving — loading the webview on the banner alone is how the
+            // panel ends up showing an error page for a workbench that was
+            // fine a second later. Poll until it answers.
+            probing = true;
+            waitUntilServing(url).then((up) => {
+                if (up) {
+                    finish(resolve, url);
+                } else {
+                    finish(reject, new Error(
+                        `Bowire reported ${url} but did not serve a response there within 30 seconds.`));
+                }
+            });
         };
+
+        let probing = false;
 
         proc.stdout?.on('data', onData);
         proc.stderr?.on('data', onData);
