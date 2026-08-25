@@ -64,6 +64,7 @@
   },
   "icon": "icon.png",
   "scripts": {
-    "vscode:prepublish": "node scripts/prepare-package.mjs"
+    "vscode:prepublish": "node scripts/prepare-package.mjs",
+    "vscode:uninstall": "node ./lib/uninstall.js"
   }
 }

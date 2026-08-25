@@ -10,7 +10,7 @@ Bowire 2.0 or newer — and you do not have to install it first.
 
 The extension drives a Bowire you already have: one you configured, one your repository pins in a tool manifest, or one on your `PATH`. That is the better case, because it is the same CLI your terminal and your CI run.
 
-If it finds none, it offers to download one and manages that copy itself. Nothing is fetched without you saying yes, and the archive is verified against its digest before anything is unpacked.
+If it finds none, it offers to download one and manages that copy itself. Nothing is fetched without you saying yes, the archive is verified against its digest before anything is unpacked, and uninstalling the extension deletes that copy again — a Bowire you installed yourself is never touched.
 
 To install one yourself:
 
