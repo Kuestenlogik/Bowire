@@ -427,7 +427,8 @@ describe('missingCliMessage', () => {
 
 describe('buildArgs', () => {
     it('passes the port and seeds a workspace', () => {
-        assert.deepEqual(workbench.buildArgs(5123), ['--port', '5123', '--auto-create-initial-workspace']);
+        assert.deepEqual(workbench.buildArgs(5123),
+            ['--port', '5123', '--auto-create-initial-workspace', '--no-browser']);
     });
 });
 
