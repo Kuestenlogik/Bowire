@@ -17,6 +17,17 @@ hosts — it drives whatever CLI you have installed, from 2.0 upwards.
   is stated as what it is, with the manual install offered as the option you
   take when CI already pins a version.
 
+## [0.1.2] — 2026-08-25
+
+### Fixed
+
+- **The CLI-resolution diagram rendered as raw text on the Marketplace.** It
+  was a Mermaid flowchart, which GitHub renders and the VS Code Marketplace
+  does not — so the extension's own listing showed twenty lines of
+  `flowchart TD` source to anyone reading the description. Replaced with a
+  table, which reads the same in both places and, for a chain this linear,
+  arguably better.
+
 ## [Unreleased]
 
 ### Added
