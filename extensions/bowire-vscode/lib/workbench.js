@@ -336,25 +336,86 @@ function describeSpawnError(err, options = {}) {
  * webview: without it the operator gets both, and the one they did not ask for
  * is the one that steals focus.
  *
- * `--port 0` is not used: the CLI prints the port it bound, and parsing that
- * is more robust than pre-picking a free port and racing another process for
- * it between the check and the bind.
+ * `--port 0` asks the OS for a free port and `--port-file` reports which one
+ * it got (#615). Picking a port ourselves meant racing every other process on
+ * the machine between choosing it and binding it — including a second window
+ * on the same folder, which derived the same number. The OS does not race
+ * with itself.
+ *
+ * That also settles what happens when a Bowire is already running: nothing.
+ * A workbench the developer started by hand keeps its port and its lifetime,
+ * and we start our own alongside it. Adopting theirs would be wrong anyway —
+ * it has a different working directory, so it reads a different
+ * `.bowire/project.json`, and closing our panel would kill their process.
  */
-function buildArgs(port) {
-    return ['--port', String(port), '--auto-create-initial-workspace', '--no-browser'];
+function buildArgs(portFilePath) {
+    return [
+        '--port', '0',
+        '--port-file', String(portFilePath),
+        '--auto-create-initial-workspace',
+        '--no-browser',
+    ];
 }
 
 /**
- * The URL from the CLI's startup banner, or null while it is still starting.
+ * The URL from a port file's contents, or null if it is not one we understand.
  *
- * Matching the banner rather than assuming the port we asked for means a
- * fallback binding still gets picked up instead of leaving the panel pointed
- * at a port nobody is listening on.
+ * Deliberately strict. This value is handed to a webview, and a file on disk
+ * is not a trusted channel just because we named the path: a half-written
+ * document, a leftover from an older format, or a file someone else put there
+ * should all read as "not ready" rather than as an address to navigate to.
  */
-function parseListeningUrl(line) {
-    if (typeof line !== 'string') return null;
-    const match = line.match(/https?:\/\/(?:localhost|127\.0\.0\.1)(?::(\d+))?\/?/i);
-    return match ? match[0].replace(/\/$/, '') : null;
+function parsePortFile(text) {
+    let doc;
+    try {
+        doc = JSON.parse(text);
+    } catch {
+        // Mid-write is possible in principle — the CLI writes through a temp
+        // file and renames, so it should not be — and unparseable means the
+        // same thing either way: keep waiting.
+        return null;
+    }
+
+    if (!doc || typeof doc !== 'object') return null;
+    if (doc.version !== 1) return null;
+    if (typeof doc.url !== 'string') return null;
+
+    // Same reduction the webview URL goes through: a loopback origin and
+    // nothing else. A port file naming a remote host is not a workbench we
+    // started, and must not become a page we render.
+    return normaliseWorkbenchUrl(doc.url);
+}
+
+/**
+ * Wait for the port file to appear and name a URL, or give up.
+ *
+ * Existence is the readiness signal: the CLI clears the path before it binds
+ * and writes it only after Kestrel is listening, so seeing the file means the
+ * bind succeeded. That is the whole reason this replaced banner-scraping —
+ * the banner is a log line, so it vanishes at a quieter log level, and it is
+ * printed before the bind is known to have worked.
+ *
+ * `readFile`, `sleep` and `now` are injected so this is testable without a
+ * disk or a real clock.
+ */
+async function waitForPortFile(path, {
+    timeoutMs = 60_000,
+    intervalMs = 100,
+    readFile = (p) => require('node:fs/promises').readFile(p, 'utf8'),
+    sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+    now = () => Date.now(),
+} = {}) {
+    const deadline = now() + timeoutMs;
+    for (;;) {
+        try {
+            const url = parsePortFile(await readFile(path));
+            if (url) return url;
+        } catch {
+            // ENOENT for as long as it is still binding — the normal case.
+        }
+        if (now() >= deadline) return null;
+        await sleep(intervalMs);
+    }
 }
 
 /**
@@ -395,18 +456,24 @@ async function waitUntilServing(url, {
 }
 
 /**
- * Pick a port to ask for. Deterministic per workspace so reopening the panel
- * reuses the same one, which keeps a stale process from stacking up ports.
+ * Where this workspace's port file goes.
+ *
+ * Under the extension's own storage rather than the workspace: it is our
+ * bookkeeping, it would otherwise show up in the explorer and in `git status`
+ * of the repo the developer is working on, and a read-only or remote
+ * workspace folder still has to work.
+ *
+ * Named per workspace so two windows cannot overwrite each other's file. The
+ * hash is only for a stable, filesystem-safe name — nothing depends on it
+ * being collision-free the way a port number did, because the file is deleted
+ * before each start and the URL is read from its contents.
  */
-function portForWorkspace(workspacePath, base = 5099) {
-    if (!workspacePath) return base;
+function portFilePathFor(storageRoot, workspacePath) {
     let hash = 0;
-    for (const ch of String(workspacePath)) {
+    for (const ch of String(workspacePath || 'no-folder')) {
         hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
     }
-    // 5099..6098 — above the CLI's own default (5080) so a workbench the
-    // developer started by hand keeps its port.
-    return base + (hash % 1000);
+    return require('node:path').join(storageRoot, 'run', `workbench-${hash.toString(16)}.json`);
 }
 
 /**
@@ -519,8 +586,9 @@ module.exports = {
     normaliseWorkbenchUrl,
     buildArgs,
     waitUntilServing,
-    parseListeningUrl,
-    portForWorkspace,
+    parsePortFile,
+    waitForPortFile,
+    portFilePathFor,
     buildWebviewHtml,
     missingCliMessage,
 };

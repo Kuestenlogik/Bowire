@@ -34,8 +34,26 @@ namespace Kuestenlogik.Bowire.App.Configuration;
 /// </remarks>
 internal sealed class BrowserUiOptions
 {
-    /// <summary>TCP port the local HTTP server binds to. Defaults to 5080.</summary>
+    /// <summary>
+    /// TCP port the local HTTP server binds to. Defaults to 5080.
+    /// </summary>
+    /// <remarks>
+    /// <c>0</c> is legal and means "let the OS pick a free one" (#615). It is
+    /// only useful together with <see cref="PortFile"/>, since otherwise
+    /// nothing can find out where the workbench landed.
+    /// </remarks>
     public int Port { get; set; } = 5080;
+
+    /// <summary>
+    /// Path to write the bound workbench URL to, once it is bound (#615).
+    /// </summary>
+    /// <remarks>
+    /// The handoff for anything that starts Bowire as a child process — an
+    /// editor plugin, a CI harness, a test fixture — instead of scraping the
+    /// console banner, which is a log line and is printed before the bind is
+    /// known to have succeeded. See <c>PortFile</c> for the contract.
+    /// </remarks>
+    public string? PortFile { get; set; }
 
     /// <summary>Title shown in the browser tab + UI header. Defaults to "Bowire".</summary>
     public string Title { get; set; } = "Bowire";

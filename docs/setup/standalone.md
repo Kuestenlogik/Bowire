@@ -116,7 +116,8 @@ for runtime feature switches inside an already-loaded plugin.
 | Option | Description | Default |
 |---|---|---|
 | `--url <url>` | Server URL to discover (repeatable for multi-URL). Optional `<plugin>@` prefix routes the URL to a single plugin. | none |
-| `--port <n>` | Bowire UI port | `5080` |
+| `--port <n>` | Bowire UI port. `0` asks the OS for a free one — pair it with `--port-file`, which is how you find out which one you got. | `5080` |
+| `--port-file <path>` | Write the bound workbench URL to this file as JSON, once the server is actually listening, and delete it on shutdown. The handoff for anything that starts Bowire as a child process. See [Reporting the bound URL](#reporting-the-bound-url). | none |
 | `--title <text>` | Browser title | `Bowire` |
 | `--no-browser` | Don't auto-open the browser | `false` |
 | `--enable-mcp-adapter` | Expose discovered methods as MCP tools at `/bowire/mcp/sse` | `false` |
@@ -133,12 +134,40 @@ bowire --url https://server:443 --port 8080 --title "Production API"
 # Headless (e.g. inside a container) — no browser auto-open
 bowire --url https://server:443 --no-browser
 
+# Started by another program: let the OS pick the port, report it back
+bowire --port 0 --port-file /tmp/bowire.json --no-browser
+
 # Multiple URLs in one Bowire window
 bowire --url https://api.dev:443 --url https://api.staging:443
 
 # AI agent integration — exposes discovered methods as MCP tools
 bowire --url https://server:443 --enable-mcp-adapter
 ```
+
+## Reporting the bound URL
+
+Anything that starts `bowire` as a child process — an editor integration, a CI harness, a test fixture — needs to know where the workbench ended up. Do not read it off the startup banner: that is a log line, so it disappears at a quieter log level, and it is printed *before* the bind is known to have worked, so it can name a URL that never serves.
+
+Use `--port-file` instead:
+
+```bash
+bowire --port 0 --port-file ./run/bowire.json --no-browser
+```
+
+`--port 0` lets the OS assign a free port, which removes the race you get from picking one yourself and binding it a moment later. Once Kestrel is listening, Bowire writes:
+
+```json
+{ "version": 1, "url": "http://127.0.0.1:53411/", "pid": 12345 }
+```
+
+The write is atomic, so a reader polling the path never sees half a document. The file is cleared before the bind and deleted on shutdown, which gives the contract worth relying on: **the file exists if and only if the workbench is bound.** Waiting for it to appear is therefore both how you learn the address and how you know it is safe to use.
+
+Two things are worth knowing:
+
+- **A hard kill leaves the file.** SIGKILL, Task Manager, a machine going down — no in-process cleanup survives those. That is why the document carries a `pid`: a reader that finds a file it did not watch appear should check whether that process is alive before trusting it. A caller that starts Bowire itself has the stronger option and should take it — delete the path first, then wait for it to reappear.
+- **Running instances are independent.** A Bowire already listening on 5080 is untouched by another started with `--port 0`; they are separate processes with separate working directories, and therefore separate project-scoped storage.
+
+This is the same handoff Chrome uses for `DevToolsActivePort` and Jupyter for `jpserver-<pid>.json`. The [VS Code extension](../integrations/vscode.md#ports-and-how-the-extension-finds-the-workbench) is built on it.
 
 ## CLI mode (grpcurl-style)
 

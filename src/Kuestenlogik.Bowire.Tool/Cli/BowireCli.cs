@@ -98,7 +98,19 @@ internal static class BowireCli
             AllowMultipleArgumentsPerToken = true
         });
         root.Add(new Option<string>("--url-file") { Description = "File with server URLs (one per line)." });
-        root.Add(new Option<int?>("--port") { Description = "Browser UI port. Default 5080." }.WithPortValidation());
+        root.Add(new Option<int?>("--port")
+        {
+            Description = "Browser UI port. Default 5080. Use 0 to let the OS pick a free port, "
+                        + "which only makes sense together with --port-file (that is how you find out which one).",
+        }.WithPortValidation(allowEphemeral: true));
+        root.Add(new Option<string>("--port-file")
+        {
+            Description = "Write the bound workbench URL to this file as JSON ({\"version\":1,\"url\":…,\"pid\":…}) "
+                        + "once the server is actually listening, and delete it on shutdown. The handoff for anything "
+                        + "that starts Bowire as a child process — an editor plugin, a CI harness, a test fixture — "
+                        + "because the file appears only after a successful bind, unlike the console banner. "
+                        + "Pairs with --port 0. Equivalent to Bowire:PortFile.",
+        });
         root.Add(new Option<string>("--title") { Description = "Browser tab title. Default \"Bowire\"." });
         root.Add(new Option<string>("--description") { Description = "Subtitle shown below the title." });
         root.Add(new Option<bool>("--no-browser") { Description = "Don't auto-open a browser window." });
@@ -263,6 +275,9 @@ internal static class BowireCli
     private const int MinPort = 1;
     private const int MaxPort = 65535;
 
+    /// <summary>Ask the OS for any free port. See <c>--port-file</c> (#615).</summary>
+    private const int EphemeralPort = 0;
+
     /// <summary>Reject a TCP port outside 1..65535 on an <see cref="Option{Int32}"/>.</summary>
     private static Option<int> WithPortValidation(this Option<int> opt)
     {
@@ -275,21 +290,34 @@ internal static class BowireCli
     }
 
     /// <summary>Reject a TCP port outside 1..65535 on a nullable <see cref="Option{T}"/>.</summary>
-    private static Option<int?> WithPortValidation(this Option<int?> opt)
+    /// <param name="opt">The option to validate.</param>
+    /// <param name="allowEphemeral">
+    /// Also accept <c>0</c>, which asks the OS for any free port. Only the
+    /// listeners that can report back where they landed — the browser UI, via
+    /// <c>--port-file</c> (#615) — opt into this; on a port nobody can
+    /// discover afterwards, 0 is a typo rather than a request.
+    /// </param>
+    private static Option<int?> WithPortValidation(this Option<int?> opt, bool allowEphemeral = false)
     {
         opt.Validators.Add(result =>
         {
             if (result.Implicit) return;
             if (result.GetValueOrDefault<int?>() is int port)
-                CheckPort(result, opt.Name, port);
+                CheckPort(result, opt.Name, port, allowEphemeral);
         });
         return opt;
     }
 
-    private static void CheckPort(OptionResult result, string name, int port)
+    private static void CheckPort(OptionResult result, string name, int port, bool allowEphemeral = false)
     {
+        if (allowEphemeral && port == EphemeralPort) return;
+
         if (port < MinPort || port > MaxPort)
-            result.AddError($"{name}: port must be between {MinPort} and {MaxPort} (got {port}).");
+        {
+            result.AddError(allowEphemeral
+                ? $"{name}: port must be 0 (any free port) or between {MinPort} and {MaxPort} (got {port})."
+                : $"{name}: port must be between {MinPort} and {MaxPort} (got {port}).");
+        }
     }
 
     /// <summary>Reject a <c>--recording</c>-style path that doesn't point at an existing file.</summary>

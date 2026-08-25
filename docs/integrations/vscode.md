@@ -111,9 +111,46 @@ Copy rather than move while you are deciding: the machine-wide store is left unt
 
 No file-system bridge is involved either way: the Bowire process reads and writes those files itself, and the webview only speaks HTTP to it.
 
-## Ports
+## Ports, and how the extension finds the workbench
 
-The extension asks for a port derived from the workspace path (5099–6098), so reopening the panel reuses the same one and two windows do not collide. It stays clear of Bowire's own default 5080, so a workbench you started by hand keeps working. If the CLI binds elsewhere, the extension follows the port it reports rather than the one it asked for.
+The extension does not pick a port. It starts Bowire with two flags:
+
+```bash
+bowire --port 0 --port-file <path>
+```
+
+`--port 0` asks the operating system for a free port. `--port-file` names a file Bowire writes the bound address into — as JSON, once Kestrel is actually listening:
+
+```json
+{ "version": 1, "url": "http://127.0.0.1:53411/", "pid": 12345 }
+```
+
+The file is deleted again on shutdown, and cleared before each bind, so its existence carries a meaning worth relying on: **the file is there if and only if the workbench is bound**. The extension waits for it to appear, reads the URL, and only then opens the panel.
+
+```mermaid
+flowchart TD
+    A["Extension deletes any old port file"] --> B["bowire --port 0 --port-file …"]
+    B --> C{"Bind succeeds?"}
+    C -- no --> D["Process exits<br/>no file written"]
+    C -- yes --> E["Bowire writes the file<br/>with the port the OS gave it"]
+    E --> F["Extension reads the URL<br/>and polls until it answers"]
+    F --> G["Panel opens"]
+    D --> H["Extension reports the CLI's own error"]
+```
+
+This replaced scraping the startup banner, which failed in two ways: it is a log line, so it disappears at a quieter log level, and it is printed *before* the bind is known to have worked — a Bowire started on a taken port announces a URL and only then throws `AddressInUseException`.
+
+`--port-file` is a plain CLI flag, so anything that starts Bowire as a child process can use it: CI harnesses, test fixtures, other editor integrations. It is the same shape Chrome uses for `DevToolsActivePort` and Jupyter for its `jpserver-<pid>.json`.
+
+### If a Bowire is already running
+
+Nothing changes. A workbench you started by hand keeps its port, its process and its lifetime; the extension starts its own next to it and the OS makes sure the two do not collide.
+
+The extension deliberately does not adopt a running instance. It would be the wrong process: it has a different working directory, so it reads a different `.bowire/project.json` and stores collections somewhere else, it may have been started with different flags, and closing the panel would stop a process the extension never started.
+
+### Stale files
+
+A hard kill — Task Manager, a crash, a machine that goes down — is the one case no in-process cleanup can cover, and it leaves the file behind. Two things make that harmless: the `pid` in the document lets a reader check whether the owner is still alive, and the extension deletes the path itself before every start rather than trusting what it finds.
 
 ## Related
 
