@@ -161,12 +161,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [611](https://github.com/Kuestenlogik/Bowire/issues/611) | Bowire | [Sidecar: add gRPC as a third transport alongside stdio and HTTP](#issue-kuestenlogik-bowire-611) | ⬜ Backlog |  |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
-### Backlog (not yet scheduled)
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [615](https://github.com/Kuestenlogik/Bowire/issues/615) | Bowire | [cli: report the bound workbench URL through a --port-file instead of the console banner](#issue-kuestenlogik-bowire-615) | ⬜ Backlog | `area:cli` |
-
 ## Details
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
@@ -802,14 +796,6 @@ Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `htt
 > `area:plugin-sdk`
 
 > **Status:** obsolete, not done. The premise no longer holds — the body below records why; the original proposal is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
-
-### Backlog (not yet scheduled)
-
-#### <a id="issue-kuestenlogik-bowire-615"></a>⬜ Backlog · [#615](https://github.com/Kuestenlogik/Bowire/issues/615) cli: report the bound workbench URL through a --port-file instead of the console banner
-
-> `area:cli`
-
-There is no reliable way for a program that starts `bowire` to learn where the workbench is actually being served. [[more]](https://github.com/Kuestenlogik/Bowire/issues/615)
 
 ---
 
