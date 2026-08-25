@@ -478,22 +478,34 @@ internal static class BrowserUiHost
     /// available and is also the correct one.
     /// </remarks>
     private static string BoundUrl(Microsoft.AspNetCore.Builder.WebApplication app, int requestedPort)
-    {
-        var addresses = app.Services
-            .GetService<Microsoft.AspNetCore.Hosting.Server.IServer>()?
-            .Features.Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>()?
-            .Addresses;
+        => NormaliseBoundAddress(
+            app.Services
+                .GetService<Microsoft.AspNetCore.Hosting.Server.IServer>()?
+                .Features.Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>()?
+                .Addresses?.FirstOrDefault(),
+            requestedPort);
 
-        var bound = addresses?.FirstOrDefault();
+    /// <summary>
+    /// Turn what the server reports into something a caller can navigate to.
+    /// </summary>
+    /// <remarks>
+    /// Split from <see cref="BoundUrl"/> so it can be tested without standing
+    /// up a host: the DI lookup and the string handling fail in completely
+    /// different ways, and only the second one has edge cases.
+    /// </remarks>
+    internal static string NormaliseBoundAddress(string? bound, int requestedPort)
+    {
         if (string.IsNullOrWhiteSpace(bound))
             return $"http://localhost:{requestedPort}/";
 
-        // Kestrel reports the wildcard forms literally, and neither is
-        // something a caller can navigate to. A reader of the port file is
-        // going to hand this straight to a browser or an HTTP client.
+        // Kestrel reports the wildcard forms literally, and none of them is an
+        // address anything can connect to. Whatever comes out of here goes
+        // into the port file, and from there straight into a browser or an
+        // HTTP client, so it has to be a real destination.
         bound = bound.Replace("://[::]", "://localhost", StringComparison.Ordinal)
                      .Replace("://0.0.0.0", "://localhost", StringComparison.Ordinal)
-                     .Replace("://+", "://localhost", StringComparison.Ordinal);
+                     .Replace("://+", "://localhost", StringComparison.Ordinal)
+                     .Replace("://*", "://localhost", StringComparison.Ordinal);
 
         return bound.EndsWith('/') ? bound : bound + "/";
     }
