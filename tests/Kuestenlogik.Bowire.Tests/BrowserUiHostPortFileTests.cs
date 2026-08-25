@@ -212,9 +212,24 @@ public sealed class BrowserUiHostPortFileTests
     [Fact]
     public async Task Opens_The_Browser_At_The_Bound_Url()
     {
+        // RunAsync suppresses the browser launch when CI or
+        // DOTNET_RUNNING_IN_CONTAINER is set, or when the process is not
+        // user-interactive — all true on a build runner, none true on a
+        // developer's machine. Without clearing them this passes locally and
+        // times out in CI, which is exactly what it did.
+        var prevCi = Environment.GetEnvironmentVariable("CI");
+        var prevContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
+        Environment.SetEnvironmentVariable("CI", null);
+        Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", null);
+
         var prevRunner = BrowserUiHost.HostRunner;
         var prevOpen = BrowserUiHost.OpenBrowserAsync;
         var opened = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // A headless runner reports UserInteractive=false, which suppresses
+        // the launch on its own and cannot be overridden. There the host
+        // simply has to return cleanly.
+        var launchExpected = Environment.UserInteractive;
         try
         {
             BrowserUiHost.OpenBrowserAsync = (url, _) => { opened.TrySetResult(url); return Task.CompletedTask; };
@@ -222,19 +237,22 @@ public sealed class BrowserUiHostPortFileTests
             {
                 await onListening("http://127.0.0.1:61235/", ct);
                 // The launch is fire-and-forget; hold the host open for it.
-                await opened.Task.WaitAsync(TimeSpan.FromSeconds(10), ct);
+                if (launchExpected) await opened.Task.WaitAsync(TimeSpan.FromSeconds(10), ct);
                 return 0;
             };
 
-            await BrowserUiHost.RunAsync([], new ConfigurationBuilder().Build(),
+            var rc = await BrowserUiHost.RunAsync([], new ConfigurationBuilder().Build(),
                 plugins: TestPluginLoaders.None(), ct: CancellationToken.None);
 
-            Assert.Equal("http://127.0.0.1:61235/", await opened.Task);
+            Assert.Equal(0, rc);
+            if (launchExpected) Assert.Equal("http://127.0.0.1:61235/", await opened.Task);
         }
         finally
         {
             BrowserUiHost.HostRunner = prevRunner;
             BrowserUiHost.OpenBrowserAsync = prevOpen;
+            Environment.SetEnvironmentVariable("CI", prevCi);
+            Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", prevContainer);
         }
     }
 

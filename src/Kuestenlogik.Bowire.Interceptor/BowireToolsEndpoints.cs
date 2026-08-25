@@ -87,15 +87,22 @@ public static class BowireToolsEndpoints
                     instance: ctx.Request.Path);
             }
 
+            // The scheme check is not redundant with TryCreate: on Unix an
+            // absolute *file path* is a valid absolute URI, so "/etc/passwd"
+            // parses as file:///etc/passwd and would be accepted as an
+            // upstream — a reverse proxy pointed at the local filesystem,
+            // reported as started. Windows rejects the same string, so this
+            // was a platform-dependent hole rather than a visible one.
             if (payload is null
                 || string.IsNullOrWhiteSpace(payload.Upstream)
-                || !Uri.TryCreate(payload.Upstream, UriKind.Absolute, out var upstreamUri))
+                || !Uri.TryCreate(payload.Upstream, UriKind.Absolute, out var upstreamUri)
+                || (upstreamUri.Scheme != Uri.UriSchemeHttp && upstreamUri.Scheme != Uri.UriSchemeHttps))
             {
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:tools:reverse-proxy:bad-request",
                     title: "Upstream URL required",
                     status: 400,
-                    detail: "POST /api/tools/reverse-proxy/start requires an absolute upstream URL.",
+                    detail: "POST /api/tools/reverse-proxy/start requires an absolute http:// or https:// upstream URL.",
                     instance: ctx.Request.Path);
             }
             if (payload.Port <= 0 || payload.Port > 65535)
