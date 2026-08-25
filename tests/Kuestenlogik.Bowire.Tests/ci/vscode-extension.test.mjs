@@ -24,6 +24,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const workbench = require(resolve(__dirname, '../../../extensions/bowire-vscode/lib/workbench.js'));
 const download = require(resolve(__dirname, '../../../extensions/bowire-vscode/lib/download.js'));
+const uninstall = require(resolve(__dirname, '../../../extensions/bowire-vscode/lib/uninstall.js'));
 
 describe('findCli', () => {
     it('returns the first path the probe reports', () => {
@@ -993,5 +994,77 @@ describe('waitUntilServing (banner is not readiness)', () => {
         assert.equal(
             await workbench.waitUntilServing('http://localhost:5099', { ...c, fetchImpl, timeoutMs: 1000 }),
             false);
+    });
+});
+
+describe('uninstall (the managed CLI does not outlive the extension)', () => {
+    const { candidateStorageDirs, isOurStorageDir, removeManagedCli, EXTENSION_ID } = uninstall;
+    const seg = (p) => p.split(/[\\/]+/).filter(Boolean);
+
+    it('lands under APPDATA on Windows', () => {
+        const dirs = candidateStorageDirs({
+            platform: 'win32',
+            env: { APPDATA: 'C:\\Users\\x\\AppData\\Roaming' },
+            home: 'C:\\Users\\x',
+        });
+        assert.equal(seg(dirs[0]).slice(-5).join('/'),
+            `Roaming/Code/User/globalStorage/${EXTENSION_ID}`);
+    });
+
+    it('respects XDG_CONFIG_HOME on Linux', () => {
+        const [first] = candidateStorageDirs({
+            platform: 'linux', env: { XDG_CONFIG_HOME: '/cfg' }, home: '/home/x',
+        });
+        // Compared as segments: path.join() emits the host separator, so a
+        // literal POSIX string here would only ever pass on POSIX.
+        assert.deepEqual(seg(first), ['cfg', 'Code', 'User', 'globalStorage', EXTENSION_ID]);
+    });
+
+    it('covers the forks people actually run, not just stable', () => {
+        const dirs = candidateStorageDirs({ platform: 'linux', env: {}, home: '/home/x' });
+        const products = dirs.map((d) => seg(d).slice(-4)[0]);
+        for (const p of ['Code', 'Code - Insiders', 'VSCodium'])
+            assert.ok(products.includes(p), `missing ${p}`);
+    });
+
+    it('answers with the portable directory alone when one is set', () => {
+        const dirs = candidateStorageDirs({
+            platform: 'win32', env: { VSCODE_PORTABLE: 'D:\\vsc', APPDATA: 'C:\\ignored' }, home: 'C:\\Users\\x',
+        });
+        assert.equal(dirs.length, 1);
+        assert.ok(seg(dirs[0]).includes('user-data'));
+        assert.ok(!dirs[0].includes('ignored'));
+    });
+
+    // The guard is the whole safety story: this code deletes recursively,
+    // unattended, from a path it reconstructed by guessing.
+    it('refuses any path that is not our own storage directory', () => {
+        for (const bad of ['/', 'C:\\', '/home/x', '/home/x/.config',
+                           `/globalStorage/${EXTENSION_ID}`,
+                           '/a/b/User/globalStorage/some.other-extension',
+                           '/a/b/User/notGlobalStorage/' + EXTENSION_ID])
+            assert.equal(isOurStorageDir(bad), false, `should reject ${bad}`);
+
+        assert.equal(isOurStorageDir(`/home/x/.config/Code/User/globalStorage/${EXTENSION_ID}`), true);
+    });
+
+    it('removes only the cli subtree, never the storage directory itself', async () => {
+        const asked = [];
+        const dirs = candidateStorageDirs({ platform: 'linux', env: {}, home: '/home/x' });
+        const removed = await removeManagedCli({ dirs, rm: async (p) => { asked.push(p); } });
+
+        assert.equal(asked.length, dirs.length);
+        for (const p of asked) assert.equal(seg(p).at(-1), 'cli');
+        assert.deepEqual(removed, asked);
+    });
+
+    it('keeps going when one copy is locked', async () => {
+        const dirs = candidateStorageDirs({ platform: 'linux', env: {}, home: '/home/x' });
+        const removed = await removeManagedCli({
+            dirs,
+            rm: async (p) => { if (p.includes('Insiders')) throw new Error('EBUSY'); },
+        });
+        assert.equal(removed.length, dirs.length - 1);
+        assert.ok(!removed.some((p) => p.includes('Insiders')));
     });
 });
