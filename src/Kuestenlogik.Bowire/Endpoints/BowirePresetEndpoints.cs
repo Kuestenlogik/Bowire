@@ -78,12 +78,21 @@ internal static class BowirePresetEndpoints
         return (mode, null);
     }
 
+    /// <summary>
+    /// The validated workspace scope for this request.
+    /// </summary>
+    /// <remarks>
+    /// Throws rather than returning a flag so every caller here is covered
+    /// without each one growing a branch it could forget — ASP.NET turns a
+    /// <see cref="BadHttpRequestException"/> into the 400 this deserves.
+    /// Both values reach a file path, and both come off the query string
+    /// (cs/path-injection).
+    /// </remarks>
     private static (string workspaceId, string? storageRoot) ReadWorkspace(HttpContext ctx)
     {
-        var workspaceId = ctx.Request.Query["workspaceId"].FirstOrDefault() ?? string.Empty;
-        var storageRoot = ctx.Request.Query["storageRoot"].FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(storageRoot)) storageRoot = null;
-        return (workspaceId, storageRoot);
+        var scope = WorkspaceScopeQuery.From(ctx);
+        if (scope.IsInvalid) throw new BadHttpRequestException(scope.Error!, StatusCodes.Status400BadRequest);
+        return (scope.WorkspaceId ?? string.Empty, scope.StorageRoot);
     }
 
     private static IResult Problem(HttpContext ctx, string title, int status, string detail)

@@ -64,12 +64,17 @@ public static class BowireGitWorkspaceEndpoints
                 return;
             }
 
-            var storageRoot = ctx.Request.Query["storageRoot"].ToString();
-            if (string.IsNullOrWhiteSpace(storageRoot))
+            // Validated, not just present: this value becomes the directory a
+            // FileSystemWatcher is pointed at, and it arrives from the query
+            // string (cs/path-injection). Same rules as every other
+            // per-workspace endpoint.
+            var scope = Kuestenlogik.Bowire.Endpoints.WorkspaceScopeQuery.From(ctx);
+            var storageRoot = scope.StorageRoot;
+            if (scope.IsInvalid || string.IsNullOrWhiteSpace(storageRoot))
             {
                 ctx.Response.StatusCode = 400;
                 await ctx.Response.WriteAsync(
-                    "Missing required query parameter 'storageRoot'.",
+                    scope.Error ?? "Missing required query parameter 'storageRoot'.",
                     ctx.RequestAborted);
                 return;
             }
