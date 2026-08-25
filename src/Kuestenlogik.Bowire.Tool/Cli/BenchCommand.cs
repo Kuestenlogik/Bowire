@@ -436,7 +436,7 @@ internal static class BenchCommand
         await stdout.WriteLineAsync().ConfigureAwait(false);
     }
 
-    private static string Ms(double value)
+    internal static string Ms(double value)
         => value >= 100
             ? Math.Round(value).ToString("0", CultureInfo.InvariantCulture) + "ms"
             : value.ToString("0.##", CultureInfo.InvariantCulture) + "ms";
@@ -458,7 +458,7 @@ internal static class BenchCommand
         return (url[(at + 1)..], explicitId ?? url[..at]);
     }
 
-    private static async Task<string?> ReadBodyAsync(string? data, CancellationToken ct)
+    internal static async Task<string?> ReadBodyAsync(string? data, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(data)) return null;
         if (!data.StartsWith('@')) return data;
@@ -466,7 +466,7 @@ internal static class BenchCommand
         return File.Exists(path) ? await File.ReadAllTextAsync(path, ct).ConfigureAwait(false) : data;
     }
 
-    private static Dictionary<string, string>? ParseHeaders(string[] headers)
+    internal static Dictionary<string, string>? ParseHeaders(string[] headers)
     {
         if (headers.Length == 0) return null;
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
