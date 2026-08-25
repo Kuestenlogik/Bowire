@@ -40,6 +40,40 @@ internal static class CollectionStore
         set => _testStorePathOverride = value;
     }
 
+    /// <summary>
+    /// Where this workspace's collections live. Mirrors
+    /// <c>ChunkedRecordingStore.ResolveRootPath</c>: a workspace id (or an
+    /// explicit storage root) anchors the file under that workspace, and
+    /// only a caller that names neither falls back to the legacy
+    /// single-file layout.
+    /// </summary>
+    /// <remarks>
+    /// #612 — collections were the odd one out. Recordings, presets, mock
+    /// configs and schema changes were already per workspace on disk while
+    /// collections and environments stayed global, so every workspace read
+    /// and wrote the same file. The visible symptom was a template's starter
+    /// collection vanishing, but the cause was that two workspaces were
+    /// never separated here at all.
+    /// </remarks>
+    internal static string ResolvePath(string? workspaceId, string? storageRoot = null)
+    {
+        if (_testStorePathOverride is not null
+            && string.IsNullOrWhiteSpace(workspaceId)
+            && string.IsNullOrWhiteSpace(storageRoot))
+        {
+            return _testStorePathOverride;
+        }
+
+        if (string.IsNullOrWhiteSpace(workspaceId) && string.IsNullOrWhiteSpace(storageRoot))
+            return StorePath;
+
+        return BowireUserContext.GetWorkspacePath(
+            workspaceId: workspaceId ?? string.Empty,
+            storageRoot: storageRoot,
+            relativePath: "collections.json");
+    }
+
+
     private static readonly Lock FileLock = new();
 
     private const string EmptyEnvelope = """{"collections":[]}""";
@@ -49,16 +83,35 @@ internal static class CollectionStore
     /// <c>{"collections":[]}</c> shape when the file does not exist
     /// or is corrupt — never throws so the UI keeps working.
     /// </summary>
-    public static string Load()
+    public static string Load() => Load(null, null);
+
+    /// <summary>
+    /// Load this workspace's collections.
+    /// </summary>
+    /// <remarks>
+    /// A workspace that has never saved returns the empty envelope. It does
+    /// NOT inherit the legacy global file: handing those collections to the
+    /// first workspace that happens to look is the cross-workspace bleed
+    /// this issue exists to end, and it would land on top of whatever a
+    /// template just seeded. Existing <c>~/.bowire/collections.json</c> data
+    /// stays where it is and is still served to legacy-layout callers.
+    /// </remarks>
+    public static string Load(string? workspaceId, string? storageRoot = null)
     {
+        var path = ResolvePath(workspaceId, storageRoot);
+
         lock (FileLock)
         {
             try
             {
-                if (!File.Exists(StorePath))
+                // A workspace with no file yet returns empty, and that is a
+                // distinct state from "empty on purpose". The client knows
+                // which of the two it is looking at — it has its own copy —
+                // so the decision belongs there, not here.
+                if (!File.Exists(path))
                     return EmptyEnvelope;
 
-                var json = File.ReadAllText(StorePath);
+                var json = File.ReadAllText(path);
                 // Validate parseability — if corrupt, return empty so
                 // the UI can recover.
                 using var _ = JsonDocument.Parse(json);
@@ -76,7 +129,13 @@ internal static class CollectionStore
     /// directory on the way. Rejects invalid JSON so a corrupt PUT
     /// can't break the on-disk store.
     /// </summary>
-    public static void Save(string json)
+    public static void Save(string json) => Save(json, null, null);
+
+    /// <summary>
+    /// Persist this workspace's collections. See
+    /// <see cref="ResolvePath(string?, string?)"/> for where they land.
+    /// </summary>
+    public static void Save(string json, string? workspaceId, string? storageRoot = null)
     {
         if (string.IsNullOrWhiteSpace(json))
             throw new ArgumentException("JSON payload required", nameof(json));
@@ -85,12 +144,15 @@ internal static class CollectionStore
         // the on-disk file.
         using var _ = JsonDocument.Parse(json);
 
+        var path = ResolvePath(workspaceId, storageRoot);
+
         lock (FileLock)
         {
-            var dir = Path.GetDirectoryName(StorePath);
+            var dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir))
                 Directory.CreateDirectory(dir);
-            File.WriteAllText(StorePath, json);
+            File.WriteAllText(path, json);
         }
     }
+
 }

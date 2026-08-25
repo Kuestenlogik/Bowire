@@ -6095,15 +6095,46 @@
     // changes and CLI usage. Mirrors loadRecordingsFromDisk: disk wins
     // over the localStorage cache when both are present (the cache
     // only matters for instant updates between roundtrips).
+    // #612 — the server call is workspace-scoped, same convention as the
+    // presets and schema-change syncs. Without it every workspace hit one
+    // global file, so this function handed whatever another workspace had
+    // saved to the current one — and overwrote the localStorage copy with
+    // it, which is how a freshly seeded template collection disappeared.
+    function _collectionsWsQuery() {
+        var wsId = (typeof activeWorkspaceId === 'string' && activeWorkspaceId)
+            ? activeWorkspaceId : '';
+        if (!wsId) return '';
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        return '?workspaceId=' + encodeURIComponent(wsId)
+            + (ws && ws.storageRoot ? '&storageRoot=' + encodeURIComponent(ws.storageRoot) : '');
+    }
+
     function loadCollectionsFromDisk() {
-        return fetch(config.prefix + '/api/collections')
+        return fetch(config.prefix + '/api/collections' + _collectionsWsQuery())
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {
-                if (data && Array.isArray(data.collections)) {
-                    collectionsList = data.collections;
+                var fromDisk = (data && Array.isArray(data.collections)) ? data.collections : null;
+                var local = loadCollections();
+
+                // An empty response means "this workspace has never saved",
+                // which is not the same as "this workspace is empty". The
+                // server cannot tell those apart — it only sees a missing
+                // file — so the decision is made here, where the local copy
+                // is also in hand.
+                //
+                // #612: without this, a workspace seeded by a template lost
+                // that seed on the very next boot, because the empty disk
+                // answer was written straight over it. Disk still wins
+                // whenever it actually holds something: that is what makes
+                // collections survive a browser change or a CLI edit.
+                if (fromDisk && (fromDisk.length > 0 || local.length === 0)) {
+                    collectionsList = fromDisk;
                     try { localStorage.setItem(wsKey(COLLECTIONS_KEY), JSON.stringify(collectionsList)); } catch { /* ignore */ }
                 } else {
-                    collectionsList = loadCollections();
+                    collectionsList = local;
+                    // Push the local state up so the two sides agree from
+                    // here on — otherwise every boot re-runs this branch.
+                    if (fromDisk && local.length > 0) scheduleCollectionsDiskSync();
                 }
             })
             .catch(function () {
@@ -6124,7 +6155,7 @@
         if (_collectionsDiskSyncTimer) clearTimeout(_collectionsDiskSyncTimer);
         _collectionsDiskSyncTimer = setTimeout(function () {
             _collectionsDiskSyncTimer = null;
-            fetch(config.prefix + '/api/collections', {
+            fetch(config.prefix + '/api/collections' + _collectionsWsQuery(), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ collections: collectionsList })
