@@ -5,6 +5,18 @@ All notable changes to the Bowire VS Code extension.
 The extension version is deliberately independent of the Bowire version it
 hosts — it drives whatever CLI you have installed, from 2.0 upwards.
 
+## [0.1.1] — 2026-08-25
+
+### Changed
+
+- **README: the requirements section no longer reads as a precondition.** It
+  said "Bowire itself, version 2.0 or newer" above three install commands,
+  which made a manual install look mandatory — while the section right below
+  it already documented that the extension fetches and manages a CLI when it
+  finds none (#590). Both were accurate; together they misled. The requirement
+  is stated as what it is, with the manual install offered as the option you
+  take when CI already pins a version.
+
 ## [Unreleased]
 
 ### Added
