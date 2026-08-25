@@ -135,12 +135,22 @@ public sealed class BowireToolsEndpointTests
     [InlineData("""{"port":18080}""")]                              // no upstream at all
     [InlineData("""{"upstream":"","port":18080}""")]                // blank
     [InlineData("""{"upstream":"   ","port":18080}""")]
-    [InlineData("""{"upstream":"example.com","port":18080}""")]     // not absolute
-    [InlineData("""{"upstream":"/relative","port":18080}""")]
-    public async Task An_Upstream_That_Is_Not_An_Absolute_Url_Is_Refused(string body)
+    [InlineData("""{"upstream":"example.com","port":18080}""")]     // no scheme to forward with
+    [InlineData("""{"upstream":"/relative","port":18080}""")]       // a path, not a URL
+    [InlineData("""{"upstream":"/etc/passwd","port":18080}""")]
+    [InlineData("""{"upstream":"file:///etc/passwd","port":18080}""")]
+    [InlineData("""{"upstream":"ftp://example.com","port":18080}""")]
+    public async Task An_Upstream_That_Is_Not_An_Http_Url_Is_Refused(string body)
     {
-        // The proxy forwards to it; "example.com" has no scheme to forward
-        // with, and guessing http:// would silently downgrade the connection.
+        // "example.com" has no scheme to forward with, and guessing http://
+        // would silently downgrade the connection.
+        //
+        // The path cases are why the endpoint checks the scheme and not just
+        // absoluteness: on Unix an absolute file path IS a valid absolute
+        // URI, so "/etc/passwd" parses as file:///etc/passwd. Before the
+        // scheme check this request was accepted on Linux and rejected on
+        // Windows — a hole that only existed on the platform most of these
+        // run on.
         using var host = await BuildHost();
 
         using var resp = await PostJson(host, "/api/tools/reverse-proxy/start", body);
