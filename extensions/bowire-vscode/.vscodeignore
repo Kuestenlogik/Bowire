@@ -9,3 +9,10 @@
 # icon is already in place by the time this file is applied.
 test/**
 scripts/**
+
+# The README's screenshot is referenced by absolute raw.githubusercontent URL,
+# because vsce's relative-link rewriting resolves against the repository root
+# and this extension lives in a subdirectory — a relative path would 404 on
+# the Marketplace. The file therefore only has to exist on main, not in the
+# package, where it would be 127 KB nothing reads.
+images/**

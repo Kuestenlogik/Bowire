@@ -49,6 +49,7 @@ Reference material is split further:
 
 - **[Protocol Guides](protocols/index.md)** &mdash; behaviour and setup for each protocol plugin (gRPC, REST, GraphQL, SignalR, WebSocket, SSE, MQTT, Socket.IO, OData, MCP) plus how to write your own.
 - **[Architecture](architecture/index.md)** &mdash; internals, the plugin pipeline, discovery, and data locations &mdash; for anyone extending or embedding Bowire deeply.
+- **[Integrations](integrations/index.md)** &mdash; running Bowire inside tools you already use ([VS Code](integrations/vscode.md)) and feeding traffic in from them ([Playwright](integrations/playwright.md)).
 
 Runnable examples next to the references:
 
