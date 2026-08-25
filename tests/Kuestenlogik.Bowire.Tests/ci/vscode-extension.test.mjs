@@ -426,6 +426,68 @@ describe('missingCliMessage', () => {
     });
 });
 
+describe('validateCliPath (a typo should fail at the setting, not at the spawn)', () => {
+    const ok = { exists: () => true, isDirectory: () => false, versionOf: () => 'bowire 2.4.0' };
+
+    it('accepts an empty value — that means "go and find one"', () => {
+        assert.equal(workbench.validateCliPath('', ok), null);
+        assert.equal(workbench.validateCliPath('   ', ok), null);
+        assert.equal(workbench.validateCliPath(undefined, ok), null);
+    });
+
+    it('accepts a working CLI', () => {
+        assert.equal(workbench.validateCliPath('/opt/bowire/bowire', ok), null);
+    });
+
+    it('expands ${workspaceFolder} before judging the path', () => {
+        const seen = [];
+        const problem = workbench.validateCliPath('${workspaceFolder}/tools/bowire', {
+            ...ok,
+            variables: { workspaceFolder: '/repo' },
+            exists: (p) => { seen.push(p); return true; },
+        });
+        assert.equal(problem, null);
+        assert.deepEqual(seen, ['/repo/tools/bowire']);
+    });
+
+    it('names an unknown variable instead of calling the path missing', () => {
+        // "not found" about a path with a literal ${…} in it sends the reader
+        // looking for a file when the problem is their spelling.
+        const problem = workbench.validateCliPath('${workspaceRoot}/bowire', ok);
+        assert.equal(problem.severity, 'error');
+        assert.match(problem.message, /\$\{workspaceRoot\}/);
+        assert.match(problem.message, /workspaceFolder/);
+    });
+
+    it('reports a path that does not exist, and says what empty would do', () => {
+        const problem = workbench.validateCliPath('/gone/bowire', { ...ok, exists: () => false });
+        assert.equal(problem.severity, 'error');
+        assert.match(problem.message, /does not exist/);
+        assert.match(problem.message, /empty/);
+    });
+
+    it('names the executable when the path is the folder it lives in', () => {
+        // The commonest mistake: pasting the folder that was unzipped.
+        const problem = workbench.validateCliPath('/opt/bowire', { ...ok, isDirectory: () => true });
+        assert.equal(problem.severity, 'error');
+        assert.match(problem.message, /folder/);
+        assert.match(problem.message, /bowire(\.exe)?/);
+    });
+
+    it('warns — but does not block — when the file says nothing to --version', () => {
+        // It may still be a Bowire: a wrapper script, a broken install. The
+        // start attempt will have more to say than we do here.
+        const problem = workbench.validateCliPath('/opt/thing', { ...ok, versionOf: () => null });
+        assert.equal(problem.severity, 'warning');
+    });
+
+    it('rejects a CLI that is too old for this extension', () => {
+        const problem = workbench.validateCliPath('/opt/bowire', { ...ok, versionOf: () => 'bowire 1.2.0' });
+        assert.equal(problem.severity, 'error');
+        assert.match(problem.message, /too old/);
+    });
+});
+
 describe('buildArgs', () => {
     it('asks the OS for a port and names the file to report it in', () => {
         // --port 0 rather than a number we picked: choosing one ourselves
