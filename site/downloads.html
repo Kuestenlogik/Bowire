@@ -660,6 +660,26 @@ description: All the ways to install and run Bowire — NuGet packages, global .
 <!-- ================================================================ -->
 <section class="downloads-group">
   <header class="downloads-group-header">
+    <h2 class="downloads-group-title">Editor integration</h2>
+
+  <div class="downloads-section">
+    <h3>VS Code <span class="downloads-section-version">Marketplace</span></h3>
+    <p class="downloads-section-desc">The workbench in a side panel, driving the same CLI your terminal and CI run. It does not bundle Bowire &mdash; it uses one you already have, or offers to fetch one if it finds none.</p>
+    <div class="downloads-command">
+      <code><span class="downloads-prompt">$</span> ext install kuestenlogik.bowire-vscode</code>
+      <button class="copy-btn downloads-copy" type="button" data-copy="ext install kuestenlogik.bowire-vscode" aria-label="Copy VS Code install command">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      </button>
+    </div>
+    <a class="btn btn-secondary" href="https://marketplace.visualstudio.com/items?itemName=kuestenlogik.bowire-vscode" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      View on the Marketplace
+    </a>
+    <p class="downloads-section-note">See <a href="{{ '/docs/integrations/vscode.html' | relative_url }}">the VS Code guide</a> for how the extension resolves a CLI and where your collections are stored. A JetBrains plugin is <a href="https://github.com/Kuestenlogik/Bowire/issues/588" target="_blank" rel="noopener">tracked separately</a>.</p>
+  </div>
+</section>
+
+<section class="downloads-group">
     <h2 class="downloads-group-title">Build from source</h2>
     <p class="downloads-group-lede">Clone the repo, audit the code, fork it, embed it in commercial products.</p>
   </header>
@@ -704,5 +724,5 @@ description: All the ways to install and run Bowire — NuGet packages, global .
     </a>
   </div>
 
-  <p class="downloads-section-note">Older versions are pinned on each tagged release &mdash; see <a href="https://github.com/Kuestenlogik/Bowire/releases" target="_blank" rel="noopener">github.com/Kuestenlogik/Bowire/releases</a> for <code>bowire-docs-&lt;version&gt;.{zip,pdf}</code> artifacts.</p>
+  <p class="downloads-section-note"><strong>Every download on this page points at the latest release.</strong> Older versions stay available: each tagged release on <a href="https://github.com/Kuestenlogik/Bowire/releases" target="_blank" rel="noopener">github.com/Kuestenlogik/Bowire/releases</a> carries its own installers, portable bundles and documentation &mdash; <code>bowire-&lt;version&gt;</code> and <code>bowire-docs-&lt;version&gt;.{zip,pdf}</code>. Package managers and the Marketplace keep their own version history.</p>
 </section>

@@ -3,3 +3,6 @@
 
 - name: Playwright
   href: playwright.md
+
+- name: VS Code
+  href: vscode.md
