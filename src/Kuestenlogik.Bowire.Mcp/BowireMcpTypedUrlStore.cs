@@ -31,17 +31,18 @@ public static class BowireMcpTypedUrlStore
     /// tests target a temp folder instead of the developer's real
     /// <c>~/.bowire/</c>. Production callers leave it null.
     /// </summary>
-    internal static string? HomeDirOverride { get; set; }
+    internal static string? HomeDirOverride
+    {
+        get => McpPaths.HomeDirOverride;
+        set => McpPaths.HomeDirOverride = value;
+    }
 
     /// <summary>
     /// Resolve the on-disk path the store reads + writes. Mirrors the
     /// resolver in <see cref="BowireMcpTools"/> so a single test-time
     /// override redirects both at once.
     /// </summary>
-    public static string FilePath
-        => Path.Combine(
-            HomeDirOverride ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".bowire", "typed-urls.json");
+    public static string FilePath => McpPaths.Config("typed-urls.json");
 
     /// <summary>
     /// Load every typed URL from disk. Returns an empty list when the

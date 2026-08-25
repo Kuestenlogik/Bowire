@@ -5,6 +5,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kuestenlogik.Bowire.Auth;
 
+using Kuestenlogik.Bowire.Projects;
+
 namespace Kuestenlogik.Bowire.Plugins;
 
 /// <summary>
@@ -28,9 +30,12 @@ public class PluginUpdateCheckService
     // system-wide split is #28 Phase D ("Per-user plugin installs --
     // split ~/.bowire/plugins/ into a system-wide tier plus a per-user
     // overlay"), out of scope for this phase.
-    private static readonly string DefaultPluginDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        ".bowire", "plugins");
+    // A property, not a static field: BowireStorageRoot.Apply() runs when the
+    // host is built, which can be after this type is first touched. A field
+    // captured before that pins the path to the pre-Apply default and quietly
+    // ignores a project that opted into .bowire/ storage (#616).
+    private static string DefaultPluginDir =>
+        BowirePaths.Resolve(BowireStorageScope.Data, "plugins");
 
     private static string? s_pluginDirOverride;
 

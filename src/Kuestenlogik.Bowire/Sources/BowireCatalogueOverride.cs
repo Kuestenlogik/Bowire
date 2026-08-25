@@ -7,6 +7,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 
+using Kuestenlogik.Bowire.Projects;
+
 namespace Kuestenlogik.Bowire.Sources;
 
 /// <summary>
@@ -445,16 +447,18 @@ public sealed class BowireCatalogueOverrideStore
     {
         var envOverride = Environment.GetEnvironmentVariable("BOWIRE_CATALOGUE_CONFIG_PATH");
         if (!string.IsNullOrEmpty(envOverride)) return envOverride;
-        var home = Environment.GetFolderPath(
-            Environment.SpecialFolder.UserProfile,
-            Environment.SpecialFolderOption.None);
-        if (string.IsNullOrEmpty(home)) return string.Empty;
-        var dir = Path.Combine(home, ".bowire");
-        try { Directory.CreateDirectory(dir); }
-#pragma warning disable CA1031
-        catch { /* best-effort */ }
-#pragma warning restore CA1031
-        return Path.Combine(dir, "catalogue-config.json");
+
+        // Used to return "" when the platform reported no home directory,
+        // which turned into a store that silently never persisted. The
+        // resolver answers with a usable root in that case (#616).
+        var path = BowirePaths.Resolve(BowireStorageScope.Data, "catalogue-config.json");
+        try { Directory.CreateDirectory(Path.GetDirectoryName(path)!); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException)
+        {
+            // Best effort — Save() reports the failure it hits when writing.
+        }
+
+        return path;
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()

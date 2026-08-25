@@ -151,6 +151,14 @@ public static class BowireServiceCollectionExtensions
         // true — the working directory had no say in it at all.
         BowireStorageRoot.Apply();
 
+        // #616 — one resolver decides where anything gets stored, and it is
+        // registered so that code with a constructor can take it rather than
+        // reaching for the static facade. The facade is refreshed here too:
+        // Apply() above may have just moved the data root, and a resolver
+        // built before that would keep answering with the old one.
+        BowirePaths.Current = new BowirePathResolver();
+        services.TryAddSingleton<IBowirePathResolver>(_ => BowirePaths.Current);
+
         // Materialise the bootstrap options. MapBowire builds its own
         // BowireOptions later — that's the one bound to the workbench
         // UI surface. The one here only carries the AddServices-time
@@ -618,15 +626,13 @@ public static class BowireServiceCollectionExtensions
         // Routes through the IBowireUserStore seam (#28) so single-user
         // installs land at ~/.bowire/schema-hints.json (unchanged) and
         // multi-tenant installs get the per-identity slot once SCIM
-        // (Phase C) wires an AsyncLocal resolver. Defensive early return
-        // on missing home dir kept -- BowireUserContext's default impl
-        // uses the same SpecialFolder.UserProfile path, and a non-string
-        // empty here would propagate a tricky Path.Combine arg anyway.
-        var home = Environment.GetFolderPath(
-            Environment.SpecialFolder.UserProfile,
-            Environment.SpecialFolderOption.None);
-        if (string.IsNullOrEmpty(home)) return string.Empty;
-        return BowireUserContext.GetUserPath("schema-hints.json");
+        // (Phase C) wires an AsyncLocal resolver.
+        //
+        // The probe for an empty home directory that used to guard this is
+        // gone: BowirePathResolver answers with a usable absolute root in that
+        // case rather than a relative ".bowire", so there is nothing left here
+        // to defend against (#616).
+        return BowirePaths.Resolve(BowireStorageScope.Data, "schema-hints.json");
     }
 
     /// <summary>

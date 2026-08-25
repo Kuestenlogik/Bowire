@@ -1215,12 +1215,15 @@ public sealed class BowireMcpTools
     /// in a half-written state. Production callers leave it null and the
     /// regular user-profile lookup wins.
     /// </summary>
-    internal static string? HomeDirOverride { get; set; }
+    /// <summary>Forwards to <see cref="McpPaths.HomeDirOverride"/>, which is
+    /// where the MCP surface's path resolution now lives (#616).</summary>
+    internal static string? HomeDirOverride
+    {
+        get => McpPaths.HomeDirOverride;
+        set => McpPaths.HomeDirOverride = value;
+    }
 
-    private static string BowireConfigPath(string filename) =>
-        Path.Combine(
-            HomeDirOverride ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".bowire", filename);
+    private static string BowireConfigPath(string filename) => McpPaths.Config(filename);
 
     private IReadOnlyList<IBowireProtocol> SelectProtocols(string? protocolId)
     {

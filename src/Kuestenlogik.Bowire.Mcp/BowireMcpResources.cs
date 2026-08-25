@@ -145,9 +145,7 @@ public sealed class BowireMcpResources
     [Description("Sibling plugins under ~/.bowire/plugins/ — package id + version per directory. Bundled plugins (the ones shipped inside the Bowire tool) are not listed here; the tool's --version banner covers them.")]
     public static TextResourceContents Plugins()
     {
-        var pluginDir = Path.Combine(
-            HomeDirOverride ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".bowire", "plugins");
+        var pluginDir = McpPaths.Plugins();
         var entries = new List<object>();
         if (Directory.Exists(pluginDir))
         {
@@ -187,10 +185,7 @@ public sealed class BowireMcpResources
         set => BowireMcpTools.HomeDirOverride = value;
     }
 
-    private static string ConfigPath(string filename) =>
-        Path.Combine(
-            HomeDirOverride ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".bowire", filename);
+    private static string ConfigPath(string filename) => McpPaths.Config(filename);
 
     private static TextResourceContents ReadJsonFile(string path, string uri)
     {

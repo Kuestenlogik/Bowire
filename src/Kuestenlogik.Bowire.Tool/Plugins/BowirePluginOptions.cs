@@ -50,9 +50,9 @@ internal sealed record BowirePluginOptions
     public const string ConfigurationKey = "Bowire:PluginDir";
 
     /// <summary>Per-user, self-contained fallback: <c>~/.bowire/plugins/</c>.</summary>
-    public static string DefaultDirectory { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        ".bowire", "plugins");
+    public static string DefaultDirectory =>
+        Kuestenlogik.Bowire.Projects.BowirePaths.Resolve(
+            Kuestenlogik.Bowire.Projects.BowireStorageScope.Data, "plugins");
 
     /// <summary>
     /// Absolute path to the active plugin directory. Absolute so install,

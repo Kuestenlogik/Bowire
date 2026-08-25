@@ -10,5 +10,9 @@
   href: pr-bot.md
 - name: Docker
   href: docker.md
+- name: Sidecar deployment
+  href: sidecar.md
+- name: Multi-user
+  href: multi-user.md
 - name: Updating Bowire and its plugins
   href: updating.md

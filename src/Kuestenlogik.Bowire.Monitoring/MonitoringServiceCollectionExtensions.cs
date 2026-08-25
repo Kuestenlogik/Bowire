@@ -4,6 +4,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
+using Kuestenlogik.Bowire.Projects;
+
 namespace Kuestenlogik.Bowire.Monitoring;
 
 /// <summary>
@@ -40,10 +42,6 @@ public static class MonitoringServiceCollectionExtensions
     /// <summary>The default outcome-ledger root — <c>~/.bowire/monitoring</c> (temp fallback).</summary>
     internal static string DefaultLedgerRoot()
     {
-        var home = Environment.GetFolderPath(
-            Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.None);
-        return string.IsNullOrEmpty(home)
-            ? System.IO.Path.Combine(System.IO.Path.GetTempPath(), "bowire", "monitoring")
-            : System.IO.Path.Combine(home, ".bowire", "monitoring");
+        return BowirePaths.Resolve(BowireStorageScope.Data, "monitoring");
     }
 }

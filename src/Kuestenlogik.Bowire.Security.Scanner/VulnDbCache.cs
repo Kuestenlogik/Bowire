@@ -4,6 +4,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Kuestenlogik.Bowire.Projects;
+
 namespace Kuestenlogik.Bowire.Security.Scanner;
 
 /// <summary>
@@ -25,11 +27,10 @@ public static class VulnDbCache
     /// </summary>
     public static string DefaultRoot()
     {
-        var home = Environment.GetFolderPath(
-            Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.None);
-        return string.IsNullOrEmpty(home)
-            ? Path.Combine(Path.GetTempPath(), "bowire", "vulndb")
-            : Path.Combine(home, ".bowire", "vulndb");
+        // The temp fallback is gone with the hand-rolled path: the resolver
+        // answers for a profile-less environment too, and having one place
+        // decide is the point (#616).
+        return BowirePaths.Resolve(BowireStorageScope.Data, "vulndb");
     }
 
     /// <summary>The <c>templates/</c> tree under a cache root.</summary>
