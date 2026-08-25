@@ -31,7 +31,6 @@ const {
     readCliVersion,
     checkCliVersion,
     buildArgs,
-    parseListeningUrl,
     portForWorkspace,
     buildWebviewHtml,
     missingCliMessage, waitUntilServing
@@ -78,11 +77,14 @@ function startWorkbench(resolution, cwd, port, channel) {
         // blaming `dotnet`, which is never the actual problem.
         let lastOutput = '';
 
+        // One deadline, not two: the poller owns it. A first run restores
+        // plugins and can be slow on a cold machine, so it is generous.
+        const START_TIMEOUT_MS = 60_000;
+
         let settled = false;
         const finish = (fn, value) => {
             if (settled) return;
             settled = true;
-            clearTimeout(timer);
             fn(value);
         };
 
@@ -90,25 +92,29 @@ function startWorkbench(resolution, cwd, port, channel) {
             const text = String(buffer);
             lastOutput = text;
             log(channel, text.trimEnd());
-            const url = parseListeningUrl(text);
-            if (!url || probing) return;
-
-            // The banner says the port is bound, which is not the same as
-            // serving — loading the webview on the banner alone is how the
-            // panel ends up showing an error page for a workbench that was
-            // fine a second later. Poll until it answers.
-            probing = true;
-            waitUntilServing(url).then((up) => {
-                if (up) {
-                    finish(resolve, url);
-                } else {
-                    finish(reject, new Error(
-                        `Bowire reported ${url} but did not serve a response there within 30 seconds.`));
-                }
-            });
         };
 
-        let probing = false;
+        // Readiness is decided by asking the port, not by reading the log.
+        //
+        // The banner was the old signal and it is unreliable twice over: it
+        // disappears at a higher log level, and it is printed before the bind
+        // is known to have worked — a second Bowire on a taken port prints
+        // "Bowire is running at: …" and only then throws AddressInUse. The
+        // port cannot be wrong: the CLI binds the one it is given or exits,
+        // it never falls back to another, so there is nothing the log could
+        // tell us that we do not already know.
+        //
+        // `proc.on('exit')` below still fires first if the process dies, so a
+        // failed bind surfaces as its real error instead of a 30 s wait.
+        // Generous: a first run restores plugins and can take a while on a
+        // cold machine. Failing here is better than a panel that never loads.
+        const url = `http://localhost:${port}`;
+        waitUntilServing(url, { timeoutMs: START_TIMEOUT_MS }).then((up) => {
+            if (up) finish(resolve, url);
+            else finish(reject, new Error(
+                `Bowire did not serve a response at ${url} within `
+                + `${START_TIMEOUT_MS / 1000} seconds.`));
+        });
 
         proc.stdout?.on('data', onData);
         proc.stderr?.on('data', onData);
@@ -127,11 +133,6 @@ function startWorkbench(resolution, cwd, port, channel) {
                 ? manifestStartFailureMessage(resolution.manifest, lastOutput)
                 : `Bowire exited with code ${code} before it started serving.`)));
 
-        // Generous: a first run restores plugins and can take a while on a
-        // cold machine. Failing here is better than a panel that never loads.
-        const timer = setTimeout(
-            () => finish(reject, new Error('Bowire did not report a listening URL within 60 seconds.')),
-            60_000);
     });
 }
 
