@@ -10,7 +10,7 @@ name: "Scan: dogfood"
 # localhost and says nothing about Bowire. Uploaded, it appears in Bowire's own
 # Security tab as a high-severity alert against Bowire, and a reader concludes
 # the product has a TLS problem. It does not — the CI scaffolding does, by
-# design. That is the same mistake scan-self.yml already avoids by not
+# design. That is the same mistake scan-smoke.yml already avoids by not
 # uploading example.com's missing headers, made a second time.
 #
 # The assertion is also the stricter test. An upload is satisfied by any output

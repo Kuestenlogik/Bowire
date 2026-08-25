@@ -1,4 +1,4 @@
-name: "Scan: self-smoke"
+name: "Scan: smoke (public target)"
 
 # Self-smoke for the bowire-scan composite action
 # (.github/actions/bowire-scan). Runs the action against a known-stable
@@ -27,7 +27,7 @@ on:
   pull_request:
     paths:
       - '.github/actions/bowire-scan/**'
-      - '.github/workflows/scan-self.yml'
+      - '.github/workflows/scan-smoke.yml'
   # Weekly smoke so a silent break (e.g. nuget.org tool de-list, .NET SDK
   # channel rotation) surfaces inside a week rather than the next time a
   # downstream consumer tries to wire the action.
