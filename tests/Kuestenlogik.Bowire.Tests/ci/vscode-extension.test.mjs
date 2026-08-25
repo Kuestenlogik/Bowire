@@ -952,3 +952,46 @@ describe('managed download (#590)', () => {
         });
     });
 });
+
+describe('waitUntilServing (banner is not readiness)', () => {
+    const fakeClock = () => {
+        let t = 0;
+        return { now: () => t, sleep: async (ms) => { t += ms; } };
+    };
+
+    it('returns once the workbench answers', async () => {
+        const c = fakeClock();
+        let calls = 0;
+        const fetchImpl = async () => {
+            calls++;
+            if (calls < 3) throw new Error('ECONNREFUSED');
+            return { status: 200 };
+        };
+        assert.equal(await workbench.waitUntilServing('http://localhost:5099', { ...c, fetchImpl }), true);
+        assert.equal(calls, 3, 'should keep polling while the connection is refused');
+    });
+
+    it('treats a redirect as served', async () => {
+        const c = fakeClock();
+        const fetchImpl = async () => ({ status: 302 });
+        assert.equal(await workbench.waitUntilServing('http://localhost:5099', { ...c, fetchImpl }), true);
+    });
+
+    it('keeps waiting on an error page rather than showing it', async () => {
+        // The whole point: a 404 while the pipeline is still coming up must
+        // not be handed to the webview as if it were the workbench.
+        const c = fakeClock();
+        let calls = 0;
+        const fetchImpl = async () => (++calls < 4 ? { status: 404 } : { status: 200 });
+        assert.equal(await workbench.waitUntilServing('http://localhost:5099', { ...c, fetchImpl }), true);
+        assert.equal(calls, 4);
+    });
+
+    it('gives up at the timeout instead of hanging', async () => {
+        const c = fakeClock();
+        const fetchImpl = async () => { throw new Error('ECONNREFUSED'); };
+        assert.equal(
+            await workbench.waitUntilServing('http://localhost:5099', { ...c, fetchImpl, timeoutMs: 1000 }),
+            false);
+    });
+});

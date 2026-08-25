@@ -32,6 +32,12 @@ hosts — it drives whatever CLI you have installed, from 2.0 upwards.
 
 ### Fixed
 
+- **The panel could load before the workbench was serving.** The extension
+  opened the webview as soon as the CLI printed its listening banner, but a
+  bound port is not a served response — the first request can arrive before
+  the pipeline is ready, and the panel then shows an error page for a
+  workbench that came up fine a moment later. It now polls the URL until it
+  answers, and reports a clear failure if it never does.
 - **The workbench opened in a browser window as well as in the editor.** The
   extension hosts a webview and always did, but it started the CLI without
   `--no-browser` — and the CLI opens a browser on startup by default, which is
