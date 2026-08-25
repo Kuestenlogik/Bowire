@@ -65,12 +65,7 @@ test.describe('Phase 2 — create workspace', () => {
         expect(await readActiveWorkspaceId(page)).toBe(ws.id);
     });
 
-    // #612 — the starter collection never reaches the new workspace. The
-    // template writes it to the right key with the right payload; something
-    // overwrites that key afterwards. Confirmed on a clean CI runner, so it
-    // is not local contamination. Removing this marker is the acceptance
-    // test for #612 — do not "fix" it by weakening the assertion.
-    test.fixme('REST template seeds Petstore URL + starter collection', async ({ page }) => {
+    test('REST template seeds Petstore URL + starter collection', async ({ page }) => {
         await page.locator('#bowire-welcome-create-btn').click();
         await createWorkspaceViaDialog(page, 'Petstore Test', 'rest');
 

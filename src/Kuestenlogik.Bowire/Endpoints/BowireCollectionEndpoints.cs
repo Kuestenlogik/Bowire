@@ -22,18 +22,33 @@ internal static class BowireCollectionEndpoints
     public static IEndpointRouteBuilder MapBowireCollectionEndpoints(
         this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
     {
-        endpoints.MapGet($"{basePath}/api/collections", () =>
+        // #612 — `workspaceId` / `storageRoot` mirror the recording
+        // endpoints. Without them every workspace read and wrote the same
+        // file, so the disk state of whichever workspace saved last was
+        // handed to all the others on their next load.
+        endpoints.MapGet($"{basePath}/api/collections", (HttpContext ctx) =>
         {
-            return Results.Content(CollectionStore.Load(), "application/json");
+            var wsId = ctx.Request.Query["workspaceId"].ToString();
+            var storageRoot = ctx.Request.Query["storageRoot"].ToString();
+            return Results.Content(
+                CollectionStore.Load(
+                    string.IsNullOrEmpty(wsId) ? null : wsId,
+                    string.IsNullOrEmpty(storageRoot) ? null : storageRoot),
+                "application/json");
         }).ExcludeFromDescription();
 
         endpoints.MapPut($"{basePath}/api/collections", async (HttpContext ctx) =>
         {
+            var wsId = ctx.Request.Query["workspaceId"].ToString();
+            var storageRoot = ctx.Request.Query["storageRoot"].ToString();
             using var reader = new StreamReader(ctx.Request.Body);
             var json = await reader.ReadToEndAsync(ctx.RequestAborted);
             try
             {
-                CollectionStore.Save(json);
+                CollectionStore.Save(
+                    json,
+                    string.IsNullOrEmpty(wsId) ? null : wsId,
+                    string.IsNullOrEmpty(storageRoot) ? null : storageRoot);
                 return Results.Json(new { saved = true }, BowireEndpointHelpers.JsonOptions);
             }
             catch (JsonException ex)
