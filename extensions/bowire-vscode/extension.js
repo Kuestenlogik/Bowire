@@ -33,6 +33,7 @@ const {
     checkCliVersion,
     buildArgs,
     portFilePathFor,
+    validateCliPath,
     waitForPortFile,
     buildWebviewHtml,
     missingCliMessage, waitUntilServing
@@ -370,12 +371,106 @@ function activate(context) {
     context.subscriptions.push(
         vscode.commands.registerCommand('bowire.openWorkbench', () => openWorkbench(context, channel)));
 
+    context.subscriptions.push(
+        vscode.commands.registerCommand('bowire.showCli', () => showResolvedCli(context, channel)));
+
+    // Check bowire.cliPath when it changes, rather than letting a typo
+    // surface later as a spawn failure with a message that blames the spawn.
+    // The check runs where the mistake was just made, which is the only place
+    // it reads as being about the setting.
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(async (event) => {
+            if (!event.affectsConfiguration('bowire.cliPath')) return;
+            const value = vscode.workspace.getConfiguration('bowire').get('cliPath', '');
+            const problem = validateCliPath(value, { variables: workspaceVariables() });
+            if (!problem) return;
+
+            const show = problem.severity === 'error'
+                ? vscode.window.showErrorMessage
+                : vscode.window.showWarningMessage;
+            const pick = await show(problem.message, 'Open setting');
+            if (pick === 'Open setting')
+                await vscode.commands.executeCommand('workbench.action.openSettings', 'bowire.cliPath');
+        }));
+
     context.subscriptions.push({ dispose: () => stopProcess(channel) });
 
     // The extension's public API. It exists so the smoke test can find the
     // workbench without a workspace folder to derive the port from — that
     // case has no other way to learn where the CLI bound.
     return { currentUrl: () => currentUrl };
+}
+
+/**
+ * `${workspaceFolder}` for the folder the user is actually in.
+ *
+ * The first folder rather than the active editor's: cliPath is resolved once
+ * per start, and a multi-root window would otherwise mean the setting pointed
+ * somewhere different depending on which tab had focus.
+ */
+function workspaceVariables() {
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    return folder ? { workspaceFolder: folder.uri.fsPath } : {};
+}
+
+/**
+ * Say which Bowire would be used, and why that one.
+ *
+ * The output channel has carried this since the first version, but only after
+ * a start and only if you knew to look. The question "which bowire is this
+ * actually running?" comes up before a start as often as after one — usually
+ * right when someone is trying to point it at a different build.
+ */
+async function showResolvedCli(context, channel) {
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    const cwd = folder ? folder.uri.fsPath : context.globalStorageUri.fsPath;
+    const configured = vscode.workspace.getConfiguration('bowire').get('cliPath', '');
+
+    const problem = validateCliPath(configured, { variables: workspaceVariables() });
+    const resolution = resolveCli({
+        configuredPath: configured,
+        workspaceDir: cwd,
+        variables: workspaceVariables(),
+        managedRoot: context.globalStorageUri.fsPath,
+    });
+
+    // Name the step that answered, not just the path. "Which bowire" and "why
+    // that one" are different questions, and the second is the one that tells
+    // you where to go to change it.
+    const origin = {
+        setting: 'the `bowire.cliPath` setting',
+        manifest: `the tool manifest at ${resolution.manifest ?? '(unknown)'}`,
+        path: 'your PATH',
+        managed: 'the copy this extension downloaded',
+    }[resolution.source] ?? resolution.source;
+
+    if (!resolution.command) {
+        const pick = await vscode.window.showWarningMessage(
+            problem ? problem.message : missingCliMessage(resolution), 'Open setting');
+        if (pick === 'Open setting')
+            await vscode.commands.executeCommand('workbench.action.openSettings', 'bowire.cliPath');
+        return;
+    }
+
+    const shown = [resolution.command, ...resolution.prefixArgs].join(' ');
+    const version = readCliVersion(resolution.command === 'dotnet' ? resolution.command : shown) ?? '(did not answer --version)';
+
+    log(channel, `Resolved CLI: ${shown} (from ${origin.replace(/`/g, '')}) — ${version}`);
+
+    const detail = problem ? `
+
+⚠ ${problem.message}` : '';
+    const pick = await vscode.window.showInformationMessage(
+        `Bowire: ${shown}
+
+Found through ${origin.replace(/`/g, '')}.
+Version: ${version}${detail}`,
+        { modal: true }, 'Open setting', 'Show output');
+
+    if (pick === 'Open setting')
+        await vscode.commands.executeCommand('workbench.action.openSettings', 'bowire.cliPath');
+    else if (pick === 'Show output')
+        channel.show(true);
 }
 
 function deactivate() {

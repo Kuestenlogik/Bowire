@@ -28,7 +28,7 @@ The extension does **not** bundle Bowire — a self-contained build is roughly 1
 
 Run **Bowire: Open workbench** from the command palette. The extension starts Bowire with your workspace folder as its working directory and opens the workbench beside your editor. Closing the panel stops the process.
 
-The **Bowire** output channel records which executable was chosen, where it came from, and what version it reported.
+**Bowire: Show resolved CLI** answers the other question — *which* Bowire this would run, and which of the four resolution steps produced it — without starting anything. The **Bowire** output channel records the same after each start.
 
 ## Where your work is stored
 
@@ -48,7 +48,7 @@ The collections then commit, diff and review like any other file, and two repos 
 
 | | |
 |---|---|
-| `bowire.cliPath` | Path to a specific `bowire` executable. Supports `${workspaceFolder}`. |
+| `bowire.cliPath` | Path to a specific `bowire` executable. Supports `${workspaceFolder}`. Checked when you change it: a path that does not exist, names a folder rather than the executable, or points at a build too old for this extension is reported straight away rather than at the next start. |
 | `bowire.autoDownload` | `prompt` (default), `always` or `never` — what to do when no CLI is found. |
 
 ## Ports

@@ -32,6 +32,11 @@
         "command": "bowire.openWorkbench",
         "title": "Bowire: Open workbench",
         "category": "Bowire"
+      },
+      {
+        "command": "bowire.showCli",
+        "title": "Bowire: Show resolved CLI",
+        "category": "Bowire"
       }
     ],
     "configuration": {

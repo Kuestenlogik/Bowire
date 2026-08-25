@@ -12,7 +12,7 @@
 'use strict';
 
 const { spawnSync } = require('node:child_process');
-const { existsSync, readFileSync } = require('node:fs');
+const { existsSync, readFileSync, statSync } = require('node:fs');
 const { join: joinPath, dirname: dirnamePath, resolve: resolvePath } = require('node:path');
 const { ridFor, managedCliPath, PINNED_CLI_VERSION } = require('./download');
 
@@ -290,6 +290,85 @@ function checkCliVersion(versionText, minimum = MINIMUM_CLI_VERSION) {
     };
 }
 
+/**
+ * Check a `bowire.cliPath` the user just typed, and say what is wrong with it.
+ *
+ * Without this the setting fails late and vaguely: the panel is opened, a
+ * spawn fails somewhere inside, and the message blames whatever Node blamed.
+ * Every case below is one somebody actually hits — a path to the folder
+ * rather than the file, a stale path after an upgrade, the wrong executable
+ * entirely — and each has a different fix, so each gets its own sentence.
+ *
+ * Returns null when the value is fine, including when it is empty: empty
+ * means "search for one", which is the default and not an error.
+ *
+ * The probes are injected so this is testable without a filesystem or a
+ * spawn, and so the caller decides how much it is willing to pay — running
+ * an unknown executable to ask its version is a real cost.
+ */
+function validateCliPath(rawValue, {
+    variables = {},
+    exists = existsSync,
+    isDirectory = (p) => { try { return statSync(p).isDirectory(); } catch { return false; } },
+    versionOf = (p) => readCliVersion(p),
+    minimum = MINIMUM_CLI_VERSION,
+} = {}) {
+    const value = String(rawValue ?? '').trim();
+    if (!value) return null;
+
+    const expanded = expandPathVariables(value, variables);
+
+    // An unexpanded ${…} means the variable was not one we know, and the path
+    // is nonsense rather than merely missing. Saying "not found" about a path
+    // with a literal ${workspaceFolder} in it sends the reader looking for a
+    // file instead of at their spelling.
+    const unresolved = expanded.match(/\$\{[^}]*\}/);
+    if (unresolved) {
+        return {
+            severity: 'error',
+            message: `bowire.cliPath still contains ${unresolved[0]}, which this extension does not know how to `
+                + 'substitute. Supported: ${workspaceFolder}.',
+        };
+    }
+
+    if (!exists(expanded)) {
+        return {
+            severity: 'error',
+            message: `bowire.cliPath points at ${expanded}, which does not exist. `
+                + 'Leave the setting empty to search a tool manifest and your PATH instead.',
+        };
+    }
+
+    if (isDirectory(expanded)) {
+        // The commonest mistake by a distance: people paste the folder they
+        // unzipped. Naming the file that belongs there is more use than
+        // saying the path is not an executable.
+        const binary = process.platform === 'win32' ? 'bowire.exe' : 'bowire';
+        return {
+            severity: 'error',
+            message: `bowire.cliPath points at a folder. Name the executable inside it — `
+                + `${joinPath(expanded, binary)}.`,
+        };
+    }
+
+    const versionText = versionOf(expanded);
+    if (versionText === null) {
+        // Present and executable-shaped, but it did not answer --version. It
+        // may still be a Bowire (a broken install, a wrapper script), so this
+        // warns rather than blocks — the start attempt will say more.
+        return {
+            severity: 'warning',
+            message: `${expanded} exists, but did not answer \`--version\`. If it is not a Bowire CLI, `
+                + 'the workbench will fail to start.',
+        };
+    }
+
+    const check = checkCliVersion(versionText, minimum);
+    if (!check.ok) return { severity: 'error', message: check.message };
+
+    return null;
+}
+
 /** Ask a CLI for its version; null when it cannot be run. */
 function readCliVersion(cli, runner = spawnSync) {
     try {
@@ -473,7 +552,7 @@ function portFilePathFor(storageRoot, workspacePath) {
     for (const ch of String(workspacePath || 'no-folder')) {
         hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
     }
-    return require('node:path').join(storageRoot, 'run', `workbench-${hash.toString(16)}.json`);
+    return joinPath(storageRoot, 'run', `workbench-${hash.toString(16)}.json`);
 }
 
 /**
@@ -584,6 +663,7 @@ module.exports = {
     checkCliVersion,
     readCliVersion,
     normaliseWorkbenchUrl,
+    validateCliPath,
     buildArgs,
     waitUntilServing,
     parsePortFile,
