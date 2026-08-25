@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**16/19 done** · 3 backlog
+**17/20 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [586](https://github.com/Kuestenlogik/Bowire/issues/586) | Bowire | [verification-drill publish is failing for `v0.0.0-test`](#issue-kuestenlogik-bowire-586) | ✅ Done |  |
 | [587](https://github.com/Kuestenlogik/Bowire/issues/587) | Bowire | [Report rollup across services — one view over the artefacts Bowire already writes](#issue-kuestenlogik-bowire-587) | ✅ Done |  |
 | [612](https://github.com/Kuestenlogik/Bowire/issues/612) | Bowire | [Collections are not workspace-scoped on disk: the global store overwrites the workspace key on every boot](#issue-kuestenlogik-bowire-612) | ✅ Done |  |
+| [615](https://github.com/Kuestenlogik/Bowire/issues/615) | Bowire | [cli: report the bound workbench URL through a --port-file instead of the console banner](#issue-kuestenlogik-bowire-615) | ✅ Done | `area:cli` |
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
@@ -266,6 +267,12 @@ Split out of #188, which stays as the hosted-platform epic (deployable, upload A
 #### <a id="issue-kuestenlogik-bowire-612"></a>✅ Done · [#612](https://github.com/Kuestenlogik/Bowire/issues/612) Collections are not workspace-scoped on disk: the global store overwrites the workspace key on every boot
 
 Creating a workspace from the **REST** template produces no starter collection. The template's `REST starter` entry — the one carrying the `findPetsByStatus` request — is not in the new workspace afterwards. [[more]](https://github.com/Kuestenlogik/Bowire/issues/612)
+
+#### <a id="issue-kuestenlogik-bowire-615"></a>✅ Done · [#615](https://github.com/Kuestenlogik/Bowire/issues/615) cli: report the bound workbench URL through a --port-file instead of the console banner
+
+> `area:cli`
+
+There is no reliable way for a program that starts `bowire` to learn where the workbench is actually being served. [[more]](https://github.com/Kuestenlogik/Bowire/issues/615)
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
