@@ -457,4 +457,124 @@ public sealed class WorkspaceExportImportTests : IDisposable
         Assert.Equal("X", doc.RootElement.GetProperty("name").GetString());
         Assert.Equal("v", doc.RootElement.GetProperty("variables").GetProperty("K").GetString());
     }
+
+    // ----------------------------------------------------------------
+    // #282 A2 — the identity block in the v2 envelope
+    //
+    // An export is what someone hands a colleague or commits to a repo, so
+    // the workspace's name and colour have to survive the trip. When they do
+    // not, the import lands as a workspace named after whatever directory
+    // the exporter happened to run in — which looks like a different
+    // workspace to everyone who opens it.
+    // ----------------------------------------------------------------
+
+    private async Task<string> WorkspaceWith(string? manifestJson, string dirName)
+    {
+        var ws = SafePath.Combine(_tempRoot, dirName);
+        Directory.CreateDirectory(SafePath.Combine(ws, "environments"));
+        await File.WriteAllTextAsync(SafePath.Combine(ws, "environments", "env_a.json"),
+            """{"id":"env_a","name":"A"}""", TestContext.Current.CancellationToken);
+        if (manifestJson is not null)
+        {
+            await File.WriteAllTextAsync(SafePath.Combine(ws, "workspace.json"),
+                manifestJson, TestContext.Current.CancellationToken);
+        }
+        return ws;
+    }
+
+    private async Task<JsonElement> ExportOf(string sourceDir, string outName)
+    {
+        var outFile = SafePath.Combine(_tempRoot, outName);
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+        var rc = await WorkspaceCommand.RunExportAsync(
+            sourceDir, outFile, stdout, stderr, TestContext.Current.CancellationToken);
+        Assert.Equal(0, rc);
+        using var doc = JsonDocument.Parse(
+            await File.ReadAllTextAsync(outFile, TestContext.Current.CancellationToken));
+        return doc.RootElement.Clone();
+    }
+
+    [Fact]
+    public async Task Export_carries_the_manifest_identity_into_the_envelope()
+    {
+        var ws = await WorkspaceWith("""
+            {"workspaceFormatVersion":1,"id":"ws_abc123","name":"Checkout team","color":"#22c55e"}
+            """, "identity-source");
+
+        var root = await ExportOf(ws, "identity.json");
+
+        var identity = root.GetProperty("workspace");
+        Assert.Equal("ws_abc123", identity.GetProperty("id").GetString());
+        Assert.Equal("Checkout team", identity.GetProperty("name").GetString());
+        Assert.Equal("#22c55e", identity.GetProperty("color").GetString());
+    }
+
+    [Fact]
+    public async Task Export_without_a_manifest_names_the_workspace_after_its_directory()
+    {
+        // Not a guess for its own sake: a workspace materialised by hand has
+        // no manifest, and a nameless export is worse than one named after
+        // the folder it came from.
+        var ws = await WorkspaceWith(manifestJson: null, "nameless-source");
+
+        var root = await ExportOf(ws, "nameless.json");
+
+        Assert.Equal("nameless-source", root.GetProperty("workspace").GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task A_manifest_that_will_not_parse_costs_the_identity_not_the_export()
+    {
+        // The data is the valuable part. Blocking the whole export on a
+        // hand-edited manifest would lose the entities too.
+        var ws = await WorkspaceWith("{ this is not json", "broken-manifest-source");
+
+        var root = await ExportOf(ws, "broken-manifest.json");
+
+        Assert.Equal("broken-manifest-source", root.GetProperty("workspace").GetProperty("name").GetString());
+        Assert.NotEqual(JsonValueKind.Undefined, root.GetProperty("data").ValueKind);
+    }
+
+    [Fact]
+    public async Task The_envelope_carries_its_format_version_and_a_data_block()
+    {
+        // Both are what the importer branches on; an export missing either is
+        // one no version of Bowire can read back.
+        var ws = await WorkspaceWith("""{"id":"ws_1","name":"W"}""", "envelope-source");
+
+        var root = await ExportOf(ws, "envelope.json");
+
+        // The canonical v2 envelope: a format marker and a version, with the
+        // entities under `data` and the identity beside it — not the flat
+        // CLI-v1 shape with top-level per-kind arrays.
+        Assert.Equal("bowire-workspace", root.GetProperty("format").GetString());
+        Assert.True(root.TryGetProperty("version", out _));
+        Assert.Equal(JsonValueKind.Object, root.GetProperty("data").ValueKind);
+        Assert.Equal(JsonValueKind.Object, root.GetProperty("workspace").ValueKind);
+    }
+
+    [Fact]
+    public async Task Export_then_import_lands_the_entity_under_its_own_id()
+    {
+        // The round trip is the promise the command makes; the per-entity
+        // file name is what a git diff shows a reviewer.
+        var ws = await WorkspaceWith("""{"id":"ws_1","name":"W"}""", "roundtrip-source");
+        var exportFile = SafePath.Combine(_tempRoot, "roundtrip.json");
+        using (var stdout = new StringWriter())
+        using (var stderr = new StringWriter())
+        {
+            await WorkspaceCommand.RunExportAsync(
+                ws, exportFile, stdout, stderr, TestContext.Current.CancellationToken);
+        }
+
+        var target = SafePath.Combine(_tempRoot, "roundtrip-target");
+        using var importOut = new StringWriter();
+        using var importErr = new StringWriter();
+        var rc = await WorkspaceCommand.RunImportAsync(
+            exportFile, target, importOut, importErr, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, rc);
+        Assert.True(File.Exists(SafePath.Combine(target, "environments", "env_a.json")));
+    }
 }
