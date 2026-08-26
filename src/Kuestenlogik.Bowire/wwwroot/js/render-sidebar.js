@@ -2763,7 +2763,15 @@
             title: 'Delete workspace',
             onClick: function () {
                 var target = workspaces.find(function (x) { return x.id === wsId; });
-                if (!target) return;
+                if (!target) {
+                    // A handler outliving its workspace means the row was
+                    // reused across a re-render (#610). The row id makes that
+                    // impossible now; if it ever returns, repaint rather than
+                    // swallow the click — a button that does nothing at all is
+                    // what made the original bug take a release to notice.
+                    if (typeof render === 'function') render();
+                    return;
+                }
                 var isLast = workspaces.length === 1;
                 // v2.2 W2 — Hard-delete branch gets its own warning
                 // copy so the operator can't miss what they're about
