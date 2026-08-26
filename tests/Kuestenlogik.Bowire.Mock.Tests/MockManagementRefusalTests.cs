@@ -213,4 +213,134 @@ public sealed class MockManagementRefusalTests
 
         Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }
+
+    // ---- runtime stub CRUD (#404) ----
+    //
+    // Every one of these edits a mock that is supposed to be running. Against
+    // an id that is not, the answer has to be a 404 rather than a 500 or a
+    // silent success: the Mocks rail keeps a stub editor open across a mock
+    // restart, so "the mock you were editing is gone" is a normal outcome and
+    // the only one that tells the operator to restart it.
+
+    [Fact]
+    public async Task Reading_One_Stub_Of_An_Unknown_Mock_Is_A_404()
+    {
+        using var host = await BuildHost();
+
+        using var resp = await host.GetTestClient().GetAsync(
+            new Uri("/api/mocks/no-such-mock/stubs/stub-1", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+        Assert.Contains("not running", await ErrorOf(resp), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Adding_A_Stub_To_An_Unknown_Mock_Is_A_404()
+    {
+        using var host = await BuildHost();
+        using var content = new StringContent(
+            """{"httpMethod":"GET","httpPath":"/orders"}""", Encoding.UTF8, "application/json");
+
+        using var resp = await host.GetTestClient().PostAsync(
+            new Uri("/api/mocks/no-such-mock/stubs", UriKind.Relative), content,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Replacing_A_Stub_On_An_Unknown_Mock_Is_A_404()
+    {
+        using var host = await BuildHost();
+        using var content = new StringContent(
+            """{"httpMethod":"GET","httpPath":"/orders"}""", Encoding.UTF8, "application/json");
+
+        using var resp = await host.GetTestClient().PutAsync(
+            new Uri("/api/mocks/no-such-mock/stubs/stub-1", UriKind.Relative), content,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Deleting_A_Stub_From_An_Unknown_Mock_Is_A_404()
+    {
+        using var host = await BuildHost();
+
+        using var resp = await host.GetTestClient().DeleteAsync(
+            new Uri("/api/mocks/no-such-mock/stubs/stub-1", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Resetting_The_Stubs_Of_An_Unknown_Mock_Is_A_404()
+    {
+        using var host = await BuildHost();
+
+        using var resp = await host.GetTestClient().PostAsync(
+            new Uri("/api/mocks/no-such-mock/stubs/reset", UriKind.Relative),
+            content: null, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Verifying_Against_An_Unknown_Mock_Is_A_404()
+    {
+        // The verification endpoint is what a test asserts through, so the
+        // difference between "no such mock" and "not satisfied" decides
+        // whether a failing test points at the mock or at the code.
+        using var host = await BuildHost();
+        using var content = new StringContent(
+            """{"httpPath":"/orders","times":1}""", Encoding.UTF8, "application/json");
+
+        using var resp = await host.GetTestClient().PostAsync(
+            new Uri("/api/mocks/no-such-mock/verify", UriKind.Relative), content,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task The_Request_Log_Of_An_Unknown_Mock_Is_A_404_Even_With_A_Cursor()
+    {
+        // The rail polls this with ?since=<cursor> on a timer. After the mock
+        // stops, the poll has to fail in a way the rail can stop on.
+        using var host = await BuildHost();
+
+        using var resp = await host.GetTestClient().GetAsync(
+            new Uri("/api/mocks/no-such-mock/requests?limit=10&since=5", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("/api/mocks/no-such-mock/scenarios")]
+    [InlineData("/api/mocks/no-such-mock/faults")]
+    public async Task Scenario_And_Fault_State_Of_An_Unknown_Mock_Is_A_404(string path)
+    {
+        // Both are read by the rail when it opens a mock's panel.
+        using var host = await BuildHost();
+
+        using var resp = await host.GetTestClient().GetAsync(
+            new Uri(path, UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Resetting_Scenarios_On_An_Unknown_Mock_Is_A_404()
+    {
+        using var host = await BuildHost();
+
+        using var resp = await host.GetTestClient().PostAsync(
+            new Uri("/api/mocks/no-such-mock/scenarios/reset", UriKind.Relative),
+            content: null, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
 }
