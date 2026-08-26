@@ -132,12 +132,18 @@ public sealed class BowirePluginUpdateStatusTests : IDisposable
         // The whole point of persisting it: the badge renders from disk. The
         // proof that nothing was fetched is that this snapshot names a package
         // and a version nuget.org has never heard of.
+        //
+        // The field names are the record's own (`results`, `installed`,
+        // `latest`) — an invented shape deserialises into a snapshot with
+        // default values and no entries, which reads as "a check ran and found
+        // nothing" rather than as a broken fixture.
         var stateDir = Path.Combine(_root, "state");
         Directory.CreateDirectory(stateDir);
         await File.WriteAllTextAsync(Path.Combine(stateDir, "update-check.json"), """
-            {"checkedAt":"2026-08-26T09:00:00+00:00",
-             "plugins":[{"packageId":"Acme.Bowire.Protocol.Widget",
-                         "installedVersion":"1.0.0","latestVersion":"9.9.9"}]}
+            {"checkedAt":"2026-08-26T09:00:00+00:00","includePrerelease":false,
+             "results":[{"packageId":"Acme.Bowire.Protocol.Widget",
+                         "installed":"1.0.0","latest":"9.9.9",
+                         "updateAvailable":true,"error":null}]}
             """, TestContext.Current.CancellationToken);
 
         using var host = await BuildHost();
