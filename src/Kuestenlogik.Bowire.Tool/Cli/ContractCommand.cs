@@ -109,7 +109,10 @@ internal static class ContractCommand
         return failOnFailures && matrix.FailedCells > 0 ? ExitFail : ExitOk;
     }
 
-    private static async Task PrintMatrixAsync(TextWriter stdout, ContractMatrix matrix)
+    // Internal, like LintCommand's renderers: this grid is what a reviewer
+    // reads in a CI log to decide whether a contract broke, so its shape is a
+    // contract of its own.
+    internal static async Task PrintMatrixAsync(TextWriter stdout, ContractMatrix matrix)
     {
         // Column width follows the widest provider name so the grid lines
         // up whatever the parties are called.
@@ -383,7 +386,17 @@ internal static class ContractCommand
         }
     }
 
-    private static string Sanitize(string name)
+    /// <summary>
+    /// Reduce a party name to something safe to put in a file name.
+    /// </summary>
+    /// <remarks>
+    /// Consumer and provider names come from contract files, which are not
+    /// necessarily written by the person running the command — so this decides
+    /// what a report path can contain. Everything outside letters and digits
+    /// becomes a dash, which removes separators and dots along with everything
+    /// else rather than trying to enumerate what is dangerous.
+    /// </remarks>
+    internal static string Sanitize(string name)
     {
         var chars = name.Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
         return new string(chars).Trim('-');
