@@ -295,7 +295,7 @@ public sealed class MockManagementRefusalTests
         // whether a failing test points at the mock or at the code.
         using var host = await BuildHost();
         using var content = new StringContent(
-            """{"httpPath":"/orders","times":1}""", Encoding.UTF8, "application/json");
+            """{"path":"/orders","atLeast":1}""", Encoding.UTF8, "application/json");
 
         using var resp = await host.GetTestClient().PostAsync(
             new Uri("/api/mocks/no-such-mock/verify", UriKind.Relative), content,
