@@ -61,11 +61,17 @@ public sealed class ContractPublishAndMatrixTests : IDisposable
     }
 
     /// <summary>A recording with one REST step — the only kind Pact can carry.</summary>
+    /// <remarks>
+    /// <c>recordingFormatVersion</c> is not decoration: the loader refuses a
+    /// recording whose version it was not built for, and a fixture without one
+    /// fails as "unsupported version" rather than as whatever the test meant
+    /// to check.
+    /// </remarks>
     private async Task<string> RestRecording(string name = "checkout")
     {
         var path = Path.Combine(_root, $"{name}.json");
         await File.WriteAllTextAsync(path, $$"""
-            {"id":"rec-1","name":"{{name}}","steps":[
+            {"recordingFormatVersion":2,"id":"rec-1","name":"{{name}}","steps":[
               {"protocolId":"rest","service":"orders","method":"GetOrder",
                "httpMethod":"GET","httpPath":"/orders/42",
                "responseStatus":200,"responseBody":"{\"id\":42}"}
@@ -78,7 +84,7 @@ public sealed class ContractPublishAndMatrixTests : IDisposable
     {
         var path = Path.Combine(_root, "grpc.json");
         await File.WriteAllTextAsync(path, """
-            {"id":"rec-2","name":"grpc-only","steps":[
+            {"recordingFormatVersion":2,"id":"rec-2","name":"grpc-only","steps":[
               {"protocolId":"grpc","service":"orders.v1.OrderService","method":"GetOrder"}
             ]}
             """, Ct);
@@ -270,5 +276,24 @@ public sealed class ContractPublishAndMatrixTests : IDisposable
         var (exit, _, _) = await Cli("contract", "matrix", "--fail-on-failures");
 
         Assert.Equal(0, exit);
+    }
+
+    [Fact]
+    public async Task A_Recording_Whose_Format_The_Loader_Refuses_Is_Reported_Not_Thrown()
+    {
+        // The bug this pins: RecordingLoader signals every rejection with
+        // InvalidDataException, which lives in System.IO but derives from
+        // SystemException — so the catch filter missed it and a hand-edited
+        // recording met the operator as an unhandled-exception stack trace.
+        var path = Path.Combine(_root, "from-the-future.json");
+        await File.WriteAllTextAsync(path, """
+            {"recordingFormatVersion":99,"id":"rec-9","name":"future","steps":[]}
+            """, Ct);
+
+        var (exit, _, err) = await Cli("contract", "publish", path, "--provider", "orders");
+
+        Assert.Equal(65, exit);
+        Assert.Contains("could not load recording", err, StringComparison.Ordinal);
+        Assert.DoesNotContain("Unhandled exception", err, StringComparison.Ordinal);
     }
 }

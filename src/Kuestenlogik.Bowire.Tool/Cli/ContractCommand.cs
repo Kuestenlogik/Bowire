@@ -200,7 +200,13 @@ internal static class ContractCommand
         {
             recording = RecordingLoader.Load(recordingPath);
         }
-        catch (Exception ex) when (ex is IOException or JsonException or InvalidOperationException or NotSupportedException)
+        // InvalidDataException belongs on this list even though it lives in
+        // System.IO: it derives from SystemException, not IOException, so the
+        // filter missed it — and it is the one RecordingLoader throws for
+        // every rejection it makes (unsupported format version, a store with
+        // no recordings, an ambiguous --select). Without it `contract publish`
+        // met a hand-edited recording with an unhandled-exception stack trace.
+        catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or InvalidOperationException or NotSupportedException)
         {
             await stderr.WriteLineAsync($"bowire contract publish: could not load recording: {ex.Message}").ConfigureAwait(false);
             return ExitDataErr;
