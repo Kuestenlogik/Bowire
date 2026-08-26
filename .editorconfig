@@ -28,6 +28,16 @@ dotnet_diagnostic.CA1054.severity = none
 # API endpoints must catch all exceptions to return proper error responses.
 dotnet_diagnostic.CA1031.severity = none
 
+# CA3003: Review code for file path injection vulnerabilities
+# Not disabled — it found a real hole (#617: workspaceId / storageRoot went
+# from the query string into Path.Combine unchecked). WorkspaceScopeQuery is
+# the fix: the one type every endpoint routes those two values through. Taint
+# analysis cannot tell a validator from a sink, so it flags the validator's own
+# Directory.Exists check for touching the value it exists to check. Excluding
+# that one type keeps the rule enforcing everywhere it can still catch
+# something, which a blanket `severity = none` would not.
+dotnet_code_quality.CA3003.excluded_symbol_names = T:Kuestenlogik.Bowire.Endpoints.WorkspaceScopeQuery
+
 # CA2016: Forward the CancellationToken parameter to methods
 # gRPC streaming WriteAsync overloads don't always accept CT directly.
 dotnet_diagnostic.CA2016.severity = suggestion
