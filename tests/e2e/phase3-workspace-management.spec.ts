@@ -196,7 +196,7 @@ test.describe('Phase 3 — workspace management', () => {
     // surfaces on the confirm button. Waiting for the row count to drop
     // before the next pass did not fix it, which rules out a plain race and
     // points at the delete handler itself when one workspace is left.
-    test.fixme('deleting the last workspace returns to the empty state and rails stay clickable', async ({ page }) => {
+    test('deleting the last workspace returns to the empty state and rails stay clickable', async ({ page }) => {
         await openRail(page, 'workspaces');
         await page.locator('.bowire-sidebar-mode').getByTitle('Open Workspaces overview').click();
 
@@ -213,11 +213,16 @@ test.describe('Phase 3 — workspace management', () => {
             // Confirm dialog — danger button (still .bowire-confirm-btn).
             await page.locator('.bowire-confirm-dialog .bowire-confirm-btn:not(.cancel)').click();
             await expect(page.locator('.bowire-confirm-dialog')).toHaveCount(0);
-            // Wait for the overview to actually repaint before the next pass.
-            // Without this the second iteration reads workspaces that the
-            // delete has already removed and clicks a row morphdom is in the
-            // middle of replacing — the click lands, no dialog opens, and the
-            // failure surfaces one line later on the confirm button (#610).
+            // Wait for the overview to repaint before the next pass.
+            //
+            // This alone did not fix #610 and is not what fixes it now: the
+            // rows carry a stable `id`, so morphdom keeps each one with its
+            // own handlers instead of reusing row 1's node for whatever
+            // workspace moved into that position. Without that id the second
+            // click landed on a row whose data-ws-id had been morphed to the
+            // surviving workspace while its handler still closed over the
+            // deleted one — so no dialog opened and the failure surfaced a
+            // line later on the confirm button.
             await expect(page.locator('.bowire-env-overview-row')).toHaveCount(ws.length - 1);
         }
 

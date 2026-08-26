@@ -1848,6 +1848,15 @@
                 : 0;
             var meta = envN + (envN === 1 ? ' env' : ' envs');
             var row = el('div', {
+                // #610 — the id is what makes morphdom keep each row with its
+                // own handlers. Its default getNodeKey reads `id`; without one
+                // it matches rows positionally, so deleting the first
+                // workspace leaves row 1's DOM node in place, morphs
+                // data-ws-id to the *next* workspace, and keeps the click
+                // handlers closed over the deleted id. The row then looks
+                // right and does nothing — the delete button resolves an id
+                // that is gone and returns.
+                id: 'bowire-ws-row-' + w.id,
                 className: 'bowire-env-overview-row'
                     + (manualMode ? ' is-draggable' : ''),
                 draggable: manualMode ? 'true' : 'false',
