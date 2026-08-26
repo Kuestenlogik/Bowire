@@ -12,12 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**18/20 done** · 2 backlog
+**19/20 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
-| [610](https://github.com/Kuestenlogik/Bowire/issues/610) | Bowire | [Repair the eight rotted Phase 1-3 E2E tests](#issue-kuestenlogik-bowire-610) | ⬜ Backlog |  |
 | [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ✅ Done | `area:multi` |
 | [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code workbench extension](#issue-kuestenlogik-bowire-101) | ✅ Done | `area:workbench` |
 | [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ✅ Done | `area:workbench` |
@@ -34,6 +33,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [585](https://github.com/Kuestenlogik/Bowire/issues/585) | Bowire | [REST OpenAPI discovery is slow (~5-8s) and flakes near the 8s probe ceiling](#issue-kuestenlogik-bowire-585) | ✅ Done |  |
 | [586](https://github.com/Kuestenlogik/Bowire/issues/586) | Bowire | [verification-drill publish is failing for `v0.0.0-test`](#issue-kuestenlogik-bowire-586) | ✅ Done |  |
 | [587](https://github.com/Kuestenlogik/Bowire/issues/587) | Bowire | [Report rollup across services — one view over the artefacts Bowire already writes](#issue-kuestenlogik-bowire-587) | ✅ Done |  |
+| [610](https://github.com/Kuestenlogik/Bowire/issues/610) | Bowire | [Repair the eight rotted Phase 1-3 E2E tests](#issue-kuestenlogik-bowire-610) | ✅ Done |  |
 | [612](https://github.com/Kuestenlogik/Bowire/issues/612) | Bowire | [Collections are not workspace-scoped on disk: the global store overwrites the workspace key on every boot](#issue-kuestenlogik-bowire-612) | ✅ Done |  |
 | [615](https://github.com/Kuestenlogik/Bowire/issues/615) | Bowire | [cli: report the bound workbench URL through a --port-file instead of the console banner](#issue-kuestenlogik-bowire-615) | ✅ Done | `area:cli` |
 
@@ -172,10 +172,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in a **git-native workspace directory**. The original #181 sketch also listed `--workspace-id` — running a workspace addressed by its id from the workbench's `~/.bowire/` per-user storage. [[more]](https://github.com/Kuestenlogik/Bowire/issues/365)
 
-#### <a id="issue-kuestenlogik-bowire-610"></a>⬜ Backlog · [#610](https://github.com/Kuestenlogik/Bowire/issues/610) Repair the eight rotted Phase 1-3 E2E tests
-
-Eight of the Phase 1–3 E2E tests under `tests/e2e/` fail against current `main`. They are marked `test.fixme` so the suite can gate CI (#see below) instead of being switched off wholesale; this issue is to repair and un-mark them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/610)
-
 #### <a id="issue-kuestenlogik-bowire-samples-54"></a>✅ Done · [Kuestenlogik/Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) harbor-demo: MQTT crane telemetry should name the container it lifts
 
 > `area:multi`
@@ -263,6 +259,10 @@ Found during v2.5 hands-on testing (CLI, against a local `bowire mock --schema` 
 #### <a id="issue-kuestenlogik-bowire-587"></a>✅ Done · [#587](https://github.com/Kuestenlogik/Bowire/issues/587) Report rollup across services — one view over the artefacts Bowire already writes
 
 Split out of #188, which stays as the hosted-platform epic (deployable, upload API, auth, multi-tenancy) and moved to v3.0. [[more]](https://github.com/Kuestenlogik/Bowire/issues/587)
+
+#### <a id="issue-kuestenlogik-bowire-610"></a>✅ Done · [#610](https://github.com/Kuestenlogik/Bowire/issues/610) Repair the eight rotted Phase 1-3 E2E tests
+
+Eight of the Phase 1–3 E2E tests under `tests/e2e/` fail against current `main`. They are marked `test.fixme` so the suite can gate CI (#see below) instead of being switched off wholesale; this issue is to repair and un-mark them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/610)
 
 #### <a id="issue-kuestenlogik-bowire-612"></a>✅ Done · [#612](https://github.com/Kuestenlogik/Bowire/issues/612) Collections are not workspace-scoped on disk: the global store overwrites the workspace key on every boot
 
