@@ -179,8 +179,14 @@ public sealed class MockManagementRefusalTests
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         using var doc = JsonDocument.Parse(
             await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
-        Assert.Equal(JsonValueKind.Array, doc.RootElement.ValueKind);
-        Assert.Equal(0, doc.RootElement.GetArrayLength());
+
+        // An envelope, not a bare array: `{ "mocks": [...] }` leaves room to
+        // add fields later without breaking a client that indexes the top
+        // level. Worth pinning, because a rail reading `body[0]` would work
+        // against a bare array and silently read nothing here.
+        var mocks = doc.RootElement.GetProperty("mocks");
+        Assert.Equal(JsonValueKind.Array, mocks.ValueKind);
+        Assert.Equal(0, mocks.GetArrayLength());
     }
 
     [Theory]
