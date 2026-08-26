@@ -142,7 +142,12 @@ public sealed class BenchScheduleCommandTests : IDisposable
 
         var (_, json, _) = await Cli("bench", "schedule", "list", "--json");
 
-        Assert.Contains("p95<250", json, StringComparison.Ordinal);
+        // Parsed rather than string-matched: the serialiser escapes '<' as
+        // <, so a Contains("p95<250") on the raw text fails for a
+        // reason that has nothing to do with the schedule.
+        using var doc = JsonDocument.Parse(json);
+        var thresholds = doc.RootElement[0].GetProperty("thresholds");
+        Assert.Equal("p95<250", thresholds[0].GetString());
     }
 
     // ---- list ----
