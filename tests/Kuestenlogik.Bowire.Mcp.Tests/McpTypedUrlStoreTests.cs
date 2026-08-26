@@ -45,7 +45,7 @@ public sealed class McpTypedUrlStoreTests : IDisposable
         catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
 
-    private void WriteRaw(string contents)
+    private static void WriteRaw(string contents)
     {
         var path = BowireMcpTypedUrlStore.FilePath;
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
