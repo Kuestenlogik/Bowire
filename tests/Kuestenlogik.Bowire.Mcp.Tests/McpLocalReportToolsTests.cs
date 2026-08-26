@@ -72,7 +72,7 @@ public sealed class McpLocalReportToolsTests : IDisposable
             },
         };
 
-    private async Task<JsonElement> Matrix()
+    private static async Task<JsonElement> Matrix()
     {
         var json = await BowireMcpTools.ContractMatrix(Ct);
         using var doc = JsonDocument.Parse(json);
