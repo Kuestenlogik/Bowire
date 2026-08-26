@@ -31,6 +31,12 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// embedded host is typically a production server whose filesystem the
 /// workbench user does not own.
 /// </para>
+/// <para>
+/// Writing these found that the endpoint had never worked: the containment
+/// check anchored on <c>GetUserPath("")</c>, and the store rejects an empty
+/// filename, so every call ended in an unhandled ArgumentException. The
+/// anchor is the workspaces folder now.
+/// </para>
 /// </remarks>
 [Collection("BowireUserContext")]
 public sealed class BowireWorkspacePurgeTests : IDisposable

@@ -197,16 +197,26 @@ internal static partial class BowireWorkspaceEndpoints
             // path separators, but a second guard here keeps the
             // RemoveDirectory sink protected even if the sanitiser
             // regresses.
-            var userRoot = Path.GetFullPath(BowireUserContext.GetUserPath(""));
+            // The anchor is the workspaces folder, resolved the same way the
+            // target was. It used to be GetUserPath("") — but the store
+            // rejects an empty filename (ArgumentException.ThrowIfNullOrEmpty),
+            // so that call threw on every request and the purge never ran at
+            // all. Anchoring on "workspaces" also tightens the check: with the
+            // trailing separator, a sibling directory whose name merely starts
+            // with the root's (…/.bowire-old) can no longer satisfy the prefix.
+            var workspacesRoot = Path.GetFullPath(
+                BowireUserContext.GetUserPath("workspaces"));
             var resolvedTarget = Path.GetFullPath(target);
-            if (!resolvedTarget.StartsWith(userRoot, StringComparison.Ordinal)
-                || string.Equals(resolvedTarget, userRoot, StringComparison.Ordinal))
+            var mustStartWith = workspacesRoot.EndsWith(Path.DirectorySeparatorChar)
+                ? workspacesRoot
+                : workspacesRoot + Path.DirectorySeparatorChar;
+            if (!resolvedTarget.StartsWith(mustStartWith, StringComparison.Ordinal))
             {
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:workspace:purge-escape",
-                    title: "Refusing to purge: resolved path escapes the user root",
+                    title: "Refusing to purge: resolved path escapes the workspaces folder",
                     status: 400,
-                    detail: $"Resolved path '{resolvedTarget}' is not strictly under '{userRoot}'.",
+                    detail: $"Resolved path '{resolvedTarget}' is not strictly under '{workspacesRoot}'.",
                     instance: ctx.Request.Path);
             }
 
