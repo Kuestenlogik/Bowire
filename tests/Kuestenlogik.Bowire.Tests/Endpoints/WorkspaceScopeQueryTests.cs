@@ -130,7 +130,7 @@ public sealed class WorkspaceScopeQueryTests
         var scope = WorkspaceScopeQuery.Validate(null, missing);
 
         Assert.True(scope.IsInvalid);
-        Assert.Contains("existing directory", scope.Error, StringComparison.Ordinal);
+        Assert.Contains("does not exist", scope.Error, StringComparison.Ordinal);
     }
 
     [Theory]
