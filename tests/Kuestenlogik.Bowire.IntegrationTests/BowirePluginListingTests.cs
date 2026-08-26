@@ -155,10 +155,13 @@ public sealed class BowirePluginListingTests : IDisposable
         using var host = await BuildHost();
         var rows = Own(await GetPlugins(host), "Broken.Plugin", "Good.Plugin");
 
-        // Both rows survive: the unparseable manifest costs its own labels,
-        // not the other plugin's presence.
-        Assert.Equal(2, rows.Count);
-        Assert.Contains(rows, r => r.GetProperty("displayName").GetString() == "Good");
+        // The unparseable one is skipped — deliberately, per the `continue` in
+        // the handler — and the healthy one is unaffected. That is the whole
+        // point: one hand-edited plugin.json costs its own row and nobody
+        // else's. (Its absence is not silent: /api/plugins/health is where a
+        // plugin that failed to load says why.)
+        var row = Assert.Single(rows);
+        Assert.Equal("Good", row.GetProperty("displayName").GetString());
     }
 
     [Fact]
@@ -233,7 +236,10 @@ public sealed class BowirePluginListingTests : IDisposable
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         using var doc = JsonDocument.Parse(
             await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
-        Assert.Equal(JsonValueKind.Array, doc.RootElement.ValueKind);
+
+        // An envelope, like the listing: room to add fields without breaking a
+        // client that indexes the top level.
+        Assert.Equal(JsonValueKind.Object, doc.RootElement.ValueKind);
     }
 
     [Fact]
