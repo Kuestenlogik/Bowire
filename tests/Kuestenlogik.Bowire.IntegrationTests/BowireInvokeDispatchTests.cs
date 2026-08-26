@@ -59,6 +59,9 @@ public sealed class BowireInvokeDispatchTests : IDisposable
         public Dictionary<string, string>? Metadata { get; private set; }
         public Exception? Throws { get; set; }
 
+        /// <summary>Frames the stream yields; empty by default.</summary>
+        public List<string> Frames { get; } = [];
+
         public Task<List<BowireServiceInfo>> DiscoverAsync(
             string serverUrl, bool showInternalServices, CancellationToken ct = default)
             => Task.FromResult(new List<BowireServiceInfo>());
@@ -78,14 +81,20 @@ public sealed class BowireInvokeDispatchTests : IDisposable
                 """{"ok":true}""", 12, "OK", new Dictionary<string, string> { ["x-stub"] = "1" }));
         }
 
-#pragma warning disable CS1998 // Nothing to stream.
+#pragma warning disable CS1998 // The frames are in memory; nothing to await.
         public async IAsyncEnumerable<string> InvokeStreamAsync(
             string serverUrl, string service, string method,
             List<string> jsonMessages, bool showInternalServices,
             Dictionary<string, string>? metadata = null,
             [EnumeratorCancellation] CancellationToken ct = default)
         {
-            yield break;
+            ServerUrl = serverUrl;
+            Service = service;
+            Method = method;
+            Messages = jsonMessages;
+            Metadata = metadata;
+            if (Throws is not null) throw Throws;
+            foreach (var frame in Frames) yield return frame;
         }
 #pragma warning restore CS1998
 
@@ -359,5 +368,147 @@ public sealed class BowireInvokeDispatchTests : IDisposable
         Assert.Contains("upstream said no",
             body.GetProperty("detail").GetString()!, StringComparison.Ordinal);
         Assert.Equal("InvalidOperationException", body.GetProperty("exceptionType").GetString());
+    }
+
+    // ---- the SSE stream ----
+    //
+    // Everything the unary path does to a request happens here too — the
+    // hint@url split, the query-auth move, the plugin pick — but re-derived
+    // from query parameters instead of a JSON body. Two implementations of
+    // one rule is exactly where they drift apart.
+
+    private async Task<string> Stream(IHost host, string query)
+    {
+        using var resp = await host.GetTestClient().GetAsync(
+            new Uri($"/api/invoke/stream?{query}", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+        return await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task A_Stream_Without_A_Service_Or_Method_Is_A_400()
+    {
+        using var host = await BuildHost();
+
+        using var resp = await host.GetTestClient().GetAsync(
+            new Uri("/api/invoke/stream?serverUrl=https%3A%2F%2Fapi.example.com", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Every_Frame_Arrives_As_Its_Own_Sse_Event_In_Order()
+    {
+        using var host = await BuildHost();
+        _plugin.Frames.AddRange(["""{"n":1}""", """{"n":2}""", """{"n":3}"""]);
+
+        var body = await Stream(host, "service=S&method=M&serverUrl=https%3A%2F%2Fapi.example.com");
+
+        var frames = body.Split("data: ", StringSplitOptions.RemoveEmptyEntries)
+            .Where(f => f.StartsWith('{'))
+            .ToList();
+        Assert.Equal(4, frames.Count);   // three frames plus the done event's payload
+        Assert.Contains("\"index\":0", body, StringComparison.Ordinal);
+        Assert.Contains("\"index\":2", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_Stream_Ends_With_A_Done_Event()
+    {
+        // The workbench closes the EventSource on it; without it the pane
+        // sits there looking like the stream is still open.
+        using var host = await BuildHost();
+        _plugin.Frames.Add("""{"n":1}""");
+
+        var body = await Stream(host, "service=S&method=M&serverUrl=https%3A%2F%2Fapi.example.com");
+
+        Assert.Contains("event: done", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Frame_Carries_Its_Offset_From_The_Start_Of_The_Stream()
+    {
+        // Not a wall-clock timestamp: recordings persist this so replay can
+        // pace the frames at the original cadence on a host whose clock has
+        // nothing to do with the capture's.
+        using var host = await BuildHost();
+        _plugin.Frames.Add("""{"n":1}""");
+
+        var body = await Stream(host, "service=S&method=M&serverUrl=https%3A%2F%2Fapi.example.com");
+
+        Assert.Contains("timestampMs", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Streaming_Hint_Is_Stripped_And_Its_Transport_Bit_Kept()
+    {
+        // The same rule as the unary path, re-derived from the query string.
+        using var host = await BuildHost();
+
+        await Stream(host, "service=S&method=M&serverUrl=grpcweb%40https%3A%2F%2Fapi.example.com");
+
+        Assert.Equal("https://api.example.com", _plugin.ServerUrl);
+        Assert.NotNull(_plugin.Metadata);
+        Assert.Contains(_plugin.Metadata, kv => kv.Key.Contains("Transport", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task A_Query_Auth_Entry_Moves_Onto_The_Url_Here_Too()
+    {
+        using var host = await BuildHost();
+        var metadata = Uri.EscapeDataString("""{"__bowireQuery__api_key":"s3cret","X-Real":"kept"}""");
+
+        await Stream(host, $"service=S&method=M&metadata={metadata}&serverUrl=https%3A%2F%2Fapi.example.com");
+
+        Assert.Contains("api_key=s3cret", _plugin.ServerUrl!, StringComparison.Ordinal);
+        Assert.DoesNotContain(_plugin.Metadata!, kv => kv.Key.StartsWith("__bowireQuery__", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Messages_That_Will_Not_Parse_Fall_Back_To_An_Empty_Object()
+    {
+        // A truncated query parameter must not take the stream down; the call
+        // still goes out with the same default the unary path uses.
+        using var host = await BuildHost();
+
+        await Stream(host, "service=S&method=M&messages=%7Bnot-json&serverUrl=https%3A%2F%2Fapi.example.com");
+
+        Assert.Equal(["{}"], _plugin.Messages);
+    }
+
+    [Fact]
+    public async Task Metadata_That_Will_Not_Parse_Is_Dropped_Rather_Than_Fatal()
+    {
+        using var host = await BuildHost();
+
+        await Stream(host, "service=S&method=M&metadata=%7Bnot-json&serverUrl=https%3A%2F%2Fapi.example.com");
+
+        Assert.Equal("S", _plugin.Service);
+    }
+
+    [Fact]
+    public async Task With_No_Plugin_The_Stream_Says_So_As_An_Error_Event()
+    {
+        // An SSE response is already committed by then, so the refusal has to
+        // travel as a frame rather than as a status code.
+        using var host = await BuildHost(withPlugin: false);
+
+        var body = await Stream(host, "service=S&method=M&serverUrl=https%3A%2F%2Fapi.example.com");
+
+        Assert.Contains("event: error", body, StringComparison.Ordinal);
+        Assert.Contains("No protocol plugin", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Plugin_That_Throws_Mid_Stream_Reports_It_As_An_Error_Event()
+    {
+        using var host = await BuildHost();
+        _plugin.Throws = new InvalidOperationException("upstream closed");
+
+        var body = await Stream(host, "service=S&method=M&serverUrl=https%3A%2F%2Fapi.example.com");
+
+        Assert.Contains("event: error", body, StringComparison.Ordinal);
+        Assert.Contains("upstream closed", body, StringComparison.Ordinal);
     }
 }
