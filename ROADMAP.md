@@ -12,12 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
 
-**17/20 done** · 3 backlog
+**18/20 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
-| [582](https://github.com/Kuestenlogik/Bowire/issues/582) | Bowire | [Split bowire-pr into its own public kuestenlogik/bowire-action repo](#issue-kuestenlogik-bowire-582) | ⬜ Backlog |  |
 | [610](https://github.com/Kuestenlogik/Bowire/issues/610) | Bowire | [Repair the eight rotted Phase 1-3 E2E tests](#issue-kuestenlogik-bowire-610) | ⬜ Backlog |  |
 | [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ✅ Done | `area:multi` |
 | [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code workbench extension](#issue-kuestenlogik-bowire-101) | ✅ Done | `area:workbench` |
@@ -31,6 +30,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ✅ Done | `area:security` |
 | [364](https://github.com/Kuestenlogik/Bowire/issues/364) | Bowire | [Contract testing: workbench matrix view (consumer × provider pass/fail)](#issue-kuestenlogik-bowire-364) | ✅ Done | `area:workbench` |
 | [367](https://github.com/Kuestenlogik/Bowire/issues/367) | Bowire | [codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)](#issue-kuestenlogik-bowire-367) | ✅ Done | `area:multi` |
+| [582](https://github.com/Kuestenlogik/Bowire/issues/582) | Bowire | [Split bowire-pr into its own public kuestenlogik/bowire-action repo](#issue-kuestenlogik-bowire-582) | ✅ Done |  |
 | [585](https://github.com/Kuestenlogik/Bowire/issues/585) | Bowire | [REST OpenAPI discovery is slow (~5-8s) and flakes near the 8s probe ceiling](#issue-kuestenlogik-bowire-585) | ✅ Done |  |
 | [586](https://github.com/Kuestenlogik/Bowire/issues/586) | Bowire | [verification-drill publish is failing for `v0.0.0-test`](#issue-kuestenlogik-bowire-586) | ✅ Done |  |
 | [587](https://github.com/Kuestenlogik/Bowire/issues/587) | Bowire | [Report rollup across services — one view over the artefacts Bowire already writes](#issue-kuestenlogik-bowire-587) | ✅ Done |  |
@@ -172,10 +172,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in a **git-native workspace directory**. The original #181 sketch also listed `--workspace-id` — running a workspace addressed by its id from the workbench's `~/.bowire/` per-user storage. [[more]](https://github.com/Kuestenlogik/Bowire/issues/365)
 
-#### <a id="issue-kuestenlogik-bowire-582"></a>⬜ Backlog · [#582](https://github.com/Kuestenlogik/Bowire/issues/582) Split bowire-pr into its own public kuestenlogik/bowire-action repo
-
-The PR-report bot was prototyped **in-repo** under `.github/actions/bowire-pr/` (see #183) so it could stabilise against the real CLI. Once it settles, it should live in its own repository and be publishable as a reusable/Marketplace action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/582)
-
 #### <a id="issue-kuestenlogik-bowire-610"></a>⬜ Backlog · [#610](https://github.com/Kuestenlogik/Bowire/issues/610) Repair the eight rotted Phase 1-3 E2E tests
 
 Eight of the Phase 1–3 E2E tests under `tests/e2e/` fail against current `main`. They are marked `test.fixme` so the suite can gate CI (#see below) instead of being switched off wholesale; this issue is to repair and un-mark them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/610)
@@ -251,6 +247,10 @@ Follow-up to #191 (CLI pillar shipped in b252e419). The one remaining acceptance
 > `area:multi`
 
 Follow-up to #356. JS tests now gate CI (`node --test` over wwwroot-js) and JS coverage is *runnable* locally (`npm run test:js:coverage` / `node --test --experimental-test-coverage`), but it isn't uploaded to Codecov yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/367)
+
+#### <a id="issue-kuestenlogik-bowire-582"></a>✅ Done · [#582](https://github.com/Kuestenlogik/Bowire/issues/582) Split bowire-pr into its own public kuestenlogik/bowire-action repo
+
+The PR-report bot was prototyped **in-repo** under `.github/actions/bowire-pr/` (see #183) so it could stabilise against the real CLI. Once it settles, it should live in its own repository and be publishable as a reusable/Marketplace action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/582)
 
 #### <a id="issue-kuestenlogik-bowire-585"></a>✅ Done · [#585](https://github.com/Kuestenlogik/Bowire/issues/585) REST OpenAPI discovery is slow (~5-8s) and flakes near the 8s probe ceiling
 
