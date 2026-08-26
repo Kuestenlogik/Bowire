@@ -263,4 +263,61 @@ public sealed class BenchScheduleCommandTests : IDisposable
         Assert.Contains("nightly", output, StringComparison.Ordinal);
         Assert.Contains("hourly", output, StringComparison.Ordinal);
     }
+
+    // ---- `bench run`: the refusals that happen before a single request ----
+    //
+    // A benchmark run takes minutes. Every one of these is checked up front
+    // precisely so a typo does not surface at the end of one — a bad
+    // threshold in the fifth budget would otherwise be discovered after the
+    // load has already been generated. (The target is positional here, unlike
+    // `schedule add`'s --target.)
+
+    private static Task<(int Exit, string Out, string Err)> Run(params string[] extra)
+        => Cli([.. RunVerb, .. extra]);
+
+    private static readonly string[] RunVerb = ["bench", "run"];
+
+    [Theory]
+    [InlineData("Weather")]
+    [InlineData("/getCurrent")]
+    [InlineData("Weather/")]
+    public async Task A_Run_Target_That_Is_Not_Service_Slash_Method_Is_Refused(string target)
+    {
+        var (exit, _, err) = await Run(target, "--url", "grpc@localhost:5001");
+
+        Assert.Equal(64, exit);
+        Assert.Contains("service/method", err, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Bad_Threshold_Is_Caught_Before_The_Load_Is_Generated()
+    {
+        var (exit, _, err) = await Run(
+            "Weather/getCurrent", "--url", "grpc@localhost:5001",
+            "--threshold", "p95 should be fastish");
+
+        Assert.Equal(64, exit);
+        Assert.Contains("bad --threshold", err, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Run_Url_With_No_Protocol_Anywhere_Is_Refused()
+    {
+        var (exit, _, err) = await Run("Weather/getCurrent", "--url", "localhost:5001");
+
+        Assert.Equal(64, exit);
+        Assert.Contains("--protocol", err, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Protocol_That_Is_Not_Loaded_Is_Named_In_The_Refusal()
+    {
+        // "no plugin 'foo'" is one `bowire plugin install` away; a generic
+        // failure at the end of a run is not.
+        var (exit, _, err) = await Run(
+            "Weather/getCurrent", "--url", "not-a-real-protocol@localhost:5001");
+
+        Assert.Equal(64, exit);
+        Assert.Contains("not-a-real-protocol", err, StringComparison.Ordinal);
+    }
 }
