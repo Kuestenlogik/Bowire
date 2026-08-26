@@ -155,11 +155,25 @@ public sealed class ScanCommandPredicateTests
         => Assert.True(ScanCommand.IsHttpScheme(target));
 
     [Fact]
-    public void A_Target_That_Is_Not_A_Url_Is_Accepted_As_A_Host_Port_Pair()
-        // "localhost:5001" is how a gRPC target is written, and it does not
-        // parse as an absolute URI — treating that as "not HTTP" would skip
-        // every such target.
-        => Assert.True(ScanCommand.IsHttpScheme("localhost:5001"));
+    public void A_Bare_Host_Without_A_Port_Is_Accepted()
+        // Not a URI at all, so the guard lets it through for a later stage to
+        // resolve.
+        => Assert.True(ScanCommand.IsHttpScheme("api.example.com"));
+
+    [Fact]
+    public void A_Host_Port_Pair_Is_Refused_Because_Dotnet_Reads_The_Host_As_A_Scheme()
+    {
+        // Worth pinning as a fact about the platform rather than a wish:
+        // Uri.TryCreate("localhost:5001", Absolute) SUCCEEDS, parsing
+        // "localhost" as the scheme and "5001" as the path. So the guard sees
+        // a scheme that is neither http nor https and says no.
+        //
+        // That is defensible for a scanner whose templates replay HTTP
+        // requests — a bare host:port is how a gRPC target is written, and
+        // those go down a different path. But it is not obvious from reading
+        // the guard, which is exactly why it is written down here.
+        Assert.False(ScanCommand.IsHttpScheme("localhost:5001"));
+    }
 
     [Fact]
     public void A_Target_With_A_Different_Scheme_Is_Refused()
