@@ -96,7 +96,7 @@ public sealed class BowirePluginListingTests : IDisposable
         return doc.RootElement.Clone();
     }
 
-    private static IEnumerable<JsonElement> Rows(JsonElement body)
+    private static JsonElement.ArrayEnumerator Rows(JsonElement body)
         => body.GetProperty("plugins").EnumerateArray();
 
     [Fact]
