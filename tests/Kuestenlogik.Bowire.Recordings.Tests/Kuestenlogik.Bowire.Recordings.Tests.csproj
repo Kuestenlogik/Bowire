@@ -15,6 +15,9 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <!-- The correlate endpoint is only reachable through a host; TestHost is
+         how the other endpoint suites in this repo drive one in-process. -->
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Recordings\Kuestenlogik.Bowire.Recordings.csproj" />
