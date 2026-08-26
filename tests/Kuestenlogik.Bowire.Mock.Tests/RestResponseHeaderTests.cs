@@ -18,7 +18,7 @@ namespace Kuestenlogik.Bowire.Mock.Tests;
 /// </remarks>
 public sealed class RestResponseHeaderTests
 {
-    private static HttpContext Apply(IDictionary<string, string>? headers)
+    private static DefaultHttpContext Apply(IDictionary<string, string>? headers)
     {
         var ctx = new DefaultHttpContext();
         UnaryReplayer.ApplyRestResponseHeaders(ctx, headers);

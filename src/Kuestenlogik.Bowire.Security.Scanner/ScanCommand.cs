@@ -672,7 +672,7 @@ public static class ScanCommand
     /// stops the scan outright: silently continuing without OAST would report
     /// every out-of-band template clean, which is worse than failing.
     /// </summary>
-    private static bool IsUsableOastServer(string url)
+    internal static bool IsUsableOastServer(string url)
         => Uri.TryCreate(url, UriKind.Absolute, out var uri)
             && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 
@@ -682,7 +682,7 @@ public static class ScanCommand
     /// callback but no interaction server was configured, so its probe would
     /// carry the literal placeholder and prove nothing.
     /// </summary>
-    private static bool NeedsOastButHasNone(BowireRecording rec)
+    internal static bool NeedsOastButHasNone(BowireRecording rec)
     {
         const string Placeholder = "{{interactsh-url}}";
         foreach (var step in rec.Steps)
@@ -783,7 +783,7 @@ public static class ScanCommand
         }
     }
 
-    private static int SeverityRank(string severity) => severity.ToUpperInvariant() switch
+    internal static int SeverityRank(string severity) => severity.ToUpperInvariant() switch
     {
         "CRITICAL" => 4,
         "HIGH" => 3,
@@ -802,7 +802,7 @@ public static class ScanCommand
     /// helper is the fallback when the template only carries a
     /// qualitative severity label.
     /// </summary>
-    private static double SeverityToScore(string severity) => severity.ToUpperInvariant() switch
+    internal static double SeverityToScore(string severity) => severity.ToUpperInvariant() switch
     {
         "CRITICAL" => 9.5,
         "HIGH" => 7.5,
@@ -811,7 +811,7 @@ public static class ScanCommand
         _ => 0.0,
     };
 
-    private static bool IsHttpClassProtocol(string protocol) => protocol switch
+    internal static bool IsHttpClassProtocol(string protocol) => protocol switch
     {
         // SignalR / Socket.IO / MCP are HTTP-class for the request the
         // template probes: SignalR's negotiate + Socket.IO's Engine.IO
@@ -840,7 +840,7 @@ public static class ScanCommand
     /// skipped; a bare host or relative target (no scheme) is treated as HTTP
     /// to preserve the pre-existing behaviour.
     /// </summary>
-    private static bool IsHttpScheme(string target)
+    internal static bool IsHttpScheme(string target)
         => !Uri.TryCreate(target, UriKind.Absolute, out var uri) || uri.Scheme is "http" or "https";
 
     // #187: load the CVE corpus for the banner lookup — a --cve-db VulnDb file,
