@@ -369,7 +369,7 @@ public sealed class MockRuntimeStubEndpointTests
         try
         {
             var (status, body) = await Send(client, HttpMethod.Post, $"/api/mocks/{mockId}/verify",
-                """{"httpPath":"/weather","times":1}""");
+                """{"path":"/weather","atLeast":1}""");
 
             Assert.Equal(HttpStatusCode.OK, status);
             using var doc = JsonDocument.Parse(body);
