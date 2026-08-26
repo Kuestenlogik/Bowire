@@ -91,7 +91,7 @@ public sealed class DiffCommandTests : IDisposable
         // Half a diff is worse than none: an unreadable base would otherwise
         // look like "everything was added".
         var path = Path.Combine(Path.GetTempPath(), $"bowire-diff-broken-{Guid.NewGuid():N}.json");
-        File.WriteAllText(path, "{ not json");
+        await File.WriteAllTextAsync(path, "{ not json", Ct);
         _files.Add(path);
 
         var exit = await Diff(path, Snapshot());
