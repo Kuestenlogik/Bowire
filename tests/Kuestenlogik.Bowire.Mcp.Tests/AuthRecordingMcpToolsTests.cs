@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Mcp;
 using Kuestenlogik.Bowire.Recording;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -16,9 +17,24 @@ namespace Kuestenlogik.Bowire.Mcp.Tests;
 /// the store round-trip itself is exercised by AuthRecordingStoreTests and the
 /// endpoint integration tests.
 /// </summary>
+[Collection(nameof(BowireConfigFixture))]
 public sealed class AuthRecordingMcpToolsTests : IAsyncDisposable
 {
     private readonly List<BowireMockHandleRegistry> _registries = [];
+
+    // The store resolves through BowireUserContext, so the tests that go past
+    // the gate would otherwise write real credentials into the developer's own
+    // ~/.bowire. Redirected here, restored on the way out; the collection
+    // serialises it because the context is a process-wide static.
+    private readonly string _home = SafePath.Combine(
+        Path.GetTempPath(), $"bowire-mcp-authrec-{Guid.NewGuid():N}");
+    private readonly IBowireUserStore _previousUserStore = BowireUserContext.Current;
+
+    public AuthRecordingMcpToolsTests()
+    {
+        Directory.CreateDirectory(_home);
+        BowireUserContext.Current = new DefaultBowireUserStore(_home);
+    }
 
     public async ValueTask DisposeAsync()
     {
@@ -26,6 +42,9 @@ public sealed class AuthRecordingMcpToolsTests : IAsyncDisposable
         {
             await registry.DisposeAsync();
         }
+        BowireUserContext.Current = _previousUserStore;
+        try { Directory.Delete(_home, recursive: true); }
+        catch (IOException) { } catch (UnauthorizedAccessException) { }
         GC.SuppressFinalize(this);
     }
 
@@ -114,5 +133,87 @@ public sealed class AuthRecordingMcpToolsTests : IAsyncDisposable
         var workspace = "authrec-mcp-" + Guid.NewGuid().ToString("N");
         using var doc = JsonDocument.Parse(BowireMcpTools.AuthRecordingList(workspace));
         Assert.Empty(doc.RootElement.GetProperty("recordings").EnumerateArray());
+    }
+
+    // ---- the confirmed path: what actually reaches the store ----
+    //
+    // The tests above stop at the gate. These carry on past it, because the
+    // half that matters to an operator is what an agent left on their disk —
+    // and the answer the agent gets back has to describe it without quoting
+    // the credential.
+
+    private static string Workspace() => "authrec-mcp-" + Guid.NewGuid().ToString("N");
+
+    [Fact]
+    public void A_Confirmed_Capture_Stores_The_Recording_And_Says_So()
+    {
+        var workspace = Workspace();
+        var tools = Tools();
+
+        var json = tools.AuthRecordingCapture(
+            "rec-1", "super-secret-token", name: "Production", scheme: "bearer", workspace: workspace);
+
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("rec-1", doc.RootElement.GetProperty("id").GetString());
+        // The credential never comes back out — an agent's transcript is not
+        // a place for it, and the agent already had it.
+        Assert.DoesNotContain("super-secret-token", json, StringComparison.Ordinal);
+
+        using var listed = JsonDocument.Parse(BowireMcpTools.AuthRecordingList(workspace));
+        var row = Assert.Single(listed.RootElement.GetProperty("recordings").EnumerateArray());
+        Assert.Equal("rec-1", row.GetProperty("id").GetString());
+        Assert.DoesNotContain("super-secret-token", listed.RootElement.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Capture_Without_A_Scheme_Is_Stored_As_Bearer()
+    {
+        // The commonest case by far; making an agent spell it out every time
+        // would be friction with no decision behind it.
+        var workspace = Workspace();
+
+        Tools().AuthRecordingCapture("rec-1", "tok", workspace: workspace);
+
+        using var listed = JsonDocument.Parse(BowireMcpTools.AuthRecordingList(workspace));
+        var row = Assert.Single(listed.RootElement.GetProperty("recordings").EnumerateArray());
+        Assert.Equal("bearer", row.GetProperty("scheme").GetString());
+    }
+
+    [Fact]
+    public void Removing_A_Stored_Recording_Takes_It_Off_The_List()
+    {
+        var workspace = Workspace();
+        var tools = Tools();
+        tools.AuthRecordingCapture("rec-1", "tok", workspace: workspace);
+
+        var json = tools.AuthRecordingRemove("rec-1", workspace: workspace);
+
+        Assert.DoesNotContain("\"pending\":true", json, StringComparison.Ordinal);
+        using var listed = JsonDocument.Parse(BowireMcpTools.AuthRecordingList(workspace));
+        Assert.Empty(listed.RootElement.GetProperty("recordings").EnumerateArray());
+    }
+
+    [Fact]
+    public void Two_Workspaces_Can_Hold_The_Same_Id_Without_Colliding()
+    {
+        // Scoping is what lets a team keep a "prod-token" per workspace; one
+        // answering for the other would be a credential mix-up, not a bug in
+        // a list.
+        var a = Workspace();
+        var b = Workspace();
+        var tools = Tools();
+        tools.AuthRecordingCapture("prod-token", "tok-a", name: "A", workspace: a);
+        tools.AuthRecordingCapture("prod-token", "tok-b", name: "B", workspace: b);
+
+        using var listedA = JsonDocument.Parse(BowireMcpTools.AuthRecordingList(a));
+        using var listedB = JsonDocument.Parse(BowireMcpTools.AuthRecordingList(b));
+
+        Assert.Equal("A", listedA.RootElement.GetProperty("recordings")
+            .EnumerateArray().Single().GetProperty("name").GetString());
+        Assert.Equal("B", listedB.RootElement.GetProperty("recordings")
+            .EnumerateArray().Single().GetProperty("name").GetString());
+
+        tools.AuthRecordingRemove("prod-token", workspace: a);
+        tools.AuthRecordingRemove("prod-token", workspace: b);
     }
 }
