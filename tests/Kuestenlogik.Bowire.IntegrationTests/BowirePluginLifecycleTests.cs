@@ -37,7 +37,7 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// argument list.
 /// </para>
 /// </remarks>
-[Collection("CwdSerialised")]
+[Collection("BowireStorageRoot")]
 public sealed class BowirePluginLifecycleTests : IDisposable
 {
     private readonly string _root = Path.Combine(

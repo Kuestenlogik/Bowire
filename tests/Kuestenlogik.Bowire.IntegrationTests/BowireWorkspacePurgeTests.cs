@@ -38,7 +38,7 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// anchor is the workspaces folder now.
 /// </para>
 /// </remarks>
-[Collection("BowireUserContext")]
+[Collection("BowireStorageRoot")]
 public sealed class BowireWorkspacePurgeTests : IDisposable
 {
     private readonly string _root = Path.Combine(

@@ -33,7 +33,7 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// real <c>~/.bowire/plugins</c>.
 /// </para>
 /// </remarks>
-[Collection("CwdSerialised")]
+[Collection("BowireStorageRoot")]
 public sealed class BowirePluginListingTests : IDisposable
 {
     private readonly string _root = Path.Combine(
