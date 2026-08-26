@@ -200,8 +200,16 @@ public static class BowireDiscoveryProbe
                 { "services_found", found.Count },
             });
 
+            // Id and Name come from a plugin, so they are only as
+            // non-null as its author made them. The attempt table pads and
+            // sorts on both — `bowire discover` measures the column width
+            // with `.Length` — so a plugin that returns null takes the
+            // command down while rendering the very table that exists to
+            // explain what plugins did. Substituting here keeps every
+            // consumer (CLI table, workbench diagnostics) safe at once.
             return (Services: found, Attempt: new BowireDiscoveryAttempt(
-                protocol.Id, protocol.Name, outcome, found.Count, elapsedMs, message)
+                protocol.Id ?? "(unknown)", protocol.Name ?? protocol.Id ?? "(unnamed plugin)",
+                outcome, found.Count, elapsedMs, message)
             {
                 Details = diagnostic?.Details,
             });
