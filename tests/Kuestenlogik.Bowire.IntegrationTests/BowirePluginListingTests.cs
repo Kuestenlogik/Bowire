@@ -99,6 +99,21 @@ public sealed class BowirePluginListingTests : IDisposable
     private static JsonElement.ArrayEnumerator Rows(JsonElement body)
         => body.GetProperty("plugins").EnumerateArray();
 
+    /// <summary>
+    /// Just the rows this test put on disk.
+    /// </summary>
+    /// <remarks>
+    /// The listing also carries every bundled protocol plugin the registry
+    /// found — 21 of them on a CI runner — so asserting on the whole set
+    /// would be asserting on how many protocols ship, which is not what any
+    /// of this is about.
+    /// </remarks>
+    private static List<JsonElement> Own(JsonElement body, params string[] ids)
+        => Rows(body)
+            .Where(r => r.TryGetProperty("packageId", out var id)
+                     && ids.Contains(id.GetString(), StringComparer.Ordinal))
+            .ToList();
+
     [Fact]
     public async Task An_Empty_Plugin_Directory_Lists_Nothing_Rather_Than_Failing()
     {
@@ -109,7 +124,9 @@ public sealed class BowirePluginListingTests : IDisposable
         var body = await GetPlugins(host);
 
         Assert.Equal(JsonValueKind.Array, body.GetProperty("plugins").ValueKind);
-        Assert.Empty(Rows(body));
+        // Bundled protocols are still listed; what must be absent is anything
+        // from the (empty) plugin directory.
+        Assert.Empty(Own(body, "Acme.Bowire.Protocol.Widget", "Good.Plugin", "Broken.Plugin"));
     }
 
     [Fact]
@@ -120,7 +137,7 @@ public sealed class BowirePluginListingTests : IDisposable
             """);
         using var host = await BuildHost();
 
-        var row = Assert.Single(Rows(await GetPlugins(host)));
+        var row = Assert.Single(Own(await GetPlugins(host), "Acme.Bowire.Protocol.Widget"));
 
         Assert.Equal("Widget", row.GetProperty("displayName").GetString());
         Assert.Equal("Speaks widget.", row.GetProperty("description").GetString());
@@ -136,8 +153,10 @@ public sealed class BowirePluginListingTests : IDisposable
         AddPlugin("Good.Plugin", """{"packageId":"Good.Plugin","displayName":"Good"}""");
 
         using var host = await BuildHost();
-        var rows = Rows(await GetPlugins(host)).ToList();
+        var rows = Own(await GetPlugins(host), "Broken.Plugin", "Good.Plugin");
 
+        // Both rows survive: the unparseable manifest costs its own labels,
+        // not the other plugin's presence.
         Assert.Equal(2, rows.Count);
         Assert.Contains(rows, r => r.GetProperty("displayName").GetString() == "Good");
     }
@@ -151,7 +170,7 @@ public sealed class BowirePluginListingTests : IDisposable
         AddPlugin("Manifestless.Plugin", manifestJson: null);
         using var host = await BuildHost();
 
-        var row = Assert.Single(Rows(await GetPlugins(host)));
+        var row = Assert.Single(Own(await GetPlugins(host), "Manifestless.Plugin"));
 
         Assert.Contains("Manifestless.Plugin",
             row.GetProperty("packageId").GetString()!, StringComparison.Ordinal);
@@ -167,7 +186,7 @@ public sealed class BowirePluginListingTests : IDisposable
         AddPlugin("Blank.Plugin", """{"packageId":"Blank.Plugin","displayName":"","description":""}""");
         using var host = await BuildHost();
 
-        var row = Assert.Single(Rows(await GetPlugins(host)));
+        var row = Assert.Single(Own(await GetPlugins(host), "Blank.Plugin"));
 
         // Nothing in the registry answers to this assembly name, so the
         // fallback has nothing to offer — but the row must still be there
@@ -184,7 +203,7 @@ public sealed class BowirePluginListingTests : IDisposable
 
         using var host = await BuildHost();
 
-        Assert.Equal(3, Rows(await GetPlugins(host)).Count());
+        Assert.Equal(3, Own(await GetPlugins(host), "A.Plugin", "B.Plugin", "C.Plugin").Count);
     }
 
     [Fact]
