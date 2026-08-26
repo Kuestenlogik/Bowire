@@ -992,7 +992,7 @@ public sealed class BowireMcpTools
     /// for null/empty/unknown so a typo doesn't park a session in a
     /// surprising mode.
     /// </summary>
-    private static BowireRecordingMode ParseMode(string? mode)
+    internal static BowireRecordingMode ParseMode(string? mode)
     {
         if (string.IsNullOrWhiteSpace(mode)) return BowireRecordingMode.Capture;
         var trimmed = mode.Trim();
@@ -1009,7 +1009,7 @@ public sealed class BowireMcpTools
     /// the tool wire contract) and so CA1308 (which discourages
     /// ToLowerInvariant) is satisfied.
     /// </summary>
-    private static string ModeWireName(BowireRecordingMode mode) => mode switch
+    internal static string ModeWireName(BowireRecordingMode mode) => mode switch
     {
         BowireRecordingMode.Capture => "capture",
         BowireRecordingMode.Proxy => "proxy",
@@ -1154,7 +1154,15 @@ public sealed class BowireMcpTools
     private static string AllowlistDeniedMessage(string url) =>
         $"URL \"{url}\" is not on the allowlist. Allowed URLs come from ~/.bowire/environments.json or BowireMcpOptions.AllowedServerUrls. Pass --allow-arbitrary-urls to the CLI (or set BowireMcpOptions.AllowArbitraryUrls = true) to drop this check; only do that in sandboxed contexts.";
 
-    private static void SeedAllowlistFromEnvironments(BowireMcpOptions options)
+    /// <summary>
+    /// Widen the allowlist to every server URL the user has configured.
+    /// </summary>
+    /// <remarks>
+    /// Internal because this is the boundary that decides where an agent may
+    /// send a request at all — worth holding directly rather than through a
+    /// tool invocation.
+    /// </remarks>
+    internal static void SeedAllowlistFromEnvironments(BowireMcpOptions options)
     {
         var path = BowireConfigPath("environments.json");
         if (!File.Exists(path)) return;
@@ -1179,7 +1187,7 @@ public sealed class BowireMcpTools
         }
     }
 
-    private static void WalkForServerUrls(JsonElement el, BowireMcpOptions options, HashSet<string> seen)
+    internal static void WalkForServerUrls(JsonElement el, BowireMcpOptions options, HashSet<string> seen)
     {
         switch (el.ValueKind)
         {
