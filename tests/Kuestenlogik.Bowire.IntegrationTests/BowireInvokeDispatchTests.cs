@@ -377,7 +377,7 @@ public sealed class BowireInvokeDispatchTests : IDisposable
     // from query parameters instead of a JSON body. Two implementations of
     // one rule is exactly where they drift apart.
 
-    private async Task<string> Stream(IHost host, string query)
+    private static async Task<string> Stream(IHost host, string query)
     {
         using var resp = await host.GetTestClient().GetAsync(
             new Uri($"/api/invoke/stream?{query}", UriKind.Relative),
