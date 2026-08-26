@@ -31,10 +31,14 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// </para>
 /// <para>
 /// So the assertions are on what the plugin was handed, captured by a stub
-/// protocol registered in place of the real registry.
+/// protocol registered in place of the real registry. That registry is a
+/// process-wide static, which is why this suite runs in the serialised
+/// <c>BowireProtocolRegistry</c> collection — a suite in another collection
+/// installing its own registry mid-test would silently dispatch these calls
+/// to a different plugin.
 /// </para>
 /// </remarks>
-[Collection("CwdSerialised")]
+[Collection("BowireProtocolRegistry")]
 public sealed class BowireInvokeDispatchTests : IDisposable
 {
     private readonly RecordingProtocol _plugin = new();
