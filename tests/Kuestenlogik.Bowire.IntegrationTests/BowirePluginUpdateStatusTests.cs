@@ -133,18 +133,27 @@ public sealed class BowirePluginUpdateStatusTests : IDisposable
         // proof that nothing was fetched is that this snapshot names a package
         // and a version nuget.org has never heard of.
         //
-        // The field names are the record's own (`results`, `installed`,
-        // `latest`) — an invented shape deserialises into a snapshot with
-        // default values and no entries, which reads as "a check ran and found
-        // nothing" rather than as a broken fixture.
+        // Serialised from the real record rather than hand-written: the cache
+        // is written with no naming policy, so the file carries the type's own
+        // PascalCase and a hand-made camelCase fixture binds to nothing —
+        // which reads as "a check ran and found nothing", not as a broken
+        // fixture. Two CI rounds went to that.
+        var snapshot = new PluginUpdateCheckSnapshot(
+            CheckedAt: new DateTimeOffset(2026, 8, 26, 9, 0, 0, TimeSpan.Zero),
+            IncludePrerelease: false,
+            Results: [new PluginUpdateCheckResult(
+                PackageId: "Acme.Bowire.Protocol.Widget",
+                Installed: "1.0.0",
+                Latest: "9.9.9",
+                UpdateAvailable: true,
+                Error: null)]);
+
         var stateDir = Path.Combine(_root, "state");
         Directory.CreateDirectory(stateDir);
-        await File.WriteAllTextAsync(Path.Combine(stateDir, "update-check.json"), """
-            {"checkedAt":"2026-08-26T09:00:00+00:00","includePrerelease":false,
-             "results":[{"packageId":"Acme.Bowire.Protocol.Widget",
-                         "installed":"1.0.0","latest":"9.9.9",
-                         "updateAvailable":true,"error":null}]}
-            """, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            Path.Combine(stateDir, "update-check.json"),
+            JsonSerializer.Serialize(snapshot),
+            TestContext.Current.CancellationToken);
 
         using var host = await BuildHost();
         var cached = (await Status(host)).GetProperty("cached");
