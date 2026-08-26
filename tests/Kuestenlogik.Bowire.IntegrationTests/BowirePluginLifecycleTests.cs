@@ -42,6 +42,16 @@ public sealed class BowirePluginLifecycleTests : IDisposable
 {
     private readonly string _root = Path.Combine(
         Path.GetTempPath(), "bowire-lifecycle-" + Guid.NewGuid().ToString("N"));
+    /// <summary>
+    /// A plugin id no other test uses.
+    /// </summary>
+    /// <remarks>
+    /// The disabled-plugins store keeps its set in a process-global static, so
+    /// a shared id would make the second test to run a no-op: <c>Disable</c>
+    /// returns early when the id is already in the set, and the file this test
+    /// looks for is then never written to <em>its</em> temp root.
+    /// </remarks>
+    private readonly string _pluginId = "Test.Plugin." + Guid.NewGuid().ToString("N")[..8];
     private readonly IBowirePathResolver _previousPaths = BowirePaths.Current;
     private readonly IBowireUserStore _previousUsers = BowireUserContext.Current;
 
@@ -102,7 +112,7 @@ public sealed class BowirePluginLifecycleTests : IDisposable
         // that diagnosable from a network tab.
         using var host = await BuildHost();
 
-        var (status, body) = await Lifecycle(host, "Some.Plugin", "explode");
+        var (status, body) = await Lifecycle(host, _pluginId, "explode");
 
         Assert.Equal(HttpStatusCode.BadRequest, status);
         var error = body.GetProperty("error").GetString()!;
@@ -118,7 +128,7 @@ public sealed class BowirePluginLifecycleTests : IDisposable
         // Normalised server-side rather than trusted from the client.
         using var host = await BuildHost();
 
-        var (status, _) = await Lifecycle(host, "Some.Plugin", "RESET-STORAGE");
+        var (status, _) = await Lifecycle(host, _pluginId, "RESET-STORAGE");
 
         Assert.Equal(HttpStatusCode.OK, status);
     }
@@ -130,9 +140,9 @@ public sealed class BowirePluginLifecycleTests : IDisposable
         // attributed to the row that produced it.
         using var host = await BuildHost();
 
-        var (_, body) = await Lifecycle(host, "Some.Plugin", "explode");
+        var (_, body) = await Lifecycle(host, _pluginId, "explode");
 
-        Assert.Equal("Some.Plugin", body.GetProperty("pluginId").GetString());
+        Assert.Equal(_pluginId, body.GetProperty("pluginId").GetString());
         Assert.Equal("explode", body.GetProperty("action").GetString());
         Assert.False(body.GetProperty("ok").GetBoolean());
     }
@@ -164,12 +174,12 @@ public sealed class BowirePluginLifecycleTests : IDisposable
         // the operator's decision unrecorded.
         using var host = await BuildHost();
 
-        var (status, body) = await Lifecycle(host, "Some.Plugin", "unload");
+        var (status, body) = await Lifecycle(host, _pluginId, "unload");
 
         Assert.Equal(HttpStatusCode.OK, status);
         Assert.True(body.GetProperty("ok").GetBoolean());
         Assert.False(body.GetProperty("wasActive").GetBoolean());
-        Assert.True(BowireDisabledPluginsStore.IsDisabled("Some.Plugin"));
+        Assert.True(BowireDisabledPluginsStore.IsDisabled(_pluginId));
     }
 
     [Fact]
@@ -178,23 +188,32 @@ public sealed class BowirePluginLifecycleTests : IDisposable
         // Double-click on the button, or two operators in two tabs.
         using var host = await BuildHost();
 
-        await Lifecycle(host, "Some.Plugin", "unload");
-        var (status, _) = await Lifecycle(host, "Some.Plugin", "unload");
+        await Lifecycle(host, _pluginId, "unload");
+        var (status, _) = await Lifecycle(host, _pluginId, "unload");
 
         Assert.Equal(HttpStatusCode.OK, status);
-        Assert.True(BowireDisabledPluginsStore.IsDisabled("Some.Plugin"));
+        Assert.True(BowireDisabledPluginsStore.IsDisabled(_pluginId));
     }
 
     [Fact]
-    public async Task Loading_Takes_A_Plugin_Back_Off_The_Disabled_List()
+    public async Task Loading_Takes_A_Plugin_Off_The_Disabled_List_Even_When_It_Cannot_Be_Loaded()
     {
+        // `load` re-runs discovery over the assemblies already in-process, so
+        // an id with no type behind it ends in a 404 that points at install.
+        //
+        // Worth pinning: the disabled-list entry is dropped *before* that
+        // discovery, so the id comes back enabled anyway. That is the right
+        // order — the operator said "stop keeping this off" and the store
+        // records the decision whether or not the assembly happens to be
+        // present — but it is not what the 404 suggests on its own.
         using var host = await BuildHost();
-        await Lifecycle(host, "Some.Plugin", "unload");
+        await Lifecycle(host, _pluginId, "unload");
 
-        var (status, _) = await Lifecycle(host, "Some.Plugin", "load");
+        var (status, body) = await Lifecycle(host, _pluginId, "load");
 
-        Assert.Equal(HttpStatusCode.OK, status);
-        Assert.False(BowireDisabledPluginsStore.IsDisabled("Some.Plugin"));
+        Assert.Equal(HttpStatusCode.NotFound, status);
+        Assert.Contains("install", body.GetProperty("error").GetString()!, StringComparison.OrdinalIgnoreCase);
+        Assert.False(BowireDisabledPluginsStore.IsDisabled(_pluginId));
     }
 
     [Fact]
@@ -204,11 +223,11 @@ public sealed class BowirePluginLifecycleTests : IDisposable
         // unloaded after a restart.
         using var host = await BuildHost();
 
-        await Lifecycle(host, "Some.Plugin", "unload");
+        await Lifecycle(host, _pluginId, "unload");
 
         var file = Path.Combine(_root, "disabled-plugins.json");
         Assert.True(File.Exists(file), $"expected {file} to be written");
-        Assert.Contains("Some.Plugin",
+        Assert.Contains(_pluginId,
             await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken),
             StringComparison.Ordinal);
     }
@@ -219,12 +238,12 @@ public sealed class BowirePluginLifecycleTests : IDisposable
     public async Task Resetting_Storage_Clears_The_State_Directory_And_Says_So()
     {
         using var host = await BuildHost();
-        var stateDir = Path.Combine(_root, "plugins", "Some.Plugin", "state");
+        var stateDir = Path.Combine(_root, "plugins", _pluginId, "state");
         Directory.CreateDirectory(stateDir);
         await File.WriteAllTextAsync(Path.Combine(stateDir, "state.json"), "{}",
             TestContext.Current.CancellationToken);
 
-        var (status, body) = await Lifecycle(host, "Some.Plugin", "reset-storage");
+        var (status, body) = await Lifecycle(host, _pluginId, "reset-storage");
 
         Assert.Equal(HttpStatusCode.OK, status);
         Assert.True(body.GetProperty("diskCleared").GetBoolean());
@@ -239,7 +258,7 @@ public sealed class BowirePluginLifecycleTests : IDisposable
         // get an error here.
         using var host = await BuildHost();
 
-        var (status, body) = await Lifecycle(host, "Some.Plugin", "reset-storage");
+        var (status, body) = await Lifecycle(host, _pluginId, "reset-storage");
 
         Assert.Equal(HttpStatusCode.OK, status);
         Assert.False(body.GetProperty("diskCleared").GetBoolean());
@@ -254,11 +273,11 @@ public sealed class BowirePluginLifecycleTests : IDisposable
         // like it worked and leave half the state behind.
         using var host = await BuildHost();
 
-        var (_, body) = await Lifecycle(host, "Some.Plugin", "reset-storage");
+        var (_, body) = await Lifecycle(host, _pluginId, "reset-storage");
 
-        Assert.Equal("bowire_plugin_Some.Plugin_",
+        Assert.Equal($"bowire_plugin_{_pluginId}_",
             body.GetProperty("localStorageKeyPrefix").GetString());
-        Assert.Contains("Some.Plugin",
+        Assert.Contains(_pluginId,
             body.GetProperty("stateDirectory").GetString()!, StringComparison.Ordinal);
     }
 
