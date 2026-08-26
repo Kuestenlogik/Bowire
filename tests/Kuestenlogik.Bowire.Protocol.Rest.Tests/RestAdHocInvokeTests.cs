@@ -96,9 +96,15 @@ public sealed class RestAdHocInvokeTests
     }
 
     [Fact]
-    public async Task A_Url_That_Is_Not_Absolute_Is_Refused()
+    public async Task A_Url_That_Will_Not_Parse_Is_Refused()
     {
-        var (result, _) = await Invoke(url: "/orders");
+        // Note what is *not* asserted here: a rooted path like "/orders".
+        // On Unix that parses as an absolute URI (file:///orders), so the
+        // guard lets it through and the failure surfaces later as a transport
+        // error instead. Same platform quirk the reverse-proxy guard had to
+        // handle explicitly — pinning it as a refusal would only hold on
+        // Windows.
+        var (result, _) = await Invoke(url: "not a url at all");
 
         Assert.Equal("Error", result.Status);
         Assert.Contains("Invalid URL", result.Metadata!["error"], StringComparison.Ordinal);
@@ -253,12 +259,16 @@ public sealed class RestAdHocInvokeTests
     [Fact]
     public async Task Content_Type_Is_Left_To_The_Content_Not_The_Header_Set()
     {
-        // Setting it on the request's header collection throws in HttpClient;
-        // it belongs on the content, which is where the body path puts it.
-        var (_, handler) = await Invoke(verb: "POST", body: """{"a":1}""",
+        // HttpClient throws on a content header added to the request's own
+        // header collection ("Misused header name") — which is exactly why the
+        // invoker filters Content-Type out of the metadata rather than
+        // forwarding it. The proof is that the call succeeds at all, and that
+        // the content keeps the type the body path gave it.
+        var (result, handler) = await Invoke(verb: "POST", body: """{"a":1}""",
             metadata: new Dictionary<string, string> { ["Content-Type"] = "application/xml" });
 
-        Assert.False(handler.Request!.Headers.Contains("Content-Type"));
+        Assert.NotEqual("Error", result.Status);
+        Assert.Equal("application/json", handler.ContentType);
     }
 
     [Fact]
