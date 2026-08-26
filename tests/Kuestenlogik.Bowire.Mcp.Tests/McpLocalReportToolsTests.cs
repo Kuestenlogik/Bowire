@@ -48,6 +48,11 @@ public sealed class McpLocalReportToolsTests : IDisposable
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
+    // Fields rather than inline array literals at the call sites: CA1861
+    // refuses a constant array argument passed from more than one place.
+    private static readonly string[] WorkspaceBowireDir = [".bowire"];
+    private static readonly string[] MissingDir = ["no-such-directory"];
+
     private static ContractVerificationReport Report(
         string consumer, string provider, bool passed, string? error = null)
         => new()
@@ -185,7 +190,7 @@ public sealed class McpLocalReportToolsTests : IDisposable
     {
         await ContractResultStore.SaveAsync(Report("web", "orders", passed: false), _root, Ct);
 
-        var json = await BowireMcpTools.ReportRollup(from: [".bowire"], ct: Ct);
+        var json = await BowireMcpTools.ReportRollup(from: WorkspaceBowireDir, ct: Ct);
 
         using var doc = JsonDocument.Parse(json);
         Assert.NotEmpty(doc.RootElement.GetProperty("services").EnumerateArray());
@@ -196,7 +201,7 @@ public sealed class McpLocalReportToolsTests : IDisposable
     {
         // An agent passes a path it guessed; the answer is an empty rollup,
         // not an error it has to interpret.
-        var json = await BowireMcpTools.ReportRollup(from: ["no-such-directory"], ct: Ct);
+        var json = await BowireMcpTools.ReportRollup(from: MissingDir, ct: Ct);
 
         using var doc = JsonDocument.Parse(json);
         Assert.Empty(doc.RootElement.GetProperty("services").EnumerateArray());
@@ -208,7 +213,7 @@ public sealed class McpLocalReportToolsTests : IDisposable
         // For a repo whose report files carry no service name of their own.
         await ContractResultStore.SaveAsync(Report("web", "orders", passed: true), _root, Ct);
 
-        var json = await BowireMcpTools.ReportRollup(from: [".bowire"], service: "checkout", ct: Ct);
+        var json = await BowireMcpTools.ReportRollup(from: WorkspaceBowireDir, service: "checkout", ct: Ct);
 
         using var doc = JsonDocument.Parse(json);
         var services = doc.RootElement.GetProperty("services").EnumerateArray().ToList();

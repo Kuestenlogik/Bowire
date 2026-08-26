@@ -65,8 +65,12 @@ public sealed class AuthRecordingCommandTests : IDisposable
         return (exit, stdout.ToString(), stderr.ToString());
     }
 
+    // A field rather than an inline array literal: this is passed on every
+    // call, and CA1861 refuses a constant array argument in that position.
+    private static readonly string[] CaptureVerb = ["auth-recording", "capture"];
+
     private static Task<(int Exit, string Out, string Err)> Capture(params string[] extra)
-        => Cli([.. new[] { "auth-recording", "capture" }, .. extra]);
+        => Cli([.. CaptureVerb, .. extra]);
 
     // ---- capture ----
 
