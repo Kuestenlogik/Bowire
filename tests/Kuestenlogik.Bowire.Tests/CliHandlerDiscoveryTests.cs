@@ -108,7 +108,8 @@ public sealed class CliHandlerDiscoveryTests : IDisposable
 
     [Fact]
     public async Task Calling_Without_A_Target_Is_A_Usage_Error()
-        => Assert.NotEqual(0, await CliHandler.CallAsync(Options(), _out, _err));
+        => Assert.NotEqual(0, await CliHandler.CallAsync(
+            Options(), _out, _err, TestContext.Current.CancellationToken));
 
     [Fact]
     public async Task Calling_A_Method_No_Plugin_Found_Points_At_Discover()
@@ -117,7 +118,8 @@ public sealed class CliHandlerDiscoveryTests : IDisposable
         // for the full table. A bare "not found" would leave the operator
         // guessing which of the two ends is wrong.
         var exit = await CliHandler.CallAsync(
-            Options(target: "orders.v1.OrderService/GetOrder"), _out, _err);
+            Options(target: "orders.v1.OrderService/GetOrder"), _out, _err,
+            TestContext.Current.CancellationToken);
 
         Assert.NotEqual(0, exit);
         var output = _out.ToString() + _err.ToString();
