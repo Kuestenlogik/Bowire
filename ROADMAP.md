@@ -10,36 +10,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
-
-**19/20 done** · 1 backlog
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
-| [54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) | Samples | [harbor-demo: MQTT crane telemetry should name the container it lifts](#issue-kuestenlogik-bowire-samples-54) | ✅ Done | `area:multi` |
-| [101](https://github.com/Kuestenlogik/Bowire/issues/101) | Bowire | [Tugboat — VS Code workbench extension](#issue-kuestenlogik-bowire-101) | ✅ Done | `area:workbench` |
-| [172](https://github.com/Kuestenlogik/Bowire/issues/172) | Bowire | [.bowire/project.json convention — checked-in workspace configuration](#issue-kuestenlogik-bowire-172) | ✅ Done | `area:workbench` |
-| [183](https://github.com/Kuestenlogik/Bowire/issues/183) | Bowire | [GitHub Action — Bowire PR-comment bot with delta + findings + perf](#issue-kuestenlogik-bowire-183) | ✅ Done | `area:workbench` |
-| [189](https://github.com/Kuestenlogik/Bowire/issues/189) | Bowire | [API design-time validation — typed rule engine over schemas](#issue-kuestenlogik-bowire-189) | ✅ Done | `area:workbench` |
-| [232](https://github.com/Kuestenlogik/Bowire/issues/232) | Bowire | [Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)](#issue-kuestenlogik-bowire-232) | ✅ Done | `area:workbench` |
-| [236](https://github.com/Kuestenlogik/Bowire/issues/236) | Bowire | [Release cascade: wait for nuget.org indexing before dispatching to siblings](#issue-kuestenlogik-bowire-236) | ✅ Done | `area:multi` |
-| [237](https://github.com/Kuestenlogik/Bowire/issues/237) | Bowire | [WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+](#issue-kuestenlogik-bowire-237) | ✅ Done | `area:cli` |
-| [360](https://github.com/Kuestenlogik/Bowire/issues/360) | Bowire | [Benchmarks: k6-style thresholds as CI gates — fail bowire test / bench runs on latency budgets](#issue-kuestenlogik-bowire-360) | ✅ Done | `area:cli` |
-| [361](https://github.com/Kuestenlogik/Bowire/issues/361) | Bowire | [Secrets redaction across all test/CI outputs — Hurl-grade](#issue-kuestenlogik-bowire-361) | ✅ Done | `area:security` |
-| [364](https://github.com/Kuestenlogik/Bowire/issues/364) | Bowire | [Contract testing: workbench matrix view (consumer × provider pass/fail)](#issue-kuestenlogik-bowire-364) | ✅ Done | `area:workbench` |
-| [367](https://github.com/Kuestenlogik/Bowire/issues/367) | Bowire | [codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)](#issue-kuestenlogik-bowire-367) | ✅ Done | `area:multi` |
-| [582](https://github.com/Kuestenlogik/Bowire/issues/582) | Bowire | [Split bowire-pr into its own public kuestenlogik/bowire-action repo](#issue-kuestenlogik-bowire-582) | ✅ Done |  |
-| [585](https://github.com/Kuestenlogik/Bowire/issues/585) | Bowire | [REST OpenAPI discovery is slow (~5-8s) and flakes near the 8s probe ceiling](#issue-kuestenlogik-bowire-585) | ✅ Done |  |
-| [586](https://github.com/Kuestenlogik/Bowire/issues/586) | Bowire | [verification-drill publish is failing for `v0.0.0-test`](#issue-kuestenlogik-bowire-586) | ✅ Done |  |
-| [587](https://github.com/Kuestenlogik/Bowire/issues/587) | Bowire | [Report rollup across services — one view over the artefacts Bowire already writes](#issue-kuestenlogik-bowire-587) | ✅ Done |  |
-| [610](https://github.com/Kuestenlogik/Bowire/issues/610) | Bowire | [Repair the eight rotted Phase 1-3 E2E tests](#issue-kuestenlogik-bowire-610) | ✅ Done |  |
-| [612](https://github.com/Kuestenlogik/Bowire/issues/612) | Bowire | [Collections are not workspace-scoped on disk: the global store overwrites the workspace key on every boot](#issue-kuestenlogik-bowire-612) | ✅ Done |  |
-| [615](https://github.com/Kuestenlogik/Bowire/issues/615) | Bowire | [cli: report the bound workbench URL through a --port-file instead of the console banner](#issue-kuestenlogik-bowire-615) | ✅ Done | `area:cli` |
-
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**5/30 done** · 1 next up · 24 backlog
+**5/31 done** · 1 next up · 25 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -65,6 +38,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ⬜ Backlog | `area:workbench` |
 | [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ⬜ Backlog | `area:workbench` |
 | [284](https://github.com/Kuestenlogik/Bowire/issues/284) | Bowire | [Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)](#issue-kuestenlogik-bowire-284) | ⬜ Backlog | `area:plugin-sdk` |
+| [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins](#issue-kuestenlogik-bowire-549) | ⬜ Backlog | `area:workbench` |
 | [588](https://github.com/Kuestenlogik/Bowire/issues/588) | Bowire | [Tugboat — JetBrains plugin (IntelliJ platform)](#issue-kuestenlogik-bowire-588) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
@@ -163,116 +137,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
 ## Details
-
-### v2.5 — Continuous integration: PR bot, project file, org dashboard *(due 2026-08-12)*
-
-#### <a id="issue-kuestenlogik-bowire-365"></a>⬜ Backlog · [#365](https://github.com/Kuestenlogik/Bowire/issues/365) Contract testing + workspace-id: run a workbench-stored workspace's suite by id
-
-> `area:workbench`
-
-Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in a **git-native workspace directory**. The original #181 sketch also listed `--workspace-id` — running a workspace addressed by its id from the workbench's `~/.bowire/` per-user storage. [[more]](https://github.com/Kuestenlogik/Bowire/issues/365)
-
-#### <a id="issue-kuestenlogik-bowire-samples-54"></a>✅ Done · [Kuestenlogik/Bowire.Samples#54](https://github.com/Kuestenlogik/Bowire.Samples/issues/54) harbor-demo: MQTT crane telemetry should name the container it lifts
-
-> `area:multi`
-
-The harbor demo is the reference recording for Bowire's correlated timeline (Kuestenlogik/Bowire#539, #545). Seven of its eight protocol steps now join into one flow. The eighth — the MQTT crane telemetry — stays dark, and the sample is the reason. [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/54)
-
-#### <a id="issue-kuestenlogik-bowire-101"></a>✅ Done · [#101](https://github.com/Kuestenlogik/Bowire/issues/101) Tugboat — VS Code workbench extension
-
-> `area:workbench`
-
-> **Scoped 2026-08-20.** This issue now covers the **VS Code extension only**; the JetBrains plugin moved to #588. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/101)
-
-#### <a id="issue-kuestenlogik-bowire-172"></a>✅ Done · [#172](https://github.com/Kuestenlogik/Bowire/issues/172) .bowire/project.json convention — checked-in workspace configuration
-
-> `area:workbench`
-
-Workspaces today live in `~/.bowire/workspaces/<id>/` (per-user, machine-local). The Export/Import (#159) exists but is opt-in. For Bowire to be the source of truth for "what this repo's API looks like", every repo needs a Bowire configuration checked-in. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/172)
-
-#### <a id="issue-kuestenlogik-bowire-183"></a>✅ Done · [#183](https://github.com/Kuestenlogik/Bowire/issues/183) GitHub Action — Bowire PR-comment bot with delta + findings + perf
-
-> `area:workbench`
-
-Bowire runs locally on the developer's machine. When the developer pushes a PR, the reviewer sees the code diff — and nothing about the API impact. Bowire's value (regressions, security findings, perf deltas) stays invisible to reviewers. Without surfacing that on the PR, "continuous" stays aspirational. [[more]](https://github.com/Kuestenlogik/Bowire/issues/183)
-
-#### <a id="issue-kuestenlogik-bowire-189"></a>✅ Done · [#189](https://github.com/Kuestenlogik/Bowire/issues/189) API design-time validation — typed rule engine over schemas
-
-> `area:workbench`
-
-Most API design issues — inconsistent naming, returning passwords, returning unbounded result lists, missing pagination, missing versioning — are caught by code review IF the reviewer is sharp. They scale exactly with reviewer attention, which doesn't scale. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/189)
-
-#### <a id="issue-kuestenlogik-bowire-232"></a>✅ Done · [#232](https://github.com/Kuestenlogik/Bowire/issues/232) Benchmarks: 'scheduled' run shape + cron infrastructure (restart-survival)
-
-> `area:workbench`
-
-Add the **scheduled** run shape to Benchmarks — a saved envelope can be set to fire on a cron schedule, the workbench (or a CLI / embedded host) runs it without operator interaction, and results land in the saved-runs history. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/232)
-
-#### <a id="issue-kuestenlogik-bowire-236"></a>✅ Done · [#236](https://github.com/Kuestenlogik/Bowire/issues/236) Release cascade: wait for nuget.org indexing before dispatching to siblings
-
-> `area:multi`
-
-When the Bowire `Release` workflow finishes a new version, it does these steps back-to-back: [[more]](https://github.com/Kuestenlogik/Bowire/issues/236)
-
-#### <a id="issue-kuestenlogik-bowire-237"></a>✅ Done · [#237](https://github.com/Kuestenlogik/Bowire/issues/237) WINGET_TOKEN expired — rotate to unblock winget publish for v2.0.0+
-
-> `area:cli`
-
-During the v2.0.0 release publish on 2026-06-21, the `winget` workflow failed at the `wingetcreate submit` step: [[more]](https://github.com/Kuestenlogik/Bowire/issues/237)
-
-#### <a id="issue-kuestenlogik-bowire-360"></a>✅ Done · [#360](https://github.com/Kuestenlogik/Bowire/issues/360) Benchmarks: k6-style thresholds as CI gates — fail bowire test / bench runs on latency budgets
-
-> `area:cli`
-
-Competitive-research input (mid-2026): k6's thresholds (`p95 < 200ms` → non-zero exit) are the load-testing table stake, and k6 2.0 doubled down (OTel output, threshold gates unchanged at the core). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/360)
-
-#### <a id="issue-kuestenlogik-bowire-361"></a>✅ Done · [#361](https://github.com/Kuestenlogik/Bowire/issues/361) Secrets redaction across all test/CI outputs — Hurl-grade
-
-> `area:security`
-
-Competitive-research input (mid-2026): Hurl 8.0 sets the bar here — values marked secret are redacted in logs, reports, and even curl-export output. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/361)
-
-#### <a id="issue-kuestenlogik-bowire-364"></a>✅ Done · [#364](https://github.com/Kuestenlogik/Bowire/issues/364) Contract testing: workbench matrix view (consumer × provider pass/fail)
-
-> `area:workbench`
-
-Follow-up to #191 (CLI pillar shipped in b252e419). The one remaining acceptance item from #191 is a UI surface rather than CI plumbing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/364)
-
-#### <a id="issue-kuestenlogik-bowire-367"></a>✅ Done · [#367](https://github.com/Kuestenlogik/Bowire/issues/367) codecov: dedicated 'javascript' flag (lcov upload from node:test coverage)
-
-> `area:multi`
-
-Follow-up to #356. JS tests now gate CI (`node --test` over wwwroot-js) and JS coverage is *runnable* locally (`npm run test:js:coverage` / `node --test --experimental-test-coverage`), but it isn't uploaded to Codecov yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/367)
-
-#### <a id="issue-kuestenlogik-bowire-582"></a>✅ Done · [#582](https://github.com/Kuestenlogik/Bowire/issues/582) Split bowire-pr into its own public kuestenlogik/bowire-action repo
-
-The PR-report bot was prototyped **in-repo** under `.github/actions/bowire-pr/` (see #183) so it could stabilise against the real CLI. Once it settles, it should live in its own repository and be publishable as a reusable/Marketplace action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/582)
-
-#### <a id="issue-kuestenlogik-bowire-585"></a>✅ Done · [#585](https://github.com/Kuestenlogik/Bowire/issues/585) REST OpenAPI discovery is slow (~5-8s) and flakes near the 8s probe ceiling
-
-Found during v2.5 hands-on testing (CLI, against a local `bowire mock --schema` REST target). [[more]](https://github.com/Kuestenlogik/Bowire/issues/585)
-
-#### <a id="issue-kuestenlogik-bowire-586"></a>✅ Done · [#586](https://github.com/Kuestenlogik/Bowire/issues/586) verification-drill publish is failing for `v0.0.0-test`
-
-<!-- publish-failure:verification-drill --> The **verification-drill** publish failed for `v0.0.0-test`. - Run: https://github.com/Kuestenlogik/Bowire/actions/runs/32348578129 - Workflow: `Verify publish-failure reporter` - Commit: 938fd2938991d1cae684e3315401055bbc3c6eab [[more]](https://github.com/Kuestenlogik/Bowire/issues/586)
-
-#### <a id="issue-kuestenlogik-bowire-587"></a>✅ Done · [#587](https://github.com/Kuestenlogik/Bowire/issues/587) Report rollup across services — one view over the artefacts Bowire already writes
-
-Split out of #188, which stays as the hosted-platform epic (deployable, upload API, auth, multi-tenancy) and moved to v3.0. [[more]](https://github.com/Kuestenlogik/Bowire/issues/587)
-
-#### <a id="issue-kuestenlogik-bowire-610"></a>✅ Done · [#610](https://github.com/Kuestenlogik/Bowire/issues/610) Repair the eight rotted Phase 1-3 E2E tests
-
-Eight of the Phase 1–3 E2E tests under `tests/e2e/` fail against current `main`. They are marked `test.fixme` so the suite can gate CI (#see below) instead of being switched off wholesale; this issue is to repair and un-mark them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/610)
-
-#### <a id="issue-kuestenlogik-bowire-612"></a>✅ Done · [#612](https://github.com/Kuestenlogik/Bowire/issues/612) Collections are not workspace-scoped on disk: the global store overwrites the workspace key on every boot
-
-Creating a workspace from the **REST** template produces no starter collection. The template's `REST starter` entry — the one carrying the `findPetsByStatus` request — is not in the new workspace afterwards. [[more]](https://github.com/Kuestenlogik/Bowire/issues/612)
-
-#### <a id="issue-kuestenlogik-bowire-615"></a>✅ Done · [#615](https://github.com/Kuestenlogik/Bowire/issues/615) cli: report the bound workbench URL through a --port-file instead of the console banner
-
-> `area:cli`
-
-There is no reliable way for a program that starts `bowire` to learn where the workbench is actually being served. [[more]](https://github.com/Kuestenlogik/Bowire/issues/615)
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
@@ -407,6 +271,12 @@ Phase F of the multi-tenant rollout — the UI affordances that turn "multi-user
 > `area:plugin-sdk`
 
 Extracted from #28 — **Phase D** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/284)
+
+#### <a id="issue-kuestenlogik-bowire-365"></a>⬜ Backlog · [#365](https://github.com/Kuestenlogik/Bowire/issues/365) Contract testing + workspace-id: run a workbench-stored workspace's suite by id
+
+> `area:workbench`
+
+Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in a **git-native workspace directory**. The original #181 sketch also listed `--workspace-id` — running a workspace addressed by its id from the workbench's `~/.bowire/` per-user storage. [[more]](https://github.com/Kuestenlogik/Bowire/issues/365)
 
 #### <a id="issue-kuestenlogik-bowire-549"></a>⬜ Backlog · [#549](https://github.com/Kuestenlogik/Bowire/issues/549) Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins
 
