@@ -8,6 +8,7 @@ using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Endpoints;
 using Kuestenlogik.Bowire.Plugins;
 using Kuestenlogik.Bowire.Projects;
+using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
@@ -358,4 +359,114 @@ public sealed class BowirePluginLifecycleTests : IDisposable
         Assert.NotEqual(HttpStatusCode.OK, resp.StatusCode);
     }
 
+    // ---- lifecycle against a plugin that is actually loaded ----
+    //
+    // The tests above drive ids the registry has never heard of. These
+    // register a live one first, because restart and unload only do their
+    // real work when there is an instance to replace or dispose — and
+    // "restart" replacing nothing while reporting success is the failure the
+    // Settings button would hide.
+
+    /// <summary>A protocol with a public parameterless ctor, as restart requires.</summary>
+    public sealed class RestartableProtocol : IBowireProtocol, IDisposable
+    {
+        public static int Constructed { get; set; }
+        public static int Disposed { get; set; }
+
+        public RestartableProtocol() => Constructed++;
+
+        public string Id => "restartable-stub";
+        public string Name => "Restartable";
+        public string IconSvg => "<svg/>";
+
+        public void Dispose() => Disposed++;
+
+        public Task<List<BowireServiceInfo>> DiscoverAsync(
+            string serverUrl, bool showInternalServices, CancellationToken ct = default)
+            => Task.FromResult(new List<BowireServiceInfo>());
+
+        public Task<InvokeResult> InvokeAsync(
+            string serverUrl, string service, string method,
+            List<string> jsonMessages, bool showInternalServices,
+            Dictionary<string, string>? metadata = null, CancellationToken ct = default)
+            => Task.FromResult(new InvokeResult(null, 0, "OK", new Dictionary<string, string>()));
+
+#pragma warning disable CS1998 // Nothing to stream.
+        public async IAsyncEnumerable<string> InvokeStreamAsync(
+            string serverUrl, string service, string method,
+            List<string> jsonMessages, bool showInternalServices,
+            Dictionary<string, string>? metadata = null,
+            [EnumeratorCancellation] CancellationToken ct = default)
+        {
+            yield break;
+        }
+#pragma warning restore CS1998
+
+        public Task<IBowireChannel?> OpenChannelAsync(
+            string serverUrl, string service, string method,
+            bool showInternalServices, Dictionary<string, string>? metadata = null,
+            CancellationToken ct = default) => Task.FromResult<IBowireChannel?>(null);
+    }
+
+    private static void RegisterLivePlugin()
+    {
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new RestartableProtocol());
+        BowireEndpointHelpers.SetRegistry(registry);
+    }
+
+    [Fact]
+    public async Task Restarting_A_Live_Plugin_Builds_A_Fresh_Instance_And_Disposes_The_Old_One()
+    {
+        // Both halves matter: a restart that never constructed a replacement
+        // would leave the plugin dead, and one that never disposed the old
+        // instance leaks whatever it held open — a socket, a file, a client.
+        RegisterLivePlugin();
+        // Reset *after* registering: constructing the live instance counts too,
+        // and what is being measured is what the restart itself did.
+        RestartableProtocol.Constructed = 0;
+        RestartableProtocol.Disposed = 0;
+        using var host = await BuildHost();
+
+        var (status, body) = await Lifecycle(host, "restartable-stub", "restart");
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.True(body.GetProperty("ok").GetBoolean());
+        Assert.Equal(1, RestartableProtocol.Constructed);
+        Assert.Equal(1, RestartableProtocol.Disposed);
+        Assert.NotNull(BowireEndpointHelpers.GetRegistry().GetById("restartable-stub"));
+    }
+
+    [Fact]
+    public async Task Unloading_A_Live_Plugin_Takes_It_Out_Of_The_Registry_And_Disposes_It()
+    {
+        RegisterLivePlugin();
+        RestartableProtocol.Disposed = 0;
+        using var host = await BuildHost();
+
+        var (status, body) = await Lifecycle(host, "restartable-stub", "unload");
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.True(body.GetProperty("wasActive").GetBoolean());
+        Assert.Equal(1, RestartableProtocol.Disposed);
+        Assert.Null(BowireEndpointHelpers.GetRegistry().GetById("restartable-stub"));
+
+        // And it is remembered, so a restart does not quietly bring it back.
+        Assert.True(BowireDisabledPluginsStore.IsDisabled("restartable-stub"));
+        BowireDisabledPluginsStore.Enable("restartable-stub");
+    }
+
+    [Fact]
+    public async Task Restarting_A_Plugin_That_Was_Just_Unloaded_Points_At_Load()
+    {
+        // The sequence an operator actually performs when a plugin misbehaves.
+        RegisterLivePlugin();
+        using var host = await BuildHost();
+        await Lifecycle(host, "restartable-stub", "unload");
+
+        var (status, _) = await Lifecycle(host, "restartable-stub", "restart");
+
+        Assert.Equal(HttpStatusCode.NotFound, status);
+        BowireDisabledPluginsStore.Enable("restartable-stub");
+    }
 }

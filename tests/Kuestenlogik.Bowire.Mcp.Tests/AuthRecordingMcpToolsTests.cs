@@ -216,4 +216,49 @@ public sealed class AuthRecordingMcpToolsTests : IAsyncDisposable
         tools.AuthRecordingRemove("prod-token", workspace: a);
         tools.AuthRecordingRemove("prod-token", workspace: b);
     }
+
+    [Fact]
+    public async Task A_Confirmed_Flow_Capture_Stores_What_The_Login_Chain_Returned()
+    {
+        // The flow's own answer decides the scheme and header — not the
+        // arguments. An agent that guessed "bearer" for a cookie-based login
+        // would store a credential the mock then presents the wrong way.
+        var workspace = Workspace();
+        var tools = Tools(capturer: new FakeCapturer());
+
+        var json = await tools.AuthRecordingCaptureFlow(
+            "rec-flow", "{}", name: "Login chain", workspace: workspace,
+            ct: TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain("pending", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("captured-tok", json, StringComparison.Ordinal);
+
+        using var listed = JsonDocument.Parse(BowireMcpTools.AuthRecordingList(workspace));
+        var row = Assert.Single(listed.RootElement.GetProperty("recordings").EnumerateArray());
+        Assert.Equal("rec-flow", row.GetProperty("id").GetString());
+        Assert.Equal("bearer", row.GetProperty("scheme").GetString());
+    }
+
+    [Fact]
+    public async Task A_Flow_That_Fails_Reports_It_And_Stores_Nothing()
+    {
+        // A login chain that cannot complete must not leave a half-recording
+        // behind for a mock to resolve later.
+        var workspace = Workspace();
+        var tools = Tools(capturer: new FailingCapturer());
+
+        var result = await tools.AuthRecordingCaptureFlow(
+            "rec-flow", "{}", workspace: workspace, ct: TestContext.Current.CancellationToken);
+
+        Assert.Contains("failed", result, StringComparison.Ordinal);
+        using var listed = JsonDocument.Parse(BowireMcpTools.AuthRecordingList(workspace));
+        Assert.Empty(listed.RootElement.GetProperty("recordings").EnumerateArray());
+    }
+
+    private sealed class FailingCapturer : Kuestenlogik.Bowire.Mocking.IAuthFlowCapturer
+    {
+        public Task<Kuestenlogik.Bowire.Mocking.AuthFlowCaptureResult> CaptureAsync(
+            string flowJson, CancellationToken ct = default)
+            => throw new Kuestenlogik.Bowire.Mocking.AuthFlowCaptureException("token step returned 401");
+    }
 }
