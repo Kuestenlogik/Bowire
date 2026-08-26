@@ -83,7 +83,7 @@ internal static class WorkspaceScopeQuery
             // the difference between writing into a folder someone chose and
             // writing into one the request invented.
             if (!Directory.Exists(root))
-                return new Scope(null, null, "storageRoot does not name an existing directory.");
+                return new Scope(null, null, "storageRoot does not exist, or is not a directory.");
         }
 
         return new Scope(id, root, null);
