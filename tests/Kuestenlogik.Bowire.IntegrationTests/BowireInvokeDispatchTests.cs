@@ -245,8 +245,10 @@ public sealed class BowireInvokeDispatchTests : IDisposable
              "bodyBinary":"aGVsbG8=","bodyBinaryContentType":"image/png","bodyBinaryName":"logo.png"}
             """;
 
-        await Invoke(host, body, "https://api.example.com");
+        var (status, response) = await Invoke(host, body, "https://api.example.com");
 
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.True(_plugin.Metadata is not null, $"plugin saw no metadata; response was {response}");
         Assert.Equal("aGVsbG8=", _plugin.Metadata!["X-Bowire-Body-Binary"]);
         Assert.Equal("image/png", _plugin.Metadata["X-Bowire-Body-Binary-Content-Type"]);
         Assert.Equal("logo.png", _plugin.Metadata["X-Bowire-Body-Binary-Name"]);
@@ -260,8 +262,10 @@ public sealed class BowireInvokeDispatchTests : IDisposable
             {"protocol":"stub","service":"S","method":"M","messages":["{}"],"bodyBinary":"aGVsbG8="}
             """;
 
-        await Invoke(host, body, "https://api.example.com");
+        var (status, response) = await Invoke(host, body, "https://api.example.com");
 
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.True(_plugin.Metadata is not null, $"plugin saw no metadata; response was {response}");
         Assert.Equal("application/octet-stream", _plugin.Metadata!["X-Bowire-Body-Binary-Content-Type"]);
         Assert.DoesNotContain("X-Bowire-Body-Binary-Name", _plugin.Metadata.Keys, StringComparer.Ordinal);
     }
