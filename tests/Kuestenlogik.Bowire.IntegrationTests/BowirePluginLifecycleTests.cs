@@ -71,6 +71,7 @@ public sealed class BowirePluginLifecycleTests : IDisposable
         BowirePaths.Current = _previousPaths;
         BowireUserContext.Current = _previousUsers;
         BowireEndpointHelpers.ResetRegistry();
+        foreach (var plugin in _livePlugins) plugin.Dispose();
         try { Directory.Delete(_root, recursive: true); }
         catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
@@ -368,51 +369,17 @@ public sealed class BowirePluginLifecycleTests : IDisposable
     // "restart" replacing nothing while reporting success is the failure the
     // Settings button would hide.
 
-    /// <summary>A protocol with a public parameterless ctor, as restart requires.</summary>
-    public sealed class RestartableProtocol : IBowireProtocol, IDisposable
+    // Held so the suite disposes what it created (CA2000). The lifecycle
+    // endpoint disposes it too — Dispose is idempotent, so the counter still
+    // measures what the restart did rather than the cleanup.
+    private readonly List<RestartableProtocol> _livePlugins = [];
+
+    private void RegisterLivePlugin()
     {
-        public static int Constructed { get; set; }
-        public static int Disposed { get; set; }
-
-        public RestartableProtocol() => Constructed++;
-
-        public string Id => "restartable-stub";
-        public string Name => "Restartable";
-        public string IconSvg => "<svg/>";
-
-        public void Dispose() => Disposed++;
-
-        public Task<List<BowireServiceInfo>> DiscoverAsync(
-            string serverUrl, bool showInternalServices, CancellationToken ct = default)
-            => Task.FromResult(new List<BowireServiceInfo>());
-
-        public Task<InvokeResult> InvokeAsync(
-            string serverUrl, string service, string method,
-            List<string> jsonMessages, bool showInternalServices,
-            Dictionary<string, string>? metadata = null, CancellationToken ct = default)
-            => Task.FromResult(new InvokeResult(null, 0, "OK", new Dictionary<string, string>()));
-
-#pragma warning disable CS1998 // Nothing to stream.
-        public async IAsyncEnumerable<string> InvokeStreamAsync(
-            string serverUrl, string service, string method,
-            List<string> jsonMessages, bool showInternalServices,
-            Dictionary<string, string>? metadata = null,
-            [EnumeratorCancellation] CancellationToken ct = default)
-        {
-            yield break;
-        }
-#pragma warning restore CS1998
-
-        public Task<IBowireChannel?> OpenChannelAsync(
-            string serverUrl, string service, string method,
-            bool showInternalServices, Dictionary<string, string>? metadata = null,
-            CancellationToken ct = default) => Task.FromResult<IBowireChannel?>(null);
-    }
-
-    private static void RegisterLivePlugin()
-    {
+        var plugin = new RestartableProtocol();
+        _livePlugins.Add(plugin);
         var registry = new BowireProtocolRegistry();
-        registry.Register(new RestartableProtocol());
+        registry.Register(plugin);
         BowireEndpointHelpers.SetRegistry(registry);
     }
 
@@ -470,4 +437,58 @@ public sealed class BowirePluginLifecycleTests : IDisposable
         Assert.Equal(HttpStatusCode.NotFound, status);
         BowireDisabledPluginsStore.Enable("restartable-stub");
     }
+}
+
+/// <summary>A protocol with a public parameterless ctor, as restart requires.</summary>
+/// <remarks>
+/// Top-level rather than nested: a public nested type is CA1034, and the
+/// restart path needs <see cref="Activator"/> to construct it by type.
+/// <c>Dispose</c> counts once however often it is called, so the suite can
+/// own the instance without inflating what the assertions measure.
+/// </remarks>
+internal sealed class RestartableProtocol : IBowireProtocol, IDisposable
+{
+    public static int Constructed { get; set; }
+    public static int Disposed { get; set; }
+
+    private bool _disposed;
+
+    public RestartableProtocol() => Constructed++;
+
+    public string Id => "restartable-stub";
+    public string Name => "Restartable";
+    public string IconSvg => "<svg/>";
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        Disposed++;
+    }
+
+    public Task<List<BowireServiceInfo>> DiscoverAsync(
+        string serverUrl, bool showInternalServices, CancellationToken ct = default)
+        => Task.FromResult(new List<BowireServiceInfo>());
+
+    public Task<InvokeResult> InvokeAsync(
+        string serverUrl, string service, string method,
+        List<string> jsonMessages, bool showInternalServices,
+        Dictionary<string, string>? metadata = null, CancellationToken ct = default)
+        => Task.FromResult(new InvokeResult(null, 0, "OK", new Dictionary<string, string>()));
+
+#pragma warning disable CS1998 // Nothing to stream.
+    public async IAsyncEnumerable<string> InvokeStreamAsync(
+        string serverUrl, string service, string method,
+        List<string> jsonMessages, bool showInternalServices,
+        Dictionary<string, string>? metadata = null,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        yield break;
+    }
+#pragma warning restore CS1998
+
+    public Task<IBowireChannel?> OpenChannelAsync(
+        string serverUrl, string service, string method,
+        bool showInternalServices, Dictionary<string, string>? metadata = null,
+        CancellationToken ct = default) => Task.FromResult<IBowireChannel?>(null);
 }
