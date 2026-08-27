@@ -374,7 +374,7 @@ describe('describeSpawnError', () => {
 
 describe('checkCliVersion', () => {
     it('accepts the minimum and anything newer', () => {
-        for (const v of ['2.0.0', '2.4.1-alpha.0.104+d86f781', '3.0.0', '2.10.0']) {
+        for (const v of ['2.5.0', '2.6.1-alpha.0.104+d86f781', '3.0.0', '2.10.0']) {
             assert.equal(workbench.checkCliVersion(v).ok, true, v);
         }
     });
@@ -384,13 +384,24 @@ describe('checkCliVersion', () => {
         assert.equal(result.ok, false);
         assert.equal(result.version, '1.9.3');
         // The message has to name a way out, not just the problem.
-        assert.match(result.message, /2\.0\.0 or newer/);
+        assert.match(result.message, /2\.5\.0 or newer/);
         assert.match(result.message, /bowire\.cliPath/);
     });
 
+    it('rejects the versions that pass every check and then fail to start', () => {
+        // The regression this floor exists for. 2.0.0-2.4.x understand
+        // --port, --no-browser and --auto-create-initial-workspace but not
+        // --port-file, which arrived in 2.5.0. They used to clear the guard
+        // and die on the argument instead, reporting only that the process
+        // "exited before it started serving".
+        for (const v of ['2.0.0', '2.3.7', '2.4.1']) {
+            assert.equal(workbench.checkCliVersion(v).ok, false, v);
+        }
+    });
+
     it('treats a prerelease as below the release it leads to', () => {
-        // 2.0.0-alpha is not yet 2.0.0, and the arguments may not be there yet.
-        assert.equal(workbench.checkCliVersion('2.0.0-alpha.1').ok, false);
+        // 2.5.0-alpha is not yet 2.5.0, and the arguments may not be there yet.
+        assert.equal(workbench.checkCliVersion('2.5.0-alpha.1').ok, false);
     });
 
     it('accepts output it cannot parse rather than blocking on it', () => {
@@ -427,7 +438,10 @@ describe('missingCliMessage', () => {
 });
 
 describe('validateCliPath (a typo should fail at the setting, not at the spawn)', () => {
-    const ok = { exists: () => true, isDirectory: () => false, versionOf: () => 'bowire 2.4.0' };
+    // At or above MINIMUM_CLI_VERSION: these cases are about the path, not
+    // the version, so the fixture must not trip the version guard on its way
+    // through. (It said 2.4.0 while the floor was 2.0.0.)
+    const ok = { exists: () => true, isDirectory: () => false, versionOf: () => 'bowire 2.5.0' };
 
     it('accepts an empty value — that means "go and find one"', () => {
         assert.equal(workbench.validateCliPath('', ok), null);
