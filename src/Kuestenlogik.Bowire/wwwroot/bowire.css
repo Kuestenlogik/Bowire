@@ -21279,7 +21279,11 @@ full accent for user-pinned
     overflow-y: auto;
 }
 
-.bowire-settings-plugin-manage-row.is-bundled {
+.bowire-settings-plugin-manage-row.is-bundled,
+/* #28 Phase D — machine-wide plugins read the same way bundled ones do:
+   present, in use, and not this account's to change. Same treatment so the
+   row says "read-only here" before anyone reaches for a disabled button. */
+.bowire-settings-plugin-manage-row.is-machine-wide {
     opacity: 0.7;
     background: var(--bowire-bg-elevated, rgba(255, 255, 255, 0.015));
 }

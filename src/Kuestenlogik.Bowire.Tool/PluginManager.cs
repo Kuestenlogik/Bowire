@@ -989,6 +989,22 @@ internal static class PluginManager
         var pluginSubDir = Path.Combine(dir, packageId);
         if (!Directory.Exists(pluginSubDir))
         {
+            // Absent from the user tier does not mean absent (#28 Phase D).
+            // A machine-wide plugin is loaded, listed, and visibly in use, so
+            // "not installed" is the one thing it certainly is not — and it
+            // sends the reader looking for a typo in a package id that is
+            // spelled correctly.
+            var machineCopy = Path.Combine(
+                Kuestenlogik.Bowire.Plugins.BowirePluginRoot.MachineRoot, packageId);
+            if (Directory.Exists(machineCopy))
+            {
+                io.ErrLine($"  '{packageId}' is installed machine-wide, not for you.");
+                io.ErrLine($"  It lives in {machineCopy} and serves every account on this host,");
+                io.ErrLine("  so removing it is an administrator's call. Run the uninstall elevated");
+                io.ErrLine($"  with --plugin-dir \"{Kuestenlogik.Bowire.Plugins.BowirePluginRoot.MachineRoot}\" if that is you.");
+                return 1;
+            }
+
             io.OutLine($"  Plugin '{packageId}' is not installed.");
             return 1;
         }
