@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**6/31 done** · 1 next up · 24 backlog
+**6/32 done** · 1 next up · 25 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -41,6 +41,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [588](https://github.com/Kuestenlogik/Bowire/issues/588) | Bowire | [Tugboat — JetBrains plugin (IntelliJ platform)](#issue-kuestenlogik-bowire-588) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
+| [619](https://github.com/Kuestenlogik/Bowire/issues/619) | Bowire | [VS Code extension 1.0 — cut the release the code already justifies](#issue-kuestenlogik-bowire-619) | ⬜ Backlog | `area:workbench` |
 | [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — the override reaches the loader and nothing else](#issue-kuestenlogik-bowire-549) | ✅ Done | `area:workbench` |
 | [589](https://github.com/Kuestenlogik/Bowire/issues/589) | Bowire | [VS Code: resolve the CLI from a workspace tool manifest](#issue-kuestenlogik-bowire-589) | ✅ Done |  |
 | [590](https://github.com/Kuestenlogik/Bowire/issues/590) | Bowire | [VS Code: offer to download a matching CLI when none is installed](#issue-kuestenlogik-bowire-590) | ✅ Done |  |
@@ -285,6 +286,12 @@ Split out of #101, which now covers the VS Code extension only. [[more]](https:/
 #### <a id="issue-kuestenlogik-bowire-613"></a>⬜ Backlog · [#613](https://github.com/Kuestenlogik/Bowire/issues/613) Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01
 
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
+
+#### <a id="issue-kuestenlogik-bowire-619"></a>⬜ Backlog · [#619](https://github.com/Kuestenlogik/Bowire/issues/619) VS Code extension 1.0 — cut the release the code already justifies
+
+> `area:workbench`
+
+The extension has outgrown its version number. `#589` (resolve the CLI from a workspace tool manifest), `#590` (offer a managed download when none is installed) and `#591` (workspace-local storage) closed the last construction sites, and none of that has reached anybody: the Marketplace still serves … [[more]](https://github.com/Kuestenlogik/Bowire/issues/619)
 
 #### <a id="issue-kuestenlogik-bowire-549"></a>✅ Done · [#549](https://github.com/Kuestenlogik/Bowire/issues/549) Workbench plugin install ignores --plugin-dir — the override reaches the loader and nothing else
 
