@@ -16,6 +16,14 @@ on:
   schedule:
     - cron: '17 9 * * 1'  # Monday 09:17 UTC — off-peak
 
+# Unlike CI there is no ingestion contract to protect on main, but a
+# superseded analysis still uploads a SARIF for a commit nobody is on
+# any more. Cancel on PRs, run to completion on main so the alert
+# state always describes the tip.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
@@ -43,9 +51,13 @@ jobs:
           # excluded by paths-ignore, so CodeQL sees zero python source
           # and fails fatally with "could not process any of it". Add it
           # back if/when production python lands.
-          - language: ruby
-            build-mode: none
-            runner: ubuntu-latest
+          #
+          # No `ruby` either, for the milder version of the same reason:
+          # the only Ruby in the repo is site/Gemfile, the Jekyll
+          # toolchain for the marketing site. It ships to nobody and
+          # executes nothing at runtime, so the column cost a slot in
+          # the matrix and never produced a finding. Add it back if Ruby
+          # ever carries product code.
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
