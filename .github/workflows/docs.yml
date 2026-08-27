@@ -56,6 +56,20 @@ jobs:
         with:
           global-json-file: global.json
 
+      # This job builds the same solution CI does, in the same
+      # configuration, because docfx reads the Release DLLs
+      # (docs/docfx.json globs artifacts/bin/…/Release/*.dll). The two
+      # runs start in parallel on a push, so there is no artefact to
+      # hand over without serialising docs behind CI — not worth it for
+      # a deploy nobody is waiting on. The restore, at least, need not
+      # happen twice: same key as ci.yml, so this reads what CI wrote.
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
       # Node is needed for both the activity-snapshot generator (runs before
       # Jekyll, populates site/_data/activity.json) and Pagefind (runs after
       # the build, indexes the combined output). One setup serves both.
