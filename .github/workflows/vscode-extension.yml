@@ -13,6 +13,23 @@ name: "VS Code extension"
 # `publish: true`. It is not wired to a tag, because the extension's version
 # is deliberately independent of Bowire's release cadence (#101) — tying it to
 # the release train would recreate the lockstep the design set out to avoid.
+#
+# Two ways to authenticate the publish, and which one runs is decided by
+# whether the AZURE_CLIENT_ID repository variable is set (#613):
+#
+#   Entra ID (variable set)   — OIDC federated credential, minted per run.
+#                               No secret in this repository. Required from
+#                               2026-12-01, when Azure DevOps retires the
+#                               globally-scoped PATs `vsce` asks for.
+#   PAT (variable unset)      — the VSCE_PAT secret. Still works until then,
+#                               and warns on every run that it is on a clock.
+#
+# To flip over, set the AZURE_CLIENT_ID + AZURE_TENANT_ID repository
+# variables. What has to exist on the Azure side first: a user-assigned
+# managed identity (or app registration) with a federated credential for
+# this repository, added as a member of the `kuestenlogik` publisher with
+# the Contributor role. Then publish once for real — this path only fails
+# when it runs, which is the lesson #237 left behind.
 
 on:
   push:
@@ -37,6 +54,10 @@ concurrency:
 
 permissions:
   contents: read
+  # For the Entra ID publish path (#613): lets the run mint an OIDC token
+  # that Azure exchanges for a short-lived credential. Harmless on every
+  # other run — a token nobody requests is never issued.
+  id-token: write
 
 jobs:
   package:
@@ -71,6 +92,25 @@ jobs:
           path: extensions/bowire-vscode/bowire-vscode.vsix
           retention-days: 30
 
+      # Entra ID, when the repository variable says it is configured (#613).
+      # Azure DevOps retires globally-scoped PATs on 2026-12-01, and that
+      # scope is what `vsce publish` has always wanted — so the PAT path has
+      # an expiry date of its own, independent of the token's.
+      #
+      # Gated on AZURE_CLIENT_ID rather than switched outright: until the
+      # federated credential exists and a real publish has proven it, the PAT
+      # path below has to keep working. Setting the two variables is what
+      # flips this repository over; unsetting them flips it back.
+      - name: Azure login (OIDC)
+        if: github.event_name == 'workflow_dispatch' && inputs.publish && vars.AZURE_CLIENT_ID != ''
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          # The publisher identity needs no subscription, and demanding one
+          # would mean granting this run more than it uses.
+          allow-no-subscriptions: true
+
       # Deliberately not `continue-on-error`. If you asked for a publish and it
       # cannot happen, that is a failure worth seeing — the winget channel
       # taught us what silent publish failures cost (#237).
@@ -79,10 +119,20 @@ jobs:
         working-directory: extensions/bowire-vscode
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          USE_ENTRA: ${{ vars.AZURE_CLIENT_ID != '' }}
         run: |
           set -euo pipefail
+          if [ "${USE_ENTRA}" = "true" ]; then
+            # --azure-credential picks up the login above through
+            # DefaultAzureCredential. No secret exists in this repository for
+            # it: the token is minted per run and dies with the job.
+            echo "Publishing with Entra ID (federated credential, no stored secret)."
+            npx --yes @vscode/vsce@latest publish --no-dependencies --azure-credential --packagePath bowire-vscode.vsix
+            exit 0
+          fi
           if [ -z "${VSCE_PAT:-}" ]; then
-            echo "::error::VSCE_PAT is not set. Create a Personal Access Token with the Marketplace (Manage) scope in Azure DevOps for the 'kuestenlogik' publisher, then add it as the repository secret VSCE_PAT."
+            echo "::error::Neither path is configured. Either set the AZURE_CLIENT_ID + AZURE_TENANT_ID repository variables for the Entra ID path (#613, required from 2026-12-01), or add a VSCE_PAT secret — a PAT with the Marketplace (Manage) scope in Azure DevOps for the 'kuestenlogik' publisher."
             exit 1
           fi
+          echo "::warning::Publishing with a PAT. Globally-scoped PATs stop working on 2026-12-01 — see #613 for the Entra ID migration."
           npx --yes @vscode/vsce@latest publish --no-dependencies --packagePath bowire-vscode.vsix
