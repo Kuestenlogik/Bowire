@@ -40,10 +40,11 @@ public class PluginUpdateCheckService
     private static string? s_pluginDirOverride;
 
     /// <summary>
-    /// On-disk plugin directory the scan walks. Defaults to the legacy
-    /// <c>~/.bowire/plugins/</c> layout; tests pin a temp dir via the
-    /// setter to redirect the scan without depending on whatever the
-    /// developer happens to have installed locally. Same pattern as
+    /// On-disk plugin directory the scan walks. Defaults to whatever
+    /// <see cref="BowirePluginRoot"/> resolved — <c>~/.bowire/plugins/</c>
+    /// unless the host was pointed elsewhere (#549); tests pin a temp dir
+    /// via the setter to redirect the scan without depending on whatever
+    /// the developer happens to have installed locally. Same pattern as
     /// <c>RecordingStore.StorePath</c> / <c>CollectionStore.StorePath</c>.
     /// </summary>
     internal static string PluginDir

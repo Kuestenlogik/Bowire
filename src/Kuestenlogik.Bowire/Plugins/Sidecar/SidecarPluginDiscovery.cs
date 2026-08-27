@@ -17,11 +17,15 @@ public static class SidecarPluginDiscovery
     public const string ManifestFileName = SidecarPluginManifest.FileName;
 
     /// <summary>
-    /// Default plugin root — <c>~/.bowire/plugins/</c>. Matches the
-    /// path the existing .NET <c>PluginManager</c> uses, so a sidecar
-    /// and a .NET plugin can live side-by-side under different
-    /// subdirectories.
+    /// The host's plugin root: <c>~/.bowire/plugins/</c> unless the host
+    /// was pointed elsewhere (<c>--plugin-dir</c> and friends, #549).
     /// </summary>
+    /// <remarks>
+    /// Deliberately the same answer the .NET plugin loader uses, so a
+    /// sidecar and a .NET plugin live side-by-side under one root in
+    /// different subdirectories — and so a host that moved its plugin
+    /// directory moves both, rather than leaving the sidecars behind.
+    /// </remarks>
     public static string DefaultPluginRoot => BowirePluginRoot.Current;
 
     /// <summary>

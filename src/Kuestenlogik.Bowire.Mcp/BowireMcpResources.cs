@@ -142,7 +142,7 @@ public sealed class BowireMcpResources
         UriTemplate = "bowire://plugins",
         Name = "Installed plugins",
         MimeType = "application/json")]
-    [Description("Sibling plugins under ~/.bowire/plugins/ — package id + version per directory. Bundled plugins (the ones shipped inside the Bowire tool) are not listed here; the tool's --version banner covers them.")]
+    [Description("Sibling plugins in the host's plugin directory — package id + version per directory. That is ~/.bowire/plugins/ by default, or wherever the host was pointed with --plugin-dir / BOWIRE_PLUGIN_DIR / Bowire:PluginDir. Bundled plugins (the ones shipped inside the Bowire tool) are not listed here; the tool's --version banner covers them.")]
     public static TextResourceContents Plugins()
     {
         var pluginDir = McpPaths.Plugins();
