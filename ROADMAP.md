@@ -41,7 +41,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [588](https://github.com/Kuestenlogik/Bowire/issues/588) | Bowire | [Tugboat — JetBrains plugin (IntelliJ platform)](#issue-kuestenlogik-bowire-588) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
-| [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins](#issue-kuestenlogik-bowire-549) | ✅ Done | `area:workbench` |
+| [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — the override reaches the loader and nothing else](#issue-kuestenlogik-bowire-549) | ✅ Done | `area:workbench` |
 | [589](https://github.com/Kuestenlogik/Bowire/issues/589) | Bowire | [VS Code: resolve the CLI from a workspace tool manifest](#issue-kuestenlogik-bowire-589) | ✅ Done |  |
 | [590](https://github.com/Kuestenlogik/Bowire/issues/590) | Bowire | [VS Code: offer to download a matching CLI when none is installed](#issue-kuestenlogik-bowire-590) | ✅ Done |  |
 | [591](https://github.com/Kuestenlogik/Bowire/issues/591) | Bowire | [Workspace-local storage: collections must travel with the repo, not the user profile](#issue-kuestenlogik-bowire-591) | ✅ Done |  |
@@ -286,7 +286,7 @@ Split out of #101, which now covers the VS Code extension only. [[more]](https:/
 
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
 
-#### <a id="issue-kuestenlogik-bowire-549"></a>✅ Done · [#549](https://github.com/Kuestenlogik/Bowire/issues/549) Workbench plugin install ignores --plugin-dir — Core keeps its own hardcoded ~/.bowire/plugins
+#### <a id="issue-kuestenlogik-bowire-549"></a>✅ Done · [#549](https://github.com/Kuestenlogik/Bowire/issues/549) Workbench plugin install ignores --plugin-dir — the override reaches the loader and nothing else
 
 > `area:workbench`
 
