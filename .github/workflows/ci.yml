@@ -5,6 +5,20 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # A failed run has no other way back: `ci.yml` produces the coverage
+  # upload, and an infrastructure failure (the Actions outage on
+  # 2026-08-26, say) leaves no artefact and no way to ask for one
+  # short of pushing an empty commit.
+  workflow_dispatch:
+
+# Superseding a run is right on a PR and wrong on main: Codecov ingests
+# the report from whichever run finishes, so cancelling an in-flight
+# main build drops that commit's coverage on the floor and the next
+# report compares against a gap. PRs have no such contract — the newest
+# push is the only one anybody reads.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
