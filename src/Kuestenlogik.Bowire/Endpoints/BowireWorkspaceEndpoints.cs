@@ -166,14 +166,29 @@ internal static partial class BowireWorkspaceEndpoints
                     instance: ctx.Request.Path);
             }
 
+            // The anchored match — rather than the string.IsNullOrEmpty
+            // check it replaces — is what closes cs/path-injection on the
+            // two Directory sinks below (alerts #1826 / #1827). The
+            // sanitiser *filters* characters, and a filter is not a barrier
+            // the C# taint analyser recognises: the id kept its taint all
+            // the way to Directory.Delete however thoroughly it had been
+            // stripped. An anchored Regex.IsMatch against a restrictive
+            // class is the shape it does recognise — the same reason
+            // SafeResolvedPathPattern exists for the command-line sink.
+            //
+            // Because the pattern admits exactly the characters the
+            // sanitiser keeps, the only input this rejects that the old
+            // check also rejected is the empty string; behaviour is
+            // unchanged. What changed is that the invariant the code
+            // already held is now stated where the analyser can read it.
             var sanitised = SanitiseWorkspaceId(workspaceId);
-            if (string.IsNullOrEmpty(sanitised))
+            if (!SafeWorkspaceIdPattern().IsMatch(sanitised))
             {
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:workspace:purge-bad-id",
                     title: "Invalid workspace id",
                     status: 400,
-                    detail: "Workspace id sanitised to empty — refusing to delete user-root in lieu of a workspace folder.",
+                    detail: "Workspace id is not a single path segment of letters, digits, '-' or '_' — refusing to delete user-root in lieu of a workspace folder.",
                     instance: ctx.Request.Path);
             }
 
@@ -345,6 +360,15 @@ internal static partial class BowireWorkspaceEndpoints
     // (spaces, quotes, shell meta, &c) trips the guard at the sink.
     [System.Text.RegularExpressions.GeneratedRegex(@"^[A-Za-z0-9_\-./\\:]+$")]
     private static partial System.Text.RegularExpressions.Regex SafeResolvedPathPattern();
+
+    // Same barrier, applied one step earlier: this one guards a
+    // workspace id before it becomes a path, so the class is tighter
+    // than SafeResolvedPathPattern's. An id is a single directory
+    // name — no separators, no dots, so no '.' or '..' segment can
+    // form — which is what keeps the Directory.Delete sink in the
+    // purge handler inside ~/.bowire/workspaces/.
+    [System.Text.RegularExpressions.GeneratedRegex(@"^[A-Za-z0-9_-]+$")]
+    private static partial System.Text.RegularExpressions.Regex SafeWorkspaceIdPattern();
 
     private static void LaunchPlatformFileManager(string path)
     {
