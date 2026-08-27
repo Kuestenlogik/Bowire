@@ -3,46 +3,7 @@
 All notable changes to the Bowire VS Code extension.
 
 The extension version is deliberately independent of the Bowire version it
-hosts — it drives whatever CLI you have installed, from 2.0 upwards.
-
-## [0.1.1] — 2026-08-25
-
-### Changed
-
-- **README: the requirements section no longer reads as a precondition.** It
-  said "Bowire itself, version 2.0 or newer" above three install commands,
-  which made a manual install look mandatory — while the section right below
-  it already documented that the extension fetches and manages a CLI when it
-  finds none (#590). Both were accurate; together they misled. The requirement
-  is stated as what it is, with the manual install offered as the option you
-  take when CI already pins a version.
-
-## [0.1.2] — 2026-08-25
-
-### Fixed
-
-- **The CLI-resolution diagram rendered as raw text on the Marketplace.** It
-  was a Mermaid flowchart, which GitHub renders and the VS Code Marketplace
-  does not — so the extension's own listing showed twenty lines of
-  `flowchart TD` source to anyone reading the description. Replaced with a
-  table, which reads the same in both places and, for a chain this linear,
-  arguably better.
-
-## [0.1.3] — 2026-08-25
-
-### Fixed
-
-- **The panel could load before the workbench was serving.** The extension
-  opened the webview as soon as the CLI printed its listening banner, but a
-  bound port is not a served response — the first request can arrive before
-  the pipeline is ready, and the panel then shows an error page for a
-  workbench that came up fine a moment later. It now polls the URL until it
-  answers, and reports a clear failure if it never does.
-- **The workbench opened in a browser window as well as in the editor.** The
-  extension hosts a webview and always did, but it started the CLI without
-  `--no-browser` — and the CLI opens a browser on startup by default, which is
-  right for someone running `bowire` in a terminal and wrong here. The
-  operator got two windows, and the one they did not ask for took focus.
+hosts — it drives whatever CLI you have installed, from 2.5 upwards.
 
 ## [0.2.0] — 2026-08-25
 
@@ -116,3 +77,42 @@ publishes when asked. 0.1.1 through 0.1.3 ship with this release too.
   nothing you already have moves; and because it is read from the repository
   rather than passed by the editor, the same checkout resolves to the same
   store from a terminal or from CI ([#591](https://github.com/Kuestenlogik/Bowire/issues/591)).
+
+## [0.1.3] — 2026-08-25
+
+### Fixed
+
+- **The panel could load before the workbench was serving.** The extension
+  opened the webview as soon as the CLI printed its listening banner, but a
+  bound port is not a served response — the first request can arrive before
+  the pipeline is ready, and the panel then shows an error page for a
+  workbench that came up fine a moment later. It now polls the URL until it
+  answers, and reports a clear failure if it never does.
+- **The workbench opened in a browser window as well as in the editor.** The
+  extension hosts a webview and always did, but it started the CLI without
+  `--no-browser` — and the CLI opens a browser on startup by default, which is
+  right for someone running `bowire` in a terminal and wrong here. The
+  operator got two windows, and the one they did not ask for took focus.
+
+## [0.1.2] — 2026-08-25
+
+### Fixed
+
+- **The CLI-resolution diagram rendered as raw text on the Marketplace.** It
+  was a Mermaid flowchart, which GitHub renders and the VS Code Marketplace
+  does not — so the extension's own listing showed twenty lines of
+  `flowchart TD` source to anyone reading the description. Replaced with a
+  table, which reads the same in both places and, for a chain this linear,
+  arguably better.
+
+## [0.1.1] — 2026-08-25
+
+### Changed
+
+- **README: the requirements section no longer reads as a precondition.** It
+  said "Bowire itself, version 2.0 or newer" above three install commands,
+  which made a manual install look mandatory — while the section right below
+  it already documented that the extension fetches and manages a CLI when it
+  finds none (#590). Both were accurate; together they misled. The requirement
+  is stated as what it is, with the manual install offered as the option you
+  take when CI already pins a version.
