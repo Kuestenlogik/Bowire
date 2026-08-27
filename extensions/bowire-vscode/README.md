@@ -8,7 +8,7 @@ gRPC, REST, GraphQL, SignalR, MQTT, NATS, WebSocket, SSE, SOAP, OData, MCP — t
 
 ## Requirements
 
-Bowire 2.0 or newer — and you do not have to install it first.
+Bowire 2.5 or newer — and you do not have to install it first.
 
 The extension drives a Bowire you already have: one you configured, one your repository pins in a tool manifest, or one on your `PATH`. That is the better case, because it is the same CLI your terminal and your CI run.
 

@@ -22,13 +22,21 @@ const BINARY = process.platform === 'win32' ? 'bowire.exe' : 'bowire';
 /**
  * Oldest CLI whose command-line contract this extension can drive.
  *
- * `--port`, `--auto-create-initial-workspace` and `--no-browser` — the three
- * arguments buildArgs emits — have all existed since before 2.0.0, so that is
- * the honest floor. Anything older does not fail cleanly: the CLI rejects the unknown
- * argument and exits, and startWorkbench reports "exited before it started
- * serving", which says nothing about the actual cause.
+ * Set by the newest argument buildArgs emits, which is `--port-file`: it
+ * landed in Bowire 2.5.0, while `--port`, `--no-browser` and
+ * `--auto-create-initial-workspace` all predate 2.0.0. The floor said 2.0.0
+ * until that argument was added and then was not moved with it, which made
+ * the check worse than useless on 2.0.0-2.4.x: the version guard passed, the
+ * CLI rejected an argument it had never heard of, and startWorkbench reported
+ * "exited before it started serving" — a message about the symptom that names
+ * nothing anyone could act on.
+ *
+ * There is no lower fallback to keep. `--port-file` replaced banner-scraping
+ * on purpose (see resolveServerUrl): the banner is a log line, so it
+ * disappears at a quieter log level, and a file that appears once the bind
+ * succeeded is the only signal that means what it says.
  */
-const MINIMUM_CLI_VERSION = '2.0.0';
+const MINIMUM_CLI_VERSION = '2.5.0';
 
 /**
  * Is `bowire` reachable on PATH?
