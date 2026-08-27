@@ -290,7 +290,7 @@ Split out of #101, which now covers the VS Code extension only. [[more]](https:/
 
 > `area:workbench`
 
-Start the workbench with `--plugin-dir X`, install a plugin from **Settings → Plugins**, and it lands in `~/.bowire/plugins` instead. The list you are looking at reads from `~/.bowire/plugins` too, so the plugin you just installed does appear — in the directory the host is not loading from. [[more]](https://github.com/Kuestenlogik/Bowire/issues/549)
+Start the workbench with `--plugin-dir X`, install a plugin from **Settings → Plugins**, and it lands in the default directory instead. The list you are looking at reads the default too, so the plugin you just installed does appear — in the directory the host is not loading from. [[more]](https://github.com/Kuestenlogik/Bowire/issues/549)
 
 #### <a id="issue-kuestenlogik-bowire-589"></a>✅ Done · [#589](https://github.com/Kuestenlogik/Bowire/issues/589) VS Code: resolve the CLI from a workspace tool manifest
 
