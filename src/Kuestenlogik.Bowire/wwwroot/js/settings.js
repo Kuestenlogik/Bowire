@@ -4069,6 +4069,30 @@
     // Table widget is loaded. Same /api/plugins fetch hydrates both
     // arrays (single round-trip).
     var installedExtensions = [];
+    // The plugin directory the host is actually using — empty until the
+    // first /api/plugins response, and on hosts too old to send it. The
+    // labels below say "~/.bowire/plugins/" only when this is empty,
+    // because that claim is wrong the moment a host runs with
+    // --plugin-dir (#549).
+    var installedPluginDir = '';
+
+    /// The plugin directory as a label. Falls back to the tilde form only
+    /// when the host hasn't told us — that is the default, and stating it
+    /// is better than an empty gap in the sentence.
+    function pluginDirLabel() {
+        return installedPluginDir || '~/.bowire/plugins/';
+    }
+
+    /// One plugin's directory. Separator taken from the path itself so a
+    /// Windows host reads C:\dir\pkg rather than C:\dir/pkg.
+    function joinPluginPath(pkgId) {
+        var base = pluginDirLabel();
+        var sep = base.indexOf('\\') >= 0 && base.indexOf('/') < 0 ? '\\' : '/';
+        return base.charAt(base.length - 1) === sep
+            ? base + pkgId
+            : base + sep + pkgId;
+    }
+
     var latestVersions = {};
     var pluginPrereleaseToggle = false;
     var pluginActionInFlight = null;
@@ -4402,7 +4426,8 @@
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-desc',
-            textContent: 'Sibling plugins under ~/.bowire/plugins/ get Update / Uninstall buttons; bundled plugins (gRPC, REST, MQTT, …) ship inside the Bowire tool and update with dotnet tool update.'
+            textContent: 'Sibling plugins under ' + pluginDirLabel()
+                + ' get Update / Uninstall buttons; bundled plugins (gRPC, REST, MQTT, …) ship inside the Bowire tool and update with dotnet tool update.'
         }));
 
         // Update-check status banner — shows whether the daily
@@ -4649,7 +4674,7 @@
         row('Version', plugin.version || plugin.Version);
         row('Source', plugin.source === 'bundled'
             ? 'bundled (ships with the bowire tool)'
-            : 'sibling (~/.bowire/plugins/' + pkgId + ')');
+            : 'sibling (' + joinPluginPath(pkgId) + ')');
         if (plugin.installedAt || plugin.InstalledAt) {
             row('Installed', plugin.installedAt || plugin.InstalledAt);
         }
@@ -4753,6 +4778,13 @@
                     installedExtensions = Array.isArray(body.extensions)
                         ? body.extensions
                         : [];
+                    // #549 — the directory these rows actually came from.
+                    // Older hosts don't send it; the empty string makes the
+                    // labels fall back to describing the default rather than
+                    // printing "undefined".
+                    installedPluginDir = typeof body.pluginDir === 'string'
+                        ? body.pluginDir
+                        : '';
                     // Bug 1 — the tree surfaces installed UI extensions
                     // under the Plugins group, so a fetch that lands
                     // while the operator is sitting on a non-Plugins

@@ -221,7 +221,17 @@ internal static class BowirePluginEndpoints
                 });
             }
 
-            return Results.Ok(new { plugins, extensions = extensionRows });
+            // pluginDir travels with the listing so the UI can name the
+            // directory these rows came from instead of asserting the
+            // default. The whole confusion in #549 was a list that looked
+            // right while describing somewhere else.
+            return Results.Ok(new
+            {
+                plugins,
+                extensions = extensionRows,
+                pluginDir = PluginDir,
+                pluginDirConfigured = BowirePluginRoot.IsConfigured,
+            });
         }).ExcludeFromDescription();
 
         // Search NuGet for Bowire plugins
