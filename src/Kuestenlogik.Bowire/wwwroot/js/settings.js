@@ -4532,9 +4532,15 @@
 
     function renderManagedPluginRow(p) {
         var bundled = p.source === 'bundled';
+        // #28 Phase D — installed for every account on the host, in a
+        // directory this user almost certainly cannot write to. Read-only
+        // here for the same reason bundled plugins are: the action would
+        // fail, and a disabled button that says why beats an error.
+        var machineWide = p.tier === 'machine';
         var row = el('div', {
             className: 'bowire-settings-plugin-manage-row'
                 + (bundled ? ' is-bundled' : '')
+                + (machineWide ? ' is-machine-wide' : '')
         });
 
         var pkgId = p.packageId || p.PackageId || '';
@@ -4599,23 +4605,27 @@
             type: 'button',
             className: 'bowire-settings-plugin-btn'
                 + (hasUpdate ? ' bowire-settings-plugin-btn-accent' : ''),
-            disabled: bundled || busy,
+            disabled: bundled || machineWide || busy,
             title: bundled
                 ? 'Bundled plugin — run `dotnet tool update -g Kuestenlogik.Bowire.Tool` to update'
-                : '',
+                : machineWide
+                    ? 'Installed machine-wide — an administrator updates it. To run a newer build yourself, install it from the catalogue: your copy takes precedence over the machine-wide one.'
+                    : '',
             textContent: busy ? 'Working…' : 'Update',
-            onClick: function () { if (!bundled) runPluginAction(pkgId, 'update'); }
+            onClick: function () { if (!bundled && !machineWide) runPluginAction(pkgId, 'update'); }
         });
         actions.appendChild(updateBtn);
 
         var uninstallBtn = el('button', {
             type: 'button',
             className: 'bowire-settings-plugin-btn bowire-settings-plugin-btn-danger',
-            disabled: bundled || busy,
-            title: bundled ? 'Bundled plugins cannot be uninstalled separately' : '',
+            disabled: bundled || machineWide || busy,
+            title: bundled ? 'Bundled plugins cannot be uninstalled separately'
+                : machineWide ? 'Installed machine-wide — an administrator removes it, and it goes for every account on this host'
+                : '',
             textContent: 'Uninstall',
             onClick: function () {
-                if (bundled) return;
+                if (bundled || machineWide) return;
                 bowireConfirm(
                     'Uninstall ' + pkgId + '? The package is removed from disk and the workbench restarts to unload it.',
                     function () { runPluginAction(pkgId, 'uninstall'); },
@@ -4674,7 +4684,12 @@
         row('Version', plugin.version || plugin.Version);
         row('Source', plugin.source === 'bundled'
             ? 'bundled (ships with the bowire tool)'
-            : 'sibling (' + joinPluginPath(pkgId) + ')');
+            : plugin.tier === 'machine'
+                // No path here: the row is about where *this* plugin lives,
+                // and joinPluginPath answers for the user tier, which is the
+                // one directory it is definitely not in.
+                ? 'machine-wide (installed for every account on this host)'
+                : 'sibling (' + joinPluginPath(pkgId) + ')');
         if (plugin.installedAt || plugin.InstalledAt) {
             row('Installed', plugin.installedAt || plugin.InstalledAt);
         }

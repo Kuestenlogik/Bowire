@@ -429,6 +429,32 @@ internal static class BowirePluginEndpoints
                     title: "packageId is required",
                     status: 400,
                     instance: "/api/plugins/{packageId}");
+
+            // A machine-wide plugin is not this user's to remove (#28 Phase
+            // D). Shelling out anyway would reach the CLI, find nothing in
+            // the user tier and report "not installed" about a plugin the
+            // workbench is listing — or, running elevated, quietly remove it
+            // for every account on the host. Refuse here, and say whose call
+            // it is.
+            if (!Directory.Exists(Path.Combine(PluginDir, packageId))
+                && Directory.Exists(Path.Combine(BowirePluginRoot.MachineRoot, packageId)))
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:plugin:machine-wide",
+                    title: "That plugin is installed machine-wide",
+                    status: 403,
+                    detail: $"'{packageId}' serves every account on this host and is an administrator's to remove. "
+                          + "An administrator can do it from a terminal with "
+                          + $"`bowire plugin uninstall {packageId} --plugin-dir \"{BowirePluginRoot.MachineRoot}\"`.",
+                    instance: "/api/plugins/{packageId}",
+                    extensions: new Dictionary<string, object?>
+                    {
+                        ["packageId"] = packageId,
+                        ["tier"] = "machine",
+                        ["directory"] = BowirePluginRoot.MachineRoot,
+                    });
+            }
+
             return await RunBowirePluginCommandAsync("uninstall", packageId, version: null, prerelease: false);
         }).ExcludeFromDescription();
 
