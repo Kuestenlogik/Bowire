@@ -17,12 +17,17 @@ on:
     - cron: '17 9 * * 1'  # Monday 09:17 UTC — off-peak
 
 # Unlike CI there is no ingestion contract to protect on main, but a
-# superseded analysis still uploads a SARIF for a commit nobody is on
-# any more. Cancel on PRs, run to completion on main so the alert
-# state always describes the tip.
+# cancelled analysis leaves the alert state describing an older commit.
+# Cancel on PRs, run to completion on main.
+#
+# Same shape as ci.yml, and for the same reason: an expression in
+# cancel-in-progress evaluates to the string "false", which is truthy, so
+# it cancels either way. The distinction has to live in the group — a
+# per-sha group on pushes has nothing to collide with, while
+# pull_request runs share one group per ref.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || 'shared' }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
