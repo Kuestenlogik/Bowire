@@ -381,6 +381,14 @@ public static class BowireServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var dir = configuration["Bowire:PluginDir"];
+        // Tell the rest of Core where the plugins live, not just the
+        // loader (#549). Before this, an embedded host that set
+        // Bowire:PluginDir in appsettings.json loaded from that directory
+        // while the workbench's plugin list, the update check and sidecar
+        // discovery all read the storage default. Safe to call with a
+        // blank value: that clears the override and falls back to the
+        // resolver, which is exactly what an unset key should mean.
+        Plugins.BowirePluginRoot.Apply(dir);
         return string.IsNullOrWhiteSpace(dir) ? services : services.AddBowirePlugins(dir);
     }
 

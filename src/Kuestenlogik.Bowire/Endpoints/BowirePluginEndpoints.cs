@@ -28,7 +28,11 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// </summary>
 internal static class BowirePluginEndpoints
 {
-    private static string PluginDir => BowirePaths.Resolve(BowireStorageScope.Data, "plugins");
+    // Was BowirePaths.Resolve(Data, "plugins") — correct for the default
+    // and blind to `Bowire:PluginDir`, which is how a host started with
+    // --plugin-dir X ended up listing a directory it does not load from
+    // (#549). BowirePluginRoot still falls through to that resolve.
+    private static string PluginDir => BowirePluginRoot.Current;
 
     public static IEndpointRouteBuilder MapBowirePluginEndpoints(
         this IEndpointRouteBuilder endpoints, string basePath)
@@ -906,6 +910,49 @@ internal static class BowirePluginEndpoints
         new(@"^[A-Za-z0-9][A-Za-z0-9._+\-]*$",
             System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
 
+    /// <summary>
+    /// Build the child-process argv for <c>bowire plugin &lt;verb&gt;</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Separate from the process launch so the argument list can be asserted
+    /// without starting anything — which is what #549 needed, because the
+    /// bug was entirely in what this list did not contain.
+    /// </para>
+    /// <para>
+    /// <paramref name="pluginDir"/> is passed rather than read from
+    /// <see cref="BowirePluginRoot"/> in here: a test can then pin a
+    /// directory without touching process-global state, and the caller
+    /// keeps one place that decides which directory is in force.
+    /// </para>
+    /// </remarks>
+    internal static List<string> BuildPluginArgv(
+        string verb, string packageIdOrEmpty, string? version, bool prerelease, string pluginDir)
+    {
+        var argv = new List<string> { "plugin", verb };
+        if (!string.IsNullOrEmpty(packageIdOrEmpty))
+            argv.Add(packageIdOrEmpty);
+        if (!string.IsNullOrEmpty(version))
+        {
+            argv.Add("--version");
+            argv.Add(version);
+        }
+        if (prerelease && (verb == "install" || verb == "update"))
+            argv.Add("--prerelease");
+
+        // The half of #549 the child could not work out for itself. It
+        // inherits the parent's environment, so BOWIRE_PLUGIN_DIR carried
+        // over and that spelling happened to work — while --plugin-dir and
+        // an appsettings.json entry did not, because neither survives a
+        // process boundary. Which of the three ways of naming one directory
+        // worked depended on which one you picked. Passing the resolved
+        // path explicitly makes the child install where this host reads
+        // from, however it was configured.
+        argv.Add("--plugin-dir");
+        argv.Add(pluginDir);
+        return argv;
+    }
+
     private static async Task<IResult> RunBowirePluginCommandAsync(
         string verb, string packageIdOrEmpty, string? version, bool prerelease)
     {
@@ -951,17 +998,8 @@ internal static class BowirePluginEndpoints
             // each element becomes one argv slot, no shell parsing,
             // no interpolation of metacharacters from the operator
             // input into a single command string.
-            psi.ArgumentList.Add("plugin");
-            psi.ArgumentList.Add(verb);
-            if (!string.IsNullOrEmpty(packageIdOrEmpty))
-                psi.ArgumentList.Add(packageIdOrEmpty);
-            if (!string.IsNullOrEmpty(version))
-            {
-                psi.ArgumentList.Add("--version");
-                psi.ArgumentList.Add(version);
-            }
-            if (prerelease && (verb == "install" || verb == "update"))
-                psi.ArgumentList.Add("--prerelease");
+            foreach (var arg in BuildPluginArgv(verb, packageIdOrEmpty, version, prerelease, PluginDir))
+                psi.ArgumentList.Add(arg);
 
             using var proc = Process.Start(psi);
             if (proc is null) return Results.StatusCode(500);

@@ -83,6 +83,16 @@ internal static class BowireCli
         // reaches the two commands that actually load (browser UI, mock)
         // without churning the installer surface.
         var pluginDir = plugins.Options.PluginDirectory;
+
+        // #549: hand the resolved directory to Core. BowirePluginOptions
+        // owns the precedence (--plugin-dir over BOWIRE_PLUGIN_DIR over
+        // config file over default) and stays here, because --plugin-dir
+        // is a CLI notion; what Core needs is only the answer. Without
+        // this the workbench's plugin list, its install shell-out, the
+        // update check and sidecar discovery each fell back to the
+        // storage default and ignored the directory this process loads
+        // from.
+        Kuestenlogik.Bowire.Plugins.BowirePluginRoot.Apply(pluginDir);
         var root = new RootCommand(
             "Bowire — multi-protocol API workbench. Run without a subcommand to launch the browser UI; " +
             "run a subcommand (discover / list / describe / call / catalogue / mock / mcp / plugin / test) for scripting.");

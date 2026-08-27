@@ -5,8 +5,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kuestenlogik.Bowire.Auth;
 
-using Kuestenlogik.Bowire.Projects;
-
 namespace Kuestenlogik.Bowire.Plugins;
 
 /// <summary>
@@ -34,8 +32,10 @@ public class PluginUpdateCheckService
     // host is built, which can be after this type is first touched. A field
     // captured before that pins the path to the pre-Apply default and quietly
     // ignores a project that opted into .bowire/ storage (#616).
-    private static string DefaultPluginDir =>
-        BowirePaths.Resolve(BowireStorageScope.Data, "plugins");
+    // Via BowirePluginRoot since #549, so a host started with --plugin-dir
+    // has its own directory checked for updates rather than the default one
+    // it never installs into.
+    private static string DefaultPluginDir => BowirePluginRoot.Current;
 
     private static string? s_pluginDirOverride;
 
