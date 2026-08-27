@@ -16,9 +16,19 @@ on:
 # main build drops that commit's coverage on the floor and the next
 # report compares against a gap. PRs have no such contract — the newest
 # push is the only one anybody reads.
+#
+# Expressed through the group, not through cancel-in-progress, because
+# `cancel-in-progress: ${{ <expression> }}` does not mean what it reads
+# like: the expression produces the *string* "false", a non-empty string
+# is truthy, and the run is cancelled exactly as if it said true. It was
+# — the CI run for eecd5c7c died 98 seconds in when the commit behind it
+# arrived, which is the precise failure these lines exist to prevent.
+# Putting the sha in the group on a push gives every main commit a group
+# of its own, so there is nothing to supersede; pull_request runs share
+# one group per ref and still collapse to the newest push.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || 'shared' }}
+  cancel-in-progress: true
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
