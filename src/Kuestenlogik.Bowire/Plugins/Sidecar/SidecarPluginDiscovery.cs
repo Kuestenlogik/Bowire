@@ -3,8 +3,6 @@
 
 using Microsoft.Extensions.Logging;
 
-using Kuestenlogik.Bowire.Projects;
-
 namespace Kuestenlogik.Bowire.Plugins.Sidecar;
 
 /// <summary>
@@ -24,8 +22,7 @@ public static class SidecarPluginDiscovery
     /// and a .NET plugin can live side-by-side under different
     /// subdirectories.
     /// </summary>
-    public static string DefaultPluginRoot =>
-        BowirePaths.Resolve(BowireStorageScope.Data, "plugins");
+    public static string DefaultPluginRoot => BowirePluginRoot.Current;
 
     /// <summary>
     /// Find every <c>sidecar.json</c> directly under

@@ -43,8 +43,15 @@ internal static class McpPaths
             : BowirePaths.Resolve(BowireStorageScope.Data, filename);
 
     /// <summary>The plugin directory.</summary>
+    /// <remarks>
+    /// The test override still wins — it exists to keep a suite off the
+    /// developer's real <c>~/.bowire</c>. Below it,
+    /// <see cref="Kuestenlogik.Bowire.Plugins.BowirePluginRoot"/> rather than the raw resolver,
+    /// so <c>bowire.plugins</c> reports the directory a host started with
+    /// <c>--plugin-dir</c> actually loads from (#549).
+    /// </remarks>
     internal static string Plugins()
         => HomeDirOverride is { Length: > 0 } home
             ? Path.Combine(home, ".bowire", "plugins")
-            : BowirePaths.Resolve(BowireStorageScope.Data, "plugins");
+            : Kuestenlogik.Bowire.Plugins.BowirePluginRoot.Current;
 }
