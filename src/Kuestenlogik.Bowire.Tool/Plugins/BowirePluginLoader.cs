@@ -62,16 +62,17 @@ internal sealed class BowirePluginLoader : IBowirePluginLoader
     /// </summary>
     public IReadOnlyList<PluginLoadResult> Load()
     {
-        var dir = Options.PluginDirectory;
-        if (!Directory.Exists(dir))
-        {
-            _last = Array.Empty<PluginLoadResult>();
-            PluginLoadResultStore.Publish(_last);
-            return _last;
-        }
-
+        // Both tiers, user first (#28 Phase D). BowirePluginRoot applies the
+        // overlay rule, so a package installed locally over a machine-wide
+        // one is loaded once, from the user's copy — which is the point of an
+        // overlay: trying a newer build without an administrator changing
+        // what everybody else gets.
+        //
+        // The precedence lands for free on the duplicate check below: the
+        // machine-tier twin arrives second and is skipped as AlreadyLoaded.
         var results = new List<PluginLoadResult>();
-        foreach (var subDir in Directory.GetDirectories(dir))
+        foreach (var (subDir, _, _) in Kuestenlogik.Bowire.Plugins.BowirePluginRoot.EnumeratePackagesUnder(
+                     Options.PluginDirectory, includeMachineTier: !Options.IsExplicit))
         {
             var normalised = Path.GetFullPath(subDir);
             var packageId = Path.GetFileName(normalised);

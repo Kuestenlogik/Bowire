@@ -33,7 +33,21 @@ public sealed class BowirePluginRootTests : IDisposable
     private readonly string _dir = Path.Combine(
         Path.GetTempPath(), "bowire-plugindir-" + Guid.NewGuid().ToString("N"));
 
-    public void Dispose() => BowirePluginRoot.Apply(null);
+    // Both are process-global, and the tier cases below swap the resolver.
+    // Restoring it matters more than the override: a suite that runs after
+    // this one would otherwise resolve every storage question into a temp
+    // directory that no longer exists.
+    private readonly IBowirePathResolver _previousPaths = BowirePaths.Current;
+
+    public void Dispose()
+    {
+        BowirePluginRoot.Apply(null);
+        BowirePaths.Current = _previousPaths;
+        try { Directory.Delete(_dir, recursive: true); }
+        catch (DirectoryNotFoundException) { }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+    }
 
     // ---- the resolution itself ----
 
@@ -167,4 +181,193 @@ public sealed class BowirePluginRootTests : IDisposable
 
         Assert.DoesNotContain("--prerelease", argv);
     }
+
+    // ---- two tiers (#28 Phase D) ----
+
+    /// <summary>Materialise a package directory under <paramref name="root"/>.</summary>
+    private static void AddPackage(string root, string packageId)
+        => Directory.CreateDirectory(Path.Combine(root, packageId));
+
+    /// <summary>
+    /// Redirect the two scopes at two temp trees, so "user" and "machine" are
+    /// genuinely different directories. The real resolver reads %ProgramData%
+    /// for the machine root, which a test has no business writing to.
+    /// </summary>
+    private (string User, string Machine) SplitTiers()
+    {
+        var user = Path.Combine(_dir, "user-tier");
+        var machine = Path.Combine(_dir, "machine-tier");
+        Directory.CreateDirectory(user);
+        Directory.CreateDirectory(machine);
+        BowirePaths.Current = new TwoTierPathResolver(user, machine);
+        return (Path.Combine(user, "plugins"), Path.Combine(machine, "plugins"));
+    }
+
+    [Fact]
+    public void With_No_Machine_Tier_Present_Only_The_User_Packages_Are_Found()
+    {
+        // The common install, and the behaviour that must not change: no
+        // %ProgramData%\Bowire\plugins exists, so nothing new appears.
+        var (user, _) = SplitTiers();
+        AddPackage(user, "Some.Plugin");
+
+        var found = BowirePluginRoot.EnumeratePackages().ToList();
+
+        Assert.Equal(["Some.Plugin"], found.Select(p => p.PackageId));
+        Assert.All(found, p => Assert.Equal(BowirePluginTier.User, p.Tier));
+    }
+
+    [Fact]
+    public void A_Machine_Wide_Package_Is_Found_Without_Being_Installed_By_The_User()
+    {
+        // The point of the phase: an administrator provisions once, every
+        // account on the host sees it.
+        var (_, machine) = SplitTiers();
+        AddPackage(machine, "Admin.Provisioned");
+
+        var found = BowirePluginRoot.EnumeratePackages().ToList();
+
+        var one = Assert.Single(found);
+        Assert.Equal("Admin.Provisioned", one.PackageId);
+        Assert.Equal(BowirePluginTier.Machine, one.Tier);
+    }
+
+    [Fact]
+    public void Both_Tiers_Are_Searched()
+    {
+        var (user, machine) = SplitTiers();
+        AddPackage(user, "Mine");
+        AddPackage(machine, "Theirs");
+
+        var found = BowirePluginRoot.EnumeratePackages().ToList();
+
+        Assert.Equal(2, found.Count);
+        Assert.Contains(found, p => p.PackageId == "Mine" && p.Tier == BowirePluginTier.User);
+        Assert.Contains(found, p => p.PackageId == "Theirs" && p.Tier == BowirePluginTier.Machine);
+    }
+
+    [Fact]
+    public void The_User_Copy_Shadows_A_Machine_Wide_One_Of_The_Same_Package()
+    {
+        // What makes it an overlay rather than a second list: someone tries a
+        // newer build of a plugin without an administrator changing what
+        // everybody else gets. Yielding both would have the loader register
+        // one protocol twice.
+        var (user, machine) = SplitTiers();
+        AddPackage(user, "Shared.Plugin");
+        AddPackage(machine, "Shared.Plugin");
+
+        var found = BowirePluginRoot.EnumeratePackages().ToList();
+
+        var one = Assert.Single(found);
+        Assert.Equal(BowirePluginTier.User, one.Tier);
+        Assert.StartsWith(Path.GetFullPath(user), Path.GetFullPath(one.Directory), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Shadowing_Ignores_Case_Because_Package_Ids_Do()
+    {
+        // NuGet ids are case-insensitive, and the two tiers can easily have
+        // been written by different tools.
+        var (user, machine) = SplitTiers();
+        AddPackage(user, "Shared.Plugin");
+        AddPackage(machine, "shared.plugin");
+
+        Assert.Single(BowirePluginRoot.EnumeratePackages());
+    }
+
+    [Fact]
+    public void An_Explicitly_Configured_Directory_Is_The_Only_One_Searched()
+    {
+        // `--plugin-dir /tmp/isolated` is an operator saying which plugins
+        // are in play. Adding a machine tier they did not ask for would make
+        // an isolated run stop being isolated.
+        var (_, machine) = SplitTiers();
+        AddPackage(machine, "Admin.Provisioned");
+        var isolated = Path.Combine(_dir, "isolated");
+        AddPackage(isolated, "Only.This");
+
+        BowirePluginRoot.Apply(isolated);
+
+        Assert.Equal(["Only.This"], BowirePluginRoot.EnumeratePackages().Select(p => p.PackageId));
+    }
+
+    [Fact]
+    public void A_Caller_That_Resolved_Its_Own_User_Root_Gets_The_Same_Overlay()
+    {
+        // The Tool resolves the directory through BowirePluginOptions, whose
+        // precedence chain Core does not model, so the loader passes what it
+        // resolved rather than trusting an earlier Apply.
+        var (_, machine) = SplitTiers();
+        AddPackage(machine, "Shared.Plugin");
+        var ownRoot = Path.Combine(_dir, "own");
+        AddPackage(ownRoot, "Shared.Plugin");
+        AddPackage(ownRoot, "Mine");
+
+        var found = BowirePluginRoot
+            .EnumeratePackagesUnder(ownRoot, includeMachineTier: true).ToList();
+
+        Assert.Equal(2, found.Count);
+        Assert.All(found, p => Assert.Equal(BowirePluginTier.User, p.Tier));
+    }
+
+    [Fact]
+    public void A_Caller_Can_Refuse_The_Machine_Tier()
+    {
+        var (_, machine) = SplitTiers();
+        AddPackage(machine, "Admin.Provisioned");
+        var ownRoot = Path.Combine(_dir, "own");
+        AddPackage(ownRoot, "Mine");
+
+        var found = BowirePluginRoot
+            .EnumeratePackagesUnder(ownRoot, includeMachineTier: false).ToList();
+
+        Assert.Equal(["Mine"], found.Select(p => p.PackageId));
+    }
+
+    [Fact]
+    public void One_Directory_Serving_Both_Tiers_Lists_Each_Package_Once()
+    {
+        // BOWIRE_DATA_DIR redirects every scope at one tree — the shape every
+        // test fixture uses — and a naive two-pass walk would double it.
+        var shared = Path.Combine(_dir, "shared");
+        Directory.CreateDirectory(shared);
+        BowirePaths.Current = new TwoTierPathResolver(shared, shared);
+        AddPackage(Path.Combine(shared, "plugins"), "Some.Plugin");
+
+        Assert.Single(BowirePluginRoot.EnumeratePackages());
+    }
+
+    [Fact]
+    public void A_Missing_Root_Is_Not_An_Error()
+    {
+        // Neither directory has to exist: a fresh install has no plugins, and
+        // most hosts have no machine tier at all.
+        BowirePaths.Current = new TwoTierPathResolver(
+            Path.Combine(_dir, "nope-user"), Path.Combine(_dir, "nope-machine"));
+
+        Assert.Empty(BowirePluginRoot.EnumeratePackages());
+    }
+}
+
+/// <summary>
+/// A resolver that puts <see cref="BowireStorageScope.Data"/> and
+/// <see cref="BowireStorageScope.Machine"/> in two different trees.
+/// </summary>
+/// <remarks>
+/// The real resolver answers the machine scope with <c>%ProgramData%\Bowire</c>
+/// or <c>/var/lib/bowire</c>, and the fixture override every other suite uses
+/// (<c>BOWIRE_DATA_DIR</c>) deliberately collapses every scope onto one
+/// directory — which is exactly the distinction these tests are about. Top
+/// level rather than nested: CA1034 is an error in this repository.
+/// </remarks>
+internal sealed class TwoTierPathResolver(string dataRoot, string machineRoot) : IBowirePathResolver
+{
+    public string Root(BowireStorageScope scope)
+        => scope == BowireStorageScope.Machine ? machineRoot : dataRoot;
+
+    public string Resolve(BowireStorageScope scope, params string[] segments)
+        => segments is { Length: > 0 }
+            ? Path.Combine(Root(scope), Path.Combine(segments))
+            : Root(scope);
 }

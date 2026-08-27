@@ -84,9 +84,13 @@ internal static class BowirePluginEndpoints
             // otherwise we fall back to the in-process registry lookup
             // by assembly name (same as bundled plugins) so first-party
             // ones with a published manifest still get nice labels.
-            if (Directory.Exists(PluginDir))
+            // Both tiers, user first, one row per package id (#28 Phase D).
+            // A machine-wide plugin this host loads has to appear, or the
+            // list stops describing what is running; the overlay rule lives
+            // in EnumeratePackages so a locally installed copy replaces the
+            // machine-wide one rather than appearing beside it.
+            foreach (var (dir, _, pluginTier) in BowirePluginRoot.EnumeratePackages())
             {
-                foreach (var dir in Directory.GetDirectories(PluginDir))
                 {
                     var metaPath = Path.Combine(dir, "plugin.json");
                     string siblingPackageId;
@@ -141,6 +145,12 @@ internal static class BowirePluginEndpoints
                         if (!string.IsNullOrEmpty(de)) dict["description"] = de;
                     }
                     dict["source"] = "sibling";
+                    // Which tier it came from (#28 Phase D). The UI needs it
+                    // to explain why a plugin has no Uninstall button: a
+                    // machine-wide one is an administrator's to remove, and
+                    // offering the action anyway would produce a permission
+                    // error where a sentence belongs.
+                    dict["tier"] = pluginTier == BowirePluginTier.Machine ? "machine" : "user";
                     plugins.Add(dict);
                 }
             }

@@ -29,6 +29,19 @@ public static class SidecarPluginDiscovery
     public static string DefaultPluginRoot => BowirePluginRoot.Current;
 
     /// <summary>
+    /// One caller-supplied root, in the shape
+    /// <see cref="BowirePluginRoot.EnumeratePackages"/> returns, so
+    /// <see cref="Discover"/> has a single loop for both cases.
+    /// </summary>
+    private static IEnumerable<(string Directory, string PackageId, BowirePluginTier Tier)>
+        EnumerateOneRoot(string root)
+    {
+        if (!Directory.Exists(root)) yield break;
+        foreach (var dir in Directory.EnumerateDirectories(root))
+            yield return (dir, Path.GetFileName(dir), BowirePluginTier.User);
+    }
+
+    /// <summary>
     /// Find every <c>sidecar.json</c> directly under
     /// <paramref name="pluginRoot"/> and instantiate one
     /// <see cref="SidecarBowireProtocol"/> per valid manifest. Missing
@@ -43,13 +56,18 @@ public static class SidecarPluginDiscovery
         ISet<string>? disabledPluginIds = null,
         ILogger? logger = null)
     {
-        var root = pluginRoot ?? DefaultPluginRoot;
-        if (!Directory.Exists(root)) return [];
-
         var disabled = disabledPluginIds ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var results = new List<SidecarBowireProtocol>();
 
-        foreach (var subDir in Directory.EnumerateDirectories(root))
+        // An explicit root is scanned on its own; otherwise both tiers, user
+        // first (#28 Phase D). A sidecar an administrator provisioned is a
+        // protocol this host can speak, and skipping it here would make the
+        // machine tier work for .NET plugins and silently not for sidecars.
+        var packages = pluginRoot is null
+            ? BowirePluginRoot.EnumeratePackages()
+            : EnumerateOneRoot(pluginRoot);
+
+        foreach (var (subDir, _, _) in packages)
         {
             var manifestPath = Path.Combine(subDir, ManifestFileName);
             if (!File.Exists(manifestPath)) continue;

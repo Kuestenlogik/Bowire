@@ -40,6 +40,19 @@ public class PluginUpdateCheckService
     private static string? s_pluginDirOverride;
 
     /// <summary>
+    /// The single-directory walk the test override implies, in the shape
+    /// <see cref="BowirePluginRoot.EnumeratePackages"/> returns so the caller
+    /// has one loop rather than two.
+    /// </summary>
+    private static IEnumerable<(string Directory, string PackageId, BowirePluginTier Tier)>
+        EnumerateOverridePackages(string root)
+    {
+        if (!Directory.Exists(root)) yield break;
+        foreach (var dir in Directory.GetDirectories(root))
+            yield return (dir, Path.GetFileName(dir), BowirePluginTier.User);
+    }
+
+    /// <summary>
     /// On-disk plugin directory the scan walks. Defaults to whatever
     /// <see cref="BowirePluginRoot"/> resolved — <c>~/.bowire/plugins/</c>
     /// unless the host was pointed elsewhere (#549); tests pin a temp dir
@@ -149,9 +162,20 @@ public class PluginUpdateCheckService
     private static List<(string PackageId, string InstalledVersion)> ListInstalledSiblings()
     {
         var list = new List<(string, string)>();
-        if (!Directory.Exists(PluginDir)) return list;
 
-        foreach (var dir in Directory.GetDirectories(PluginDir))
+        // Both tiers (#28 Phase D). A machine-wide plugin is one this host
+        // loads, so leaving it out of the check would mean the one plugin
+        // nobody can update without an administrator is also the one nobody
+        // is told about. The overlay rule lives in EnumeratePackages, so a
+        // package installed over a machine-wide copy is checked once, against
+        // the version actually in play.
+        //
+        // The test override still wins outright: it exists to keep a suite
+        // off whatever the developer has installed, and reading a second
+        // directory would defeat that.
+        foreach (var (dir, _, _) in s_pluginDirOverride is null
+            ? BowirePluginRoot.EnumeratePackages()
+            : EnumerateOverridePackages(s_pluginDirOverride))
         {
             var metaPath = Path.Combine(dir, "plugin.json");
             if (!File.Exists(metaPath)) continue;

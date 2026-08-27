@@ -62,6 +62,21 @@ internal sealed record BowirePluginOptions
     public required string PluginDirectory { get; init; }
 
     /// <summary>
+    /// Whether <see cref="PluginDirectory"/> came from an operator rather
+    /// than from the default.
+    /// </summary>
+    /// <remarks>
+    /// The machine tier (#28 Phase D) hangs off this. Naming a directory is
+    /// an operator saying which plugins are in play, so
+    /// <c>--plugin-dir /tmp/isolated</c> keeps an isolated run isolated
+    /// instead of quietly adding whatever an administrator provisioned. Left
+    /// <c>false</c> by the object initialiser, which is right for the
+    /// hand-built case documented on this type: a caller who writes the
+    /// directory out is describing where plugins live, not overriding it.
+    /// </remarks>
+    public bool IsExplicit { get; init; }
+
+    /// <summary>
     /// Bowire contract version a plugin's manifest is checked against.
     /// <c>null</c> means the running host's own version, which is what
     /// production always wants.
@@ -108,6 +123,7 @@ internal sealed record BowirePluginOptions
             PluginDirectory = picked is null
                 ? DefaultDirectory
                 : Absolutise(picked, basePath),
+            IsExplicit = picked is not null,
         };
     }
 
