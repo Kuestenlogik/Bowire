@@ -194,7 +194,42 @@ test('pill label: unread changes lead with the count and the oldest unread time'
     ], null);
     const hh = (oldest.getHours() < 10 ? '0' : '') + oldest.getHours();
     const mm = (oldest.getMinutes() < 10 ? '0' : '') + oldest.getMinutes();
-    assert.equal(sb._schemaChangePillLabel(), '2 changes since ' + hh + ':' + mm);
+
+    // The weekday prefix is optional here on purpose. Three minutes ago is
+    // yesterday for the three minutes after midnight, and the label then
+    // reads "Thu 23:58" — correct, and what the test asserted as a plain
+    // time until a CI run started at 00:01 and failed on it. The rule
+    // itself is pinned by the two tests below rather than restated here,
+    // where it would just be a copy of the code under test.
+    assert.match(
+        sb._schemaChangePillLabel(),
+        new RegExp('^2 changes since (\\S+ )?' + hh + ':' + mm + '$'));
+});
+
+test('pill label: a time from today carries no weekday', () => {
+    const sb = load();
+    // Midday, so the entry cannot fall on another date whatever time the
+    // suite runs — the whole point being to pin "same day" without the
+    // ambiguity that broke the test above.
+    const noon = new Date();
+    noon.setHours(12, 0, 0, 0);
+    sb._setLog([{ at: noon.toISOString(), type: 'added', service: 'A' }], null);
+
+    assert.equal(sb._schemaChangePillLabel(), '1 change since 12:00');
+});
+
+test('pill label: a time from another day says which one', () => {
+    // Without it, "since 23:58" on a Friday morning reads as eight minutes
+    // ago rather than yesterday evening.
+    const sb = load();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(12, 0, 0, 0);
+    sb._setLog([{ at: yesterday.toISOString(), type: 'added', service: 'A' }], null);
+
+    const label = sb._schemaChangePillLabel();
+    const weekday = yesterday.toLocaleDateString(undefined, { weekday: 'short' });
+    assert.equal(label, '1 change since ' + weekday + ' 12:00');
 });
 
 test('pill label: with everything read it decays to a quiet total', () => {
