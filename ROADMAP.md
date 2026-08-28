@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**6/32 done** · 1 next up · 25 backlog
+**7/32 done** · 1 next up · 24 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -35,13 +35,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog | `area:plugin-sdk` |
 | [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
 | [96](https://github.com/Kuestenlogik/Bowire/issues/96) | Bowire | [Multi-tenant Phase C — SCIM 2.0 provisioning endpoints](#issue-kuestenlogik-bowire-96) | ⬜ Backlog | `area:workbench` |
-| [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ⬜ Backlog | `area:workbench` |
 | [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ⬜ Backlog | `area:workbench` |
 | [284](https://github.com/Kuestenlogik/Bowire/issues/284) | Bowire | [Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)](#issue-kuestenlogik-bowire-284) | ⬜ Backlog | `area:plugin-sdk` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [588](https://github.com/Kuestenlogik/Bowire/issues/588) | Bowire | [Tugboat — JetBrains plugin (IntelliJ platform)](#issue-kuestenlogik-bowire-588) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
 | [619](https://github.com/Kuestenlogik/Bowire/issues/619) | Bowire | [VS Code extension 1.0 — cut the release the code already justifies](#issue-kuestenlogik-bowire-619) | ⬜ Backlog | `area:workbench` |
+| [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ✅ Done | `area:workbench` |
 | [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — the override reaches the loader and nothing else](#issue-kuestenlogik-bowire-549) | ✅ Done | `area:workbench` |
 | [589](https://github.com/Kuestenlogik/Bowire/issues/589) | Bowire | [VS Code: resolve the CLI from a workspace tool manifest](#issue-kuestenlogik-bowire-589) | ✅ Done |  |
 | [590](https://github.com/Kuestenlogik/Bowire/issues/590) | Bowire | [VS Code: offer to download a matching CLI when none is installed](#issue-kuestenlogik-bowire-590) | ✅ Done |  |
@@ -265,12 +265,6 @@ Surface IServiceCollection.AddBowireEnvironment(name, configure) (or a fluent bu
 
 Extracted from #28 — **Phase C** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/96)
 
-#### <a id="issue-kuestenlogik-bowire-97"></a>⬜ Backlog · [#97](https://github.com/Kuestenlogik/Bowire/issues/97) Multi-tenant Phase E — single-user → multi-tenant migration path
-
-> `area:workbench`
-
-Extracted from #28 — **Phase E** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/97)
-
 #### <a id="issue-kuestenlogik-bowire-98"></a>⬜ Backlog · [#98](https://github.com/Kuestenlogik/Bowire/issues/98) Multi-tenant Phase F — user chip, scoped state copy, admin impersonation
 
 > `area:workbench`
@@ -302,6 +296,12 @@ Split out of #101, which now covers the VS Code extension only. [[more]](https:/
 > `area:workbench`
 
 The extension has outgrown its version number. `#589` (resolve the CLI from a workspace tool manifest), `#590` (offer a managed download when none is installed) and `#591` (workspace-local storage) closed the last construction sites, and none of that has reached anybody: the Marketplace still serves … [[more]](https://github.com/Kuestenlogik/Bowire/issues/619)
+
+#### <a id="issue-kuestenlogik-bowire-97"></a>✅ Done · [#97](https://github.com/Kuestenlogik/Bowire/issues/97) Multi-tenant Phase E — single-user → multi-tenant migration path
+
+> `area:workbench`
+
+Extracted from #28 — **Phase E** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/97)
 
 #### <a id="issue-kuestenlogik-bowire-549"></a>✅ Done · [#549](https://github.com/Kuestenlogik/Bowire/issues/549) Workbench plugin install ignores --plugin-dir — the override reaches the loader and nothing else
 
