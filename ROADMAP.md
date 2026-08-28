@@ -144,6 +144,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [620](https://github.com/Kuestenlogik/Bowire/issues/620) | Bowire | [Benchmark: measure time to first chunk, not just the whole round trip](#issue-kuestenlogik-bowire-620) | ⬜ Backlog | `area:cli` |
 | [621](https://github.com/Kuestenlogik/Bowire/issues/621) | Bowire | [Benchmark: gate on values the response reports, not just on the clock](#issue-kuestenlogik-bowire-621) | ⬜ Backlog | `area:cli` |
 | [622](https://github.com/Kuestenlogik/Bowire/issues/622) | Bowire | [Benchmark: several targets in one run, so routing choices are comparable](#issue-kuestenlogik-bowire-622) | ⬜ Backlog | `area:cli` |
+| [623](https://github.com/Kuestenlogik/Bowire/issues/623) | Bowire | [Benchmark: report the shape of a run, not only its totals](#issue-kuestenlogik-bowire-623) | ⬜ Backlog | `area:cli` |
+| [624](https://github.com/Kuestenlogik/Bowire/issues/624) | Bowire | [Benchmark: hold connections open and report what became of them](#issue-kuestenlogik-bowire-624) | ⬜ Backlog | `area:cli` |
 
 ## Details
 
@@ -708,6 +710,18 @@ Every metric `bowire bench` produces comes from the clock: latency percentiles, 
 > `area:cli`
 
 A benchmark run targets one endpoint and produces one set of numbers. Anyone routing across several backends — several models behind one OpenAI-compatible surface, a primary and a fallback, two regions — has to run Bowire once per target and compare the reports by hand. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/622)
+
+#### <a id="issue-kuestenlogik-bowire-623"></a>⬜ Backlog · [#623](https://github.com/Kuestenlogik/Bowire/issues/623) Benchmark: report the shape of a run, not only its totals
+
+> `area:cli`
+
+`error-rate` is one number for the whole run. That hides the difference between the two failures people most need to tell apart: [[more]](https://github.com/Kuestenlogik/Bowire/issues/623)
+
+#### <a id="issue-kuestenlogik-bowire-624"></a>⬜ Backlog · [#624](https://github.com/Kuestenlogik/Bowire/issues/624) Benchmark: hold connections open and report what became of them
+
+> `area:cli`
+
+Everything Bowire measures today is a request that completes. `bowire bench` calls `InvokeAsync`, times the round trip and moves on; even for a streaming method it takes the non-streaming path. [[more]](https://github.com/Kuestenlogik/Bowire/issues/624)
 
 ---
 
