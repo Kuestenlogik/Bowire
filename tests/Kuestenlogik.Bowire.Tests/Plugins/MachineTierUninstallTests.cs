@@ -60,7 +60,7 @@ public sealed class MachineTierUninstallTests : IDisposable
         catch (UnauthorizedAccessException) { }
     }
 
-    private void AddPackage(string root, string packageId)
+    private static void AddPackage(string root, string packageId)
         => Directory.CreateDirectory(Path.Combine(root, packageId));
 
     private int Uninstall(string packageId)
