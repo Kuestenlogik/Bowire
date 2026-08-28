@@ -26412,3 +26412,75 @@ not as the
 .bowire-rollup-sources-row td { background: var(--bowire-surface-subtle); }
 .bowire-rollup-sources { list-style: none; margin: 0; padding: 4px 0; }
 .bowire-rollup-source { font-family: var(--bowire-font-mono); font-size: 11px; color: var(--bowire-text-tertiary); padding: 2px 0; }
+
+/* ---- Single-user → per-identity migration offer (#97) ---- */
+/* Asked once, before the person concludes that turning on authentication
+   deleted their work. Modal rather than a dismissible banner because the
+   decision is one-way for this identity: declining is recorded, and a
+   banner people scroll past would record it by accident. */
+.bowire-migration-offer {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+.bowire-migration-card {
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-lg);
+    width: min(520px, 92vw);
+    padding: 22px 24px 18px;
+}
+.bowire-migration-title {
+    margin: 0 0 12px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-migration-body {
+    margin: 0 0 10px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--bowire-text);
+}
+.bowire-migration-note {
+    margin: 0 0 12px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--bowire-text-secondary);
+}
+/* The path is what tells an operator which install this came out of, so it
+   stays legible rather than being truncated into a decoration. */
+.bowire-migration-source {
+    margin: 0 0 14px;
+    font-family: var(--bowire-font-mono, ui-monospace, monospace);
+    font-size: 11.5px;
+    color: var(--bowire-text-tertiary);
+    overflow-wrap: anywhere;
+}
+/* Reserved by the layout only once it has something to say — an empty
+   paragraph holding open a gap reads as a rendering bug. */
+.bowire-migration-error:empty {
+    display: none;
+}
+.bowire-migration-error {
+    margin: 0 0 12px;
+    font-size: 12.5px;
+    color: var(--bowire-error);
+}
+.bowire-migration-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+.bowire-migration-go {
+    border-color: var(--bowire-accent);
+    color: var(--bowire-accent-text);
+    background: var(--bowire-accent-subtle);
+}
+.bowire-migration-go:hover:not(:disabled) {
+    border-color: var(--bowire-accent-hover);
+}

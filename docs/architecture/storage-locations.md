@@ -43,7 +43,52 @@ Unset means the root itself, so nothing moves for the single-instance case — t
 Two names are refused rather than accepted quietly, because both failures are invisible:
 
 - **Anything that is not a single segment** — a separator, `..`, an absolute path. It would write outside the storage root and look like it worked.
-- **A name Bowire already uses for a directory** — `plugins`, `workspaces`, `recordings`, `flows`, `cache`, `certs`, `logs`, `presets`, `mocks`. With no instance set the root *is* the scope, so an instance named `plugins` would share state with an unnamed one, which is the opposite of what setting it was for.
+- **A name Bowire already uses for a directory** — `plugins`, `workspaces`, `recordings`, `flows`, `cache`, `certs`, `logs`, `presets`, `mocks`, `users`. With no instance set the root *is* the scope, so an instance named `plugins` would share state with an unnamed one, which is the opposite of what setting it was for.
+
+## Several people on one instance
+
+One Bowire serving several signed-in people puts each of them in their own slot under the storage root:
+
+```
+~/.bowire/
+├─ environments.json        ← the single-user layout, still here
+├─ collections.json
+├─ plugins/                 ← two tiers, an admin's business, not a person's
+└─ users/
+   ├─ ada-example.com-4f2a1c07/
+   │  ├─ environments.json
+   │  ├─ workspaces/
+   │  └─ .migration.json    ← what was decided, and when
+   └─ grace-example.com-9b3e5d10/
+```
+
+Turn it on with `Bowire:MultiTenant:Enabled`. It is off by default and is **not** implied by configuring an identity provider: plenty of single-user installs put a login in front of a workbench that still has one person behind it, and moving their data because they added OIDC would be a surprise, not a feature.
+
+The slot name is a readable rendering of the subject with a fingerprint of it appended. The readable half is so an operator can tell whose directory is whose without a lookup table. The fingerprint is not decoration: `a.b@example.com` and `a-b@example.com` render identically, and two identities sharing a slot would read each other's environments — secrets included. It is taken over the untouched subject, so distinct subjects always land in distinct directories.
+
+Which claim identifies a person is `sub`, then `nameidentifier` (ASP.NET maps the first onto the second unless the host disabled inbound claim mapping, so both are tried), then `oid` for Entra ID. `Bowire:MultiTenant:SubjectClaim` overrides that, and when it is set there is no fallback — an operator who named a claim and silently got e-mail addresses instead would be filing two identities into one slot.
+
+### What happens to the data that was already there
+
+Switching an existing install on moves where every store reads. Without a migration the person who signs in first sees an empty workbench, and the obvious conclusion — that turning on auth cost them their work — is the one people draw.
+
+So Bowire offers it once, per identity:
+
+| `Bowire:MultiTenant:Migration` | |
+|---|---|
+| `Prompt` *(default)* | Offer the copy and let the person decide. The first identity to sign in is not reliably the one the data belongs to — it might be the operator's admin account. |
+| `Auto` | Copy into the first identity that signs in. For installs the operator knows have one person. |
+| `Skip` | Never offer. For starting clean, and for an operator who already moved the data by hand. |
+
+Three things are worth knowing about how it runs:
+
+- **It copies; it never moves.** The legacy files stay put. That costs disk and buys a switch back to single-user without a second migration, plus a way out if the data lands in the wrong slot — decline it in the right one. Deleting the originals is the operator's call to time.
+- **Everything comes along except what is named as not personal** — `plugins`, `certs`, `logs`, `cache`, `state`, `project.json`, and `users` itself. An inclusion list would have to grow with every new store, and forgetting one would be silent data loss; forgetting to exclude one merely copies a cache.
+- **A slot that already holds work is left alone.** Merging two sets of environments produces one set nobody can take apart again.
+
+The decision is recorded in `.migration.json` inside the slot — what was copied, from where, and when. It lives there rather than in a central log so that deleting an identity deletes its receipt too: an index of people who used to exist is not state Bowire should keep on its own initiative.
+
+The copy is staged next to the slot and moved into place as the last step, so a migration that fails halfway leaves no slot at all rather than half a one. If the process is killed mid-copy, a `users/.staging-…` directory is left behind; it is safe to delete, and nothing reads it.
 
 ## Redirecting everything (tests)
 

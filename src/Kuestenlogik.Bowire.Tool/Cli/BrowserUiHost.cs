@@ -351,6 +351,12 @@ internal static class BrowserUiHost
         // a no-op and the workbench stays open (today's default).
         builder.Services.AddBowireAuth(builder.Configuration);
 
+        // #97 — per-identity storage. Registering is not enabling: the
+        // services land either way so the migration endpoint can be mapped
+        // unconditionally, and Bowire:MultiTenant:Enabled is what actually
+        // moves where the stores read.
+        builder.Services.AddBowireTenancy(builder.Configuration);
+
         // Opt-in MCP adapter. Registering it pre-Build is the new
         // DI-driven shape (the previous WithMcpAdapter() called at
         // map-time predates the official SDK Migration). The adapter
@@ -380,6 +386,11 @@ internal static class BrowserUiHost
         // middleware (callback paths, claims transformation, &c). No-op
         // when no provider is registered.
         app.UseBowireAuth();
+
+        // After UseAuthentication, because there is no identity to scope
+        // storage by until the scheme has run. No-op unless the install
+        // opted into multi-tenant.
+        app.UseBowireTenancy();
 
         // Standalone CLI mounts the workbench at the site root ("/") —
         // there's no host app sharing the route table, so a `/bowire`
