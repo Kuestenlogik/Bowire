@@ -90,6 +90,8 @@ The decision is recorded in `.migration.json` inside the slot — what was copie
 
 The copy is staged next to the slot and moved into place as the last step, so a migration that fails halfway leaves no slot at all rather than half a one. If the process is killed mid-copy, a `users/.staging-…` directory is left behind; it is safe to delete, and nothing reads it.
 
+A decision can be reversed from Settings → Data, or with `bowire users migrate <subject> --undo`. Undoing an acceptance moves that slot to `users/.undone-…` rather than deleting it — the receipt records counts, not a manifest, so there is no way to tell which files came from the migration and which the person made afterwards, and the safe answer is to destroy nothing. Neither `.staging-…` nor `.undone-…` is a slot: both are dot-prefixed, and a slug never is.
+
 ## Redirecting everything (tests)
 
 `BOWIRE_DATA_DIR` points every scope at one directory:

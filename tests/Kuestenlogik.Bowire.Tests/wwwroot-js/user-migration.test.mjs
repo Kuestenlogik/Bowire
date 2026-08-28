@@ -68,6 +68,15 @@ function load(responder) {
             addEventListener: function () {},
             location: { reload: function () { reloads++; } }
         };
+        var toasts = [];
+        function toast(msg, kind) { toasts.push({ msg: msg, kind: kind }); }
+        var closed = 0;
+        function closeSettings() { closed++; }
+        // settings.js's row helper, stubbed to the shape the fragment uses.
+        function renderSettingsRow(label, description, control) {
+            return el('div', { className: 'bowire-settings-row', textContent: label + ' ' + description },
+                control());
+        }
         var calls = [];
         function fetch(url, init) {
             calls.push({ url: url, method: (init && init.method) || 'GET' });
@@ -79,7 +88,9 @@ function load(responder) {
             body: document.body,
             calls: calls,
             reloads: function () { return reloads; },
-            current: function () { return userMigrationOffer; }
+            current: function () { return userMigrationOffer; },
+            settingsRow: renderUserMigrationSettings,
+            toasts: toasts
         };
     `;
     return compileFragment(_RELPATH, ['_responder'], appended)({ _responder: responder });
@@ -244,4 +255,69 @@ test('the offer is fetched once the page has loaded, not at parse time', () => {
 
     assert.match(src, /addEventListener\('load'/);
     assert.doesNotMatch(src, /^\s*fetchUserMigrationOffer\(\);/m);
+});
+
+// ---- Settings → Data ----
+// The dialog is a one-time question and is long gone by the time anyone wants
+// to reverse the answer. Whatever is reachable there is the whole of undo.
+
+test('a single-user install carries no remnant of a feature it does not have', async () => {
+    const f = load(responder({ state: 'Off' }));
+    f.offer();
+    await settle();
+
+    assert.equal(f.settingsRow(), null);
+});
+
+test('nothing is claimed before the server has answered', () => {
+    // Rendering a row from an unknown state would state a fact about somebody's
+    // data that nobody checked.
+    const f = load(responder(AVAILABLE));
+
+    assert.equal(f.settingsRow(), null);
+});
+
+test('an accepted migration can be taken back, and says what that costs', async () => {
+    const f = load(responder(
+        { state: 'AlreadyDecided', outcome: 'Migrated', decidedUtc: '2026-08-20T09:14:00+00:00' },
+        { state: 'Available' }));
+    f.offer();
+    await settle();
+
+    const row = f.settingsRow();
+    assert.match(text(row), /Copied into your account on 2026-08-20/);
+    // "Undo" has to say it moves rather than deletes, or nobody dares press it.
+    assert.match(text(row), /deletes nothing/);
+
+    row.querySelector('bowire-btn').onClick();
+    await settle();
+
+    assert.equal(f.calls[1].url, '/api/migration/undo');
+    assert.equal(f.reloads(), 1);
+});
+
+test('a declined migration can be asked for again', async () => {
+    const f = load(responder(
+        { state: 'AlreadyDecided', outcome: 'Declined', decidedUtc: '2026-08-20T09:14:00+00:00' },
+        { state: 'Available' }));
+    f.offer();
+    await settle();
+
+    const row = f.settingsRow();
+    assert.match(text(row), /start fresh on 2026-08-20/);
+    assert.match(text(row), /never touched/);
+});
+
+test('a failed undo from Settings is said out loud', async () => {
+    // There is no dialog to write the failure into here, and a failure nobody
+    // is told about is the one outcome this whole feature exists to avoid.
+    const f = load(responder({ state: 'AlreadyDecided', outcome: 'Migrated' }, 'fail'));
+    f.offer();
+    await settle();
+
+    f.settingsRow().querySelector('bowire-btn').onClick();
+    await settle();
+
+    assert.equal(f.reloads(), 0);
+    assert.match(f.toasts[0].msg, /Nothing was moved or deleted/);
 });
