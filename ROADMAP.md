@@ -137,6 +137,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [611](https://github.com/Kuestenlogik/Bowire/issues/611) | Bowire | [Sidecar: add gRPC as a third transport alongside stdio and HTTP](#issue-kuestenlogik-bowire-611) | ⬜ Backlog |  |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
+### Backlog (not yet scheduled)
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [620](https://github.com/Kuestenlogik/Bowire/issues/620) | Bowire | [Benchmark: measure time to first chunk, not just the whole round trip](#issue-kuestenlogik-bowire-620) | ⬜ Backlog | `area:cli` |
+| [621](https://github.com/Kuestenlogik/Bowire/issues/621) | Bowire | [Benchmark: gate on values the response reports, not just on the clock](#issue-kuestenlogik-bowire-621) | ⬜ Backlog | `area:cli` |
+| [622](https://github.com/Kuestenlogik/Bowire/issues/622) | Bowire | [Benchmark: several targets in one run, so routing choices are comparable](#issue-kuestenlogik-bowire-622) | ⬜ Backlog | `area:cli` |
+
 ## Details
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
@@ -680,6 +688,26 @@ Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `htt
 > `area:plugin-sdk`
 
 > **Status:** obsolete, not done. The premise no longer holds — the body below records why; the original proposal is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
+
+### Backlog (not yet scheduled)
+
+#### <a id="issue-kuestenlogik-bowire-620"></a>⬜ Backlog · [#620](https://github.com/Kuestenlogik/Bowire/issues/620) Benchmark: measure time to first chunk, not just the whole round trip
+
+> `area:cli`
+
+`bowire bench` calls `IBowireProtocol.InvokeAsync` and times the whole round trip. For a streaming endpoint that number mixes two things a reader wants to separate: how fast the server started answering, and how long the answer was. [[more]](https://github.com/Kuestenlogik/Bowire/issues/620)
+
+#### <a id="issue-kuestenlogik-bowire-621"></a>⬜ Backlog · [#621](https://github.com/Kuestenlogik/Bowire/issues/621) Benchmark: gate on values the response reports, not just on the clock
+
+> `area:cli`
+
+Every metric `bowire bench` produces comes from the clock: latency percentiles, error rate, throughput. Nothing comes from the response body, so anything the server *reports about itself* is invisible to a gate. [[more]](https://github.com/Kuestenlogik/Bowire/issues/621)
+
+#### <a id="issue-kuestenlogik-bowire-622"></a>⬜ Backlog · [#622](https://github.com/Kuestenlogik/Bowire/issues/622) Benchmark: several targets in one run, so routing choices are comparable
+
+> `area:cli`
+
+A benchmark run targets one endpoint and produces one set of numbers. Anyone routing across several backends — several models behind one OpenAI-compatible surface, a primary and a fallback, two regions — has to run Bowire once per target and compare the reports by hand. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/622)
 
 ---
 
