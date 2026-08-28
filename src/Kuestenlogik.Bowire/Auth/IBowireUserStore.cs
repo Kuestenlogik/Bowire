@@ -57,7 +57,7 @@ public interface IBowireUserStore
 /// don't opt into multi-tenant mode (issue #28) use this transparently
 /// and see no behavioural change.
 /// </summary>
-public sealed class DefaultBowireUserStore : IBowireUserStore
+public sealed class DefaultBowireUserStore : IBowireUserStore, IBowireStorageRootProvider
 {
     // Declared before Instance on purpose: static initialisers run in
     // declaration order, so the other way round hands the constructor a null.
@@ -93,6 +93,15 @@ public sealed class DefaultBowireUserStore : IBowireUserStore
 
     /// <summary>The directory this store resolves paths under.</summary>
     public string Root => _root;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The same directory as <see cref="Root"/>: the flat layout puts a
+    /// person's state directly in the storage root, so for this store the two
+    /// questions have one answer. They come apart in
+    /// <see cref="ScopedBowireUserStore"/>.
+    /// </remarks>
+    public string StorageRoot => _root;
 
     public string GetUserPath(string filename)
     {

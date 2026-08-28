@@ -252,6 +252,13 @@
          globals are read via typeof at click time) but ordering otherwise free. -->
     <BowireJsFragment Include="wwwroot\js\tools-reverse-proxy.js" />
     <BowireJsFragment Include="wwwroot\js\plugin-update-badge.js" />
+    <!-- #97 — the one-time offer to copy a single-user install's data into
+         the signed-in identity's slot. Renders straight into document.body
+         rather than through render(), because a one-time decision is not
+         application state and a node morphdom never sees cannot be reused
+         for something else while it is on screen. Depends on helpers.js
+         (el) and prologue.js (config); ordering otherwise free. -->
+    <BowireJsFragment Include="wwwroot\js\user-migration.js" />
     <BowireJsFragment Include="wwwroot\js\ai.js" />
     <!-- #125 Phase 2 — vars resolver UX. Must come before init.js
          (which calls installVarsAutocomplete + installVarsChips). -->

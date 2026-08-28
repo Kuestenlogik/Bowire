@@ -102,6 +102,7 @@ public sealed class BowirePathResolver : IBowirePathResolver
         new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "plugins", "workspaces", "recordings", "flows", "cache", "certs", "logs", "presets", "mocks",
+            "users",
         };
 
     private readonly Func<string, string?> _environment;
@@ -109,8 +110,8 @@ public sealed class BowirePathResolver : IBowirePathResolver
 
     /// <summary>A resolver reading the real environment.</summary>
     public BowirePathResolver()
-        : this(Environment.GetEnvironmentVariable, () => BowireUserContext.Current is DefaultBowireUserStore s
-            ? s.Root
+        : this(Environment.GetEnvironmentVariable, () => BowireUserContext.Current is IBowireStorageRootProvider s
+            ? s.StorageRoot
             : DefaultBowireUserStore.UserProfileRoot)
     {
     }
