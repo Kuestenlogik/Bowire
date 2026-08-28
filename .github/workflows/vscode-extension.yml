@@ -49,7 +49,12 @@ on:
         default: false
 
 concurrency:
-  group: vscode-extension-${{ github.ref }}
+  # A push-triggered run must not be cancelled by the next push: on main
+  # every commit is its own subject, and superseding one loses that
+  # commit's result rather than saving work. Keying the group on the sha
+  # for pushes keeps them independent, while a pull request still
+  # collapses onto one shared key so a re-push supersedes the last run.
+  group: vscode-extension-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || 'shared' }}
   cancel-in-progress: true
 
 permissions:
