@@ -683,4 +683,4 @@ Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `htt
 
 ---
 
-*Generated 2026-08-27 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-08-28 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
