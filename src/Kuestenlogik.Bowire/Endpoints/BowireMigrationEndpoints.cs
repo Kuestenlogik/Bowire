@@ -60,6 +60,22 @@ internal static class BowireMigrationEndpoints
             });
         });
 
+        endpoints.MapPost($"{basePath}/api/migration/undo", (HttpContext http) =>
+        {
+            var plan = Plan(http);
+            if (plan is null) return Results.Ok(Off());
+            if (plan.State != BowireUserMigrationState.AlreadyDecided) return Stale(plan);
+
+            var aside = BowireUserMigrator.Undo(plan);
+            return Results.Ok(new
+            {
+                state = nameof(BowireUserMigrationState.Available),
+                // Where it went, so the answer to "did that delete my work?"
+                // is a path rather than a reassurance.
+                movedTo = aside,
+            });
+        });
+
         return endpoints;
     }
 

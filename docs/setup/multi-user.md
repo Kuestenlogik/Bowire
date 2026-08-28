@@ -81,6 +81,28 @@ What it does, and does not, do:
 - **Leaves a slot that already holds work alone.** Merging two sets of environments produces one set nobody can separate again.
 - **Records the decision** in `.migration.json` inside the slot: what was copied, from where, when, and whether it was accepted or refused. It sits in the slot rather than in a central log, so deleting an identity deletes its record too.
 
+### Taking it back
+
+The decision stays reversible under **Settings → Data**. Undoing an accepted migration moves that account's slot aside — under `users/.undone-…`, deleting nothing — and puts the data back on offer, including to whoever it actually belongs to. Undoing a refusal only removes the record; anything done in the slot since stays exactly where it is, and if there is work in there the offer correctly does not come back.
+
+The case this exists for is the ordinary one: the operator's admin identity signs in first, accepts, and the person the data belongs to is then told there is nothing to migrate.
+
+### From the host
+
+The same decisions are available without a browser, which is where an operator usually is when flipping an install over:
+
+```bash
+bowire users list                              # the slots on disk, and what each decided
+bowire users migrate ada@example.com           # report only — nothing changes
+bowire users migrate ada@example.com --apply
+bowire users migrate ada@example.com --decline
+bowire users migrate ada@example.com --undo
+```
+
+The subject is named rather than inferred: there is no request here, so there is no caller to be. `migrate` with no flag lists the files it would move and stops, so "what would this do" can be asked without being the answer.
+
+Slot names are derived from the subject and cannot be read back into one — the mapping is deliberately one-way, so `list` shows directories rather than people.
+
 ## Plugins in a multi-user install
 
 Installed plugins are not per-identity state. They resolve in two tiers: a machine-wide directory an administrator manages (`%ProgramData%\Bowire\plugins`, `/var/lib/bowire/plugins`) and the running account's own directory on top of it. Uninstalling something from the machine tier is refused and names the elevated command that would work.

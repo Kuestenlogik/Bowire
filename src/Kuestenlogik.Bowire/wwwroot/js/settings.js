@@ -3357,6 +3357,16 @@
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: 'Data Management' }));
 
+        // #97 — the standing place to see, and take back, what was decided
+        // about the single-user install's data. The one-time dialog is gone
+        // by the time anyone wants to reverse it, so the row has to live
+        // somewhere that does not disappear. The renderer belongs to the
+        // migration slice; it returns null when there is nothing to show.
+        if (typeof renderUserMigrationSettings === 'function') {
+            var migrationRow = renderUserMigrationSettings();
+            if (migrationRow) section.appendChild(migrationRow);
+        }
+
         // ---- v2.2 W2 — Workspace deletion mode + Trash retention ----
         section.appendChild(renderSettingsRow(
             'Workspace deletion',

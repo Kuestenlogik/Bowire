@@ -263,6 +263,85 @@ public sealed class BowireUserMigratorTests : IDisposable
         Assert.Equal(BowireUserMigrationState.Available, Plan().State);
     }
 
+    // ---- taking it back ----
+
+    [Fact]
+    public void Undoing_An_Accepted_Migration_Moves_The_Slot_Aside_Rather_Than_Deleting_It()
+    {
+        // The case: the operator's admin identity signs in first and takes the
+        // data. Undo has to be safe enough that they will actually use it.
+        Legacy("environments.json", """{"envs":[1]}""");
+        BowireUserMigrator.Apply(Plan());
+
+        var aside = BowireUserMigrator.Undo(Plan());
+
+        Assert.NotNull(aside);
+        Assert.False(Directory.Exists(Slot));
+        Assert.Equal("""{"envs":[1]}""", File.ReadAllText(Path.Combine(aside!, "environments.json")));
+    }
+
+    [Fact]
+    public void Undoing_Puts_The_Migration_Back_On_Offer()
+    {
+        Legacy("environments.json");
+        BowireUserMigrator.Apply(Plan());
+        BowireUserMigrator.Undo(Plan());
+
+        Assert.Equal(BowireUserMigrationState.Available, Plan().State);
+    }
+
+    [Fact]
+    public void What_Was_Set_Aside_Is_Not_A_Slot()
+    {
+        // It sits under users/ and must not be mistaken for an identity — by
+        // a listing, or by the next migration looking for a free name.
+        Legacy("environments.json");
+        BowireUserMigrator.Apply(Plan());
+
+        var aside = BowireUserMigrator.Undo(Plan());
+
+        Assert.StartsWith(".", Path.GetFileName(aside)!, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Undoing_A_Decline_Only_Removes_The_Record()
+    {
+        Legacy("environments.json");
+        BowireUserMigrator.Decline(Plan());
+
+        var aside = BowireUserMigrator.Undo(Plan());
+
+        Assert.Null(aside);
+        Assert.Equal(BowireUserMigrationState.Available, Plan().State);
+    }
+
+    [Fact]
+    public void Undoing_A_Decline_Leaves_The_Work_Done_Since_Where_It_Is()
+    {
+        // Somebody declined, then built a workspace. Moving that aside would
+        // hide the very thing they are looking at — so a decline's undo
+        // touches only its own record, and the slot's contents then correctly
+        // stop the offer coming back.
+        Legacy("environments.json");
+        BowireUserMigrator.Decline(Plan());
+        File.WriteAllText(Path.Combine(Slot, "collections.json"), """{"mine":true}""");
+
+        BowireUserMigrator.Undo(Plan());
+
+        Assert.Equal("""{"mine":true}""", File.ReadAllText(Path.Combine(Slot, "collections.json")));
+        Assert.Equal(BowireUserMigrationState.SlotNotEmpty, Plan().State);
+    }
+
+    [Fact]
+    public void There_Is_Nothing_To_Undo_Before_Anything_Was_Decided()
+    {
+        Legacy("environments.json");
+
+        var ex = Assert.Throws<InvalidOperationException>(() => BowireUserMigrator.Undo(Plan()));
+
+        Assert.Contains("Available", ex.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Each_Identity_Decides_For_Itself()
     {

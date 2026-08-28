@@ -12,6 +12,10 @@
     // cannot be reused for something else while it is on screen.
 
     var userMigrationOffer = null;
+    // The last thing the server said, whatever it said. The dialog only cares
+    // about 'Available', but Settings has to be able to show — and reverse —
+    // a decision long after the dialog is gone.
+    var userMigrationPlan = null;
 
     function userMigrationSize(bytes) {
         if (!bytes) return '';
@@ -30,7 +34,7 @@
         userMigrationOffer = null;
     }
 
-    function userMigrationDecide(path, onDone) {
+    function userMigrationDecide(path, onDone, onFail) {
         var buttons = userMigrationOffer
             ? userMigrationOffer.querySelectorAll('button')
             : [];
@@ -53,6 +57,10 @@
                     note.textContent =
                         'That did not go through. Your existing data is untouched — try again.';
                 }
+                // Called from Settings there is no dialog to write into, and
+                // a failure nobody is told about is the one failure mode this
+                // whole feature exists to avoid.
+                if (typeof onFail === 'function') onFail();
             });
     }
 
@@ -116,6 +124,7 @@
             fetch(config.prefix + '/api/migration')
                 .then(function (r) { return r.ok ? r.json() : null; })
                 .then(function (plan) {
+                    userMigrationPlan = plan || null;
                     // Every other state is a state with nothing to ask about:
                     // the install is single-user, the person already decided,
                     // there is nothing on disk, or their slot has work in it.
@@ -126,6 +135,71 @@
                 })
                 .catch(function () { /* single-user install, or offline */ });
         } catch { /* fetch threw synchronously */ }
+    }
+
+    // ---- Settings → Data ----
+    // The dialog is a one-time question and is gone by the time anyone wants
+    // to reverse the answer. This row is where that stays reachable.
+
+    function userMigrationSettingsCopy(plan) {
+        var when = plan.decidedUtc ? String(plan.decidedUtc).slice(0, 10) : '';
+
+        if (plan.state === 'Available') {
+            return {
+                label: 'Earlier data',
+                description: 'There is work on this machine from before Bowire kept each person’s '
+                    + 'separate. It has not been copied into your account.',
+                action: 'Review',
+                run: function () { fetchUserMigrationOffer(); if (typeof closeSettings === 'function') closeSettings(); },
+            };
+        }
+        if (plan.outcome === 'Migrated') {
+            return {
+                label: 'Earlier data',
+                description: 'Copied into your account' + (when ? ' on ' + when : '')
+                    + '. Undoing moves this account’s files aside — it deletes nothing — and '
+                    + 'offers the data again, including to whoever it actually belongs to.',
+                action: 'Undo',
+                run: function () { userMigrationDecide('undo', userMigrationReload, userMigrationComplain); },
+            };
+        }
+        if (plan.outcome === 'Declined') {
+            return {
+                label: 'Earlier data',
+                description: 'You chose to start fresh' + (when ? ' on ' + when : '')
+                    + '. The original files were never touched.',
+                action: 'Offer it again',
+                run: function () { userMigrationDecide('undo', userMigrationReload, userMigrationComplain); },
+            };
+        }
+        return null;
+    }
+
+    function userMigrationReload() { window.location.reload(); }
+
+    function userMigrationComplain() {
+        if (typeof toast === 'function') {
+            toast('That did not go through. Nothing was moved or deleted.', 'error');
+        }
+    }
+
+    function renderUserMigrationSettings() {
+        // Nothing known, or nothing to say: no row rather than an empty one.
+        // A single-user install must not carry a remnant of a feature it does
+        // not have.
+        if (!userMigrationPlan) { fetchUserMigrationOffer(); return null; }
+
+        var copy = userMigrationSettingsCopy(userMigrationPlan);
+        if (!copy || typeof renderSettingsRow !== 'function') return null;
+
+        return renderSettingsRow(copy.label, copy.description, function () {
+            return el('button', {
+                type: 'button',
+                className: 'bowire-btn',
+                textContent: copy.action,
+                onClick: copy.run,
+            });
+        });
     }
 
     if (typeof window !== 'undefined') {

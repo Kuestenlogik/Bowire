@@ -194,6 +194,9 @@ internal static class BowireCli
         root.Add(DiffCommand.Build());
         root.Add(LintCommand.Build());
         root.Add(WorkspaceCommand.Build());
+        // #97 — the operator's side of per-identity storage: what is on disk,
+        // and moving a single-user install's data into a named subject's slot.
+        root.Add(UsersCommand.Build());
         root.Add(CatalogueCommand.Build());
         root.Add(RecordingCommand.Build());
         root.Add(ContractCommand.Build());

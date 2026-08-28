@@ -42,6 +42,9 @@ public static class BowireUserMigrator
 
     private const string StagingPrefix = ".staging-";
 
+    /// <summary>Where an undone slot goes. Dot-prefixed, so it is not a slot.</summary>
+    private const string UndonePrefix = ".undone-";
+
     private static readonly JsonSerializerOptions s_json = new() { WriteIndented = true };
 
     private static readonly EnumerationOptions s_walk = new()
@@ -216,6 +219,56 @@ public static class BowireUserMigrator
         Directory.CreateDirectory(plan.Slot);
         Write(Path.Combine(plan.Slot, ReceiptFileName), receipt);
         return receipt;
+    }
+
+    /// <summary>
+    /// Take back a decision, so the offer can be made again.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The case this exists for is accepting in the wrong account — the
+    /// operator's admin identity signs in first, takes the data, and the
+    /// person it belongs to is then told there is nothing to migrate.
+    /// </para>
+    /// <para>
+    /// <b>Accepted</b> moves the whole slot aside rather than deleting what
+    /// was copied. Deleting would have to know which files came from the
+    /// migration and which the person made afterwards, and the receipt
+    /// records counts rather than a manifest — so the safe answer is to
+    /// destroy nothing and hand back where it went.
+    /// </para>
+    /// <para>
+    /// <b>Declined</b> only removes the receipt. The slot itself may hold work
+    /// done since, and moving that aside would hide the very thing the person
+    /// is looking at. With the receipt gone the next plan reads the slot: empty
+    /// means the offer returns, and anything else means it correctly does not.
+    /// </para>
+    /// </remarks>
+    /// <returns>Where the slot was moved, or <c>null</c> when only a receipt was removed.</returns>
+    /// <exception cref="InvalidOperationException">Nothing has been decided yet.</exception>
+    public static string? Undo(BowireUserMigrationPlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        if (plan.State != BowireUserMigrationState.AlreadyDecided || plan.Receipt is null)
+        {
+            throw new InvalidOperationException(
+                $"Nothing to undo: the migration for '{plan.Subject}' is {plan.State}, not AlreadyDecided.");
+        }
+
+        if (plan.Receipt.Outcome == BowireUserMigrationOutcome.Declined)
+        {
+            File.Delete(Path.Combine(plan.Slot, ReceiptFileName));
+            return null;
+        }
+
+        var aside = Path.Combine(
+            plan.StorageRoot,
+            BowireUserSlot.DirectoryName,
+            UndonePrefix + plan.Slug + "-" + Guid.NewGuid().ToString("N")[..8]);
+
+        Directory.CreateDirectory(Path.GetDirectoryName(aside)!);
+        Directory.Move(plan.Slot, aside);
+        return aside;
     }
 
     /// <summary>
