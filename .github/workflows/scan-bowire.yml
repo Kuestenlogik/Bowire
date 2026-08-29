@@ -169,11 +169,30 @@ jobs:
       # scan-dogfood's job. This one reports; the Security tab is where it is
       # read, and failing the build on a banner-level nit would only teach
       # people to ignore a red cross.
-      - name: Upload the findings as ours
+      #
+      # One upload per surface, each with its own category. Code Scanning
+      # stopped combining several SARIF runs under one category in July 2025,
+      # so a single directory upload is rejected outright — and the split is
+      # the better shape anyway: the Security tab groups by category, so
+      # "missing headers on the MCP endpoint" stays a different line from the
+      # same header missing on the workbench.
+      - name: Upload the workbench findings
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: sarif
-          category: bowire-self
+          sarif_file: sarif/workbench.sarif
+          category: bowire-self-workbench
+
+      - name: Upload the API findings
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: sarif/api.sarif
+          category: bowire-self-api
+
+      - name: Upload the MCP findings
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: sarif/mcp.sarif
+          category: bowire-self-mcp
 
       # The scan steps already upload each SARIF unfiltered, under
       # bowire-self-<surface>. This is the same set after filtering, so what
