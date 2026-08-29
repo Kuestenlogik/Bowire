@@ -46,6 +46,10 @@ inputs:
     description: 'Specific version of Kuestenlogik.Bowire.Tool to install. Default: latest published.'
     required: false
     default: ''
+  artifact-name:
+    description: "Name of the build artifact the SARIF is uploaded under. Give each invocation its own name when scanning several targets in one job — artifact names are unique per run, so a second step with the same name fails with a 409."
+    required: false
+    default: 'bowire-findings'
   upload-to-code-scanning:
     description: "Upload the SARIF into the caller's Security tab ('true'/'false'). Set 'false' when scanning an external target whose findings don't belong to the caller. Requires `security-events: write` on the calling job."
     required: false
@@ -62,10 +66,14 @@ runs:
     - name: Install Bowire CLI
       shell: bash
       run: |
+        # `update` rather than `install`: it installs when the tool is absent
+        # and is a no-op when it is already there. On a fresh runner the two
+        # are identical, but a job that scans several targets uses this action
+        # more than once, and `install` fails the second time.
         if [ -n "${{ inputs.tool-version }}" ]; then
-          dotnet tool install -g Kuestenlogik.Bowire.Tool --version "${{ inputs.tool-version }}"
+          dotnet tool update -g Kuestenlogik.Bowire.Tool --version "${{ inputs.tool-version }}"
         else
-          dotnet tool install -g Kuestenlogik.Bowire.Tool
+          dotnet tool update -g Kuestenlogik.Bowire.Tool
         fi
         echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
@@ -96,7 +104,7 @@ runs:
       if: always() && hashFiles('findings.sarif') != ''
       uses: actions/upload-artifact@v7
       with:
-        name: bowire-findings
+        name: ${{ inputs.artifact-name }}
         path: findings.sarif
         if-no-files-found: warn
 
