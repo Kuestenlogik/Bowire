@@ -38,6 +38,9 @@ public static class BowireTenancyExtensions
         configure?.Invoke(options);
 
         services.TryAddSingleton(options);
+        // #98 — who the caller is, beyond the subject their storage is keyed
+        // on. Claims only; a package that knows about roles replaces it.
+        services.TryAddSingleton<IBowireUserDirectory, ClaimsUserDirectory>();
         services.TryAddSingleton(sp =>
         {
             var paths = sp.GetService<IBowirePathResolver>() ?? BowirePaths.Current;

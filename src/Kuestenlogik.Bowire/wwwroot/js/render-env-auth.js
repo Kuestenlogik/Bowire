@@ -4346,6 +4346,10 @@
                 themeBtn,
                 toolsBtn,
                 toolsMenu,
+                // #98 — who is signed in. Returns null in single-user mode,
+                // where there is nobody to identify; the fragment owns the
+                // whole affordance so this stays one call.
+                (typeof renderUserChip === 'function') ? renderUserChip() : null,
                 helpBtn,
                 aboutBtn
             ),

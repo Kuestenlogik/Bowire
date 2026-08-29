@@ -40,6 +40,15 @@ public static class BowireScimExtensions
             return new BowireScimStore(paths.Root(BowireStorageScope.Data));
         });
 
+        // #98 — the provisioned directory is what knows who administers the
+        // install. Replace rather than TryAdd: Core registers a claims-only
+        // default, and whichever of the two Add* calls runs first, the one
+        // that can answer the role question has to win.
+        services.Replace(ServiceDescriptor.Singleton<IBowireUserDirectory>(
+            sp => new ScimUserDirectory(
+                sp.GetRequiredService<BowireScimStore>(),
+                sp.GetRequiredService<BowireScimOptions>())));
+
         if (options.Enabled && options.PurgeAfter > TimeSpan.Zero)
         {
             services.AddHostedService<BowireScimPurgeService>();

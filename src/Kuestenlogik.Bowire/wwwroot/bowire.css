@@ -26484,3 +26484,98 @@ not as the
 .bowire-migration-go:hover:not(:disabled) {
     border-color: var(--bowire-accent-hover);
 }
+
+/* ---- Account chip (#98) ---- */
+/* Only ever rendered in multi-tenant mode. In a single-user install the
+   fragment returns null rather than an empty circle, so there are no
+   "logged out" styles to write. */
+.bowire-user-chip-wrapper {
+    position: relative;
+    display: inline-flex;
+}
+.bowire-user-chip {
+    gap: 6px;
+    padding-inline: 6px 10px;
+    max-width: 190px;
+}
+.bowire-user-chip-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    object-fit: cover;
+}
+.bowire-user-chip-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bowire-accent-subtle);
+    color: var(--bowire-accent-text);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+/* The name is the first thing to go when the topbar runs out of room — the
+   avatar still identifies the account, and the title attribute still says
+   who it is. */
+.bowire-user-chip-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+@media (max-width: 1100px) {
+    .bowire-user-chip-label { display: none; }
+    .bowire-user-chip { padding-inline: 6px; }
+}
+.bowire-user-chip-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 60;
+    min-width: 240px;
+    padding: 12px 14px;
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+}
+.bowire-user-chip-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-user-chip-email {
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+    overflow-wrap: anywhere;
+}
+.bowire-user-chip-role {
+    margin-top: 2px;
+    align-self: flex-start;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--bowire-accent-text);
+    background: var(--bowire-accent-subtle);
+    border-radius: var(--bowire-radius-sm, 3px);
+    padding: 2px 6px;
+}
+.bowire-user-chip-slot {
+    margin-top: 6px;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-user-chip-signout {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--bowire-accent-text);
+    text-decoration: none;
+}
+.bowire-user-chip-signout:hover {
+    text-decoration: underline;
+}

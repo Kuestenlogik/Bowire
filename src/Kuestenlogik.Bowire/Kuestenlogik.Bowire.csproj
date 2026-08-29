@@ -259,6 +259,11 @@
          for something else while it is on screen. Depends on helpers.js
          (el) and prologue.js (config); ordering otherwise free. -->
     <BowireJsFragment Include="wwwroot\js\user-migration.js" />
+    <!-- #98 — the account chip. Renders inside the topbar through a
+         typeof guard in render-env-auth.js, so a single-user install
+         carries the fragment but never shows a control. Depends on
+         helpers.js (el) and prologue.js (config, render). -->
+    <BowireJsFragment Include="wwwroot\js\user-chip.js" />
     <BowireJsFragment Include="wwwroot\js\ai.js" />
     <!-- #125 Phase 2 — vars resolver UX. Must come before init.js
          (which calls installVarsAutocomplete + installVarsChips). -->
