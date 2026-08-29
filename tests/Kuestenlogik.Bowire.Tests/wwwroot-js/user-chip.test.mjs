@@ -1,8 +1,9 @@
-// #98 — the account chip.
+// #98 — the account chip, and acting on somebody else's behalf.
 //
-// The thing worth pinning is not the markup. It is that a single-user install
-// renders nothing at all — no placeholder, no empty circle — and that a
-// multi-tenant one never shows a raw subject where a person expects a name.
+// The things worth pinning are not the markup. They are that a single-user
+// install renders nothing at all, that a multi-tenant one never shows a raw
+// subject where a person expects a name, and that an administrator can always
+// see whose workbench they are looking at and get back out of it.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,13 +11,18 @@ import { compileFragment } from './_load-fragment.mjs';
 
 const _RELPATH = '../../../src/Kuestenlogik.Bowire/wwwroot/js/user-chip.js';
 
-function load(me) {
+function load(me, extra) {
     const appended = `
         function _mkNode(tag) {
             var n = {
                 tag: tag, children: [], style: {}, className: '', textContent: '', src: '',
                 href: '', parentNode: null,
                 appendChild: function (c) { if (c) { c.parentNode = n; n.children.push(c); } return c; },
+                removeChild: function (c) {
+                    var i = n.children.indexOf(c);
+                    if (i >= 0) { n.children.splice(i, 1); c.parentNode = null; }
+                    return c;
+                },
                 _walk: function (hit, into) {
                     for (var i = 0; i < n.children.length; i++) {
                         var c = n.children[i];
@@ -53,24 +59,59 @@ function load(me) {
         var config = { prefix: '' };
         var renders = 0;
         function render() { renders++; }
-        var window = { addEventListener: function () {} };
+        var _body = _mkNode('body');
+        var document = {
+            body: _body,
+            querySelector: function (sel) { return _body.querySelector(sel); }
+        };
+        var reloads = 0;
+        var window = {
+            addEventListener: function () {},
+            location: { reload: function () { reloads++; } }
+        };
         var calls = [];
-        function fetch(url) {
-            calls.push(url);
-            return _me === null
-                ? Promise.resolve({ ok: false, status: 404 })
-                : Promise.resolve({ ok: true, json: function () { return Promise.resolve(_me); } });
+        function fetch(url, init) {
+            calls.push({ url: url, method: (init && init.method) || 'GET' });
+            return _routes(url, init);
         }
         return {
             load: fetchBowireIdentity,
             chip: renderUserChip,
+            banner: renderImpersonationBanner,
+            openPicker: openUserPicker,
+            picker: function () { return _body.querySelector('.bowire-user-picker'); },
+            body: _body,
             multiTenant: isMultiTenant,
             name: userChipName,
             calls: calls,
-            renders: function () { return renders; }
+            renders: function () { return renders; },
+            reloads: function () { return reloads; }
         };
     `;
-    return compileFragment(_RELPATH, ['_me'], appended)({ _me: me });
+
+    const routes = (url, init) => {
+        const method = (init && init.method) || 'GET';
+        if (url.indexOf('/api/me') === 0) {
+            return me === null
+                ? Promise.resolve({ ok: false, status: 404 })
+                : Promise.resolve({ ok: true, json: () => Promise.resolve(me) });
+        }
+        if (url.indexOf('/api/users') === 0) {
+            const users = (extra && extra.users) || [];
+            return users === 'fail'
+                ? Promise.resolve({ ok: false, status: 500 })
+                : Promise.resolve({ ok: true, json: () => Promise.resolve(users) });
+        }
+        if (url.indexOf('/api/impersonation') === 0) {
+            const outcome = extra && extra[method === 'POST' ? 'begin' : 'end'];
+            return outcome === 'fail'
+                ? Promise.resolve({ ok: false, status: 403 })
+                : Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+        }
+        return Promise.resolve({ ok: false, status: 404 });
+    };
+
+    return compileFragment(_RELPATH, ['_routes'], appended)({ _routes: routes });
 }
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
@@ -92,11 +133,18 @@ const ADA = {
     initials: 'AL',
 };
 
-async function ready(me) {
-    const f = load(me);
+const ADMIN = { ...ADA, displayName: 'Grace Hopper', email: 'grace@example.com', isAdmin: true };
+
+async function ready(me, extra) {
+    const f = load(me, extra);
     f.load();
     await settle();
     return f;
+}
+
+function open(f) {
+    f.chip().onClick({ stopPropagation() {} });
+    return f.chip();
 }
 
 // ---- when there is nobody to identify ----
@@ -111,47 +159,34 @@ test('a single-user install renders no chip at all', async () => {
 });
 
 test('nothing is rendered before the server has answered', () => {
-    const f = load(ADA);
-
-    assert.equal(f.chip(), null);
+    assert.equal(load(ADA).chip(), null);
 });
 
 test('an install that answers nothing is treated as single-user', async () => {
-    const f = await ready(null);
-
-    assert.equal(f.chip(), null);
+    assert.equal((await ready(null)).chip(), null);
 });
 
 test('a single-user answer does not cost a re-render', async () => {
-    const f = await ready({ multiTenant: false });
-
-    assert.equal(f.renders(), 0);
+    assert.equal((await ready({ multiTenant: false })).renders(), 0);
 });
 
 test('a multi-tenant answer does trigger one', async () => {
-    const f = await ready(ADA);
-
-    assert.equal(f.renders(), 1);
+    assert.equal((await ready(ADA)).renders(), 1);
 });
 
 // ---- naming the person ----
 
 test('the chip shows the name the identity provider gave', async () => {
-    const f = await ready(ADA);
-
-    assert.match(text(f.chip()), /Ada Lovelace/);
+    assert.match(text((await ready(ADA)).chip()), /Ada Lovelace/);
 });
 
 test('without a name it falls back to the e-mail address', async () => {
-    const f = await ready({ ...ADA, displayName: null });
-
-    assert.equal(f.name(), 'ada@example.com');
+    assert.equal((await ready({ ...ADA, displayName: null })).name(), 'ada@example.com');
 });
 
 test('the raw subject is the last resort, not the first', async () => {
     // For most providers the subject is a GUID. Showing it where a name was
-    // expected reads as a bug rather than as a missing claim, so it only
-    // appears when there is nothing else at all.
+    // expected reads as a bug rather than as a missing claim.
     const withEmail = await ready({ ...ADA, displayName: null });
     const withNeither = await ready({ ...ADA, displayName: null, email: null });
 
@@ -160,17 +195,16 @@ test('the raw subject is the last resort, not the first', async () => {
 });
 
 test('initials stand in for a missing picture', async () => {
-    const f = await ready(ADA);
+    const avatar = (await ready(ADA)).chip().querySelector('.bowire-user-chip-initials');
 
-    const avatar = f.chip().querySelector('.bowire-user-chip-initials');
     assert.ok(avatar, 'no initials avatar');
     assert.equal(avatar.textContent, 'AL');
 });
 
 test('a picture from the provider is used when there is one', async () => {
     const f = await ready({ ...ADA, picture: 'https://example.com/ada.png' });
-
     const img = f.chip().querySelector('img');
+
     assert.ok(img, 'no image');
     assert.equal(img.src, 'https://example.com/ada.png');
 });
@@ -178,53 +212,165 @@ test('a picture from the provider is used when there is one', async () => {
 // ---- the popover ----
 
 test('the popover appears on click and says who and what', async () => {
-    const f = await ready({ ...ADA, isAdmin: true });
+    const opened = text(open(await ready(ADMIN)));
 
-    f.chip().onClick({ stopPropagation() {} });
-    const opened = text(f.chip());
-
-    assert.match(opened, /Ada Lovelace/);
-    assert.match(opened, /ada@example\.com/);
+    assert.match(opened, /Grace Hopper/);
+    assert.match(opened, /grace@example\.com/);
     assert.match(opened, /Administrator/);
 });
 
 test('somebody without the admin role is a member, not an administrator', async () => {
-    const f = await ready(ADA);
+    const opened = text(open(await ready(ADA)));
 
-    f.chip().onClick({ stopPropagation() {} });
-
-    assert.match(text(f.chip()), /Member/);
-    assert.doesNotMatch(text(f.chip()), /Administrator/);
+    assert.match(opened, /Member/);
+    assert.doesNotMatch(opened, /Administrator/);
 });
 
 test('the popover says the work is stored separately', async () => {
-    // The whole reason somebody looks at this chip: are these recordings
-    // mine, and can anyone else see them.
-    const f = await ready(ADA);
-
-    f.chip().onClick({ stopPropagation() {} });
-
-    assert.match(text(f.chip()), /stored separately/);
+    assert.match(text(open(await ready(ADA))), /stored separately/);
 });
 
 test('sign out is offered only when there is somewhere to send them', async () => {
     // A link that clears nothing teaches people to believe they signed out
     // when they did not.
-    const without = await ready(ADA);
-    without.chip().onClick({ stopPropagation() {} });
-    assert.equal(without.chip().querySelector('.bowire-user-chip-signout'), null);
+    assert.equal(open(await ready(ADA)).querySelector('.bowire-user-chip-signout'), null);
 
-    const withUrl = await ready({ ...ADA, signOutUrl: 'https://idp.example.com/logout' });
-    withUrl.chip().onClick({ stopPropagation() {} });
-    const link = withUrl.chip().querySelector('.bowire-user-chip-signout');
+    const link = open(await ready({ ...ADA, signOutUrl: 'https://idp.example.com/logout' }))
+        .querySelector('.bowire-user-chip-signout');
     assert.ok(link, 'no sign-out link');
     assert.equal(link.href, 'https://idp.example.com/logout');
 });
 
-// ---- how it starts ----
-
 test('the identity is asked for once, from the workbench prefix', async () => {
-    const f = await ready(ADA);
+    assert.deepEqual((await ready(ADA)).calls.map((c) => c.url), ['/api/me']);
+});
 
-    assert.deepEqual(f.calls, ['/api/me']);
+// ---- acting as somebody else ----
+
+test('only an administrator is offered the switch', async () => {
+    assert.equal(open(await ready(ADA)).querySelector('.bowire-user-chip-switch'), null);
+    assert.ok(open(await ready(ADMIN)).querySelector('.bowire-user-chip-switch'));
+});
+
+test('an administrator already in a session is not offered a second hop', async () => {
+    // Two levels of "acting as" is how somebody loses track of whose
+    // workbench they are looking at. Getting out is the banner's job.
+    const f = await ready({ ...ADMIN, actingAs: { subject: 'x', displayName: 'Ada Lovelace' } });
+
+    assert.equal(open(f).querySelector('.bowire-user-chip-switch'), null);
+});
+
+test('no banner while an administrator is themselves', async () => {
+    assert.equal((await ready(ADMIN)).banner(), null);
+    assert.equal((await ready(ADA)).banner(), null);
+});
+
+test('the banner names whose workbench this is, and what it costs', async () => {
+    const f = await ready({
+        ...ADMIN,
+        actingAs: { subject: 'x', displayName: 'Ada Lovelace', email: 'ada@example.com' },
+    });
+    const said = text(f.banner());
+
+    assert.match(said, /Viewing as/);
+    assert.match(said, /Ada Lovelace/);
+    assert.match(said, /ada@example\.com/);
+    // The part an administrator needs to know before they touch anything.
+    assert.match(said, /recorded against your own account/);
+});
+
+test('ending the session tells the server and reloads', async () => {
+    // Every store read the other person's slot while the page was up, so
+    // re-reading them one at a time is a list that goes stale.
+    const f = await ready({ ...ADMIN, actingAs: { subject: 'x', displayName: 'Ada' } });
+
+    f.banner().querySelector('.bowire-impersonation-end').onClick();
+    await settle();
+
+    assert.deepEqual(f.calls[1], { url: '/api/impersonation', method: 'DELETE' });
+    assert.equal(f.reloads(), 1);
+});
+
+test('a failed end still returns them to their own workbench', async () => {
+    // Leaving the page as it was would leave somebody believing they had
+    // returned when they had not.
+    const f = await ready({ ...ADMIN, actingAs: { subject: 'x', displayName: 'Ada' } },
+        { end: 'fail' });
+
+    f.banner().querySelector('.bowire-impersonation-end').onClick();
+    await settle();
+
+    assert.equal(f.reloads(), 1);
+});
+
+// ---- the picker ----
+
+test('opening the picker asks the server who else there is', async () => {
+    const f = await ready(ADMIN, { users: [{ subject: 'x', displayName: 'Ada Lovelace' }] });
+
+    f.openPicker();
+    await settle();
+
+    assert.ok(f.calls.some((c) => c.url.indexOf('/api/users') === 0), 'never asked');
+    assert.match(text(f.picker()), /Ada Lovelace/);
+});
+
+test('the picker says what a session will cost before it starts one', async () => {
+    const f = await ready(ADMIN, { users: [] });
+
+    f.openPicker();
+    await settle();
+
+    assert.match(text(f.picker()), /recorded against your own account/);
+});
+
+test('an install with no directory says so rather than showing no results', async () => {
+    // "No results" reads as a search that found nothing. This is a feature
+    // that cannot work here, and the difference is worth a sentence.
+    const f = await ready(ADMIN, { users: [] });
+
+    f.openPicker();
+    await settle();
+
+    assert.match(text(f.picker()), /no directory listing other identities/);
+});
+
+test('picking somebody starts the session and reloads', async () => {
+    const f = await ready(ADMIN, { users: [{ subject: 'ada-subject', displayName: 'Ada' }] });
+
+    f.openPicker();
+    await settle();
+    f.picker().querySelector('.bowire-user-picker-row').onClick();
+    await settle();
+
+    const post = f.calls.find((c) => c.method === 'POST');
+    assert.ok(post, 'no POST');
+    assert.equal(post.url, '/api/impersonation');
+    assert.equal(f.reloads(), 1);
+});
+
+test('a refused session leaves the picker open and says nothing changed', async () => {
+    // A picker that closed on failure looks exactly like one that worked.
+    const f = await ready(ADMIN,
+        { users: [{ subject: 'ada-subject', displayName: 'Ada' }], begin: 'fail' });
+
+    f.openPicker();
+    await settle();
+    f.picker().querySelector('.bowire-user-picker-row').onClick();
+    await settle();
+
+    assert.equal(f.reloads(), 0);
+    assert.ok(f.picker(), 'the picker went away');
+    assert.match(text(f.picker()), /Nothing changed/);
+});
+
+test('cancelling takes the picker away without starting anything', async () => {
+    const f = await ready(ADMIN, { users: [{ subject: 'x', displayName: 'Ada' }] });
+
+    f.openPicker();
+    await settle();
+    f.picker().querySelector('.bowire-btn').onClick();
+
+    assert.equal(f.picker(), null);
+    assert.equal(f.calls.filter((c) => c.method === 'POST').length, 0);
 });

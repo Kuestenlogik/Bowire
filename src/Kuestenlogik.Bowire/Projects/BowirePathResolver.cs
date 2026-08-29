@@ -102,7 +102,7 @@ public sealed class BowirePathResolver : IBowirePathResolver
         new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "plugins", "workspaces", "recordings", "flows", "cache", "certs", "logs", "presets", "mocks",
-            "users", "scim",
+            "users", "scim", "audit",
         };
 
     private readonly Func<string, string?> _environment;

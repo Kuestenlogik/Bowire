@@ -87,6 +87,11 @@ public static class BowireUserMigrator
             // hand them a roster of their colleagues.
             BowireScimDirectory,
 
+            // The record of who acted on whose behalf (#98). Install
+            // state about everybody, and evidence — not something to
+            // hand a copy of to one identity.
+            BowireAuditLog.DirectoryName,
+
             // The project manifest is read from the root and describes the
             // checkout, not the person.
             "project.json",
