@@ -3413,7 +3413,9 @@
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
         section.appendChild(el('div', { className: 'bowire-ws-detail-section-label',
-            textContent: cols.length === 0 ? 'No collections yet' : 'Collections (' + cols.length + ')' }));
+            textContent: cols.length === 0
+                ? ownedEmpty('Collections')
+                : ownedLabel('Collections') + ' (' + cols.length + ')' }));
         if (cols.length === 0) {
             section.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
@@ -3519,7 +3521,9 @@
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
         section.appendChild(el('div', { className: 'bowire-ws-detail-section-label',
-            textContent: recs.length === 0 ? 'No recordings yet' : 'Recordings (' + recs.length + ')' }));
+            textContent: recs.length === 0
+                ? ownedEmpty('Recordings')
+                : ownedLabel('Recordings') + ' (' + recs.length + ')' }));
         if (recs.length === 0) {
             section.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
@@ -3659,7 +3663,7 @@
             var envEmptyWrap = el('div', { style: 'margin-top:8px' });
             envEmptyWrap.appendChild(renderEmptyCard({
                 icon: 'globe',
-                headline: 'No environments yet',
+                headline: ownedEmpty('Environments'),
                 body: 'Environments scope variables, auth tokens, and secrets per deployment stage. Create one for "staging", another for "prod", and toggle the active env from the topbar to re-point your requests.',
                 actions: [
                     {

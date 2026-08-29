@@ -83,6 +83,8 @@ function load(me, extra) {
             body: _body,
             multiTenant: isMultiTenant,
             name: userChipName,
+            label: ownedLabel,
+            empty: ownedEmpty,
             calls: calls,
             renders: function () { return renders; },
             reloads: function () { return reloads; }
@@ -373,4 +375,42 @@ test('cancelling takes the picker away without starting anything', async () => {
 
     assert.equal(f.picker(), null);
     assert.equal(f.calls.filter((c) => c.method === 'POST').length, 0);
+});
+
+// ---- whose work is this ----
+
+test('a shared instance says the lists are yours', async () => {
+    // The question somebody actually has when a list of recordings appears on
+    // a machine other people also use.
+    const f = await ready(ADA);
+
+    assert.equal(f.label('Recordings'), 'Your recordings');
+    assert.equal(f.label('Collections'), 'Your collections');
+});
+
+test('a single-user install leaves the wording alone', async () => {
+    // There is nobody to distinguish from, so "Your" would be noise.
+    const f = await ready({ multiTenant: false });
+
+    assert.equal(f.label('Recordings'), 'Recordings');
+    assert.equal(f.empty('Recordings'), 'No recordings yet');
+});
+
+test('an empty account reads differently from an empty server', async () => {
+    // "No recordings yet" on a shared instance leaves somebody wondering
+    // whether they are looking at nothing of theirs or nothing at all.
+    const shared = await ready(ADA);
+    const alone = await ready({ multiTenant: false });
+
+    assert.equal(shared.empty('Environments'), 'You have no environments yet');
+    assert.equal(alone.empty('Environments'), 'No environments yet');
+});
+
+test('the wording is unknown until the server has answered', () => {
+    // Before /api/me lands, the safe assumption is the one that changes
+    // nothing: a chip flashing "Your" into a single-user workbench would be a
+    // claim about the deployment nobody checked.
+    const f = load(ADA);
+
+    assert.equal(f.label('Recordings'), 'Recordings');
 });

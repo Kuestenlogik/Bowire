@@ -19,6 +19,30 @@
         return !!(bowireIdentity && bowireIdentity.multiTenant);
     }
 
+    // ---- whose work is this ----
+    // A person looking at a list of recordings on a shared instance is asking
+    // one question: are these mine, or everyone's? The answer belongs in the
+    // label they are already reading, not in a footnote somewhere else on the
+    // page. In a single-user install the question does not arise, and the
+    // wording stays as it was.
+
+    /** "Your recordings" where several people share an instance, else "Recordings". */
+    function ownedLabel(noun) {
+        return isMultiTenant() ? 'Your ' + noun.toLowerCase() : noun;
+    }
+
+    /**
+     * "You have no recordings yet" rather than "No recordings yet" — the
+     * difference between an empty account and an empty server, which is the
+     * first thing somebody wonders when a shared instance greets them with
+     * nothing.
+     */
+    function ownedEmpty(noun) {
+        return isMultiTenant()
+            ? 'You have no ' + noun.toLowerCase() + ' yet'
+            : 'No ' + noun.toLowerCase() + ' yet';
+    }
+
     /** The name to show — never the raw subject, which is usually a GUID. */
     function userChipName() {
         if (!bowireIdentity) return '';
