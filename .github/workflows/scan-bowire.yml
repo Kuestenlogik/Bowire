@@ -124,6 +124,7 @@ jobs:
         uses: ./.github/actions/bowire-scan
         with:
           target: http://localhost:5190/
+          artifact-name: bowire-self-workbench
           templates: docs/security/examples
           suite: owasp-api
           severity: low
@@ -136,6 +137,7 @@ jobs:
         uses: ./.github/actions/bowire-scan
         with:
           target: http://localhost:5190/api/plugins
+          artifact-name: bowire-self-api
           templates: docs/security/examples
           suite: owasp-api
           severity: low
@@ -148,6 +150,7 @@ jobs:
         uses: ./.github/actions/bowire-scan
         with:
           target: http://localhost:5190/mcp
+          artifact-name: bowire-self-mcp
           templates: docs/security/examples
           suite: owasp-api
           severity: low
@@ -172,11 +175,15 @@ jobs:
           sarif_file: sarif
           category: bowire-self
 
-      - name: Keep the raw findings as an artifact
+      # The scan steps already upload each SARIF unfiltered, under
+      # bowire-self-<surface>. This is the same set after filtering, so what
+      # was dropped is visible by diffing the two rather than by trusting the
+      # log line that says it happened.
+      - name: Keep the filtered findings as an artifact
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: bowire-self-findings
+          name: bowire-self-filtered
           path: sarif/
           if-no-files-found: warn
 
