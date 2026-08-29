@@ -46,7 +46,13 @@ internal static class BowireIdentityEndpoints
 
             var directory = http.RequestServices.GetService<IBowireUserDirectory>()
                 ?? new ClaimsUserDirectory();
-            var profile = directory.Describe(http.User, subject);
+
+            // While impersonating, the tenancy scope names the target — which
+            // is right for storage and wrong for "who am I". The chip has to
+            // show the administrator, and the banner has to name whose
+            // workbench they are looking at.
+            var acting = BowireImpersonation.Current;
+            var profile = directory.Describe(http.User, acting?.Actor ?? subject);
 
             return Results.Ok(new
             {
@@ -64,10 +70,29 @@ internal static class BowireIdentityEndpoints
                 // Computed here rather than in the browser so every surface
                 // that wants them agrees on what they are.
                 initials = Initials(profile),
+                actingAs = acting is null ? null : Describe(directory, http, acting.ActingAs),
             });
         });
 
         return endpoints;
+    }
+
+    /// <summary>
+    /// The identity an administrator is currently looking at, for the banner.
+    /// </summary>
+    private static object Describe(
+        IBowireUserDirectory directory, HttpContext http, string subject)
+    {
+        // Not http.User: those are the administrator's claims, and using them
+        // would label the banner with the administrator's own name.
+        var profile = directory.Describe(null, subject);
+        return new
+        {
+            subject = profile.Subject,
+            displayName = profile.DisplayName,
+            email = profile.Email,
+            initials = Initials(profile),
+        };
     }
 
     /// <summary>

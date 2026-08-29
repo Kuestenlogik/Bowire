@@ -10,6 +10,9 @@
 
     var bowireIdentity = null;
     var userChipOpen = false;
+    var userPickerOpen = false;
+    var userPickerCandidates = null;
+    var userPickerError = '';
 
     /** True once the server has said this install serves several people. */
     function isMultiTenant() {
@@ -68,6 +71,23 @@
             className: 'bowire-user-chip-slot',
             textContent: 'Your work is stored separately from everyone else’s.',
         }));
+
+        // Only an administrator, and only while they are themselves. The
+        // banner is how somebody already in a session gets back out; offering
+        // a second hop from inside one is a way to lose track of whose
+        // workbench you are looking at.
+        if (bowireIdentity.isAdmin && !bowireIdentity.actingAs) {
+            rows.push(el('button', {
+                type: 'button',
+                className: 'bowire-user-chip-switch',
+                textContent: 'View as another user…',
+                onClick: function (e) {
+                    if (e && e.stopPropagation) e.stopPropagation();
+                    userChipOpen = false;
+                    openUserPicker();
+                },
+            }));
+        }
 
         if (bowireIdentity.signOutUrl) {
             rows.push(el('a', {
@@ -129,6 +149,165 @@
                 })
                 .catch(function () { /* single-user, or offline */ });
         } catch { /* fetch threw synchronously */ }
+    }
+
+    // ---- acting on somebody else's behalf ----
+
+    function renderImpersonationBanner() {
+        var acting = bowireIdentity && bowireIdentity.actingAs;
+        if (!acting) return null;
+
+        var who = acting.displayName || acting.email || acting.subject;
+        return el('div', {
+            className: 'bowire-impersonation-banner',
+            role: 'status',
+        },
+            el('span', { className: 'bowire-impersonation-text' },
+                'Viewing as ',
+                el('strong', { textContent: who }),
+                (acting.email && acting.email !== who)
+                    ? el('span', {
+                        className: 'bowire-impersonation-email',
+                        textContent: ' (' + acting.email + ')',
+                    })
+                    : null,
+                '. Anything you change is recorded against your own account.'),
+            el('button', {
+                type: 'button',
+                className: 'bowire-impersonation-end',
+                textContent: 'Return to my workbench',
+                onClick: endImpersonation,
+            }));
+    }
+
+    function endImpersonation() {
+        // Reload either way. Every store read the other person's slot while
+        // this page was up, and re-reading them one by one is a list that goes
+        // stale; a failed end that left the page as it was would also leave
+        // somebody believing they had returned.
+        fetch(config.prefix + '/api/impersonation', { method: 'DELETE' })
+            .then(function () { window.location.reload(); })
+            .catch(function () { window.location.reload(); });
+    }
+
+    function beginImpersonation(subject) {
+        userPickerError = '';
+        fetch(config.prefix + '/api/impersonation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subject: subject }),
+        })
+            .then(function (r) {
+                if (!r.ok) throw new Error(String(r.status));
+                window.location.reload();
+            })
+            .catch(function () {
+                // Stay open with the reason visible: a picker that closed on
+                // failure looks exactly like one that worked.
+                userPickerError = 'That did not go through. Nothing changed.';
+                renderUserPicker();
+            });
+    }
+
+    // ---- the picker ----
+
+    function openUserPicker() {
+        userPickerOpen = true;
+        userPickerCandidates = null;
+        userPickerError = '';
+        renderUserPicker();
+        searchUsers('');
+        if (typeof render === 'function') render();
+    }
+
+    function closeUserPicker() {
+        userPickerOpen = false;
+        var existing = document.querySelector('.bowire-user-picker');
+        if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+    }
+
+    function searchUsers(term) {
+        fetch(config.prefix + '/api/users?limit=20&q=' + encodeURIComponent(term || ''))
+            .then(function (r) { return r.ok ? r.json() : []; })
+            .then(function (found) {
+                userPickerCandidates = Array.isArray(found) ? found : [];
+                renderUserPicker();
+            })
+            .catch(function () {
+                userPickerCandidates = [];
+                userPickerError = 'Could not read the user list.';
+                renderUserPicker();
+            });
+    }
+
+    function renderUserPickerRows() {
+        if (userPickerCandidates === null) {
+            return [el('p', { className: 'bowire-user-picker-empty', textContent: 'Looking…' })];
+        }
+
+        if (userPickerCandidates.length === 0) {
+            // Not "no results": an install with no directory that lists other
+            // identities has nobody it *can* name, and saying so is the
+            // difference between a search that found nothing and a feature
+            // that cannot work here.
+            return [el('p', { className: 'bowire-user-picker-empty' },
+                'Nobody to show. This instance has no directory listing other identities.')];
+        }
+
+        return userPickerCandidates.map(function (candidate) {
+            return el('button', {
+                type: 'button',
+                className: 'bowire-user-picker-row',
+                onClick: function () { beginImpersonation(candidate.subject); },
+            },
+                el('span', {
+                    className: 'bowire-user-picker-name',
+                    textContent: candidate.displayName || candidate.email || candidate.subject,
+                }),
+                candidate.email
+                    ? el('span', { className: 'bowire-user-picker-email', textContent: candidate.email })
+                    : null);
+        });
+    }
+
+    function renderUserPicker() {
+        var existing = document.querySelector('.bowire-user-picker');
+        if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+        if (!userPickerOpen) return;
+
+        var dialog = el('div', {
+            className: 'bowire-user-picker',
+            role: 'dialog',
+            'aria-modal': 'true',
+            'aria-label': 'View as another user',
+        },
+            el('div', { className: 'bowire-user-picker-card' },
+                el('h2', {
+                    className: 'bowire-user-picker-title',
+                    textContent: 'View as another user',
+                }),
+                el('p', { className: 'bowire-user-picker-note' },
+                    'You will see their recordings, environments and collections. '
+                    + 'Anything you change is recorded against your own account, '
+                    + 'with theirs named alongside it.'),
+                el('input', {
+                    type: 'search',
+                    className: 'bowire-user-picker-search',
+                    placeholder: 'Search by name or address',
+                    'aria-label': 'Search users',
+                    onInput: function (e) { searchUsers(e && e.target ? e.target.value : ''); },
+                }),
+                el('div', { className: 'bowire-user-picker-list' }, renderUserPickerRows()),
+                el('p', { className: 'bowire-user-picker-error', textContent: userPickerError }),
+                el('div', { className: 'bowire-user-picker-actions' },
+                    el('button', {
+                        type: 'button',
+                        className: 'bowire-btn',
+                        textContent: 'Cancel',
+                        onClick: closeUserPicker,
+                    }))));
+
+        document.body.appendChild(dialog);
     }
 
     if (typeof window !== 'undefined') {

@@ -43,7 +43,7 @@ Unset means the root itself, so nothing moves for the single-instance case — t
 Two names are refused rather than accepted quietly, because both failures are invisible:
 
 - **Anything that is not a single segment** — a separator, `..`, an absolute path. It would write outside the storage root and look like it worked.
-- **A name Bowire already uses for a directory** — `plugins`, `workspaces`, `recordings`, `flows`, `cache`, `certs`, `logs`, `presets`, `mocks`, `users`, `scim`. With no instance set the root *is* the scope, so an instance named `plugins` would share state with an unnamed one, which is the opposite of what setting it was for.
+- **A name Bowire already uses for a directory** — `plugins`, `workspaces`, `recordings`, `flows`, `cache`, `certs`, `logs`, `presets`, `mocks`, `users`, `scim`, `audit`. With no instance set the root *is* the scope, so an instance named `plugins` would share state with an unnamed one, which is the opposite of what setting it was for.
 
 ## Several people on one instance
 

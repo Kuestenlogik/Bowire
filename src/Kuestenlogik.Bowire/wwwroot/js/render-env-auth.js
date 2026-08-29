@@ -663,6 +663,14 @@
         // The topbar hosts brand / command palette / env selector / theme
         // toggle — the global-action bar for the whole app. The body
         // keeps the old horizontal layout unchanged otherwise.
+        // #98 — acting on somebody else's behalf. First child, so it takes
+        // its own row in the flex column and pushes the whole shell down
+        // rather than covering the topbar: this is a state of the session,
+        // not a notice about the content below it.
+        var _actingBanner = (typeof renderImpersonationBanner === 'function')
+            ? renderImpersonationBanner() : null;
+        if (_actingBanner) next.appendChild(_actingBanner);
+
         next.appendChild(renderTopbar());
 
         // Workspace identity cue — opt-in peripheral indicator in the

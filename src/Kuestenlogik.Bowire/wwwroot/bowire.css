@@ -26579,3 +26579,152 @@ not as the
 .bowire-user-chip-signout:hover {
     text-decoration: underline;
 }
+
+/* ---- Acting on somebody else's behalf (#98) ---- */
+/* First child of the flex column, so it takes its own row and pushes the
+   shell down rather than covering the topbar. This is a state of the whole
+   session, not a notice about the content below it. */
+.bowire-impersonation-banner {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 7px 14px;
+    background: var(--bowire-warning-bg);
+    border-bottom: 1px solid var(--bowire-warning);
+    font-size: 12.5px;
+    color: var(--bowire-text);
+}
+.bowire-impersonation-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-impersonation-email {
+    color: var(--bowire-text-secondary);
+}
+/* Never hidden by the overflow rules above: the way out has to stay
+   reachable at every width, or somebody is stuck in a session. */
+.bowire-impersonation-end {
+    flex: 0 0 auto;
+    background: transparent;
+    border: 1px solid var(--bowire-warning);
+    border-radius: var(--bowire-radius-sm, 3px);
+    color: var(--bowire-text);
+    font-size: 12px;
+    padding: 3px 10px;
+    cursor: pointer;
+}
+.bowire-impersonation-end:hover {
+    background: var(--bowire-warning-bg);
+}
+
+/* The switch-user entry in the account popover. A button rather than a link
+   because it opens a dialog rather than navigating. */
+.bowire-user-chip-switch {
+    margin-top: 8px;
+    align-self: flex-start;
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-size: 12px;
+    color: var(--bowire-accent-text);
+    cursor: pointer;
+}
+.bowire-user-chip-switch:hover {
+    text-decoration: underline;
+}
+
+/* ---- The picker ---- */
+.bowire-user-picker {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+.bowire-user-picker-card {
+    background: var(--bowire-surface);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-lg);
+    width: min(460px, 92vw);
+    padding: 20px 22px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.bowire-user-picker-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--bowire-text);
+}
+.bowire-user-picker-note {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--bowire-text-secondary);
+}
+.bowire-user-picker-search {
+    padding: 6px 9px;
+    background: var(--bowire-bg, transparent);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm, 3px);
+    color: var(--bowire-text);
+    font-size: 13px;
+}
+/* Capped and scrolling: a directory of a thousand people must not push the
+   cancel button off the screen. */
+.bowire-user-picker-list {
+    max-height: 260px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+.bowire-user-picker-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    width: 100%;
+    padding: 7px 8px;
+    background: transparent;
+    border: none;
+    border-radius: var(--bowire-radius-sm, 3px);
+    cursor: pointer;
+    text-align: left;
+}
+.bowire-user-picker-row:hover {
+    background: var(--bowire-surface-hover);
+}
+.bowire-user-picker-name {
+    font-size: 13px;
+    color: var(--bowire-text);
+}
+.bowire-user-picker-email {
+    font-size: 11.5px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-user-picker-empty {
+    margin: 0;
+    padding: 10px 2px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-user-picker-error:empty {
+    display: none;
+}
+.bowire-user-picker-error {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--bowire-error);
+}
+.bowire-user-picker-actions {
+    display: flex;
+    justify-content: flex-end;
+}
