@@ -12,10 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**7/32 done** · 1 next up · 24 backlog
+**7/32 done** · 1 in progress · 1 next up · 23 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | 🟡 In progress | `area:workbench` |
 | [28](https://github.com/Kuestenlogik/Bowire/issues/28) | Bowire | [Multi-tenant data model + SCIM (Phase B)](#issue-kuestenlogik-bowire-28) | 🟢 Next up | `area:workbench` |
 | [21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21) | Protocol.Dis | [probeDuration setting is ignored by DiscoverAsync](#issue-kuestenlogik-bowire-protocol-dis-21) | ⬜ Backlog | `area:plugin-sdk` |
 | [22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) | Protocol.Dis | [Typed PDU envelope decoding beyond EntityState](#issue-kuestenlogik-bowire-protocol-dis-22) | ⬜ Backlog | `area:plugin-sdk` |
@@ -34,7 +35,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) | Protocol.Akka | [Docs drift: TappedMessage envelope field names & payload shape](#issue-kuestenlogik-bowire-protocol-akka-34) | ⬜ Backlog | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog | `area:plugin-sdk` |
 | [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
-| [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ⬜ Backlog | `area:workbench` |
 | [284](https://github.com/Kuestenlogik/Bowire/issues/284) | Bowire | [Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)](#issue-kuestenlogik-bowire-284) | ⬜ Backlog | `area:plugin-sdk` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [588](https://github.com/Kuestenlogik/Bowire/issues/588) | Bowire | [Tugboat — JetBrains plugin (IntelliJ platform)](#issue-kuestenlogik-bowire-588) | ⬜ Backlog |  |
@@ -151,6 +151,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
+#### <a id="issue-kuestenlogik-bowire-98"></a>🟡 In progress · [#98](https://github.com/Kuestenlogik/Bowire/issues/98) Multi-tenant Phase F — user chip, scoped state copy, admin impersonation
+
+> `area:workbench`
+
+Phase F of the multi-tenant rollout — the UI affordances that turn "multi-user works under the hood" into "users feel it" (#28). [[more]](https://github.com/Kuestenlogik/Bowire/issues/98)
+
 #### <a id="issue-kuestenlogik-bowire-28"></a>🟢 Next up · [#28](https://github.com/Kuestenlogik/Bowire/issues/28) Multi-tenant data model + SCIM (Phase B)
 
 > `area:workbench`
@@ -258,12 +264,6 @@ When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` 
 > `area:workbench`
 
 Surface IServiceCollection.AddBowireEnvironment(name, configure) (or a fluent builder on AddBowire()) so the host can pre-seed environments with variables derived from the running appʼs own IConfiguration / IOptions<T>. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/49)
-
-#### <a id="issue-kuestenlogik-bowire-98"></a>⬜ Backlog · [#98](https://github.com/Kuestenlogik/Bowire/issues/98) Multi-tenant Phase F — user chip, scoped state copy, admin impersonation
-
-> `area:workbench`
-
-Phase F of the multi-tenant rollout — the UI affordances that turn "multi-user works under the hood" into "users feel it" (#28). [[more]](https://github.com/Kuestenlogik/Bowire/issues/98)
 
 #### <a id="issue-kuestenlogik-bowire-284"></a>⬜ Backlog · [#284](https://github.com/Kuestenlogik/Bowire/issues/284) Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)
 
