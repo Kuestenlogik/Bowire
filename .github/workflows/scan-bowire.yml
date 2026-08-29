@@ -1,0 +1,185 @@
+name: "Scan: Bowire itself"
+
+# Bowire's scanner against the HTTP surface Bowire actually ships — and, unlike
+# the other two scan jobs, these findings ARE uploaded (#614).
+#
+# The three scan jobs answer three different questions:
+#
+#   * scan-self     — "does the composite action still run end-to-end?" It
+#                     scans example.com, which is stable and needs nothing
+#                     started. example.com's missing headers are not ours, so
+#                     it does not upload.
+#   * scan-dogfood  — "does the scanner still find what it should?" It starts
+#                     a sample and asserts the findings against a frozen set.
+#                     The findings describe the harness, so it does not upload.
+#   * this job      — "what does Bowire expose?" It starts the real tool and
+#                     uploads, because the target is the product.
+#
+# The gap this closes: CodeQL reads the source, and nothing sends a request to
+# a running instance. That is exactly what `bowire scan` is for, and it was
+# pointed at everything except us.
+#
+# Why the findings are filtered rather than gated on severity. Measured
+# against a real instance: the only high-severity finding is "target serves
+# plaintext http://", which is true of a runner with no certificate and false
+# of any deployed Bowire — while the two findings that ARE ours (missing
+# security headers, a version-disclosing Server banner) are both low. A
+# `--severity medium` gate would upload the harness's finding and drop both
+# real ones. So the exclusion is by rule and by name, in
+# scripts/ci/harness-scan-rules.json, where it can be argued with.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - '.github/actions/bowire-scan/**'
+      - '.github/workflows/scan-bowire.yml'
+      - 'scripts/ci/filter-harness-findings.mjs'
+      - 'scripts/ci/harness-scan-rules.json'
+  # Weekly, because a finding can appear without src/ changing: an updated
+  # template corpus, a new probe, a dependency that starts sending a header.
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  # A push-triggered run must not be cancelled by the next push: on main every
+  # commit is its own subject, and superseding one loses that commit's result
+  # rather than saving work.
+  group: scan-bowire-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || 'shared' }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  # The whole point of this job, and the one thing the other two scan jobs
+  # deliberately do not ask for.
+  security-events: write
+
+jobs:
+  scan:
+    name: scan the shipped surface
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # From source, not from NuGet: the point is to scan what this commit
+      # serves. The scanner itself is the published tool (the composite action
+      # installs it), which is the right way round — a released scanner
+      # against the build under review.
+      - name: Build the tool
+        run: dotnet build src/Kuestenlogik.Bowire.Tool -c Release -m:1 -nodeReuse:false
+
+      - name: Start Bowire
+        run: |
+          set -euo pipefail
+
+          # A profile of its own, so findings come from the product rather than
+          # from state a previous step happened to leave behind. BOWIRE_DATA_DIR
+          # points every storage scope at one directory (#616), which is what
+          # makes "known-empty" a single line instead of a cleanup ritual.
+          BOWIRE_DATA_DIR="$(mktemp -d)"
+          export BOWIRE_DATA_DIR
+          echo "BOWIRE_DATA_DIR=$BOWIRE_DATA_DIR" >> "$GITHUB_ENV"
+
+          nohup dotnet artifacts/bin/Kuestenlogik.Bowire.Tool/release/Kuestenlogik.Bowire.Tool.dll \
+            --port 5190 --no-browser --enable-mcp-adapter \
+            > bowire.log 2>&1 &
+          echo $! > bowire.pid
+
+          # Polled with a request rather than by grepping the banner. Bowire
+          # prints "Bowire is running at …" before Kestrel reports listening,
+          # and under load the gap is long enough that a banner-based wait
+          # scans a socket nobody is accepting on yet.
+          for _ in $(seq 1 90); do
+            if curl -fsS -o /dev/null --max-time 2 http://localhost:5190/; then
+              echo "Bowire is answering on :5190"
+              exit 0
+            fi
+            if ! kill -0 "$(cat bowire.pid)" 2>/dev/null; then
+              echo "::error::Bowire exited before it served a request."
+              cat bowire.log
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "::error::Bowire did not answer within 90s."
+          cat bowire.log
+          exit 1
+
+      # Three targets rather than one. The findings carry the probed URL in
+      # their logical location and fingerprint, so alerts stay distinguishable
+      # — a missing header on the MCP endpoint is a different alert from the
+      # same header missing on the workbench, and it should be.
+      - name: Scan the workbench
+        uses: ./.github/actions/bowire-scan
+        with:
+          target: http://localhost:5190/
+          templates: docs/security/examples
+          suite: owasp-api
+          severity: low
+          upload-to-code-scanning: 'false'
+
+      - name: Keep the workbench findings
+        run: mkdir -p sarif && mv findings.sarif sarif/workbench.sarif
+
+      - name: Scan the API surface
+        uses: ./.github/actions/bowire-scan
+        with:
+          target: http://localhost:5190/api/plugins
+          templates: docs/security/examples
+          suite: owasp-api
+          severity: low
+          upload-to-code-scanning: 'false'
+
+      - name: Keep the API findings
+        run: mv findings.sarif sarif/api.sarif
+
+      - name: Scan the MCP endpoint
+        uses: ./.github/actions/bowire-scan
+        with:
+          target: http://localhost:5190/mcp
+          templates: docs/security/examples
+          suite: owasp-api
+          severity: low
+          upload-to-code-scanning: 'false'
+
+      - name: Keep the MCP findings
+        run: mv findings.sarif sarif/mcp.sarif
+
+      - name: Drop what describes the harness rather than Bowire
+        run: >
+          node scripts/ci/filter-harness-findings.mjs
+          sarif/workbench.sarif sarif/api.sarif sarif/mcp.sarif
+
+      # No severity gate on the build. A new finding here is news, not a
+      # regression against a frozen expectation — that assertion is
+      # scan-dogfood's job. This one reports; the Security tab is where it is
+      # read, and failing the build on a banner-level nit would only teach
+      # people to ignore a red cross.
+      - name: Upload the findings as ours
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: sarif
+          category: bowire-self
+
+      - name: Keep the raw findings as an artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: bowire-self-findings
+          path: sarif/
+          if-no-files-found: warn
+
+      - name: Bowire log
+        if: always()
+        run: cat bowire.log || true

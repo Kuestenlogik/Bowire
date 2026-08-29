@@ -1,0 +1,26 @@
+{
+  "$comment": [
+    "Findings that describe how CI runs Bowire rather than what Bowire is (#614).",
+    "",
+    "Scanning our own instance is only worth doing if the alerts that come out",
+    "are ones Bowire can actually fix. A workflow that starts the tool on",
+    "http://localhost and uploads 'target serves plaintext http://' has not",
+    "found anything about the product — it has described its own scaffolding,",
+    "and an operator reading the Security tab concludes Bowire ships without",
+    "TLS. That is the mistake scan-dogfood.yml refuses to make by not",
+    "uploading at all; here we do want the upload, so the exclusion has to be",
+    "explicit and named instead.",
+    "",
+    "The bar for adding a rule here: would this finding disappear if the same",
+    "build ran behind a load balancer with a certificate? If yes it is the",
+    "harness's. If it would still be true of a correctly deployed Bowire, it",
+    "stays and gets fixed.",
+    "",
+    "Deliberately NOT excluded: BWR-BUILTIN-BANNER-SERVER. `Server: Kestrel`",
+    "is emitted because Bowire does not set AddServerHeader = false, and that",
+    "is true of every deployment, behind any ingress. It is ours."
+  ],
+  "rules": {
+    "BWR-BUILTIN-TLS-001": "Plaintext http:// is a property of the CI runner, which has no certificate. A deployed Bowire sits behind TLS terminated upstream."
+  }
+}
