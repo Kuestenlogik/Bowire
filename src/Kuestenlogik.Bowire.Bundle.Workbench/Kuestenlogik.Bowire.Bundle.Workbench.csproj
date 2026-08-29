@@ -102,6 +102,12 @@
     <!-- Mock + MCP runtimes. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Mock\Kuestenlogik.Bowire.Mock.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
+    <!-- SCIM provisioning (#96). Ships with the bundle because the
+         standalone CLI *is* the server deployment shape, but mounts
+         nothing until Bowire:Scim:Enabled says so — an unused assembly
+         rather than an exposed endpoint. Embedded hosts that want it
+         call MapBowireScim() themselves. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Scim\Kuestenlogik.Bowire.Scim.csproj" />
     <!-- Help (#154 Phase 4) + Telemetry (#29 v2). -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Help\Kuestenlogik.Bowire.Help.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Telemetry\Kuestenlogik.Bowire.Telemetry.csproj" />

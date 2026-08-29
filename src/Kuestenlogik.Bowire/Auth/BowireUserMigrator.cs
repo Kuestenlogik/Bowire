@@ -45,6 +45,13 @@ public static class BowireUserMigrator
     /// <summary>Where an undone slot goes. Dot-prefixed, so it is not a slot.</summary>
     private const string UndonePrefix = ".undone-";
 
+    /// <summary>
+    /// The SCIM package's directory name (#96). Named here rather than
+    /// referenced: Core does not depend on the provisioning package, and the
+    /// exclusion has to hold whether or not it is installed.
+    /// </summary>
+    private const string BowireScimDirectory = "scim";
+
     private static readonly JsonSerializerOptions s_json = new() { WriteIndented = true };
 
     private static readonly EnumerationOptions s_walk = new()
@@ -74,6 +81,11 @@ public static class BowireUserMigrator
 
             // Machine-shaped or regenerable.
             "certs", "logs", "cache", "state",
+
+            // The provisioned user list (#96). Install state describing
+            // everybody, so copying it into one identity's slot would
+            // hand them a roster of their colleagues.
+            BowireScimDirectory,
 
             // The project manifest is read from the root and describes the
             // checkout, not the person.

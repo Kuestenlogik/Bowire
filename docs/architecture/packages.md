@@ -116,6 +116,12 @@ MCP-server adapter — exposes Bowire's discovered protocol methods as MCP tools
 
 Vulnerability scanner — the engine behind `bowire scan`. Reads JSON templates (built-in passive checks + the `Bowire.VulnDb` baseline + Nuclei templates via `--nuclei`), runs them against a target URL through the discovered protocol plugins, emits SARIF 2.1.0. References `Kuestenlogik.Bowire.Cli` so its `ScanCliCommand` lands in the auto-discovery loop. Optional — embedded hosts that don't need scanning leave it out.
 
+### `Kuestenlogik.Bowire.Scim`
+
+SCIM 2.0 provisioning (RFC 7643 / 7644) — lets Okta, Entra ID or Google Workspace create, update and deprovision the identities a multi-tenant install serves, instead of an operator shelling into the host. Reads and writes through Core's tenancy seam; no third-party dependency, since SCIM is JSON over HTTP.
+
+A separate package because this is a *provisioning API*: an embedded desktop host must not be able to grow one by upgrading, and a package that is not referenced cannot be misconfigured into existence. It ships inside the workbench bundle — the standalone CLI is the server deployment shape — but mounts nothing until `Bowire:Scim:Enabled`, and refuses to start when that is set without a token. Embedded hosts call `MapBowireScim()` themselves.
+
 ### `Kuestenlogik.Bowire.Map`
 
 UI extension — adds the live-map widget to the workbench. Implements `IBowireUiExtension`. Ships separately because the MapLibre runtime (~870 KB of JS + CSS) doesn't belong in every install.
@@ -170,7 +176,7 @@ Provides both:
 
 ## Versioning
 
-Packages **inside the Bowire repo** (`Kuestenlogik.Bowire`, `.Cli`, `.Tool`, `.Ai`, `.AsyncApi`, `.Auth.Oidc`, `.Help`, `.Map`, `.Mock`, `.Mcp`, `.Security.Scanner`, `.Telemetry`, `.Testing`, all in-tree `Protocol.*` plugins) share the same version number and release together. The version follows [SemVer 2.0](https://semver.org/).
+Packages **inside the Bowire repo** (`Kuestenlogik.Bowire`, `.Cli`, `.Tool`, `.Ai`, `.AsyncApi`, `.Auth.Oidc`, `.Scim`, `.Help`, `.Map`, `.Mock`, `.Mcp`, `.Security.Scanner`, `.Telemetry`, `.Testing`, all in-tree `Protocol.*` plugins) share the same version number and release together. The version follows [SemVer 2.0](https://semver.org/).
 
 Packages **in sibling repos** carry their own version number — each plugin matures on its own schedule. The compatibility contract (which sibling-version × Bowire-host pair works together) is documented in [Plugin Compatibility](compatibility.md); the short version is "plugin built against `Kuestenlogik.Bowire X.Y.Z` runs in any Bowire host within the same major".
 

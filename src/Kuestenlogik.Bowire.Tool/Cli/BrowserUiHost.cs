@@ -15,6 +15,7 @@ using Kuestenlogik.Bowire.Workspace.Git;
 // UseBowireAuth lives in Kuestenlogik.Bowire.Auth; already covered.
 using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Protocol.Mcp;
+using Kuestenlogik.Bowire.Scim;
 using Kuestenlogik.Bowire.Sources;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -357,6 +358,10 @@ internal static class BrowserUiHost
         // moves where the stores read.
         builder.Services.AddBowireTenancy(builder.Configuration);
 
+        // #96 — SCIM 2.0 provisioning. Off unless Bowire:Scim:Enabled, and
+        // refused at startup when it is on without a token.
+        builder.Services.AddBowireScim(builder.Configuration);
+
         // Opt-in MCP adapter. Registering it pre-Build is the new
         // DI-driven shape (the previous WithMcpAdapter() called at
         // map-time predates the official SDK Migration). The adapter
@@ -392,11 +397,21 @@ internal static class BrowserUiHost
         // opted into multi-tenant.
         app.UseBowireTenancy();
 
+        // After the tenancy scope is in place: this reads the same subject to
+        // decide whether the directory still wants this person here.
+        app.UseBowireScim();
+
         // Standalone CLI mounts the workbench at the site root ("/") —
         // there's no host app sharing the route table, so a `/bowire`
         // prefix would just be a wasted hop. Embedded callers keep the
         // default `/bowire` (or whatever pattern they pass) so they don't
         // collide with their own routes.
+        // #96 — the provisioning surface, mounted beside the workbench
+        // rather than inside it: a connector holds a shared token, not a
+        // user session, so it could never pass the workbench's own gate.
+        // No-op unless Bowire:Scim:Enabled.
+        app.MapBowireScim();
+
         app.MapBowire("/", options =>
         {
             options.Mode = Kuestenlogik.Bowire.BowireMode.Standalone;

@@ -14,5 +14,7 @@
   href: sidecar.md
 - name: Multi-user
   href: multi-user.md
+- name: SCIM provisioning
+  href: scim.md
 - name: Updating Bowire and its plugins
   href: updating.md

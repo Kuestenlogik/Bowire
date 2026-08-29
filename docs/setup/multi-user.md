@@ -77,7 +77,7 @@ So Bowire offers to bring it across, once, per identity:
 What it does, and does not, do:
 
 - **Copies. Never moves.** The originals stay where they are, so you can switch back to single-user without a second migration, and a migration into the wrong slot is undone by declining it in the right one. Delete the originals when you are satisfied — that timing is yours.
-- **Brings everything except what is not a person's**: `plugins`, `certs`, `logs`, `cache`, `state` and `project.json` stay behind. The rule is an exclusion list on purpose — a new store's data comes along by default, because forgetting to include something loses data while forgetting to exclude something copies a cache.
+- **Brings everything except what is not a person's**: `plugins`, `certs`, `logs`, `cache`, `state`, `scim` and `project.json` stay behind. The rule is an exclusion list on purpose — a new store's data comes along by default, because forgetting to include something loses data while forgetting to exclude something copies a cache.
 - **Leaves a slot that already holds work alone.** Merging two sets of environments produces one set nobody can separate again.
 - **Records the decision** in `.migration.json` inside the slot: what was copied, from where, when, and whether it was accepted or refused. It sits in the slot rather than in a central log, so deleting an identity deletes its record too.
 
@@ -109,10 +109,13 @@ Installed plugins are not per-identity state. They resolve in two tiers: a machi
 
 Per-*identity* plugin installs are still open — see [#284](https://github.com/Kuestenlogik/Bowire/issues/284). It is not a path question: plugins are assemblies loaded into the host process, so letting each signed-in person add one to a shared server is a privilege decision before it is a storage decision.
 
+## Letting the directory keep the list
+
+Everything above still leaves one thing manual: who exists. [SCIM 2.0 provisioning](scim.md) hands that to your identity provider — Okta, Entra ID or Google Workspace create, update and deprovision identities, and a deactivation is enforced rather than merely recorded: the person is refused at the door and their slot is moved out of reach, reversibly, until the purge window closes.
+
 ## What is still on the roadmap
 
-- **SCIM 2.0 provisioning** (`/scim/v2/Users`, `/scim/v2/Groups`) for IdP-driven user lifecycle — [#96](https://github.com/Kuestenlogik/Bowire/issues/96).
-- **A user chip, scoped state copy and admin impersonation** in the workbench — [#98](https://github.com/Kuestenlogik/Bowire/issues/98).
+- **A user chip, scoped state copy and admin impersonation** in the workbench — [#98](https://github.com/Kuestenlogik/Bowire/issues/98). Group membership is already synced by SCIM; these are the surfaces that act on it.
 
 ## When this matters
 
@@ -122,6 +125,7 @@ Per-*identity* plugin installs are still open — see [#284](https://github.com/
 
 ## Related
 
+* [SCIM provisioning](scim.md) — let the identity provider keep the user list
 * [Where Bowire stores things](../architecture/storage-locations.md) — scopes, the project opt-in, instances, and the slot layout
 * [Sidecar deployment](sidecar.md)
 * [Standalone CLI](standalone.md)

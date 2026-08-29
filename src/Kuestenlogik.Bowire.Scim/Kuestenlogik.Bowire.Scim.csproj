@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #96 (#28 Phase C) — SCIM 2.0 provisioning.
+
+         A sibling package rather than Core for one reason: this is a
+         provisioning API. An embedded desktop host must not be able to grow
+         one by upgrading, and a package that is not referenced cannot be
+         misconfigured into existence. Core keeps the tenancy seam this reads
+         and writes through; the wire protocol lives here.
+
+         No third-party dependency — SCIM is JSON over HTTP, and the shapes
+         are small enough that a model library would cost more than it
+         saves. -->
+    <Description>Bowire SCIM 2.0 — user provisioning for multi-tenant installs (RFC 7643 / 7644). Lets Okta, Entra ID and Google Workspace create, update and deprovision the identities a Bowire instance serves, so an operator hands the user list to their IdP instead of shelling into the host. Opt-in: mounted only when the host asks for it.</Description>
+    <PackageId>Kuestenlogik.Bowire.Scim</PackageId>
+    <PackageTags>bowire;scim;scim2;provisioning;okta;entra;azure-ad;multi-tenant;rfc7644</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Scim.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+</Project>
