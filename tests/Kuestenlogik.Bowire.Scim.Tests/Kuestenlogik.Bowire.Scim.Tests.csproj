@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!-- #96 — SCIM provisioning coverage. The risk here is not the CRUD: it
+         is that two identity providers disagree about the shapes they send,
+         so an implementation can pass its own round-trip and still fail
+         against the only two clients that matter. The PATCH and content-type
+         suites pin the request shapes Okta and Entra ID actually emit. -->
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <!-- TestServer: drives the real endpoints in-process, so the wire
+         behaviour a connector depends on is tested without a socket. -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Scim\Kuestenlogik.Bowire.Scim.csproj" />
+  </ItemGroup>
+</Project>

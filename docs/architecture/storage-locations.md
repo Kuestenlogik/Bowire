@@ -43,7 +43,7 @@ Unset means the root itself, so nothing moves for the single-instance case — t
 Two names are refused rather than accepted quietly, because both failures are invisible:
 
 - **Anything that is not a single segment** — a separator, `..`, an absolute path. It would write outside the storage root and look like it worked.
-- **A name Bowire already uses for a directory** — `plugins`, `workspaces`, `recordings`, `flows`, `cache`, `certs`, `logs`, `presets`, `mocks`, `users`. With no instance set the root *is* the scope, so an instance named `plugins` would share state with an unnamed one, which is the opposite of what setting it was for.
+- **A name Bowire already uses for a directory** — `plugins`, `workspaces`, `recordings`, `flows`, `cache`, `certs`, `logs`, `presets`, `mocks`, `users`, `scim`. With no instance set the root *is* the scope, so an instance named `plugins` would share state with an unnamed one, which is the opposite of what setting it was for.
 
 ## Several people on one instance
 
@@ -83,7 +83,7 @@ So Bowire offers it once, per identity:
 Three things are worth knowing about how it runs:
 
 - **It copies; it never moves.** The legacy files stay put. That costs disk and buys a switch back to single-user without a second migration, plus a way out if the data lands in the wrong slot — decline it in the right one. Deleting the originals is the operator's call to time.
-- **Everything comes along except what is named as not personal** — `plugins`, `certs`, `logs`, `cache`, `state`, `project.json`, and `users` itself. An inclusion list would have to grow with every new store, and forgetting one would be silent data loss; forgetting to exclude one merely copies a cache.
+- **Everything comes along except what is named as not personal** — `plugins`, `certs`, `logs`, `cache`, `state`, `project.json`, the provisioned user list in `scim`, and `users` itself. An inclusion list would have to grow with every new store, and forgetting one would be silent data loss; forgetting to exclude one merely copies a cache.
 - **A slot that already holds work is left alone.** Merging two sets of environments produces one set nobody can take apart again.
 
 The decision is recorded in `.migration.json` inside the slot — what was copied, from where, and when. It lives there rather than in a central log so that deleting an identity deletes its receipt too: an index of people who used to exist is not state Bowire should keep on its own initiative.
