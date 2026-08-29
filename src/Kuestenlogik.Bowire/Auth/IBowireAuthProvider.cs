@@ -131,4 +131,24 @@ public interface IBowireAuthProvider
         // operate purely through AddAuthentication; only providers
         // that need custom middleware override this.
     }
+
+    /// <summary>
+    /// Where the workbench sends somebody who asks to sign out, or
+    /// <c>null</c> when this provider has nowhere to send them.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Null by default, and the account chip then shows no sign-out link at
+    /// all (#98). That is deliberate: a scheme with no sign-out — an API key,
+    /// a reverse proxy that terminates auth upstream — has nothing the
+    /// workbench can do about it, and a link that clears nothing teaches
+    /// people to believe they have signed out when they have not.
+    /// </para>
+    /// <para>
+    /// An OIDC provider points this at its end-session endpoint, so single
+    /// sign-out reaches every application in the session rather than only
+    /// this one.
+    /// </para>
+    /// </remarks>
+    string? SignOutUrl => null;
 }

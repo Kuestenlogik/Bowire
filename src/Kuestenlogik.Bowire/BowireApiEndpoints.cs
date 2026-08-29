@@ -141,6 +141,7 @@ internal static class BowireApiEndpoints
             .MapBowireWorkspaceEndpoints(basePath)
             .MapBowirePluginEndpoints(basePath)
             .MapBowireMigrationEndpoints(basePath)
+            .MapBowireIdentityEndpoints(basePath)
             .MapBowireSemanticsEndpoints(basePath)
             .MapBowireSecurityEndpoints(basePath)
             .MapBowireHelpEndpoints(basePath)
