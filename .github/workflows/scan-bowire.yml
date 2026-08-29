@@ -91,7 +91,7 @@ jobs:
           export BOWIRE_DATA_DIR
           echo "BOWIRE_DATA_DIR=$BOWIRE_DATA_DIR" >> "$GITHUB_ENV"
 
-          nohup dotnet artifacts/bin/Kuestenlogik.Bowire.Tool/release/Kuestenlogik.Bowire.Tool.dll \
+          nohup dotnet artifacts/bin/Kuestenlogik.Bowire.Tool/release/bowire.dll \
             --port 5190 --no-browser --enable-mcp-adapter \
             > bowire.log 2>&1 &
           echo $! > bowire.pid
