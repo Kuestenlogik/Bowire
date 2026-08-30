@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Mcp;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -92,7 +93,12 @@ public static class McpAdapterEndpoints
         // nosniff on everything else never reaches it. This is the mount the
         // standalone CLI uses (`--enable-mcp-adapter`), which is why the
         // scanner still reported /mcp after the server mount was fixed.
-        endpoints.MapMcp(mountPattern).AddEndpointFilter(BaselineHeaders);
+        endpoints.MapMcp(mountPattern)
+            .AddEndpointFilter(BaselineHeaders)
+            // #625 — same gate as the workbench, asked for explicitly because
+            // this mount sits outside the group that applies it. No-op when no
+            // auth provider is configured.
+            .RequireBowireAuth(endpoints.ServiceProvider);
 
         // Read-only info endpoint the workbench's Settings → General
         // tab consults to render the MCP-adapter status row. Returns
