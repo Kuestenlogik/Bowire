@@ -63,8 +63,8 @@ public sealed class BowireEndpointTests : IClassFixture<BowireTestFixture>
         Assert.Contains($"<script nonce=\"{nonce}\">", content, StringComparison.Ordinal);
         // Both blocks: the configuration and the bundle. One without the other
         // is a workbench that loads and then does nothing.
-        Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(
-            content, $"<script nonce=\"{System.Text.RegularExpressions.Regex.Escape(nonce)}\">").Count);
+        Assert.Equal(2, System.Text.RegularExpressions.Regex.Count(
+            content, $"<script nonce=\"{System.Text.RegularExpressions.Regex.Escape(nonce)}\">"));
     }
 
     [Fact]
