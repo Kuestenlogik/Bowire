@@ -42,8 +42,53 @@ public sealed class BowireEndpointTests : IClassFixture<BowireTestFixture>
         var response = await _client.GetAsync(new Uri("/bowire", UriKind.Relative), TestContext.Current.CancellationToken);
         var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
-        Assert.Contains("<style>", content);  // Inlined CSS
-        Assert.Contains("<script>", content); // Inlined JS
+        Assert.Contains("<style>", content);        // Inlined CSS
+        Assert.Contains("<script nonce=\"", content); // Inlined JS, carrying the CSP nonce
+    }
+
+    [Fact]
+    public async Task BowireUiEndpoint_ScriptNonceMatchesTheHeader()
+    {
+        // #625 — the workbench ships its whole bundle inline, so a policy
+        // whose nonce does not match the markup does not merely weaken
+        // something: the browser refuses both script blocks and the page
+        // renders as an empty shell, with nothing on the server saying so.
+        var response = await _client.GetAsync(new Uri("/bowire", UriKind.Relative), TestContext.Current.CancellationToken);
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+
+        var policy = Assert.Single(response.Headers.GetValues("Content-Security-Policy"));
+        var nonce = System.Text.RegularExpressions.Regex.Match(policy, @"'nonce-([^']+)'").Groups[1].Value;
+
+        Assert.NotEmpty(nonce);
+        Assert.Contains($"<script nonce=\"{nonce}\">", content, StringComparison.Ordinal);
+        // Both blocks: the configuration and the bundle. One without the other
+        // is a workbench that loads and then does nothing.
+        Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(
+            content, $"<script nonce=\"{System.Text.RegularExpressions.Regex.Escape(nonce)}\">").Count);
+    }
+
+    [Fact]
+    public async Task BowireUiEndpoint_GivesEachResponseItsOwnNonce()
+    {
+        // A nonce reused across responses is one an injected script can read
+        // off a cached page and replay.
+        var first = await _client.GetAsync(new Uri("/bowire", UriKind.Relative), TestContext.Current.CancellationToken);
+        var second = await _client.GetAsync(new Uri("/bowire", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.NotEqual(
+            Assert.Single(first.Headers.GetValues("Content-Security-Policy")),
+            Assert.Single(second.Headers.GetValues("Content-Security-Policy")));
+    }
+
+    [Fact]
+    public async Task BowireApiResponses_CarryTheBaselineHeaders()
+    {
+        // nosniff is the one that matters for a JSON API: without it a browser
+        // is free to sniff a response body and treat it as script.
+        var response = await _client.GetAsync(new Uri("/bowire/api/services", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Equal("nosniff", Assert.Single(response.Headers.GetValues("X-Content-Type-Options")));
+        Assert.Equal("SAMEORIGIN", Assert.Single(response.Headers.GetValues("X-Frame-Options")));
     }
 
     [Fact]
