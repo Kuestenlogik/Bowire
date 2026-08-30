@@ -1,6 +1,8 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
+using System.Threading.RateLimiting;
 using Kuestenlogik.Bowire.Ai;
 using Kuestenlogik.Bowire.Ai.Anthropic;
 using Kuestenlogik.Bowire.Ai.Mcp;
@@ -17,6 +19,8 @@ using Kuestenlogik.Bowire.PluginLoading;
 using Kuestenlogik.Bowire.Protocol.Mcp;
 using Kuestenlogik.Bowire.Scim;
 using Kuestenlogik.Bowire.Sources;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -357,6 +361,49 @@ internal static class BrowserUiHost
         // mount.
         builder.WebHost.ConfigureKestrel(kestrel => kestrel.AddServerHeader = false);
 
+        // #625 — per-client rate limiting, in the standalone host only. An
+        // embedded host has its own pipeline and usually an ingress in front
+        // of it; adding a limiter to somebody else's application is not ours
+        // to do.
+        //
+        // The budget is deliberately generous. A limit tight enough to trip on
+        // a scanner's burst is tight enough to interrupt somebody clicking
+        // through a workbench, and a limit chosen to satisfy a probe rather
+        // than to protect the service is theatre. What closes the gap honestly
+        // is advertising the budget — which is also what the remediation text
+        // asks for, and what a client can actually act on.
+        var rateLimit = builder.Configuration.GetSection("Bowire:RateLimit");
+        var rateLimitEnabled = rateLimit.GetValue("Enabled", true);
+        var ratePermits = Math.Max(1, rateLimit.GetValue("PermitLimit", 600));
+        var rateWindow = TimeSpan.FromSeconds(Math.Max(1, rateLimit.GetValue("WindowSeconds", 60)));
+
+        if (rateLimitEnabled)
+        {
+            builder.Services.AddRateLimiter(limiter =>
+            {
+                limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+                limiter.OnRejected = (context, _) =>
+                {
+                    // Retry-After is the part a client can act on; without it a
+                    // 429 only says "no" and every client guesses differently.
+                    context.HttpContext.Response.Headers.RetryAfter =
+                        ((int)rateWindow.TotalSeconds).ToString(CultureInfo.InvariantCulture);
+                    return ValueTask.CompletedTask;
+                };
+                limiter.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        // Per client, not global: one busy workbench must not
+                        // throttle everybody else on a shared instance.
+                        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = ratePermits,
+                            Window = rateWindow,
+                            QueueLimit = 0,
+                        }));
+            });
+        }
+
         builder.Services.AddBowireAuth(builder.Configuration);
 
         // #97 — per-identity storage. Registering is not enabling: the
@@ -384,6 +431,25 @@ internal static class BrowserUiHost
 
         var app = builder.Build();
         app.UseResponseCompression();
+
+        if (rateLimitEnabled)
+        {
+            app.UseRateLimiter();
+
+            // Advertise the budget. A client that can read the policy can pace
+            // itself instead of discovering the wall by hitting it, and a
+            // limit nobody is told about is one every caller has to find out
+            // about the hard way.
+            app.Use(async (context, next) =>
+            {
+                context.Response.Headers["RateLimit-Limit"] =
+                    ratePermits.ToString(CultureInfo.InvariantCulture);
+                context.Response.Headers["RateLimit-Policy"] = string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"\"bowire\";q={ratePermits};w={(int)rateWindow.TotalSeconds}");
+                await next(context);
+            });
+        }
 
         // #625 — the baseline headers on everything, not only on the routes
         // inside Bowire's own group.
