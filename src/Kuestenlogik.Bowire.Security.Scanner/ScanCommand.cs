@@ -1225,6 +1225,7 @@ public static class ScanCommand
                         Driver = new SarifDriver
                         {
                             Name = "bowire-scan",
+                            Version = ScannerVersion.Current,
                             InformationUri = "https://github.com/Kuestenlogik/Bowire",
                             Rules = ExtractRules(findings),
                         },
@@ -1588,11 +1589,47 @@ internal sealed class SarifRun
     [JsonPropertyName("results")] public IList<SarifResult> Results { get; init; } = new List<SarifResult>();
 }
 
+/// <summary>
+/// The scanner's own version, for the SARIF driver (#625).
+/// </summary>
+/// <remarks>
+/// The informational version rather than the assembly version: it carries the
+/// build metadata the release pipeline stamps, which is what identifies a
+/// specific build rather than a release line.
+/// </remarks>
+internal static class ScannerVersion
+{
+    /// <summary>The informational version, or the assembly version as a fallback.</summary>
+    public static string? Current { get; } = Read();
+
+    private static string? Read()
+    {
+        var assembly = typeof(ScannerVersion).Assembly;
+        var informational = System.Reflection.CustomAttributeExtensions
+            .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(assembly)
+            ?.InformationalVersion;
+        return string.IsNullOrWhiteSpace(informational)
+            ? assembly.GetName().Version?.ToString()
+            : informational;
+    }
+}
+
 internal sealed class SarifTool { [JsonPropertyName("driver")] public SarifDriver Driver { get; init; } = new(); }
 
 internal sealed class SarifDriver
 {
     [JsonPropertyName("name")] public string Name { get; init; } = "";
+
+    /// <summary>
+    /// The scanner build that produced this run (#625).
+    /// </summary>
+    /// <remarks>
+    /// Code Scanning shows it beside the tool name, which is what makes
+    /// "which build reported this" answerable from an alert months later.
+    /// Omitted, the field is simply blank and the question has no answer.
+    /// </remarks>
+    [JsonPropertyName("version")] public string? Version { get; init; }
+
     [JsonPropertyName("informationUri")] public string? InformationUri { get; init; }
     [JsonPropertyName("rules")] public IList<SarifRule> Rules { get; init; } = new List<SarifRule>();
 }
