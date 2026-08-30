@@ -71,6 +71,17 @@ public static class BowireResponseHeaders
     /// <summary>
     /// Apply the headers that apply to everything — HTML and JSON alike.
     /// </summary>
+    /// <summary>
+    /// The policy for a response that is not a document: nothing may load,
+    /// and nothing may frame it.
+    /// </summary>
+    /// <remarks>
+    /// A JSON body executes nothing, so this is not about the response's own
+    /// content — it is about what happens when a browser is talked into
+    /// rendering it as a document anyway. Costs nothing and closes that door.
+    /// </remarks>
+    public const string ApiContentSecurityPolicy = "default-src 'none'; frame-ancestors 'none'";
+
     public static void ApplyBaseline(HttpResponse response)
     {
         ArgumentNullException.ThrowIfNull(response);
@@ -87,6 +98,24 @@ public static class BowireResponseHeaders
         // Referrer leakage matters here because a Bowire URL can carry a
         // workspace or service name that names an internal system.
         response.Headers["Referrer-Policy"] = "same-origin";
+
+        // Only over TLS. RFC 6797 §8.1 requires a user agent to ignore the
+        // header when it arrives over plaintext, so sending it there would be
+        // a header that does nothing, present only to quiet a scanner. A
+        // deployment behind TLS gets it; a CI runner without a certificate
+        // correctly does not, and that difference is worth keeping visible.
+        if (response.HttpContext.Request.IsHttps)
+        {
+            response.Headers["Strict-Transport-Security"] = "max-age=31536000";
+        }
+
+        // Documents overwrite this with the nonce policy a moment later; for
+        // everything else — JSON, 404s, the 405 an MCP mount answers a plain
+        // GET with — this is the policy that applies.
+        if (!response.Headers.ContainsKey("Content-Security-Policy"))
+        {
+            response.Headers["Content-Security-Policy"] = ApiContentSecurityPolicy;
+        }
     }
 
     /// <summary>
