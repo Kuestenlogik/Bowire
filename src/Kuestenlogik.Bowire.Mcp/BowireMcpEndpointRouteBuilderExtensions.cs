@@ -66,23 +66,6 @@ public static class BowireMcpEndpointRouteBuilderExtensions
     /// empty string to mount at site root (the standalone CLI does
     /// this when adapter+server are exposed in the same process).
     /// </param>
-    /// <summary>
-    /// Bowire's baseline response headers, for the mounts that sit outside its
-    /// own route group (#625).
-    /// </summary>
-    /// <remarks>
-    /// The group filter in <c>BowireApiEndpoints</c> covers the workbench and
-    /// the API. MCP mounts itself through the SDK at its own pattern, so it
-    /// has to ask for the same treatment explicitly — which is how the first
-    /// pass missed it, and how the scanner caught it.
-    /// </remarks>
-    private static async ValueTask<object?> BaselineHeaders(
-        EndpointFilterInvocationContext context, EndpointFilterDelegate next)
-    {
-        BowireResponseHeaders.ApplyBaseline(context.HttpContext.Response);
-        return await next(context).ConfigureAwait(false);
-    }
-
     public static IEndpointRouteBuilder MapBowireMcp(
         this IEndpointRouteBuilder endpoints,
         string prefix = "/bowire/mcp")
@@ -166,5 +149,22 @@ public static class BowireMcpEndpointRouteBuilderExtensions
         .ExcludeFromDescription();
 
         return endpoints;
+    }
+
+    /// <summary>
+    /// Bowire's baseline response headers, for the mounts that sit outside its
+    /// own route group (#625).
+    /// </summary>
+    /// <remarks>
+    /// The group filter in <c>BowireApiEndpoints</c> covers the workbench and
+    /// the API. MCP mounts itself through the SDK at its own pattern, so it
+    /// has to ask for the same treatment explicitly — which is how the first
+    /// pass missed it, and how the scanner caught it.
+    /// </remarks>
+    private static async ValueTask<object?> BaselineHeaders(
+        EndpointFilterInvocationContext context, EndpointFilterDelegate next)
+    {
+        BowireResponseHeaders.ApplyBaseline(context.HttpContext.Response);
+        return await next(context).ConfigureAwait(false);
     }
 }
