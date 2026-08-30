@@ -66,6 +66,23 @@ public static class BowireMcpEndpointRouteBuilderExtensions
     /// empty string to mount at site root (the standalone CLI does
     /// this when adapter+server are exposed in the same process).
     /// </param>
+    /// <summary>
+    /// Bowire's baseline response headers, for the mounts that sit outside its
+    /// own route group (#625).
+    /// </summary>
+    /// <remarks>
+    /// The group filter in <c>BowireApiEndpoints</c> covers the workbench and
+    /// the API. MCP mounts itself through the SDK at its own pattern, so it
+    /// has to ask for the same treatment explicitly — which is how the first
+    /// pass missed it, and how the scanner caught it.
+    /// </remarks>
+    private static async ValueTask<object?> BaselineHeaders(
+        EndpointFilterInvocationContext context, EndpointFilterDelegate next)
+    {
+        BowireResponseHeaders.ApplyBaseline(context.HttpContext.Response);
+        return await next(context).ConfigureAwait(false);
+    }
+
     public static IEndpointRouteBuilder MapBowireMcp(
         this IEndpointRouteBuilder endpoints,
         string prefix = "/bowire/mcp")
@@ -82,7 +99,11 @@ public static class BowireMcpEndpointRouteBuilderExtensions
         // and pass through what we received (with canonical "/" turned
         // back into "" so MapMcp(...) doesn't double-prefix).
         var mountPattern = canonical == "/" ? string.Empty : canonical;
-        endpoints.MapMcp(mountPattern);
+        // #625 — the MCP mount sits outside Bowire's own route group, so the
+        // filter that puts nosniff on everything else never reaches it. The
+        // scanner found exactly that: every header finding that survived the
+        // first fix was on /mcp.
+        endpoints.MapMcp(mountPattern).AddEndpointFilter(BaselineHeaders);
 
         // Idempotent manifest mount: callers don't have to call us in a
         // specific order; whichever Map* fires first wins the manifest
@@ -141,6 +162,7 @@ public static class BowireMcpEndpointRouteBuilderExtensions
 
             return Results.Json(new { endpoints = entries });
         })
+        .AddEndpointFilter(BaselineHeaders)
         .ExcludeFromDescription();
 
         return endpoints;
