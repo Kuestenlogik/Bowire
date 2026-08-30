@@ -88,7 +88,11 @@ public static class McpAdapterEndpoints
         // Match MapMcp's empty-string semantics: when canonical is "/"
         // we pass "" so the SDK doesn't double-slash.
         var mountPattern = canonical == "/" ? string.Empty : canonical;
-        endpoints.MapMcp(mountPattern);
+        // #625 — outside Bowire's own route group, so the filter that puts
+        // nosniff on everything else never reaches it. This is the mount the
+        // standalone CLI uses (`--enable-mcp-adapter`), which is why the
+        // scanner still reported /mcp after the server mount was fixed.
+        endpoints.MapMcp(mountPattern).AddEndpointFilter(BaselineHeaders);
 
         // Read-only info endpoint the workbench's Settings → General
         // tab consults to render the MCP-adapter status row. Returns
@@ -110,6 +114,7 @@ public static class McpAdapterEndpoints
         var infoBase = ParentOf(canonical);
         endpoints.MapGet($"{infoBase}/api/mcp-adapter", () =>
             Results.Ok(new { enabled = true, path = adapterPath }))
+            .AddEndpointFilter(BaselineHeaders)
             .ExcludeFromDescription();
 
         // Idempotently mount the manifest endpoint so a host that
@@ -134,5 +139,16 @@ public static class McpAdapterEndpoints
         var lastSlash = canonical.LastIndexOf('/');
         if (lastSlash <= 0) return string.Empty;
         return canonical[..lastSlash];
+    }
+
+    /// <summary>
+    /// Bowire's baseline response headers, for a mount outside its own route
+    /// group (#625).
+    /// </summary>
+    private static async ValueTask<object?> BaselineHeaders(
+        EndpointFilterInvocationContext context, EndpointFilterDelegate next)
+    {
+        BowireResponseHeaders.ApplyBaseline(context.HttpContext.Response);
+        return await next(context).ConfigureAwait(false);
     }
 }
