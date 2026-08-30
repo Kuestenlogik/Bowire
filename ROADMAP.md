@@ -725,4 +725,4 @@ Everything Bowire measures today is a request that completes. `bowire bench` cal
 
 ---
 
-*Generated 2026-08-29 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-08-30 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
