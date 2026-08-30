@@ -172,8 +172,19 @@ internal static class BowireHtmlGenerator
         return assembly.GetName().Version?.ToString() ?? "unknown";
     });
 
-    public static string GenerateIndexHtml(BowireOptions options, HttpRequest request)
+    /// <summary>
+    /// The workbench page.
+    /// </summary>
+    /// <param name="options">Host options.</param>
+    /// <param name="request">The request being answered.</param>
+    /// <param name="nonce">
+    /// The Content-Security-Policy nonce for this response (#625). Both inline
+    /// script blocks carry it; without it a browser enforcing the policy runs
+    /// neither, and the page renders as an empty shell.
+    /// </param>
+    public static string GenerateIndexHtml(BowireOptions options, HttpRequest request, string? nonce = null)
     {
+        var nonceAttr = string.IsNullOrEmpty(nonce) ? "" : $" nonce=\"{nonce}\"";
         // Same shape as BowireApiEndpoints.Map: an empty RoutePrefix means
         // the workbench is mounted at site root, so the JS-side `prefix`
         // must collapse to "" — otherwise `fetch(`${config.prefix}/api/…`)`
@@ -274,7 +285,7 @@ internal static class BowireHtmlGenerator
                    </div>
                    <style>@keyframes bowire-spin { to { transform:rotate(360deg) } } #bowire-loading { background:#0f0f17 } [data-theme="light"] #bowire-loading { background:#f8f9fc } @media (prefers-color-scheme:light) { html:not([data-theme="dark"]) #bowire-loading { background:#f8f9fc } } .bowire-loading-stage { position:relative;width:80px;height:80px } .bowire-loading-logo-ring { position:absolute;inset:0;border:3px solid #2a2a3d;border-top-color:#6366f1;border-radius:50%;animation:bowire-spin .8s linear infinite } [data-theme="light"] .bowire-loading-logo-ring { border-color:#d8dae5;border-top-color:#4f46e5 } @media (prefers-color-scheme:light) { html:not([data-theme="dark"]) .bowire-loading-logo-ring { border-color:#d8dae5;border-top-color:#4f46e5 } } .bowire-loading-logo { position:absolute;width:40px;height:40px;top:50%;left:50%;transform:translate(-50%,-50%) } .bowire-loading-logo-dark { display:block } .bowire-loading-logo-light { display:none } [data-theme="light"] .bowire-loading-logo-dark { display:none } [data-theme="light"] .bowire-loading-logo-light { display:block } @media (prefers-color-scheme:light) { html:not([data-theme="dark"]) .bowire-loading-logo-dark { display:none } html:not([data-theme="dark"]) .bowire-loading-logo-light { display:block } } #bowire-app { opacity:0;transition:opacity .2s ease } .bowire-app-ready { opacity:1!important }</style>
                    <div id="bowire-app" role="application" aria-label="Bowire workbench"></div>
-                   <script>
+                   <script{{nonceAttr}}>
                        window.__BOWIRE_CONFIG__ = {
                            title: "{{title}}",
                            description: "{{desc}}",
@@ -307,7 +318,7 @@ internal static class BowireHtmlGenerator
                            modules: {{_modules.ToJson()}}
                        };
                    </script>
-                   <script>{{js}}</script>
+                   <script{{nonceAttr}}>{{js}}</script>
                </body>
                </html>
                """;

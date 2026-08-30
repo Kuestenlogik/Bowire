@@ -110,7 +110,14 @@ internal static class BowireApiEndpoints
         var uiPath = basePath.Length == 0 ? "/" : basePath;
         endpoints.MapGet(uiPath, (HttpContext ctx) =>
         {
-            var html = BowireHtmlGenerator.GenerateIndexHtml(options, ctx.Request);
+            // #625 — a nonce per response, carried on both inline script
+            // blocks. The bundle and the config block are inline, so a policy
+            // without it would serve an empty shell.
+            var nonce = BowireResponseHeaders.NewNonce();
+            BowireResponseHeaders.ApplyForDocument(
+                ctx.Response, nonce, options.ContentSecurityPolicy);
+
+            var html = BowireHtmlGenerator.GenerateIndexHtml(options, ctx.Request, nonce);
             return Results.Content(html, "text/html");
         }).ExcludeFromDescription();
 
@@ -121,6 +128,17 @@ internal static class BowireApiEndpoints
         // the group on purpose: the bootstrap HTML has to load before
         // the user can sign in.
         var bowireGroup = endpoints.MapGroup(string.Empty);
+
+        // #625 — nosniff and friends on every Bowire response. A filter on the
+        // group rather than host middleware: an embedded host owns its
+        // pipeline, and adding headers to everything it serves would be
+        // reaching outside our mount.
+        bowireGroup.AddEndpointFilter(async (context, next) =>
+        {
+            BowireResponseHeaders.ApplyBaseline(context.HttpContext.Response);
+            return await next(context).ConfigureAwait(false);
+        });
+
         bowireGroup
             .MapBowireDiscoveryEndpoints(options, basePath)
             .MapBowireInvokeEndpoints(options, basePath)

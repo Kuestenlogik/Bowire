@@ -64,6 +64,28 @@ public sealed class BowireOptions
     public string RoutePrefix { get; set; } = "bowire";
 
     /// <summary>
+    /// Override the Content-Security-Policy sent with the workbench page
+    /// (#625). <c>{0}</c> is replaced with this response's script nonce.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Null keeps
+    /// <see cref="BowireResponseHeaders.DefaultContentSecurityPolicyFormat"/>,
+    /// which allows inline script only by nonce, permits inline styles because
+    /// the workbench sets style attributes from script, and does not restrict
+    /// egress because a tool for talking to arbitrary services has no fixed
+    /// list to restrict it to.
+    /// </para>
+    /// <para>
+    /// An empty string sends no policy at all. That exists for the embedded
+    /// host whose own page composes Bowire with something this default
+    /// forbids — better an operator who turned it off deliberately than one
+    /// who finds a blank workbench and no explanation.
+    /// </para>
+    /// </remarks>
+    public string? ContentSecurityPolicy { get; set; }
+
+    /// <summary>
     /// Single discovery URL. Kept for backwards compatibility; when set, the
     /// value is merged into <see cref="ServerUrls"/> automatically.
     /// </summary>

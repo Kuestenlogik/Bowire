@@ -350,6 +350,13 @@ internal static class BrowserUiHost
         // matching IBowireAuthProvider plugin gets to wire its scheme
         // + the BowireAuthPolicies.Default policy; otherwise this is
         // a no-op and the workbench stays open (today's default).
+        // #625 — Kestrel announces itself by default, which tells anyone
+        // scanning the port exactly which stack to look up CVEs for. Set here
+        // rather than in MapBowire: an embedded host owns its own Kestrel, and
+        // turning its banner off on its behalf would be reaching outside our
+        // mount.
+        builder.WebHost.ConfigureKestrel(kestrel => kestrel.AddServerHeader = false);
+
         builder.Services.AddBowireAuth(builder.Configuration);
 
         // #97 — per-identity storage. Registering is not enabling: the
