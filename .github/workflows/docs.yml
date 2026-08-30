@@ -64,7 +64,7 @@ jobs:
       # a deploy nobody is waiting on. The restore, at least, need not
       # happen twice: same key as ci.yml, so this reads what CI wrote.
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj') }}

@@ -58,7 +58,7 @@ jobs:
       # decides which of those are actually pulled. Either changing is
       # the only thing that can change the restore graph.
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj') }}
@@ -221,7 +221,7 @@ jobs:
       # Same key as the build job, so whichever of the two lands first
       # populates the cache the other one reads.
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj') }}
