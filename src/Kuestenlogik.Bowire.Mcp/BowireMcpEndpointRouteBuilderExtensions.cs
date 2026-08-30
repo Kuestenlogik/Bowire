@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Auth;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -86,7 +87,13 @@ public static class BowireMcpEndpointRouteBuilderExtensions
         // filter that puts nosniff on everything else never reaches it. The
         // scanner found exactly that: every header finding that survived the
         // first fix was on /mcp.
-        endpoints.MapMcp(mountPattern).AddEndpointFilter(BaselineHeaders);
+        endpoints.MapMcp(mountPattern)
+            .AddEndpointFilter(BaselineHeaders)
+            // #625 — outside BowireApiEndpoints' group, so the auth gate has
+            // to be asked for. Without it, an install with an identity
+            // provider gated the workbench and /api/* while leaving MCP open
+            // — and MCP drives the same operations. No-op with no provider.
+            .RequireBowireAuth(endpoints.ServiceProvider);
 
         // Idempotent manifest mount: callers don't have to call us in a
         // specific order; whichever Map* fires first wins the manifest
