@@ -385,6 +385,25 @@ internal static class BrowserUiHost
         var app = builder.Build();
         app.UseResponseCompression();
 
+        // #625 — the baseline headers on everything, not only on the routes
+        // inside Bowire's own group.
+        //
+        // Two reasons the group filter is not enough here. It cannot reach a
+        // response the endpoint never produced — a 404, or the 405 an MCP
+        // mount answers a plain GET with — because the short-circuit happens
+        // before the filter runs. And the standalone host maps plenty outside
+        // that group: the MCP adapter, mock management, the AI endpoints. The
+        // scanner found the MCP one; the others were the same gap waiting.
+        //
+        // Middleware is right *here* and wrong in MapBowire: this process
+        // serves nothing but Bowire, so every response is ours to set headers
+        // on. An embedded host's is not.
+        app.Use(async (context, next) =>
+        {
+            BowireResponseHeaders.ApplyBaseline(context.Response);
+            await next(context);
+        });
+
         // UseAuthentication/UseAuthorization are only meaningful when
         // an IBowireAuthProvider registered a scheme above. Calling
         // them unconditionally is safe because AddBowireAuth registers
