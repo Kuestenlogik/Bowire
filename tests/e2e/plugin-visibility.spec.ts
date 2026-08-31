@@ -23,7 +23,10 @@ test.describe('Per-identity protocol visibility (#638)', () => {
     async function openProtocols(page: import('@playwright/test').Page) {
         await page.locator('.bowire-rail-settings').click();
         await expect(page.locator('.bowire-settings-overlay')).toBeVisible();
-        await page.locator('.bowire-settings-left').getByText('Protocols', { exact: true }).click();
+        // The Plugins group header navigates to Protocols itself — its own
+        // comment calls it "the most common entry" — so this needs no tree
+        // expansion, which is what the Protocols leaf would have needed.
+        await page.locator('.bowire-settings-left').getByText('Plugins', { exact: true }).click();
         await expect(page.locator('#bowire-settings-right-configure-protocols')).toBeVisible();
     }
 
