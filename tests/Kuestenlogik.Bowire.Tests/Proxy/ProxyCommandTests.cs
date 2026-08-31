@@ -44,7 +44,7 @@ public sealed class ProxyCommandTests
         }
         finally
         {
-            ready.Dispose();
+            await ready.DisposeAsync();
         }
 
         // Graceful shutdown via cancellation returns 0.
