@@ -27,25 +27,20 @@ public sealed class ProxyCommandTests
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
 
         var options = new ProxyCommand.ProxyOptions { Port = 0, ApiPort = 0, Capacity = 50 };
-        int code;
 
-        // try/finally rather than `using`: the writer is handed to a task, and
-        // CA2025 wants it provably still alive when that task ends. Awaiting
-        // the run inside the block and disposing after says exactly that,
-        // which a using-declaration around an awaited-later task does not.
+        // Written as a straight line rather than a using or a try/finally:
+        // the writer is handed to a task, and CA2025 wants it provably alive
+        // until that task ends. Sequential awaits say so in the only way the
+        // analyzer reads — and they also happen to be the clearest account of
+        // what this test does: wait until it is up, stop it, see what it
+        // returned, then put the writer away.
         var ready = new ReadySignal("press Ctrl-C to stop");
-        try
-        {
-            var run = ProxyCommand.RunAsync(options, stdout: ready, cancellationToken: cts.Token);
+        var run = ProxyCommand.RunAsync(options, stdout: ready, cancellationToken: cts.Token);
 
-            await ready.Reached.WaitAsync(TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken);
-            await cts.CancelAsync();
-            code = await run;
-        }
-        finally
-        {
-            await ready.DisposeAsync();
-        }
+        await ready.Reached.WaitAsync(TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken);
+        await cts.CancelAsync();
+        var code = await run;
+        await ready.DisposeAsync();
 
         // Graceful shutdown via cancellation returns 0.
         Assert.Equal(0, code);
