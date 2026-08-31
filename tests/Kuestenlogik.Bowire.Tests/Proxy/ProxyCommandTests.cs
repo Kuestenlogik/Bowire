@@ -28,19 +28,18 @@ public sealed class ProxyCommandTests
 
         var options = new ProxyCommand.ProxyOptions { Port = 0, ApiPort = 0, Capacity = 50 };
 
-        // Written as a straight line rather than a using or a try/finally:
-        // the writer is handed to a task, and CA2025 wants it provably alive
-        // until that task ends. Sequential awaits say so in the only way the
-        // analyzer reads — and they also happen to be the clearest account of
-        // what this test does: wait until it is up, stop it, see what it
-        // returned, then put the writer away.
+        // Deliberately never disposed. ReadySignal owns nothing — a
+        // StringBuilder and a TaskCompletionSource — so Dispose has nothing
+        // to do, and CA2025 fires on *any* shape that hands a disposable to
+        // a task and later disposes it, however provably ordered the awaits
+        // are. Not holding the obligation is truer than arranging the code
+        // to look like it discharges one.
         var ready = new ReadySignal("press Ctrl-C to stop");
         var run = ProxyCommand.RunAsync(options, stdout: ready, cancellationToken: cts.Token);
 
         await ready.Reached.WaitAsync(TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken);
         await cts.CancelAsync();
         var code = await run;
-        await ready.DisposeAsync();
 
         // Graceful shutdown via cancellation returns 0.
         Assert.Equal(0, code);
