@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
-using Kuestenlogik.Bowire.Auth;
+using Kuestenlogik.Bowire.Projects;
 
 namespace Kuestenlogik.Bowire.Plugins;
 
@@ -17,11 +17,34 @@ namespace Kuestenlogik.Bowire.Plugins;
 /// </summary>
 /// <remarks>
 /// <para>
-/// State lives at <c>&lt;user-store&gt;/disabled-plugins.json</c> so it
-/// survives a host restart. Reads are lock-free and lazy — the file is
-/// loaded into memory on first access. Writes go straight to disk
-/// (best-effort: if the user-profile is read-only, the in-memory set
-/// still reflects the change for the current session).
+/// <b>Process-wide is not a wording choice (#284 Phase D).</b> Unloading
+/// re-runs <c>BowireProtocolRegistry.Discover</c> against the merged set and
+/// swaps the registry every session reads, so what this file holds takes
+/// effect for everybody on the host at once. It used to be written under
+/// <c>&lt;user-store&gt;/</c>, which on a multi-tenant install gave each
+/// identity their own copy of a list whose effect was shared — so the last
+/// person to touch it decided for everyone, and nobody could see why.
+/// </para>
+/// <para>
+/// It now resolves against <see cref="BowireStorageScope.Data"/>: the
+/// process's own storage root, which is writable by the account Bowire runs
+/// as and does not vary per caller. In single-user mode that is the very same
+/// path as before — the flat layout puts a person's state directly in the
+/// storage root — so nothing moves on a laptop. On a multi-tenant install the
+/// old per-identity copies stop being read; they are left on disk rather than
+/// merged, because a union of several people's lists is not any one person's
+/// intent, and a protocol disabled by surprise is harder to notice than one
+/// that is simply on.
+/// </para>
+/// <para>
+/// What an individual wants <em>hidden in their own workbench</em> is a
+/// different question with a different answer, and it does not live here.
+/// </para>
+/// <para>
+/// State lives at <c>&lt;storage-root&gt;/disabled-plugins.json</c> so it
+/// survives a host restart. The file is loaded into memory on first access.
+/// Writes go straight to disk (best-effort: if the root is read-only, the
+/// in-memory set still reflects the change for the current session).
 /// </para>
 /// <para>
 /// IDs are matched case-insensitively against
@@ -128,9 +151,10 @@ public static class BowireDisabledPluginsStore
 
     /// <summary>
     /// Test seam — drop the in-memory cache so the next access reloads
-    /// from disk. The on-disk file is not deleted; tests that need a
-    /// clean slate point <see cref="BowireUserContext.Current"/> at a
-    /// per-test scratch directory.
+    /// from disk. The on-disk file is not deleted; tests that need a clean
+    /// slate point the storage root at a per-test scratch directory (an
+    /// <c>IBowirePathResolver</c> in the container, or
+    /// <c>BowirePaths.Current</c>).
     /// </summary>
     internal static void ResetForTests()
     {
@@ -139,18 +163,14 @@ public static class BowireDisabledPluginsStore
 
     private static void EnsureLoaded()
     {
-        // Volatile-read fast-path — uncontended lookups skip the lock
-        // entirely. CA1508 thinks the inner null-check is redundant
-        // because the static is set under lock, but a second thread
-        // can race past the outer check before this one acquires the
-        // gate; suppress so the double-check stays.
-        if (s_cached is not null) return;
+        // One check, under the lock. The double-checked version needed a
+        // CA1508 suppression to survive — the analyzer cannot see the race
+        // the inner check exists for — and this is a set of a dozen strings
+        // read on endpoint paths, not a hot loop. Losing an uncontended
+        // fast-path is cheaper than a suppression that has to be explained.
         lock (s_gate)
         {
-#pragma warning disable CA1508
-            if (s_cached is not null) return;
-#pragma warning restore CA1508
-            s_cached = LoadFromDisk();
+            s_cached ??= LoadFromDisk();
         }
     }
 
@@ -158,13 +178,12 @@ public static class BowireDisabledPluginsStore
     {
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         string path;
-        try { path = BowireUserContext.GetUserPath(FileName); }
+        try { path = BowirePaths.Resolve(BowireStorageScope.Data, FileName); }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
-            // Resolver rejected the file name (multi-tenant store with
-            // a bad config) or the user-profile root can't be derived.
-            // Fall back to an empty set; the lifecycle endpoint still
-            // works in-process, just doesn't persist.
+            // The resolver rejected the file name or could not derive a
+            // storage root. Fall back to an empty set; the lifecycle endpoint
+            // still works in-process, it just does not persist.
             _ = ex;
             return set;
         }
@@ -196,7 +215,7 @@ public static class BowireDisabledPluginsStore
     private static void TryPersist()
     {
         string path;
-        try { path = BowireUserContext.GetUserPath(FileName); }
+        try { path = BowirePaths.Resolve(BowireStorageScope.Data, FileName); }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
             _ = ex;
