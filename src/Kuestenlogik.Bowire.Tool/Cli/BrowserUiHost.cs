@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Kuestenlogik.Bowire.App.Cli;
 
@@ -251,12 +252,18 @@ internal static class BrowserUiHost
             ["--catalogue-consul"] = "Bowire:Discovery:Catalogue:Consul:Address",
         });
         InferCatalogueProvider(builder.Configuration);
-        // "localhost" is a two-address alias to Kestrel (127.0.0.1 and [::1]),
-        // and it refuses to bind that dynamically — "Dynamic port binding is
-        // not supported when binding to localhost". Port 0 therefore has to
-        // name a concrete loopback address. IPv4 rather than [::1] because it
-        // is the one every client on this machine can reach.
-        builder.WebHost.UseUrls(ui.Port == 0 ? "http://127.0.0.1:0" : $"http://localhost:{ui.Port}");
+
+        // #634 — UseUrls sits at the very top of ASP.NET's address precedence,
+        // above ASPNETCORE_URLS and Kestrel:Endpoints alike. Calling it
+        // unconditionally meant a configured HTTPS endpoint was discarded and
+        // the tool served plaintext on 5080 without a word, so it is now
+        // called only when the address really is Bowire's to choose.
+        var (listenUrls, addressNote) = ResolveListenAddress(
+            ui.PortExplicit, ui.Port, PlatformAddressConfigured(builder.Configuration));
+        if (listenUrls is not null)
+        {
+            builder.WebHost.UseUrls(listenUrls);
+        }
         builder.Services.AddResponseCompression(opts => opts.EnableForHttps = true);
         // Run every loaded plugin's IBowireProtocolServices.ConfigureServices
         // so prerequisites like services.AddGrpcReflection() actually land
@@ -425,7 +432,12 @@ internal static class BrowserUiHost
         {
             var mcpServerUrl = !string.IsNullOrEmpty(ui.PrimaryUrl)
                 ? ui.PrimaryUrl
-                : $"http://localhost:{ui.Port}";
+                // #634 — the scheme has to follow whatever the address
+                // configuration actually asked for. This runs before Kestrel
+                // has bound anything, so the configured form is the only
+                // source; the banner and the port file read the bound address
+                // itself and are exact.
+                : $"{ConfiguredScheme(builder.Configuration)}://localhost:{ui.Port}";
             builder.Services.AddBowireMcpAdapter(mcpServerUrl);
         }
 
@@ -575,6 +587,11 @@ internal static class BrowserUiHost
         // between StartAsync and shutdown, and with --port 0 it is the only
         // place it exists at all. RunAsync collapses the two and leaves no
         // seam to read it from.
+        if (addressNote is not null && app.Logger.IsEnabled(LogLevel.Information))
+        {
+            app.Logger.LogInformation("{Note}", addressNote);
+        }
+
         await app.StartAsync(ct).ConfigureAwait(false);
 
         await onListening(BoundUrl(app, ui.Port), ct).ConfigureAwait(false);
@@ -596,12 +613,130 @@ internal static class BrowserUiHost
     /// available and is also the correct one.
     /// </remarks>
     private static string BoundUrl(Microsoft.AspNetCore.Builder.WebApplication app, int requestedPort)
-        => NormaliseBoundAddress(
-            app.Services
-                .GetService<Microsoft.AspNetCore.Hosting.Server.IServer>()?
-                .Features.Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>()?
-                .Addresses?.FirstOrDefault(),
-            requestedPort);
+    {
+        var addresses = app.Services
+            .GetService<Microsoft.AspNetCore.Hosting.Server.IServer>()?
+            .Features.Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>()?
+            .Addresses;
+
+        // #634 — a Kestrel:Endpoints block can bind http and https at once, and
+        // this address goes into the banner, the port file and the browser.
+        // Handing out the plaintext one when a TLS endpoint is right there
+        // would make the whole point of configuring TLS invisible.
+        var bound = addresses?.FirstOrDefault(
+                a => a.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            ?? addresses?.FirstOrDefault();
+
+        return NormaliseBoundAddress(bound, requestedPort);
+    }
+
+    /// <summary>
+    /// Whether the platform's own address configuration says anything (#634).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// These are the four keys ASP.NET itself reads: <c>ASPNETCORE_URLS</c>
+    /// and <c>--urls</c> land on <c>urls</c>, <c>ASPNETCORE_HTTP_PORTS</c> and
+    /// <c>ASPNETCORE_HTTPS_PORTS</c> on <c>http_ports</c> / <c>https_ports</c>,
+    /// and <c>appsettings.json</c> can describe endpoints — certificate and
+    /// all — under <c>Kestrel:Endpoints</c>. Any one of them is an operator
+    /// who has already said where Bowire should listen.
+    /// </para>
+    /// <para>
+    /// Bowire's own <c>--url</c> is unrelated and does not collide: it names
+    /// the services to probe and binds to <c>Bowire:ServerUrls</c>.
+    /// </para>
+    /// </remarks>
+    internal static bool PlatformAddressConfigured(IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        return !string.IsNullOrWhiteSpace(configuration["urls"])
+            || !string.IsNullOrWhiteSpace(configuration["http_ports"])
+            || !string.IsNullOrWhiteSpace(configuration["https_ports"])
+            || configuration.GetSection("Kestrel:Endpoints").GetChildren().Any();
+    }
+
+    /// <summary>
+    /// The scheme the configured address asks for, for the one place that has
+    /// to name a URL before Kestrel has bound one.
+    /// </summary>
+    internal static string ConfiguredScheme(IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        var urls = configuration["urls"];
+        if (!string.IsNullOrWhiteSpace(urls)
+            && urls.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return "https";
+        }
+
+        // https_ports without urls is the documented way to ask for TLS only.
+        if (!string.IsNullOrWhiteSpace(configuration["https_ports"])
+            && string.IsNullOrWhiteSpace(configuration["http_ports"]))
+        {
+            return "https";
+        }
+
+        return "http";
+    }
+
+    /// <summary>
+    /// Decide what — if anything — Bowire should pass to <c>UseUrls</c> (#634).
+    /// </summary>
+    /// <param name="portExplicit">Whether the operator named the port.</param>
+    /// <param name="port">The port, explicit or defaulted.</param>
+    /// <param name="platformConfigured">
+    /// Whether <c>ASPNETCORE_URLS</c>, the port variables or
+    /// <c>Kestrel:Endpoints</c> already name an address.
+    /// </param>
+    /// <returns>
+    /// The value for <c>UseUrls</c>, or <c>null</c> to leave the platform's
+    /// configuration standing; plus a line to log when Bowire overrode
+    /// something the operator had configured.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// Split from the host so the precedence can be tested as the table it is,
+    /// rather than by standing up a server per case.
+    /// </para>
+    /// <para>
+    /// The rule is that a port Bowire chose is not a decision and must not
+    /// behave like one. <c>--port</c> is a command-line argument and outranks
+    /// environment and <c>appsettings</c> — the VS Code extension passes it
+    /// alongside <c>--port-file</c> and has to keep winning — but the 5080
+    /// default is not something anybody asked for, and applying it through
+    /// <c>UseUrls</c> is what silently discarded configured HTTPS endpoints.
+    /// When nothing is configured anywhere the default applies exactly as
+    /// before, so a plain <c>bowire</c> is unchanged.
+    /// </para>
+    /// </remarks>
+    internal static (string? Urls, string? Note) ResolveListenAddress(
+        bool portExplicit, int port, bool platformConfigured)
+    {
+        if (!portExplicit && platformConfigured)
+        {
+            // The operator's configuration stands, certificate and all.
+            return (null, null);
+        }
+
+        // "localhost" is a two-address alias to Kestrel (127.0.0.1 and [::1]),
+        // and it refuses to bind that dynamically — "Dynamic port binding is
+        // not supported when binding to localhost". Port 0 therefore has to
+        // name a concrete loopback address. IPv4 rather than [::1] because it
+        // is the one every client on this machine can reach.
+        var urls = port == 0
+            ? "http://127.0.0.1:0"
+            : string.Create(CultureInfo.InvariantCulture, $"http://localhost:{port}");
+
+        var note = portExplicit && platformConfigured
+            ? string.Create(CultureInfo.InvariantCulture,
+                $"--port {port} overrides the address configured through ASPNETCORE_URLS / Kestrel:Endpoints; listening on {urls} instead. Drop --port to use the configured endpoint.")
+            : null;
+
+        return (urls, note);
+    }
 
     /// <summary>
     /// Turn what the server reports into something a caller can navigate to.

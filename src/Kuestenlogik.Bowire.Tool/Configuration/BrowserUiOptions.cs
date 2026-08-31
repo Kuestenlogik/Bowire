@@ -45,6 +45,28 @@ internal sealed class BrowserUiOptions
     public int Port { get; set; } = 5080;
 
     /// <summary>
+    /// Whether <see cref="Port"/> came from the operator rather than from the
+    /// default above (#634).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The distinction decides whether Bowire may call <c>UseUrls</c>, which
+    /// sits at the top of ASP.NET's configuration precedence and therefore
+    /// discards <c>ASPNETCORE_URLS</c> and <c>Kestrel:Endpoints</c> outright.
+    /// A port the operator typed is a choice and may win. A port we picked
+    /// because nobody said anything is not, and applying it as though it were
+    /// is how a configured HTTPS endpoint ended up silently serving plaintext
+    /// on 5080.
+    /// </para>
+    /// <para>
+    /// Set by <c>BuildBrowserUiOptions</c> from the presence of the
+    /// <c>Bowire:Port</c> key, which <c>--port</c>, <c>BOWIRE_Bowire__Port</c>
+    /// and <c>appsettings.json</c> all resolve to.
+    /// </para>
+    /// </remarks>
+    public bool PortExplicit { get; set; }
+
+    /// <summary>
     /// Path to write the bound workbench URL to, once it is bound (#615).
     /// </summary>
     /// <remarks>

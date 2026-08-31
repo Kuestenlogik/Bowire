@@ -116,6 +116,53 @@ public sealed class BrowserUiOptionsTests : IDisposable
     }
 
     [Fact]
+    public void PortExplicit_NothingConfigured_IsFalse()
+    {
+        var config = BowireConfiguration.Build([]);
+        var ui = BowireConfiguration.BuildBrowserUiOptions(config, []);
+
+        // #634 — 5080 is Bowire's guess, not the operator's decision, and the
+        // difference decides whether UseUrls may discard ASPNETCORE_URLS.
+        Assert.Equal(5080, ui.Port);
+        Assert.False(ui.PortExplicit);
+    }
+
+    [Fact]
+    public void PortExplicit_CliFlag_IsTrue()
+    {
+        var args = new[] { "--port", "8080" };
+        var config = BowireConfiguration.Build(args);
+        var ui = BowireConfiguration.BuildBrowserUiOptions(config, args);
+
+        Assert.True(ui.PortExplicit);
+    }
+
+    [Fact]
+    public void PortExplicit_CliFlagRepeatingTheDefault_IsStillTrue()
+    {
+        var args = new[] { "--port", "5080" };
+        var config = BowireConfiguration.Build(args);
+        var ui = BowireConfiguration.BuildBrowserUiOptions(config, args);
+
+        // The binder cannot tell this apart from the default; the config key's
+        // presence is the only place the distinction survives. Someone who
+        // types the default port means it.
+        Assert.True(ui.PortExplicit);
+    }
+
+    [Fact]
+    public void PortExplicit_AppSettings_IsTrue()
+    {
+        File.WriteAllText(SafePath.Combine(_tempDir, "appsettings.json"),
+            """{ "Bowire": { "Port": 7070 } }""");
+
+        var config = BowireConfiguration.Build([]);
+        var ui = BowireConfiguration.BuildBrowserUiOptions(config, []);
+
+        Assert.True(ui.PortExplicit);
+    }
+
+    [Fact]
     public void CliFlag_Port_OverridesAppSettings()
     {
         File.WriteAllText(SafePath.Combine(_tempDir, "appsettings.json"),

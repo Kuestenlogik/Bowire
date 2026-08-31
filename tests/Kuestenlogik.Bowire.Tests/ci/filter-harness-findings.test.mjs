@@ -182,23 +182,43 @@ test('a rules file without a rules object is refused', () => {
 
 // ---- the default rules path ----
 
-test('without --rules it uses the checked-in list and still filters every file', () => {
+test('without --rules it reads the checked-in list and processes every file', () => {
     // The regression this exists for: every other test passes --rules, and the
     // argument parser skipped the FIRST file whenever the flag was absent —
     // indexOf returns -1, and -1 + 1 is index 0. The default path is the one
     // the workflow actually uses.
+    //
+    // Asserted through the tally rather than through a dropped finding,
+    // because the checked-in list is empty since #634 — the scan runs over
+    // TLS now, so the one entry it held has no cause left. A test that needed
+    // a live exclusion to prove the file loop would have to be deleted the
+    // day the list is finally empty, which is the day it matters most.
     withFixture((dir) => {
-        const a = writeSarif(dir, 'a.sarif', ['BWR-REST-001', 'BWR-BUILTIN-TLS-001']);
-        const b = writeSarif(dir, 'b.sarif', ['BWR-BUILTIN-TLS-001']);
+        const a = writeSarif(dir, 'a.sarif', ['BWR-REST-001']);
+        const b = writeSarif(dir, 'b.sarif', ['BWR-OWASP-API4-RATELIMIT']);
 
-        execFileSync(process.execPath, [script, a, b], {
+        const out = execFileSync(process.execPath, [script, a, b], {
             encoding: 'utf8',
             cwd: resolve(here, '../../..'),
         });
 
+        // 1 if the first file was skipped, 2 if the loop saw both.
+        assert.match(out, /2 finding\(s\) kept/);
         assert.deepEqual(read(a).results.map((r) => r.ruleId), ['BWR-REST-001']);
-        assert.deepEqual(read(b).results, []);
+        assert.deepEqual(read(b).results.map((r) => r.ruleId), ['BWR-OWASP-API4-RATELIMIT']);
     });
+});
+
+test('the checked-in list excludes nothing, and that is the goal', () => {
+    // Guards against the quiet habit this file exists to prevent: a red build,
+    // one more id appended, and a finding nobody sees again. #634 removed the
+    // only entry by removing its cause — the scan serves TLS, so the plaintext
+    // finding is gone rather than hidden. Adding an entry back is allowed; it
+    // just has to be a deliberate edit here, with the reasoning next to it.
+    const path = resolve(here, '../../../scripts/ci/harness-scan-rules.json');
+    const parsed = JSON.parse(readFileSync(path, 'utf8'));
+
+    assert.deepEqual(Object.keys(parsed.rules), []);
 });
 
 // ---- the checked-in list ----

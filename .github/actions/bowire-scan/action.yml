@@ -50,6 +50,10 @@ inputs:
     description: "Name of the build artifact the SARIF is uploaded under. Give each invocation its own name when scanning several targets in one job — artifact names are unique per run, so a second step with the same name fails with a 409."
     required: false
     default: 'bowire-findings'
+  allow-self-signed:
+    description: "Accept a self-signed or otherwise untrusted certificate on the target ('true'/'false'). For an internal target behind a private CA, or a build that serves its own certificate. Leave 'false' for anything public — a scanner that ignores certificate errors cannot report them."
+    required: false
+    default: 'false'
   upload-to-code-scanning:
     description: "Upload the SARIF into the caller's Security tab ('true'/'false'). Set 'false' when scanning an external target whose findings don't belong to the caller. Requires `security-events: write` on the calling job."
     required: false
@@ -97,6 +101,9 @@ runs:
         fi
         if [ -n "${{ inputs.suite }}" ]; then
           ARGS+=(--suite "${{ inputs.suite }}")
+        fi
+        if [ "${{ inputs.allow-self-signed }}" = "true" ]; then
+          ARGS+=(--allow-self-signed-certs)
         fi
         bowire "${ARGS[@]}"
 

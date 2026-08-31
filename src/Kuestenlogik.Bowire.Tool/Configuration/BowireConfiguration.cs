@@ -222,6 +222,12 @@ internal static class BowireConfiguration
         var options = new BrowserUiOptions();
         configuration.GetSection("Bowire").Bind(options);
 
+        // #634 — the binder cannot tell a configured 5080 from the default
+        // 5080, and the difference decides whether Bowire is allowed to
+        // override ASPNETCORE_URLS / Kestrel:Endpoints. The key's presence is
+        // the only place that information still exists.
+        options.PortExplicit = configuration["Bowire:Port"] is { Length: > 0 };
+
         var cliUrls = ExtractRepeatedUrls(args);
         cliUrls.AddRange(ReadUrlFiles(args));
         if (cliUrls.Count > 0)

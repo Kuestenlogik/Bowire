@@ -33,6 +33,7 @@ bowire --url https://my-grpc-server:443
 ```
 
 Bowire starts a local HTTP server on `http://localhost:5080`
+(see [Serving over HTTPS](#serving-over-https) for TLS)
 and auto-opens your default browser. The sidebar populates as
 discovery completes (typically <1 second against a local server).
 
@@ -168,6 +169,68 @@ Two things are worth knowing:
 - **Running instances are independent.** A Bowire already listening on 5080 is untouched by another started with `--port 0`; they are separate processes with separate working directories, and therefore separate project-scoped storage.
 
 This is the same handoff Chrome uses for `DevToolsActivePort` and Jupyter for `jpserver-<pid>.json`. The [VS Code extension](../integrations/vscode.md#ports-and-how-the-extension-finds-the-workbench) is built on it.
+
+## Serving over HTTPS
+
+Bowire's listener is plain ASP.NET Core, so it takes its address from the same
+places every other ASP.NET application does. There is no Bowire-specific TLS
+flag, and there does not need to be:
+
+```bash
+# A development certificate — the one-off setup
+dotnet dev-certs https --trust
+
+ASPNETCORE_URLS=https://localhost:5443 bowire
+```
+
+For a real certificate, describe the endpoint in `appsettings.json` next to the
+executable:
+
+```json
+{
+  "Kestrel": {
+    "Endpoints": {
+      "Https": {
+        "Url": "https://0.0.0.0:5443",
+        "Certificate": { "Path": "/etc/bowire/cert.pfx", "Password": "…" }
+      }
+    }
+  }
+}
+```
+
+`ASPNETCORE_HTTP_PORTS` and `ASPNETCORE_HTTPS_PORTS` work as well. All of this
+is [Kestrel's own configuration](https://learn.microsoft.com/aspnet/core/fundamentals/servers/kestrel/endpoints),
+including certificate loading from a store, SNI and client certificates —
+Bowire adds nothing and takes nothing away.
+
+Two consequences worth knowing:
+
+- **`Strict-Transport-Security` appears only over TLS.** RFC 6797 §8.1 requires
+  a user agent to ignore the header when it arrives over plaintext, so sending
+  it there would be decoration. Run Bowire over HTTPS and it is sent.
+- **The port file follows the scheme you bound.** `--port-file` reports the
+  address Kestrel actually serves, `https://…` included, so a caller that
+  starts Bowire as a child process needs no separate configuration to find it.
+  Where both an HTTP and an HTTPS endpoint are configured, the HTTPS one is
+  reported.
+
+### `--port` and configured endpoints
+
+`--port` is a command-line argument, so it outranks the environment and
+`appsettings.json` — that is ASP.NET's ordinary precedence, and the VS Code
+extension relies on it. It also means passing `--port` alongside a configured
+HTTPS endpoint gives you the port, in plaintext, and not the endpoint. Bowire
+logs a line when that happens rather than doing it quietly:
+
+```
+--port 5080 overrides the address configured through ASPNETCORE_URLS /
+Kestrel:Endpoints; listening on http://localhost:5080 instead.
+Drop --port to use the configured endpoint.
+```
+
+Leave `--port` off and the configured endpoint stands. With neither, Bowire
+listens on `http://localhost:5080` as it always has.
 
 ## CLI mode (grpcurl-style)
 
