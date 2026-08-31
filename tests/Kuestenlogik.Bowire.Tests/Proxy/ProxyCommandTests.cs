@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text;
 using Kuestenlogik.Bowire.App;
 
 namespace Kuestenlogik.Bowire.Tests.Proxy;
@@ -18,13 +19,38 @@ public sealed class ProxyCommandTests
     [Fact]
     public async Task RunAsync_StartsOnDynamicPortsAndExitsGracefully()
     {
+        // #637 — cancel when the command says it is up, not two seconds
+        // after asking. The old version gave "start two listeners, load a
+        // CA, then shut down" a fixed 2s budget, which on a loaded runner
+        // put the cancellation inside StartAsync instead of after it — a
+        // different code path, tested by accident, roughly once a week.
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(TimeSpan.FromSeconds(2));
+        using var ready = new ReadySignal("press Ctrl-C to stop");
 
         var options = new ProxyCommand.ProxyOptions { Port = 0, ApiPort = 0, Capacity = 50 };
-        var code = await ProxyCommand.RunAsync(options, cancellationToken: cts.Token);
+        var run = ProxyCommand.RunAsync(options, stdout: ready, cancellationToken: cts.Token);
+
+        await ready.Reached.WaitAsync(TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken);
+        await cts.CancelAsync();
 
         // Graceful shutdown via cancellation returns 0.
+        Assert.Equal(0, await run);
+    }
+
+    [Fact]
+    public async Task RunAsync_CancelledBeforeItFinishesStarting_StillExitsCleanly()
+    {
+        // The path the flake was landing on. Stopping before you have
+        // started is the same event as stopping after, and it used to throw
+        // OperationCanceledException out of RunAsync — an unhandled
+        // exception and a stack trace where a clean exit belongs. It also
+        // left the certificate authority undisposed.
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var options = new ProxyCommand.ProxyOptions { Port = 0, ApiPort = 0, Capacity = 10 };
+        var code = await ProxyCommand.RunAsync(options, cancellationToken: cts.Token);
+
         Assert.Equal(0, code);
     }
 
@@ -120,6 +146,53 @@ public sealed class ProxyCommandTests
         finally
         {
             if (Directory.Exists(caDir)) Directory.Delete(caDir, recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// A <see cref="TextWriter"/> that completes a task the first time the
+    /// command writes a given phrase.
+    /// </summary>
+    /// <remarks>
+    /// Waiting for the process to say it is ready beats waiting for a
+    /// duration to elapse: the duration is a guess about a machine nobody
+    /// controls, and the banner is the thing that is actually true.
+    /// </remarks>
+    private sealed class ReadySignal(string phrase) : TextWriter
+    {
+        private readonly TaskCompletionSource _reached =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        private readonly StringBuilder _line = new();
+
+        public Task Reached => _reached.Task;
+
+        public override Encoding Encoding => Encoding.UTF8;
+
+        public override void Write(char value)
+        {
+            if (value == '\n')
+            {
+                if (_line.ToString().Contains(phrase, StringComparison.Ordinal))
+                {
+                    _reached.TrySetResult();
+                }
+                _line.Clear();
+                return;
+            }
+            _line.Append(value);
+        }
+
+        public override void Write(string? value)
+        {
+            if (value is null) return;
+            foreach (var c in value) Write(c);
+        }
+
+        public override void WriteLine(string? value)
+        {
+            Write(value);
+            Write('\n');
         }
     }
 }

@@ -137,7 +137,16 @@ public sealed class BowireParallelEndpointsTests
         Assert.True(json!.Results.Count <= 2,
             $"Expected at most one result per session, got {json.Results.Count}.");
         Assert.Equal(0, json.PassCount);
-        Assert.All(json.Sessions, s => Assert.Equal("first-failure", s.Aborted));
+        // #637 — the session that actually failed says "first-failure"; a
+        // sibling cut short by it says "sibling-failure". Asserting the
+        // former for *every* session was a race: whether the sibling reached
+        // its own first target before the abort propagated is a scheduling
+        // detail, and it lost that race roughly once a week.
+        Assert.Contains(json.Sessions, s => s.Aborted == "first-failure");
+        Assert.All(json.Sessions, s => Assert.True(
+            s.Aborted == "first-failure"
+                || (s.Aborted?.StartsWith("sibling-failure", StringComparison.Ordinal) ?? false),
+            $"Unexpected abort reason '{s.Aborted}' — expected this session's own failure or a sibling's."));
     }
 
     [Fact]
