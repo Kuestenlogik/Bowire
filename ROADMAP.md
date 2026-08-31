@@ -732,4 +732,4 @@ Now that #614 points `bowire scan` at the surface Bowire ships, the scanner repo
 
 ---
 
-*Generated 2026-08-30 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-08-31 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
