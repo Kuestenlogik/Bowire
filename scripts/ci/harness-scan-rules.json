@@ -8,7 +8,7 @@
     "found anything about the product — it has described its own scaffolding,",
     "and an operator reading the Security tab concludes Bowire ships without",
     "TLS. That is the mistake scan-dogfood.yml refuses to make by not",
-    "uploading at all; here we do want the upload, so the exclusion has to be",
+    "uploading at all; here we do want the upload, so an exclusion has to be",
     "explicit and named instead.",
     "",
     "The bar for adding a rule here: would this finding disappear if the same",
@@ -16,11 +16,22 @@
     "harness's. If it would still be true of a correctly deployed Bowire, it",
     "stays and gets fixed.",
     "",
+    "The list is EMPTY, and that is the goal rather than an oversight. It held",
+    "exactly one entry, BWR-BUILTIN-TLS-001, because the scan ran over",
+    "plaintext. #634 made Bowire honour ASPNETCORE_URLS and Kestrel:Endpoints",
+    "instead of overriding them, so the scan now runs over TLS with a",
+    "certificate the job issues itself — the finding is gone because the cause",
+    "is gone, which is a better outcome than an exclusion that hid it. It also",
+    "unblocked BWR-REST-001: Strict-Transport-Security is only sent over TLS",
+    "(RFC 6797 §8.1), so over http:// that rule could never be closed honestly.",
+    "",
     "Deliberately NOT excluded: BWR-BUILTIN-BANNER-SERVER. `Server: Kestrel`",
-    "is emitted because Bowire does not set AddServerHeader = false, and that",
-    "is true of every deployment, behind any ingress. It is ours."
+    "was emitted because Bowire did not set AddServerHeader = false, and that",
+    "was true of every deployment, behind any ingress. It was ours, and #625",
+    "fixed it rather than excluding it.",
+    "",
+    "Prefer fixing the harness over adding a rule. Every entry here is a",
+    "finding nobody will see again."
   ],
-  "rules": {
-    "BWR-BUILTIN-TLS-001": "Plaintext http:// is a property of the CI runner, which has no certificate. A deployed Bowire sits behind TLS terminated upstream."
-  }
+  "rules": {}
 }

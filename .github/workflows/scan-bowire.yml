@@ -19,14 +19,23 @@ name: "Scan: Bowire itself"
 # a running instance. That is exactly what `bowire scan` is for, and it was
 # pointed at everything except us.
 #
-# Why the findings are filtered rather than gated on severity. Measured
-# against a real instance: the only high-severity finding is "target serves
-# plaintext http://", which is true of a runner with no certificate and false
-# of any deployed Bowire — while the two findings that ARE ours (missing
-# security headers, a version-disclosing Server banner) are both low. A
-# `--severity medium` gate would upload the harness's finding and drop both
-# real ones. So the exclusion is by rule and by name, in
-# scripts/ci/harness-scan-rules.json, where it can be argued with.
+# Why the findings are filtered by rule rather than gated on severity.
+# Measured against a real instance: the findings that are ours (missing
+# security headers, a version-disclosing Server banner) are all low, so a
+# `--severity medium` gate would drop every one of them and keep nothing. If a
+# finding ever does describe the harness instead of the product, it gets
+# excluded by name in scripts/ci/harness-scan-rules.json, where it can be
+# argued with.
+#
+# Why the run serves HTTPS (#634). It used to serve plaintext, which produced
+# a high-severity "target serves plaintext http://" finding that said nothing
+# about Bowire, and it made `BWR-REST-001` unclosable: Strict-Transport-
+# Security is only sent over TLS, per RFC 6797 §8.1, so over http:// that rule
+# could never be satisfied honestly. Running the scan the way an operator
+# deploys removes both problems, and it turns this job into the end-to-end
+# proof that Bowire honours ASPNETCORE_URLS and Kestrel:Certificates — the
+# whole point of #634. Note there is deliberately no `--port`: passing it
+# overrides the configured endpoint, which is the behaviour under test.
 
 on:
   push:
@@ -79,6 +88,21 @@ jobs:
       - name: Build the tool
         run: dotnet build src/Kuestenlogik.Bowire.Tool -c Release -m:1 -nodeReuse:false
 
+      # A self-signed certificate rather than `dotnet dev-certs`: it is
+      # reproducible, it carries the SANs the scanner connects by, and it goes
+      # in through Kestrel:Certificates — the same path a real deployment uses,
+      # so the run exercises the configuration it documents.
+      - name: Issue a certificate for the run
+        run: |
+          set -euo pipefail
+          openssl req -x509 -newkey rsa:2048 -sha256 -days 2 -nodes \
+            -keyout run-key.pem -out run-cert.pem \
+            -subj "/CN=localhost" \
+            -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+          openssl pkcs12 -export -out run-cert.pfx \
+            -inkey run-key.pem -in run-cert.pem -passout pass:bowire-ci
+          echo "BOWIRE_CERT=$PWD/run-cert.pfx" >> "$GITHUB_ENV"
+
       - name: Start Bowire
         run: |
           set -euo pipefail
@@ -91,8 +115,16 @@ jobs:
           export BOWIRE_DATA_DIR
           echo "BOWIRE_DATA_DIR=$BOWIRE_DATA_DIR" >> "$GITHUB_ENV"
 
+          # Address and certificate through ASP.NET's own configuration, with
+          # no Bowire-specific flag involved — if Bowire ever goes back to
+          # forcing its own address, this job serves plaintext on 5080, the
+          # scan of :5190 cannot connect, and the build says so.
+          export ASPNETCORE_URLS="https://127.0.0.1:5190"
+          export Kestrel__Certificates__Default__Path="$BOWIRE_CERT"
+          export Kestrel__Certificates__Default__Password="bowire-ci"
+
           nohup dotnet artifacts/bin/Kuestenlogik.Bowire.Tool/release/bowire.dll \
-            --port 5190 --no-browser --enable-mcp-adapter \
+            --no-browser --enable-mcp-adapter \
             > bowire.log 2>&1 &
           echo $! > bowire.pid
 
@@ -101,8 +133,11 @@ jobs:
           # and under load the gap is long enough that a banner-based wait
           # scans a socket nobody is accepting on yet.
           for _ in $(seq 1 90); do
-            if curl -fsS -o /dev/null --max-time 2 http://localhost:5190/; then
-              echo "Bowire is answering on :5190"
+            # -k because the certificate is this run's own. The scan steps
+            # do the same; a scanner that refused it would report nothing at
+            # all, which is not the same as finding nothing wrong.
+            if curl -fsSk -o /dev/null --max-time 2 https://localhost:5190/; then
+              echo "Bowire is answering over TLS on :5190"
               exit 0
             fi
             if ! kill -0 "$(cat bowire.pid)" 2>/dev/null; then
@@ -112,7 +147,7 @@ jobs:
             fi
             sleep 1
           done
-          echo "::error::Bowire did not answer within 90s."
+          echo "::error::Bowire did not answer on https://localhost:5190 within 90s. Check the log for the address it actually bound."
           cat bowire.log
           exit 1
 
@@ -123,7 +158,8 @@ jobs:
       - name: Scan the workbench
         uses: ./.github/actions/bowire-scan
         with:
-          target: http://localhost:5190/
+          target: https://localhost:5190/
+          allow-self-signed: 'true'
           artifact-name: bowire-self-workbench
           templates: docs/security/examples
           suite: owasp-api
@@ -136,7 +172,8 @@ jobs:
       - name: Scan the API surface
         uses: ./.github/actions/bowire-scan
         with:
-          target: http://localhost:5190/api/plugins
+          target: https://localhost:5190/api/plugins
+          allow-self-signed: 'true'
           artifact-name: bowire-self-api
           templates: docs/security/examples
           suite: owasp-api
@@ -149,7 +186,8 @@ jobs:
       - name: Scan the MCP endpoint
         uses: ./.github/actions/bowire-scan
         with:
-          target: http://localhost:5190/mcp
+          target: https://localhost:5190/mcp
+          allow-self-signed: 'true'
           artifact-name: bowire-self-mcp
           templates: docs/security/examples
           suite: owasp-api
