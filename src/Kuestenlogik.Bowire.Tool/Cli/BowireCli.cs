@@ -1094,10 +1094,14 @@ internal static class BowireCli
         };
         bind.AcceptOnlyFromAmong("stdio", "http");
 
-        var port = new Option<int>("--port")
+        // #635 — nullable, and no default factory: an unset --port has to stay
+        // distinguishable from one the operator typed, because only the second
+        // may override ASPNETCORE_URLS / Kestrel:Endpoints. Same shape as the
+        // root command's --port.
+        var port = new Option<int?>("--port")
         {
-            Description = "Port for --bind http.",
-            DefaultValueFactory = _ => 5081
+            Description = "Port for --bind http. Default 5081. Leave it off to use ASPNETCORE_URLS "
+                        + "or Kestrel:Endpoints, which is also how you serve this over TLS.",
         }.WithPortValidation();
         var allowArbitrary = new Option<bool>("--allow-arbitrary-urls")
         { Description = "Drop the URL allowlist. Only safe in sandboxed contexts." };

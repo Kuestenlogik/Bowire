@@ -200,6 +200,34 @@ Claude Desktop config:
 }
 ```
 
+### Standing the same server up over HTTP (`--bind http`)
+
+`bowire mcp serve` speaks stdio by default. `--bind http` runs the identical
+toolset behind a Kestrel of its own, for agents that connect over the network
+rather than over a pipe:
+
+```bash
+bowire mcp serve --bind http --token "$MCP_SECRET"
+```
+
+The endpoint is `POST /mcp` on port 5081 — no `/bowire/` prefix, because the prefix follows the host's idea of where Bowire lives and here Bowire is the host. `--token` requires
+`Authorization: Bearer <secret>` on every inbound request.
+
+**Serve it over TLS whenever it leaves the machine.** `--token` puts a bearer
+token on the wire, and a bearer token over plaintext is readable by anything
+on the path. There is no Bowire flag for this — the listener takes its address
+from ASP.NET's own configuration, exactly like [the workbench](../setup/standalone.md#serving-over-https):
+
+```bash
+ASPNETCORE_URLS=https://localhost:5443 bowire mcp serve --bind http --token "$MCP_SECRET"
+```
+
+or `Kestrel:Endpoints` with `Kestrel:Certificates` in `appsettings.json` for a
+real certificate. Leave `--port` off when you do: it is a command-line
+argument, so it outranks the environment and would give you the port in
+plaintext instead of the endpoint you configured. Bowire logs a line when that
+happens rather than doing it quietly.
+
 ### Tool surface (roles 3 + 4)
 
 Both transports expose the same toolset. Top-level tools include:
