@@ -146,7 +146,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [622](https://github.com/Kuestenlogik/Bowire/issues/622) | Bowire | [Benchmark: several targets in one run, so routing choices are comparable](#issue-kuestenlogik-bowire-622) | ⬜ Backlog | `area:cli` |
 | [623](https://github.com/Kuestenlogik/Bowire/issues/623) | Bowire | [Benchmark: report the shape of a run, not only its totals](#issue-kuestenlogik-bowire-623) | ⬜ Backlog | `area:cli` |
 | [624](https://github.com/Kuestenlogik/Bowire/issues/624) | Bowire | [Benchmark: hold connections open and report what became of them](#issue-kuestenlogik-bowire-624) | ⬜ Backlog | `area:cli` |
-| [625](https://github.com/Kuestenlogik/Bowire/issues/625) | Bowire | [Bowire's own HTTP surface: the findings its scanner reports about it](#issue-kuestenlogik-bowire-625) | ⬜ Backlog | `area:security` |
 
 ## Details
 
@@ -723,12 +722,6 @@ A benchmark run targets one endpoint and produces one set of numbers. Anyone rou
 > `area:cli`
 
 Everything Bowire measures today is a request that completes. `bowire bench` calls `InvokeAsync`, times the round trip and moves on; even for a streaming method it takes the non-streaming path. [[more]](https://github.com/Kuestenlogik/Bowire/issues/624)
-
-#### <a id="issue-kuestenlogik-bowire-625"></a>⬜ Backlog · [#625](https://github.com/Kuestenlogik/Bowire/issues/625) Bowire's own HTTP surface: the findings its scanner reports about it
-
-> `area:security`
-
-Now that #614 points `bowire scan` at the surface Bowire ships, the scanner reports seven findings against us. This issue is what to do about each — not all of them are defects, and saying which are is the first piece of work. [[more]](https://github.com/Kuestenlogik/Bowire/issues/625)
 
 ---
 
