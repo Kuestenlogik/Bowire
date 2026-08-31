@@ -5,10 +5,10 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Endpoints;
 using Kuestenlogik.Bowire.IntegrationTests.Fakes;
 using Kuestenlogik.Bowire.Plugins;
+using Kuestenlogik.Bowire.Projects;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
@@ -27,20 +27,26 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// can assert side-effects on the live registry without depending on
 /// the full discovery sweep.
 /// </summary>
-[Collection("BowireUserContext")]
+// BowireStorageRoot rather than BowireUserContext (#284 Phase D): the
+// disabled-plugins file follows the storage root now, so this fixture swaps
+// BowirePaths — and BowirePluginLifecycleTests swaps the same static, which
+// makes them the same collection or a race.
+[Collection("BowireStorageRoot")]
 public sealed class BowirePluginLifecycleEndpointTests : IDisposable
 {
-    private readonly IBowireUserStore _originalStore;
+    private readonly IBowirePathResolver _originalPaths;
     private readonly BowireProtocolRegistry? _originalRegistry;
     private readonly string _scratchDir;
 
     public BowirePluginLifecycleEndpointTests()
     {
-        _originalStore = BowireUserContext.Current;
+        _originalPaths = BowirePaths.Current;
         _scratchDir = Path.Combine(Path.GetTempPath(),
             $"bowire-lifecycle-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_scratchDir);
-        BowireUserContext.Current = new ScratchStore(_scratchDir);
+        BowirePaths.Current = new BowirePathResolver(
+            name => name == BowirePathResolver.DataDirVariable ? _scratchDir : null,
+            () => _scratchDir);
         // Snapshot whatever registry was cached (may be null in this
         // test process) so we can restore it on Dispose and not leak
         // our "fake-only" snapshot into adjacent test classes.
@@ -50,7 +56,7 @@ public sealed class BowirePluginLifecycleEndpointTests : IDisposable
 
     public void Dispose()
     {
-        BowireUserContext.Current = _originalStore;
+        BowirePaths.Current = _originalPaths;
         if (_originalRegistry is not null)
         {
             BowireEndpointHelpers.SetRegistry(_originalRegistry);
@@ -350,13 +356,4 @@ public sealed class BowirePluginLifecycleEndpointTests : IDisposable
         return reg;
     }
 
-    /// <summary>
-    /// Per-test <see cref="IBowireUserStore"/> pointing at the scratch
-    /// directory so the disabled-plugins file lands there instead of
-    /// the real <c>~/.bowire/</c>.
-    /// </summary>
-    private sealed class ScratchStore(string root) : IBowireUserStore
-    {
-        public string GetUserPath(string filename) => Path.Combine(root, filename);
-    }
 }

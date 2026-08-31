@@ -107,7 +107,11 @@ Slot names are derived from the subject and cannot be read back into one — the
 
 Installed plugins are not per-identity state. They resolve in two tiers: a machine-wide directory an administrator manages (`%ProgramData%\Bowire\plugins`, `/var/lib/bowire/plugins`) and the running account's own directory on top of it. Uninstalling something from the machine tier is refused and names the elevated command that would work.
 
-Per-*identity* plugin installs are still open — see [#284](https://github.com/Kuestenlogik/Bowire/issues/284). It is not a path question: plugins are assemblies loaded into the host process, so letting each signed-in person add one to a shared server is a privilege decision before it is a storage decision.
+**Changing which plugins are installed is an administrator's action.** Install, update, uninstall and the load/unload lifecycle all require it on an install that has an identity provider; without one — a laptop, an embedded host that never configured identities — nothing is gated, because there is one person and gating them protects nobody. The reason is not tidiness: an installed plugin's assemblies are loaded into the server process and share the host's own types with it, so an install by the least-privileged identity would be code execution as the server, next to every other identity's slot.
+
+**Disabling a plugin is process-wide, and the file now says so.** Unloading re-runs protocol discovery and swaps the registry every session reads, so it was never a per-person setting. Its list lives at `<storage root>/disabled-plugins.json`, beside the slots rather than inside one. It used to be written under `users/<slug>/`, which gave each identity a private copy of a shared decision — the last person to touch it decided for everyone. In single-user mode this is the same path it always was, so nothing moves on a laptop; a multi-tenant install that has old per-identity copies simply stops reading them, and they can be deleted.
+
+Per-*identity* plugin **installs** stay open deliberately — see [#284](https://github.com/Kuestenlogik/Bowire/issues/284). Plugins are assemblies loaded into the host process, so "each person brings their own" would mean one person's code running beside another person's data. Where that is genuinely needed, the answer is a process per identity — one Bowire each, with its own slot and its own plugin overlay, behind a router — not an in-process approximation of isolation.
 
 ## Letting the directory keep the list
 
