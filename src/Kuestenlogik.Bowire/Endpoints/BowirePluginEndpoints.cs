@@ -309,6 +309,12 @@ internal static class BowirePluginEndpoints
             // without two round-trips.
             var registry = BowireEndpointHelpers.GetRegistry();
             var disabled = BowireDisabledPluginsStore.Snapshot();
+            // #638 — the caller's own preference, which is a different thing
+            // from `disabled`: that one unloaded the plugin for everybody,
+            // this one only says who wants to look at it. It rides along on
+            // the row rather than filtering the list, so the rail can offer
+            // a way back.
+            var hidden = BowireHiddenProtocolsStore.Snapshot();
             var loaderById = latest
                 .GroupBy(r => r.PackageId, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
@@ -321,6 +327,7 @@ internal static class BowirePluginEndpoints
                     id = protocol.Id,
                     name = protocol.Name,
                     lifecycle = disabled.Contains(protocol.Id) ? "disabled" : "active",
+                    hidden = hidden.Contains(protocol.Id),
                 });
             }
             foreach (var id in disabled)
@@ -331,6 +338,7 @@ internal static class BowirePluginEndpoints
                     id,
                     name = id,
                     lifecycle = "disabled",
+                    hidden = hidden.Contains(id),
                 });
             }
             foreach (var (packageId, result) in loaderById)
@@ -346,6 +354,7 @@ internal static class BowirePluginEndpoints
                     id = packageId,
                     name = packageId,
                     lifecycle = "errored",
+                    hidden = hidden.Contains(packageId),
                 });
             }
 
@@ -585,6 +594,63 @@ internal static class BowirePluginEndpoints
         // UI extensions) get an informative 501 because their lifecycle
         // hooks land alongside the IBowireContributionLifecycle contract
         // in a later release.
+        // #638 — "I don't use MQTT; stop showing it to me". Deliberately not
+        // behind the admin gate: hiding a row in your own workbench changes
+        // nothing about the install, which is what separates it from the
+        // lifecycle actions below. Nothing on an execution path reads it —
+        // invoke, channel, discovery and the MCP adapter all ignore it, so a
+        // hidden protocol still answers when something calls it.
+        endpoints.MapPost($"{basePath}/api/plugins/{{pluginId}}/visibility",
+            async (string pluginId, HttpContext ctx) =>
+            {
+                if (string.IsNullOrWhiteSpace(pluginId))
+                    return BowireEndpointHelpers.Problem(
+                        type: "urn:bowire:invalid-input",
+                        title: "pluginId is required",
+                        status: 400,
+                        instance: ctx.Request.Path);
+
+                bool hidden;
+                using (var reader = new StreamReader(ctx.Request.Body))
+                {
+                    var body = await reader.ReadToEndAsync(ctx.RequestAborted);
+                    if (string.IsNullOrWhiteSpace(body))
+                        return BowireEndpointHelpers.Problem(
+                            type: "urn:bowire:invalid-input",
+                            title: "A body of { \"hidden\": true | false } is required",
+                            status: 400,
+                            instance: ctx.Request.Path);
+
+                    JsonElement req;
+                    try { req = JsonSerializer.Deserialize<JsonElement>(body); }
+                    catch (JsonException ex)
+                    {
+                        return BowireEndpointHelpers.Problem(
+                            type: "urn:bowire:invalid-input",
+                            title: "Body is not valid JSON",
+                            status: 400,
+                            detail: ex.Message,
+                            instance: ctx.Request.Path);
+                    }
+
+                    if (req.ValueKind != JsonValueKind.Object
+                        || !req.TryGetProperty("hidden", out var flag)
+                        || (flag.ValueKind != JsonValueKind.True && flag.ValueKind != JsonValueKind.False))
+                    {
+                        return BowireEndpointHelpers.Problem(
+                            type: "urn:bowire:invalid-input",
+                            title: "\"hidden\" must be true or false",
+                            status: 400,
+                            instance: ctx.Request.Path);
+                    }
+
+                    hidden = flag.ValueKind == JsonValueKind.True;
+                }
+
+                var changed = BowireHiddenProtocolsStore.SetHidden(pluginId, hidden);
+                return Results.Ok(new { ok = true, pluginId, hidden, changed });
+            }).ExcludeFromDescription();
+
         endpoints.MapPost($"{basePath}/api/plugins/{{pluginId}}/lifecycle/{{action}}",
             (string pluginId, string action, HttpContext ctx) =>
                 // Starting and stopping a plugin changes what every session on
