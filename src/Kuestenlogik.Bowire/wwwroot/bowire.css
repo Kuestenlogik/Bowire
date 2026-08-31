@@ -26728,3 +26728,34 @@ not as the
     display: flex;
     justify-content: flex-end;
 }
+
+/* #638 — "hide this protocol from my sidebar". A secondary per-row action,
+   so it follows the established hover-reveal: absent until the pointer is on
+   the row, and never a wall of buttons down the page. focus-within is the
+   half that display:none alone would lose — a control only a mouse can reach
+   is a control some people do not have. */
+.bowire-settings-plugin-hide-toggle {
+    display: none;
+    margin-right: 6px;
+}
+.bowire-settings-plugin-row-with-lifecycle:hover .bowire-settings-plugin-hide-toggle,
+.bowire-settings-plugin-row-with-lifecycle:focus-within .bowire-settings-plugin-hide-toggle {
+    display: inline-flex;
+}
+
+/* The disclosure stays visible whether or not anything is hidden behind it:
+   its count is the answer to "where did MQTT go", and a control that only
+   appears once you already know to look for it answers nothing. */
+.bowire-settings-hidden-disclosure {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+.bowire-settings-hidden-protocols .bowire-settings-plugin-hide-toggle {
+    /* Inside the disclosure every row is hidden by definition, so its own
+       "Show" button is the point of the section rather than a secondary
+       action — it does not wait for a hover. */
+    display: inline-flex;
+}

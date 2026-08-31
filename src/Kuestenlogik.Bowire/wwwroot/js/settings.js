@@ -1100,19 +1100,60 @@
         // toggle + the per-plugin settings array (when present) + the
         // "no configurable settings" notice; _wrapWithLifecycleCluster
         // anchors the lifecycle buttons next to it.
-        for (var pi = 0; pi < protocols.length; pi++) {
-            (function (plugin, isFirst) {
-                if (!isFirst) {
-                    section.appendChild(el('div', {
-                        className: 'bowire-settings-protocol-divider',
-                        style: 'border-top:1px solid var(--bowire-border-subtle);margin:18px 0 0'
-                    }));
+        // #638 — hidden protocols are moved, not removed. A preference whose
+        // undo is not on the page is one people work around by reinstalling
+        // things, so they go under a disclosure that says how many there are.
+        var visibleProtocols = [];
+        var hiddenProtocols = [];
+        for (var si = 0; si < protocols.length; si++) {
+            if (_isProtocolHidden(protocols[si].id)) hiddenProtocols.push(protocols[si]);
+            else visibleProtocols.push(protocols[si]);
+        }
+
+        function appendProtocolRow(target, plugin, isFirst) {
+            if (!isFirst) {
+                target.appendChild(el('div', {
+                    className: 'bowire-settings-protocol-divider',
+                    style: 'border-top:1px solid var(--bowire-border-subtle);margin:18px 0 0'
+                }));
+            }
+            target.appendChild(_wrapWithLifecycleCluster(
+                renderPluginSettings(plugin),
+                plugin.id,
+                true
+            ));
+        }
+
+        for (var pi = 0; pi < visibleProtocols.length; pi++) {
+            appendProtocolRow(section, visibleProtocols[pi], pi === 0);
+        }
+
+        if (hiddenProtocols.length > 0) {
+            var disclosure = el('button', {
+                type: 'button',
+                className: 'bowire-settings-action-btn bowire-settings-hidden-disclosure',
+                style: 'background:none;color:var(--bowire-text-tertiary);margin-top:18px',
+                textContent: (hiddenSectionExpanded ? '▾ ' : '▸ ')
+                    + hiddenProtocols.length
+                    + (hiddenProtocols.length === 1 ? ' hidden protocol' : ' hidden protocols'),
+                title: 'Hidden in your view only. They stay loaded and keep working.',
+                onClick: function () {
+                    hiddenSectionExpanded = !hiddenSectionExpanded;
+                    renderSettingsDialog();
                 }
-                section.appendChild(_wrapWithLifecycleCluster(
-                    renderPluginSettings(plugin),
-                    plugin.id
-                ));
-            })(protocols[pi], pi === 0);
+            });
+            section.appendChild(disclosure);
+
+            if (hiddenSectionExpanded) {
+                var hiddenBox = el('div', {
+                    className: 'bowire-settings-hidden-protocols',
+                    style: 'opacity:0.72;margin-top:8px'
+                });
+                for (var hi = 0; hi < hiddenProtocols.length; hi++) {
+                    appendProtocolRow(hiddenBox, hiddenProtocols[hi], hi === 0);
+                }
+                section.appendChild(hiddenBox);
+            }
         }
 
         // Manage installed sibling plugins (update / uninstall +
@@ -1238,7 +1279,10 @@
     // panel keeps its existing layout; the cluster floats next to it
     // via a flex container so the operator sees "configure here,
     // lifecycle there" without two stacked rows per plugin.
-    function _wrapWithLifecycleCluster(panel, pluginId) {
+    // `includeHideToggle` is opt-in rather than default: hiding is a
+    // protocol-sidebar preference, and a "Hide" button on a UI widget or a
+    // module row would promise something those pages do not honour.
+    function _wrapWithLifecycleCluster(panel, pluginId, includeHideToggle) {
         var wrap = el('div', {
             className: 'bowire-settings-plugin-row-with-lifecycle',
             style: 'display:flex;gap:12px;align-items:flex-start;justify-content:space-between'
@@ -1251,6 +1295,7 @@
         var right = el('div', {
             style: 'flex:0 0 auto;padding-top:8px'
         });
+        if (includeHideToggle) right.appendChild(_renderHideToggle(pluginId));
         right.appendChild(_renderPluginLifecycleButtons(pluginId));
         wrap.appendChild(right);
         return wrap;
@@ -4160,6 +4205,64 @@
     var pluginLifecycleInFlight = null; // 'pluginId::action' or null
     var pluginLifecycleResult = null;   // { pluginId, action, ok, text }
 
+    // #638 — protocol ids this identity has hidden. Null until the health
+    // snapshot lands, which reads as "nothing hidden": showing a protocol
+    // somebody hid is a moment's clutter, hiding one they did not is a
+    // support case nobody can reproduce.
+    var hiddenProtocolIds = null;
+    var hiddenSectionExpanded = false;
+
+    function _isProtocolHidden(pluginId) {
+        if (!hiddenProtocolIds || !pluginId) return false;
+        for (var i = 0; i < hiddenProtocolIds.length; i++) {
+            if (hiddenProtocolIds[i] === pluginId) return true;
+        }
+        return false;
+    }
+
+    // Optimistic, then corrected by the next health snapshot. The server is
+    // the authority; the local edit exists so the row does not sit there
+    // looking unclicked while a round-trip happens.
+    function _setProtocolHidden(pluginId, hidden) {
+        if (!pluginId) return;
+        var next = (hiddenProtocolIds || []).filter(function (id) { return id !== pluginId; });
+        if (hidden) next.push(pluginId);
+        hiddenProtocolIds = next;
+        if (hidden) hiddenSectionExpanded = true;
+        renderSettingsDialog();
+
+        fetch(config.prefix + '/api/plugins/' + encodeURIComponent(pluginId) + '/visibility', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hidden: !!hidden })
+        })
+            .then(function () { fetchPluginHealth(); })
+            .catch(function () {
+                // Put it back rather than leaving the page claiming something
+                // that did not happen.
+                hiddenProtocolIds = (hiddenProtocolIds || [])
+                    .filter(function (id) { return id !== pluginId; });
+                if (!hidden) hiddenProtocolIds.push(pluginId);
+                renderSettingsDialog();
+            });
+    }
+
+    // Hover-reveal, like the other secondary row actions: present on every
+    // row, visible on the one the pointer is over, so the page is not a wall
+    // of buttons for an action most people use once.
+    function _renderHideToggle(pluginId) {
+        var hidden = _isProtocolHidden(pluginId);
+        return el('button', {
+            type: 'button',
+            className: 'bowire-settings-plugin-btn bowire-settings-plugin-hide-toggle',
+            title: hidden
+                ? 'Show this protocol in your sidebar again. Only your own view — nobody else is affected.'
+                : 'Hide this protocol from your sidebar. Only your own view: it stays loaded, still discovers, and still answers when you call it.',
+            textContent: hidden ? 'Show' : 'Hide',
+            onClick: function () { _setProtocolHidden(pluginId, !hidden); }
+        });
+    }
+
     function _renderPluginLifecycleButtons(pluginId) {
         var group = el('div', { className: 'bowire-settings-plugin-lifecycle' });
         // Four lifecycle actions. Backend returns 501 for each one
@@ -4377,6 +4480,16 @@
                 .then(function (body) {
                     if (!body || !Array.isArray(body.plugins)) return;
                     pluginHealth = body.plugins;
+                    // #638 — the same response carries, per protocol id, what
+                    // *this* caller has hidden. Read from the snapshot the
+                    // page already fetches rather than a second round-trip:
+                    // one request that is either fresh or stale as a whole
+                    // beats two that can disagree.
+                    if (Array.isArray(body.lifecycle)) {
+                        hiddenProtocolIds = body.lifecycle
+                            .filter(function (row) { return row && row.hidden; })
+                            .map(function (row) { return String(row.id || ''); });
+                    }
                     // Re-render only when the dialog is still open and
                     // sitting on a sub-page that surfaces the health
                     // banner (Protocols carries it post-#325 revisit²).
