@@ -202,7 +202,7 @@ internal static class BowireParallelRunner
             }
             catch (OperationCanceledException)
             {
-                summary.Aborted = CancellationReason(outerToken, "-before-start");
+                summary.Aborted = CancellationReason("-before-start", outerToken);
                 summary.DurationMs = sessionSw.ElapsedMilliseconds;
                 return new SessionOutcome { Summary = summary, Targets = perSessionTargets };
             }
@@ -214,7 +214,7 @@ internal static class BowireParallelRunner
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                summary.Aborted = CancellationReason(outerToken, "");
+                summary.Aborted = CancellationReason("", outerToken);
                 break;
             }
 
@@ -251,13 +251,13 @@ internal static class BowireParallelRunner
     /// <summary>
     /// Which cancellation stopped this session (#637).
     /// </summary>
-    /// <param name="outerToken">
-    /// The caller's own token — the one only an HTTP disconnect or an
-    /// explicit stop can trip.
-    /// </param>
     /// <param name="suffix">
     /// <c>"-before-start"</c> when the session had not reached its first
     /// target yet, empty otherwise.
+    /// </param>
+    /// <param name="outerToken">
+    /// The caller's own token — the one only an HTTP disconnect or an
+    /// explicit stop can trip.
     /// </param>
     /// <remarks>
     /// <para>
@@ -276,7 +276,7 @@ internal static class BowireParallelRunner
     /// failed and the rest were stopped", never as "every session failed".
     /// </para>
     /// </remarks>
-    private static string CancellationReason(CancellationToken outerToken, string suffix)
+    private static string CancellationReason(string suffix, CancellationToken outerToken)
         => (outerToken.IsCancellationRequested ? "cancelled" : "sibling-failure") + suffix;
 
     private static async Task<BowireParallelTargetResult> ExecuteTargetAsync(
