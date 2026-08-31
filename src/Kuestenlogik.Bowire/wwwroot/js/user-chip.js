@@ -19,6 +19,15 @@
         return !!(bowireIdentity && bowireIdentity.multiTenant);
     }
 
+    // #636 — whether the caller may change the install itself (install a
+    // plugin, update or remove one). Unknown reads as "yes": /api/me may not
+    // have answered yet, and a laptop is the common case, so a control that
+    // flickers away would be worse than one the server refuses. Only an
+    // explicit false hides anything.
+    function bowireCanAdminister() {
+        return !bowireIdentity || bowireIdentity.canAdminister !== false;
+    }
+
     // ---- whose work is this ----
     // A person looking at a list of recordings on a shared instance is asking
     // one question: are these mine, or everyone's? The answer belongs in the
@@ -169,7 +178,12 @@
                     // Only worth a re-render when there is something new to
                     // show; morphdom would no-op anyway, but a single-user
                     // install should not pay for a render it does not need.
-                    if (me.multiTenant && typeof render === 'function') render();
+                    // Also when the answer is "you may not administer this
+                    // install": that one changes which controls belong on the
+                    // page, so it has to reach the DOM even on an install
+                    // that is otherwise single-tenant.
+                    if ((me.multiTenant || me.canAdminister === false)
+                        && typeof render === 'function') render();
                 })
                 .catch(function () { /* single-user, or offline */ });
         } catch { /* fetch threw synchronously */ }

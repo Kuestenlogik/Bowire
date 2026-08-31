@@ -377,6 +377,14 @@ internal static class BowirePluginEndpoints
 
         endpoints.MapPost($"{basePath}/api/plugins/install", async (HttpContext ctx) =>
         {
+            // #636 — this downloads a package and puts assemblies where the
+            // next start loads them into the server process, sharing the
+            // host's own Kuestenlogik.Bowire* and System.* identities with
+            // them. On a shared install that is code execution as the server,
+            // reachable by the least-privileged identity on it.
+            if (BowireAdminGate.RequireAdministrator(ctx, "install a plugin") is { } refusal)
+                return refusal;
+
             using var reader = new StreamReader(ctx.Request.Body);
             var body = await reader.ReadToEndAsync(ctx.RequestAborted);
             var req = JsonSerializer.Deserialize<JsonElement>(body);
@@ -397,6 +405,11 @@ internal static class BowirePluginEndpoints
         // Update a single installed plugin (or all when packageId == "all")
         endpoints.MapPost($"{basePath}/api/plugins/{{packageId}}/update", async (string packageId, HttpContext ctx) =>
         {
+            // Same reach as install: an update names a version, and a version
+            // is an assembly.
+            if (BowireAdminGate.RequireAdministrator(ctx, "update a plugin") is { } refusal)
+                return refusal;
+
             string? version = null;
             var prerelease = false;
             if (ctx.Request.ContentLength is > 0)
@@ -421,8 +434,14 @@ internal static class BowirePluginEndpoints
         }).ExcludeFromDescription();
 
         // Uninstall an installed plugin
-        endpoints.MapDelete($"{basePath}/api/plugins/{{packageId}}", async (string packageId) =>
+        endpoints.MapDelete($"{basePath}/api/plugins/{{packageId}}", async (string packageId, HttpContext ctx) =>
         {
+            // Removing a protocol everyone is using is an administrator's
+            // call too — the tier check below already refuses the machine
+            // tier, and this refuses the identity rather than the directory.
+            if (BowireAdminGate.RequireAdministrator(ctx, "uninstall a plugin") is { } refusal)
+                return refusal;
+
             if (string.IsNullOrWhiteSpace(packageId))
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:invalid-input",
@@ -568,7 +587,11 @@ internal static class BowirePluginEndpoints
         // in a later release.
         endpoints.MapPost($"{basePath}/api/plugins/{{pluginId}}/lifecycle/{{action}}",
             (string pluginId, string action, HttpContext ctx) =>
-                HandleLifecycleAction(pluginId, action, ctx))
+                // Starting and stopping a plugin changes what every session on
+                // this process sees, not just the caller's.
+                BowireAdminGate.RequireAdministrator(ctx, "start or stop a plugin") is { } refusal
+                    ? refusal
+                    : HandleLifecycleAction(pluginId, action, ctx))
             .ExcludeFromDescription();
 
         // Read the last persisted snapshot + whether the background
