@@ -1132,11 +1132,23 @@
             className: 'bowire-settings-plugins-action-bar',
             style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px'
         });
+        // #636 — installing puts assemblies where the next start loads them
+        // into the server process, so on a shared install it is an
+        // administrator's call. Disabled with a title rather than hidden: a
+        // control that explains why it is unavailable beats one that silently
+        // is not there, and it matches how machine-wide plugins already read.
+        var canAdminister = typeof bowireCanAdminister === 'function'
+            ? bowireCanAdminister()
+            : true;
         bar.appendChild(el('button', {
             type: 'button',
             className: 'bowire-settings-action-btn',
+            disabled: canAdminister ? undefined : true,
+            title: canAdminister
+                ? ''
+                : 'Only an administrator can install a plugin on this instance — it loads into the server process every session shares.',
             textContent: 'Install plugin…',
-            onClick: function () { _openInstallPluginModal(); }
+            onClick: function () { if (canAdminister) _openInstallPluginModal(); }
         }));
         bar.appendChild(el('button', {
             type: 'button',
@@ -4610,32 +4622,43 @@
         var actions = el('div', { className: 'bowire-settings-plugin-manage-actions' });
         var hasUpdate = !bundled && latest && latest !== version;
         var busy = pluginActionInFlight === pkgId;
+        // #636 — same gate the endpoints apply, read from /api/me so the two
+        // cannot drift.
+        var mayAdminister = typeof bowireCanAdminister === 'function'
+            ? bowireCanAdminister()
+            : true;
+        var notAdminTitle = 'Only an administrator can change the plugins on this instance.';
 
         var updateBtn = el('button', {
             type: 'button',
             className: 'bowire-settings-plugin-btn'
                 + (hasUpdate ? ' bowire-settings-plugin-btn-accent' : ''),
-            disabled: bundled || machineWide || busy,
+            disabled: bundled || machineWide || busy || !mayAdminister,
             title: bundled
                 ? 'Bundled plugin — run `dotnet tool update -g Kuestenlogik.Bowire.Tool` to update'
                 : machineWide
                     ? 'Installed machine-wide — an administrator updates it. To run a newer build yourself, install it from the catalogue: your copy takes precedence over the machine-wide one.'
-                    : '',
+                    : !mayAdminister
+                        ? notAdminTitle
+                        : '',
             textContent: busy ? 'Working…' : 'Update',
-            onClick: function () { if (!bundled && !machineWide) runPluginAction(pkgId, 'update'); }
+            onClick: function () {
+                if (!bundled && !machineWide && mayAdminister) runPluginAction(pkgId, 'update');
+            }
         });
         actions.appendChild(updateBtn);
 
         var uninstallBtn = el('button', {
             type: 'button',
             className: 'bowire-settings-plugin-btn bowire-settings-plugin-btn-danger',
-            disabled: bundled || machineWide || busy,
+            disabled: bundled || machineWide || busy || !mayAdminister,
             title: bundled ? 'Bundled plugins cannot be uninstalled separately'
                 : machineWide ? 'Installed machine-wide — an administrator removes it, and it goes for every account on this host'
+                : !mayAdminister ? notAdminTitle
                 : '',
             textContent: 'Uninstall',
             onClick: function () {
-                if (bundled || machineWide) return;
+                if (bundled || machineWide || !mayAdminister) return;
                 bowireConfirm(
                     'Uninstall ' + pkgId + '? The package is removed from disk and the workbench restarts to unload it.',
                     function () { runPluginAction(pkgId, 'uninstall'); },

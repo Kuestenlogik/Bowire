@@ -41,7 +41,15 @@ internal static class BowireIdentityEndpoints
             // difference matters to the caller.
             if (options is null || !options.Enabled || subject is null)
             {
-                return Results.Ok(new { multiTenant = false });
+                // canAdminister travels on both shapes (#636). Without it the
+                // workbench cannot tell "there is no gate here" from "you are
+                // not an administrator", and a laptop would lose its install
+                // button to a check meant for shared installs.
+                return Results.Ok(new
+                {
+                    multiTenant = false,
+                    canAdminister = BowireAdminGate.IsAdministrator(http),
+                });
             }
 
             var directory = http.RequestServices.GetService<IBowireUserDirectory>()
@@ -62,6 +70,10 @@ internal static class BowireIdentityEndpoints
                 email = profile.Email,
                 picture = profile.Picture,
                 isAdmin = profile.IsAdmin,
+                // What the caller may *do*, as opposed to what they are.
+                // Same answer here, but the gate is the one the endpoints
+                // apply, so the workbench and the server cannot drift.
+                canAdminister = BowireAdminGate.IsAdministrator(http),
                 // Only when the configured provider actually has somewhere to
                 // send them; a sign-out link that clears nothing is worse than
                 // none, because people believe it.
