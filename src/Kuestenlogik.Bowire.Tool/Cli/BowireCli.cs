@@ -393,7 +393,8 @@ internal static class BowireCli
                 ExportCa = pr.GetValue(exportCaOpt),
             };
             return await ProxyCommand.RunAsync(options,
-                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false);
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error,
+                cancellationToken: ct).ConfigureAwait(false);
         });
 
         return proxy;

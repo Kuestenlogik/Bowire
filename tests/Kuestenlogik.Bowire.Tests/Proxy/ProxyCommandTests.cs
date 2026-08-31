@@ -1,7 +1,6 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text;
 using Kuestenlogik.Bowire.App;
 
 namespace Kuestenlogik.Bowire.Tests.Proxy;
@@ -28,16 +27,17 @@ public sealed class ProxyCommandTests
 
         var options = new ProxyCommand.ProxyOptions { Port = 0, ApiPort = 0, Capacity = 50 };
 
-        // Deliberately never disposed. ReadySignal owns nothing — a
-        // StringBuilder and a TaskCompletionSource — so Dispose has nothing
-        // to do, and CA2025 fires on *any* shape that hands a disposable to
-        // a task and later disposes it, however provably ordered the awaits
-        // are. Not holding the obligation is truer than arranging the code
-        // to look like it discharges one.
-        var ready = new ReadySignal("press Ctrl-C to stop");
-        var run = ProxyCommand.RunAsync(options, stdout: ready, cancellationToken: cts.Token);
+        // Through the command's own readiness callback rather than by
+        // scraping its stdout: a TextWriter is IDisposable, and handing one
+        // to a task is a shape the analyzers reject in every arrangement —
+        // which was the nudge to give ProxyCommand the seam it owed anyway.
+        var listening = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var run = ProxyCommand.RunAsync(
+            options,
+            onListening: (_, _) => listening.TrySetResult(),
+            cancellationToken: cts.Token);
 
-        await ready.Reached.WaitAsync(TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken);
+        await listening.Task.WaitAsync(TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken);
         await cts.CancelAsync();
         var code = await run;
 
@@ -154,53 +154,6 @@ public sealed class ProxyCommandTests
         finally
         {
             if (Directory.Exists(caDir)) Directory.Delete(caDir, recursive: true);
-        }
-    }
-
-    /// <summary>
-    /// A <see cref="TextWriter"/> that completes a task the first time the
-    /// command writes a given phrase.
-    /// </summary>
-    /// <remarks>
-    /// Waiting for the process to say it is ready beats waiting for a
-    /// duration to elapse: the duration is a guess about a machine nobody
-    /// controls, and the banner is the thing that is actually true.
-    /// </remarks>
-    private sealed class ReadySignal(string phrase) : TextWriter
-    {
-        private readonly TaskCompletionSource _reached =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        private readonly StringBuilder _line = new();
-
-        public Task Reached => _reached.Task;
-
-        public override Encoding Encoding => Encoding.UTF8;
-
-        public override void Write(char value)
-        {
-            if (value == '\n')
-            {
-                if (_line.ToString().Contains(phrase, StringComparison.Ordinal))
-                {
-                    _reached.TrySetResult();
-                }
-                _line.Clear();
-                return;
-            }
-            _line.Append(value);
-        }
-
-        public override void Write(string? value)
-        {
-            if (value is null) return;
-            foreach (var c in value) Write(c);
-        }
-
-        public override void WriteLine(string? value)
-        {
-            Write(value);
-            Write('\n');
         }
     }
 }
