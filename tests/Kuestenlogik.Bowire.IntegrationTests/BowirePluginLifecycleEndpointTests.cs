@@ -215,12 +215,13 @@ public sealed class BowirePluginLifecycleEndpointTests : IDisposable
     [Fact]
     public async Task ResetStorage_deletes_state_directory_when_present()
     {
-        // Seed an on-disk plugin state directory in ~/.bowire/plugins/<id>/state.
-        // PluginDir is hard-wired to %UserProfile%/.bowire/plugins/ —
-        // the endpoint reads it directly; we mirror the layout here.
-        var pluginDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".bowire", "plugins", "fake-state-test");
+        // Seed an on-disk plugin state directory at <root>/plugins/<id>/state.
+        // The endpoint resolves it through BowirePluginRoot, which follows
+        // BowirePaths — so it lands in this fixture's scratch root. It used to
+        // be written to the real %UserProfile%/.bowire/, which passed only
+        // because nothing had redirected the resolver yet (#284 Phase D did):
+        // the test was deleting a directory in the developer's own home.
+        var pluginDir = Path.Combine(_scratchDir, "plugins", "fake-state-test");
         var stateDir = Path.Combine(pluginDir, "state");
         Directory.CreateDirectory(stateDir);
         await File.WriteAllTextAsync(
