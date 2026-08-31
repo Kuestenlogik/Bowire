@@ -25,16 +25,30 @@ public sealed class ProxyCommandTests
         // put the cancellation inside StartAsync instead of after it — a
         // different code path, tested by accident, roughly once a week.
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        using var ready = new ReadySignal("press Ctrl-C to stop");
 
         var options = new ProxyCommand.ProxyOptions { Port = 0, ApiPort = 0, Capacity = 50 };
-        var run = ProxyCommand.RunAsync(options, stdout: ready, cancellationToken: cts.Token);
+        int code;
 
-        await ready.Reached.WaitAsync(TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken);
-        await cts.CancelAsync();
+        // try/finally rather than `using`: the writer is handed to a task, and
+        // CA2025 wants it provably still alive when that task ends. Awaiting
+        // the run inside the block and disposing after says exactly that,
+        // which a using-declaration around an awaited-later task does not.
+        var ready = new ReadySignal("press Ctrl-C to stop");
+        try
+        {
+            var run = ProxyCommand.RunAsync(options, stdout: ready, cancellationToken: cts.Token);
+
+            await ready.Reached.WaitAsync(TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken);
+            await cts.CancelAsync();
+            code = await run;
+        }
+        finally
+        {
+            ready.Dispose();
+        }
 
         // Graceful shutdown via cancellation returns 0.
-        Assert.Equal(0, await run);
+        Assert.Equal(0, code);
     }
 
     [Fact]
