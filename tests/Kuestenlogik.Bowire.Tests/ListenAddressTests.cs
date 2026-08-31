@@ -21,12 +21,12 @@ namespace Kuestenlogik.Bowire.Tests;
 /// than a server per case.
 /// </para>
 /// </remarks>
-public class BrowserUiListenAddressTests
+public class ListenAddressTests
 {
     [Fact]
-    public void ResolveListenAddress_NothingConfiguredAnywhere_KeepsTheDefault()
+    public void Resolve_NothingConfiguredAnywhere_KeepsTheDefault()
     {
-        var (urls, note) = BrowserUiHost.ResolveListenAddress(
+        var (urls, note) = ListenAddress.Resolve(
             portExplicit: false, port: 5080, platformConfigured: false);
 
         // A plain `bowire` has to behave exactly as it did before #634.
@@ -35,9 +35,9 @@ public class BrowserUiListenAddressTests
     }
 
     [Fact]
-    public void ResolveListenAddress_PlatformConfiguredAndNoPortPassed_LeavesItAlone()
+    public void Resolve_PlatformConfiguredAndNoPortPassed_LeavesItAlone()
     {
-        var (urls, note) = BrowserUiHost.ResolveListenAddress(
+        var (urls, note) = ListenAddress.Resolve(
             portExplicit: false, port: 5080, platformConfigured: true);
 
         // The whole point: null means "do not call UseUrls", which is what
@@ -47,9 +47,9 @@ public class BrowserUiListenAddressTests
     }
 
     [Fact]
-    public void ResolveListenAddress_ExplicitPort_StillWins()
+    public void Resolve_ExplicitPort_StillWins()
     {
-        var (urls, _) = BrowserUiHost.ResolveListenAddress(
+        var (urls, _) = ListenAddress.Resolve(
             portExplicit: true, port: 7070, platformConfigured: true);
 
         // --port is a command-line argument and outranks environment and
@@ -59,9 +59,9 @@ public class BrowserUiListenAddressTests
     }
 
     [Fact]
-    public void ResolveListenAddress_ExplicitPortOverAConfiguredAddress_SaysSo()
+    public void Resolve_ExplicitPortOverAConfiguredAddress_SaysSo()
     {
-        var (_, note) = BrowserUiHost.ResolveListenAddress(
+        var (_, note) = ListenAddress.Resolve(
             portExplicit: true, port: 7070, platformConfigured: true);
 
         // Overriding is allowed; overriding in silence is the bug. The note
@@ -72,9 +72,9 @@ public class BrowserUiListenAddressTests
     }
 
     [Fact]
-    public void ResolveListenAddress_ExplicitPortWithNothingConfigured_SaysNothing()
+    public void Resolve_ExplicitPortWithNothingConfigured_SaysNothing()
     {
-        var (urls, note) = BrowserUiHost.ResolveListenAddress(
+        var (urls, note) = ListenAddress.Resolve(
             portExplicit: true, port: 7070, platformConfigured: false);
 
         Assert.Equal("http://localhost:7070", urls);
@@ -84,9 +84,9 @@ public class BrowserUiListenAddressTests
     }
 
     [Fact]
-    public void ResolveListenAddress_PortZero_NamesAConcreteLoopbackAddress()
+    public void Resolve_PortZero_NamesAConcreteLoopbackAddress()
     {
-        var (urls, _) = BrowserUiHost.ResolveListenAddress(
+        var (urls, _) = ListenAddress.Resolve(
             portExplicit: true, port: 0, platformConfigured: false);
 
         // Kestrel refuses to bind "localhost" dynamically — "Dynamic port
@@ -99,27 +99,27 @@ public class BrowserUiListenAddressTests
     [InlineData("http_ports", "5080")]
     [InlineData("https_ports", "5001")]
     [InlineData("Kestrel:Endpoints:Https:Url", "https://localhost:5001")]
-    public void PlatformAddressConfigured_RecognisesEveryKeyAspNetItselfReads(string key, string value)
+    public void PlatformConfigured_RecognisesEveryKeyAspNetItselfReads(string key, string value)
     {
         var configuration = Configure((key, value));
 
-        Assert.True(BrowserUiHost.PlatformAddressConfigured(configuration));
+        Assert.True(ListenAddress.PlatformConfigured(configuration));
     }
 
     [Fact]
-    public void PlatformAddressConfigured_EmptyConfiguration_IsFalse()
+    public void PlatformConfigured_EmptyConfiguration_IsFalse()
     {
-        Assert.False(BrowserUiHost.PlatformAddressConfigured(Configure()));
+        Assert.False(ListenAddress.PlatformConfigured(Configure()));
     }
 
     [Fact]
-    public void PlatformAddressConfigured_BowiresOwnUrlFlag_DoesNotCount()
+    public void PlatformConfigured_BowiresOwnUrlFlag_DoesNotCount()
     {
         // Bowire's --url names the services to probe. Reading it as a listen
         // address would stop the tool binding anything at all.
         var configuration = Configure(("Bowire:ServerUrls:0", "https://api.example.com"));
 
-        Assert.False(BrowserUiHost.PlatformAddressConfigured(configuration));
+        Assert.False(ListenAddress.PlatformConfigured(configuration));
     }
 
     [Theory]
@@ -132,7 +132,7 @@ public class BrowserUiListenAddressTests
     {
         var configuration = Configure(("urls", urls), ("https_ports", httpsPorts));
 
-        Assert.Equal(expected, BrowserUiHost.ConfiguredScheme(configuration));
+        Assert.Equal(expected, ListenAddress.ConfiguredScheme(configuration));
     }
 
     private static IConfiguration Configure(params (string Key, string? Value)[] entries)

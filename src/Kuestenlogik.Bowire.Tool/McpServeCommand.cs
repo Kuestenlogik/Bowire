@@ -45,6 +45,17 @@ internal static class McpServeCommand
     // without spawning a real process or binding a port. Defaults
     // reproduce the original inline behaviour exactly when called with
     // CancellationToken.None.
+    /// <summary>
+    /// The port <c>--bind http</c> uses when nobody names one (#635).
+    /// </summary>
+    /// <remarks>
+    /// Applied here rather than as the option's default value, because an
+    /// option default is indistinguishable from a typed one by the time it
+    /// reaches this method — and that difference decides whether the address
+    /// may override <c>ASPNETCORE_URLS</c>.
+    /// </remarks>
+    internal const int DefaultHttpPort = 5081;
+
     internal static Func<McpServeConfig, CancellationToken, Task<int>> StdioRunner { get; set; } = DefaultServeStdio;
     internal static Func<McpServeConfig, CancellationToken, Task<int>> HttpRunner { get; set; } = DefaultServeHttp;
 
@@ -56,6 +67,11 @@ internal static class McpServeCommand
     /// <param name="ConfigureOptions">Applied to the local
     /// <see cref="BowireMcpOptions"/> when not in forwarder mode.</param>
     /// <param name="Port">HTTP-bind port; ignored for stdio.</param>
+    /// <param name="PortExplicit">
+    /// Whether <paramref name="Port"/> is the operator's choice rather than the
+    /// built-in default (#635). Only the former may override the address
+    /// ASP.NET was configured with.
+    /// </param>
     /// <param name="AllowArbitraryUrls">Mirror of <see cref="BowireMcpOptions.AllowArbitraryUrls"/>.</param>
     /// <param name="NoEnvAllowlist">Inverse of <see cref="BowireMcpOptions.LoadAllowlistFromEnvironments"/>.</param>
     /// <param name="AllowInvoke">Inverse of <see cref="BowireMcpOptions.LoadAllowlistFromTypedUrls"/>'s default-off.</param>
@@ -74,7 +90,8 @@ internal static class McpServeCommand
         CommandIo Io,
         Uri? AttachEndpoint = null,
         string? AttachToken = null,
-        string? ServerToken = null);
+        string? ServerToken = null,
+        bool PortExplicit = false);
 
     public static Task<int> RunAsync(string bind, int port, bool allowArbitraryUrls, bool noEnvAllowlist)
         => RunAsync(bind, port, allowArbitraryUrls, noEnvAllowlist,
@@ -90,7 +107,7 @@ internal static class McpServeCommand
     // DefaultServeHttp exit promptly without blocking on stdin/stdout
     // or a Kestrel socket. Public surface is the CT-less overload above
     // — production callers keep that.
-    internal static Task<int> RunAsync(string bind, int port, bool allowArbitraryUrls, bool noEnvAllowlist,
+    internal static Task<int> RunAsync(string bind, int? port, bool allowArbitraryUrls, bool noEnvAllowlist,
         bool allowInvoke = false, bool noConfirm = false,
         TextWriter? stdout = null, TextWriter? stderr = null,
         string? attach = null, string? attachToken = null, string? token = null,
@@ -126,10 +143,12 @@ internal static class McpServeCommand
         }
 
         var cfg = new McpServeConfig(
-            configureOpts, port, allowArbitraryUrls, noEnvAllowlist, allowInvoke, noConfirm, io,
+            configureOpts, port ?? DefaultHttpPort, allowArbitraryUrls, noEnvAllowlist,
+            allowInvoke, noConfirm, io,
             AttachEndpoint: attachUri,
             AttachToken: string.IsNullOrEmpty(attachToken) ? null : attachToken,
-            ServerToken: string.IsNullOrEmpty(token) ? null : token);
+            ServerToken: string.IsNullOrEmpty(token) ? null : token,
+            PortExplicit: port.HasValue);
 
         return bind switch
         {
@@ -197,6 +216,20 @@ internal static class McpServeCommand
         var builder = WebApplication.CreateBuilder();
         builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
+        // #635 — the address, decided once and shared with the workbench host.
+        // Passing a URL to RunAsync (as this did) outranks every configuration
+        // source ASP.NET reads, so an operator's ASPNETCORE_URLS or
+        // Kestrel:Endpoints was discarded in silence — and there was no way to
+        // serve this over TLS at all. That matters more here than on the
+        // workbench: `mcp serve` exists to be reached across a network
+        // boundary, and --token puts a bearer token on the wire.
+        var (listenUrls, addressNote) = ListenAddress.Resolve(
+            cfg.PortExplicit, cfg.Port, ListenAddress.PlatformConfigured(builder.Configuration));
+        if (listenUrls is not null)
+        {
+            builder.WebHost.UseUrls(listenUrls);
+        }
+
         if (cfg.AttachEndpoint is not null)
         {
             builder.Services
@@ -256,7 +289,18 @@ internal static class McpServeCommand
         // manifest endpoint for free.
         app.MapBowireMcp(McpPathPrefix);
 
-        cfg.Io.OutLine($"  Bowire MCP - listening on http://localhost:{cfg.Port}{McpPathPrefix}");
+        if (addressNote is not null)
+        {
+            cfg.Io.OutLine($"  {addressNote}");
+        }
+
+        // Report the address that was actually chosen, rather than rebuilding
+        // it from parts. Where Bowire chose it, `listenUrls` is exactly what
+        // Kestrel was handed; where it did not, naming a URL here would be a
+        // guess at configuration this process has not resolved yet.
+        cfg.Io.OutLine(listenUrls is not null
+            ? $"  Bowire MCP - listening on {listenUrls}{McpPathPrefix}"
+            : $"  Bowire MCP - listening on the configured endpoint (ASPNETCORE_URLS / Kestrel:Endpoints), path {McpPathPrefix}");
         if (cfg.AttachEndpoint is not null)
         {
             cfg.Io.OutLine($"  --attach {cfg.AttachEndpoint} — forwarder mode "
@@ -279,7 +323,9 @@ internal static class McpServeCommand
 
         try
         {
-            await app.RunAsync($"http://localhost:{cfg.Port}").WaitAsync(ct).ConfigureAwait(false);
+            // No URL argument: UseUrls above has already had its say, and only
+            // when the address was Bowire's to choose.
+            await app.RunAsync().WaitAsync(ct).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {

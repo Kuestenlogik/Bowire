@@ -232,6 +232,9 @@ Drop --port to use the configured endpoint.
 Leave `--port` off and the configured endpoint stands. With neither, Bowire
 listens on `http://localhost:5080` as it always has.
 
+The same rule governs `bowire mcp serve --bind http`, which stands up a
+listener of its own — see [Bowire as an MCP server over HTTP](../protocols/mcp.md#standing-the-same-server-up-over-http---bind-http).
+
 ## CLI mode (grpcurl-style)
 
 The same tool also has a CLI mode for scripting and automation. No

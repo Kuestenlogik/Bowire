@@ -87,6 +87,64 @@ public sealed class McpServeCommandTests
     }
 
     [Fact]
+    public async Task RunAsync_HttpBind_PortPassed_IsMarkedExplicit()
+    {
+        // #635 — only a port the operator named may override the address
+        // ASP.NET was configured with, so the provenance has to survive the
+        // trip from the command line into the host.
+        var seen = await CaptureHttpConfig(port: 6543);
+
+        Assert.Equal(6543, seen.Port);
+        Assert.True(seen.PortExplicit);
+    }
+
+    [Fact]
+    public async Task RunAsync_HttpBind_NoPort_DefaultsWithoutClaimingItWasChosen()
+    {
+        var seen = await CaptureHttpConfig(port: null);
+
+        // The default still applies — a plain `bowire mcp serve --bind http`
+        // is unchanged — but it does not pretend to be a decision, which is
+        // what let the old code discard ASPNETCORE_URLS.
+        Assert.Equal(McpServeCommand.DefaultHttpPort, seen.Port);
+        Assert.False(seen.PortExplicit);
+    }
+
+    [Fact]
+    public async Task RunAsync_HttpBind_PortRepeatingTheDefault_IsStillExplicit()
+    {
+        // Indistinguishable from the default by value; distinguishable only
+        // because the option is nullable. Someone who types 5081 means it.
+        var seen = await CaptureHttpConfig(port: McpServeCommand.DefaultHttpPort);
+
+        Assert.True(seen.PortExplicit);
+    }
+
+    private static async Task<McpServeCommand.McpServeConfig> CaptureHttpConfig(int? port)
+    {
+        var prevHttp = McpServeCommand.HttpRunner;
+        McpServeCommand.McpServeConfig? seen = null;
+        try
+        {
+            McpServeCommand.HttpRunner = (cfg, _) => { seen = cfg; return Task.FromResult(0); };
+
+            await McpServeCommand.RunAsync(
+                bind: "http",
+                port: port,
+                allowArbitraryUrls: false,
+                noEnvAllowlist: false,
+                ct: TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            McpServeCommand.HttpRunner = prevHttp;
+        }
+
+        Assert.NotNull(seen);
+        return seen!;
+    }
+
+    [Fact]
     public async Task RunAsync_HttpBind_RoutesToHttpRunnerWithConfiguredOptions()
     {
         var prevStdio = McpServeCommand.StdioRunner;
