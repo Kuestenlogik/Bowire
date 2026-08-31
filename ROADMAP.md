@@ -147,6 +147,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [622](https://github.com/Kuestenlogik/Bowire/issues/622) | Bowire | [Benchmark: several targets in one run, so routing choices are comparable](#issue-kuestenlogik-bowire-622) | ⬜ Backlog | `area:cli` |
 | [623](https://github.com/Kuestenlogik/Bowire/issues/623) | Bowire | [Benchmark: report the shape of a run, not only its totals](#issue-kuestenlogik-bowire-623) | ⬜ Backlog | `area:cli` |
 | [624](https://github.com/Kuestenlogik/Bowire/issues/624) | Bowire | [Benchmark: hold connections open and report what became of them](#issue-kuestenlogik-bowire-624) | ⬜ Backlog | `area:cli` |
+| [637](https://github.com/Kuestenlogik/Bowire/issues/637) | Bowire | [Intermittent test failures on main: proxy port bind, and parallel-abort status wording](#issue-kuestenlogik-bowire-637) | ⬜ Backlog | `area:cli` |
 
 ## Details
 
@@ -729,6 +730,12 @@ A benchmark run targets one endpoint and produces one set of numbers. Anyone rou
 > `area:cli`
 
 Everything Bowire measures today is a request that completes. `bowire bench` calls `InvokeAsync`, times the round trip and moves on; even for a streaming method it takes the non-streaming path. [[more]](https://github.com/Kuestenlogik/Bowire/issues/624)
+
+#### <a id="issue-kuestenlogik-bowire-637"></a>⬜ Backlog · [#637](https://github.com/Kuestenlogik/Bowire/issues/637) Intermittent test failures on main: proxy port bind, and parallel-abort status wording
+
+> `area:cli`
+
+`Kuestenlogik.Bowire.Tests.Proxy.ProxyCommandTests.RunAsync_StartsOnDynamicPortsAndExitsGracefully` failed on [run 33398576681](https://github.com/Kuestenlogik/Bowire/actions/runs/33398576681) and passed on the next run over the same code (33193ce4, a ROADMAP.md-only commit on top of a56407db). [[more]](https://github.com/Kuestenlogik/Bowire/issues/637)
 
 ---
 
