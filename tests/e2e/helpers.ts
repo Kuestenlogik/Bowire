@@ -27,7 +27,35 @@ export async function bootFresh(page: Page, theme: 'dark' | 'light' = 'dark'): P
         try { localStorage.setItem('bowire_theme_pref', t); } catch { /* ignore */ }
     }, theme);
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20_000 });
+    try {
+        await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20_000 });
+    } catch (cause) {
+        // #637 — this times out about once a week, always on whichever spec
+        // runs first, and always passes on retry. The timeout is not the
+        // problem to fix: twenty seconds for a workbench to hydrate is
+        // already generous, and raising it would hide whether first paint is
+        // getting slower. What was missing is any way to tell *where* it got
+        // stuck, so the next occurrence answers that instead of being
+        // re-run. Deliberately not a retry — a second attempt here would
+        // turn the same evidence into silence.
+        const state = await page.evaluate(() => ({
+            readyState: document.readyState,
+            hasShell: !!document.getElementById('bowire-app'),
+            shellClasses: document.getElementById('bowire-app')?.className ?? null,
+            // The bundle sets these as it comes up; which ones are missing
+            // says whether the script never ran, ran and threw, or ran and
+            // is still waiting on a request.
+            hasConfig: typeof (window as any).__BOWIRE_CONFIG__ !== 'undefined',
+            bodyChildren: document.body?.childElementCount ?? 0,
+            title: document.title,
+        })).catch(() => null);
+
+        throw new Error(
+            'bootFresh: #bowire-app.bowire-app-ready never appeared within 20s. '
+            + `Page state at timeout: ${JSON.stringify(state)}. `
+            + 'See Kuestenlogik/Bowire#637 — record this line there rather than re-running.',
+            { cause });
+    }
 }
 
 /**

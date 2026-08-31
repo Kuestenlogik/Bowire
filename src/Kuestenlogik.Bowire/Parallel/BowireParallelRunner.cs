@@ -119,6 +119,7 @@ internal static class BowireParallelRunner
                     abortOnFailureCts,
                     http,
                     logger,
+                    cancellationToken,
                     abortOnFailureCts.Token).ConfigureAwait(false);
                 sessionResults[sessionIndex] = perSession.Summary;
                 lock (targetResultsLock)
@@ -182,6 +183,7 @@ internal static class BowireParallelRunner
         CancellationTokenSource abortOnFailureCts,
         HttpClient http,
         ILogger logger,
+        CancellationToken outerToken,
         CancellationToken cancellationToken)
     {
         var perSessionTargets = new List<BowireParallelTargetResult>();
@@ -200,7 +202,7 @@ internal static class BowireParallelRunner
             }
             catch (OperationCanceledException)
             {
-                summary.Aborted = "cancelled-before-start";
+                summary.Aborted = CancellationReason(outerToken, "-before-start");
                 summary.DurationMs = sessionSw.ElapsedMilliseconds;
                 return new SessionOutcome { Summary = summary, Targets = perSessionTargets };
             }
@@ -212,7 +214,7 @@ internal static class BowireParallelRunner
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                summary.Aborted = "cancelled";
+                summary.Aborted = CancellationReason(outerToken, "");
                 break;
             }
 
@@ -245,6 +247,37 @@ internal static class BowireParallelRunner
         summary.DurationMs = sessionSw.ElapsedMilliseconds;
         return new SessionOutcome { Summary = summary, Targets = perSessionTargets };
     }
+
+    /// <summary>
+    /// Which cancellation stopped this session (#637).
+    /// </summary>
+    /// <param name="outerToken">
+    /// The caller's own token — the one only an HTTP disconnect or an
+    /// explicit stop can trip.
+    /// </param>
+    /// <param name="suffix">
+    /// <c>"-before-start"</c> when the session had not reached its first
+    /// target yet, empty otherwise.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// The session loop watches a token linked from two sources, so
+    /// "cancelled" was being reported for two different events: the caller
+    /// hung up, and a sibling session failed with
+    /// <c>continueOnError=false</c> and stopped everyone. An operator
+    /// reading a report cannot tell those apart from one word, and they call
+    /// for opposite responses — one is their own doing, the other is a
+    /// failure somewhere else in the run.
+    /// </para>
+    /// <para>
+    /// The session that actually failed still reports <c>first-failure</c>;
+    /// this names what happened to the others. Which session gets which is
+    /// a scheduling detail, so a report should be read as "one of these
+    /// failed and the rest were stopped", never as "every session failed".
+    /// </para>
+    /// </remarks>
+    private static string CancellationReason(CancellationToken outerToken, string suffix)
+        => (outerToken.IsCancellationRequested ? "cancelled" : "sibling-failure") + suffix;
 
     private static async Task<BowireParallelTargetResult> ExecuteTargetAsync(
         int sessionIndex,

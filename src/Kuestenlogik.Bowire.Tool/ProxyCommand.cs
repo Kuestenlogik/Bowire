@@ -72,6 +72,16 @@ internal static class ProxyCommand
         {
             await proxy.StartAsync(cancellationToken).ConfigureAwait(false);
         }
+        catch (OperationCanceledException)
+        {
+            // #637 — Ctrl-C while the listener is still coming up. The
+            // graceful path below already treats a stop as exit 0; a stop
+            // that arrives a moment earlier is the same event and must not
+            // leave the caller an exception to render. It also has to
+            // dispose the CA, which nothing else on this path would.
+            ca?.Dispose();
+            return 0;
+        }
         catch (Exception ex) when (ex is System.Net.Sockets.SocketException or IOException or InvalidOperationException)
         {
             await io.Err.WriteLineAsync($"bowire proxy: could not bind proxy port {options.Port}: {ex.Message}").ConfigureAwait(false);
@@ -95,6 +105,15 @@ internal static class ProxyCommand
         try
         {
             await api.StartAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // Same again, one listener further in: the proxy is up and has
+            // to come down, and CancellationToken.None because a stop that
+            // honours the cancellation it is responding to stops halfway.
+            await proxy.StopAsync(CancellationToken.None).ConfigureAwait(false);
+            ca?.Dispose();
+            return 0;
         }
         catch (Exception ex) when (ex is System.Net.Sockets.SocketException or IOException or InvalidOperationException)
         {
