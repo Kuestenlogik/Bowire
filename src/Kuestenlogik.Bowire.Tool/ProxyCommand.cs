@@ -34,7 +34,32 @@ internal static class ProxyCommand
         public string? ExportCa { get; init; }
     }
 
-    public static async Task<int> RunAsync(ProxyOptions options, TextWriter? stdout = null, TextWriter? stderr = null, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Run the intercepting proxy until <paramref name="cancellationToken"/>
+    /// is tripped.
+    /// </summary>
+    /// <param name="options">Ports, capacity, CA settings.</param>
+    /// <param name="stdout">Diagnostic sink; defaults to the console.</param>
+    /// <param name="stderr">Error sink; defaults to the console.</param>
+    /// <param name="onListening">
+    /// Called once both listeners are bound, with the proxy port and the
+    /// workbench-API port — the ones actually bound, which with
+    /// <c>--port 0</c> is the only place they exist (#637).
+    /// </param>
+    /// <param name="cancellationToken">Stops the proxy; a stop is exit 0.</param>
+    /// <remarks>
+    /// The callback exists for the same reason <c>--port-file</c> does on the
+    /// workbench (#615): anything starting this as a child process needs the
+    /// bound ports, and the banner is a log line — it disappears at a quieter
+    /// level and is printed before anything is known to have worked. Scraping
+    /// it is what the workbench documentation tells people not to do.
+    /// </remarks>
+    public static async Task<int> RunAsync(
+        ProxyOptions options,
+        TextWriter? stdout = null,
+        TextWriter? stderr = null,
+        Action<int, int>? onListening = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options);
         var io = CommandIo.Resolve(stdout, stderr);
@@ -122,6 +147,10 @@ internal static class ProxyCommand
             ca?.Dispose();
             return 1;
         }
+
+        // Both listeners are up. The callback goes before the banner because
+        // the banner is decoration and this is the fact.
+        onListening?.Invoke(proxy.Port, options.ApiPort);
 
         await io.Out.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
             $"bowire proxy: intercepting on http://127.0.0.1:{proxy.Port}")).ConfigureAwait(false);
