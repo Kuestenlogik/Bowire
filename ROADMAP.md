@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**8/30 done** · 1 next up · 21 backlog
+**9/31 done** · 1 next up · 21 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -46,6 +46,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [591](https://github.com/Kuestenlogik/Bowire/issues/591) | Bowire | [Workspace-local storage: collections must travel with the repo, not the user profile](#issue-kuestenlogik-bowire-591) | ✅ Done |  |
 | [601](https://github.com/Kuestenlogik/Bowire/issues/601) | Bowire | [Migrate the test run to Microsoft.Testing.Platform (unblocks xunit.v3 4.x)](#issue-kuestenlogik-bowire-601) | ✅ Done |  |
 | [604](https://github.com/Kuestenlogik/Bowire/issues/604) | Bowire | [CLI: --url-file is declared and documented but never read](#issue-kuestenlogik-bowire-604) | ✅ Done |  |
+| [636](https://github.com/Kuestenlogik/Bowire/issues/636) | Bowire | [Any authenticated user can install a plugin into the shared server process](#issue-kuestenlogik-bowire-636) | ✅ Done | `area:security` |
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
@@ -318,6 +319,12 @@ Make the VS Code extension store a workspace's Bowire data inside that workspace
 #### <a id="issue-kuestenlogik-bowire-604"></a>✅ Done · [#604](https://github.com/Kuestenlogik/Bowire/issues/604) CLI: --url-file is declared and documented but never read
 
 `--url-file` is declared on the CLI and documented in the setup guide, but nothing ever reads it. Passing it is silently a no-op. [[more]](https://github.com/Kuestenlogik/Bowire/issues/604)
+
+#### <a id="issue-kuestenlogik-bowire-636"></a>✅ Done · [#636](https://github.com/Kuestenlogik/Bowire/issues/636) Any authenticated user can install a plugin into the shared server process
+
+> `area:security`
+
+The plugin management endpoints sit behind the workbench's general auth policy (#625) and nothing else: [[more]](https://github.com/Kuestenlogik/Bowire/issues/636)
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
