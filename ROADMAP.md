@@ -12,11 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**12/32 done** · 1 next up · 19 backlog
+**13/32 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [28](https://github.com/Kuestenlogik/Bowire/issues/28) | Bowire | [Multi-tenant data model + SCIM (Phase B)](#issue-kuestenlogik-bowire-28) | 🟢 Next up | `area:workbench` |
 | [21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21) | Protocol.Dis | [probeDuration setting is ignored by DiscoverAsync](#issue-kuestenlogik-bowire-protocol-dis-21) | ⬜ Backlog | `area:plugin-sdk` |
 | [22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) | Protocol.Dis | [Typed PDU envelope decoding beyond EntityState](#issue-kuestenlogik-bowire-protocol-dis-22) | ⬜ Backlog | `area:plugin-sdk` |
 | [23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) | Protocol.Dis | [Entity-filtered stream drops non-EntityState PDUs](#issue-kuestenlogik-bowire-protocol-dis-23) | ⬜ Backlog | `area:plugin-sdk` |
@@ -36,6 +35,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [588](https://github.com/Kuestenlogik/Bowire/issues/588) | Bowire | [Tugboat — JetBrains plugin (IntelliJ platform)](#issue-kuestenlogik-bowire-588) | ⬜ Backlog |  |
+| [28](https://github.com/Kuestenlogik/Bowire/issues/28) | Bowire | [Multi-tenant data model + SCIM (Phase B)](#issue-kuestenlogik-bowire-28) | ✅ Done | `area:workbench` |
 | [96](https://github.com/Kuestenlogik/Bowire/issues/96) | Bowire | [Multi-tenant Phase C — SCIM 2.0 provisioning endpoints](#issue-kuestenlogik-bowire-96) | ✅ Done | `area:workbench` |
 | [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ✅ Done | `area:workbench` |
 | [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ✅ Done | `area:workbench` |
@@ -154,12 +154,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-#### <a id="issue-kuestenlogik-bowire-28"></a>🟢 Next up · [#28](https://github.com/Kuestenlogik/Bowire/issues/28) Multi-tenant data model + SCIM (Phase B)
-
-> `area:workbench`
-
-**Builds on:** #31, #32 — multi-tenant SCIM extends the auth foundation. [[more]](https://github.com/Kuestenlogik/Bowire/issues/28)
-
 #### <a id="issue-kuestenlogik-bowire-protocol-dis-21"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21) probeDuration setting is ignored by DiscoverAsync
 
 > `area:plugin-sdk`
@@ -271,6 +265,12 @@ Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in
 #### <a id="issue-kuestenlogik-bowire-588"></a>⬜ Backlog · [#588](https://github.com/Kuestenlogik/Bowire/issues/588) Tugboat — JetBrains plugin (IntelliJ platform)
 
 Split out of #101, which now covers the VS Code extension only. [[more]](https://github.com/Kuestenlogik/Bowire/issues/588)
+
+#### <a id="issue-kuestenlogik-bowire-28"></a>✅ Done · [#28](https://github.com/Kuestenlogik/Bowire/issues/28) Multi-tenant data model + SCIM (Phase B)
+
+> `area:workbench`
+
+**Builds on:** #31, #32 — multi-tenant SCIM extends the auth foundation. [[more]](https://github.com/Kuestenlogik/Bowire/issues/28)
 
 #### <a id="issue-kuestenlogik-bowire-96"></a>✅ Done · [#96](https://github.com/Kuestenlogik/Bowire/issues/96) Multi-tenant Phase C — SCIM 2.0 provisioning endpoints
 
