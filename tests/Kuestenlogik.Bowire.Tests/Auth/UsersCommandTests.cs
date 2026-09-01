@@ -56,7 +56,8 @@ public sealed class UsersCommandTests : IDisposable
             new ConfigurationBuilder().Build(),
             plugins: TestPluginLoaders.None(),
             stdout: stdout,
-            stderr: stderr);
+            stderr: stderr,
+            cancellationToken: TestContext.Current.CancellationToken);
         return (code, stdout.ToString(), stderr.ToString());
     }
 

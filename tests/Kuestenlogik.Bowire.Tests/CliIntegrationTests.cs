@@ -39,7 +39,7 @@ public sealed class CliIntegrationTests : IDisposable
         var cfg = BowireConfiguration.Build(args);
         await using var outW = new StringWriter();
         await using var errW = new StringWriter();
-        var code = await BowireCli.RunAsync(args, cfg, plugins: TestPluginLoaders.None(), outW, errW);
+        var code = await BowireCli.RunAsync(args, cfg, plugins: TestPluginLoaders.None(), outW, errW, cancellationToken: TestContext.Current.CancellationToken);
         return (code, outW.ToString(), errW.ToString());
     }
 
