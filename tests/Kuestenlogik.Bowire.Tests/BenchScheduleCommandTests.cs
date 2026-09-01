@@ -53,7 +53,8 @@ public sealed class BenchScheduleCommandTests : IDisposable
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
         var exit = await BowireCli.RunAsync(
-            args, EmptyConfig(), plugins: TestPluginLoaders.None(), stdout: stdout, stderr: stderr);
+            args, EmptyConfig(), plugins: TestPluginLoaders.None(), stdout: stdout, stderr: stderr,
+            cancellationToken: TestContext.Current.CancellationToken);
         return (exit, stdout.ToString(), stderr.ToString());
     }
 

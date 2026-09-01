@@ -42,7 +42,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["list", "--url", "http://127.0.0.1:1", "-plaintext"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.None());
+            plugins: TestPluginLoaders.None(),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -58,7 +59,8 @@ public sealed class BowireCliActionTests : IDisposable
             ["auth-recording", "list", "--workspace", "authrec-cli-" + Guid.NewGuid().ToString("N")],
             EmptyConfig(),
             plugins: TestPluginLoaders.None(),
-            stdout: stdout, stderr: null);
+            stdout: stdout, stderr: null,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
         Assert.Contains("No auth recordings", stdout.ToString(), StringComparison.Ordinal);
     }
@@ -71,7 +73,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["auth-recording", "capture", "--id", "x"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.None());
+            plugins: TestPluginLoaders.None(),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(64, rc);
     }
 
@@ -81,7 +84,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["describe", "users.UserService", "--url", "http://127.0.0.1:1"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.None());
+            plugins: TestPluginLoaders.None(),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -98,7 +102,8 @@ public sealed class BowireCliActionTests : IDisposable
                 "-d", "{\"id\":1}",
                 "-H", "authorization: bearer x"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.None());
+            plugins: TestPluginLoaders.None(),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -115,7 +120,8 @@ public sealed class BowireCliActionTests : IDisposable
                 "-plaintext",
                 "-d", "{}"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.None());
+            plugins: TestPluginLoaders.None(),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -128,7 +134,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["mock"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.None());
+            plugins: TestPluginLoaders.None(),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -157,7 +164,8 @@ public sealed class BowireCliActionTests : IDisposable
                 "--loop",
                 "--auto-install"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.None(), stdout: null, stderr: stderr);
+            plugins: TestPluginLoaders.None(), stdout: null, stderr: stderr,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
         Assert.Contains("chaos", stderr.ToString(), StringComparison.OrdinalIgnoreCase);
     }
@@ -171,7 +179,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["test"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.None());
+            plugins: TestPluginLoaders.None(),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -198,7 +207,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["test", coll, "--report", report, "--junit", junit],
             EmptyConfig(),
-            plugins: TestPluginLoaders.None());
+            plugins: TestPluginLoaders.None(),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
         Assert.True(File.Exists(report));
         Assert.True(File.Exists(junit));
@@ -212,7 +222,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "list", "--verbose"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.For(_tempDir));
+            plugins: TestPluginLoaders.For(_tempDir),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
     }
 
@@ -222,7 +233,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "uninstall", "no-such-package"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.For(_tempDir));
+            plugins: TestPluginLoaders.For(_tempDir),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -233,7 +245,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "install", "any-id", "--file", SafePath.Combine(_tempDir, "absent.nupkg")],
             EmptyConfig(),
-            plugins: TestPluginLoaders.For(_tempDir));
+            plugins: TestPluginLoaders.For(_tempDir),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -250,7 +263,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "install", "Ghost.Pkg", "--source", feed],
             EmptyConfig(),
-            plugins: TestPluginLoaders.For(_tempDir));
+            plugins: TestPluginLoaders.For(_tempDir),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -269,7 +283,8 @@ public sealed class BowireCliActionTests : IDisposable
                 "--output", bundle,
                 "--source", feed],
             EmptyConfig(),
-            plugins: TestPluginLoaders.For(_tempDir));
+            plugins: TestPluginLoaders.For(_tempDir),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -281,7 +296,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "update"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.For(_tempDir));
+            plugins: TestPluginLoaders.For(_tempDir),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
     }
 
@@ -293,7 +309,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "update", "ghost"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.For(_tempDir));
+            plugins: TestPluginLoaders.For(_tempDir),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -303,7 +320,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["plugin", "inspect", "no-such"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.For(_tempDir));
+            plugins: TestPluginLoaders.For(_tempDir),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -335,7 +353,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["import", "har", har],
             EmptyConfig(),
-            plugins: TestPluginLoaders.None());
+            plugins: TestPluginLoaders.None(),
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
         Assert.True(File.Exists(Path.ChangeExtension(har, ".bwr")));
     }
@@ -354,7 +373,8 @@ public sealed class BowireCliActionTests : IDisposable
         var rc = await BowireCli.RunAsync(
             ["import", "har", har, "--out", explicitOut, "--name", "custom"],
             EmptyConfig(),
-            plugins: TestPluginLoaders.None());
+            plugins: TestPluginLoaders.None(),
+            cancellationToken: TestContext.Current.CancellationToken);
         // Empty entries array — importer may emit a recording with no
         // steps (exit 0) or surface a "no entries" diagnostic (exit 1).
         // Either way the action lambda body executed.

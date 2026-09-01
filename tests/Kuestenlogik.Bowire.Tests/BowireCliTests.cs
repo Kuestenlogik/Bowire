@@ -30,7 +30,8 @@ public sealed class BowireCliTests
     {
         using var sw = new StringWriter();
         var rc = await BowireCli.RunAsync(["--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
-            stdout: sw, stderr: TextWriter.Null);
+            stdout: sw, stderr: TextWriter.Null,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
         var output = sw.ToString();
         // Every subcommand should appear in the help blob.
@@ -62,7 +63,8 @@ public sealed class BowireCliTests
     {
         using var sw = new StringWriter();
         var rc = await BowireCli.RunAsync([subcommand, "--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
-            stdout: sw, stderr: TextWriter.Null);
+            stdout: sw, stderr: TextWriter.Null,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
         Assert.NotEmpty(sw.ToString());
     }
@@ -74,7 +76,8 @@ public sealed class BowireCliTests
         // alias for --env must be wired on the test subcommand.
         using var sw = new StringWriter();
         var rc = await BowireCli.RunAsync(["test", "--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
-            stdout: sw, stderr: TextWriter.Null);
+            stdout: sw, stderr: TextWriter.Null,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
         var output = sw.ToString();
         Assert.Contains("--env-file", output, StringComparison.Ordinal);
@@ -89,7 +92,8 @@ public sealed class BowireCliTests
         using var sw = new StringWriter();
         var rc = await BowireCli.RunAsync(
             ["mcp", "serve", "--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
-            stdout: sw, stderr: TextWriter.Null);
+            stdout: sw, stderr: TextWriter.Null,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
         Assert.Contains("--bind", sw.ToString(), StringComparison.Ordinal);
     }
@@ -106,7 +110,8 @@ public sealed class BowireCliTests
         using var sw = new StringWriter();
         var rc = await BowireCli.RunAsync(
             ["plugin", sub, "--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
-            stdout: sw, stderr: TextWriter.Null);
+            stdout: sw, stderr: TextWriter.Null,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
         Assert.NotEmpty(sw.ToString());
     }
@@ -118,7 +123,8 @@ public sealed class BowireCliTests
     {
         using var sw = new StringWriter();
         var rc = await BowireCli.RunAsync(["--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
-            stdout: sw, stderr: TextWriter.Null);
+            stdout: sw, stderr: TextWriter.Null,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
         var output = sw.ToString();
         Assert.Contains("catalogue", output, StringComparison.Ordinal);
@@ -143,7 +149,8 @@ public sealed class BowireCliTests
         using var sw = new StringWriter();
         var rc = await BowireCli.RunAsync(
             ["catalogue", sub, "--help"], EmptyConfig(), plugins: TestPluginLoaders.None(),
-            stdout: sw, stderr: TextWriter.Null);
+            stdout: sw, stderr: TextWriter.Null,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
         Assert.NotEmpty(sw.ToString());
     }
@@ -157,7 +164,8 @@ public sealed class BowireCliTests
         using var err = new StringWriter();
         var rc = await BowireCli.RunAsync(
             ["--catalogue-provider", "local", "--catalogue-path", "/tmp/x.json", "--help"],
-            EmptyConfig(), plugins: TestPluginLoaders.None(), stdout: sw, stderr: err);
+            EmptyConfig(), plugins: TestPluginLoaders.None(), stdout: sw, stderr: err,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
         Assert.Empty(err.ToString());
     }

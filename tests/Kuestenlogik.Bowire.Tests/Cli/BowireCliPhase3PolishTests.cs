@@ -108,7 +108,7 @@ public sealed class BowireCliPhase3PolishTests
         using var stderr = new StringWriter();
 
         string[] args = ["mock", "--port", "70000"];
-        var rc = await BowireCli.RunAsync(args, EmptyConfig(), plugins: TestPluginLoaders.None(), stdout, stderr);
+        var rc = await BowireCli.RunAsync(args, EmptyConfig(), plugins: TestPluginLoaders.None(), stdout, stderr, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(1, rc);
         Assert.Equal(string.Empty, stdout.ToString());

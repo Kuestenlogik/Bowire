@@ -44,7 +44,8 @@ public sealed class ReportRollupCommandTests : IDisposable
         using var stderr = new StringWriter();
         var exit = await BowireCli.RunAsync(
             args, new ConfigurationBuilder().Build(),
-            plugins: TestPluginLoaders.None(), stdout: stdout, stderr: stderr);
+            plugins: TestPluginLoaders.None(), stdout: stdout, stderr: stderr,
+            cancellationToken: TestContext.Current.CancellationToken);
         return (exit, stdout.ToString(), stderr.ToString());
     }
 
