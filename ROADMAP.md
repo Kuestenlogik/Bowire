@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**10/32 done** · 1 next up · 21 backlog
+**11/32 done** · 1 next up · 20 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -34,12 +34,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) | Protocol.Akka | [Docs drift: TappedMessage envelope field names & payload shape](#issue-kuestenlogik-bowire-protocol-akka-34) | ⬜ Backlog | `area:plugin-sdk` |
 | [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog | `area:plugin-sdk` |
 | [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
-| [284](https://github.com/Kuestenlogik/Bowire/issues/284) | Bowire | [Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)](#issue-kuestenlogik-bowire-284) | ⬜ Backlog | `area:plugin-sdk` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [588](https://github.com/Kuestenlogik/Bowire/issues/588) | Bowire | [Tugboat — JetBrains plugin (IntelliJ platform)](#issue-kuestenlogik-bowire-588) | ⬜ Backlog |  |
 | [96](https://github.com/Kuestenlogik/Bowire/issues/96) | Bowire | [Multi-tenant Phase C — SCIM 2.0 provisioning endpoints](#issue-kuestenlogik-bowire-96) | ⬜ In review | `area:workbench` |
 | [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ✅ Done | `area:workbench` |
 | [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ✅ Done | `area:workbench` |
+| [284](https://github.com/Kuestenlogik/Bowire/issues/284) | Bowire | [Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)](#issue-kuestenlogik-bowire-284) | ✅ Done | `area:plugin-sdk` |
 | [549](https://github.com/Kuestenlogik/Bowire/issues/549) | Bowire | [Workbench plugin install ignores --plugin-dir — the override reaches the loader and nothing else](#issue-kuestenlogik-bowire-549) | ✅ Done | `area:workbench` |
 | [589](https://github.com/Kuestenlogik/Bowire/issues/589) | Bowire | [VS Code: resolve the CLI from a workspace tool manifest](#issue-kuestenlogik-bowire-589) | ✅ Done |  |
 | [590](https://github.com/Kuestenlogik/Bowire/issues/590) | Bowire | [VS Code: offer to download a matching CLI when none is installed](#issue-kuestenlogik-bowire-590) | ✅ Done |  |
@@ -261,12 +261,6 @@ When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` 
 
 Surface IServiceCollection.AddBowireEnvironment(name, configure) (or a fluent builder on AddBowire()) so the host can pre-seed environments with variables derived from the running appʼs own IConfiguration / IOptions<T>. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/49)
 
-#### <a id="issue-kuestenlogik-bowire-284"></a>⬜ Backlog · [#284](https://github.com/Kuestenlogik/Bowire/issues/284) Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)
-
-> `area:plugin-sdk`
-
-Extracted from #28 — **Phase D** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/284)
-
 #### <a id="issue-kuestenlogik-bowire-365"></a>⬜ Backlog · [#365](https://github.com/Kuestenlogik/Bowire/issues/365) Contract testing + workspace-id: run a workbench-stored workspace's suite by id
 
 > `area:workbench`
@@ -294,6 +288,12 @@ Extracted from #28 — **Phase E** of the multi-tenant rollout. Tracked separate
 > `area:workbench`
 
 Phase F of the multi-tenant rollout — the UI affordances that turn "multi-user works under the hood" into "users feel it" (#28). [[more]](https://github.com/Kuestenlogik/Bowire/issues/98)
+
+#### <a id="issue-kuestenlogik-bowire-284"></a>✅ Done · [#284](https://github.com/Kuestenlogik/Bowire/issues/284) Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)
+
+> `area:plugin-sdk`
+
+Extracted from #28 — **Phase D** of the multi-tenant rollout. Tracked separately so it can be sized + scheduled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/284)
 
 #### <a id="issue-kuestenlogik-bowire-549"></a>✅ Done · [#549](https://github.com/Kuestenlogik/Bowire/issues/549) Workbench plugin install ignores --plugin-dir — the override reaches the loader and nothing else
 
@@ -739,4 +739,4 @@ Everything Bowire measures today is a request that completes. `bowire bench` cal
 
 ---
 
-*Generated 2026-08-31 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-09-01 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
