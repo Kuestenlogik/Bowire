@@ -213,12 +213,17 @@ internal static class BowireScimEndpoints
             return Error(StatusCodes.Status400BadRequest, "invalidFilter", ex.Message);
         }
 
+        // #96 — filter, page, *then* stamp the location. Stamping first meant
+        // a directory of 10 000 built 10 000 absolute URLs to return fifty of
+        // them, and wrote every one of them into the stored resource: the
+        // work and the write both scaled with the directory rather than with
+        // the page.
         var matching = store.Users()
             .Where(r => filter is null || filter.Matches(name => UserAttribute(r.Resource, name)))
-            .Select(r => Located(r.Resource, http, basePath))
+            .Select(r => r.Resource)
             .ToList();
 
-        return Ok(Page(matching, http, options));
+        return Ok(Page(matching, u => Located(u, http, basePath), http, options));
     }
 
     private static IResult ListGroups(
@@ -233,10 +238,9 @@ internal static class BowireScimEndpoints
 
         var matching = store.Groups()
             .Where(g => filter is null || filter.Matches(name => GroupAttribute(g, name)))
-            .Select(g => Located(g, http, basePath))
             .ToList();
 
-        return Ok(Page(matching, http, options));
+        return Ok(Page(matching, g => Located(g, http, basePath), http, options));
     }
 
     private static ScimFilter? ParseFilter(HttpContext http)
@@ -245,8 +249,21 @@ internal static class BowireScimEndpoints
         return string.IsNullOrWhiteSpace(text) ? null : ScimFilter.Parse(text);
     }
 
-    private static ScimListResponse<T> Page<T>(
-        IReadOnlyList<T> all, HttpContext http, BowireScimOptions options)
+    /// <summary>
+    /// One page of <paramref name="all"/>, with <paramref name="project"/>
+    /// applied to the slice rather than to the whole list.
+    /// </summary>
+    /// <remarks>
+    /// The projection is deferred on purpose: it is what stamps the absolute
+    /// location onto a resource, and doing that to every match in order to
+    /// return one page made both the cost and the write scale with the size
+    /// of the directory (#96).
+    /// </remarks>
+    private static ScimListResponse<T> Page<TSource, T>(
+        IReadOnlyList<TSource> all,
+        Func<TSource, T> project,
+        HttpContext http,
+        BowireScimOptions options)
     {
         // 1-based, per RFC 7644 §3.4.2.4 — a connector that asks for
         // startIndex=1 and gets the second resource silently skips the first
@@ -255,7 +272,7 @@ internal static class BowireScimEndpoints
         var count = Math.Clamp(
             Number(http, "count", options.DefaultPageSize), 0, options.MaxPageSize);
 
-        var page = all.Skip(start - 1).Take(count).ToList();
+        var page = all.Skip(start - 1).Take(count).Select(project).ToList();
 
         return new ScimListResponse<T>
         {
