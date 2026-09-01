@@ -51,7 +51,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
-**0/5 done** · 5 backlog
+**0/6 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -60,6 +60,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [240](https://github.com/Kuestenlogik/Bowire/issues/240) | Bowire | [Map widget: per-entity grouping via configurable track-id field](#issue-kuestenlogik-bowire-240) | ⬜ Backlog | `area:workbench` |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
 | [619](https://github.com/Kuestenlogik/Bowire/issues/619) | Bowire | [VS Code extension 1.0 — cut the release the code already justifies](#issue-kuestenlogik-bowire-619) | ⬜ Backlog | `area:workbench` |
+| [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
@@ -362,6 +363,12 @@ Group stream frames by an explicit **track identifier** so the map can show N pa
 > `area:workbench`
 
 The extension has outgrown its version number. `#589` (resolve the CLI from a workspace tool manifest), `#590` (offer a managed download when none is installed) and `#591` (workspace-local storage) closed the last construction sites, and none of that has reached anybody: the Marketplace still serves … [[more]](https://github.com/Kuestenlogik/Bowire/issues/619)
+
+#### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
+
+> `area:workbench`
+
+Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
