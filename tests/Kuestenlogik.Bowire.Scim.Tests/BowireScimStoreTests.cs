@@ -157,6 +157,37 @@ public sealed class BowireScimStoreTests : IDisposable
     }
 
     [Fact]
+    public void Provisioning_Does_Not_Create_An_Empty_Slot()
+    {
+        // #96 — the slot appears when there is something to put in it, not
+        // when the person is provisioned. An organisation that syncs 10 000
+        // people would otherwise get 10 000 empty directories, most of them
+        // for accounts that never sign in.
+        //
+        // Nothing security-relevant rests on this either way: the
+        // deactivation gate reads the record, not the directory, so an
+        // identity with no slot yet is refused exactly like one with a slot
+        // that was archived. The neighbouring tests are where that is pinned.
+        var store = Store();
+        var record = store.CreateUser(Ada());
+        store.BindSubject(record.Resource.Id, "8f14e45f");
+
+        var slot = new ScopedBowireUserStore(_root, "8f14e45f").Slot;
+        Assert.False(Directory.Exists(slot));
+
+        // And it appears the moment the person's state does.
+        Directory.CreateDirectory(slot);
+        File.WriteAllText(Path.Combine(slot, "environments.json"), "{}");
+        Assert.True(Directory.Exists(slot));
+
+        // Deactivating an identity whose slot was never written is not an
+        // error — there is simply nothing to archive.
+        var untouched = store.CreateUser(new ScimUser { UserName = "grace@example.com" });
+        Assert.True(store.DeleteUser(untouched.Resource.Id));
+        Assert.Null(store.GetUser(untouched.Resource.Id)!.ArchivedSlot);
+    }
+
+    [Fact]
     public void Deactivating_Moves_The_Persons_State_Out_Of_Reach()
     {
         var store = Store();
