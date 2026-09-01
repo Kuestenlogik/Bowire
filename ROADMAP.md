@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**11/32 done** · 1 next up · 20 backlog
+**12/32 done** · 1 next up · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -36,7 +36,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [49](https://github.com/Kuestenlogik/Bowire/issues/49) | Bowire | [Programmatic environment provisioning in embedded mode](#issue-kuestenlogik-bowire-49) | ⬜ Backlog | `area:workbench` |
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
 | [588](https://github.com/Kuestenlogik/Bowire/issues/588) | Bowire | [Tugboat — JetBrains plugin (IntelliJ platform)](#issue-kuestenlogik-bowire-588) | ⬜ Backlog |  |
-| [96](https://github.com/Kuestenlogik/Bowire/issues/96) | Bowire | [Multi-tenant Phase C — SCIM 2.0 provisioning endpoints](#issue-kuestenlogik-bowire-96) | ⬜ In review | `area:workbench` |
+| [96](https://github.com/Kuestenlogik/Bowire/issues/96) | Bowire | [Multi-tenant Phase C — SCIM 2.0 provisioning endpoints](#issue-kuestenlogik-bowire-96) | ✅ Done | `area:workbench` |
 | [97](https://github.com/Kuestenlogik/Bowire/issues/97) | Bowire | [Multi-tenant Phase E — single-user → multi-tenant migration path](#issue-kuestenlogik-bowire-97) | ✅ Done | `area:workbench` |
 | [98](https://github.com/Kuestenlogik/Bowire/issues/98) | Bowire | [Multi-tenant Phase F — user chip, scoped state copy, admin impersonation](#issue-kuestenlogik-bowire-98) | ✅ Done | `area:workbench` |
 | [284](https://github.com/Kuestenlogik/Bowire/issues/284) | Bowire | [Multi-tenant Phase D — per-user plugin installs (system tier + per-user overlay)](#issue-kuestenlogik-bowire-284) | ✅ Done | `area:plugin-sdk` |
@@ -272,7 +272,7 @@ Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in
 
 Split out of #101, which now covers the VS Code extension only. [[more]](https://github.com/Kuestenlogik/Bowire/issues/588)
 
-#### <a id="issue-kuestenlogik-bowire-96"></a>⬜ In review · [#96](https://github.com/Kuestenlogik/Bowire/issues/96) Multi-tenant Phase C — SCIM 2.0 provisioning endpoints
+#### <a id="issue-kuestenlogik-bowire-96"></a>✅ Done · [#96](https://github.com/Kuestenlogik/Bowire/issues/96) Multi-tenant Phase C — SCIM 2.0 provisioning endpoints
 
 > `area:workbench`
 
