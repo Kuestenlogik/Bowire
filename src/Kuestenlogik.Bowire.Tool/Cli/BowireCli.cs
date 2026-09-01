@@ -48,8 +48,15 @@ internal static class BowireCli
         return args.Length > 0 && string.Equals(args[0], "plugin", StringComparison.Ordinal);
     }
 
+    /// <param name="cancellationToken">
+    /// Stops a long-running subcommand — <c>proxy</c>, <c>mcp serve</c>,
+    /// <c>mock</c>. Without it those could be started through this entry
+    /// point and never stopped, which is why their CLI wiring had no test
+    /// (#637): the only way to exercise the handler was to run it forever.
+    /// </param>
     public static async Task<int> RunAsync(string[] args, IConfiguration cfg, IBowirePluginLoader plugins,
-        TextWriter? stdout = null, TextWriter? stderr = null)
+        TextWriter? stdout = null, TextWriter? stderr = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(plugins);
         var root = BuildRoot(args, cfg, plugins);
@@ -73,7 +80,7 @@ internal static class BowireCli
             return CliErrorRenderer.Render(parseResult, invocationConfig.Error, useColor);
         }
 
-        return await parseResult.InvokeAsync(invocationConfig).ConfigureAwait(false);
+        return await parseResult.InvokeAsync(invocationConfig, cancellationToken).ConfigureAwait(false);
     }
 
     private static RootCommand BuildRoot(string[] originalArgs, IConfiguration cfg, IBowirePluginLoader plugins)
