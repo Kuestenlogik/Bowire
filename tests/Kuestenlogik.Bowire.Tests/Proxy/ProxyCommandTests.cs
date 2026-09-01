@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire.App;
+using Kuestenlogik.Bowire.App.Cli;
+using Kuestenlogik.Bowire.Tests.Plugins;
+using Microsoft.Extensions.Configuration;
 
 namespace Kuestenlogik.Bowire.Tests.Proxy;
 
@@ -60,6 +63,35 @@ public sealed class ProxyCommandTests
         var code = await ProxyCommand.RunAsync(options, cancellationToken: cts.Token);
 
         Assert.Equal(0, code);
+    }
+
+    [Fact]
+    public async Task ProxySubcommand_WiresTheParsedOptionsIntoTheCommand()
+    {
+        // The `proxy` CLI action had no test at all, because the only way to
+        // reach it was to start a proxy and never stop it. With a token that
+        // reaches the handler, a pre-cancelled run exercises the wiring and
+        // returns through the cancelled-before-started path.
+        //
+        // Worth having for a reason this session demonstrated: the action
+        // passed its cancellation token positionally, so adding a parameter
+        // to ProxyCommand.RunAsync silently rebound it. That is a compile
+        // error today and would have been a runtime one with a different
+        // signature — either way, nothing was watching this call.
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        var rc = await BowireCli.RunAsync(
+            ["proxy", "--port", "0", "--api-port", "0", "--no-mitm"],
+            new ConfigurationBuilder().Build(),
+            plugins: TestPluginLoaders.None(),
+            stdout: stdout,
+            stderr: stderr,
+            cancellationToken: cts.Token);
+
+        Assert.Equal(0, rc);
     }
 
     [Fact]
