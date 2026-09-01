@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using Kuestenlogik.Bowire.App;
 using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.Tests.Plugins;
@@ -83,8 +84,16 @@ public sealed class ProxyCommandTests
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
 
+        // Concrete ports, not 0: the proxy subcommand's --port validation has
+        // no ephemeral allowance (the workbench's does, because --port-file
+        // gives 0 a way to report itself), so "0" is a parse error here and
+        // would never reach the action this test exists to cover.
+        var port = GetFreePort();
+        var apiPort = GetFreePort();
+
         var rc = await BowireCli.RunAsync(
-            ["proxy", "--port", "0", "--api-port", "0", "--no-mitm"],
+            ["proxy", "--port", port.ToString(CultureInfo.InvariantCulture),
+             "--api-port", apiPort.ToString(CultureInfo.InvariantCulture), "--no-mitm"],
             new ConfigurationBuilder().Build(),
             plugins: TestPluginLoaders.None(),
             stdout: stdout,
@@ -188,4 +197,13 @@ public sealed class ProxyCommandTests
             if (Directory.Exists(caDir)) Directory.Delete(caDir, recursive: true);
         }
     }
+    private static int GetFreePort()
+    {
+        using var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return port;
+    }
+
 }
