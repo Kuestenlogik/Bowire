@@ -93,6 +93,26 @@ public sealed class BowireScimStore
 
     private readonly Lock _gate = new();
     private readonly Dictionary<string, ScimUserRecord> _users = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// <c>userName</c> → SCIM id, case-insensitive (#96).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every write path has to answer "is this login name taken", and every
+    /// sign-in has to answer "whose is it". Both used to walk the whole
+    /// dictionary, which makes provisioning quadratic: a directory of 10 000
+    /// costs 50 million comparisons to fill, and each new user costs a scan
+    /// of everyone who came before. That is the shape an identity provider
+    /// hammers hardest.
+    /// </para>
+    /// <para>
+    /// Maintained rather than derived: rebuilding on each mutation would put
+    /// the same walk back. The sync points are the load, create, replace,
+    /// patch and purge — soft delete keeps the record, so it keeps its name.
+    /// </para>
+    /// </remarks>
+    private readonly Dictionary<string, string> _byUserName = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ScimGroup> _groups = new(StringComparer.Ordinal);
     private readonly TimeProvider _clock;
 
@@ -122,6 +142,43 @@ public sealed class BowireScimStore
 
     /// <summary>The append-only record of every provisioning decision.</summary>
     public string EventLog => Path.Combine(Root, "events.jsonl");
+
+    /// <summary>
+    /// Whether <paramref name="userName"/> belongs to somebody other than
+    /// <paramref name="exceptId"/>. Callers hold <c>_gate</c>.
+    /// </summary>
+    private bool UserNameTaken(string? userName, string? exceptId)
+        => !string.IsNullOrWhiteSpace(userName)
+            && _byUserName.TryGetValue(userName, out var owner)
+            && !string.Equals(owner, exceptId, StringComparison.Ordinal);
+
+    /// <summary>Point the index at this record's current name. Holds <c>_gate</c>.</summary>
+    private void IndexUserName(ScimUserRecord record, string? previousName = null)
+    {
+        if (!string.IsNullOrWhiteSpace(previousName)
+            && !string.Equals(previousName, record.Resource.UserName, StringComparison.OrdinalIgnoreCase)
+            && _byUserName.TryGetValue(previousName, out var owner)
+            && string.Equals(owner, record.Resource.Id, StringComparison.Ordinal))
+        {
+            _byUserName.Remove(previousName);
+        }
+
+        if (!string.IsNullOrWhiteSpace(record.Resource.UserName))
+        {
+            _byUserName[record.Resource.UserName] = record.Resource.Id;
+        }
+    }
+
+    /// <summary>Drop this record from the index. Holds <c>_gate</c>.</summary>
+    private void ForgetUserName(ScimUserRecord record)
+    {
+        if (!string.IsNullOrWhiteSpace(record.Resource.UserName)
+            && _byUserName.TryGetValue(record.Resource.UserName, out var owner)
+            && string.Equals(owner, record.Resource.Id, StringComparison.Ordinal))
+        {
+            _byUserName.Remove(record.Resource.UserName);
+        }
+    }
 
     private string UsersDirectory => Path.Combine(Root, "users");
 
@@ -169,8 +226,9 @@ public sealed class BowireScimStore
                     Same(r.Subject, subject))
                 ?? _users.Values.FirstOrDefault(r =>
                     Same(r.Resource.ExternalId, subject))
-                ?? _users.Values.FirstOrDefault(r =>
-                    Same(r.Resource.UserName, subject));
+                ?? (_byUserName.TryGetValue(subject, out var byName)
+                    ? _users.GetValueOrDefault(byName)
+                    : null);
         }
     }
 
@@ -181,7 +239,9 @@ public sealed class BowireScimStore
         EnsureLoaded();
         lock (_gate)
         {
-            return _users.Values.FirstOrDefault(r => Same(r.Resource.UserName, userName));
+            return _byUserName.TryGetValue(userName, out var id)
+                ? _users.GetValueOrDefault(id)
+                : null;
         }
     }
 
@@ -200,7 +260,7 @@ public sealed class BowireScimStore
         EnsureLoaded();
         lock (_gate)
         {
-            if (_users.Values.Any(r => Same(r.Resource.UserName, resource.UserName)))
+            if (UserNameTaken(resource.UserName, exceptId: null))
             {
                 throw new ScimConflictException(
                     $"A user with userName '{resource.UserName}' already exists.");
@@ -219,6 +279,7 @@ public sealed class BowireScimStore
 
             var record = new ScimUserRecord { Resource = resource };
             _users[resource.Id] = record;
+            IndexUserName(record);
             Persist(record);
             Log("create", resource.Id, resource.UserName, active: resource.Active);
             return record;
@@ -238,8 +299,7 @@ public sealed class BowireScimStore
         {
             if (!_users.TryGetValue(id, out var existing)) return null;
 
-            if (!string.IsNullOrWhiteSpace(resource.UserName)
-                && _users.Values.Any(r => r.Resource.Id != id && Same(r.Resource.UserName, resource.UserName)))
+            if (UserNameTaken(resource.UserName, exceptId: id))
             {
                 throw new ScimConflictException(
                     $"A user with userName '{resource.UserName}' already exists.");
@@ -258,7 +318,9 @@ public sealed class BowireScimStore
                 Version = Etag(now),
             };
 
+            var previousName = existing.Resource.UserName;
             existing.Resource = resource;
+            IndexUserName(existing, previousName);
             ApplyActivation(existing, wasActive, resource.Active, now);
             Persist(existing);
             Log("replace", id, resource.UserName, active: resource.Active);
@@ -279,10 +341,12 @@ public sealed class BowireScimStore
             if (!_users.TryGetValue(id, out var existing)) return null;
 
             var wasActive = existing.Resource.Active;
+            // Captured before the change, because the change is what may
+            // rename the user out from under the index.
+            var previousName = existing.Resource.UserName;
             change(existing.Resource);
 
-            if (_users.Values.Any(r => r.Resource.Id != id
-                && Same(r.Resource.UserName, existing.Resource.UserName)))
+            if (UserNameTaken(existing.Resource.UserName, exceptId: id))
             {
                 throw new ScimConflictException(
                     $"A user with userName '{existing.Resource.UserName}' already exists.");
@@ -293,6 +357,7 @@ public sealed class BowireScimStore
             existing.Resource.Meta.LastModified = now;
             existing.Resource.Meta.Version = Etag(now);
 
+            IndexUserName(existing, previousName);
             ApplyActivation(existing, wasActive, existing.Resource.Active, now);
             Persist(existing);
             Log("update", id, existing.Resource.UserName, active: existing.Resource.Active);
@@ -349,6 +414,7 @@ public sealed class BowireScimStore
                 if (record.ArchivedSlot is not null) Delete(record.ArchivedSlot);
                 File.Delete(UserFile(record.Resource.Id));
                 _users.Remove(record.Resource.Id);
+                ForgetUserName(record);
                 Log("purge", record.Resource.Id, record.Resource.UserName, active: false);
                 purged++;
             }
@@ -534,6 +600,7 @@ public sealed class BowireScimStore
                 if (record is not null && !string.IsNullOrEmpty(record.Resource.Id))
                 {
                     _users[record.Resource.Id] = record;
+                    IndexUserName(record);
                 }
             });
             Load(GroupsDirectory, file =>
