@@ -27,7 +27,7 @@ namespace Kuestenlogik.Bowire.Scim.Tests;
 /// (#637). What these catch is a return to walking the directory.
 /// </para>
 /// </remarks>
-public sealed class ScimScaleTests : IDisposable
+public sealed class ScimScaleTests(ITestOutputHelper output) : IDisposable
 {
     private const int Directory10K = 10_000;
 
@@ -53,6 +53,7 @@ public sealed class ScimScaleTests : IDisposable
         _ = store.Users();
 
         var listed = Measure(() => store.Users());
+        output.WriteLine($"list {Directory10K}: {listed.Elapsed.TotalMilliseconds:F1} ms");
         Assert.Equal(Directory10K, listed.Result.Count);
         Assert.True(listed.Elapsed < TimeSpan.FromMilliseconds(500),
             $"Listing {Directory10K} users took {listed.Elapsed.TotalMilliseconds:F0} ms.");
@@ -66,6 +67,7 @@ public sealed class ScimScaleTests : IDisposable
                 : null))
             .ToList());
 
+        output.WriteLine($"filter {Directory10K}: {filtered.Elapsed.TotalMilliseconds:F1} ms");
         Assert.Single(filtered.Result);
         Assert.True(filtered.Elapsed < TimeSpan.FromMilliseconds(500),
             $"Filtering {Directory10K} users took {filtered.Elapsed.TotalMilliseconds:F0} ms.");
@@ -91,6 +93,7 @@ public sealed class ScimScaleTests : IDisposable
             return found;
         });
 
+        output.WriteLine($"{Directory10K} lookups: {lookups.Elapsed.TotalMilliseconds:F1} ms");
         Assert.Equal(Directory10K, lookups.Result);
         Assert.True(lookups.Elapsed < TimeSpan.FromSeconds(2),
             $"{Directory10K} lookups took {lookups.Elapsed.TotalMilliseconds:F0} ms.");
@@ -158,9 +161,17 @@ public sealed class ScimScaleTests : IDisposable
 
     private BowireScimStore Seeded(int count)
     {
-        var store = new BowireScimStore(_root);
-        for (var i = 0; i < count; i++) store.CreateUser(User(UserName(i)));
-        return store;
+        // Timed too: filling the directory is the path an identity provider
+        // spends its first hour on, and it is the one that used to be
+        // quadratic.
+        var seeded = Measure(() =>
+        {
+            var store = new BowireScimStore(_root);
+            for (var i = 0; i < count; i++) store.CreateUser(User(UserName(i)));
+            return store;
+        });
+        output.WriteLine($"provision {count}: {seeded.Elapsed.TotalMilliseconds:F0} ms");
+        return seeded.Result;
     }
 
     private static string UserName(int i)
