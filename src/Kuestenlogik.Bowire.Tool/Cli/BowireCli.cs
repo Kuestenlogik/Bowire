@@ -48,12 +48,21 @@ internal static class BowireCli
         return args.Length > 0 && string.Equals(args[0], "plugin", StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Parse <paramref name="args"/> and run the subcommand they name.
+    /// </summary>
+    /// <param name="args">The command line, without the executable name.</param>
+    /// <param name="cfg">Configuration the subcommands bind their options from.</param>
+    /// <param name="plugins">Loader whose packages contribute protocol subcommands.</param>
+    /// <param name="stdout">Output sink; defaults to the console.</param>
+    /// <param name="stderr">Error sink; defaults to the console.</param>
     /// <param name="cancellationToken">
     /// Stops a long-running subcommand — <c>proxy</c>, <c>mcp serve</c>,
     /// <c>mock</c>. Without it those could be started through this entry
     /// point and never stopped, which is why their CLI wiring had no test
     /// (#637): the only way to exercise the handler was to run it forever.
     /// </param>
+    /// <returns>The process exit code.</returns>
     public static async Task<int> RunAsync(string[] args, IConfiguration cfg, IBowirePluginLoader plugins,
         TextWriter? stdout = null, TextWriter? stderr = null,
         CancellationToken cancellationToken = default)
