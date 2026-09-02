@@ -136,7 +136,17 @@ internal static class BowireApiEndpoints
         bowireGroup.AddEndpointFilter(async (context, next) =>
         {
             BowireResponseHeaders.ApplyBaseline(context.HttpContext.Response);
-            return await next(context).ConfigureAwait(false);
+
+            // #640 — name the workspace for the rest of the call, so a plugin
+            // asked for a setting inside DiscoverAsync knows whose it is. The
+            // workspace arrives as a query parameter and the plugin contract
+            // carries a URL and a token; this is the seam between them, and it
+            // is the same trade tenancy makes.
+            var scope = Endpoints.WorkspaceScopeQuery.From(context.HttpContext);
+            using (Plugins.BowirePluginSettingsScope.Enter(scope.WorkspaceId, scope.StorageRoot))
+            {
+                return await next(context).ConfigureAwait(false);
+            }
         });
 
         bowireGroup
