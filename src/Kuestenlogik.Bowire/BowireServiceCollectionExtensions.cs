@@ -5,6 +5,7 @@ using System.Reflection;
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.PluginLoading;
+using Kuestenlogik.Bowire.Environments;
 using Kuestenlogik.Bowire.Plugins;
 using Kuestenlogik.Bowire.Projects;
 using Kuestenlogik.Bowire.Recording;
@@ -697,5 +698,61 @@ public static class BowireServiceCollectionExtensions
             if (loaded.Contains(simpleName)) continue;
             try { Assembly.LoadFrom(dll); } catch { /* skip */ }
         }
+    }
+
+    /// <summary>
+    /// Declare an environment from the host's own configuration (#49).
+    /// </summary>
+    /// <param name="services">The host's container.</param>
+    /// <param name="name">What it is called in the workbench's switcher.</param>
+    /// <param name="configure">Fills in the variables.</param>
+    /// <example>
+    /// <code>
+    /// services.AddBowire();
+    /// services.AddBowireEnvironment("Staging", env => env
+    ///     .Set("baseUrl", configuration["Api:BaseUrl"])
+    ///     .Set("tenant", options.Value.TenantId));
+    /// </code>
+    /// </example>
+    /// <remarks>
+    /// <para>
+    /// An embedded host already knows its base URLs and tenant ids; without
+    /// this the only way to use them in the workbench was to read them out of
+    /// <c>appsettings.json</c> and type them in again, leaving two copies of
+    /// which one goes quietly wrong the moment the other changes.
+    /// </para>
+    /// <para>
+    /// Declared environments are contributed on every start and never written
+    /// to <c>environments.json</c>. Change the host's configuration, restart,
+    /// and the environment changes with it — nothing stale left behind, and
+    /// nothing for the workbench to save back and end up holding twice.
+    /// </para>
+    /// <para>
+    /// Call it once per environment. A second call with the same name replaces
+    /// the first, so a host composing configuration in layers gets the last
+    /// word rather than two entries sharing a name.
+    /// </para>
+    /// </remarks>
+    public static IServiceCollection AddBowireEnvironment(
+        this IServiceCollection services, string name, Action<BowireProvisionedEnvironment> configure)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var environment = new BowireProvisionedEnvironment { Name = name.Trim() };
+        configure(environment);
+
+        // Last call wins on the same name. Registered as a singleton instance
+        // so the order the host sees is its own registration order, which is
+        // what someone reading their Program.cs expects.
+        var existing = services.FirstOrDefault(d =>
+            d.ServiceType == typeof(BowireProvisionedEnvironment)
+            && d.ImplementationInstance is BowireProvisionedEnvironment e
+            && string.Equals(e.Id, environment.Id, StringComparison.Ordinal));
+        if (existing is not null) services.Remove(existing);
+
+        services.AddSingleton(environment);
+        return services;
     }
 }

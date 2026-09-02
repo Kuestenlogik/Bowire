@@ -18,12 +18,26 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// </summary>
 internal static class BowireEnvironmentEndpoints
 {
+    /// <summary>
+    /// What the host declared through <c>AddBowireEnvironment</c>, or nothing
+    /// — which is every host that never called it.
+    /// </summary>
+    private static IReadOnlyList<BowireProvisionedEnvironment> Provisioned(HttpContext ctx)
+        => ctx.RequestServices.GetServices<BowireProvisionedEnvironment>().ToList();
+
+
     public static IEndpointRouteBuilder MapBowireEnvironmentEndpoints(
         this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
     {
-        endpoints.MapGet($"{basePath}/api/environments", () =>
+        endpoints.MapGet($"{basePath}/api/environments", (HttpContext ctx) =>
         {
-            return Results.Content(EnvironmentStore.Load(), "application/json");
+            // #49 — whatever the host declared rides along with what the
+            // person saved. Marked so the workbench can render it as the
+            // host's rather than as something to edit.
+            var provisioned = Provisioned(ctx);
+            return Results.Content(
+                BowireProvisionedEnvironments.Merge(EnvironmentStore.Load(), provisioned),
+                "application/json");
         }).ExcludeFromDescription();
 
         endpoints.MapPut($"{basePath}/api/environments", async (HttpContext ctx) =>
@@ -32,7 +46,13 @@ internal static class BowireEnvironmentEndpoints
             var json = await reader.ReadToEndAsync(ctx.RequestAborted);
             try
             {
-                EnvironmentStore.Save(json);
+                // #49 — and they must not come back the other way. The
+                // workbench sends the whole envelope on every change, so
+                // without this a declared environment would be saved on the
+                // first edit anybody made and then exist twice: once declared,
+                // once stored, diverging as soon as the host's configuration
+                // moved.
+                EnvironmentStore.Save(BowireProvisionedEnvironments.Strip(json, Provisioned(ctx)));
                 return Results.Json(new { saved = true }, BowireEndpointHelpers.JsonOptions);
             }
             catch (JsonException ex)
