@@ -40,7 +40,7 @@ public class BowireProvisionedEnvironmentTests
         Assert.Equal(2, environments.GetArrayLength());
 
         var host = environments[1];
-        Assert.Equal("host:staging", host.GetProperty("id").GetString());
+        Assert.Equal("host:Staging", host.GetProperty("id").GetString());
         Assert.Equal("Staging", host.GetProperty("name").GetString());
         Assert.Equal("https://staging.example.com",
             host.GetProperty("vars").GetProperty("baseUrl").GetString());
@@ -86,7 +86,7 @@ public class BowireProvisionedEnvironmentTests
     {
         // The flag is something a client could omit; the ids are ours.
         var claimed =
-            """{"globals":{},"environments":[{"id":"host:staging","name":"Staging","vars":{"baseUrl":"http://evil"}}],"activeEnvId":""}""";
+            """{"globals":{},"environments":[{"id":"host:Staging","name":"Staging","vars":{"baseUrl":"http://evil"}}],"activeEnvId":""}""";
 
         var toSave = JsonDocument.Parse(
             BowireProvisionedEnvironments.Strip(claimed, [Staging()]));
@@ -101,7 +101,7 @@ public class BowireProvisionedEnvironmentTests
         // declaration is the source of truth, so the stale value must not show
         // up as a second entry with the same name and a different answer.
         var withLeftover =
-            """{"globals":{},"environments":[{"id":"host:staging","name":"Staging","vars":{"baseUrl":"http://stale"}}],"activeEnvId":""}""";
+            """{"globals":{},"environments":[{"id":"host:Staging","name":"Staging","vars":{"baseUrl":"http://stale"}}],"activeEnvId":""}""";
 
         var merged = JsonDocument.Parse(
             BowireProvisionedEnvironments.Merge(withLeftover, [Staging()]));

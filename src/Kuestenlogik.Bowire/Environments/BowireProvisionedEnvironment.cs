@@ -35,9 +35,11 @@ public sealed class BowireProvisionedEnvironment
     /// <remarks>
     /// Prefixed so it cannot collide with the random ids the workbench mints,
     /// and stable across restarts so a request pinned to this environment
-    /// keeps pointing at it.
+    /// keeps pointing at it. The name's case is kept rather than folded: the
+    /// id only has to be stable and distinct, and folding it would be a
+    /// normalisation nobody asked for (CA1308 is right to ask why).
     /// </remarks>
-    public string Id => "host:" + Name.ToLowerInvariant().Replace(' ', '-');
+    public string Id => "host:" + Name.Replace(' ', '-');
 
     /// <summary>What the environment is called in the switcher.</summary>
     public required string Name { get; init; }

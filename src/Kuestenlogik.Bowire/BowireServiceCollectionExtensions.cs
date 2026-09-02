@@ -749,7 +749,7 @@ public static class BowireServiceCollectionExtensions
         var existing = services.FirstOrDefault(d =>
             d.ServiceType == typeof(BowireProvisionedEnvironment)
             && d.ImplementationInstance is BowireProvisionedEnvironment e
-            && string.Equals(e.Id, environment.Id, StringComparison.Ordinal));
+            && string.Equals(e.Id, environment.Id, StringComparison.OrdinalIgnoreCase));
         if (existing is not null) services.Remove(existing);
 
         services.AddSingleton(environment);

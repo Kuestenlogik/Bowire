@@ -24,7 +24,7 @@ internal static class BowireEnvironmentEndpoints
     /// What the host declared through <c>AddBowireEnvironment</c>, or nothing
     /// — which is every host that never called it.
     /// </summary>
-    private static IReadOnlyList<BowireProvisionedEnvironment> Provisioned(HttpContext ctx)
+    private static List<BowireProvisionedEnvironment> Provisioned(HttpContext ctx)
         => ctx.RequestServices.GetServices<BowireProvisionedEnvironment>().ToList();
 
 
