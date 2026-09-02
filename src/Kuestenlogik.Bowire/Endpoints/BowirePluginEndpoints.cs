@@ -594,6 +594,71 @@ internal static class BowirePluginEndpoints
         // UI extensions) get an informative 501 because their lifecycle
         // hooks land alongside the IBowireContributionLifecycle contract
         // in a later release.
+        // #640 — the values behind the schemas plugins declare. They used to
+        // live in the browser's localStorage and go nowhere; a plugin asked
+        // for its own setting and got nothing, so four shipped a control that
+        // looked like it worked. Workspace-scoped: a probe window is a
+        // property of what you are pointed at, not of who you are.
+        endpoints.MapGet($"{basePath}/api/plugins/settings", (HttpContext ctx) =>
+        {
+            var store = ctx.RequestServices.GetService<BowirePluginSettingsStore>();
+            if (store is null) return Results.Ok(new { settings = new Dictionary<string, object>() });
+
+            return Results.Ok(new { settings = store.Snapshot() });
+        }).ExcludeFromDescription();
+
+        endpoints.MapPut($"{basePath}/api/plugins/settings/{{pluginId}}/{{key}}",
+            async (string pluginId, string key, HttpContext ctx) =>
+        {
+            var store = ctx.RequestServices.GetService<BowirePluginSettingsStore>();
+            if (store is null)
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:plugin-settings:unavailable",
+                    title: "This host does not store plugin settings.",
+                    status: 501,
+                    instance: ctx.Request.Path);
+
+            if (BowirePluginSettingsScope.Current is null)
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:plugin-settings:no-workspace",
+                    title: "Name a workspace to save a plugin setting.",
+                    status: 400,
+                    detail: "Plugin settings are stored per workspace; the request named none.",
+                    instance: ctx.Request.Path);
+
+            using var reader = new StreamReader(ctx.Request.Body);
+            var body = await reader.ReadToEndAsync(ctx.RequestAborted);
+
+            string? value;
+            try
+            {
+                var req = JsonSerializer.Deserialize<JsonElement>(body);
+                // A null value clears the setting, which is how "back to the
+                // default" stays distinguishable from "set to nothing".
+                value = req.ValueKind == JsonValueKind.Object && req.TryGetProperty("value", out var v)
+                    ? v.ValueKind switch
+                    {
+                        JsonValueKind.Null => null,
+                        JsonValueKind.String => v.GetString(),
+                        JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False => v.GetRawText(),
+                        _ => null,
+                    }
+                    : null;
+            }
+            catch (JsonException ex)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Body is not valid JSON",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path);
+            }
+
+            var changed = store.Set(pluginId, key, value);
+            return Results.Ok(new { ok = true, pluginId, key, value, changed });
+        }).ExcludeFromDescription();
+
         // #638 — "I don't use MQTT; stop showing it to me". Deliberately not
         // behind the admin gate: hiding a row in your own workbench changes
         // nothing about the install, which is what separates it from the

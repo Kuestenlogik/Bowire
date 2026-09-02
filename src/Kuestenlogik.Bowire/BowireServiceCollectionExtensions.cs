@@ -159,6 +159,14 @@ public static class BowireServiceCollectionExtensions
         BowirePaths.Current = new BowirePathResolver();
         services.TryAddSingleton<IBowirePathResolver>(_ => BowirePaths.Current);
 
+        // #640 — the values behind IBowireProtocol.Settings. A singleton
+        // because its cache is keyed by workspace path and shared across
+        // requests; which workspace a given call is for comes from
+        // BowirePluginSettingsScope, not from the lifetime.
+        services.TryAddSingleton<BowirePluginSettingsStore>();
+        services.TryAddSingleton<IBowirePluginSettings>(sp =>
+            sp.GetRequiredService<BowirePluginSettingsStore>());
+
         // Materialise the bootstrap options. MapBowire builds its own
         // BowireOptions later — that's the one bound to the workbench
         // UI surface. The one here only carries the AddServices-time
