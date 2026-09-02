@@ -8,6 +8,7 @@ using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Kuestenlogik.Bowire.Plugins;
 
 namespace Kuestenlogik.Bowire.Protocol.Soap;
 
@@ -37,12 +38,19 @@ public sealed class BowireSoapProtocol : IBowireProtocol, IDisposable
 
     public string Name => "SOAP";
     public string Description => "Legacy SOAP services — WSDL discovery + envelope invoke.";
+
+    /// <summary>
+    /// Resolved in <see cref="Initialize"/>; null when the host registered
+    /// none, which is every call before #640 and still the CLI's case.
+    /// </summary>
+    private IBowirePluginSettings? _settings;
     public string Id => "soap";
 
     public void Initialize(IServiceProvider? serviceProvider)
     {
         var config = serviceProvider?.GetService<IConfiguration>();
         _http = BowireHttpClientFactory.Create(config, Id, TimeSpan.FromSeconds(30));
+        _settings = serviceProvider?.GetService<IBowirePluginSettings>();
     }
 
     /// <summary>
@@ -111,7 +119,12 @@ public sealed class BowireSoapProtocol : IBowireProtocol, IDisposable
             endpoint = overrideUri;
         }
 
-        var soapVersion = metadata?.GetValueOrDefault("soap_version") ?? "1.1";
+        // #640 — the per-call metadata still wins; the workspace's
+        // defaultSoapVersion is what applies when the caller says nothing,
+        // which is what the setting has always claimed to do.
+        var soapVersion = metadata?.GetValueOrDefault("soap_version")
+            ?? _settings?.GetValue(Id, "defaultSoapVersion")
+            ?? "1.1";
         var soapAction = metadata?.GetValueOrDefault("soap_action") ?? "";
         var targetNamespace = metadata?.GetValueOrDefault("target_namespace") ?? "";
 
