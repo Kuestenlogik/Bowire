@@ -256,6 +256,7 @@
         if (!pluginsTabFetchedThisOpen) {
             pluginsTabFetchedThisOpen = true;
             fetchPluginHealth();
+            fetchPluginSettings();
             fetchInstalledPlugins();
         }
         renderSettingsDialog();
@@ -5116,6 +5117,18 @@
             }
         ));
 
+        // #640 — settings are stored per workspace. Without one there is
+        // nowhere to put them, and a control that silently does nothing is
+        // the bug this whole change exists to remove.
+        if (plugin.settings && plugin.settings.length > 0 && !_pluginSettingsWsQuery()) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-help',
+                style: 'margin-top:8px',
+                textContent: 'These settings are saved per workspace. Open or create a workspace to change '
+                    + 'them — until then the plugin uses the defaults shown.'
+            }));
+        }
+
         if (!plugin.settings || plugin.settings.length === 0) {
             section.appendChild(el('div', { style: 'color:var(--bowire-text-tertiary);font-size:13px;margin-top:8px',
                 textContent: 'This plugin has no configurable settings.' }));
@@ -5124,33 +5137,38 @@
 
         for (var si = 0; si < plugin.settings.length; si++) {
             (function (setting) {
-                var storageKey = 'bowire_plugin_' + plugin.id + '_' + setting.key;
                 if (setting.type === 'bool') {
-                    var current = localStorage.getItem(storageKey);
-                    var val = current !== null ? current === 'true' : !!setting.defaultValue;
+                    var current = pluginSettingValue(plugin.id, setting.key);
+                    var val = current !== null && current !== undefined
+                        ? current === 'true'
+                        : !!setting.defaultValue;
                     section.appendChild(renderSettingsToggle(
                         setting.label, setting.description || '', val,
-                        function (v) { localStorage.setItem(storageKey, v ? 'true' : 'false'); }
+                        function (v) { savePluginSetting(plugin.id, setting.key, v ? 'true' : 'false'); }
                     ));
                 } else if (setting.type === 'number') {
                     section.appendChild(renderSettingsRow(setting.label, setting.description || '', function () {
-                        var stored = localStorage.getItem(storageKey);
+                        var stored = pluginSettingValue(plugin.id, setting.key);
                         return el('input', {
                             id: 'bowire-plugin-setting-' + plugin.id + '-' + setting.key,
                             type: 'number', className: 'bowire-settings-input',
-                            value: stored !== null ? stored : String(setting.defaultValue || ''),
+                            value: stored !== null && stored !== undefined
+                                ? stored
+                                : String(setting.defaultValue || ''),
                             style: 'width:80px',
-                            onChange: function (e) { localStorage.setItem(storageKey, e.target.value); }
+                            onChange: function (e) { savePluginSetting(plugin.id, setting.key, e.target.value); }
                         });
                     }));
                 } else if (setting.type === 'select' && setting.options) {
                     section.appendChild(renderSettingsRow(setting.label, setting.description || '', function () {
-                        var stored = localStorage.getItem(storageKey);
-                        var cur = stored !== null ? stored : String(setting.defaultValue || '');
+                        var stored = pluginSettingValue(plugin.id, setting.key);
+                        var cur = stored !== null && stored !== undefined
+                            ? stored
+                            : String(setting.defaultValue || '');
                         var select = el('select', {
                             id: 'bowire-plugin-setting-' + plugin.id + '-' + setting.key,
                             className: 'bowire-settings-select',
-                            onChange: function (e) { localStorage.setItem(storageKey, e.target.value); }
+                            onChange: function (e) { savePluginSetting(plugin.id, setting.key, e.target.value); }
                         });
                         for (var oi = 0; oi < setting.options.length; oi++) {
                             var opt = el('option', { value: setting.options[oi].value, textContent: setting.options[oi].label });
@@ -5161,12 +5179,14 @@
                     }));
                 } else {
                     section.appendChild(renderSettingsRow(setting.label, setting.description || '', function () {
-                        var stored = localStorage.getItem(storageKey);
+                        var stored = pluginSettingValue(plugin.id, setting.key);
                         return el('input', {
                             id: 'bowire-plugin-setting-' + plugin.id + '-' + setting.key,
                             type: 'text', className: 'bowire-settings-input',
-                            value: stored !== null ? stored : String(setting.defaultValue || ''),
-                            onChange: function (e) { localStorage.setItem(storageKey, e.target.value); }
+                            value: stored !== null && stored !== undefined
+                                ? stored
+                                : String(setting.defaultValue || ''),
+                            onChange: function (e) { savePluginSetting(plugin.id, setting.key, e.target.value); }
                         });
                     }));
                 }
@@ -5175,9 +5195,130 @@
         return section;
     }
 
+    // #640 — plugin settings live on the server now, per workspace, because
+    // the plugin that declared them runs there. They used to be written to
+    // localStorage and read back by nobody: the control persisted across
+    // reloads and changed nothing.
+    var pluginSettingValues = null;   // { pluginId: { key: "value" } }, null until fetched
+    var pluginSettingsMigrated = {};  // workspaceId -> true, once its stragglers are pushed
+
+    // Same shape the collection endpoints use. Settings are workspace-scoped,
+    // so with no workspace named there is nowhere to save — the plugin then
+    // gets its declared default, which is what it got before this existed.
+    function _pluginSettingsWsQuery() {
+        var wsId = (typeof activeWorkspaceId === 'string' && activeWorkspaceId)
+            ? activeWorkspaceId : '';
+        if (!wsId) return '';
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        return '?workspaceId=' + encodeURIComponent(wsId)
+            + (ws && ws.storageRoot ? '&storageRoot=' + encodeURIComponent(ws.storageRoot) : '');
+    }
+
+    function fetchPluginSettings() {
+        var qs = _pluginSettingsWsQuery();
+        if (!qs) { pluginSettingValues = {}; return; }
+        try {
+            fetch(config.prefix + '/api/plugins/settings' + qs)
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (body) {
+                    if (!body) return;
+                    pluginSettingValues = body.settings || {};
+                    _migrateLocalPluginSettings();
+                    if (settingsOpen && _settingsTabShowsPluginInventory()) renderSettingsDialog();
+                })
+                .catch(function () { /* offline — fall back to defaults */ });
+        } catch { /* fetch threw synchronously */ }
+    }
+
+    // One-time lift of whatever the browser was holding. Without this, a value
+    // somebody set before #640 would keep rendering and still never reach the
+    // plugin — the same lie, now with a server that disagrees.
+    function _migrateLocalPluginSettings() {
+        var wsId = (typeof activeWorkspaceId === 'string' && activeWorkspaceId) ? activeWorkspaceId : '';
+        if (!wsId || pluginSettingsMigrated[wsId]) return;
+        pluginSettingsMigrated[wsId] = true;
+
+        var stragglers = [];
+        try {
+            for (var i = 0; i < localStorage.length; i++) {
+                var raw = localStorage.key(i);
+                if (!raw || raw.indexOf('bowire_plugin_') !== 0) continue;
+                // bowire_plugin_<pluginId>_<key>; plugin ids carry no
+                // underscore, so the first one after the prefix splits it.
+                var rest = raw.slice('bowire_plugin_'.length);
+                var cut = rest.indexOf('_');
+                if (cut <= 0) continue;
+                stragglers.push({
+                    storageKey: raw,
+                    pluginId: rest.slice(0, cut),
+                    key: rest.slice(cut + 1),
+                    value: localStorage.getItem(raw)
+                });
+            }
+        } catch { return; /* storage unavailable — nothing to migrate */ }
+
+        stragglers.forEach(function (item) {
+            var already = pluginSettingValues
+                && pluginSettingValues[item.pluginId]
+                && pluginSettingValues[item.pluginId][item.key];
+            if (already !== undefined && already !== null) return;
+            if (item.value === null) return;
+            savePluginSetting(item.pluginId, item.key, item.value, function () {
+                try { localStorage.removeItem(item.storageKey); } catch { /* ignore */ }
+            });
+        });
+    }
+
+    function pluginSettingValue(pluginId, key) {
+        if (pluginSettingValues
+            && pluginSettingValues[pluginId]
+            && pluginSettingValues[pluginId][key] !== undefined) {
+            return pluginSettingValues[pluginId][key];
+        }
+        // Before the snapshot lands, and on a host with no workspace, show
+        // whatever the browser still holds rather than flashing the default.
+        try { return localStorage.getItem('bowire_plugin_' + pluginId + '_' + key); }
+        catch { return null; }
+    }
+
+    function savePluginSetting(pluginId, key, value, onSaved) {
+        if (!pluginSettingValues) pluginSettingValues = {};
+        if (!pluginSettingValues[pluginId]) pluginSettingValues[pluginId] = {};
+        var previous = pluginSettingValues[pluginId][key];
+        pluginSettingValues[pluginId][key] = value;
+
+        var qs = _pluginSettingsWsQuery();
+        if (!qs) {
+            // No workspace: keep the browser copy so the control still
+            // remembers, and say nothing — the plugin uses its default and
+            // the row below explains why.
+            try { localStorage.setItem('bowire_plugin_' + pluginId + '_' + key, value); }
+            catch { /* ignore */ }
+            return;
+        }
+
+        fetch(config.prefix + '/api/plugins/settings/'
+            + encodeURIComponent(pluginId) + '/' + encodeURIComponent(key) + qs,
+            {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ value: value })
+            })
+            .then(function (resp) {
+                if (!resp.ok) throw new Error(String(resp.status));
+                if (typeof onSaved === 'function') onSaved();
+            })
+            .catch(function () {
+                // Put it back rather than leaving the page claiming a value
+                // the plugin will never see.
+                pluginSettingValues[pluginId][key] = previous;
+                if (settingsOpen) renderSettingsDialog();
+            });
+    }
+
     function getPluginSetting(pluginId, key, defaultValue) {
-        var stored = localStorage.getItem('bowire_plugin_' + pluginId + '_' + key);
-        if (stored === null) return defaultValue;
+        var stored = pluginSettingValue(pluginId, key);
+        if (stored === null || stored === undefined) return defaultValue;
         if (defaultValue === true || defaultValue === false) return stored === 'true';
         if (typeof defaultValue === 'number') return Number(stored);
         return stored;
