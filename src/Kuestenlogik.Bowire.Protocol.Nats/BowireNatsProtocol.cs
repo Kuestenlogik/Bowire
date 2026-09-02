@@ -8,6 +8,7 @@ using Kuestenlogik.Bowire.Models;
 using NATS.Client.Core;
 using NATS.Client.JetStream;
 using NATS.Net;
+using Kuestenlogik.Bowire.Plugins;
 
 namespace Kuestenlogik.Bowire.Protocol.Nats;
 
@@ -53,7 +54,18 @@ public sealed class BowireNatsProtocol : IBowireProtocol
             "number", 3),
     ];
 
-    public void Initialize(IServiceProvider? serviceProvider) { }
+    /// <summary>
+    /// Resolved in <see cref="Initialize"/>; null when the host registered
+    /// none, which is every call before #640 and still the CLI's case.
+    /// </summary>
+    private IBowirePluginSettings? _settings;
+
+    public void Initialize(IServiceProvider? serviceProvider)
+        => _settings = serviceProvider?.GetService(typeof(IBowirePluginSettings)) as IBowirePluginSettings;
+
+    /// <summary>How long to listen for subjects, per the workspace's setting.</summary>
+    private TimeSpan ScanDuration()
+        => _settings?.GetSeconds(Id, "scanDuration", TimeSpan.FromSeconds(3)) ?? TimeSpan.FromSeconds(3);
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
@@ -83,7 +95,10 @@ public sealed class BowireNatsProtocol : IBowireProtocol
         // 1) Subject sample (Phase 1 shape, kept verbatim).
         try
         {
-            var subjects = await NatsDiscovery.ScanSubjectsOnConnectionAsync(conn, ct).ConfigureAwait(false);
+            // #640 — the declared scanDuration, finally read.
+            var subjects = await NatsDiscovery
+                .ScanSubjectsOnConnectionAsync(conn, ct, ScanDuration())
+                .ConfigureAwait(false);
             all.AddRange(NatsDiscovery.BuildServices(subjects, serverUrl));
         }
         catch { /* swallow — see method docs */ }

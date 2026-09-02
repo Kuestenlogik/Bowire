@@ -8,6 +8,7 @@ using System.Text.Json;
 using Kuestenlogik.Bowire.Models;
 using MQTTnet;
 using MQTTnet.Protocol;
+using Kuestenlogik.Bowire.Plugins;
 
 namespace Kuestenlogik.Bowire.Protocol.Mqtt;
 
@@ -47,7 +48,18 @@ public sealed class BowireMqttProtocol : IBowireProtocol
             "number", 3)
     ];
 
-    public void Initialize(IServiceProvider? serviceProvider) { }
+    /// <summary>
+    /// Resolved in <see cref="Initialize"/>; null when the host registered
+    /// none, which is every call before #640 and still the CLI's case.
+    /// </summary>
+    private IBowirePluginSettings? _settings;
+
+    public void Initialize(IServiceProvider? serviceProvider)
+        => _settings = serviceProvider?.GetService(typeof(IBowirePluginSettings)) as IBowirePluginSettings;
+
+    /// <summary>How long to listen for topics, per the workspace's setting.</summary>
+    private TimeSpan ScanDuration()
+        => _settings?.GetSeconds(Id, "scanDuration", TimeSpan.FromSeconds(3)) ?? TimeSpan.FromSeconds(3);
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
@@ -61,7 +73,11 @@ public sealed class BowireMqttProtocol : IBowireProtocol
 
         try
         {
-            var topics = await MqttDiscovery.ScanTopicsAsync(brokerUri.Value.host, brokerUri.Value.port, ct);
+            // #640 — the scanDuration this plugin has always declared. The
+            // parameter was here from the start; nothing ever passed one,
+            // because until now there was nowhere to read the value from.
+            var topics = await MqttDiscovery.ScanTopicsAsync(
+                brokerUri.Value.host, brokerUri.Value.port, ct, ScanDuration());
             return MqttDiscovery.BuildServices(topics, serverUrl);
         }
         catch
