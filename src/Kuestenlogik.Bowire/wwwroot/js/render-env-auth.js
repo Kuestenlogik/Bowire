@@ -5190,7 +5190,13 @@
                             'aria-hidden': isActive ? 'false' : 'true'
                         })
                     );
-                    if (env) {
+                    // #49 — an environment the host declared is not this
+                    // person's to rename or delete: the server strips it back
+                    // out on save, so offering the controls would mean an edit
+                    // that silently vanishes. That is exactly the failure this
+                    // feature exists to avoid, so the row says whose it is
+                    // instead of pretending.
+                    if (env && !env.provisioned) {
                         // Per-row pencil → bowirePrompt rename, persisted
                         // via updateEnvironment. Mirrors the workspace
                         // dropdown's pencil affordance — pencil first
@@ -5289,6 +5295,14 @@
                             innerHTML: _envGlyph(color)
                         }),
                         el('span', { className: 'bowire-env-dropdown-item-name', textContent: label }),
+                        env && env.provisioned
+                            ? el('span', {
+                                className: 'bowire-env-dropdown-item-meta',
+                                textContent: 'from host',
+                                title: 'Declared by the application hosting Bowire. Change it where the '
+                                    + 'host is configured — edits here would not survive a restart.'
+                            })
+                            : null,
                         tools
                     );
                 }
