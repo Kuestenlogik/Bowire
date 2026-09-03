@@ -12,11 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**17/35 done** · 1 in progress · 17 backlog
+**18/35 done** · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [641](https://github.com/Kuestenlogik/Bowire/issues/641) | Bowire | [Flows never reach the server: two dead MCP resources, and the CLI cannot see them](#issue-kuestenlogik-bowire-641) | 🟡 In progress | `area:workbench` |
 | [21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21) | Protocol.Dis | [probeDuration setting is ignored by DiscoverAsync](#issue-kuestenlogik-bowire-protocol-dis-21) | ⬜ Backlog | `area:plugin-sdk` |
 | [22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) | Protocol.Dis | [Typed PDU envelope decoding beyond EntityState](#issue-kuestenlogik-bowire-protocol-dis-22) | ⬜ Backlog | `area:plugin-sdk` |
 | [23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) | Protocol.Dis | [Entity-filtered stream drops non-EntityState PDUs](#issue-kuestenlogik-bowire-protocol-dis-23) | ⬜ Backlog | `area:plugin-sdk` |
@@ -51,6 +50,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [635](https://github.com/Kuestenlogik/Bowire/issues/635) | Bowire | [bowire mcp serve overrides ASPNETCORE_URLS and Kestrel config, and cannot serve HTTPS](#issue-kuestenlogik-bowire-635) | ✅ Done | `area:security` |
 | [636](https://github.com/Kuestenlogik/Bowire/issues/636) | Bowire | [Any authenticated user can install a plugin into the shared server process](#issue-kuestenlogik-bowire-636) | ✅ Done | `area:security` |
 | [638](https://github.com/Kuestenlogik/Bowire/issues/638) | Bowire | [Per-identity 'hidden in my workbench' preference for protocols](#issue-kuestenlogik-bowire-638) | ✅ Done | `area:multi` |
+| [641](https://github.com/Kuestenlogik/Bowire/issues/641) | Bowire | [Flows never reach the server: two dead MCP resources, and the CLI cannot see them](#issue-kuestenlogik-bowire-641) | ✅ Done | `area:workbench` |
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
@@ -158,12 +158,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ## Details
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
-
-#### <a id="issue-kuestenlogik-bowire-641"></a>🟡 In progress · [#641](https://github.com/Kuestenlogik/Bowire/issues/641) Flows never reach the server: two dead MCP resources, and the CLI cannot see them
-
-> `area:workbench`
-
-Flows are the only major artifact the workbench never writes to the server. Collections, environments, recordings and auth recordings each have endpoints and a per-workspace file; flows have `bowire_flows` in the browser's localStorage and nothing else. [[more]](https://github.com/Kuestenlogik/Bowire/issues/641)
 
 #### <a id="issue-kuestenlogik-bowire-protocol-dis-21"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21) probeDuration setting is ignored by DiscoverAsync
 
@@ -358,6 +352,12 @@ The plugin management endpoints sit behind the workbench's general auth policy (
 > `area:multi`
 
 The second half of the visibility split decided in #284. [[more]](https://github.com/Kuestenlogik/Bowire/issues/638)
+
+#### <a id="issue-kuestenlogik-bowire-641"></a>✅ Done · [#641](https://github.com/Kuestenlogik/Bowire/issues/641) Flows never reach the server: two dead MCP resources, and the CLI cannot see them
+
+> `area:workbench`
+
+Flows are the only major artifact the workbench never writes to the server. Collections, environments, recordings and auth recordings each have endpoints and a per-workspace file; flows have `bowire_flows` in the browser's localStorage and nothing else. [[more]](https://github.com/Kuestenlogik/Bowire/issues/641)
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
