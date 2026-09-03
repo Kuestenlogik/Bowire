@@ -47,6 +47,32 @@ public sealed class BowireEndpointTests : IClassFixture<BowireTestFixture>
     }
 
     [Fact]
+    public async Task ScriptSrcAllowsSelf_SoRuntimeLoadedExtensionBundlesStillLoad()
+    {
+        // A regression the scanner could not see and CI did not carry: UI
+        // extensions are loaded by injecting a <script src> at runtime
+        // (extensions.js), and a nonce cannot cover a tag the server never
+        // rendered. With 'nonce-…' alone every extension bundle was blocked —
+        // the map widget among them — and the workbench looked fine, because
+        // a policy that switches a feature off still looks like a policy.
+        //
+        // 'self' permits same-origin script *files* and still refuses inline
+        // injection, which is the vector the nonce actually defends.
+        var response = await _client.GetAsync(new Uri("/bowire", UriKind.Relative), TestContext.Current.CancellationToken);
+        var policy = response.Headers.GetValues("Content-Security-Policy").Single();
+
+        var scriptSrc = policy.Split(';')
+            .Select(part => part.Trim())
+            .Single(part => part.StartsWith("script-src", StringComparison.Ordinal));
+
+        Assert.Contains("'self'", scriptSrc, StringComparison.Ordinal);
+        Assert.Contains("'nonce-", scriptSrc, StringComparison.Ordinal);
+
+        // And still not the thing that would make the header decorative.
+        Assert.DoesNotContain("'unsafe-inline'", scriptSrc, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task BowireUiEndpoint_ScriptNonceMatchesTheHeader()
     {
         // #625 — the workbench ships its whole bundle inline, so a policy
