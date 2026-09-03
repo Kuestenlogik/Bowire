@@ -100,7 +100,11 @@ A decision can be reversed from Settings → Data, or with `bowire users migrate
 BOWIRE_DATA_DIR=/tmp/bowire-fixture bowire test ./suite.json
 ```
 
-A fixture can then create one tree and delete one tree, rather than hunting for state beside whichever output directory the run happened to use. It is read in exactly one place, which is what makes that promise hold for *everything* rather than for the stores that remembered to check.
+A fixture can then create one tree and delete one tree, rather than hunting for state beside whichever output directory the run happened to use.
+
+It outranks everything, including a project manifest: the point of the variable is that one directory holds the run, and a manifest that redirected it would defeat that. The one exception is a workspace the operator pointed at a checkout with `storageRoot` — that is their directory rather than Bowire's storage, and it keeps landing in the repository so it travels with a clone.
+
+The variable is read in exactly one place, `BowirePathResolver.DataDirOverride`, which is what makes the promise hold for *everything* rather than for the stores that remembered to check. That sentence stood here before it was true: until [#643](https://github.com/Kuestenlogik/Bowire/issues/643) the resolver honoured the variable and the user store did not, so it moved the plugin directory while every workspace-scoped artifact — collections, recordings, flows, plugin settings — stayed in the real `~/.bowire`. A run that believed it was isolated wrote into the developer's own storage. Two readers of one variable is how two answers come apart; there is one reader now.
 
 ## For contributors
 

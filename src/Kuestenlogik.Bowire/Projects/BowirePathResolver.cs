@@ -153,13 +153,34 @@ public sealed class BowirePathResolver : IBowirePathResolver
         return SafePath.Combine(root, relative);
     }
 
+    /// <summary>
+    /// The <c>BOWIRE_DATA_DIR</c> override, or <c>null</c> when it is unset
+    /// (#643).
+    /// </summary>
+    /// <param name="environment">
+    /// How to read it. Defaults to the process environment; tests pass their
+    /// own so they need not mutate a process-global.
+    /// </param>
+    /// <remarks>
+    /// Public because <see cref="BowireStorageRoot"/> has to ask the same
+    /// question, and asking it twice is how the two answers came apart:
+    /// this resolver honoured the variable while the user store — and so
+    /// every workspace-scoped path — did not. A run that believed it was
+    /// isolated wrote into the real <c>~/.bowire</c>.
+    /// </remarks>
+    public static string? DataDirOverride(Func<string, string?>? environment = null)
+    {
+        var raw = (environment ?? Environment.GetEnvironmentVariable)(DataDirVariable);
+        return string.IsNullOrWhiteSpace(raw) ? null : raw;
+    }
+
     private string BaseRoot(BowireStorageScope scope)
     {
         // One directory for everything, which is what makes a test fixture
         // able to create one tree and delete one tree rather than hunting for
         // state beside whichever output directory the run used.
-        var redirected = _environment(DataDirVariable);
-        if (!string.IsNullOrWhiteSpace(redirected)) return redirected;
+        var redirected = DataDirOverride(_environment);
+        if (redirected is not null) return redirected;
 
         return scope switch
         {
