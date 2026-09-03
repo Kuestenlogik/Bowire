@@ -62,6 +62,64 @@
 
     function persistFlows() {
         try { localStorage.setItem(wsKey(FLOWS_KEY), JSON.stringify(flowsList)); } catch {}
+        scheduleFlowsDiskSync();
+    }
+
+    // #641 — flows reach the server now. They were the last major artifact
+    // that never did, and each consequence looked like its own bug: two MCP
+    // resources reading a file nothing wrote, `bowire test` unable to see
+    // anything built here, flows missing from a git-native workspace, flows
+    // outside the per-identity slot. Same shape the collections use — the
+    // browser copy stays the in-flight cache, the file is the source of truth.
+    function _flowsWsQuery() {
+        var wsId = (typeof activeWorkspaceId === 'string' && activeWorkspaceId) ? activeWorkspaceId : '';
+        if (!wsId) return '';
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        return '?workspaceId=' + encodeURIComponent(wsId)
+            + (ws && ws.storageRoot ? '&storageRoot=' + encodeURIComponent(ws.storageRoot) : '');
+    }
+
+    var _flowsDiskSyncTimer = null;
+    function scheduleFlowsDiskSync() {
+        if (_flowsDiskSyncTimer) clearTimeout(_flowsDiskSyncTimer);
+        _flowsDiskSyncTimer = setTimeout(function () {
+            _flowsDiskSyncTimer = null;
+            try {
+                fetch(config.prefix + '/api/flows' + _flowsWsQuery(), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ flows: flowsList })
+                }).catch(function () { /* offline — the browser copy still holds */ });
+            } catch { /* fetch threw synchronously */ }
+        }, 400);
+    }
+
+    function loadFlowsFromDisk() {
+        return fetch(config.prefix + '/api/flows' + _flowsWsQuery())
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                var fromDisk = (data && Array.isArray(data.flows)) ? data.flows : null;
+                var local = loadFlows();
+
+                // "Never saved" is not "saved empty", and the server cannot
+                // tell them apart — it only sees a missing file. The decision
+                // belongs here, where the local copy is also in hand. This is
+                // the lesson #612 cost the collections: without it, a
+                // workspace lost its flows on the next boot to an empty disk
+                // answer.
+                if (fromDisk && (fromDisk.length > 0 || local.length === 0)) {
+                    flowsList = fromDisk;
+                    for (var i = 0; i < flowsList.length; i++) migrateNodes(flowsList[i].nodes);
+                    try { localStorage.setItem(wsKey(FLOWS_KEY), JSON.stringify(flowsList)); } catch {}
+                } else {
+                    flowsList = local;
+                    // Lift whatever the browser was holding, once, so the two
+                    // sides agree from here on instead of re-running this
+                    // branch every boot.
+                    if (local.length > 0) scheduleFlowsDiskSync();
+                }
+            })
+            .catch(function () { flowsList = loadFlows(); });
     }
 
     function createFlow(name) {

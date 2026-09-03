@@ -740,6 +740,13 @@
         // workbench ever reaches `bowire-app-ready`.
         if (typeof loadFlows === 'function') {
             flowsList = loadFlows();
+            // #641 — and then reconcile with the file, the way collections
+            // do. Guarded separately: an older Flows package ships loadFlows
+            // without the disk half, and boot must not depend on the two
+            // arriving together.
+            if (typeof loadFlowsFromDisk === 'function') {
+                loadFlowsFromDisk().then(function () { render(); });
+            }
         }
 
         // Phase 3-R — kick off the external-extension bootstrap. Each
