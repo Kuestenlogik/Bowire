@@ -31,6 +31,17 @@ public static class BowireResponseHeaders
     /// only form that is both true and useful.
     /// </para>
     /// <para>
+    /// <b>Why <c>script-src</c> also carries <c>'self'</c>.</b> UI extensions
+    /// are loaded by injecting a <c>&lt;script src&gt;</c> at runtime
+    /// (<c>extensions.js</c>), and a nonce cannot cover a tag the server never
+    /// rendered. With the nonce alone, every extension bundle was blocked —
+    /// the map widget among them — and neither the scanner nor CI could see
+    /// it, because a policy that blocks a feature still looks like a policy.
+    /// <c>'self'</c> permits same-origin script <em>files</em>, which is what
+    /// those are, and still refuses inline injection, which is the vector the
+    /// nonce is actually defending.
+    /// </para>
+    /// <para>
     /// <b>Why <c>style-src</c> carries <c>'unsafe-inline'</c> and no nonce.</b>
     /// The DOM-building code sets inline <c>style</c> attributes throughout,
     /// and a nonce does not cover style attributes. Worse, adding one would
@@ -48,7 +59,7 @@ public static class BowireResponseHeaders
     /// </remarks>
     public const string DefaultContentSecurityPolicyFormat =
         "default-src 'self'; "
-        + "script-src 'nonce-{0}'; "
+        + "script-src 'self' 'nonce-{0}'; "
         + "style-src 'self' 'unsafe-inline'; "
         + "img-src 'self' data: blob: https: http:; "
         + "font-src 'self' data:; "
