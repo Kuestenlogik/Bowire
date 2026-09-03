@@ -11754,6 +11754,18 @@ and chip row */
 }
 .bowire-env-dropdown-item-glyph svg { width: 14px; height: 14px; }
 .bowire-env-dropdown-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* #49 — an environment the host declared. The chip sits between the name and
+   the tools cluster, which is where per-row meta goes everywhere else in the
+   workbench; the row has no rename or trash, so the space the tools would
+   occupy is exactly what it fills. Tertiary colour: it answers "why can I not
+   edit this" for whoever looks, and stays out of the way for everyone else. */
+.bowire-env-dropdown-item-meta {
+    flex-shrink: 0;
+    margin-left: 8px;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    white-space: nowrap;
+}
 .bowire-env-dropdown-item-tools {
     margin-left: auto;
     display: inline-flex;
