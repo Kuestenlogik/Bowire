@@ -26,7 +26,7 @@ export async function bootFresh(page: Page, theme: 'dark' | 'light' = 'dark'): P
         } catch { /* ignore */ }
         try { localStorage.setItem('bowire_theme_pref', t); } catch { /* ignore */ }
     }, theme);
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    const reloaded = await page.reload({ waitUntil: 'domcontentloaded' });
     try {
         await page.waitForSelector('#bowire-app.bowire-app-ready', { timeout: 20_000 });
     } catch (cause) {
@@ -50,9 +50,23 @@ export async function bootFresh(page: Page, theme: 'dark' | 'light' = 'dark'): P
             title: document.title,
         })).catch(() => null);
 
+        // #637 — the DOM said "complete, and empty", which does not
+        // distinguish "the server sent nothing" from "the script never ran".
+        // The response does: a 200 with a zero-length body is ours and is a
+        // shipping bug; a 5xx names the failure; a healthy body means the
+        // problem is in the browser.
+        const response = reloaded
+            ? {
+                status: reloaded.status(),
+                contentType: reloaded.headers()['content-type'] ?? null,
+                bodyLength: await reloaded.body().then(b => b.length).catch(() => -1),
+            }
+            : null;
+
         throw new Error(
             'bootFresh: #bowire-app.bowire-app-ready never appeared within 20s. '
             + `Page state at timeout: ${JSON.stringify(state)}. `
+            + `Reload response: ${JSON.stringify(response)}. `
             + 'See Kuestenlogik/Bowire#637 — record this line there rather than re-running.',
             { cause });
     }
