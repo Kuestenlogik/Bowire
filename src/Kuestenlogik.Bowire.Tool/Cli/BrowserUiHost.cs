@@ -398,16 +398,31 @@ internal static class BrowserUiHost
                     return ValueTask.CompletedTask;
                 };
                 limiter.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-                    RateLimitPartition.GetFixedWindowLimiter(
-                        // Per client, not global: one busy workbench must not
-                        // throttle everybody else on a shared instance.
-                        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                        _ => new FixedWindowRateLimiterOptions
-                        {
-                            PermitLimit = ratePermits,
-                            Window = rateWindow,
-                            QueueLimit = 0,
-                        }));
+                    // The API is what the limiter is for, and what the finding
+                    // was about. Everything else the workbench serves — the
+                    // document, its bundle, the icons — is exempt, because a
+                    // 429 there is a blank page with no explanation on it.
+                    //
+                    // That is not hypothetical: this limiter throttled the
+                    // workbench serving itself. A session that loads a 5 MB
+                    // document a few times and then polls reaches 600 requests
+                    // inside a minute without trying, and the next page load
+                    // came back 429 with an empty body — indistinguishable
+                    // from a broken server. It took an instrumented e2e
+                    // failure to see it, because the status never reached
+                    // anything that logged it (#637).
+                    IsRateLimitedSurface(context.Request.Path)
+                        ? RateLimitPartition.GetFixedWindowLimiter(
+                            // Per client, not global: one busy workbench must
+                            // not throttle everybody else on a shared instance.
+                            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                            _ => new FixedWindowRateLimiterOptions
+                            {
+                                PermitLimit = ratePermits,
+                                Window = rateWindow,
+                                QueueLimit = 0,
+                            })
+                        : RateLimitPartition.GetNoLimiter<string>("unlimited"));
             });
         }
 
@@ -629,6 +644,29 @@ internal static class BrowserUiHost
 
         return NormaliseBoundAddress(bound, requestedPort);
     }
+
+    /// <summary>
+    /// Whether this path is part of the surface the rate limiter protects.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The machine-readable surfaces: <c>/api</c> and the MCP mount. Those are
+    /// what an automated client hammers and what the finding in #625 was
+    /// about.
+    /// </para>
+    /// <para>
+    /// The workbench document and its assets are deliberately outside. A page
+    /// load that comes back 429 renders as a blank window — the browser has
+    /// nothing to display and nothing to say — so throttling it turns a
+    /// protection into an outage that looks like a crash. It did exactly that
+    /// here before anybody noticed, because the only symptom was an empty
+    /// page.
+    /// </para>
+    /// </remarks>
+    internal static bool IsRateLimitedSurface(PathString path)
+        => path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/mcp", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/scim", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Turn what the server reports into something a caller can navigate to.
