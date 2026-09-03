@@ -53,11 +53,21 @@ public static class BowireStorageRoot
     /// the current working directory.
     /// </param>
     /// <returns>
-    /// The project's <c>.bowire/</c> directory when its manifest opts in;
+    /// <c>BOWIRE_DATA_DIR</c> when it is set; the project's <c>.bowire/</c>
+    /// directory when its manifest opts in;
     /// <see cref="DefaultBowireUserStore.UserProfileRoot"/> otherwise.
     /// </returns>
     public static string Resolve(string? startDirectory = null)
     {
+        // #643 — BOWIRE_DATA_DIR outranks everything, including a project
+        // manifest, exactly as it does in BowirePathResolver. Without this
+        // the variable moved the plugin directory and left every
+        // workspace-scoped artifact — collections, recordings, flows, plugin
+        // settings — in the real ~/.bowire, so a run that believed it was
+        // isolated wrote into the developer's own storage and left
+        // directories behind.
+        if (BowirePathResolver.DataDirOverride() is { } redirected) return redirected;
+
         var located = BowireProjectLoader.Discover(startDirectory);
         if (located is null) return DefaultBowireUserStore.UserProfileRoot;
 
