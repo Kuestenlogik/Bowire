@@ -234,6 +234,16 @@ public sealed class WriteAndKeyAddressingTests
                 catch (OperationCanceledException) { return; }
                 catch (ObjectDisposedException) { return; }
                 catch (HttpListenerException) { return; }
+                // The listener was stopped from under us. DisposeAsync
+                // cancels and then calls Stop(), and the loop can be between
+                // its `while (!ct.IsCancellationRequested)` check and this
+                // call when that lands — GetContextAsync then reaches
+                // BeginGetContext on a stopped listener and throws
+                // "Please call the Start() method before calling this
+                // method." Unhandled, it faulted the loop task, which
+                // DisposeAsync rethrows at the `await using` and fails a test
+                // that had already passed its assertions.
+                catch (InvalidOperationException) { return; }
 
                 LastRequestMethod = context.Request.HttpMethod;
                 LastRequestUrl = context.Request.RawUrl ?? context.Request.Url?.ToString() ?? "";
