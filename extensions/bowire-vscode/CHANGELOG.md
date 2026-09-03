@@ -5,6 +5,35 @@ All notable changes to the Bowire VS Code extension.
 The extension version is deliberately independent of the Bowire version it
 hosts — it drives whatever CLI you have installed, from 2.5 upwards.
 
+## [1.0.0] — 2026-09-03
+
+1.0 is a promise about the surface, not a claim about ambition: the
+`bowire.*` settings keys and the command ids stay where they are, and moving
+one is a major version from here on. The extension reached the point where
+that promise is cheap to make and expensive to postpone — every further 0.x
+trains people to expect churn that has already stopped.
+
+Nothing in this release changes behaviour. What changes is that the work
+already on `main` finally reaches the Marketplace, which has been serving
+0.1.2 from 18 August while three construction sites closed behind it:
+resolving the CLI from a workspace tool manifest
+([#589](https://github.com/Kuestenlogik/Bowire/issues/589)), offering a
+managed download when none is installed
+([#590](https://github.com/Kuestenlogik/Bowire/issues/590)), and
+workspace-local storage
+([#591](https://github.com/Kuestenlogik/Bowire/issues/591)).
+
+### Stable from here
+
+- **Settings keys** — `bowire.cliPath`, and its siblings, keep their names.
+- **Command ids** — including `Bowire: Show resolved CLI`, added in 0.2.0.
+- **The CLI floor stays 2.5.0.** The extension drives an installed Bowire
+  rather than bundling one, and hosts anything from the floor upwards. Its
+  version therefore stays independent of Bowire's
+  ([#101](https://github.com/Kuestenlogik/Bowire/issues/101)) — a shared
+  number would assert a coupling that does not exist and force an extension
+  release on every Bowire release.
+
 ## [0.2.0] — 2026-08-25
 
 Everything below has been in the repository for a while but never reached the
