@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6 — Multi-tenancy: per-identity state, SCIM provisioning, per-user plugins
 
-**14/32 done** · 1 in progress · 17 backlog
+**17/35 done** · 1 in progress · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -46,6 +46,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [591](https://github.com/Kuestenlogik/Bowire/issues/591) | Bowire | [Workspace-local storage: collections must travel with the repo, not the user profile](#issue-kuestenlogik-bowire-591) | ✅ Done |  |
 | [601](https://github.com/Kuestenlogik/Bowire/issues/601) | Bowire | [Migrate the test run to Microsoft.Testing.Platform (unblocks xunit.v3 4.x)](#issue-kuestenlogik-bowire-601) | ✅ Done |  |
 | [604](https://github.com/Kuestenlogik/Bowire/issues/604) | Bowire | [CLI: --url-file is declared and documented but never read](#issue-kuestenlogik-bowire-604) | ✅ Done |  |
+| [625](https://github.com/Kuestenlogik/Bowire/issues/625) | Bowire | [Bowire's own HTTP surface: the findings its scanner reports about it](#issue-kuestenlogik-bowire-625) | ✅ Done | `area:security` |
+| [634](https://github.com/Kuestenlogik/Bowire/issues/634) | Bowire | [The CLI overrides ASPNETCORE_URLS and Kestrel config silently — and so cannot serve HTTPS](#issue-kuestenlogik-bowire-634) | ✅ Done | `area:security` |
+| [635](https://github.com/Kuestenlogik/Bowire/issues/635) | Bowire | [bowire mcp serve overrides ASPNETCORE_URLS and Kestrel config, and cannot serve HTTPS](#issue-kuestenlogik-bowire-635) | ✅ Done | `area:security` |
 | [636](https://github.com/Kuestenlogik/Bowire/issues/636) | Bowire | [Any authenticated user can install a plugin into the shared server process](#issue-kuestenlogik-bowire-636) | ✅ Done | `area:security` |
 | [638](https://github.com/Kuestenlogik/Bowire/issues/638) | Bowire | [Per-identity 'hidden in my workbench' preference for protocols](#issue-kuestenlogik-bowire-638) | ✅ Done | `area:multi` |
 
@@ -325,6 +328,24 @@ Make the VS Code extension store a workspace's Bowire data inside that workspace
 #### <a id="issue-kuestenlogik-bowire-604"></a>✅ Done · [#604](https://github.com/Kuestenlogik/Bowire/issues/604) CLI: --url-file is declared and documented but never read
 
 `--url-file` is declared on the CLI and documented in the setup guide, but nothing ever reads it. Passing it is silently a no-op. [[more]](https://github.com/Kuestenlogik/Bowire/issues/604)
+
+#### <a id="issue-kuestenlogik-bowire-625"></a>✅ Done · [#625](https://github.com/Kuestenlogik/Bowire/issues/625) Bowire's own HTTP surface: the findings its scanner reports about it
+
+> `area:security`
+
+Now that #614 points `bowire scan` at the surface Bowire ships, the scanner reports seven findings against us. This issue is what to do about each — not all of them are defects, and saying which are is the first piece of work. [[more]](https://github.com/Kuestenlogik/Bowire/issues/625)
+
+#### <a id="issue-kuestenlogik-bowire-634"></a>✅ Done · [#634](https://github.com/Kuestenlogik/Bowire/issues/634) The CLI overrides ASPNETCORE_URLS and Kestrel config silently — and so cannot serve HTTPS
+
+> `area:security`
+
+`BrowserUiHost` calls, unconditionally: [[more]](https://github.com/Kuestenlogik/Bowire/issues/634)
+
+#### <a id="issue-kuestenlogik-bowire-635"></a>✅ Done · [#635](https://github.com/Kuestenlogik/Bowire/issues/635) bowire mcp serve overrides ASPNETCORE_URLS and Kestrel config, and cannot serve HTTPS
+
+> `area:security`
+
+`bowire mcp serve --bind http` has the defect #634 just removed from the workbench host, in its own listener: [[more]](https://github.com/Kuestenlogik/Bowire/issues/635)
 
 #### <a id="issue-kuestenlogik-bowire-636"></a>✅ Done · [#636](https://github.com/Kuestenlogik/Bowire/issues/636) Any authenticated user can install a plugin into the shared server process
 
