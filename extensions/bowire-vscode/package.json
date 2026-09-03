@@ -2,7 +2,7 @@
   "name": "bowire-vscode",
   "displayName": "Bowire",
   "description": "The Bowire multi-protocol API workbench, hosted in VS Code. gRPC, REST, GraphQL, SignalR, MQTT, WebSocket, SSE, MCP and more — driving the same bowire CLI your terminal and CI already run.",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "publisher": "kuestenlogik",
   "license": "Apache-2.0",
   "engines": {
