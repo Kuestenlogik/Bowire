@@ -115,7 +115,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [624](https://github.com/Kuestenlogik/Bowire/issues/624) | Bowire | [Benchmark: hold connections open and report what became of them](#issue-kuestenlogik-bowire-624) | ⬜ Backlog | `area:cli` |
 | [640](https://github.com/Kuestenlogik/Bowire/issues/640) | Bowire | [Plugin settings are rendered and stored, but never reach the plugin](#issue-kuestenlogik-bowire-640) | ⬜ Backlog | `area:plugin-sdk` |
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Lizenz entscheiden und je Projekt führen](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
-| [637](https://github.com/Kuestenlogik/Bowire/issues/637) | Bowire | [Intermittent test failures on main: proxy port bind, and parallel-abort status wording](#issue-kuestenlogik-bowire-637) | ⬜ Done | `area:cli` |
 
 ## Details
 
@@ -558,12 +557,6 @@ Found while looking at [Bowire.Protocol.Dis#21](https://github.com/Kuestenlogik/
 > `area:multi`
 
 Die Lizenzfrage für Bowire steht laut Lizenz- und Stufenkonzept aus („TBD"), und sie ist hier keine Formalie: Bowire ist im Bestand ein **Sicherheitswerkzeug** — Schwachstellendatenbank, Scanner, Protokollmodule, SDKs in Go, Node, Python und Rust, CI-Action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/647)
-
-#### <a id="issue-kuestenlogik-bowire-637"></a>⬜ Done · [#637](https://github.com/Kuestenlogik/Bowire/issues/637) Intermittent test failures on main: proxy port bind, and parallel-abort status wording
-
-> `area:cli`
-
-`Kuestenlogik.Bowire.Tests.Proxy.ProxyCommandTests.RunAsync_StartsOnDynamicPortsAndExitsGracefully` failed on [run 33398576681](https://github.com/Kuestenlogik/Bowire/actions/runs/33398576681) and passed on the next run over the same code (33193ce4, a ROADMAP.md-only commit on top of a56407db). [[more]](https://github.com/Kuestenlogik/Bowire/issues/637)
 
 ---
 
