@@ -102,6 +102,19 @@ public static class BowireOastServer
         {
             await app.StartAsync(ct).ConfigureAwait(false);
         }
+        catch (OperationCanceledException)
+        {
+            // Stopped before it finished starting. The wait below already
+            // treats a cancellation as the normal exit; one that lands a
+            // moment earlier is the same event, and letting it escape here
+            // turned Ctrl+C during startup into an unhandled exception and a
+            // stack trace where a clean exit belongs.
+            //
+            // Third instance of this shape — `bowire proxy` had it on both of
+            // its listeners (#637). Anything that hands a caller's token to
+            // StartAsync owes it the same catch.
+            return 0;
+        }
         catch (IOException ex)
         {
             await stderr.WriteLineAsync($"  Could not bind HTTP port {options.HttpPort}: {ex.Message}").ConfigureAwait(false);
