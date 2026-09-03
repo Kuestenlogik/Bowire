@@ -26347,8 +26347,7 @@ not as the
 .bowire-contract-main { padding: 16px; }
 .bowire-contract-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .bowire-contract-summary { font-size: 13px; color: var(--bowire-text-secondary); margin-bottom: 10px; }
-.bowire-contract-empty,
-.bowire-contract-error { font-size: 13px; color: var(--bowire-text-tertiary); padding: 12px 0; }
+.bowire-contract-error { font-size: 13px; padding: 12px 0; }
 .bowire-contract-error { color: var(--bowire-danger); }
 .bowire-contract-matrix { border-collapse: collapse; font-size: 12px; }
 .bowire-contract-matrix th,
@@ -26371,6 +26370,9 @@ not as the
 .bowire-contract-verdict-pass { color: var(--bowire-success); font-weight: 600; }
 .bowire-contract-verdict-fail { color: var(--bowire-danger); font-weight: 600; }
 .bowire-contract-method { color: var(--bowire-text-secondary); }
+/* #645 — the description carried no rule at all, so it inherited whatever
+   the row gave it and sat flush against the duration that floats right. */
+.bowire-contract-desc { color: var(--bowire-text); flex: 1 1 auto; min-width: 0; }
 .bowire-contract-duration { color: var(--bowire-text-tertiary); margin-left: auto; }
 .bowire-contract-assertion,
 .bowire-contract-error { font-size: 12px; margin-top: 4px; color: var(--bowire-danger); }
@@ -26405,8 +26407,7 @@ not as the
 .bowire-rollup-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
 .bowire-rollup-path { flex: 1 1 auto; max-width: 520px; font-family: var(--bowire-font-mono); font-size: 12px; }
 .bowire-rollup-summary { font-size: 13px; color: var(--bowire-text-secondary); margin-bottom: 10px; }
-.bowire-rollup-empty,
-.bowire-rollup-error { font-size: 13px; color: var(--bowire-text-tertiary); padding: 12px 0; }
+.bowire-rollup-error { font-size: 13px; padding: 12px 0; }
 .bowire-rollup-error { color: var(--bowire-danger); }
 .bowire-rollup-table { border-collapse: collapse; font-size: 12px; width: 100%; }
 .bowire-rollup-table th,

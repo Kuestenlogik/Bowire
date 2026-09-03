@@ -62,8 +62,8 @@ function bowireRollupRow(service) {
         : '—';
 
     var cells = [
-        el('td', { class: 'bowire-rollup-service' }, service.service),
-        el('td', { class: 'bowire-rollup-worst bowire-rollup-worst-' + worst }, worst.toUpperCase()),
+        el('td', { className: 'bowire-rollup-service' }, service.service),
+        el('td', { className: 'bowire-rollup-worst bowire-rollup-worst-' + worst }, worst.toUpperCase()),
         el('td', {}, lint),
         el('td', {}, bowireRollupCell(service.contracts)),
         el('td', {}, bowireRollupCell(service.tests)),
@@ -74,12 +74,12 @@ function bowireRollupRow(service) {
     ];
 
     return el('tr', {
-        class: 'bowire-rollup-row',
+        className: 'bowire-rollup-row',
         role: 'button',
         tabindex: '0',
         title: 'Show the reports behind this row',
         'data-service': service.service,
-        onclick: function () {
+        onClick: function () {
             // Resolve by name at click time — morphdom keeps nodes across
             // re-renders, so a captured object would go stale.
             var name = this.getAttribute('data-service');
@@ -91,45 +91,60 @@ function bowireRollupRow(service) {
 
 function bowireRollupSources(service) {
     var items = (service.sources || []).map(function (src) {
-        return el('li', { class: 'bowire-rollup-source' }, src.kind + '  ·  ' + src.path);
+        return el('li', { className: 'bowire-rollup-source' }, src.kind + '  ·  ' + src.path);
     });
     if (items.length === 0) {
-        items = [el('li', { class: 'bowire-rollup-source' }, 'no source files recorded')];
+        items = [el('li', { className: 'bowire-rollup-source' }, 'no source files recorded')];
     }
-    return el('tr', { class: 'bowire-rollup-sources-row' },
-        el('td', { colspan: '8' }, el('ul', { class: 'bowire-rollup-sources' }, items)));
+    return el('tr', { className: 'bowire-rollup-sources-row' },
+        el('td', { colspan: '8' }, el('ul', { className: 'bowire-rollup-sources' }, items)));
 }
 
 function renderRollupMain() {
     var body = [];
 
-    body.push(el('div', { class: 'bowire-rollup-toolbar' }, [
+    // #645 — see the note in contract-matrix.js: the row keeps its class,
+    // the controls inside take the shared ones.
+    body.push(el('div', { className: 'bowire-rollup-toolbar' }, [
         el('input', {
-            class: 'bowire-rollup-path',
+            className: 'bowire-settings-input bowire-rollup-path',
             type: 'text',
             value: bowireRollupPath,
             placeholder: 'paths to read, comma-separated',
             title: 'Files or directories holding Bowire reports. Directories are walked recursively.',
-            oninput: function () { bowireRollupPath = this.value; }
+            onInput: function () { bowireRollupPath = this.value; }
         }),
         el('button', {
-            class: 'bowire-rollup-run',
+            type: 'button',
+            className: 'bowire-settings-action-btn',
             disabled: bowireRollupLoading ? 'disabled' : null,
-            onclick: function () { bowireLoadRollup(); }
+            onClick: function () { bowireLoadRollup(); }
         }, bowireRollupLoading ? 'Reading…' : 'Roll up')
     ]));
 
     if (bowireRollupError) {
-        body.push(el('div', { class: 'bowire-rollup-error' }, bowireRollupError));
+        body.push(el('div', { className: 'bowire-rollup-error' }, bowireRollupError));
     } else if (!bowireRollup) {
-        body.push(el('div', { class: 'bowire-rollup-empty' },
-            'Point this at a folder of Bowire reports — lint findings, contract results, benchmark runs, scan SARIF, test JUnit — and press Roll up.'));
+        // #645 — the shared empty card, so this pane stops being the one that
+        // greets you with a bare paragraph.
+        body.push(renderEmptyCard({
+            icon: 'layers',
+            headline: 'Nothing rolled up yet',
+            body: 'Point the path above at a folder of Bowire reports — lint findings, '
+                + 'contract results, benchmark runs, scan SARIF, test JUnit — and press Roll up. '
+                + 'Directories are walked recursively.',
+        }));
     } else if (!bowireRollup.services || bowireRollup.services.length === 0) {
-        body.push(el('div', { class: 'bowire-rollup-empty' },
-            'No Bowire reports found under those paths'
-            + (bowireRollup.summary && bowireRollup.summary.skipped
-                ? ' (' + bowireRollup.summary.skipped + ' file(s) read but not recognised).'
-                : '.')));
+        body.push(renderEmptyCard({
+            icon: 'layers',
+            headline: 'No Bowire reports under those paths',
+            // The skipped count is the difference between "nothing there" and
+            // "things there that I could not read", and only one of those is
+            // the operator's problem to fix.
+            body: bowireRollup.summary && bowireRollup.summary.skipped
+                ? bowireRollup.summary.skipped + ' file(s) were read but not recognised as Bowire reports.'
+                : 'Nothing under those paths looked like a Bowire report.',
+        }));
     } else {
         var head = el('tr', {}, [
             el('th', {}, 'Service'), el('th', {}, 'Worst'), el('th', {}, 'Lint H/M/L'),
@@ -144,13 +159,13 @@ function renderRollupMain() {
         });
 
         var s = bowireRollup.summary || {};
-        body.push(el('div', { class: 'bowire-rollup-summary' },
+        body.push(el('div', { className: 'bowire-rollup-summary' },
             s.services + ' service(s) · ' + s.atHigh + ' at high · ' + s.clean + ' clean'
             + (s.skipped ? ' · ' + s.skipped + ' file(s) skipped' : '')));
-        body.push(el('table', { class: 'bowire-rollup-table' }, rows));
+        body.push(el('table', { className: 'bowire-rollup-table' }, rows));
     }
 
-    return el('div', { class: 'bowire-rollup-main' }, body);
+    return el('div', { className: 'bowire-rollup-main' }, body);
 }
 
 window.__bowireRailRenderers = window.__bowireRailRenderers || {};
