@@ -154,6 +154,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [623](https://github.com/Kuestenlogik/Bowire/issues/623) | Bowire | [Benchmark: report the shape of a run, not only its totals](#issue-kuestenlogik-bowire-623) | ⬜ Backlog | `area:cli` |
 | [624](https://github.com/Kuestenlogik/Bowire/issues/624) | Bowire | [Benchmark: hold connections open and report what became of them](#issue-kuestenlogik-bowire-624) | ⬜ Backlog | `area:cli` |
 | [640](https://github.com/Kuestenlogik/Bowire/issues/640) | Bowire | [Plugin settings are rendered and stored, but never reach the plugin](#issue-kuestenlogik-bowire-640) | ⬜ Backlog | `area:plugin-sdk` |
+| [643](https://github.com/Kuestenlogik/Bowire/issues/643) | Bowire | [BOWIRE_DATA_DIR is ignored by workspace-scoped storage, so an isolated run writes into the real home](#issue-kuestenlogik-bowire-643) | ⬜ Backlog | `area:workbench` |
 | [637](https://github.com/Kuestenlogik/Bowire/issues/637) | Bowire | [Intermittent test failures on main: proxy port bind, and parallel-abort status wording](#issue-kuestenlogik-bowire-637) | ⬜ Done | `area:cli` |
 
 ## Details
@@ -781,6 +782,12 @@ Everything Bowire measures today is a request that completes. `bowire bench` cal
 > `area:plugin-sdk`
 
 Found while looking at [Bowire.Protocol.Dis#21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21), which reads as a local oversight in one plugin and is not. [[more]](https://github.com/Kuestenlogik/Bowire/issues/640)
+
+#### <a id="issue-kuestenlogik-bowire-643"></a>⬜ Backlog · [#643](https://github.com/Kuestenlogik/Bowire/issues/643) BOWIRE_DATA_DIR is ignored by workspace-scoped storage, so an isolated run writes into the real home
+
+> `area:workbench`
+
+`BOWIRE_DATA_DIR` redirects everything that goes through `BowirePaths`, and nothing that goes through a workspace. [[more]](https://github.com/Kuestenlogik/Bowire/issues/643)
 
 #### <a id="issue-kuestenlogik-bowire-637"></a>⬜ Done · [#637](https://github.com/Kuestenlogik/Bowire/issues/637) Intermittent test failures on main: proxy port bind, and parallel-abort status wording
 
