@@ -123,6 +123,10 @@ internal static class OwaspApiSuite
         new McpResourceTraversalProbe(),
         new McpToolInjectionProbe(),
         new WebSocketAuthProbe(),
+        // Passive: three handshakes, no frames. Silent without
+        // --auth-header-b, because a cross-identity check with one identity
+        // has nothing to compare (Bowire.VulnDb#23).
+        new WebSocketAuthorizationProbe(),
         new WebSocketResourceLimitProbe(),
         new MqttAuthProbe(),
         // Passive: connects and closes, publishes nothing. The auth probe asks
@@ -153,7 +157,8 @@ internal static class OwaspApiSuite
     /// <summary>
     /// Run the active protocol probes (opt-in, <c>--active</c>). Same
     /// plugin-resolution + timeout isolation as
-    /// <see cref="RunProtocolProbesAsync"/>, but each probe carries the
+    /// <see cref="RunProtocolProbesAsync(string, BowireProtocolRegistry, IList{string}, TimeSpan, CancellationToken)"/>,
+    /// but each probe carries the
     /// operator-set <see cref="ActiveScanOptions"/> budgets and may mutate the
     /// target. Callers must have surfaced the mutating-mode warning already.
     /// </summary>
@@ -224,6 +229,15 @@ internal static class OwaspApiSuite
     /// </summary>
     public static async Task<IReadOnlyList<ScanFinding>> RunProtocolProbesAsync(
         string target, BowireProtocolRegistry registry, IList<string> authHeaders, TimeSpan perProbeTimeout, CancellationToken ct)
+        => await RunProtocolProbesAsync(target, registry, authHeaders, [], perProbeTimeout, ct).ConfigureAwait(false);
+
+    /// <summary>
+    /// Same, with the scan's optional second identity (<c>--auth-header-b</c>)
+    /// available to probes that compare two of them.
+    /// </summary>
+    public static async Task<IReadOnlyList<ScanFinding>> RunProtocolProbesAsync(
+        string target, BowireProtocolRegistry registry, IList<string> authHeaders,
+        IList<string> authHeadersB, TimeSpan perProbeTimeout, CancellationToken ct)
     {
         var merged = new List<ScanFinding>();
         foreach (var probe in ProtocolProbes)
@@ -250,7 +264,7 @@ internal static class OwaspApiSuite
                 IReadOnlyList<ScanFinding> result = [];
                 foreach (var candidate in CandidateTargets(target, probe.ProtocolId))
                 {
-                    result = await probe.RunAsync(candidate, protocol, authHeaders, cts.Token).ConfigureAwait(false);
+                    result = await probe.RunAsync(candidate, protocol, authHeaders, authHeadersB, cts.Token).ConfigureAwait(false);
                     if (Reached(result)) break;
                 }
                 merged.AddRange(result);
