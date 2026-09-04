@@ -12,25 +12,26 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6.1 — Storage isolation, workspace inventory, workbench fixes
 
-**2/2 done**
+**4/4 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [637](https://github.com/Kuestenlogik/Bowire/issues/637) | Bowire | [Intermittent test failures on main: proxy port bind, and parallel-abort status wording](#issue-kuestenlogik-bowire-637) | ✅ Done | `area:cli` |
 | [643](https://github.com/Kuestenlogik/Bowire/issues/643) | Bowire | [BOWIRE_DATA_DIR is ignored by workspace-scoped storage, so an isolated run writes into the real home](#issue-kuestenlogik-bowire-643) | ✅ Done | `area:workbench` |
+| [645](https://github.com/Kuestenlogik/Bowire/issues/645) | Bowire | [Rollup and Contracts panes do not follow the shared rail vocabulary](#issue-kuestenlogik-bowire-645) | ✅ Done | `area:workbench` |
+| [646](https://github.com/Kuestenlogik/Bowire/issues/646) | Bowire | [The workspace list is not per identity — multi-tenancy separates contents, not inventory](#issue-kuestenlogik-bowire-646) | ✅ Done | `area:multi` |
 
-### v2.6.2 — Correlation coverage, plugin settings across repos, workspace-aware MCP
+### v2.6.2 — Correlation coverage and plugin settings that arrive
 
-**0/2 done** · 2 backlog
+**0/1 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [640](https://github.com/Kuestenlogik/Bowire/issues/640) | Bowire | [Plugin settings are rendered and stored, but never reach the plugin](#issue-kuestenlogik-bowire-640) | ⬜ Backlog | `area:plugin-sdk` |
-| [642](https://github.com/Kuestenlogik/Bowire/issues/642) | Bowire | [MCP resources read the workspace-less files, so they answer with the wrong data](#issue-kuestenlogik-bowire-642) | ⬜ Backlog | `area:mcp` |
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
-**2/8 done** · 6 backlog
+**0/7 done** · 7 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -40,8 +41,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
 | [619](https://github.com/Kuestenlogik/Bowire/issues/619) | Bowire | [VS Code extension 1.0 — cut the release the code already justifies](#issue-kuestenlogik-bowire-619) | ⬜ Backlog | `area:workbench` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
-| [645](https://github.com/Kuestenlogik/Bowire/issues/645) | Bowire | [Rollup and Contracts panes do not follow the shared rail vocabulary](#issue-kuestenlogik-bowire-645) | ✅ Done | `area:workbench` |
-| [646](https://github.com/Kuestenlogik/Bowire/issues/646) | Bowire | [The workspace list is not per identity — multi-tenancy separates contents, not inventory](#issue-kuestenlogik-bowire-646) | ✅ Done | `area:multi` |
+| [642](https://github.com/Kuestenlogik/Bowire/issues/642) | Bowire | [MCP resources read the workspace-less files, so they answer with the wrong data](#issue-kuestenlogik-bowire-642) | ⬜ Backlog | `area:mcp` |
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
@@ -148,19 +148,25 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 `BOWIRE_DATA_DIR` redirects everything that goes through `BowirePaths`, and nothing that goes through a workspace. [[more]](https://github.com/Kuestenlogik/Bowire/issues/643)
 
-### v2.6.2 — Correlation coverage, plugin settings across repos, workspace-aware MCP
+#### <a id="issue-kuestenlogik-bowire-645"></a>✅ Done · [#645](https://github.com/Kuestenlogik/Bowire/issues/645) Rollup and Contracts panes do not follow the shared rail vocabulary
+
+> `area:workbench`
+
+The Rollup and Contracts panes are built past the workbench's shared vocabulary, and it shows. [[more]](https://github.com/Kuestenlogik/Bowire/issues/645)
+
+#### <a id="issue-kuestenlogik-bowire-646"></a>✅ Done · [#646](https://github.com/Kuestenlogik/Bowire/issues/646) The workspace list is not per identity — multi-tenancy separates contents, not inventory
+
+> `area:multi`
+
+Multi-tenancy separates everything *inside* a workspace and nothing *about* which workspaces exist. [[more]](https://github.com/Kuestenlogik/Bowire/issues/646)
+
+### v2.6.2 — Correlation coverage and plugin settings that arrive
 
 #### <a id="issue-kuestenlogik-bowire-640"></a>⬜ Backlog · [#640](https://github.com/Kuestenlogik/Bowire/issues/640) Plugin settings are rendered and stored, but never reach the plugin
 
 > `area:plugin-sdk`
 
 Found while looking at [Bowire.Protocol.Dis#21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21), which reads as a local oversight in one plugin and is not. [[more]](https://github.com/Kuestenlogik/Bowire/issues/640)
-
-#### <a id="issue-kuestenlogik-bowire-642"></a>⬜ Backlog · [#642](https://github.com/Kuestenlogik/Bowire/issues/642) MCP resources read the workspace-less files, so they answer with the wrong data
-
-> `area:mcp`
-
-The MCP resources read the workspace-less files, so on any install that uses workspaces they answer with somebody else's data or with nothing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/642)
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
@@ -198,17 +204,11 @@ The extension has outgrown its version number. `#589` (resolve the CLI from a wo
 
 Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
 
-#### <a id="issue-kuestenlogik-bowire-645"></a>✅ Done · [#645](https://github.com/Kuestenlogik/Bowire/issues/645) Rollup and Contracts panes do not follow the shared rail vocabulary
+#### <a id="issue-kuestenlogik-bowire-642"></a>⬜ Backlog · [#642](https://github.com/Kuestenlogik/Bowire/issues/642) MCP resources read the workspace-less files, so they answer with the wrong data
 
-> `area:workbench`
+> `area:mcp`
 
-The Rollup and Contracts panes are built past the workbench's shared vocabulary, and it shows. [[more]](https://github.com/Kuestenlogik/Bowire/issues/645)
-
-#### <a id="issue-kuestenlogik-bowire-646"></a>✅ Done · [#646](https://github.com/Kuestenlogik/Bowire/issues/646) The workspace list is not per identity — multi-tenancy separates contents, not inventory
-
-> `area:multi`
-
-Multi-tenancy separates everything *inside* a workspace and nothing *about* which workspaces exist. [[more]](https://github.com/Kuestenlogik/Bowire/issues/646)
+The MCP resources read the workspace-less files, so on any install that uses workspaces they answer with somebody else's data or with nothing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/642)
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
