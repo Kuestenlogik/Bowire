@@ -122,6 +122,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [624](https://github.com/Kuestenlogik/Bowire/issues/624) | Bowire | [Benchmark: hold connections open and report what became of them](#issue-kuestenlogik-bowire-624) | ⬜ Backlog | `area:cli` |
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Lizenz entscheiden und je Projekt führen](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
 | [652](https://github.com/Kuestenlogik/Bowire/issues/652) | Bowire | [The gRPC transport-auth check is unreachable when reflection is disabled — the state it recommends](#issue-kuestenlogik-bowire-652) | ⬜ Backlog | `area:security` |
+| [653](https://github.com/Kuestenlogik/Bowire/issues/653) | Bowire | [A .proto that discovery accepts cannot be invoked — the gRPC plugin resolves descriptors only via reflection](#issue-kuestenlogik-bowire-653) | ⬜ Backlog | `area:plugin-sdk` |
 
 ## Details
 
@@ -566,6 +567,12 @@ Die Lizenzfrage für Bowire steht laut Lizenz- und Stufenkonzept aus („TBD"), 
 > `area:security`
 
 `GrpcReflectionProbe` runs two checks. The second one — invoke a read-only method with no credential and read the status trailer — is the gRPC counterpart of `WebSocketAuthProbe`, `MqttAuthProbe` and `SseAuthProbe`, and it is good: read-only prefixes only, up to six candidates, and trailers classifi … [[more]](https://github.com/Kuestenlogik/Bowire/issues/652)
+
+#### <a id="issue-kuestenlogik-bowire-653"></a>⬜ Backlog · [#653](https://github.com/Kuestenlogik/Bowire/issues/653) A .proto that discovery accepts cannot be invoked — the gRPC plugin resolves descriptors only via reflection
+
+> `area:plugin-sdk`
+
+`#253` gave discovery a schema source that is not the server: upload a `.proto`, and its services are merged into the service list. That is the feature for a gRPC server with reflection disabled — which is the recommended production state, and which Bowire's own scanner recommends. [[more]](https://github.com/Kuestenlogik/Bowire/issues/653)
 
 ---
 
