@@ -16,6 +16,22 @@ internal sealed class GreeterService : Greeter.GreeterBase
         });
     }
 
+    /// <summary>
+    /// Read-only and management-plane by name, so GrpcAuthorizationProbe
+    /// will pick it as a candidate. Echoes back whoever called, which is
+    /// what makes an "it treated both identities the same" verdict visible.
+    /// </summary>
+    public override Task<ListPoliciesReply> ListPolicies(ListPoliciesRequest request, ServerCallContext context)
+    {
+        var reply = new ListPoliciesReply
+        {
+            Caller = context.RequestHeaders.GetValue("authorization") ?? "anonymous",
+        };
+        reply.Policies.Add("allow-read");
+        reply.Policies.Add("allow-write");
+        return Task.FromResult(reply);
+    }
+
     public override async Task SayHelloStream(HelloRequest request,
         IServerStreamWriter<HelloReply> responseStream, ServerCallContext context)
     {

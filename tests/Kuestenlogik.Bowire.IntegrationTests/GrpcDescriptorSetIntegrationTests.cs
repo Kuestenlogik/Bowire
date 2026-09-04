@@ -111,7 +111,11 @@ public sealed class GrpcDescriptorSetIntegrationTests
     /// `greeter.proto` and its transitive imports as a FileDescriptorSet —
     /// what `protoc --descriptor_set_out --include_imports` would produce.
     /// </summary>
-    private static string InlineMarker()
+    /// <remarks>
+    /// Internal so GrpcAuthorizationProbeIntegrationTests can reuse it — both
+    /// need the same set for the same server, and a second copy would drift.
+    /// </remarks>
+    internal static string InlineMarker()
     {
         var set = new FileDescriptorSet();
         var seen = new HashSet<string>(StringComparer.Ordinal);
