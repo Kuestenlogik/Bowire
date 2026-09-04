@@ -2406,19 +2406,28 @@
                         }
                     } catch { /* quota / disabled — the in-memory list is still right */ }
 
-                    // The active workspace moved, which is the same event
-                    // switchWorkspace() handles — and it handles it with a
-                    // reload, because every per-workspace store routes
-                    // through wsKey() and the synchronous part of boot has
-                    // already read some of them under the old id. Re-doing
-                    // that by hand means walking every load-fn; this does
-                    // not.
+                    // We were looking at a workspace the server does not
+                    // have, so the synchronous part of boot read per-workspace
+                    // storage under an id that is now wrong. That is the same
+                    // event switchWorkspace() handles, and it handles it with
+                    // a reload, because every per-workspace store routes
+                    // through wsKey() and re-pointing them by hand means
+                    // walking every load-fn.
                     //
-                    // It happens at most once. The reconciled list and id
-                    // are in localStorage above, so the next boot reads them
-                    // synchronously, this branch finds nothing changed, and
-                    // no second reload follows.
-                    if (previousActive !== activeWorkspaceId) {
+                    // Only when there WAS a previous workspace. Adopting an id
+                    // where there was none reads nothing wrong — with
+                    // activeWorkspaceId null the synchronous boot used
+                    // wsKey()'s base-key shape, and the disk hydrators run
+                    // after this function resolves, so they see the adopted
+                    // id. Reloading there would fire on every boot of a
+                    // browser with cleared storage against a server that has
+                    // workspaces, which is an ordinary situation and not one
+                    // worth a page load.
+                    //
+                    // When it does fire it fires once: the reconciled list and
+                    // id are in localStorage above, so the next boot reads
+                    // them synchronously and finds nothing changed.
+                    if (previousActive && previousActive !== activeWorkspaceId) {
                         try { window.location.reload(); } catch { /* embedded host */ }
                     }
                     return;
