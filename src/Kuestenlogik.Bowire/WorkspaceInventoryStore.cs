@@ -123,7 +123,9 @@ internal static class WorkspaceInventoryStore
 
         // Validated before the path is touched: a malformed PUT must not be
         // able to leave a file behind that the next load has to recover from.
-        using var _ = JsonDocument.Parse(json);
+        // Named rather than discarded: `_` is a using variable here, and the
+        // catch below assigns to `_` too.
+        using var validated = JsonDocument.Parse(json);
 
         var path = ResolvePath();
         if (path is null) return false;

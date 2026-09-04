@@ -36,6 +36,17 @@ const _prelude = `
     }
     var _renders = 0;
     function render() { _renders++; }
+    // #645 — the empty states go through the shared card now, so the stub
+    // has to supply it. Shape-compatible with the real one in helpers.js:
+    // a .bowire-empty-card wrapper with the headline and body inside, which
+    // is all these assertions read.
+    function renderEmptyCard(opts) {
+        opts = opts || {};
+        return el('div', { className: 'bowire-empty-card' }, [
+            el('h3', { className: 'bowire-empty-card-headline' }, opts.headline || ''),
+            el('p', { className: 'bowire-empty-card-body' }, opts.body || ''),
+        ]);
+    }
     var _fetches = [];
     var _fetchResult = null;
     async function fetch(url, init) {
@@ -70,8 +81,15 @@ function load() {
 }
 
 // Walk the built tree collecting nodes with a given class.
+//
+// #645 — reads `className` with `class` as a fallback. The fragment used to
+// spell it `class:`, which only ever worked because the real el() falls
+// through to setAttribute for keys it does not recognise; it now uses the
+// same `className:` as the rest of the workbench. Keeping both here means
+// this helper does not have to change again the next time a fragment is
+// brought over.
 function byClass(node, className, found = []) {
-    const cls = node.attrs?.class || '';
+    const cls = node.attrs?.className || node.attrs?.class || '';
     if (typeof cls === 'string' && cls.split(' ').includes(className)) found.push(node);
     (node.children || []).forEach(c => byClass(c, className, found));
     return found;
@@ -159,7 +177,12 @@ test('an empty result says so instead of showing a bare table', () => {
     const tree = rail.renderRollupMain();
 
     assert.equal(byClass(tree, 'bowire-rollup-row').length, 0);
-    assert.match(textOf(byClass(tree, 'bowire-rollup-empty')[0]), /No Bowire reports found/);
+    // #645 — the shared empty card, and it still separates "nothing there"
+    // from "files I could not read": the skipped count is the difference
+    // between the operator having nothing to fix and having something to.
+    const card = textOf(byClass(tree, 'bowire-empty-card')[0]);
+    assert.match(card, /No Bowire reports under those paths/);
+    assert.match(card, /2 file\(s\) were read but not recognised/);
 });
 
 test('typing in the path box updates the state the fetch reads', async () => {
@@ -169,7 +192,7 @@ test('typing in the path box updates the state the fetch reads', async () => {
     const input = byClass(rail.renderRollupMain(), 'bowire-rollup-path')[0];
     assert.equal(input.attrs.value, '.bowire');
 
-    input.attrs.oninput.call({ value: 'reports/, other/' });
+    input.attrs.onInput.call({ value: 'reports/, other/' });
     assert.equal(rail.path(), 'reports/, other/');
 
     // …and the fetch splits it into the paths the API expects, dropping the
