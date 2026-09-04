@@ -18,7 +18,10 @@ namespace Kuestenlogik.Bowire;
 /// <summary>
 /// Queries gRPC Server Reflection to discover services, methods, and message schemas.
 /// </summary>
-internal sealed class GrpcReflectionClient : IDisposable
+// Implements IGrpcDescriptorSource with the signature it already had (#653):
+// asking the server is one way to obtain descriptors, and until a caller
+// could supply their own it was the only one.
+internal sealed class GrpcReflectionClient : IGrpcDescriptorSource
 {
     private readonly GrpcChannel _channel;
     private readonly ServerReflection.ServerReflectionClient _client;
