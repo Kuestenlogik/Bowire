@@ -121,6 +121,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [623](https://github.com/Kuestenlogik/Bowire/issues/623) | Bowire | [Benchmark: report the shape of a run, not only its totals](#issue-kuestenlogik-bowire-623) | ⬜ Backlog | `area:cli` |
 | [624](https://github.com/Kuestenlogik/Bowire/issues/624) | Bowire | [Benchmark: hold connections open and report what became of them](#issue-kuestenlogik-bowire-624) | ⬜ Backlog | `area:cli` |
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Lizenz entscheiden und je Projekt führen](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
+| [652](https://github.com/Kuestenlogik/Bowire/issues/652) | Bowire | [The gRPC transport-auth check is unreachable when reflection is disabled — the state it recommends](#issue-kuestenlogik-bowire-652) | ⬜ Backlog | `area:security` |
 
 ## Details
 
@@ -559,6 +560,12 @@ Everything Bowire measures today is a request that completes. `bowire bench` cal
 > `area:multi`
 
 Die Lizenzfrage für Bowire steht laut Lizenz- und Stufenkonzept aus („TBD"), und sie ist hier keine Formalie: Bowire ist im Bestand ein **Sicherheitswerkzeug** — Schwachstellendatenbank, Scanner, Protokollmodule, SDKs in Go, Node, Python und Rust, CI-Action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/647)
+
+#### <a id="issue-kuestenlogik-bowire-652"></a>⬜ Backlog · [#652](https://github.com/Kuestenlogik/Bowire/issues/652) The gRPC transport-auth check is unreachable when reflection is disabled — the state it recommends
+
+> `area:security`
+
+`GrpcReflectionProbe` runs two checks. The second one — invoke a read-only method with no credential and read the status trailer — is the gRPC counterpart of `WebSocketAuthProbe`, `MqttAuthProbe` and `SseAuthProbe`, and it is good: read-only prefixes only, up to six candidates, and trailers classifi … [[more]](https://github.com/Kuestenlogik/Bowire/issues/652)
 
 ---
 
