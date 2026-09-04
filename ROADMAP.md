@@ -12,14 +12,21 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6.1 — Storage isolation, workspace inventory, workbench fixes
 
-**2/4 done** · 2 backlog
+**2/2 done**
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [637](https://github.com/Kuestenlogik/Bowire/issues/637) | Bowire | [Intermittent test failures on main: proxy port bind, and parallel-abort status wording](#issue-kuestenlogik-bowire-637) | ✅ Done | `area:cli` |
+| [643](https://github.com/Kuestenlogik/Bowire/issues/643) | Bowire | [BOWIRE_DATA_DIR is ignored by workspace-scoped storage, so an isolated run writes into the real home](#issue-kuestenlogik-bowire-643) | ✅ Done | `area:workbench` |
+
+### v2.6.2 — Correlation coverage, plugin settings across repos, workspace-aware MCP
+
+**0/2 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [640](https://github.com/Kuestenlogik/Bowire/issues/640) | Bowire | [Plugin settings are rendered and stored, but never reach the plugin](#issue-kuestenlogik-bowire-640) | ⬜ Backlog | `area:plugin-sdk` |
 | [642](https://github.com/Kuestenlogik/Bowire/issues/642) | Bowire | [MCP resources read the workspace-less files, so they answer with the wrong data](#issue-kuestenlogik-bowire-642) | ⬜ Backlog | `area:mcp` |
-| [637](https://github.com/Kuestenlogik/Bowire/issues/637) | Bowire | [Intermittent test failures on main: proxy port bind, and parallel-abort status wording](#issue-kuestenlogik-bowire-637) | ✅ Done | `area:cli` |
-| [643](https://github.com/Kuestenlogik/Bowire/issues/643) | Bowire | [BOWIRE_DATA_DIR is ignored by workspace-scoped storage, so an isolated run writes into the real home](#issue-kuestenlogik-bowire-643) | ✅ Done | `area:workbench` |
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
@@ -129,18 +136,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6.1 — Storage isolation, workspace inventory, workbench fixes
 
-#### <a id="issue-kuestenlogik-bowire-640"></a>⬜ Backlog · [#640](https://github.com/Kuestenlogik/Bowire/issues/640) Plugin settings are rendered and stored, but never reach the plugin
-
-> `area:plugin-sdk`
-
-Found while looking at [Bowire.Protocol.Dis#21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21), which reads as a local oversight in one plugin and is not. [[more]](https://github.com/Kuestenlogik/Bowire/issues/640)
-
-#### <a id="issue-kuestenlogik-bowire-642"></a>⬜ Backlog · [#642](https://github.com/Kuestenlogik/Bowire/issues/642) MCP resources read the workspace-less files, so they answer with the wrong data
-
-> `area:mcp`
-
-The MCP resources read the workspace-less files, so on any install that uses workspaces they answer with somebody else's data or with nothing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/642)
-
 #### <a id="issue-kuestenlogik-bowire-637"></a>✅ Done · [#637](https://github.com/Kuestenlogik/Bowire/issues/637) Intermittent test failures on main: proxy port bind, and parallel-abort status wording
 
 > `area:cli`
@@ -152,6 +147,20 @@ The MCP resources read the workspace-less files, so on any install that uses wor
 > `area:workbench`
 
 `BOWIRE_DATA_DIR` redirects everything that goes through `BowirePaths`, and nothing that goes through a workspace. [[more]](https://github.com/Kuestenlogik/Bowire/issues/643)
+
+### v2.6.2 — Correlation coverage, plugin settings across repos, workspace-aware MCP
+
+#### <a id="issue-kuestenlogik-bowire-640"></a>⬜ Backlog · [#640](https://github.com/Kuestenlogik/Bowire/issues/640) Plugin settings are rendered and stored, but never reach the plugin
+
+> `area:plugin-sdk`
+
+Found while looking at [Bowire.Protocol.Dis#21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21), which reads as a local oversight in one plugin and is not. [[more]](https://github.com/Kuestenlogik/Bowire/issues/640)
+
+#### <a id="issue-kuestenlogik-bowire-642"></a>⬜ Backlog · [#642](https://github.com/Kuestenlogik/Bowire/issues/642) MCP resources read the workspace-less files, so they answer with the wrong data
+
+> `area:mcp`
+
+The MCP resources read the workspace-less files, so on any install that uses workspaces they answer with somebody else's data or with nothing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/642)
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
