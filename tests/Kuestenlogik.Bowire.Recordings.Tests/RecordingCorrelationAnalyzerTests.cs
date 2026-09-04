@@ -664,15 +664,21 @@ public sealed class RecordingCorrelationAnalyzerTests
         // and skipped this one. An interpretation payload is where a semantic
         // widget's data lives, and it survives save/load verbatim — so a
         // recording can legitimately carry its only shared identifier there.
+        //
+        // The field has to be id-shaped: Suggest only accepts leaves whose
+        // normalised name ends in "id" (and not the bare "id", which collides
+        // across entities). A name like `vesselRef` is dropped by that rule
+        // before it ever reaches the scoring, which says nothing about
+        // whether the interpretation was walked.
         var rec = new BowireRecording { Id = "r", Name = "interpretations" };
         rec.Steps.Add(StepWithInterpretation(
             "s1", "rest", 0,
             body: """{"note":"no ids here"}""",
-            payloadJson: """{"vesselRef":"IMO-9074729","lat":53.5}"""));
+            payloadJson: """{"vesselId":"IMO-9074729","lat":53.5}"""));
         rec.Steps.Add(StepWithInterpretation(
             "s2", "grpc", 10,
             body: """{"note":"nor here"}""",
-            payloadJson: """{"vesselRef":"IMO-9074729","lon":9.9}"""));
+            payloadJson: """{"vesselId":"IMO-9074729","lon":9.9}"""));
 
         var suggestions = RecordingCorrelationAnalyzer.Suggest(rec);
 
@@ -691,11 +697,11 @@ public sealed class RecordingCorrelationAnalyzerTests
         rec.Steps.Add(StepWithInterpretation(
             "s1", "rest", 0,
             body: """{"note":"no ids here"}""",
-            payloadJson: """{"vesselRef":"IMO-9074729"}"""));
+            payloadJson: """{"vesselId":"IMO-9074729"}"""));
         rec.Steps.Add(StepWithInterpretation(
             "s2", "grpc", 10,
             body: """{"note":"nor here"}""",
-            payloadJson: """{"vesselRef":"IMO-9074729"}"""));
+            payloadJson: """{"vesselId":"IMO-9074729"}"""));
 
         var timeline = RecordingCorrelationAnalyzer.Analyze(rec);
 
@@ -713,7 +719,7 @@ public sealed class RecordingCorrelationAnalyzerTests
         var frame = new BowireRecordingFrame
         {
             Body = """{"note":"no ids here"}""",
-            Interpretations = [Interpretation("""{"vesselRef":"IMO-9074729"}""")],
+            Interpretations = [Interpretation("""{"vesselId":"IMO-9074729"}""")],
         };
 
         var seen = new List<string>();
