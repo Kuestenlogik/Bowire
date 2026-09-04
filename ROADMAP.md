@@ -12,11 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6.2 — Correlation coverage and plugin settings that arrive
 
-**0/1 done** · 1 backlog
+**1/1 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [640](https://github.com/Kuestenlogik/Bowire/issues/640) | Bowire | [Plugin settings are rendered and stored, but never reach the plugin](#issue-kuestenlogik-bowire-640) | ⬜ Backlog | `area:plugin-sdk` |
+| [640](https://github.com/Kuestenlogik/Bowire/issues/640) | Bowire | [Plugin settings are rendered and stored, but never reach the plugin](#issue-kuestenlogik-bowire-640) | ✅ Done | `area:plugin-sdk` |
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
@@ -126,7 +126,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.6.2 — Correlation coverage and plugin settings that arrive
 
-#### <a id="issue-kuestenlogik-bowire-640"></a>⬜ Backlog · [#640](https://github.com/Kuestenlogik/Bowire/issues/640) Plugin settings are rendered and stored, but never reach the plugin
+#### <a id="issue-kuestenlogik-bowire-640"></a>✅ Done · [#640](https://github.com/Kuestenlogik/Bowire/issues/640) Plugin settings are rendered and stored, but never reach the plugin
 
 > `area:plugin-sdk`
 
