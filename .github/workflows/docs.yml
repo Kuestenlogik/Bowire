@@ -81,6 +81,26 @@ jobs:
       - name: Build projects (for API docs)
         run: dotnet build Kuestenlogik.Bowire.slnx --configuration Release
 
+      # Protocol plugins in their own repositories contribute their own pages.
+      #
+      # Before this, a plugin's documentation lived here while its code lived
+      # there, so the two could only be fixed in separate commits — which is
+      # exactly how docs/protocols/dis.md came to claim `probeDuration` was
+      # configurable for weeks while the plugin hard-coded three seconds.
+      #
+      # Both steps are non-fatal by construction: a plugin that is unreachable
+      # leaves the copy committed here in place, and the build carries on. One
+      # plugin having a bad day must not stop the site from deploying.
+      - name: Fetch plugin-contributed protocol pages
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/docs/fetch-plugin-docs.mjs
+
+      # Regenerated rather than hand-kept: a fetched page that nothing links to
+      # is invisible, so contribution would only be half-solved without this.
+      - name: Regenerate the protocols navigation
+        run: node scripts/docs/generate-protocols-toc.mjs
+
       # Build DocFX documentation
       - name: Install DocFX
         run: dotnet tool install -g docfx

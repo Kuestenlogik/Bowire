@@ -3,6 +3,19 @@ title: TacticalAPI
 summary: 'TacticalAPI is a Bowire sibling plugin that wraps Rheinmetall''s situational-awareness gRPC interface with a bundled schema so the Situation service tree renders even without Server Reflection. Discovery, typed unary CRUD, server-streaming pump, mTLS via the shared __bowireMtls__ marker, IBowireMockEmitter for recording replay.'
 ---
 
+<!--
+  This page is this repository's contribution to https://bowire.io.
+
+  Bowire's docs build fetches it into docs/protocols/tacticalapi.md and links it
+  from the protocols navigation automatically — do not add a copy to the
+  Bowire repository, it would be overwritten on the next build.
+
+  It moved here because the behaviour it describes lives here: while the page
+  sat in the Bowire repository, a claim about this plugin and the code making
+  it true could only be fixed in two separate commits, and for one setting
+  they drifted for weeks.
+-->
+
 # TacticalAPI
 
 The TacticalAPI plugin connects Bowire to Rheinmetall's situational-awareness gRPC interface: bundled-schema discovery (no Server Reflection on the target needed), typed unary invoke for `GetSituationObjects` / `AddOrUpdateSituationObjects` / `DeleteSituationObjects`, the server-streaming pump for `SubscribeSituationObjectEvents`, URL-scheme normalisation (`tacticalapi@host:port`, `grpc(s)://`, bare `host:port`), and mTLS via the shared `__bowireMtls__` marker alongside the legacy `_bowire:client-cert-pfx` keys.

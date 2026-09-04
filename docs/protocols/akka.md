@@ -3,6 +3,19 @@ title: Akka.NET
 summary: 'The Akka.NET plugin streams every message landing in a tap-mailboxed actor''s inbox into the Bowire workbench — observe a live actor system the same way you watch gRPC streams or MQTT topics.'
 ---
 
+<!--
+  This page is this repository's contribution to https://bowire.io.
+
+  Bowire's docs build fetches it into docs/protocols/akka.md and links it
+  from the protocols navigation automatically — do not add a copy to the
+  Bowire repository, it would be overwritten on the next build.
+
+  It moved here because the behaviour it describes lives here: while the page
+  sat in the Bowire repository, a claim about this plugin and the code making
+  it true could only be fixed in two separate commits, and for one setting
+  they drifted for weeks.
+-->
+
 # Akka.NET
 
 The Akka.NET plugin streams every message landing in a tap-mailboxed actor's inbox into the Bowire workbench. You watch a running actor system the same way you watch a gRPC server-stream or an MQTT topic — except the events are inter-actor `Tell`s instead of network frames.

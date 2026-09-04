@@ -3,6 +3,19 @@ title: DIS
 summary: 'The DIS plugin discovers entities on an IEEE 1278 multicast group, streams typed PDU envelopes per entity (or for the whole exercise feed), and replays captured PDU sequences via the mock server.'
 ---
 
+<!--
+  This page is this repository's contribution to https://bowire.io.
+
+  Bowire's docs build fetches it into docs/protocols/dis.md and links it
+  from the protocols navigation automatically — do not add a copy to the
+  Bowire repository, it would be overwritten on the next build.
+
+  It moved here because the behaviour it describes lives here: while the page
+  sat in the Bowire repository, a claim about this plugin and the code making
+  it true could only be fixed in two separate commits, and for one setting
+  they drifted for weeks.
+-->
+
 # DIS
 
 The DIS plugin gives Bowire two paths into an **IEEE 1278.1 Distributed Interactive Simulation** multicast group:

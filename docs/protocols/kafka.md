@@ -3,6 +3,19 @@ title: Kafka
 summary: 'The Kafka plugin browses topics, consumes live traffic, produces test messages, and replays recorded streams against any Confluent.Kafka-compatible cluster — including Confluent Schema Registry decode and mTLS / SASL auth.'
 ---
 
+<!--
+  This page is this repository's contribution to https://bowire.io.
+
+  Bowire's docs build fetches it into docs/protocols/kafka.md and links it
+  from the protocols navigation automatically — do not add a copy to the
+  Bowire repository, it would be overwritten on the next build.
+
+  It moved here because the behaviour it describes lives here: while the page
+  sat in the Bowire repository, a claim about this plugin and the code making
+  it true could only be fixed in two separate commits, and for one setting
+  they drifted for weeks.
+-->
+
 # Kafka
 
 The Kafka plugin browses topics, consumes live traffic, produces test messages, and replays recorded streams against any Confluent.Kafka-compatible cluster. Built on [Confluent.Kafka](https://github.com/confluentinc/confluent-kafka-dotnet).
