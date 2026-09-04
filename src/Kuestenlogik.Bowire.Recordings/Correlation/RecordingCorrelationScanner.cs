@@ -112,8 +112,8 @@ internal static class RecordingCorrelationScanner
 
     /// <summary>
     /// Every JSON-bearing surface of one step, in a stable order:
-    /// request body, each request message, the response, each sent
-    /// frame's body and data, and each received frame's data.
+    /// request body, each request message, the response, the step's
+    /// interpretation payloads, and each sent and received frame.
     /// </summary>
     public static void ScanStep(BowireRecordingStep step, CorrelationLeafVisitor onLeaf)
     {
@@ -121,6 +121,7 @@ internal static class RecordingCorrelationScanner
         ScanLeaves(step.Body, onLeaf);
         foreach (var message in step.Messages) ScanLeaves(message, onLeaf);
         ScanLeaves(step.Response, onLeaf);
+        ScanInterpretations(step.Interpretations, onLeaf);
         if (step.SentMessages is not null)
         {
             foreach (var frame in step.SentMessages) ScanFrame(frame, onLeaf);
@@ -137,6 +138,44 @@ internal static class RecordingCorrelationScanner
         if (frame is null) return;
         ScanLeaves(frame.Body, onLeaf);
         ScanValue(frame.Data, onLeaf);
+        ScanInterpretations(frame.Interpretations, onLeaf);
+    }
+
+    /// <summary>
+    /// The interpretation payloads on a step or a frame (#547).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This walker claimed to cover "every JSON-bearing surface" and did not
+    /// cover this one. An interpretation payload is where a semantic widget's
+    /// data lives — a coordinate pair, a decoded identifier, a resolved
+    /// entity reference — and it is carried verbatim through save and load,
+    /// so it is as real a surface as the body beside it.
+    /// </para>
+    /// <para>
+    /// The consequence was invisible rather than loud: a recording whose only
+    /// shared identifier sat inside an interpretation left both steps dark on
+    /// the correlated timeline, with nothing on screen to say why. Nothing
+    /// errored, so nobody had a thread to pull.
+    /// </para>
+    /// <para>
+    /// Payloads are already-parsed <see cref="JsonElement"/>s, so they go
+    /// straight to the element walker rather than through the text path. A
+    /// default <see cref="JsonElement"/> has kind Undefined and falls out of
+    /// that walker's default arm, which is what an interpretation written
+    /// without a payload deserialises to.
+    /// </para>
+    /// </remarks>
+    private static void ScanInterpretations(
+        IEnumerable<RecordedInterpretation>? interpretations,
+        CorrelationLeafVisitor onLeaf)
+    {
+        if (interpretations is null) return;
+        foreach (var interpretation in interpretations)
+        {
+            if (interpretation is null) continue;
+            ScanElement(interpretation.Payload, string.Empty, onLeaf, 0);
+        }
     }
 
     /// <summary>
