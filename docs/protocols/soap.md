@@ -53,6 +53,14 @@ SOAP `<Fault>` bodies surface with `Status="Fault"` and the fault XML in the res
 
 SOAP has no streaming primitive — `InvokeStreamAsync` always returns empty and `OpenChannelAsync` returns null.
 
+## Settings
+
+Set per workspace in **Settings → Plugins**; they reach the plugin at
+invocation time (#640). A workspace that has never set one gets the default
+below.
+
+- `defaultSoapVersion` (string, default `"1.1"`) — envelope namespace used when the caller does not name one. Precedence is per-request `soap_version` metadata → this setting → `1.1`, so passing `soap_version=1.2` on a single invocation still wins; the setting decides what happens when nothing is passed.
+
 ## Sample
 
 A hand-rolled SOAP-1.1 Calculator service (no WCF dependency) lives at [`samples/Kuestenlogik.Bowire.Sample.Soap`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.Soap) — `dotnet run`, then open the embedded workbench at <http://localhost:5180/bowire> or point an external one at `http://localhost:5180/Calculator.asmx?wsdl`.
