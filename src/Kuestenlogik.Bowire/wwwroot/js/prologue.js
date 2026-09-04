@@ -2360,17 +2360,28 @@
     // NOTE: `bowire_active_workspace` deliberately stays local. Which
     // workspace *this window* is looking at is view state; syncing it would
     // make opening a second tab move the first one.
-    var _workspaceInventorySyncTimer = null;
+    // Sent immediately, and with keepalive.
+    //
+    // The debounce this started with was copied from the collections sync,
+    // where it earns its keep because a caller edits a collection while
+    // typing. Nothing calls this from a keystroke — every caller is a discrete
+    // act: create, rename, duplicate, delete, reorder, switch. So the timer
+    // bought nothing and cost a workspace.
+    //
+    // Concretely: the REST workspace template seeds its state and then calls
+    // window.location.reload(). With a 400 ms timer the request was not merely
+    // in flight when the page went away, it had not been created yet — so the
+    // server never heard about the workspace, the reconcile on the way back up
+    // found an empty list, and the workspace the operator had just named was
+    // gone. keepalive covers the remaining case, where the request is out but
+    // the document is being torn down around it.
     function scheduleWorkspaceInventorySync() {
-        if (_workspaceInventorySyncTimer) clearTimeout(_workspaceInventorySyncTimer);
-        _workspaceInventorySyncTimer = setTimeout(function () {
-            _workspaceInventorySyncTimer = null;
-            fetch(config.prefix + '/api/workspaces', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ workspaces: workspaces })
-            }).catch(function () { /* offline / embedded host without a slot */ });
-        }, 400);
+        fetch(config.prefix + '/api/workspaces', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ workspaces: workspaces }),
+            keepalive: true
+        }).catch(function () { /* offline / embedded host without a slot */ });
     }
 
     // Boot reconcile. Must finish before anything workspace-scoped hydrates,
