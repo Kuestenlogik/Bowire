@@ -7,6 +7,22 @@ service Greeter {
   rpc SayHelloStream (HelloRequest) returns (stream HelloReply);
   rpc CollectHellos (stream HelloRequest) returns (HelloReply);
   rpc ChatHellos (stream HelloRequest) returns (stream HelloReply);
+
+  // Reads, and names a management-plane noun -- the shape
+  // GrpcAuthorizationProbe will pick as a candidate. It exists so the
+  // cross-identity check has something safe to invoke; the probe never
+  // calls a privileged *mutating* method.
+  rpc ListPolicies (ListPoliciesRequest) returns (ListPoliciesReply);
+}
+
+// Empty on purpose: the probe sends {}, and a method that rejects an
+// empty request before authorization runs yields no verdict.
+message ListPoliciesRequest {
+}
+
+message ListPoliciesReply {
+  repeated string policies = 1;
+  string caller = 2;
 }
 
 message HelloRequest {
