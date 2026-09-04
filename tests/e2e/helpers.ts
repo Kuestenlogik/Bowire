@@ -12,6 +12,29 @@ import type { Page } from '@playwright/test';
  */
 export async function bootFresh(page: Page, theme: 'dark' | 'light' = 'dark'): Promise<void> {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+    // #646 — the workspace list lives on the server now, so clearing the
+    // browser is no longer a fresh start. One suite shares one server, and
+    // without this every spec after the first one boots into whatever
+    // workspaces its predecessor created: the empty-Home CTA never renders
+    // and the click on it times out.
+    //
+    // The empty list is written rather than deleted on purpose. "Never saved"
+    // and "saved empty" are different states — the first lets the browser's
+    // copy win, which is exactly what a leftover profile would exploit. This
+    // asserts the state the specs actually want: this identity has no
+    // workspaces, and means it.
+    await page.evaluate(async () => {
+        try {
+            const prefix = (window as any).__BOWIRE_CONFIG__?.prefix ?? '';
+            await fetch(prefix + '/api/workspaces', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ workspaces: [] }),
+            });
+        } catch { /* a host without the endpoint keeps the old behaviour */ }
+    });
+
     await page.evaluate(async (t) => {
         try { localStorage.clear(); } catch { /* ignore */ }
         try { sessionStorage.clear(); } catch { /* ignore */ }
