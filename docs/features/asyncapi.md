@@ -40,11 +40,11 @@ Today every active binding key resolves to a shipped, first- or third-party plug
 | `bindings:` key | Dispatched via | Channel address &rarr; |
 |---|---|---|
 | `http` | Built-in `HttpClient` (no extra wire needed) | URL path + verb |
-| `mqtt` / `mqtt5` | [`Kuestenlogik.Bowire.Protocol.Mqtt`](mqtt.md) | Topic. QoS / retain / will fields ride on the metadata bag. |
-| `kafka` | [`Kuestenlogik.Bowire.Protocol.Kafka`](kafka.md) | Topic. Schema-Registry hints + key / partition on metadata. |
+| `mqtt` / `mqtt5` | [`Kuestenlogik.Bowire.Protocol.Mqtt`](../protocols/mqtt.md) | Topic. QoS / retain / will fields ride on the metadata bag. |
+| `kafka` | [`Kuestenlogik.Bowire.Protocol.Kafka`](../protocols/kafka.md) | Topic. Schema-Registry hints + key / partition on metadata. |
 | `amqp` (0.9.1) | [`Kuestenlogik.Bowire.Protocol.Amqp`](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp) | Exchange / routing key. |
 | `amqp1` (1.0) | [`Kuestenlogik.Bowire.Protocol.Amqp`](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp) | Address. |
-| `ws` | [`Kuestenlogik.Bowire.Protocol.WebSocket`](websocket.md) | Channel address as URL path. |
+| `ws` | [`Kuestenlogik.Bowire.Protocol.WebSocket`](../protocols/websocket.md) | Channel address as URL path. |
 
 NATS follows once `Kuestenlogik.Bowire.Protocol.Nats` ships.
 
@@ -89,7 +89,7 @@ Inverse of the loader: emit an AsyncAPI 3.0 document from the discovered topics 
 
 ## Related
 
-* [MQTT](mqtt.md) — wire dispatched by `bindings.mqtt` / `mqtt5`
-* [Kafka](kafka.md) — wire dispatched by `bindings.kafka`
-* [WebSocket](websocket.md) — wire dispatched by `bindings.ws`
-* [Custom protocols](custom.md) — how to add a new `BindingResolver` for an unsupported binding key
+* [MQTT](../protocols/mqtt.md) — wire dispatched by `bindings.mqtt` / `mqtt5`
+* [Kafka](../protocols/kafka.md) — wire dispatched by `bindings.kafka`
+* [WebSocket](../protocols/websocket.md) — wire dispatched by `bindings.ws`
+* [Custom protocols](../protocols/custom.md) — how to add a new `BindingResolver` for an unsupported binding key
