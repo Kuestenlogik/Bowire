@@ -597,7 +597,7 @@ public static class ScanCommand
             // doesn't speak the protocol can't stall the whole scan.
             var registry = BowireProtocolRegistry.Discover();
             var protocolTimeout = TimeSpan.FromSeconds(Math.Min(options.TimeoutSeconds, 12));
-            Fold(await OwaspApiSuite.RunProtocolProbesAsync(options.Target, registry, effectiveAuth, protocolTimeout, ct).ConfigureAwait(false));
+            Fold(await OwaspApiSuite.RunProtocolProbesAsync(options.Target, registry, effectiveAuth, options.AuthHeadersB, protocolTimeout, ct).ConfigureAwait(false));
         }
 
         // Active (mutating / aggressive) probes — #395–#400. Opt-in only, and

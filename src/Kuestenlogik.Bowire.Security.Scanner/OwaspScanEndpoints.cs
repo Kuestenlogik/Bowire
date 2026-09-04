@@ -80,7 +80,7 @@ public sealed class OwaspScanEndpoints : IBowireEndpointContribution
                 // available; absent ones skip. Bounded so a non-matching
                 // target can't stall the request.
                 var registry = BowireProtocolRegistry.Discover();
-                findings.AddRange(await OwaspApiSuite.RunProtocolProbesAsync(req.Target, registry, authA, TimeSpan.FromSeconds(12), ctx.RequestAborted).ConfigureAwait(false));
+                findings.AddRange(await OwaspApiSuite.RunProtocolProbesAsync(req.Target, registry, authA, authB, TimeSpan.FromSeconds(12), ctx.RequestAborted).ConfigureAwait(false));
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or InvalidOperationException or UriFormatException or IOException)
             {
