@@ -728,6 +728,63 @@ public sealed class RecordingCorrelationAnalyzerTests
         Assert.Contains("IMO-9074729", seen);
     }
 
+    // ---- (8) the suggester weighs evidence, it does not gate on names (#650) ----
+
+    [Fact]
+    public void AnIdentifierWithoutAnIdSuffixIsSuggested()
+    {
+        // The gate this replaced could not see `vesselRef` at all, because the
+        // normalised name does not end in "id". Neither could it see
+        // orderNumber, sessionKey, msisdn, mmsi or imo — so a German, French or
+        // maritime API was unsupported by suggestion.
+        var rec = new BowireRecording { Id = "r", Name = "no id suffix" };
+        rec.Steps.Add(Step("s1", "rest", 0, body: """{"vesselRef":"IMO-9074729","note":"outbound"}"""));
+        rec.Steps.Add(Step("s2", "grpc", 10, body: """{"vesselRef":"IMO-9074729","note":"inbound"}"""));
+
+        var suggestions = RecordingCorrelationAnalyzer.Suggest(rec);
+
+        var hit = Assert.Single(
+            suggestions,
+            c => string.Equals(c.Value, "IMO-9074729", StringComparison.Ordinal));
+        Assert.Equal(2, hit.StepCount);
+    }
+
+    [Fact]
+    public void ABooleanIsNeverSuggested()
+    {
+        // `valid` ends with the letters i and d, so the old substring gate let
+        // `valid: true` through as a correlation-key candidate. So did `paid`,
+        // `grid` and `android`. A boolean cannot identify anything.
+        var rec = new BowireRecording { Id = "r", Name = "flags" };
+        rec.Steps.Add(Step("s1", "rest", 0, body: """{"valid":true,"paid":true,"vesselRef":"IMO-9074729"}"""));
+        rec.Steps.Add(Step("s2", "grpc", 10, body: """{"valid":true,"paid":true,"vesselRef":"IMO-9074729"}"""));
+
+        var suggestions = RecordingCorrelationAnalyzer.Suggest(rec);
+
+        Assert.DoesNotContain(suggestions, c =>
+            string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
+        // The real key beside it still is.
+        Assert.Contains(suggestions, c => string.Equals(c.Value, "IMO-9074729", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ProtocolSpreadStillOutranksAPrettierName()
+    {
+        // Shape is a tiebreak, not a veto. A candidate spanning three protocols
+        // must beat a better-named one spanning two, or the suggester would be
+        // ranking on looks rather than on evidence — which is the failure the
+        // name gate was.
+        var rec = new BowireRecording { Id = "r", Name = "spread beats shape" };
+        rec.Steps.Add(Step("s1", "rest", 0, body: """{"berthId":"777777","manifestUuid":"9f1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d"}"""));
+        rec.Steps.Add(Step("s2", "grpc", 10, body: """{"berthId":"777777","manifestUuid":"9f1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d"}"""));
+        rec.Steps.Add(Step("s3", "graphql", 20, body: """{"berthId":"777777"}"""));
+
+        var suggestions = RecordingCorrelationAnalyzer.Suggest(rec);
+
+        Assert.NotEmpty(suggestions);
+        Assert.Equal("777777", suggestions[0].Value);
+    }
+
     [Fact]
     public void AnInterpretationWithoutAPayloadIsSkippedRatherThanThrowing()
     {
