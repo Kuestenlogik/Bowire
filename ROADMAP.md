@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
-**0/7 done** · 7 backlog
+**1/7 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -22,11 +22,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
 | [619](https://github.com/Kuestenlogik/Bowire/issues/619) | Bowire | [VS Code extension 1.0 — cut the release the code already justifies](#issue-kuestenlogik-bowire-619) | ⬜ Backlog | `area:workbench` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
-| [646](https://github.com/Kuestenlogik/Bowire/issues/646) | Bowire | [The workspace list is not per identity — multi-tenancy separates contents, not inventory](#issue-kuestenlogik-bowire-646) | ⬜ Backlog | `area:multi` |
+| [646](https://github.com/Kuestenlogik/Bowire/issues/646) | Bowire | [The workspace list is not per identity — multi-tenancy separates contents, not inventory](#issue-kuestenlogik-bowire-646) | ✅ Done | `area:multi` |
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
-**9/26 done** · 17 backlog
+**10/26 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -46,7 +46,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog | `area:workbench` |
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ⬜ Backlog | `area:workbench` |
 | [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog |  |
-| [645](https://github.com/Kuestenlogik/Bowire/issues/645) | Bowire | [Rollup and Contracts panes do not follow the shared rail vocabulary](#issue-kuestenlogik-bowire-645) | ⬜ Backlog | `area:workbench` |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ✅ Done | `area:workbench` |
 | [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ✅ Done | `area:workbench` |
 | [362](https://github.com/Kuestenlogik/Bowire/issues/362) | Bowire | [Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern](#issue-kuestenlogik-bowire-362) | ✅ Done | `area:workbench` |
@@ -56,6 +55,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [537](https://github.com/Kuestenlogik/Bowire/issues/537) | Bowire | [Make the catalogue a primary entry point, not a side path](#issue-kuestenlogik-bowire-537) | ✅ Done | `area:workbench` |
 | [538](https://github.com/Kuestenlogik/Bowire/issues/538) | Bowire | [Show the CLI equivalent of every request (Copy as Bowire CLI)](#issue-kuestenlogik-bowire-538) | ✅ Done | `area:workbench` |
 | [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ✅ Done | `area:workbench` |
+| [645](https://github.com/Kuestenlogik/Bowire/issues/645) | Bowire | [Rollup and Contracts panes do not follow the shared rail vocabulary](#issue-kuestenlogik-bowire-645) | ✅ Done | `area:workbench` |
 
 ### v2.9 — MCP completion + agent hub
 
@@ -154,7 +154,7 @@ The extension has outgrown its version number. `#589` (resolve the CLI from a wo
 
 Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
 
-#### <a id="issue-kuestenlogik-bowire-646"></a>⬜ Backlog · [#646](https://github.com/Kuestenlogik/Bowire/issues/646) The workspace list is not per identity — multi-tenancy separates contents, not inventory
+#### <a id="issue-kuestenlogik-bowire-646"></a>✅ Done · [#646](https://github.com/Kuestenlogik/Bowire/issues/646) The workspace list is not per identity — multi-tenancy separates contents, not inventory
 
 > `area:multi`
 
@@ -256,12 +256,6 @@ Feasible and small. Everything the proposal assumes already exists: `BowireOptio
 
 #189 shipped the design-time lint core across **all three surfaces** — CLI (`bowire lint`), Web-UI (workbench Lint rail + `/api/lint`), and MCP (`bowire.lint`) — with a typed rule engine, 5 built-in rules, `.bowire/rules.json` config (toggles + severity overrides), and a plugin SPI (`IBowireLintRule … [[more]](https://github.com/Kuestenlogik/Bowire/issues/583)
 
-#### <a id="issue-kuestenlogik-bowire-645"></a>⬜ Backlog · [#645](https://github.com/Kuestenlogik/Bowire/issues/645) Rollup and Contracts panes do not follow the shared rail vocabulary
-
-> `area:workbench`
-
-The Rollup and Contracts panes are built past the workbench's shared vocabulary, and it shows. [[more]](https://github.com/Kuestenlogik/Bowire/issues/645)
-
 #### <a id="issue-kuestenlogik-bowire-256"></a>✅ Done · [#256](https://github.com/Kuestenlogik/Bowire/issues/256) Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style
 
 > `area:workbench`
@@ -315,6 +309,12 @@ Feasible, but the proposal's sample line is not a real command today: `bowire ca
 > `area:workbench`
 
 Ship a "Correlated timeline" as a second tab inside the existing Recordings detail pane (`renderRecordingDetail` in `src/Kuestenlogik.Bowire.Recordings/wwwroot/js/recording.js`), rendering one lane per protocol with one bar per step and per-frame ticks for streaming steps, all placed on a shared tim … [[more]](https://github.com/Kuestenlogik/Bowire/issues/539)
+
+#### <a id="issue-kuestenlogik-bowire-645"></a>✅ Done · [#645](https://github.com/Kuestenlogik/Bowire/issues/645) Rollup and Contracts panes do not follow the shared rail vocabulary
+
+> `area:workbench`
+
+The Rollup and Contracts panes are built past the workbench's shared vocabulary, and it shows. [[more]](https://github.com/Kuestenlogik/Bowire/issues/645)
 
 ### v2.9 — MCP completion + agent hub
 
@@ -560,4 +560,4 @@ Die Lizenzfrage für Bowire steht laut Lizenz- und Stufenkonzept aus („TBD"), 
 
 ---
 
-*Generated 2026-09-03 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-09-04 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
