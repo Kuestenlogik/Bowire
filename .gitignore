@@ -487,3 +487,19 @@ tests/Kuestenlogik.Bowire.IntegrationTests/Properties/launchSettings.json
 # second copy would be a duplicate to keep in step by hand.
 extensions/bowire-vscode/icon.png
 extensions/bowire-vscode/LICENSE
+
+# Protocol pages contributed by plugin repositories (scripts/docs/fetch-plugin-docs.mjs).
+#
+# Each is fetched from the plugin's own repository on every docs build, so a
+# copy here would be a second source of truth for the same page — which is the
+# drift this arrangement exists to remove. The list is not the discovery
+# mechanism: that is the `bowire-plugin` topic. The fetcher warns when this
+# list and what it discovered disagree, so a new plugin says so rather than
+# quietly leaving an untracked file behind.
+/docs/protocols/akka.md
+/docs/protocols/amqp.md
+/docs/protocols/dis.md
+/docs/protocols/kafka.md
+/docs/protocols/surgewave.md
+/docs/protocols/tacticalapi.md
+/docs/protocols/udp.md
