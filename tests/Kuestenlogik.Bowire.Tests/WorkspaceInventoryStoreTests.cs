@@ -123,7 +123,11 @@ public sealed class WorkspaceInventoryStoreTests : IDisposable
     {
         // Validated before the path is touched: a bad PUT must not be able to
         // leave a file the next load has to recover from.
-        Assert.Throws<JsonException>(() => WorkspaceInventoryStore.Save("{ nope"));
+        // ThrowsAny, not Throws: the contract is "the JSON is rejected", and
+        // JsonDocument.Parse raises JsonReaderException, a JsonException
+        // subtype. Assert.Throws demands an exact match and would pin this
+        // test to an implementation detail of System.Text.Json.
+        Assert.ThrowsAny<JsonException>(() => WorkspaceInventoryStore.Save("{ nope"));
 
         Assert.False(File.Exists(Path.Combine(_root, "workspaces.json")));
         Assert.Null(WorkspaceInventoryStore.Load());
