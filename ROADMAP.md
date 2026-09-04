@@ -38,7 +38,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
-**9/25 done** · 16 backlog
+**10/25 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -56,7 +56,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ⬜ Backlog | `area:security` |
 | [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ⬜ Backlog | `area:workbench` |
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ⬜ Backlog | `area:workbench` |
-| [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ⬜ Backlog | `area:workbench` |
 | [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog |  |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ✅ Done | `area:workbench` |
 | [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ✅ Done | `area:workbench` |
@@ -67,6 +66,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [537](https://github.com/Kuestenlogik/Bowire/issues/537) | Bowire | [Make the catalogue a primary entry point, not a side path](#issue-kuestenlogik-bowire-537) | ✅ Done | `area:workbench` |
 | [538](https://github.com/Kuestenlogik/Bowire/issues/538) | Bowire | [Show the CLI equivalent of every request (Copy as Bowire CLI)](#issue-kuestenlogik-bowire-538) | ✅ Done | `area:workbench` |
 | [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ✅ Done | `area:workbench` |
+| [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ✅ Done | `area:workbench` |
 
 ### v2.9 — MCP completion + agent hub
 
@@ -287,12 +287,6 @@ Feasible and small. Everything the proposal assumes already exists: `BowireOptio
 
 `RecordingCorrelationScanner.ScanStep` documents itself as walking "every JSON-bearing surface of one step", but it misses one: the interpretations. [[more]](https://github.com/Kuestenlogik/Bowire/issues/547)
 
-#### <a id="issue-kuestenlogik-bowire-551"></a>⬜ Backlog · [#551](https://github.com/Kuestenlogik/Bowire/issues/551) render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row
-
-> `area:workbench`
-
-`render()` rebuilds the entire workbench tree off-screen and morphdom-diffs it. There is no debounce, no dirty flag, no coalescing â€” a grep for `scheduleRender` / `renderPending` / any batching wrapper across `wwwroot/js/` returns nothing, and there are ~685 `render()` call sites. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/551)
-
 #### <a id="issue-kuestenlogik-bowire-583"></a>⬜ Backlog · [#583](https://github.com/Kuestenlogik/Bowire/issues/583) Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint
 
 #189 shipped the design-time lint core across **all three surfaces** — CLI (`bowire lint`), Web-UI (workbench Lint rail + `/api/lint`), and MCP (`bowire.lint`) — with a typed rule engine, 5 built-in rules, `.bowire/rules.json` config (toggles + severity overrides), and a plugin SPI (`IBowireLintRule … [[more]](https://github.com/Kuestenlogik/Bowire/issues/583)
@@ -350,6 +344,12 @@ Feasible, but the proposal's sample line is not a real command today: `bowire ca
 > `area:workbench`
 
 Ship a "Correlated timeline" as a second tab inside the existing Recordings detail pane (`renderRecordingDetail` in `src/Kuestenlogik.Bowire.Recordings/wwwroot/js/recording.js`), rendering one lane per protocol with one bar per step and per-frame ticks for streaming steps, all placed on a shared tim … [[more]](https://github.com/Kuestenlogik/Bowire/issues/539)
+
+#### <a id="issue-kuestenlogik-bowire-551"></a>✅ Done · [#551](https://github.com/Kuestenlogik/Bowire/issues/551) render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row
+
+> `area:workbench`
+
+`render()` rebuilds the entire workbench tree off-screen and morphdom-diffs it. There is no debounce, no dirty flag, no coalescing â€” a grep for `scheduleRender` / `renderPending` / any batching wrapper across `wwwroot/js/` returns nothing, and there are ~685 `render()` call sites. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/551)
 
 ### v2.9 — MCP completion + agent hub
 
