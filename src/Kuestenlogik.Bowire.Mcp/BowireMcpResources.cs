@@ -104,7 +104,7 @@ public sealed class BowireMcpResources
         UriTemplate = "bowire://collections",
         Name = "Collections (index)",
         MimeType = "application/json")]
-    [Description("Index of saved request collections (Postman-style). Each entry's items: protocol, service, method, body, env-vars.")]
+    [Description("Index of saved request collections (Postman-style). Each entry's items: protocol, service, method, body, env-vars. On a host that uses workspaces this file is the pre-workspace one and is usually empty or stale — read bowire://workspaces first and use the workspace-scoped resource instead.")]
     public static TextResourceContents CollectionsIndex()
         => ReadJsonFile(ConfigPath("collections.json"), "bowire://collections");
 
@@ -123,7 +123,7 @@ public sealed class BowireMcpResources
         UriTemplate = "bowire://flows",
         Name = "Flows (index)",
         MimeType = "application/json")]
-    [Description("Index of every saved visual flow — name, step count, last-modified.")]
+    [Description("Index of every saved visual flow — name, step count, last-modified. On a host that uses workspaces this file is the pre-workspace one and is usually empty or stale — read bowire://workspaces first and use the workspace-scoped resource instead.")]
     public static TextResourceContents FlowsIndex()
         => ReadJsonFile(ConfigPath("flows.json"), "bowire://flows");
 
@@ -135,6 +135,93 @@ public sealed class BowireMcpResources
     public static TextResourceContents Flow(
         [Description("Flow id from the index.")] string id)
         => ReadOneById(ConfigPath("flows.json"), "flows", id, "bowire://flows/" + id);
+
+    // -------- Workspaces (#642) --------
+    //
+    // The three families above read the workspace-less files, which on any
+    // install that uses workspaces means stale data or none. The workbench
+    // sends `?workspaceId=` on every call; an agent asking `bowire://flows`
+    // sends a URI and nothing else, so the workspace has to be nameable in the
+    // URI — and that needs something that can list them. #646 supplied it.
+    //
+    // The workspace-less resources deliberately stay, and stay first in the
+    // description an agent reads: a host that never adopted workspaces has its
+    // data exactly where they look, and breaking that to fix this would trade
+    // one wrong answer for another.
+
+    [McpServerResource(
+        UriTemplate = "bowire://workspaces",
+        Name = "Workspaces (index)",
+        MimeType = "application/json")]
+    [Description("Every workspace this identity has — id, name, and whether it is backed by a git checkout. Use an id here with bowire://workspaces/{workspaceId}/collections, /recordings or /flows to read what the workbench actually shows. An empty list means the host never adopted workspaces, in which case the plain bowire://collections, ://recordings and ://flows are the right ones.")]
+    public static TextResourceContents WorkspacesIndex()
+    {
+        var workspaces = McpPaths.Workspaces();
+        return TextResource("bowire://workspaces", JsonSerializer.Serialize(
+            new
+            {
+                workspaces = workspaces.Select(w => new
+                {
+                    id = w.Id,
+                    name = w.Name,
+                    // Named rather than inferred: an agent that knows a
+                    // workspace lives in a checkout also knows its contents are
+                    // shared with whoever clones it.
+                    gitNative = !string.IsNullOrEmpty(w.StorageRoot),
+                    storageRoot = w.StorageRoot,
+                }),
+            },
+            JsonOpts));
+    }
+
+    [McpServerResource(
+        UriTemplate = "bowire://workspaces/{workspaceId}/collections",
+        Name = "Collections (workspace)",
+        MimeType = "application/json")]
+    [Description("Saved request collections in one workspace — what the workbench shows when that workspace is open. Get the id from bowire://workspaces.")]
+    public static TextResourceContents WorkspaceCollections(
+        [Description("Workspace id from bowire://workspaces.")] string workspaceId)
+        => WorkspaceFile(workspaceId, "collections.json", "collections");
+
+    [McpServerResource(
+        UriTemplate = "bowire://workspaces/{workspaceId}/recordings",
+        Name = "Recordings (workspace)",
+        MimeType = "application/json")]
+    [Description("Recordings captured in one workspace. Get the id from bowire://workspaces.")]
+    public static TextResourceContents WorkspaceRecordings(
+        [Description("Workspace id from bowire://workspaces.")] string workspaceId)
+        => WorkspaceFile(workspaceId, "recordings.json", "recordings");
+
+    [McpServerResource(
+        UriTemplate = "bowire://workspaces/{workspaceId}/flows",
+        Name = "Flows (workspace)",
+        MimeType = "application/json")]
+    [Description("Visual flows saved in one workspace. Get the id from bowire://workspaces.")]
+    public static TextResourceContents WorkspaceFlows(
+        [Description("Workspace id from bowire://workspaces.")] string workspaceId)
+        => WorkspaceFile(workspaceId, "flows.json", "flows");
+
+    /// <summary>
+    /// One workspace-scoped document, or a message naming the index.
+    /// </summary>
+    /// <remarks>
+    /// An unknown id answers with an error rather than an empty document on
+    /// purpose. "No data" cannot be told apart from "wrong id" by the agent
+    /// reading it, and this whole ticket exists because a resource answered
+    /// confidently with the wrong thing.
+    /// </remarks>
+    private static TextResourceContents WorkspaceFile(
+        string workspaceId, string filename, string collectionName)
+    {
+        var uri = $"bowire://workspaces/{workspaceId}/{collectionName}";
+        var path = McpPaths.WorkspaceConfig(workspaceId, filename);
+        if (path is null)
+        {
+            return TextResource(uri,
+                $"No workspace with id '{workspaceId}'. Read bowire://workspaces for the ids that exist.");
+        }
+        return ReadJsonFile(path, uri);
+    }
 
     // -------- Plugins + allowlist --------
 
