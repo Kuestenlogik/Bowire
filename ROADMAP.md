@@ -20,7 +20,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
-**0/7 done** · 7 backlog
+**1/7 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -30,7 +30,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
 | [619](https://github.com/Kuestenlogik/Bowire/issues/619) | Bowire | [VS Code extension 1.0 — cut the release the code already justifies](#issue-kuestenlogik-bowire-619) | ⬜ Backlog | `area:workbench` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
-| [642](https://github.com/Kuestenlogik/Bowire/issues/642) | Bowire | [MCP resources read the workspace-less files, so they answer with the wrong data](#issue-kuestenlogik-bowire-642) | ⬜ Backlog | `area:mcp` |
+| [642](https://github.com/Kuestenlogik/Bowire/issues/642) | Bowire | [MCP resources read the workspace-less files, so they answer with the wrong data](#issue-kuestenlogik-bowire-642) | ✅ Done | `area:mcp` |
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
@@ -120,6 +120,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [623](https://github.com/Kuestenlogik/Bowire/issues/623) | Bowire | [Benchmark: report the shape of a run, not only its totals](#issue-kuestenlogik-bowire-623) | ⬜ Backlog | `area:cli` |
 | [624](https://github.com/Kuestenlogik/Bowire/issues/624) | Bowire | [Benchmark: hold connections open and report what became of them](#issue-kuestenlogik-bowire-624) | ⬜ Backlog | `area:cli` |
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Lizenz entscheiden und je Projekt führen](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
+| [650](https://github.com/Kuestenlogik/Bowire/issues/650) | Bowire | [The correlation suggester gates on the field name before it weighs any evidence](#issue-kuestenlogik-bowire-650) | ⬜ Backlog | `area:workbench` |
 
 ## Details
 
@@ -167,7 +168,7 @@ The extension has outgrown its version number. `#589` (resolve the CLI from a wo
 
 Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
 
-#### <a id="issue-kuestenlogik-bowire-642"></a>⬜ Backlog · [#642](https://github.com/Kuestenlogik/Bowire/issues/642) MCP resources read the workspace-less files, so they answer with the wrong data
+#### <a id="issue-kuestenlogik-bowire-642"></a>✅ Done · [#642](https://github.com/Kuestenlogik/Bowire/issues/642) MCP resources read the workspace-less files, so they answer with the wrong data
 
 > `area:mcp`
 
@@ -552,6 +553,12 @@ Everything Bowire measures today is a request that completes. `bowire bench` cal
 > `area:multi`
 
 Die Lizenzfrage für Bowire steht laut Lizenz- und Stufenkonzept aus („TBD"), und sie ist hier keine Formalie: Bowire ist im Bestand ein **Sicherheitswerkzeug** — Schwachstellendatenbank, Scanner, Protokollmodule, SDKs in Go, Node, Python und Rust, CI-Action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/647)
+
+#### <a id="issue-kuestenlogik-bowire-650"></a>⬜ Backlog · [#650](https://github.com/Kuestenlogik/Bowire/issues/650) The correlation suggester gates on the field name before it weighs any evidence
+
+> `area:workbench`
+
+`Suggest` gates every candidate on the field name before it looks at any evidence: [[more]](https://github.com/Kuestenlogik/Bowire/issues/650)
 
 ---
 
