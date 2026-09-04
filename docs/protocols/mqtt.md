@@ -61,6 +61,14 @@ MQTT payloads are binary. Bowire tries three strategies:
 - `tcp://host:1883`
 - `host:1883` (scheme optional)
 
+## Settings
+
+Set per workspace in **Settings → Plugins**; they reach the plugin at discovery
+time (#640). A workspace that has never set one gets the default below.
+
+- `autoInterpretJson` (bool, default `true`) — parse JSON payloads for structured display instead of raw text
+- `scanDuration` (number, default `3`) — how long to subscribe to `#` during discovery, in seconds. Raise it on a quiet broker where topics are published infrequently; a topic that publishes nothing during the window is not discovered.
+
 ## Sample
 
 [`samples/Kuestenlogik.Bowire.Sample.Mqtt`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.Mqtt) is a **fully self-contained** demo — no docker. MQTTnet ships a pure-.NET embeddable broker, so one project runs the broker (`:1883`), a publisher emitting one retained reading per second on `bowire/sample/sensor`, **and** the embedded workbench at `/bowire`. Run it with `dotnet run`, then reach it either way:
