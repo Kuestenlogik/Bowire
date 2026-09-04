@@ -2,11 +2,15 @@
   Quickstart stepper — three steps from zero to running Bowire.
 
   Step 1 ("Pick your boat") chooses the install + run mode by picking
-  a ship metaphor: Container ship (embedded in your ASP.NET app),
-  Speedboat (standalone CLI), Dazzle ship (mock-server replay), Tugboat
-  (sidecar + MCP adapter for AI agents), or Cruise ship (multi-user
-  preview). That selection determines which install + run snippets
-  show in steps 2 + 3. An optional URL input feeds substitutions in
+  a ship metaphor: Sailboat (embedded in your ASP.NET app), Speedboat
+  (standalone CLI), Tugboat (the VS Code extension), Dazzle ship
+  (mock-server replay), Container ship (Docker sidecar + MCP adapter
+  for AI agents), or Cruise ship (multi-user host). That selection
+  determines which install + run snippets show in steps 2 + 3.
+
+  The list above used to name a different boat for almost every mode —
+  it had drifted from the cards below and was describing a plan rather
+  than the page. An optional URL input feeds substitutions in
   step 3. The whole thing is vanilla JS state — see the corresponding
   handler in assets/js/main.js.
 
@@ -14,7 +18,7 @@
   panel — the two had heavy conceptual overlap (boats = install-mode,
   vessels = topology) so the ship art + trait detail now lives here
   inline on the picker cards. data-boat keys stay (backend / tester /
-  mock / ai / passenger) so URLs + JS state are unchanged.
+  vscode / mock / ai / passenger) so URLs + JS state are unchanged.
 {% endcomment %}
 <section class="launch" id="launch">
   <div class="container">
@@ -76,6 +80,21 @@
             <h3 class="launch-boat-name">Speedboat</h3>
             <p class="launch-boat-mode">Standalone app</p>
             <p class="launch-boat-desc">Installed as a global <code>dotnet tool</code> on your laptop. Point Bowire at any URL &mdash; staging gRPC in the morning, REST after lunch, WebSocket all afternoon.</p>
+          </button>
+
+          <button type="button" class="launch-boat" data-boat="vscode">
+            <div class="launch-boat-diagram">
+              <!-- Tugboat photo — small, powerful, and always alongside
+                   something bigger. Which is the extension: it does not
+                   replace the workbench, it brings it to where the code
+                   already is. -->
+              <img src="{{ '/assets/images/launch/tugboat.jpg' | relative_url }}"
+                   alt="Tugboat with the Bowire wordmark on its hull, working alongside a larger vessel"
+                   loading="lazy" width="680" height="440">
+            </div>
+            <h3 class="launch-boat-name">Tugboat</h3>
+            <p class="launch-boat-mode">VS Code extension</p>
+            <p class="launch-boat-desc">The workbench in a side panel, beside the code that serves the API. It drives the same <code>bowire</code> CLI as your terminal and your CI &mdash; so a collection you save in the editor is the file the pipeline reads.</p>
           </button>
 
           <button type="button" class="launch-boat" data-boat="mock">

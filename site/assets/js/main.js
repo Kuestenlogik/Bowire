@@ -1788,6 +1788,23 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
             installPrompt: 'NuGet packages — core plus the protocols you ship. Tick whichever you need; the snippet updates live.',
             runPrompt: 'One line in your Program.cs.'
         },
+        vscode: {
+            installLang: 'bash',
+            // Two ways in, and the UI one is what most people want — but a
+            // command is what a page can show, copy and paste. Both name the
+            // same extension id, so neither can drift from the other.
+            install:
+                '# Quick Open (Ctrl+P / Cmd+P), or search "Bowire" in Extensions\n' +
+                'ext install kuestenlogik.bowire-vscode',
+            runLang: 'bash',
+            run: '# Command Palette (Ctrl+Shift+P / Cmd+Shift+P):\n' +
+                 'Bowire: Open Workbench',
+            then:
+                'The workbench opens in an editor panel beside your code, and it drives a <code>bowire</code> CLI rather than bundling one &mdash; so the workbench in your editor, your terminal and your CI are the same binary reading the same collections.<br><br>It looks for that CLI in order: the <code>bowire.cliPath</code> setting, then <code>PATH</code>, then a <code>dotnet tool</code> install. Only if none of those find anything does it <em>offer</em> to fetch one into its own storage &mdash; never without being asked.',
+            urlInput: false,
+            installPrompt: 'One extension. It needs a Bowire CLI to drive &mdash; it finds one, or offers to fetch it.',
+            runPrompt: 'One command from the palette.'
+        },
         tester: {
             installLang: 'bash',
             install:
@@ -1899,10 +1916,10 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
                 '    proxy_pass   http://bowire:5080/;\n' +
                 '}',
             then:
-                'Each authenticated passenger gets their own cabin state — recordings, environments, collections — keyed off the proxy-injected user header. Scheduled port calls come from <code>--url-file</code> so operators pin the routes; users see the same catalogue but their own per-cabin data.<br><br><strong>Preview:</strong> native OIDC + per-user data slots arrive with the <a href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md#auth-provider-extension-spi-phase-a-core-seam" target="_blank" rel="noopener">Auth-provider extension SPI</a> — Phase A wires the seam, Phase B lights up per-user storage.',
+                'Each authenticated identity gets its own slot on disk — workspaces, recordings, environments, collections, plugin settings — resolved from whoever the auth provider says is calling. Scheduled port calls come from <code>--url-file</code> so operators pin the routes; everyone sees the same catalogue and their own data.<br><br>Point <code>--auth-provider oidc</code> at any OIDC IdP — Entra ID, Okta, Keycloak — with no provider-specific code paths. SCIM keeps the roster in step.',
             urlInput: false,
-            installPrompt: 'Server-side container — front it with your own OIDC proxy until Phase A ships.',
-            runPrompt: 'Bowire trusts the proxy-injected user header. Wire it once in the proxy, every passenger boards authenticated.'
+            installPrompt: 'Server-side container, plus an auth provider so Bowire knows who is calling.',
+            runPrompt: 'Name an OIDC authority and a client id. Every passenger boards as themselves.'
         }
     };
 
