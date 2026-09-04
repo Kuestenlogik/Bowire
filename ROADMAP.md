@@ -120,7 +120,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [623](https://github.com/Kuestenlogik/Bowire/issues/623) | Bowire | [Benchmark: report the shape of a run, not only its totals](#issue-kuestenlogik-bowire-623) | ⬜ Backlog | `area:cli` |
 | [624](https://github.com/Kuestenlogik/Bowire/issues/624) | Bowire | [Benchmark: hold connections open and report what became of them](#issue-kuestenlogik-bowire-624) | ⬜ Backlog | `area:cli` |
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Lizenz entscheiden und je Projekt führen](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
-| [650](https://github.com/Kuestenlogik/Bowire/issues/650) | Bowire | [The correlation suggester gates on the field name before it weighs any evidence](#issue-kuestenlogik-bowire-650) | ⬜ Backlog | `area:workbench` |
 
 ## Details
 
@@ -553,12 +552,6 @@ Everything Bowire measures today is a request that completes. `bowire bench` cal
 > `area:multi`
 
 Die Lizenzfrage für Bowire steht laut Lizenz- und Stufenkonzept aus („TBD"), und sie ist hier keine Formalie: Bowire ist im Bestand ein **Sicherheitswerkzeug** — Schwachstellendatenbank, Scanner, Protokollmodule, SDKs in Go, Node, Python und Rust, CI-Action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/647)
-
-#### <a id="issue-kuestenlogik-bowire-650"></a>⬜ Backlog · [#650](https://github.com/Kuestenlogik/Bowire/issues/650) The correlation suggester gates on the field name before it weighs any evidence
-
-> `area:workbench`
-
-`Suggest` gates every candidate on the field name before it looks at any evidence: [[more]](https://github.com/Kuestenlogik/Bowire/issues/650)
 
 ---
 
