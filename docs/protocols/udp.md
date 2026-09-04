@@ -3,6 +3,19 @@ title: UDP
 summary: 'The UDP plugin binds to any UDP endpoint — multicast, broadcast, or unicast — and streams every received datagram into the workbench as a JSON envelope.'
 ---
 
+<!--
+  This page is this repository's contribution to https://bowire.io.
+
+  Bowire's docs build fetches it into docs/protocols/udp.md and links it
+  from the protocols navigation automatically — do not add a copy to the
+  Bowire repository, it would be overwritten on the next build.
+
+  It moved here because the behaviour it describes lives here: while the page
+  sat in the Bowire repository, a claim about this plugin and the code making
+  it true could only be fixed in two separate commits, and for one setting
+  they drifted for weeks.
+-->
+
 # UDP
 
 The UDP plugin binds to any UDP endpoint and streams every received datagram into the workbench as a JSON envelope. Useful for debugging any UDP-based protocol without a dedicated plugin: DIS (when you want raw bytes alongside [`Bowire.Protocol.Dis`](dis.md)'s typed decoding), NetFlow, syslog, game-server telemetry, custom sensor feeds, …

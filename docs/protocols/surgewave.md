@@ -3,6 +3,19 @@ title: Surgewave
 summary: 'The Surgewave plugin browses topics and produces / consumes messages against a Küstenlogik Surgewave broker over the native Surgewave wire or a Kafka-compatible wire on the same broker.'
 ---
 
+<!--
+  This page is this repository's contribution to https://bowire.io.
+
+  Bowire's docs build fetches it into docs/protocols/surgewave.md and links it
+  from the protocols navigation automatically — do not add a copy to the
+  Bowire repository, it would be overwritten on the next build.
+
+  It moved here because the behaviour it describes lives here: while the page
+  sat in the Bowire repository, a claim about this plugin and the code making
+  it true could only be fixed in two separate commits, and for one setting
+  they drifted for weeks.
+-->
+
 # Surgewave
 
 The Surgewave plugin browses topics and produces / consumes messages against a [Küstenlogik Surgewave](https://github.com/Kuestenlogik/Surgewave) broker. Surgewave's broker speaks both the native Surgewave wire and the Kafka wire — the plugin lets you pick which protocol it uses against the same broker, including Confluent Schema Registry decode in Kafka mode.
