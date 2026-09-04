@@ -17,7 +17,7 @@ namespace Kuestenlogik.Bowire.Security.Scanner;
 /// resource boundary (any client reads any file the server process can).
 ///
 /// <para>Black-box and non-destructive. The probe first confirms the endpoint
-/// actually speaks MCP (<see cref="IBowireProtocol.DiscoverAsync"/> completes
+/// actually speaks MCP (<see cref="IBowireProtocol.DiscoverAsync(string, bool, System.Threading.CancellationToken)"/> completes
 /// the initialize handshake and lists a surface), then asks the resource seam
 /// to read a small set of traversal / out-of-scope URIs. A read that comes back
 /// with resource content means the server escaped its intended scope

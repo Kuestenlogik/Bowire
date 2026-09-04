@@ -41,28 +41,25 @@ internal interface IOwaspProtocolProbe
     Task<IReadOnlyList<ScanFinding>> RunAsync(string target, IBowireProtocol protocol, IList<string> authHeaders, CancellationToken ct);
 
     /// <summary>
-    /// Same, with the scan's optional <em>second</em> identity
-    /// (<c>--auth-header-b</c>) available.
+    /// Same, with everything else the scan knows —
+    /// <see cref="OwaspProbeContext.AuthHeadersB"/> for a second identity,
+    /// <see cref="OwaspProbeContext.ProtocolMetadata"/> for plugin
+    /// configuration such as a gRPC descriptor set.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A default implementation that drops <paramref name="authHeadersB"/> and
-    /// calls the single-identity overload, so a probe only overrides this when
-    /// it actually compares two identities. The alternative — a parameter on
-    /// the one method — would have edited fourteen probes that have nothing to
-    /// say about a second credential, which is churn that hides the one change
-    /// that matters.
+    /// A default implementation that keeps only the target, the plugin and the
+    /// first identity, so a probe with no opinion about the rest stays exactly
+    /// as it is. Fourteen of the sixteen probes take that default.
     /// </para>
     /// <para>
-    /// The second identity already reached the HTTP probe seam
+    /// The second identity had reached the HTTP probe seam
     /// (<see cref="IOwaspApiProbe"/>) and stopped there. Cross-identity
     /// authorization is not an HTTP-only failure — see
     /// Kuestenlogik/Bowire.VulnDb#23, where a WebSocket handler authenticates
     /// the session and never authorizes it.
     /// </para>
     /// </remarks>
-    Task<IReadOnlyList<ScanFinding>> RunAsync(
-        string target, IBowireProtocol protocol,
-        IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct)
-        => RunAsync(target, protocol, authHeaders, ct);
+    Task<IReadOnlyList<ScanFinding>> RunAsync(OwaspProbeContext context, CancellationToken ct)
+        => RunAsync(context.Target, context.Protocol, context.AuthHeaders, ct);
 }

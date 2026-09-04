@@ -71,12 +71,17 @@ internal static class ExportCommand
             Description = "Override the info.version field. Defaults to '1.0.0' or the first service.Version found."
         };
 
+        var descriptorSetOpt = new Option<string?>("--grpc-descriptor-set")
+        {
+            Description = "Path to a compiled gRPC descriptor set (`protoc --descriptor_set_out=api.protoset --include_imports`), for a server that does not answer Server Reflection — the recommended production state. Ignored by every other protocol."
+        };
+
         // ----- openapi subcommand --------------------------------
         var openapi = new Command("openapi",
             "Run REST discovery against <url> and emit an OpenAPI 3.0 document.");
         openapi.Add(urlArg);
         openapi.Add(outputOpt); openapi.Add(formatOpt); openapi.Add(recordingOpt);
-        openapi.Add(titleOpt); openapi.Add(versionOpt);
+        openapi.Add(titleOpt); openapi.Add(versionOpt); openapi.Add(descriptorSetOpt);
         openapi.SetAction(async (pr, ct) =>
             await RunOpenApiAsync(
                 pr.GetValue(urlArg) ?? "",
@@ -87,14 +92,15 @@ internal static class ExportCommand
                 pr.GetValue(versionOpt),
                 ct,
                 pr.InvocationConfiguration.Output,
-                pr.InvocationConfiguration.Error).ConfigureAwait(false));
+                pr.InvocationConfiguration.Error,
+                pr.GetValue(descriptorSetOpt)).ConfigureAwait(false));
 
         // ----- asyncapi subcommand --------------------------------
         var asyncapi = new Command("asyncapi",
             "Run messaging discovery against <url> and emit an AsyncAPI 3.0 document.");
         asyncapi.Add(urlArg);
         asyncapi.Add(outputOpt); asyncapi.Add(formatOpt); asyncapi.Add(recordingOpt);
-        asyncapi.Add(titleOpt); asyncapi.Add(versionOpt);
+        asyncapi.Add(titleOpt); asyncapi.Add(versionOpt); asyncapi.Add(descriptorSetOpt);
         asyncapi.SetAction(async (pr, ct) =>
             await RunAsyncApiAsync(
                 pr.GetValue(urlArg) ?? "",
@@ -105,7 +111,8 @@ internal static class ExportCommand
                 pr.GetValue(versionOpt),
                 ct,
                 pr.InvocationConfiguration.Output,
-                pr.InvocationConfiguration.Error).ConfigureAwait(false));
+                pr.InvocationConfiguration.Error,
+                pr.GetValue(descriptorSetOpt)).ConfigureAwait(false));
 
         export.Add(openapi);
         export.Add(asyncapi);
@@ -119,7 +126,8 @@ internal static class ExportCommand
         string? recordingPath, string? title, string? versionOverride,
         CancellationToken ct,
         TextWriter? stdout = null,
-        TextWriter? stderr = null)
+        TextWriter? stderr = null,
+        string? descriptorSetPath = null)
     {
         var outW = stdout ?? Console.Out;
         var errW = stderr ?? Console.Error;
@@ -142,14 +150,17 @@ internal static class ExportCommand
         }
 
         List<BowireServiceInfo> services;
-        // Plugin DiscoverAsync: 3rd-party transport surface.
-#pragma warning disable CA1031 // Do not catch general exception types
+        // Plugin DiscoverAsync is a 3rd-party transport surface: any failure
+        // there is an export failure, not a crash. Filtered so cancellation
+        // and OOM still propagate — the same boundary-catch shape
+        // CliSchemaSnapshot uses, and the reason no pragma is needed.
         try
         {
-            services = await protocol.DiscoverAsync(url, showInternalServices: true, ct).ConfigureAwait(false);
+            services = await protocol.DiscoverAsync(
+                url, showInternalServices: true,
+                CliSchemaSnapshot.DescriptorSetMetadata(descriptorSetPath), ct).ConfigureAwait(false);
         }
-        catch (Exception ex)
-#pragma warning restore CA1031
+        catch (Exception ex) when (ex is not OperationCanceledException and not OutOfMemoryException)
         {
             await errW.WriteLineAsync($"Discovery failed for {url}: {ex.Message}").ConfigureAwait(false);
             return 1;
@@ -167,7 +178,8 @@ internal static class ExportCommand
         string? recordingPath, string? title, string? versionOverride,
         CancellationToken ct,
         TextWriter? stdout = null,
-        TextWriter? stderr = null)
+        TextWriter? stderr = null,
+        string? descriptorSetPath = null)
     {
         var outW = stdout ?? Console.Out;
         var errW = stderr ?? Console.Error;
@@ -198,14 +210,17 @@ internal static class ExportCommand
         }
 
         List<BowireServiceInfo> services;
-        // Plugin DiscoverAsync: 3rd-party transport surface.
-#pragma warning disable CA1031 // Do not catch general exception types
+        // Plugin DiscoverAsync is a 3rd-party transport surface: any failure
+        // there is an export failure, not a crash. Filtered so cancellation
+        // and OOM still propagate — the same boundary-catch shape
+        // CliSchemaSnapshot uses, and the reason no pragma is needed.
         try
         {
-            services = await protocol.DiscoverAsync(url, showInternalServices: true, ct).ConfigureAwait(false);
+            services = await protocol.DiscoverAsync(
+                url, showInternalServices: true,
+                CliSchemaSnapshot.DescriptorSetMetadata(descriptorSetPath), ct).ConfigureAwait(false);
         }
-        catch (Exception ex)
-#pragma warning restore CA1031
+        catch (Exception ex) when (ex is not OperationCanceledException and not OutOfMemoryException)
         {
             await errW.WriteLineAsync($"Discovery failed for {url}: {ex.Message}").ConfigureAwait(false);
             return 1;

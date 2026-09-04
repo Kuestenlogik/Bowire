@@ -7,7 +7,7 @@ namespace Kuestenlogik.Bowire.Models;
 /// What a protocol plugin has to say about a probe <em>besides</em> the
 /// services it returned (#544).
 /// <para>
-/// <see cref="IBowireProtocol.DiscoverAsync"/> is all-or-nothing: a plugin
+/// <see cref="IBowireProtocol.DiscoverAsync(string, bool, System.Threading.CancellationToken)"/> is all-or-nothing: a plugin
 /// either returns a list or throws. A plugin whose probe half-worked — an
 /// MCP server with one malformed tool but perfectly good resources and
 /// prompts — therefore had to choose between hiding the fault (return the

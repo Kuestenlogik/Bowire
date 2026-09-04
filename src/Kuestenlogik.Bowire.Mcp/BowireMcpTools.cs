@@ -96,11 +96,28 @@ public sealed class BowireMcpTools
         }
     }
 
+    /// <summary>
+    /// A descriptor-set path as the metadata bag the gRPC plugin reads.
+    /// </summary>
+    /// <remarks>
+    /// The agent-facing half of #653: without it an agent could be told a
+    /// server hosts nothing, when in truth the server simply declines to
+    /// enumerate itself — the same blind spot the CLI and the HTTP API had.
+    /// </remarks>
+    private static Dictionary<string, string>? DescriptorSetMetadata(string? path)
+        => string.IsNullOrWhiteSpace(path)
+            ? null
+            : new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                [BowireMetadataKeys.GrpcDescriptorSet] = path,
+            };
+
     [McpServerTool(Name = "bowire.discover")]
     [Description("Run discovery against a server URL and return the discovered services and methods. Optional `protocol` filters to one plugin (grpc, rest, graphql, signalr, mqtt, ws, sse, mcp, odata, socketio); without it every registered protocol that handles the URL gets a turn. The `attempts` array reports what each plugin did — outcome is ok / empty / partial / error / timeout — so an empty `services` list always comes with an explanation instead of leaving you to guess. `partial` means that plugin returned services AND hit a fault while producing them, so its contribution is incomplete; the optional `details` array breaks the message down step by step.")]
     public async Task<string> Discover(
         [Description("Server URL to discover (must be on the allowlist unless arbitrary URLs are allowed).")] string url,
         [Description("Optional protocol id (grpc, rest, graphql, signalr, mqtt, ws, sse, mcp, odata, socketio).")] string? protocol = null,
+        [Description("Optional path to a compiled gRPC descriptor set (protoc --descriptor_set_out=api.protoset --include_imports), for a gRPC server that does not answer Server Reflection. Ignored by every other protocol.")] string? grpcDescriptorSet = null,
         CancellationToken ct = default)
     {
         if (!IsUrlAllowed(url)) return AllowlistDeniedMessage(url);
@@ -121,6 +138,7 @@ public sealed class BowireMcpTools
             pluginHint: string.IsNullOrWhiteSpace(protocol) ? null : protocol,
             showInternalServices: false,
             perProbeCeiling: TimeSpan.FromSeconds(20),
+            metadata: DescriptorSetMetadata(grpcDescriptorSet),
             logger: _logger,
             ct: ct).ConfigureAwait(false);
 
@@ -146,6 +164,7 @@ public sealed class BowireMcpTools
     public async Task<string> Lint(
         [Description("Server URL to discover + lint (must be on the allowlist unless arbitrary URLs are allowed).")] string url,
         [Description("Optional protocol id (grpc, rest, graphql, signalr, mqtt, ws, sse, mcp, odata, socketio) to pin one plugin.")] string? protocol = null,
+        [Description("Optional path to a compiled gRPC descriptor set (protoc --descriptor_set_out=api.protoset --include_imports), for a gRPC server that does not answer Server Reflection. Ignored by every other protocol.")] string? grpcDescriptorSet = null,
         CancellationToken ct = default)
     {
         if (!IsUrlAllowed(url)) return AllowlistDeniedMessage(url);
@@ -156,6 +175,7 @@ public sealed class BowireMcpTools
             pluginHint: string.IsNullOrWhiteSpace(protocol) ? null : protocol,
             showInternalServices: false,
             perProbeCeiling: TimeSpan.FromSeconds(20),
+            metadata: DescriptorSetMetadata(grpcDescriptorSet),
             logger: _logger,
             ct: ct).ConfigureAwait(false);
 

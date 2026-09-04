@@ -61,6 +61,12 @@ public static class BowireDiscoveryProbe
     /// past the browser's 12 s abort — total wall-clock is
     /// max(per-probe), not the sum, because the probes run in parallel.
     /// </param>
+    /// <param name="metadata">
+    /// Plugin configuration for this probe — a gRPC descriptor set, for a
+    /// server that does not answer reflection — so a target the plain
+    /// discovery path cannot enumerate still reports its services. Forwarded
+    /// verbatim; a plugin with nothing to read in it ignores it.
+    /// </param>
     /// <param name="logger">Optional; receives one warning per failed probe.</param>
     /// <param name="ct">Caller cancellation, linked into the ceiling.</param>
     public static async Task<BowireDiscoveryProbeResult> RunAsync(
@@ -69,6 +75,7 @@ public static class BowireDiscoveryProbe
         string? pluginHint,
         bool showInternalServices,
         TimeSpan perProbeCeiling,
+        IReadOnlyDictionary<string, string>? metadata = null,
         ILogger? logger = null,
         CancellationToken ct = default)
     {
@@ -114,7 +121,7 @@ public static class BowireDiscoveryProbe
                 }
                 else
                 {
-                    found = await protocol.DiscoverAsync(serverUrl, showInternalServices, probeCt);
+                    found = await protocol.DiscoverAsync(serverUrl, showInternalServices, metadata, probeCt);
                 }
 
                 foreach (var svc in found)

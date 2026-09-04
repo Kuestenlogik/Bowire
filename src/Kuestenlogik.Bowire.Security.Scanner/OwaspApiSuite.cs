@@ -238,6 +238,18 @@ internal static class OwaspApiSuite
     public static async Task<IReadOnlyList<ScanFinding>> RunProtocolProbesAsync(
         string target, BowireProtocolRegistry registry, IList<string> authHeaders,
         IList<string> authHeadersB, TimeSpan perProbeTimeout, CancellationToken ct)
+        => await RunProtocolProbesAsync(target, registry, authHeaders, authHeadersB,
+            protocolMetadata: null, perProbeTimeout, ct).ConfigureAwait(false);
+
+    /// <summary>
+    /// Same, with plugin configuration for this scan —
+    /// <c>--grpc-descriptor-set</c> and anything else that travels in the
+    /// metadata bag rather than as a header.
+    /// </summary>
+    public static async Task<IReadOnlyList<ScanFinding>> RunProtocolProbesAsync(
+        string target, BowireProtocolRegistry registry, IList<string> authHeaders,
+        IList<string> authHeadersB, IReadOnlyDictionary<string, string>? protocolMetadata,
+        TimeSpan perProbeTimeout, CancellationToken ct)
     {
         var merged = new List<ScanFinding>();
         foreach (var probe in ProtocolProbes)
@@ -264,7 +276,14 @@ internal static class OwaspApiSuite
                 IReadOnlyList<ScanFinding> result = [];
                 foreach (var candidate in CandidateTargets(target, probe.ProtocolId))
                 {
-                    result = await probe.RunAsync(candidate, protocol, authHeaders, authHeadersB, cts.Token).ConfigureAwait(false);
+                    result = await probe.RunAsync(new OwaspProbeContext
+                    {
+                        Target = candidate,
+                        Protocol = protocol,
+                        AuthHeaders = authHeaders,
+                        AuthHeadersB = authHeadersB,
+                        ProtocolMetadata = protocolMetadata,
+                    }, cts.Token).ConfigureAwait(false);
                     if (Reached(result)) break;
                 }
                 merged.AddRange(result);

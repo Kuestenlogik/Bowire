@@ -29,8 +29,14 @@ internal static class CliSchemaSnapshot
     /// otherwise a live URL to discover. Returns <c>null</c> (after writing a
     /// message to <paramref name="errW"/>) on failure.
     /// </summary>
+    /// <remarks>
+    /// <c>descriptorSetPath</c> is forwarded to discovery when
+    /// <c>source</c> turns out to be a live URL; it is irrelevant when the
+    /// source is a snapshot file on disk.
+    /// </remarks>
     public static async Task<List<BowireServiceInfo>?> ResolveAsync(
-        string source, string? protocolId, TextWriter errW, CancellationToken ct)
+        string source, string? protocolId, TextWriter errW, CancellationToken ct,
+        string? descriptorSetPath = null)
     {
         if (File.Exists(source))
         {
@@ -52,12 +58,18 @@ internal static class CliSchemaSnapshot
             }
         }
 
-        return await DiscoverAsync(source, protocolId, errW, ct).ConfigureAwait(false);
+        return await DiscoverAsync(source, protocolId, errW, ct, descriptorSetPath).ConfigureAwait(false);
     }
 
     /// <summary>Discover a live URL into a service list, or <c>null</c> on failure.</summary>
+    /// <remarks>
+    /// <c>descriptorSetPath</c> is a compiled gRPC descriptor set, for a
+    /// server that does not answer reflection. Optional and last so existing
+    /// callers keep compiling; a non-gRPC plugin ignores it.
+    /// </remarks>
     public static async Task<List<BowireServiceInfo>?> DiscoverAsync(
-        string url, string? protocolId, TextWriter errW, CancellationToken ct)
+        string url, string? protocolId, TextWriter errW, CancellationToken ct,
+        string? descriptorSetPath = null)
     {
         var id = string.IsNullOrWhiteSpace(protocolId) ? PickProtocolId(url) : protocolId;
         var protocol = ResolveProtocol(id);
@@ -73,7 +85,8 @@ internal static class CliSchemaSnapshot
         // and OOM still propagate (the no-pragma boundary-catch convention).
         try
         {
-            return await protocol.DiscoverAsync(url, showInternalServices: true, ct).ConfigureAwait(false);
+            return await protocol.DiscoverAsync(
+                url, showInternalServices: true, DescriptorSetMetadata(descriptorSetPath), ct).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not OutOfMemoryException)
         {
@@ -81,6 +94,21 @@ internal static class CliSchemaSnapshot
             return null;
         }
     }
+
+    /// <summary>
+    /// A descriptor-set path as the metadata bag the gRPC plugin reads.
+    /// </summary>
+    /// <remarks>
+    /// <c>null</c> when no path was given, which is every non-gRPC run and
+    /// most gRPC ones.
+    /// </remarks>
+    internal static IReadOnlyDictionary<string, string>? DescriptorSetMetadata(string? descriptorSetPath)
+        => string.IsNullOrWhiteSpace(descriptorSetPath)
+            ? null
+            : new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                [BowireMetadataKeys.GrpcDescriptorSet] = descriptorSetPath,
+            };
 
     /// <summary>
     /// Best-effort protocol pick from a URL scheme; <c>--protocol</c> overrides.

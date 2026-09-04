@@ -694,6 +694,40 @@ internal static class BowireCli
         return (url, plaintext, verbose, compact, data, headers);
     }
 
+    /// <summary>
+    /// <c>--grpc-descriptor-set</c>, for every gRPC-capable subcommand.
+    /// </summary>
+    /// <remarks>
+    /// One definition rather than four: the four commands that reach a gRPC
+    /// server (<c>list</c>, <c>describe</c>, <c>discover</c>, <c>call</c>) all
+    /// need it, and a flag that means something subtly different depending on
+    /// which verb you typed is worse than no flag.
+    /// </remarks>
+    private static Option<string?> GrpcDescriptorSetOption() => new("--grpc-descriptor-set")
+    {
+        Description = "Path to a compiled gRPC descriptor set "
+            + "(`protoc --descriptor_set_out=api.protoset --include_imports`), for a server that does not "
+            + "answer Server Reflection — the recommended production state. Same input `grpcurl -protoset` takes. "
+            + "Sugar for the metadata marker the plugin reads, so `-H` still works; the marker is stripped "
+            + "before anything reaches the wire.",
+    };
+
+    /// <summary>
+    /// Fold the flag into the metadata the plugin already reads.
+    /// </summary>
+    /// <remarks>
+    /// An explicit <c>-H</c> of the same key wins: a caller who spelled the
+    /// marker out was being deliberate, and silently overwriting that would
+    /// make the more precise instruction lose to the more convenient one.
+    /// </remarks>
+    private static void ApplyDescriptorSet(ParseResult pr, Option<string?> option, CliCommandOptions cli)
+    {
+        var path = pr.GetValue(option);
+        if (string.IsNullOrWhiteSpace(path)) return;
+        if (cli.Headers.Exists(h => h.StartsWith(BowireMetadataKeys.GrpcDescriptorSet, StringComparison.Ordinal))) return;
+        cli.Headers.Add($"{BowireMetadataKeys.GrpcDescriptorSet}: {path}");
+    }
+
     private static CliCommandOptions BuildCliOptions(
         ParseResult pr,
         Option<string> url, Option<bool> plaintext, Option<bool> verbose, Option<bool> compact,
@@ -744,21 +778,31 @@ internal static class BowireCli
         var cmd = new Command("discover",
             "Probe a URL with every loaded protocol plugin and report what each one found — or why it didn't. "
             + "Accepts the `protocol@url` hint form to pin one plugin.");
-        cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose);
+        var descriptorSet = GrpcDescriptorSetOption();
+        cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose); cmd.Add(descriptorSet);
         cmd.SetAction(async (pr, _) =>
-            await CliHandler.DiscoverAsync(BuildCliOptions(pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, null),
-                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false));
+        {
+            var cli = BuildCliOptions(pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, null);
+            ApplyDescriptorSet(pr, descriptorSet, cli);
+            return await CliHandler.DiscoverAsync(cli,
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
+        });
         return cmd;
     }
 
     private static Command BuildListCommand(IConfiguration cfg)
     {
         var (url, plaintext, verbose, _, _, _) = GrpcCliOptions(cfg);
+        var descriptorSet = GrpcDescriptorSetOption();
         var cmd = new Command("list", "List discovered gRPC services.");
-        cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose);
+        cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose); cmd.Add(descriptorSet);
         cmd.SetAction(async (pr, _) =>
-            await CliHandler.ListAsync(BuildCliOptions(pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, null),
-                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false));
+        {
+            var cli = BuildCliOptions(pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, null);
+            ApplyDescriptorSet(pr, descriptorSet, cli);
+            return await CliHandler.ListAsync(cli,
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
+        });
         return cmd;
     }
 
@@ -767,12 +811,17 @@ internal static class BowireCli
         var (url, plaintext, verbose, _, _, _) = GrpcCliOptions(cfg);
         var target = new Argument<string>("target") { Description = "Service name, or service/method." };
 
+        var descriptorSet = GrpcDescriptorSetOption();
         var cmd = new Command("describe", "Describe a gRPC service or method.");
-        cmd.Add(target); cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose);
+        cmd.Add(target); cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose); cmd.Add(descriptorSet);
         cmd.SetAction(async (pr, _) =>
-            await CliHandler.DescribeAsync(BuildCliOptions(
-                pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, pr.GetValue(target)),
-                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false));
+        {
+            var cli = BuildCliOptions(
+                pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, pr.GetValue(target));
+            ApplyDescriptorSet(pr, descriptorSet, cli);
+            return await CliHandler.DescribeAsync(cli,
+                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
+        });
         return cmd;
     }
 
@@ -828,6 +877,7 @@ internal static class BowireCli
             AllowMultipleArgumentsPerToken = false,
         };
 
+        var grpcDescriptorSet = GrpcDescriptorSetOption();
         var cmd = new Command("call",
             "Invoke a method on any loaded protocol plugin (grpcurl-style). "
             + "Pin the plugin with `--protocol` or the `protocol@url` form; add `--stream` to follow "
@@ -835,6 +885,7 @@ internal static class BowireCli
         cmd.Add(target); cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose);
         cmd.Add(compact); cmd.Add(data); cmd.Add(headers);
         cmd.Add(protocol); cmd.Add(stream); cmd.Add(vars); cmd.Add(varFiles);
+        cmd.Add(grpcDescriptorSet);
         // ct rather than `_`: --stream blocks until the server ends the
         // stream, so Ctrl+C has to reach InvokeStreamAsync.
         cmd.SetAction(async (pr, ct) =>
@@ -847,6 +898,7 @@ internal static class BowireCli
             var explicitProtocol = pr.GetValue(protocol);
             if (!string.IsNullOrEmpty(explicitProtocol)) cli.Protocol = explicitProtocol;
             cli.Stream = pr.GetValue(stream);
+            ApplyDescriptorSet(pr, grpcDescriptorSet, cli);
             cli.Vars.AddRange(pr.GetValue(vars) ?? []);
             cli.VarFiles.AddRange(pr.GetValue(varFiles) ?? []);
             return await CliHandler.CallAsync(cli,

@@ -29,6 +29,19 @@
 // Run:
 //   dotnet run --project samples/Kuestenlogik.Bowire.Sample.Grpc
 //   → open http://localhost:5182/bowire
+//
+// Hardened shape — the one production is supposed to look like:
+//   dotnet run --project samples/Kuestenlogik.Bowire.Sample.Grpc -- --hardened
+//
+// That drops the embedded workbench and, with it, Server Reflection: the
+// plugin's MapBowire() hook is what maps the reflection endpoint here.
+// What is left is a bare gRPC server that will not tell a caller what it
+// hosts — so a client needs a descriptor set built from greeter.proto:
+//
+//   protoc --descriptor_set_out=greeter.protoset --include_imports \
+//          -I samples/Kuestenlogik.Bowire.Sample.Grpc/Protos greeter.proto
+//   bowire call grpc@http://localhost:5183 bowire.samples.greeter.Greeter/SayHello \
+//          -d '{"name":"world"}' --grpc-descriptor-set greeter.protoset
 
 using Bowire.Samples.Greeter;
 using Grpc.Core;
@@ -37,6 +50,12 @@ using Kuestenlogik.Bowire.Sources;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// `--hardened` runs the sample the way a real deployment runs: no
+// reflection, no workbench, just the service. It exists because the
+// reflection-off case is the one a client library is most likely to get
+// wrong, and it could not be reproduced from this sample before.
+var hardened = args.Contains("--hardened", StringComparer.Ordinal);
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.ListenLocalhost(5182, listen => listen.Protocols = HttpProtocols.Http1);
@@ -48,13 +67,16 @@ builder.WebHost.ConfigureKestrel(options =>
 // and AddBowire() calls it too — spelled out here so the server half
 // stands on its own if you lift it out of the sample.
 builder.Services.AddGrpc();
-builder.Services.AddGrpcReflection();
+if (!hardened) builder.Services.AddGrpcReflection();
 
 // Embedded Bowire workbench + catalogue-driven discovery. The catalogue
 // provider (local, reading grpc-catalogue.json) points the Sources rail
 // at this host over gRPC.
-builder.Services.AddBowire();
-builder.Services.AddBowireCatalogue(builder.Configuration);
+if (!hardened)
+{
+    builder.Services.AddBowire();
+    builder.Services.AddBowireCatalogue(builder.Configuration);
+}
 
 var app = builder.Build();
 
@@ -71,7 +93,7 @@ var app = builder.Build();
 // off — and grpcweb@ discovery needs reflection on the web transport
 // too. A host that maps every gRPC service itself can drop the options
 // object and write `app.MapGrpcService<T>().EnableGrpcWeb()` instead.
-app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
+if (!hardened) app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
 
 app.MapGrpcService<GreeterService>();
 
@@ -81,8 +103,11 @@ app.MapGrpcService<GreeterService>();
 // MapGrpcReflectionService() for us. Mapping it here as well makes the
 // route ambiguous and every reflection call 500s, so the sample leaves
 // it to the plugin.
-app.MapBowire("/bowire");
-app.MapGet("/", () => Results.Redirect("/bowire"));
+if (!hardened)
+{
+    app.MapBowire("/bowire");
+    app.MapGet("/", () => Results.Redirect("/bowire"));
+}
 
 await app.RunAsync();
 
@@ -113,6 +138,25 @@ sealed class GreeterService : Greeter.GreeterBase
         context.ResponseTrailers.Add("x-greeter-caller", caller);
 
         return Task.FromResult(Greet(request, caller));
+    }
+
+    // Read-only by name and by behaviour: no trailers, no validation, no
+    // state. It answers an empty request, which is what makes it usable
+    // as the probe target for `bowire scan`'s gRPC auth check.
+    public override Task<HelloReply> GetGreeting(GetGreetingRequest request, ServerCallContext context)
+    {
+        var caller = context.RequestHeaders.GetValue(CallerHeader) ?? "anonymous";
+        return Task.FromResult(new HelloReply
+        {
+            Message = request.Language switch
+            {
+                Language.German => "Hallo!",
+                Language.French => "Bonjour !",
+                _ => "Hello!",
+            },
+            Language = request.Language == Language.Unspecified ? Language.English : request.Language,
+            Caller = caller,
+        });
     }
 
     public override async Task SayHelloStream(HelloRequest request,

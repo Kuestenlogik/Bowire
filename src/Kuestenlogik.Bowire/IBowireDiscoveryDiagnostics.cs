@@ -10,7 +10,7 @@ namespace Kuestenlogik.Bowire;
 /// half-succeed (#544): "here are the services I found, AND here is what
 /// broke while I found them".
 /// <para>
-/// <see cref="IBowireProtocol.DiscoverAsync"/> has no channel for that — a
+/// <see cref="IBowireProtocol.DiscoverAsync(string, bool, System.Threading.CancellationToken)"/> has no channel for that — a
 /// plugin either returns a list or throws, so a partially-faulted probe had
 /// to hide either the fault or the results. The MCP plugin is the canonical
 /// case: an MCP server with a single malformed tool used to suppress its
@@ -52,7 +52,7 @@ namespace Kuestenlogik.Bowire;
 public interface IBowireDiscoveryDiagnostics
 {
     /// <summary>
-    /// Same probe as <see cref="IBowireProtocol.DiscoverAsync"/>, but able
+    /// Same probe as <see cref="IBowireProtocol.DiscoverAsync(string, bool, System.Threading.CancellationToken)"/>, but able
     /// to report a fault without swallowing the services it did find.
     /// </summary>
     /// <param name="serverUrl">The bare target URL, as DiscoverAsync gets it.</param>
@@ -68,7 +68,7 @@ public interface IBowireDiscoveryDiagnostics
 /// was finding it.
 /// </summary>
 /// <param name="Services">
-/// Exactly what <see cref="IBowireProtocol.DiscoverAsync"/> would have
+/// Exactly what <see cref="IBowireProtocol.DiscoverAsync(string, bool, System.Threading.CancellationToken)"/> would have
 /// returned. Never <see langword="null"/>; an empty list is fine.
 /// </param>
 /// <param name="Diagnostic">
