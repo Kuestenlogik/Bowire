@@ -78,8 +78,15 @@ internal sealed class GrpcReflectionProbe : IOwaspProtocolProbe
         var methodCount = services.Sum(s => s.Methods.Count);
         if (serviceCount == 0)
         {
-            return [Marker(Entry, ScanFindingStatus.Skipped, "API9-GRPC-NO-REFLECTION", "gRPC reflection not exposed",
-                "Anonymous gRPC Server Reflection returned no services — the target is not a gRPC endpoint, or reflection is disabled (the desired production state).")];
+            // Two facts, and the second one used to be missing. Reporting
+            // only "reflection is off, which is what you want" reads as
+            // reassurance about a server whose authentication was never
+            // examined — and the better a deployment follows this probe's
+            // own first recommendation, the more often that happens (#652).
+            return [Marker(Entry, ScanFindingStatus.Skipped, "API9-GRPC-NO-REFLECTION", "gRPC reflection not exposed — and the auth check could not run",
+                "Anonymous gRPC Server Reflection returned no services: the target is not a gRPC endpoint, or reflection is disabled (the desired production state). "
+                + "Either way the transport-authentication check did NOT run — it needs a method to call, and reflection is currently the only way it can learn of one. "
+                + "This says nothing about whether this server's methods answer to callers with no credential.")];
         }
 
         var findings = new List<ScanFinding>();
