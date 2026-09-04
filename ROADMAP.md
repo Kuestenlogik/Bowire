@@ -10,17 +10,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.6.1 — Storage isolation, workspace inventory, workbench fixes
-
-**4/4 done**
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [637](https://github.com/Kuestenlogik/Bowire/issues/637) | Bowire | [Intermittent test failures on main: proxy port bind, and parallel-abort status wording](#issue-kuestenlogik-bowire-637) | ✅ Done | `area:cli` |
-| [643](https://github.com/Kuestenlogik/Bowire/issues/643) | Bowire | [BOWIRE_DATA_DIR is ignored by workspace-scoped storage, so an isolated run writes into the real home](#issue-kuestenlogik-bowire-643) | ✅ Done | `area:workbench` |
-| [645](https://github.com/Kuestenlogik/Bowire/issues/645) | Bowire | [Rollup and Contracts panes do not follow the shared rail vocabulary](#issue-kuestenlogik-bowire-645) | ✅ Done | `area:workbench` |
-| [646](https://github.com/Kuestenlogik/Bowire/issues/646) | Bowire | [The workspace list is not per identity — multi-tenancy separates contents, not inventory](#issue-kuestenlogik-bowire-646) | ✅ Done | `area:multi` |
-
 ### v2.6.2 — Correlation coverage and plugin settings that arrive
 
 **0/1 done** · 1 backlog
@@ -133,32 +122,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Lizenz entscheiden und je Projekt führen](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
 
 ## Details
-
-### v2.6.1 — Storage isolation, workspace inventory, workbench fixes
-
-#### <a id="issue-kuestenlogik-bowire-637"></a>✅ Done · [#637](https://github.com/Kuestenlogik/Bowire/issues/637) Intermittent test failures on main: proxy port bind, and parallel-abort status wording
-
-> `area:cli`
-
-`Kuestenlogik.Bowire.Tests.Proxy.ProxyCommandTests.RunAsync_StartsOnDynamicPortsAndExitsGracefully` failed on [run 33398576681](https://github.com/Kuestenlogik/Bowire/actions/runs/33398576681) and passed on the next run over the same code (33193ce4, a ROADMAP.md-only commit on top of a56407db). [[more]](https://github.com/Kuestenlogik/Bowire/issues/637)
-
-#### <a id="issue-kuestenlogik-bowire-643"></a>✅ Done · [#643](https://github.com/Kuestenlogik/Bowire/issues/643) BOWIRE_DATA_DIR is ignored by workspace-scoped storage, so an isolated run writes into the real home
-
-> `area:workbench`
-
-`BOWIRE_DATA_DIR` redirects everything that goes through `BowirePaths`, and nothing that goes through a workspace. [[more]](https://github.com/Kuestenlogik/Bowire/issues/643)
-
-#### <a id="issue-kuestenlogik-bowire-645"></a>✅ Done · [#645](https://github.com/Kuestenlogik/Bowire/issues/645) Rollup and Contracts panes do not follow the shared rail vocabulary
-
-> `area:workbench`
-
-The Rollup and Contracts panes are built past the workbench's shared vocabulary, and it shows. [[more]](https://github.com/Kuestenlogik/Bowire/issues/645)
-
-#### <a id="issue-kuestenlogik-bowire-646"></a>✅ Done · [#646](https://github.com/Kuestenlogik/Bowire/issues/646) The workspace list is not per identity — multi-tenancy separates contents, not inventory
-
-> `area:multi`
-
-Multi-tenancy separates everything *inside* a workspace and nothing *about* which workspaces exist. [[more]](https://github.com/Kuestenlogik/Bowire/issues/646)
 
 ### v2.6.2 — Correlation coverage and plugin settings that arrive
 
