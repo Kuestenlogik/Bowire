@@ -632,4 +632,110 @@ public sealed class RecordingCorrelationAnalyzerTests
         Assert.Equal(3, timeline.Events.Count);
         Assert.Equal(RecordingCorrelationMatch.None, timeline.Events[0].Match);
     }
+
+    // ---- (7) interpretation payloads are a surface too (#547) ----
+
+    private static RecordedInterpretation Interpretation(string json)
+        => new("geo.point", "$.payload", JsonDocument.Parse(json).RootElement.Clone());
+
+    /// <summary>
+    /// A step whose only identifier lives in an interpretation payload.
+    /// Built inline rather than through <see cref="Step"/> because
+    /// <c>Interpretations</c> is init-only.
+    /// </summary>
+    private static BowireRecordingStep StepWithInterpretation(
+        string id, string protocol, long capturedAt, string body, string payloadJson)
+        => new()
+        {
+            Id = id,
+            Protocol = protocol,
+            Service = protocol + "-svc",
+            Method = "Do",
+            CapturedAt = capturedAt,
+            DurationMs = 5,
+            Body = body,
+            Interpretations = [Interpretation(payloadJson)],
+        };
+
+    [Fact]
+    public void Suggest_ReadsAnIdentifierThatOnlyExistsInAnInterpretationPayload()
+    {
+        // The scanner called itself "every JSON-bearing surface of one step"
+        // and skipped this one. An interpretation payload is where a semantic
+        // widget's data lives, and it survives save/load verbatim — so a
+        // recording can legitimately carry its only shared identifier there.
+        var rec = new BowireRecording { Id = "r", Name = "interpretations" };
+        rec.Steps.Add(StepWithInterpretation(
+            "s1", "rest", 0,
+            body: """{"note":"no ids here"}""",
+            payloadJson: """{"vesselRef":"IMO-9074729","lat":53.5}"""));
+        rec.Steps.Add(StepWithInterpretation(
+            "s2", "grpc", 10,
+            body: """{"note":"nor here"}""",
+            payloadJson: """{"vesselRef":"IMO-9074729","lon":9.9}"""));
+
+        var suggestions = RecordingCorrelationAnalyzer.Suggest(rec);
+
+        var hit = Assert.Single(
+            suggestions,
+            c => string.Equals(c.Value, "IMO-9074729", StringComparison.Ordinal));
+        Assert.Equal(2, hit.StepCount);
+    }
+
+    [Fact]
+    public void Analyze_CorrelatesTwoStepsThatShareOnlyAnInterpretationPayload()
+    {
+        // The observable consequence of the gap: both steps stayed dark on
+        // the correlated timeline, and nothing on screen said why.
+        var rec = new BowireRecording { Id = "r", Name = "interpretations" };
+        rec.Steps.Add(StepWithInterpretation(
+            "s1", "rest", 0,
+            body: """{"note":"no ids here"}""",
+            payloadJson: """{"vesselRef":"IMO-9074729"}"""));
+        rec.Steps.Add(StepWithInterpretation(
+            "s2", "grpc", 10,
+            body: """{"note":"nor here"}""",
+            payloadJson: """{"vesselRef":"IMO-9074729"}"""));
+
+        var timeline = RecordingCorrelationAnalyzer.Analyze(rec);
+
+        Assert.NotNull(timeline.Key);
+        Assert.Equal("IMO-9074729", timeline.Key.Value);
+        Assert.Equal(2, timeline.Events.Count);
+        Assert.All(timeline.Events, e => Assert.NotEqual(RecordingCorrelationMatch.None, e.Match));
+    }
+
+    [Fact]
+    public void ScanFrame_ReadsAFramesInterpretationPayload()
+    {
+        // ScanFrame walked Body and Data but not Interpretations, so a
+        // streaming frame had the same hole as its step.
+        var frame = new BowireRecordingFrame
+        {
+            Body = """{"note":"no ids here"}""",
+            Interpretations = [Interpretation("""{"vesselRef":"IMO-9074729"}""")],
+        };
+
+        var seen = new List<string>();
+        RecordingCorrelationScanner.ScanFrame(frame, (_, _, value) => seen.Add(value));
+
+        Assert.Contains("IMO-9074729", seen);
+    }
+
+    [Fact]
+    public void AnInterpretationWithoutAPayloadIsSkippedRatherThanThrowing()
+    {
+        // A default JsonElement has kind Undefined, which is what an
+        // interpretation written without a payload deserialises to.
+        var frame = new BowireRecordingFrame
+        {
+            Body = """{"shipId":101}""",
+            Interpretations = [new RecordedInterpretation("geo.point", "$.payload", default)],
+        };
+
+        var seen = new List<string>();
+        RecordingCorrelationScanner.ScanFrame(frame, (_, _, value) => seen.Add(value));
+
+        Assert.Equal(["101"], seen);
+    }
 }
