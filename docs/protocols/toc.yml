@@ -42,7 +42,5 @@
   href: akka.md
 - name: TacticalAPI
   href: tacticalapi.md
-- name: AsyncAPI
-  href: asyncapi.md
 - name: Custom Protocols
   href: custom.md

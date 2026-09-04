@@ -18,6 +18,8 @@
   items:
     - name: Auto-discovery
       href: auto-discovery.md
+    - name: AsyncAPI as a discovery source
+      href: asyncapi.md
     - name: Service catalogue
       href: catalogue.md
     - name: Side-by-side service compare
