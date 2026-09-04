@@ -138,13 +138,23 @@ public static class RecordingCorrelationAnalyzer
 
             RecordingCorrelationScanner.ScanStep(step, (name, normalized, value) =>
             {
-                // Only id-shaped leaves are candidates. A name that IS
-                // just "id" is too generic to suggest — `id` collides
-                // across every entity in a multi-service capture — but
-                // it stays selectable by hand, and it still counts as a
-                // weak match once another key is chosen.
-                if (!normalized.EndsWith("id", StringComparison.Ordinal)) return;
-                if (string.Equals(normalized, "id", StringComparison.Ordinal)) return;
+                // Every leaf is a candidate; what it looks like decides its
+                // rank, not whether it is considered at all (#650).
+                //
+                // This used to gate on `normalized.EndsWith("id")`, which was
+                // wrong in both directions. It let `valid`, `paid`, `grid` and
+                // `android` through on a substring match, and it could not see
+                // `vesselRef`, `orderNumber`, `sessionKey`, `msisdn`, `mmsi` or
+                // `imo` at all — so a German or French API, or a maritime one,
+                // was unsupported by suggestion in a product whose flagship
+                // recording is a port call.
+                //
+                // Worse than either was the ordering: the gate ran *before* the
+                // evidence. What makes something a correlation key is that the
+                // same value spans several steps and several protocols, which
+                // this method already computes — and the name test threw
+                // candidates away before that ever got to weigh in.
+                if (!CouldBeAKey(normalized, value)) return;
                 Accumulate(groups, RecordingCorrelationKey.SourceField,
                     name, normalized, value, protocol, i);
             });
@@ -915,12 +925,138 @@ public static class RecordingCorrelationAnalyzer
         if (!group.Protocols.Contains(protocol, StringComparer.Ordinal)) group.Protocols.Add(protocol);
     }
 
+    /// <summary>
+    /// Whether a leaf could be a correlation key at all (#650).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Two exclusions, and both are about impossibility rather than taste —
+    /// everything else is left to the score, where the evidence is.
+    /// </para>
+    /// <para>
+    /// <b>A bare <c>id</c></b> collides across every entity in a multi-service
+    /// capture: the ship has one, the port call has one, every container has
+    /// one. Suggesting it would fuse three unrelated entities into one
+    /// timeline. It stays selectable by hand, and still counts as a weak match
+    /// once another key is chosen.
+    /// </para>
+    /// <para>
+    /// <b>A boolean is never an identifier.</b> This is what removes
+    /// <c>valid: true</c> and <c>paid: true</c> — which the old name gate let
+    /// through, because "valid" ends with the letters i and d.
+    /// </para>
+    /// </remarks>
+    private static bool CouldBeAKey(string normalizedName, string value)
+    {
+        if (string.Equals(normalizedName, "id", StringComparison.Ordinal)) return false;
+        if (string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)) return false;
+        if (string.Equals(value, "false", StringComparison.OrdinalIgnoreCase)) return false;
+        if (LooksLikeATimestamp(value)) return false;
+        return true;
+    }
+
+    /// <summary>
+    /// Whether a value is a date or a time rather than an identity (#650).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A capture stamps the same instant across every service that handled the
+    /// request, so a timestamp spans protocols exactly the way a correlation
+    /// key does — and outranks one, because there are usually more of them.
+    /// Removing the name gate made that visible immediately: the harbor
+    /// recording's top suggestion became <c>at = 2026-07-22T06:00:00Z</c>
+    /// instead of <c>shipId = 101</c>, and every lane verdict downstream
+    /// followed the wrong key.
+    /// </para>
+    /// <para>
+    /// It is a value rule rather than a name rule on purpose. Excluding fields
+    /// called <c>at</c>, <c>timestamp</c>, <c>time</c>, <c>ts</c>, <c>created</c>
+    /// … is the same list-of-names mistake the gate was, one layer down; what
+    /// disqualifies the leaf is that it holds a time.
+    /// </para>
+    /// <para>
+    /// Deliberately narrow. Two or more dashes <i>and</i> a successful parse:
+    /// <c>IMO-9074729</c> has one dash and stays, a UUID has four but does not
+    /// parse and stays, while <c>2026-07-22</c> and
+    /// <c>2026-07-22T06:00:00Z</c> both go. An epoch number is left alone —
+    /// it is indistinguishable from an entity number, and guessing wrong there
+    /// would silently drop real keys.
+    /// </para>
+    /// </remarks>
+    private static bool LooksLikeATimestamp(string value)
+    {
+        if (value.Length < 8) return false;
+        var dashes = 0;
+        foreach (var c in value)
+        {
+            if (c == '-') dashes++;
+        }
+        return dashes >= 2
+            && DateTimeOffset.TryParse(
+                value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _);
+    }
+
+    /// <summary>
+    /// Name endings that read as "this is an identifier" (#650).
+    /// </summary>
+    /// <remarks>
+    /// A bonus, never a condition — the list is a hint about what people call
+    /// identifiers, and a hint that decided admission is what made the old gate
+    /// blind to every name nobody thought to add. Anything absent here is still
+    /// suggested; it just has to earn its rank from the evidence.
+    /// </remarks>
+    private static readonly string[] s_identifierSuffixes =
+        ["id", "uuid", "guid", "ref", "key", "no", "nr", "code", "mmsi", "imo", "sid"];
+
+    /// <summary>
+    /// How much a candidate's *shape* argues for it, before its evidence does.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately small against the protocol term below: shape is a tiebreak
+    /// between candidates the evidence rates alike, never a way to outrank a
+    /// value that actually spans more services. A recording where the
+    /// prettiest-looking name wins over the one that appears everywhere would
+    /// be a worse suggester than the gate this replaces.
+    /// </remarks>
+    private static int ShapeBonus(CandidateGroup group)
+    {
+        var bonus = 0;
+
+        var normalized = RecordingCorrelationScanner.NormalizeName(group.DisplayName);
+        foreach (var suffix in s_identifierSuffixes)
+        {
+            if (!normalized.EndsWith(suffix, StringComparison.Ordinal)) continue;
+            // The whole name being the suffix ("ref", "code") says less than a
+            // qualified one ("vesselRef", "orderCode").
+            bonus += normalized.Length > suffix.Length ? 120 : 40;
+            break;
+        }
+
+        var value = group.Value;
+        // A long value carries more entropy than a short one, and entropy is
+        // what makes a value identify something. Capped so a very long string
+        // cannot approach the protocol term.
+        if (value.Length >= 8) bonus += 80;
+        else if (value.Length <= 2) bonus -= 80;
+
+        // Dash-grouped hex is the shape of a UUID and of most trace ids.
+        if (value.Length >= 16 && value.Count(c => c == '-') is >= 1 and <= 8) bonus += 60;
+
+        // A run of digits long enough to be an account, order or entity number.
+        if (value.Length >= 6 && value.All(char.IsAsciiDigit)) bonus += 60;
+
+        return bonus;
+    }
+
     // Spanning more protocols is the stronger signal — a value repeated
     // across five services is a transaction id, the same value repeated
     // five times inside one REST response is a foreign key.
     private static int Score(CandidateGroup group)
     {
-        var baseScore = (group.Protocols.Count * 1000) + group.StepIndices.Count;
+        // Protocol spread stays worth 1000, so it dominates: shape decides
+        // between candidates the evidence cannot separate, and never overturns
+        // it. The bonus tops out well below one protocol.
+        var baseScore = (group.Protocols.Count * 1000) + group.StepIndices.Count + ShapeBonus(group);
         return string.Equals(group.Source, RecordingCorrelationKey.SourceHeader, StringComparison.Ordinal)
             ? HeaderScoreBase + baseScore
             : baseScore;
