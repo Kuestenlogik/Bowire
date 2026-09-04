@@ -112,20 +112,26 @@
           </button>
 
           <button type="button" class="launch-boat" data-boat="passenger">
-            <span class="protocol-card-ribbon" aria-hidden="true">preview</span>
             <div class="launch-boat-diagram">
               <!-- Cruise ship photo — multi-deck cruise vessel
                    wearing the Bowire wordmark on the bow. One Bowire
-                   server, many authenticated passengers. Preview tier
-                   — full multi-user + OIDC story still being delivered
-                   through the auth-provider extension SPI. -->
+                   server, many authenticated passengers.
+
+                   The preview ribbon came off with v2.6: per-identity
+                   state, SCIM provisioning and per-user plugins shipped
+                   in that milestone, Kuestenlogik.Bowire.Auth.Oidc ships
+                   as a first-party provider, and v2.6.1 moved the last
+                   browser-only piece — the workspace list — into the
+                   identity's slot. What is still open (#639) is proving
+                   the Okta and Entra round-trips against live tenants,
+                   which is verification, not a missing capability. -->
               <img src="{{ '/assets/images/launch/passengership.jpg' | relative_url }}"
                    alt="Cruise ship with the Bowire wordmark on the bow"
                    loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Cruise ship</h3>
             <p class="launch-boat-mode">Multi-User host</p>
-            <p class="launch-boat-desc">One Bowire, several authenticated passengers. Per-user state across sessions, scheduled port calls. Today: works behind your OIDC reverse proxy.</p>
+            <p class="launch-boat-desc">One Bowire, several authenticated passengers. Point it at any OIDC provider &mdash; Entra ID, Okta, Keycloak &mdash; and every identity gets its own slot on disk: workspaces, recordings, collections, plugin settings. SCIM keeps the roster in step.</p>
           </button>
 
         </div>

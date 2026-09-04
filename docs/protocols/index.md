@@ -69,8 +69,12 @@ graph LR
     A --> R[TacticalAPI]
     A --> L[Custom plugins]
     style A fill:#6366f1,color:#fff
+    %% Dashed = not a concrete plugin. "Custom plugins" is the extension
+    %% point, not a package you can install. TacticalAPI used to be dashed
+    %% too, from when it was a preview entry (3afffbf2, May) — it has shipped
+    %% since (1.0.10 on nuget), and a mark nobody can look up the meaning of
+    %% is worse than no mark.
     style L stroke-dasharray: 5 5
-    style R stroke-dasharray: 3 3
 ```
 
 ## What every plugin provides
