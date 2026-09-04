@@ -10,6 +10,15 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
+### v2.6.1 — Storage isolation, workspace inventory, workbench fixes
+
+**2/2 done**
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [637](https://github.com/Kuestenlogik/Bowire/issues/637) | Bowire | [Intermittent test failures on main: proxy port bind, and parallel-abort status wording](#issue-kuestenlogik-bowire-637) | ✅ Done | `area:cli` |
+| [643](https://github.com/Kuestenlogik/Bowire/issues/643) | Bowire | [BOWIRE_DATA_DIR is ignored by workspace-scoped storage, so an isolated run writes into the real home](#issue-kuestenlogik-bowire-643) | ✅ Done | `area:workbench` |
+
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
 **2/8 done** · 6 backlog
@@ -117,6 +126,20 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Lizenz entscheiden und je Projekt führen](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
 
 ## Details
+
+### v2.6.1 — Storage isolation, workspace inventory, workbench fixes
+
+#### <a id="issue-kuestenlogik-bowire-637"></a>✅ Done · [#637](https://github.com/Kuestenlogik/Bowire/issues/637) Intermittent test failures on main: proxy port bind, and parallel-abort status wording
+
+> `area:cli`
+
+`Kuestenlogik.Bowire.Tests.Proxy.ProxyCommandTests.RunAsync_StartsOnDynamicPortsAndExitsGracefully` failed on [run 33398576681](https://github.com/Kuestenlogik/Bowire/actions/runs/33398576681) and passed on the next run over the same code (33193ce4, a ROADMAP.md-only commit on top of a56407db). [[more]](https://github.com/Kuestenlogik/Bowire/issues/637)
+
+#### <a id="issue-kuestenlogik-bowire-643"></a>✅ Done · [#643](https://github.com/Kuestenlogik/Bowire/issues/643) BOWIRE_DATA_DIR is ignored by workspace-scoped storage, so an isolated run writes into the real home
+
+> `area:workbench`
+
+`BOWIRE_DATA_DIR` redirects everything that goes through `BowirePaths`, and nothing that goes through a workspace. [[more]](https://github.com/Kuestenlogik/Bowire/issues/643)
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
