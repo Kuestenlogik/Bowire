@@ -861,10 +861,25 @@
         // `ReferenceError: loadRecordingsFromDisk is not defined`.
         // Guard + skip; the rail's UI surface is also rail-gated so
         // the missing list is invisible to the operator.
-        var bootHydrators = [loadEnvironmentsFromDisk()];
-        if (typeof loadRecordingsFromDisk === 'function') {
-            bootHydrators.push(loadRecordingsFromDisk());
-        }
+        // #646 — the workspace inventory reconciles FIRST, and everything
+        // workspace-scoped waits for it. wsKey() routes on
+        // activeWorkspaceId, so hydrating in parallel would read one
+        // workspace's storage under another's id whenever the server's list
+        // disagreed with the browser's — which is precisely the case this
+        // exists to handle (a second machine, or a second identity in the
+        // same browser profile).
+        var bootHydrators = [
+            (typeof reconcileWorkspaceInventory === 'function'
+                ? reconcileWorkspaceInventory()
+                : Promise.resolve()
+            ).then(function () {
+                var scoped = [loadEnvironmentsFromDisk()];
+                if (typeof loadRecordingsFromDisk === 'function') {
+                    scoped.push(loadRecordingsFromDisk());
+                }
+                return Promise.allSettled(scoped);
+            }),
+        ];
         Promise.allSettled(bootHydrators).finally(function () {
             render();
 

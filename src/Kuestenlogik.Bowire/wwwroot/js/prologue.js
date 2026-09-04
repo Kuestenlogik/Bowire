@@ -2345,6 +2345,97 @@
             if (activeWorkspaceId) localStorage.setItem('bowire_active_workspace', activeWorkspaceId);
             markSaved('workspace');
         } catch (e) { markSaveFailed('workspace', e); }
+        scheduleWorkspaceInventorySync();
+    }
+
+    // #646 — the inventory is the identity's, not the browser's.
+    //
+    // Everything *inside* a workspace already resolved into the signed-in
+    // identity's slot; the list naming those workspaces did not. Two people
+    // sharing a browser profile saw one list, one person on two machines saw
+    // two, and neither deprovisioning nor `bowire users migrate` could reach
+    // it because it was never on disk. localStorage stays as the cache that
+    // makes the first paint instant — it is no longer the record.
+    //
+    // NOTE: `bowire_active_workspace` deliberately stays local. Which
+    // workspace *this window* is looking at is view state; syncing it would
+    // make opening a second tab move the first one.
+    var _workspaceInventorySyncTimer = null;
+    function scheduleWorkspaceInventorySync() {
+        if (_workspaceInventorySyncTimer) clearTimeout(_workspaceInventorySyncTimer);
+        _workspaceInventorySyncTimer = setTimeout(function () {
+            _workspaceInventorySyncTimer = null;
+            fetch(config.prefix + '/api/workspaces', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ workspaces: workspaces })
+            }).catch(function () { /* offline / embedded host without a slot */ });
+        }, 400);
+    }
+
+    // Boot reconcile. Must finish before anything workspace-scoped hydrates,
+    // because wsKey() routes on activeWorkspaceId and that id has to be one
+    // the server agrees exists.
+    function reconcileWorkspaceInventory() {
+        return fetch(config.prefix + '/api/workspaces')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data) return;
+                var fromServer = Array.isArray(data.workspaces) ? data.workspaces : null;
+
+                if (data.everSaved && fromServer) {
+                    // The server wins once it holds anything — including an
+                    // empty list, which means the person deleted their last
+                    // workspace and must not have it resurrected from a
+                    // browser that never noticed. That is why `everSaved`
+                    // travels separately from the array's length: the two
+                    // states look identical on the wire otherwise, and
+                    // collapsing them is what #612 cost the collections.
+                    var previousActive = activeWorkspaceId;
+                    workspaces = fromServer;
+                    if (!activeWorkspaceId
+                        || !workspaces.find(function (w) { return w.id === activeWorkspaceId; })) {
+                        activeWorkspaceId = workspaces.length > 0 ? workspaces[0].id : null;
+                    }
+                    try {
+                        localStorage.setItem('bowire_workspaces', JSON.stringify(workspaces));
+                        if (activeWorkspaceId) {
+                            localStorage.setItem('bowire_active_workspace', activeWorkspaceId);
+                        } else {
+                            localStorage.removeItem('bowire_active_workspace');
+                        }
+                    } catch { /* quota / disabled — the in-memory list is still right */ }
+
+                    // The active workspace moved, which is the same event
+                    // switchWorkspace() handles — and it handles it with a
+                    // reload, because every per-workspace store routes
+                    // through wsKey() and the synchronous part of boot has
+                    // already read some of them under the old id. Re-doing
+                    // that by hand means walking every load-fn; this does
+                    // not.
+                    //
+                    // It happens at most once. The reconciled list and id
+                    // are in localStorage above, so the next boot reads them
+                    // synchronously, this branch finds nothing changed, and
+                    // no second reload follows.
+                    if (previousActive !== activeWorkspaceId) {
+                        try { window.location.reload(); } catch { /* embedded host */ }
+                    }
+                    return;
+                }
+
+                // Nothing saved yet. `mayAdoptLocal` is the server's answer,
+                // not ours: it is true only in single-user mode, where there
+                // is exactly one identity and the browser's list can only be
+                // theirs. On a shared install the first person to sign in
+                // would otherwise adopt whatever the previous one left behind.
+                // This is the once-per-install path every existing operator
+                // takes, and it is why an upgrade loses nothing.
+                if (data.mayAdoptLocal && workspaces.length > 0) {
+                    scheduleWorkspaceInventorySync();
+                }
+            })
+            .catch(function () { /* keep the local list; nothing to reconcile against */ });
     }
     function activeWorkspace() {
         // Explicit null = "no active workspace" (e.g. after deleting

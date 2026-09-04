@@ -4,16 +4,27 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Kuestenlogik.Bowire.Auth;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Kuestenlogik.Bowire.Endpoints;
 
 /// <summary>
-/// Workspace file support — loads and saves a <c>.bww</c> JSON file
+/// Two related things an operator thinks of as one.
+///
+/// <c>/api/workspaces</c> (plural) is the <b>inventory</b>: which workspaces
+/// this identity has. It lives in their slot via
+/// <see cref="WorkspaceInventoryStore"/>, because a list that only exists in
+/// one browser profile is not per identity, does not survive a second machine,
+/// and is missed by both deprovisioning and migration (#646).
+///
+/// <c>/api/workspace</c> (singular) is the portable <b>document</b> — loads
+/// and saves a <c>.bww</c> JSON file
 /// from the working directory. The workspace bundles environments,
 /// collections, recordings, flows, plugin pins, and URL configuration
 /// so the whole setup is portable and shareable via version control.
@@ -67,6 +78,122 @@ internal static partial class BowireWorkspaceEndpoints
     public static IEndpointRouteBuilder MapBowireWorkspaceEndpoints(
         this IEndpointRouteBuilder endpoints, string basePath)
     {
+        // #646 — the inventory: which workspaces this identity has. Distinct
+        // from the /api/workspace document below, which is the portable .bww
+        // bundle of one workspace's *contents*. Both live here because an
+        // operator thinks of them as one subject, but they answer different
+        // questions and neither is the other's storage.
+        endpoints.MapGet($"{basePath}/api/workspaces", (HttpContext ctx) =>
+        {
+            var saved = WorkspaceInventoryStore.Load();
+
+            // Whether the browser may hand up a list nobody has claimed yet.
+            //
+            // On a shared install this must be no: the first identity to sign
+            // in would otherwise adopt whatever the previous person left in
+            // that browser profile, which is a disclosure dressed up as a
+            // convenience. In single-user mode there is exactly one identity
+            // by definition, so the list can only be theirs — and that is the
+            // path every existing install takes exactly once.
+            //
+            // Decided here rather than in the browser. The server knows the
+            // deployment shape; the page can be told anything.
+            var tenancy = ctx.RequestServices.GetService<BowireTenancyOptions>();
+            var mayAdoptLocal = tenancy is null || !tenancy.Enabled;
+
+            if (saved is null)
+            {
+                return Results.Ok(new
+                {
+                    workspaces = Array.Empty<object>(),
+                    everSaved = false,
+                    mayAdoptLocal,
+                });
+            }
+
+            // Re-emitted through a node rather than returned verbatim so the
+            // envelope carries everSaved without the store having to know
+            // about it. `workspaces` is whatever was written; the server does
+            // not have opinions about a workspace record's fields, and adding
+            // one in the workbench must not need a server release.
+            try
+            {
+                var node = JsonNode.Parse(saved) as JsonObject;
+                if (node is not null)
+                {
+                    node["everSaved"] = true;
+                    node["mayAdoptLocal"] = mayAdoptLocal;
+                    return Results.Content(node.ToJsonString(), "application/json");
+                }
+            }
+            catch (JsonException ex)
+            {
+                // Load() already parsed this, so reaching here means the file
+                // changed underneath us. Same answer as a corrupt file: fall
+                // back to the browser's copy rather than to an error.
+                _ = ex;
+            }
+
+            return Results.Ok(new
+            {
+                workspaces = Array.Empty<object>(),
+                everSaved = false,
+                mayAdoptLocal,
+            });
+        }).ExcludeFromDescription();
+
+        endpoints.MapPut($"{basePath}/api/workspaces", async (HttpContext ctx) =>
+        {
+            using var reader = new StreamReader(ctx.Request.Body);
+            var body = await reader.ReadToEndAsync(ctx.RequestAborted);
+
+            if (string.IsNullOrWhiteSpace(body))
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:workspaces:save-failed",
+                    title: "Couldn't save the workspace list",
+                    status: 400,
+                    detail: "Empty request body.",
+                    instance: ctx.Request.Path);
+            }
+
+            try
+            {
+                // Stored verbatim, but only after the shape is confirmed: a
+                // body that is valid JSON yet not an object with a workspaces
+                // array would be written and then read back as "never saved",
+                // which is how a list quietly disappears.
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object
+                    || !doc.RootElement.TryGetProperty("workspaces", out var list)
+                    || list.ValueKind != JsonValueKind.Array)
+                {
+                    return BowireEndpointHelpers.Problem(
+                        type: "urn:bowire:workspaces:save-failed",
+                        title: "Couldn't save the workspace list",
+                        status: 400,
+                        detail: "Expected an object with a 'workspaces' array.",
+                        instance: ctx.Request.Path);
+                }
+
+                var stored = WorkspaceInventoryStore.Save(body);
+                // saved:false is not an error — no slot resolved, so the
+                // browser keeps its own list exactly as it did before this
+                // endpoint existed. The caller is told which happened.
+                return Results.Ok(new { saved = stored });
+            }
+            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:workspaces:save-failed",
+                    title: "Couldn't save the workspace list",
+                    status: 400,
+                    detail: ex.Message,
+                    instance: ctx.Request.Path,
+                    extensions: new Dictionary<string, object?> { ["exceptionType"] = ex.GetType().Name });
+            }
+        }).ExcludeFromDescription();
+
         endpoints.MapGet($"{basePath}/api/workspace", () =>
         {
             if (!File.Exists(WorkspacePath))
