@@ -125,6 +125,11 @@ internal static class OwaspApiSuite
         new WebSocketAuthProbe(),
         new WebSocketResourceLimitProbe(),
         new MqttAuthProbe(),
+        // Passive: connects and closes, publishes nothing. The auth probe asks
+        // whether anyone may in; this one asks what the link exposes to anyone
+        // watching, which a broker that correctly demands credentials still
+        // gets wrong (Bowire.VulnDb#25).
+        new MqttCleartextProbe(),
         new SseAuthProbe(),
     ];
 
