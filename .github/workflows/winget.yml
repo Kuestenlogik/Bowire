@@ -64,6 +64,34 @@ env:
   WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
 
 jobs:
+  # The token check is its own job, because a step cannot stop the ones
+  # after it.
+  #
+  # This used to be two steps inside `publish`: a warning, then
+  # `run: exit 0`. `exit 0` ends that step successfully and nothing else —
+  # every following step still ran, so an unconfigured channel did not skip,
+  # it failed, on the step that needs the token. A job-level `if` on a job
+  # that produced the flag is the only shape that actually gates the rest.
+  #
+  # It matters more than tidiness: a channel that reports red on every
+  # release teaches everyone to ignore red publish jobs, which is how seven
+  # releases of silent failure happened (#237).
+  gate:
+    name: Is the winget token configured?
+    runs-on: ubuntu-latest
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - id: check
+        run: |
+          if [ -z "${WINGET_TOKEN}" ]; then
+            echo "::warning::WINGET_TOKEN secret is not set — skipping winget submission."
+            echo "Add a *classic* PAT with the public_repo scope (fine-grained PATs cannot open PRs against third-party orgs like microsoft/winget-pkgs) as WINGET_TOKEN to enable this."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
   publish:
     name: Submit / update microsoft/winget-pkgs
     runs-on: windows-latest
@@ -74,21 +102,10 @@ jobs:
     # Manual workflow_dispatch runs (which have no release tag) still
     # pass this gate; the WINGET_TOKEN check inside the job stops them
     # cleanly if no token is configured.
-    if: ${{ github.event_name != 'release' || (!contains(github.event.release.tag_name, '-rc') && !contains(github.event.release.tag_name, '-beta') && !contains(github.event.release.tag_name, '-preview')) }}
+    if: ${{ needs.gate.outputs.configured == 'true' && (github.event_name != 'release' || (!contains(github.event.release.tag_name, '-rc') && !contains(github.event.release.tag_name, '-beta') && !contains(github.event.release.tag_name, '-preview'))) }}
 
+    needs: gate
     steps:
-      - name: Bail out if WINGET_TOKEN is missing
-        if: ${{ env.WINGET_TOKEN == '' }}
-        shell: pwsh
-        run: |
-          Write-Host "::warning::WINGET_TOKEN secret is not set — skipping winget submission."
-          Write-Host "Add a *classic* PAT with the public_repo scope (fine-grained PATs cannot open PRs against third-party orgs like microsoft/winget-pkgs) as WINGET_TOKEN to enable this step."
-
-      - name: Stop here if no token
-        if: ${{ env.WINGET_TOKEN == '' }}
-        shell: pwsh
-        run: exit 0
-
       - uses: actions/checkout@v7
 
       - name: Resolve version + release date

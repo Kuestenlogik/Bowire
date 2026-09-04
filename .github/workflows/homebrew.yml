@@ -54,21 +54,41 @@ env:
   HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 
 jobs:
+  # The token check is its own job, because a step cannot stop the ones
+  # after it.
+  #
+  # This used to be two steps inside `publish`: a warning, then
+  # `run: exit 0`. `exit 0` ends that step successfully and nothing else —
+  # every following step still ran, so an unconfigured channel did not skip,
+  # it failed, on the step that needs the token. A job-level `if` on a job
+  # that produced the flag is the only shape that actually gates the rest.
+  #
+  # It matters more than tidiness: a channel that reports red on every
+  # release teaches everyone to ignore red publish jobs, which is how seven
+  # releases of silent failure happened (#237).
+  gate:
+    name: Is the tap configured?
+    runs-on: ubuntu-latest
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - id: check
+        run: |
+          if [ -z "${HOMEBREW_TAP_TOKEN}" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN secret is not set — skipping Homebrew formula update."
+            echo "Create the tap at github.com/kuestenlogik/homebrew-bowire and add a fine-grained PAT with push access to it as HOMEBREW_TAP_TOKEN to enable this."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
   publish:
     name: Push formula to tap
     runs-on: ubuntu-latest
+    needs: gate
+    if: needs.gate.outputs.configured == 'true'
 
     steps:
-      - name: Bail out if HOMEBREW_TAP_TOKEN is missing
-        if: ${{ env.HOMEBREW_TAP_TOKEN == '' }}
-        run: |
-          echo "::warning::HOMEBREW_TAP_TOKEN secret is not set — skipping Homebrew formula update."
-          echo "Add a fine-grained PAT with push access to kuestenlogik/homebrew-bowire as HOMEBREW_TAP_TOKEN to enable this step."
-
-      - name: Stop here if no token
-        if: ${{ env.HOMEBREW_TAP_TOKEN == '' }}
-        run: exit 0
-
       - uses: actions/checkout@v7
 
       - name: Resolve version + tag
