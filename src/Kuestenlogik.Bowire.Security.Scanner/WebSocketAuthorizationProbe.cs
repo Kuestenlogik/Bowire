@@ -37,10 +37,14 @@ internal sealed class WebSocketAuthorizationProbe : IOwaspProtocolProbe
         string target, IBowireProtocol protocol, IList<string> authHeaders, CancellationToken ct)
         => Task.FromResult<IReadOnlyList<ScanFinding>>([]);
 
-    public async Task<IReadOnlyList<ScanFinding>> RunAsync(
-        string target, IBowireProtocol protocol,
-        IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct)
+    public async Task<IReadOnlyList<ScanFinding>> RunAsync(OwaspProbeContext context, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        var target = context.Target;
+        var protocol = context.Protocol;
+        var authHeaders = context.AuthHeaders;
+        var authHeadersB = context.AuthHeadersB;
+
         if (authHeaders is null || authHeaders.Count == 0
             || authHeadersB is null || authHeadersB.Count == 0)
         {

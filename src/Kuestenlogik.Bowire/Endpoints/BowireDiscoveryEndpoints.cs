@@ -89,7 +89,7 @@ internal static class BowireDiscoveryEndpoints
                     // grpc plugin's URL marker name — must stay aligned with
                     // GrpcChannelBuilder.TransportUrlMarker. Hard-coded as a
                     // string here so core doesn't take a plugin reference.
-                    serverUrl = $"{serverUrl}{sep}__bowireGrpcTransport={Uri.EscapeDataString(tm.Value)}";
+                    serverUrl = $"{serverUrl}{sep}{BowireMetadataKeys.GrpcTransport}={Uri.EscapeDataString(tm.Value)}";
                 }
 
                 // Same side-channel idea for SSE: DiscoverAsync has no
@@ -172,6 +172,7 @@ internal static class BowireDiscoveryEndpoints
                 pluginHint,
                 options.ShowInternalServices,
                 TimeSpan.FromSeconds(8),
+                DescriptorSetMetadata(ctx),
                 BowireEndpointHelpers.GetLogger(ctx),
                 ctx.RequestAborted);
 
@@ -290,6 +291,36 @@ internal static class BowireDiscoveryEndpoints
     /// off — so a caller can pin the legacy shape explicitly rather than by
     /// omission.
     /// </summary>
+    /// <summary>
+    /// <c>?grpcDescriptorSet=&lt;path&gt;</c> as the metadata bag the gRPC
+    /// plugin reads, or <c>null</c> when absent.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Discovery and invoke were answering different questions about the same
+    /// server: <c>/api/invoke</c> honours a supplied descriptor set (#653), so
+    /// a caller could invoke a method on a reflection-less server but could
+    /// not get it listed. This closes that, which is what makes the same
+    /// capability reachable from all three surfaces rather than two.
+    /// </para>
+    /// <para>
+    /// A path, not bytes: a multi-kilobyte base64 blob does not belong in a
+    /// query string, and the caller here is either the local workbench or a
+    /// script on the same machine. The marker's JSON form still accepts
+    /// inline bytes for callers that have them and no path.
+    /// </para>
+    /// </remarks>
+    private static Dictionary<string, string>? DescriptorSetMetadata(HttpContext ctx)
+    {
+        var path = ctx.Request.Query["grpcDescriptorSet"].FirstOrDefault();
+        return string.IsNullOrWhiteSpace(path)
+            ? null
+            : new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                [BowireMetadataKeys.GrpcDescriptorSet] = path,
+            };
+    }
+
     private static bool IsTruthy(string? value)
     {
         if (value is null) return false;

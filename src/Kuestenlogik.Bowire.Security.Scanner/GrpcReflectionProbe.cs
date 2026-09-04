@@ -56,13 +56,28 @@ internal sealed class GrpcReflectionProbe : IOwaspProtocolProbe
     };
 
     public async Task<IReadOnlyList<ScanFinding>> RunAsync(string target, IBowireProtocol protocol, IList<string> authHeaders, CancellationToken ct)
+        => await RunAsync(new OwaspProbeContext
+        {
+            Target = target,
+            Protocol = protocol,
+            AuthHeaders = authHeaders,
+        }, ct).ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<ScanFinding>> RunAsync(OwaspProbeContext context, CancellationToken ct)
     {
-        List<BowireServiceInfo> services;
+        ArgumentNullException.ThrowIfNull(context);
+        var target = context.Target;
+        var protocol = context.Protocol;
+
+        List<BowireServiceInfo> reflected;
         try
         {
-            // DiscoverAsync uses the ServerReflection API with no credentials —
-            // this measures anonymous reflection exposure, not authorised use.
-            services = await protocol.DiscoverAsync(target, showInternalServices: false, ct).ConfigureAwait(false);
+            // No metadata, deliberately: this call measures what the server
+            // hands an anonymous stranger. Passing the operator's descriptor
+            // set here would answer the question out of their own file and
+            // report services as publicly enumerable that this server never
+            // disclosed.
+            reflected = await protocol.DiscoverAsync(target, showInternalServices: false, ct).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -74,9 +89,14 @@ internal sealed class GrpcReflectionProbe : IOwaspProtocolProbe
                 $"Anonymous gRPC Server Reflection could not be attempted ({ex.GetType().Name}).")];
         }
 
-        var serviceCount = services.Count;
-        var methodCount = services.Sum(s => s.Methods.Count);
-        if (serviceCount == 0)
+        // A descriptor set the operator supplied (--grpc-descriptor-set), if
+        // any. Kept strictly apart from what reflection disclosed: this list is
+        // what we may *call*, never evidence of what the server *exposes*.
+        var supplied = await TrySuppliedServicesAsync(context, ct).ConfigureAwait(false);
+
+        var findings = new List<ScanFinding>();
+
+        if (reflected.Count == 0 && supplied.Count == 0)
         {
             // Two facts, and the second one used to be missing. Reporting
             // only "reflection is off, which is what you want" reads as
@@ -85,28 +105,74 @@ internal sealed class GrpcReflectionProbe : IOwaspProtocolProbe
             // own first recommendation, the more often that happens (#652).
             return [Marker(Entry, ScanFindingStatus.Skipped, "API9-GRPC-NO-REFLECTION", "gRPC reflection not exposed — and the auth check could not run",
                 "Anonymous gRPC Server Reflection returned no services: the target is not a gRPC endpoint, or reflection is disabled (the desired production state). "
-                + "Either way the transport-authentication check did NOT run — it needs a method to call, and reflection is currently the only way it can learn of one. "
-                + "This says nothing about whether this server's methods answer to callers with no credential.")];
+                + "Either way the transport-authentication check did NOT run — it needs a method to call, and it had no other way to learn of one. "
+                + "Re-run with --grpc-descriptor-set <api.protoset> to name the methods yourself and let the check proceed.")];
         }
 
-        var findings = new List<ScanFinding>();
+        if (reflected.Count > 0)
+        {
+            var names = string.Join(", ", reflected.Take(5).Select(s => s.Name));
+            var ellipsis = reflected.Count > 5 ? ", …" : "";
+            var methodCount = reflected.Sum(s => s.Methods.Count);
+            findings.Add(Finding("BWR-OWASP-API9-GRPC-REFLECTION", "gRPC server reflection enabled", Entry.Tag, "CWE-200",
+                $"Anonymous gRPC Server Reflection returned {reflected.Count} service(s) / {methodCount} method(s) ({names}{ellipsis}). Public reflection lets any client enumerate every service, method, and message schema — the gRPC analog of an exposed API inventory.",
+                "Disable gRPC Server Reflection in production, or gate it behind auth — it is a debugging aid. Grpc.AspNetCore: don't register AddGrpcReflection / MapGrpcReflectionService in prod; ship .proto files to legitimate consumers out-of-band instead.",
+                "medium", 5.3));
+        }
+        else
+        {
+            // The case #652 was filed for, now answered rather than reported:
+            // reflection is off *and* the auth check can still run.
+            findings.Add(Marker(Entry, ScanFindingStatus.Safe, "API9-GRPC-NO-REFLECTION", "gRPC reflection not exposed",
+                $"Anonymous gRPC Server Reflection returned no services — the desired production state. The {supplied.Count} service(s) named by --grpc-descriptor-set are used below to test authentication; they are the operator's own declaration and say nothing about what this server discloses."));
+        }
 
-        var names = string.Join(", ", services.Take(5).Select(s => s.Name));
-        var ellipsis = serviceCount > 5 ? ", …" : "";
-        findings.Add(Finding("BWR-OWASP-API9-GRPC-REFLECTION", "gRPC server reflection enabled", Entry.Tag, "CWE-200",
-            $"Anonymous gRPC Server Reflection returned {serviceCount} service(s) / {methodCount} method(s) ({names}{ellipsis}). Public reflection lets any client enumerate every service, method, and message schema — the gRPC analog of an exposed API inventory.",
-            "Disable gRPC Server Reflection in production, or gate it behind auth — it is a debugging aid. Grpc.AspNetCore: don't register AddGrpcReflection / MapGrpcReflectionService in prod; ship .proto files to legitimate consumers out-of-band instead.",
-            "medium", 5.3));
+        // Prefer what the server admitted to: it is ground truth about this
+        // deployment, where a supplied set may describe methods it does not host.
+        var callable = reflected.Count > 0 ? reflected : supplied;
 
         // Auth check (API2) — only meaningful when a credential is expected.
         // Without --auth-header we can't tell an intentionally-public gRPC API
         // from a broken one, so we leave API2 to the caller's other probes.
-        if (authHeaders.Count > 0)
+        if (context.AuthHeaders.Count > 0)
         {
-            findings.Add(await CheckTransportAuthAsync(target, protocol, services, ct).ConfigureAwait(false));
+            findings.Add(await CheckTransportAuthAsync(
+                target, protocol, callable, context.ProtocolMetadata,
+                fromSuppliedSet: reflected.Count == 0, ct).ConfigureAwait(false));
         }
 
         return findings;
+    }
+
+    /// <summary>
+    /// The services named by a caller-supplied descriptor set, or empty when
+    /// the scan supplied none.
+    /// </summary>
+    /// <remarks>
+    /// A set that cannot be read is not worth failing the probe over — the
+    /// reflection half has already run and has something to say — so it
+    /// degrades to the same message a scan with no set at all prints.
+    /// </remarks>
+    private static async Task<List<BowireServiceInfo>> TrySuppliedServicesAsync(
+        OwaspProbeContext context, CancellationToken ct)
+    {
+        var metadata = context.ProtocolMetadata;
+        if (metadata is null || !metadata.ContainsKey(BowireMetadataKeys.GrpcDescriptorSet)) return [];
+
+        try
+        {
+            return await context.Protocol
+                .DiscoverAsync(context.Target, showInternalServices: false, metadata, ct)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return [];
+        }
     }
 
     /// <summary>
@@ -118,18 +184,43 @@ internal sealed class GrpcReflectionProbe : IOwaspProtocolProbe
     private const int MaxAuthCandidates = 6;
 
     /// <summary>
-    /// Invoke read-only, unary, reflection-discovered methods with no
-    /// credential and classify the gRPC status trailer. Tries several
-    /// candidates until one yields an accept/reject verdict.
+    /// Invoke read-only, unary methods with no credential and classify the
+    /// gRPC status trailer. Tries several candidates until one yields an
+    /// accept/reject verdict.
     /// </summary>
-    private static async Task<ScanFinding> CheckTransportAuthAsync(string target, IBowireProtocol protocol, List<BowireServiceInfo> services, CancellationToken ct)
+    /// <param name="target">The URL this attempt is against.</param>
+    /// <param name="protocol">The resolved gRPC plugin.</param>
+    /// <param name="services">The methods available to try, from whichever source named them.</param>
+    /// <param name="protocolMetadata">
+    /// Plugin configuration — a descriptor set, when one was supplied. It is
+    /// not a credential: the plugin strips these markers before anything
+    /// reaches the wire, so the call stays anonymous, which is the entire
+    /// point of it.
+    /// </param>
+    /// <param name="fromSuppliedSet">
+    /// Whether <paramref name="services"/> came from the operator's descriptor
+    /// set rather than from reflection. Only changes how the verdict is
+    /// worded — a method named by a set may not be hosted at all, and the
+    /// reader should be told which of the two they are looking at.
+    /// </param>
+    /// <param name="ct">Cancellation for the whole check.</param>
+    private static async Task<ScanFinding> CheckTransportAuthAsync(
+        string target, IBowireProtocol protocol, List<BowireServiceInfo> services,
+        IReadOnlyDictionary<string, string>? protocolMetadata, bool fromSuppliedSet, CancellationToken ct)
     {
+        var source = fromSuppliedSet ? "--grpc-descriptor-set" : "Reflection";
         var candidates = FindReadOnlyUnaryMethods(services);
         if (candidates.Count == 0)
         {
             return Marker(s_api2, ScanFindingStatus.Skipped, "API2-GRPC-NO-READONLY", "gRPC auth check skipped",
-                "Reflection surfaced no read-only, unary method safe to invoke without side effects — the transport-auth check needs one (a Get* / List* / Health* … method) to probe anonymously.");
+                $"{source} surfaced no read-only, unary method safe to invoke without side effects — the transport-auth check needs one (a Get* / List* / Health* … method) to probe anonymously.");
         }
+
+        // The marker travels; nothing else does. Converted here because
+        // InvokeAsync takes a mutable bag it does not mutate.
+        var callMetadata = protocolMetadata is null || protocolMetadata.Count == 0
+            ? null
+            : protocolMetadata.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
 
         string? lastStatus = null;
         string? lastMethod = null;
@@ -138,10 +229,10 @@ internal sealed class GrpcReflectionProbe : IOwaspProtocolProbe
             string status;
             try
             {
-                // No metadata → no credential. If the server enforces auth at
-                // the transport, this call is rejected before the handler runs.
+                // No credential. If the server enforces auth at the transport,
+                // this call is rejected before the handler runs.
                 var result = await protocol.InvokeAsync(target, service, method, ["{}"],
-                    showInternalServices: false, metadata: null, ct).ConfigureAwait(false);
+                    showInternalServices: false, metadata: callMetadata, ct).ConfigureAwait(false);
                 status = result.Status;
             }
             catch (OperationCanceledException)
@@ -167,7 +258,7 @@ internal sealed class GrpcReflectionProbe : IOwaspProtocolProbe
                         cwe: "CWE-306", owaspApi: s_api2.Tag, severity: "high", cvss: 7.5,
                         remediation: "Enforce authentication at the transport for every gRPC method — a server interceptor / metadata credential check that rejects missing or invalid tokens with UNAUTHENTICATED before the handler runs. Don't rely on per-handler checks that a new method can forget."),
                     Status = ScanFindingStatus.Vulnerable,
-                    Detail = $"An anonymous call to {service}/{method} (no credential, despite --auth-header being supplied) returned gRPC status {status} — the request reached the method body without authentication. Any client can invoke it without a token.",
+                    Detail = $"An anonymous call to {service}/{method} (no credential, despite --auth-header being supplied) returned gRPC status {status} — the request reached the method body without authentication. Any client can invoke it without a token. The method was named by {source}.",
                 };
             }
 

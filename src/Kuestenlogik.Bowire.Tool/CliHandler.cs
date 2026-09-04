@@ -6,6 +6,7 @@ using Kuestenlogik.Bowire;
 using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Protocol.Grpc;
 
 namespace Kuestenlogik.Bowire.App;
 
@@ -65,14 +66,45 @@ internal static class CliHandler
         }
     }
 
+    /// <summary>
+    /// Metadata headers (<c>-H "key: value"</c>) as a bag, or <c>null</c> when
+    /// none were given.
+    /// </summary>
+    /// <remarks>
+    /// Split on the FIRST colon, so a Windows path in a value
+    /// (<c>C:\schemas\api.protoset</c>) survives — the key ends at the colon
+    /// that separates it, not at the drive letter's.
+    /// </remarks>
+    internal static Dictionary<string, string>? BuildMetadata(CliCommandOptions cli)
+    {
+        ArgumentNullException.ThrowIfNull(cli);
+        if (cli.Headers.Count == 0) return null;
+
+        var metadata = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var h in cli.Headers)
+        {
+            var colonIdx = h.IndexOf(':', StringComparison.Ordinal);
+            if (colonIdx <= 0) continue;
+            metadata[h[..colonIdx].Trim()] = h[(colonIdx + 1)..].Trim();
+        }
+        return metadata.Count > 0 ? metadata : null;
+    }
+
     private static async Task<int> ListImplAsync(CliCommandOptions cli, CommandIo io)
     {
-        using var client = new GrpcReflectionClient(cli.Url, showInternalServices: false);
+        // CreateSource rather than a bare reflection client: a supplied
+        // descriptor set answers here too, so `bowire list` works against a
+        // server that will not enumerate itself.
+        using var client = GrpcDescriptorSet.CreateSource(
+            BuildMetadata(cli), cli.Url, showInternalServices: false,
+            mtlsConfig: null, configuration: null);
         var services = await client.ListServicesAsync();
 
         if (services.Count == 0)
         {
-            WriteWarning(io, "No gRPC services found. Is server reflection enabled?");
+            WriteWarning(io, "No gRPC services found. Is server reflection enabled? "
+                + "If it is off (the recommended production state), pass --grpc-descriptor-set <api.protoset> "
+                + "built with `protoc --descriptor_set_out=api.protoset --include_imports`.");
             return 0;
         }
 
@@ -130,7 +162,8 @@ internal static class CliHandler
         var probe = await BowireDiscoveryProbe.RunAsync(
             registry, cli.Url, pluginHint,
             showInternalServices: false,
-            perProbeCeiling: TimeSpan.FromSeconds(8)).ConfigureAwait(false);
+            perProbeCeiling: TimeSpan.FromSeconds(8),
+            metadata: BuildMetadata(cli)).ConfigureAwait(false);
 
         var color = UseColor(io.Out);
 
@@ -223,7 +256,9 @@ internal static class CliHandler
             return 2;
         }
 
-        using var client = new GrpcReflectionClient(cli.Url, showInternalServices: false);
+        using var client = GrpcDescriptorSet.CreateSource(
+            BuildMetadata(cli), cli.Url, showInternalServices: false,
+            mtlsConfig: null, configuration: null);
 
         // Check if target contains a method name (service/method)
         if (cli.Target.Contains('/'))
@@ -315,22 +350,7 @@ internal static class CliHandler
             messages[i] = await File.ReadAllTextAsync(filePath, ct);
         }
 
-        // Parse metadata headers "key: value"
-        Dictionary<string, string>? metadata = null;
-        if (cli.Headers.Count > 0)
-        {
-            metadata = new Dictionary<string, string>();
-            foreach (var h in cli.Headers)
-            {
-                var colonIdx = h.IndexOf(':', StringComparison.Ordinal);
-                if (colonIdx > 0)
-                {
-                    var key = h[..colonIdx].Trim();
-                    var value = h[(colonIdx + 1)..].Trim();
-                    metadata[key] = value;
-                }
-            }
-        }
+        var metadata = BuildMetadata(cli);
 
         // #538 — {{name}} / ${name} resolution over body, URL and metadata.
         // Same resolver + same --env-file-then---var precedence the Flow
@@ -358,11 +378,19 @@ internal static class CliHandler
         if (wantsRegistry)
             return await InvokeViaRegistryAsync(cli, io, serviceName, methodName, messages, metadata, ct);
 
-        using var reflectionClient = new GrpcReflectionClient(cli.Url, showInternalServices: false);
-        using var invoker = new GrpcInvoker(cli.Url, reflectionClient);
+        // The fast path skips the plugin, so it also skipped the plugin's two
+        // jobs around a supplied descriptor set: choosing it as the descriptor
+        // source, and keeping its marker off the wire. Both are done here.
+        // Caught by running the CLI against the hardened sample — the error
+        // said "no descriptor set was supplied" while one was.
+        using var descriptorSource = GrpcDescriptorSet.CreateSource(
+            metadata, cli.Url, showInternalServices: false,
+            mtlsConfig: null, configuration: null);
+        using var invoker = new GrpcInvoker(cli.Url, descriptorSource);
+        var wireMetadata = GrpcDescriptorSet.StripMarker(metadata);
 
         // Try unary first, then streaming
-        var result = await invoker.InvokeUnaryAsync(serviceName, methodName, messages, metadata);
+        var result = await invoker.InvokeUnaryAsync(serviceName, methodName, messages, wireMetadata);
 
         if (result.Status == "Use the streaming endpoint for server-streaming and duplex calls.")
         {
@@ -370,7 +398,7 @@ internal static class CliHandler
             // The CLI only needs the JSON rendering; the binary side of
             // the frame is for the mock-server recorder path.
             await foreach (var frame in invoker.InvokeStreamingWithFramesAsync(
-                serviceName, methodName, messages, metadata))
+                serviceName, methodName, messages, wireMetadata))
             {
                 WriteJsonResponse(io, frame.Json, cli.Compact);
             }
@@ -456,11 +484,14 @@ internal static class CliHandler
             }
         }
 
+        // The same metadata the invoke below will use: without it this
+        // resolve step cannot see a service on a reflection-less server, and
+        // an unpinned call would fail before reaching the plugin at all.
         var probe = await BowireDiscoveryProbe.RunAsync(
             registry, cli.Url, pinned?.Id,
             showInternalServices: false,
             perProbeCeiling: TimeSpan.FromSeconds(8),
-            logger: null, ct: ct).ConfigureAwait(false);
+            logger: null, ct: ct, metadata: metadata).ConfigureAwait(false);
 
         // Unpinned: the plugin that actually found the target service
         // wins. Falling back to "the first plugin that found anything"

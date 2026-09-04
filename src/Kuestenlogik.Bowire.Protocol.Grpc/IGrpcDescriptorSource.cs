@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Google.Protobuf.Reflection;
+using Kuestenlogik.Bowire.Models;
 
 namespace Kuestenlogik.Bowire.Protocol.Grpc;
 
@@ -21,11 +22,14 @@ namespace Kuestenlogik.Bowire.Protocol.Grpc;
 /// <c>No file descriptors for '&lt;service&gt;'</c>.
 /// </para>
 /// <para>
-/// The interface is deliberately one method wide, because that is the whole
-/// surface the two call sites ever used. Everything else about the reflection
-/// client — its channel, its caching, its disposal — was never part of the
-/// contract; making the seam any wider would invent coupling that was not
-/// there.
+/// Two methods, because there are two questions a caller asks of a schema:
+/// <em>what can I call</em> and <em>how do I marshal this one call</em>. The
+/// interface started at the second alone — that was the whole surface invoke
+/// and channel-open used — and grew the first when discovery turned out to
+/// need the same independence from reflection: a scan against a hardened
+/// server could not even enumerate the methods it was meant to test. Nothing
+/// else about the reflection client — its channel, its caching, its disposal —
+/// is part of the contract.
 /// </para>
 /// <para>
 /// This is not the same question as *where the schema is stored*. A supplied
@@ -46,4 +50,16 @@ internal interface IGrpcDescriptorSource : IDisposable
     /// </remarks>
     Task<List<FileDescriptorProto>> ResolveAllDescriptorsAsync(
         string serviceName, CancellationToken ct = default);
+
+    /// <summary>
+    /// Every service the source knows about, with its methods.
+    /// </summary>
+    /// <remarks>
+    /// The reflection implementation asks the server and reports what it is
+    /// willing to admit to; the descriptor-set implementation reports what the
+    /// operator handed over. Those can disagree — a set may describe a method
+    /// the deployment does not host — and that is the caller's problem to
+    /// notice, not something to paper over here.
+    /// </remarks>
+    Task<List<BowireServiceInfo>> ListServicesAsync(CancellationToken ct = default);
 }

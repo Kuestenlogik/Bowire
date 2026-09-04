@@ -597,7 +597,9 @@ public static class ScanCommand
             // doesn't speak the protocol can't stall the whole scan.
             var registry = BowireProtocolRegistry.Discover();
             var protocolTimeout = TimeSpan.FromSeconds(Math.Min(options.TimeoutSeconds, 12));
-            Fold(await OwaspApiSuite.RunProtocolProbesAsync(options.Target, registry, effectiveAuth, options.AuthHeadersB, protocolTimeout, ct).ConfigureAwait(false));
+            Fold(await OwaspApiSuite.RunProtocolProbesAsync(
+                options.Target, registry, effectiveAuth, options.AuthHeadersB,
+                ProtocolMetadataFor(options), protocolTimeout, ct).ConfigureAwait(false));
         }
 
         // Active (mutating / aggressive) probes — #395–#400. Opt-in only, and
@@ -661,6 +663,33 @@ public static class ScanCommand
     /// interaction server (the default — OAST is opt-in). A malformed URL is
     /// reported as a usage error rather than throwing out of the scan.
     /// </summary>
+    /// <summary>
+    /// Scan flags that are plugin configuration rather than headers.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Returns <c>null</c> for the overwhelmingly common scan that passed
+    /// none, so a probe can test for a supplied set with a null check instead
+    /// of an empty-dictionary dance.
+    /// </para>
+    /// <para>
+    /// A path that does not exist is passed through rather than rejected here.
+    /// The probe that needs the set says precisely what it could not do
+    /// without it; failing the whole scan because one protocol's optional
+    /// input was mistyped would throw away every other finding.
+    /// </para>
+    /// </remarks>
+    internal static IReadOnlyDictionary<string, string>? ProtocolMetadataFor(ScanOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (string.IsNullOrWhiteSpace(options.GrpcDescriptorSetPath)) return null;
+
+        return new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [BowireMetadataKeys.GrpcDescriptorSet] = options.GrpcDescriptorSetPath,
+        };
+    }
+
     private static Oast.InteractshClient? TryCreateOastClient(ScanOptions options)
         => string.IsNullOrWhiteSpace(options.OastServer)
             ? null
@@ -1548,6 +1577,16 @@ public sealed class ScanOptions
     /// Empty = single-identity scan (BOLA probe skips).
     /// </summary>
     public IList<string> AuthHeadersB { get; init; } = new List<string>();
+
+    /// <summary>
+    /// Path to a compiled gRPC descriptor set (<c>--grpc-descriptor-set</c>).
+    /// </summary>
+    /// <remarks>
+    /// Deliberately a path on the scan, not a workspace lookup. A scan runs in
+    /// CI against a URL with no workspace anywhere near it, and requiring one
+    /// would have made the flag unusable exactly where hardened servers live.
+    /// </remarks>
+    public string? GrpcDescriptorSetPath { get; init; }
 }
 
 /// <summary>One scan-result row — what happened when the template was run against the target.</summary>

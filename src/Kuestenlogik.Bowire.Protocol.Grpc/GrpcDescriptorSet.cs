@@ -4,6 +4,7 @@
 using System.Text.Json;
 using Google.Protobuf;
 using Google.Protobuf.Reflection;
+using Kuestenlogik.Bowire.Models;
 
 namespace Kuestenlogik.Bowire.Protocol.Grpc;
 
@@ -42,7 +43,7 @@ internal static class GrpcDescriptorSet
     /// Metadata key carrying the descriptor set. Plugins strip it before
     /// forwarding the rest of the metadata as gRPC headers.
     /// </summary>
-    public const string MarkerKey = "__bowireGrpcDescriptors__";
+    public const string MarkerKey = BowireMetadataKeys.GrpcDescriptorSet;
 
     /// <summary>
     /// Read the marker and load the set, or <c>null</c> when it is absent.
@@ -151,7 +152,7 @@ internal static class GrpcDescriptorSet
     {
         var supplied = TryLoadFromMetadata(metadata);
         return supplied is not null
-            ? new GrpcDescriptorSetSource(supplied)
+            ? new GrpcDescriptorSetSource(supplied, showInternalServices)
             : new GrpcReflectionClient(serverUrl, showInternalServices, mtlsConfig, configuration, transportMode);
     }
 
@@ -183,9 +184,11 @@ internal static class GrpcDescriptorSet
 /// Serves descriptors out of a set the caller supplied, instead of asking the
 /// server for them (#653).
 /// </summary>
-internal sealed class GrpcDescriptorSetSource(IReadOnlyList<FileDescriptorProto> files) : IGrpcDescriptorSource
+internal sealed class GrpcDescriptorSetSource(
+    IReadOnlyList<FileDescriptorProto> files, bool showInternalServices = false) : IGrpcDescriptorSource
 {
     private readonly IReadOnlyList<FileDescriptorProto> _files = files;
+    private readonly bool _showInternalServices = showInternalServices;
 
     /// <summary>
     /// The whole set, whatever service is asked for.
@@ -204,6 +207,38 @@ internal sealed class GrpcDescriptorSetSource(IReadOnlyList<FileDescriptorProto>
         _ = serviceName;
         ct.ThrowIfCancellationRequested();
         return Task.FromResult(_files.ToList());
+    }
+
+    /// <summary>
+    /// Every service in the set, in the same shape reflection produces.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="ct"/> is honoured but nothing here awaits: the bytes
+    /// were parsed before this object existed, so the work is a walk over
+    /// descriptors already in memory. It stays async because the interface has
+    /// to accommodate the implementation that really does go to the network.
+    /// </remarks>
+    public Task<List<BowireServiceInfo>> ListServicesAsync(CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        var all = _files.ToList();
+        var services = new List<BowireServiceInfo>();
+
+        foreach (var fd in all)
+        {
+            foreach (var svc in fd.Service)
+            {
+                var fullName = string.IsNullOrEmpty(fd.Package) ? svc.Name : $"{fd.Package}.{svc.Name}";
+                if (!_showInternalServices && GrpcReflectionClient.InternalServices.Contains(fullName))
+                    continue;
+
+                var info = GrpcReflectionClient.BuildServiceInfo(fullName, all);
+                if (info is not null) services.Add(info);
+            }
+        }
+
+        return Task.FromResult(services.OrderBy(s => s.Name, StringComparer.Ordinal).ToList());
     }
 
     /// <summary>Nothing to release — the bytes were read before this existed.</summary>

@@ -62,6 +62,10 @@ internal static class DiffCommand
             Description = "Exit non-zero on: 'none' (default), 'breaking' (a removed service/method or signature change), or 'any' (any callable-surface change).",
             DefaultValueFactory = _ => "none",
         };
+        var descriptorSetOpt = new Option<string?>("--grpc-descriptor-set")
+        {
+            Description = "Path to a compiled gRPC descriptor set (`protoc --descriptor_set_out=api.protoset --include_imports`), for a server that does not answer Server Reflection — the recommended production state. Ignored by every other protocol."
+        };
         var protocolOpt = new Option<string?>("--protocol")
         {
             Description = "Protocol plugin id for live-URL discovery (rest, grpc, graphql, websocket, mqtt, ...). Ignored for snapshot files. Guessed from the URL scheme when unset.",
@@ -73,6 +77,7 @@ internal static class DiffCommand
         diff.Add(outputOpt);
         diff.Add(failOnOpt);
         diff.Add(protocolOpt);
+        diff.Add(descriptorSetOpt);
         diff.SetAction(async (pr, ct) =>
             await RunDiffAsync(
                 pr.GetValue(baseOpt),
@@ -83,13 +88,15 @@ internal static class DiffCommand
                 pr.GetValue(protocolOpt),
                 ct,
                 pr.InvocationConfiguration.Output,
-                pr.InvocationConfiguration.Error).ConfigureAwait(false));
+                pr.InvocationConfiguration.Error,
+                pr.GetValue(descriptorSetOpt)).ConfigureAwait(false));
 
-        diff.Add(BuildSnapshot(outputOpt, protocolOpt));
+        diff.Add(BuildSnapshot(outputOpt, protocolOpt, descriptorSetOpt));
         return diff;
     }
 
-    private static Command BuildSnapshot(Option<string?> outputOpt, Option<string?> protocolOpt)
+    private static Command BuildSnapshot(
+        Option<string?> outputOpt, Option<string?> protocolOpt, Option<string?> descriptorSetOpt)
     {
         var snapshot = new Command(
             "snapshot",
@@ -103,6 +110,7 @@ internal static class DiffCommand
         snapshot.Add(urlArg);
         snapshot.Add(outputOpt);
         snapshot.Add(protocolOpt);
+        snapshot.Add(descriptorSetOpt);
         snapshot.SetAction(async (pr, ct) =>
             await RunSnapshotAsync(
                 pr.GetValue(urlArg) ?? "",
@@ -110,7 +118,8 @@ internal static class DiffCommand
                 pr.GetValue(protocolOpt),
                 ct,
                 pr.InvocationConfiguration.Output,
-                pr.InvocationConfiguration.Error).ConfigureAwait(false));
+                pr.InvocationConfiguration.Error,
+                pr.GetValue(descriptorSetOpt)).ConfigureAwait(false));
 
         return snapshot;
     }
@@ -120,7 +129,8 @@ internal static class DiffCommand
     internal static async Task<int> RunDiffAsync(
         string? baseSource, string? headSource, string? format, string? output,
         string failOn, string? protocolId,
-        CancellationToken ct, TextWriter? stdout = null, TextWriter? stderr = null)
+        CancellationToken ct, TextWriter? stdout = null, TextWriter? stderr = null,
+        string? descriptorSetPath = null)
     {
         var outW = stdout ?? Console.Out;
         var errW = stderr ?? Console.Error;
@@ -132,9 +142,11 @@ internal static class DiffCommand
             return 2;
         }
 
-        var before = await CliSchemaSnapshot.ResolveAsync(baseSource, protocolId, errW, ct).ConfigureAwait(false);
+        var before = await CliSchemaSnapshot.ResolveAsync(
+            baseSource, protocolId, errW, ct, descriptorSetPath).ConfigureAwait(false);
         if (before is null) return 1;
-        var after = await CliSchemaSnapshot.ResolveAsync(headSource, protocolId, errW, ct).ConfigureAwait(false);
+        var after = await CliSchemaSnapshot.ResolveAsync(
+            headSource, protocolId, errW, ct, descriptorSetPath).ConfigureAwait(false);
         if (after is null) return 1;
 
         var delta = BowireSchemaDiff.Compute(before, after);
@@ -149,7 +161,8 @@ internal static class DiffCommand
 
     internal static async Task<int> RunSnapshotAsync(
         string url, string? output, string? protocolId,
-        CancellationToken ct, TextWriter? stdout = null, TextWriter? stderr = null)
+        CancellationToken ct, TextWriter? stdout = null, TextWriter? stderr = null,
+        string? descriptorSetPath = null)
     {
         var outW = stdout ?? Console.Out;
         var errW = stderr ?? Console.Error;
@@ -160,7 +173,8 @@ internal static class DiffCommand
             return 2;
         }
 
-        var services = await CliSchemaSnapshot.DiscoverAsync(url, protocolId, errW, ct).ConfigureAwait(false);
+        var services = await CliSchemaSnapshot.DiscoverAsync(
+            url, protocolId, errW, ct, descriptorSetPath).ConfigureAwait(false);
         if (services is null) return 1;
 
         var json = JsonSerializer.Serialize(services, CliSchemaSnapshot.Json);

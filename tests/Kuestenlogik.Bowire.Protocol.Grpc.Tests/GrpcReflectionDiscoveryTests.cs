@@ -20,7 +20,7 @@ namespace Kuestenlogik.Bowire.Protocol.Grpc.Tests;
 /// parser path. We host a minimal Kestrel app that serves
 /// <see cref="ReflectionServiceImpl"/> against synthetic
 /// <see cref="FileDescriptorSet"/>s and let
-/// <see cref="BowireGrpcProtocol.DiscoverAsync"/> walk the wire — same
+/// <see cref="BowireGrpcProtocol.DiscoverAsync(string, bool, System.Threading.CancellationToken)"/> walk the wire — same
 /// surface the production workbench uses, no live external server.
 ///
 /// Sharing the CWD-serialised collection because WebApplicationBuilder

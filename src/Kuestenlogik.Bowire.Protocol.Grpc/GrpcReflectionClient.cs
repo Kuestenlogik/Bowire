@@ -28,7 +28,10 @@ internal sealed class GrpcReflectionClient : IGrpcDescriptorSource
     private readonly bool _showInternalServices;
     private readonly MtlsHandlerOwner? _mtlsOwner;
 
-    private static readonly HashSet<string> InternalServices =
+    // Shared with GrpcDescriptorSetSource: a descriptor set built with
+    // --include_imports carries these too, and showInternalServices must mean
+    // the same thing whichever source answered.
+    internal static readonly HashSet<string> InternalServices =
     [
         "grpc.reflection.v1alpha.ServerReflection",
         "grpc.reflection.v1.ServerReflection",
@@ -91,33 +94,57 @@ internal sealed class GrpcReflectionClient : IGrpcDescriptorSource
     /// <summary>
     /// Lists all gRPC services available on the server via reflection.
     /// </summary>
+    /// <remarks>
+    /// A server with no reflection service answers <c>Unimplemented</c>, and
+    /// that is not a failure of this call — it is the answer. Returning an
+    /// empty list says so. It used to escape as a raw
+    /// <c>Status(StatusCode="Unimplemented", Detail="Service is
+    /// unimplemented.")</c>, which reads as though the service the caller
+    /// asked about were missing, and reached the operator through every
+    /// discovery surface at once: `bowire list` printed it instead of a
+    /// diagnosis, the security scanner recorded the target as UNREACHABLE
+    /// rather than as a hardened server, and the workbench sidebar showed an
+    /// error where "nothing discovered" was the truth.
+    /// <para>
+    /// Only <c>Unimplemented</c>. Every other status still throws: a refused
+    /// connection or an expired certificate is a failure to reach the server,
+    /// and reporting those as "no services" would call a broken target clean.
+    /// </para>
+    /// </remarks>
     public async Task<List<BowireServiceInfo>> ListServicesAsync(CancellationToken ct = default)
     {
         var services = new List<BowireServiceInfo>();
 
-        using var call = _client.ServerReflectionInfo(cancellationToken: ct);
-
-        await call.RequestStream.WriteAsync(new ServerReflectionRequest
+        try
         {
-            ListServices = ""
-        }, ct);
+            using var call = _client.ServerReflectionInfo(cancellationToken: ct);
 
-        await call.RequestStream.CompleteAsync();
-
-        await foreach (var response in call.ResponseStream.ReadAllAsync(ct))
-        {
-            if (response.ListServicesResponse is null)
-                continue;
-
-            foreach (var svc in response.ListServicesResponse.Service)
+            await call.RequestStream.WriteAsync(new ServerReflectionRequest
             {
-                if (!_showInternalServices && InternalServices.Contains(svc.Name))
+                ListServices = ""
+            }, ct);
+
+            await call.RequestStream.CompleteAsync();
+
+            await foreach (var response in call.ResponseStream.ReadAllAsync(ct))
+            {
+                if (response.ListServicesResponse is null)
                     continue;
 
-                var serviceInfo = await GetServiceInfoAsync(svc.Name, ct);
-                if (serviceInfo is not null)
-                    services.Add(serviceInfo);
+                foreach (var svc in response.ListServicesResponse.Service)
+                {
+                    if (!_showInternalServices && InternalServices.Contains(svc.Name))
+                        continue;
+
+                    var serviceInfo = await GetServiceInfoAsync(svc.Name, ct);
+                    if (serviceInfo is not null)
+                        services.Add(serviceInfo);
+                }
             }
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.Unimplemented)
+        {
+            return [];
         }
 
         return services.OrderBy(s => s.Name).ToList();
@@ -246,7 +273,14 @@ internal sealed class GrpcReflectionClient : IGrpcDescriptorSource
         return result;
     }
 
-    private static BowireServiceInfo? BuildServiceInfo(
+    /// <remarks>
+    /// Internal rather than private so a caller-supplied descriptor set
+    /// produces byte-identical service info to reflection's. Two mappings from
+    /// descriptor to <see cref="BowireServiceInfo"/> would drift, and the
+    /// drift would show up as a sidebar that renders differently depending on
+    /// where the schema came from.
+    /// </remarks>
+    internal static BowireServiceInfo? BuildServiceInfo(
         string serviceName, List<FileDescriptorProto> fileDescriptors)
     {
         // Find the service definition across all file descriptors

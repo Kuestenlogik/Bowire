@@ -63,6 +63,10 @@ public sealed class ScanCliCommand : IBowireCliCommand
             Description = "A SECOND identity's auth header(s), same shape as --auth-header. Enables the OWASP API1 BOLA check: the object at --target is read as identity A (--auth-header) and then as identity B; if B can read A's object while anonymous access is blocked, object-level authorization is missing. Repeatable.",
             AllowMultipleArgumentsPerToken = false,
         };
+        var grpcDescriptorSetOpt = new Option<string>("--grpc-descriptor-set")
+        {
+            Description = "Path to a compiled gRPC descriptor set (`protoc --descriptor_set_out=api.protoset --include_imports`). Lets the gRPC checks run against a server with Server Reflection disabled — the recommended production state, which until now left the transport-authentication check with no method to call. The set names what to test; it is never treated as evidence of what the server exposes, and it is stripped before anything reaches the wire.",
+        };
         var activeOpt = new Option<bool>("--active") { Description = "Enable the ACTIVE (mutating / aggressive) probe tier (#395–#400) — OFF by default. Active probes may PUBLISH to the target (MQTT retained-message poisoning), hold connections open, or open many streams. Each namespaces + cleans up its side effects, but this deliberately mutates the target: use only against systems you are authorised to test." };
         var activeDurationOpt = new Option<int>("--active-duration") { Description = "Wall-clock budget in seconds for time-based active probes (slow-loris / slow-consumption). Default 15." };
         var activeConcurrencyOpt = new Option<int>("--active-concurrency") { Description = "Concurrency budget (N) for fan-out active probes (gRPC concurrent-stream). The verdict is honest about the number reached. Default 100." };
@@ -93,6 +97,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
         scan.Add(scopeOpt);
         scan.Add(authHeaderOpt);
         scan.Add(authHeaderBOpt);
+        scan.Add(grpcDescriptorSetOpt);
         scan.Add(activeOpt);
         scan.Add(activeDurationOpt);
         scan.Add(activeConcurrencyOpt);
@@ -123,6 +128,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
                 Scope = pr.GetValue(scopeOpt) ?? Array.Empty<string>(),
                 AuthHeaders = pr.GetValue(authHeaderOpt) ?? Array.Empty<string>(),
                 AuthHeadersB = pr.GetValue(authHeaderBOpt) ?? Array.Empty<string>(),
+                GrpcDescriptorSetPath = pr.GetValue(grpcDescriptorSetOpt),
                 Active = pr.GetValue(activeOpt),
                 ActiveDurationSeconds = pr.GetValue(activeDurationOpt) is int d and > 0 ? d : 15,
                 ActiveConcurrency = pr.GetValue(activeConcurrencyOpt) is int c and > 0 ? c : 100,

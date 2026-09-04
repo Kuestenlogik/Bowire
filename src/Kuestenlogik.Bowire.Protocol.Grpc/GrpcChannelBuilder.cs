@@ -45,13 +45,13 @@ internal static class GrpcChannelBuilder
 {
     /// <summary>
     /// Query-string marker the discovery endpoint appends to a server URL
-    /// when the user typed <c>grpcweb@&lt;url&gt;</c>. <see cref="IBowireProtocol.DiscoverAsync"/>
+    /// when the user typed <c>grpcweb@&lt;url&gt;</c>. <see cref="IBowireProtocol.DiscoverAsync(string, bool, System.Threading.CancellationToken)"/>
     /// takes no metadata dict, so we piggy-back on the URL instead — symmetric
     /// to the <c>__bowireQuery__</c> / <c>__bowireMtls__</c> metadata markers.
     /// The plugin strips this parameter before handing the URL to
     /// <c>GrpcChannel.ForAddress</c> so the gRPC stack never sees it.
     /// </summary>
-    public const string TransportUrlMarker = "__bowireGrpcTransport";
+    public const string TransportUrlMarker = BowireMetadataKeys.GrpcTransport;
     /// <summary>
     /// Build a <see cref="GrpcChannel"/> for the given transport mode.
     /// The <paramref name="innerHandler"/> is the inner pipeline (typically

@@ -73,15 +73,39 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireProtocolService
         // via the `grpcweb@` hint because DiscoverAsync has no metadata bag.
         var (cleanUrl, transportMode) = GrpcChannelBuilder.ExtractTransportFromUrl(serverUrl);
 
-        // Discovery doesn't currently carry per-environment metadata, so
-        // mTLS-protected gRPC servers can't be reflected against today.
-        // Once IBowireProtocol.DiscoverAsync grows a metadata parameter
-        // (planned alongside SSE-MCP / streamable discovery), the same
-        // MtlsConfig.TryParseFromMetadata path below kicks in here too.
         using var client = new GrpcReflectionClient(
             cleanUrl, showInternalServices, mtlsConfig: null,
             configuration: _configuration, transportMode: transportMode);
         return await client.ListServicesAsync(ct);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The overload that can answer for a server with reflection switched off:
+    /// a descriptor set in the metadata is enumerated directly, and mTLS
+    /// configuration now reaches discovery the same way it reaches invoke.
+    /// The parameterless overload above stays as it was, because the workbench
+    /// sidebar calls it on every URL change and has no metadata to give.
+    /// </remarks>
+    public async Task<List<BowireServiceInfo>> DiscoverAsync(
+        string serverUrl, bool showInternalServices,
+        IReadOnlyDictionary<string, string>? metadata, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(serverUrl)) return [];
+
+        var (cleanUrl, urlTransport) = GrpcChannelBuilder.ExtractTransportFromUrl(serverUrl);
+        var asDictionary = metadata as Dictionary<string, string>
+            ?? metadata?.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
+
+        var mtlsConfig = MtlsConfig.TryParseFromMetadata(asDictionary);
+        // A transport named in the metadata beats one stitched onto the URL:
+        // the URL hint exists only because this overload did not.
+        var metadataTransport = GrpcChannelBuilder.ResolveMode(asDictionary);
+        var transportMode = metadataTransport != GrpcTransportMode.Native ? metadataTransport : urlTransport;
+
+        using var source = GrpcDescriptorSet.CreateSource(
+            metadata, cleanUrl, showInternalServices, mtlsConfig, _configuration, transportMode);
+        return await source.ListServicesAsync(ct);
     }
 
     public async Task<InvokeResult> InvokeAsync(

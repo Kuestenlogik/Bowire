@@ -42,6 +42,31 @@ public interface IBowireProtocol
     /// <summary>Discover available services and methods.</summary>
     Task<List<BowireServiceInfo>> DiscoverAsync(string serverUrl, bool showInternalServices, CancellationToken ct = default);
 
+    /// <summary>
+    /// Same, with the per-call metadata <see cref="InvokeAsync"/> already
+    /// receives.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Discovery was the one operation with no way to carry configuration, and
+    /// it is the operation that decides whether anything else can run at all.
+    /// A gRPC server with reflection switched off could be invoked once a
+    /// descriptor set was supplied, but could not be enumerated — so a scan
+    /// could not find the methods it was meant to test, and mTLS-protected
+    /// servers could not be reflected against at all.
+    /// </para>
+    /// <para>
+    /// A default implementation that drops the metadata, so a plugin with no
+    /// per-environment configuration to honour stays exactly as it is. Only a
+    /// plugin that already reads a marker out of <c>metadata</c> elsewhere has
+    /// any reason to override it.
+    /// </para>
+    /// </remarks>
+    Task<List<BowireServiceInfo>> DiscoverAsync(
+        string serverUrl, bool showInternalServices,
+        IReadOnlyDictionary<string, string>? metadata, CancellationToken ct = default)
+        => DiscoverAsync(serverUrl, showInternalServices, ct);
+
     /// <summary>Invoke a unary or client-streaming call.</summary>
     Task<InvokeResult> InvokeAsync(string serverUrl, string service, string method,
         List<string> jsonMessages, bool showInternalServices,

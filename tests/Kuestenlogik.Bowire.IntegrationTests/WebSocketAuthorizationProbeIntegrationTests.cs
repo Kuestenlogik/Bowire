@@ -41,9 +41,13 @@ public sealed class WebSocketAuthorizationProbeIntegrationTests
         await using var host = await PluginTestHost.StartAsync(MapAnyCredentialAccepted);
         var wsUrl = WsUrl(host, "/ws/terminal");
 
-        var findings = await new WebSocketAuthorizationProbe().RunAsync(
-            wsUrl, new BowireWebSocketProtocol(),
-            [$"Authorization: {TokenA}"], [$"Authorization: {TokenB}"], ct);
+        var findings = await new WebSocketAuthorizationProbe().RunAsync(new OwaspProbeContext
+            {
+                Target = wsUrl,
+                Protocol = new BowireWebSocketProtocol(),
+                AuthHeaders = [$"Authorization: {TokenA}"],
+                AuthHeadersB = [$"Authorization: {TokenB}"],
+            }, ct);
 
         var f = Assert.Single(findings);
         Assert.Equal(ScanFindingStatus.Vulnerable, f.Status);
@@ -60,9 +64,13 @@ public sealed class WebSocketAuthorizationProbeIntegrationTests
         await using var host = await PluginTestHost.StartAsync(MapOnlyAliceAccepted);
         var wsUrl = WsUrl(host, "/ws/terminal");
 
-        var findings = await new WebSocketAuthorizationProbe().RunAsync(
-            wsUrl, new BowireWebSocketProtocol(),
-            [$"Authorization: {TokenA}"], [$"Authorization: {TokenB}"], ct);
+        var findings = await new WebSocketAuthorizationProbe().RunAsync(new OwaspProbeContext
+            {
+                Target = wsUrl,
+                Protocol = new BowireWebSocketProtocol(),
+                AuthHeaders = [$"Authorization: {TokenA}"],
+                AuthHeadersB = [$"Authorization: {TokenB}"],
+            }, ct);
 
         var f = Assert.Single(findings);
         Assert.Equal(ScanFindingStatus.Safe, f.Status);
@@ -79,9 +87,13 @@ public sealed class WebSocketAuthorizationProbeIntegrationTests
         await using var host = await PluginTestHost.StartAsync(MapEveryoneAccepted);
         var wsUrl = WsUrl(host, "/ws/terminal");
 
-        var findings = await new WebSocketAuthorizationProbe().RunAsync(
-            wsUrl, new BowireWebSocketProtocol(),
-            [$"Authorization: {TokenA}"], [$"Authorization: {TokenB}"], ct);
+        var findings = await new WebSocketAuthorizationProbe().RunAsync(new OwaspProbeContext
+            {
+                Target = wsUrl,
+                Protocol = new BowireWebSocketProtocol(),
+                AuthHeaders = [$"Authorization: {TokenA}"],
+                AuthHeadersB = [$"Authorization: {TokenB}"],
+            }, ct);
 
         var f = Assert.Single(findings);
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
@@ -99,8 +111,12 @@ public sealed class WebSocketAuthorizationProbeIntegrationTests
         await using var host = await PluginTestHost.StartAsync(MapAnyCredentialAccepted);
         var wsUrl = WsUrl(host, "/ws/terminal");
 
-        var findings = await new WebSocketAuthorizationProbe().RunAsync(
-            wsUrl, new BowireWebSocketProtocol(), [$"Authorization: {TokenA}"], [], ct);
+        var findings = await new WebSocketAuthorizationProbe().RunAsync(new OwaspProbeContext
+            {
+                Target = wsUrl,
+                Protocol = new BowireWebSocketProtocol(),
+                AuthHeaders = [$"Authorization: {TokenA}"],
+            }, ct);
 
         Assert.Empty(findings);
     }
@@ -112,9 +128,13 @@ public sealed class WebSocketAuthorizationProbeIntegrationTests
         await using var host = await PluginTestHost.StartAsync(MapAnyCredentialAccepted);
         var wsUrl = WsUrl(host, "/ws/terminal");
 
-        var findings = await new WebSocketAuthorizationProbe().RunAsync(
-            wsUrl, new BowireWebSocketProtocol(),
-            [$"Authorization: {TokenA}"], [$"Authorization: {TokenA}"], ct);
+        var findings = await new WebSocketAuthorizationProbe().RunAsync(new OwaspProbeContext
+            {
+                Target = wsUrl,
+                Protocol = new BowireWebSocketProtocol(),
+                AuthHeaders = [$"Authorization: {TokenA}"],
+                AuthHeadersB = [$"Authorization: {TokenA}"],
+            }, ct);
 
         var f = Assert.Single(findings);
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);

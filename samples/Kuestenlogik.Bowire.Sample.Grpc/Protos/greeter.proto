@@ -22,6 +22,13 @@ service Greeter {
   // Duplex. One reply per request, both directions flowing
   // independently over the same channel.
   rpc Converse (stream HelloRequest) returns (stream HelloReply);
+
+  // Unary, and named so a reader can tell at a glance that it changes
+  // nothing. Bowire's own security scanner will only invoke a method
+  // whose name says it is read-only (Get* / List* / Health* / ...), so
+  // without one here the sample could not exercise the gRPC
+  // transport-authentication check it exists to demonstrate.
+  rpc GetGreeting (GetGreetingRequest) returns (HelloReply);
 }
 
 // Salutation language. proto3 mandates the zero value; the server reads
@@ -62,6 +69,13 @@ message HelloReply {
 
   // The `x-caller` request header, or "anonymous" when it was absent.
   string caller = 3;
+}
+
+// Every field optional, so an empty {} is a valid request. That is what
+// a scanner sends when probing whether a method answers without a
+// credential, and a method that rejects {} tells it nothing.
+message GetGreetingRequest {
+  Language language = 1;
 }
 
 // The single response SayHelloBatch sends after the client stream ends.
