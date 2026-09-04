@@ -249,6 +249,30 @@ Both transports expose the same toolset. Top-level tools include:
 
 The full tool list is generated from the discovered `BowireMcpTools` class via the ModelContextProtocol C# SDK — call `tools/list` on the running server to see the current schemas.
 
+### Resource surface (roles 3 + 4)
+
+Tools *do* things; resources are things an agent can read. Call `resources/list` on the running server for the live set.
+
+| Resource | What it holds |
+|----------|---------------|
+| `bowire://workspaces` | Every workspace this identity has — `id`, `name`, `gitNative`, `storageRoot`. **The index the workspace-scoped resources are addressed through.** |
+| `bowire://workspaces/{workspaceId}/collections` | Saved request collections in that workspace. |
+| `bowire://workspaces/{workspaceId}/recordings` | Recordings captured in that workspace. |
+| `bowire://workspaces/{workspaceId}/flows` | Visual flows saved in that workspace. |
+| `bowire://collections`, `bowire://recordings`, `bowire://flows` | The **workspace-less** files, for a host that never adopted workspaces. |
+| `bowire://collections/{id}`, `bowire://recordings/{id}`, `bowire://flows/{id}` | One item by id, from the workspace-less files. |
+| `bowire://plugins` | Sibling plugins in the host's plugin directory. |
+
+#### Why a workspace has to be named
+
+An agent asking for `bowire://flows` sends a URI and nothing else. The workbench sends `?workspaceId=` on every call it makes, but a resource read carries no such context, and Bowire has no server-side notion of "the workspace that is currently open" — the active selection lives in the browser, deliberately, because two windows may honestly be looking at different workspaces.
+
+So the workspace is named in the URI, and `bowire://workspaces` exists to make the ids discoverable. That index only became possible once the workspace list itself moved out of the browser and into the identity's storage slot; before that, nothing on the server knew a workspace existed.
+
+The consequence worth knowing: **on a host that uses workspaces, the workspace-less resources are the pre-workspace files** — usually stale, often empty. They still answer, because a host that never adopted workspaces has its data exactly there and breaking that would trade one wrong answer for another. Read `bowire://workspaces` first; an empty list means the workspace-less resources are the right ones.
+
+An unknown workspace id answers with a message naming the index rather than with an empty document. "No data" and "wrong id" are indistinguishable to whoever reads the result, and that ambiguity is what this surface previously got wrong.
+
 ### Security warning (roles 3 + 4)
 
 The MCP server lets an agent drive any URL that's allowlisted (or any URL at all if no allowlist is configured). Treat it the same way you'd treat a CLI with shell access: only run it against trusted target systems, and prefer the `AllowedServerUrls` allowlist for non-localhost production hosts.
