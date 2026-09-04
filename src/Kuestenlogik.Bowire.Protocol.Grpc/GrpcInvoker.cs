@@ -23,7 +23,9 @@ namespace Kuestenlogik.Bowire;
 internal sealed class GrpcInvoker : IDisposable
 {
     private readonly GrpcChannel _channel;
-    private readonly GrpcReflectionClient _reflectionClient;
+    // The seam, not the reflection client: a caller-supplied descriptor set
+    // serves the same request without a round trip (#653).
+    private readonly IGrpcDescriptorSource _reflectionClient;
     private readonly MtlsHandlerOwner? _mtlsOwner;
     private readonly GrpcTransportMode _transportMode;
     private readonly string _serverUrl;
@@ -33,7 +35,7 @@ internal sealed class GrpcInvoker : IDisposable
 
     public GrpcInvoker(
         string serverUrl,
-        GrpcReflectionClient reflectionClient,
+        IGrpcDescriptorSource reflectionClient,
         MtlsConfig? mtlsConfig = null,
         IConfiguration? configuration = null,
         GrpcTransportMode transportMode = GrpcTransportMode.Native)
@@ -284,12 +286,37 @@ internal sealed class GrpcInvoker : IDisposable
     private async Task<ResolvedMethod> ResolveMethodAsync(
         string serviceName, string methodName, CancellationToken ct)
     {
-        // Get all file descriptor protos from reflection
-        var fileDescProtos = await _reflectionClient.ResolveAllDescriptorsAsync(serviceName, ct);
+        // Descriptors from wherever the caller's configuration points — the
+        // server's reflection service, or a set they supplied (#653).
+        //
+        // A server without the reflection service answers Unimplemented, and
+        // that message — "Service is unimplemented" — reads as though the
+        // *called* service were missing. It is the single most common way to
+        // arrive here and it pointed the reader at the wrong thing, so it is
+        // translated into the one sentence that helps.
+        List<FileDescriptorProto> fileDescProtos;
+        try
+        {
+            fileDescProtos = await _reflectionClient.ResolveAllDescriptorsAsync(serviceName, ct);
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.Unimplemented)
+        {
+            throw new InvalidOperationException(
+                $"No descriptors for '{serviceName}'. The server does not offer gRPC Server Reflection "
+                + "(commonly disabled in production), and no descriptor set was supplied. "
+                + "Pass one built with `protoc --descriptor_set_out=api.protoset --include_imports`.", ex);
+        }
 
         if (fileDescProtos.Count == 0)
+        {
+            // The old wording blamed reflection and named an internal concept,
+            // which left the one person who could fix it — whoever knows the
+            // server has reflection off — with nothing to act on.
             throw new InvalidOperationException(
-                $"gRPC Reflection returned no file descriptors for '{serviceName}'.");
+                $"No descriptors for '{serviceName}'. The server did not answer gRPC Server Reflection "
+                + "(commonly disabled in production), and no descriptor set was supplied. "
+                + "Pass one built with `protoc --descriptor_set_out=api.protoset --include_imports`.");
+        }
 
         // Build FileDescriptors with proper dependency resolution
         var fileDescriptors = BuildFileDescriptors(fileDescProtos);

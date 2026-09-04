@@ -387,12 +387,12 @@ public sealed class GrpcCertAndSlowPathTests
     [Fact]
     public async Task GrpcInvoker_ResolveMethodAsync_Throws_When_Reflection_Returns_No_Descriptors()
     {
-        // Drives the InvalidOperationException at GrpcInvoker.cs
-        // lines 290-292 (empty fileDescProtos guard) via the reflection
-        // pathway: the discovery server returns "no such service" so
-        // the BFS resolves to zero descriptors. The plugin's
+        // Drives the empty-descriptors guard in ResolveMethodAsync via
+        // the reflection pathway: the discovery server returns "no such
+        // service" so the BFS resolves to zero descriptors. The plugin's
         // InvokeAsync wraps the exception cleanly — we assert on the
-        // message.
+        // message. (Line numbers left out on purpose; the previous ones
+        // had already drifted.)
         var fdProto = BuildSingleServiceFileDescriptor("demo.OnlyOne", "DoSomething");
         await using var server = await ReflectionOnlyServer.StartAsync(fdProto);
 
@@ -406,11 +406,13 @@ public sealed class GrpcCertAndSlowPathTests
                 showInternalServices: false,
                 metadata: null,
                 cts.Token));
-        // Either "no file descriptors" (line 291) or "not found"
-        // (line 314) — both are acceptable failure shapes for the
-        // unknown-service path.
+        // Either the no-descriptors message or "not found" — both are
+        // acceptable failure shapes for the unknown-service path. The
+        // wording changed with #653: it now names what to supply instead
+        // of only reporting that reflection came back empty, so the
+        // assertion follows it rather than pinning the old phrasing.
         Assert.True(
-            ex.Message.Contains("no file descriptors", StringComparison.Ordinal)
+            ex.Message.Contains("No descriptors for", StringComparison.Ordinal)
             || ex.Message.Contains("not found", StringComparison.Ordinal),
             $"Unexpected error message: {ex.Message}");
     }

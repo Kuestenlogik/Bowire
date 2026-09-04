@@ -163,13 +163,35 @@ internal sealed class GrpcBowireChannel : IBowireChannel
             return null;
         }
 
-        var sanitisedMetadata = GrpcChannelBuilder.StripTransportMarker(metadata);
-        using var reflectionClient = new GrpcReflectionClient(
-            serverUrl, showInternalServices, mtlsConfig: null, configuration: configuration);
+        var afterDescriptors = GrpcDescriptorSet.StripMarker(metadata);
+        var sanitisedMetadata = GrpcChannelBuilder.StripTransportMarker(afterDescriptors);
+        using var reflectionClient = GrpcDescriptorSet.CreateSource(
+            metadata, serverUrl, showInternalServices, mtlsConfig: null, configuration: configuration);
 
-        var fileDescProtos = await reflectionClient.ResolveAllDescriptorsAsync(serviceName, ct);
+        // Same translation as the unary path: Unimplemented here means the
+        // server has no reflection service, not that the service being called
+        // is missing (#653).
+        List<FileDescriptorProto> fileDescProtos;
+        try
+        {
+            fileDescProtos = await reflectionClient.ResolveAllDescriptorsAsync(serviceName, ct);
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.Unimplemented)
+        {
+            throw new InvalidOperationException(
+                $"No descriptors for '{serviceName}'. The server does not offer gRPC Server Reflection "
+                + "(commonly disabled in production), and no descriptor set was supplied. "
+                + "Pass one built with `protoc --descriptor_set_out=api.protoset --include_imports`.", ex);
+        }
         if (fileDescProtos.Count == 0)
-            throw new InvalidOperationException($"No file descriptors for '{serviceName}'.");
+        {
+            // Streaming had the identical hard dependency, so it gets the
+            // identical message: what is missing, and the two ways to supply it.
+            throw new InvalidOperationException(
+                $"No descriptors for '{serviceName}'. The server did not answer gRPC Server Reflection "
+                + "(commonly disabled in production), and no descriptor set was supplied. "
+                + "Pass one built with `protoc --descriptor_set_out=api.protoset --include_imports`.");
+        }
 
         var fileDescriptors = GrpcInvoker.BuildFileDescriptorsPublic(fileDescProtos);
         if (fileDescriptors.Count == 0)
