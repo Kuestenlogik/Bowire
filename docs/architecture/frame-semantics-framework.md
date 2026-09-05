@@ -778,6 +778,24 @@ window.BowireExtensions.register({
       // ctx.host          — { subscribeSse(url), fetch(url, init) }
       //                     fetch uses Bowire's auth + CSP context;
       //                     subscribeSse closes itself on unmount.
+      // ctx.prefs         — { get(key, fallback), set(key, value) }
+      //                     v1.1 additive (#238). Small JSON-shaped
+      //                     widget preferences, scoped to the active
+      //                     workspace AND namespaced by extension id.
+      //                     A widget bundle loads outside the core
+      //                     IIFE, so it can reach neither the
+      //                     workspace-key helper nor the active
+      //                     workspace id; without this it would have
+      //                     to re-derive the key format and then drift
+      //                     from it. Reads and writes are individually
+      //                     guarded (localStorage throws outright in
+      //                     private mode), and both degrade to the
+      //                     fallback rather than failing the mount.
+      //                     Being additive, a widget must tolerate its
+      //                     absence — the map widget substitutes an
+      //                     in-memory stub, so its trajectory toggle
+      //                     works for the session and simply does not
+      //                     survive a reload.
       // returns: () => void   — unmount cleanup
     }
   },
