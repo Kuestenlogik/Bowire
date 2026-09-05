@@ -12,16 +12,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
-**4/9 done** · 5 backlog
+**5/9 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [239](https://github.com/Kuestenlogik/Bowire/issues/239) | Bowire | [Map widget: time-scrubber + playback for accumulated streams](#issue-kuestenlogik-bowire-239) | ⬜ Backlog | `area:workbench` |
 | [240](https://github.com/Kuestenlogik/Bowire/issues/240) | Bowire | [Map widget: per-entity grouping via configurable track-id field](#issue-kuestenlogik-bowire-240) | ⬜ Backlog | `area:workbench` |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
-| [619](https://github.com/Kuestenlogik/Bowire/issues/619) | Bowire | [VS Code extension 1.0 — cut the release the code already justifies](#issue-kuestenlogik-bowire-619) | ⬜ Backlog | `area:workbench` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [238](https://github.com/Kuestenlogik/Bowire/issues/238) | Bowire | [Map widget: trajectory LineString between sequential frames](#issue-kuestenlogik-bowire-238) | ✅ Done | `area:workbench` |
+| [619](https://github.com/Kuestenlogik/Bowire/issues/619) | Bowire | [VS Code extension 1.0 — cut the release the code already justifies](#issue-kuestenlogik-bowire-619) | ✅ Done | `area:workbench` |
 | [642](https://github.com/Kuestenlogik/Bowire/issues/642) | Bowire | [MCP resources read the workspace-less files, so they answer with the wrong data](#issue-kuestenlogik-bowire-642) | ✅ Done | `area:mcp` |
 | [650](https://github.com/Kuestenlogik/Bowire/issues/650) | Bowire | [The correlation suggester gates on the field name before it weighs any evidence](#issue-kuestenlogik-bowire-650) | ✅ Done | `area:workbench` |
 | [655](https://github.com/Kuestenlogik/Bowire/issues/655) | Bowire | [CSP has no worker-src, so MapLibre's worker is blocked and the map never mounts](#issue-kuestenlogik-bowire-655) | ✅ Done | `area:security` |
@@ -136,12 +136,6 @@ Group stream frames by an explicit **track identifier** so the map can show N pa
 
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
 
-#### <a id="issue-kuestenlogik-bowire-619"></a>⬜ Backlog · [#619](https://github.com/Kuestenlogik/Bowire/issues/619) VS Code extension 1.0 — cut the release the code already justifies
-
-> `area:workbench`
-
-The extension has outgrown its version number. `#589` (resolve the CLI from a workspace tool manifest), `#590` (offer a managed download when none is installed) and `#591` (workspace-local storage) closed the last construction sites, and none of that has reached anybody: the Marketplace still serves … [[more]](https://github.com/Kuestenlogik/Bowire/issues/619)
-
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
 > `area:workbench`
@@ -153,6 +147,12 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 > `area:workbench`
 
 Add an optional **trajectory line** (MapLibre LineString layer) connecting sequential frames on the map widget, so a stream of position updates renders as a moving path instead of a scatter of disconnected dots. Default OFF (current behaviour); operator toggles it on per-method or per-session. [[more]](https://github.com/Kuestenlogik/Bowire/issues/238)
+
+#### <a id="issue-kuestenlogik-bowire-619"></a>✅ Done · [#619](https://github.com/Kuestenlogik/Bowire/issues/619) VS Code extension 1.0 — cut the release the code already justifies
+
+> `area:workbench`
+
+The extension has outgrown its version number. `#589` (resolve the CLI from a workspace tool manifest), `#590` (offer a managed download when none is installed) and `#591` (workspace-local storage) closed the last construction sites, and none of that has reached anybody: the Marketplace still serves … [[more]](https://github.com/Kuestenlogik/Bowire/issues/619)
 
 #### <a id="issue-kuestenlogik-bowire-642"></a>✅ Done · [#642](https://github.com/Kuestenlogik/Bowire/issues/642) MCP resources read the workspace-less files, so they answer with the wrong data
 
