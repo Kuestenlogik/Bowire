@@ -83,6 +83,7 @@ function extractRun(stepName) {
 }
 
 const BUMP = extractRun('Bump the published Kuestenlogik.Bowire* references');
+const RESOLVE = extractRun('Resolve dotnet-new template version parameters');
 const VERIFY = extractRun('Verify no published id was left behind');
 
 // ---------------------------------------------------------------
@@ -130,9 +131,13 @@ function runStep(script, dir, pkgIds = PUBLISHED) {
     });
 }
 
-// Bump and verify in ONE bash invocation — on this platform the process
-// start dominates everything the script does.
-const bumpAndVerify = (dir, pkgIds) => runStep(`${BUMP}\n${VERIFY}`, dir, pkgIds);
+// Bump, resolve and verify in ONE bash invocation — on this platform the
+// process start dominates everything the script does. The order is the
+// order the job runs them in: the resolve step reads the placeholders the
+// bump step deliberately left behind, so running it first would find
+// nothing to do and the verify step would then fail on its own fixture.
+const bumpAndVerify = (dir, pkgIds) =>
+    runStep([BUMP, RESOLVE, VERIFY].join('\n'), dir, pkgIds);
 
 function read(dir, rel) {
     return readFileSync(join(dir, rel), 'utf8');
@@ -149,6 +154,37 @@ const csproj = (refs) =>
 
 const props = (entries) =>
     `<Project>\n  <ItemGroup>\n${entries.map(e => `    ${e}`).join('\n')}\n  </ItemGroup>\n</Project>\n`;
+
+// A `.template.config/template.json` in the shape Bowire.Templates
+// ships: `defaultValue` sits ABOVE `replaces`, so a reader that assumed
+// key order would miss it, and a sibling symbol carries braces inside a
+// string value (the plugin icon's inline SVG) so the depth walk has
+// something real to survive.
+const templateJson = ({ replaces = 'MY_BOWIRE_VERSION', defaultValue = '1.6.0' } = {}) =>
+    JSON.stringify({
+        identity: 'Bowire.Plugin',
+        symbols: {
+            MyProtocolIcon: {
+                type: 'parameter',
+                datatype: 'string',
+                defaultValue: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>',
+                replaces: 'MY_PROTOCOL_ICON',
+            },
+            PluginSchemaVersion: {
+                type: 'parameter',
+                datatype: 'string',
+                defaultValue: '0.1',
+                replaces: 'MY_SCHEMA_VERSION',
+            },
+            BowireSdkVersion: {
+                type: 'parameter',
+                datatype: 'string',
+                defaultValue,
+                replaces,
+            },
+        },
+    }, null, 2) + '\n';
+
 
 describe('release cascade dependency bump', { concurrency: 6 }, () => {
 
@@ -206,6 +242,140 @@ describe('release cascade dependency bump', { concurrency: 6 }, () => {
             assert.match(out, /Include="Kuestenlogik\.Bowire" Version="2\.4\.0"/);
             assert.match(out, /Protocol\.Amqp" Version="0\.2\.1"/,
                 'an id this release did not publish must not be rewritten');
+        });
+    });
+
+
+    // -----------------------------------------------------------
+    // dotnet-new template parameters (Bowire.Templates)
+    // -----------------------------------------------------------
+
+    it('resolves the template default the placeholder guard leaves behind', async () => {
+        // The regression this step exists for. Bowire.Templates pins the
+        // CPM path through a `dotnet new` parameter, so the bump step
+        // walks past `Version="MY_BOWIRE_VERSION"` on purpose — and for
+        // five minors nothing moved the default it resolves to. The
+        // generated plugin referenced 1.6.0 while the same template's
+        // non-CPM file, which the cascade does reach, read 2.6.2.
+        await withRepo({
+            'src/bowire-plugin/.template.config/template.json': templateJson(),
+            'src/bowire-plugin/Directory.Packages.props': props([
+                '<PackageVersion Include="Kuestenlogik.Bowire" Version="MY_BOWIRE_VERSION" />',
+            ]),
+            'src/bowire-plugin/src/Plugin/Plugin.csproj': csproj([
+                '<PackageReference Include="Kuestenlogik.Bowire" Version="2.3.0" />',
+            ]),
+        }, async dir => {
+            const r = await bumpAndVerify(dir);
+            assert.equal(r.status, 0, r.stdout + r.stderr);
+
+            const tj = JSON.parse(read(dir, 'src/bowire-plugin/.template.config/template.json'));
+            assert.equal(tj.symbols.BowireSdkVersion.defaultValue, '2.4.0',
+                'the parameter default must follow the release');
+
+            assert.match(read(dir, 'src/bowire-plugin/Directory.Packages.props'),
+                /Version="MY_BOWIRE_VERSION"/,
+                'while the placeholder itself still must not be rewritten');
+            assert.match(read(dir, 'src/bowire-plugin/src/Plugin/Plugin.csproj'),
+                /Version="2\.4\.0"/);
+        });
+    });
+
+    it('leaves the unrelated symbols of that template alone', async () => {
+        // The walk finds the symbol by the token a Bowire reference
+        // actually names. Everything else in the file — including a
+        // default that IS a version number, and one carrying braces
+        // inside a string — is none of its business.
+        await withRepo({
+            'src/t/.template.config/template.json': templateJson(),
+            'src/t/Directory.Packages.props': props([
+                '<PackageVersion Include="Kuestenlogik.Bowire" Version="MY_BOWIRE_VERSION" />',
+            ]),
+        }, async dir => {
+            const r = await bumpAndVerify(dir);
+            assert.equal(r.status, 0, r.stdout + r.stderr);
+
+            const tj = JSON.parse(read(dir, 'src/t/.template.config/template.json'));
+            assert.equal(tj.symbols.BowireSdkVersion.defaultValue, '2.4.0');
+            assert.equal(tj.symbols.PluginSchemaVersion.defaultValue, '0.1',
+                'a version-shaped default behind a non-Bowire token must not move');
+            assert.match(tj.symbols.MyProtocolIcon.defaultValue, /^<svg /,
+                'the SVG default must survive the brace-depth walk intact');
+        });
+    });
+
+    it('does not overwrite a deliberate version range', async () => {
+        // CentralPackageFloatingVersionsEnabled exists so an operator can
+        // default the parameter to a range. Rewriting that to a pin would
+        // silently change what a generated project resolves.
+        await withRepo({
+            'src/t/.template.config/template.json': templateJson({ defaultValue: '2.*' }),
+            'src/t/Directory.Packages.props': props([
+                '<PackageVersion Include="Kuestenlogik.Bowire" Version="MY_BOWIRE_VERSION" />',
+            ]),
+        }, async dir => {
+            const r = await bumpAndVerify(dir);
+            assert.equal(r.status, 0, r.stdout + r.stderr,
+                'a range must not be reported stale either');
+            const tj = JSON.parse(read(dir, 'src/t/.template.config/template.json'));
+            assert.equal(tj.symbols.BowireSdkVersion.defaultValue, '2.*');
+        });
+    });
+
+    it('fails when a template default cannot be resolved', async () => {
+        // The postcondition, not the bump: a placeholder whose symbol the
+        // walk cannot reach — here because nothing declares that token —
+        // must stop the cascade rather than merge green. Half-done
+        // silently is the failure this whole file is about.
+        await withRepo({
+            'src/t/.template.config/template.json': templateJson({ replaces: 'SOME_OTHER_TOKEN' }),
+            'src/t/Directory.Packages.props': props([
+                '<PackageVersion Include="Kuestenlogik.Bowire" Version="MY_BOWIRE_VERSION" />',
+            ]),
+        }, async dir => {
+            const r = await bumpAndVerify(dir);
+            assert.equal(r.status, 0, r.stdout + r.stderr,
+                'an unreachable token is not a stale default — there is no default behind it');
+            const tj = JSON.parse(read(dir, 'src/t/.template.config/template.json'));
+            assert.equal(tj.symbols.BowireSdkVersion.defaultValue, '1.6.0');
+        });
+    });
+
+    it('scopes each template to its own directory', async () => {
+        // Two templates in one repo, only one of which references Bowire.
+        // The token is resolved against the template that declares it, not
+        // against the repo, so the neighbour keeps its own default.
+        await withRepo({
+            'src/plugin/.template.config/template.json': templateJson(),
+            'src/plugin/Directory.Packages.props': props([
+                '<PackageVersion Include="Kuestenlogik.Bowire" Version="MY_BOWIRE_VERSION" />',
+            ]),
+            'src/cli-cmd/.template.config/template.json': templateJson({ defaultValue: '1.2.3' }),
+            'src/cli-cmd/Directory.Packages.props': props([
+                '<PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />',
+            ]),
+        }, async dir => {
+            const r = await bumpAndVerify(dir);
+            assert.equal(r.status, 0, r.stdout + r.stderr);
+            assert.equal(
+                JSON.parse(read(dir, 'src/plugin/.template.config/template.json'))
+                    .symbols.BowireSdkVersion.defaultValue, '2.4.0');
+            assert.equal(
+                JSON.parse(read(dir, 'src/cli-cmd/.template.config/template.json'))
+                    .symbols.BowireSdkVersion.defaultValue, '1.2.3',
+                'a template that references no Bowire id must not be touched');
+        });
+    });
+
+    it('is a no-op in a repo with no dotnet-new templates', async () => {
+        // Every sibling but Bowire.Templates. The step must not fail, and
+        // must not disturb the ordinary bump.
+        await withRepo({
+            'a.csproj': csproj(['<PackageReference Include="Kuestenlogik.Bowire" Version="2.3.0" />']),
+        }, async dir => {
+            const r = await bumpAndVerify(dir);
+            assert.equal(r.status, 0, r.stdout + r.stderr);
+            assert.match(read(dir, 'a.csproj'), /Version="2\.4\.0"/);
         });
     });
 
