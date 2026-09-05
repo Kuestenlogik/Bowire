@@ -80,7 +80,7 @@ function makeMapLibre(recorder) {
                 return { setData(data) { recorder.sources[id] = data; } };
             },
             setLayoutProperty(l, p, v) { if (p === 'visibility') recorder.layerVisibility[l] = v; },
-            fitBounds() {}, flyTo() {}, resize() {}, remove() {},
+            fitBounds() { recorder.fits++; }, flyTo() {}, resize() {}, remove() {},
         };
         setTimeout(() => self._loadCbs.forEach((cb) => cb()), 0);
         return self;
@@ -120,7 +120,7 @@ const settle = async (n = 6) => {
  *                         in — an array for the multi-entity shape.
  */
 async function mountMap({ interpretations, methodSeed = {}, seed = {} } = {}) {
-    const recorder = { sources: {}, layers: [], layerVisibility: {}, controls: [] };
+    const recorder = { sources: {}, layers: [], layerVisibility: {}, controls: [], fits: 0 };
     const win = {
         __BOWIRE_CONFIG__: { mapBasemap: 'none' },
         maplibregl: makeMapLibre(recorder),
@@ -183,7 +183,129 @@ const tacFrame = (id, step) => ({
 const DIS_PATHS = { 'coordinate.latitude': '$.lat', 'coordinate.longitude': '$.lon' };
 const disFrame = (id, marking, lat, lon) => ({ id, entityMarking: marking, lat, lon });
 
+// --- The nested shape: the coordinate sits BELOW the entity ---------
+// TacticalAPI's real payload is
+// situationObjects[N].symbol.location.content.point.geoPoint.latitudeCoordinate,
+// so the coordinate's parent is `geoPoint` and the entity is five levels
+// up. A flat `position: { latitude, longitude }` is the same problem one
+// level deep. Both are the common case; lat/lon directly on the entity
+// is the exception.
+const NESTED_PATHS = [0, 1].map((i) => ({
+    'coordinate.latitude': `$.situationObjects[${i}].position.latitude`,
+    'coordinate.longitude': `$.situationObjects[${i}].position.longitude`,
+}));
+const nestedFrame = (id, step) => ({
+    id,
+    situationObjects: [
+        { uuid: 'moewe', name: 'Patrol Möwe', position: { latitude: 54 + step * 0.01, longitude: 11.5 } },
+        { uuid: 'hanse', name: 'Cargo Hanse', position: { latitude: 54, longitude: 11.5 + step * 0.01 } },
+    ],
+});
+
 describe('map widget — per-entity tracks (#240)', { concurrency: 1 }, () => {
+
+    it('finds the id above the node that holds the coordinate', async () => {
+        // The bug a browser run caught and every fixture here missed:
+        // `parentPath` is the parent of lat and lon, which is the node
+        // HOLDING the position — not the entity. Resolving only against
+        // it found no id, fell back to the symbol-type key, and drew
+        // thirteen entities as eight tracks, which looks like a picture
+        // rather than a failure.
+        const m = await mountMap({
+            interpretations: NESTED_PATHS,
+            methodSeed: { trackIdPath: 'uuid' },
+            seed: { trajectory: true },
+        });
+        m.frames.push(nestedFrame('f1', 1));
+        m.frames.push(nestedFrame('f2', 2));
+        await settle();
+
+        const tracks = m.handle.tracks();
+        assert.equal(tracks.length, 2);
+        assert.deepEqual(tracks.map((t) => t.trackId).sort(), ['hanse', 'moewe']);
+        assert.equal(m.lines().features.length, 2);
+        m.unmount();
+    });
+
+    it('re-keys the nested shape too, not just the flat one', async () => {
+        // The half the first fix missed. Arrival climbs the ancestor
+        // chain; the re-key did not, because it kept only the node
+        // holding the coordinate and there is no way up from there. The
+        // flat fixture could not see it — its coordinate parent IS the
+        // entity — so the browser still showed thirteen entities as
+        // eight tracks while every test passed.
+        const m = await mountMap({ interpretations: NESTED_PATHS, seed: { trajectory: true } });
+        m.frames.push(nestedFrame('f1', 1));
+        m.frames.push(nestedFrame('f2', 2));
+        await settle();
+        assert.equal(m.handle.tracks().every((t) => t.trackId === ''), true);
+
+        m.handle.setTrackIdPath('uuid');
+        const tracks = m.handle.tracks();
+        assert.equal(tracks.length, 2);
+        assert.deepEqual(tracks.map((t) => t.trackId).sort(), ['hanse', 'moewe']);
+        assert.equal(m.lines().features.length, 2);
+        m.unmount();
+    });
+
+    it('frames the data even when one frame carries many entities', async () => {
+        // The auto-fit cutoff counted PINS, and a multi-entity frame
+        // passes five on its first message — so with thirteen entities in
+        // one snapshot the map never fitted once and sat at zoom 1 over
+        // the whole world, the scenario a speck off Denmark. The rule
+        // always meant "the first few updates".
+        const m = await mountMap({ interpretations: NESTED_PATHS });
+        m.frames.push(nestedFrame('f1', 1));
+        m.frames.push(nestedFrame('f2', 2));
+        await settle();
+        assert.ok(m.recorder.fits > 0, 'the camera must fit to the data at least once');
+        m.unmount();
+    });
+
+    it('keeps entities apart even when they share a symbol code', async () => {
+        // Convoy Alpha's three vehicles carry one SIDC between them, so
+        // the #238 fallback merges them — correctly, it has nothing
+        // better. With a track id configured they must separate, and
+        // this is what "thirteen entities, eight tracks" looked like.
+        const paths = [0, 1, 2].map((i) => ({
+            'coordinate.latitude': `$.situationObjects[${i}].position.latitude`,
+            'coordinate.longitude': `$.situationObjects[${i}].position.longitude`,
+        }));
+        const frame = (id, step) => ({
+            id,
+            situationObjects: [0, 1, 2].map((i) => ({
+                uuid: 'alpha-' + i,
+                symbolCode: 'SFGPUCV---*****',
+                position: { latitude: 54.09, longitude: 10.2 + (step + i) * 0.001 },
+            })),
+        });
+
+        const m = await mountMap({ interpretations: paths, seed: { trajectory: true } });
+        m.frames.push(frame('f1', 1));
+        m.frames.push(frame('f2', 2));
+        await settle();
+        assert.equal(m.handle.tracks().length, 1,
+            'without a path the shared symbol code is all there is to group on');
+
+        m.handle.setTrackIdPath('uuid');
+        assert.equal(m.handle.tracks().length, 3, 'with one, they separate');
+        assert.equal(m.lines().features.length, 3);
+        m.unmount();
+    });
+
+    it('offers candidates from above the coordinate too', async () => {
+        const m = await mountMap({ interpretations: NESTED_PATHS });
+        m.frames.push(nestedFrame('f1', 1));
+        await settle();
+
+        const candidates = m.handle.trackCandidates();
+        assert.ok(candidates.includes('uuid'),
+            'the entity id lives a level above the coordinate and must still be offered');
+        assert.ok(candidates.includes('name'));
+        assert.ok(!candidates.includes('latitude') && !candidates.includes('longitude'),
+            'the coordinate fields are not entity identities');
+        m.unmount();
+    });
 
     it('splits one frame into a track per entity (TacticalAPI shape)', async () => {
         const m = await mountMap({
