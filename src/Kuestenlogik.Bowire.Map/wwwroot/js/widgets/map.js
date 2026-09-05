@@ -905,6 +905,7 @@
         // panned/zoomed — same instinct as the existing 5-pin auto-fit
         // cutoff, just extended for the selection-driven camera moves.
         var selectedFrameIds = new Set();
+        var framesSeen = 0;
         var userMovedCamera = false;
         map.on('dragstart', function () { userMovedCamera = true; });
         map.on('zoomstart', function (e) {
@@ -926,6 +927,7 @@
             var coords = extractCoords(frame);
             if (coords.length === 0) return;
             collectTrackCandidates(frame, coords);
+            framesSeen++;
             var discriminator = (frame && frame.discriminator) || '*';
             var frameId = (frame && frame.id) || null;
 
@@ -951,7 +953,7 @@
                       parentPath: coord.parentPath }, coord);
                 track.color = bowireMapDiscriminatorColor(track.key, paletteStore);
                 noteTrackSeen(track);
-                trackSourceByPin.set(pinSeq + 1, entityNodeFor(coord));
+                trackSourceByPin.set(pinSeq + 1, coord);
                 pointsSource.features.push({
                     type: 'Feature',
                     id: ++pinSeq,
@@ -1015,7 +1017,15 @@
             // Once the user has moved the camera (drag/zoom) OR a
             // selection has driven the camera, skip auto-fit so we
             // don't fight the user.
-            if (pointsSource.features.length <= 5 && !userMovedCamera) maybeFit();
+            // Auto-fit while the picture is still settling, then leave
+            // the camera alone. The old cutoff counted PINS, which a
+            // multi-entity frame passes on its first message: thirteen
+            // entities in one snapshot meant the map never fitted once
+            // and sat at zoom 1 over the whole world with the data a
+            // speck off Denmark. Counting frames is what the rule always
+            // meant — "the first few updates" — and it behaves the same
+            // way it used to for one entity per frame.
+            if (framesSeen <= 5 && !userMovedCamera) maybeFit();
 
             // After the trim, so a track never keeps a vertex whose pin
             // the cap has already dropped.
@@ -1033,19 +1043,24 @@
         // Tracks the operator has switched off in the legend, by key.
         var hiddenTracks = new Set();
 
-        // pin id -> the entity node that pin was resolved from.
+        // pin id -> the coord this pin was resolved from.
         //
-        // Without this, changing the track path can only affect frames
-        // that have not arrived yet — and the moment an operator most
-        // wants to change it is when the stream has finished and the
-        // question is how to read what came in. The frames themselves are
-        // dropped after addPin, so what is kept is the ENTITY node, not
-        // the frame: in the multi-pairing shape that is one
-        // situationObject rather than the whole snapshot, and holding a
-        // child does not keep its parent alive.
+        // Without it, changing the track path can only affect frames that
+        // have not arrived yet — and the moment an operator most wants to
+        // change it is when the stream has finished and the question is
+        // how to read what came in.
         //
-        // Trimmed in lockstep with the pins, so it inherits the same cap
-        // and cannot outgrow it.
+        // The whole coord is kept, root included, because resolving a
+        // track id means walking UP from the coordinate's parent: the id
+        // may live one level above (a flat `position`) or five
+        // (TacticalAPI's geoPoint), and only the data knows. An entity
+        // node alone cannot be climbed from.
+        //
+        // That retains the frame — but once per FRAME, not once per pin:
+        // every pin from one multi-entity snapshot shares the same root
+        // object, so thirteen entities across forty-six frames hold
+        // forty-six roots. Trimmed in lockstep with the pins, so it is
+        // bounded by the same cap.
         var trackSourceByPin = new Map();
 
         // key -> { label, color, count }. Insertion-ordered, which is
@@ -1108,10 +1123,43 @@
             var direct = coord && coord.root != null
                 ? bowireResolveJsonPath(coord.root, trackIdPath)
                 : null;
-            if (direct == null || typeof direct === 'object') {
-                // Relative: resolved against the entity, which is what
-                // makes N entities in one frame produce N ids.
-                direct = bowireResolveJsonPath(entity, stripRoot(trackIdPath));
+
+            // Then relative, walking UP from the coordinate's own parent.
+            //
+            // The climb is the part that matters. `parentPath` is the
+            // parent of lat and lon, which is the node that HOLDS the
+            // coordinate — `position`, or in the TacticalAPI shape
+            // `geoPoint`, five levels below the entity. The entity is
+            // wherever the identifying field actually lives, and only
+            // the data knows how deep that is. Resolving against the
+            // immediate parent alone finds a track id exactly when the
+            // producer happens to put the coordinate straight on the
+            // entity, and silently falls back to grouping by symbol
+            // type otherwise — which reads as "thirteen entities, eight
+            // tracks" and looks like a plausible picture.
+            //
+            // bowireFindSidcForPair already climbs for the same reason;
+            // this is the same walk with the operator's field instead of
+            // a shape-matched one.
+            var relative = stripRoot(trackIdPath);
+            if ((direct == null || typeof direct === 'object') && relative !== '') {
+                var probe = entity;
+                var hit = bowireResolveJsonPath(probe, relative);
+                if (hit == null || typeof hit === 'object') {
+                    var path = coord && coord.parentPath ? coord.parentPath : null;
+                    var safety = 16;
+                    while (safety-- > 0 && path && path !== '$' && path !== '') {
+                        var next = bowireDropLastSegment(path);
+                        if (next === path) break;
+                        path = next || '$';
+                        var ancestor = bowireResolveJsonPath(coord.root, path);
+                        if (ancestor == null || typeof ancestor !== 'object') continue;
+                        hit = bowireResolveJsonPath(ancestor, relative);
+                        if (hit != null && typeof hit !== 'object') break;
+                        hit = null;
+                    }
+                }
+                if (hit != null && typeof hit !== 'object') direct = hit;
             }
             // A track id has to be a scalar the operator can read back in
             // the legend. An object resolves to "[object Object]" and
@@ -1241,6 +1289,13 @@
         function setTrajectoryEnabled(enabled) {
             showTrajectory = !!enabled;
             mapPrefs.set('trajectory', showTrajectory);
+            // Keep the control honest. The checkbox is not the state —
+            // showTrajectory is — so anything that sets the state without
+            // going through a click (a remounted widget restoring a
+            // preference, the handle, a future keyboard shortcut) has to
+            // push it back, or the box reads unchecked over a visible
+            // layer.
+            if (trajectoryCheckbox) trajectoryCheckbox.checked = showTrajectory;
             try {
                 map.setLayoutProperty('bowire-lines-layer', 'visibility',
                     showTrajectory ? 'visible' : 'none');
@@ -1367,12 +1422,9 @@
          * all. That is the case where an operator most wants to change
          * it: the data is in, and the question is how to read it.
          *
-         * The frames are gone by now, so the id is re-resolved against
-         * the entity node kept per pin — see trackSourceByPin. A pin
-         * whose node is no longer held (trimmed, or arriving from a host
-         * that gave the widget nothing to hold) falls back to its
-         * stamped id and then to the #238 key, so it groups by something
-         * rather than dropping out of the legend.
+         * The id is re-resolved through the coord kept per pin — see
+         * trackSourceByPin — which is the same input arrival had, so the
+         * ancestor climb behaves the same way here as it does live.
          */
         function reassignTracks() {
             trackMeta.clear();
@@ -1380,8 +1432,12 @@
             for (var i = 0; i < pointsSource.features.length; i++) {
                 var feature = pointsSource.features[i];
                 var props = feature.properties || {};
+                // Re-resolved through exactly the arrival path, coord and
+                // all, so the climb behaves identically. A pin whose
+                // coord is gone falls back to its stamped id and then to
+                // the #238 key rather than dropping out of the legend.
                 var track = bowireTrackFor(
-                    props, null, trackSourceByPin.get(feature.id));
+                    props, trackSourceByPin.get(feature.id) || null);
                 props.trackId = track.trackId || '';
                 track.color = bowireMapDiscriminatorColor(track.key, paletteStore);
                 props.trackKey = track.key;
@@ -1404,6 +1460,7 @@
         // the zoom buttons, so neither covers the other on a narrow
         // pane. IControl is duck-typed — an object with onAdd/onRemove
         // is all MapLibre asks for.
+        var trajectoryCheckbox = null;
         var trajectoryToggleControl = {
             onAdd: function () {
                 var wrap = document.createElement('div');
@@ -1430,6 +1487,7 @@
                 box.addEventListener('change', function () {
                     setTrajectoryEnabled(box.checked);
                 });
+                trajectoryCheckbox = box;
                 // MapLibre installs its own handlers on the canvas
                 // container; without this a click on the control also
                 // reaches the map and can start a drag under the
@@ -1451,6 +1509,7 @@
                     this._container.parentNode.removeChild(this._container);
                 }
                 this._container = null;
+                trajectoryCheckbox = null;
             }
         };
         map.addControl(trajectoryToggleControl, 'top-left');
@@ -1491,40 +1550,51 @@
         function collectTrackCandidates(frame, coords) {
             if (trackCandidates.length > 0 || !coords || coords.length === 0) return;
             var coord = coords[0];
-            var basePath = (coord.parentPath && coord.parentPath !== '$')
-                ? stripRoot(coord.parentPath)
-                : '';
-            var base = basePath
-                ? bowireResolveJsonPath(coord.root, coord.parentPath)
-                : coord.root;
-            if (base == null || typeof base !== 'object') return;
+            if (coord.root == null) return;
 
+            // Walk the same ancestor chain resolveTrackId walks, nearest
+            // first. Offering only the coordinate's immediate parent
+            // would list `latitude` and `longitude` and nothing else:
+            // that node HOLDS the position, and the field that names the
+            // entity lives further up — one level for a flat
+            // `position: {…}`, five for TacticalAPI's
+            // symbol.location.content.point.geoPoint.
+            //
+            // Because resolution climbs too, a bare field name is enough
+            // however deep the match turns out to be, so the offered
+            // paths stay short and stay readable in the dropdown.
             var found = [];
-            (function walk(node, prefix, depth) {
-                if (depth > 3 || node == null || typeof node !== 'object') return;
+            var seen = Object.create(null);
+            var latLeaf = stripRoot(coord.latPath);
+            var lonLeaf = stripRoot(coord.lonPath);
+
+            function harvest(node) {
+                if (node == null || typeof node !== 'object' || Array.isArray(node)) return;
                 for (var k in node) {
                     if (!Object.prototype.hasOwnProperty.call(node, k)) continue;
                     var v = node[k];
-                    var path = prefix ? prefix + '.' + k : k;
-                    if (v == null) continue;
-                    if (typeof v === 'object') {
-                        if (!Array.isArray(v)) walk(v, path, depth + 1);
-                        continue;
-                    }
-                    // Coordinates identify a position, never an entity —
-                    // offering them would produce one track per ping.
-                    // The walk yields paths RELATIVE to the entity while
-                    // latPath/lonPath are absolute, so the comparison has
-                    // to be made in one frame of reference. Rebuilding the
-                    // absolute form is exact; matching on field names
-                    // ('lat', 'latitude', 'y', …) is a guess that misses
-                    // whatever the producer actually called them.
-                    var absolute = basePath ? basePath + '.' + path : path;
-                    if (absolute === stripRoot(coord.latPath)
-                        || absolute === stripRoot(coord.lonPath)) continue;
-                    found.push(path);
+                    if (v == null || typeof v === 'object') continue;
+                    if (seen[k]) continue;
+                    // A coordinate identifies a position, never an
+                    // entity: grouping on one yields a track per ping.
+                    if (latLeaf.endsWith('.' + k) || lonLeaf.endsWith('.' + k)) continue;
+                    seen[k] = true;
+                    found.push(k);
                 }
-            })(base, '', 0);
+            }
+
+            var path = (coord.parentPath && coord.parentPath !== '$') ? coord.parentPath : '$';
+            var safety = 16;
+            while (safety-- > 0) {
+                var node = path === '$'
+                    ? coord.root
+                    : bowireResolveJsonPath(coord.root, path);
+                harvest(node);
+                if (path === '$') break;
+                var next = bowireDropLastSegment(path);
+                path = (next === path || next === '') ? '$' : next;
+            }
+
             trackCandidates = found.slice(0, 40);
             renderTrackPathOptions();
         }
