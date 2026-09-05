@@ -99,9 +99,15 @@ jobs:
             if [[ -f "$candidate" ]]; then
               # Strip any YAML front-matter so the body downstream is pure
               # markdown ready to land in the release body verbatim.
-              FILE_BODY=$(awk 'BEGIN{fm=0} /^---$/{fm++; next} fm<2{next} {print}' "$candidate")
-              FILE_BODY=$(echo "$FILE_BODY" | sed -E 's/<[^>]+>//g; /^[[:space:]]*$/d' | head -c 1)
-              if [[ -n "$FILE_BODY" ]]; then
+              CANDIDATE_BODY=$(awk 'BEGIN{fm=0} /^---$/{fm++; next} fm<2{next} {print}' "$candidate")
+              # Placeholder detection MUST match the publish step below
+              # ("Pull editorial body"), which counts `### ` subsections.
+              # A looser test here passed the gate on a template body the
+              # publish step then discarded, so the release shipped the
+              # auto-generated change list with no editorial block and
+              # nothing failed. Same signal, same verdict, both steps.
+              SECTION_COUNT=$(echo "$CANDIDATE_BODY" | grep -cE '^### ' || true)
+              if [[ "${SECTION_COUNT:-0}" -gt 0 ]]; then
                 FILE_BODY="present-at:${candidate}"
                 break
               fi
