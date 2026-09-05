@@ -73,6 +73,35 @@ public sealed class BowireEndpointTests : IClassFixture<BowireTestFixture>
     }
 
     [Fact]
+    public async Task WorkerSrcAllowsBlob_SoTheMapWidgetReachesItsLoadEvent()
+    {
+        // The same failure as ScriptSrcAllowsSelf..., one step further in.
+        // MapLibre parses tiles in a web worker it constructs from a blob:
+        // URL. worker-src has no default of its own — absent, the browser
+        // falls back to script-src, which allows same-origin files and the
+        // nonce but not a blob. The worker was refused, MapLibre never fired
+        // 'load', and the widget's mount awaits exactly that: the map did not
+        // render at all, while the page, the header and the scanner all
+        // looked healthy.
+        var response = await _client.GetAsync(new Uri("/bowire", UriKind.Relative), TestContext.Current.CancellationToken);
+        var policy = response.Headers.GetValues("Content-Security-Policy").Single();
+
+        var workerSrc = policy.Split(';')
+            .Select(part => part.Trim())
+            .SingleOrDefault(part => part.StartsWith("worker-src", StringComparison.Ordinal));
+
+        Assert.NotNull(workerSrc);
+        Assert.Contains("blob:", workerSrc, StringComparison.Ordinal);
+
+        // Spelled out rather than inherited, so a later script-src edit
+        // cannot move the worker rule without anyone noticing.
+        Assert.DoesNotContain("blob:", policy.Split(';')
+            .Select(part => part.Trim())
+            .Single(part => part.StartsWith("script-src", StringComparison.Ordinal)),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task BowireUiEndpoint_ScriptNonceMatchesTheHeader()
     {
         // #625 — the workbench ships its whole bundle inline, so a policy
