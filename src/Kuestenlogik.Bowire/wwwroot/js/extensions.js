@@ -656,23 +656,43 @@
                 // preference must never take its mount down with it.
                 prefs: (function () {
                     var ns = 'bowire_ext_' + (opts.extensionId || 'unknown') + '_';
-                    function scopedKey(key) {
-                        return wsKeyFor(activeWorkspaceId, ns + String(key));
-                    }
-                    return {
-                        get: function (key, fallback) {
-                            try {
-                                var raw = localStorage.getItem(scopedKey(key));
-                                return raw === null ? fallback : JSON.parse(raw);
-                            } catch { return fallback; }
-                        },
-                        set: function (key, value) {
-                            try {
-                                localStorage.setItem(scopedKey(key), JSON.stringify(value));
-                                return true;
-                            } catch { return false; }
+                    // A store is a get/set pair over one key prefix. Two of
+                    // them ship: the widget-wide one, and `.method`, which
+                    // adds the (service, method) tuple. Some settings are a
+                    // property of the operator (a toggle they like), others
+                    // of the data (which field on THIS response is the track
+                    // id) — the second is wrong to carry to the next method,
+                    // and asking every widget to build that key itself is
+                    // how the two drift apart.
+                    function storeFor(prefix) {
+                        function scopedKey(key) {
+                            return wsKeyFor(activeWorkspaceId, prefix + String(key));
                         }
-                    };
+                        return {
+                            get: function (key, fallback) {
+                                try {
+                                    var raw = localStorage.getItem(scopedKey(key));
+                                    return raw === null ? fallback : JSON.parse(raw);
+                                } catch { return fallback; }
+                            },
+                            set: function (key, value) {
+                                try {
+                                    localStorage.setItem(scopedKey(key), JSON.stringify(value));
+                                    return true;
+                                } catch { return false; }
+                            }
+                        };
+                    }
+                    var store = storeFor(ns);
+                    // Mounted outside a method (the editor surface, a test
+                    // harness) there is no tuple to scope by. Falling back to
+                    // the widget-wide store keeps `.method` always callable,
+                    // so a widget never has to branch on its own mount
+                    // context to read a setting.
+                    store.method = (opts.serviceId && opts.methodId)
+                        ? storeFor(ns + 'm_' + opts.serviceId + '_' + opts.methodId + '_')
+                        : store;
+                    return store;
                 })(),
                 host: {
                     subscribeSse: function (url) {

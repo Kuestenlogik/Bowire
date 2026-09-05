@@ -796,6 +796,17 @@ window.BowireExtensions.register({
       //                     in-memory stub, so its trajectory toggle
       //                     works for the session and simply does not
       //                     survive a reload.
+      // ctx.prefs.method  — the same pair, additionally scoped to the
+      //                     (service, method) tuple this mount is for
+      //                     (#240). Some settings are a property of the
+      //                     operator, others of the data: which field on
+      //                     THIS response is the track id is wrong to
+      //                     carry to the next method. Additive on top of
+      //                     `prefs`, so a widget resolves it as
+      //                     `prefs.method || prefs` rather than assuming
+      //                     it, and never by writing the field onto the
+      //                     host's object — that object is shared with
+      //                     every other widget on the page.
       // returns: () => void   — unmount cleanup
     }
   },
