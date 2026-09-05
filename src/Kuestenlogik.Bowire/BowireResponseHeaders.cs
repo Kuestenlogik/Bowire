@@ -42,6 +42,19 @@ public static class BowireResponseHeaders
     /// nonce is actually defending.
     /// </para>
     /// <para>
+    /// <b>Why <c>worker-src</c> is spelled out.</b> MapLibre runs its tile
+    /// parsing in a web worker that it constructs from a <c>blob:</c> URL it
+    /// builds at runtime. <c>worker-src</c> has no default of its own: when it
+    /// is absent the browser falls back to <c>script-src</c>, which allows
+    /// same-origin files and the nonce but not a blob, so the worker was
+    /// refused and MapLibre never reached its <c>load</c> event. The mount
+    /// awaits that event, so the map widget did not render at all — the same
+    /// failure shape as the extension-bundle block above, one step further in,
+    /// and just as invisible: the page was fine, the header was fine, and the
+    /// feature was off. Naming the directive is also what stops the next
+    /// <c>script-src</c> edit from silently moving the worker rule with it.
+    /// </para>
+    /// <para>
     /// <b>Why <c>style-src</c> carries <c>'unsafe-inline'</c> and no nonce.</b>
     /// The DOM-building code sets inline <c>style</c> attributes throughout,
     /// and a nonce does not cover style attributes. Worse, adding one would
@@ -60,6 +73,7 @@ public static class BowireResponseHeaders
     public const string DefaultContentSecurityPolicyFormat =
         "default-src 'self'; "
         + "script-src 'self' 'nonce-{0}'; "
+        + "worker-src 'self' blob:; "
         + "style-src 'self' 'unsafe-inline'; "
         + "img-src 'self' data: blob: https: http:; "
         + "font-src 'self' data:; "
