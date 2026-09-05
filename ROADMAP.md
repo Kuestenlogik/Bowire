@@ -569,4 +569,4 @@ A schema uploaded through the workbench — a `.proto`, an OpenAPI document — 
 
 ---
 
-*Generated 2026-09-04 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-09-05 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
