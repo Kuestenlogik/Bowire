@@ -248,6 +248,15 @@
         '#4f46e5', '#dc2626', '#16a34a', '#d97706',
         '#0891b2', '#c026d3', '#7c3aed', '#65a30d'
     ];
+    // Separator for the composite track key. A control character, not a
+    // punctuation mark, because every half is a free-form string: a JSON
+    // path carries dots and brackets, a discriminator carries whatever
+    // the protocol calls its message type, and a track id carries
+    // whatever the producer put in the field. Any printable delimiter is
+    // one that could also occur inside a half and merge two tracks into
+    // one.
+    var BOWIRE_TRACK_KEY_SEP = String.fromCharCode(31);
+
     function bowireMapDiscriminatorColor(discriminator, store) {
         var key = discriminator || '*';
         if (!(key in store)) {
@@ -481,7 +490,6 @@
         container.style.height = '100%';
         container.style.flex = '1 1 auto';
 
-        var pinsByDiscriminator = {};
         var paletteStore = {};
         var disposed = false;
         var pinSeq = 0;
@@ -597,6 +605,16 @@
             get: function (key, fallback) { return fallback; },
             set: function () { return false; }
         };
+        // `.method` is additive on top of `prefs`, which is itself
+        // additive on the v1.0 contract, so a host can have one and not
+        // the other. Resolved into its own binding rather than patched
+        // onto `ctx.prefs`: that object belongs to the host, is shared
+        // with every other widget on the page, and a widget writing a
+        // field onto it would be deciding for all of them. Falling back
+        // to the widget-wide store keeps the call sites unconditional —
+        // a per-method setting then behaves as a per-workspace one,
+        // which is a narrower promise than intended but never a crash.
+        var mapMethodPrefs = mapPrefs.method || mapPrefs;
         var showTrajectory = mapPrefs.get('trajectory', false) === true;
 
         await new Promise(function (resolve) {
@@ -852,6 +870,12 @@
                             pair.lat, pair.lon);
                         out.push({
                             lat: lat, lon: lon,
+                            // #240 — the root this pair actually resolved
+                            // against. A track-id path is resolved here
+                            // too, and re-deriving which of the envelope
+                            // shapes matched would be a second guess at a
+                            // question already answered.
+                            root: parsedRoots[i],
                             sidc: sidc,
                             affinity: bowireSidcAffinity(sidc),
                             latPath: pair.lat,
@@ -901,8 +925,8 @@
             // single-coord path used to.
             var coords = extractCoords(frame);
             if (coords.length === 0) return;
+            collectTrackCandidates(frame, coords);
             var discriminator = (frame && frame.discriminator) || '*';
-            var color = bowireMapDiscriminatorColor(discriminator, paletteStore);
             var frameId = (frame && frame.id) || null;
 
             var anySelected = selectedFrameIds.size > 0;
@@ -918,13 +942,30 @@
 
             for (var c = 0; c < coords.length; c++) {
                 var coord = coords[c];
+                // Per coord, not per frame: one multi-pairing frame
+                // carries N entities, and resolving the track once for
+                // the frame is exactly the bug that would put them all
+                // on one line and one colour.
+                var track = bowireTrackFor(
+                    { discriminator: discriminator, sidc: coord.sidc,
+                      parentPath: coord.parentPath }, coord);
+                track.color = bowireMapDiscriminatorColor(track.key, paletteStore);
+                noteTrackSeen(track);
+                trackSourceByPin.set(pinSeq + 1, entityNodeFor(coord));
                 pointsSource.features.push({
                     type: 'Feature',
                     id: ++pinSeq,
                     geometry: { type: 'Point', coordinates: [coord.lon, coord.lat] },
                     properties: {
-                        color: color,
+                        color: track.color,
                         discriminator: discriminator,
+                        // #240 — resolved once, at arrival, against the
+                        // root this coord came from. Re-resolving later
+                        // is impossible (the frame is gone) and
+                        // re-deriving from the pin would be a different
+                        // answer, so the key travels with the pin.
+                        trackKey: track.key,
+                        trackId: track.trackId || '',
                         frameId: frameId,
                         selected: selectedTag,
                         // Highlight tristate driven by the JSON↔map
@@ -966,15 +1007,8 @@
                 }
             }
 
-            // Trim pin count to avoid unbounded memory in long streams.
-            // The cap mirrors what render-main.js does for streamMessages.
-            var CAP = 5000;
-            if (pointsSource.features.length > CAP) {
-                pointsSource.features.splice(0, pointsSource.features.length - CAP);
-            }
-
-            var src = map.getSource('bowire-points');
-            if (src) src.setData(pointsSource);
+            trimToCap();
+            renderPoints();
 
             // Auto-fit on the first few pins, then leave navigation to
             // the user. Avoids the jitter of a re-fit on every frame.
@@ -988,41 +1022,134 @@
             rebuildTrajectories();
         }
 
-        // Separator for the composite track key. A control character,
-        // not a punctuation mark, because both halves are free-form
-        // strings: a JSON path carries dots and brackets and a
-        // discriminator carries whatever the protocol calls its message
-        // type, so any printable delimiter is one that could also occur
-        // inside a half and merge two tracks into one.
-        var BOWIRE_TRACK_KEY_SEP = String.fromCharCode(31);
+        // #240 — per-entity tracks.
+        //
+        // The path is stored against (workspace, service, method): which
+        // field carries the track id is a property of THIS response, not
+        // of the operator, and carrying it to the next method would point
+        // at a field that is not there.
+        var trackIdPath = String(mapMethodPrefs.get('trackIdPath', '') || '');
+
+        // Tracks the operator has switched off in the legend, by key.
+        var hiddenTracks = new Set();
+
+        // pin id -> the entity node that pin was resolved from.
+        //
+        // Without this, changing the track path can only affect frames
+        // that have not arrived yet — and the moment an operator most
+        // wants to change it is when the stream has finished and the
+        // question is how to read what came in. The frames themselves are
+        // dropped after addPin, so what is kept is the ENTITY node, not
+        // the frame: in the multi-pairing shape that is one
+        // situationObject rather than the whole snapshot, and holding a
+        // child does not keep its parent alive.
+        //
+        // Trimmed in lockstep with the pins, so it inherits the same cap
+        // and cannot outgrow it.
+        var trackSourceByPin = new Map();
+
+        // key -> { label, color, count }. Insertion-ordered, which is
+        // first-seen order, which is the order the legend lists them in —
+        // a legend that reshuffles as counts change is unreadable while
+        // a stream is live.
+        var trackMeta = new Map();
+
+        /** Drop the leading `$.` so absolute and relative paths compare. */
+        function stripRoot(path) {
+            return String(path || '').replace(/^\$\.?/, '');
+        }
 
         /**
-         * Which path does this pin belong to?
-         *
-         * The discriminator alone is the grouping #238 asks for, and it
-         * is right for the common shape — one entity per frame, many
-         * frames. It is wrong for the other shape the widget already
-         * supports: a multi-pairing frame (TacticalAPI's
-         * situationObjects[N]) carries N entities that all share one
-         * discriminator, so keying on it alone would thread every
-         * entity in the frame onto a single line and draw exactly the
-         * zigzag across unrelated entities the ticket rules out.
-         *
-         * So the key pairs the discriminator with whatever identifies
-         * the entity within the frame. `sidc` first: it is the tactical
-         * identifier and it follows an entity across frames even if the
-         * response reorders them. `parentPath` second: for a frame with
-         * no symbology it at least separates slot 0 from slot 1, which
-         * is right whenever the producer keeps its ordering stable.
-         *
-         * Both are heuristics standing in for a field nobody has
-         * declared yet. #240 replaces this with a configurable track-id
-         * and the rest of this function stays as it is.
+         * The object a track id would be read from for this coord: the
+         * entity in a multi-pairing frame, the frame itself otherwise.
          */
-        function bowireTrackKey(props) {
+        function entityNodeFor(coord) {
+            if (!coord || coord.root == null) return null;
+            if (coord.parentPath && coord.parentPath !== '$') {
+                var node = bowireResolveJsonPath(coord.root, coord.parentPath);
+                if (node != null && typeof node === 'object') return node;
+            }
+            return coord.root;
+        }
+
+        /**
+         * Resolve the operator's track-id path against one coord.
+         *
+         * Two path shapes, and the difference is the whole design.
+         *
+         * An ABSOLUTE path ($.entity.id) names one field on the frame.
+         * That is right when the frame carries one entity.
+         *
+         * A RELATIVE path (unitId, or symbol.name) is resolved against
+         * the coord's own parent — `situationObjects[3]` for the fourth
+         * entity in a multi-pairing frame, `situationObjects[4]` for the
+         * fifth. This is what makes N entities in ONE frame resolve to N
+         * different ids.
+         *
+         * The ticket's example writes that second case as
+         * `$.situationObjects[*].unitId`. A wildcard would have to be
+         * added to the resolver and would then still need a rule for
+         * matching the Nth match to the Nth coord — and the widget
+         * already knows which parent each coord came from, so the
+         * wildcard is a less precise way of saying something already
+         * known exactly. The relative form says it directly.
+         *
+         * Absolute is tried first and relative second, rather than
+         * branching on the leading `$`, so a path that happens to
+         * resolve both ways prefers the reading the operator wrote
+         * literally.
+         */
+        function resolveTrackId(coord, node) {
+            if (!trackIdPath) return null;
+            var entity = node || entityNodeFor(coord);
+            if (entity == null) return null;
+
+            // Absolute first: `$.entity.id` names one field on the frame.
+            var direct = coord && coord.root != null
+                ? bowireResolveJsonPath(coord.root, trackIdPath)
+                : null;
+            if (direct == null || typeof direct === 'object') {
+                // Relative: resolved against the entity, which is what
+                // makes N entities in one frame produce N ids.
+                direct = bowireResolveJsonPath(entity, stripRoot(trackIdPath));
+            }
+            // A track id has to be a scalar the operator can read back in
+            // the legend. An object resolves to "[object Object]" and
+            // merges every entity into one track, which looks like the
+            // feature working until someone counts the rows.
+            if (direct == null || typeof direct === 'object') return null;
+            var text = String(direct);
+            return text === '' ? null : text;
+        }
+
+        /**
+         * The grouping key for one pin, and the label the legend shows.
+         *
+         * With a track-id configured, the id IS the grouping — that is
+         * the point of #240, and it is also what makes the colour
+         * per-entity rather than per-message-type.
+         *
+         * Without one, this falls back to exactly what #238 shipped:
+         * discriminator paired with the entity's own identity. The
+         * ticket asks for "no regression" on the empty path, and the
+         * regression to avoid is not the pin colour — it is the
+         * multi-entity zigzag that keying on discriminator alone
+         * reintroduces.
+         */
+        function bowireTrackFor(props, coord, node) {
+            var trackId = (coord || node)
+                ? resolveTrackId(coord, node)
+                : ((props && props.trackId) || null);
+            if (trackId) {
+                return { key: 'id' + BOWIRE_TRACK_KEY_SEP + trackId, label: trackId, trackId: trackId };
+            }
+            var discriminator = (props && props.discriminator) || '*';
             var identity = (props && (props.sidc || props.parentPath)) || '';
-            return ((props && props.discriminator) || '*')
-                + BOWIRE_TRACK_KEY_SEP + identity;
+            return {
+                key: discriminator + BOWIRE_TRACK_KEY_SEP + identity,
+                label: discriminator === '*' ? (identity || 'default') : discriminator,
+                trackId: null
+            };
         }
 
         /**
@@ -1043,13 +1170,22 @@
             for (var i = 0; i < pointsSource.features.length; i++) {
                 var f = pointsSource.features[i];
                 var props = f.properties || {};
-                var key = bowireTrackKey(props);
+                // Pins carry their own key, stamped at arrival. Rebuilding
+                // it here would resolve the track path against a root the
+                // pin no longer holds, and would silently regroup every
+                // pin already on the map the moment the operator changes
+                // the path — which is what reassignTracks() does on
+                // purpose, in one place, rather than as a side effect of
+                // drawing.
+                var key = props.trackKey || '';
+                if (hiddenTracks.has(key)) continue;
                 var track = byTrack[key];
                 if (!track) {
                     track = byTrack[key] = {
                         coords: [],
                         color: props.color,
                         discriminator: props.discriminator,
+                        trackId: props.trackId || '',
                         selected: 'no'
                     };
                     order.push(key);
@@ -1080,6 +1216,7 @@
                     properties: {
                         color: t.color,
                         discriminator: t.discriminator,
+                        trackId: t.trackId,
                         selected: t.selected === 'yes'
                             ? 'yes'
                             : (anySelected ? 'no-but-others-are' : 'no')
@@ -1115,6 +1252,150 @@
                 var src = map.getSource('bowire-lines');
                 if (src) src.setData(linesSource);
             }
+        }
+
+        /**
+         * Record that a pin landed on a track. The legend reads this, so
+         * it holds the label and colour rather than re-deriving them: a
+         * track whose pins have all been trimmed away still has a row
+         * until the operator clears, and re-deriving a label from pins
+         * that no longer exist is not possible.
+         */
+        function noteTrackSeen(track) {
+            var meta = trackMeta.get(track.key);
+            if (!meta) {
+                trackMeta.set(track.key, {
+                    label: track.label,
+                    color: track.color,
+                    trackId: track.trackId || '',
+                    count: 1
+                });
+                renderLegend();
+                return;
+            }
+            meta.count++;
+            // Cheap enough to repaint one row's count every frame; the
+            // legend is a handful of rows, not the pin collection.
+            renderLegendCounts();
+        }
+
+        /**
+         * Trim the pin collection back to the cap.
+         *
+         * #240 asks for "5000 / N tracks, so one chatty entity doesn't
+         * FIFO-trim the others". The budget is right; the division is
+         * not. A per-track quota of CAP/N shrinks every existing track's
+         * allowance the moment an N+1th track appears, which
+         * retroactively deletes history from tracks that did nothing —
+         * the quiet ones lose the most, since they are the ones whose
+         * history spans the longest wall-clock.
+         *
+         * The same protection without that side effect: keep the budget
+         * global and take each pin from whichever track is currently
+         * longest. A chatty entity is by definition the longest track,
+         * so it pays for its own noise, and a track nobody is feeding is
+         * never trimmed on someone else's behalf. With one track this is
+         * exactly the FIFO the widget had before.
+         */
+        function trimToCap() {
+            var CAP = 5000;
+            if (pointsSource.features.length <= CAP) return;
+
+            var counts = new Map();
+            for (var i = 0; i < pointsSource.features.length; i++) {
+                var k = (pointsSource.features[i].properties || {}).trackKey || '';
+                counts.set(k, (counts.get(k) || 0) + 1);
+            }
+
+            var over = pointsSource.features.length - CAP;
+            while (over-- > 0) {
+                var worstKey = null;
+                var worstCount = -1;
+                counts.forEach(function (n, k) {
+                    if (n > worstCount) { worstCount = n; worstKey = k; }
+                });
+                if (worstKey === null) break;
+                // Features are in arrival order, so the first one on that
+                // track is its oldest.
+                for (var j = 0; j < pointsSource.features.length; j++) {
+                    if (((pointsSource.features[j].properties || {}).trackKey || '') === worstKey) {
+                        trackSourceByPin.delete(pointsSource.features[j].id);
+                        pointsSource.features.splice(j, 1);
+                        break;
+                    }
+                }
+                counts.set(worstKey, worstCount - 1);
+            }
+        }
+
+        /**
+         * Push the pin collection to MapLibre, minus any track the
+         * operator switched off.
+         *
+         * Hiding is a render concern, never a state one. The master
+         * collection keeps every pin, so a hidden track still counts in
+         * the legend, still holds its selection, and comes back exactly
+         * as it was — rather than being deleted and having to be
+         * re-streamed, which for a finished stream means never.
+         *
+         * With nothing hidden the master array is handed over as-is; the
+         * filtered copy is only built when there is something to filter.
+         */
+        function renderPoints() {
+            var src = map.getSource('bowire-points');
+            if (!src) return;
+            if (hiddenTracks.size === 0) {
+                src.setData(pointsSource);
+                return;
+            }
+            src.setData({
+                type: 'FeatureCollection',
+                features: pointsSource.features.filter(function (f) {
+                    return !hiddenTracks.has((f.properties || {}).trackKey || '');
+                })
+            });
+        }
+
+        /**
+         * Re-key every pin already on the map after the operator changes
+         * the track-id path.
+         *
+         * The alternative — apply the new path only to pins arriving
+         * from now on — leaves the map showing two groupings at once
+         * with no way to tell which pin follows which, and for a stream
+         * that has already finished it means the setting does nothing at
+         * all. That is the case where an operator most wants to change
+         * it: the data is in, and the question is how to read it.
+         *
+         * The frames are gone by now, so the id is re-resolved against
+         * the entity node kept per pin — see trackSourceByPin. A pin
+         * whose node is no longer held (trimmed, or arriving from a host
+         * that gave the widget nothing to hold) falls back to its
+         * stamped id and then to the #238 key, so it groups by something
+         * rather than dropping out of the legend.
+         */
+        function reassignTracks() {
+            trackMeta.clear();
+            hiddenTracks.clear();
+            for (var i = 0; i < pointsSource.features.length; i++) {
+                var feature = pointsSource.features[i];
+                var props = feature.properties || {};
+                var track = bowireTrackFor(
+                    props, null, trackSourceByPin.get(feature.id));
+                props.trackId = track.trackId || '';
+                track.color = bowireMapDiscriminatorColor(track.key, paletteStore);
+                props.trackKey = track.key;
+                props.color = track.color;
+                var meta = trackMeta.get(track.key);
+                if (meta) meta.count++;
+                else trackMeta.set(track.key, {
+                    label: track.label, color: track.color,
+                    trackId: track.trackId || '', count: 1
+                });
+            }
+            renderPoints();
+            rebuildTrajectories();
+            renderLegend();
         }
 
         // "Show trajectory" toggle, mounted as a MapLibre control so it
@@ -1174,6 +1455,298 @@
         };
         map.addControl(trajectoryToggleControl, 'top-left');
 
+        // -----------------------------------------------------------
+        // #240 — track legend and track-id path control
+        // -----------------------------------------------------------
+        //
+        // Both live in one MapLibre control below the trajectory toggle:
+        // the path decides what the tracks ARE and the legend lists what
+        // came out, so splitting them across two corners would make the
+        // operator connect a cause on one side of the canvas to its
+        // effect on the other.
+
+        var legendBody = null;      // rows container, rebuilt on track changes
+        var legendRows = new Map(); // key -> { count, row } for cheap count updates
+        var legendCollapsed = mapPrefs.get('legendCollapsed', false) === true;
+
+        /**
+         * Candidate track-id fields, derived from a frame we have
+         * actually seen rather than from the schema.
+         *
+         * #240 asks for candidates "detected from the schema (REST/gRPC
+         * inputType)". The schema is the wrong source twice over: for a
+         * response stream the input type describes the request, and a
+         * schema-derived list includes fields the producer never
+         * populates while missing whatever a `google.protobuf.Struct` or
+         * a free-form JSON body actually carried. The frames on the wire
+         * answer the question the operator is asking — "which field
+         * distinguishes these entities" — exactly.
+         *
+         * Paths are offered RELATIVE to a coordinate's parent where one
+         * exists, because that is the form that resolves per entity in a
+         * multi-pairing frame. Scalars are kept, objects and arrays
+         * dropped: a track id has to be something the legend can print.
+         */
+        var trackCandidates = [];
+        function collectTrackCandidates(frame, coords) {
+            if (trackCandidates.length > 0 || !coords || coords.length === 0) return;
+            var coord = coords[0];
+            var basePath = (coord.parentPath && coord.parentPath !== '$')
+                ? stripRoot(coord.parentPath)
+                : '';
+            var base = basePath
+                ? bowireResolveJsonPath(coord.root, coord.parentPath)
+                : coord.root;
+            if (base == null || typeof base !== 'object') return;
+
+            var found = [];
+            (function walk(node, prefix, depth) {
+                if (depth > 3 || node == null || typeof node !== 'object') return;
+                for (var k in node) {
+                    if (!Object.prototype.hasOwnProperty.call(node, k)) continue;
+                    var v = node[k];
+                    var path = prefix ? prefix + '.' + k : k;
+                    if (v == null) continue;
+                    if (typeof v === 'object') {
+                        if (!Array.isArray(v)) walk(v, path, depth + 1);
+                        continue;
+                    }
+                    // Coordinates identify a position, never an entity —
+                    // offering them would produce one track per ping.
+                    // The walk yields paths RELATIVE to the entity while
+                    // latPath/lonPath are absolute, so the comparison has
+                    // to be made in one frame of reference. Rebuilding the
+                    // absolute form is exact; matching on field names
+                    // ('lat', 'latitude', 'y', …) is a guess that misses
+                    // whatever the producer actually called them.
+                    var absolute = basePath ? basePath + '.' + path : path;
+                    if (absolute === stripRoot(coord.latPath)
+                        || absolute === stripRoot(coord.lonPath)) continue;
+                    found.push(path);
+                }
+            })(base, '', 0);
+            trackCandidates = found.slice(0, 40);
+            renderTrackPathOptions();
+        }
+
+        var trackPathSelect = null;
+        function renderTrackPathOptions() {
+            if (!trackPathSelect) return;
+            var current = trackIdPath;
+            trackPathSelect.textContent = '';
+            var none = document.createElement('option');
+            none.value = '';
+            none.textContent = '(group by message type)';
+            trackPathSelect.appendChild(none);
+            var seen = false;
+            for (var i = 0; i < trackCandidates.length; i++) {
+                var opt = document.createElement('option');
+                opt.value = trackCandidates[i];
+                opt.textContent = trackCandidates[i];
+                if (trackCandidates[i] === current) { opt.selected = true; seen = true; }
+                trackPathSelect.appendChild(opt);
+            }
+            // A path typed by hand, or one carried over from a previous
+            // session, is not necessarily in the observed set. Keeping it
+            // as its own option means selecting something else and
+            // changing your mind does not silently lose it.
+            if (current && !seen) {
+                var custom = document.createElement('option');
+                custom.value = current;
+                custom.textContent = current + '  (custom)';
+                custom.selected = true;
+                trackPathSelect.appendChild(custom);
+            }
+        }
+
+        function setTrackIdPath(path) {
+            var next = String(path || '').trim();
+            if (next === trackIdPath) return;
+            trackIdPath = next;
+            mapMethodPrefs.set('trackIdPath', trackIdPath);
+            reassignTracks();
+            renderTrackPathOptions();
+        }
+
+        function toggleTrackHidden(key, hidden) {
+            if (hidden) hiddenTracks.add(key);
+            else hiddenTracks.delete(key);
+            renderPoints();
+            rebuildTrajectories();
+        }
+
+        /** Repaint only the counts — the hot path while a stream runs. */
+        function renderLegendCounts() {
+            trackMeta.forEach(function (meta, key) {
+                var row = legendRows.get(key);
+                if (row && row.count) row.count.textContent = String(meta.count);
+            });
+        }
+
+        function renderLegend() {
+            if (!legendBody) return;
+            legendBody.textContent = '';
+            legendRows.clear();
+            if (trackMeta.size === 0) {
+                var empty = document.createElement('div');
+                empty.textContent = 'No tracks yet';
+                empty.style.opacity = '0.6';
+                empty.style.padding = '2px 0';
+                legendBody.appendChild(empty);
+                return;
+            }
+            trackMeta.forEach(function (meta, key) {
+                var row = document.createElement('label');
+                row.style.display = 'flex';
+                row.style.alignItems = 'center';
+                row.style.gap = '6px';
+                row.style.padding = '2px 0';
+                row.style.cursor = 'pointer';
+                row.style.userSelect = 'none';
+
+                var box = document.createElement('input');
+                box.type = 'checkbox';
+                box.checked = !hiddenTracks.has(key);
+                box.style.margin = '0';
+                box.style.cursor = 'pointer';
+                box.addEventListener('change', function () {
+                    toggleTrackHidden(key, !box.checked);
+                });
+
+                var swatch = document.createElement('span');
+                swatch.style.width = '10px';
+                swatch.style.height = '10px';
+                swatch.style.borderRadius = '2px';
+                swatch.style.flex = '0 0 auto';
+                swatch.style.background = meta.color || '#888';
+
+                var name = document.createElement('span');
+                name.textContent = meta.label;
+                name.title = meta.label;
+                name.style.overflow = 'hidden';
+                name.style.textOverflow = 'ellipsis';
+                name.style.whiteSpace = 'nowrap';
+                name.style.maxWidth = '150px';
+
+                // Frame count as a meta chip between the name and the
+                // edge — the house pattern for a per-row count.
+                var count = document.createElement('span');
+                count.textContent = String(meta.count);
+                count.style.marginLeft = 'auto';
+                count.style.opacity = '0.65';
+                count.style.fontVariantNumeric = 'tabular-nums';
+
+                row.appendChild(box);
+                row.appendChild(swatch);
+                row.appendChild(name);
+                row.appendChild(count);
+                legendBody.appendChild(row);
+                legendRows.set(key, { count: count, row: row });
+            });
+        }
+
+        var trackControl = {
+            onAdd: function () {
+                var wrap = document.createElement('div');
+                wrap.className = 'maplibregl-ctrl maplibregl-ctrl-group bowire-map-track-ctrl';
+                wrap.style.padding = '6px 8px';
+                wrap.style.font = '12px system-ui, sans-serif';
+                wrap.style.minWidth = '210px';
+                wrap.style.maxWidth = '260px';
+
+                var head = document.createElement('div');
+                head.style.display = 'flex';
+                head.style.alignItems = 'center';
+                head.style.gap = '6px';
+                head.style.cursor = 'pointer';
+                head.style.userSelect = 'none';
+
+                var caret = document.createElement('span');
+                caret.textContent = legendCollapsed ? '▸' : '▾';
+                caret.style.opacity = '0.7';
+
+                var title = document.createElement('strong');
+                title.textContent = 'Tracks';
+                title.style.fontWeight = '600';
+
+                head.appendChild(caret);
+                head.appendChild(title);
+
+                var body = document.createElement('div');
+                body.hidden = legendCollapsed;
+                body.style.marginTop = '6px';
+
+                head.addEventListener('click', function () {
+                    legendCollapsed = !legendCollapsed;
+                    body.hidden = legendCollapsed;
+                    caret.textContent = legendCollapsed ? '▸' : '▾';
+                    mapPrefs.set('legendCollapsed', legendCollapsed);
+                });
+
+                var pathLabel = document.createElement('div');
+                pathLabel.textContent = 'Group by';
+                pathLabel.style.opacity = '0.7';
+                pathLabel.style.marginBottom = '2px';
+
+                trackPathSelect = document.createElement('select');
+                trackPathSelect.style.width = '100%';
+                trackPathSelect.style.font = 'inherit';
+                trackPathSelect.addEventListener('change', function () {
+                    setTrackIdPath(trackPathSelect.value);
+                });
+
+                var custom = document.createElement('input');
+                custom.type = 'text';
+                custom.placeholder = 'or a path, e.g. entity.id';
+                custom.value = trackIdPath;
+                custom.style.width = '100%';
+                custom.style.font = 'inherit';
+                custom.style.marginTop = '4px';
+                custom.style.boxSizing = 'border-box';
+                // Committed on Enter or blur, not per keystroke: every
+                // change re-keys every pin on the map, and doing that
+                // for each character of a half-typed path would regroup
+                // the display against paths the operator never meant.
+                custom.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') { e.preventDefault(); setTrackIdPath(custom.value); }
+                });
+                custom.addEventListener('blur', function () { setTrackIdPath(custom.value); });
+
+                legendBody = document.createElement('div');
+                legendBody.style.marginTop = '6px';
+                legendBody.style.maxHeight = '160px';
+                legendBody.style.overflowY = 'auto';
+
+                body.appendChild(pathLabel);
+                body.appendChild(trackPathSelect);
+                body.appendChild(custom);
+                body.appendChild(legendBody);
+
+                wrap.appendChild(head);
+                wrap.appendChild(body);
+
+                // Same reason as the trajectory toggle: MapLibre's canvas
+                // handlers would otherwise start a drag under the cursor.
+                wrap.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+                wrap.addEventListener('dblclick', function (e) { e.stopPropagation(); });
+
+                renderTrackPathOptions();
+                renderLegend();
+                this._container = wrap;
+                return wrap;
+            },
+            onRemove: function () {
+                if (this._container && this._container.parentNode) {
+                    this._container.parentNode.removeChild(this._container);
+                }
+                this._container = null;
+                legendBody = null;
+                trackPathSelect = null;
+            }
+        };
+        map.addControl(trackControl, 'top-left');
+
+
 
         /**
          * Re-flag every feature's `selected` property and push the
@@ -1192,8 +1765,7 @@
                     ? 'yes'
                     : (anySelected ? 'no-but-others-are' : 'no');
             }
-            var src = map.getSource('bowire-points');
-            if (src) src.setData(pointsSource);
+            renderPoints();
             rebuildTrajectories();
         }
 
@@ -1501,7 +2073,22 @@
             // without reaching into the source's private state.
             setTrajectory: setTrajectoryEnabled,
             isTrajectoryEnabled: function () { return showTrajectory; },
-            trajectoryGeoJson: function () { return linesSource; }
+            trajectoryGeoJson: function () { return linesSource; },
+            setTrackIdPath: setTrackIdPath,
+            trackIdPath: function () { return trackIdPath; },
+            trackCandidates: function () { return trackCandidates.slice(); },
+            tracks: function () {
+                var out = [];
+                trackMeta.forEach(function (meta, key) {
+                    out.push({
+                        key: key, label: meta.label, color: meta.color,
+                        trackId: meta.trackId, count: meta.count,
+                        hidden: hiddenTracks.has(key)
+                    });
+                });
+                return out;
+            },
+            setTrackHidden: toggleTrackHidden
         };
         registry.push(handle);
 
