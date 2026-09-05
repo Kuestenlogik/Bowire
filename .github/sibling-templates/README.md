@@ -35,7 +35,17 @@ The question is never *how many dots* — it is *did this release publish that i
 
 Two shapes are deliberately left alone, and the guard that protects them is the `Version="[0-9]…"` match: values that do not start with a digit are not versions. That covers `dotnet new` template parameters (Bowire.Templates ships `Version="MY_BOWIRE_VERSION"`) and MSBuild indirections like `Version="$(BowireVersion)"`.
 
-A final step asserts the postcondition: every published id this repo pins at a numeric version must now read the new version, or the job fails. Half-done silently is the failure this cascade already shipped once.
+## Template parameters
+
+Skipping the placeholder is only half of Bowire.Templates' story. Its plugin template holds the Bowire version twice — as that placeholder in `Directory.Packages.props`, and as the `defaultValue` of the `template.json` symbol whose `replaces` is the placeholder. The bump step correctly refuses the first; nothing resolved the second, so the default sat at `1.6.0` from May while the same template's non-CPM `.csproj`, which the bump step *does* reach, tracked every release to `2.6.2`. `dotnet new bowire-plugin` with no `--BowireSdkVersion` generated a plugin against a Bowire five minors old, and every cascade run was green.
+
+The **Resolve dotnet-new template version parameters** step closes that hop. For each `*/.template.config/template.json` it collects the non-numeric `Version="…"` tokens that a *published* id carries inside that same template directory, finds the symbol whose `replaces` is one of them, and rewrites its `defaultValue`. Same question as the bump step — *did this release publish that id* — asked one indirection further in. A template naming no Bowire id is untouched, which is every sibling but this one.
+
+A default that is not a concrete version is left alone: `2.*` or `[2.0,3.0)` is a deliberate NuGet range (this template enables `CentralPackageFloatingVersionsEnabled` precisely so an operator can choose one), and overwriting it with a pin would silently change what a generated project resolves.
+
+## The postcondition
+
+A final step asserts it: every published id this repo pins at a numeric version, **and every template default behind one of its placeholders**, must now read the new version, or the job fails. Half-done silently is the failure this cascade already shipped twice — once as the one-dot-segment regex, once as the unresolved template default.
 
 The logic is covered by `tests/Kuestenlogik.Bowire.Tests/ci/cascade-bump.test.mjs` in the main repo, which extracts these step scripts out of the YAML and runs them against fixtures of every sibling's real reference shapes — so edit the template, run `npm run test:ci-workflows`, then propagate.
 
