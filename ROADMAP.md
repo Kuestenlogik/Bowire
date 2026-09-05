@@ -10,14 +10,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.6.2 — Correlation coverage and plugin settings that arrive
-
-**1/1 done**
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [640](https://github.com/Kuestenlogik/Bowire/issues/640) | Bowire | [Plugin settings are rendered and stored, but never reach the plugin](#issue-kuestenlogik-bowire-640) | ✅ Done | `area:plugin-sdk` |
-
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
 **2/8 done** · 6 backlog
@@ -124,14 +116,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [654](https://github.com/Kuestenlogik/Bowire/issues/654) | Bowire | [Uploaded schemas live in a process-wide static — lost on restart, shared between identities, invisible to the CLI](#issue-kuestenlogik-bowire-654) | ⬜ Backlog | `area:multi` |
 
 ## Details
-
-### v2.6.2 — Correlation coverage and plugin settings that arrive
-
-#### <a id="issue-kuestenlogik-bowire-640"></a>✅ Done · [#640](https://github.com/Kuestenlogik/Bowire/issues/640) Plugin settings are rendered and stored, but never reach the plugin
-
-> `area:plugin-sdk`
-
-Found while looking at [Bowire.Protocol.Dis#21](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/21), which reads as a local oversight in one plugin and is not. [[more]](https://github.com/Kuestenlogik/Bowire/issues/640)
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
