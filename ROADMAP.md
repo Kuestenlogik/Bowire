@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.7 — Geospatial map: trajectories, playback & entity grouping
 
-**3/8 done** · 5 backlog
+**4/9 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -24,6 +24,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [238](https://github.com/Kuestenlogik/Bowire/issues/238) | Bowire | [Map widget: trajectory LineString between sequential frames](#issue-kuestenlogik-bowire-238) | ✅ Done | `area:workbench` |
 | [642](https://github.com/Kuestenlogik/Bowire/issues/642) | Bowire | [MCP resources read the workspace-less files, so they answer with the wrong data](#issue-kuestenlogik-bowire-642) | ✅ Done | `area:mcp` |
 | [650](https://github.com/Kuestenlogik/Bowire/issues/650) | Bowire | [The correlation suggester gates on the field name before it weighs any evidence](#issue-kuestenlogik-bowire-650) | ✅ Done | `area:workbench` |
+| [655](https://github.com/Kuestenlogik/Bowire/issues/655) | Bowire | [CSP has no worker-src, so MapLibre's worker is blocked and the map never mounts](#issue-kuestenlogik-bowire-655) | ✅ Done | `area:security` |
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
@@ -164,6 +165,12 @@ The MCP resources read the workspace-less files, so on any install that uses wor
 > `area:workbench`
 
 `Suggest` gates every candidate on the field name before it looks at any evidence: [[more]](https://github.com/Kuestenlogik/Bowire/issues/650)
+
+#### <a id="issue-kuestenlogik-bowire-655"></a>✅ Done · [#655](https://github.com/Kuestenlogik/Bowire/issues/655) CSP has no worker-src, so MapLibre's worker is blocked and the map never mounts
+
+> `area:security`
+
+The map widget did not render. Not "rendered wrong" — did not render, in every build carrying the current Content-Security-Policy. [[more]](https://github.com/Kuestenlogik/Bowire/issues/655)
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n
 
