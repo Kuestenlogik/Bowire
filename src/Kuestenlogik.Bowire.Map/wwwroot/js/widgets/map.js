@@ -571,6 +571,34 @@
             features: []
         };
 
+        // #238 — trajectory geometry. The line features are DERIVED from
+        // pointsSource on every rebuild rather than accumulated
+        // alongside it. Two things fall out of that and both matter:
+        // the FIFO cap below already trims pins, so the trajectory
+        // inherits the same 5000-vertex ceiling without a second
+        // budget to keep in step; and a pin and its segment can never
+        // disagree about position, selection or colour, because there
+        // is only one copy of that state.
+        //
+        // The cost is an O(pins) pass per frame. addPin already
+        // serialises the whole collection through setData on every
+        // frame, so this is the same order of work — and it is skipped
+        // outright while the toggle is off, which is the default.
+        var linesSource = {
+            type: 'FeatureCollection',
+            features: []
+        };
+
+        // ctx.prefs is a v1.1 additive. A widget mounted by an older
+        // host (or a third-party one) must still mount, so fall back to
+        // an in-memory stub: the toggle then works for the session and
+        // simply does not survive a reload.
+        var mapPrefs = (ctx && ctx.prefs) || {
+            get: function (key, fallback) { return fallback; },
+            set: function () { return false; }
+        };
+        var showTrajectory = mapPrefs.get('trajectory', false) === true;
+
         await new Promise(function (resolve) {
             map.on('load', resolve);
         });
@@ -607,6 +635,46 @@
             try { map.remove(); } catch {}
             return function () {};
         }
+
+        // Trajectory line source + layer. Registered BEFORE the two
+        // point layers so it paints underneath them: MapLibre stacks in
+        // insertion order, and the pins have to stay on top to remain
+        // legible and clickable for selection.
+        map.addSource('bowire-lines', { type: 'geojson', data: linesSource });
+        map.addLayer({
+            id: 'bowire-lines-layer',
+            type: 'line',
+            source: 'bowire-lines',
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+                // Toggled rather than added/removed on demand: keeping
+                // the layer registered means the toggle never has to
+                // re-derive its position in the stack, and a hidden
+                // layer with an empty source costs nothing to draw.
+                visibility: showTrajectory ? 'visible' : 'none'
+            },
+            paint: {
+                // Per-discriminator colour, carried on the feature so
+                // one layer covers every track — same approach the pin
+                // layers take with affinity and selection.
+                'line-color': ['get', 'color'],
+                'line-width': [
+                    'match', ['get', 'selected'],
+                    'yes', 4,
+                    /* default */ 2
+                ],
+                // Unselected tracks sit back so a selected path reads
+                // as the foreground one, mirroring how the pin layer
+                // dims with 'no-but-others-are'.
+                'line-opacity': [
+                    'match', ['get', 'selected'],
+                    'yes', 0.95,
+                    'no-but-others-are', 0.35,
+                    /* default */ 0.6
+                ]
+            }
+        });
 
         map.addSource('bowire-points', { type: 'geojson', data: pointsSource });
 
@@ -914,7 +982,198 @@
             // selection has driven the camera, skip auto-fit so we
             // don't fight the user.
             if (pointsSource.features.length <= 5 && !userMovedCamera) maybeFit();
+
+            // After the trim, so a track never keeps a vertex whose pin
+            // the cap has already dropped.
+            rebuildTrajectories();
         }
+
+        // Separator for the composite track key. A control character,
+        // not a punctuation mark, because both halves are free-form
+        // strings: a JSON path carries dots and brackets and a
+        // discriminator carries whatever the protocol calls its message
+        // type, so any printable delimiter is one that could also occur
+        // inside a half and merge two tracks into one.
+        var BOWIRE_TRACK_KEY_SEP = String.fromCharCode(31);
+
+        /**
+         * Which path does this pin belong to?
+         *
+         * The discriminator alone is the grouping #238 asks for, and it
+         * is right for the common shape — one entity per frame, many
+         * frames. It is wrong for the other shape the widget already
+         * supports: a multi-pairing frame (TacticalAPI's
+         * situationObjects[N]) carries N entities that all share one
+         * discriminator, so keying on it alone would thread every
+         * entity in the frame onto a single line and draw exactly the
+         * zigzag across unrelated entities the ticket rules out.
+         *
+         * So the key pairs the discriminator with whatever identifies
+         * the entity within the frame. `sidc` first: it is the tactical
+         * identifier and it follows an entity across frames even if the
+         * response reorders them. `parentPath` second: for a frame with
+         * no symbology it at least separates slot 0 from slot 1, which
+         * is right whenever the producer keeps its ordering stable.
+         *
+         * Both are heuristics standing in for a field nobody has
+         * declared yet. #240 replaces this with a configurable track-id
+         * and the rest of this function stays as it is.
+         */
+        function bowireTrackKey(props) {
+            var identity = (props && (props.sidc || props.parentPath)) || '';
+            return ((props && props.discriminator) || '*')
+                + BOWIRE_TRACK_KEY_SEP + identity;
+        }
+
+        /**
+         * Rebuild every LineString from the current pin collection and
+         * push it in one setData. Insertion order of the pins IS stream
+         * order, so walking the collection front-to-back appends each
+         * track's coordinates in the order they arrived — no separate
+         * sort, and no timestamp to trust.
+         *
+         * A no-op while the toggle is off, which keeps the default
+         * render path exactly what it was before this feature.
+         */
+        function rebuildTrajectories() {
+            if (!showTrajectory) return;
+
+            var byTrack = Object.create(null);
+            var order = [];
+            for (var i = 0; i < pointsSource.features.length; i++) {
+                var f = pointsSource.features[i];
+                var props = f.properties || {};
+                var key = bowireTrackKey(props);
+                var track = byTrack[key];
+                if (!track) {
+                    track = byTrack[key] = {
+                        coords: [],
+                        color: props.color,
+                        discriminator: props.discriminator,
+                        selected: 'no'
+                    };
+                    order.push(key);
+                }
+                track.coords.push(f.geometry.coordinates);
+                // One selected pin lights the whole path it belongs to.
+                // Selecting a frame means selecting an entity, and the
+                // point of the highlight is to answer "where has this
+                // one been" — dimming the rest of its own track would
+                // work against that.
+                if (props.selected === 'yes') track.selected = 'yes';
+            }
+
+            var anySelected = selectedFrameIds.size > 0;
+            var features = [];
+            for (var k = 0; k < order.length; k++) {
+                var t = byTrack[order[k]];
+                // A LineString needs two positions to be valid geometry,
+                // and a track with one pin has no path to show anyway.
+                // MapLibre tolerates the degenerate case; GeoJSON does
+                // not, and anything reading this source through the
+                // widget's remote-control surface would be right to
+                // reject it.
+                if (t.coords.length < 2) continue;
+                features.push({
+                    type: 'Feature',
+                    geometry: { type: 'LineString', coordinates: t.coords },
+                    properties: {
+                        color: t.color,
+                        discriminator: t.discriminator,
+                        selected: t.selected === 'yes'
+                            ? 'yes'
+                            : (anySelected ? 'no-but-others-are' : 'no')
+                    }
+                });
+            }
+
+            linesSource.features = features;
+            var src = map.getSource('bowire-lines');
+            if (src) src.setData(linesSource);
+        }
+
+        /**
+         * Flip the trajectory on or off: persist the choice, show or
+         * hide the layer, and either build the geometry or drop it.
+         *
+         * Dropping it on the way out is deliberate. A hidden layer over
+         * a populated source still holds every vertex alive, and a long
+         * stream that the operator turned the trajectory off for is
+         * precisely the case where that memory is not wanted.
+         */
+        function setTrajectoryEnabled(enabled) {
+            showTrajectory = !!enabled;
+            mapPrefs.set('trajectory', showTrajectory);
+            try {
+                map.setLayoutProperty('bowire-lines-layer', 'visibility',
+                    showTrajectory ? 'visible' : 'none');
+            } catch { /* style not ready or layer gone — nothing to show */ }
+            if (showTrajectory) {
+                rebuildTrajectories();
+            } else {
+                linesSource.features = [];
+                var src = map.getSource('bowire-lines');
+                if (src) src.setData(linesSource);
+            }
+        }
+
+        // "Show trajectory" toggle, mounted as a MapLibre control so it
+        // inherits the same placement, stacking and teardown as the
+        // NavigationControl already on the map. Sits top-left, opposite
+        // the zoom buttons, so neither covers the other on a narrow
+        // pane. IControl is duck-typed — an object with onAdd/onRemove
+        // is all MapLibre asks for.
+        var trajectoryToggleControl = {
+            onAdd: function () {
+                var wrap = document.createElement('div');
+                wrap.className = 'maplibregl-ctrl maplibregl-ctrl-group bowire-map-trajectory-ctrl';
+                // Inline styles for the same reason the rest of this
+                // widget uses them: an extension renders against any
+                // theme and must not depend on bowire.css being loaded.
+                wrap.style.padding = '4px 8px';
+                wrap.style.font = '12px system-ui, sans-serif';
+
+                var label = document.createElement('label');
+                label.style.display = 'flex';
+                label.style.alignItems = 'center';
+                label.style.gap = '6px';
+                label.style.cursor = 'pointer';
+                label.style.whiteSpace = 'nowrap';
+                label.style.userSelect = 'none';
+
+                var box = document.createElement('input');
+                box.type = 'checkbox';
+                box.checked = showTrajectory;
+                box.style.cursor = 'pointer';
+                box.style.margin = '0';
+                box.addEventListener('change', function () {
+                    setTrajectoryEnabled(box.checked);
+                });
+                // MapLibre installs its own handlers on the canvas
+                // container; without this a click on the control also
+                // reaches the map and can start a drag under the
+                // cursor.
+                wrap.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+                wrap.addEventListener('dblclick', function (e) { e.stopPropagation(); });
+
+                var text = document.createElement('span');
+                text.textContent = 'Show trajectory';
+
+                label.appendChild(box);
+                label.appendChild(text);
+                wrap.appendChild(label);
+                this._container = wrap;
+                return wrap;
+            },
+            onRemove: function () {
+                if (this._container && this._container.parentNode) {
+                    this._container.parentNode.removeChild(this._container);
+                }
+                this._container = null;
+            }
+        };
+        map.addControl(trajectoryToggleControl, 'top-left');
+
 
         /**
          * Re-flag every feature's `selected` property and push the
@@ -935,6 +1194,7 @@
             }
             var src = map.getSource('bowire-points');
             if (src) src.setData(pointsSource);
+            rebuildTrajectories();
         }
 
         /**
@@ -1233,7 +1493,15 @@
             container: container,
             flyTo: flyTo,
             highlightByPath: highlightByPath,
-            clearHighlight: clearHighlight
+            clearHighlight: clearHighlight,
+            // #238 — the trajectory toggle, on the same surface as the
+            // hover-sync. The JSON viewer does not drive it today; a
+            // browser check does, and it is the only way to ask a
+            // mounted widget what geometry it actually handed MapLibre
+            // without reaching into the source's private state.
+            setTrajectory: setTrajectoryEnabled,
+            isTrajectoryEnabled: function () { return showTrajectory; },
+            trajectoryGeoJson: function () { return linesSource; }
         };
         registry.push(handle);
 

@@ -13,7 +13,9 @@
 // The v1.0 ctx surface is deliberately tight (frames$, selection$,
 // theme, viewport, host). Anything beyond it is a v1.1+ additive
 // concern; widgets that reach for a missing field should fall back
-// gracefully.
+// gracefully. `prefs` (#238) is the first such additive: per-workspace,
+// per-extension widget preferences, which a bundle loading outside this
+// IIFE cannot otherwise scope for itself.
 //
 // selection$ — added in Phase 3.1 — is a snapshot stream (not a
 // delta stream) of `{ selectedFrameIds }` events bridged from the
@@ -634,6 +636,44 @@
                         };
                     }
                 },
+                // v1.1 additive — per-workspace widget preferences.
+                //
+                // A widget bundle loads as its own <script>, outside the
+                // core IIFE, so it can reach neither `wsKeyFor` nor
+                // `activeWorkspaceId`. Without this a widget that wants
+                // to remember a toggle has to re-derive the workspace
+                // key format for itself and then drift from it the next
+                // time the core's changes — the map widget already
+                // documents the same problem for `config`, which is why
+                // it reads its basemap from `window.__BOWIRE_CONFIG__`.
+                //
+                // Keys are namespaced by extension id, so two widgets
+                // can both store 'trajectory' without colliding, and a
+                // widget can never reach a core key by naming one.
+                // Reads and writes are individually guarded: private
+                // mode and "block site data" both make localStorage
+                // throw rather than return null, and a widget losing a
+                // preference must never take its mount down with it.
+                prefs: (function () {
+                    var ns = 'bowire_ext_' + (opts.extensionId || 'unknown') + '_';
+                    function scopedKey(key) {
+                        return wsKeyFor(activeWorkspaceId, ns + String(key));
+                    }
+                    return {
+                        get: function (key, fallback) {
+                            try {
+                                var raw = localStorage.getItem(scopedKey(key));
+                                return raw === null ? fallback : JSON.parse(raw);
+                            } catch { return fallback; }
+                        },
+                        set: function (key, value) {
+                            try {
+                                localStorage.setItem(scopedKey(key), JSON.stringify(value));
+                                return true;
+                            } catch { return false; }
+                        }
+                    };
+                })(),
                 host: {
                     subscribeSse: function (url) {
                         // Returns a same-shape async-iterable backed by an
@@ -891,6 +931,7 @@
                         kinds: aggregatedKinds,
                         discriminator: '*',
                         selectionMode: ext.viewer.selectionMode,
+                        extensionId: ext.id,
                         // Carry the (service, method) tuple through so the
                         // ctx can drain the dispatch-replay cache for
                         // frames that fired before this mount existed.
@@ -935,6 +976,7 @@
                         // truncate to [lastSelected]. Default 'single'
                         // is enforced at registration time.
                         selectionMode: ext.viewer && ext.viewer.selectionMode,
+                        extensionId: ext.id,
                         serviceId: serviceId,
                         methodId: methodId
                     });
