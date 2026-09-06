@@ -24,15 +24,27 @@
 //     cached response for a few minutes after a push, so a re-fetch reported
 //     "unchanged" while the plugin had in fact been edited. Two copies of one
 //     truth is the very thing this move exists to remove.
+//   * **What gets written is a documentation page, or nothing.** The body is
+//     checked before it lands: bounded in size, carrying front matter, and
+//     free of markup that would execute — DocFX passes raw HTML through to a
+//     page served on bowire.io, so a page's bytes reach a visitor's browser
+//     on our own origin. The repositories are the org's own, which makes this
+//     a supply-chain guard: it is what stops ONE compromised plugin
+//     repository from putting script on the documentation site. A page that
+//     fails the check gets the same placeholder an unreachable one gets, so
+//     the failure is loud, temporary, and self-correcting. The rule lives in
+//     plugin-docs.mjs (`rejectPage`) and is covered by
+//     tests/Kuestenlogik.Bowire.Tests/ci/plugin-doc-page.test.mjs.
 //   * **It says what it did.** Every page reports fetched or placeholder, so
 //     "is the site showing the real page?" is answerable from the build log
 //     rather than by reading the deployed HTML.
 
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { discoverPluginRepos, SOURCE_PATH, ORG } from './plugin-docs.mjs';
+import { discoverPluginRepos, rejectPage, SOURCE_PATH, ORG } from './plugin-docs.mjs';
 
 const DEST_DIR = join('docs', 'protocols');
+
 
 /**
  * The page that stands in when a plugin's own copy cannot be read.
@@ -107,19 +119,21 @@ async function main() {
             continue;
         }
         if (!res.ok) {
-            await writeFile(dest, placeholder(slug, repo, `${res.status} ${res.statusText}`), 'utf8');
-            console.log(`::warning::${repo}: ${res.status} ${res.statusText} — ${slug}.md is a placeholder for this build`);
+            // The status CODE only. `statusText` is free text chosen by
+            // whatever answered, and this string is written into a page
+            // that gets published — a server that replies with a status
+            // line of its own composition should not get to put it there.
+            await writeFile(dest, placeholder(slug, repo, `HTTP ${Number(res.status)}`), 'utf8');
+            console.log(`::warning::${repo}: HTTP ${Number(res.status)} — ${slug}.md is a placeholder for this build`);
             missing++;
             continue;
         }
 
         const body = await res.text();
-        if (!body.trimStart().startsWith('---')) {
-            // The toc generator reads `title` out of the front matter, so a
-            // page without it would appear in the navigation as a bare slug —
-            // indistinguishable from a broken build. Say which it is.
-            await writeFile(dest, placeholder(slug, repo, `${SOURCE_PATH} has no YAML front matter`), 'utf8');
-            console.log(`::warning::${repo}: ${SOURCE_PATH} has no YAML front matter — placeholder`);
+        const reject = rejectPage(body);
+        if (reject !== null) {
+            await writeFile(dest, placeholder(slug, repo, reject), 'utf8');
+            console.log(`::warning::${repo}: ${reject} — placeholder`);
             missing++;
             continue;
         }

@@ -72,3 +72,70 @@ export async function discoverPluginRepos(fetchImpl = fetch, token = process.env
 
     return found.sort((a, b) => a.slug.localeCompare(b.slug));
 }
+
+/**
+ * Ceiling for a fetched page, in bytes.
+ *
+ * A protocol page is prose; the largest one in the org is a few tens of
+ * kilobytes. The number is less a guess at "big enough" than a refusal
+ * to write an unbounded remote body to disk in CI — whatever a
+ * repository serves at that path, the build has a fixed cost.
+ */
+export const MAX_PAGE_BYTES = 512 * 1024;
+
+/**
+ * Markup a documentation page has no reason to carry, and that a page on
+ * bowire.io would execute.
+ *
+ * DocFX passes raw HTML straight through markdown into the rendered
+ * page, so anything matched here would reach a visitor's browser on our
+ * own origin. The repositories are the org's own, which makes this a
+ * supply-chain guard rather than an untrusted-input one: it is what
+ * stops a single compromised plugin repository from putting script on
+ * the documentation site, and it costs nothing on a page that is what it
+ * claims to be.
+ *
+ * A rejection, not a scrub. Stripping the tags would publish a page
+ * subtly unlike its source, which is worse than saying the page could
+ * not be read — the placeholder path already exists for exactly that, is
+ * visible in the build log, and repairs itself on the next run.
+ */
+const UNSAFE_MARKUP = [
+    [/<\s*script\b/i, '<script>'],
+    [/<\s*iframe\b/i, '<iframe>'],
+    [/<\s*object\b/i, '<object>'],
+    [/<\s*embed\b/i, '<embed>'],
+    [/<\s*form\b/i, '<form>'],
+    [/<\s*meta\b[^>]*http-equiv/i, 'a <meta http-equiv> redirect'],
+    [/<[^>]+\son[a-z]+\s*=/i, 'an inline event handler'],
+    [/javascript\s*:/i, 'a javascript: URL'],
+    [/data\s*:\s*text\/html/i, 'a data:text/html URL'],
+];
+
+/**
+ * Why this body must not be published, or null when it may be.
+ *
+ * @param {string} body      the fetched page
+ * @param {string} sourcePath the path it was fetched from, for the message
+ * @returns {string | null}
+ */
+export function rejectPage(body, sourcePath = SOURCE_PATH) {
+    if (typeof body !== 'string') return `${sourcePath} did not decode as text`;
+
+    const bytes = Buffer.byteLength(body, 'utf8');
+    if (bytes > MAX_PAGE_BYTES) {
+        return `page is ${bytes} bytes, over the ${MAX_PAGE_BYTES}-byte ceiling`;
+    }
+
+    // The toc generator reads `title` out of the front matter, so a page
+    // without it appears in the navigation as a bare slug —
+    // indistinguishable from a broken build. Say which it is.
+    if (!body.trimStart().startsWith('---')) {
+        return `${sourcePath} has no YAML front matter`;
+    }
+
+    for (const [pattern, what] of UNSAFE_MARKUP) {
+        if (pattern.test(body)) return `${sourcePath} contains ${what}`;
+    }
+    return null;
+}
