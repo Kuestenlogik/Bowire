@@ -927,6 +927,7 @@
             var coords = extractCoords(frame);
             if (coords.length === 0) return;
             collectTrackCandidates(frame, coords);
+            var frameOrdinal = framesSeen;
             framesSeen++;
             var discriminator = (frame && frame.discriminator) || '*';
             var frameId = (frame && frame.id) || null;
@@ -968,6 +969,10 @@
                         // answer, so the key travels with the pin.
                         trackKey: track.key,
                         trackId: track.trackId || '',
+                        // #239 — which update this pin belongs to. The
+                        // cursor moves over frames, so every pin has to
+                        // say which one it came in on.
+                        frameOrdinal: frameOrdinal,
                         frameId: frameId,
                         selected: selectedTag,
                         // Highlight tristate driven by the JSON↔map
@@ -1010,6 +1015,7 @@
             }
 
             trimToCap();
+            noteFrameOnTimeline(frame, frameOrdinal);
             renderPoints();
 
             // Auto-fit on the first few pins, then leave navigation to
@@ -1226,7 +1232,10 @@
                 // purpose, in one place, rather than as a side effect of
                 // drawing.
                 var key = props.trackKey || '';
-                if (hiddenTracks.has(key)) continue;
+                // The trajectory answers to the cursor for the same
+                // reason the pins do: a path drawn past the moment being
+                // looked at shows the operator the future.
+                if (!pinVisibleAt(props)) continue;
                 var track = byTrack[key];
                 if (!track) {
                     track = byTrack[key] = {
@@ -1399,14 +1408,17 @@
         function renderPoints() {
             var src = map.getSource('bowire-points');
             if (!src) return;
-            if (hiddenTracks.size === 0) {
+            // Nothing hidden and no cursor: hand the master array over
+            // as-is. The filtered copy is only built when there is
+            // something to filter.
+            if (hiddenTracks.size === 0 && cursorOrdinal === null) {
                 src.setData(pointsSource);
                 return;
             }
             src.setData({
                 type: 'FeatureCollection',
                 features: pointsSource.features.filter(function (f) {
-                    return !hiddenTracks.has((f.properties || {}).trackKey || '');
+                    return pinVisibleAt(f.properties || {});
                 })
             });
         }
@@ -1513,6 +1525,361 @@
             }
         };
         map.addControl(trajectoryToggleControl, 'top-left');
+
+        // -----------------------------------------------------------
+        // #239 — time cursor and playback
+        // -----------------------------------------------------------
+        //
+        // The map has always shown the live tail. Once a stream stops
+        // there is no way back to minute 7, and "where was it when the
+        // alert fired" needs an external tool. The cursor answers that
+        // by deciding which frames count as "already arrived"; the pin
+        // layer, the trajectory and the legend all read the same answer,
+        // so nothing else here has to learn about time.
+        //
+        // The axis is FRAMES, not pins. A frame is one update — the unit
+        // an operator thinks in — and one frame may carry thirteen pins.
+        // Scrubbing by pin would step through a multi-entity snapshot
+        // thirteen times and show two thirds of a moment.
+
+        // One entry per frame that produced at least one pin:
+        // { ordinal, time }. `time` is the frame's own timestamp where it
+        // has one, else its ordinal — see frameTimeOf.
+        var frameTimeline = [];
+
+        // Which frame the map is showing. null means "the tail", i.e.
+        // live: a new frame moves the picture forward on its own.
+        var cursorOrdinal = null;
+
+        // 'live' until something stops the stream or the operator pauses.
+        var playbackState = 'live';
+        var streamEnded = false;
+        var playTimer = null;
+        var playbackSpeed = Number(mapPrefs.get('playbackSpeed', 1)) || 1;
+
+        /**
+         * The frame's own notion of when it happened.
+         *
+         * Producers disagree about the field name, and plenty of streams
+         * carry no time at all. The ordinal is the honest fallback: it
+         * preserves arrival order, which is the only thing the scrubber
+         * actually needs, and it keeps the control usable on a stream
+         * that would otherwise have no axis to offer.
+         */
+        function frameTimeOf(frame, ordinal) {
+            var candidates = [
+                frame && frame.timestamp,
+                frame && frame.capturedAt,
+                frame && frame.time,
+                frame && frame.receivedAt
+            ];
+            for (var i = 0; i < candidates.length; i++) {
+                var raw = candidates[i];
+                if (raw == null) continue;
+                var value = typeof raw === 'number' ? raw : Date.parse(raw);
+                if (isFinite(value)) return { value: value, real: true };
+            }
+            return { value: ordinal, real: false };
+        }
+
+        /** Is the map currently showing everything it has? */
+        function cursorAtTail() {
+            return cursorOrdinal === null
+                || frameTimeline.length === 0
+                || cursorOrdinal >= frameTimeline[frameTimeline.length - 1].ordinal;
+        }
+
+        /**
+         * Should this pin be drawn?
+         *
+         * Hidden rather than dimmed. The ticket allows either, and the
+         * point of the cursor is to show what the map WOULD have shown at
+         * that moment — a dimmed future is still a future the operator
+         * can see, which is the thing being asked about.
+         */
+        function pinVisibleAt(props) {
+            if (hiddenTracks.has(props.trackKey || '')) return false;
+            if (cursorOrdinal === null) return true;
+            var ordinal = props.frameOrdinal;
+            return ordinal == null || ordinal <= cursorOrdinal;
+        }
+
+        /**
+         * Move the cursor and repaint.
+         *
+         * Selection is deliberately untouched. A frame selected while the
+         * cursor sits before it stays selected — it simply is not drawn,
+         * and comes back the moment the cursor passes it. Clearing the
+         * selection on a scrub would make rewinding destructive, and the
+         * operator scrubs precisely to look around a selected frame.
+         */
+        function setCursor(ordinal) {
+            var last = frameTimeline.length > 0
+                ? frameTimeline[frameTimeline.length - 1].ordinal
+                : null;
+            if (last === null) { cursorOrdinal = null; return; }
+            cursorOrdinal = Math.max(0, Math.min(ordinal, last));
+            renderPoints();
+            rebuildTrajectories();
+            renderLegendCounts();
+            renderPlaybackBar();
+        }
+
+        function stopPlayback() {
+            if (playTimer !== null) { clearTimeout(playTimer); playTimer = null; }
+        }
+
+        /**
+         * Advance one frame and schedule the next.
+         *
+         * The delay between two frames is their timestamp difference,
+         * divided by the speed — so playback runs at the rate the data
+         * actually arrived rather than at a fixed tick. On a stream with
+         * no usable timestamps the axis is ordinals, whose difference is
+         * 1, so a frame every 500 ms at 1x reads as a steady replay
+         * instead of a burst.
+         *
+         * Clamped at both ends: a producer that stamped two frames the
+         * same millisecond must not spin, and one that left a five-minute
+         * gap must not look frozen.
+         */
+        function scheduleNextFrame() {
+            stopPlayback();
+            if (playbackState !== 'playing' || frameTimeline.length === 0) return;
+
+            var idx = indexOfOrdinal(cursorOrdinal);
+            if (idx < 0 || idx >= frameTimeline.length - 1) {
+                // Reached the end: stop rather than loop. A replay that
+                // silently restarts makes a long stream impossible to
+                // read — the operator cannot tell the second pass from
+                // the first.
+                setPlaybackState('paused');
+                return;
+            }
+
+            var current = frameTimeline[idx];
+            var next = frameTimeline[idx + 1];
+            var gap = next.real && current.real ? next.value - current.value : 500;
+            var delay = Math.min(Math.max(gap / playbackSpeed, 16), 2000);
+
+            playTimer = setTimeout(function () {
+                if (disposed || playbackState !== 'playing') return;
+                setCursor(next.ordinal);
+                scheduleNextFrame();
+            }, delay);
+        }
+
+        function indexOfOrdinal(ordinal) {
+            if (ordinal === null) return frameTimeline.length - 1;
+            for (var i = 0; i < frameTimeline.length; i++) {
+                if (frameTimeline[i].ordinal >= ordinal) return i;
+            }
+            return frameTimeline.length - 1;
+        }
+
+        function setPlaybackState(next) {
+            playbackState = next;
+            if (next === 'playing') {
+                // Playing from the tail means replaying, so rewind first —
+                // otherwise Play looks broken: it is already at the end
+                // and there is nothing to advance to.
+                if (cursorAtTail() && frameTimeline.length > 1) {
+                    setCursor(frameTimeline[0].ordinal);
+                }
+                scheduleNextFrame();
+            } else {
+                stopPlayback();
+                if (next === 'live') {
+                    cursorOrdinal = null;
+                    renderPoints();
+                    rebuildTrajectories();
+                    renderLegendCounts();
+                }
+            }
+            renderPlaybackBar();
+        }
+
+        /**
+         * Record a frame on the timeline.
+         *
+         * Called from addPin AFTER the pins are in, so a frame that
+         * resolved no coordinates never reaches the axis — scrubbing onto
+         * it would look like a stall.
+         */
+        function noteFrameOnTimeline(frame, ordinal) {
+            var t = frameTimeOf(frame, ordinal);
+            frameTimeline.push({ ordinal: ordinal, value: t.value, real: t.real });
+
+            // The timeline is trimmed with the pins: an ordinal whose pins
+            // the cap has dropped is a position the scrubber cannot show.
+            var oldest = pointsSource.features.length > 0
+                ? (pointsSource.features[0].properties || {}).frameOrdinal
+                : null;
+            if (oldest != null) {
+                var cut = 0;
+                while (cut < frameTimeline.length && frameTimeline[cut].ordinal < oldest) cut++;
+                if (cut > 0) frameTimeline.splice(0, cut);
+            }
+            renderPlaybackBar();
+        }
+
+        // Bottom strip: scrubber, transport buttons, speed.
+        //
+        // Built directly into the widget container rather than as a
+        // MapLibre control: controls dock into a corner and size to their
+        // content, and this needs the full width. It sits above the
+        // canvas and below nothing, so the map keeps its own gestures
+        // everywhere the bar is not.
+        var playbackBar = null;
+        var playbackParts = null;
+
+        var BOWIRE_PLAYBACK_SPEEDS = [0.5, 1, 2, 4, 10];
+
+        function buildPlaybackBar() {
+            var bar = document.createElement('div');
+            bar.className = 'bowire-map-playback';
+            Object.assign(bar.style, {
+                position: 'absolute', left: '0', right: '0', bottom: '0',
+                display: 'none', alignItems: 'center', gap: '8px',
+                padding: '6px 10px',
+                font: '12px system-ui, sans-serif',
+                background: 'rgba(20,22,30,0.82)',
+                color: '#e8eaf0',
+                backdropFilter: 'blur(2px)',
+                zIndex: '5'
+            });
+            // The map's own drag/zoom handlers live on the canvas
+            // container; without this a drag that starts on the scrubber
+            // also pans the map underneath it.
+            bar.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+            bar.addEventListener('dblclick', function (e) { e.stopPropagation(); });
+            bar.addEventListener('wheel', function (e) { e.stopPropagation(); });
+
+            function button(label, title) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.textContent = label;
+                b.title = title;
+                Object.assign(b.style, {
+                    font: 'inherit', cursor: 'pointer', minWidth: '28px',
+                    padding: '2px 6px', borderRadius: '3px',
+                    border: '1px solid rgba(255,255,255,0.25)',
+                    background: 'rgba(255,255,255,0.08)', color: 'inherit'
+                });
+                return b;
+            }
+
+            var playBtn = button('▶', 'Play');
+            playBtn.addEventListener('click', function () {
+                setPlaybackState(playbackState === 'playing' ? 'paused' : 'playing');
+            });
+
+            var stepBack = button('⏮', 'Step back one frame');
+            stepBack.addEventListener('click', function () {
+                setPlaybackState('paused');
+                var idx = indexOfOrdinal(cursorOrdinal);
+                if (idx > 0) setCursor(frameTimeline[idx - 1].ordinal);
+            });
+
+            var stepFwd = button('⏭', 'Step forward one frame');
+            stepFwd.addEventListener('click', function () {
+                setPlaybackState('paused');
+                var idx = indexOfOrdinal(cursorOrdinal);
+                if (idx < frameTimeline.length - 1) setCursor(frameTimeline[idx + 1].ordinal);
+            });
+
+            var liveBtn = button('Live', 'Follow the stream again');
+            liveBtn.style.minWidth = '46px';
+            liveBtn.addEventListener('click', function () { setPlaybackState('live'); });
+
+            var range = document.createElement('input');
+            range.type = 'range';
+            range.min = '0';
+            range.step = '1';
+            range.style.flex = '1 1 auto';
+            range.style.cursor = 'pointer';
+            // `input`, not `change`: the ticket asks for the picture to
+            // follow the handle as it moves, not to jump when released.
+            range.addEventListener('input', function () {
+                setPlaybackState('paused');
+                var idx = Math.max(0, Math.min(Number(range.value), frameTimeline.length - 1));
+                if (frameTimeline[idx]) setCursor(frameTimeline[idx].ordinal);
+            });
+
+            var speed = document.createElement('select');
+            speed.style.font = 'inherit';
+            speed.title = 'Playback speed';
+            for (var i = 0; i < BOWIRE_PLAYBACK_SPEEDS.length; i++) {
+                var opt = document.createElement('option');
+                opt.value = String(BOWIRE_PLAYBACK_SPEEDS[i]);
+                opt.textContent = BOWIRE_PLAYBACK_SPEEDS[i] + '×';
+                if (BOWIRE_PLAYBACK_SPEEDS[i] === playbackSpeed) opt.selected = true;
+                speed.appendChild(opt);
+            }
+            speed.addEventListener('change', function () {
+                playbackSpeed = Number(speed.value) || 1;
+                // Speed is a property of the operator, not of the data, so
+                // it is the one piece of playback state that persists —
+                // the cursor position deliberately does not.
+                mapPrefs.set('playbackSpeed', playbackSpeed);
+                if (playbackState === 'playing') scheduleNextFrame();
+            });
+
+            var readout = document.createElement('span');
+            readout.style.opacity = '0.75';
+            readout.style.fontVariantNumeric = 'tabular-nums';
+            readout.style.whiteSpace = 'nowrap';
+            readout.style.minWidth = '92px';
+            readout.style.textAlign = 'right';
+
+            bar.appendChild(stepBack);
+            bar.appendChild(playBtn);
+            bar.appendChild(stepFwd);
+            bar.appendChild(range);
+            bar.appendChild(readout);
+            bar.appendChild(speed);
+            bar.appendChild(liveBtn);
+            container.appendChild(bar);
+
+            playbackBar = bar;
+            playbackParts = {
+                play: playBtn, stepBack: stepBack, stepFwd: stepFwd,
+                live: liveBtn, range: range, speed: speed, readout: readout
+            };
+        }
+
+        /**
+         * Reflect the current state on the bar.
+         *
+         * The bar hides itself until there is something to scrub, and its
+         * transport disables while the stream is live: a cursor that
+         * fights an arriving frame would flicker between the operator's
+         * position and the tail, and #239 pins the cursor to "now" for
+         * exactly that reason. Pause is the way out, so Play stays live.
+         */
+        function renderPlaybackBar() {
+            if (!playbackBar || !playbackParts) return;
+            var count = frameTimeline.length;
+            playbackBar.style.display = count > 1 ? 'flex' : 'none';
+            if (count === 0) return;
+
+            var idx = indexOfOrdinal(cursorOrdinal);
+            var p = playbackParts;
+            p.range.max = String(count - 1);
+            p.range.value = String(idx);
+            p.range.disabled = playbackState === 'live';
+            p.stepBack.disabled = playbackState === 'live' || idx <= 0;
+            p.stepFwd.disabled = playbackState === 'live' || idx >= count - 1;
+            p.live.disabled = playbackState === 'live';
+            p.play.textContent = playbackState === 'playing' ? '❚❚' : '▶';
+            p.play.title = playbackState === 'playing' ? 'Pause' : 'Play';
+
+            p.readout.textContent = playbackState === 'live'
+                ? 'live · ' + count
+                : (idx + 1) + ' / ' + count;
+        }
+
+        buildPlaybackBar();
 
         // -----------------------------------------------------------
         // #240 — track legend and track-id path control
@@ -1645,11 +2012,38 @@
             rebuildTrajectories();
         }
 
+        /**
+         * How many pins each track currently has ON THE MAP.
+         *
+         * With no cursor that is the running total the track kept as it
+         * arrived — cheap, and the hot path while a stream is live. With
+         * a cursor it is not: the legend describes the picture, and a row
+         * reading 46 next to sixteen visible pins is the legend
+         * disagreeing with the map it belongs to.
+         *
+         * The recount is one pass over the pins, and it runs on cursor
+         * moves rather than on frames, so the live path stays untouched.
+         */
+        function visibleTrackCounts() {
+            if (cursorOrdinal === null) return null;
+            var counts = new Map();
+            for (var i = 0; i < pointsSource.features.length; i++) {
+                var props = pointsSource.features[i].properties || {};
+                if (props.frameOrdinal != null && props.frameOrdinal > cursorOrdinal) continue;
+                var key = props.trackKey || '';
+                counts.set(key, (counts.get(key) || 0) + 1);
+            }
+            return counts;
+        }
+
         /** Repaint only the counts — the hot path while a stream runs. */
         function renderLegendCounts() {
+            var visible = visibleTrackCounts();
             trackMeta.forEach(function (meta, key) {
                 var row = legendRows.get(key);
-                if (row && row.count) row.count.textContent = String(meta.count);
+                if (!row || !row.count) return;
+                row.count.textContent = String(
+                    visible === null ? meta.count : (visible.get(key) || 0));
             });
         }
 
@@ -1657,6 +2051,7 @@
             if (!legendBody) return;
             legendBody.textContent = '';
             legendRows.clear();
+            var visibleCounts = visibleTrackCounts();
             if (trackMeta.size === 0) {
                 var empty = document.createElement('div');
                 empty.textContent = 'No tracks yet';
@@ -1701,7 +2096,8 @@
                 // Frame count as a meta chip between the name and the
                 // edge — the house pattern for a per-row count.
                 var count = document.createElement('span');
-                count.textContent = String(meta.count);
+                count.textContent = String(
+                    visibleCounts === null ? meta.count : (visibleCounts.get(key) || 0));
                 count.style.marginLeft = 'auto';
                 count.style.opacity = '0.65';
                 count.style.fontVariantNumeric = 'tabular-nums';
@@ -1885,6 +2281,13 @@
                 }
             } catch (e) {
                 if (!disposed) console.error('[bowire-map] stream loop ended:', e);
+            } finally {
+                // #239 — the stream is done, so the scrubber can take
+                // over. `finally`, not the happy path: a stream that ends
+                // by throwing is exactly when someone wants to rewind and
+                // look at what happened just before.
+                streamEnded = true;
+                if (!disposed && playbackState === 'live') setPlaybackState('paused');
             }
         })();
 
@@ -2158,12 +2561,40 @@
                 });
                 return out;
             },
-            setTrackHidden: toggleTrackHidden
+            setTrackHidden: toggleTrackHidden,
+            // #239 — the time cursor. Same reasoning as the trajectory
+            // surface: this is the only way to ask a mounted widget what
+            // moment it is showing without reaching into MapLibre.
+            setPlaybackState: setPlaybackState,
+            setCursorIndex: function (index) {
+                if (frameTimeline.length === 0) return;
+                var i = Math.max(0, Math.min(index, frameTimeline.length - 1));
+                setCursor(frameTimeline[i].ordinal);
+            },
+            visibleTrackCounts: function () {
+                var visible = visibleTrackCounts();
+                var out = {};
+                trackMeta.forEach(function (meta, key) {
+                    out[key] = visible === null ? meta.count : (visible.get(key) || 0);
+                });
+                return out;
+            },
+            playback: function () {
+                return {
+                    state: playbackState,
+                    streamEnded: streamEnded,
+                    frames: frameTimeline.length,
+                    index: frameTimeline.length === 0 ? -1 : indexOfOrdinal(cursorOrdinal),
+                    atTail: cursorAtTail(),
+                    speed: playbackSpeed
+                };
+            }
         };
         registry.push(handle);
 
         return function unmount() {
             disposed = true;
+            stopPlayback();
             var idx = registry.indexOf(handle);
             if (idx >= 0) registry.splice(idx, 1);
             try { map.remove(); } catch {}
