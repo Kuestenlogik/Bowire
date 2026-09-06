@@ -80,11 +80,15 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
     /// the hint-less all-plugins fan-out (any URL that happens to answer
     /// text/event-stream — legacy MCP SSE transport, graphql-sse — would
     /// grow a phantom "SSE Endpoints" service next to the owning
-    /// plugin's real one). Mirrors the gRPC transport marker; must stay
-    /// aligned with the literal in BowireDiscoveryEndpoints.
+    /// plugin's real one).
     /// </summary>
-    internal const string AdHocHintMarker = "__bowireSseAdHoc=1";
-
+    /// <remarks>
+    /// Reads the shared <see cref="BowireMetadataKeys.PluginHint"/> marker
+    /// rather than a private one. The private version needed a constant here
+    /// and a matching literal in BowireDiscoveryEndpoints, kept together by a
+    /// comment; SignalR had a second copy of the same arrangement, and the
+    /// third plugin to want this bit got it wrong instead.
+    /// </remarks>
     /// <inheritdoc />
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
@@ -92,15 +96,8 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
         // Strip the hint marker before anything else touches the URL —
         // the self-origin check, the probe, OriginUrl and the ad-hoc
         // method path must all see the clean URL.
-        var hinted = false;
-        if (!string.IsNullOrEmpty(serverUrl))
-        {
-            var marked = serverUrl;
-            serverUrl = serverUrl
-                .Replace("?" + AdHocHintMarker, "", StringComparison.Ordinal)
-                .Replace("&" + AdHocHintMarker, "", StringComparison.Ordinal);
-            hinted = marked.Length != serverUrl.Length;
-        }
+        var hinted = BowireServerUrl.HasPluginHint(serverUrl, Id);
+        serverUrl = BowireServerUrl.StripPluginHint(serverUrl);
 
         // serverUrl threaded into Discover so the self-origin gate inside
         // can decide whether to scan the local EndpointDataSource — see

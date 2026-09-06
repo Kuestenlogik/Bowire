@@ -47,18 +47,6 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
     }
 
     /// <summary>
-    /// Side-channel marker the discovery endpoint appends to the URL when
-    /// the caller explicitly hinted <c>signalr@…</c>. DiscoverAsync has no
-    /// hint parameter, and the ad-hoc fallback below must never fire on
-    /// the hint-less all-plugins fan-out (every http(s) URL would get a
-    /// negotiate probe, and any hub-shaped answer would grow a phantom
-    /// service next to the owning plugin's real one). Mirrors the gRPC
-    /// transport / SSE ad-hoc markers; must stay aligned with the literal
-    /// in BowireDiscoveryEndpoints.
-    /// </summary>
-    internal const string AdHocHintMarker = "__bowireSignalRAdHoc=1";
-
-    /// <summary>
     /// Service name of the synthesised separate-target hub surface. The
     /// space makes collisions with real hub class names impossible, so
     /// the invoke paths can safely key their ad-hoc redirect on it.
@@ -71,15 +59,12 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
         // Strip the hint marker before anything else touches the URL —
         // the self-origin check, the negotiate probe, OriginUrl and the
         // hub metadata scan must all see the clean URL.
-        var hinted = false;
-        if (!string.IsNullOrEmpty(serverUrl))
-        {
-            var marked = serverUrl;
-            serverUrl = serverUrl
-                .Replace("?" + AdHocHintMarker, "", StringComparison.Ordinal)
-                .Replace("&" + AdHocHintMarker, "", StringComparison.Ordinal);
-            hinted = marked.Length != serverUrl.Length;
-        }
+        // Reads the shared BowireMetadataKeys.PluginHint marker. The
+        // private one this replaced needed a constant here and a matching
+        // literal in BowireDiscoveryEndpoints, held together by a comment —
+        // the same arrangement SSE had a second copy of.
+        var hinted = BowireServerUrl.HasPluginHint(serverUrl, Id);
+        serverUrl = BowireServerUrl.StripPluginHint(serverUrl);
 
         var services = SignalRHubDiscovery.DiscoverHubs(_serviceProvider, serverUrl);
 
