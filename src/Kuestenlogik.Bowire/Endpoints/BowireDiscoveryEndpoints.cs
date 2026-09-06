@@ -92,30 +92,21 @@ internal static class BowireDiscoveryEndpoints
                     serverUrl = $"{serverUrl}{sep}{BowireMetadataKeys.GrpcTransport}={Uri.EscapeDataString(tm.Value)}";
                 }
 
-                // Same side-channel idea for SSE: DiscoverAsync has no
-                // "was I explicitly hinted?" parameter, but the plugin's
-                // ad-hoc separate-target fallback must ONLY fire for
-                // `sse@…` — on the hint-less fan-out any URL that happens
-                // to answer text/event-stream (legacy MCP SSE transport,
-                // graphql-sse, …) would otherwise grow a phantom
-                // "SSE Endpoints" service next to the owning plugin's
-                // real one. Marker name must stay aligned with
-                // BowireSseProtocol.AdHocHintMarker.
-                if (string.Equals(mappedId, "sse", StringComparison.OrdinalIgnoreCase))
-                {
-                    var sep = serverUrl.Contains('?', StringComparison.Ordinal) ? '&' : '?';
-                    serverUrl = $"{serverUrl}{sep}__bowireSseAdHoc=1";
-                }
-
-                // SignalR's separate-target fallback (#510) is gated the
-                // same way: negotiate-probe + ad-hoc service only for an
-                // explicit signalr@ hint. Marker name must stay aligned
-                // with BowireSignalRProtocol.AdHocHintMarker.
-                if (string.Equals(mappedId, "signalr", StringComparison.OrdinalIgnoreCase))
-                {
-                    var sep = serverUrl.Contains('?', StringComparison.Ordinal) ? '&' : '?';
-                    serverUrl = $"{serverUrl}{sep}__bowireSignalRAdHoc=1";
-                }
+                // Every hinted plugin gets the same marker, so a plugin
+                // that must only act when explicitly asked for has one
+                // question to ask and one answer to trust.
+                //
+                // SSE and SignalR each grew their own
+                // (`__bowireSseAdHoc`, `__bowireSignalRAdHoc`), kept
+                // aligned with a constant in another file by a comment.
+                // Two conventions for one bit is already one too many,
+                // and TacticalAPI showed what the third costs: it gated
+                // on the `tacticalapi@` prefix instead — which Parse
+                // above has already consumed — so its DiscoverAsync
+                // returned an empty list on every path, its own sample
+                // included, while its unit test passed by calling it
+                // with a prefix production never delivers.
+                serverUrl = BowireServerUrl.WithPluginHint(serverUrl, mappedId);
             }
 
             // Standalone tool launched without --url and with no proto

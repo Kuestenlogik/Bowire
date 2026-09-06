@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Net;
+using Kuestenlogik.Bowire;
 using Kuestenlogik.Bowire.Protocol.SignalR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -63,8 +64,12 @@ public sealed class AdHocSignalRTests : IAsyncDisposable
         GC.SuppressFinalize(this);
     }
 
+    // Built through the core helper the discovery endpoint itself calls,
+    // so the test cannot pass against a marker production never appends —
+    // which is exactly how the TacticalAPI plugin's own discovery test
+    // stayed green while its DiscoverAsync returned nothing on every path.
     private static string WithMarker(string url) =>
-        url + (url.Contains('?', StringComparison.Ordinal) ? "&" : "?") + BowireSignalRProtocol.AdHocHintMarker;
+        BowireServerUrl.WithPluginHint(url, "signalr");
 
     // ---- discovery gating ----
 
