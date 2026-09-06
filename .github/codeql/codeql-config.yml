@@ -8,6 +8,46 @@
 #      .github/codeql/extensions/bowire-log-sanitiser.yml + is wired
 #      into the scan via the `packs:` block below.
 #
+#      That technique is C#-only, and the reason is worth writing down
+#      so nobody re-derives it: C#'s dataflow consults models-as-data
+#      barriers globally, so a `barrierModel` row reaches every flow
+#      query. JavaScript's do not. `js/http-to-file-access`, for one,
+#      declares its only barrier as an abstract QL class with no
+#      implementation --
+#
+#          abstract class Sanitizer extends DataFlow::Node { }
+#          predicate isBarrier(DataFlow::Node n) { n instanceof Sanitizer }
+#
+#      -- and never reads a model. `codeql/javascript-all` does declare
+#      `barrierModel` (3 columns, no `provenance`, unlike C#'s 9), but
+#      that query ignores it, so a row there would be inert rather than
+#      wrong.
+#
+#      The QL hook does not reach it either. `javascript.qll` runs
+#      `import Customizations`, and that file's own doc comment offers
+#      exactly this use -- but the import resolves inside
+#      `codeql/javascript-all`, so a `Customizations.qll` shipped in
+#      another pack is never imported by anything. Published query packs
+#      also carry `.qlx` next to `.ql`, and the precompiled artefact wins
+#      even when the source path is passed explicitly.
+#
+#      Measured with CodeQL CLI 2.26.4 against a real JS database, for
+#      alert #1836 (js/http-to-file-access in
+#      scripts/docs/fetch-plugin-docs.mjs): stock query 1 finding;
+#      --additional-packs with a Customizations.qll 1; the same with
+#      --rerun 1; the query copied into that pack and compiled from
+#      source 1; the copy with the sanitiser imported EXPLICITLY 0. The
+#      class works; the injection does not.
+#
+#      So the only route that reaches the Action is a repo-local pack
+#      holding a COPY of the rule that imports the sanitiser, plus a
+#      query-filter excluding the stock one -- a fork of an upstream
+#      security query, which then drifts and silences the real rule
+#      repo-wide. #1836 is dismissed with a written reason instead; the
+#      flow it names is validated by rejectPage() in
+#      scripts/docs/plugin-docs.mjs and covered by
+#      tests/Kuestenlogik.Bowire.Tests/ci/plugin-doc-page.test.mjs.
+#
 #   2. Skip dev-tooling paths (Playwright screenshot scripts, marketing
 #      PDF build helpers, ad-hoc UX tests) that legitimately disable
 #      cert validation against self-signed localhost dev servers OR
