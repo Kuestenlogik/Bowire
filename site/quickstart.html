@@ -102,6 +102,16 @@ any service URL without code changes.
             <span class="quickstart-path-btn-desc">Run <code>bowire</code> against any service URL. No code changes to the target.</span>
           </span>
         </button>
+        <button class="quickstart-path-btn" type="button" role="tab" data-path="vscode" aria-selected="false">
+          <span class="quickstart-path-btn-photo" aria-hidden="true">
+            <img src="{{ '/assets/images/launch/tugboat.jpg' | relative_url }}" alt="" loading="lazy">
+          </span>
+          <span class="quickstart-path-btn-body">
+            <span class="quickstart-path-btn-title">Tugboat</span>
+            <span class="quickstart-path-btn-mode">VS Code extension</span>
+            <span class="quickstart-path-btn-desc">The workbench in a side panel, beside the code that serves the API. Drives the same <code>bowire</code> CLI as your terminal and your CI.</span>
+          </span>
+        </button>
         <button class="quickstart-path-btn" type="button" role="tab" data-path="mock" aria-selected="false">
           <span class="quickstart-path-btn-photo" aria-hidden="true">
             <img src="{{ '/assets/images/launch/dazzleship.jpg' | relative_url }}" alt="" loading="lazy">
@@ -120,6 +130,16 @@ any service URL without code changes.
             <span class="quickstart-path-btn-title">Container ship</span>
             <span class="quickstart-path-btn-mode">Docker sidecar</span>
             <span class="quickstart-path-btn-desc">Bowire runs as its own service in a compose stack or Kubernetes pod. Reachable from inside the cluster, browsable from outside.</span>
+          </span>
+        </button>
+        <button class="quickstart-path-btn" type="button" role="tab" data-path="multiuser" aria-selected="false">
+          <span class="quickstart-path-btn-photo" aria-hidden="true">
+            <img src="{{ '/assets/images/launch/passengership.jpg' | relative_url }}" alt="" loading="lazy">
+          </span>
+          <span class="quickstart-path-btn-body">
+            <span class="quickstart-path-btn-title">Cruise ship</span>
+            <span class="quickstart-path-btn-mode">Multi-user host</span>
+            <span class="quickstart-path-btn-desc">One Bowire, several authenticated passengers. Any OIDC provider, a slot on disk per identity, SCIM keeping the roster in step.</span>
           </span>
         </button>
       </div>
@@ -581,6 +601,117 @@ app.Run();</code></pre>
       <p>Bowire picks up every protocol prerequisite for you: gRPC plugins call <code>AddGrpcReflection()</code> and <code>MapGrpcReflectionService()</code>, REST plugins read your <code>IApiDescriptionGroupCollectionProvider</code>, SignalR plugins enumerate mapped hubs via <code>EndpointDataSource</code>. Side effects scoped to dev / staging environments only &mdash; the production path stays untouched.</p>
     </div>
   </article>
+
+  <!-- ========================================================== -->
+  <!--  VS Code path                                              -->
+  <!-- ========================================================== -->
+
+  <article class="quickstart-page-step" id="vscode-install" data-path="vscode" hidden>
+    <div class="quickstart-page-step-num">2</div>
+    <div class="quickstart-page-step-body">
+      <h2>Install the extension</h2>
+      <p class="features-block-lead">One extension, from the Marketplace. It does not bundle Bowire &mdash; it drives a CLI, so the workbench in your editor, your terminal and your CI are the same binary reading the same collections.</p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <button class="copy-btn" data-copy="ext install kuestenlogik.bowire-vscode" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code>$ ext install kuestenlogik.bowire-vscode</code></pre>
+      </div>
+    </div>
+  </article>
+
+  <article class="quickstart-page-step" id="vscode-cli" data-path="vscode" hidden>
+    <div class="quickstart-page-step-num">3</div>
+    <div class="quickstart-page-step-body">
+      <h2>Point it at a Bowire</h2>
+      <p class="features-block-lead">It looks for <code>bowire</code> on <code>PATH</code> first. For a build that is not there &mdash; a local checkout, a portable copy, a second version alongside the installed one &mdash; name it in <code>.vscode/settings.json</code>. The value supports <code>${workspaceFolder}</code>, so a project-local build can be committed and shared with the team. If nothing is found, <code>bowire.autoDownload</code> decides whether it offers to fetch a verified one (<code>prompt</code> by default; <code>always</code> and <code>never</code> also work). <a href="{{ '/docs/integrations/vscode.html' | relative_url }}">How it finds Bowire &rarr;</a></p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">json</span>
+        </div>
+        <pre><code>{ "bowire.cliPath": "${workspaceFolder}/tools/bowire" }</code></pre>
+      </div>
+    </div>
+  </article>
+
+  <article class="quickstart-page-step" id="vscode-open" data-path="vscode" hidden>
+    <div class="quickstart-page-step-num">4</div>
+    <div class="quickstart-page-step-body">
+      <h2>Open the panel</h2>
+      <p class="features-block-lead">Run <strong>Bowire: Open Workbench</strong> from the Command Palette. The extension starts a Bowire, finds the port it bound, and mounts the workbench in an editor panel beside the code that serves the API &mdash; the same rails, the same discovery, no context switch to a browser.</p>
+    </div>
+  </article>
+
+  <!-- ========================================================== -->
+  <!--  Multi-user path                                           -->
+  <!-- ========================================================== -->
+
+  <article class="quickstart-page-step" id="multiuser-install" data-path="multiuser" hidden>
+    <div class="quickstart-page-step-num">2</div>
+    <div class="quickstart-page-step-body">
+      <h2>Install Bowire and an auth provider</h2>
+      <p class="features-block-lead">The identity dependencies live in their own package, so only installs that use them pay for them. <code>Kuestenlogik.Bowire.Auth.Oidc</code> speaks to any OIDC-compliant IdP &mdash; Entra ID, Okta, Keycloak &mdash; with no provider-specific code paths.</p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <button class="copy-btn" data-copy="dotnet tool install -g Kuestenlogik.Bowire.Tool &amp;&amp; bowire plugin install Kuestenlogik.Bowire.Auth.Oidc" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code>$ dotnet tool install -g Kuestenlogik.Bowire.Tool
+$ bowire plugin install Kuestenlogik.Bowire.Auth.Oidc</code></pre>
+      </div>
+    </div>
+  </article>
+
+  <article class="quickstart-page-step" id="multiuser-auth" data-path="multiuser" hidden>
+    <div class="quickstart-page-step-num">3</div>
+    <div class="quickstart-page-step-body">
+      <h2>Lock the door</h2>
+      <p class="features-block-lead">With no provider selected nothing changes and the endpoints stay open &mdash; the laptop-friendly default. With one selected, every Bowire route requires an authenticated caller, and a provider named on the command line that cannot be found is a startup failure rather than a silent fallback to no auth.</p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <button class="copy-btn" data-copy="bowire --auth-provider oidc --auth-oidc-authority https://login.example.com --auth-oidc-client-id bowire --auth-oidc-required-claim &quot;groups=bowire-users&quot;" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code>$ bowire --url … \
+         --auth-provider oidc \
+         --auth-oidc-authority https://login.example.com \
+         --auth-oidc-client-id bowire \
+         --auth-oidc-required-claim "groups=bowire-users"</code></pre>
+      </div>
+    </div>
+  </article>
+
+  <article class="quickstart-page-step" id="multiuser-slots" data-path="multiuser" hidden>
+    <div class="quickstart-page-step-num">4</div>
+    <div class="quickstart-page-step-body">
+      <h2>Give each person their own state</h2>
+      <p class="features-block-lead">Authentication answers <em>who is calling</em>; it moves nothing on disk. Per-identity storage is a separate switch, deliberately not implied by configuring a provider &mdash; plenty of installs put a login in front of a workbench that still has one person behind it. Switched on, each identity gets a slot under the storage root: workspaces, recordings, collections, plugin settings. <a href="{{ '/docs/setup/multi-user.html' | relative_url }}">Multi-user setup &rarr;</a> &middot; <a href="{{ '/docs/setup/scim.html' | relative_url }}">SCIM provisioning &rarr;</a></p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">jsonc</span>
+        </div>
+        <pre><code>{ "Bowire": { "MultiTenant": { "Enabled": true } } }</code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-lang">bash</span>
+          <button class="copy-btn" data-copy="bowire users list" aria-label="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <pre><code>$ bowire users list                    # the slots on disk, and what each decided
+$ bowire users migrate ada@example.com # report only — nothing changes until --apply</code></pre>
+      </div>
+    </div>
+  </article>
+
 
   <!-- Embedded finish — same flag bubble pattern, slightly different prose -->
   <article class="quickstart-page-step quickstart-page-step-finish" id="embed-afloat" data-path="embedded" hidden>
