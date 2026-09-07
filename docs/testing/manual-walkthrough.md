@@ -438,6 +438,45 @@ Run an ASP.NET host with `app.MapBowire()` + `app.UseBowireInterceptor()`, open 
 
 ---
 
+## Phase 13.5 — Reporting rails (lint · contracts · rollup · monitoring)
+
+These four had no coverage in this document until the v2.7 acceptance run
+found them (see `acceptance-v2.7.md`). They share a shape: each renders a
+ledger that a CLI command writes, so with nothing run yet the correct
+display is an empty state that names the command — not a blank pane and not
+an error. Check that first, then feed each one.
+
+### Lint
+
+1. [ ] Lint rail. Heading reads **DESIGN-TIME LINT**, with the explanation
+       that it checks the discovered API surface for design smells —
+       secrets in responses, PII, unbounded collections.
+2. [ ] With a source discovered: run the checks and confirm findings carry
+       a rule name and the method they fired on.
+3. [ ] A finding is clickable through to the method it concerns.
+
+### Contracts
+
+1. [ ] Contracts rail with no run yet → **No contract results yet**.
+2. [ ] Empty state is reached with no workspace as well, and stays an empty
+       state rather than an error.
+3. [ ] After a contract run: results list, pass/fail per contract.
+
+### Rollup
+
+1. [ ] Rollup rail with nothing collected → **Nothing rolled up yet**.
+2. [ ] After runs exist: aggregated view across sources/workspaces.
+
+### Monitoring
+
+1. [ ] Monitoring rail with no probes → **No probe outcomes yet**, and the
+       empty state names its producer: `bowire monitor run <probes>`.
+2. [ ] Run that command, reopen the rail, confirm the outcome ledger fills.
+3. [ ] Rail name check: this is Monitoring / `bowire monitor` — not
+       "Lighthouse", which collided with Google's tool.
+
+---
+
 ## Phase 14 — Settings
 
 ### My preferences
