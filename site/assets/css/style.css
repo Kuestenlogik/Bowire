@@ -8339,7 +8339,10 @@ html[data-theme="light"] {
 
 @media (min-width: 1180px) {
     .launch-boats {
-        grid-template-columns: repeat(5, 1fr);
+        /* Six, because there are six boats. Five left the last one
+           stranded on a row of its own, which read as "and also this
+           one" rather than as one set of deployment shapes. */
+        grid-template-columns: repeat(6, 1fr);
     }
 }
 
