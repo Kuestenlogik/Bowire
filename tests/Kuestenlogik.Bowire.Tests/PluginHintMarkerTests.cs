@@ -1,6 +1,8 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Models;
+
 namespace Kuestenlogik.Bowire.Tests;
 
 /// <summary>
@@ -11,19 +13,22 @@ namespace Kuestenlogik.Bowire.Tests;
 /// <see cref="BowireServerUrl.Parse"/> consumes the <c>hint@</c> prefix
 /// before any plugin is reached, so a plugin cannot see it. Plugins that
 /// must only act when pinned — a bundled-schema discovery, an ad-hoc
-/// separate-target fallback — need that bit delivered some other way, and
-/// SSE and SignalR each grew a private marker for it.
+/// separate-target fallback — need that bit delivered some other way.
 /// </para>
 /// <para>
-/// TacticalAPI is why this is now one shared marker rather than three
-/// private ones: it gated on the <c>tacticalapi@</c> prefix instead, which
-/// can never arrive, so its discovery returned an empty list on every path
-/// including its own sample's. Its unit test passed because it called
-/// <c>DiscoverAsync</c> with a prefix production never delivers.
+/// It is delivered as discovery <em>metadata</em>, merged in one place:
+/// <see cref="BowireDiscoveryProbe.RunAsync"/>, which every surface goes
+/// through. Two earlier arrangements failed, and both failures are pinned
+/// below. A marker appended to the URL leaks to the operator's own server
+/// unless the receiving plugin strips it, and only the plugins that owned a
+/// marker did. Merging at the call site instead left four of five callers —
+/// the CLI and the MCP tool among them — silently without the hint.
 /// </para>
 /// </remarks>
 public sealed class PluginHintMarkerTests
 {
+    private static readonly TimeSpan Ceiling = TimeSpan.FromSeconds(5);
+
     [Fact]
     public void ParseStripsTheHint_WhichIsWhyTheMarkerExists()
     {
@@ -36,77 +41,155 @@ public sealed class PluginHintMarkerTests
         Assert.DoesNotContain("tacticalapi@", url, StringComparison.Ordinal);
     }
 
-    [Theory]
-    [InlineData("http://localhost:5191")]
-    [InlineData("http://localhost:5191/hubs/chat")]
-    [InlineData("http://localhost:5191?existing=1")]
-    [InlineData("http://localhost:5191/stream?a=1&b=2")]
-    public void RoundTrips(string url)
+    [Fact]
+    public async Task PinnedPluginIsToldItWasNamed()
     {
-        var marked = BowireServerUrl.WithPluginHint(url, "sse");
+        var registry = new BowireProtocolRegistry();
+        var sse = new RecordingProtocol("sse");
+        registry.Register(sse);
 
-        Assert.True(BowireServerUrl.HasPluginHint(marked, "sse"));
-        Assert.Equal(url, BowireServerUrl.StripPluginHint(marked));
+        await BowireDiscoveryProbe.RunAsync(
+            registry, "http://host/stream", pluginHint: "sse",
+            showInternalServices: false, perProbeCeiling: Ceiling,
+            ct: TestContext.Current.CancellationToken);
+
+        Assert.Equal("sse", sse.SeenMetadata?[BowireMetadataKeys.PluginHint]);
     }
 
     [Fact]
-    public void StrippingKeepsTheQueryWellFormed()
+    public async Task TheMarkerNeverTouchesTheUrl()
     {
-        // Dropping a marker that landed first has to promote the next
-        // parameter, or the URL keeps a stray '&' where its query starts.
-        var marked = BowireServerUrl.WithPluginHint("http://host/stream", "sse") + "&keep=1";
+        // The regression this file exists to prevent: with the marker on the
+        // URL, a `rest@`/`graphql@`/`odata@` discovery dialled the operator's
+        // own server with `?__bowirePluginHint=…` appended, because no
+        // stripper stood between the endpoint and the wire.
+        var registry = new BowireProtocolRegistry();
+        var rest = new RecordingProtocol("rest");
+        registry.Register(rest);
 
-        Assert.Equal("http://host/stream?keep=1", BowireServerUrl.StripPluginHint(marked));
+        await BowireDiscoveryProbe.RunAsync(
+            registry, "http://host/api?page=2", pluginHint: "rest",
+            showInternalServices: false, perProbeCeiling: Ceiling,
+            ct: TestContext.Current.CancellationToken);
+
+        Assert.Equal("http://host/api?page=2", rest.SeenUrl);
+        Assert.DoesNotContain(
+            BowireMetadataKeys.PluginHint, rest.SeenUrl, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void AnswersOnlyForThePluginThatWasPinned()
+    public async Task AnUnpinnedProbeCarriesNoMarkerAtAll()
     {
-        var marked = BowireServerUrl.WithPluginHint("http://host/stream", "sse");
+        // Absent, not empty-string: a plugin asks `TryGetValue`, and a key
+        // that is always present would make every fan-out look pinned.
+        var registry = new BowireProtocolRegistry();
+        var sse = new RecordingProtocol("sse");
+        registry.Register(sse);
 
-        Assert.True(BowireServerUrl.HasPluginHint(marked, "sse"));
-        Assert.False(BowireServerUrl.HasPluginHint(marked, "signalr"));
+        await BowireDiscoveryProbe.RunAsync(
+            registry, "http://host/stream", pluginHint: null,
+            showInternalServices: false, perProbeCeiling: Ceiling,
+            ct: TestContext.Current.CancellationToken);
+
+        Assert.False(sse.SeenMetadata?.ContainsKey(BowireMetadataKeys.PluginHint) ?? false);
     }
 
     [Fact]
-    public void MatchesTheIdCaseInsensitively()
+    public async Task TheMarkerJoinsExistingMetadataRatherThanReplacingIt()
     {
-        // Parse leaves the hint opaque and the router matches it
-        // case-insensitively, so a plugin asking the question must not be
-        // stricter than the router that answered it.
-        var marked = BowireServerUrl.WithPluginHint("http://host", "SignalR");
+        // A pinned gRPC discovery still needs its descriptor set: the two
+        // ride the same bag, and the merge must not drop the other.
+        var registry = new BowireProtocolRegistry();
+        var grpc = new RecordingProtocol("grpc");
+        registry.Register(grpc);
+        var caller = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [BowireMetadataKeys.GrpcDescriptorSet] = "/tmp/set.binpb",
+        };
 
-        Assert.True(BowireServerUrl.HasPluginHint(marked, "signalr"));
-        Assert.True(BowireServerUrl.HasPluginHint(marked, "SIGNALR"));
+        await BowireDiscoveryProbe.RunAsync(
+            registry, "http://host", pluginHint: "grpc",
+            showInternalServices: false, perProbeCeiling: Ceiling,
+            metadata: caller,
+            ct: TestContext.Current.CancellationToken);
+
+        Assert.Equal("/tmp/set.binpb", grpc.SeenMetadata?[BowireMetadataKeys.GrpcDescriptorSet]);
+        Assert.Equal("grpc", grpc.SeenMetadata?[BowireMetadataKeys.PluginHint]);
+        // The caller's own dictionary is not mutated — it may be a shared
+        // or frozen bag, and a probe that edited it would leak the hint
+        // into the next, unrelated, discovery.
+        Assert.False(caller.ContainsKey(BowireMetadataKeys.PluginHint));
     }
 
     [Fact]
-    public void IgnoresTheNameAppearingElsewhereInTheUrl()
+    public async Task TheHintReachesThePluginWithTheCaseTheCallerTyped()
     {
-        // Only a query parameter counts. A path segment that happens to
-        // spell the marker is part of someone's URL, not our routing.
-        var url = "http://host/__bowirePluginHint=sse/stream";
+        // Plugins compare case-insensitively (the router that matched the
+        // hint does too), so the probe forwards the id verbatim rather
+        // than normalising it and inventing a second convention.
+        var registry = new BowireProtocolRegistry();
+        var signalr = new RecordingProtocol("signalr");
+        registry.Register(signalr);
 
-        Assert.False(BowireServerUrl.HasPluginHint(url, "sse"));
-        Assert.Equal(url, BowireServerUrl.StripPluginHint(url));
+        await BowireDiscoveryProbe.RunAsync(
+            registry, "http://host/hub", pluginHint: "SignalR",
+            showInternalServices: false, perProbeCeiling: Ceiling,
+            ct: TestContext.Current.CancellationToken);
+
+        var seen = signalr.SeenMetadata?[BowireMetadataKeys.PluginHint];
+        Assert.Equal("SignalR", seen);
+        Assert.Equal("signalr", seen, ignoreCase: true);
     }
 
-    [Fact]
-    public void UnmarkedUrlsAreUntouched()
+    /// <summary>
+    /// Records what the probe handed it and finds nothing — the questions
+    /// here are all about what reaches the plugin, not what comes back.
+    /// </summary>
+    /// <remarks>
+    /// Overrides the metadata overload deliberately. The interface default
+    /// forwards to the three-argument one and drops the bag, so a stub that
+    /// took the default would record <c>null</c> for every case and pass
+    /// this file whatever the probe did.
+    /// </remarks>
+    private sealed class RecordingProtocol(string id) : IBowireProtocol
     {
-        const string url = "http://host/stream?a=1";
+        public string Id { get; } = id;
+        public string Name { get; } = id;
+        public string IconSvg => "<svg/>";
 
-        Assert.False(BowireServerUrl.HasPluginHint(url, "sse"));
-        Assert.Equal(url, BowireServerUrl.StripPluginHint(url));
-        Assert.Equal(url, BowireServerUrl.WithPluginHint(url, ""));
-    }
+        public string? SeenUrl { get; private set; }
+        public IReadOnlyDictionary<string, string>? SeenMetadata { get; private set; }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    public void HandlesAbsentUrls(string? url)
-    {
-        Assert.False(BowireServerUrl.HasPluginHint(url, "sse"));
-        Assert.Equal(string.Empty, BowireServerUrl.StripPluginHint(url));
+        public Task<List<BowireServiceInfo>> DiscoverAsync(
+            string serverUrl, bool showInternalServices, CancellationToken ct = default)
+            => DiscoverAsync(serverUrl, showInternalServices, null, ct);
+
+        public Task<List<BowireServiceInfo>> DiscoverAsync(
+            string serverUrl, bool showInternalServices,
+            IReadOnlyDictionary<string, string>? metadata, CancellationToken ct = default)
+        {
+            SeenUrl = serverUrl;
+            SeenMetadata = metadata;
+            return Task.FromResult(new List<BowireServiceInfo>());
+        }
+
+        public Task<InvokeResult> InvokeAsync(
+            string serverUrl, string service, string method,
+            List<string> jsonMessages, bool showInternalServices,
+            Dictionary<string, string>? metadata = null, CancellationToken ct = default)
+            => Task.FromResult(new InvokeResult(null, 0, "OK", new Dictionary<string, string>()));
+
+        // Non-async so there is no CS1998 to suppress — the repo bans
+        // pragma suppressions, and an empty sequence needs no iterator.
+        public IAsyncEnumerable<string> InvokeStreamAsync(
+            string serverUrl, string service, string method,
+            List<string> jsonMessages, bool showInternalServices,
+            Dictionary<string, string>? metadata = null, CancellationToken ct = default)
+            => AsyncEnumerable.Empty<string>();
+
+        public Task<IBowireChannel?> OpenChannelAsync(
+            string serverUrl, string service, string method,
+            bool showInternalServices, Dictionary<string, string>? metadata = null,
+            CancellationToken ct = default) => Task.FromResult<IBowireChannel?>(null);
     }
 }

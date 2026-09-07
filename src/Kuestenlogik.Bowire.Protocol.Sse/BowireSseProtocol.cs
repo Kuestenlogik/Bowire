@@ -90,14 +90,33 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
     /// third plugin to want this bit got it wrong instead.
     /// </remarks>
     /// <inheritdoc />
-    public async Task<List<BowireServiceInfo>> DiscoverAsync(
+    public Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
+        => DiscoverAsync(serverUrl, showInternalServices, null, ct);
+
+    /// <summary>
+    /// Was this plugin the one the caller pinned with <c>hint@url</c>?
+    /// </summary>
+    /// <remarks>
+    /// Read from metadata, not from the URL. A marker on the URL is
+    /// dialled by whichever plugin receives it unless that plugin strips
+    /// it, so a marker is only safe where it has an owner; metadata is a
+    /// bag the plugin reads and never a string it sends.
+    /// </remarks>
+    private bool IsPinnedToThisPlugin(IReadOnlyDictionary<string, string>? metadata)
+        => metadata is not null
+            && metadata.TryGetValue(BowireMetadataKeys.PluginHint, out var pinned)
+            && string.Equals(pinned, Id, StringComparison.OrdinalIgnoreCase);
+
+    /// <inheritdoc />
+    public async Task<List<BowireServiceInfo>> DiscoverAsync(
+        string serverUrl, bool showInternalServices,
+        IReadOnlyDictionary<string, string>? metadata, CancellationToken ct = default)
     {
-        // Strip the hint marker before anything else touches the URL —
-        // the self-origin check, the probe, OriginUrl and the ad-hoc
-        // method path must all see the clean URL.
-        var hinted = BowireServerUrl.HasPluginHint(serverUrl, Id);
-        serverUrl = BowireServerUrl.StripPluginHint(serverUrl);
+        // Read from the bag, so nothing needs stripping: the self-origin
+        // check, the probe, OriginUrl and the ad-hoc method path all see
+        // the URL the caller typed.
+        var hinted = IsPinnedToThisPlugin(metadata);
 
         // serverUrl threaded into Discover so the self-origin gate inside
         // can decide whether to scan the local EndpointDataSource — see

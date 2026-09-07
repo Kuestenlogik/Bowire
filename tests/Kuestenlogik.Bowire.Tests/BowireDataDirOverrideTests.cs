@@ -27,8 +27,18 @@ namespace Kuestenlogik.Bowire.Tests;
 /// resolvers give the same answer, which is a property that cannot rot as
 /// stores are added.
 /// </para>
+/// <para>
+/// CwdSerialised rather than a collection of its own: this class writes
+/// `BOWIRE_DATA_DIR` and `BowirePaths.Current`, both process-global, and
+/// "BowireStorageRoot" had no matching CollectionDefinition — so it carried
+/// no DisableParallelization and ran alongside the classes that read those
+/// same globals. BowirePluginRootTests failed intermittently on exactly that
+/// race, finding an empty plugin directory because this class had pointed
+/// the resolver somewhere else mid-test. A global needs one owning
+/// collection, not one per subject.
+/// </para>
 /// </remarks>
-[Collection("BowireStorageRoot")]
+[Collection("CwdSerialised")]
 public sealed class BowireDataDirOverrideTests : IDisposable
 {
     private readonly string _scratch = Path.Combine(

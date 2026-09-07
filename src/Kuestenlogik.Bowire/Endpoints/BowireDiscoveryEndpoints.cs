@@ -92,21 +92,19 @@ internal static class BowireDiscoveryEndpoints
                     serverUrl = $"{serverUrl}{sep}{BowireMetadataKeys.GrpcTransport}={Uri.EscapeDataString(tm.Value)}";
                 }
 
-                // Every hinted plugin gets the same marker, so a plugin
-                // that must only act when explicitly asked for has one
-                // question to ask and one answer to trust.
+                // The resolved plugin id travels to the plugins in the
+                // discovery METADATA (see the probe call below), never on
+                // the URL.
                 //
-                // SSE and SignalR each grew their own
-                // (`__bowireSseAdHoc`, `__bowireSignalRAdHoc`), kept
-                // aligned with a constant in another file by a comment.
-                // Two conventions for one bit is already one too many,
-                // and TacticalAPI showed what the third costs: it gated
-                // on the `tacticalapi@` prefix instead — which Parse
-                // above has already consumed — so its DiscoverAsync
-                // returned an empty list on every path, its own sample
-                // included, while its unit test passed by calling it
-                // with a prefix production never delivers.
-                serverUrl = BowireServerUrl.WithPluginHint(serverUrl, mappedId);
+                // It used to go on the URL, and an acceptance run caught
+                // what that costs: every marker in this method is paired
+                // with a plugin that strips it again — gRPC strips its
+                // transport marker, SSE and SignalR stripped their own —
+                // and a marker appended for EVERY hint has no such pair.
+                // A `rest@`, `graphql@` or `odata@` discovery would have
+                // carried `?__bowirePluginHint=rest` to the operator's own
+                // server. Metadata has no such reach: it is a bag the
+                // plugin reads, not a string it dials.
             }
 
             // Standalone tool launched without --url and with no proto
@@ -277,12 +275,6 @@ internal static class BowireDiscoveryEndpoints
     }
 
     /// <summary>
-    /// Query-flag parsing for <c>?includeAttempts=…</c>. Present-but-empty
-    /// counts as on (<c>?includeAttempts</c>), <c>0</c> / <c>false</c> as
-    /// off — so a caller can pin the legacy shape explicitly rather than by
-    /// omission.
-    /// </summary>
-    /// <summary>
     /// <c>?grpcDescriptorSet=&lt;path&gt;</c> as the metadata bag the gRPC
     /// plugin reads, or <c>null</c> when absent.
     /// </summary>
@@ -312,6 +304,12 @@ internal static class BowireDiscoveryEndpoints
             };
     }
 
+    /// <summary>
+    /// Query-flag parsing for <c>?includeAttempts=…</c>. Present-but-empty
+    /// counts as on (<c>?includeAttempts</c>), <c>0</c> / <c>false</c> as
+    /// off — so a caller can pin the legacy shape explicitly rather than by
+    /// omission.
+    /// </summary>
     private static bool IsTruthy(string? value)
     {
         if (value is null) return false;

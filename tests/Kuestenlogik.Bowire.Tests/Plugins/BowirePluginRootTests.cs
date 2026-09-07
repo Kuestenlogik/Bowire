@@ -39,6 +39,18 @@ public sealed class BowirePluginRootTests : IDisposable
     // directory that no longer exists.
     private readonly IBowirePathResolver _previousPaths = BowirePaths.Current;
 
+    public BowirePluginRootTests()
+    {
+        // Do not trust what this class inherits. `AddBowire` calls
+        // BowirePluginRoot.Apply(dir) whenever a host is built, so any of the
+        // hundreds of tests that build one leaves s_configured set for the
+        // rest of the process — and a configured directory makes Roots return
+        // that directory *only*, so the two-tier cases below then enumerate
+        // somewhere this class never wrote. Restoring on Dispose is not
+        // enough: it cleans up after this class, not before it.
+        BowirePluginRoot.Apply(null);
+    }
+
     public void Dispose()
     {
         BowirePluginRoot.Apply(null);

@@ -64,12 +64,13 @@ public sealed class AdHocSignalRTests : IAsyncDisposable
         GC.SuppressFinalize(this);
     }
 
-    // Built through the core helper the discovery endpoint itself calls,
-    // so the test cannot pass against a marker production never appends —
-    // which is exactly how the TacticalAPI plugin's own discovery test
-    // stayed green while its DiscoverAsync returned nothing on every path.
-    private static string WithMarker(string url) =>
-        BowireServerUrl.WithPluginHint(url, "signalr");
+    // The bag BowireDiscoveryProbe builds for a `signalr@…` target, keyed
+    // the way production keys it. Asserting against a marker production
+    // never sends is exactly how the TacticalAPI plugin's own discovery
+    // test stayed green while its DiscoverAsync returned nothing on every
+    // path, so the key comes from the shared constant, not a literal.
+    private static readonly Dictionary<string, string> Pinned =
+        new(StringComparer.Ordinal) { [BowireMetadataKeys.PluginHint] = "signalr" };
 
     // ---- discovery gating ----
 
@@ -90,7 +91,7 @@ public sealed class AdHocSignalRTests : IAsyncDisposable
     {
         var protocol = new BowireSignalRProtocol();
 
-        var services = await protocol.DiscoverAsync(WithMarker($"{_baseUrl}/hub"), showInternalServices: false, TestContext.Current.CancellationToken);
+        var services = await protocol.DiscoverAsync($"{_baseUrl}/hub", showInternalServices: false, Pinned, TestContext.Current.CancellationToken);
 
         var svc = Assert.Single(services);
         Assert.Equal(BowireSignalRProtocol.AdHocServiceName, svc.Name);
@@ -119,7 +120,7 @@ public sealed class AdHocSignalRTests : IAsyncDisposable
     {
         var protocol = new BowireSignalRProtocol();
 
-        var services = await protocol.DiscoverAsync(WithMarker($"{_baseUrl}/plain"), showInternalServices: false, TestContext.Current.CancellationToken);
+        var services = await protocol.DiscoverAsync($"{_baseUrl}/plain", showInternalServices: false, Pinned, TestContext.Current.CancellationToken);
 
         Assert.Empty(services);
     }
@@ -131,7 +132,7 @@ public sealed class AdHocSignalRTests : IAsyncDisposable
 
         // Reserved port with nothing listening — the probe must swallow
         // the connection failure and report "no services", not throw.
-        var services = await protocol.DiscoverAsync(WithMarker("http://127.0.0.1:1/hub"), showInternalServices: false, TestContext.Current.CancellationToken);
+        var services = await protocol.DiscoverAsync("http://127.0.0.1:1/hub", showInternalServices: false, Pinned, TestContext.Current.CancellationToken);
 
         Assert.Empty(services);
     }

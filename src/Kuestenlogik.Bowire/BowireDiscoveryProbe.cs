@@ -65,7 +65,9 @@ public static class BowireDiscoveryProbe
     /// Plugin configuration for this probe — a gRPC descriptor set, for a
     /// server that does not answer reflection — so a target the plain
     /// discovery path cannot enumerate still reports its services. Forwarded
-    /// verbatim; a plugin with nothing to read in it ignores it.
+    /// with <paramref name="pluginHint"/> merged in under
+    /// <see cref="BowireMetadataKeys.PluginHint"/>; a plugin with nothing to
+    /// read in it ignores both.
     /// </param>
     /// <param name="logger">Optional; receives one warning per failed probe.</param>
     /// <param name="ct">Caller cancellation, linked into the ceiling.</param>
@@ -87,6 +89,14 @@ public static class BowireDiscoveryProbe
             ? registry.Protocols
             : registry.Protocols.Where(p =>
                 string.Equals(p.Id, pluginHint, StringComparison.OrdinalIgnoreCase))).ToList();
+
+        // The hint reaches the plugins as metadata, and it is merged here
+        // rather than by each caller. Five call sites pass `pluginHint`;
+        // when only the HTTP endpoint also stuffed it into the bag,
+        // `bowire discover signalr@…` and the `bowire.discover` MCP tool
+        // silently lost the pinned-only surfaces the UI got. One merge
+        // point, every surface.
+        var probeMetadata = WithPluginHint(metadata, pluginHint);
 
         var services = new List<BowireServiceInfo>();
         var attempts = new List<BowireDiscoveryAttempt>(protocolsToProbe.Count);
@@ -121,7 +131,7 @@ public static class BowireDiscoveryProbe
                 }
                 else
                 {
-                    found = await protocol.DiscoverAsync(serverUrl, showInternalServices, metadata, probeCt);
+                    found = await protocol.DiscoverAsync(serverUrl, showInternalServices, probeMetadata, probeCt);
                 }
 
                 foreach (var svc in found)
@@ -230,6 +240,38 @@ public static class BowireDiscoveryProbe
         }
 
         return new BowireDiscoveryProbeResult(services, attempts);
+    }
+
+    /// <summary>
+    /// Add the pinned plugin id to the discovery metadata, so a plugin can
+    /// ask whether the caller named it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="BowireServerUrl.Parse"/> consumes the <c>hint@</c> prefix
+    /// before any plugin is reached, so a plugin gating on that prefix gates
+    /// on something it can never see — which is exactly what the TacticalAPI
+    /// plugin did, returning an empty list on every path while its own unit
+    /// test passed against a prefix production never delivers.
+    /// </para>
+    /// <para>
+    /// Metadata rather than a URL marker: a marker on the URL is dialled by
+    /// whichever plugin receives it unless that plugin strips it again, and
+    /// only the plugins that own a marker do. One appended for every hint has
+    /// no such owner, and would reach the operator's own server as a stray
+    /// query parameter.
+    /// </para>
+    /// </remarks>
+    private static IReadOnlyDictionary<string, string>? WithPluginHint(
+        IReadOnlyDictionary<string, string>? metadata, string? pluginId)
+    {
+        if (string.IsNullOrEmpty(pluginId)) return metadata;
+
+        var merged = metadata is null
+            ? new Dictionary<string, string>(StringComparer.Ordinal)
+            : new Dictionary<string, string>(metadata, StringComparer.Ordinal);
+        merged[BowireMetadataKeys.PluginHint] = pluginId;
+        return merged;
     }
 
     /// <summary>
