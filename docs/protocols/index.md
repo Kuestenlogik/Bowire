@@ -9,22 +9,37 @@ Bowire ships with **fourteen first-party protocol plugins** plus **seven sibling
 
 ## First-party protocols
 
-| Protocol | Package | Discovery | Call types |
-|----------|---------|-----------|------------|
-| [gRPC](grpc.md) | `Kuestenlogik.Bowire.Protocol.Grpc` | Server Reflection · `.proto` upload | Unary, Server / Client / Bidi streaming |
-| [REST](rest.md) | `Kuestenlogik.Bowire.Protocol.Rest` | OpenAPI 3 / Swagger 2 · `IApiDescriptionGroupCollectionProvider` | Request / response |
-| [GraphQL](graphql.md) | `Kuestenlogik.Bowire.Protocol.GraphQL` | Schema introspection · SDL upload | Query, Mutation, Subscription |
-| [SignalR](signalr.md) | `Kuestenlogik.Bowire.Protocol.SignalR` | Endpoint metadata scan | Invoke, Server streaming, Duplex |
-| [WebSocket](websocket.md) | `Kuestenlogik.Bowire.Protocol.WebSocket` | Manual (no inherent discovery) | Duplex with text / binary frames |
-| [SSE](sse.md) | `Kuestenlogik.Bowire.Protocol.Sse` | Attribute · manual registration | Server streaming |
-| [MQTT](mqtt.md) | `Kuestenlogik.Bowire.Protocol.Mqtt` | Topic subscribe / publish (MQTT 3.1.1, 5.0 via MQTTnet) | Pub / Sub, Request / Response |
-| [NATS](nats.md) | `Kuestenlogik.Bowire.Protocol.Nats` | Subject sampling · JetStream streams · Services API (`$SRV.PING`) | Pub / Sub / Request, Stream consume |
-| [SOAP](soap.md) | `Kuestenlogik.Bowire.Protocol.Soap` | WSDL 1.1 `<portType>` + `<binding>` walk | Unary (SOAP 1.1 / 1.2) |
-| [JSON-RPC](jsonrpc.md) | `Kuestenlogik.Bowire.Protocol.JsonRpc` | OpenRPC `rpc.discover` · freeform fallback | Unary |
-| [Pulsar](pulsar.md) | `Kuestenlogik.Bowire.Protocol.Pulsar` | Pulsar HTTP admin (`/admin/v2/persistent`) | Produce (Unary), Subscribe (ServerStreaming) |
-| [Socket.IO](socketio.md) | `Kuestenlogik.Bowire.Protocol.SocketIo` | Manual (namespace / event) | Duplex with ack |
-| [OData](odata.md) | `Kuestenlogik.Bowire.Protocol.OData` | CSDL metadata endpoint | Request / response |
-| [MCP](mcp.md) | `Kuestenlogik.Bowire.Protocol.Mcp` | Wraps other protocols as MCP tools | Unary (tool invocation) |
+These ship from this repo. All but two are in the workbench bundle, so
+`bowire` speaks them out of the box. **NATS** and **Pulsar** each carry a
+third-party client library (NATS.Net, DotPulsar), which under the
+optional-package rule keeps them out of the bundle — install either before
+pointing Bowire at a broker:
+
+```
+bowire plugin install Kuestenlogik.Bowire.Protocol.Nats
+bowire plugin install Kuestenlogik.Bowire.Protocol.Pulsar
+```
+
+Without that step a `nats://` or `pulsar://` URL answers *"No protocol
+plugin recognised this URL"* — the plugin is not missing from your install,
+it was never in it.
+
+| Protocol | Package | Bundled | Discovery | Call types |
+|----------|---------|---------|-----------|------------|
+| [gRPC](grpc.md) | `Kuestenlogik.Bowire.Protocol.Grpc` | yes | Server Reflection · `.proto` upload | Unary, Server / Client / Bidi streaming |
+| [REST](rest.md) | `Kuestenlogik.Bowire.Protocol.Rest` | yes | OpenAPI 3 / Swagger 2 · `IApiDescriptionGroupCollectionProvider` | Request / response |
+| [GraphQL](graphql.md) | `Kuestenlogik.Bowire.Protocol.GraphQL` | yes | Schema introspection · SDL upload | Query, Mutation, Subscription |
+| [SignalR](signalr.md) | `Kuestenlogik.Bowire.Protocol.SignalR` | yes | Endpoint metadata scan | Invoke, Server streaming, Duplex |
+| [WebSocket](websocket.md) | `Kuestenlogik.Bowire.Protocol.WebSocket` | yes | Manual (no inherent discovery) | Duplex with text / binary frames |
+| [SSE](sse.md) | `Kuestenlogik.Bowire.Protocol.Sse` | yes | Attribute · manual registration | Server streaming |
+| [MQTT](mqtt.md) | `Kuestenlogik.Bowire.Protocol.Mqtt` | yes | Topic subscribe / publish (MQTT 3.1.1, 5.0 via MQTTnet) | Pub / Sub, Request / Response |
+| [NATS](nats.md) | `Kuestenlogik.Bowire.Protocol.Nats` | no · install first | Subject sampling · JetStream streams · Services API (`$SRV.PING`) | Pub / Sub / Request, Stream consume |
+| [SOAP](soap.md) | `Kuestenlogik.Bowire.Protocol.Soap` | yes | WSDL 1.1 `<portType>` + `<binding>` walk | Unary (SOAP 1.1 / 1.2) |
+| [JSON-RPC](jsonrpc.md) | `Kuestenlogik.Bowire.Protocol.JsonRpc` | yes | OpenRPC `rpc.discover` · freeform fallback | Unary |
+| [Pulsar](pulsar.md) | `Kuestenlogik.Bowire.Protocol.Pulsar` | no · install first | Pulsar HTTP admin (`/admin/v2/persistent`) | Produce (Unary), Subscribe (ServerStreaming) |
+| [Socket.IO](socketio.md) | `Kuestenlogik.Bowire.Protocol.SocketIo` | yes | Manual (namespace / event) | Duplex with ack |
+| [OData](odata.md) | `Kuestenlogik.Bowire.Protocol.OData` | yes | CSDL metadata endpoint | Request / response |
+| [MCP](mcp.md) | `Kuestenlogik.Bowire.Protocol.Mcp` | yes | Wraps other protocols as MCP tools | Unary (tool invocation) |
 
 ## Sibling plugins
 

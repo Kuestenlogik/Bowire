@@ -129,6 +129,7 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Mqtt\Kuestenlogik.Bowire.Protocol.Mqtt.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.SocketIo\Kuestenlogik.Bowire.Protocol.SocketIo.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.OData\Kuestenlogik.Bowire.Protocol.OData.csproj" />
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Soap\Kuestenlogik.Bowire.Protocol.Soap.csproj" />
     <!-- TacticalApi retired from the default Workbench bundle. Every other
          reference in this bundle is a UNIVERSAL web protocol (REST, gRPC,
          GraphQL, MQTT, WS, SSE, MCP, SignalR, JSON-RPC, SOAP, OData,
