@@ -29,25 +29,37 @@ internal static class BowireScimEndpoints
     {
         var basePath = options.BasePath.TrimEnd('/');
 
+        // A group rather than fifteen absolute routes, so #639's provisioning
+        // trace can be attached in ONE place. Hanging a filter off each route
+        // separately would mean the next route added to this file is the one
+        // that quietly is not traced — and a trace with a hole in it is worse
+        // than none, because it reads as evidence.
+        var group = endpoints.MapGroup(basePath);
+        if (options.TraceProvisioning)
+        {
+            var trace = new ScimProvisioningTrace(Path.Combine(store.Root, "trace.jsonl"));
+            group.AddEndpointFilter(new ScimTraceFilter(trace));
+        }
+
         // ---- discovery (RFC 7643 §5) ----
         // Every connector reads these before it writes anything; Entra ID
         // refuses to start a sync without ServiceProviderConfig.
 
-        endpoints.MapGet($"{basePath}/ServiceProviderConfig", (HttpContext http) =>
+        group.MapGet("/ServiceProviderConfig", (HttpContext http) =>
             Guard(http, options) ?? Ok(ServiceProviderConfig(options)));
 
-        endpoints.MapGet($"{basePath}/ResourceTypes", (HttpContext http) =>
+        group.MapGet("/ResourceTypes", (HttpContext http) =>
             Guard(http, options) ?? Ok(ResourceTypes(basePath)));
 
-        endpoints.MapGet($"{basePath}/Schemas", (HttpContext http) =>
+        group.MapGet("/Schemas", (HttpContext http) =>
             Guard(http, options) ?? Ok(Schemas()));
 
         // ---- users ----
 
-        endpoints.MapGet($"{basePath}/Users", (HttpContext http) =>
+        group.MapGet("/Users", (HttpContext http) =>
             Guard(http, options) ?? ListUsers(http, options, store, basePath));
 
-        endpoints.MapGet($"{basePath}/Users/{{id}}", (HttpContext http, string id) =>
+        group.MapGet("/Users/{id}", (HttpContext http, string id) =>
         {
             var refused = Guard(http, options);
             if (refused is not null) return refused;
@@ -58,7 +70,7 @@ internal static class BowireScimEndpoints
                 : Ok(Located(record.Resource, http, basePath));
         });
 
-        endpoints.MapPost($"{basePath}/Users", async (HttpContext http) =>
+        group.MapPost("/Users", async (HttpContext http) =>
         {
             var refused = Guard(http, options);
             if (refused is not null) return refused;
@@ -77,7 +89,7 @@ internal static class BowireScimEndpoints
             }
         });
 
-        endpoints.MapPut($"{basePath}/Users/{{id}}", async (HttpContext http, string id) =>
+        group.MapPut("/Users/{id}", async (HttpContext http, string id) =>
         {
             var refused = Guard(http, options);
             if (refused is not null) return refused;
@@ -96,7 +108,7 @@ internal static class BowireScimEndpoints
             }
         });
 
-        endpoints.MapPatch($"{basePath}/Users/{{id}}", async (HttpContext http, string id) =>
+        group.MapPatch("/Users/{id}", async (HttpContext http, string id) =>
         {
             var refused = Guard(http, options);
             if (refused is not null) return refused;
@@ -119,16 +131,16 @@ internal static class BowireScimEndpoints
             }
         });
 
-        endpoints.MapDelete($"{basePath}/Users/{{id}}", (HttpContext http, string id) =>
+        group.MapDelete("/Users/{id}", (HttpContext http, string id) =>
             Guard(http, options)
                 ?? (store.DeleteUser(id) ? Results.NoContent() : NotFound(id)));
 
         // ---- groups ----
 
-        endpoints.MapGet($"{basePath}/Groups", (HttpContext http) =>
+        group.MapGet("/Groups", (HttpContext http) =>
             Guard(http, options) ?? ListGroups(http, options, store, basePath));
 
-        endpoints.MapGet($"{basePath}/Groups/{{id}}", (HttpContext http, string id) =>
+        group.MapGet("/Groups/{id}", (HttpContext http, string id) =>
         {
             var refused = Guard(http, options);
             if (refused is not null) return refused;
@@ -137,7 +149,7 @@ internal static class BowireScimEndpoints
             return group is null ? NotFound(id) : Ok(Located(group, http, basePath));
         });
 
-        endpoints.MapPost($"{basePath}/Groups", async (HttpContext http) =>
+        group.MapPost("/Groups", async (HttpContext http) =>
         {
             var refused = Guard(http, options);
             if (refused is not null) return refused;
@@ -156,7 +168,7 @@ internal static class BowireScimEndpoints
             }
         });
 
-        endpoints.MapPut($"{basePath}/Groups/{{id}}", async (HttpContext http, string id) =>
+        group.MapPut("/Groups/{id}", async (HttpContext http, string id) =>
         {
             var refused = Guard(http, options);
             if (refused is not null) return refused;
@@ -175,7 +187,7 @@ internal static class BowireScimEndpoints
             }
         });
 
-        endpoints.MapPatch($"{basePath}/Groups/{{id}}", async (HttpContext http, string id) =>
+        group.MapPatch("/Groups/{id}", async (HttpContext http, string id) =>
         {
             var refused = Guard(http, options);
             if (refused is not null) return refused;
@@ -194,7 +206,7 @@ internal static class BowireScimEndpoints
             }
         });
 
-        endpoints.MapDelete($"{basePath}/Groups/{{id}}", (HttpContext http, string id) =>
+        group.MapDelete("/Groups/{id}", (HttpContext http, string id) =>
             Guard(http, options)
                 ?? (store.DeleteGroup(id) ? Results.NoContent() : NotFound(id)));
 

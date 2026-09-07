@@ -115,6 +115,84 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 `bowire users list` on the host shows the identity slots and what each one decided about the [single-user migration](multi-user.md#bringing-the-existing-data-with-you); the SCIM record list is under `scim/` in the storage root.
 
+## Proving it against a real directory
+
+Everything above is exercised by tests against fixtures. That answers "does
+Bowire reply correctly to what we send it" and not the question a live
+round-trip is for, which is what a real connector *does*: how it walks a
+directory, what it sends that Bowire does not model, how it retries, and
+whether it treats a deactivated user as absent or as inactive. None of those
+are Bowire's decisions ([#639](https://github.com/Kuestenlogik/Bowire/issues/639)).
+
+### Turn the trace on first
+
+`scim/events.jsonl` records mutations and their outcome, so a provider's
+*reads* — the paging walk, the existence filter — leave no trace at all, and
+the reads are most of what the exercise is for. Set:
+
+```jsonc
+"Bowire": { "Scim": { "TraceProvisioning": true } }
+```
+
+Every request then appends one line to `scim/trace.jsonl`:
+
+```json
+{"at":"2026-09-07T09:14:22Z","method":"GET","path":"/scim/v2/Users",
+ "query":"?startIndex=101&count=100","status":200,"ms":18.4}
+{"at":"2026-09-07T09:14:31Z","method":"PATCH","path":"/scim/v2/Users/8f14e45f",
+ "status":200,"ms":22.1,"patchDialect":"entra",
+ "unmodelled":["urn:ietf:params:scim:schemas:extension:enterprise:2.0:User"]}
+```
+
+`patchDialect` is read off the wire — the casing of `op` and whether a `path`
+is present — never from a User-Agent, which a proxy may rewrite. A document
+matching neither shape is reported as `other` rather than forced into one,
+because that is the finding, not an inconvenience.
+
+**Turn it off again afterwards.** The lines contain what the connector sent:
+user names, e-mail addresses, the filters a directory walk used. That is
+personal data about people who did not agree to be in a debug file, and it is
+wanted for a bounded exercise, not for normal operation.
+
+### The matrix
+
+Run it once per provider. Each row is a thing to do in the IdP and a thing to
+check here — the point is the second column, because a connector reporting
+success is not evidence that anything happened.
+
+| Step | Do | Confirm |
+|---|---|---|
+| 1 | Assign a user to the app | `POST /Users` in the trace, `create` in the events, `bowire users list` shows the slot |
+| 2 | Let the initial sync run | The paging walk in the trace: how many `GET /Users`, with which `startIndex` and `count` |
+| 3 | Change the display name | `PATCH` or `PUT`, `update` in the events, the change visible without a restart |
+| 4 | Add the user to the admin group | `members` on the group, `Bowire:Scim:AdminGroup` matches |
+| 5 | Sign in as that user | The subject binds — `bind` in the events. This is where a wrong `SubjectClaim` shows itself |
+| 6 | Deactivate in the IdP | `PATCH` with `active:false`; note **`patchDialect`** and **how long** step 6 took to arrive |
+| 7 | Try to sign in | Refused at the door, slot archived and still present |
+| 8 | Reactivate | Slot restored with the work still in it |
+| 9 | Unassign the user | `DELETE`, `delete` in the events, slot archived |
+| 10 | Let the purge window elapse (or set `PurgeAfter` to zero) | `purge` in the events, slot gone |
+
+Two things to watch for that no fixture can produce:
+
+- **`unmodelled`** — attributes the directory maps that Bowire keeps verbatim
+  and does not act on. Harmless until one of them is the one that mattered.
+- **Anything with a 4xx or 5xx status.** A connector that retries silently
+  will make the sync look green while the trace says otherwise.
+
+### What was actually exercised
+
+The point of the table is that it names versions and dates. "SCIM works" ages
+badly; "Okta's connector as of this date did this" does not.
+
+| Provider | Version / build | Date | Result | Notes |
+|---|---|---|---|---|
+| Okta | _not yet run_ | — | — | needs a developer org ([#639](https://github.com/Kuestenlogik/Bowire/issues/639)) |
+| Entra ID | _not yet run_ | — | — | needs a tenant with an Enterprise App |
+
+Fill a row when a round-trip completes, and file whatever it revealed —
+either fixed, or written down here as a documented limit.
+
 ## Related
 
 * [Multi-user deployment](multi-user.md) — the auth gate and per-identity storage this builds on

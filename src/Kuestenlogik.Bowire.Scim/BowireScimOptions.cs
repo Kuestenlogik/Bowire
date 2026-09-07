@@ -91,4 +91,28 @@ public sealed class BowireScimOptions
     /// make provisioning work only for directories that happen to agree.
     /// </remarks>
     public string AdminGroup { get; set; } = "bowire-admins";
+
+    /// <summary>
+    /// Record every SCIM request to <c>scim/trace.jsonl</c> (#639). Off by
+    /// default.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For a provisioning round-trip against a real identity provider, where
+    /// the questions are about the connector rather than about Bowire: how it
+    /// pages a directory, what it sends that Bowire does not model, which
+    /// PATCH dialect it actually uses, how long it takes to notice a
+    /// deactivation. <c>events.jsonl</c> cannot answer those — it records
+    /// mutations and their outcome, so a provider's reads leave no trace, and
+    /// the reads are most of what a round-trip is for.
+    /// </para>
+    /// <para>
+    /// Off by default because the lines contain what the connector sent:
+    /// user names, e-mail addresses, the filters a directory walk used.
+    /// Personal data about people who did not agree to be in a debug file,
+    /// wanted for a bounded exercise rather than for normal operation. Turn
+    /// it on for the exercise, and off again after.
+    /// </para>
+    /// </remarks>
+    public bool TraceProvisioning { get; set; }
 }
