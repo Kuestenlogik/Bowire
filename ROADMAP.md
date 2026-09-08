@@ -59,13 +59,26 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Auffindbarkeit: Aufhänger, Verzeichnisse, Stern-Aufruf *(due 2026-11-16)*
 
-**0/1 done** · 1 backlog
+**0/4 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ⬜ Backlog | `area:site` |
+| [669](https://github.com/Kuestenlogik/Bowire/issues/669) | Bowire | [Ask for the star and the watch: README badge, in-product prompt, one-time CLI hint](#issue-kuestenlogik-bowire-669) | ⬜ Backlog | `area:multi` |
+| [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
+| [671](https://github.com/Kuestenlogik/Bowire/issues/671) | Bowire | [Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero](#issue-kuestenlogik-bowire-671) | ⬜ Backlog | `area:site` |
 
-### v3.0 — Cleanups + breaking-change cuts *(due 2026-12-08)*
+### v2.11 — Firmennetze: Proxy, Windows-Auth, Cookies *(due 2026-12-14)*
+
+**0/3 done** · 3 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [679](https://github.com/Kuestenlogik/Bowire/issues/679) | Bowire | [Windows-integrated auth (Negotiate/NTLM) and Digest — the .NET tool cannot call .NET intranet APIs](#issue-kuestenlogik-bowire-679) | ⬜ Backlog | `area:workbench` |
+| [680](https://github.com/Kuestenlogik/Bowire/issues/680) | Bowire | [Outbound proxy and custom CA support — Bowire is unusable behind a corporate proxy](#issue-kuestenlogik-bowire-680) | ⬜ Backlog | `area:workbench` |
+| [681](https://github.com/Kuestenlogik/Bowire/issues/681) | Bowire | [Persistent cookie manager, and cookies beyond REST](#issue-kuestenlogik-bowire-681) | ⬜ Backlog | `area:workbench` |
+
+### v3.0 — Cleanups + breaking-change cuts *(due 2027-01-12)*
 
 **1/26 done** · 25 backlog
 
@@ -98,13 +111,29 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [611](https://github.com/Kuestenlogik/Bowire/issues/611) | Bowire | [Sidecar: add gRPC as a third transport alongside stdio and HTTP](#issue-kuestenlogik-bowire-611) | ⬜ Backlog |  |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
+### v3.1 — Interop und Migration *(due 2027-02-16)*
+
+**0/7 done** · 7 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
+| [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ⬜ Backlog | `area:workbench` |
+| [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ⬜ Backlog | `area:workbench` |
+| [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ⬜ Backlog | `area:cli` |
+| [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ⬜ Backlog | `area:workbench` |
+| [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
+| [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire get/post: URL-first verbs, HTTPie-style body notation, and --offline](#issue-kuestenlogik-bowire-678) | ⬜ Backlog | `area:cli` |
+
 ### v3.2 — Firmennetze und Backend-Ersatz *(due 2027-03-01)*
 
-**0/1 done** · 1 backlog
+**0/3 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [667](https://github.com/Kuestenlogik/Bowire/issues/667) | Bowire | [Hosted playground: a public multi-protocol demo fleet plus a hardened, hosted workbench](#issue-kuestenlogik-bowire-667) | ⬜ Backlog | `area:multi` |
+| [682](https://github.com/Kuestenlogik/Bowire/issues/682) | Bowire | [Secret-manager variable sources: Vault, Azure Key Vault, AWS Secrets Manager, 1Password](#issue-kuestenlogik-bowire-682) | ⬜ Backlog | `area:workbench` |
+| [683](https://github.com/Kuestenlogik/Bowire/issues/683) | Bowire | [Mock with state: data buckets, CRUD routes, request-aware templating, admin API](#issue-kuestenlogik-bowire-683) | ⬜ Backlog | `area:mock` |
 
 ### Backlog (not yet scheduled)
 
@@ -330,7 +359,45 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 
 In every directory, every search result and every model-generated answer, Bowire gets **one line** next to its name. Ours is *"The multi-protocol API workbench."* It is accurate, and it names neither an opponent nor a problem. [[more]](https://github.com/Kuestenlogik/Bowire/issues/668)
 
-### v3.0 — Cleanups + breaking-change cuts *(due 2026-12-08)*
+#### <a id="issue-kuestenlogik-bowire-669"></a>⬜ Backlog · [#669](https://github.com/Kuestenlogik/Bowire/issues/669) Ask for the star and the watch: README badge, in-product prompt, one-time CLI hint
+
+> `area:multi`
+
+Bowire has 8 stars, 1 fork and **0 watchers** after four months. That is not primarily a reach problem — it is that nobody who uses Bowire is ever asked. [[more]](https://github.com/Kuestenlogik/Bowire/issues/669)
+
+#### <a id="issue-kuestenlogik-bowire-670"></a>⬜ Backlog · [#670](https://github.com/Kuestenlogik/Bowire/issues/670) Get listed where developers and models actually look
+
+> `area:site`
+
+Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
+
+#### <a id="issue-kuestenlogik-bowire-671"></a>⬜ Backlog · [#671](https://github.com/Kuestenlogik/Bowire/issues/671) Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero
+
+> `area:site`
+
+Two structural gaps on bowire.io. Both cheap, neither risky. [[more]](https://github.com/Kuestenlogik/Bowire/issues/671)
+
+### v2.11 — Firmennetze: Proxy, Windows-Auth, Cookies *(due 2026-12-14)*
+
+#### <a id="issue-kuestenlogik-bowire-679"></a>⬜ Backlog · [#679](https://github.com/Kuestenlogik/Bowire/issues/679) Windows-integrated auth (Negotiate/NTLM) and Digest — the .NET tool cannot call .NET intranet APIs
+
+> `area:workbench`
+
+The auth surface is broad — Bearer, Basic, API key, signed JWT, OAuth 2.0 (client credentials and authorization code + PKCE), custom token endpoint, AWS SigV4, mTLS, cookie jar. **Windows-integrated auth is missing.** [[more]](https://github.com/Kuestenlogik/Bowire/issues/679)
+
+#### <a id="issue-kuestenlogik-bowire-680"></a>⬜ Backlog · [#680](https://github.com/Kuestenlogik/Bowire/issues/680) Outbound proxy and custom CA support — Bowire is unusable behind a corporate proxy
+
+> `area:workbench`
+
+`WebProxy` does not appear anywhere in the source. `--proxy` exists only as the mock server's upstream forwarder — it has nothing to do with how Bowire's own requests leave the machine. [[more]](https://github.com/Kuestenlogik/Bowire/issues/680)
+
+#### <a id="issue-kuestenlogik-bowire-681"></a>⬜ Backlog · [#681](https://github.com/Kuestenlogik/Bowire/issues/681) Persistent cookie manager, and cookies beyond REST
+
+> `area:workbench`
+
+The cookie jar today is a per-environment in-memory `CookieContainer`, and it is **REST-only** (`src/Kuestenlogik.Bowire/Auth/CookieJar.cs`). It replays what a previous response set on the same origin, and that is all. [[more]](https://github.com/Kuestenlogik/Bowire/issues/681)
+
+### v3.0 — Cleanups + breaking-change cuts *(due 2027-01-12)*
 
 #### <a id="issue-kuestenlogik-bowire-44"></a>⬜ Backlog · [#44](https://github.com/Kuestenlogik/Bowire/issues/44) Sidecar packaging — Docker / Compose / Kubernetes
 
@@ -484,6 +551,50 @@ Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `htt
 
 > **Status:** obsolete, not done. The premise no longer holds — the body below records why; the original proposal is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
 
+### v3.1 — Interop und Migration *(due 2027-02-16)*
+
+#### <a id="issue-kuestenlogik-bowire-672"></a>⬜ Backlog · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
+
+> `area:cli`
+
+Pre- and post-request scripts exist — as `new Function('ctx', …)` **in the browser**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/672)
+
+#### <a id="issue-kuestenlogik-bowire-673"></a>⬜ Backlog · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
+
+> `area:workbench`
+
+For "I am testing my own REST endpoint while developing it", a `.http` file is **better** than Bowire. The file sits next to the code, it is in the repo, there is no second window and no second process. Visual Studio 2022, Rider and the VS Code REST Client all run them natively. Competing with that is a losing framing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/673)
+
+#### <a id="issue-kuestenlogik-bowire-674"></a>⬜ Backlog · [#674](https://github.com/Kuestenlogik/Bowire/issues/674) Import from Insomnia, Bruno and .http, with a migration guide per source
+
+> `area:workbench`
+
+Bowire reads Postman v2.1, HAR, OpenAPI, proto and SDL. It does **not** read Insomnia, Bruno (`.bru` or OpenCollection YAML), Yaak, or `.http`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/674)
+
+#### <a id="issue-kuestenlogik-bowire-675"></a>⬜ Backlog · [#675](https://github.com/Kuestenlogik/Bowire/issues/675) Data-driven collection runs: one iteration per CSV/JSON row
+
+> `area:cli`
+
+"Run this collection two hundred times, row *n* fills the variables" is standard in Postman, Bruno, Insomnia, Requestly and Hoppscotch, and is `@loop` in httpyac. Bowire has assertions (`bowire test`) and Flows with loops, but no data-driven run. [[more]](https://github.com/Kuestenlogik/Bowire/issues/675)
+
+#### <a id="issue-kuestenlogik-bowire-676"></a>⬜ Backlog · [#676](https://github.com/Kuestenlogik/Bowire/issues/676) JSONPath filter expressions in assertions, chaining and mock overrides
+
+> `area:workbench`
+
+Assertion paths today are plain traversal — `response.items.0.tags.2`. There is no way to express "the id of every item that is done", which is the shape most real assertions want: [[more]](https://github.com/Kuestenlogik/Bowire/issues/676)
+
+#### <a id="issue-kuestenlogik-bowire-677"></a>⬜ Backlog · [#677](https://github.com/Kuestenlogik/Bowire/issues/677) Broader code export, and snippets for the protocols no snippet library covers
+
+> `area:workbench`
+
+Code export offers five to six target languages per protocol. Postman, Hoppscotch and Insomnia each offer twenty-five to forty, all of them via HTTPSnippet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/677)
+
+#### <a id="issue-kuestenlogik-bowire-678"></a>⬜ Backlog · [#678](https://github.com/Kuestenlogik/Bowire/issues/678) bowire get/post: URL-first verbs, HTTPie-style body notation, and --offline
+
+> `area:cli`
+
+`bowire call` can do a lot — every protocol, `{{vars}}`, `--env-file`, `--stream`, `--compact`, tab completion, meaningful exit codes. What it cannot do is the thing curl and HTTPie are actually used for: **one call, right now, with no context**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/678)
+
 ### v3.2 — Firmennetze und Backend-Ersatz *(due 2027-03-01)*
 
 #### <a id="issue-kuestenlogik-bowire-667"></a>⬜ Backlog · [#667](https://github.com/Kuestenlogik/Bowire/issues/667) Hosted playground: a public multi-protocol demo fleet plus a hardened, hosted workbench
@@ -491,6 +602,18 @@ Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `htt
 > `area:multi`
 
 Mockoon has [playground.mockoon.com](https://mockoon.com/playground/) — a public, zero-install mock API (11 CRUD collections, 100 fake records each, plus `/echo`, `/time`, `/error`, `/lorem` utilities). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/667)
+
+#### <a id="issue-kuestenlogik-bowire-682"></a>⬜ Backlog · [#682](https://github.com/Kuestenlogik/Bowire/issues/682) Secret-manager variable sources: Vault, Azure Key Vault, AWS Secrets Manager, 1Password
+
+> `area:workbench`
+
+Bowire has the keyring — `{{keyring.*}}` resolves a secret from the machine's credential store, and `bowire test --keyring` reads them in CI. That solves the single-developer case well. [[more]](https://github.com/Kuestenlogik/Bowire/issues/682)
+
+#### <a id="issue-kuestenlogik-bowire-683"></a>⬜ Backlog · [#683](https://github.com/Kuestenlogik/Bowire/issues/683) Mock with state: data buckets, CRUD routes, request-aware templating, admin API
+
+> `area:mock`
+
+Bowire's mock is **replay-first**: a recording becomes an endpoint, a schema becomes plausible responses, and a sidecar config refines them with field overrides, conditional rules and an auth gate. For contract testing that is better than what Mockoon does. [[more]](https://github.com/Kuestenlogik/Bowire/issues/683)
 
 ### Backlog (not yet scheduled)
 
