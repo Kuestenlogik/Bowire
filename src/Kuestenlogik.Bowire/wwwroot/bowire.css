@@ -26772,3 +26772,335 @@ not as the
        action — it does not wait for a hover. */
     display: inline-flex;
 }
+
+/* ---- #95 Header Library ------------------------------------------------
+   The chip strip sits above a header editor and answers two questions the
+   editor alone cannot: which named sets are riding along with this request,
+   and what will actually be sent once they are merged. Chips are toggles,
+   so they read as pressable — filled when on, outlined when off — and the
+   set that is being overridden further down says so rather than quietly
+   not mattering. */
+
+.bowire-header-library-host {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bowire-header-library-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.bowire-header-library-strip {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.bowire-header-library-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bowire-text-tertiary);
+    margin-right: 2px;
+}
+
+.bowire-header-library-spacer { flex: 1 1 auto; }
+
+/* ---- chips ---- */
+
+.bowire-header-set-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px;
+    border-radius: var(--bowire-radius-pill, 999px);
+    border: 1px solid var(--bowire-border);
+    background: transparent;
+    color: var(--bowire-text-secondary, var(--bowire-text));
+    font-family: var(--bowire-font-sans);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.6;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.bowire-header-set-chip:hover {
+    border-color: var(--bowire-accent);
+    color: var(--bowire-text);
+}
+
+.bowire-header-set-chip:focus-visible {
+    outline: 2px solid var(--bowire-accent);
+    outline-offset: 1px;
+}
+
+.bowire-header-set-chip.is-on {
+    background: var(--bowire-accent-subtle);
+    border-color: var(--bowire-accent);
+    color: var(--bowire-text);
+}
+
+/* Switched by hand rather than by scope — a dashed edge says "this is not
+   what the scope would have chosen", so the operator can tell a deliberate
+   one-off from the automatic behaviour. */
+.bowire-header-set-chip.is-pinned { border-style: dashed; }
+
+.bowire-header-set-chip-name { white-space: nowrap; }
+
+/* The count of headers this set contributes. Tertiary, so it reads as
+   metadata beside the name rather than part of it. */
+.bowire-header-set-chip-meta {
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    color: var(--bowire-text-tertiary);
+    background: var(--bowire-surface);
+    border-radius: var(--bowire-radius-pill, 999px);
+    padding: 0 5px;
+    min-width: 16px;
+    text-align: center;
+}
+
+.bowire-header-set-chip.is-on .bowire-header-set-chip-meta {
+    color: var(--bowire-text-secondary, var(--bowire-text));
+}
+
+.bowire-header-set-chip-warn {
+    font-size: 10px;
+    line-height: 1;
+    color: var(--bowire-warning, #d08a2c);
+}
+
+/* ---- preview toggle + manage ---- */
+
+.bowire-header-library-toggle,
+.bowire-header-library-manage {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    font-family: var(--bowire-font-sans);
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.bowire-header-library-toggle:hover,
+.bowire-header-library-manage:hover {
+    color: var(--bowire-text);
+    border-color: var(--bowire-border);
+}
+
+.bowire-header-library-toggle:focus-visible,
+.bowire-header-library-manage:focus-visible {
+    outline: 2px solid var(--bowire-accent);
+    outline-offset: 1px;
+}
+
+.bowire-header-library-toggle.is-open {
+    color: var(--bowire-text);
+    border-color: var(--bowire-border);
+}
+
+/* ---- effective-headers preview ---- */
+
+.bowire-header-library-preview {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--bowire-border);
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 11px;
+}
+
+.bowire-header-library-preview-head,
+.bowire-header-library-preview-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) minmax(140px, 2fr) minmax(110px, auto);
+    gap: 10px;
+    padding: 5px 10px;
+    align-items: baseline;
+}
+
+.bowire-header-library-preview-head {
+    background: var(--bowire-surface);
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.bowire-header-library-preview-row + .bowire-header-library-preview-row {
+    border-top: 1px solid var(--bowire-border);
+}
+
+.bowire-header-library-preview-key {
+    font-family: var(--bowire-font-mono, monospace);
+    color: var(--bowire-text);
+}
+
+/* Values can be long (a bearer token, a long Accept). Let one scroll in
+   its own cell rather than pushing the grid sideways. */
+.bowire-header-library-preview-val {
+    font-family: var(--bowire-font-mono, monospace);
+    color: var(--bowire-text-secondary, var(--bowire-text));
+    overflow-x: auto;
+    white-space: pre;
+}
+
+.bowire-header-library-preview-src {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    justify-content: flex-end;
+    color: var(--bowire-text-tertiary);
+    white-space: nowrap;
+}
+
+.bowire-header-library-preview-beat {
+    font-size: 10px;
+    color: var(--bowire-warning, #d08a2c);
+    border: 1px solid currentColor;
+    border-radius: var(--bowire-radius-pill, 999px);
+    padding: 0 5px;
+}
+
+.bowire-header-library-preview-empty {
+    padding: 8px 10px;
+    color: var(--bowire-text-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bowire-header-set-chip { transition: none; }
+}
+
+/* ---- #95 Header Library — Settings → Workspace → Header library -------
+   One card per set: identity and scope on the head row, the headers
+   themselves below. Row tools (enable, remove) stay hidden until the row
+   is hovered or focused, so a set with eight headers reads as eight
+   headers rather than as twenty-four controls. */
+
+.bowire-header-library-empty {
+    padding: 16px 0;
+    color: var(--bowire-text-secondary, var(--bowire-text));
+}
+
+.bowire-header-library-empty p { margin: 0 0 6px; }
+
+.bowire-header-library-empty-hint {
+    color: var(--bowire-text-tertiary);
+    font-size: 12px;
+    max-width: 62ch;
+}
+
+.bowire-header-set-card {
+    border: 1px solid var(--bowire-border);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.bowire-header-set-card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 10px;
+    background: var(--bowire-surface);
+    border-bottom: 1px solid var(--bowire-border);
+}
+
+.bowire-header-set-name-input { flex: 0 1 200px; font-weight: 600; }
+.bowire-header-set-scope-kind { flex: 0 0 auto; }
+.bowire-header-set-scope-value { flex: 0 1 220px; }
+
+/* Deleting a whole set is destructive and rare — keep it quiet until the
+   card is hovered, and only warm to danger on its own hover. */
+.bowire-header-set-delete { opacity: 0; transition: opacity 120ms ease; }
+.bowire-header-set-card:hover .bowire-header-set-delete,
+.bowire-header-set-delete:focus-visible { opacity: 1; }
+.bowire-header-set-delete:hover { color: var(--bowire-error, #ef4444); }
+
+.bowire-header-set-rows { display: flex; flex-direction: column; }
+
+.bowire-header-set-row {
+    display: grid;
+    grid-template-columns: minmax(110px, 1fr) minmax(140px, 1.6fr) minmax(110px, 1fr) 28px 28px;
+    gap: 6px;
+    align-items: center;
+    padding: 4px 10px;
+}
+
+.bowire-header-set-row + .bowire-header-set-row {
+    border-top: 1px solid var(--bowire-border);
+}
+
+.bowire-header-set-row-head {
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding-top: 8px;
+}
+
+.bowire-header-set-row-head + .bowire-header-set-row { border-top: none; }
+
+/* The enable tick is a state marker, so it reserves its width and only
+   hides its glyph — the row must not reflow as rows toggle. */
+.bowire-header-set-row-toggle {
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--bowire-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--bowire-accent);
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    justify-self: center;
+}
+
+.bowire-header-set-row-toggle.is-on { border-color: var(--bowire-accent); }
+
+.bowire-header-set-row-toggle:focus-visible,
+.bowire-header-set-row-del:focus-visible {
+    outline: 2px solid var(--bowire-accent);
+    outline-offset: 1px;
+}
+
+/* Removing one header is a per-row tool: hidden until the row is hovered
+   or something in it has focus. */
+.bowire-header-set-row-del {
+    width: 22px;
+    height: 22px;
+    padding: 4px;
+    border: none;
+    background: transparent;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    display: none;
+    justify-self: center;
+}
+
+.bowire-header-set-row:hover .bowire-header-set-row-del,
+.bowire-header-set-row:focus-within .bowire-header-set-row-del {
+    display: inline-flex;
+}
+
+.bowire-header-set-row-del:hover { color: var(--bowire-error, #ef4444); }
+.bowire-header-set-row-del svg { width: 100%; height: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+    .bowire-header-set-delete { transition: none; }
+}

@@ -23,6 +23,7 @@ For the UI layout itself &mdash; rail strip, panes, action bar, theme &mdash; se
 - [Compose](compose.md) &mdash; the v2.1 Hoppscotch-style request builder, per-protocol layout, Library on the left, history persistence
 - [Form & JSON input](form-json-input.md) &mdash; switching between the schema-backed form and raw JSON editor
 - [Authentication](authentication.md) &mdash; Bearer / Basic / API Key / JWT / OAuth 2.0 / AWS Sig v4 / custom token provider
+- [Header library](header-library.md) &mdash; named, scoped header sets that ride along with matching requests instead of being retyped into each one
 - [Response chaining](response-chaining.md) &mdash; click any value in a response to paste `${response.path}` into the next request
 
 ## Streaming & channels

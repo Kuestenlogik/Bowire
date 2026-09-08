@@ -730,6 +730,12 @@
         collectionsList = loadCollections();
         loadCollectionsFromDisk().then(function () { render(); });
 
+        // #95 - the header library is workspace-scoped and small, so it
+        // loads straight from localStorage with no disk round-trip. A
+        // workspace switch reloads the page (see switchWorkspace), so
+        // once at boot is enough.
+        loadHeaderLibrary();
+
         // Load flows from localStorage. `loadFlows` lives in the Flows
         // package (Kuestenlogik.Bowire.Flows) — embedded hosts that
         // don't reference that package legitimately ship without it,

@@ -112,6 +112,14 @@
     <BowireJsFragment Include="wwwroot\js\invocation-url.js" />
     <BowireJsFragment Include="wwwroot\js\workspace-templates.js" />
     <BowireJsFragment Include="wwwroot\js\history-env.js" />
+    <!-- #95 - Header Library. Named, scoped header sets merged under the
+         request's own rows at execute time. Pure scope-matching and
+         precedence logic plus a workspace-scoped store; the chip strip and
+         the Settings CRUD view read from here. Must come BEFORE
+         request-builder.js (chip strip + execute merge) and settings.js
+         (the library editor). Dependencies: wsKey / markSaved from
+         prologue.js. -->
+    <BowireJsFragment Include="wwwroot\js\header-library.js" />
     <!-- v2.2 T3 — Regression Coverage Surface. Per-workspace run-log
          ring buffer + per-method aggregation. The runners (Discover
          invoke, Compose runner, Benchmark runner, Recording replay)

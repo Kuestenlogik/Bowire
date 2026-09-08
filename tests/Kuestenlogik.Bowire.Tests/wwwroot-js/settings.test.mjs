@@ -120,6 +120,37 @@ test('_migrateLegacySettingsTab: unknown ids fall through to general', () => {
     assert.equal(migrate(undefined), 'general');
 });
 
+test('_migrateLegacySettingsTab: no tree leaf silently falls back to General', () => {
+    // 'general' is the default branch's answer for an id it does not know,
+    // so a leaf missing from the switch renders the General page and reads
+    // as a dead nav entry. #95 shipped exactly that for an afternoon.
+    //
+    // Deliberate aliases are fine (the expandable 'plugins' parent lands on
+    // configure-protocols), which is why this asserts "not the fallback"
+    // rather than "maps to itself", and only looks at leaves.
+    const migrate = loadMigrate();
+    const tree = loadBuildTree();
+    tree.setSettingsTab('general');
+
+    const leaves = [];
+    (function walk(nodes) {
+        nodes.forEach((n) => {
+            if (Array.isArray(n.children) && n.children.length) { walk(n.children); return; }
+            if (n.id && n.id.indexOf('settings:') === 0 && !n.header) {
+                leaves.push(n.id.slice('settings:'.length));
+            }
+        });
+    })(tree.build());
+
+    assert.ok(leaves.length >= 8, `expected the tree to offer leaves, got ${leaves.length}`);
+    for (const id of leaves) {
+        if (id === 'general') continue;
+        assert.notEqual(migrate(id), 'general',
+            `settings tab '${id}' is in the tree but not in the migration switch, `
+            + 'so clicking it renders the General page');
+    }
+});
+
 test('_migrateLegacySettingsTab: dynamic plugin- / extension- ids are preserved', () => {
     const migrate = loadMigrate();
     assert.equal(migrate('plugin-rest'), 'plugin-rest');
@@ -128,7 +159,7 @@ test('_migrateLegacySettingsTab: dynamic plugin- / extension- ids are preserved'
 
 // ---- Tree structure ----
 
-test('_buildSettingsTreeNodes: Workspace… header sits above an expandable parent with 4 children', () => {
+test('_buildSettingsTreeNodes: Workspace… header sits above an expandable parent with 5 children', () => {
     const tree = loadBuildTree();
     tree.setSettingsTab('workspace-sources');
     const nodes = tree.build();
@@ -147,6 +178,9 @@ test('_buildSettingsTreeNodes: Workspace… header sits above an expandable pare
     assert.deepEqual(childIds.sort(), [
         'settings:workspace-data',
         'settings:workspace-environments',
+        // #95 - the header library is workspace-owned, so it lives beside
+        // Environments rather than under System settings.
+        'settings:workspace-headers',
         'settings:workspace-overrides',
         'settings:workspace-sources'
     ]);

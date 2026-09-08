@@ -153,6 +153,7 @@
         var wsChildren = [
             leaf('workspace-sources', 'Sources / URLs', 'globe'),
             leaf('workspace-environments', 'Environments', 'globe'),
+            leaf('workspace-headers', 'Header library', 'braces'),
             leaf('workspace-overrides', 'Per-Workspace overrides', 'settings'),
             leaf('workspace-data', 'Data', 'trash')
         ];
@@ -203,6 +204,11 @@
             case 'data':
             case 'workspace-sources':
             case 'workspace-environments':
+            // #95 - Header Library. Every known tab id has to be listed
+            // here: the default branch below rewrites anything unknown to
+            // 'general', so a leaf missing from this switch renders the
+            // General page and looks like a dead nav entry.
+            case 'workspace-headers':
             case 'workspace-overrides':
             case 'workspace-data':
                 return tabId;
@@ -345,6 +351,8 @@
             rightPanel.appendChild(renderSettingsWorkspaceSources());
         } else if (settingsTab === 'workspace-environments') {
             rightPanel.appendChild(renderSettingsWorkspaceEnvironments());
+        } else if (settingsTab === 'workspace-headers') {
+            rightPanel.appendChild(renderSettingsHeaderLibrary());
         } else if (settingsTab === 'workspace-overrides') {
             rightPanel.appendChild(renderSettingsWorkspaceOverrides());
         } else if (settingsTab === 'workspace-data') {

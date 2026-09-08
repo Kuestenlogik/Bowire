@@ -185,7 +185,14 @@
         try { if (typeof substituteVars === 'function') body = substituteVars(body); } catch (_) {}
 
         // Metadata KV → object + auth-derived entries.
-        var metadata = _kvToObject(ps.metadata || []);
+        // #95 — library sets underneath the request's own metadata rows.
+        // Only library values pass through substituteVars; the request's
+        // own rows keep whatever this path already did with them.
+        var metadata = (typeof effectiveRequestHeaderObject === 'function')
+            ? effectiveRequestHeaderObject(ps.metadata || [], {
+                substituteLibrary: typeof substituteVars === 'function' ? substituteVars : null
+            })
+            : _kvToObject(ps.metadata || []);
         _applyHoppAuthToMetadata(fr, metadata);
 
         isExecuting = true;
@@ -338,7 +345,14 @@
         var argsJson = ps.arguments || '{}';
         try { if (typeof substituteVars === 'function') argsJson = substituteVars(argsJson); } catch (_) {}
 
-        var metadata = _kvToObject(ps.metadata || []);
+        // #95 — library sets underneath the request's own metadata rows.
+        // Only library values pass through substituteVars; the request's
+        // own rows keep whatever this path already did with them.
+        var metadata = (typeof effectiveRequestHeaderObject === 'function')
+            ? effectiveRequestHeaderObject(ps.metadata || [], {
+                substituteLibrary: typeof substituteVars === 'function' ? substituteVars : null
+            })
+            : _kvToObject(ps.metadata || []);
         _applyHoppAuthToMetadata(fr, metadata);
 
         // MCP method routes:
@@ -520,7 +534,14 @@
         var topic = ps.topic;
         try { if (typeof substituteVars === 'function') topic = substituteVars(topic); } catch (_) {}
 
-        var metadata = _kvToObject(ps.metadata || []);
+        // #95 — library sets underneath the request's own metadata rows.
+        // Only library values pass through substituteVars; the request's
+        // own rows keep whatever this path already did with them.
+        var metadata = (typeof effectiveRequestHeaderObject === 'function')
+            ? effectiveRequestHeaderObject(ps.metadata || [], {
+                substituteLibrary: typeof substituteVars === 'function' ? substituteVars : null
+            })
+            : _kvToObject(ps.metadata || []);
         _applyHoppAuthToMetadata(fr, metadata);
         // Carry QoS + Retain through the metadata bag — the MQTT plugin
         // unpacks them server-side (mqtt-qos / mqtt-retain conventions).

@@ -30,6 +30,8 @@
       href: form-json-input.md
     - name: Authentication
       href: authentication.md
+    - name: Header library
+      href: header-library.md
     - name: Response chaining
       href: response-chaining.md
 

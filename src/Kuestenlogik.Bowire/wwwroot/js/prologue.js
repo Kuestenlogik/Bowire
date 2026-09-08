@@ -4044,6 +4044,11 @@
         // request set the author had at export time. Disk-mode exports
         // ship []; browser-mode exports fill the bucket.
         'bowire_request_builder_history',
+        // #95 - Header Library. Named, scoped header sets. Belongs to the
+        // workspace (a team's API conventions travel with the project, not
+        // with whoever's browser opened it), so it round-trips through .bww
+        // as `headerLibrary` alongside collections and environments.
+        'bowire_header_library',
         // v2.2 W1 — backfill of every wsKey()'d project-content bucket
         // that was missing from the canonical set. Without these
         // entries the disk-purge cascade leaked orphaned per-workspace
@@ -4170,7 +4175,9 @@
         // #290 — Request-builder history (per-workspace). Browser-mode
         // workspaces fill this; disk-mode exporters ship []. Cap
         // enforced at write time inside request-builder.js (RB_HISTORY_CAP).
-        bowire_request_builder_history:         'requestBuilderHistory'
+        bowire_request_builder_history:         'requestBuilderHistory',
+        // #95 - named, scoped header sets.
+        bowire_header_library:       'headerLibrary'
     };
     // Inverse of _V2_DATA_KEY_MAP — used by importWorkspaceJson to
     // route v2-canonical field names back to the localStorage bucket
@@ -4203,7 +4210,8 @@
         scripts:             [],   // disk-only; browser exports as []
         methodScripts:       {},   // #126 — per-method pre/post-script source
         requestBuilderHistory:      [],   // #290 — recent Request-builder request executions
-        presets:             {}
+        presets:             {},
+        headerLibrary:       []    // #95 - named, scoped header sets
     };
 
     function exportWorkspaceJson(wsId) {
@@ -4557,6 +4565,7 @@
             tryRun('methodTypeFilter',function () { persistMethodTypeFilter(); });
             tryRun('urlFilter',       function () { persistUrlFilter(); });
             tryRun('methodLabelMode', function () { persistMethodLabelMode(); });
+            tryRun('headerLibrary',   function () { persistHeaderLibrary(); });
             tryRun('expandedServices',function () { persistExpandedServices(); });
             tryRun('urlHeaders',      function () { persistUrlHeaders(); });
             tryRun('urlMeta',         function () { persistUrlMeta(); });

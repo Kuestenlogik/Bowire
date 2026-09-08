@@ -371,6 +371,10 @@
             postScript: '',
             authKind: 'none',
             authData: {},
+            // #95 - per-request answer to "is this header set on?".
+            // { [setId]: boolean }; absent means "whatever the set's
+            // scope says", so a scope edit still reaches the request.
+            headerSets: {},
             // Per-protocol scratch state. Switching protocols flips the
             // active surface but the previous one's edits stay parked
             // here so the operator can flip back without losing work.
@@ -770,6 +774,18 @@
                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
                     executeHoppRequest();
+                }
+            },
+            onFocusOut: function () {
+                // #95 — `url:` header sets are chosen by the request's host,
+                // so the chip strip's answer goes stale the moment the URL
+                // changes. Typing deliberately does not re-render (that tears
+                // focus out of the input), so repaint on the way out instead —
+                // and only when there is a library that could be wrong, so a
+                // workspace without header sets keeps today's render count.
+                if (typeof headerLibrary !== 'undefined'
+                    && Array.isArray(headerLibrary) && headerLibrary.length > 0) {
+                    render();
                 }
             }
         });
@@ -1310,6 +1326,17 @@
             }
             table.appendChild(row);
         });
+
+        // #95 - a header editor gets the Header Library strip above it.
+        // Only header tabs opt in: the same table also renders query
+        // parameters, form-body fields and scratch variables, and a
+        // header set has nothing to say about any of those.
+        if (opts.headerLibrary && typeof renderHeaderLibraryStrip === 'function') {
+            var strip = renderHeaderLibraryStrip(rows);
+            if (strip) {
+                return el('div', { className: 'bowire-header-library-host' }, strip, table);
+            }
+        }
         return table;
     }
 
@@ -2335,8 +2362,14 @@
         } catch (_) { /* keep raw */ }
         var urlWithParams = _composeUrlWithParams(urlBase, fr._requestBuilder.params);
 
-        // Compose headers — KV table + auth derivation.
-        var headers = _kvToObject(fr._requestBuilder.headers);
+        // Compose headers — library sets, then the KV table on top, then
+        // auth derivation. #95: the library sits underneath so a row the
+        // operator can see in the Metadata tab always wins. The
+        // substitution loop below covers library values too, which is why
+        // no hook is passed here.
+        var headers = (typeof effectiveRequestHeaderObject === 'function')
+            ? effectiveRequestHeaderObject(fr._requestBuilder.headers)
+            : _kvToObject(fr._requestBuilder.headers);
         // Resolve {{var}} inside header values.
         Object.keys(headers).forEach(function (k) {
             try {
@@ -2654,7 +2687,11 @@
 
         // Auth-derived headers — same logic as executeHoppRequest, just
         // applied to the snapshot rather than the in-flight request.
-        var headers = _kvToObject(fr._requestBuilder.headers || []);
+        var headers = (typeof effectiveRequestHeaderObject === 'function')
+            ? effectiveRequestHeaderObject(fr._requestBuilder.headers || [], {
+                substituteLibrary: typeof substituteVars === 'function' ? substituteVars : null
+            })
+            : _kvToObject(fr._requestBuilder.headers || []);
         if (fr._requestBuilder.authKind === 'bearer' && fr._requestBuilder.authData.token) {
             headers['Authorization'] = 'Bearer ' + fr._requestBuilder.authData.token;
         } else if (fr._requestBuilder.authKind === 'basic') {
@@ -2846,6 +2883,7 @@
                     keyPlaceholder: 'Parameter', valuePlaceholder: 'Value', descPlaceholder: 'Description'
                 });
                 case 'header':    return _renderHoppKvTable(fr._requestBuilder.headers, {
+                    headerLibrary: true,
                     keyPlaceholder: 'Header', valuePlaceholder: 'Value', descPlaceholder: 'Description'
                 });
                 case 'body':      return _renderHoppBodyTab(fr);
@@ -2894,6 +2932,7 @@
             switch (tabId) {
                 case 'message':  return _renderGrpcMessageTab(fr, ps);
                 case 'metadata': return _renderHoppKvTable(ps.metadata, {
+                    headerLibrary: true,
                     keyPlaceholder: 'Metadata', valuePlaceholder: 'Value', descPlaceholder: 'Description'
                 });
                 case 'deadline': return _renderGrpcDeadlineTab(fr, ps);
@@ -2939,6 +2978,7 @@
             switch (tabId) {
                 case 'arguments': return _renderMcpArgumentsTab(fr, ps);
                 case 'headers':   return _renderHoppKvTable(ps.metadata, {
+                    headerLibrary: true,
                     keyPlaceholder: 'Header', valuePlaceholder: 'Value', descPlaceholder: 'Description'
                 });
                 default:          return _renderCommonTabBody(fr, tabId);
@@ -3031,6 +3071,7 @@
             switch (tabId) {
                 case 'frame':   return _renderWsFrameTab(fr, ps);
                 case 'headers': return _renderHoppKvTable(ps.metadata, {
+                    headerLibrary: true,
                     keyPlaceholder: 'Header', valuePlaceholder: 'Value', descPlaceholder: 'Description'
                 });
                 default:        return _renderCommonTabBody(fr, tabId);
@@ -3076,6 +3117,7 @@
             var ps = rbProtoState(fr);
             switch (tabId) {
                 case 'headers':   return _renderHoppKvTable(ps.metadata, {
+                    headerLibrary: true,
                     keyPlaceholder: 'Header', valuePlaceholder: 'Value', descPlaceholder: 'Description'
                 });
                 case 'reconnect': return _renderSseReconnectTab(fr, ps);
