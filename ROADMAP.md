@@ -90,6 +90,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [611](https://github.com/Kuestenlogik/Bowire/issues/611) | Bowire | [Sidecar: add gRPC as a third transport alongside stdio and HTTP](#issue-kuestenlogik-bowire-611) | ⬜ Backlog |  |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
+### v3.2 — Firmennetze und Backend-Ersatz *(due 2027-03-01)*
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [667](https://github.com/Kuestenlogik/Bowire/issues/667) | Bowire | [Hosted playground: a public multi-protocol demo fleet plus a hardened, hosted workbench](#issue-kuestenlogik-bowire-667) | ⬜ Backlog | `area:multi` |
+
 ### Backlog (not yet scheduled)
 
 | # | Project | Title | Status | Tags |
@@ -105,7 +113,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [664](https://github.com/Kuestenlogik/Bowire/issues/664) | Bowire | [Method-name form on /api/invoke is not uniform across plugins](#issue-kuestenlogik-bowire-664) | ⬜ Backlog | `area:workbench` |
 | [665](https://github.com/Kuestenlogik/Bowire/issues/665) | Bowire | [SignalR ad-hoc invoke declares args:string but requires a JSON array](#issue-kuestenlogik-bowire-665) | ⬜ Backlog | `area:workbench` |
 | [666](https://github.com/Kuestenlogik/Bowire/issues/666) | Bowire | [plugin install suggests a re-run its own already-installed guard blocks](#issue-kuestenlogik-bowire-666) | ⬜ Backlog | `area:plugin-sdk` |
-| [667](https://github.com/Kuestenlogik/Bowire/issues/667) | Bowire | [Hosted playground: a public multi-protocol demo fleet plus a hardened, hosted workbench](#issue-kuestenlogik-bowire-667) | ⬜ Backlog | `area:multi` |
 
 ## Details
 
@@ -461,6 +468,14 @@ Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `htt
 
 > **Status:** obsolete, not done. The premise no longer holds — the body below records why; the original proposal is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
 
+### v3.2 — Firmennetze und Backend-Ersatz *(due 2027-03-01)*
+
+#### <a id="issue-kuestenlogik-bowire-667"></a>⬜ Backlog · [#667](https://github.com/Kuestenlogik/Bowire/issues/667) Hosted playground: a public multi-protocol demo fleet plus a hardened, hosted workbench
+
+> `area:multi`
+
+Mockoon has [playground.mockoon.com](https://mockoon.com/playground/) — a public, zero-install mock API (11 CRUD collections, 100 fake records each, plus `/echo`, `/time`, `/error`, `/lorem` utilities). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/667)
+
 ### Backlog (not yet scheduled)
 
 #### <a id="issue-kuestenlogik-bowire-620"></a>⬜ Backlog · [#620](https://github.com/Kuestenlogik/Bowire/issues/620) Benchmark: measure time to first chunk, not just the whole round trip
@@ -528,12 +543,6 @@ Discovery declares the SignalR ad-hoc `invoke` method's input as: [[more]](https
 > `area:plugin-sdk`
 
 `bowire plugin install --file <pkg>.nupkg` installs a package whose runtime dependencies could not be resolved, reports the unmet ones as a warning, and tells the operator what to do: [[more]](https://github.com/Kuestenlogik/Bowire/issues/666)
-
-#### <a id="issue-kuestenlogik-bowire-667"></a>⬜ Backlog · [#667](https://github.com/Kuestenlogik/Bowire/issues/667) Hosted playground: a public multi-protocol demo fleet plus a hardened, hosted workbench
-
-> `area:multi`
-
-Mockoon has [playground.mockoon.com](https://mockoon.com/playground/) — a public, zero-install mock API (11 CRUD collections, 100 fake records each, plus `/echo`, `/time`, `/error`, `/lorem` utilities). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/667)
 
 ---
 
