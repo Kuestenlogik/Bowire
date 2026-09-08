@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-11-03)*
 
-**14/29 done** · 15 backlog
+**15/29 done** · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -30,7 +30,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
-| [684](https://github.com/Kuestenlogik/Bowire/issues/684) | Bowire | [Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench](#issue-kuestenlogik-bowire-684) | ⬜ Backlog | `area:cli` |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ✅ Done | `area:workbench` |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ✅ Done | `area:workbench` |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ✅ Done | `area:workbench` |
@@ -44,6 +43,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ✅ Done | `area:workbench` |
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ✅ Done | `area:workbench` |
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ✅ Done | `area:workbench` |
+| [684](https://github.com/Kuestenlogik/Bowire/issues/684) | Bowire | [Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench](#issue-kuestenlogik-bowire-684) | ✅ Done | `area:cli` |
 | [686](https://github.com/Kuestenlogik/Bowire/issues/686) | Bowire | [el() turns a false boolean attribute into a set attribute, so disabled: false disables the control](#issue-kuestenlogik-bowire-686) | ✅ Done | `area:workbench` |
 
 ### v2.9 — MCP completion + agent hub *(due 2026-11-24)*
@@ -238,12 +238,6 @@ Feasible and small. Everything the proposal assumes already exists: `BowireOptio
 
 Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
 
-#### <a id="issue-kuestenlogik-bowire-684"></a>⬜ Backlog · [#684](https://github.com/Kuestenlogik/Bowire/issues/684) Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench
-
-> `area:cli`
-
-Starting Bowire while an instance is already listening does not fail gracefully — it throws an **unhandled** `IOException` / `AddressInUseException` and exits with code 1, after printing roughly forty lines of .NET stack trace. [[more]](https://github.com/Kuestenlogik/Bowire/issues/684)
-
 #### <a id="issue-kuestenlogik-bowire-47"></a>✅ Done · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
 
 > `area:workbench`
@@ -321,6 +315,12 @@ Ship a "Correlated timeline" as a second tab inside the existing Recordings deta
 > `area:workbench`
 
 `render()` rebuilds the entire workbench tree off-screen and morphdom-diffs it. There is no debounce, no dirty flag, no coalescing â€” a grep for `scheduleRender` / `renderPending` / any batching wrapper across `wwwroot/js/` returns nothing, and there are ~685 `render()` call sites. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/551)
+
+#### <a id="issue-kuestenlogik-bowire-684"></a>✅ Done · [#684](https://github.com/Kuestenlogik/Bowire/issues/684) Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench
+
+> `area:cli`
+
+Starting Bowire while an instance is already listening does not fail gracefully — it throws an **unhandled** `IOException` / `AddressInUseException` and exits with code 1, after printing roughly forty lines of .NET stack trace. [[more]](https://github.com/Kuestenlogik/Bowire/issues/684)
 
 #### <a id="issue-kuestenlogik-bowire-686"></a>✅ Done · [#686](https://github.com/Kuestenlogik/Bowire/issues/686) el() turns a false boolean attribute into a set attribute, so disabled: false disables the control
 
