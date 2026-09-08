@@ -54,6 +54,8 @@
       href: mock-server.md
     - name: Test assertions
       href: test-assertions.md
+    - name: Design-time lint
+      href: lint.md
     - name: Contract testing
       href: contract-testing.md
     - name: Report rollup
