@@ -10,21 +10,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.7 — Geospatial map: trajectories, playback & entity grouping
-
-**7/7 done**
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [238](https://github.com/Kuestenlogik/Bowire/issues/238) | Bowire | [Map widget: trajectory LineString between sequential frames](#issue-kuestenlogik-bowire-238) | ✅ Done | `area:workbench` |
-| [239](https://github.com/Kuestenlogik/Bowire/issues/239) | Bowire | [Map widget: time-scrubber + playback for accumulated streams](#issue-kuestenlogik-bowire-239) | ✅ Done | `area:workbench` |
-| [240](https://github.com/Kuestenlogik/Bowire/issues/240) | Bowire | [Map widget: per-entity grouping via configurable track-id field](#issue-kuestenlogik-bowire-240) | ✅ Done | `area:workbench` |
-| [619](https://github.com/Kuestenlogik/Bowire/issues/619) | Bowire | [VS Code extension 1.0 — cut the release the code already justifies](#issue-kuestenlogik-bowire-619) | ✅ Done | `area:workbench` |
-| [642](https://github.com/Kuestenlogik/Bowire/issues/642) | Bowire | [MCP resources read the workspace-less files, so they answer with the wrong data](#issue-kuestenlogik-bowire-642) | ✅ Done | `area:mcp` |
-| [650](https://github.com/Kuestenlogik/Bowire/issues/650) | Bowire | [The correlation suggester gates on the field name before it weighs any evidence](#issue-kuestenlogik-bowire-650) | ✅ Done | `area:workbench` |
-| [655](https://github.com/Kuestenlogik/Bowire/issues/655) | Bowire | [CSP has no worker-src, so MapLibre's worker is blocked and the map never mounts](#issue-kuestenlogik-bowire-655) | ✅ Done | `area:security` |
-
-### v2.8 — Workbench UX polish: freeform REST, header library, i18n
+### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-10-06)*
 
 **11/27 done** · 16 backlog
 
@@ -58,7 +44,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ✅ Done | `area:workbench` |
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ✅ Done | `area:workbench` |
 
-### v2.9 — MCP completion + agent hub
+### v2.9 — MCP completion + agent hub *(due 2026-10-27)*
 
 **1/6 done** · 5 backlog
 
@@ -71,7 +57,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ⬜ Backlog | `area:security` |
 | [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ✅ Done | `area:mcp` |
 
-### v3.0 — Cleanups + breaking-change cuts
+### v3.0 — Cleanups + breaking-change cuts *(due 2026-12-08)*
 
 **1/26 done** · 25 backlog
 
@@ -118,51 +104,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Details
 
-### v2.7 — Geospatial map: trajectories, playback & entity grouping
-
-#### <a id="issue-kuestenlogik-bowire-238"></a>✅ Done · [#238](https://github.com/Kuestenlogik/Bowire/issues/238) Map widget: trajectory LineString between sequential frames
-
-> `area:workbench`
-
-Add an optional **trajectory line** (MapLibre LineString layer) connecting sequential frames on the map widget, so a stream of position updates renders as a moving path instead of a scatter of disconnected dots. Default OFF (current behaviour); operator toggles it on per-method or per-session. [[more]](https://github.com/Kuestenlogik/Bowire/issues/238)
-
-#### <a id="issue-kuestenlogik-bowire-239"></a>✅ Done · [#239](https://github.com/Kuestenlogik/Bowire/issues/239) Map widget: time-scrubber + playback for accumulated streams
-
-> `area:workbench`
-
-Add a **time-scrubber + playback control** to the map widget for stream-driven sessions, so an operator can rewind to any point in the accumulated frame history, play forward at variable speed, and pause to inspect a specific moment. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/239)
-
-#### <a id="issue-kuestenlogik-bowire-240"></a>✅ Done · [#240](https://github.com/Kuestenlogik/Bowire/issues/240) Map widget: per-entity grouping via configurable track-id field
-
-> `area:workbench`
-
-Group stream frames by an explicit **track identifier** so the map can show N parallel entities — each with its own colour, trajectory, selection state — instead of merging everything into one pile of pins. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/240)
-
-#### <a id="issue-kuestenlogik-bowire-619"></a>✅ Done · [#619](https://github.com/Kuestenlogik/Bowire/issues/619) VS Code extension 1.0 — cut the release the code already justifies
-
-> `area:workbench`
-
-The extension has outgrown its version number. `#589` (resolve the CLI from a workspace tool manifest), `#590` (offer a managed download when none is installed) and `#591` (workspace-local storage) closed the last construction sites, and none of that has reached anybody: the Marketplace still serves … [[more]](https://github.com/Kuestenlogik/Bowire/issues/619)
-
-#### <a id="issue-kuestenlogik-bowire-642"></a>✅ Done · [#642](https://github.com/Kuestenlogik/Bowire/issues/642) MCP resources read the workspace-less files, so they answer with the wrong data
-
-> `area:mcp`
-
-The MCP resources read the workspace-less files, so on any install that uses workspaces they answer with somebody else's data or with nothing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/642)
-
-#### <a id="issue-kuestenlogik-bowire-650"></a>✅ Done · [#650](https://github.com/Kuestenlogik/Bowire/issues/650) The correlation suggester gates on the field name before it weighs any evidence
-
-> `area:workbench`
-
-`Suggest` gates every candidate on the field name before it looks at any evidence: [[more]](https://github.com/Kuestenlogik/Bowire/issues/650)
-
-#### <a id="issue-kuestenlogik-bowire-655"></a>✅ Done · [#655](https://github.com/Kuestenlogik/Bowire/issues/655) CSP has no worker-src, so MapLibre's worker is blocked and the map never mounts
-
-> `area:security`
-
-The map widget did not render. Not "rendered wrong" — did not render, in every build carrying the current Content-Security-Policy. [[more]](https://github.com/Kuestenlogik/Bowire/issues/655)
-
-### v2.8 — Workbench UX polish: freeform REST, header library, i18n
+### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-10-06)*
 
 #### <a id="issue-kuestenlogik-bowire-47"></a>⬜ Backlog · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
 
@@ -322,7 +264,7 @@ Ship a "Correlated timeline" as a second tab inside the existing Recordings deta
 
 `render()` rebuilds the entire workbench tree off-screen and morphdom-diffs it. There is no debounce, no dirty flag, no coalescing â€” a grep for `scheduleRender` / `renderPending` / any batching wrapper across `wwwroot/js/` returns nothing, and there are ~685 `render()` call sites. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/551)
 
-### v2.9 — MCP completion + agent hub
+### v2.9 — MCP completion + agent hub *(due 2026-10-27)*
 
 #### <a id="issue-kuestenlogik-bowire-46"></a>⬜ Backlog · [#46](https://github.com/Kuestenlogik/Bowire/issues/46) MCP server-side notifications via SDK notification handlers
 
@@ -360,7 +302,7 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 
 > **Status:** done. The architecture diverges from the original plan — the body below reflects what actually shipped; the historical plan is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/37)
 
-### v3.0 — Cleanups + breaking-change cuts
+### v3.0 — Cleanups + breaking-change cuts *(due 2026-12-08)*
 
 #### <a id="issue-kuestenlogik-bowire-44"></a>⬜ Backlog · [#44](https://github.com/Kuestenlogik/Bowire/issues/44) Sidecar packaging — Docker / Compose / Kubernetes
 
@@ -560,4 +502,4 @@ A schema uploaded through the workbench — a `.proto`, an OpenAPI document — 
 
 ---
 
-*Generated 2026-09-07 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-09-08 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
