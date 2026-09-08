@@ -492,6 +492,35 @@
         } catch {}
     }
 
+    // #47 — sidebar label mode. An HTTP endpoint carries two names: the
+    // method name from the contract (`GetForecast`) and the route it
+    // answers on (`/api/Weather/forecast/{city}`). Which one identifies
+    // it depends on what the reader is holding. Someone with the service
+    // definition open scans method names; someone with a browser devtools
+    // log, an nginx access log or a customer's bug report has only the
+    // route, and translating it back to a method name by hand is exactly
+    // the friction this toggle removes.
+    //
+    //   'name'  — always the method name (default; behaviour before #47)
+    //   'route' — the HTTP path where the method has one, name otherwise
+    //
+    // Sticky rather than per-workspace: it encodes a reading habit, which
+    // belongs to the person sitting in front of the tool, not to the
+    // project they happen to have open.
+    const METHOD_LABEL_MODE_KEY = 'bowire_method_label_mode';
+    let methodLabelMode = (function () {
+        try {
+            return localStorage.getItem(METHOD_LABEL_MODE_KEY) === 'route' ? 'route' : 'name';
+        } catch { return 'name'; }
+    })();
+    function persistMethodLabelMode() {
+        try { localStorage.setItem(METHOD_LABEL_MODE_KEY, methodLabelMode); } catch {}
+    }
+    function setMethodLabelMode(mode) {
+        methodLabelMode = mode === 'route' ? 'route' : 'name';
+        persistMethodLabelMode();
+    }
+
     // Controls the visibility of the filter popup (anchored next to the
     // search bar). Closed by an outside-click handler when open.
     let protocolFilterOpen = false;
@@ -4527,6 +4556,7 @@
             tryRun('protocolFilter',  function () { persistProtocolFilter(); });
             tryRun('methodTypeFilter',function () { persistMethodTypeFilter(); });
             tryRun('urlFilter',       function () { persistUrlFilter(); });
+            tryRun('methodLabelMode', function () { persistMethodLabelMode(); });
             tryRun('expandedServices',function () { persistExpandedServices(); });
             tryRun('urlHeaders',      function () { persistUrlHeaders(); });
             tryRun('urlMeta',         function () { persistUrlMeta(); });

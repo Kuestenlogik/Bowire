@@ -591,8 +591,8 @@
             // whether either of the optional tags is shown.
             el('span', {
                 className: 'bowire-method-name' + (m.deprecated ? ' deprecated' : ''),
-                title: m.summary || m.description || m.name,
-                textContent: m.name
+                title: methodRowTitle(m),
+                textContent: methodRowLabel(m)
             }),
             m.deprecated ? el('span', { className: 'bowire-method-deprecated-tag', textContent: 'DEPR' }) : null,
             // #48 — marker for a method the last watch poll
@@ -867,11 +867,13 @@
                     }
                 }
 
-                // Method name
+                // Method name — #47: follows the same label mode as the
+                // services tree. A favorite whose service has gone away has
+                // no method object left, so the stored name is the fallback.
                 item.appendChild(el('span', {
                     className: 'bowire-method-name'
                         + (available && row.method.deprecated ? ' deprecated' : ''),
-                    textContent: row.fav.method
+                    textContent: methodRowLabel(available ? row.method : null, row.fav.method)
                 }));
 
                 // Service name (secondary)
@@ -4190,6 +4192,47 @@
         // the wrapper so the dropdown-build logic doesn't get dropped
         // by a future dead-code sweep.
         void newBtnWrapper;
+
+        // #47 — label-mode toggle: method name vs HTTP route. Rendered
+        // only when the discovered set actually holds a route, because a
+        // workspace of plain gRPC / MQTT / WebSocket methods would get a
+        // button that cannot change a single row. Same rule the filter
+        // button follows, and the same rule the Zugaenge model states:
+        // a surface hides what it cannot do rather than offering it and
+        // failing quietly.
+        //
+        // It sits on the view-switch row rather than in the filter popup
+        // because that popup only appears when there are >= 2 protocols,
+        // method types or discovery URLs -- so the single-REST-service
+        // operator, who wants routes most, would never find it there.
+        var anyRoute = false;
+        for (var lrs = 0; lrs < services.length && !anyRoute; lrs++) {
+            var lrMethods = services[lrs].methods || [];
+            for (var lrm = 0; lrm < lrMethods.length; lrm++) {
+                if (lrMethods[lrm].httpPath) { anyRoute = true; break; }
+            }
+        }
+        if (anyRoute) {
+            var routeMode = methodLabelMode === 'route';
+            viewSwitch.appendChild(el('button', {
+                id: 'bowire-label-mode-btn',
+                className: 'bowire-sidebar-toolbar-btn' + (routeMode ? ' is-active' : ''),
+                'aria-pressed': routeMode ? 'true' : 'false',
+                'aria-label': 'Toggle between method names and HTTP routes',
+                title: routeMode
+                    ? 'Showing HTTP routes — click to show method names'
+                    : 'Showing method names — click to show HTTP routes',
+                onClick: function () {
+                    setMethodLabelMode(methodLabelMode === 'route' ? 'name' : 'route');
+                    render();
+                }
+            },
+                el('span', {
+                    innerHTML: svgIcon('globe'),
+                    style: 'width:14px;height:14px;display:flex'
+                })
+            ));
+        }
 
         // #182 — "Compare…" opens the side-by-side service version diff
         // in the main pane. Shown when there is something to compare: at

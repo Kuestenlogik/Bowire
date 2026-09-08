@@ -48,7 +48,8 @@ The Discover sidebar is the only one that walks a tree (services → methods) in
 - **Name-filter input** below the toolbar — types narrow the visible tree in real time. `Esc` clears.
 - **Chip strip** appears only when at least one filter is active — visualises the current narrowing as removable pills.
 - **Compare button** — appears when there are two services (or two discovery URLs) to set against each other; opens the [side-by-side service compare](../features/service-compare.md) surface (#182).
-- **Service groups** are expandable tree nodes per protocol. Each method row shows its **call-type badge** (Unary, Server-Streaming, Client-Streaming, Duplex), name, and a hover-reveal **star** for favoriting. Drag a method to drop it into a Collection picker (#431).
+- **Name / route toggle** (🌐) — flips every method row between its method name (`GetForecast`) and the HTTP route it answers on (`/api/Weather/forecast/{city}`). The choice is sticky across restarts and applies to the favourites list too. The button only appears when the discovered set actually holds a route — a workspace of plain gRPC or MQTT methods has nothing to switch to. In route mode the method name moves into the row's tooltip, and the verb is not repeated in the label because the call-type badge already carries it (#47).
+- **Service groups** are expandable tree nodes per protocol. Each method row shows its **call-type badge** (Unary, Server-Streaming, Client-Streaming, Duplex — or the HTTP verb for a REST endpoint), its label (method name or route, see above), and a hover-reveal **star** for favoriting. Drag a method to drop it into a Collection picker (#431).
 
 The protocol-tab strip from v1.x has been retired in favour of the filter-popup-with-multi-select approach — one place to slice the tree by any dimension, not three competing strips.
 

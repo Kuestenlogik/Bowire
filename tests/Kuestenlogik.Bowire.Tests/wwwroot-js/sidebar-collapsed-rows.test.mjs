@@ -56,6 +56,13 @@ const _prelude = `
             return el('span', { className: 'bowire-coverage-chip' });
         }
         function schemaWatchMarkerFor() { _lookups.watchMark++; return null; }
+        // #47 — the label/tooltip helpers live in helpers.js; this row
+        // renderer only needs them to hand back a string. The stubs mirror
+        // name mode, which is what these rows asserted before #47.
+        function methodRowLabel(m, fallbackName) { return (m && m.name) || fallbackName || ''; }
+        function methodRowTitle(m, fallbackName) {
+            return (m && (m.summary || m.description)) || (m && m.name) || fallbackName || '';
+        }
 `;
 const _postlude = `
         return {

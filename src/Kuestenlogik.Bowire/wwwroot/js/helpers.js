@@ -1635,6 +1635,40 @@
     }
 
     /**
+     * #47 — the text that identifies a method in a sidebar row, honouring
+     * the sticky label mode. In 'route' mode an endpoint that has an HTTP
+     * path shows the path; everything else keeps its method name, because
+     * a name is all a plain gRPC / MQTT / WebSocket method has.
+     *
+     * The verb is deliberately NOT prefixed here. The badge at the end of
+     * the row already carries it (see methodBadgeText), and rendering
+     * "GET" at both ends of one row buys the reader nothing.
+     *
+     * `fallbackName` covers the favorites list, where a row can outlive
+     * the service it points at and no method object is available.
+     */
+    function methodRowLabel(method, fallbackName) {
+        var name = (method && method.name) || fallbackName || '';
+        if (methodLabelMode !== 'route') return name;
+        return (method && method.httpPath) || name;
+    }
+
+    /**
+     * #47 — companion tooltip. Route mode takes the method name off the
+     * row, so the tooltip has to carry it; otherwise there is no way back
+     * to the name short of flipping the mode. Name mode keeps the tooltip
+     * exactly as it was before #47.
+     */
+    function methodRowTitle(method, fallbackName) {
+        var name = (method && method.name) || fallbackName || '';
+        var summary = (method && (method.summary || method.description)) || '';
+        if (methodLabelMode !== 'route' || !(method && method.httpPath)) {
+            return summary || name;
+        }
+        return summary ? name + '\n' + summary : name;
+    }
+
+    /**
      * Returns a "data-type" value for the method badge. REST verbs get their
      * own bucket so the CSS can color them per-verb.
      */
