@@ -1,0 +1,43 @@
+{
+  "_comment": "#117 — English is the source of truth. Every other locale file carries exactly this key set; the locale-parity test fails a build where they diverge, including one where a placeholder was dropped or invented. Keys are dotted and area-first (landing.*, settings.*) so a translator can work through one surface at a time. Placeholders are {name}, never {{name}} — the double-brace form is Bowire's own variable syntax and appears literally inside some strings.",
+
+  "settings.general.language.label": "Language",
+  "settings.general.language.description": "Language for the workbench interface. Follows your browser unless you pick one.",
+  "settings.general.language.auto": "Auto (follow browser)",
+
+  "landing.home.lede": "Pick what you want to do — or jump back into recent activity below.",
+  "landing.action.browseCatalogue": "Browse catalogue ({count})",
+  "landing.action.openHome": "Open Home",
+  "landing.action.openWorkspace": "Open Workspace",
+  "landing.action.takeTour": "Take a tour",
+
+  "landing.discovery.incomplete": "Discovery is incomplete",
+  "landing.recent.title": "Resume a recent call",
+  "landing.tips.title": "Tips",
+
+  "landing.loading.hint": "First connection can take a few seconds. If discovery fails, ensure your server has reflection / OpenAPI / GraphQL introspection enabled.",
+
+  "landing.discoveryFailed.title": "Could not discover services at {target}",
+  "landing.discoveryFailed.causes": "Common causes:",
+  "landing.discoveryFailed.causeGrpc": "gRPC server: enable Grpc.AspNetCore.Server.Reflection",
+  "landing.discoveryFailed.causeRest": "REST server: ensure /swagger.json or /openapi.json is reachable",
+  "landing.discoveryFailed.causeGraphql": "GraphQL server: __schema introspection must not be disabled",
+  "landing.discoveryFailed.causeNetwork": "Network: server is reachable from this machine",
+
+  "landing.noServices.title": "No services discovered yet",
+  "landing.noServices.body": "Bowire is configured but none of your servers responded with discoverable services. Verify each connection below or upload a schema as a fallback.",
+  "landing.noServices.uploadHint": "Or upload a schema file (.proto, OpenAPI, GraphQL SDL) to discover services without a live server connection.",
+  "landing.noServices.uploadAction": "Upload schema",
+
+  "landing.wrongProtocol.title": "No {protocol} services found",
+  "landing.wrongProtocol.body": "Your discovery URL didn't return any {protocol} services. Switch to a protocol tab that has hits:",
+  "landing.wrongProtocol.hint": "Wrong protocol? Server-side reflection / introspection might not be enabled for {protocol}.",
+
+  "landing.selectMethod.body": "Pick a method from the sidebar to invoke against any of the connected URLs.",
+
+  "landing.diagnostics.copy": "Copy diagnostics",
+  "landing.retry": "Retry",
+  "landing.tour.action": "Take the guided tour →",
+  "landing.docs.action": "Open docs →",
+  "landing.docs.title": "Open the in-app help drawer (F1)"
+}

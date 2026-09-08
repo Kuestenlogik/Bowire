@@ -160,7 +160,7 @@
         if (degradedKeys.length > 0) {
             card.appendChild(el('div', {
                 className: 'bowire-landing-section-title',
-                textContent: 'Discovery is incomplete'
+                textContent: t('landing.discovery.incomplete')
             }));
             for (var k = 0; k < degradedKeys.length; k++) {
                 var diag = renderDiscoveryDiagnostics(degradedKeys[k]);
@@ -174,7 +174,7 @@
         if (recents.length > 0) {
             card.appendChild(el('div', {
                 className: 'bowire-landing-section-title',
-                textContent: 'Resume a recent call'
+                textContent: t('landing.recent.title')
             }));
             var list = el('div', { className: 'bowire-landing-history' });
             for (var i = 0; i < recents.length; i++) {
@@ -188,7 +188,7 @@
         // column.
         card.appendChild(el('div', {
             className: 'bowire-landing-section-title',
-            textContent: 'Tips'
+            textContent: t('landing.tips.title')
         }));
         var tips = el('div', { className: 'bowire-landing-tips' });
         tips.appendChild(renderTipLine('search', 'Press Shift+/ to focus the command palette'));
@@ -227,13 +227,13 @@
         var _firstRunActions = [];
         if (_canBrowseCatalogue) {
             _firstRunActions.push({
-                label: 'Browse catalogue (' + _catN + ')',
+                label: t('landing.action.browseCatalogue', { count: _catN }),
                 primary: true,
                 onClick: function () { openCatalogueBrowserDialog({}); }
             });
         }
         _firstRunActions.push({
-            label: 'Open Home',
+            label: t('landing.action.openHome'),
             primary: !_canBrowseCatalogue,
             onClick: function () {
                 railMode = 'home';
@@ -241,7 +241,7 @@
                 render();
             }
         }, {
-            label: 'Open Workspace',
+            label: t('landing.action.openWorkspace'),
             onClick: function () {
                 railMode = 'workspaces';
                 try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
@@ -256,7 +256,7 @@
             // execute) instead of duplicating those steps in a
             // Discover-only variant.
             id: 'bowire-discover-empty-tour-btn',
-            label: 'Take a tour',
+            label: t('landing.action.takeTour'),
             onClick: function () {
                 if (typeof window !== 'undefined'
                     && typeof window.bowireStartGettingStartedTour === 'function') {
@@ -290,7 +290,7 @@
         // anchor for first-time operators; the action cards below carry
         // the actual entry points.
         hero.appendChild(el('div', { className: 'bowire-landing-hero-tagline',
-            textContent: 'Pick what you want to do — or jump back into recent activity below.' }));
+            textContent: t('landing.home.lede') }));
 
         var grid = el('div', { className: 'bowire-landing-cta-grid' });
         // #537 — when the host curated a catalogue, the first tile is
@@ -359,7 +359,7 @@
         var label = 'Discovering services\u2026';
         card.appendChild(el('div', { className: 'bowire-landing-loading-label', textContent: label }));
         card.appendChild(el('div', { className: 'bowire-landing-loading-hint',
-            textContent: 'First connection can take a few seconds. If discovery fails, ensure your server has reflection / OpenAPI / GraphQL introspection enabled.' }));
+            textContent: t('landing.loading.hint') }));
         parent.appendChild(card);
     }
 
@@ -377,7 +377,7 @@
 
         card.appendChild(el('div', { className: 'bowire-landing-error-icon', innerHTML: svgIcon('disconnect') }));
         card.appendChild(el('div', { className: 'bowire-landing-error-title',
-            textContent: 'Could not discover services at ' + titleTarget }));
+            textContent: t('landing.discoveryFailed.title', { target: titleTarget }) }));
         card.appendChild(el('div', { className: 'bowire-landing-error-message', textContent: errMsg }));
 
         var diag = renderDiscoveryDiagnostics(diagKey);
@@ -390,14 +390,14 @@
         }
 
         var listTitle = el('div', { className: 'bowire-landing-section-title',
-            textContent: 'Common causes:' });
+            textContent: t('landing.discoveryFailed.causes') });
         card.appendChild(listTitle);
 
         var bullets = el('ul', { className: 'bowire-landing-troubleshoot' });
-        bullets.appendChild(el('li', { textContent: 'gRPC server: enable Grpc.AspNetCore.Server.Reflection' }));
-        bullets.appendChild(el('li', { textContent: 'REST server: ensure /swagger.json or /openapi.json is reachable' }));
-        bullets.appendChild(el('li', { textContent: 'GraphQL server: __schema introspection must not be disabled' }));
-        bullets.appendChild(el('li', { textContent: 'Network: server is reachable from this machine' }));
+        bullets.appendChild(el('li', { textContent: t('landing.discoveryFailed.causeGrpc') }));
+        bullets.appendChild(el('li', { textContent: t('landing.discoveryFailed.causeRest') }));
+        bullets.appendChild(el('li', { textContent: t('landing.discoveryFailed.causeGraphql') }));
+        bullets.appendChild(el('li', { textContent: t('landing.discoveryFailed.causeNetwork') }));
         card.appendChild(bullets);
 
         parent.appendChild(card);
@@ -409,9 +409,9 @@
         var card = el('div', { className: 'bowire-landing-card' });
 
         card.appendChild(el('div', { className: 'bowire-landing-section-title',
-            textContent: 'No services discovered yet' }));
+            textContent: t('landing.noServices.title') }));
         card.appendChild(el('div', { className: 'bowire-landing-help-text',
-            textContent: 'Bowire is configured but none of your servers responded with discoverable services. Verify each connection below or upload a schema as a fallback.' }));
+            textContent: t('landing.noServices.body') }));
 
         if (serverUrls.length > 0) {
             var statusList = el('div', { className: 'bowire-landing-status-list' });
@@ -423,7 +423,7 @@
 
         card.appendChild(el('div', { className: 'bowire-landing-divider' }));
         card.appendChild(el('div', { className: 'bowire-landing-help-text',
-            textContent: 'Or upload a schema file (.proto, OpenAPI, GraphQL SDL) to discover services without a live server connection.' }));
+            textContent: t('landing.noServices.uploadHint') }));
         var btn = el('button', {
             className: 'bowire-landing-cta-secondary',
             onClick: function () {
@@ -435,7 +435,7 @@
             }
         },
             el('span', { innerHTML: svgIcon('upload') }),
-            el('span', { textContent: 'Upload schema' })
+            el('span', { textContent: t('landing.noServices.uploadAction') })
         );
         card.appendChild(btn);
 
@@ -449,9 +449,9 @@
 
         var currentProtoName = (protocols.find(function (p) { return p.id === selectedProtocol; }) || {}).name || selectedProtocol;
         card.appendChild(el('div', { className: 'bowire-landing-section-title',
-            textContent: 'No ' + currentProtoName + ' services found' }));
+            textContent: t('landing.wrongProtocol.title', { protocol: currentProtoName }) }));
         card.appendChild(el('div', { className: 'bowire-landing-help-text',
-            textContent: 'Your discovery URL didn\'t return any ' + currentProtoName + ' services. Switch to a protocol tab that has hits:' }));
+            textContent: t('landing.wrongProtocol.body', { protocol: currentProtoName }) }));
 
         var switchGrid = el('div', { className: 'bowire-landing-protocol-switch' });
         for (var i = 0; i < protocols.length; i++) {
@@ -484,7 +484,7 @@
         card.appendChild(switchGrid);
 
         card.appendChild(el('div', { className: 'bowire-landing-help-text bowire-landing-help-text-muted',
-            textContent: 'Wrong protocol? Server-side reflection / introspection might not be enabled for ' + currentProtoName + '.' }));
+            textContent: t('landing.wrongProtocol.hint', { protocol: currentProtoName }) }));
 
         parent.appendChild(card);
     }
@@ -506,7 +506,7 @@
 
         card.appendChild(el('div', { className: 'bowire-landing-divider' }));
         card.appendChild(el('div', { className: 'bowire-landing-section-title',
-            textContent: 'Pick a method from the sidebar to invoke against any of the connected URLs.' }));
+            textContent: t('landing.selectMethod.body') }));
 
         parent.appendChild(card);
     }
@@ -606,7 +606,7 @@
             }
         },
             el('span', { innerHTML: svgIcon('copy') }),
-            el('span', { textContent: 'Copy diagnostics' })
+            el('span', { textContent: t('landing.diagnostics.copy') })
         ));
 
         return wrap;
@@ -726,7 +726,7 @@
         if (status === 'error' || status === 'disconnected') {
             row.appendChild(el('button', {
                 className: 'bowire-landing-status-retry',
-                textContent: 'Retry',
+                textContent: t('landing.retry'),
                 onClick: function () { fetchServices(); }
             }));
         }
@@ -796,7 +796,7 @@
         var footer = el('div', { className: 'bowire-landing-footer' });
         footer.appendChild(el('button', {
             className: 'bowire-landing-footer-btn',
-            textContent: 'Take the guided tour →',
+            textContent: t('landing.tour.action'),
             onClick: function () {
                 if (typeof startTour === 'function') startTour();
             }
@@ -809,8 +809,8 @@
         if (localDocs && typeof helpOpenDrawer === 'function') {
             footer.appendChild(el('button', {
                 className: 'bowire-landing-footer-btn',
-                textContent: 'Open docs →',
-                title: 'Open the in-app help drawer (F1)',
+                textContent: t('landing.docs.action'),
+                title: t('landing.docs.title'),
                 onClick: function () { helpOpenDrawer(); }
             }));
         } else {
@@ -819,7 +819,7 @@
                 href: 'https://bowire.io/docs/',
                 target: '_blank',
                 rel: 'noopener',
-                textContent: 'Open docs →'
+                textContent: t('landing.docs.action')
             }));
         }
         parent.appendChild(footer);

@@ -413,6 +413,44 @@
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: 'General' }));
 
+        // #117 - Language. First row of the section, above Theme, because it
+        // decides what every other label in the dialog reads. Switching it
+        // re-renders both the app and this dialog so the change is visible
+        // where the operator is looking.
+        section.appendChild(renderSettingsRow(
+            t('settings.general.language.label'),
+            t('settings.general.language.description'),
+            function () {
+                var select = el('select', {
+                    id: 'bowire-settings-locale-select',
+                    className: 'bowire-settings-select',
+                    onChange: function (e) {
+                        setLocale(e.target.value);
+                        render();
+                        renderSettingsDialog();
+                    }
+                });
+                var current = localePreference();
+                var choices = [{ value: 'auto', label: t('settings.general.language.auto') }];
+                availableLocales().forEach(function (id) {
+                    // Each language is named in itself - a German speaker
+                    // looks for "Deutsch", not for "German".
+                    var name = id;
+                    try {
+                        var display = new Intl.DisplayNames([id], { type: 'language' });
+                        name = display.of(id) || id;
+                    } catch { /* no Intl.DisplayNames - the tag is still readable */ }
+                    choices.push({ value: id, label: name });
+                });
+                for (var li = 0; li < choices.length; li++) {
+                    var opt = el('option', { value: choices[li].value, textContent: choices[li].label });
+                    if (choices[li].value === current) opt.selected = true;
+                    select.appendChild(opt);
+                }
+                return select;
+            }
+        ));
+
         // Theme
         section.appendChild(renderSettingsRow(
             'Theme',

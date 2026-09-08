@@ -57,6 +57,13 @@
         try { checkAppVersionMarker(); }
         catch (e) { console.warn('[bowire] version-marker check failed', e); }
 
+        // #117 - resolve the language before anything renders. The catalogues
+        // are embedded in the bundle, so this reads a stored preference and
+        // the browser's language and picks one; nothing is fetched and
+        // nothing can arrive late.
+        try { loadLocale(); }
+        catch (e) { console.warn('[bowire] locale resolution failed', e); }
+
         // Apply stored theme preference (or auto → OS) immediately so
         // the first paint is correct. Replaces the old
         // `setAttribute('data-theme', config.theme)` hard-wire, which

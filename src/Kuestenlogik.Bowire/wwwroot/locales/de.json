@@ -1,0 +1,43 @@
+{
+  "_comment": "#117 — Deutsch. Gleicher Schlüsselsatz wie en.json; der Paritätstest bricht ab, sobald die beiden auseinanderlaufen — auch wenn nur ein Platzhalter fehlt oder dazuerfunden wurde. Platzhalter {name} bleiben unübersetzt stehen. Ohne direkte Anrede formuliert, wie die übrige Oberfläche.",
+
+  "settings.general.language.label": "Sprache",
+  "settings.general.language.description": "Sprache der Oberfläche. Folgt dem Browser, solange nichts gewählt ist.",
+  "settings.general.language.auto": "Automatisch (Browser folgen)",
+
+  "landing.home.lede": "Auswählen, was ansteht — oder unten an eine der letzten Tätigkeiten anknüpfen.",
+  "landing.action.browseCatalogue": "Katalog durchsehen ({count})",
+  "landing.action.openHome": "Start öffnen",
+  "landing.action.openWorkspace": "Arbeitsbereich öffnen",
+  "landing.action.takeTour": "Rundgang starten",
+
+  "landing.discovery.incomplete": "Die Ermittlung ist unvollständig",
+  "landing.recent.title": "An einen letzten Aufruf anknüpfen",
+  "landing.tips.title": "Hinweise",
+
+  "landing.loading.hint": "Die erste Verbindung kann einige Sekunden dauern. Schlägt die Ermittlung fehl, muss auf dem Server Reflexion, OpenAPI oder GraphQL-Introspektion eingeschaltet sein.",
+
+  "landing.discoveryFailed.title": "Unter {target} ließen sich keine Dienste ermitteln",
+  "landing.discoveryFailed.causes": "Häufige Ursachen:",
+  "landing.discoveryFailed.causeGrpc": "gRPC-Server: Grpc.AspNetCore.Server.Reflection einschalten",
+  "landing.discoveryFailed.causeRest": "REST-Server: /swagger.json oder /openapi.json muss erreichbar sein",
+  "landing.discoveryFailed.causeGraphql": "GraphQL-Server: die __schema-Introspektion darf nicht abgeschaltet sein",
+  "landing.discoveryFailed.causeNetwork": "Netz: der Server muss von diesem Rechner aus erreichbar sein",
+
+  "landing.noServices.title": "Bisher keine Dienste ermittelt",
+  "landing.noServices.body": "Bowire ist eingerichtet, aber keiner der Server hat mit ermittelbaren Diensten geantwortet. Jede Verbindung unten prüfen — oder ersatzweise ein Schema hochladen.",
+  "landing.noServices.uploadHint": "Alternativ eine Schemadatei (.proto, OpenAPI, GraphQL-SDL) hochladen und die Dienste ohne laufende Serververbindung ermitteln.",
+  "landing.noServices.uploadAction": "Schema hochladen",
+
+  "landing.wrongProtocol.title": "Keine {protocol}-Dienste gefunden",
+  "landing.wrongProtocol.body": "Die Ermittlungs-Adresse hat keine {protocol}-Dienste geliefert. Auf ein Protokoll wechseln, das Treffer hat:",
+  "landing.wrongProtocol.hint": "Falsches Protokoll? Womöglich ist die serverseitige Reflexion beziehungsweise Introspektion für {protocol} nicht eingeschaltet.",
+
+  "landing.selectMethod.body": "Eine Methode im Seitenstreifen wählen, um sie gegen eine der verbundenen Adressen aufzurufen.",
+
+  "landing.diagnostics.copy": "Diagnose kopieren",
+  "landing.retry": "Erneut versuchen",
+  "landing.tour.action": "Geführten Rundgang starten →",
+  "landing.docs.action": "Doku öffnen →",
+  "landing.docs.title": "Die eingebaute Hilfe öffnen (F1)"
+}

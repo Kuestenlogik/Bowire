@@ -220,6 +220,8 @@ internal static class BowireCli
         root.Add(ReportCommand.Build());
         root.Add(AuthRecordingCommand.Build());
         root.Add(ProjectCommand.Build());
+        // #117 - `bowire docs translations` scaffolds and checks a UI locale.
+        root.Add(TranslationsCommand.Build());
         root.Add(BuildVersionCommand(plugins));
 
         // Auto-discovered CLI commands — scanner today, fuzz / proxy /
