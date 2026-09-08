@@ -101,6 +101,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [624](https://github.com/Kuestenlogik/Bowire/issues/624) | Bowire | [Benchmark: hold connections open and report what became of them](#issue-kuestenlogik-bowire-624) | ⬜ Backlog | `area:cli` |
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Lizenz entscheiden und je Projekt führen](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
 | [654](https://github.com/Kuestenlogik/Bowire/issues/654) | Bowire | [Uploaded schemas live in a process-wide static — lost on restart, shared between identities, invisible to the CLI](#issue-kuestenlogik-bowire-654) | ⬜ Backlog | `area:multi` |
+| [663](https://github.com/Kuestenlogik/Bowire/issues/663) | Bowire | [Lint's response-shape rules cannot fire on REST — discovery populates no output fields](#issue-kuestenlogik-bowire-663) | ⬜ Backlog | `area:cli` |
+| [664](https://github.com/Kuestenlogik/Bowire/issues/664) | Bowire | [Method-name form on /api/invoke is not uniform across plugins](#issue-kuestenlogik-bowire-664) | ⬜ Backlog | `area:workbench` |
+| [665](https://github.com/Kuestenlogik/Bowire/issues/665) | Bowire | [SignalR ad-hoc invoke declares args:string but requires a JSON array](#issue-kuestenlogik-bowire-665) | ⬜ Backlog | `area:workbench` |
+| [666](https://github.com/Kuestenlogik/Bowire/issues/666) | Bowire | [plugin install suggests a re-run its own already-installed guard blocks](#issue-kuestenlogik-bowire-666) | ⬜ Backlog | `area:plugin-sdk` |
 
 ## Details
 
@@ -499,6 +503,30 @@ Die Lizenzfrage für Bowire steht laut Lizenz- und Stufenkonzept aus („TBD"), 
 > `area:multi`
 
 A schema uploaded through the workbench — a `.proto`, an OpenAPI document — lives in a static list for the lifetime of the process and nowhere else: [[more]](https://github.com/Kuestenlogik/Bowire/issues/654)
+
+#### <a id="issue-kuestenlogik-bowire-663"></a>⬜ Backlog · [#663](https://github.com/Kuestenlogik/Bowire/issues/663) Lint's response-shape rules cannot fire on REST — discovery populates no output fields
+
+> `area:cli`
+
+`bowire lint` against a REST target reports "no findings" and exits 0. Against a gRPC target the same rules produce findings. The difference is not the APIs — it is that REST discovery populates request parameters but no response schemas, so the four response-shaped rules have nothing to inspect. [[more]](https://github.com/Kuestenlogik/Bowire/issues/663)
+
+#### <a id="issue-kuestenlogik-bowire-664"></a>⬜ Backlog · [#664](https://github.com/Kuestenlogik/Bowire/issues/664) Method-name form on /api/invoke is not uniform across plugins
+
+> `area:workbench`
+
+`/api/invoke` takes a `method` field, and which form it accepts differs by plugin. A caller that reads a discovery response and uses the obvious field hits one or the other. [[more]](https://github.com/Kuestenlogik/Bowire/issues/664)
+
+#### <a id="issue-kuestenlogik-bowire-665"></a>⬜ Backlog · [#665](https://github.com/Kuestenlogik/Bowire/issues/665) SignalR ad-hoc invoke declares args:string but requires a JSON array
+
+> `area:workbench`
+
+Discovery declares the SignalR ad-hoc `invoke` method's input as: [[more]](https://github.com/Kuestenlogik/Bowire/issues/665)
+
+#### <a id="issue-kuestenlogik-bowire-666"></a>⬜ Backlog · [#666](https://github.com/Kuestenlogik/Bowire/issues/666) plugin install suggests a re-run its own already-installed guard blocks
+
+> `area:plugin-sdk`
+
+`bowire plugin install --file <pkg>.nupkg` installs a package whose runtime dependencies could not be resolved, reports the unmet ones as a warning, and tells the operator what to do: [[more]](https://github.com/Kuestenlogik/Bowire/issues/666)
 
 ---
 
