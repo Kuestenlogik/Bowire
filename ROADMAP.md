@@ -105,6 +105,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [664](https://github.com/Kuestenlogik/Bowire/issues/664) | Bowire | [Method-name form on /api/invoke is not uniform across plugins](#issue-kuestenlogik-bowire-664) | ⬜ Backlog | `area:workbench` |
 | [665](https://github.com/Kuestenlogik/Bowire/issues/665) | Bowire | [SignalR ad-hoc invoke declares args:string but requires a JSON array](#issue-kuestenlogik-bowire-665) | ⬜ Backlog | `area:workbench` |
 | [666](https://github.com/Kuestenlogik/Bowire/issues/666) | Bowire | [plugin install suggests a re-run its own already-installed guard blocks](#issue-kuestenlogik-bowire-666) | ⬜ Backlog | `area:plugin-sdk` |
+| [667](https://github.com/Kuestenlogik/Bowire/issues/667) | Bowire | [Hosted playground: a public multi-protocol demo fleet plus a hardened, hosted workbench](#issue-kuestenlogik-bowire-667) | ⬜ Backlog | `area:multi` |
 
 ## Details
 
@@ -527,6 +528,12 @@ Discovery declares the SignalR ad-hoc `invoke` method's input as: [[more]](https
 > `area:plugin-sdk`
 
 `bowire plugin install --file <pkg>.nupkg` installs a package whose runtime dependencies could not be resolved, reports the unmet ones as a warning, and tells the operator what to do: [[more]](https://github.com/Kuestenlogik/Bowire/issues/666)
+
+#### <a id="issue-kuestenlogik-bowire-667"></a>⬜ Backlog · [#667](https://github.com/Kuestenlogik/Bowire/issues/667) Hosted playground: a public multi-protocol demo fleet plus a hardened, hosted workbench
+
+> `area:multi`
+
+Mockoon has [playground.mockoon.com](https://mockoon.com/playground/) — a public, zero-install mock API (11 CRUD collections, 100 fake records each, plus `/echo`, `/time`, `/error`, `/lorem` utilities). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/667)
 
 ---
 
