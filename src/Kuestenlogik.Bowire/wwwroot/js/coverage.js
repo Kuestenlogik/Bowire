@@ -288,20 +288,30 @@
         var glyphs = { recent: '●', stale: '◐', failing: '✕', uncovered: '○' };
         var tooltipLines = [];
         if (cov.runs === 0) {
-            tooltipLines.push('No runs recorded');
-            tooltipLines.push('Invoke the method to start tracking');
+            tooltipLines.push(t('coverage.chip.noRuns'));
+            tooltipLines.push(t('coverage.chip.noRunsHint'));
         } else {
-            tooltipLines.push('Last run: ' + new Date(cov.lastRunAt).toLocaleString()
-                + ' (' + cov.lastOutcome + ')');
-            tooltipLines.push('Runs: '
-                + cov.runsLast7Days + ' in 7d / '
-                + cov.runsLast30Days + ' in 30d / '
-                + cov.runs + ' total');
+            // #117 - the timestamp follows the chosen language too, not just
+            // the browser's. A German workbench showing an American date is
+            // the kind of half-translation that reads as an oversight.
+            tooltipLines.push(t('coverage.chip.lastRun', {
+                when: new Date(cov.lastRunAt).toLocaleString(activeLocale),
+                outcome: cov.lastOutcome
+            }));
+            tooltipLines.push(t('coverage.chip.runs', {
+                d7: cov.runsLast7Days,
+                d30: cov.runsLast30Days,
+                total: cov.runs
+            }));
             if (cov.passRate30d != null) {
-                tooltipLines.push('30d pass-rate: ' + Math.round(cov.passRate30d * 100) + '%');
+                tooltipLines.push(t('coverage.chip.passRate', {
+                    percent: Math.round(cov.passRate30d * 100)
+                }));
             }
             if (cov.sources.length > 0) {
-                tooltipLines.push('Sources: ' + cov.sources.join(', '));
+                tooltipLines.push(t('coverage.chip.sources', {
+                    sources: cov.sources.join(', ')
+                }));
             }
         }
         return el('span', {
@@ -309,7 +319,7 @@
             'data-coverage': st,
             title: tooltipLines.join('\n'),
             textContent: glyphs[st] || glyphs.uncovered,
-            'aria-label': 'Coverage: ' + st
+            'aria-label': t('coverage.chip.ariaLabel', { state: st })
         });
     }
 
@@ -317,11 +327,11 @@
 
     function _coverageRailLabel(source) {
         switch (source) {
-            case 'discover':          return 'Discover';
-            case 'compose':           return 'Compose';
-            case 'benchmark':         return 'Benchmark';
-            case 'recording-replay':  return 'Recording';
-            case 'flow':              return 'Flow';
+            case 'discover':          return t('coverage.source.discover');
+            case 'compose':           return t('coverage.source.compose');
+            case 'benchmark':         return t('coverage.source.benchmark');
+            case 'recording-replay':  return t('coverage.source.recording');
+            case 'flow':              return t('coverage.source.flow');
             default:                  return source || 'unknown';
         }
     }
@@ -390,40 +400,40 @@
             return sel;
         }
         filters.appendChild(el('label', { className: 'bowire-coverage-filter-label' },
-            el('span', { textContent: 'Source' }),
+            el('span', { textContent: t('coverage.filter.source') }),
             makeSelect(
                 [
-                    { value: 'all',              label: 'All sources' },
-                    { value: 'discover',         label: 'Discover' },
-                    { value: 'compose',          label: 'Compose' },
-                    { value: 'benchmark',        label: 'Benchmark' },
-                    { value: 'recording-replay', label: 'Recording replay' },
-                    { value: 'flow',             label: 'Flow' }
+                    { value: 'all',              label: t('coverage.filter.allSources') },
+                    { value: 'discover',         label: t('coverage.source.discover') },
+                    { value: 'compose',          label: t('coverage.source.compose') },
+                    { value: 'benchmark',        label: t('coverage.source.benchmark') },
+                    { value: 'recording-replay', label: t('coverage.source.recordingReplay') },
+                    { value: 'flow',             label: t('coverage.source.flow') }
                 ],
                 _runHistoryFilter.source,
                 function (v) { _runHistoryFilter.source = v; if (typeof renderSettingsDialog === 'function') renderSettingsDialog(); }
             )
         ));
         filters.appendChild(el('label', { className: 'bowire-coverage-filter-label' },
-            el('span', { textContent: 'Outcome' }),
+            el('span', { textContent: t('coverage.filter.outcome') }),
             makeSelect(
                 [
-                    { value: 'all',   label: 'All outcomes' },
-                    { value: 'ok',    label: 'Pass' },
-                    { value: 'fail',  label: 'Fail' },
-                    { value: 'error', label: 'Error' }
+                    { value: 'all',   label: t('coverage.filter.allOutcomes') },
+                    { value: 'ok',    label: t('coverage.outcome.pass') },
+                    { value: 'fail',  label: t('coverage.outcome.fail') },
+                    { value: 'error', label: t('coverage.outcome.error') }
                 ],
                 _runHistoryFilter.outcome,
                 function (v) { _runHistoryFilter.outcome = v; if (typeof renderSettingsDialog === 'function') renderSettingsDialog(); }
             )
         ));
         filters.appendChild(el('label', { className: 'bowire-coverage-filter-label' },
-            el('span', { textContent: 'Search' }),
+            el('span', { textContent: t('coverage.filter.search') }),
             el('input', {
                 type: 'text',
                 className: 'bowire-settings-input bowire-coverage-filter-search',
                 value: _runHistoryFilter.search || '',
-                placeholder: 'service/method or error text',
+                placeholder: t('coverage.filter.searchPlaceholder'),
                 onInput: function (e) { _runHistoryFilter.search = e.target.value; },
                 onChange: function (e) {
                     _runHistoryFilter.search = e.target.value;
@@ -434,13 +444,13 @@
         var clearBtn = el('button', {
             className: 'bowire-settings-action-btn',
             type: 'button',
-            textContent: 'Clear history',
+            textContent: t('coverage.clear.action'),
             onClick: function () {
                 if (typeof bowireConfirm === 'function') {
-                    bowireConfirm('Clear the workspace run history?', function () {
+                    bowireConfirm(t('coverage.clear.confirm'), function () {
                         clearRunHistory();
                         if (typeof renderSettingsDialog === 'function') renderSettingsDialog();
-                    }, { title: 'Clear run history', danger: true, confirmText: 'Clear' });
+                    }, { title: t('coverage.clear.title'), danger: true, confirmText: t('coverage.clear.confirmLabel') });
                 } else {
                     clearRunHistory();
                     if (typeof renderSettingsDialog === 'function') renderSettingsDialog();
@@ -463,8 +473,8 @@
         if (visible.length === 0) {
             wrap.appendChild(el('div', { className: 'bowire-coverage-empty',
                 textContent: totalCount === 0
-                    ? 'No runs recorded yet. Invoke a method, run a benchmark, or replay a recording to start tracking.'
-                    : 'No runs match the current filter.'
+                    ? t('coverage.empty.noRuns')
+                    : t('coverage.empty.noMatch')
             }));
             return wrap;
         }
@@ -472,11 +482,11 @@
         var table = el('table', { className: 'bowire-coverage-table' });
         var thead = el('thead', {},
             el('tr', {},
-                el('th', { textContent: 'When' }),
-                el('th', { textContent: 'Method' }),
-                el('th', { textContent: 'Source' }),
-                el('th', { textContent: 'Outcome' }),
-                el('th', { textContent: 'Duration' })
+                el('th', { textContent: t('coverage.table.when') }),
+                el('th', { textContent: t('coverage.table.method') }),
+                el('th', { textContent: t('coverage.table.source') }),
+                el('th', { textContent: t('coverage.table.outcome') }),
+                el('th', { textContent: t('coverage.table.duration') })
             )
         );
         table.appendChild(thead);

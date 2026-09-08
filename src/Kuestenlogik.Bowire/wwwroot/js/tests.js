@@ -15,14 +15,14 @@
         var body = el('div', { className: 'bowire-pane-body bowire-tests-body' });
 
         body.appendChild(el('div', { className: 'bowire-tests-hint',
-            textContent: 'Assertions that run automatically after every successful response. Use {{var}} substitution in expected values if you need them resolved at run time. Results show up in the Response pane under "Test results".' }));
+            textContent: t('assertions.intro') }));
 
         var tests = getTestsFor(selectedService.name, selectedMethod.name);
 
         // Add Assertion button
         body.appendChild(el('button', {
             className: 'bowire-tests-add',
-            textContent: '+ Add Assertion',
+            textContent: t('assertions.add'),
             onClick: function () {
                 var fresh = getTestsFor(selectedService.name, selectedMethod.name);
                 fresh.push({ id: nextTestId(), path: 'response.', op: 'eq', expected: '' });
@@ -33,7 +33,7 @@
 
         if (tests.length === 0) {
             body.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding: 20px' },
-                el('div', { className: 'bowire-empty-desc', textContent: 'No assertions yet. Add one and it will run after the next response.' })
+                el('div', { className: 'bowire-empty-desc', textContent: t('assertions.empty.none') })
             ));
             return body;
         }
@@ -52,8 +52,8 @@
         var actions = el('div', { className: 'bowire-tests-actions' },
             el('button', {
                 className: 'bowire-tests-export',
-                textContent: 'Export collection',
-                title: 'Download a portable test collection JSON file (use with `bowire test`)',
+                textContent: t('assertions.export.action'),
+                title: t('assertions.export.title'),
                 onClick: function () {
                     var collection = buildTestCollection(selectedService, selectedMethod, tests);
                     var json = JSON.stringify(collection, null, 2);
@@ -67,8 +67,8 @@
             }),
             el('button', {
                 className: 'bowire-tests-import',
-                textContent: 'Import collection',
-                title: 'Load assertions from a previously exported test collection',
+                textContent: t('assertions.import.action'),
+                title: t('assertions.import.title'),
                 onClick: function () {
                     var input = document.createElement('input');
                     input.type = 'file';
@@ -79,10 +79,10 @@
                             var text = await input.files[0].text();
                             var data = JSON.parse(text);
                             importTestCollection(data, selectedService, selectedMethod);
-                            toast('Collection imported', 'success');
+                            toast(t('assertions.import.ok'), 'success');
                             render();
                         } catch (e) {
-                            toast('Import failed: ' + e.message, 'error');
+                            toast(t('assertions.import.failed', { reason: e.message }), 'error');
                         }
                     };
                     input.click();
@@ -90,15 +90,15 @@
             }),
             el('button', {
                 className: 'bowire-tests-clear',
-                textContent: 'Remove all',
+                textContent: t('assertions.removeAll.action'),
                 onClick: function () {
-                    bowireConfirm('Remove all ' + tests.length + ' assertions for this method?', function () {
+                    bowireConfirm(t('assertions.removeAll.confirm', { count: tests.length }), function () {
                         var backup = tests.slice();
                         setTestsFor(selectedService.name, selectedMethod.name, []);
                         lastAssertionResults = {};
                         render();
-                        toast('Assertions removed', 'success', { undo: function () { setTestsFor(selectedService.name, selectedMethod.name, backup); render(); } });
-                    }, { title: 'Remove Assertions', danger: true, confirmText: 'Remove All' });
+                        toast(t('assertions.removeAll.done'), 'success', { undo: function () { setTestsFor(selectedService.name, selectedMethod.name, backup); render(); } });
+                    }, { title: t('assertions.removeAll.title'), danger: true, confirmText: t('assertions.removeAll.confirmLabel') });
                 }
             })
         );
@@ -118,10 +118,10 @@
 
         if (tests.length === 0) {
             body.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding: 40px' },
-                el('div', { className: 'bowire-empty-desc', textContent: 'No assertions defined for this method.' }),
+                el('div', { className: 'bowire-empty-desc', textContent: t('assertions.empty.forMethod') }),
                 el('button', {
                     className: 'bowire-empty-action',
-                    textContent: 'Add assertions in Request → Tests',
+                    textContent: t('assertions.empty.whereToAdd'),
                     onClick: function () {
                         try { activeRequestTab = 'tests'; } catch { /* let-shadow */ }
                         render();
@@ -133,7 +133,7 @@
 
         if (lastResponseJson == null) {
             body.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding: 40px' },
-                el('div', { className: 'bowire-empty-desc', textContent: 'Execute the request to see assertion results.' })
+                el('div', { className: 'bowire-empty-desc', textContent: t('assertions.empty.runFirst') })
             ));
             return body;
         }
@@ -162,8 +162,8 @@
         body.appendChild(el('div', { className: 'bowire-tests-actions' },
             el('button', {
                 className: 'bowire-tests-run',
-                textContent: 'Re-run against last response',
-                title: 'Re-run all assertions against the most recent response',
+                textContent: t('assertions.rerun.action'),
+                title: t('assertions.rerun.title'),
                 onClick: function () {
                     runAssertions(selectedService.name, selectedMethod.name,
                         statusInfo ? statusInfo.status : 'OK',
@@ -207,7 +207,7 @@
             if (result.message) {
                 detail.appendChild(el('span', { className: 'bowire-test-detail-error', textContent: result.message }));
             } else {
-                detail.appendChild(el('span', { textContent: 'actual: ' + formatActual(result.actual) }));
+                detail.appendChild(el('span', { textContent: t('assertions.result.actual', { value: formatActual(result.actual) }) }));
             }
             row.appendChild(detail);
         }
@@ -230,8 +230,8 @@
             className: 'bowire-test-path',
             type: 'text',
             value: test.path || '',
-            placeholder: 'response.path.to.field  or  status',
-            title: 'JSON path against the response body, or "status" for the gRPC/HTTP status name',
+            placeholder: t('assertions.row.pathPlaceholder'),
+            title: t('assertions.row.pathTitle'),
             onChange: function (e) {
                 var fresh = getTestsFor(selectedService.name, selectedMethod.name);
                 if (fresh[idx]) { fresh[idx].path = e.target.value; setTestsFor(selectedService.name, selectedMethod.name, fresh); }
@@ -241,7 +241,7 @@
         // Operator dropdown
         var opSelect = el('select', {
             className: 'bowire-test-op',
-            title: 'Comparison operator',
+            title: t('assertions.row.opTitle'),
             onChange: function (e) {
                 var fresh = getTestsFor(selectedService.name, selectedMethod.name);
                 if (fresh[idx]) { fresh[idx].op = e.target.value; setTestsFor(selectedService.name, selectedMethod.name, fresh); render(); }
@@ -262,7 +262,8 @@
                 className: 'bowire-test-expected',
                 type: 'text',
                 value: test.expected == null ? '' : String(test.expected),
-                placeholder: op === 'matches' ? 'regex' : (op === 'type' ? 'string|number|boolean|object|array|null' : 'expected'),
+                placeholder: op === 'matches' ? t('assertions.row.expectedRegex')
+                    : (op === 'type' ? t('assertions.row.expectedType') : t('assertions.row.expected')),
                 onChange: function (e) {
                     var fresh = getTestsFor(selectedService.name, selectedMethod.name);
                     if (fresh[idx]) { fresh[idx].expected = e.target.value; setTestsFor(selectedService.name, selectedMethod.name, fresh); }
@@ -276,7 +277,7 @@
         row.appendChild(el('button', {
             className: 'bowire-test-remove',
             innerHTML: svgIcon('close'),
-            title: 'Remove assertion',
+            title: t('assertions.row.remove'),
             onClick: function () {
                 var fresh = getTestsFor(selectedService.name, selectedMethod.name);
                 fresh.splice(idx, 1);
@@ -292,7 +293,7 @@
             if (result.message) {
                 detail.appendChild(el('span', { className: 'bowire-test-detail-error', textContent: result.message }));
             } else {
-                detail.appendChild(el('span', { textContent: 'actual: ' + formatActual(result.actual) }));
+                detail.appendChild(el('span', { textContent: t('assertions.result.actual', { value: formatActual(result.actual) }) }));
             }
             row.appendChild(detail);
         }
