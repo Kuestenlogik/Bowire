@@ -9311,3 +9311,24 @@ html[data-theme="light"] {
     }
 }
 
+
+/* A bundled protocol needs no install command, but it still needs the same
+   row as the ones that do — a card that simply omits the line reads as an
+   omission rather than as "nothing to run here". The slot stays, the badge
+   replaces the copy button. */
+.protocol-install-builtin code {
+    opacity: 0.72;
+}
+
+.protocol-install-badge {
+    flex: none;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+}

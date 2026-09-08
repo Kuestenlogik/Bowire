@@ -19,6 +19,21 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Release bodies are prose written by hand, and a hand can leave markup in
+// them. v2.6.0 shipped with its template placeholder unfilled — an unclosed
+// HTML comment among it — and because the page rendered the field raw, that
+// comment swallowed the two sections after it: "Drop us a line" appeared
+// inside the "recently shipped" card. The page escapes now as well; this
+// strips at the source so the data file carries text either way.
+function plainText(value) {
+    if (!value) return value;
+    return String(value)
+        .replace(/<!--[\s\S]*?(?:-->|$)/g, ' ')   // comments, closed or not
+        .replace(/<[^>]*>/g, ' ')                    // tags, real or accidental
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 const REPO = 'Kuestenlogik/Bowire';
 const DISPLAY = 4;                              // releases rendered in the list
 const FETCH = 10;                               // releases pulled for cadence math
@@ -125,8 +140,8 @@ async function main() {
         url: rel.html_url,
         published_at: publishedAt,
         published_date: publishedAt ? publishedAt.slice(0, 10) : null,
-        body_header: header,
-        body_lede: lede,
+        body_header: plainText(header),
+        body_lede: plainText(lede),
       };
     });
 

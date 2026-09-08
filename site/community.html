@@ -185,7 +185,7 @@ description: Join the Bowire community — contribute code, file issues, follow 
             {% if rel.published_date %}<time class="community-releases-date" datetime="{{ rel.published_at }}">{{ rel.published_date }}</time>{% endif %}
           </div>
           {% if rel.body_header or rel.body_lede != "" %}
-          <p class="community-releases-lede">{% if rel.body_header %}<strong>{{ rel.body_header }}</strong>{% if rel.body_lede != "" %} &mdash; {% endif %}{% endif %}{{ rel.body_lede }}</p>
+          <p class="community-releases-lede">{% if rel.body_header %}<strong>{{ rel.body_header | escape }}</strong>{% if rel.body_lede != "" %} &mdash; {% endif %}{% endif %}{{ rel.body_lede | escape }}</p>
           {% endif %}
         </li>
         {% endfor %}
