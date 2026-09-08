@@ -12,11 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-11-03)*
 
-**12/29 done** · 1 in progress · 16 backlog
+**13/29 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | 🟡 In progress | `area:workbench` |
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog | `area:workbench` |
 | [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog | `area:workbench` |
 | [247](https://github.com/Kuestenlogik/Bowire/issues/247) | Bowire | [Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas](#issue-kuestenlogik-bowire-247) | ⬜ Backlog | `area:workbench` |
@@ -32,8 +31,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [684](https://github.com/Kuestenlogik/Bowire/issues/684) | Bowire | [Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench](#issue-kuestenlogik-bowire-684) | ⬜ Backlog | `area:cli` |
-| [686](https://github.com/Kuestenlogik/Bowire/issues/686) | Bowire | [el() turns a false boolean attribute into a set attribute, so disabled: false disables the control](#issue-kuestenlogik-bowire-686) | ⬜ Backlog |  |
+| [686](https://github.com/Kuestenlogik/Bowire/issues/686) | Bowire | [el() turns a false boolean attribute into a set attribute, so disabled: false disables the control](#issue-kuestenlogik-bowire-686) | ⬜ Backlog | `area:workbench` |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ✅ Done | `area:workbench` |
+| [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ✅ Done | `area:workbench` |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ✅ Done | `area:workbench` |
 | [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ✅ Done | `area:workbench` |
 | [362](https://github.com/Kuestenlogik/Bowire/issues/362) | Bowire | [Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern](#issue-kuestenlogik-bowire-362) | ✅ Done | `area:workbench` |
@@ -158,12 +158,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-11-03)*
 
-#### <a id="issue-kuestenlogik-bowire-95"></a>🟡 In progress · [#95](https://github.com/Kuestenlogik/Bowire/issues/95) Header Library: named, scoped, toggleable header sets
-
-> `area:workbench`
-
-Headers like `Accept: application/vnd.example+json`, `X-Api-Version: 2`, `User-Agent: my-tester/1.0` get re-typed on every method, every environment, every workspace. Bowire's Metadata tab is per-request — there's no place to say "every call against api.example.com sends these three headers" without scripts. [[more]](https://github.com/Kuestenlogik/Bowire/issues/95)
-
 #### <a id="issue-kuestenlogik-bowire-117"></a>⬜ Backlog · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
 
 > `area:workbench`
@@ -252,6 +246,8 @@ Starting Bowire while an instance is already listening does not fail gracefully 
 
 #### <a id="issue-kuestenlogik-bowire-686"></a>⬜ Backlog · [#686](https://github.com/Kuestenlogik/Bowire/issues/686) el() turns a false boolean attribute into a set attribute, so disabled: false disables the control
 
+> `area:workbench`
+
 `el()` in `helpers.js` skips `undefined` and `null` and routes everything else through `setAttribute`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/686)
 
 #### <a id="issue-kuestenlogik-bowire-47"></a>✅ Done · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
@@ -259,6 +255,12 @@ Starting Bowire while an instance is already listening does not fail gracefully 
 > `area:workbench`
 
 For REST endpoints, offer a per-sidebar toggle (sticky in localStorage) that flips the label between \`GetForecast\` and \`GET /api/Weather/forecast/{city}\`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/47)
+
+#### <a id="issue-kuestenlogik-bowire-95"></a>✅ Done · [#95](https://github.com/Kuestenlogik/Bowire/issues/95) Header Library: named, scoped, toggleable header sets
+
+> `area:workbench`
+
+Headers like `Accept: application/vnd.example+json`, `X-Api-Version: 2`, `User-Agent: my-tester/1.0` get re-typed on every method, every environment, every workspace. Bowire's Metadata tab is per-request — there's no place to say "every call against api.example.com sends these three headers" without scripts. [[more]](https://github.com/Kuestenlogik/Bowire/issues/95)
 
 #### <a id="issue-kuestenlogik-bowire-256"></a>✅ Done · [#256](https://github.com/Kuestenlogik/Bowire/issues/256) Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style
 
