@@ -9,22 +9,21 @@ Bowire's browser UI is a single-page application built with pure HTML, CSS, and 
 
 ## Layout
 
-The diagram below labels four working regions inside the workbench. Click any one to jump to its detail page:
+The diagram below labels the six regions of the workbench. Click any one to jump to its detail page. It is generated from the running UI by `scripts/screenshots/generate-ui-anatomy.js`, which reads each region's bounding box out of the DOM — so it shows the workbench as it is, not as it was when somebody last redrew it:
 
 <picture class="ui-anatomy-picture">
   <source srcset="../images/ui-anatomy-dark.svg" media="(prefers-color-scheme: dark)">
   <img class="ui-anatomy-img" src="../images/ui-anatomy-light.svg" alt="Bowire workbench layout — click any region to open its UI Guide page">
 </picture>
 
-1. **[Sidebar](sidebar.md)** &mdash; service list, search, favorites, protocol tabs
-2. **[Request Pane](request-pane.md)** &mdash; form/JSON editor, metadata headers, import
-3. **[Response Pane](response-pane.md)** &mdash; syntax-highlighted response, streaming view, copy/download
-4. **[Action Bar](action-bar.md)** &mdash; execute button, repeat, status indicators
+1. **[Topbar](topbar.md)** &mdash; brand, command palette / global search, workspace and environment chips, undo / redo, theme, AI drawer, About, Settings.
+2. **[Rail strip](rail-strip.md)** &mdash; the 48 px icon column at the very left edge. Its icons switch *rails*, and the sidebar reshapes to whichever rail is active.
+3. **[Sidebar](sidebar.md)** &mdash; the list panel for the active rail. Under Discover that is the services and methods tree; under other rails it lists workspaces, collections, recordings, mocks, flows, and so on.
+4. **[Request Pane](request-pane.md)** &mdash; form/JSON editor, metadata headers, import
+5. **[Response Pane](response-pane.md)** &mdash; syntax-highlighted response, streaming view, copy/download
+6. **[Action Bar](action-bar.md)** &mdash; execute button, repeat, status indicators
 
-Above and beside those four regions run two surfaces that aren't numbered in the diagram:
-
-- **[Topbar](topbar.md)** &mdash; brand, command palette / global search, connection pill, environment selector, theme, AI drawer, About, Settings.
-- **[Rail strip](rail-strip.md)** &mdash; the 48 px icon column at the very left edge that switches rails; the sidebar reshapes to whichever rail is active.
+The rail strip and the sidebar are two layers of one idea: the rail decides *what kind of thing* you are looking at, the sidebar lists the things. Before v2.0 those were tabs inside the sidebar; they are not any more.
 
 On desktop, the topbar runs across the full width; the sidebar sits on the left with the request and response panes stacked or side-by-side on the right; the optional AI drawer slides in from the right edge. On mobile, the sidebar collapses behind a hamburger menu and panels stack vertically.
 
