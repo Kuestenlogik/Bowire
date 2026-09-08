@@ -57,6 +57,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ⬜ Backlog | `area:security` |
 | [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ✅ Done | `area:mcp` |
 
+### v2.10 — Auffindbarkeit: Aufhänger, Verzeichnisse, Stern-Aufruf *(due 2026-11-16)*
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ⬜ Backlog | `area:site` |
+
 ### v3.0 — Cleanups + breaking-change cuts *(due 2026-12-08)*
 
 **1/26 done** · 25 backlog
@@ -313,6 +321,14 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 > `area:mcp`
 
 > **Status:** done. The architecture diverges from the original plan — the body below reflects what actually shipped; the historical plan is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/37)
+
+### v2.10 — Auffindbarkeit: Aufhänger, Verzeichnisse, Stern-Aufruf *(due 2026-11-16)*
+
+#### <a id="issue-kuestenlogik-bowire-668"></a>⬜ Backlog · [#668](https://github.com/Kuestenlogik/Bowire/issues/668) Sharpen the one-line pitch, and carry the same sentence everywhere
+
+> `area:site`
+
+In every directory, every search result and every model-generated answer, Bowire gets **one line** next to its name. Ours is *"The multi-protocol API workbench."* It is accurate, and it names neither an opponent nor a problem. [[more]](https://github.com/Kuestenlogik/Bowire/issues/668)
 
 ### v3.0 — Cleanups + breaking-change cuts *(due 2026-12-08)*
 
