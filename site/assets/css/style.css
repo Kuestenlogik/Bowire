@@ -8202,6 +8202,20 @@ html[data-theme="light"] {
     margin: 0 auto;
 }
 
+/* The six boat cards break out of the stepper's 880px reading measure to
+   the full container width. 880px is right for the numbered steps, which
+   are prose; it squeezed the cards, which are a six-across grid — and it
+   left them visibly narrower than every neighbouring section, the "why
+   Bowire?" banner below included. Only the grid breaks out, so the steps
+   keep their measure. */
+@media (min-width: 1180px) {
+    .launch-boats {
+        width: min(var(--container), 100vw - 48px);
+        margin-left: calc(50% - min(var(--container), 100vw - 48px) / 2);
+        margin-right: calc(50% - min(var(--container), 100vw - 48px) / 2);
+    }
+}
+
 /* Step indicators row — three numbered circles + connectors. */
 .launch-steps {
     display: flex;
