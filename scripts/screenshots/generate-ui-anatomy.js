@@ -25,6 +25,7 @@ const path = require('path');
 const fs = require('fs');
 // Canonical sidebar helpers — the same ones capture-ui-guide.js uses.
 const sidebar = require('../lib/sidebar.cjs');
+const layout = require('./_anatomy-layout.js');
 
 let chromium;
 try { chromium = require('@playwright/test').chromium; }
@@ -42,25 +43,37 @@ const HEIGHT = 900;
 // navigation surface rather than a picture. `side` places the callout
 // label outside the region where there is room for it.
 const REGIONS = [
-    { key: 'topbar',       n: 1, label: 'Topbar',        href: 'topbar.html',        side: 'below',
+    { key: 'topbar',       n: 1, label: 'Topbar',        href: 'topbar.html',        placement: 'above',
       selectors: ['.bowire-topbar', 'header.bowire-header', '#bowire-topbar', '.bowire-header'] },
-    { key: 'railStrip',    n: 2, label: 'Rail strip',    href: 'rail-strip.html',    side: 'right',
+    { key: 'railStrip',    n: 2, label: 'Rail strip',    href: 'rail-strip.html',    placement: 'left',
       selectors: ['#bowire-activity-rail', '.bowire-activity-rail', '.bowire-rail'] },
-    { key: 'sidebar',      n: 3, label: 'Sidebar',       href: 'sidebar.html',       side: 'inside',
+    { key: 'sidebar',      n: 3, label: 'Sidebar',       href: 'sidebar.html',       placement: 'inside',
       selectors: ['#bowire-sidebar', '.bowire-sidebar', 'aside.bowire-sidebar'] },
-    { key: 'requestPane',  n: 4, label: 'Request pane',  href: 'request-pane.html',  side: 'inside',
+    { key: 'requestPane',  n: 4, label: 'Request pane',  href: 'request-pane.html',  placement: 'inside',
       // The pane ids carry the selected method — #bowire-request-pane-Default-GetPort-calls —
       // so only a prefix match is stable across whatever the catalogue offers.
       selectors: ['[id^="bowire-request-pane-"]', '#bowire-request-pane'] },
-    { key: 'responsePane', n: 5, label: 'Response pane', href: 'response-pane.html', side: 'inside',
+    { key: 'responsePane', n: 5, label: 'Response pane', href: 'response-pane.html', placement: 'inside',
       selectors: ['[id^="bowire-response-pane-"]', '#bowire-response-pane'] },
-    { key: 'actionBar',    n: 6, label: 'Action bar',    href: 'action-bar.html',    side: 'above',
+    { key: 'actionBar',    n: 6, label: 'Action bar',    href: 'action-bar.html',    placement: 'below',
       selectors: ['#bowire-action-bar', '.bowire-action-bar', '.bowire-actions'] },
 ];
 
+// `plate` is the callout's own background. Without it the label sat
+// straight on the screenshot and became unreadable wherever the UI
+// underneath happened to be light — the region name is the one thing on
+// this diagram that has to be legible, so it brings its own ground.
 const THEMES = {
-    light: { stroke: '#4f46e5', fill: 'rgba(79,70,229,0.08)', text: '#1e1b4b', badgeText: '#ffffff' },
-    dark:  { stroke: '#a5b4fc', fill: 'rgba(165,180,252,0.12)', text: '#e0e7ff', badgeText: '#1e1b4b' },
+    light: {
+        id: 'light', canvas: '#f6f7fb',
+        stroke: '#4f46e5', fill: 'rgba(79,70,229,0.10)',
+        plate: '#312e81', plateText: '#ffffff', badge: '#ffffff', badgeText: '#312e81',
+    },
+    dark: {
+        id: 'dark', canvas: '#0f1117',
+        stroke: '#a5b4fc', fill: 'rgba(165,180,252,0.14)',
+        plate: '#e0e7ff', plateText: '#1e1b4b', badge: '#312e81', badgeText: '#e0e7ff',
+    },
 };
 
 function log(m) { console.log(new Date().toISOString().slice(11, 19), m); }
@@ -122,37 +135,52 @@ async function measure(page) {
     }, REGIONS.map((r) => ({ key: r.key, selectors: r.selectors })));
 }
 
-function callout(region, box, palette) {
-    // Keep the label inside the canvas whichever side it is placed on.
-    let lx = box.x + 12;
-    let ly = box.y + 26;
-    if (region.side === 'below') { ly = box.y + box.h + 26; }
-    if (region.side === 'above') { ly = Math.max(20, box.y - 12); }
-    if (region.side === 'right') { lx = box.x + box.w + 14; ly = box.y + 32; }
-    lx = Math.min(lx, WIDTH - 150);
-    ly = Math.min(Math.max(ly, 20), HEIGHT - 12);
+function callout(region, box, palette, screen) {
+    const { plate, leader, box: b } = layout.place(region, box, screen);
+    const cy = plate.y + plate.h / 2;
+
+    // A leader is drawn only for a region too narrow to host its own label —
+    // the topbar is 47px tall and the rail strip 48px wide, so a plate
+    // inside either covers the thing it names.
+    const line = leader
+        ? `    <line x1="${leader.from.x}" y1="${leader.from.y}" x2="${leader.to.x}" y2="${leader.to.y}"
+          stroke="${palette.stroke}" stroke-width="2" marker-end="url(#arrow-${palette.id})"/>
+`
+        : '';
 
     return `  <a href="${region.href}" aria-label="${region.label}">
-    <rect x="${box.x + 1}" y="${box.y + 1}" width="${Math.max(box.w - 2, 2)}" height="${Math.max(box.h - 2, 2)}"
+    <rect x="${b.x + 1}" y="${b.y + 1}" width="${Math.max(b.w - 2, 2)}" height="${Math.max(b.h - 2, 2)}"
           rx="6" fill="${palette.fill}" stroke="${palette.stroke}" stroke-width="2"/>
-    <circle cx="${lx + 11}" cy="${ly - 5}" r="11" fill="${palette.stroke}"/>
-    <text x="${lx + 11}" y="${ly - 1}" font-family="system-ui,-apple-system,Segoe UI,sans-serif"
-          font-size="12" font-weight="700" fill="${palette.badgeText}" text-anchor="middle">${region.n}</text>
-    <text x="${lx + 29}" y="${ly}" font-family="system-ui,-apple-system,Segoe UI,sans-serif"
-          font-size="13" font-weight="600" fill="${palette.text}">${region.label}</text>
+${line}    <rect x="${plate.x}" y="${plate.y}" width="${plate.w}" height="${plate.h}" rx="13"
+          fill="${palette.plate}" stroke="${palette.stroke}" stroke-width="1"/>
+    <circle cx="${plate.x + 15}" cy="${cy}" r="9" fill="${palette.badge}"/>
+    <text x="${plate.x + 15}" y="${cy + 4}" font-family="system-ui,-apple-system,Segoe UI,sans-serif"
+          font-size="11" font-weight="700" fill="${palette.badgeText}" text-anchor="middle">${region.n}</text>
+    <text x="${plate.x + 30}" y="${cy + 4}" font-family="system-ui,-apple-system,Segoe UI,sans-serif"
+          font-size="12.5" font-weight="600" fill="${palette.plateText}">${region.label}</text>
   </a>`;
 }
 
 function buildSvg(pngBase64, boxes, palette) {
+    const screen = { width: WIDTH, height: HEIGHT };
+    const c = layout.canvas(WIDTH, HEIGHT);
     const shapes = REGIONS
         .filter((r) => boxes[r.key])
-        .map((r) => callout(r, boxes[r.key], palette))
+        .map((r) => callout(r, boxes[r.key], palette, screen))
         .join('\n');
     return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-     viewBox="0 0 ${WIDTH} ${HEIGHT}" width="${WIDTH}" height="${HEIGHT}" role="img"
+     viewBox="0 0 ${c.w} ${c.h}" width="${c.w}" height="${c.h}" role="img"
      aria-label="Bowire workbench layout — click any region to open its UI Guide page">
   <title>Bowire workbench layout</title>
-  <image href="data:image/png;base64,${pngBase64}" x="0" y="0" width="${WIDTH}" height="${HEIGHT}"/>
+  <defs>
+    <marker id="arrow-${palette.id}" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="${palette.stroke}"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="${c.w}" height="${c.h}" fill="${palette.canvas}"/>
+  <image href="data:image/png;base64,${pngBase64}" x="${c.imageX}" y="${c.imageY}"
+         width="${WIDTH}" height="${HEIGHT}"/>
 ${shapes}
 </svg>
 `;

@@ -8210,9 +8210,15 @@ html[data-theme="light"] {
    keep their measure. */
 @media (min-width: 1180px) {
     .launch-boats {
-        width: min(var(--container), 100vw - 48px);
-        margin-left: calc(50% - min(var(--container), 100vw - 48px) / 2);
-        margin-right: calc(50% - min(var(--container), 100vw - 48px) / 2);
+        /* --container is the container's BORDER box and it carries
+           `padding: 0 24px`, so the content its neighbours actually occupy
+           is 48px narrower. Breaking out to --container itself overshot
+           them by 24px a side — the cards ended up wider than the "why
+           Bowire?" header directly below. Subtract the padding. */
+        --launch-boats-width: min(var(--container) - 48px, 100vw - 96px);
+        width: var(--launch-boats-width);
+        margin-left: calc(50% - var(--launch-boats-width) / 2);
+        margin-right: calc(50% - var(--launch-boats-width) / 2);
     }
 }
 

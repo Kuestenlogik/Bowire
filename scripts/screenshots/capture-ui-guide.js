@@ -19,6 +19,8 @@ const path = require('path');
 const fs = require('fs');
 // Canonical sidebar helpers — see scripts/lib/sidebar.cjs (#551).
 const sidebar = require('../lib/sidebar.cjs');
+// Crop from the element's own box, not from coordinates measured by eye.
+const clipper = require('./_region-clip.js');
 
 let chromium;
 try { chromium = require('@playwright/test').chromium; }
@@ -75,11 +77,8 @@ async function captureRailStrip(page, theme) {
     await seed(page, COMBINED_ROOT, 'discover', theme);
     await page.waitForSelector('#bowire-activity-rail .bowire-rail-btn', { timeout: 15000 });
     await page.waitForTimeout(600);
-    await page.screenshot({
-        path: outPath('rail-strip', theme),
-        clip: { x: 0, y: 56, width: 56, height: 720 }
-    });
-    log(`rail-strip [${theme}]: OK`);
+    const railRect = await clipper.shootSurface(page, 'rail-strip', outPath('rail-strip', theme), { pad: 4 });
+    log(`rail-strip [${theme}]: ${railRect ? `OK (${railRect.sel})` : 'SKIPPED — no element matched'}`);
 }
 
 /** Sidebar — Discover mode, services tree expanded, clip to the
@@ -92,12 +91,8 @@ async function captureSidebar(page, theme) {
     await page.waitForTimeout(600);
     await sidebar.openCatalogue(page, { timeout: 30000 });
     await page.waitForTimeout(400);
-    await page.screenshot({
-        path: outPath('sidebar', theme),
-        // Rail = 48 px, sidebar default ~ 280 px, topbar = 56 px.
-        clip: { x: 48, y: 56, width: 300, height: 820 }
-    });
-    log(`sidebar [${theme}]: OK`);
+    const sideRect = await clipper.shootSurface(page, 'sidebar', outPath('sidebar', theme), { pad: 4 });
+    log(`sidebar [${theme}]: ${sideRect ? `OK (${sideRect.sel})` : 'SKIPPED — no element matched'}`);
 }
 
 /** Request pane — pick a method first so the pane has content. */
@@ -111,14 +106,8 @@ async function captureRequestPane(page, theme) {
     const m = page.locator('.bowire-method-item').first();
     await m.click();
     await page.waitForTimeout(800);
-    // Centre pane sits roughly between x=350 (sidebar end) and
-    // x=900 (middle of viewport). The action bar sits at the bottom
-    // ~ y=820; the request pane occupies the upper half.
-    await page.screenshot({
-        path: outPath('request-pane', theme),
-        clip: { x: 348, y: 56, width: 560, height: 760 }
-    });
-    log(`request-pane [${theme}]: OK`);
+    const reqRect = await clipper.shootSurface(page, 'request-pane', outPath('request-pane', theme), { pad: 4 });
+    log(`request-pane [${theme}]: ${reqRect ? `OK (${reqRect.sel})` : 'SKIPPED — no element matched'}`);
 }
 
 /** Response pane — execute first so the JSON viewer has content. */
@@ -142,12 +131,8 @@ async function captureResponsePane(page, theme) {
         await exec.click();
         await page.waitForTimeout(1500);
     }
-    // Right half of the viewport.
-    await page.screenshot({
-        path: outPath('response-pane', theme),
-        clip: { x: 908, y: 56, width: 500, height: 760 }
-    });
-    log(`response-pane [${theme}]: OK`);
+    const resRect = await clipper.shootSurface(page, 'response-pane', outPath('response-pane', theme), { pad: 4 });
+    log(`response-pane [${theme}]: ${resRect ? `OK (${resRect.sel})` : 'SKIPPED — no element matched'}`);
 }
 
 /** Action bar — same setup as response pane, clip to the bottom strip. */
@@ -161,31 +146,8 @@ async function captureActionBar(page, theme) {
     const m = page.locator('.bowire-method-item').first();
     await m.click();
     await page.waitForTimeout(800);
-    // Action bar sits between the request + response panes — find it
-    // dynamically so the y is right regardless of theme/density.
-    const ab = page.locator('.bowire-action-bar, #bowire-action-bar').first();
-    if (await ab.isVisible().catch(() => false)) {
-        const box = await ab.boundingBox();
-        if (box) {
-            await page.screenshot({
-                path: outPath('action-bar', theme),
-                clip: {
-                    x: Math.max(0, Math.floor(box.x) - 8),
-                    y: Math.max(0, Math.floor(box.y) - 8),
-                    width: Math.min(WIDTH, Math.ceil(box.width) + 16),
-                    height: Math.min(HEIGHT, Math.ceil(box.height) + 16)
-                }
-            });
-            log(`action-bar [${theme}]: OK (bbox)`);
-            return;
-        }
-    }
-    // Fallback to a fixed clip near the bottom of the viewport.
-    await page.screenshot({
-        path: outPath('action-bar', theme),
-        clip: { x: 280, y: 800, width: 1100, height: 80 }
-    });
-    log(`action-bar [${theme}]: OK (fallback)`);
+    const abRect = await clipper.shootSurface(page, 'action-bar', outPath('action-bar', theme), { pad: 8 });
+    log(`action-bar [${theme}]: ${abRect ? `OK (${abRect.sel})` : 'SKIPPED — no element matched'}`);
 }
 
 const surfaces = [
