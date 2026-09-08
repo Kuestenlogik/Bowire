@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-11-03)*
 
-**12/27 done** · 1 in progress · 14 backlog
+**12/29 done** · 1 in progress · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -31,6 +31,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
+| [684](https://github.com/Kuestenlogik/Bowire/issues/684) | Bowire | [Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench](#issue-kuestenlogik-bowire-684) | ⬜ Backlog | `area:cli` |
+| [686](https://github.com/Kuestenlogik/Bowire/issues/686) | Bowire | [el() turns a false boolean attribute into a set attribute, so disabled: false disables the control](#issue-kuestenlogik-bowire-686) | ⬜ Backlog |  |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ✅ Done | `area:workbench` |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ✅ Done | `area:workbench` |
 | [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ✅ Done | `area:workbench` |
@@ -59,7 +61,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
 
-**0/4 done** · 4 backlog
+**0/5 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -67,6 +69,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [669](https://github.com/Kuestenlogik/Bowire/issues/669) | Bowire | [Ask for the star and the watch: README badge, in-product prompt, one-time CLI hint](#issue-kuestenlogik-bowire-669) | ⬜ Backlog | `area:multi` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [671](https://github.com/Kuestenlogik/Bowire/issues/671) | Bowire | [Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero](#issue-kuestenlogik-bowire-671) | ⬜ Backlog | `area:site` |
+| [685](https://github.com/Kuestenlogik/Bowire/issues/685) | Bowire | [Desktop launch: a shortcut on every platform, no console window, and docs that say how to start Bowire](#issue-kuestenlogik-bowire-685) | ⬜ Backlog | `area:multi` |
 
 ### v2.11 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2027-01-11)*
 
@@ -241,6 +244,16 @@ Feasible and small. Everything the proposal assumes already exists: `BowireOptio
 
 Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
 
+#### <a id="issue-kuestenlogik-bowire-684"></a>⬜ Backlog · [#684](https://github.com/Kuestenlogik/Bowire/issues/684) Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench
+
+> `area:cli`
+
+Starting Bowire while an instance is already listening does not fail gracefully — it throws an **unhandled** `IOException` / `AddressInUseException` and exits with code 1, after printing roughly forty lines of .NET stack trace. [[more]](https://github.com/Kuestenlogik/Bowire/issues/684)
+
+#### <a id="issue-kuestenlogik-bowire-686"></a>⬜ Backlog · [#686](https://github.com/Kuestenlogik/Bowire/issues/686) el() turns a false boolean attribute into a set attribute, so disabled: false disables the control
+
+`el()` in `helpers.js` skips `undefined` and `null` and routes everything else through `setAttribute`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/686)
+
 #### <a id="issue-kuestenlogik-bowire-47"></a>✅ Done · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
 
 > `area:workbench`
@@ -376,6 +389,12 @@ Six credible competitors turned up during the competitive survey **via openalter
 > `area:site`
 
 Two structural gaps on bowire.io. Both cheap, neither risky. [[more]](https://github.com/Kuestenlogik/Bowire/issues/671)
+
+#### <a id="issue-kuestenlogik-bowire-685"></a>⬜ Backlog · [#685](https://github.com/Kuestenlogik/Bowire/issues/685) Desktop launch: a shortcut on every platform, no console window, and docs that say how to start Bowire
+
+> `area:multi`
+
+Ask someone who just ran the MSI how they start Bowire tomorrow morning, after a reboot. Nothing in the product answers that. [[more]](https://github.com/Kuestenlogik/Bowire/issues/685)
 
 ### v2.11 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2027-01-11)*
 
