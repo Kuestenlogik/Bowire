@@ -6,13 +6,19 @@ name: Roadmap sync
 # materialises it for offline / non-API consumers.
 #
 # Triggers:
-#   * issues / project_v2 / milestones — re-render on any item or
-#     field change that could affect the rendered file.
+#   * issues — an issue filed, edited, closed, labelled, or moved
+#     between milestones changes what the file renders.
+#   * milestone — the version headings, themes and due dates come
+#     straight off the main-repo milestones, so an edit there changes
+#     the output without touching a single issue. Without this, moving
+#     a release date left the rendered dates stale until the nightly.
 #   * pull_request — verify ROADMAP.md isn't manually edited drifting
 #     from the Project.
 #   * workflow_dispatch — manual kick.
-#   * schedule (daily) — safety net so an org-level Project edit that
-#     somehow bypasses the project_v2 event still gets picked up.
+#   * schedule (daily) — the safety net, and the ONLY thing that picks
+#     up a board-field change. Projects V2 emits no repository event a
+#     workflow can subscribe to (there is no `project_v2:` trigger), so
+#     a Status / Release edit stays invisible here until the nightly run.
 #
 # Auth: reuses the org-secret BOWIRE_DISPATCH_TOKEN — the same PAT
 # that powers roadmap-field-guard.yml and Bowire.Bootcamp's notify
@@ -24,6 +30,8 @@ name: Roadmap sync
 on:
   issues:
     types: [opened, edited, deleted, transferred, milestoned, demilestoned, labeled, unlabeled, closed, reopened]
+  milestone:
+    types: [created, opened, edited, closed, deleted]
   pull_request:
     paths:
       - 'ROADMAP.md'
