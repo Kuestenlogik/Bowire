@@ -210,6 +210,24 @@ cannot quietly stop being runnable.
 | `1` | Connection or runtime error (for `discover`: no service found) |
 | `2` | Protocol-level error (a gRPC status, a 4xx/5xx HTTP response, an unknown `--protocol`, a URL no plugin recognised) or invalid usage |
 
+### Starting Bowire when Bowire is already running
+
+`bowire` with no subcommand starts the workbench. If the port it wants is
+already serving **another Bowire**, it does not start a second one: it prints
+the running instance's URL, opens a browser at it (unless `--no-browser`), and
+exits `0`. Nothing went wrong -- you asked for a workbench and there is one, so
+a script that starts Bowire idempotently keeps working.
+
+Flags that shape the *server* cannot be applied to an instance that is already
+up. If the second invocation carries any of `--url`, `--enable-mcp-adapter`,
+`--title`, `--disable-plugin`, `--plugin-dir`, `--map-basemap` or
+`--auto-create-initial-workspace`, they are named on stderr rather than
+silently dropped. Stop the running instance first if you need them.
+
+If the port is held by something that is **not** Bowire, you get one line
+naming the port and the two ways out (`--port <number>`, or `--port 0` together
+with `--port-file`), and exit `1`. Either way there is no stack trace.
+
 ## CI/CD Usage
 
 CLI mode is designed for automated pipelines:

@@ -195,9 +195,45 @@ internal static class BrowserUiHost
             }, token);
         }
 
+        // #684 - ask the port BEFORE building a host for it. Catching the
+        // bind failure afterwards is not enough: ASP.NET logs "Hosting failed
+        // to start" with the full exception through its own logger on the way
+        // out, so the operator still gets forty lines of stack trace before
+        // our tidy message. The only way to keep the console clean is not to
+        // attempt the bind. The catch below stays as the fallback for the
+        // race - somebody can take the port between this check and the bind.
+        //
+        // Only when ui.Port is the port Bowire will actually bind. When the
+        // platform names the address (ASPNETCORE_URLS, http_ports, a
+        // Kestrel:Endpoints section) and the operator did not pass --port,
+        // Bowire does not call UseUrls at all (#634) and Kestrel listens
+        // somewhere else entirely -- probing 5080 there would refuse to start
+        // over a port nobody was going to use.
+        var bowireOwnsTheAddress =
+            ui.PortExplicit || !ListenAddress.PlatformConfigured(bootstrapConfig);
+        if (ui.Port != 0 && bowireOwnsTheAddress)
+        {
+            var occupant = await ProbePortAsync(ui.Port, ct).ConfigureAwait(false);
+            if (occupant != PortOccupant.None)
+            {
+                return await HandlePortInUseAsync(ui, io, noBrowser, occupant, ct).ConfigureAwait(false);
+            }
+        }
+
         try
         {
             return await HostRunner(args, ui, plugins, OnListening, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ui.Port != 0 && IsAddressInUse(ex))
+        {
+            // #684 - the port is taken. Starting Bowire when Bowire is already
+            // there is not an error, and even when the occupant is a stranger
+            // the answer is one line, not an unhandled exception. --port 0 is
+            // excluded because the OS picks a free port; there is nothing to
+            // adopt and no in-use failure to interpret.
+            return await HandlePortInUseAsync(
+                ui, io, noBrowser, await ProbePortAsync(ui.Port, ct).ConfigureAwait(false), ct)
+                .ConfigureAwait(false);
         }
         finally
         {
@@ -207,6 +243,209 @@ internal static class BrowserUiHost
             // why the document carries a pid for readers to check.
             PortFile.Clear(ui.PortFile);
         }
+    }
+
+
+    /// <summary>What is sitting on the port Bowire wanted (#684).</summary>
+    internal enum PortOccupant
+    {
+        /// <summary>Nothing is listening. The ordinary case on a normal start.</summary>
+        None,
+        /// <summary>Another Bowire workbench — the one we should hand the operator.</summary>
+        Bowire,
+        /// <summary>Something else is listening. Not ours to open a browser at.</summary>
+        Other,
+    }
+
+    // internal: tests substitute a probe that answers without a socket.
+    internal static Func<int, CancellationToken, Task<PortOccupant>> ProbePortAsync { get; set; } = DefaultProbePort;
+
+    /// <summary>
+    /// Is this failure "the port is taken", however deeply ASP.NET wrapped it?
+    /// </summary>
+    /// <remarks>
+    /// Matched on the socket error code rather than on a type or a message.
+    /// The message comes from the OS and arrives in the user's system
+    /// language, so a Bowire started on a German Windows would otherwise need
+    /// German string matching to recognise its own failure.
+    /// </remarks>
+    private static bool IsAddressInUse(Exception? ex)
+    {
+        for (var e = ex; e is not null; e = e.InnerException)
+        {
+            if (e is System.Net.Sockets.SocketException socket
+                && socket.SocketErrorCode == System.Net.Sockets.SocketError.AddressAlreadyInUse)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Ask the port whether a Bowire is answering on it.
+    /// </summary>
+    /// <remarks>
+    /// <c>/api/plugins/health</c> is the cheapest endpoint that only a Bowire
+    /// serves: it reads two in-memory snapshots and returns JSON. A stranger
+    /// on the same port answering 200 JSON at that exact path is not a case
+    /// worth designing around.
+    /// <para>
+    /// Anything that is not a clean JSON 200 answers <see cref="PortOccupant.Other"/>.
+    /// That deliberately includes a Bowire behind an auth provider, which
+    /// replies 401: we would rather tell the operator the port is taken than
+    /// open a browser at something we could not identify.
+    /// </para>
+    /// </remarks>
+    // internal: the seam above is stubbed in every routing test, which left
+    // this method covered by nothing. Two tests call it directly against a
+    // real socket, because a stub cannot tell you that the probe answers
+    // "in use" on a free port -- which the first version of it did.
+    internal static async Task<PortOccupant> DefaultProbePort(int port, CancellationToken ct)
+    {
+        // "Is anything there?" is a TCP question, not an HTTP one. Asking it
+        // with an HTTP GET meant reading it back out of an exception, and the
+        // shapes are not distinguishable in practice: a refused connection, a
+        // dropped SYN and a server that is not speaking HTTP all arrive as
+        // HttpRequestException or TaskCanceledException depending on the
+        // platform, the firewall and which loopback address resolved first.
+        // Getting that wrong once is enough -- the first cut answered "in use"
+        // on a free port and refused to start at all.
+        if (!await IsAnythingListeningAsync(port, ct).ConfigureAwait(false))
+        {
+            return PortOccupant.None;
+        }
+
+        // Something is listening. Now the only question is whether it is one
+        // of ours, and for that an unanswered HTTP call is simply a no.
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+            using var response = await http
+                .GetAsync(
+                    new Uri($"http://localhost:{port.ToString(CultureInfo.InvariantCulture)}/api/plugins/health"),
+                    ct)
+                .ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode) return PortOccupant.Other;
+            var mediaType = response.Content.Headers.ContentType?.MediaType;
+            return string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase)
+                ? PortOccupant.Bowire
+                : PortOccupant.Other;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException or UriFormatException)
+        {
+            return PortOccupant.Other;
+        }
+    }
+
+    /// <summary>
+    /// Can anything be connected to on this port, on either loopback address?
+    /// </summary>
+    /// <remarks>
+    /// Both are tried because Kestrel's localhost binding covers
+    /// <c>127.0.0.1</c> and <c>[::1]</c>, and a host can resolve or refuse
+    /// them differently. One successful connect is enough to say the port is
+    /// taken; anything else -- refused, unreachable, no answer inside the
+    /// budget -- means Bowire may go ahead and bind.
+    /// </remarks>
+    private static async Task<bool> IsAnythingListeningAsync(int port, CancellationToken ct)
+    {
+        foreach (var address in new[] { System.Net.IPAddress.Loopback, System.Net.IPAddress.IPv6Loopback })
+        {
+            using var client = new System.Net.Sockets.TcpClient(address.AddressFamily);
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            budget.CancelAfter(TimeSpan.FromMilliseconds(600));
+            try
+            {
+                await client.ConnectAsync(address, port, budget.Token).ConfigureAwait(false);
+                return true;
+            }
+            catch (Exception ex) when (ex is System.Net.Sockets.SocketException or OperationCanceledException)
+            {
+                // Refused, unreachable, or no answer in the budget. Try the
+                // other loopback address, then let the caller start.
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The port Bowire asked for is taken. Adopt the workbench that is already
+    /// there, or say plainly what is in the way (#684).
+    /// </summary>
+    /// <remarks>
+    /// Starting Bowire when Bowire is already there is not an error — the
+    /// operator asked for a workbench and there is one. It used to end in an
+    /// unhandled exception and forty lines of stack trace, which is the
+    /// default outcome of a second double-click the moment there is a
+    /// clickable launcher.
+    /// </remarks>
+    private static async Task<int> HandlePortInUseAsync(
+        BrowserUiOptions ui, CommandIo io, bool noBrowser, PortOccupant occupant, CancellationToken ct)
+    {
+        var url = $"http://localhost:{ui.Port.ToString(CultureInfo.InvariantCulture)}/";
+
+        if (occupant != PortOccupant.Bowire)
+        {
+            await io.Err.WriteLineAsync(
+                $"  Port {ui.Port.ToString(CultureInfo.InvariantCulture)} is already in use by something that is not Bowire.")
+                .ConfigureAwait(false);
+            await io.Err.WriteLineAsync(
+                "  Start on a different port with --port <number>, or use --port 0 together with --port-file to let the OS pick one.")
+                .ConfigureAwait(false);
+            return 1;
+        }
+
+        io.OutLine();
+        io.OutLine($"  Bowire is already running at:  {url}");
+        io.OutLine("  Opening that one instead of starting a second.");
+
+        // Flags that shape the SERVER cannot be honoured by an instance that
+        // is already up. Saying so is the difference between adopting the
+        // running workbench and silently ignoring what the operator asked
+        // for — the same rule the accesses model states for a thin source:
+        // report what you cannot do rather than behave differently in
+        // silence.
+        var ignored = new List<string>();
+        if (ui.ServerUrls.Count > 0 || !string.IsNullOrEmpty(ui.ServerUrl)) ignored.Add("--url");
+        if (ui.EnableMcpAdapter) ignored.Add("--enable-mcp-adapter");
+        if (!string.Equals(ui.Title, "Bowire", StringComparison.Ordinal)) ignored.Add("--title");
+        if (ui.DisabledPlugins.Count > 0) ignored.Add("--disable-plugin");
+        if (!string.IsNullOrEmpty(ui.PluginDir)) ignored.Add("--plugin-dir");
+        if (!string.IsNullOrEmpty(ui.MapBasemap)) ignored.Add("--map-basemap");
+        if (ui.AutoCreateInitialWorkspace is not null) ignored.Add("--auto-create-initial-workspace");
+
+        if (ignored.Count > 0)
+        {
+            io.OutLine();
+            await io.Err.WriteLineAsync(
+                $"  The running instance was not started with {string.Join(", ", ignored)}, and cannot be changed from here.")
+                .ConfigureAwait(false);
+            await io.Err.WriteLineAsync(
+                "  Stop it first if you need those settings.")
+                .ConfigureAwait(false);
+        }
+
+        io.OutLine();
+
+        if (!noBrowser)
+        {
+            var openBrowser = OpenBrowserAsync;
+            try
+            {
+                await openBrowser(url, ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Headless / CI / no browser — the URL is on stdout either way.
+            }
+        }
+
+        // Exit 0: nothing went wrong. The operator wanted a workbench and has
+        // one. A non-zero code here would fail a script that starts Bowire
+        // idempotently.
+        return 0;
     }
 
     private static async Task DefaultOpenBrowser(string url, CancellationToken ct)
