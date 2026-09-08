@@ -10,13 +10,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-10-06)*
+### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-11-03)*
 
-**11/27 done** · 16 backlog
+**12/27 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ⬜ Backlog | `area:workbench` |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ⬜ Backlog | `area:workbench` |
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog | `area:workbench` |
 | [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog | `area:workbench` |
@@ -32,6 +31,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
+| [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ✅ Done | `area:workbench` |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ✅ Done | `area:workbench` |
 | [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ✅ Done | `area:workbench` |
 | [362](https://github.com/Kuestenlogik/Bowire/issues/362) | Bowire | [Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern](#issue-kuestenlogik-bowire-362) | ✅ Done | `area:workbench` |
@@ -44,7 +44,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ✅ Done | `area:workbench` |
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ✅ Done | `area:workbench` |
 
-### v2.9 — MCP completion + agent hub *(due 2026-10-27)*
+### v2.9 — MCP completion + agent hub *(due 2026-11-24)*
 
 **1/6 done** · 5 backlog
 
@@ -57,7 +57,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ⬜ Backlog | `area:security` |
 | [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ✅ Done | `area:mcp` |
 
-### v2.10 — Auffindbarkeit: Aufhänger, Verzeichnisse, Stern-Aufruf *(due 2026-11-16)*
+### v2.10 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
 
 **0/4 done** · 4 backlog
 
@@ -68,7 +68,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [671](https://github.com/Kuestenlogik/Bowire/issues/671) | Bowire | [Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero](#issue-kuestenlogik-bowire-671) | ⬜ Backlog | `area:site` |
 
-### v2.11 — Firmennetze: Proxy, Windows-Auth, Cookies *(due 2026-12-14)*
+### v2.11 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2027-01-11)*
 
 **0/3 done** · 3 backlog
 
@@ -78,7 +78,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [680](https://github.com/Kuestenlogik/Bowire/issues/680) | Bowire | [Outbound proxy and custom CA support — Bowire is unusable behind a corporate proxy](#issue-kuestenlogik-bowire-680) | ⬜ Backlog | `area:workbench` |
 | [681](https://github.com/Kuestenlogik/Bowire/issues/681) | Bowire | [Persistent cookie manager, and cookies beyond REST](#issue-kuestenlogik-bowire-681) | ⬜ Backlog | `area:workbench` |
 
-### v3.0 — Cleanups + breaking-change cuts *(due 2027-01-12)*
+### v3.0 — Cleanups + breaking-change cuts *(due 2027-02-23)*
 
 **1/26 done** · 25 backlog
 
@@ -111,7 +111,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [611](https://github.com/Kuestenlogik/Bowire/issues/611) | Bowire | [Sidecar: add gRPC as a third transport alongside stdio and HTTP](#issue-kuestenlogik-bowire-611) | ⬜ Backlog |  |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
-### v3.1 — Interop und Migration *(due 2027-02-16)*
+### v3.1 — Interop and migration *(due 2027-03-30)*
 
 **0/7 done** · 7 backlog
 
@@ -125,7 +125,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire get/post: URL-first verbs, HTTPie-style body notation, and --offline](#issue-kuestenlogik-bowire-678) | ⬜ Backlog | `area:cli` |
 
-### v3.2 — Firmennetze und Backend-Ersatz *(due 2027-03-01)*
+### v3.2 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
 **0/3 done** · 3 backlog
 
@@ -153,13 +153,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Details
 
-### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-10-06)*
-
-#### <a id="issue-kuestenlogik-bowire-47"></a>⬜ Backlog · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
-
-> `area:workbench`
-
-For REST endpoints, offer a per-sidebar toggle (sticky in localStorage) that flips the label between \`GetForecast\` and \`GET /api/Weather/forecast/{city}\`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/47)
+### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-11-03)*
 
 #### <a id="issue-kuestenlogik-bowire-95"></a>⬜ Backlog · [#95](https://github.com/Kuestenlogik/Bowire/issues/95) Header Library: named, scoped, toggleable header sets
 
@@ -247,6 +241,12 @@ Feasible and small. Everything the proposal assumes already exists: `BowireOptio
 
 Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
 
+#### <a id="issue-kuestenlogik-bowire-47"></a>✅ Done · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
+
+> `area:workbench`
+
+For REST endpoints, offer a per-sidebar toggle (sticky in localStorage) that flips the label between \`GetForecast\` and \`GET /api/Weather/forecast/{city}\`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/47)
+
 #### <a id="issue-kuestenlogik-bowire-256"></a>✅ Done · [#256](https://github.com/Kuestenlogik/Bowire/issues/256) Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style
 
 > `area:workbench`
@@ -313,7 +313,7 @@ Ship a "Correlated timeline" as a second tab inside the existing Recordings deta
 
 `render()` rebuilds the entire workbench tree off-screen and morphdom-diffs it. There is no debounce, no dirty flag, no coalescing â€” a grep for `scheduleRender` / `renderPending` / any batching wrapper across `wwwroot/js/` returns nothing, and there are ~685 `render()` call sites. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/551)
 
-### v2.9 — MCP completion + agent hub *(due 2026-10-27)*
+### v2.9 — MCP completion + agent hub *(due 2026-11-24)*
 
 #### <a id="issue-kuestenlogik-bowire-46"></a>⬜ Backlog · [#46](https://github.com/Kuestenlogik/Bowire/issues/46) MCP server-side notifications via SDK notification handlers
 
@@ -351,7 +351,7 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 
 > **Status:** done. The architecture diverges from the original plan — the body below reflects what actually shipped; the historical plan is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/37)
 
-### v2.10 — Auffindbarkeit: Aufhänger, Verzeichnisse, Stern-Aufruf *(due 2026-11-16)*
+### v2.10 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
 
 #### <a id="issue-kuestenlogik-bowire-668"></a>⬜ Backlog · [#668](https://github.com/Kuestenlogik/Bowire/issues/668) Sharpen the one-line pitch, and carry the same sentence everywhere
 
@@ -377,7 +377,7 @@ Six credible competitors turned up during the competitive survey **via openalter
 
 Two structural gaps on bowire.io. Both cheap, neither risky. [[more]](https://github.com/Kuestenlogik/Bowire/issues/671)
 
-### v2.11 — Firmennetze: Proxy, Windows-Auth, Cookies *(due 2026-12-14)*
+### v2.11 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2027-01-11)*
 
 #### <a id="issue-kuestenlogik-bowire-679"></a>⬜ Backlog · [#679](https://github.com/Kuestenlogik/Bowire/issues/679) Windows-integrated auth (Negotiate/NTLM) and Digest — the .NET tool cannot call .NET intranet APIs
 
@@ -397,7 +397,7 @@ The auth surface is broad — Bearer, Basic, API key, signed JWT, OAuth 2.0 (cli
 
 The cookie jar today is a per-environment in-memory `CookieContainer`, and it is **REST-only** (`src/Kuestenlogik.Bowire/Auth/CookieJar.cs`). It replays what a previous response set on the same origin, and that is all. [[more]](https://github.com/Kuestenlogik/Bowire/issues/681)
 
-### v3.0 — Cleanups + breaking-change cuts *(due 2027-01-12)*
+### v3.0 — Cleanups + breaking-change cuts *(due 2027-02-23)*
 
 #### <a id="issue-kuestenlogik-bowire-44"></a>⬜ Backlog · [#44](https://github.com/Kuestenlogik/Bowire/issues/44) Sidecar packaging — Docker / Compose / Kubernetes
 
@@ -551,7 +551,7 @@ Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `htt
 
 > **Status:** obsolete, not done. The premise no longer holds — the body below records why; the original proposal is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
 
-### v3.1 — Interop und Migration *(due 2027-02-16)*
+### v3.1 — Interop and migration *(due 2027-03-30)*
 
 #### <a id="issue-kuestenlogik-bowire-672"></a>⬜ Backlog · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
@@ -595,7 +595,7 @@ Code export offers five to six target languages per protocol. Postman, Hoppscotc
 
 `bowire call` can do a lot — every protocol, `{{vars}}`, `--env-file`, `--stream`, `--compact`, tab completion, meaningful exit codes. What it cannot do is the thing curl and HTTPie are actually used for: **one call, right now, with no context**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/678)
 
-### v3.2 — Firmennetze und Backend-Ersatz *(due 2027-03-01)*
+### v3.2 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
 #### <a id="issue-kuestenlogik-bowire-667"></a>⬜ Backlog · [#667](https://github.com/Kuestenlogik/Bowire/issues/667) Hosted playground: a public multi-protocol demo fleet plus a hardened, hosted workbench
 
