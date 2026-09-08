@@ -212,6 +212,24 @@ jobs:
       # tar.gz for unix-y RIDs, zip for Windows. Filenames match what
       # the marketing-site download dropdown links to via
       # `releases/latest/download/<name>` — keep these stable.
+      # #685 - the macOS app bundle. Copied into both osx publish folders
+      # before they are archived, so a downloaded tarball carries a
+      # double-clickable Bowire.app next to the CLI, and the Homebrew formula
+      # finds one to install. The bundle holds no code -
+      # Contents/MacOS/Bowire execs the CLI beside it - so it needs nothing
+      # from the build beyond the version stamp.
+      - name: Stage the macOS app bundle
+        env:
+          V: ${{ steps.version.outputs.VERSION }}
+        run: |
+          for rid in osx-x64 osx-arm64; do
+            cp -R packaging/macos/Bowire.app "publish/bowire-$rid/Bowire.app"
+            plist="publish/bowire-$rid/Bowire.app/Contents/Info.plist"
+            sed -i "s/__VERSION__/$V/g" "$plist"
+            chmod +x "publish/bowire-$rid/Bowire.app/Contents/MacOS/Bowire"
+          done
+          grep -c "$V" "publish/bowire-osx-arm64/Bowire.app/Contents/Info.plist"
+
       - name: Archive standalone binaries
         run: |
           mkdir -p publish/archives

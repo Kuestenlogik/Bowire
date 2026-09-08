@@ -41,11 +41,20 @@ makedepends=()
 source_x86_64=("${pkgname}-${pkgver}-x86_64.tar.gz::${url}/releases/download/v${pkgver}/bowire-linux-x64.tar.gz")
 source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::${url}/releases/download/v${pkgver}/bowire-linux-arm64.tar.gz")
 
+# #685 - the desktop entry and its icon. Fetched from the tag rather than
+# carried in the release tarball, because the tarball is the .NET publish
+# output and putting packaging metadata inside it would spread one file across
+# two build systems. Both live in the repo at packaging/linux/ and images/,
+# which is the single source the deb / rpm read too.
+source=("bowire.desktop::${url}/raw/v${pkgver}/packaging/linux/bowire.desktop"
+        "bowire.png::${url}/raw/v${pkgver}/images/bowire_logo_small.png")
+
 # `updpkgsums` rewrites these on every release. Empty placeholders
 # would also work; the `SKIP` token tells makepkg to bypass the check
 # on platforms whose source isn't published yet.
 sha256sums_x86_64=('SKIP')
 sha256sums_aarch64=('SKIP')
+sha256sums=('SKIP' 'SKIP')
 
 package() {
     # Drop the unpacked self-contained publish under /opt/bowire.
@@ -60,6 +69,15 @@ package() {
     # PATH-friendly symlink under /usr/bin.
     install -dm755 "${pkgdir}/usr/bin"
     ln -s /opt/bowire/bowire "${pkgdir}/usr/bin/bowire"
+
+    # #685 - the clickable way in. Without these the only route to the
+    # workbench after installing is typing `bowire` in a shell, which nothing
+    # in the product ever tells you. hicolor/256x256 is the one size every
+    # desktop environment scales from.
+    install -Dm644 "bowire.desktop" \
+        "${pkgdir}/usr/share/applications/${pkgname}.desktop"
+    install -Dm644 "bowire.png" \
+        "${pkgdir}/usr/share/icons/hicolor/256x256/apps/${pkgname}.png"
 
     # Standard Apache-2.0 placement under /usr/share/licenses/<pkg>/
     # so `pacman -Qi bowire` can show the license text.

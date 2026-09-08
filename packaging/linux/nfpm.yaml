@@ -63,3 +63,18 @@ contents:
   - src: /opt/bowire/bowire
     dst: /usr/bin/bowire
     type: symlink
+
+  # #685 - the clickable way in. Without these two files the only route to
+  # the workbench after `apt install bowire` is typing `bowire` in a shell,
+  # which nothing in the product ever tells you. The .desktop entry puts
+  # Bowire in the application menu and makes it pinnable to a dock; the icon
+  # is what the menu draws next to it.
+  #
+  # 256x256 under hicolor is the one size every desktop environment scales
+  # from, so a single file covers GNOME, KDE, XFCE and the rest.
+  - src: packaging/linux/bowire.desktop
+    dst: /usr/share/applications/bowire.desktop
+    type: config|noreplace
+
+  - src: images/bowire_logo_small.png
+    dst: /usr/share/icons/hicolor/256x256/apps/bowire.png

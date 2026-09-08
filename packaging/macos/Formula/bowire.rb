@@ -54,6 +54,28 @@ class Bowire < Formula
     # in bin/ surfaces the executable on PATH.
     libexec.install Dir["*"]
     bin.install_symlink libexec/"bowire"
+
+    # #685 - the macOS app bundle, when the archive carries one. A formula
+    # may not write to /Applications (that is cask territory), so it lands in
+    # the prefix and the caveat below tells the user how to link it. The
+    # bundle holds no code: Contents/MacOS/Bowire finds the CLI installed
+    # above, so the two cannot drift.
+    prefix.install libexec/"Bowire.app" if (libexec/"Bowire.app").exist?
+  end
+
+  def caveats
+    return unless (prefix/"Bowire.app").exist?
+
+    <<~EOS
+      Bowire installs a Mac app bundle so it can be launched from Launchpad or
+      the Dock. Homebrew formulae may not write to /Applications, so link it
+      once yourself:
+
+        ln -sfn #{prefix}/Bowire.app /Applications/Bowire.app
+
+      Opening it starts the workbench and your browser. Bowire does not run in
+      the background: quitting it stops the workbench.
+    EOS
   end
 
   test do

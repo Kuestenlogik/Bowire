@@ -10,6 +10,32 @@ platform branches:
   Linux    linux-x64      linux-arm64
 ```
 
+## The app bundle
+
+`Bowire.app/` is a code-free application bundle (#685): an `Info.plist`, an
+icon, and a three-line `Contents/MacOS/Bowire` that execs whichever `bowire`
+CLI it can find — `BOWIRE_BIN`, one beside the bundle, a Homebrew prefix, or
+`PATH`. Holding no binary of its own is what keeps it correct when Homebrew
+updates the CLI underneath it.
+
+It exists because a Homebrew *formula* installs a CLI and nothing else, which
+left macOS with no Launchpad entry and nothing to pin to the Dock. The release
+pipeline copies the bundle into both `osx-*` tarballs and stamps the version
+into the plist; the formula installs it into the prefix and prints the one
+`ln -s` that links it into `/Applications` — a formula may not write there
+itself, that is cask territory.
+
+The icon is generated, not hand-made:
+
+```bash
+python scripts/packaging/make-icns.py
+```
+
+That rebuilds `Contents/Resources/bowire.icns` from
+`images/bowire_logo_small.png`. It is checked in so the bundle is complete in
+a checkout, and it is written directly rather than through `iconutil` because
+the release pipeline cross-publishes the macOS artefacts on an Ubuntu runner.
+
 Homebrew picks the right archive at install time based on `OS.mac?`
 and `Hardware::CPU.arm?`.
 

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  #685 — macOS application bundle.
+
+  Homebrew installs Bowire as a CLI, which left macOS with no clickable way
+  in at all: no Launchpad entry, nothing to pin to the Dock. This bundle is
+  that entry. It carries no code of its own — Contents/MacOS/Bowire is a
+  three-line launcher that execs the real binary — so it stays correct when
+  the CLI is updated underneath it.
+
+  CFBundleVersion is rewritten by the release pipeline; the placeholder is
+  what the repo carries so the bundle is openable straight from a checkout.
+
+  LSUIElement is deliberately NOT set. Bowire's UI is the browser, but the
+  process should still appear in the Dock while it runs — it is the only
+  handle a person has on it until the tray/menu-bar item lands.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Bowire</string>
+    <key>CFBundleDisplayName</key>
+    <string>Bowire</string>
+    <key>CFBundleIdentifier</key>
+    <string>de.kuestenlogik.bowire</string>
+    <key>CFBundleVersion</key>
+    <string>__VERSION__</string>
+    <key>CFBundleShortVersionString</key>
+    <string>__VERSION__</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleExecutable</key>
+    <string>Bowire</string>
+    <key>CFBundleIconFile</key>
+    <string>bowire</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>© Küstenlogik. Apache-2.0.</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+</dict>
+</plist>

@@ -1,0 +1,23 @@
+[Desktop Entry]
+# Freedesktop application entry (#685). Installed to
+# /usr/share/applications/bowire.desktop by the deb / rpm (nfpm.yaml) and by
+# the AUR PKGBUILD, so Bowire appears in the application menu and can be
+# pinned to a dock — the same way the MSI drops a Start-menu and desktop
+# shortcut on Windows.
+#
+# Exec points at the /usr/bin/bowire symlink rather than /opt/bowire/bowire so
+# the entry keeps working if the install layout ever moves.
+#
+# Terminal=false is the point of the file: launched from a menu, Bowire opens
+# the browser itself and needs no terminal of its own.
+Type=Application
+Version=1.0
+Name=Bowire
+GenericName=API workbench
+Comment=Interactive multi-protocol API workbench — gRPC, REST, GraphQL, MQTT, WebSocket and more
+Exec=/usr/bin/bowire
+Icon=bowire
+Terminal=false
+StartupNotify=true
+Categories=Development;Network;WebDevelopment;
+Keywords=API;gRPC;REST;GraphQL;HTTP;MQTT;WebSocket;SignalR;OpenAPI;workbench;

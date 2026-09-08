@@ -1,0 +1,41 @@
+#!/bin/sh
+# #685 — the macOS app bundle's entry point.
+#
+# Deliberately a launcher rather than the binary itself: the bundle is
+# installed once and the CLI underneath it is updated by Homebrew, so the
+# bundle must not carry its own copy. Finding the CLI at launch keeps the two
+# from drifting.
+#
+# Launching from Finder or Launchpad gives no terminal, which is the whole
+# point — `bowire` with no subcommand starts the workbench and opens the
+# browser itself.
+#
+# Search order:
+#   1. BOWIRE_BIN, for anyone who keeps it somewhere unusual.
+#   2. Beside the bundle, which is how a downloaded .tar.gz is laid out.
+#   3. The Homebrew prefixes, arm64 first because that is the common Mac now.
+#   4. PATH, which covers a manual install.
+set -eu
+
+here=$(cd "$(dirname "$0")" && pwd)
+
+for candidate in \
+    "${BOWIRE_BIN:-}" \
+    "$here/../../../bowire" \
+    "/opt/homebrew/bin/bowire" \
+    "/usr/local/bin/bowire"
+do
+    [ -n "$candidate" ] || continue
+    if [ -x "$candidate" ]; then
+        exec "$candidate" "$@"
+    fi
+done
+
+if command -v bowire >/dev/null 2>&1; then
+    exec bowire "$@"
+fi
+
+# Nothing to launch. A bundle that dies silently looks like a broken install,
+# so say what is missing in the one place a Finder launch can show it.
+/usr/bin/osascript -e 'display alert "Bowire is not installed" message "The Bowire command-line tool could not be found.\n\nInstall it with:\n    brew install kuestenlogik/bowire/bowire\n\nOr set BOWIRE_BIN to its path." as critical' >/dev/null 2>&1 || true
+exit 1

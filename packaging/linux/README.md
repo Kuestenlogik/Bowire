@@ -5,9 +5,18 @@ Three formats live under here:
 ```
 packaging/linux/
 ├── nfpm.yaml         # Single config → DEB + RPM (x86_64 + aarch64)
+├── bowire.desktop    # Freedesktop menu entry, installed by all three
 ├── aur/PKGBUILD      # Arch User Repository build script
 └── README.md         # this file
 ```
+
+`bowire.desktop` puts Bowire in the application menu so there is a clickable
+way in, not only `bowire` in a shell (#685). The DEB / RPM read it straight
+from this directory; the PKGBUILD fetches it from the tag, because it builds
+from the release tarball rather than a checkout. Both also install
+`images/bowire_logo_small.png` to
+`/usr/share/icons/hicolor/256x256/apps/bowire.png` — one size every desktop
+environment scales from.
 
 The release pipeline (`.github/workflows/release.yml`) attaches all
 of these to each GitHub release:

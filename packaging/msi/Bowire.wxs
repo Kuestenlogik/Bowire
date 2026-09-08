@@ -104,6 +104,35 @@
             </Component>
         </StandardDirectory>
 
+        <!-- #685 - desktop shortcut. The Start-menu entry alone was the only
+             clickable way in, and nothing in the product or the docs said it
+             existed; a desktop icon is what people actually look for after an
+             install.
+
+             Guarded by a public property rather than a UI checkbox: this MSI
+             deliberately ships no custom wizard, and a per-machine install
+             that drops an icon on every user's desktop with no way to decline
+             is its own complaint. Default on, opt out with
+             `msiexec /i Bowire.msi DESKTOPSHORTCUT=0`. -->
+        <Property Id="DESKTOPSHORTCUT" Value="1" />
+        <StandardDirectory Id="DesktopFolder">
+            <Component Id="DesktopShortcut" Guid="6E1D4C2A-9B3F-4E77-A1D6-2C58B0F4E913"
+                       Condition="DESKTOPSHORTCUT = &quot;1&quot;">
+                <Shortcut Id="BowireDesktopShortcut"
+                          Name="Bowire"
+                          Description="Interactive multi-protocol API workbench"
+                          Target="[INSTALLFOLDER]bowire.exe"
+                          WorkingDirectory="INSTALLFOLDER"
+                          Icon="bowire.ico" />
+                <RegistryValue Root="HKCU"
+                               Key="Software\Kuestenlogik\Bowire"
+                               Name="DesktopShortcut"
+                               Type="integer"
+                               Value="1"
+                               KeyPath="yes" />
+            </Component>
+        </StandardDirectory>
+
         <!-- Add the install folder to the system PATH so `bowire …`
              works in any new shell. `Part="last"` appends rather than
              prepending so we don't shadow other tools' commands. -->
@@ -135,6 +164,7 @@
                  Level="1">
             <ComponentGroupRef Id="ProductFiles" />
             <ComponentRef Id="StartMenuShortcut" />
+            <ComponentRef Id="DesktopShortcut" />
             <ComponentRef Id="PathEntry" />
         </Feature>
     </Package>

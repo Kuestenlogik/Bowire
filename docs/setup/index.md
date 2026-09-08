@@ -36,6 +36,29 @@ Or take a native installer or a self-contained archive from the [Downloads page]
 
 See [Standalone tool](standalone.md) for the CLI command set, how to restrict loaded plugins, and how another program can start Bowire and learn which port it bound.
 
+### After installing: how to start it
+
+Every installer puts Bowire in the place your desktop already looks:
+
+| | |
+|---|---|
+| **Windows** (MSI, winget, Chocolatey) | Start menu &rarr; **Bowire**, and a desktop icon. Add `DESKTOPSHORTCUT=0` to `msiexec` if you would rather not have the desktop one. |
+| **Linux** (DEB, RPM, AUR) | Application menu &rarr; **Bowire**, under Development. Pin it to your dock like any other app. |
+| **macOS** (Homebrew, tarball) | `Bowire.app`, in the tarball and in the Homebrew prefix. `brew install` prints the one command that links it into `/Applications`, after which it is in Launchpad. |
+| **Anywhere** | `bowire` in a terminal &mdash; every install puts it on your `PATH`. |
+
+Clicking any of those starts the workbench and **opens your browser at it**. There is no separate app window: the browser tab *is* the UI.
+
+On Windows a console window opens alongside it. That window is Bowire &mdash; closing it stops the workbench, and so does <kbd>Ctrl</kbd>+<kbd>C</kbd> in it. ([#687](https://github.com/Kuestenlogik/Bowire/issues/687) replaces it with a tray icon, which is what gives you a way to quit once the window is gone.) On Linux and macOS a menu launch has no terminal at all.
+
+### After a reboot
+
+**Nothing is running.** Bowire is not a service and does not start with your machine — it runs only while you have it open. Start it again the same way: Start menu, application menu, Launchpad, desktop icon or `bowire`.
+
+Clicking again while it is already running does not start a second copy: Bowire notices the first one and opens your browser at it.
+
+The workbench that comes back is the same one you left. Workspaces, collections, environments and recordings live on disk (see [storage locations](../architecture/storage-locations.md)), not in the running process.
+
 ## In your editor
 
 The [VS Code extension](../integrations/vscode.md) opens the workbench in an editor panel beside your code.
