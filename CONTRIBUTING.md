@@ -51,6 +51,37 @@ docs/                  Documentation
 scripts/               Build and packaging scripts
 ```
 
+## Frontend fragments
+
+The workbench UI is vanilla JavaScript. `wwwroot/bowire.js` is **generated** —
+MSBuild concatenates the per-feature fragments under
+`src/Kuestenlogik.Bowire/wwwroot/js/` into one IIFE, in the order the
+`<BowireJsFragment>` items are listed in the csproj. Edit the fragments; never
+the bundle.
+
+Two things bite newcomers:
+
+- **Build the project you are going to run.** Every consumer
+  (`Kuestenlogik.Bowire.Tool`, each `samples/*`) keeps its own copy of
+  `Kuestenlogik.Bowire.dll` with the bundle embedded. Building the main project
+  alone leaves the old copy in place, and the browser serves the old bundle.
+
+- **`el(tag, attrs, children…)` sets attributes, not DOM properties.** For an
+  HTML *boolean* attribute (`disabled`, `checked`, `selected`, `readonly`,
+  `required`, `hidden`, …) presence is what counts, so `disabled: false` used to
+  disable the control. `el()` now drops `false` for those attributes, but the
+  rule to remember is that they are attributes: `spellcheck`, `draggable`,
+  `contenteditable` and every `aria-*` are *enumerated*, and there `false`
+  correctly becomes the string `"false"`. When you need real property semantics
+  — marking an `<option>` selected, for one — set the property after
+  construction: `var o = el('option', {...}); o.selected = true;`
+
+JS tests live beside the C# ones and run separately:
+
+```bash
+npm run test:js
+```
+
 ## Running Tests
 
 ```bash

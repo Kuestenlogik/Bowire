@@ -2,6 +2,25 @@
     function $(sel, parent) { return (parent || document).querySelector(sel); }
     function $$(sel, parent) { return [...(parent || document).querySelectorAll(sel)]; }
 
+    // #686 — HTML boolean attributes. For these, PRESENCE is what counts and
+    // the value is ignored, so `setAttribute('disabled', false)` disables the
+    // element — the exact opposite of what the caller wrote. A call site that
+    // wrote `disabled: someCondition` was silently getting the inverse.
+    //
+    // Deliberately an allow-list rather than "skip every false". `spellcheck`,
+    // `draggable`, `contenteditable`, `translate` and every `aria-*` are
+    // ENUMERATED attributes: for them the literal string "false" is meaningful
+    // and dropping the attribute changes the answer. Eight call sites rely on
+    // `spellcheck: false` to keep red squiggles out of JSON editors and token
+    // fields, so those must keep going through setAttribute.
+    const BOOLEAN_ATTRS = new Set([
+        'allowfullscreen', 'async', 'autofocus', 'autoplay', 'checked',
+        'controls', 'default', 'defer', 'disabled', 'formnovalidate', 'hidden',
+        'inert', 'ismap', 'itemscope', 'loop', 'multiple', 'muted', 'nomodule',
+        'novalidate', 'open', 'playsinline', 'readonly', 'required',
+        'reversed', 'selected'
+    ]);
+
     function el(tag, attrs, ...children) {
         const e = document.createElement(tag);
         if (attrs) {
@@ -17,6 +36,11 @@
                 else if (k === 'innerHTML') e.innerHTML = v;
                 else if (k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), v);
                 else if (k === 'dataset') Object.assign(e.dataset, v);
+                // #686 — `disabled: false` must mean "not disabled", not
+                // `disabled="false"` (which disables). Only true boolean
+                // attributes are skipped; everything else still stringifies,
+                // which is what enumerated attributes need.
+                else if (v === false && BOOLEAN_ATTRS.has(k.toLowerCase())) continue;
                 else e.setAttribute(k, v);
             }
         }
