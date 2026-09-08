@@ -61,15 +61,15 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
 
-**0/5 done** · 1 in progress · 4 backlog
+**1/5 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [685](https://github.com/Kuestenlogik/Bowire/issues/685) | Bowire | [Desktop launch: a shortcut on every platform, no console window, and docs that say how to start Bowire](#issue-kuestenlogik-bowire-685) | 🟡 In progress | `area:multi` |
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ⬜ Backlog | `area:site` |
 | [669](https://github.com/Kuestenlogik/Bowire/issues/669) | Bowire | [Ask for the star and the watch: README badge, in-product prompt, one-time CLI hint](#issue-kuestenlogik-bowire-669) | ⬜ Backlog | `area:multi` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [671](https://github.com/Kuestenlogik/Bowire/issues/671) | Bowire | [Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero](#issue-kuestenlogik-bowire-671) | ⬜ Backlog | `area:site` |
+| [685](https://github.com/Kuestenlogik/Bowire/issues/685) | Bowire | [Desktop launch: a shortcut on every platform, no console window, and docs that say how to start Bowire](#issue-kuestenlogik-bowire-685) | ✅ Done | `area:multi` |
 
 ### v2.11 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2027-01-11)*
 
@@ -127,7 +127,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ⬜ Backlog | `area:workbench` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire get/post: URL-first verbs, HTTPie-style body notation, and --offline](#issue-kuestenlogik-bowire-678) | ⬜ Backlog | `area:cli` |
-| [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog |  |
+| [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
 
 ### v3.2 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -369,12 +369,6 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 
 ### v2.10 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
 
-#### <a id="issue-kuestenlogik-bowire-685"></a>🟡 In progress · [#685](https://github.com/Kuestenlogik/Bowire/issues/685) Desktop launch: a shortcut on every platform, no console window, and docs that say how to start Bowire
-
-> `area:multi`
-
-Ask someone who just ran the MSI how they start Bowire tomorrow morning, after a reboot. Nothing in the product answers that. [[more]](https://github.com/Kuestenlogik/Bowire/issues/685)
-
 #### <a id="issue-kuestenlogik-bowire-668"></a>⬜ Backlog · [#668](https://github.com/Kuestenlogik/Bowire/issues/668) Sharpen the one-line pitch, and carry the same sentence everywhere
 
 > `area:site`
@@ -398,6 +392,12 @@ Six credible competitors turned up during the competitive survey **via openalter
 > `area:site`
 
 Two structural gaps on bowire.io. Both cheap, neither risky. [[more]](https://github.com/Kuestenlogik/Bowire/issues/671)
+
+#### <a id="issue-kuestenlogik-bowire-685"></a>✅ Done · [#685](https://github.com/Kuestenlogik/Bowire/issues/685) Desktop launch: a shortcut on every platform, no console window, and docs that say how to start Bowire
+
+> `area:multi`
+
+Ask someone who just ran the MSI how they start Bowire tomorrow morning, after a reboot. Nothing in the product answers that. [[more]](https://github.com/Kuestenlogik/Bowire/issues/685)
 
 ### v2.11 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2027-01-11)*
 
@@ -618,6 +618,8 @@ Code export offers five to six target languages per protocol. Postman, Hoppscotc
 `bowire call` can do a lot — every protocol, `{{vars}}`, `--env-file`, `--stream`, `--compact`, tab completion, meaningful exit codes. What it cannot do is the thing curl and HTTPie are actually used for: **one call, right now, with no context**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/678)
 
 #### <a id="issue-kuestenlogik-bowire-687"></a>⬜ Backlog · [#687](https://github.com/Kuestenlogik/Bowire/issues/687) Tray icon and no console window: give the running workbench a handle of its own
+
+> `area:cli`
 
 #685 gave every desktop a clickable way into Bowire — a Start-menu entry and desktop icon on Windows, an application-menu entry on Linux, `Bowire.app` on macOS. What it deliberately did **not** do is get rid of the console window Windows opens alongside it, and this issue is why. [[more]](https://github.com/Kuestenlogik/Bowire/issues/687)
 
