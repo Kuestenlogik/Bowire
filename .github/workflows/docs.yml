@@ -8,6 +8,7 @@ on:
       - 'site/**'
       - 'src/**'
       - 'scripts/site/build-activity-snapshot.mjs'
+      - 'scripts/site/build-install-snapshot.mjs'
       - 'scripts/site/optimize-images.mjs'
       - '.github/workflows/docs.yml'
   # Refresh on every published release so the community-page "Activity on deck"
@@ -156,6 +157,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/site/build-activity-snapshot.mjs
+
+      # Install counts, same reasoning as the activity snapshot: baked at
+      # build time so the page makes no third-party call at load. Two of the
+      # three sources would allow a browser read; Docker Hub sends no CORS
+      # header at all, so baking all three keeps one number from one place
+      # rather than two live values and one stale one. The daily cron above
+      # is what keeps it current.
+      - name: Refresh install snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/site/build-install-snapshot.mjs
 
       # Image transcodes (AVIF + WebP responsive variants) are committed
       # alongside their .png/.jpg sources. CI runs --check to fail the

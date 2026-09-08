@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-09-08T09:59:12.913Z",
+  "available": true,
+  "total": 29314,
+  "nuget": {
+    "count": 24134,
+    "leader": "Kuestenlogik.Bowire",
+    "family": 62,
+    "version": "2.7.0",
+    "error": null
+  },
+  "github": {
+    "count": 1681,
+    "releases": 48,
+    "assets": 1976,
+    "error": null
+  },
+  "docker": {
+    "count": 3499,
+    "error": null
+  }
+}

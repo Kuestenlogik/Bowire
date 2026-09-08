@@ -340,32 +340,15 @@ if (toggle && nav) {
         .then(data => { if (data) setValue('gh-stars', formatCount(data.stargazers_count)); })
         .catch(() => {});
 
-    // NuGet azuresearch (CORS-enabled, no auth). The Downloads badge
-    // shows the *max* download count across the Kuestenlogik.Bowire.*
-    // family rather than the sum. Summing double-counts: a single
-    // `dotnet tool install` pulls the CLI plus its transitively
-    // referenced core + bundled protocol plugins, bumping ~10 package
-    // counters for one logical install (~6-7× inflation measured). The
-    // max — today the core Kuestenlogik.Bowire, on which everything
-    // depends — is an honest lower bound on distinct pulls and auto-
-    // tracks whichever package leads. The Version badge stays pinned to
-    // the canonical Kuestenlogik.Bowire host package. take=1000 covers
-    // the family; the filter drops fuzzy full-text matches that share
-    // the "Bowire" token but not the Kuestenlogik.Bowire(.) prefix.
-    fetch('https://azuresearch-usnc.nuget.org/query?q=Kuestenlogik.Bowire&prerelease=false&take=1000')
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-            if (!data || !Array.isArray(data.data)) return;
-            const family = data.data.filter(p =>
-                p.id === 'Kuestenlogik.Bowire' ||
-                p.id.startsWith('Kuestenlogik.Bowire.'));
-            if (family.length === 0) return;
-            const max = family.reduce((m, p) => Math.max(m, p.totalDownloads || 0), 0);
-            setValue('nuget-downloads', formatCount(max));
-            const core = family.find(p => p.id === 'Kuestenlogik.Bowire');
-            if (core) setValue('nuget-version', 'v' + core.version);
-        })
-        .catch(() => {});
+    // The Downloads and NuGet-version badges used to be fetched here. They
+    // are baked now (scripts/site/build-install-snapshot.mjs → _data/installs.json,
+    // refreshed by the docs workflow's daily cron), because the downloads
+    // figure has to include Docker Hub and Docker Hub sends no CORS header —
+    // a browser on bowire.io cannot read it at all. Rather than show two live
+    // numbers plus one stale one, all of it comes from one place.
+    //
+    // Stars stay live above: GitHub sends Access-Control-Allow-Origin: * and
+    // a star count is the one figure where the minute matters.
 })();
 
 // ====================================================================
