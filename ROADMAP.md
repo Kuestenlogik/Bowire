@@ -128,7 +128,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire get/post: URL-first verbs, HTTPie-style body notation, and --offline](#issue-kuestenlogik-bowire-678) | ⬜ Backlog | `area:cli` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
-| [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ⬜ Backlog |  |
+| [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ⬜ Backlog | `area:workbench` |
 
 ### v3.2 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -625,6 +625,8 @@ Code export offers five to six target languages per protocol. Postman, Hoppscotc
 #685 gave every desktop a clickable way into Bowire — a Start-menu entry and desktop icon on Windows, an application-menu entry on Linux, `Bowire.app` on macOS. What it deliberately did **not** do is get rid of the console window Windows opens alongside it, and this issue is why. [[more]](https://github.com/Kuestenlogik/Bowire/issues/687)
 
 #### <a id="issue-kuestenlogik-bowire-688"></a>⬜ Backlog · [#688](https://github.com/Kuestenlogik/Bowire/issues/688) Plurals: the translation layer cannot express a sentence whose shape depends on a number
+
+> `area:workbench`
 
 The translation layer from #117 substitutes `{name}` placeholders and nothing more. That is enough for a count *inside* a sentence: [[more]](https://github.com/Kuestenlogik/Bowire/issues/688)
 
