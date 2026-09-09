@@ -455,17 +455,23 @@
         var counts = migrateLegacyVars();
         if (typeof toast !== 'function') return counts;
         if (counts.total === 0) {
-            toast('No legacy ${name} placeholders found.', 'info');
+            toast(t('varsDeprecation.none'), 'info');
             return counts;
         }
+        // Six buckets used to be six plural constructions in one sentence
+        // ("3 recording fields, 1 collection field"). The layer cannot express
+        // one plural yet, let alone six, so the breakdown reads as a list
+        // instead - which also scans faster than a run-on sentence.
         var parts = [];
-        if (counts.recordings) parts.push(counts.recordings + ' recording field' + (counts.recordings === 1 ? '' : 's'));
-        if (counts.collections) parts.push(counts.collections + ' collection field' + (counts.collections === 1 ? '' : 's'));
-        if (counts.freeform) parts.push(counts.freeform + ' freeform field' + (counts.freeform === 1 ? '' : 's'));
-        if (counts.flows) parts.push(counts.flows + ' flow field' + (counts.flows === 1 ? '' : 's'));
-        if (counts.environments) parts.push(counts.environments + ' env var' + (counts.environments === 1 ? '' : 's'));
-        if (counts.globals) parts.push(counts.globals + ' global var' + (counts.globals === 1 ? '' : 's'));
-        toast('Migrated ' + counts.total + ' placeholder' + (counts.total === 1 ? '' : 's') + ' to {{name}}: ' + parts.join(', ') + '.', 'success');
+        ['recordings', 'collections', 'freeform', 'flows', 'environments', 'globals']
+            .forEach(function (bucket) {
+                if (counts[bucket]) {
+                    parts.push(t('varsDeprecation.bucket.' + bucket) + ': ' + counts[bucket]);
+                }
+            });
+        // #688 - the outer sentence still has a plural of its own.
+        toast(t(counts.total === 1 ? 'varsDeprecation.migrated.one' : 'varsDeprecation.migrated.many',
+            { count: counts.total, parts: parts.join(', ') }), 'success');
         return counts;
     }
 
@@ -477,19 +483,15 @@
         // Sticky (duration: 0) — the user picks 'Migrate', 'Snooze',
         // or 'Dismiss'. Auto-fading a deprecation nudge would defeat
         // the purpose.
-        var t = toast(
-            'This workspace uses the legacy ${name} syntax. The canonical syntax is {{name}} (#145).',
-            'info',
-            { duration: 0 }
-        );
-        if (!t) return;
+        var nudge = toast(t('varsDeprecation.nudge'), 'info', { duration: 0 });
+        if (!nudge) return;
 
         // Insert action buttons BEFORE the auto-added close (×).
-        var closeBtn = t.querySelector('.bowire-toast-close');
+        var closeBtn = nudge.querySelector('.bowire-toast-close');
 
         var migrateBtn = el('button', {
             className: 'bowire-toast-undo',
-            textContent: 'Migrate now',
+            textContent: t('varsDeprecation.migrateNow'),
             onClick: function (e) {
                 e.stopPropagation();
                 try { _runMigrationFromUi(); } catch (err) {
@@ -502,7 +504,7 @@
 
         var snoozeBtn = el('button', {
             className: 'bowire-toast-undo',
-            textContent: 'Snooze for this workspace',
+            textContent: t('varsDeprecation.snooze'),
             onClick: function (e) {
                 e.stopPropagation();
                 snoozeLegacyVarsToast();

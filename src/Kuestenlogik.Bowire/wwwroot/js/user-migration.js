@@ -78,17 +78,15 @@
                 el('h2', {
                     id: 'bowire-migration-title',
                     className: 'bowire-migration-title',
-                    textContent: 'Bring your existing work across?',
+                    textContent: t('migration.title'),
                 }),
                 el('p', { className: 'bowire-migration-body' },
-                    'This Bowire now keeps each person’s work separate. There ' +
-                    'is ' + (count === 1 ? 'one file' : count + ' files') +
-                    (size ? ' (' + size + ')' : '') +
-                    ' from before that split, and it can be copied into your account.'),
-                el('p', { className: 'bowire-migration-note' },
-                    'Nothing is moved or deleted — the originals stay where they ' +
-                    'are. If this was somebody else’s work, start fresh and it ' +
-                    'will be offered to them instead.'),
+                    // #688 - one message, two shapes. The bracketed size arrives
+                    // ready-made or empty; brackets read the same in every language.
+                    t(count === 1 ? 'migration.body.one' : 'migration.body.many', {
+                        count: count, size: size ? ' (' + size + ')' : ''
+                    })),
+                el('p', { className: 'bowire-migration-note' }, t('migration.note')),
                 el('p', {
                     className: 'bowire-migration-source',
                     title: plan.source,
@@ -99,7 +97,7 @@
                     el('button', {
                         type: 'button',
                         className: 'bowire-btn',
-                        textContent: 'Start fresh',
+                        textContent: t('migration.startFresh'),
                         onClick: function () {
                             userMigrationDecide('decline', userMigrationDismiss);
                         },
@@ -107,7 +105,7 @@
                     el('button', {
                         type: 'button',
                         className: 'bowire-btn bowire-migration-go',
-                        textContent: 'Copy it to my account',
+                        textContent: t('migration.copy'),
                         onClick: function () {
                             userMigrationDecide('accept', function () {
                                 // Every store read its (empty) slot while the
@@ -142,33 +140,31 @@
     // to reverse the answer. This row is where that stays reachable.
 
     function userMigrationSettingsCopy(plan) {
-        var when = plan.decidedUtc ? String(plan.decidedUtc).slice(0, 10) : '';
+        var when = plan.decidedUtc
+            ? t('migration.settings.on', { date: String(plan.decidedUtc).slice(0, 10) })
+            : '';
 
         if (plan.state === 'Available') {
             return {
-                label: 'Earlier data',
-                description: 'There is work on this machine from before Bowire kept each person’s '
-                    + 'separate. It has not been copied into your account.',
-                action: 'Review',
+                label: t('migration.settings.label'),
+                description: t('migration.settings.available'),
+                action: t('migration.settings.review'),
                 run: function () { fetchUserMigrationOffer(); if (typeof closeSettings === 'function') closeSettings(); },
             };
         }
         if (plan.outcome === 'Migrated') {
             return {
-                label: 'Earlier data',
-                description: 'Copied into your account' + (when ? ' on ' + when : '')
-                    + '. Undoing moves this account’s files aside — it deletes nothing — and '
-                    + 'offers the data again, including to whoever it actually belongs to.',
-                action: 'Undo',
+                label: t('migration.settings.label'),
+                description: t('migration.settings.migrated', { when: when }),
+                action: t('common.undo'),
                 run: function () { userMigrationDecide('undo', userMigrationReload, userMigrationComplain); },
             };
         }
         if (plan.outcome === 'Declined') {
             return {
-                label: 'Earlier data',
-                description: 'You chose to start fresh' + (when ? ' on ' + when : '')
-                    + '. The original files were never touched.',
-                action: 'Offer it again',
+                label: t('migration.settings.label'),
+                description: t('migration.settings.declined', { when: when }),
+                action: t('migration.settings.offerAgain'),
                 run: function () { userMigrationDecide('undo', userMigrationReload, userMigrationComplain); },
             };
         }
@@ -179,7 +175,7 @@
 
     function userMigrationComplain() {
         if (typeof toast === 'function') {
-            toast('That did not go through. Nothing was moved or deleted.', 'error');
+            toast(t('migration.failed'), 'error');
         }
     }
 

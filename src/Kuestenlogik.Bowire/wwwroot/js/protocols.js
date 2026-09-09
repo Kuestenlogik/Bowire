@@ -78,17 +78,17 @@
         var line = op + ' ' + name;
         if (fields.length > 0) {
             line += '(' + fields.map(function (f) {
-                var t;
+                var gqlType;
                 switch (f.type) {
-                    case 'int32': case 'int64': case 'uint32': case 'uint64': t = 'Int'; break;
-                    case 'float': case 'double': t = 'Float'; break;
-                    case 'bool': t = 'Boolean'; break;
-                    case 'message': t = (f.messageType && f.messageType.name) || 'JSON'; break;
-                    default: t = 'String';
+                    case 'int32': case 'int64': case 'uint32': case 'uint64': gqlType = 'Int'; break;
+                    case 'float': case 'double': gqlType = 'Float'; break;
+                    case 'bool': gqlType = 'Boolean'; break;
+                    case 'message': gqlType = (f.messageType && f.messageType.name) || 'JSON'; break;
+                    default: gqlType = 'String';
                 }
-                if (f.isRepeated) t = '[' + t + '!]';
-                if (f.required) t += '!';
-                return '$' + f.name + ': ' + t;
+                if (f.isRepeated) gqlType = '[' + gqlType + '!]';
+                if (f.required) gqlType += '!';
+                return '$' + f.name + ': ' + gqlType;
             }).join(', ') + ')';
         }
         line += ' {\n  ' + name;
@@ -422,7 +422,7 @@
                 var msg = problemTitle(result);
                 channelError = msg;
                 addConsoleEntry({ type: 'error', method: fullName, status: 'Channel open failed', body: msg });
-                toast('Channel open failed: ' + msg, 'error');
+                toast(t('channel.openFailed', { reason: msg }), 'error');
                 render();
                 return;
             }
@@ -590,11 +590,11 @@
             });
 
             render();
-            toast('Channel opened', 'success');
+            toast(t('channel.opened'), 'success');
         } catch (e) {
             channelError = e.message;
             addConsoleEntry({ type: 'error', method: (selectedService.name + '/' + selectedMethod.name), status: 'Channel open failed', body: e.message });
-            toast('Channel open failed: ' + e.message, 'error');
+            toast(t('channel.openFailed', { reason: e.message }), 'error');
             render();
         }
     }
@@ -679,7 +679,7 @@
             if (result.title) {
                 var msg = problemTitle(result);
                 addConsoleEntry({ type: 'error', method: sendFullName, status: 'Send failed', body: msg });
-                toast('Send failed: ' + msg, 'error');
+                toast(t('channel.sendFailed', { reason: msg }), 'error');
                 return;
             }
 
@@ -700,7 +700,7 @@
                 }
             });
         } catch (e) {
-            toast('Send failed: ' + e.message, 'error');
+            toast(t('channel.sendFailed', { reason: e.message }), 'error');
         }
     }
 

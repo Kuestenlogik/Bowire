@@ -433,7 +433,7 @@
         if (!schemaWatchDelta) return null;
         var d = schemaWatchDelta;
         if (d.addedServiceNames.has(svcName)) {
-            return { label: 'new', title: 'Service appeared since the last poll' };
+            return { label: t('schemaWatch.newBadge'), title: t('schemaWatch.newTitle') };
         }
         var e = d.perService[svcName];
         if (!e) return null;
@@ -538,7 +538,7 @@
                     if (delta.callableMoved) {
                         schemaWatchDelta = schemaIndexDelta(delta);
                         var summary = schemaDeltaSummary(delta);
-                        toast('Schema changed: ' + summary, 'info');
+                        toast(t('schemaWatch.changed', { summary: summary }), 'info');
                         addConsoleEntry({
                             type: 'response', method: 'Schema Watch', status: 'Changed',
                             body: summary + '\n' + schemaDeltaDetail(delta)
@@ -560,7 +560,7 @@
         };
 
         schemaWatchTimer = setTimeout(tick, period);
-        toast('Schema watch started (every ' + (period / 1000) + 's)', 'info');
+        toast(t('schemaWatch.started', { seconds: period / 1000 }), 'info');
     }
 
     // Long-form for the console, where there is room to name names.
@@ -593,7 +593,7 @@
             clearTimeout(schemaWatchTimer);
             schemaWatchTimer = null;
         }
-        if (!opts || !opts.quiet) toast('Schema watch stopped', 'info');
+        if (!opts || !opts.quiet) toast(t('schemaWatch.stopped'), 'info');
     }
 
     function isSchemaWatchActive() {

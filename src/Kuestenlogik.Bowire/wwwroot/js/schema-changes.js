@@ -129,8 +129,8 @@
     function _schemaChangePrune(entries, nowMs) {
         var cutoff = nowMs - SCHEMA_CHANGE_RETENTION_DAYS * 24 * 60 * 60 * 1000;
         return entries.filter(function (e) {
-            var t = Date.parse(e && e.at);
-            return isFinite(t) && t >= cutoff;
+            var ms = Date.parse(e && e.at);
+            return isFinite(ms) && ms >= cutoff;
         });
     }
 
@@ -213,8 +213,8 @@
         if (!isFinite(watermark) && watermark !== -Infinity) watermark = -Infinity;
         var n = 0;
         for (var i = 0; i < entries.length; i++) {
-            var t = Date.parse(entries[i].at);
-            if (isFinite(t) && t > watermark) n++;
+            var ms = Date.parse(entries[i].at);
+            if (isFinite(ms) && ms > watermark) n++;
         }
         return n;
     }
@@ -272,8 +272,8 @@
             var watermark = schemaChangeLastReadAt ? Date.parse(schemaChangeLastReadAt) : -Infinity;
             var oldest = Infinity;
             for (var i = 0; i < entries.length; i++) {
-                var t = Date.parse(entries[i].at);
-                if (isFinite(t) && t > watermark && t < oldest) oldest = t;
+                var ms = Date.parse(entries[i].at);
+                if (isFinite(ms) && ms > watermark && ms < oldest) oldest = ms;
             }
             return unread + ' change' + (unread !== 1 ? 's' : '')
                 + (isFinite(oldest) ? ' since ' + _schemaChangeTimeShort(oldest) : '');
@@ -365,26 +365,27 @@
         entries.sort(function (a, b) { return Date.parse(b.at) - Date.parse(a.at); });
 
         dd.appendChild(el('div', { className: 'bowire-schema-changes-dropdown-header' },
-            el('span', { textContent: 'Schema changes' }),
+            el('span', { textContent: t('schemaChanges.title') }),
             el('span', {
                 className: 'bowire-schema-changes-dropdown-count',
-                textContent: '(' + entries.length + ' in ' + SCHEMA_CHANGE_RETENTION_DAYS + ' days)'
+                textContent: t('schemaChanges.count', {
+                    count: entries.length, days: SCHEMA_CHANGE_RETENTION_DAYS
+                })
             })
         ));
 
         if (entries.length === 0) {
             dd.appendChild(el('div', {
                 className: 'bowire-schema-changes-dropdown-empty',
-                textContent: 'No schema changes detected in the last '
-                    + SCHEMA_CHANGE_RETENTION_DAYS + ' days.'
+                textContent: t('schemaChanges.empty', { days: SCHEMA_CHANGE_RETENTION_DAYS })
             }));
             return;
         }
 
         var list = el('div', { className: 'bowire-schema-changes-dropdown-list' });
         entries.forEach(function (entry) {
-            var t = Date.parse(entry.at);
-            var isUnread = isFinite(t) && t > watermark;
+            var ms = Date.parse(entry.at);
+            var isUnread = isFinite(ms) && ms > watermark;
             var removed = entry.type === 'removed';
             var row = el('div', {
                 className: 'bowire-schema-changes-row'
@@ -432,8 +433,7 @@
 
         dd.appendChild(el('div', { className: 'bowire-schema-changes-dropdown-footer' },
             el('span', {
-                textContent: 'Kept for ' + SCHEMA_CHANGE_RETENTION_DAYS
-                    + ' days per workspace · detected by Schema Watch'
+                textContent: t('schemaChanges.retention', { days: SCHEMA_CHANGE_RETENTION_DAYS })
             })
         ));
     }
@@ -453,7 +453,7 @@
         }
         if (!svc) {
             if (typeof toast === 'function') {
-                toast('Service "' + entry.service + '" is not in the current schema', 'info');
+                toast(t('schemaChanges.serviceGone', { name: entry.service }), 'info');
             }
             render();
             return;
@@ -466,7 +466,7 @@
                 }
             }
             if (typeof toast === 'function') {
-                toast('Method "' + entry.method + '" no longer exists — showing its service', 'info');
+                toast(t('schemaChanges.methodGone', { name: entry.method }), 'info');
             }
         }
         expandedServices.add(svc.name);

@@ -189,20 +189,20 @@
                     if (typeof redoLastAction === 'function') {
                         var r = redoLastAction();
                         if (r) {
-                            if (typeof toast === 'function') toast('Redone: ' + r.title, 'info');
+                            if (typeof toast === 'function') toast(t('actionLog.redone', { title: r.title }), 'info');
                             render();
                         } else if (typeof toast === 'function') {
-                            toast('Nothing to redo', 'info');
+                            toast(t('actionLog.nothingToRedo'), 'info');
                         }
                     }
                 } else {
                     if (typeof undoLastAction === 'function') {
                         var u = undoLastAction();
                         if (u) {
-                            if (typeof toast === 'function') toast('Undone: ' + u.title, 'info');
+                            if (typeof toast === 'function') toast(t('actionLog.undone', { title: u.title }), 'info');
                             render();
                         } else if (typeof toast === 'function') {
-                            toast('Nothing to undo', 'info');
+                            toast(t('actionLog.nothingToUndo'), 'info');
                         }
                     }
                 }
@@ -833,11 +833,12 @@
                 if (!data || !data.found) return;
                 discoveredProject = data;
                 var srcCount = Array.isArray(data.sources) ? data.sources.length : 0;
-                var label = data.name ? ('“' + data.name + '”') : 'this repository';
-                var noun = srcCount === 1 ? 'source' : 'sources';
+                // r.title / u.title above and this project name are operator data;
+                // only the sentence around them is Bowire's.
+                var label = data.name ? ('“' + data.name + '”') : t('project.thisRepository');
                 if (typeof toast === 'function') {
-                    toast('Loaded project ' + label + ' from .bowire/project.json ('
-                        + srcCount + ' ' + noun + ').', 'info');
+                    toast(t(srcCount === 1 ? 'project.loaded.one' : 'project.loaded.many',
+                        { name: label, count: srcCount }), 'info');
                 }
             })
             .catch(function () { /* no manifest / offline host → no-op */ });
