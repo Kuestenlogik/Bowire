@@ -200,10 +200,10 @@
     // the editor uses this and the .ok / .error class to flip colour
     // and pin a parser hint when something is broken.
     function validateJsonText(text) {
-        var t = (text || '').trim();
-        if (!t) return { ok: true, error: null, empty: true };
+        var trimmed = (text || '').trim();
+        if (!trimmed) return { ok: true, error: null, empty: true };
         try {
-            JSON.parse(t);
+            JSON.parse(trimmed);
             return { ok: true, error: null, empty: false };
         } catch (e) {
             return { ok: false, error: e.message || 'Invalid JSON', empty: false };
@@ -943,20 +943,20 @@
 
         // ---- buttons ----
         var expandBtn = _jsonToolbarBtn('⤢', 'Expand all', false, function () {
-            var t = viewer.__bowireTogglesByPath;
-            if (!(t instanceof Set)) return;
-            t.clear();
+            var toggles = viewer.__bowireTogglesByPath;
+            if (!(toggles instanceof Set)) return;
+            toggles.clear();
             if (typeof viewer.__bowireRebuildViewerLines === 'function') {
                 viewer.__bowireRebuildViewerLines();
             }
             if (local.search) _applyJsonSearch(viewer, local.search);
         });
         var collapseBtn = _jsonToolbarBtn('⊟', 'Collapse all', false, function () {
-            var t = viewer.__bowireTogglesByPath;
-            if (!(t instanceof Set)) return;
+            var toggles = viewer.__bowireTogglesByPath;
+            if (!(toggles instanceof Set)) return;
             var all = bowireAllContainerPaths(raw);
-            t.clear();
-            all.forEach(function (p) { t.add(p); });
+            toggles.clear();
+            all.forEach(function (p) { toggles.add(p); });
             if (typeof viewer.__bowireRebuildViewerLines === 'function') {
                 viewer.__bowireRebuildViewerLines();
             }
@@ -3117,8 +3117,8 @@
         // First pass — does everything fit WITHOUT the chevron? Sum the
         // widths of every tab + fixed sibling. If it fits, we're done.
         var totalTabsWidth = 0;
-        for (var t = 0; t < allTabs.length; t++) {
-            totalTabsWidth += allTabs[t].getBoundingClientRect().width;
+        for (var ti = 0; ti < allTabs.length; ti++) {
+            totalTabsWidth += allTabs[ti].getBoundingClientRect().width;
         }
         // Account for any styled gap between flex children.
         var styles = window.getComputedStyle(stripEl);
@@ -3419,18 +3419,18 @@
         //                   the active row's ✓ and inactive rows' hidden
         //                   slot line up (no column shift on selection).
         if (Array.isArray(opts.tools)) {
-            opts.tools.forEach(function (t) {
-                if (!t) return;
+            opts.tools.forEach(function (tool) {
+                if (!tool) return;
                 row.appendChild(el('button', {
                     type: 'button',
-                    className: 'bowire-tree-tool' + (t.danger ? ' bowire-tree-tool-danger' : ''),
-                    title: t.title,
-                    'aria-label': t.ariaLabel || t.title,
-                    disabled: t.disabled ? true : undefined,
-                    innerHTML: svgIcon(t.icon),
+                    className: 'bowire-tree-tool' + (tool.danger ? ' bowire-tree-tool-danger' : ''),
+                    title: tool.title,
+                    'aria-label': tool.ariaLabel || tool.title,
+                    disabled: tool.disabled ? true : undefined,
+                    innerHTML: svgIcon(tool.icon),
                     onClick: function (e) {
                         e.stopPropagation();
-                        if (typeof t.onClick === 'function') t.onClick(e);
+                        if (typeof tool.onClick === 'function') tool.onClick(e);
                     }
                 }));
             });
@@ -3626,19 +3626,19 @@
         // use inline conditionals (e.g. save-as-template only on the
         // active workspace).
         if (Array.isArray(node.tools) && node.tools.length > 0) {
-            node.tools.forEach(function (t) {
-                if (!t) return;
+            node.tools.forEach(function (tool) {
+                if (!tool) return;
                 row.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-tree-tool'
-                        + (t.danger ? ' bowire-tree-tool-danger' : ''),
-                    title: t.title,
-                    'aria-label': t.ariaLabel || t.title,
-                    disabled: t.disabled ? true : undefined,
-                    innerHTML: svgIcon(t.icon),
+                        + (tool.danger ? ' bowire-tree-tool-danger' : ''),
+                    title: tool.title,
+                    'aria-label': tool.ariaLabel || tool.title,
+                    disabled: tool.disabled ? true : undefined,
+                    innerHTML: svgIcon(tool.icon),
                     onClick: function (e) {
                         e.stopPropagation();
-                        if (typeof t.onClick === 'function') t.onClick(e);
+                        if (typeof tool.onClick === 'function') tool.onClick(e);
                     }
                 }));
             });
@@ -3767,7 +3767,7 @@
             document.body.appendChild(container);
         }
         var resolvedType = type || 'info';
-        var t = el('div', {
+        var node = el('div', {
             className: 'bowire-toast ' + resolvedType,
             role: (resolvedType === 'error' || resolvedType === 'warning') ? 'alert' : 'status'
         });
@@ -3781,21 +3781,21 @@
             warning: 'warning',
             error: 'errorCircle'
         }[resolvedType] || 'info';
-        t.appendChild(el('span', {
+        node.appendChild(el('span', {
             className: 'bowire-toast-icon',
             'aria-hidden': 'true',
             innerHTML: (typeof svgIcon === 'function') ? svgIcon(typeIconKey) : ''
         }));
-        t.appendChild(el('span', { className: 'bowire-toast-message', textContent: message }));
+        node.appendChild(el('span', { className: 'bowire-toast-message', textContent: message }));
 
         if (opts.undo && typeof opts.undo === 'function') {
-            t.appendChild(el('button', {
+            node.appendChild(el('button', {
                 className: 'bowire-toast-undo',
                 textContent: t('common.undo'),
                 onClick: function (e) {
                     e.stopPropagation();
                     opts.undo();
-                    dismissToast(t);
+                    dismissToast(node);
                 }
             }));
         }
@@ -3804,30 +3804,30 @@
         // relevant settings or surface ("Invocation enabled" → "Open
         // Settings").
         if (opts.action && typeof opts.action.onClick === 'function') {
-            t.appendChild(el('button', {
+            node.appendChild(el('button', {
                 className: 'bowire-toast-undo',
                 textContent: opts.action.label || 'Open',
                 onClick: function (e) {
                     e.stopPropagation();
                     opts.action.onClick();
-                    dismissToast(t);
+                    dismissToast(node);
                 }
             }));
         }
 
-        t.appendChild(el('button', {
+        node.appendChild(el('button', {
             className: 'bowire-toast-close',
             innerHTML: svgIcon('close'),
             'aria-label': t('common.dismiss'),
-            onClick: function (e) { e.stopPropagation(); dismissToast(t); }
+            onClick: function (e) { e.stopPropagation(); dismissToast(node); }
         }));
 
-        container.appendChild(t);
+        container.appendChild(node);
         var duration = opts.duration !== undefined ? opts.duration : 4000;
         if (duration > 0) {
-            t._timeout = setTimeout(function () { dismissToast(t); }, duration);
+            node._timeout = setTimeout(function () { dismissToast(node); }, duration);
         }
-        return t;
+        return node;
     }
 
     // Expose the toast helper to extension bundles that load outside
@@ -3839,12 +3839,12 @@
         window.bowireToast = toast;
     }
 
-    function dismissToast(t) {
-        if (t._dismissed) return;
-        t._dismissed = true;
-        if (t._timeout) clearTimeout(t._timeout);
-        t.classList.add('bowire-toast-out');
-        setTimeout(function () { t.remove(); }, 200);
+    function dismissToast(node) {
+        if (node._dismissed) return;
+        node._dismissed = true;
+        if (node._timeout) clearTimeout(node._timeout);
+        node.classList.add('bowire-toast-out');
+        setTimeout(function () { node.remove(); }, 200);
     }
 
     // Custom confirm dialog — replaces native confirm().

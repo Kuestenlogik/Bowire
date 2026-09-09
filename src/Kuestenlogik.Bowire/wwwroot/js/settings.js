@@ -1281,9 +1281,9 @@
                     // with a slow NuGet round-trip: an empty id and a
                     // pasted URL / path instead of a package id.
                     validator: function (v) {
-                        var t = String(v || '').trim();
-                        if (!t) return 'Enter a package id.';
-                        if (/[\\/\s]/.test(t)) return 'That looks like a path or URL — enter the package id only.';
+                        var id = String(v || '').trim();
+                        if (!id) return 'Enter a package id.';
+                        if (/[\\/\s]/.test(id)) return 'That looks like a path or URL — enter the package id only.';
                         return null;
                     }
                 })

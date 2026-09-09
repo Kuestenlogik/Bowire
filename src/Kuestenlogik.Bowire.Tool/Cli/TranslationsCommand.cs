@@ -109,7 +109,16 @@ internal static class TranslationsCommand
         {
             // Underscore keys are the file's note to translators, not UI text.
             if (pair.Key.StartsWith('_')) continue;
-            result[pair.Key] = pair.Value?.GetValue<string>() ?? string.Empty;
+            // A number, an object or a null is a slip in a hand-edited file,
+            // and this command exists for people editing these files by hand.
+            // Reporting the catalogue as unreadable beats a stack trace, and
+            // beats quietly turning 42 into the translated string "42".
+            if (pair.Value is not JsonValue value || !value.TryGetValue<string>(out var text))
+            {
+                return null;
+            }
+
+            result[pair.Key] = text;
         }
         return result;
     }
@@ -176,7 +185,8 @@ internal static class TranslationsCommand
         var candidate = Flatten(await File.ReadAllTextAsync(path, ct).ConfigureAwait(false));
         if (candidate is null)
         {
-            await io.Err.WriteLineAsync($"  {path} is not a JSON object.").ConfigureAwait(false);
+            await io.Err.WriteLineAsync(
+                $"  {path} is not a flat JSON object of strings.").ConfigureAwait(false);
             return 1;
         }
 

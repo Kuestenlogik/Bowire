@@ -185,16 +185,16 @@
             // skip
         } else if (supportedTypes.length > 1) {
             var typeSeg = el('div', { className: 'bowire-freeform-type-seg bowire-freeform-type-seg-compact' });
-            supportedTypes.forEach(function (t) {
+            supportedTypes.forEach(function (type) {
                 typeSeg.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-freeform-type-seg-btn'
-                        + (t === fr.methodType ? ' is-active' : ''),
-                    title: t,
-                    textContent: t,
+                        + (type === fr.methodType ? ' is-active' : ''),
+                    title: type,
+                    textContent: type,
                     onClick: function () {
-                        if (fr.methodType === t) return;
-                        fr.methodType = t;
+                        if (fr.methodType === type) return;
+                        fr.methodType = type;
                         render();
                     }
                 }));
@@ -2069,10 +2069,10 @@
                     'data-bowire-no-vars-ac': '1',
                     onChange: function (e) {
                         var v = String(e.target.value || '').trim();
-                        var t = _liveWs();
-                        if (v && t && v !== t.name) {
-                            var prevName = t.name;
-                            var targetId = t.id;
+                        var live = _liveWs();
+                        if (v && live && v !== live.name) {
+                            var prevName = live.name;
+                            var targetId = live.id;
                             if (renameWorkspace(targetId, v)) {
                                 // #194 — log so the rename is reversible
                                 // via Ctrl/Cmd+Z + the Activity drawer.
@@ -2101,8 +2101,8 @@
                     className: 'bowire-ws-detail-switch-btn',
                     textContent: 'Switch to this workspace',
                     onClick: function () {
-                        var t = _liveWs();
-                        if (t) switchWorkspace(t.id);
+                        var live = _liveWs();
+                        if (live) switchWorkspace(live.id);
                     }
                 })
         );
@@ -2191,15 +2191,15 @@
                     title: 'Create a copy of this workspace under a new name (URLs, envs, collections, recordings, flows, pins).',
                     onClick: function () {
                         menu.remove();
-                        var t = _liveWs();
-                        if (!t || typeof duplicateWorkspace !== 'function') return;
+                        var live = _liveWs();
+                        if (!live || typeof duplicateWorkspace !== 'function') return;
                         bowirePrompt('Name for the duplicate', {
                             title: 'Duplicate workspace',
-                            defaultValue: t.name + ' (copy)',
+                            defaultValue: live.name + ' (copy)',
                             okLabel: 'Duplicate'
                         }, function (newName) {
                             if (newName === null) return;
-                            var fresh = duplicateWorkspace(t.id, newName);
+                            var fresh = duplicateWorkspace(live.id, newName);
                             if (fresh) {
                                 workspacesSelectedId = fresh.id;
                                 render();
@@ -2217,11 +2217,11 @@
                         title: 'Snapshot this workspace as a reusable template — appears in "Your templates" on the next create-workspace dialog.',
                         onClick: function () {
                             menu.remove();
-                            var t = _liveWs();
-                            if (!t) return;
+                            var live = _liveWs();
+                            if (!live) return;
                             bowirePrompt('Template name', {
                                 title: 'Save as template',
-                                defaultValue: t.name + ' template',
+                                defaultValue: live.name + ' template',
                                 confirmText: 'Save',
                                 validator: function (val) {
                                     return String(val || '').trim() ? null : 'Name required';
@@ -2229,7 +2229,7 @@
                             }).then(function (name) {
                                 if (!name) return;
                                 try {
-                                    saveWorkspaceAsTemplate(t.id, name, '', 'layers');
+                                    saveWorkspaceAsTemplate(live.id, name, '', 'layers');
                                     if (typeof toast === 'function') {
                                         toast('Saved "' + name + '" — available in the next create-workspace dialog.', 'success');
                                     }
@@ -2252,9 +2252,9 @@
                         title: 'Download the workspace as a single .bww file (URLs, collections, recordings, favorites, benchmarks, flows, presets — NO secrets).',
                         onClick: function () {
                             menu.remove();
-                            var t = _liveWs();
-                            if (!t) return;
-                            if (downloadWorkspaceExport(t.id)) {
+                            var live = _liveWs();
+                            if (!live) return;
+                            if (downloadWorkspaceExport(live.id)) {
                                 if (typeof toast === 'function') toast('Workspace exported', 'success');
                             } else {
                                 if (typeof toast === 'function') toast('Export failed — see console', 'error');
@@ -2339,9 +2339,9 @@
             var liveWsForVars = _liveWs() || ws;
             var varsMap = liveWsForVars.vars || {};
             main.appendChild(_renderKvSection('Variables', varsMap, function (next) {
-                var t = _liveWs();
-                if (t) {
-                    t.vars = next;
+                var live = _liveWs();
+                if (live) {
+                    live.vars = next;
                     if (typeof persistWorkspaces === 'function') persistWorkspaces();
                 }
             }, false));
@@ -2364,16 +2364,16 @@
             if (typeof renderAuthSection === 'function') {
                 main.appendChild(renderAuthSection(
                     function () {
-                        var t = _liveWs() || ws;
-                        return t.auth || { type: 'none' };
+                        var live = _liveWs() || ws;
+                        return live.auth || { type: 'none' };
                     },
                     function (nextAuth) {
-                        var t = _liveWs();
-                        if (!t) return;
+                        var live = _liveWs();
+                        if (!live) return;
                         if (!nextAuth || nextAuth.type === 'none') {
-                            delete t.auth;
+                            delete live.auth;
                         } else {
-                            t.auth = nextAuth;
+                            live.auth = nextAuth;
                         }
                         if (typeof persistWorkspaces === 'function') persistWorkspaces();
                     }
@@ -2453,11 +2453,11 @@
                     style: 'background:' + c,
                     title: c,
                     onClick: function () {
-                        var t = _liveWs();
-                        if (t && t.color !== c) {
-                            var prevColor = t.color;
-                            var targetId = t.id;
-                            t.color = c;
+                        var live = _liveWs();
+                        if (live && live.color !== c) {
+                            var prevColor = live.color;
+                            var targetId = live.id;
+                            live.color = c;
                             persistWorkspaces();
                             // #194 — colour picks are reversible.
                             if (typeof recordAction === 'function') {
@@ -2495,9 +2495,9 @@
             title: 'Custom colour',
             'aria-label': 'Custom workspace colour',
             onInput: function (e) {
-                var t = _liveWs();
-                if (t) {
-                    t.color = e.target.value;
+                var live = _liveWs();
+                if (live) {
+                    live.color = e.target.value;
                     persistWorkspaces();
                     render();
                 }
@@ -2517,9 +2517,9 @@
                 placeholder: 'Notes — what this workspace is for, who shares it, …',
                 rows: '3',
                 onChange: function (e) {
-                    var t = _liveWs();
-                    if (t) {
-                        t.description = String(e.target.value || '').trim();
+                    var live = _liveWs();
+                    if (live) {
+                        live.description = String(e.target.value || '').trim();
                         persistWorkspaces();
                     }
                 }
@@ -2551,9 +2551,9 @@
                 style: 'width:80px',
                 'aria-label': 'Schema Watch interval for this workspace',
                 onChange: function (e) {
-                    var t = _liveWs();
-                    if (!t || typeof wsKeyFor !== 'function') return;
-                    var key = wsKeyFor(t.id, 'bowire_watch_interval');
+                    var live = _liveWs();
+                    if (!live || typeof wsKeyFor !== 'function') return;
+                    var key = wsKeyFor(live.id, 'bowire_watch_interval');
                     var v = String(e.target.value || '').trim();
                     try {
                         if (v) localStorage.setItem(key, v);
@@ -2669,9 +2669,9 @@
                     type: 'checkbox',
                     checked: browserOnly ? 'checked' : null,
                     onChange: function (e) {
-                        var t = _liveWs();
-                        if (t && typeof setWorkspaceStorageMode === 'function') {
-                            setWorkspaceStorageMode(t.id, e.target.checked ? 'browser-only' : 'disk');
+                        var live = _liveWs();
+                        if (live && typeof setWorkspaceStorageMode === 'function') {
+                            setWorkspaceStorageMode(live.id, e.target.checked ? 'browser-only' : 'disk');
                             render();
                         }
                     }
@@ -2704,14 +2704,14 @@
                     value: currentRoot || '',
                     placeholder: 'Default: ~/.bowire/workspaces/' + ws.id + '/',
                     onBlur: function (e) {
-                        var t = _liveWs();
-                        if (!t || typeof setWorkspaceStorageRoot !== 'function') return;
+                        var live = _liveWs();
+                        if (!live || typeof setWorkspaceStorageRoot !== 'function') return;
                         var raw = String(e.target.value == null ? '' : e.target.value);
                         var trimmed = raw.trim();
                         var prior = (typeof getWorkspaceStorageRoot === 'function')
-                            ? (getWorkspaceStorageRoot(t) || '') : '';
+                            ? (getWorkspaceStorageRoot(live) || '') : '';
                         if (trimmed === prior) return;
-                        setWorkspaceStorageRoot(t.id, trimmed);
+                        setWorkspaceStorageRoot(live.id, trimmed);
                         render();
                     }
                 }),
@@ -2766,12 +2766,12 @@
                     placeholder: 'http://proxy.example.internal:8889',
                     'aria-label': 'External proxy endpoint URL',
                     onBlur: function (e) {
-                        var t = _liveWs();
-                        if (!t || typeof setWorkspaceProxyEndpoint !== 'function') return;
+                        var live = _liveWs();
+                        if (!live || typeof setWorkspaceProxyEndpoint !== 'function') return;
                         var raw = String(e.target.value == null ? '' : e.target.value).trim();
-                        var prior = getWorkspaceProxyEndpoint(t.id) || '';
+                        var prior = getWorkspaceProxyEndpoint(live.id) || '';
                         if (raw === prior) return;
-                        setWorkspaceProxyEndpoint(t.id, raw);
+                        setWorkspaceProxyEndpoint(live.id, raw);
                         // Reset the rail state so the next visit
                         // re-connects against the new endpoint.
                         if (typeof proxyConnectionState !== 'undefined') {
@@ -2828,14 +2828,14 @@
                     value: currentPins[pid],
                     'aria-label': 'Version constraint for ' + pid,
                     onBlur: function (e) {
-                        var t = _liveWs();
-                        if (!t || typeof setWorkspacePluginPins !== 'function') return;
+                        var live = _liveWs();
+                        if (!live || typeof setWorkspacePluginPins !== 'function') return;
                         var v = String(e.target.value || '').trim();
-                        var pins = getWorkspacePluginPins(t.id);
+                        var pins = getWorkspacePluginPins(live.id);
                         if (v.length === 0) { delete pins[pid]; }
                         else { pins[pid] = v; }
-                        setWorkspacePluginPins(t.id, pins);
-                        if (typeof triggerWorkspacePinCheck === 'function') triggerWorkspacePinCheck(t.id);
+                        setWorkspacePluginPins(live.id, pins);
+                        if (typeof triggerWorkspacePinCheck === 'function') triggerWorkspacePinCheck(live.id);
                         render();
                     }
                 }));
@@ -2844,12 +2844,12 @@
                     'aria-label': 'Remove pin for ' + pid,
                     textContent: '✕',
                     onClick: function () {
-                        var t = _liveWs();
-                        if (!t || typeof setWorkspacePluginPins !== 'function') return;
-                        var pins = getWorkspacePluginPins(t.id);
+                        var live = _liveWs();
+                        if (!live || typeof setWorkspacePluginPins !== 'function') return;
+                        var pins = getWorkspacePluginPins(live.id);
                         delete pins[pid];
-                        setWorkspacePluginPins(t.id, pins);
-                        if (typeof triggerWorkspacePinCheck === 'function') triggerWorkspacePinCheck(t.id);
+                        setWorkspacePluginPins(live.id, pins);
+                        if (typeof triggerWorkspacePinCheck === 'function') triggerWorkspacePinCheck(live.id);
                         render();
                     }
                 }));
@@ -2882,15 +2882,15 @@
                 className: 'bowire-presets-btn',
                 textContent: 'Add pin',
                 onClick: function () {
-                    var t = _liveWs();
-                    if (!t || typeof setWorkspacePluginPins !== 'function') return;
+                    var live = _liveWs();
+                    if (!live || typeof setWorkspacePluginPins !== 'function') return;
                     var id = addSelect.value;
                     var v = String(addVersion.value || '').trim() || '*';
                     if (!id) return;
-                    var pins = getWorkspacePluginPins(t.id);
+                    var pins = getWorkspacePluginPins(live.id);
                     pins[id] = v;
-                    setWorkspacePluginPins(t.id, pins);
-                    if (typeof triggerWorkspacePinCheck === 'function') triggerWorkspacePinCheck(t.id);
+                    setWorkspacePluginPins(live.id, pins);
+                    if (typeof triggerWorkspacePinCheck === 'function') triggerWorkspacePinCheck(live.id);
                     render();
                 }
             });
@@ -2915,14 +2915,14 @@
                 style: 'margin-top:10px;',
                 textContent: 'Pin all currently loaded protocols (' + loadedNotPinned.length + ')',
                 onClick: function () {
-                    var t = _liveWs();
-                    if (!t || typeof setWorkspacePluginPins !== 'function') return;
-                    var pins = getWorkspacePluginPins(t.id);
+                    var live = _liveWs();
+                    if (!live || typeof setWorkspacePluginPins !== 'function') return;
+                    var pins = getWorkspacePluginPins(live.id);
                     loadedNotPinned.forEach(function (id) {
                         pins[String(id).toLowerCase()] = '*';
                     });
-                    setWorkspacePluginPins(t.id, pins);
-                    if (typeof triggerWorkspacePinCheck === 'function') triggerWorkspacePinCheck(t.id);
+                    setWorkspacePluginPins(live.id, pins);
+                    if (typeof triggerWorkspacePinCheck === 'function') triggerWorkspacePinCheck(live.id);
                     render();
                 }
             }));
@@ -2969,9 +2969,9 @@
             className: 'bowire-presets-btn',
             textContent: 'Export workspace…',
             onClick: function () {
-                var t = _liveWs();
-                if (!t) return;
-                if (!downloadWorkspaceExport(t.id)) {
+                var live = _liveWs();
+                if (!live) return;
+                if (!downloadWorkspaceExport(live.id)) {
                     toast('Export failed — see console', 'error');
                     return;
                 }
@@ -2996,8 +2996,8 @@
                             toast('Could not parse the file as JSON', 'error');
                             return;
                         }
-                        var t = _liveWs();
-                        if (t) _showWorkspaceImportDialog(payload, t);
+                        var live = _liveWs();
+                        if (live) _showWorkspaceImportDialog(payload, live);
                     };
                     reader.readAsText(file);
                 };
@@ -3016,16 +3016,16 @@
                 className: 'bowire-settings-action-btn bowire-ws-detail-delete-btn',
                 textContent: 'Delete this workspace',
                 onClick: function () {
-                    var t = _liveWs();
-                    if (!t) return;
-                    var wsName = t.name;
-                    var wsId = t.id;
+                    var live = _liveWs();
+                    if (!live) return;
+                    var wsName = live.name;
+                    var wsId = live.id;
                     var isLast = workspaces.length === 1;
                     // v2.2 W2 — Hard-delete branch gets its own warning
                     // copy; soft-delete keeps the v2.1 copy verbatim.
                     var mode = (typeof getWorkspaceDeleteMode === 'function')
                         ? getWorkspaceDeleteMode() : 'soft';
-                    var hardMsg = 'This workspace will be deleted IMMEDIATELY. Undo will work for the next ~200 actions, but it won’t be in the Trash. Continue?';
+                    var hardMsg = 'This workspace will be deleted IMMEDIATELY. Undo will work for the next ~200 actions, but it won’live be in the Trash. Continue?';
                     var softMsg = isLast
                         ? 'Delete the last workspace "' + wsName + '"? You will return to the empty no-workspace state — URLs / envs / recordings scoped to this workspace are removed.'
                         : 'Delete workspace "' + wsName + '"? URLs / envs / recordings scoped to this workspace are removed.';
@@ -3055,12 +3055,12 @@
                                 }
                                 toast('Deleted workspace "' + snapshotName + '"', 'info', {
                                     undo: function () {
-                                        var t = (typeof workspacesTrash !== 'undefined'
+                                        var trashed = (typeof workspacesTrash !== 'undefined'
                                             && Array.isArray(workspacesTrash))
                                             ? workspacesTrash.find(function (x) { return x && x.workspace && x.workspace.id === wsId; })
                                             : null;
-                                        if (t && typeof restoreWorkspaceFromTrash === 'function') {
-                                            restoreWorkspaceFromTrash(t);
+                                        if (trashed && typeof restoreWorkspaceFromTrash === 'function') {
+                                            restoreWorkspaceFromTrash(trashed);
                                             workspacesSelectedId = wsId;
                                             render();
                                             return;
@@ -6211,7 +6211,7 @@
                             if (typeof showContextMenu !== 'function') return;
                             var id = e.currentTarget.dataset.tabId;
                             if (!id) return;
-                            var idx = requestTabs.findIndex(function (t) { return t.id === id; });
+                            var idx = requestTabs.findIndex(function (tab) { return tab.id === id; });
                             var hasOthers = requestTabs.length > 1;
                             var hasRight = idx >= 0 && idx < requestTabs.length - 1;
                             showContextMenu(e.clientX, e.clientY, [
@@ -6229,8 +6229,8 @@
                                         // the right-clicked one is the active +
                                         // sole remaining tab.
                                         var keepId = id;
-                                        requestTabs.slice().forEach(function (t) {
-                                            if (t.id !== keepId) closeTab(t.id);
+                                        requestTabs.slice().forEach(function (tab) {
+                                            if (tab.id !== keepId) closeTab(tab.id);
                                         });
                                         switchTab(keepId);
                                     }
@@ -6239,10 +6239,10 @@
                                     label: 'Close tabs to the right',
                                     disabled: !hasRight,
                                     onClick: function () {
-                                        var currentIdx = requestTabs.findIndex(function (t) { return t.id === id; });
+                                        var currentIdx = requestTabs.findIndex(function (tab) { return tab.id === id; });
                                         if (currentIdx < 0) return;
-                                        requestTabs.slice(currentIdx + 1).forEach(function (t) {
-                                            closeTab(t.id);
+                                        requestTabs.slice(currentIdx + 1).forEach(function (tab) {
+                                            closeTab(tab.id);
                                         });
                                     }
                                 }
@@ -6379,7 +6379,7 @@
                     && typeof activeDesignTabId !== 'undefined') {
                     // Adopt the stray request into a Compose tab so the
                     // operator's in-flight edits aren't dropped.
-                    var alreadyOwned = composeTabs.some(function (t) { return t.request === freeformRequest; });
+                    var alreadyOwned = composeTabs.some(function (tab) { return tab.request === freeformRequest; });
                     if (!alreadyOwned) {
                         var adoptedId = 'design_' + (++_designTabIdCounter);
                         composeTabs.push({ id: adoptedId, request: freeformRequest, origin: { kind: 'fresh' } });
@@ -6689,7 +6689,7 @@
         // If the active sub-tab isn't applicable for this method
         // (switched from a method with a Selection set to one without,
         // for example), snap back to the first applicable tab.
-        if (bodySubTabs.length >= 2 && !bodySubTabs.some(function (t) { return t.id === activeBodySubTab; })) {
+        if (bodySubTabs.length >= 2 && !bodySubTabs.some(function (tab) { return tab.id === activeBodySubTab; })) {
             activeBodySubTab = bodySubTabs[0].id;
         }
 
@@ -6697,25 +6697,25 @@
         if (bodySubTabs.length >= 2) {
             var subTabBar = el('div', { id: 'bowire-body-subtabs', className: 'bowire-sub-tabs', role: 'tablist' });
             for (var sti = 0; sti < bodySubTabs.length; sti++) {
-                (function (t) {
+                (function (tab) {
                     subTabBar.appendChild(el('button', {
-                        id: 'bowire-body-subtab-' + t.id,
-                        className: 'bowire-sub-tab' + (activeBodySubTab === t.id ? ' active' : ''),
+                        id: 'bowire-body-subtab-' + tab.id,
+                        className: 'bowire-sub-tab' + (activeBodySubTab === tab.id ? ' active' : ''),
                         role: 'tab',
-                        textContent: t.label,
+                        textContent: tab.label,
                         onClick: function () {
                             // Form ↔ JSON swap needs the existing sync
                             // helpers so values stay in step. The legacy
                             // top-strip toggle did the same; preserving
                             // it here so the sub-tab is a drop-in.
-                            if (activeBodySubTab === 'form' && t.id === 'json') {
+                            if (activeBodySubTab === 'form' && tab.id === 'json') {
                                 syncFormToJson();
-                            } else if (activeBodySubTab === 'json' && t.id === 'form') {
+                            } else if (activeBodySubTab === 'json' && tab.id === 'form') {
                                 syncJsonToForm();
                             }
-                            activeBodySubTab = t.id;
-                            if (t.id === 'form' || t.id === 'json') {
-                                requestInputMode = t.id;
+                            activeBodySubTab = tab.id;
+                            if (tab.id === 'form' || tab.id === 'json') {
+                                requestInputMode = tab.id;
                             }
                             render();
                         }
@@ -10291,8 +10291,8 @@
                             });
                             return;
                         }
-                        var t = responseData || '';
-                        navigator.clipboard.writeText(t).then(function () {
+                        var text = responseData || '';
+                        navigator.clipboard.writeText(text).then(function () {
                             toast('Copied to clipboard', 'success');
                         });
                     }

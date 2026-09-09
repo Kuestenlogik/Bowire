@@ -282,3 +282,44 @@ test('every catalogue key has a caller', () => {
         (k) => !statics.has(k) && !prefixes.some((p) => k.startsWith(p)));
     assert.deepEqual(orphans, [], `catalogue keys nothing reads:\n  ${orphans.join('\n  ')}`);
 });
+
+test('no fragment both shadows t and calls it', () => {
+    // Every fragment shares one IIFE scope, and the translator is a
+    // one-letter name in it. `t` is also the obvious name for a loop counter,
+    // a callback parameter, a temporary — the codebase has about a hundred of
+    // them, and each one blinds its own scope to the translator.
+    //
+    // This is not theoretical. toast() held `var t = el('div', ...)` and the
+    // sweep put t('common.dismiss') inside it, so every toast in Bowire threw
+    // "t is not a function" until the local was renamed. Nothing else caught
+    // it: the bundle parses, the analyser is happy, and no test rendered a
+    // toast.
+    //
+    // The check is per file rather than per scope, which is stricter than the
+    // language requires — a shadow three functions away from any t() call is
+    // harmless. That is the point: the rule "a file that translates does not
+    // name anything t" is one a reader can hold, and a scope-accurate check
+    // would need a parser to answer a question nobody should have to ask.
+    const DECLARES_T = [
+        /(?<![A-Za-z0-9_$.])(?:var|let|const)\s+t\s*[=;,)]/,   // var t = …
+        /function\s*\**\s*[A-Za-z0-9_$]*\s*\([^)]*(?<![A-Za-z0-9_$.])t\s*[,)]/, // function (t)
+        /\(\s*t\s*\)\s*=>/,                                    // (t) => …
+        /(?<![A-Za-z0-9_$.])for\s*\(\s*(?:var|let)\s+t\s*[=;]/, // for (var t = 0
+        /(?<![A-Za-z0-9_$.])catch\s*\(\s*t\s*\)/,
+    ];
+    const CALLS_T = /(?<![A-Za-z0-9_$.])t\(\s*['"]/;
+
+    const offenders = [];
+    for (const { file, text } of fragmentSources()) {
+        if (!CALLS_T.test(text)) continue;   // not swept yet — its turn will come
+        const shadows = [];
+        text.split('\n').forEach((line, i) => {
+            if (line.trim().startsWith('//')) return;
+            if (DECLARES_T.some((re) => re.test(line))) shadows.push(`${i + 1}: ${line.trim()}`);
+        });
+        if (shadows.length) offenders.push(`${file}\n    ${shadows.join('\n    ')}`);
+    }
+
+    assert.deepEqual(offenders, [],
+        `a fragment that calls t() must not bind the name t:\n  ${offenders.join('\n  ')}`);
+});
