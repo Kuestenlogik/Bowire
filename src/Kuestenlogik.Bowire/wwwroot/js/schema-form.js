@@ -334,8 +334,8 @@
                         textContent: f.name
                     }),
                     isRequired
-                        ? el('span', { className: 'bowire-form-label-required', textContent: 'required' })
-                        : el('span', { className: 'bowire-form-label-optional', textContent: 'optional' }),
+                        ? el('span', { className: 'bowire-form-label-required', textContent: t('schemaForm.required') })
+                        : el('span', { className: 'bowire-form-label-optional', textContent: t('schemaForm.optional') }),
                     f.source ? el('span', { className: 'bowire-form-label-source bowire-source-' + f.source, textContent: f.source }) : null,
                     el('span', { className: 'bowire-form-label-type', textContent: typeLabel }),
                     f.source ? null : el('span', { className: 'bowire-form-label-number', textContent: '#' + f.number })
@@ -380,7 +380,7 @@
                             var removeBtn = el('button', {
                                 className: 'bowire-metadata-remove',
                                 textContent: '\u00d7',
-                                title: 'Remove item',
+                                title: t('schemaForm.removeItem'),
                                 onClick: function () { arr.splice(idx, 1); render(); }
                             });
                             itemRow.appendChild(removeBtn);
@@ -390,7 +390,7 @@
 
                     var addBtn = el('button', {
                         className: 'bowire-form-repeated-add',
-                        textContent: '+ Add item',
+                        textContent: t('schemaForm.addItem'),
                         onClick: function () {
                             if (f.type === 'message') arr.push({});
                             else if (f.type === 'bool') arr.push(false);
@@ -416,7 +416,7 @@
                             var keyInput = el('input', {
                                 className: 'bowire-form-input',
                                 type: 'text',
-                                placeholder: 'key',
+                                placeholder: t('schemaForm.mapKey'),
                                 value: mapKey,
                                 style: 'flex:1',
                                 onInput: function () {
@@ -432,7 +432,7 @@
                             var valInput = el('input', {
                                 className: 'bowire-form-input',
                                 type: 'text',
-                                placeholder: 'value',
+                                placeholder: t('schemaForm.mapValue'),
                                 value: String(mapValue),
                                 style: 'flex:1',
                                 onInput: function () {
@@ -442,7 +442,7 @@
                             var removeBtn = el('button', {
                                 className: 'bowire-metadata-remove',
                                 textContent: '\u00d7',
-                                title: 'Remove entry',
+                                title: t('schemaForm.removeEntry'),
                                 onClick: function () {
                                     delete formValues[key][mapKey];
                                     render();
@@ -457,7 +457,7 @@
 
                     var addEntryBtn = el('button', {
                         className: 'bowire-form-repeated-add',
-                        textContent: '+ Add entry',
+                        textContent: t('schemaForm.addEntry'),
                         onClick: function () {
                             formValues[key][''] = '';
                             render();
@@ -526,7 +526,7 @@
                     var ta = el('textarea', {
                         className: 'bowire-form-input',
                         dataset: { fieldKey: key },
-                        placeholder: 'Base64-encoded bytes...',
+                        placeholder: t('schemaForm.bytesPlaceholder'),
                         style: 'height:60px;resize:vertical;padding:6px 10px',
                         onInput: function () { formValues[key] = this.value; }
                     });
@@ -660,8 +660,8 @@
                         textContent: f.name
                     }),
                     isReq
-                        ? el('span', { className: 'bowire-form-label-required', textContent: 'required' })
-                        : el('span', { className: 'bowire-form-label-optional', textContent: 'optional' }),
+                        ? el('span', { className: 'bowire-form-label-required', textContent: t('schemaForm.required') })
+                        : el('span', { className: 'bowire-form-label-optional', textContent: t('schemaForm.optional') }),
                     el('span', { className: 'bowire-form-label-type', textContent: typeLabel }),
                     el('span', { className: 'bowire-form-label-number', textContent: '#' + f.number })
                 );
@@ -753,6 +753,10 @@
             if (f.isMap) typeLabel = 'map<...>';
             if (f.isRepeated) typeLabel = `repeated ${typeLabel}`;
 
+            // f.label is the schema's own label (proto2: optional, required,
+            // repeated), not Bowire's required/optional badge above. It stays
+            // in the schema's language, and the comparison against 'optional'
+            // is a sentinel - translating either would break both.
             const row = el('div', { className: 'bowire-schema-field' },
                 el('span', { className: 'bowire-schema-field-name', textContent: f.name }),
                 el('span', { className: 'bowire-schema-field-type', textContent: typeLabel }),

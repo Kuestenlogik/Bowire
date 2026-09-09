@@ -94,6 +94,11 @@
         // not, so those stay raw.
         ra = { route: _stripVersionMarkers(ra.route), kind: ra.kind, input: ra.input, output: ra.output, deprecated: ra.deprecated, note: ra.note };
         rb = { route: _stripVersionMarkers(rb.route), kind: rb.kind, input: rb.input, output: rb.output, deprecated: rb.deprecated, note: rb.note };
+        // Deliberately not translated. schemaChangeDetail() also feeds the
+        // schema-change log, which is posted to the server and kept there,
+        // so a translated phrase would be stored as data in whichever
+        // language the watcher happened to run in. Same shape as the
+        // action log - see #689.
         var detail = schemaChangeDetail(ra, rb);
         var bits = [];
         if (detail) bits.push(detail);
@@ -438,7 +443,7 @@
         var a = (serviceCompareState.sides.a.serviceName || 'a').replace(/[^A-Za-z0-9._-]+/g, '-');
         var b = (serviceCompareState.sides.b.serviceName || 'b').replace(/[^A-Za-z0-9._-]+/g, '-');
         downloadTextFile(md, 'compare-' + a + '-vs-' + b + '.md', 'text/markdown');
-        if (typeof toast === 'function') toast('Comparison report exported', 'success');
+        if (typeof toast === 'function') toast(t('compare.exported'), 'success');
     }
 
     // ---- surface ----
@@ -450,7 +455,7 @@
         // Header — title, schema summary, export + close.
         var header = el('div', { className: 'bowire-compare-header' });
         header.appendChild(el('div', { className: 'bowire-compare-title' },
-            el('span', { textContent: 'Compare services' }),
+            el('span', { textContent: t('compare.title') }),
             st.schemaDiff
                 ? el('span', { className: 'bowire-compare-summary', textContent: compareSchemaSummary(st.schemaDiff) })
                 : null
@@ -459,15 +464,15 @@
         if (st.schemaDiff) {
             headerActions.appendChild(el('button', {
                 className: 'bowire-compare-btn',
-                textContent: 'Export markdown',
-                title: 'Download a markdown comparison report (for a PR comment)',
+                textContent: t('compare.export'),
+                title: t('compare.exportTitle'),
                 onClick: _exportCompareReport
             }));
         }
         headerActions.appendChild(el('button', {
             className: 'bowire-compare-btn bowire-compare-btn-close',
-            textContent: 'Close',
-            'aria-label': 'Close comparison',
+            textContent: t('common.close'),
+            'aria-label': t('compare.closeAria'),
             onClick: closeServiceCompare
         }));
         header.appendChild(headerActions);
@@ -475,14 +480,14 @@
 
         // Chooser — two columns.
         var chooser = el('div', { className: 'bowire-compare-chooser' });
-        chooser.appendChild(_renderCompareSide('a', 'Baseline (A)'));
+        chooser.appendChild(_renderCompareSide('a', t('compare.sideA')));
         chooser.appendChild(el('span', { className: 'bowire-compare-vs', textContent: '→' }));
-        chooser.appendChild(_renderCompareSide('b', 'Target (B)'));
+        chooser.appendChild(_renderCompareSide('b', t('compare.sideB')));
         main.appendChild(chooser);
 
         if (!st.schemaDiff) {
             main.appendChild(el('div', { className: 'bowire-compare-hint',
-                textContent: 'Pick a service on each side. Same API at two URLs, or a v1 vs v2 twin — methods align by name (version suffixes like _v2 are matched).' }));
+                textContent: t('compare.hint') }));
             return main;
         }
 
@@ -497,7 +502,7 @@
 
         // URL select.
         var urls = (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) ? serverUrls : [];
-        var urlSel = el('select', { className: 'bowire-compare-select', 'aria-label': label + ' URL',
+        var urlSel = el('select', { className: 'bowire-compare-select', 'aria-label': t('compare.urlAria', { side: label }),
             onChange: function (e) {
                 var v = e.target.value;
                 // Clear the stale service pick FIRST — _compareLoadUrl
@@ -511,8 +516,8 @@
                 _compareLoadUrl(side, v === '(embedded)' ? '' : v);
             }
         });
-        urlSel.appendChild(el('option', { value: '__none', textContent: 'Pick a source…', selected: s.url === null }));
-        urlSel.appendChild(el('option', { value: '(embedded)', textContent: 'Embedded host', selected: s.url === '' }));
+        urlSel.appendChild(el('option', { value: '__none', textContent: t('compare.pickSource'), selected: s.url === null }));
+        urlSel.appendChild(el('option', { value: '(embedded)', textContent: t('compare.embeddedHost'), selected: s.url === '' }));
         urls.forEach(function (u) {
             urlSel.appendChild(el('option', { value: u, textContent: compareUrlLabel(u), selected: s.url === u }));
         });
@@ -520,17 +525,17 @@
 
         // Service select (or loading / error).
         if (s.loading) {
-            col.appendChild(el('div', { className: 'bowire-compare-side-status', textContent: 'Discovering…' }));
+            col.appendChild(el('div', { className: 'bowire-compare-side-status', textContent: t('compare.discovering') }));
         } else if (s.url !== null) {
             var entry = serviceCompareState.urlCache[_compareUrlKey(s.url)];
             if (entry && entry.error) {
                 col.appendChild(el('div', { className: 'bowire-compare-side-status bowire-compare-side-error', textContent: entry.error }));
             } else {
                 var list = _compareServicesForSide(side);
-                var svcSel = el('select', { className: 'bowire-compare-select', 'aria-label': label + ' service',
+                var svcSel = el('select', { className: 'bowire-compare-select', 'aria-label': t('compare.serviceAria', { side: label }),
                     onChange: function (e) { _compareSelectService(side, e.target.value === '__none' ? null : e.target.value); }
                 });
-                svcSel.appendChild(el('option', { value: '__none', textContent: list.length ? 'Pick a service…' : 'No services found', selected: !s.serviceName }));
+                svcSel.appendChild(el('option', { value: '__none', textContent: list.length ? t('compare.pickService') : t('compare.noServices'), selected: !s.serviceName }));
                 list.forEach(function (svc) {
                     var n = svc.methods ? svc.methods.length : 0;
                     svcSel.appendChild(el('option', { value: svc.name, selected: s.serviceName === svc.name,
@@ -548,15 +553,15 @@
         var bar = el('div', { className: 'bowire-compare-actions' });
         bar.appendChild(el('button', {
             className: 'bowire-compare-btn',
-            textContent: serviceCompareState.busy ? 'Invoking…' : 'Invoke all & diff responses',
+            textContent: serviceCompareState.busy ? t('compare.invoking') : t('compare.invokeAll'),
             disabled: serviceCompareState.busy ? 'disabled' : null,
-            title: 'Call every aligned method on both sides and diff the responses field-by-field',
+            title: t('compare.invokeAllTitle'),
             onClick: serviceCompareState.busy ? null : runAllCompareMethods
         }));
         var toggleUnchanged = el('label', { className: 'bowire-compare-toggle' },
             el('input', { type: 'checkbox', checked: serviceCompareState.showUnchanged ? 'checked' : null,
                 onChange: function (e) { serviceCompareState.showUnchanged = !!e.target.checked; render(); } }),
-            el('span', { textContent: 'show unchanged (' + d.unchanged.length + ')' })
+            el('span', { textContent: t('compare.showUnchanged', { count: d.unchanged.length }) })
         );
         bar.appendChild(toggleUnchanged);
         wrap.appendChild(bar);
@@ -570,7 +575,7 @@
             d.unchanged.forEach(function (c) { list.appendChild(_renderCompareMethodRow('unchanged', c.a, c.b, c.noteOnly ? 'description updated' : '', c)); });
         }
         if (!list.children.length) {
-            list.appendChild(el('div', { className: 'bowire-compare-hint', textContent: 'Schemas are identical.' }));
+            list.appendChild(el('div', { className: 'bowire-compare-hint', textContent: t('compare.identicalSchemas') }));
         }
         wrap.appendChild(list);
         return wrap;
@@ -609,9 +614,9 @@
             var resp = serviceCompareState.responses[pair.key];
             head.appendChild(el('button', {
                 className: 'bowire-compare-invoke',
-                textContent: (resp && resp.pending) ? '…' : 'Diff response',
+                textContent: (resp && resp.pending) ? '…' : t('compare.diffResponse'),
                 disabled: (resp && resp.pending) ? 'disabled' : null,
-                title: 'Invoke on both sides and diff the responses',
+                title: t('compare.diffResponseTitle'),
                 onClick: function () { runCompareMethod(pair); }
             }));
         }
@@ -630,7 +635,7 @@
         }
         if (r.fieldDiff && r.fieldDiff.kind === 'json') {
             if (r.fieldDiff.entries.length === 0) {
-                box.appendChild(el('div', { className: 'bowire-compare-identical', textContent: 'Responses are field-identical.' }));
+                box.appendChild(el('div', { className: 'bowire-compare-identical', textContent: t('compare.fieldIdentical') }));
                 return box;
             }
             r.fieldDiff.entries.forEach(function (e) {
@@ -638,10 +643,15 @@
                 var line = el('div', { className: 'bowire-diff-line bowire-compare-fieldline bowire-compare-field-' + cls });
                 line.appendChild(el('span', { className: 'bowire-compare-field-path', textContent: e.path }));
                 var desc;
-                if (e.change === 'kind-changed') desc = 'type ' + e.aKind + ' → ' + e.bKind;
-                else if (e.change === 'added') desc = 'added (' + e.bKind + ' ' + e.bText + ')';
-                else if (e.change === 'removed') desc = 'removed (' + e.aKind + ' ' + e.aText + ')';
-                else if (e.change === 'array-length') desc = 'array length ' + e.aText + ' → ' + e.bText;
+                if (e.change === 'kind-changed') {
+                    desc = t('compare.field.typeChanged', { from: e.aKind, to: e.bKind });
+                } else if (e.change === 'added') {
+                    desc = t('compare.field.added', { kind: e.bKind, value: e.bText });
+                } else if (e.change === 'removed') {
+                    desc = t('compare.field.removed', { kind: e.aKind, value: e.aText });
+                } else if (e.change === 'array-length') {
+                    desc = t('compare.field.arrayLength', { from: e.aText, to: e.bText });
+                }
                 else desc = e.aText + ' → ' + e.bText;
                 line.appendChild(el('span', { className: 'bowire-compare-field-desc', textContent: desc }));
                 box.appendChild(line);
@@ -650,7 +660,7 @@
         }
         // Non-JSON fallback — line diff.
         if (r.textIdentical) {
-            box.appendChild(el('div', { className: 'bowire-compare-identical', textContent: 'Responses are identical.' }));
+            box.appendChild(el('div', { className: 'bowire-compare-identical', textContent: t('compare.identical') }));
             return box;
         }
         (r.lineDiff || []).forEach(function (ln) {
