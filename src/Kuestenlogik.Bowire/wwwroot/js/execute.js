@@ -45,7 +45,10 @@
             if (Object.keys(validationErrors).length > 0) {
                 formValidationErrors = validationErrors;
                 var count = Object.keys(validationErrors).length;
-                toast(count + (count === 1 ? ' field has' : ' fields have') + ' validation errors', 'error');
+                // #688 - two keys until the layer can express a plural in
+                // one. English and German have two forms; Polish has three.
+                toast(t(count === 1 ? 'execute.validation.oneField'
+                    : 'execute.validation.manyFields', { count: count }), 'error');
                 render();
                 return;
             }
@@ -190,7 +193,7 @@
                 onEnvSet: onEnvSet
             });
             if (!preResult.ok) {
-                toast('Pre-request script error: ' + preResult.error, 'error');
+                toast(t('execute.script.preError', { reason: preResult.error }), 'error');
                 return;
             }
             // Apply mutations back to the in-flight request.
@@ -275,7 +278,7 @@
             onEnvSet: onEnvSet
         });
         if (!postResult.ok) {
-            toast('Post-response script error: ' + postResult.error, 'error');
+            toast(t('execute.script.postError', { reason: postResult.error }), 'error');
         }
     }
 
@@ -311,9 +314,9 @@
         }
 
         var modal = el('div', { className: 'bowire-shortcuts-modal' },
-            el('div', { className: 'bowire-shortcuts-title', textContent: 'Keyboard Shortcuts' }),
+            el('div', { className: 'bowire-shortcuts-title', textContent: t('shortcuts.title') }),
             grid,
-            el('div', { className: 'bowire-shortcuts-footer', textContent: 'Press ? or Esc to close' })
+            el('div', { className: 'bowire-shortcuts-footer', textContent: t('shortcuts.footer') })
         );
 
         var overlay = el('div', {
@@ -491,13 +494,13 @@
         summary.appendChild(el('button', {
             type: 'button',
             className: 'bowire-console-row-copy',
-            title: 'Copy this entry',
-            'aria-label': 'Copy entry',
+            title: t('console.copyEntry'),
+            'aria-label': t('console.copyEntryAria'),
             innerHTML: svgIcon('copy'),
             onClick: function (e) {
                 e.stopPropagation();
                 navigator.clipboard.writeText(serializeConsoleEntries([entry])).then(function () {
-                    if (typeof toast === 'function') toast('Entry copied', 'success');
+                    if (typeof toast === 'function') toast(t('console.copied'), 'success');
                 });
             }
         }));
@@ -545,12 +548,12 @@
         if (consoleLog.length === 0) {
             body.appendChild(renderEmptyCard({
                 icon: 'console',
-                headline: 'No activity yet',
-                body: 'Console captures every request, response, channel-frame, and error. Fire a call from the request pane and it lands here as a sortable timeline.',
+                headline: t('console.empty.headline'),
+                body: t('console.empty.body'),
                 hintKey: 'bowire_empty_console_hint',
                 actions: [
                     {
-                        label: 'Focus request pane',
+                        label: t('console.empty.focusRequest'),
                         onClick: function () {
                             var pane = document.querySelector('.bowire-request-pane, .bowire-freeform-pane');
                             if (pane) pane.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -561,7 +564,7 @@
         } else if (filtered.length === 0) {
             body.appendChild(el('div', { className: 'bowire-console-empty',
                 style: 'padding:12px 14px;color:var(--bowire-text-tertiary)',
-                textContent: 'No entries match the current filters.' }));
+                textContent: t('console.empty.noMatch') }));
         } else {
             for (var i = 0; i < filtered.length; i++) {
                 body.appendChild(buildConsoleRow(filtered[i]));
@@ -590,10 +593,10 @@
         channel:  'Chan'
     };
     var CONSOLE_TIME_OPTS = [
-        { v: 1,  label: 'Last 1 min' },
-        { v: 5,  label: 'Last 5 min' },
-        { v: 15, label: 'Last 15 min' },
-        { v: 60, label: 'Last 60 min' }
+        { v: 1,  label: t('console.filter.last1') },
+        { v: 5,  label: t('console.filter.last5') },
+        { v: 15, label: t('console.filter.last15') },
+        { v: 60, label: t('console.filter.last60') }
     ];
 
     // Build the chip cluster + filter-add trigger. Returns two DOM
@@ -609,8 +612,8 @@
                 el('button', {
                     type: 'button',
                     className: 'bowire-console-filter-chip-remove',
-                    title: 'Remove filter',
-                    'aria-label': 'Remove filter ' + label,
+                    title: t('console.filter.remove'),
+                    'aria-label': t('console.filter.removeAria', { label: label }),
                     textContent: '×',
                     onClick: function (e) {
                         e.stopPropagation();
@@ -653,7 +656,7 @@
             className: 'bowire-console-toolbar-btn bowire-console-filter-add-btn'
                 + ((consoleFilterBarOpen || anyActive) ? ' is-on' : ''),
             title: consoleFilterBarOpen ? 'Hide filter bar' : 'Show filter bar',
-            'aria-label': 'Toggle filter bar',
+            'aria-label': t('console.filter.toggleBar'),
             'aria-pressed': consoleFilterBarOpen ? 'true' : 'false',
             innerHTML: svgIcon('filter'),
             onClick: function () {
@@ -676,8 +679,8 @@
                 el('button', {
                     type: 'button',
                     className: 'bowire-console-filter-chip-remove',
-                    title: 'Remove filter',
-                    'aria-label': 'Remove filter ' + label,
+                    title: t('console.filter.remove'),
+                    'aria-label': t('console.filter.removeAria', { label: label }),
                     textContent: '×',
                     onClick: function (e) {
                         e.stopPropagation();
@@ -702,7 +705,7 @@
         var input = el('input', {
             type: 'text',
             className: 'bowire-console-filterbar-input',
-            placeholder: 'Search… (try: type:req, type:resp, 5m)',
+            placeholder: t('console.filter.searchPlaceholder'),
             value: consoleTextFilter,
             spellcheck: 'false',
             autocomplete: 'off',
@@ -741,9 +744,9 @@
             bar.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-console-filterbar-clear',
-                title: 'Clear all filters',
-                'aria-label': 'Clear all filters',
-                textContent: 'Clear',
+                title: t('console.filter.clearAll'),
+                'aria-label': t('console.filter.clearAll'),
+                textContent: t('console.filter.clear'),
                 onClick: function () {
                     consoleTypeFilter.clear();
                     consoleTimeFilterMin = 0;
@@ -825,7 +828,7 @@
             title: consoleAutoScroll
                 ? 'Auto-scroll is active — click to pin view'
                 : 'View pinned — click to follow tail',
-            'aria-label': 'Toggle auto-scroll',
+            'aria-label': t('console.autoScroll'),
             'aria-pressed': !consoleAutoScroll ? 'true' : 'false',
             innerHTML: svgIcon('pin'),
             onClick: function () {
@@ -839,7 +842,7 @@
         }));
         actions.appendChild(el('span', {
             className: 'bowire-console-toolbar-selcount',
-            title: 'Selected entries',
+            title: t('console.selected'),
             textContent: String(consoleSelected.size)
         }));
         // Smart download — falls back to the whole log when there's
@@ -872,8 +875,8 @@
         actions.appendChild(el('button', {
             type: 'button',
             className: 'bowire-console-toolbar-btn',
-            title: 'Clear selection',
-            'aria-label': 'Clear selection',
+            title: t('console.clearSelection'),
+            'aria-label': t('console.clearSelection'),
             innerHTML: svgIcon('selectionClear'),
             onClick: function () {
                 consoleSelected.clear();
@@ -890,15 +893,15 @@
             id: 'bowire-console-clear-btn',
             className: 'bowire-console-clear bowire-console-toolbar-btn',
             innerHTML: svgIcon('trash'),
-            title: 'Clear all entries',
-            'aria-label': 'Clear all entries',
+            title: t('console.clearAll'),
+            'aria-label': t('console.clearAll'),
             onClick: clearConsole
         }));
         actions.appendChild(el('button', {
             type: 'button',
             className: 'bowire-drawer-close bowire-bottom-drawer-close',
-            title: 'Close console',
-            'aria-label': 'Close console',
+            title: t('console.close'),
+            'aria-label': t('console.close'),
             innerHTML: svgIcon('close'),
             onClick: onClose
         }));
@@ -911,8 +914,8 @@
                 id: 'bowire-console-clear-btn',
                 className: 'bowire-console-clear',
                 innerHTML: svgIcon('trash'),
-                title: 'Clear all entries',
-                'aria-label': 'Clear all entries',
+                title: t('console.clearAll'),
+                'aria-label': t('console.clearAll'),
                 onClick: clearConsole
             })
         );
@@ -943,7 +946,7 @@
             id: 'bowire-bottom-drawer',
             className: 'bowire-bottom-drawer',
             role: 'complementary',
-            'aria-label': 'Console',
+            'aria-label': t('console.title'),
             style: 'height:' + (typeof consoleHeight === 'number' ? consoleHeight : 240) + 'px'
         });
         // Top-edge splitter — drag to resize. Mousedown captures move
@@ -955,8 +958,8 @@
             className: 'bowire-bottom-drawer-splitter',
             role: 'separator',
             'aria-orientation': 'horizontal',
-            'aria-label': 'Resize console',
-            title: 'Drag to resize the console'
+            'aria-label': t('console.resize'),
+            title: t('console.resizeTitle')
         });
         splitter.addEventListener('mousedown', function (e) {
             e.preventDefault();
@@ -984,7 +987,7 @@
         var header = el('div', { className: 'bowire-bottom-drawer-header' });
         header.appendChild(el('div', { className: 'bowire-bottom-drawer-title' },
             el('span', { className: 'bowire-console-title-icon', innerHTML: svgIcon('clock') }),
-            el('span', { textContent: 'Console' }),
+            el('span', { textContent: t('console.title') }),
             consoleLog.length > 0
                 ? el('span', { className: 'bowire-bottom-drawer-count', textContent: String(consoleLog.length) })
                 : null
