@@ -8066,12 +8066,12 @@
         const row = el('div', { className: 'bowire-metadata-row' },
             el('input', {
                 className: 'bowire-metadata-input',
-                placeholder: 'Header name',
+                placeholder: t('headers.namePlaceholder'),
                 value: key || ''
             }),
             el('input', {
                 className: 'bowire-metadata-input',
-                placeholder: 'Value',
+                placeholder: t('headers.valuePlaceholder'),
                 value: value || ''
             }),
             el('button', {

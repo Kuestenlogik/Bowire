@@ -138,7 +138,10 @@
         var list = loadPresets(mode);
         var preset = {
             id: _presetId(),
-            name: String(name || 'Untitled preset').trim(),
+            // Empty rather than a default name: a translated one would sit
+            // in the workspace for ever, in whichever language happened to
+            // be active. The display supplies the fallback instead.
+            name: String(name || '').trim(),
             createdAt: 0,        // Date.now() not available in this skill's runtime sometimes; fine as 0
             lastUsedAt: 0,
             isDefault: false,
@@ -231,19 +234,19 @@
     // them up without needing a parallel "pending headers" state.
     function applyPresetToCurrentMethod(preset) {
         if (!preset || !preset.config) {
-            if (typeof toast === 'function') toast('Preset is empty', 'error');
+            if (typeof toast === 'function') toast(t('presets.toast.empty'), 'error');
             return false;
         }
         var c = preset.config;
         if (typeof selectedService === 'undefined' || typeof selectedMethod === 'undefined'
             || !selectedService || !selectedMethod) {
-            if (typeof toast === 'function') toast('Pick a method before applying a preset', 'error');
+            if (typeof toast === 'function') toast(t('presets.toast.noMethod'), 'error');
             return false;
         }
         if (c.service && c.method
             && (c.service !== selectedService.name || c.method !== selectedMethod.name)) {
             if (typeof toast === 'function') {
-                toast('Preset is for ' + c.service + '.' + c.method, 'error');
+                toast(t('presets.toast.wrongMethod', { method: c.service + '.' + c.method }), 'error');
             }
             return false;
         }
@@ -279,7 +282,7 @@
                         });
                         if (!anyOverlap) {
                             if (typeof toast === 'function') {
-                                toast('Preset does not match this method’s schema', 'error');
+                                toast(t('presets.toast.schemaMismatch'), 'error');
                             }
                             return false;
                         }
@@ -329,16 +332,16 @@
                 var addBtn = editor.querySelector('.bowire-metadata-add');
                 Object.keys(c.metadata).forEach(function (key) {
                     var row = el('div', { className: 'bowire-metadata-row' },
-                        el('input', { className: 'bowire-metadata-input', type: 'text', value: key, placeholder: 'header name' }),
-                        el('input', { className: 'bowire-metadata-input', type: 'text', value: c.metadata[key], placeholder: 'header value' })
+                        el('input', { className: 'bowire-metadata-input', type: 'text', value: key, placeholder: t('headers.namePlaceholder') }),
+                        el('input', { className: 'bowire-metadata-input', type: 'text', value: c.metadata[key], placeholder: t('headers.valuePlaceholder') })
                     );
                     if (addBtn) editor.insertBefore(row, addBtn);
                     else editor.appendChild(row);
                 });
                 if (Object.keys(c.metadata).length === 0) {
                     var emptyRow = el('div', { className: 'bowire-metadata-row' },
-                        el('input', { className: 'bowire-metadata-input', type: 'text', value: '', placeholder: 'header name' }),
-                        el('input', { className: 'bowire-metadata-input', type: 'text', value: '', placeholder: 'header value' })
+                        el('input', { className: 'bowire-metadata-input', type: 'text', value: '', placeholder: t('headers.namePlaceholder') }),
+                        el('input', { className: 'bowire-metadata-input', type: 'text', value: '', placeholder: t('headers.valuePlaceholder') })
                     );
                     if (addBtn) editor.insertBefore(emptyRow, addBtn);
                     else editor.appendChild(emptyRow);
@@ -360,11 +363,11 @@
             var maxAttempts = 30;
             var tick = function () {
                 if (_isPresetVisibleInDom(expectedBody)) {
-                    toast('Loaded "' + (preset.name || 'preset') + '"', 'success');
+                    toast(t('presets.toast.loaded', { name: preset.name || t('presets.untitled') }), 'success');
                     return;
                 }
                 if (++attempts >= maxAttempts) {
-                    toast('Preset could not be fully applied — schema may have changed', 'error');
+                    toast(t('presets.toast.applyFailed'), 'error');
                     return;
                 }
                 window.requestAnimationFrame(tick);
@@ -373,7 +376,7 @@
                 window.requestAnimationFrame(tick);
             } else {
                 // Fallback: fire immediately without DOM check
-                toast('Loaded "' + (preset.name || 'preset') + '"', 'success');
+                toast(t('presets.toast.loaded', { name: preset.name || t('presets.untitled') }), 'success');
             }
         }
         return true;
@@ -472,7 +475,7 @@
         if (presets.length > 0) {
             var picker = el('select', {
                 className: 'bowire-presets-select',
-                title: 'Load a saved preset',
+                title: t('presets.load.title'),
                 onChange: function (e) {
                     var id = e.target.value;
                     if (!id) return;
@@ -484,11 +487,11 @@
                     }
                 }
             });
-            picker.appendChild(el('option', { value: '', textContent: '— Load preset… —' }));
+            picker.appendChild(el('option', { value: '', textContent: t('presets.load.option') }));
             presets.forEach(function (p) {
                 picker.appendChild(el('option', {
                     value: p.id,
-                    textContent: (p.isDefault ? '★ ' : '') + p.name
+                    textContent: (p.isDefault ? '★ ' : '') + (p.name || t('presets.untitled'))
                 }));
             });
             bar.appendChild(picker);
@@ -505,17 +508,17 @@
         bar.appendChild(el('button', {
             className: 'bowire-presets-btn',
             title: saveAllowed
-                ? 'Save current configuration as preset'
-                : (opts.canSaveHint || 'Pick something to save first'),
+                ? t('presets.save.title')
+                : (opts.canSaveHint || t('presets.save.disabledHint')),
             disabled: saveAllowed ? null : 'disabled',
             'aria-disabled': saveAllowed ? null : 'true',
             onClick: function () {
                 if (!saveAllowed) return;
                 if (typeof opts.snapshot !== 'function') return;
-                bowirePrompt('Preset name', {
-                    title: 'Save preset',
-                    placeholder: 'e.g. 100-session staging p95',
-                    confirmText: 'Save',
+                bowirePrompt(t('presets.save.promptMessage'), {
+                    title: t('presets.save.promptTitle'),
+                    placeholder: t('presets.save.promptPlaceholder'),
+                    confirmText: t('common.save'),
                 }).then(function (name) {
                     if (!name) return;
                     var snap = opts.snapshot();
@@ -525,19 +528,19 @@
             }
         },
             el('span', { innerHTML: svgIcon('preset') }),
-            el('span', { textContent: ' Save preset' })
+            el('span', { textContent: t('presets.save.button') })
         ));
 
         // Manage menu — only when presets exist
         if (presets.length > 0) {
             bar.appendChild(el('button', {
                 className: 'bowire-presets-btn',
-                title: 'Manage saved presets — set default, delete',
+                title: t('presets.manage.title'),
                 onClick: function () {
                     _openPresetsManageModal(mode, opts);
                 }
             },
-                el('span', { textContent: 'Manage' })
+                el('span', { textContent: t('common.manage') })
             ));
         }
 
@@ -556,16 +559,16 @@
         });
 
         var modal = el('div', { className: 'bowire-presets-modal' });
-        modal.appendChild(el('div', { className: 'bowire-presets-modal-title', textContent: 'Manage presets' }));
+        modal.appendChild(el('div', { className: 'bowire-presets-modal-title', textContent: t('presets.manage.heading') }));
 
         var list = el('div', { className: 'bowire-presets-modal-list' });
         var presets = loadPresets(mode);
         if (presets.length === 0) {
-            list.appendChild(el('p', { className: 'bowire-presets-empty', textContent: 'No presets saved yet.' }));
+            list.appendChild(el('p', { className: 'bowire-presets-empty', textContent: t('presets.manage.empty') }));
         } else {
             presets.forEach(function (p) {
                 var row = el('div', { className: 'bowire-presets-modal-row' },
-                    el('span', { className: 'bowire-presets-modal-name', textContent: p.name }),
+                    el('span', { className: 'bowire-presets-modal-name', textContent: p.name || t('presets.untitled') }),
                     el('label', { className: 'bowire-presets-modal-default-label' },
                         el('input', {
                             type: 'checkbox',
@@ -577,15 +580,15 @@
                                 _openPresetsManageModal(mode, opts);
                             }
                         }),
-                        el('span', { textContent: ' Default' })
+                        el('span', { textContent: t('presets.manage.default') })
                     ),
                     el('button', {
                         className: 'bowire-presets-modal-delete',
-                        title: 'Delete this preset',
-                        textContent: 'Delete',
+                        title: t('presets.manage.deleteTitle'),
+                        textContent: t('common.delete'),
                         onClick: function () {
-                            bowireConfirm('Delete preset "' + p.name + '"?', {
-                                confirmText: 'Delete',
+                            bowireConfirm(t('presets.manage.deleteConfirm', { name: p.name || t('presets.untitled') }), {
+                                confirmText: t('common.delete'),
                                 danger: true
                             }).then(function (ok) {
                                 if (ok) {
@@ -606,7 +609,7 @@
         modal.appendChild(el('div', { className: 'bowire-presets-modal-actions' },
             el('button', {
                 className: 'bowire-presets-modal-close',
-                textContent: 'Close',
+                textContent: t('common.close'),
                 onClick: function () { overlay.remove(); }
             })
         ));

@@ -228,3 +228,57 @@ test('a catalogue that is not an object is ignored rather than breaking t', () =
     api.registerLocaleCatalogue('', { greeting: 'x' });
     assert.deepEqual(api.availableLocales(), ['en', 'de']);
 });
+
+// ---- the fragments against the catalogue ----
+//
+// The sweep is incremental: one surface at a time moves onto t(). Both
+// directions of that move can fail silently, so CI checks both.
+//
+// A mistyped key renders as the raw key in the UI ("presets.manage.headng"),
+// because t() falls back to the key itself rather than throwing. And a key
+// added to the catalogue but never wired up leaves the literal sitting in the
+// code, translated nowhere and noticed by nobody — that is exactly how
+// headerLibrary.settings.lede came to exist for two commits without a caller.
+
+const FRAGMENTS = resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js');
+
+// t('a.b.c') where the `t` is a whole identifier — not the tail of format(,
+// assert( or split(. Keys built at run time (t('x.' + field)) are collected
+// separately by their prefix, because their leaves cannot be read statically.
+const STATIC_CALL = /(?<![A-Za-z0-9_$.])t\(\s*'([a-zA-Z0-9_.]+)'/g;
+const DYNAMIC_CALL = /(?<![A-Za-z0-9_$.])t\(\s*'([a-zA-Z0-9_.]+\.)'\s*\+/g;
+
+function fragmentSources() {
+    return readdirSync(FRAGMENTS)
+        .filter((f) => f.endsWith('.js') && f !== '_locales.js' && f !== 'i18n.js')
+        .map((f) => ({ file: f, text: readFileSync(resolve(FRAGMENTS, f), 'utf8') }));
+}
+
+test('every t() key in the fragments exists in the catalogue', () => {
+    const missing = [];
+    for (const { file, text } of fragmentSources()) {
+        for (const [, key] of text.matchAll(STATIC_CALL)) {
+            if (key.endsWith('.')) continue;   // dynamic, handled above
+            if (!(key in english)) missing.push(`${file}: ${key}`);
+        }
+    }
+    assert.deepEqual(missing, [], `t() keys with no catalogue entry:\n  ${missing.join('\n  ')}`);
+});
+
+test('every catalogue key has a caller', () => {
+    const sources = fragmentSources();
+    const statics = new Set();
+    const prefixes = [];
+    for (const { text } of sources) {
+        for (const [, key] of text.matchAll(STATIC_CALL)) statics.add(key);
+        for (const [, prefix] of text.matchAll(DYNAMIC_CALL)) prefixes.push(prefix);
+        // Key names also travel as data — a table of scopes carries
+        // 'headerLibrary.scope.url' as a label and t()s it at render time.
+        for (const [, key] of text.matchAll(/'([a-z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9]+)+)'/g)) {
+            statics.add(key);
+        }
+    }
+    const orphans = keysOf(english).filter(
+        (k) => !statics.has(k) && !prefixes.some((p) => k.startsWith(p)));
+    assert.deepEqual(orphans, [], `catalogue keys nothing reads:\n  ${orphans.join('\n  ')}`);
+});

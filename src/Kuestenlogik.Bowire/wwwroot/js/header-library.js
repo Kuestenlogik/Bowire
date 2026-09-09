@@ -498,7 +498,7 @@ function renderHeaderLibraryStrip(requestRows) {
     strip.appendChild(el('button', {
         className: 'bowire-header-library-manage',
         title: t('headerLibrary.strip.manageTitle'),
-        textContent: t('headerLibrary.strip.manage'),
+        textContent: t('common.manage'),
         onClick: function () {
             if (typeof openHeaderLibraryEditor === 'function') openHeaderLibraryEditor();
         }
@@ -594,10 +594,7 @@ function renderSettingsHeaderLibrary() {
     var section = el('div', { className: 'bowire-settings-section' });
     var ws = (typeof _renderWorkspaceSubpageHeader === 'function')
         ? _renderWorkspaceSubpageHeader(section, t('headerLibrary.settings.title'),
-            'Named sets of headers that ride along with matching requests. A set applies '
-            + 'where its scope says, the request’s own rows always win, and the chip '
-            + 'strip above any header editor lets you flip one off for a single call. '
-            + 'The library travels with the workspace through .bww export / import.')
+            t('headerLibrary.settings.lede'))
         : true;
     if (!ws) return section;
 
