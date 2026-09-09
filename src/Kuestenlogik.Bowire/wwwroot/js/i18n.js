@@ -128,3 +128,25 @@ function t(key, params) {
     if (text === undefined) return key;
     return interpolate(text, params);
 }
+
+/**
+ * A translated sentence with one slot filled by a DOM node instead of text.
+ *
+ * The alternative — splitting the sentence into a prefix key and a suffix key
+ * around the element — freezes English word order into the catalogue. A
+ * translator who needs the name at the end of the clause cannot get it there.
+ * Here they place `{slot}` wherever their grammar wants it, and the node is
+ * spliced in at that point.
+ *
+ * Returns an array of strings and nodes, ready to spread into el(...). A key
+ * whose text has lost the slot still renders, just without the node — a
+ * missing name is better than a blank sentence.
+ */
+function tNodes(key, slot, nodes, params) {
+    var text = t(key, params);
+    var marker = '{' + slot + '}';
+    var at = text.indexOf(marker);
+    if (at < 0) return [text];
+    var middle = Array.isArray(nodes) ? nodes : [nodes];
+    return [text.slice(0, at)].concat(middle, [text.slice(at + marker.length)]);
+}

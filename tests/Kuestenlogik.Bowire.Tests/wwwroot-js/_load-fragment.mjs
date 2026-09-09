@@ -49,7 +49,9 @@ const CATALOGUE = (() => {
 })();
 
 // Mirrors i18n.js: `{name}` is substituted, `{{name}}` is Bowire's own
-// variable syntax and survives untouched.
+// variable syntax and survives untouched. tNodes comes along because a
+// fragment that translates a sentence around an element reaches for it the
+// same way it reaches for t().
 const DEFAULT_T = `
 function t(key, params) {
     var text = ${JSON.stringify(CATALOGUE)}[key];
@@ -58,6 +60,14 @@ function t(key, params) {
     return text.replace(/(?<!\\{)\\{([a-zA-Z0-9_]+)\\}(?!\\})/g, function (whole, name) {
         return Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : whole;
     });
+}
+function tNodes(key, slot, nodes, params) {
+    var text = t(key, params);
+    var marker = '{' + slot + '}';
+    var at = text.indexOf(marker);
+    if (at < 0) return [text];
+    var middle = Array.isArray(nodes) ? nodes : [nodes];
+    return [text.slice(0, at)].concat(middle, [text.slice(at + marker.length)]);
 }
 `;
 

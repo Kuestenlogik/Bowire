@@ -113,11 +113,11 @@
     function catalogueFilterEntries(query, tag) {
         var all = Array.isArray(catalogueEntries) ? catalogueEntries : [];
         var q = String(query || '').trim().toLowerCase();
-        var t = tag ? String(tag) : null;
+        var wanted = tag ? String(tag) : null;
         return all.filter(function (e) {
             if (!e || !e.url) return false;
-            if (t) {
-                if (!Array.isArray(e.tags) || e.tags.indexOf(t) < 0) return false;
+            if (wanted) {
+                if (!Array.isArray(e.tags) || e.tags.indexOf(wanted) < 0) return false;
             }
             if (!q) return true;
             var hay = [
@@ -139,10 +139,10 @@
             var tags = all[i] && all[i].tags;
             if (!Array.isArray(tags)) continue;
             for (var j = 0; j < tags.length; j++) {
-                var t = String(tags[j] || '').trim();
-                if (!t || seen[t]) continue;
-                seen[t] = true;
-                out.push(t);
+                var raw = String(tags[j] || '').trim();
+                if (!raw || seen[raw]) continue;
+                seen[raw] = true;
+                out.push(raw);
             }
         }
         return out.sort();
@@ -303,7 +303,7 @@
         var payload = await refreshCatalogueEntries();
         if (!payload) {
             if (typeof toast === 'function') {
-                toast('Could not refresh the catalogue — the provider did not answer.', 'error');
+                toast(t('catalogue.refreshFailed'), 'error');
             }
             return false;
         }
@@ -350,15 +350,15 @@
             header.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-catalogue-addall',
-                textContent: 'Add all',
-                title: 'Add every catalogue entry to this workspace',
+                textContent: t('catalogue.addAll'),
+                title: t('catalogue.addAllTitle'),
                 onClick: function () {
                     var pending = catalogueEntries.filter(function (e) {
                         var u = catalogueEntryUrl(e);
                         return u && (typeof serverUrls === 'undefined' || serverUrls.indexOf(u) < 0);
                     });
                     if (pending.length === 0) {
-                        if (typeof toast === 'function') toast('Every entry is already in this workspace', 'info');
+                        if (typeof toast === 'function') toast(t('catalogue.alreadyAll'), 'info');
                         return;
                     }
                     var run = function () {
@@ -372,7 +372,7 @@
                             if (catalogueAdoptedUrls) catalogueAdoptedUrls[u] = false;
                         });
                         if (typeof persistServerUrls === 'function') persistServerUrls();
-                        if (typeof toast === 'function') toast('Added ' + pending.length + ' URLs', 'success');
+                        if (typeof toast === 'function') toast(t('catalogue.added', { count: pending.length }), 'success');
                         if (typeof fetchServices === 'function') fetchServices();
                         if (typeof opts.onAdded === 'function') opts.onAdded(null);
                         if (typeof render === 'function') render();
@@ -382,7 +382,8 @@
                             'Add all ' + pending.length + ' catalogue entries to this workspace? '
                             + 'Discovery probes every one of them.',
                             run,
-                            { title: 'Add all entries', confirmText: 'Add ' + pending.length }
+                            { title: t('catalogue.addAllHeading'),
+                                confirmText: t('catalogue.addAllConfirm', { count: pending.length }) }
                         );
                     } else {
                         run();
@@ -394,8 +395,8 @@
             var refreshBtn = el('button', {
                 type: 'button',
                 className: 'bowire-catalogue-refresh',
-                title: 'Re-fetch the catalogue from the provider',
-                'aria-label': 'Refresh catalogue',
+                title: t('catalogue.refreshTitle'),
+                'aria-label': t('catalogue.refreshAria'),
                 onClick: function () { refreshCatalogueNow(); }
             });
             if (typeof svgIcon === 'function') refreshBtn.innerHTML = svgIcon('replay');
@@ -413,8 +414,8 @@
         var search = el('input', {
             type: 'search',
             className: 'bowire-catalogue-search',
-            placeholder: 'Filter by name, URL, protocol or tag…',
-            'aria-label': 'Filter catalogue entries',
+            placeholder: t('catalogue.filterPlaceholder'),
+            'aria-label': t('catalogue.filterAria'),
             value: catalogueSearchQuery || '',
             // Meta-UI, same as bowirePrompt's input: opt out of the
             // vars-chip overlay + the {{var}} autocomplete.
@@ -437,22 +438,22 @@
                 return;
             }
             tagbar.style.display = '';
-            tags.forEach(function (t) {
+            tags.forEach(function (tag) {
                 tagbar.appendChild(el('button', {
                     type: 'button',
-                    className: 'bowire-catalogue-tag' + (catalogueTagFilter === t ? ' is-active' : ''),
-                    textContent: t,
+                    className: 'bowire-catalogue-tag' + (catalogueTagFilter === tag ? ' is-active' : ''),
+                    textContent: tag,
                     // The tag travels on the node, not in the closure. In
                     // the inline mount these chips sit inside the morphdom
                     // tree and are keyless, so a refresh that changes the
                     // tag set recycles a preserved chip onto a different
-                    // label — a closed-over `t` would then filter by the
+                    // label — a closed-over `tag` would then filter by the
                     // tag the chip USED to show.
-                    dataset: { catalogueTag: t },
+                    dataset: { catalogueTag: tag },
                     onClick: function (e) {
                         var tag = (e && e.currentTarget && e.currentTarget.dataset)
                             ? e.currentTarget.dataset.catalogueTag
-                            : t;
+                            : tag;
                         catalogueTagFilter = (catalogueTagFilter === tag) ? null : tag;
                         paintTags();
                         paintList();
@@ -523,8 +524,8 @@
         }));
         if (Array.isArray(entry.tags) && entry.tags.length > 0) {
             var tagRow = el('div', { className: 'bowire-catalogue-row-meta' });
-            entry.tags.slice(0, 4).forEach(function (t) {
-                tagRow.appendChild(el('span', { className: 'bowire-catalogue-row-tag', textContent: String(t) }));
+            entry.tags.slice(0, 4).forEach(function (tag) {
+                tagRow.appendChild(el('span', { className: 'bowire-catalogue-row-tag', textContent: String(tag) }));
             });
             text.appendChild(tagRow);
         }
@@ -556,7 +557,7 @@
                 var liveUrl = rowEl ? rowEl.getAttribute('data-bowire-catalogue-url') : entryUrl;
                 var live = catalogueEntryByUrl(liveUrl);
                 if (!live) {
-                    if (typeof toast === 'function') toast('That entry is no longer in the catalogue', 'error');
+                    if (typeof toast === 'function') toast(t('catalogue.entryGone'), 'error');
                     if (typeof repaint === 'function') repaint();
                     return;
                 }
@@ -606,14 +607,14 @@
             footer.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-catalogue-footer-link',
-                textContent: 'Enter a URL manually…',
+                textContent: t('catalogue.manualUrl'),
                 onClick: function () { close(); opts.onManual(); }
             }));
         }
         footer.appendChild(el('button', {
             type: 'button',
             className: 'bowire-confirm-btn cancel',
-            textContent: 'Close',
+            textContent: t('common.close'),
             onClick: close
         }));
 

@@ -80,7 +80,7 @@
             dialog.innerHTML = '';
             dialog.appendChild(el('div', {
                 className: 'bowire-confirm-title',
-                textContent: 'Reverse proxy'
+                textContent: t('reverseProxy.title')
             }));
 
             if (startedEntry) {
@@ -89,9 +89,11 @@
                     style: 'display:flex;flex-direction:column;gap:8px'
                 },
                     el('div', { style: 'font-weight:500',
-                        textContent: 'Running on :' + startedEntry.port + ' → ' + startedEntry.upstream }),
+                        textContent: t('reverseProxy.running', {
+                            port: startedEntry.port, upstream: startedEntry.upstream
+                        }) }),
                     el('div', { style: 'font-size:12px;color:var(--bowire-text-tertiary)',
-                        textContent: 'Stops when Bowire shuts down.' })
+                        textContent: t('reverseProxy.stopsOnExit') })
                 ));
                 var stopBtn = el('button', {
                     className: 'bowire-confirm-btn',
@@ -109,17 +111,17 @@
                             busy = false;
                             refreshReverseProxies({ rerender: true });
                             overlay.remove();
-                            if (typeof toast === 'function') toast('Reverse proxy stopped', 'info');
+                            if (typeof toast === 'function') toast(t('reverseProxy.stoppedToast'), 'info');
                         }).catch(function () {
                             busy = false;
-                            errorText = 'Stop failed. Check the server logs.';
+                            errorText = t('reverseProxy.stopFailed');
                             rerender();
                         });
                     }
                 });
                 var closeBtn = el('button', {
                     className: 'bowire-confirm-btn cancel',
-                    textContent: 'Close',
+                    textContent: t('common.close'),
                     onClick: function () { overlay.remove(); }
                 });
                 dialog.appendChild(el('div', { className: 'bowire-confirm-actions' }, closeBtn, stopBtn));
@@ -135,13 +137,13 @@
 
             dialog.appendChild(el('div', {
                 className: 'bowire-confirm-message',
-                textContent: 'Start a Bowire reverse proxy in front of an upstream service. Every request that hits the bound port is captured and forwarded — useful for ad-hoc debugging without restarting the upstream.'
+                textContent: t('reverseProxy.lede')
             }));
 
             var upstreamInput = el('input', {
                 type: 'url',
                 className: 'bowire-settings-input',
-                placeholder: 'https://api.example.com',
+                placeholder: t('invokeUrl.customPlaceholder'),
                 style: 'width:100%;margin-bottom:8px',
                 value: lastReverseProxyUpstream()
             });
@@ -157,38 +159,38 @@
             dialog.appendChild(el('div', {
                 className: 'bowire-parallel-field'
             },
-                el('label', { className: 'bowire-parallel-field-label', textContent: 'Upstream URL' }),
+                el('label', { className: 'bowire-parallel-field-label', textContent: t('reverseProxy.upstreamLabel') }),
                 upstreamInput
             ));
             dialog.appendChild(el('div', {
                 className: 'bowire-parallel-field'
             },
-                el('label', { className: 'bowire-parallel-field-label', textContent: 'Listen port' }),
+                el('label', { className: 'bowire-parallel-field-label', textContent: t('reverseProxy.portLabel') }),
                 portInput,
                 el('div', { className: 'bowire-parallel-field-hint',
-                    textContent: 'Loopback only. Stops when Bowire shuts down.' })
+                    textContent: t('reverseProxy.loopbackHint') })
             ));
 
             var cancelBtn = el('button', {
                 className: 'bowire-confirm-btn cancel',
-                textContent: 'Cancel',
+                textContent: t('common.cancel'),
                 onClick: function () { overlay.remove(); }
             });
             var startBtn = el('button', {
                 className: 'bowire-confirm-btn',
-                textContent: busy ? 'Starting…' : 'Start',
+                textContent: busy ? t('reverseProxy.starting') : t('reverseProxy.start'),
                 disabled: busy ? 'disabled' : null,
                 onClick: function () {
                     if (busy) return;
                     var upstream = (upstreamInput.value || '').trim();
                     var port = parseInt(portInput.value, 10);
                     if (!upstream || !/^https?:\/\//i.test(upstream)) {
-                        errorText = 'Upstream must be an absolute http(s) URL.';
+                        errorText = t('reverseProxy.badUpstream');
                         rerender();
                         return;
                     }
                     if (!port || port < 1 || port > 65535) {
-                        errorText = 'Port must be between 1 and 65535.';
+                        errorText = t('reverseProxy.badPort');
                         rerender();
                         return;
                     }
@@ -208,7 +210,7 @@
                             startedEntry = resp.body;
                             refreshReverseProxies({ rerender: true });
                             if (typeof toast === 'function') {
-                                toast('Reverse proxy running on :' + startedEntry.port, 'success');
+                                toast(t('reverseProxy.startedToast', { port: startedEntry.port }), 'success');
                             }
                             rerender();
                         } else {
@@ -251,7 +253,7 @@
             body: JSON.stringify({ port: port })
         }).then(function () {
             refreshReverseProxies({ rerender: true });
-            if (typeof toast === 'function') toast('Reverse proxy on :' + port + ' stopped', 'info');
+            if (typeof toast === 'function') toast(t('reverseProxy.stoppedOne', { port: port }), 'info');
         });
     }
 
@@ -266,7 +268,7 @@
             }).catch(function () { /* keep going on per-row failure */ });
         })).then(function () {
             refreshReverseProxies({ rerender: true });
-            if (typeof toast === 'function') toast('All reverse proxies stopped', 'info');
+            if (typeof toast === 'function') toast(t('reverseProxy.stoppedAll'), 'info');
         });
     }
 

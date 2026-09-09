@@ -144,7 +144,7 @@ const i18n = compileFragment(
     };
     return {
         registerLocaleCatalogue, resolveLocale, loadLocale, setLocale,
-        localePreference, availableLocales, interpolate, t,
+        localePreference, availableLocales, interpolate, t, tNodes,
         active: () => activeLocale,
     };
     `
@@ -322,4 +322,65 @@ test('no fragment both shadows t and calls it', () => {
 
     assert.deepEqual(offenders, [],
         `a fragment that calls t() must not bind the name t:\n  ${offenders.join('\n  ')}`);
+});
+
+// ---- tNodes ----
+//
+// The alternative this exists to avoid: a `viewingAsPrefix` key and a
+// `viewingAsSuffix` key with the <strong> wedged between them. That renders
+// correctly in English and nowhere else, because it freezes English word
+// order into the catalogue and a translator has no way to move the name.
+
+test('tNodes splits the sentence where the translator put the slot', () => {
+    const api = withCatalogues({
+        en: { greet: 'Viewing as {name}. Anything you change is yours.' },
+    });
+    api.loadLocale();
+    const node = { tag: 'strong' };
+    assert.deepEqual(api.tNodes('greet', 'name', node), [
+        'Viewing as ',
+        node,
+        '. Anything you change is yours.',
+    ]);
+});
+
+test('tNodes follows the slot when a translation moves it', () => {
+    // German wants the name later in the clause. That is the whole point.
+    const api = withCatalogues({
+        en: { greet: 'Viewing as {name}. Anything you change is yours.' },
+        de: { greet: 'Sie sehen den Arbeitsplatz von {name}. Ihre Änderungen bleiben Ihre.' },
+        store: { bowire_locale: 'de' },
+    });
+    api.loadLocale();
+    const node = { tag: 'strong' };
+    const parts = api.tNodes('greet', 'name', node);
+    assert.equal(parts[0], 'Sie sehen den Arbeitsplatz von ');
+    assert.equal(parts[1], node);
+    assert.equal(parts[2], '. Ihre Änderungen bleiben Ihre.');
+});
+
+test('tNodes takes several nodes for one slot', () => {
+    // The account chip puts a name and an optional e-mail in the same slot.
+    const api = withCatalogues({ en: { greet: 'Viewing as {name}.' } });
+    api.loadLocale();
+    const strong = { tag: 'strong' };
+    const email = { tag: 'span' };
+    assert.deepEqual(api.tNodes('greet', 'name', [strong, email]),
+        ['Viewing as ', strong, email, '.']);
+});
+
+test('tNodes still renders when a translation lost the slot', () => {
+    // A sentence without the name beats a blank line, and the missing slot is
+    // visible in the result rather than swallowed.
+    const api = withCatalogues({ en: { greet: 'Viewing as somebody.' } });
+    api.loadLocale();
+    assert.deepEqual(api.tNodes('greet', 'name', { tag: 'strong' }), ['Viewing as somebody.']);
+});
+
+test('tNodes interpolates the other placeholders as usual', () => {
+    const api = withCatalogues({ en: { greet: '{count} open, last was {name}.' } });
+    api.loadLocale();
+    const node = { tag: 'strong' };
+    assert.deepEqual(api.tNodes('greet', 'name', node, { count: 3 }),
+        ['3 open, last was ', node, '.']);
 });

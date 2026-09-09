@@ -102,7 +102,7 @@
         // recordings: these are yours, and they are stored apart.
         rows.push(el('div', {
             className: 'bowire-user-chip-slot',
-            textContent: 'Your work is stored separately from everyone else’s.',
+            textContent: t('userChip.storedSeparately'),
         }));
 
         // Only an administrator, and only while they are themselves. The
@@ -113,7 +113,7 @@
             rows.push(el('button', {
                 type: 'button',
                 className: 'bowire-user-chip-switch',
-                textContent: 'View as another user…',
+                textContent: t('userChip.viewAs'),
                 onClick: function (e) {
                     if (e && e.stopPropagation) e.stopPropagation();
                     userChipOpen = false;
@@ -126,14 +126,14 @@
             rows.push(el('a', {
                 className: 'bowire-user-chip-signout',
                 href: bowireIdentity.signOutUrl,
-                textContent: 'Sign out',
+                textContent: t('userChip.signOut'),
             }));
         }
 
         return el('div', {
             className: 'bowire-user-chip-popover',
             role: 'dialog',
-            'aria-label': 'Signed in as ' + userChipName(),
+            'aria-label': t('userChip.signedInAs', { name: userChipName() }),
         }, rows);
     }
 
@@ -147,8 +147,8 @@
             type: 'button',
             id: 'bowire-user-chip',
             className: 'bowire-theme-toggle-btn bowire-user-chip' + (userChipOpen ? ' active' : ''),
-            title: 'Signed in as ' + userChipName(),
-            'aria-label': 'Signed in as ' + userChipName(),
+            title: t('userChip.signedInAs', { name: userChipName() }),
+            'aria-label': t('userChip.signedInAs', { name: userChipName() }),
             'aria-expanded': userChipOpen ? 'true' : 'false',
             'data-topbar-priority': '2',
             'data-topbar-label': 'Account',
@@ -201,19 +201,23 @@
             role: 'status',
         },
             el('span', { className: 'bowire-impersonation-text' },
-                'Viewing as ',
-                el('strong', { textContent: who }),
-                (acting.email && acting.email !== who)
-                    ? el('span', {
-                        className: 'bowire-impersonation-email',
-                        textContent: ' (' + acting.email + ')',
-                    })
-                    : null,
-                '. Anything you change is recorded against your own account.'),
+                // tNodes rather than a prefix key and a suffix key: splitting the
+                // sentence around the <strong> would freeze English word order, and
+                // a translator who needs the name later in the clause could not
+                // move it there.
+                tNodes('userChip.viewingAs', 'name', [
+                    el('strong', { textContent: who }),
+                    (acting.email && acting.email !== who)
+                        ? el('span', {
+                            className: 'bowire-impersonation-email',
+                            textContent: ' (' + acting.email + ')',
+                        })
+                        : null
+                ])),
             el('button', {
                 type: 'button',
                 className: 'bowire-impersonation-end',
-                textContent: 'Return to my workbench',
+                textContent: t('userChip.returnToMine'),
                 onClick: endImpersonation,
             }));
     }
@@ -280,7 +284,7 @@
 
     function renderUserPickerRows() {
         if (userPickerCandidates === null) {
-            return [el('p', { className: 'bowire-user-picker-empty', textContent: 'Looking…' })];
+            return [el('p', { className: 'bowire-user-picker-empty', textContent: t('userChip.looking') })];
         }
 
         if (userPickerCandidates.length === 0) {
@@ -288,8 +292,7 @@
             // identities has nobody it *can* name, and saying so is the
             // difference between a search that found nothing and a feature
             // that cannot work here.
-            return [el('p', { className: 'bowire-user-picker-empty' },
-                'Nobody to show. This instance has no directory listing other identities.')];
+            return [el('p', { className: 'bowire-user-picker-empty' }, t('userChip.nobody'))];
         }
 
         return userPickerCandidates.map(function (candidate) {
@@ -317,22 +320,19 @@
             className: 'bowire-user-picker',
             role: 'dialog',
             'aria-modal': 'true',
-            'aria-label': 'View as another user',
+            'aria-label': t('userChip.viewAsTitle'),
         },
             el('div', { className: 'bowire-user-picker-card' },
                 el('h2', {
                     className: 'bowire-user-picker-title',
-                    textContent: 'View as another user',
+                    textContent: t('userChip.viewAsTitle'),
                 }),
-                el('p', { className: 'bowire-user-picker-note' },
-                    'You will see their recordings, environments and collections. '
-                    + 'Anything you change is recorded against your own account, '
-                    + 'with theirs named alongside it.'),
+                el('p', { className: 'bowire-user-picker-note' }, t('userChip.pickerNote')),
                 el('input', {
                     type: 'search',
                     className: 'bowire-user-picker-search',
-                    placeholder: 'Search by name or address',
-                    'aria-label': 'Search users',
+                    placeholder: t('userChip.searchPlaceholder'),
+                    'aria-label': t('userChip.searchAria'),
                     onInput: function (e) { searchUsers(e && e.target ? e.target.value : ''); },
                 }),
                 el('div', { className: 'bowire-user-picker-list' }, renderUserPickerRows()),
@@ -341,7 +341,7 @@
                     el('button', {
                         type: 'button',
                         className: 'bowire-btn',
-                        textContent: 'Cancel',
+                        textContent: t('common.cancel'),
                         onClick: closeUserPicker,
                     }))));
 
