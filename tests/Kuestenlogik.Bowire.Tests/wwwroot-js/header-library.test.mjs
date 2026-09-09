@@ -297,9 +297,14 @@ test('sanitising fills the row defaults and drops nameless rows', () => {
     ]);
 });
 
-test('a set with no name gets a placeholder rather than an empty chip', () => {
+test('a set with no name is stored nameless, not with an English default', () => {
+    // #117 - the placeholder belongs to the display, not to the data. A
+    // sanitiser that wrote 'Untitled set' (or its translation) would freeze
+    // whichever language was active into the workspace, and the .bww would
+    // carry it to everyone else. The chip and the delete label supply the
+    // fallback at render time instead.
     const out = api.sanitiseHeaderLibrary([{ id: 'a', scope: 'global', headers: [] }]);
-    assert.equal(out[0].name, 'Untitled set');
+    assert.equal(out[0].name, '');
 });
 
 test('non-array input sanitises to an empty library', () => {

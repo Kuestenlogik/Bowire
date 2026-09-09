@@ -261,7 +261,7 @@ function sanitiseHeaderLibrary(raw) {
         var headers = Array.isArray(set.headers) ? set.headers : [];
         out.push({
             id: id,
-            name: typeof set.name === 'string' && set.name.trim() ? set.name.trim() : 'Untitled set',
+            name: typeof set.name === 'string' ? set.name.trim() : '',
             scope: parseHeaderScopeToString(set.scope),
             headers: headers.filter(function (r) {
                 return r && typeof r === 'object' && String(r.key == null ? '' : r.key).trim();
@@ -317,7 +317,7 @@ function persistHeaderLibrary() {
             };
         });
         localStorage.setItem(wsKey(HEADER_LIBRARY_KEY), JSON.stringify(clean));
-        if (typeof markSaved === 'function') markSaved('Header library');
+        if (typeof markSaved === 'function') markSaved(t('headerLibrary.saved'));
     } catch { /* quota / private mode — the library stays in memory */ }
 }
 
@@ -425,7 +425,7 @@ function renderHeaderLibraryStrip(requestRows) {
 
     strip.appendChild(el('span', {
         className: 'bowire-header-library-label',
-        textContent: 'Header library'
+        textContent: t('headerLibrary.strip.label')
     }));
 
     headerLibrary.forEach(function (set) {
@@ -434,10 +434,17 @@ function renderHeaderLibraryStrip(requestRows) {
         var pinned = Object.prototype.hasOwnProperty.call(overrides, set.id);
         var count = (set.headers || []).filter(function (r) { return r.enabled !== false; }).length;
 
-        var why = pinned
-            ? 'set by hand for this request'
-            : (byScope ? 'matched by scope ' + set.scope
-                       : 'scope ' + set.scope + ' does not match');
+        // #117 - one whole sentence per state rather than four fragments
+        // glued together. The old form was
+        // `(on ? 'On' : 'Off') + ' - ' + why + '. Click to turn ' + ...`,
+        // which no language that orders those parts differently can
+        // reproduce. This is the concatenation rule in its clearest case.
+        var reason = pinned
+            ? (on ? t('headerLibrary.chip.pinnedOn') : t('headerLibrary.chip.pinnedOff'))
+            : (byScope
+                ? t('headerLibrary.chip.scopeMatch', { scope: set.scope })
+                : t('headerLibrary.chip.scopeNoMatch', { scope: set.scope }));
+        var invitation = on ? t('headerLibrary.chip.clickOff') : t('headerLibrary.chip.clickOn');
 
         strip.appendChild(el('button', {
             className: 'bowire-header-set-chip'
@@ -445,8 +452,7 @@ function renderHeaderLibraryStrip(requestRows) {
                 + (pinned ? ' is-pinned' : '')
                 + (on && overridden[set.id] ? ' is-overridden' : ''),
             'aria-pressed': on ? 'true' : 'false',
-            title: (on ? 'On' : 'Off') + ' — ' + why
-                + '. Click to turn ' + (on ? 'off' : 'on') + '.',
+            title: reason + ' ' + invitation,
             dataset: { setId: set.id },
             onClick: function (e) {
                 // Re-resolve from the DOM rather than from this closure:
@@ -458,12 +464,15 @@ function renderHeaderLibraryStrip(requestRows) {
                 render();
             }
         },
-            el('span', { className: 'bowire-header-set-chip-name', textContent: set.name }),
+            el('span', {
+                className: 'bowire-header-set-chip-name',
+                textContent: set.name || t('headerLibrary.settings.untitled')
+            }),
             el('span', { className: 'bowire-header-set-chip-meta', textContent: String(count) }),
             (on && overridden[set.id])
                 ? el('span', {
                     className: 'bowire-header-set-chip-warn',
-                    title: 'A header from this set is overridden further down the stack',
+                    title: t('headerLibrary.chip.overridden'),
                     textContent: '⚠'
                 })
                 : null
@@ -475,10 +484,10 @@ function renderHeaderLibraryStrip(requestRows) {
     strip.appendChild(el('button', {
         className: 'bowire-header-library-toggle' + (headerLibraryPreviewOpen ? ' is-open' : ''),
         'aria-expanded': headerLibraryPreviewOpen ? 'true' : 'false',
-        title: 'Show every header this request will actually send',
+        title: t('headerLibrary.strip.effectiveTitle'),
         onClick: function () { headerLibraryPreviewOpen = !headerLibraryPreviewOpen; render(); }
     },
-        el('span', { textContent: composed.rows.length + ' effective' }),
+        el('span', { textContent: t('headerLibrary.strip.effective', { count: composed.rows.length }) }),
         el('span', {
             className: 'bowire-header-library-caret',
             innerHTML: svgIcon(headerLibraryPreviewOpen ? 'chevronUp' : 'chevronDown'),
@@ -488,8 +497,8 @@ function renderHeaderLibraryStrip(requestRows) {
 
     strip.appendChild(el('button', {
         className: 'bowire-header-library-manage',
-        title: 'Edit the header library',
-        textContent: 'Manage',
+        title: t('headerLibrary.strip.manageTitle'),
+        textContent: t('headerLibrary.strip.manage'),
         onClick: function () {
             if (typeof openHeaderLibraryEditor === 'function') openHeaderLibraryEditor();
         }
@@ -513,21 +522,21 @@ function renderHeaderLibraryPreview(composed) {
     if (composed.rows.length === 0) {
         table.appendChild(el('div', {
             className: 'bowire-header-library-preview-empty',
-            textContent: 'No headers — neither this request nor an active set contributes one.'
+            textContent: t('headerLibrary.preview.empty')
         }));
         return table;
     }
 
     table.appendChild(el('div', { className: 'bowire-header-library-preview-head' },
-        el('span', { textContent: 'Header' }),
-        el('span', { textContent: 'Value' }),
-        el('span', { textContent: 'From' })
+        el('span', { textContent: t('headerLibrary.preview.header') }),
+        el('span', { textContent: t('headerLibrary.preview.value') }),
+        el('span', { textContent: t('headerLibrary.preview.from') })
     ));
 
     var beaten = {};
     composed.conflicts.forEach(function (c) {
         beaten[c.key.toLowerCase()] = c.losers.map(function (l) {
-            return l.setName || 'this request';
+            return l.setName || t('headerLibrary.preview.thisRequest');
         });
     });
 
@@ -539,13 +548,15 @@ function renderHeaderLibraryPreview(composed) {
             el('span', { className: 'bowire-header-library-preview-src' },
                 el('span', {
                     className: 'bowire-header-library-preview-src-name',
-                    textContent: r.source === 'request' ? 'this request' : (r.setName || 'library')
+                    textContent: r.source === 'request'
+                        ? t('headerLibrary.preview.thisRequest')
+                        : (r.setName || t('headerLibrary.preview.library'))
                 }),
                 lost
                     ? el('span', {
                         className: 'bowire-header-library-preview-beat',
-                        title: 'Also set by: ' + lost.join(', '),
-                        textContent: 'wins over ' + lost.length
+                        title: t('headerLibrary.preview.alsoSetBy', { names: lost.join(', ') }),
+                        textContent: t('headerLibrary.preview.winsOver', { count: lost.length })
                     })
                     : null
             )
@@ -566,10 +577,10 @@ function openHeaderLibraryEditor() {
 }
 
 var HEADER_SCOPE_KINDS = [
-    { id: 'global',  label: 'Everywhere',   hint: '' },
-    { id: 'url',     label: 'URL host',     hint: 'api.example.com' },
-    { id: 'service', label: 'Service',      hint: 'UserService' },
-    { id: 'method',  label: 'Method',       hint: 'UserService.GetUser' }
+    { id: 'global',  label: 'headerLibrary.scope.global',  hint: '' },
+    { id: 'url',     label: 'headerLibrary.scope.url',     hint: 'api.example.com' },
+    { id: 'service', label: 'headerLibrary.scope.service', hint: 'UserService' },
+    { id: 'method',  label: 'headerLibrary.scope.method',  hint: 'UserService.GetUser' }
 ];
 
 /** Persist, then repaint the dialog. Used by every structural edit. */
@@ -582,7 +593,7 @@ function _headerLibraryChanged() {
 function renderSettingsHeaderLibrary() {
     var section = el('div', { className: 'bowire-settings-section' });
     var ws = (typeof _renderWorkspaceSubpageHeader === 'function')
-        ? _renderWorkspaceSubpageHeader(section, 'Header library',
+        ? _renderWorkspaceSubpageHeader(section, t('headerLibrary.settings.title'),
             'Named sets of headers that ride along with matching requests. A set applies '
             + 'where its scope says, the request’s own rows always win, and the chip '
             + 'strip above any header editor lets you flip one off for a single call. '
@@ -596,7 +607,10 @@ function renderSettingsHeaderLibrary() {
             onClick: function () {
                 headerLibrary.push({
                     id: newHeaderSetId(),
-                    name: 'New set',
+                    // Empty rather than 'New set': a translated default would
+                    // otherwise sit in the workspace for ever, in whichever
+                    // language happened to be active when it was created.
+                    name: '',
                     scope: 'global',
                     headers: []
                 });
@@ -604,18 +618,16 @@ function renderSettingsHeaderLibrary() {
             }
         },
             el('span', { innerHTML: svgIcon('plus'), style: 'width:13px;height:13px;display:flex' }),
-            el('span', { textContent: 'New set', style: 'margin-left:5px' })
+            el('span', { textContent: t('headerLibrary.settings.newSet'), style: 'margin-left:5px' })
         )
     ));
 
     if (headerLibrary.length === 0) {
         section.appendChild(el('div', { className: 'bowire-header-library-empty' },
-            el('p', { textContent: 'No header sets yet.' }),
+            el('p', { textContent: t('headerLibrary.settings.emptyTitle') }),
             el('p', {
                 className: 'bowire-header-library-empty-hint',
-                textContent: 'A set is worth making as soon as you have typed the same header '
-                    + 'into a second request — an Accept for a vendor media type, an '
-                    + 'X-Api-Version, a User-Agent your gateway logs by.'
+                textContent: t('headerLibrary.settings.emptyHint')
             })
         ));
         return section;
@@ -640,8 +652,8 @@ function _renderHeaderSetCard(set) {
         className: 'bowire-settings-input bowire-header-set-name-input',
         type: 'text',
         value: set.name,
-        'aria-label': 'Set name',
-        placeholder: 'Set name',
+        'aria-label': t('headerLibrary.set.nameLabel'),
+        placeholder: t('headerLibrary.set.nameLabel'),
         // Mutate in place while typing, repaint only on the way out --
         // a render per keystroke tears focus off the input (the lesson
         // the request-builder KV table records in its own comment).
@@ -653,7 +665,7 @@ function _renderHeaderSetCard(set) {
 
     var kindSelect = el('select', {
         className: 'bowire-settings-select bowire-header-set-scope-kind',
-        'aria-label': 'Scope',
+        'aria-label': t('headerLibrary.set.scopeLabel'),
         onChange: function (e) {
             var target = _resolveHeaderSet(card, set);
             var kind = e.target.value;
@@ -667,7 +679,7 @@ function _renderHeaderSetCard(set) {
         // routes unknown keys through setAttribute, and `selected="false"`
         // is still a present attribute -- every option would be marked and
         // the last one would win.
-        var opt = el('option', { value: k.id, textContent: k.label });
+        var opt = el('option', { value: k.id, textContent: t(k.label) });
         if (k.id === parsed.kind) opt.selected = true;
         kindSelect.appendChild(opt);
     });
@@ -680,7 +692,7 @@ function _renderHeaderSetCard(set) {
             type: 'text',
             value: parsed.value,
             placeholder: hint || '',
-            'aria-label': 'Scope value',
+            'aria-label': t('headerLibrary.set.scopeValueLabel'),
             onInput: function (e) {
                 var target = _resolveHeaderSet(card, set);
                 target.scope = parseHeaderScope(target.scope).kind + ':' + e.target.value;
@@ -693,8 +705,10 @@ function _renderHeaderSetCard(set) {
 
     head.appendChild(el('button', {
         className: 'bowire-settings-action-btn bowire-header-set-delete',
-        title: 'Delete this set',
-        'aria-label': 'Delete set ' + set.name,
+        title: t('headerLibrary.set.delete'),
+        'aria-label': t('headerLibrary.set.deleteAria', {
+            name: set.name || t('headerLibrary.settings.untitled')
+        }),
         innerHTML: svgIcon('trash'),
         onClick: function () {
             var id = card.dataset.setId;
@@ -716,9 +730,9 @@ function _renderHeaderSetCard(set) {
 
     var table = el('div', { className: 'bowire-header-set-rows' });
     table.appendChild(el('div', { className: 'bowire-header-set-row bowire-header-set-row-head' },
-        el('span', { textContent: 'Header' }),
-        el('span', { textContent: 'Value' }),
-        el('span', { textContent: 'Description' }),
+        el('span', { textContent: t('headerLibrary.set.colHeader') }),
+        el('span', { textContent: t('headerLibrary.set.colValue') }),
+        el('span', { textContent: t('headerLibrary.set.colDescription') }),
         el('span', { textContent: '' }),
         el('span', { textContent: '' })
     ));
@@ -730,10 +744,8 @@ function _renderHeaderSetCard(set) {
                 className: 'bowire-settings-input',
                 type: 'text',
                 value: r[field] || '',
-                'aria-label': field,
-                placeholder: field === 'key' ? 'Header'
-                    : field === 'value' ? 'Value  •  {{token}} resolves against the active environment'
-                    : 'Description',
+                'aria-label': t('headerLibrary.row.' + field + 'Aria'),
+                placeholder: t('headerLibrary.row.' + field),
                 onInput: function (e) {
                     var live = _resolveHeaderRow(card, set, idx);
                     if (live) live[field] = e.target.value;
@@ -750,7 +762,7 @@ function _renderHeaderSetCard(set) {
         });
         row.appendChild(el('button', {
             className: 'bowire-header-set-row-toggle' + (r.enabled === false ? '' : ' is-on'),
-            title: r.enabled === false ? 'Disabled — not sent' : 'Enabled',
+            title: r.enabled === false ? t('headerLibrary.row.disabled') : t('headerLibrary.row.enabled'),
             'aria-pressed': r.enabled === false ? 'false' : 'true',
             textContent: r.enabled === false ? '' : '✓',
             onClick: function () {
@@ -761,8 +773,8 @@ function _renderHeaderSetCard(set) {
         }));
         row.appendChild(el('button', {
             className: 'bowire-header-set-row-del',
-            title: 'Remove this header',
-            'aria-label': 'Remove header',
+            title: t('headerLibrary.row.remove'),
+            'aria-label': t('headerLibrary.row.removeAria'),
             innerHTML: svgIcon('close'),
             onClick: function () {
                 var live = _resolveHeaderSet(card, set);
