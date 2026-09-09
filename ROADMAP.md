@@ -12,11 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-11-03)*
 
-**15/29 done** · 14 backlog
+**15/29 done** · 1 in progress · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ⬜ Backlog | `area:workbench` |
+| [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | 🟡 In progress | `area:workbench` |
 | [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog | `area:workbench` |
 | [247](https://github.com/Kuestenlogik/Bowire/issues/247) | Bowire | [Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas](#issue-kuestenlogik-bowire-247) | ⬜ Backlog | `area:workbench` |
 | [249](https://github.com/Kuestenlogik/Bowire/issues/249) | Bowire | [Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module](#issue-kuestenlogik-bowire-249) | ⬜ Backlog | `area:workbench` |
@@ -116,7 +116,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.1 — Interop and migration *(due 2027-03-30)*
 
-**0/8 done** · 8 backlog
+**0/9 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -128,6 +128,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire get/post: URL-first verbs, HTTPie-style body notation, and --offline](#issue-kuestenlogik-bowire-678) | ⬜ Backlog | `area:cli` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
+| [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ⬜ Backlog |  |
 
 ### v3.2 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -159,7 +160,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-11-03)*
 
-#### <a id="issue-kuestenlogik-bowire-117"></a>⬜ Backlog · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
+#### <a id="issue-kuestenlogik-bowire-117"></a>🟡 In progress · [#117](https://github.com/Kuestenlogik/Bowire/issues/117) i18n — extract every UI string; ship DE + EN catalogues
 
 > `area:workbench`
 
@@ -623,6 +624,10 @@ Code export offers five to six target languages per protocol. Postman, Hoppscotc
 
 #685 gave every desktop a clickable way into Bowire — a Start-menu entry and desktop icon on Windows, an application-menu entry on Linux, `Bowire.app` on macOS. What it deliberately did **not** do is get rid of the console window Windows opens alongside it, and this issue is why. [[more]](https://github.com/Kuestenlogik/Bowire/issues/687)
 
+#### <a id="issue-kuestenlogik-bowire-688"></a>⬜ Backlog · [#688](https://github.com/Kuestenlogik/Bowire/issues/688) Plurals: the translation layer cannot express a sentence whose shape depends on a number
+
+The translation layer from #117 substitutes `{name}` placeholders and nothing more. That is enough for a count *inside* a sentence: [[more]](https://github.com/Kuestenlogik/Bowire/issues/688)
+
 ### v3.2 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
 #### <a id="issue-kuestenlogik-bowire-667"></a>⬜ Backlog · [#667](https://github.com/Kuestenlogik/Bowire/issues/667) Hosted playground: a public multi-protocol demo fleet plus a hardened, hosted workbench
@@ -713,4 +718,4 @@ Discovery declares the SignalR ad-hoc `invoke` method's input as: [[more]](https
 
 ---
 
-*Generated 2026-09-08 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-09-09 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
