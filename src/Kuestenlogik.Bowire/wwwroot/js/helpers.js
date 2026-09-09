@@ -116,6 +116,12 @@
         }
     }
 
+    // #117 - NOT translated, deliberately. These are the canonical gRPC
+    // status names from the spec (INVALID_ARGUMENT, NOT_FOUND) and the
+    // HTTP reason phrases from the RFC. A German "404 Nicht gefunden"
+    // would break the connection to the specification and to every other
+    // tool the operator compares against. Protocol vocabulary stays in
+    // the protocol's language.
     function grpcStatusLabel(status) {
         switch (status) {
             case 'OK': return 'OK';
@@ -883,7 +889,7 @@
         searchBar.style.display = 'none';
         var searchInput = el('input', {
             type: 'text',
-            placeholder: 'Find in JSON…  Enter / Shift+Enter to navigate',
+            placeholder: t('search.placeholder'),
             className: 'bowire-json-toolbar-search-input',
             onInput: function (e) {
                 local.search = e.target.value;
@@ -904,7 +910,7 @@
         searchBar.appendChild(el('button', {
             type: 'button',
             className: 'bowire-json-toolbar-search-close',
-            title: 'Close search (Esc)',
+            title: t('search.close'),
             textContent: '×',
             onClick: function () { closeSearch(); }
         }));
@@ -1185,7 +1191,7 @@
         if (!headers || typeof headers !== 'object') {
             wrap.appendChild(el('div', {
                 className: 'bowire-response-empty',
-                textContent: 'No headers captured.'
+                textContent: t('headers.none')
             }));
             return wrap;
         }
@@ -1193,7 +1199,7 @@
         if (keys.length === 0) {
             wrap.appendChild(el('div', {
                 className: 'bowire-response-empty',
-                textContent: 'No headers captured.'
+                textContent: t('headers.none')
             }));
             return wrap;
         }
@@ -2004,7 +2010,7 @@
             console.warn('[drawer] content render failed', e);
             content = el('p', {
                 className: 'bowire-drawer-empty',
-                textContent: 'Drawer content failed to render.'
+                textContent: t('drawer.renderFailed')
             });
         }
         if (content) contentWrap.appendChild(content);
@@ -2130,8 +2136,8 @@
             closeWrap.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-alert-bar-close',
-                title: 'Hide for this session',
-                'aria-label': 'Hide for this session',
+                title: t('hint.hideSession'),
+                'aria-label': t('hint.hideSession'),
                 innerHTML: svgIcon('close'),
                 onClick: function (e) {
                     // Stop the click from bubbling to any ancestor
@@ -2174,8 +2180,8 @@
                 var chevron = el('button', {
                     type: 'button',
                     className: 'bowire-alert-bar-close-chevron',
-                    title: 'More dismiss options',
-                    'aria-label': 'More dismiss options',
+                    title: t('hint.moreOptions'),
+                    'aria-label': t('hint.moreOptions'),
                     'aria-haspopup': 'menu',
                     'aria-expanded': 'false',
                     innerHTML: svgIcon('chevronDown'),
@@ -2244,18 +2250,18 @@
             className: 'bowire-shortcut-modal',
             role: 'dialog',
             'aria-modal': 'true',
-            'aria-label': 'Keyboard shortcuts'
+            'aria-label': t('shortcuts.aria')
         });
         var header = el('div', { className: 'bowire-shortcut-header' });
         header.appendChild(el('span', {
             className: 'bowire-shortcut-title',
-            textContent: 'Keyboard shortcuts'
+            textContent: t('shortcuts.heading')
         }));
         header.appendChild(el('button', {
             type: 'button',
             className: 'bowire-drawer-close bowire-shortcut-close',
-            title: 'Close (Esc or Ctrl/Cmd+/)',
-            'aria-label': 'Close',
+            title: t('shortcuts.close'),
+            'aria-label': t('common.close'),
             innerHTML: svgIcon('close'),
             onClick: function () {
                 shortcutSheetOpen = false;
@@ -2372,7 +2378,7 @@
                 var dismiss = el('button', {
                     type: 'button',
                     className: 'bowire-empty-card-dismiss',
-                    textContent: 'Got it — don’t show again',
+                    textContent: t('hint.gotIt'),
                     onClick: function () {
                         if (typeof dismissHint === 'function') {
                             dismissHint(opts.hintKey, 'permanent', hintLabel);
@@ -2465,7 +2471,7 @@
             actions: [
                 {
                     id: 'bowire-prereq-create-ws-btn',
-                    label: 'Create workspace…',
+                    label: t('common.createWorkspace'),
                     primary: true,
                     onClick: function () {
                         if (typeof openCreateWorkspaceDialog === 'function') {
@@ -2484,7 +2490,7 @@
                 },
                 {
                     id: 'bowire-prereq-tour-btn',
-                    label: 'Take a tour',
+                    label: t('common.takeTour'),
                     onClick: function () {
                         if (typeof window !== 'undefined'
                             && typeof window.bowireStartCreateWorkspaceTour === 'function') {
@@ -2493,7 +2499,7 @@
                     }
                 },
                 {
-                    label: 'Manage workspaces',
+                    label: t('common.manageWorkspaces'),
                     onClick: function () {
                         railMode = 'workspaces';
                         try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
@@ -2582,7 +2588,7 @@
             });
             selRow.appendChild(_renderToolbarIconBtn({
                 icon: 'close',
-                title: 'Clear selection (Esc)',
+                title: t('selection.clear'),
                 onClick: sel.onClear || function () {}
             }));
             return selRow;
@@ -2624,8 +2630,8 @@
             row.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-sidebar-toolbar-btn',
-                title: 'More actions',
-                'aria-label': 'More actions',
+                title: t('menu.moreActions'),
+                'aria-label': t('menu.moreActions'),
                 'aria-haspopup': 'menu',
                 onClick: function (e) {
                     e.stopPropagation();
@@ -3256,8 +3262,8 @@
     // Workspaces reference uses. Rails that lack a created-timestamp
     // just filter with the alpha option.
     var BOWIRE_LIST_SORT_OPTIONS = [
-        { value: 'name',    label: 'Name (A–Z)', icon: 'sortAlpha' },
-        { value: 'created', label: 'Newest first', icon: 'calendar' }
+        { value: 'name',    label: t('sort.name'), icon: 'sortAlpha' },
+        { value: 'created', label: t('sort.newest'), icon: 'calendar' }
     ];
 
     // #362 — one filter+sort pass shared by every list rail so search
@@ -3369,7 +3375,7 @@
     // Rails that support drag-reorder use this so the grip glyph +
     // 'Manual' label read identically everywhere.
     var BOWIRE_LIST_SORT_OPTIONS_WITH_MANUAL = [
-        { value: 'manual', label: 'Manual (drag to reorder)', icon: 'grip' }
+        { value: 'manual', label: t('sort.manual'), icon: 'grip' }
     ];
 
     function renderSidebarListItem(opts) {
@@ -3433,8 +3439,8 @@
             row.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-list-row-delete',
-                title: opts.deleteTitle || 'Delete',
-                'aria-label': opts.deleteTitle || 'Delete',
+                title: opts.deleteTitle || t('common.delete'),
+                'aria-label': opts.deleteTitle || t('common.delete'),
                 innerHTML: svgIcon('trash'),
                 onClick: function (e) {
                     e.stopPropagation();
@@ -3702,7 +3708,7 @@
 
         if (problem.detail) {
             var details = el('details', { className: 'bowire-problem-details' });
-            details.appendChild(el('summary', { textContent: 'Details' }));
+            details.appendChild(el('summary', { textContent: t('common.details') }));
             details.appendChild(el('div', { className: 'bowire-problem-detail-body', textContent: problem.detail }));
             card.appendChild(details);
         }
@@ -3785,7 +3791,7 @@
         if (opts.undo && typeof opts.undo === 'function') {
             t.appendChild(el('button', {
                 className: 'bowire-toast-undo',
-                textContent: 'Undo',
+                textContent: t('common.undo'),
                 onClick: function (e) {
                     e.stopPropagation();
                     opts.undo();
@@ -3812,7 +3818,7 @@
         t.appendChild(el('button', {
             className: 'bowire-toast-close',
             innerHTML: svgIcon('close'),
-            'aria-label': 'Dismiss',
+            'aria-label': t('common.dismiss'),
             onClick: function (e) { e.stopPropagation(); dismissToast(t); }
         }));
 
@@ -3877,14 +3883,14 @@
 
         var confirmBtn = el('button', {
             className: 'bowire-confirm-btn' + (opts.danger ? ' danger' : ''),
-            textContent: opts.confirmText || 'Confirm',
-            'aria-label': opts.confirmText || 'Confirm',
+            textContent: opts.confirmText || t('common.confirm'),
+            'aria-label': opts.confirmText || t('common.confirm'),
             onClick: function () { settle(true); }
         });
         var cancelBtn = el('button', {
             className: 'bowire-confirm-btn cancel',
-            textContent: opts.cancelText || 'Cancel',
-            'aria-label': 'Cancel',
+            textContent: opts.cancelText || t('common.cancel'),
+            'aria-label': t('common.cancel'),
             onClick: function () { settle(false); }
         });
 
@@ -3973,7 +3979,7 @@
             var cancelBtn = el('button', {
                 className: 'bowire-confirm-btn cancel',
                 textContent: opts.cancelText || 'Cancel',
-                'aria-label': 'Cancel',
+                'aria-label': t('common.cancel'),
                 onClick: function () { overlay.remove(); resolve(null); },
             });
 

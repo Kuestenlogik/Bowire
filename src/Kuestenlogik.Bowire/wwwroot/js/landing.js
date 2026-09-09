@@ -256,7 +256,7 @@
             // execute) instead of duplicating those steps in a
             // Discover-only variant.
             id: 'bowire-discover-empty-tour-btn',
-            label: t('landing.action.takeTour'),
+            label: t('common.takeTour'),
             onClick: function () {
                 if (typeof window !== 'undefined'
                     && typeof window.bowireStartGettingStartedTour === 'function') {

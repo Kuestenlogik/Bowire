@@ -9,7 +9,6 @@
   "landing.action.browseCatalogue": "Katalog durchsehen ({count})",
   "landing.action.openHome": "Start öffnen",
   "landing.action.openWorkspace": "Arbeitsbereich öffnen",
-  "landing.action.takeTour": "Rundgang starten",
 
   "landing.discovery.incomplete": "Die Ermittlung ist unvollständig",
   "landing.recent.title": "An einen letzten Aufruf anknüpfen",
@@ -188,5 +187,32 @@
   "console.filter.last1": "Letzte 1 Min.",
   "console.filter.last5": "Letzte 5 Min.",
   "console.filter.last15": "Letzte 15 Min.",
-  "console.filter.last60": "Letzte 60 Min."
+  "console.filter.last60": "Letzte 60 Min.",
+
+  // Gemeinsame Bausteine aus helpers.js. HTTP-Grundtexte und gRPC-Statusnamen bleiben bewusst englisch - siehe Kommentar an grpcStatusLabel.
+  "common.cancel": "Abbrechen",
+  "common.confirm": "Bestätigen",
+  "common.close": "Schließen",
+  "common.dismiss": "Ausblenden",
+  "common.undo": "Rückgängig",
+  "common.details": "Einzelheiten",
+  "common.delete": "Löschen",
+  "common.takeTour": "Rundgang starten",
+  "common.createWorkspace": "Arbeitsbereich anlegen…",
+  "common.manageWorkspaces": "Arbeitsbereiche verwalten",
+  "search.placeholder": "In JSON suchen…  Enter / Umschalt+Enter zum Blättern",
+  "search.close": "Suche schließen (Esc)",
+  "headers.none": "Keine Kopfzeilen erfasst.",
+  "drawer.renderFailed": "Der Inhalt der Lade ließ sich nicht darstellen.",
+  "hint.hideSession": "Für diese Sitzung ausblenden",
+  "hint.moreOptions": "Weitere Möglichkeiten zum Ausblenden",
+  "hint.gotIt": "Verstanden — nicht mehr anzeigen",
+  "shortcuts.aria": "Tastenkürzel",
+  "shortcuts.heading": "Tastenkürzel",
+  "shortcuts.close": "Schließen (Esc oder Strg/Cmd+/)",
+  "selection.clear": "Auswahl aufheben (Esc)",
+  "menu.moreActions": "Weitere Aktionen",
+  "sort.name": "Name (A–Z)",
+  "sort.newest": "Neueste zuerst",
+  "sort.manual": "Manuell (zum Umsortieren ziehen)"
 }

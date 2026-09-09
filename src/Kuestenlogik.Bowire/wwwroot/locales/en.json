@@ -9,7 +9,6 @@
   "landing.action.browseCatalogue": "Browse catalogue ({count})",
   "landing.action.openHome": "Open Home",
   "landing.action.openWorkspace": "Open Workspace",
-  "landing.action.takeTour": "Take a tour",
 
   "landing.discovery.incomplete": "Discovery is incomplete",
   "landing.recent.title": "Resume a recent call",
@@ -188,5 +187,32 @@
   "console.filter.last1": "Last 1 min",
   "console.filter.last5": "Last 5 min",
   "console.filter.last15": "Last 15 min",
-  "console.filter.last60": "Last 60 min"
+  "console.filter.last60": "Last 60 min",
+
+  // shared widgets in helpers.js: search, hints, shortcuts sheet, sort menus, confirm dialog
+  "common.cancel": "Cancel",
+  "common.confirm": "Confirm",
+  "common.close": "Close",
+  "common.dismiss": "Dismiss",
+  "common.undo": "Undo",
+  "common.details": "Details",
+  "common.delete": "Delete",
+  "common.takeTour": "Take a tour",
+  "common.createWorkspace": "Create workspace…",
+  "common.manageWorkspaces": "Manage workspaces",
+  "search.placeholder": "Find in JSON…  Enter / Shift+Enter to navigate",
+  "search.close": "Close search (Esc)",
+  "headers.none": "No headers captured.",
+  "drawer.renderFailed": "Drawer content failed to render.",
+  "hint.hideSession": "Hide for this session",
+  "hint.moreOptions": "More dismiss options",
+  "hint.gotIt": "Got it — don’t show again",
+  "shortcuts.aria": "Keyboard shortcuts",
+  "shortcuts.heading": "Keyboard shortcuts",
+  "shortcuts.close": "Close (Esc or Ctrl/Cmd+/)",
+  "selection.clear": "Clear selection (Esc)",
+  "menu.moreActions": "More actions",
+  "sort.name": "Name (A–Z)",
+  "sort.newest": "Newest first",
+  "sort.manual": "Manual (drag to reorder)"
 }
