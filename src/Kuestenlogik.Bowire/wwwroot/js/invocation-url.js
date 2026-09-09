@@ -140,8 +140,8 @@
         return (s && m) ? { svc: s.name, method: m.name } : null;
     }
     function _ovSet(mode, url) {
-        var t = _ovTarget();
-        if (t) setInvocationOverride(t.svc, t.method, { mode: mode, url: url });
+        var target = _ovTarget();
+        if (target) setInvocationOverride(target.svc, target.method, { mode: mode, url: url });
     }
 
     function renderInvocationUrlOverride(service, method) {
@@ -159,12 +159,12 @@
         var head = el('div', {
             className: 'bowire-invoke-url-head',
             role: 'button',
-            title: 'Choose where Execute sends this call',
+            title: t('invokeUrl.title'),
             onClick: function () { _invocationOverrideExpanded = !_invocationOverrideExpanded; render(); }
         },
             el('span', { className: 'bowire-invoke-url-caret' + (expanded ? '' : ' collapsed'),
                 textContent: expanded ? '▾' : '▸' }),
-            el('span', { className: 'bowire-invoke-url-label', textContent: 'Invocation URL' }),
+            el('span', { className: 'bowire-invoke-url-label', textContent: t('invokeUrl.label') }),
             el('span', {
                 className: 'bowire-invoke-url-state' + (ov.mode !== 'schema' ? ' is-override' : ''),
                 textContent: stateText
@@ -186,7 +186,7 @@
             render();
         }
         var hasSources = typeof serverUrls !== 'undefined' && Array.isArray(serverUrls) && serverUrls.length > 0;
-        var seg = el('div', { className: 'bowire-invoke-url-modes', role: 'group', 'aria-label': 'Invocation URL mode' });
+        var seg = el('div', { className: 'bowire-invoke-url-modes', role: 'group', 'aria-label': t('invokeUrl.modeAria') });
         [['schema', 'Same as schema', false],
          ['source', 'From Source', !hasSources],
          ['inline', 'Custom', false]].forEach(function (m) {
@@ -203,7 +203,7 @@
         // Mode-specific control.
         var body = el('div', { className: 'bowire-invoke-url-body' });
         if (ov.mode === 'source') {
-            var sel = el('select', { className: 'bowire-invoke-url-select', 'aria-label': 'Source URL',
+            var sel = el('select', { className: 'bowire-invoke-url-select', 'aria-label': t('invokeUrl.sourceAria'),
                 onChange: function (e) { _ovSet('source', e.target.value); render(); }
             });
             serverUrls.forEach(function (u) {
@@ -216,18 +216,18 @@
                 type: 'text',
                 className: 'bowire-invoke-url-input',
                 value: ov.url || '',
-                placeholder: 'https://api.example.com',
-                'aria-label': 'Custom invocation URL',
+                placeholder: t('invokeUrl.customPlaceholder'),
+                'aria-label': t('invokeUrl.customAria'),
                 'data-bowire-no-vars-chip': '1',
                 onChange: function (e) { _ovSet('inline', e.target.value); }
             }));
             body.appendChild(el('span', { className: 'bowire-invoke-url-hint',
-                textContent: '{{vars}} are substituted at send time.' }));
+                textContent: t('invokeUrl.varsHint') }));
         } else {
             body.appendChild(el('span', { className: 'bowire-invoke-url-schema',
-                textContent: schemaUrl || '(embedded host)' }));
+                textContent: schemaUrl || t('invokeUrl.embeddedHost') }));
             body.appendChild(el('span', { className: 'bowire-invoke-url-hint',
-                textContent: 'The call goes to the same URL the schema came from.' }));
+                textContent: t('invokeUrl.sameAsSchema') }));
         }
         block.appendChild(body);
         return block;

@@ -56,28 +56,33 @@
 
     function _renderLintResults() {
         if (_lintState.loading) {
-            return el('p', { className: 'bowire-pane-empty', textContent: 'Linting…' });
+            return el('p', { className: 'bowire-pane-empty', textContent: t('lint.running') });
         }
         if (_lintState.error) {
-            return el('p', { className: 'bowire-pane-empty', textContent: 'Lint failed: ' + _lintState.error });
+            return el('p', { className: 'bowire-pane-empty',
+                textContent: t('lint.failed', { reason: _lintState.error }) });
         }
         if (!_lintState.findings) {
-            return el('p', { className: 'bowire-pane-empty', textContent: 'Click “Run lint” to check the discovered API surface.' });
+            return el('p', { className: 'bowire-pane-empty', textContent: t('lint.idle') });
         }
 
         var findings = _lintState.findings.slice().sort(function (a, b) {
             return _lintSeverityRank(a.severity) - _lintSeverityRank(b.severity);
         });
         if (findings.length === 0) {
-            return el('p', { className: 'bowire-pane-empty', textContent: 'No design-time findings — the discovered surface is clean.' });
+            return el('p', { className: 'bowire-pane-empty', textContent: t('lint.clean') });
         }
 
         var wrap = el('div', {});
         var s = _lintState.summary || {};
         wrap.appendChild(el('p', {
             className: 'bowire-lint-summary',
-            textContent: findings.length + ' finding' + (findings.length !== 1 ? 's' : '')
-                + ' — ' + (s.high || 0) + ' high, ' + (s.medium || 0) + ' medium, ' + (s.low || 0) + ' low'
+            // #688 - two keys and a conditional until the layer can express a
+            // plural. Not two messages: one message, two shapes.
+            textContent: t(findings.length === 1 ? 'lint.summary.one' : 'lint.summary.many', {
+                count: findings.length,
+                high: s.high || 0, medium: s.medium || 0, low: s.low || 0
+            })
         }));
         var listEl = el('div', { className: 'bowire-lint-list' });
         findings.forEach(function (f) { listEl.appendChild(_renderLintRow(f)); });
@@ -89,14 +94,14 @@
         var main = el('div', { id: 'bowire-main-lint', className: 'bowire-main bowire-main-lint' });
         var pad = el('div', { className: 'bowire-main-pad' });
 
-        pad.appendChild(el('h1', { className: 'bowire-pane-title', textContent: 'Design-time lint' }));
+        pad.appendChild(el('h1', { className: 'bowire-pane-title', textContent: t('lint.title') }));
         pad.appendChild(el('p', {
             className: 'bowire-lint-sub',
-            textContent: 'Checks the discovered API surface for design smells — secrets in responses, PII, unbounded lists, missing versioning, and more. Same rules as `bowire lint`; toggle them in .bowire/rules.json.'
+            textContent: t('lint.lede')
         }));
 
         var count = (typeof services !== 'undefined' && services) ? services.length : 0;
-        var runBtn = el('button', { className: 'bowire-btn bowire-btn-primary', type: 'button', textContent: 'Run lint' });
+        var runBtn = el('button', { className: 'bowire-btn bowire-btn-primary', type: 'button', textContent: t('lint.run') });
         runBtn.addEventListener('click', runLint);
         pad.appendChild(el('div', { className: 'bowire-lint-controls' },
             runBtn,

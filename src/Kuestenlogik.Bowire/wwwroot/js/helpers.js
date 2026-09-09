@@ -148,10 +148,10 @@
 
         if (format === 'proto') {
             // Proto binary: fetch raw bytes from server
-            if (!responseData && streamMessages.length === 0) { toast('No response to download', 'info'); return; }
+            if (!responseData && streamMessages.length === 0) { toast(t('download.noResponse'), 'info'); return; }
             // For proto binary, we'd need the raw bytes from the server.
             // Since we only have JSON, convert back (best effort).
-            toast('Proto binary download requires raw bytes — use JSON for now', 'info');
+            toast(t('download.protoUnsupported'), 'info');
             return;
         }
 
@@ -166,7 +166,7 @@
             try { text = JSON.stringify(JSON.parse(responseData), null, 2); } catch { text = responseData; }
             filename = methodName + '.json';
         } else {
-            toast('No response to download', 'info');
+            toast(t('download.noResponse'), 'info');
             return;
         }
 
@@ -176,7 +176,7 @@
         a.download = filename;
         a.click();
         URL.revokeObjectURL(a.href);
-        toast('Downloaded ' + filename, 'success');
+        toast(t('download.done', { name: filename }), 'success');
     }
 
     function formatBytes(bytes) {
@@ -979,12 +979,12 @@
                 navigator.clipboard.writeText(txt).then(
                     function () {
                         if (typeof toast === 'function') {
-                            toast('Response copied', 'success');
+                            toast(t('clipboard.responseCopied'), 'success');
                         }
                     },
                     function () {
                         if (typeof toast === 'function') {
-                            toast('Copy failed', 'error');
+                            toast(t('clipboard.failed'), 'error');
                         }
                     }
                 );
@@ -1079,7 +1079,7 @@
                 try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch {}
             }, 0);
         } catch (_) {
-            if (typeof toast === 'function') toast('Download failed', 'error');
+            if (typeof toast === 'function') toast(t('download.failed'), 'error');
         }
     }
 
@@ -1090,7 +1090,7 @@
      */
     function _downloadJsonViewerBody(raw, opts) {
         if (raw == null) {
-            if (typeof toast === 'function') toast('Nothing to download', 'info');
+            if (typeof toast === 'function') toast(t('download.nothing'), 'info');
             return;
         }
         var contentType = (opts && opts.contentType) ? String(opts.contentType).toLowerCase() : '';
@@ -1123,7 +1123,7 @@
                 try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch {}
             }, 0);
         } catch (_) {
-            if (typeof toast === 'function') toast('Download failed', 'error');
+            if (typeof toast === 'function') toast(t('download.failed'), 'error');
         }
     }
 
@@ -2963,7 +2963,7 @@
         var tabSelector = opts.tabSelector;
         if (!tabSelector) return;
         var fixedSelector = opts.fixedSelector || null;
-        var labelPrefix = opts.label || 'More';
+        var labelPrefix = opts.label || t('common.more');
 
         // Idempotency marker — an expando PROPERTY, not a dataset
         // attribute. morphdom preserves this node across renders but

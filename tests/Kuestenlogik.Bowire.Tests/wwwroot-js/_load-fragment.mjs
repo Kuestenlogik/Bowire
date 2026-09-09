@@ -31,6 +31,36 @@ import { dirname, resolve } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// #117 — `t` is one of those host-provided free names, and since the sweep
+// began it is one every fragment may reach for. Rather than make each suite
+// stub it, the loader supplies one that reads the real English catalogue.
+//
+// Resolving against en.json rather than returning the key keeps existing
+// assertions on English UI text meaningful — a test that says the cell reads
+// "OK" still checks what the operator sees — and it means a key that never
+// made it into the catalogue shows up in a test as its own raw name, which is
+// exactly how it would show up on screen.
+const CATALOGUE = (() => {
+    const path = resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/locales/en.json');
+    const text = readFileSync(path, 'utf8')
+        .replace(/^\s*\/\/.*$/gm, '')          // the notes-to-translators lines
+        .replace(/,(\s*[}\]])/g, '$1');        // and the trailing comma they allow
+    return JSON.parse(text);
+})();
+
+// Mirrors i18n.js: `{name}` is substituted, `{{name}}` is Bowire's own
+// variable syntax and survives untouched.
+const DEFAULT_T = `
+function t(key, params) {
+    var text = ${JSON.stringify(CATALOGUE)}[key];
+    if (typeof text !== 'string' || text === '') return key;
+    if (!params) return text;
+    return text.replace(/(?<!\\{)\\{([a-zA-Z0-9_]+)\\}(?!\\})/g, function (whole, name) {
+        return Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : whole;
+    });
+}
+`;
+
 /**
  * Compile a wwwroot/js fragment for unit testing under real V8 coverage.
  *
@@ -60,9 +90,21 @@ export function compileFragment(srcRelPath, hostNames, appended) {
     const src = readFileSync(filename, 'utf8');
     // filename => real coverage attribution; postlude appended => the
     // fragment's own line numbers stay aligned with the source file.
-    const fn = vm.compileFunction(src + '\n' + (appended || ''), hostNames, {
-        filename,
-    });
+    // Skip the stub when the caller injects its own `t` as a host name, and
+    // when the fragment IS the translation layer — i18n.js declares the real
+    // t(), and appending a stub after it would override the very function
+    // that suite exists to test.
+    const declaresOwnT = /\bfunction\s+t\s*\(/.test(src);
+    const injectT = !hostNames.includes('t') && !declaresOwnT;
+    // The stub goes in before `appended` so a suite that declares its own `t`
+    // there still wins — the later function declaration survives hoisting.
+    // Both land after the fragment, so its line numbers stay aligned with the
+    // source and coverage attribution holds.
+    const fn = vm.compileFunction(
+        src + '\n' + (injectT ? DEFAULT_T : '') + (appended || ''),
+        hostNames,
+        { filename },
+    );
     const loader = (hostValues) =>
         fn(...hostNames.map((n) => (hostValues || {})[n]));
     // Some suites also assert against the raw fragment text (e.g. "module

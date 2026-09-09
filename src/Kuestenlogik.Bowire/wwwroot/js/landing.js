@@ -601,7 +601,7 @@
                 if (!k) return;
                 if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') return;
                 navigator.clipboard.writeText(serializeDiscoveryDiagnostics(k)).then(function () {
-                    if (typeof toast === 'function') toast('Diagnostics copied', 'success');
+                    if (typeof toast === 'function') toast(t('clipboard.diagnosticsCopied'), 'success');
                 });
             }
         },

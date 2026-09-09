@@ -77,7 +77,7 @@ function bowireRollupRow(service) {
         className: 'bowire-rollup-row',
         role: 'button',
         tabindex: '0',
-        title: 'Show the reports behind this row',
+        title: t('rollup.sourcesTitle'),
         'data-service': service.service,
         onClick: function () {
             // Resolve by name at click time — morphdom keeps nodes across
@@ -110,8 +110,8 @@ function renderRollupMain() {
             className: 'bowire-settings-input bowire-rollup-path',
             type: 'text',
             value: bowireRollupPath,
-            placeholder: 'paths to read, comma-separated',
-            title: 'Files or directories holding Bowire reports. Directories are walked recursively.',
+            placeholder: t('rollup.pathsPlaceholder'),
+            title: t('rollup.pathsTitle'),
             onInput: function () { bowireRollupPath = this.value; }
         }),
         el('button', {

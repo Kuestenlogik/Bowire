@@ -206,7 +206,7 @@
      */
     function bowireEnsureRecordingAndCapture(step, recordingName) {
         if (typeof isRecording !== 'function' || typeof startRecording !== 'function') {
-            toast('Capturing mocks needs the Recordings package (Kuestenlogik.Bowire.Recordings).', 'error');
+            toast(t('handoff.needsRecordings'), 'error');
             return false;
         }
         if (!isRecording()) {
@@ -262,7 +262,7 @@
         if (!bowireEnsureRecordingAndCapture(step, 'Mock: ' + label)) return;
         var mocks = (typeof window !== 'undefined') ? window.__bowireMocks : null;
         if (!mocks || typeof mocks.startFromRecording !== 'function') {
-            toast('Captured as a mock step — add Kuestenlogik.Bowire.Mock to boot it as a host', 'info');
+            toast(t('handoff.capturedNoHost'), 'info');
             render();
             return;
         }
@@ -270,7 +270,7 @@
             ? recordingsList.find(function (r) { return r.id === recordingActiveId; })
             : null;
         if (!rec) {
-            toast('Captured as a mock step', 'success');
+            toast(t('handoff.captured'), 'success');
             render();
             return;
         }
@@ -411,14 +411,14 @@
         var items = [];
 
         items.push({
-            label: 'Save as mock',
+            label: t('handoff.mock.label'),
             icon: 'server',
             disabled: !offers.mock,
             title: offers.mock
                 ? (offers.mockHost
-                    ? 'Freeze this response into a recording step and boot a mock host from it'
-                    : 'Freeze this response into a recording step (add Kuestenlogik.Bowire.Mock to boot a host)')
-                : 'Needs Kuestenlogik.Bowire.Recordings',
+                    ? t('handoff.mock.titleHost')
+                    : t('handoff.mock.titleNoHost'))
+                : t('handoff.mock.needs'),
             onClick: function () {
                 var s = bowireHandoffSnapshot(surface);
                 if (s) bowireHandoffToMock(s);
@@ -426,12 +426,12 @@
         });
 
         items.push({
-            label: 'Add to flow…',
+            label: t('handoff.flow.label'),
             icon: 'flow',
             disabled: !offers.flow,
             title: offers.flow
-                ? 'Append this request as a step in a new or existing flow'
-                : 'Needs Kuestenlogik.Bowire.Flows',
+                ? t('handoff.flow.title')
+                : t('handoff.flow.needs'),
             onClick: function (ev) {
                 var s = bowireHandoffSnapshot(surface);
                 if (s) bowireHandoffToFlow(s, ev.clientX, ev.clientY);
@@ -440,14 +440,14 @@
 
         var canTest = offers.test && !!snap.service && !!snap.method;
         items.push({
-            label: 'Keep as test',
+            label: t('handoff.test.label'),
             icon: 'check',
             disabled: !canTest,
             title: canTest
-                ? 'Save this status (and body) as assertions for ' + snap.service + ' · ' + snap.method
+                ? t('handoff.test.title', { method: snap.service + ' · ' + snap.method })
                 : (offers.test
-                    ? 'This request has no service/method identity to key assertions on'
-                    : 'Assertions are unavailable in this build'),
+                    ? t('handoff.test.noIdentity')
+                    : t('handoff.test.unavailable')),
             onClick: function () {
                 var s = bowireHandoffSnapshot(surface);
                 if (s) bowireHandoffToTest(s);
@@ -457,12 +457,12 @@
         items.push({ separator: true });
 
         items.push({
-            label: 'Add to benchmark envelope…',
+            label: t('handoff.benchmark.label'),
             icon: 'lightning',
             disabled: !offers.benchmark,
             title: offers.benchmark
-                ? 'Add this known-good request to a benchmark envelope'
-                : 'Needs Kuestenlogik.Bowire.Benchmarking',
+                ? t('handoff.benchmark.title')
+                : t('handoff.benchmark.needs'),
             onClick: function (ev) {
                 var s = bowireHandoffSnapshot(surface);
                 if (s) bowireHandoffToBenchmark(s, ev.clientX, ev.clientY);
@@ -490,7 +490,7 @@
             type: 'button',
             id: isBuilder ? 'bowire-builder-handoff-btn' : 'bowire-response-handoff-btn',
             className: (isBuilder ? 'bowire-response-meta-btn' : 'bowire-pane-btn') + ' bowire-handoff-btn',
-            title: 'Turn this response into a mock, flow, test or benchmark',
+            title: t('handoff.button.title'),
             'aria-haspopup': 'menu',
             onClick: function (e) {
                 e.stopPropagation();
@@ -498,6 +498,6 @@
             }
         });
         btn.appendChild(el('span', { innerHTML: svgIcon('plus'), className: 'bowire-handoff-btn-icon' }));
-        btn.appendChild(el('span', { textContent: 'Use this…' }));
+        btn.appendChild(el('span', { textContent: t('handoff.button.label') }));
         return btn;
     }

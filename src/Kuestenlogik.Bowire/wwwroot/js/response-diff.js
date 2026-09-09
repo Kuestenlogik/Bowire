@@ -64,7 +64,7 @@
             selectB.appendChild(optB);
         }
 
-        header.appendChild(el('span', { className: 'bowire-diff-title', textContent: 'Compare responses' }));
+        header.appendChild(el('span', { className: 'bowire-diff-title', textContent: t('responseDiff.title') }));
         header.appendChild(selectA);
         header.appendChild(el('span', { className: 'bowire-diff-vs', textContent: 'vs' }));
         header.appendChild(selectB);
@@ -87,7 +87,7 @@
 
         header.appendChild(el('button', {
             className: 'bowire-pane-btn',
-            textContent: 'Close Diff',
+            textContent: t('responseDiff.close'),
             onClick: function () {
                 diffViewOpen = false;
                 diffSnapshotA = null;
@@ -101,10 +101,10 @@
         // ---- Diff body ----
         if (diffSnapshotA === diffSnapshotB) {
             container.appendChild(el('div', { className: 'bowire-diff-empty',
-                textContent: 'Select two different snapshots to compare.' }));
+                textContent: t('responseDiff.pickTwo') }));
         } else if (added === 0 && removed === 0) {
             container.appendChild(el('div', { className: 'bowire-diff-empty',
-                textContent: 'Both responses are identical.' }));
+                textContent: t('responseDiff.identical') }));
         } else {
             var diffBox = el('pre', { className: 'bowire-diff-body' });
             for (var dj = 0; dj < diff.length; dj++) {
