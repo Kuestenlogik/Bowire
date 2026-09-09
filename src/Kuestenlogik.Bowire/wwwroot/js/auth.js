@@ -64,7 +64,7 @@
             try {
                 var sessionResp = await fetch(config.prefix + '/api/auth/session');
                 if (!sessionResp.ok) {
-                    toast('Session-token forwarding requires an active auth provider', 'error');
+                    toast(t('auth.session.needsProvider'), 'error');
                 } else {
                     var sessionData = await sessionResp.json();
                     if (sessionData && sessionData.hasToken && sessionData.token
@@ -72,14 +72,14 @@
                         out['Authorization'] = (sessionData.scheme || 'Bearer') + ' ' + sessionData.token;
                     } else if (sessionData && !sessionData.hasToken) {
                         if (sessionData.reason === 'anonymous') {
-                            toast('Session-token forwarding needs an authenticated workbench (sign in first)', 'error');
+                            toast(t('auth.session.needsSignIn'), 'error');
                         } else {
-                            toast('Active auth provider does not expose its access token (SaveToken=false)', 'error');
+                            toast(t('auth.session.noSaveToken'), 'error');
                         }
                     }
                 }
             } catch (e) {
-                toast('Session-token fetch failed: ' + (e && e.message || e), 'error');
+                toast(t('auth.session.fetchFailed', { reason: (e && e.message) || e }), 'error');
             }
         } else if (auth.type === 'basic') {
             var user = substituteVars(auth.username || '');
@@ -108,7 +108,7 @@
                     out['Authorization'] = 'Bearer ' + jwt;
                 }
             } catch (e) {
-                toast('JWT signing failed: ' + e.message, 'error');
+                toast(t('auth.jwt.signFailed', { reason: e.message }), 'error');
             }
         } else if (auth.type === 'oauth2_cc') {
             try {
@@ -117,7 +117,7 @@
                     out['Authorization'] = 'Bearer ' + token2;
                 }
             } catch (e) {
-                toast('OAuth token fetch failed: ' + e.message, 'error');
+                toast(t('auth.oauth.fetchFailed', { reason: e.message }), 'error');
             }
         } else if (auth.type === 'custom_token') {
             try {
@@ -127,7 +127,7 @@
                     out['Authorization'] = prefix + token3;
                 }
             } catch (e) {
-                toast('Custom token fetch failed: ' + e.message, 'error');
+                toast(t('auth.customToken.failed', { reason: e.message }), 'error');
             }
         } else if (auth.type === 'oauth2_ac') {
             try {
@@ -137,7 +137,7 @@
                     out['Authorization'] = 'Bearer ' + token4;
                 }
             } catch (e) {
-                toast('OAuth (auth code) token unavailable: ' + e.message, 'error');
+                toast(t('auth.oauthAc.unavailable', { reason: e.message }), 'error');
             }
         } else if (auth.type === 'aws_sigv4') {
             // AWS Sig v4 has to be applied AFTER the body is built because
@@ -779,7 +779,7 @@
         var isDefault = !trimmed || trimmed === 'New Environment';
         if (!isDefault && _isEnvironmentNameTaken(trimmed)) {
             if (typeof toast === 'function') {
-                toast('An environment named "' + trimmed + '" already exists.', 'error');
+                toast(t('env.nameTaken', { name: trimmed }), 'error');
             }
             return null;
         }
@@ -810,7 +810,7 @@
         if (opts && opts.logAction && typeof toast === 'function') {
             var snapshot = JSON.parse(JSON.stringify(env));
             var _envName = env.name || 'unnamed';
-            toast('Created environment "' + _envName + '"', 'info', {
+            toast(t('env.created', { name: _envName }), 'info', {
                 undo: function () {
                     deleteEnvironment(snapshot.id);
                     render();
@@ -842,16 +842,16 @@
     // setActiveEnvId, render).
     function openCreateEnvironmentDialog(onCreated) {
         if (typeof bowirePrompt !== 'function') return;
-        bowirePrompt('Name your new environment', {
-            title: 'New environment',
-            placeholder: 'e.g. staging',
-            confirmText: 'Create',
+        bowirePrompt(t('env.promptMessage'), {
+            title: t('env.promptTitle'),
+            placeholder: t('env.promptPlaceholder'),
+            confirmText: t('env.promptConfirm'),
             validator: function (val) {
                 var trimmed = String(val || '').trim();
                 if (!trimmed) return 'Name required';
                 if (_isEnvironmentNameTaken(trimmed)) {
                     if (typeof toast === 'function') {
-                        toast('An environment named "' + trimmed + '" already exists.', 'error');
+                        toast(t('env.nameTaken', { name: trimmed }), 'error');
                     }
                     return 'Duplicate';
                 }
@@ -890,7 +890,7 @@
             if (!trimmed) return false;
             if (_isEnvironmentNameTaken(trimmed, id)) {
                 if (typeof toast === 'function') {
-                    toast('An environment named "' + trimmed + '" already exists.', 'error');
+                    toast(t('env.nameTaken', { name: trimmed }), 'error');
                 }
                 return false;
             }

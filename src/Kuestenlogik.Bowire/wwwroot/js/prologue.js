@@ -393,15 +393,24 @@
             var methodDelta = newMethodCount - prevMethodCount;
             if (typeof toast !== 'function') return;
             if (svcDelta === 0 && methodDelta === 0) {
-                toast('No changes from ' + url, 'info');
+                toast(t('schemaDelta.none', { url: url }), 'info');
                 return;
             }
+            // #688 - the sign rides with the number; only the noun has two
+            // shapes, and the layer cannot yet express even that one.
             var parts = [];
-            if (svcDelta > 0) parts.push('+' + svcDelta + ' service' + (svcDelta === 1 ? '' : 's'));
-            if (svcDelta < 0) parts.push(svcDelta + ' service' + (svcDelta === -1 ? '' : 's'));
-            if (methodDelta > 0) parts.push('+' + methodDelta + ' method' + (methodDelta === 1 ? '' : 's'));
-            if (methodDelta < 0) parts.push(methodDelta + ' method' + (methodDelta === -1 ? '' : 's'));
-            toast('Schema changed: ' + parts.join(', '), 'info');
+            // Both keys spelled out at the call site rather than assembled from
+            // pieces. A key built by concatenation cannot be found by grepping
+            // for it, and the orphan check in locales.test.mjs cannot see it
+            // either — it read these four as keys nothing reads.
+            function deltaPart(delta, oneKey, manyKey) {
+                if (delta === 0) return;
+                var signed = (delta > 0 ? '+' : '') + delta;
+                parts.push(t(Math.abs(delta) === 1 ? oneKey : manyKey, { delta: signed }));
+            }
+            deltaPart(svcDelta, 'schemaDelta.service.one', 'schemaDelta.service.many');
+            deltaPart(methodDelta, 'schemaDelta.method.one', 'schemaDelta.method.many');
+            toast(t('schemaWatch.changed', { summary: parts.join(', ') }), 'info');
         }).catch(function () {
             render();
         });
@@ -1478,8 +1487,8 @@
     // Drop anything older than 30 days.
     (function purgeOldTrash() {
         var cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-        recordingsTrash = recordingsTrash.filter(function (t) { return t.deletedAt > cutoff; });
-        collectionsTrash = collectionsTrash.filter(function (t) { return t.deletedAt > cutoff; });
+        recordingsTrash = recordingsTrash.filter(function (tab) { return tab.deletedAt > cutoff; });
+        collectionsTrash = collectionsTrash.filter(function (tab) { return tab.deletedAt > cutoff; });
     })();
     function persistRecordingsTrash() {
         try { localStorage.setItem(wsKey('bowire_recordings_trash'), JSON.stringify(recordingsTrash)); } catch { /* ignore */ }
@@ -1505,7 +1514,7 @@
     } catch { /* ignore */ }
     (function purgeOldTabsTrash() {
         var cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-        tabsTrash = tabsTrash.filter(function (t) { return t.deletedAt > cutoff; });
+        tabsTrash = tabsTrash.filter(function (tab) { return tab.deletedAt > cutoff; });
         if (tabsTrash.length > TABS_TRASH_MAX) tabsTrash.length = TABS_TRASH_MAX;
     })();
     function persistTabsTrash() {
@@ -2516,9 +2525,9 @@
         });
         if (liveHit) return true;
         if (Array.isArray(workspacesTrash)) {
-            var trashHit = workspacesTrash.some(function (t) {
-                return t && t.workspace && t.workspace.id !== excludeId
-                    && String(t.workspace.name || '').trim().toLowerCase() === norm;
+            var trashHit = workspacesTrash.some(function (tab) {
+                return tab && tab.workspace && tab.workspace.id !== excludeId
+                    && String(tab.workspace.name || '').trim().toLowerCase() === norm;
             });
             if (trashHit) return true;
         }
@@ -2532,9 +2541,9 @@
     function _toastIfTrashCollision(name) {
         var norm = String(name || '').trim().toLowerCase();
         if (!norm || !Array.isArray(workspacesTrash)) return false;
-        var hit = workspacesTrash.find(function (t) {
-            return t && t.workspace
-                && String(t.workspace.name || '').trim().toLowerCase() === norm;
+        var hit = workspacesTrash.find(function (tab) {
+            return tab && tab.workspace
+                && String(tab.workspace.name || '').trim().toLowerCase() === norm;
         });
         if (!hit) return false;
         if (typeof toast === 'function') {
@@ -2568,7 +2577,7 @@
                 // chasing a phantom workspace.
                 if (!_toastIfTrashCollision(requested)) {
                     if (typeof toast === 'function') {
-                        toast('A workspace named "' + requested + '" already exists.', 'error');
+                        toast(t('workspace.nameTaken', { name: requested }), 'error');
                     }
                 }
                 return null;
@@ -2988,12 +2997,12 @@
             var payload = null;
             try { payload = JSON.parse(evt.data); } catch { /* tolerate */ }
             var hint = (payload && payload.path)
-                ? '"' + payload.path + '" changed on disk.'
-                : 'Workspace files changed on disk.';
-            _fsWatchToast = toast(hint + ' Reload to pick up the new state?', 'info', {
+                ? t('fsWatch.pathChanged', { path: payload.path })
+                : t('fsWatch.filesChanged');
+            _fsWatchToast = toast(t('fsWatch.reloadPrompt', { what: hint }), 'info', {
                 duration: 0, // sticky — explicit dismiss only
                 action: {
-                    label: 'Reload',
+                    label: t('fsWatch.reload'),
                     onClick: function () {
                         try { window.location.reload(); }
                         catch { /* embedded host */ }
@@ -3066,7 +3075,7 @@
         if (!trimmed) return false;
         if (_isWorkspaceNameTaken(trimmed, id)) {
             if (typeof toast === 'function') {
-                toast('A workspace named "' + trimmed + '" already exists.', 'error');
+                toast(t('workspace.nameTaken', { name: trimmed }), 'error');
             }
             return false;
         }
@@ -3479,8 +3488,8 @@
     function _findTrashEntryByWorkspaceId(wsId) {
         if (!wsId || !Array.isArray(workspacesTrash)) return null;
         for (var i = 0; i < workspacesTrash.length; i++) {
-            var t = workspacesTrash[i];
-            if (t && t.workspace && t.workspace.id === wsId) return t;
+            var tab = workspacesTrash[i];
+            if (tab && tab.workspace && tab.workspace.id === wsId) return tab;
         }
         return null;
     }
@@ -3508,8 +3517,8 @@
                 // snapshot from the trash bucket. Walk that path so
                 // existing logs keep working; log a one-shot console
                 // note so it's visible during the migration window.
-                var t = _findTrashEntryByWorkspaceId(spec.workspaceId);
-                if (t && restoreWorkspaceFromTrash(t)) {
+                var tab = _findTrashEntryByWorkspaceId(spec.workspaceId);
+                if (tab && restoreWorkspaceFromTrash(tab)) {
                     if (typeof render === 'function') render();
                     if (!_warnedLegacyWorkspaceDelete) {
                         _warnedLegacyWorkspaceDelete = true;
@@ -3518,7 +3527,7 @@
                     return;
                 }
                 if (typeof toast === 'function') {
-                    toast('Could not restore workspace — snapshot expired and trash entry purged.', 'error');
+                    toast(t('workspace.restoreExpired'), 'error');
                 }
             },
             redo: function () {
@@ -3546,13 +3555,13 @@
                 if (typeof render === 'function') render();
             },
             redo: function () {
-                var t = _findTrashEntryByWorkspaceId(spec.workspaceId);
-                if (t && restoreWorkspaceFromTrash(t)) {
+                var tab = _findTrashEntryByWorkspaceId(spec.workspaceId);
+                if (tab && restoreWorkspaceFromTrash(tab)) {
                     if (typeof render === 'function') render();
                     return;
                 }
                 if (typeof toast === 'function') {
-                    toast('Could not restore workspace — trash entry purged.', 'error');
+                    toast(t('workspace.restorePurged'), 'error');
                 }
             }
         };
@@ -3619,12 +3628,12 @@
                 if (recordingsList.find(function (r) { return r.id === spec.recordingId; })) return;
                 if (!Array.isArray(recordingsTrash)) return;
                 for (var i = 0; i < recordingsTrash.length; i++) {
-                    var t = recordingsTrash[i];
-                    if (!t || !t.entry || t.entry.id !== spec.recordingId) continue;
-                    var idx = (typeof t.originalIdx === 'number')
-                        ? Math.min(t.originalIdx, recordingsList.length)
+                    var tab = recordingsTrash[i];
+                    if (!tab || !tab.entry || tab.entry.id !== spec.recordingId) continue;
+                    var idx = (typeof tab.originalIdx === 'number')
+                        ? Math.min(tab.originalIdx, recordingsList.length)
                         : recordingsList.length;
-                    recordingsList.splice(idx, 0, t.entry);
+                    recordingsList.splice(idx, 0, tab.entry);
                     recordingsTrash.splice(i, 1);
                     if (typeof persistRecordings === 'function') persistRecordings();
                     if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
@@ -3650,8 +3659,8 @@
                 // so the recording doesn't end up in two places.
                 if (Array.isArray(recordingsTrash)) {
                     for (var i = 0; i < recordingsTrash.length; i++) {
-                        var t = recordingsTrash[i];
-                        if (t && t.entry && t.entry.id === spec.entry.id) {
+                        var tab = recordingsTrash[i];
+                        if (tab && tab.entry && tab.entry.id === spec.entry.id) {
                             recordingsTrash.splice(i, 1);
                             if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
                             break;
@@ -3749,13 +3758,13 @@
                     });
                 } catch { /* ignore */ }
                 if (typeof toast === 'function') {
-                    toast('Settings restored — reload for full effect.', 'info');
+                    toast(t('settings.restored'), 'info');
                 }
             },
             redo: function () {
                 try { localStorage.clear(); } catch { /* ignore */ }
                 if (typeof toast === 'function') {
-                    toast('Reset re-applied — reload to clear state.', 'info');
+                    toast(t('settings.resetReapplied'), 'info');
                 }
             }
         };
@@ -3781,8 +3790,8 @@
                     var ids = {};
                     spec.entries.forEach(function (item) { if (item.entry) ids[item.entry.id] = true; });
                     for (var i = recordingsTrash.length - 1; i >= 0; i--) {
-                        var t = recordingsTrash[i];
-                        if (t && t.entry && ids[t.entry.id]) recordingsTrash.splice(i, 1);
+                        var tab = recordingsTrash[i];
+                        if (tab && tab.entry && ids[tab.entry.id]) recordingsTrash.splice(i, 1);
                     }
                     if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
                 }
@@ -3815,12 +3824,12 @@
                 // Walk newest-first so the most recent trash entry for
                 // this id wins (the undo we just performed).
                 for (var i = 0; i < collectionsTrash.length; i++) {
-                    var t = collectionsTrash[i];
-                    if (!t || !t.entry || t.entry.id !== spec.collectionId) continue;
+                    var tab = collectionsTrash[i];
+                    if (!tab || !tab.entry || tab.entry.id !== spec.collectionId) continue;
                     if (Array.isArray(collectionsList)
                         && !collectionsList.find(function (c) { return c.id === spec.collectionId; })) {
-                        var idx = Math.min(t.originalIdx || collectionsList.length, collectionsList.length);
-                        collectionsList.splice(idx, 0, t.entry);
+                        var idx = Math.min(tab.originalIdx || collectionsList.length, collectionsList.length);
+                        collectionsList.splice(idx, 0, tab.entry);
                         if (typeof persistCollections === 'function') persistCollections();
                     }
                     collectionsTrash.splice(i, 1);
@@ -3850,8 +3859,8 @@
                     var ids = {};
                     spec.entries.forEach(function (item) { if (item.entry) ids[item.entry.id] = true; });
                     for (var i = collectionsTrash.length - 1; i >= 0; i--) {
-                        var t = collectionsTrash[i];
-                        if (t && t.entry && ids[t.entry.id]) collectionsTrash.splice(i, 1);
+                        var tab = collectionsTrash[i];
+                        if (tab && tab.entry && ids[tab.entry.id]) collectionsTrash.splice(i, 1);
                     }
                     if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
                 }
@@ -5194,8 +5203,8 @@
     function persistRequestTabs() {
         try {
             var data = {
-                tabs: requestTabs.map(function (t) {
-                    return { id: t.id, serviceKey: t.serviceKey, methodKey: t.methodKey, empty: t.empty || undefined };
+                tabs: requestTabs.map(function (tab) {
+                    return { id: tab.id, serviceKey: tab.serviceKey, methodKey: tab.methodKey, empty: tab.empty || undefined };
                 }),
                 active: activeTabId,
             };
@@ -5233,28 +5242,28 @@
         requestTabsRehydrated = true;
         var seenIds = Object.create(null);
         for (var i = 0; i < data.tabs.length; i++) {
-            var t = data.tabs[i];
+            var tab = data.tabs[i];
             // Drop tabs whose id collides with one already restored
             // — corrupt persisted state should not resurrect the
             // duplicate that originally produced the two-active-
             // tabs symptom.
-            if (seenIds[t.id]) continue;
+            if (seenIds[tab.id]) continue;
             // Empty placeholder tabs carry no service/method — restore
             // them as-is so a spawned-but-unfilled tab survives reload.
-            if (t.empty) {
-                seenIds[t.id] = true;
-                requestTabs.push({ id: t.id, empty: true, serviceKey: null, methodKey: null, service: null, method: null });
+            if (tab.empty) {
+                seenIds[tab.id] = true;
+                requestTabs.push({ id: tab.id, empty: true, serviceKey: null, methodKey: null, service: null, method: null });
                 continue;
             }
-            var svc = services.find(function (s) { return s.name === t.serviceKey; });
+            var svc = services.find(function (s) { return s.name === tab.serviceKey; });
             if (!svc) continue;
-            var meth = (svc.methods || []).find(function (m) { return m.name === t.methodKey; });
+            var meth = (svc.methods || []).find(function (m) { return m.name === tab.methodKey; });
             if (!meth) continue;
-            seenIds[t.id] = true;
+            seenIds[tab.id] = true;
             requestTabs.push({
-                id: t.id,
-                serviceKey: t.serviceKey,
-                methodKey: t.methodKey,
+                id: tab.id,
+                serviceKey: tab.serviceKey,
+                methodKey: tab.methodKey,
                 service: svc,
                 method: meth,
             });
@@ -5684,9 +5693,9 @@
     // and re-inserts at the original position when possible, falling
     // back to the end. Returns true if the restore succeeded so the
     // caller can drop the trash row.
-    function restoreClosedTab(t) {
-        if (!t || !t.entry) return false;
-        var stub = t.entry;
+    function restoreClosedTab(tab) {
+        if (!tab || !tab.entry) return false;
+        var stub = tab.entry;
         var svc = null;
         var meth = null;
         if (Array.isArray(services)) {
@@ -5710,7 +5719,7 @@
             freeform: stub.freeform || null
         };
         var insertAt = Math.min(
-            typeof t.originalIdx === 'number' ? t.originalIdx : requestTabs.length,
+            typeof tab.originalIdx === 'number' ? tab.originalIdx : requestTabs.length,
             requestTabs.length
         );
         requestTabs.splice(insertAt, 0, newTab);
@@ -5992,7 +6001,7 @@
             || !Array.isArray(serverUrls)
             || serverUrls.length === 0) {
             if (typeof toast === 'function') {
-                toast('No Source URLs in this workspace yet — add one in Workspaces → Sources first.', 'error');
+                toast(t('freeform.noSources'), 'error');
             }
             return;
         }
@@ -6348,8 +6357,8 @@
         // suppress flag.
         if (!_suppressCollectionCreateLog && typeof toast === 'function') {
             var _colId = col.id;
-            var _colName = col.name || 'unnamed';
-            toast('Created collection "' + _colName + '"', 'info', {
+            var _colName = col.name || t('collections.unnamed');
+            toast(t('collections.created', { name: _colName }), 'info', {
                 undo: function () {
                     if (typeof deleteCollection === 'function') deleteCollection(_colId);
                     if (typeof render === 'function') render();
@@ -6366,12 +6375,12 @@
                     redo: function () {
                         if (!Array.isArray(collectionsTrash)) return;
                         for (var i = 0; i < collectionsTrash.length; i++) {
-                            var t = collectionsTrash[i];
-                            if (!t || !t.entry || t.entry.id !== _colId) continue;
+                            var entry = collectionsTrash[i];
+                            if (!entry || !entry.entry || entry.entry.id !== _colId) continue;
                             if (Array.isArray(collectionsList)
                                 && !collectionsList.find(function (c) { return c.id === _colId; })) {
-                                var idx = Math.min(t.originalIdx || collectionsList.length, collectionsList.length);
-                                collectionsList.splice(idx, 0, t.entry);
+                                var idx = Math.min(entry.originalIdx || collectionsList.length, collectionsList.length);
+                                collectionsList.splice(idx, 0, entry.entry);
                                 if (typeof persistCollections === 'function') persistCollections();
                             }
                             collectionsTrash.splice(i, 1);
@@ -6444,7 +6453,7 @@
             metadata: Object.keys(meta).length > 0 ? meta : null,
             serverUrl: (selectedService && selectedService.originUrl) || (serverUrls[0] || null)
         });
-        toast('Saved to collection', 'success');
+        toast(t('collections.saved'), 'success');
     }
 
     // ---- Console / Log View State ----
@@ -6893,7 +6902,7 @@
             ? _keyringVarsCache[ref] : null;
     }
     function clearKeyringVarsCache() { _keyringVarsCache = {}; _keyringVarsInflight = {}; }
-    if (typeof window !== 'undefined') window.bowirePrefetchKeyringVars = function (t) { return prefetchKeyringVars(t); };
+    if (typeof window !== 'undefined') window.bowirePrefetchKeyringVars = function (list) { return prefetchKeyringVars(list); };
 
     async function prefetchKeyringVars(templates) {
         // Gated on the keyring module being installed + enabled — a host
@@ -6908,11 +6917,11 @@
         var refs = new Set();
         var reCurly = /\{\{\s*keyring\.([^}\s]+)\s*\}\}/g;
         var reDollar = /\$\{\s*keyring\.([^}\s]+)\s*\}/g;
-        templates.forEach(function (t) {
-            if (typeof t !== 'string') return;
+        templates.forEach(function (tpl) {
+            if (typeof tpl !== 'string') return;
             var m;
-            while ((m = reCurly.exec(t)) !== null) { refs.add(m[1]); }
-            while ((m = reDollar.exec(t)) !== null) { refs.add(m[1]); }
+            while ((m = reCurly.exec(tpl)) !== null) { refs.add(m[1]); }
+            while ((m = reDollar.exec(tpl)) !== null) { refs.add(m[1]); }
         });
         if (refs.size === 0) return;
 
@@ -6994,8 +7003,8 @@
 
     function _walkAndReplace(value, secretValues) {
         if (value === null || value === undefined) return value;
-        var t = typeof value;
-        if (t === 'string') {
+        var kind = typeof value;
+        if (kind === 'string') {
             var out = value;
             for (var i = 0; i < secretValues.length; i++) {
                 if (out.indexOf(secretValues[i]) !== -1) {
@@ -7004,7 +7013,7 @@
             }
             return out;
         }
-        if (t !== 'object') return value;
+        if (kind !== 'object') return value;
         if (Array.isArray(value)) {
             return value.map(function (v) { return _walkAndReplace(v, secretValues); });
         }
