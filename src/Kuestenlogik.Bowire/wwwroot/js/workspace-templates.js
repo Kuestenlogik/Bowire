@@ -14,18 +14,23 @@
     // hydrates from the freshly-templated buckets. The 'empty'
     // template is the no-op default and skips the reload.
 
+    // The built-ins carry catalogue KEYS, not text. This array is built
+    // once when the bundle loads, and setLocale() does not reload the
+    // page - a t() here would freeze whichever language was active at
+    // boot. templateLabel() / templateDescription() resolve them at
+    // render time. Same shape as the scope table in header-library.js.
     var BOWIRE_WORKSPACE_TEMPLATES = [
         {
             id: 'empty',
-            label: 'Empty',
-            description: 'No URLs, no collections, no env vars. Start from scratch.',
+            labelKey: 'wsTemplates.builtin.empty.label',
+            descriptionKey: 'wsTemplates.builtin.empty.description',
             icon: 'plus',
             apply: function () { /* no-op */ }
         },
         {
             id: 'rest',
-            label: 'REST API testing',
-            description: 'Petstore (well-known public OpenAPI 3.0 endpoint) — Bowire auto-discovers the Pet / Store / User services on first connect. Plus a starter collection with two ready-to-invoke calls.',
+            labelKey: 'wsTemplates.builtin.rest.label',
+            descriptionKey: 'wsTemplates.builtin.rest.description',
             icon: 'globe',
             apply: function (wsId) {
                 // Swagger Petstore v3 exposes /api/v3/openapi.json — Bowire's
@@ -44,6 +49,9 @@
                     baseUrl: 'https://petstore3.swagger.io/api/v3',
                     apiToken: 'special-key'    // documented Petstore token
                 });
+                // The collection name is written into the new workspace and
+                // travels through .bww export, so it stays English: a
+                // translated one would freeze the language it was created in.
                 _templateWriteCollections(wsId, [{
                     id: 'col_rest_starter',
                     name: 'REST starter',
@@ -77,8 +85,8 @@
         },
         {
             id: 'grpc',
-            label: 'gRPC services',
-            description: 'A gRPC URL prefix pointing at grpcb.in (server-reflection enabled). Without reflection or a .proto upload, the services tree stays empty — the URL is a placeholder for your own gRPC backend.',
+            labelKey: 'wsTemplates.builtin.grpc.label',
+            descriptionKey: 'wsTemplates.builtin.grpc.description',
             icon: 'connect',
             apply: function (wsId) {
                 // grpcb.in (port 9001 grpc, 443 grpcs) is a public
@@ -104,8 +112,8 @@
         },
         {
             id: 'mock',
-            label: 'Mock server build',
-            description: 'Petstore (discovery-enabled) plus an empty Mock targets collection ready to capture recordings as mock fixtures. Record-then-replay workflow ready to go.',
+            labelKey: 'wsTemplates.builtin.mock.label',
+            descriptionKey: 'wsTemplates.builtin.mock.description',
             icon: 'recording',
             apply: function (wsId) {
                 // Postman-echo is a generic-HTTP-echo service that
@@ -125,8 +133,8 @@
         },
         {
             id: 'multi',
-            label: 'Multi-protocol smoke test',
-            description: 'Petstore REST + a public WebSocket echo + grpcb.in for gRPC reflection. Three different wire formats in one workspace — ready for cross-protocol coverage runs.',
+            labelKey: 'wsTemplates.builtin.multi.label',
+            descriptionKey: 'wsTemplates.builtin.multi.description',
             icon: 'layers',
             apply: function (wsId) {
                 _templateWriteUrls(wsId, [
@@ -141,6 +149,19 @@
             }
         }
     ];
+
+    // A built-in carries labelKey / descriptionKey; a user template carries
+    // the operator's own label / description, which is data and not ours to
+    // translate. An empty user label falls back to the catalogue word.
+    function templateLabel(tpl) {
+        if (tpl.labelKey) return t(tpl.labelKey);
+        return tpl.label || t('wsTemplates.unnamed');
+    }
+
+    function templateDescription(tpl) {
+        if (tpl.descriptionKey) return t(tpl.descriptionKey);
+        return tpl.description || '';
+    }
 
     // Shared writers — every template apply() lands data under the
     // *new* workspace's wsKey prefix, not the currently-active one.
@@ -246,7 +267,10 @@
         // to how the built-in templates write their values.
         return {
             id: stored.id,
-            label: stored.name || '(unnamed template)',
+            // Both are operator text. No default is written in: the display
+            // supplies the fallback, so an unnamed template does not carry
+            // one language's word for 'unnamed' around.
+            label: stored.name || '',
             description: stored.description || '',
             icon: stored.icon || 'layers',
             isUser: true,
@@ -364,7 +388,7 @@
     }
 
     function deleteUserTemplate(id) {
-        var all = _readUserTemplates().filter(function (t) { return t.id !== id; });
+        var all = _readUserTemplates().filter(function (tpl) { return tpl.id !== id; });
         _writeUserTemplates(all);
     }
 
@@ -414,8 +438,8 @@
             type: 'text',
             id: 'bowire-ws-create-name',
             className: 'bowire-prompt-input',
-            placeholder: 'e.g. Payments — staging',
-            'aria-label': 'Workspace name',
+            placeholder: t('wsTemplates.dialog.namePlaceholder'),
+            'aria-label': t('wsTemplates.dialog.nameAria'),
             'data-bowire-no-vars-chip': '1',
             'data-bowire-no-vars-ac': '1'
         });
@@ -429,7 +453,7 @@
         // splits 'no template' from 'pick a template' — the layout
         // matches the model.
         var startFromScratchWrap = el('div', { className: 'bowire-ws-template-scratch-wrap' });
-        var emptyTpl = BOWIRE_WORKSPACE_TEMPLATES.find(function (t) { return t.id === 'empty'; });
+        var emptyTpl = BOWIRE_WORKSPACE_TEMPLATES.find(function (tpl) { return tpl.id === 'empty'; });
         if (emptyTpl) {
             var scratchRow = el('label', {
                 className: 'bowire-ws-template-scratch'
@@ -454,11 +478,11 @@
             var scratchInfo = el('div', { className: 'bowire-ws-template-info' });
             scratchInfo.appendChild(el('div', {
                 className: 'bowire-ws-template-label',
-                textContent: 'Start from scratch'
+                textContent: t('wsTemplates.scratch.label')
             }));
             scratchInfo.appendChild(el('div', {
                 className: 'bowire-ws-template-desc',
-                textContent: 'No URLs, no collections, no env vars — empty workspace.'
+                textContent: t('wsTemplates.scratch.description')
             }));
             scratchRow.appendChild(scratchInfo);
             startFromScratchWrap.appendChild(scratchRow);
@@ -469,13 +493,13 @@
         var templatesHeader = el('div', { className: 'bowire-ws-templates-header' });
         templatesHeader.appendChild(el('div', {
             className: 'bowire-ws-templates-title',
-            textContent: 'Or pick a template'
+            textContent: t('wsTemplates.list.heading')
         }));
         var filterInput = el('input', {
             type: 'text',
             className: 'bowire-ws-templates-filter',
-            placeholder: 'Search templates…',
-            'aria-label': 'Filter templates',
+            placeholder: t('wsTemplates.list.filterPlaceholder'),
+            'aria-label': t('wsTemplates.list.filterAria'),
             'data-bowire-no-vars-chip': '1',
             'data-bowire-no-vars-ac': '1',
             onInput: function (e) {
@@ -485,7 +509,7 @@
         });
         templatesHeader.appendChild(filterInput);
 
-        var templateList = el('div', { id: 'bowire-ws-create-templates', className: 'bowire-ws-template-list', role: 'radiogroup', 'aria-label': 'Start from template' });
+        var templateList = el('div', { id: 'bowire-ws-create-templates', className: 'bowire-ws-template-list', role: 'radiogroup', 'aria-label': t('wsTemplates.list.groupAria') });
 
         function _syncSelectionClasses() {
             var rows = document.querySelectorAll('.bowire-ws-template-row, .bowire-ws-template-scratch');
@@ -516,15 +540,17 @@
             row.appendChild(radio);
             row.appendChild(el('span', { className: 'bowire-ws-template-icon', innerHTML: svgIcon(tpl.icon) }));
             var info = el('div', { className: 'bowire-ws-template-info' });
-            info.appendChild(el('div', { className: 'bowire-ws-template-label', textContent: tpl.label }));
-            info.appendChild(el('div', { className: 'bowire-ws-template-desc', textContent: tpl.description }));
+            info.appendChild(el('div', { className: 'bowire-ws-template-label',
+                textContent: templateLabel(tpl) }));
+            info.appendChild(el('div', { className: 'bowire-ws-template-desc',
+                textContent: templateDescription(tpl) }));
             row.appendChild(info);
             if (tpl.isUser) {
                 row.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-ws-template-delete-btn',
-                    title: 'Delete this user template',
-                    'aria-label': 'Delete template ' + tpl.label,
+                    title: t('wsTemplates.delete.title'),
+                    'aria-label': t('wsTemplates.delete.aria', { name: templateLabel(tpl) }),
                     innerHTML: svgIcon('trash'),
                     onClick: function (ev) {
                         // Prevent the label-click from selecting the
@@ -533,7 +559,7 @@
                         // Use the existing toast/confirm primitive if
                         // present; otherwise direct delete is fine.
                         var ok = (typeof confirm === 'function')
-                            ? confirm('Delete template "' + tpl.label + '"? This cannot be undone.')
+                            ? confirm(t('wsTemplates.delete.confirm', { name: templateLabel(tpl) }))
                             : true;
                         if (!ok) return;
                         deleteUserTemplate(tpl.id);
@@ -556,13 +582,15 @@
             // 'Start from scratch' option). Built-ins follow, then
             // user templates — single continuous list, no divider.
             // Filter input narrows by label substring + description.
-            var allTpls = BOWIRE_WORKSPACE_TEMPLATES.filter(function (t) {
-                return t.id !== 'empty';
+            var allTpls = BOWIRE_WORKSPACE_TEMPLATES.filter(function (tpl) {
+                return tpl.id !== 'empty';
             }).concat(listUserTemplates());
             if (templateFilter) {
-                allTpls = allTpls.filter(function (t) {
-                    var lbl = (t.label || '').toLowerCase();
-                    var desc = (t.description || '').toLowerCase();
+                allTpls = allTpls.filter(function (tpl) {
+                    // Filter on what is on screen, so a German label matches a
+                    // German search term.
+                    var lbl = templateLabel(tpl).toLowerCase();
+                    var desc = templateDescription(tpl).toLowerCase();
                     return lbl.indexOf(templateFilter) >= 0 || desc.indexOf(templateFilter) >= 0;
                 });
             }
@@ -570,8 +598,8 @@
                 templateList.appendChild(el('div', {
                     className: 'bowire-ws-templates-empty',
                     textContent: templateFilter
-                        ? 'No templates match "' + templateFilter + '".'
-                        : 'No templates yet. Save the current workspace as a template to start building your library.'
+                        ? t('wsTemplates.list.noMatch', { filter: templateFilter })
+                        : t('wsTemplates.list.none')
                 }));
                 return;
             }
@@ -616,21 +644,25 @@
             if (typeof toast === 'function' && selectedTemplateId === 'empty') {
                 var _wsId = ws.id;
                 var _wsName = ws.name;
-                toast('Created workspace "' + _wsName + '"', 'info', {
+                toast(t('wsTemplates.created', { name: _wsName }), 'info', {
                     undo: function () {
                         if (typeof deleteWorkspace === 'function') deleteWorkspace(_wsId);
                         if (typeof render === 'function') render();
                     },
                     logAction: {
+                        // Not translated: recordAction persists the rendered
+                        // title, so a translated one would freeze the language
+                        // of the session that made the entry. #689 moves the
+                        // action log to keys resolved at render time.
                         kind: 'workspace-create',
                         rail: 'workspaces',
                         title: 'Created workspace "' + _wsName + '"',
                         undoSpec: { workspaceId: _wsId },
                         redo: function () {
                             if (typeof workspacesTrash === 'undefined' || !Array.isArray(workspacesTrash)) return;
-                            var t = workspacesTrash.find(function (x) { return x && x.workspace && x.workspace.id === _wsId; });
-                            if (t && typeof restoreWorkspaceFromTrash === 'function') {
-                                restoreWorkspaceFromTrash(t);
+                            var trashed = workspacesTrash.find(function (x) { return x && x.workspace && x.workspace.id === _wsId; });
+                            if (trashed && typeof restoreWorkspaceFromTrash === 'function') {
+                                restoreWorkspaceFromTrash(trashed);
                                 if (typeof render === 'function') render();
                             }
                         }
@@ -677,12 +709,12 @@
         var confirmBtn = el('button', {
             id: 'bowire-ws-create-submit',
             className: 'bowire-confirm-btn',
-            textContent: 'Create',
+            textContent: t('wsTemplates.dialog.create'),
             onClick: commit
         });
         var cancelBtn = el('button', {
             className: 'bowire-confirm-btn cancel',
-            textContent: 'Cancel',
+            textContent: t('common.cancel'),
             onClick: function () { overlay.remove(); }
         });
 
@@ -697,8 +729,8 @@
             'aria-modal': 'true',
             'aria-labelledby': 'bowire-ws-create-title'
         },
-            el('div', { id: 'bowire-ws-create-title', className: 'bowire-confirm-title', textContent: 'Create workspace' }),
-            el('div', { className: 'bowire-confirm-message', textContent: 'Name your workspace, then start from scratch or pick a template.' }),
+            el('div', { id: 'bowire-ws-create-title', className: 'bowire-confirm-title', textContent: t('wsTemplates.dialog.title') }),
+            el('div', { className: 'bowire-confirm-message', textContent: t('wsTemplates.dialog.message') }),
             nameInput,
             startFromScratchWrap,
             templatesHeader,
