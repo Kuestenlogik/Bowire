@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-11-03)*
 
-**16/29 done** · 13 backlog
+**17/29 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -25,7 +25,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog | `area:workbench` |
 | [366](https://github.com/Kuestenlogik/Bowire/issues/366) | Bowire | [Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults](#issue-kuestenlogik-bowire-366) | ⬜ Backlog | `area:workbench` |
 | [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ⬜ Backlog | `area:security` |
-| [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ⬜ Backlog | `area:workbench` |
 | [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog |  |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
@@ -37,6 +36,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [362](https://github.com/Kuestenlogik/Bowire/issues/362) | Bowire | [Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern](#issue-kuestenlogik-bowire-362) | ✅ Done | `area:workbench` |
 | [363](https://github.com/Kuestenlogik/Bowire/issues/363) | Bowire | [Sidebar UX round 2: rail-strip drop targets + uniform 'select → assign → save as preset' toolbar affordance](#issue-kuestenlogik-bowire-363) | ✅ Done | `area:workbench` |
 | [534](https://github.com/Kuestenlogik/Bowire/issues/534) | Bowire | [Explain why discovery failed instead of just reporting 0 services](#issue-kuestenlogik-bowire-534) | ✅ Done | `area:workbench` |
+| [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ✅ Done | `area:workbench` |
 | [536](https://github.com/Kuestenlogik/Bowire/issues/536) | Bowire | [Offer next-step handoffs directly from a successful response](#issue-kuestenlogik-bowire-536) | ✅ Done | `area:workbench` |
 | [537](https://github.com/Kuestenlogik/Bowire/issues/537) | Bowire | [Make the catalogue a primary entry point, not a side path](#issue-kuestenlogik-bowire-537) | ✅ Done | `area:workbench` |
 | [538](https://github.com/Kuestenlogik/Bowire/issues/538) | Bowire | [Show the CLI equivalent of every request (Copy as Bowire CLI)](#issue-kuestenlogik-bowire-538) | ✅ Done | `area:workbench` |
@@ -216,12 +216,6 @@ Follow-ups collecting the workbench-UI remainders from the shipped test-pillar f
 
 The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the workflow the OAST work so far does not cover. [[more]](https://github.com/Kuestenlogik/Bowire/issues/486)
 
-#### <a id="issue-kuestenlogik-bowire-535"></a>⬜ Backlog · [#535](https://github.com/Kuestenlogik/Bowire/issues/535) Embedded first run should land on Discover, not on a workspace-creation gate
-
-> `area:workbench`
-
-Feasible and small. Everything the proposal assumes already exists: `BowireOptions.AutoCreateInitialWorkspace` (BowireOptions.cs:133) is emitted into `window.__BOWIRE_CONFIG__` by BowireHtmlGenerator.cs:271 and consumed by the boot seed in prologue.js:1999-2017; embedded-vs-standalone is decided onc … [[more]](https://github.com/Kuestenlogik/Bowire/issues/535)
-
 #### <a id="issue-kuestenlogik-bowire-583"></a>⬜ Backlog · [#583](https://github.com/Kuestenlogik/Bowire/issues/583) Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint
 
 #189 shipped the design-time lint core across **all three surfaces** — CLI (`bowire lint`), Web-UI (workbench Lint rail + `/api/lint`), and MCP (`bowire.lint`) — with a typed rule engine, 5 built-in rules, `.bowire/rules.json` config (toggles + severity overrides), and a plugin SPI (`IBowireLintRule … [[more]](https://github.com/Kuestenlogik/Bowire/issues/583)
@@ -283,6 +277,12 @@ Follow-up to #362 (audit findings cleared). Two genuinely-new enhancements that 
 > `area:workbench`
 
 The `attempts` data does exist server-side, but the claim that "the UI simply does not show it" understates the problem: the UI never even *reads* the body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/534)
+
+#### <a id="issue-kuestenlogik-bowire-535"></a>✅ Done · [#535](https://github.com/Kuestenlogik/Bowire/issues/535) Embedded first run should land on Discover, not on a workspace-creation gate
+
+> `area:workbench`
+
+Feasible and small. Everything the proposal assumes already exists: `BowireOptions.AutoCreateInitialWorkspace` (BowireOptions.cs:133) is emitted into `window.__BOWIRE_CONFIG__` by BowireHtmlGenerator.cs:271 and consumed by the boot seed in prologue.js:1999-2017; embedded-vs-standalone is decided onc … [[more]](https://github.com/Kuestenlogik/Bowire/issues/535)
 
 #### <a id="issue-kuestenlogik-bowire-536"></a>✅ Done · [#536](https://github.com/Kuestenlogik/Bowire/issues/536) Offer next-step handoffs directly from a successful response
 
