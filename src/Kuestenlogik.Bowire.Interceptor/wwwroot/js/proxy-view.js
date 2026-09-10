@@ -228,11 +228,11 @@
         // so it lives behind the ⋮).
         if (typeof renderSidebarToolbar === 'function') {
             container.appendChild(renderSidebarToolbar({
-                title: 'Proxy',
+                title: t('proxy.title'),
                 actions: [
                     {
                         icon: 'replay',
-                        title: 'Reconnect to the proxy',
+                        title: t('proxy.reconnect'),
                         onClick: function () {
                             proxyConnectionState = 'idle';
                             render();
@@ -241,19 +241,19 @@
                 ],
                 overflow: [
                     {
-                        label: 'Clear all flows',
+                        label: t('intercept.clearFlows'),
                         danger: true,
                         onClick: function () { bowireProxyClearFlows(); }
                     },
                     { separator: true },
                     {
-                        label: 'Edit API URL…',
+                        label: t('proxy.editApiUrl'),
                         onClick: function () {
-                            bowirePrompt('Proxy API URL', {
-                                title: 'Proxy connection',
+                            bowirePrompt(t('proxy.apiUrlPrompt'), {
+                                title: t('proxy.connectionTitle'),
                                 defaultValue: apiUrl || '',
                                 placeholder: 'http://localhost:8889',
-                                confirmText: 'Save'
+                                confirmText: t('common.save')
                             }).then(function (val) {
                                 if (val === null || val === undefined) return;
                                 bowireProxySetApiUrl(String(val).trim());
@@ -273,19 +273,18 @@
         if (embedded && !apiUrl) {
             container.appendChild(renderEmptyCard({
                 icon: 'plug',
-                headline: 'Proxy runs outside this host',
-                body: 'Proxy mode runs in the standalone Bowire CLI or against an external proxy URL. '
-                    + 'This host (embedded MapBowire) doesn\'t expose a proxy listener.',
+                headline: t('proxy.outsideHost'),
+                body: t('proxy.outsideHostSidebarBody'),
                 actions: [
                     {
-                        label: 'Set external proxy URL…',
+                        label: t('proxy.setExternal'),
                         primary: true,
                         onClick: function () {
-                            bowirePrompt('External proxy endpoint', {
-                                title: 'Proxy connection',
+                            bowirePrompt(t('main.ws.proxyEndpoint'), {
+                                title: t('proxy.connectionTitle'),
                                 defaultValue: '',
                                 placeholder: 'http://proxy.example.internal:8889',
-                                confirmText: 'Save'
+                                confirmText: t('common.save')
                             }).then(function (val) {
                                 if (val === null || val === undefined) return;
                                 bowireProxySetApiUrl(String(val).trim());
@@ -295,7 +294,7 @@
                         }
                     },
                     {
-                        label: 'Read the docs',
+                        label: t('proxy.readDocs'),
                         onClick: function () {
                             if (typeof helpOpenDrawer === 'function') {
                                 helpOpenDrawer('features/proxy');
@@ -310,7 +309,7 @@
         if (proxyConnectionState === 'connecting') {
             container.appendChild(el('div', { className: 'bowire-loading', style: 'padding:24px' },
                 el('div', { className: 'bowire-spinner' }),
-                el('span', { className: 'bowire-loading-text', textContent: 'Connecting to proxy…' })
+                el('span', { className: 'bowire-loading-text', textContent: t('proxy.connecting') })
             ));
             return;
         }
@@ -322,18 +321,20 @@
             // instead.
             var errBody;
             if (embedded) {
-                errBody = (proxyConnectionError || 'Could not connect to ' + apiUrl)
-                    + ' — check the external proxy URL is running and reachable from this host.';
+                errBody = t('proxy.unreachableEmbeddedBody', {
+                    error: proxyConnectionError || t('proxy.noConnectTo', { url: apiUrl })
+                });
             } else {
-                errBody = (proxyConnectionError || 'Could not connect to ' + apiUrl)
-                    + ' — start the proxy with `bowire proxy` in a terminal, then retry.';
+                errBody = t('proxy.unreachableStandaloneBody', {
+                    error: proxyConnectionError || t('proxy.noConnectTo', { url: apiUrl })
+                });
             }
             container.appendChild(renderEmptyCard({
                 icon: 'plug',
-                headline: 'Proxy not reachable',
+                headline: t('proxy.unreachable'),
                 body: errBody,
                 actions: [{
-                    label: 'Retry',
+                    label: t('intercept.retry'),
                     primary: true,
                     onClick: function () { proxyConnectionState = 'idle'; render(); }
                 }]
@@ -344,8 +345,10 @@
         if (proxyFlows.length === 0) {
             container.appendChild(renderEmptyCard({
                 icon: 'globe',
-                headline: 'Waiting for traffic',
-                body: 'Point your browser / client at ' + apiUrl.replace(/:\d+$/, ':8888') + ' to start capturing — captured flows land here in real time.'
+                headline: t('proxy.waitingTraffic'),
+                body: t('proxy.waitingTrafficBody', {
+                    url: apiUrl.replace(/:\d+$/, ':8888')
+                })
             }));
             return;
         }
@@ -371,7 +374,7 @@
                         textContent: flow.responseStatus > 0 ? String(flow.responseStatus) : (flow.error ? 'ERR' : '…') }),
                     el('span', { className: 'bowire-proxy-list-url', textContent: flow.url || '', title: flow.url || '' }),
                     flow.scheme === 'https'
-                        ? el('span', { className: 'bowire-proxy-list-tls', title: 'MITM-intercepted HTTPS', textContent: '🔓' })
+                        ? el('span', { className: 'bowire-proxy-list-tls', title: t('proxy.mitmHttps'), textContent: '🔓' })
                         : null
                 ));
             })(proxyFlows[i]);
@@ -395,9 +398,8 @@
         if (embedded && !apiUrl) {
             pane.appendChild(renderEmptyCard({
                 icon: 'plug',
-                headline: 'Proxy runs outside this host',
-                body: 'Proxy mode runs in the standalone Bowire CLI or against an external proxy URL. '
-                    + 'Set an external proxy endpoint in Workspace Settings → General to wire this rail to a remote `bowire proxy`.'
+                headline: t('proxy.outsideHost'),
+                body: t('proxy.outsideHostMainBody')
             }));
             return pane;
         }
@@ -407,11 +409,11 @@
             // hint that worked for the standalone CLI is meaningless
             // here. Show a host-appropriate next step.
             var mainErrBody = embedded
-                ? 'Check the external proxy URL in Workspace Settings, then click Retry in the sidebar.'
-                : 'Run `bowire proxy` in a terminal, then click Retry in the sidebar.';
+                ? t('proxy.noConnectionEmbeddedBody')
+                : t('proxy.noConnectionStandaloneBody');
             pane.appendChild(renderEmptyCard({
                 icon: 'plug',
-                headline: 'No proxy connection',
+                headline: t('proxy.noConnection'),
                 body: mainErrBody
             }));
             return pane;
@@ -420,8 +422,8 @@
         if (!proxyFlowSelectedId) {
             pane.appendChild(renderEmptyCard({
                 icon: 'globe',
-                headline: 'Pick a captured flow',
-                body: 'Select a row in the sidebar to inspect the request / response, or send it into the recording pipeline.'
+                headline: t('intercept.pickFlow'),
+                body: t('intercept.pickFlowBody')
             }));
             return pane;
         }
@@ -431,8 +433,8 @@
         if (!summary && !detail) {
             pane.appendChild(renderEmptyCard({
                 icon: 'history',
-                headline: 'Flow no longer available',
-                body: 'The capture ring buffer evicted this entry. Pick a more recent flow from the sidebar.'
+                headline: t('intercept.flowGone'),
+                body: t('intercept.flowGoneBody')
             }));
             return pane;
         }
@@ -446,23 +448,23 @@
             el('button', {
                 id: 'bowire-proxy-send-rec-btn',
                 className: 'bowire-env-editor-action-btn',
-                title: 'Convert this captured flow into a Bowire recording you can replay, fuzz, or include in a test collection.',
+                title: t('intercept.toRecordingTitle'),
                 onClick: function () { bowireProxySendToRecording(proxyFlowSelectedId); }
-            }, el('span', { textContent: 'Send to recording' }))
+            }, el('span', { textContent: t('intercept.sendToRecording') }))
         );
         pane.appendChild(header);
 
         // Metadata row
         const meta = el('div', { className: 'bowire-proxy-detail-meta' });
-        meta.appendChild(metaCell('Status', String(flow.responseStatus || (flow.error ? 'ERR' : '…'))));
-        meta.appendChild(metaCell('Scheme', flow.scheme || 'http'));
-        meta.appendChild(metaCell('Latency', (flow.latencyMs || 0) + ' ms'));
-        meta.appendChild(metaCell('Captured', flow.capturedAt ? new Date(flow.capturedAt).toLocaleTimeString() : ''));
-        if (flow.error) meta.appendChild(metaCell('Error', flow.error));
+        meta.appendChild(metaCell(t('intercept.metaStatus'), String(flow.responseStatus || (flow.error ? 'ERR' : '…'))));
+        meta.appendChild(metaCell(t('intercept.metaScheme'), flow.scheme || 'http'));
+        meta.appendChild(metaCell(t('intercept.metaLatency'), (flow.latencyMs || 0) + ' ms'));
+        meta.appendChild(metaCell(t('intercept.metaCaptured'), flow.capturedAt ? new Date(flow.capturedAt).toLocaleTimeString() : ''));
+        if (flow.error) meta.appendChild(metaCell(t('intercept.metaError'), flow.error));
         pane.appendChild(meta);
 
         if (!detail) {
-            pane.appendChild(el('div', { style: 'padding:24px; opacity:0.7', textContent: 'Loading full payload…' }));
+            pane.appendChild(el('div', { style: 'padding:24px; opacity:0.7', textContent: t('intercept.loadingPayload') }));
             return pane;
         }
 
@@ -492,7 +494,7 @@
         const hdrList = el('div', { className: 'bowire-proxy-detail-headers' });
         const list = Array.isArray(headers) ? headers : [];
         if (list.length === 0) {
-            hdrList.appendChild(el('div', { className: 'bowire-proxy-detail-hdr-empty', textContent: '(no headers)' }));
+            hdrList.appendChild(el('div', { className: 'bowire-proxy-detail-hdr-empty', textContent: t('proxy.noHeaders') }));
         } else {
             for (let i = 0; i < list.length; i++) {
                 const pair = list[i];
@@ -509,12 +511,12 @@
             bodyBox.appendChild(el('pre', { className: 'bowire-proxy-detail-body-pre', textContent: bodyText }));
         } else if (bodyBase64) {
             bodyBox.appendChild(el('div', { className: 'bowire-proxy-detail-body-binary' },
-                el('div', { textContent: '(binary payload — base64)' }),
+                el('div', { textContent: t('proxy.binaryPayload') }),
                 el('pre', { className: 'bowire-proxy-detail-body-pre', style: 'opacity:0.7',
                     textContent: bodyBase64.length > 2048 ? bodyBase64.slice(0, 2048) + '…' : bodyBase64 })
             ));
         } else {
-            bodyBox.appendChild(el('div', { className: 'bowire-proxy-detail-body-empty', textContent: '(empty body)' }));
+            bodyBox.appendChild(el('div', { className: 'bowire-proxy-detail-body-empty', textContent: t('proxy.emptyBody') }));
         }
         side.appendChild(bodyBox);
         return side;

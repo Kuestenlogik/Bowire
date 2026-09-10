@@ -216,7 +216,7 @@
             // Auto-flip to the Mocks tab so the operator sees the rule
             // they just seeded.
             interceptedSubView = 'mocks';
-            if (typeof toast === 'function') toast('Mock rule seeded from flow', 'success');
+            if (typeof toast === 'function') toast(t('intercept.ruleSeeded'), 'success');
             render();
             return rule;
         } catch { return null; }
@@ -259,11 +259,11 @@
 
         if (typeof renderSidebarToolbar === 'function') {
             container.appendChild(renderSidebarToolbar({
-                title: 'Intercepted',
+                title: t('intercept.interceptedTitle'),
                 actions: [
                     {
                         icon: 'replay',
-                        title: 'Reconnect to the interceptor',
+                        title: t('intercept.reconnectInterceptor'),
                         onClick: function () {
                             interceptedConnectionState = 'idle';
                             render();
@@ -272,7 +272,7 @@
                 ],
                 overflow: [
                     {
-                        label: 'Clear all flows',
+                        label: t('intercept.clearFlows'),
                         danger: true,
                         onClick: function () { bowireInterceptedClearFlows(); }
                     }
@@ -286,12 +286,12 @@
             el('button', {
                 className: 'bowire-rail-subtab' + (interceptedSubView === 'flows' ? ' active' : ''),
                 onClick: function () { interceptedSubView = 'flows'; render(); }
-            }, el('span', { textContent: 'Flows' }),
+            }, el('span', { textContent: t('intercept.flowsTab') }),
                 el('span', { className: 'bowire-rail-subtab-meta', textContent: interceptedFlows.length ? String(interceptedFlows.length) : '' })),
             el('button', {
                 className: 'bowire-rail-subtab' + (interceptedSubView === 'mocks' ? ' active' : ''),
                 onClick: function () { interceptedSubView = 'mocks'; render(); }
-            }, el('span', { textContent: 'Mocks' }),
+            }, el('span', { textContent: t('intercept.mocksTab') }),
                 el('span', { className: 'bowire-rail-subtab-meta', textContent: interceptedMockRules.length ? String(interceptedMockRules.length) : '' }))
         );
         container.appendChild(tabStrip);
@@ -302,7 +302,7 @@
             if (live && typeof bowireWireTabOverflow === 'function') {
                 bowireWireTabOverflow(live, {
                     tabSelector: '.bowire-rail-subtab',
-                    label: 'More tabs'
+                    label: t('main.moreTabs')
                 });
             }
         });
@@ -315,7 +315,7 @@
         if (interceptedConnectionState === 'connecting') {
             container.appendChild(el('div', { className: 'bowire-loading', style: 'padding:24px' },
                 el('div', { className: 'bowire-spinner' }),
-                el('span', { className: 'bowire-loading-text', textContent: 'Connecting to interceptor…' })
+                el('span', { className: 'bowire-loading-text', textContent: t('intercept.connectingInterceptor') })
             ));
             return;
         }
@@ -323,11 +323,12 @@
         if (interceptedConnectionState === 'error') {
             container.appendChild(renderEmptyCard({
                 icon: 'plug',
-                headline: 'Interceptor not reachable',
-                body: (interceptedConnectionError || 'Failed to reach the interceptor endpoints.')
-                    + ' This rail talks to the same host that serves the workbench — check the host is running.',
+                headline: t('intercept.interceptorUnreachable'),
+                body: t('intercept.unreachableBody', {
+                    error: interceptedConnectionError || t('intercept.interceptorEndpointsFailed')
+                }),
                 actions: [{
-                    label: 'Retry',
+                    label: t('intercept.retry'),
                     primary: true,
                     onClick: function () { interceptedConnectionState = 'idle'; render(); }
                 }]
@@ -338,11 +339,10 @@
         if (interceptedFlows.length === 0) {
             container.appendChild(renderEmptyCard({
                 icon: 'globe',
-                headline: 'No traffic yet',
-                body: 'Add app.UseBowireInterceptor() to this host\'s pipeline, then drive any request through it from any client. '
-                    + 'Captured flows land here in real time.',
+                headline: t('intercept.noTrafficYet'),
+                body: t('intercept.noTrafficEmbeddedBody'),
                 actions: [{
-                    label: 'Interceptor docs',
+                    label: t('intercept.docs'),
                     primary: true,
                     onClick: function () { window.open('https://bowire.io/docs/features/', '_blank', 'noopener'); }
                 }]
@@ -377,10 +377,10 @@
                         title: flow.url || ''
                     }),
                     flow.streaming
-                        ? el('span', { className: 'bowire-proxy-list-tls', title: 'Streaming response', textContent: '↻' })
+                        ? el('span', { className: 'bowire-proxy-list-tls', title: t('intercept.streamingResponse'), textContent: '↻' })
                         : null,
                     flow.mocked
-                        ? el('span', { className: 'bowire-proxy-list-tls', title: 'Served from mock rule', textContent: 'M' })
+                        ? el('span', { className: 'bowire-proxy-list-tls', title: t('intercept.fromMockRule'), textContent: 'M' })
                         : null
                 ));
             })(interceptedFlows[i]);
@@ -404,7 +404,7 @@
             ),
             el('span', {
                 className: 'bowire-rail-subtab-toggle-label',
-                textContent: interceptedMocksEnabled ? 'Mock injection ON' : 'Mock injection OFF'
+                textContent: interceptedMocksEnabled ? t('intercept.mockInjectionOn') : t('intercept.mockInjectionOff')
             })
         );
         container.appendChild(toggleRow);
@@ -423,19 +423,19 @@
                 };
                 render();
             }
-        }, el('span', { textContent: '+ New mock rule' })));
+        }, el('span', { textContent: t('intercept.newRule') })));
 
         if (interceptedMockRules.length === 0) {
             container.appendChild(renderEmptyCard({
                 icon: 'globe',
-                headline: 'No mock rules',
+                headline: t('intercept.noMockRules'),
                 // Cross-link to the Mock servers sub-tab so the
                 // operator understands the orthogonal split: rules here
                 // substitute single responses inside the proxy /
                 // middleware pipeline; Mock servers spin up a standalone
                 // host that replays a recording end-to-end. Same word
                 // "mock" — different verb.
-                body: 'Add a rule, or open a captured flow and click "Mock this route" to seed one from the response. Looking for a standalone mock server that replays a whole recording? See the Mock servers sub-tab.'
+                body: t('intercept.noMockRulesBody')
             }));
             return;
         }
@@ -463,7 +463,7 @@
                         title: rule.name || rule.pathPattern || ''
                     }),
                     !rule.enabled
-                        ? el('span', { className: 'bowire-proxy-list-tls', title: 'Rule paused', textContent: '⏸' })
+                        ? el('span', { className: 'bowire-proxy-list-tls', title: t('intercept.rulePaused'), textContent: '⏸' })
                         : null
                 ));
             })(interceptedMockRules[i]);
@@ -478,8 +478,8 @@
         if (interceptedConnectionState === 'error') {
             pane.appendChild(renderEmptyCard({
                 icon: 'plug',
-                headline: 'No interceptor connection',
-                body: 'Click Retry in the sidebar — this rail talks to the same host that serves the workbench.'
+                headline: t('intercept.noInterceptorConnection'),
+                body: t('intercept.retryHint')
             }));
             return pane;
         }
@@ -491,8 +491,8 @@
         if (!interceptedFlowSelectedId) {
             pane.appendChild(renderEmptyCard({
                 icon: 'globe',
-                headline: 'Pick an intercepted flow',
-                body: 'Select a row in the sidebar to inspect the request / response, or send it into the recording pipeline.'
+                headline: t('intercept.pickInterceptedFlow'),
+                body: t('intercept.pickFlowBody')
             }));
             return pane;
         }
@@ -502,8 +502,8 @@
         if (!summary && !detail) {
             pane.appendChild(renderEmptyCard({
                 icon: 'history',
-                headline: 'Flow no longer available',
-                body: 'The capture ring buffer evicted this entry. Pick a more recent flow from the sidebar.'
+                headline: t('intercept.flowGone'),
+                body: t('intercept.flowGoneBody')
             }));
             return pane;
         }
@@ -517,15 +517,15 @@
             el('button', {
                 id: 'bowire-intercepted-send-rec-btn',
                 className: 'bowire-env-editor-action-btn',
-                title: 'Convert this intercepted flow into a Bowire recording you can replay, fuzz, or include in a test collection.',
+                title: t('intercept.toRecordingTitle2'),
                 onClick: function () { bowireInterceptedSendToRecording(interceptedFlowSelectedId); }
-            }, el('span', { textContent: 'Send to recording' })),
+            }, el('span', { textContent: t('intercept.sendToRecording') })),
             el('button', {
                 id: 'bowire-intercepted-mock-this-btn',
                 className: 'bowire-env-editor-action-btn',
-                title: 'Seed a mock-injection rule from this flow. The interceptor will serve the captured response in place of the upstream endpoint until the rule is paused or removed.',
+                title: t('intercept.mockRouteTitle'),
                 onClick: function () { bowireInterceptedSeedMockFromFlow(interceptedFlowSelectedId); }
-            }, el('span', { textContent: 'Mock this route' }))
+            }, el('span', { textContent: t('intercept.mockRoute') }))
         );
         pane.appendChild(header);
 
@@ -537,17 +537,17 @@
                 el('div', { className: 'bowire-proxy-detail-meta-value', textContent: value })
             );
         }
-        meta.appendChild(_interceptedMetaCell('Status', String(flow.responseStatus || (flow.error ? 'ERR' : '…'))));
-        meta.appendChild(_interceptedMetaCell('Scheme', flow.scheme || 'http'));
-        meta.appendChild(_interceptedMetaCell('Latency', (flow.latencyMs || 0) + ' ms'));
-        meta.appendChild(_interceptedMetaCell('Captured', flow.capturedAt ? new Date(flow.capturedAt).toLocaleTimeString() : ''));
-        if (flow.streaming) meta.appendChild(_interceptedMetaCell('Mode', 'streaming'));
-        if (flow.mocked) meta.appendChild(_interceptedMetaCell('Source', 'mock rule'));
-        if (flow.error) meta.appendChild(_interceptedMetaCell('Error', flow.error));
+        meta.appendChild(_interceptedMetaCell(t('intercept.metaStatus'), String(flow.responseStatus || (flow.error ? 'ERR' : '…'))));
+        meta.appendChild(_interceptedMetaCell(t('intercept.metaScheme'), flow.scheme || 'http'));
+        meta.appendChild(_interceptedMetaCell(t('intercept.metaLatency'), (flow.latencyMs || 0) + ' ms'));
+        meta.appendChild(_interceptedMetaCell(t('intercept.metaCaptured'), flow.capturedAt ? new Date(flow.capturedAt).toLocaleTimeString() : ''));
+        if (flow.streaming) meta.appendChild(_interceptedMetaCell(t('intercept.metaMode'), t('intercept.modeStreaming')));
+        if (flow.mocked) meta.appendChild(_interceptedMetaCell(t('intercept.metaSource'), t('intercept.sourceMockRule')));
+        if (flow.error) meta.appendChild(_interceptedMetaCell(t('intercept.metaError'), flow.error));
         pane.appendChild(meta);
 
         if (!detail) {
-            pane.appendChild(el('div', { style: 'padding:24px; opacity:0.7', textContent: 'Loading full payload…' }));
+            pane.appendChild(el('div', { style: 'padding:24px; opacity:0.7', textContent: t('intercept.loadingPayload') }));
             return pane;
         }
 
@@ -573,8 +573,8 @@
         if (!rule) {
             pane.appendChild(renderEmptyCard({
                 icon: 'globe',
-                headline: 'Mock injection',
-                body: 'Pick a rule on the left, click "+ New mock rule" to author one, or open a captured flow on the Flows tab and click "Mock this route".'
+                headline: t('intercept.mockInjection'),
+                body: t('intercept.mockInjectionBody')
             }));
             return pane;
         }
@@ -583,23 +583,23 @@
 
         // Header with name + save / delete actions.
         const header = el('div', { className: 'bowire-env-editor-header' },
-            el('h2', { className: 'bowire-env-editor-title', textContent: isDraft ? 'New mock rule' : (rule.name || 'Mock rule') }),
+            el('h2', { className: 'bowire-env-editor-title', textContent: isDraft ? t('intercept.newRuleTitle') : (rule.name || t('intercept.ruleFallbackName')) }),
             el('span', { style: 'flex:1' }),
             !isDraft ? el('button', {
                 className: 'bowire-env-editor-action-btn',
-                title: rule.enabled ? 'Pause this rule (keep the definition, skip the matcher)' : 'Resume this rule',
+                title: rule.enabled ? t('intercept.pauseRuleTitle') : t('intercept.resumeRuleTitle'),
                 onClick: function () {
                     bowireInterceptedSaveMockRule(Object.assign({}, rule, { enabled: !rule.enabled }));
                 }
-            }, el('span', { textContent: rule.enabled ? 'Pause' : 'Resume' })) : null,
+            }, el('span', { textContent: rule.enabled ? t('intercept.pause') : t('intercept.resume') })) : null,
             !isDraft ? el('button', {
                 className: 'bowire-env-editor-action-btn',
-                title: 'Delete this mock rule',
+                title: t('intercept.deleteRule'),
                 onClick: function () { bowireInterceptedDeleteMockRule(rule.id); }
-            }, el('span', { textContent: 'Delete' })) : null,
+            }, el('span', { textContent: t('common.delete') })) : null,
             isDraft ? el('button', {
                 className: 'bowire-env-editor-action-btn',
-                title: 'Save the new rule. Existing matching requests start mocking from the next call.',
+                title: t('intercept.saveRuleTitle'),
                 onClick: function () {
                     bowireInterceptedSaveMockRule(interceptedMockEditing).then(function (saved) {
                         if (saved) {
@@ -609,7 +609,7 @@
                         }
                     });
                 }
-            }, el('span', { textContent: 'Save' })) : null
+            }, el('span', { textContent: t('common.save') })) : null
         );
         pane.appendChild(header);
 
@@ -626,7 +626,7 @@
             type: 'text',
             className: 'bowire-env-editor-field-input',
             value: rule.name || '',
-            placeholder: 'Display name',
+            placeholder: t('main.src.displayName'),
             onChange: function (e) {
                 if (isDraft) { interceptedMockEditing.name = e.target.value; render(); }
                 else { bowireInterceptedSaveMockRule(Object.assign({}, rule, { name: e.target.value })); }
@@ -646,7 +646,7 @@
             type: 'text',
             className: 'bowire-env-editor-field-input',
             value: rule.method || '*',
-            placeholder: 'GET / POST / *',
+            placeholder: t('intercept.verbPlaceholder'),
             onChange: function (e) {
                 if (isDraft) { interceptedMockEditing.method = e.target.value; render(); }
                 else { bowireInterceptedSaveMockRule(Object.assign({}, rule, { method: e.target.value })); }
@@ -683,12 +683,12 @@
             }
         });
 
-        pane.appendChild(_fieldRow('Name', nameInput));
-        pane.appendChild(_fieldRow('Path pattern', pathInput));
-        pane.appendChild(_fieldRow('Method', methodInput));
-        pane.appendChild(_fieldRow('Status code', statusInput));
-        pane.appendChild(_fieldRow('Delay (ms)', delayInput));
-        pane.appendChild(_fieldRow('Response body', bodyInput));
+        pane.appendChild(_fieldRow(t('intercept.fieldName'), nameInput));
+        pane.appendChild(_fieldRow(t('intercept.fieldPathPattern'), pathInput));
+        pane.appendChild(_fieldRow(t('intercept.fieldMethod'), methodInput));
+        pane.appendChild(_fieldRow(t('intercept.fieldStatusCode'), statusInput));
+        pane.appendChild(_fieldRow(t('intercept.fieldDelayMs'), delayInput));
+        pane.appendChild(_fieldRow(t('intercept.fieldResponseBody'), bodyInput));
 
         // Recordings → mock seeding affordance: compose with the
         // existing Mocks rail by listing live recordings as one-click
@@ -696,10 +696,10 @@
         // doesn't accidentally clobber an existing rule.
         if (isDraft && typeof recordingsList !== 'undefined' && Array.isArray(recordingsList) && recordingsList.length > 0) {
             var seedBlock = el('div', { className: 'bowire-env-editor-field-row' },
-                el('label', { className: 'bowire-env-editor-field-label', textContent: 'Seed from recording' }),
+                el('label', { className: 'bowire-env-editor-field-label', textContent: t('intercept.seedFromRecording') }),
                 (function () {
                     var sel = el('select', { className: 'bowire-env-editor-field-input' },
-                        el('option', { value: '', textContent: '— pick a recording —' })
+                        el('option', { value: '', textContent: t('intercept.pickRecording') })
                     );
                     recordingsList.forEach(function (rec) {
                         if (!rec || !rec.id) return;

@@ -138,7 +138,7 @@
             && typeof window.bowireOpenReverseProxyModal === 'function') {
             actions.push({
                 id: 'bowire-intercept-start-proxy-btn',
-                label: 'Start Reverse-Proxy now',
+                label: t('intercept.startProxy'),
                 primary: true,
                 onClick: function () {
                     window.bowireOpenReverseProxyModal();
@@ -155,7 +155,7 @@
             });
         }
         actions.push({
-            label: 'Re-check status',
+            label: t('intercept.recheck'),
             onClick: function () {
                 interceptStatus = null;
                 bowireInterceptLoadStatus();
@@ -235,8 +235,8 @@
             el('button', {
                 type: 'button',
                 className: 'bowire-rail-subtabs-action',
-                title: 'Reconnect to the traffic source',
-                'aria-label': 'Reconnect',
+                title: t('intercept.reconnectSource'),
+                'aria-label': t('intercept.reconnect'),
                 onClick: function () {
                     if (typeof interceptedConnectionState !== 'undefined') {
                         interceptedConnectionState = 'idle';
@@ -247,14 +247,14 @@
             el('button', {
                 type: 'button',
                 className: 'bowire-rail-subtabs-action',
-                title: 'More actions…',
-                'aria-label': 'More actions',
+                title: t('menu.moreActions'),
+                'aria-label': t('menu.moreActions'),
                 onClick: function (e) {
                     e.stopPropagation();
                     if (typeof showContextMenu !== 'function') return;
                     var r = e.currentTarget.getBoundingClientRect();
                     showContextMenu(r.left, r.bottom + 4, [{
-                        label: 'Clear all flows',
+                        label: t('intercept.clearFlows'),
                         icon: 'trash',
                         danger: true,
                         onClick: function () {
@@ -273,7 +273,7 @@
             if (live && typeof bowireWireTabOverflow === 'function') {
                 bowireWireTabOverflow(live, {
                     tabSelector: '.bowire-rail-subtab',
-                    label: 'More tabs'
+                    label: t('main.moreTabs')
                 });
             }
         });
@@ -322,7 +322,7 @@
         if (interceptedConnectionState === 'connecting') {
             container.appendChild(el('div', { className: 'bowire-loading', style: 'padding:24px' },
                 el('div', { className: 'bowire-spinner' }),
-                el('span', { className: 'bowire-loading-text', textContent: 'Connecting to traffic source…' })
+                el('span', { className: 'bowire-loading-text', textContent: t('intercept.connectingSource') })
             ));
             return;
         }
@@ -330,11 +330,12 @@
         if (interceptedConnectionState === 'error') {
             container.appendChild(renderEmptyCard({
                 icon: 'plug',
-                headline: 'Traffic source not reachable',
-                body: (interceptedConnectionError || 'Failed to reach the traffic endpoints.')
-                    + ' This rail talks to the same host that serves the workbench — check the host is running.',
+                headline: t('intercept.sourceUnreachable'),
+                body: t('intercept.unreachableBody', {
+                    error: interceptedConnectionError || t('intercept.sourceEndpointsFailed')
+                }),
                 actions: [{
-                    label: 'Retry',
+                    label: t('intercept.retry'),
                     primary: true,
                     onClick: function () { interceptedConnectionState = 'idle'; render(); }
                 }]
@@ -344,16 +345,16 @@
 
         if (!Array.isArray(interceptedFlows) || interceptedFlows.length === 0) {
             var emptyBody = bowireInterceptIsEmbedded()
-                ? 'Add app.UseBowireInterceptor() to this host\'s pipeline, then drive any request through it from any client. Captured flows land here in real time.'
-                : 'Point your client at the bowire proxy / bowire interceptor CLI sidecar to start capturing. Captured flows land here in real time.';
+                ? t('intercept.noTrafficEmbeddedBody')
+                : t('intercept.noTrafficStandaloneBody');
             container.appendChild(renderEmptyCard({
                 icon: 'trafficLight',
-                headline: 'No traffic yet',
+                headline: t('intercept.noTrafficYet'),
                 body: emptyBody,
                 actions: [
                     {
                         id: 'bowire-intercept-empty-tour-btn',
-                        label: 'Take a tour',
+                        label: t('common.takeTour'),
                         onClick: function () {
                             if (typeof window !== 'undefined'
                                 && typeof window.bowireStartCaptureTrafficTour === 'function') {
@@ -397,9 +398,9 @@
                         e.stopPropagation();
                         showContextMenu(e.clientX, e.clientY, [
                             {
-                                label: 'Save as recording',
+                                label: t('intercept.saveAsRecording'),
                                 icon: 'recording',
-                                title: 'Persist this captured flow as a .bwr recording in the active workspace',
+                                title: t('intercept.saveAsRecordingTitle'),
                                 onClick: function () {
                                     if (typeof bowireInterceptedSendToRecording === 'function') {
                                         bowireInterceptedSendToRecording(flow.id);
@@ -420,10 +421,10 @@
                         title: flow.url || ''
                     }),
                     flow.streaming
-                        ? el('span', { className: 'bowire-proxy-list-tls', title: 'Streaming response', textContent: '↻' })
+                        ? el('span', { className: 'bowire-proxy-list-tls', title: t('intercept.streamingResponse'), textContent: '↻' })
                         : null,
                     flow.mocked
-                        ? el('span', { className: 'bowire-proxy-list-tls', title: 'Served from override rule', textContent: 'M' })
+                        ? el('span', { className: 'bowire-proxy-list-tls', title: t('intercept.fromOverride'), textContent: 'M' })
                         : null
                 ));
             })(interceptedFlows[i]);
@@ -438,10 +439,10 @@
         if (typeof window === 'undefined' || !window.__bowireMocks) {
             container.appendChild(renderEmptyCard({
                 icon: 'mock',
-                headline: 'Mock package not loaded',
-                body: 'Reference Kuestenlogik.Bowire.Mock from the host to enable standalone mock servers. The standalone Bowire CLI ships with it included.',
+                headline: t('intercept.mockPackageMissing'),
+                body: t('intercept.mockPackageMissingBodyCli'),
                 actions: [{
-                    label: 'Setup docs',
+                    label: t('intercept.setupDocs'),
                     primary: true,
                     onClick: function () { window.open('https://bowire.io/docs/setup/embedded.html', '_blank', 'noopener'); }
                 }]
@@ -455,10 +456,10 @@
         if (!list.length) {
             container.appendChild(renderEmptyCard({
                 icon: 'mock',
-                headline: 'No mock servers running',
-                body: 'Mock servers are standalone replay hosts spun up from a recording. Open the Recordings rail and use "Run as mock" on any session to start one.',
+                headline: t('intercept.noMockServers'),
+                body: t('intercept.noMockServersBody'),
                 actions: [{
-                    label: 'Open Recordings',
+                    label: t('hint.openRecordings'),
                     primary: true,
                     onClick: function () { railMode = 'recordings'; render(); }
                 }]
@@ -482,7 +483,7 @@
                             if (typeof mockSelectedId !== 'undefined') mockSelectedId = m.mockId;
                             render();
                         },
-                        deleteTitle: 'Stop mock host',
+                        deleteTitle: t('intercept.stopMockHost'),
                         onDelete: function () {
                             if (window.__bowireMocks && typeof window.__bowireMocks.stop === 'function') {
                                 window.__bowireMocks.stop(m.mockId);
@@ -519,17 +520,17 @@
 
     function renderInterceptSettingsListInto(container) {
         var embedded = bowireInterceptIsEmbedded();
-        var headline = embedded ? 'Embedded middleware' : 'Standalone proxy';
+        var headline = embedded ? t('intercept.embeddedHeadline') : t('intercept.standaloneHeadline');
         var body = embedded
-            ? 'Bowire is mounted in-process via MapBowire(). Wire UseBowireInterceptor() into the pipeline to capture flows. The main pane shows the live middleware status.'
-            : 'Bowire runs standalone. Captured flows arrive from the bowire proxy / bowire interceptor CLI sidecar. The main pane lets you point the rail at a remote sidecar URL.';
+            ? t('intercept.embeddedBody')
+            : t('intercept.standaloneBody');
 
         container.appendChild(renderEmptyCard({
             icon: 'plug',
             headline: headline,
             body: body,
             actions: [{
-                label: 'Interceptor docs',
+                label: t('intercept.docs'),
                 primary: true,
                 onClick: function () { window.open('https://bowire.io/docs/features/', '_blank', 'noopener'); }
             }]
@@ -577,8 +578,8 @@
             && interceptedConnectionState === 'error') {
             pane.appendChild(renderEmptyCard({
                 icon: 'plug',
-                headline: 'No traffic source connection',
-                body: 'Click Retry in the sidebar — this rail talks to the same host that serves the workbench.'
+                headline: t('intercept.noSourceConnection'),
+                body: t('intercept.retryHint')
             }));
             return pane;
         }
@@ -586,8 +587,8 @@
         if (typeof interceptedFlowSelectedId === 'undefined' || !interceptedFlowSelectedId) {
             pane.appendChild(renderEmptyCard({
                 icon: 'globe',
-                headline: 'Pick a captured flow',
-                body: 'Select a row in the sidebar to inspect the request / response, or send it into the recording pipeline.'
+                headline: t('intercept.pickFlow'),
+                body: t('intercept.pickFlowBody')
             }));
             return pane;
         }
@@ -601,8 +602,8 @@
         if (!summary && !detail) {
             pane.appendChild(renderEmptyCard({
                 icon: 'history',
-                headline: 'Flow no longer available',
-                body: 'The capture ring buffer evicted this entry. Pick a more recent flow from the sidebar.'
+                headline: t('intercept.flowGone'),
+                body: t('intercept.flowGoneBody')
             }));
             return pane;
         }
@@ -614,23 +615,23 @@
             el('button', {
                 id: 'bowire-intercept-send-rec-btn',
                 className: 'bowire-env-editor-action-btn',
-                title: 'Convert this captured flow into a Bowire recording you can replay, fuzz, or include in a test collection.',
+                title: t('intercept.toRecordingTitle'),
                 onClick: function () {
                     if (typeof bowireInterceptedSendToRecording === 'function') {
                         bowireInterceptedSendToRecording(interceptedFlowSelectedId);
                     }
                 }
-            }, el('span', { textContent: 'Send to recording' })),
+            }, el('span', { textContent: t('intercept.sendToRecording') })),
             el('button', {
                 id: 'bowire-intercept-override-btn',
                 className: 'bowire-env-editor-action-btn',
-                title: 'Seed a live-override rule from this flow. The interceptor will serve the captured response in place of the upstream endpoint until the rule is paused or removed.',
+                title: t('intercept.overrideTitle'),
                 onClick: function () {
                     if (typeof bowireInterceptedSeedMockFromFlow === 'function') {
                         bowireInterceptedSeedMockFromFlow(interceptedFlowSelectedId);
                     }
                 }
-            }, el('span', { textContent: 'Override this route' }))
+            }, el('span', { textContent: t('intercept.overrideRoute') }))
         );
         pane.appendChild(actionRow);
 
@@ -641,17 +642,17 @@
                 el('div', { className: 'bowire-proxy-detail-meta-value', textContent: value })
             );
         }
-        meta.appendChild(_interceptMetaCell('Status', String(flow.responseStatus || (flow.error ? 'ERR' : '…'))));
-        meta.appendChild(_interceptMetaCell('Scheme', flow.scheme || 'http'));
-        meta.appendChild(_interceptMetaCell('Latency', (flow.latencyMs || 0) + ' ms'));
-        meta.appendChild(_interceptMetaCell('Captured', flow.capturedAt ? new Date(flow.capturedAt).toLocaleTimeString() : ''));
-        if (flow.streaming) meta.appendChild(_interceptMetaCell('Mode', 'streaming'));
-        if (flow.mocked) meta.appendChild(_interceptMetaCell('Source', 'override rule'));
-        if (flow.error) meta.appendChild(_interceptMetaCell('Error', flow.error));
+        meta.appendChild(_interceptMetaCell(t('intercept.metaStatus'), String(flow.responseStatus || (flow.error ? 'ERR' : '…'))));
+        meta.appendChild(_interceptMetaCell(t('intercept.metaScheme'), flow.scheme || 'http'));
+        meta.appendChild(_interceptMetaCell(t('intercept.metaLatency'), (flow.latencyMs || 0) + ' ms'));
+        meta.appendChild(_interceptMetaCell(t('intercept.metaCaptured'), flow.capturedAt ? new Date(flow.capturedAt).toLocaleTimeString() : ''));
+        if (flow.streaming) meta.appendChild(_interceptMetaCell(t('intercept.metaMode'), t('intercept.modeStreaming')));
+        if (flow.mocked) meta.appendChild(_interceptMetaCell(t('intercept.metaSource'), t('intercept.sourceOverride')));
+        if (flow.error) meta.appendChild(_interceptMetaCell(t('intercept.metaError'), flow.error));
         pane.appendChild(meta);
 
         if (!detail) {
-            pane.appendChild(el('div', { style: 'padding:24px; opacity:0.7', textContent: 'Loading full payload…' }));
+            pane.appendChild(el('div', { style: 'padding:24px; opacity:0.7', textContent: t('intercept.loadingPayload') }));
             return pane;
         }
 
@@ -678,15 +679,15 @@
         if (typeof window === 'undefined' || !window.__bowireMocks) {
             pane.appendChild(renderEmptyCard({
                 icon: 'mock',
-                headline: 'Mock package not loaded',
-                body: 'Reference Kuestenlogik.Bowire.Mock from the host to enable standalone mock servers.'
+                headline: t('intercept.mockPackageMissing'),
+                body: t('intercept.mockPackageMissingBody')
             }));
             return pane;
         }
         pane.appendChild(renderEmptyCard({
             icon: 'mock',
-            headline: 'Pick a mock server',
-            body: 'Pick a running mock from the sidebar to see its URL, live request log, and stop control.'
+            headline: t('intercept.pickMockServer'),
+            body: t('intercept.pickMockServerBody')
         }));
         return pane;
     }
@@ -696,19 +697,20 @@
 
         if (embedded) {
             pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
-                el('label', { className: 'bowire-env-editor-field-label', textContent: 'Deployment' }),
-                el('div', { className: 'bowire-env-editor-field-value', textContent: 'Embedded — Bowire is mounted in-process via MapBowire().' })
+                el('label', { className: 'bowire-env-editor-field-label', textContent: t('intercept.deployment') }),
+                el('div', { className: 'bowire-env-editor-field-value', textContent: t('intercept.embeddedNote') })
             ));
             pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
-                el('label', { className: 'bowire-env-editor-field-label', textContent: 'Middleware' }),
-                el('div', { className: 'bowire-env-editor-field-value', textContent: 'Add app.UseBowireInterceptor() to the host\'s pipeline. When wired, every request flowing through the pipeline is captured.' })
+                el('label', { className: 'bowire-env-editor-field-label', textContent: t('intercept.middleware') }),
+                el('div', { className: 'bowire-env-editor-field-value',
+                    textContent: t('intercept.middlewareNote') })
             ));
             pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
-                el('label', { className: 'bowire-env-editor-field-label', textContent: 'Endpoint base' }),
-                el('div', { className: 'bowire-env-editor-field-value', textContent: '/api/intercepted/* (alias /api/traffic/*) on this same origin.' })
+                el('label', { className: 'bowire-env-editor-field-label', textContent: t('intercept.endpointBase') }),
+                el('div', { className: 'bowire-env-editor-field-value', textContent: t('intercept.endpointBaseNote') })
             ));
             pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
-                el('label', { className: 'bowire-env-editor-field-label', textContent: 'Docs' }),
+                el('label', { className: 'bowire-env-editor-field-label', textContent: t('intercept.docsLabel') }),
                 el('button', {
                     className: 'bowire-env-editor-action-btn',
                     onClick: function () {
@@ -716,7 +718,7 @@
                             helpOpenDrawer('features/proxy');
                         }
                     }
-                }, el('span', { textContent: 'Open Intercept docs' }))
+                }, el('span', { textContent: t('intercept.openDocs') }))
             ));
             return pane;
         }
@@ -725,11 +727,11 @@
             ? bowireProxyEffectiveApiUrl() : '';
 
         pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
-            el('label', { className: 'bowire-env-editor-field-label', textContent: 'Deployment' }),
-            el('div', { className: 'bowire-env-editor-field-value', textContent: 'Standalone — Bowire runs as a CLI tool (bowire proxy or bowire interceptor).' })
+            el('label', { className: 'bowire-env-editor-field-label', textContent: t('intercept.deployment') }),
+            el('div', { className: 'bowire-env-editor-field-value', textContent: t('intercept.standaloneNote') })
         ));
         pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
-            el('label', { className: 'bowire-env-editor-field-label', textContent: 'External sidecar URL' }),
+            el('label', { className: 'bowire-env-editor-field-label', textContent: t('intercept.sidecarUrl') }),
             el('div', { className: 'bowire-env-editor-field-value', textContent: currentUrl || 'http://127.0.0.1:8889 (loopback default)' })
         ));
         pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
@@ -738,11 +740,11 @@
                 className: 'bowire-env-editor-action-btn',
                 onClick: function () {
                     if (typeof bowirePrompt !== 'function') return;
-                    bowirePrompt('Sidecar API URL', {
-                        title: 'Intercept sidecar',
+                    bowirePrompt(t('intercept.sidecarPrompt'), {
+                        title: t('intercept.sidecarTitle'),
                         defaultValue: currentUrl || '',
                         placeholder: 'http://localhost:8889',
-                        confirmText: 'Save'
+                        confirmText: t('common.save')
                     }).then(function (val) {
                         if (val === null || val === undefined) return;
                         if (typeof bowireProxySetApiUrl === 'function') {
@@ -751,14 +753,15 @@
                         render();
                     });
                 }
-            }, el('span', { textContent: 'Edit URL…' }))
+            }, el('span', { textContent: t('intercept.editUrl') }))
         ));
         pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
-            el('label', { className: 'bowire-env-editor-field-label', textContent: 'CLI subcommands' }),
-            el('div', { className: 'bowire-env-editor-field-value', textContent: 'bowire proxy (MITM) and bowire interceptor (reverse-proxy edge) both populate the Intercept rail.' })
+            el('label', { className: 'bowire-env-editor-field-label', textContent: t('intercept.cliSubcommands') }),
+            el('div', { className: 'bowire-env-editor-field-value',
+                textContent: t('intercept.cliNote') })
         ));
         pane.appendChild(el('div', { className: 'bowire-env-editor-field-row' },
-            el('label', { className: 'bowire-env-editor-field-label', textContent: 'Docs' }),
+            el('label', { className: 'bowire-env-editor-field-label', textContent: t('intercept.docsLabel') }),
             el('button', {
                 className: 'bowire-env-editor-action-btn',
                 onClick: function () {
@@ -766,7 +769,7 @@
                         helpOpenDrawer('features/proxy');
                     }
                 }
-            }, el('span', { textContent: 'Open Intercept docs' }))
+            }, el('span', { textContent: t('intercept.openDocs') }))
         ));
         return pane;
     }
