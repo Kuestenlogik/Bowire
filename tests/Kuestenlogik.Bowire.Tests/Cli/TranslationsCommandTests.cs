@@ -163,8 +163,12 @@ public sealed class TranslationsCommandTests : IDisposable
 
         Assert.Equal(1, rc);
         Assert.Contains("Still empty", stderr, StringComparison.Ordinal);
-        Assert.DoesNotContain("Missing", stderr, StringComparison.Ordinal);
-        Assert.DoesNotContain("Not in English", stderr, StringComparison.Ordinal);
+        // The report headers, not the bare words: the catalogue now has a key
+        // called parallel.exporterMissing, and a scaffold lists every key it
+        // is missing a value for. Asserting on "Missing" matched the key name
+        // and failed a passing run.
+        Assert.DoesNotContain("Missing (", stderr, StringComparison.Ordinal);
+        Assert.DoesNotContain("Not in English (", stderr, StringComparison.Ordinal);
         Assert.Contains("0 of ", stderr, StringComparison.Ordinal);
     }
 

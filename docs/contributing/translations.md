@@ -67,9 +67,26 @@ Word order is yours. `"No {protocol} services found"` becomes `"Keine {protocol}
 
 ## How a language is chosen
 
+**In the workbench:**
+
 1. The operator's choice in **Settings &rarr; General &rarr; Language**, if they made one.
 2. Otherwise the browser's language. A browser asking for `de-AT` gets `de` when there is no `de-AT` catalogue &mdash; a regional variant is closer to its base language than to English.
 3. Otherwise English.
+
+**On the command line**, where there is no settings dialog to ask:
+
+1. `BOWIRE_LOCALE`, because somebody who sets it has said something about Bowire rather than about their shell.
+2. `LC_ALL`, then `LANG` &mdash; how a POSIX shell says it.
+3. The operating system's current UI culture.
+4. Otherwise English.
+
+A shell value is narrowed step by step: `de_DE.UTF-8@euro` loses the modifier, then the encoding, then the region, so it finds `de.json` without anyone configuring anything. `C` and `POSIX` mean *no locale* and are ignored rather than read as a language named C.
+
+```bash
+BOWIRE_LOCALE=de bowire docs translations fr --check fr.json
+```
+
+Both surfaces read the **same** files. There is no second catalogue for the CLI, no `.resx`, nothing to keep in step &mdash; a key you translate is translated everywhere it appears.
 
 A missing key renders as the key itself (`landing.noServices.title`) rather than as blank space. That is deliberate: silence would ship unnoticed.
 
@@ -95,8 +112,25 @@ Prefer one key with a placeholder over string concatenation. `'No ' + name + ' s
 
 Adding a key to `en.json` and not to the others is fine &mdash; the parity test only fails on keys a translation *has* that English does not, and on empty values in keys it does have. Translators catch up afterwards.
 
+## What stays English on purpose
+
+Not everything in the interface is Bowire's to translate. A word that names something *outside* Bowire's own text keeps its name:
+
+| Stays | Why |
+|---|---|
+| `INVALID_ARGUMENT`, `404 Not Found` | gRPC status names and HTTP reason phrases come from the specification. A German "404 Nicht gefunden" breaks the link to curl, to a browser's network panel, to a colleague's screenshot. |
+| Tool, Resource, Prompt | MCP's three primitive kinds. Each maps to a wire call (`tools/call`, `resources/read`, `prompts/get`), and the hint under them names those calls. |
+| Bearer Token, Basic Auth, JWT, HMAC, PKCE, mTLS | Names of authentication schemes and algorithms. Somebody searching for one searches for that name. |
+| QoS, Retain, `withCredentials`, `Set-Cookie` | Names of protocol settings, flags and headers. |
+| `curl`, `grpcurl`, `wscat`, PowerShell | Tools and shells. |
+| OpenAPI, Swagger, GeoJSON, WGS84, RFC 7946, ISO&#8209;8601 | Standards and formats. |
+| `bowire call`, `dotnet add package`, `{{secret.*}}` | Commands and Bowire's own syntax. |
+| `DEPR`, `DEPRECATED` | The schema's own deprecation marker, not Bowire's word. |
+
+The sentence *around* one of these is translated; the thing being named is not. A status bar that reads "Verbunden" beside `INVALID_ARGUMENT` is doing this on purpose: it tells the operator at a glance which half is Bowire talking and which half is the server.
+
+The same reasoning applies to anything Bowire *writes into data*. A workspace name, a collection name, an action-log entry: those travel through `.bww` export into somebody else's Bowire, so a default written in one language would arrive in theirs. Bowire stores them empty or in English and translates only the display.
+
 ## What is still English
 
-The sweep is in progress. `landing.js` reads entirely from the catalogue; the rest of the workbench still carries its text inline and is being moved surface by surface &mdash; see [#117](https://github.com/Kuestenlogik/Bowire/issues/117) for what is done and what is left.
-
-Until a surface is swept, it renders in English regardless of the chosen language. Switching to German today changes the landing page and the language selector itself, and leaves everything else as it was.
+The workbench sweep is complete &mdash; every surface reads from the catalogue. What remains is the command line's own `--help` text (roughly three hundred option and command descriptions), tracked separately.

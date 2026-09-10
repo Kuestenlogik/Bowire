@@ -53,11 +53,12 @@
   <ItemGroup>
     <EmbeddedResource Include="wwwroot\bowire.css" LogicalName="Kuestenlogik.Bowire.wwwroot.bowire.css" />
     <EmbeddedResource Include="wwwroot\bowire.js" LogicalName="Kuestenlogik.Bowire.wwwroot.bowire.js" />
-    <!-- #117 - the English catalogue, so `bowire docs translations` can
-         scaffold a new locale from the same file the workbench reads. The
-         other locales are not embedded: nothing outside the bundle needs
-         them. -->
-    <EmbeddedResource Include="wwwroot\locales\en.json" LogicalName="Kuestenlogik.Bowire.wwwroot.locales.en.json" />
+    <!-- #117 - every catalogue, embedded. `bowire docs translations` reads
+         English to scaffold a new locale, and BowireLocale reads whichever
+         one BOWIRE_LOCALE / LANG asks for, so the CLI speaks the same
+         language as the workbench without a second copy of the files. -->
+    <EmbeddedResource Include="wwwroot\locales\*.json"
+                      LogicalName="Kuestenlogik.Bowire.wwwroot.locales.%(Filename)%(Extension)" />
     <EmbeddedResource Include="wwwroot\favicon.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.favicon.svg" />
     <EmbeddedResource Include="wwwroot\kuestenlogik_lockup.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.kuestenlogik_lockup.svg" />
     <!--
