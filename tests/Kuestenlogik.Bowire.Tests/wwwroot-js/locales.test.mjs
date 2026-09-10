@@ -126,7 +126,14 @@ for (const file of translations) {
 test('keys are dotted and area-first', () => {
     // The convention is what lets a translator work through one surface at a
     // time, and what keeps the flat file navigable at a thousand entries.
-    const bad = keysOf(english).filter((k) => !/^[a-z][a-zA-Z0-9]*(\.[a-zA-Z0-9]+)+$/.test(k));
+    //
+    // A hyphen inside a segment is allowed, because some keys are named after
+    // an id that already exists in the code: every tour step carries
+    // `id: 'mock-use-as-mock'`, and `tour.mock-use-as-mock.body` keeps the
+    // key and the id the same string. Reorder a tour, rename nothing — and
+    // grepping the id finds its text. Renaming the id to fit the key would be
+    // the convention deciding what the code is called.
+    const bad = keysOf(english).filter((k) => !/^[a-z][a-zA-Z0-9]*(\.[a-zA-Z0-9-]+)+$/.test(k));
     assert.deepEqual(bad, [], `keys not in area.thing.part form: ${bad.join(', ')}`);
 });
 
@@ -245,8 +252,8 @@ const FRAGMENTS = resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/j
 // t('a.b.c') where the `t` is a whole identifier — not the tail of format(,
 // assert( or split(. Keys built at run time (t('x.' + field)) are collected
 // separately by their prefix, because their leaves cannot be read statically.
-const STATIC_CALL = /(?<![A-Za-z0-9_$.])t\(\s*'([a-zA-Z0-9_.]+)'/g;
-const DYNAMIC_CALL = /(?<![A-Za-z0-9_$.])t\(\s*'([a-zA-Z0-9_.]+\.)'\s*\+/g;
+const STATIC_CALL = /(?<![A-Za-z0-9_$.])t\(\s*'([a-zA-Z0-9_.-]+)'/g;
+const DYNAMIC_CALL = /(?<![A-Za-z0-9_$.])t\(\s*'([a-zA-Z0-9_.-]+\.)'\s*\+/g;
 
 function fragmentSources() {
     return readdirSync(FRAGMENTS)
@@ -274,7 +281,7 @@ test('every catalogue key has a caller', () => {
         for (const [, prefix] of text.matchAll(DYNAMIC_CALL)) prefixes.push(prefix);
         // Key names also travel as data — a table of scopes carries
         // 'headerLibrary.scope.url' as a label and t()s it at render time.
-        for (const [, key] of text.matchAll(/'([a-z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9]+)+)'/g)) {
+        for (const [, key] of text.matchAll(/'([a-z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9-]+)+)'/g)) {
             statics.add(key);
         }
     }

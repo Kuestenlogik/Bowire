@@ -232,11 +232,11 @@
         }
         requestAnimationFrame(function () {
             if (!_tourState.running) return;
-            var t = _resolveStepTarget(step.target);
-            if (t) {
-                _tourState.targetEl = t;
-                _paintOverlay(t);
-                _paintTooltip(step, t);
+            var target = _resolveStepTarget(step.target);
+            if (target) {
+                _tourState.targetEl = target;
+                _paintOverlay(target);
+                _paintTooltip(step, target);
                 _attachReflowListeners();
             } else {
                 _retryResolveStepTarget(step, attempt + 1);
@@ -399,8 +399,8 @@
             // an 'on-event:' signal both paths emit.
             var hitTargets = _allClickableTargetsForStep();
             for (var i = 0; i < hitTargets.length; i++) {
-                var t = hitTargets[i];
-                var rect = t.getBoundingClientRect();
+                var target = hitTargets[i];
+                var rect = target.getBoundingClientRect();
                 if (e.clientX >= rect.left && e.clientX <= rect.right
                     && e.clientY >= rect.top && e.clientY <= rect.bottom) {
                     var was = overlay.style.pointerEvents;
@@ -1099,13 +1099,13 @@
         return [
             {
                 id: 'create-first-workspace',
-                title: 'Create a workspace',
-                body: 'A workspace is your project folder. It holds the URLs you discover, the environments + secrets you reference, and the collections / recordings / benchmarks you build.\n\nMost operators name them after the project ("Petstore Staging", "Internal CMS").',
+                title: t('tour.create-first-workspace.title'),
+                body: t('tour.create-first-workspace.body'),
                 target: '#bowire-welcome-create-btn',
                 alternatives: [
                     {
                         target: '#bowire-workspace-chip',
-                        label: 'You can also open the workspace chip in the topbar and pick "+ New workspace".'
+                        label: t('tour.create-first-workspace.altLabel')
                     }
                 ],
                 navigate: function () {
@@ -1116,7 +1116,7 @@
                     if (typeof render === 'function') render();
                 },
                 cta: {
-                    label: 'Create workspace…',
+                    label: t('tour.create-first-workspace.cta'),
                     onClick: function () {
                         if (typeof openCreateWorkspaceDialog === 'function') {
                             openCreateWorkspaceDialog(function (ws) {
@@ -1146,16 +1146,16 @@
                 // new workspace und dann durch den popup dialog führt
                 // (eingabe name des workspaces, auswahl des templates)'.
                 id: 'ws-dialog-name',
-                title: 'Name your workspace',
-                body: 'Type a name. Most operators name after the project ("Petstore Staging", "Internal CMS").\n\nClick Next once you have a name.',
+                title: t('tour.ws-dialog-name.title'),
+                body: t('tour.ws-dialog-name.body'),
                 target: '#bowire-ws-create-name',
                 advance: 'next-button'
             },
             {
                 // In-dialog walkthrough B: template selection.
                 id: 'ws-dialog-template',
-                title: 'Start from scratch or a template',
-                body: 'A template seeds the workspace with example URLs, environments, and collections so you can explore immediately. Try the REST or gRPC template — or stay on "Empty" to start clean.\n\nClick Next once you pick.',
+                title: t('tour.ws-dialog-template.title'),
+                body: t('tour.ws-dialog-template.body'),
                 target: '#bowire-ws-create-templates',
                 advance: 'next-button'
             },
@@ -1164,8 +1164,8 @@
                 // workspace-created event the dialog\'s commit() fires
                 // once the workspace is persisted.
                 id: 'ws-dialog-submit',
-                title: 'Create it',
-                body: 'Click Create. Bowire will set up the workspace, seed any chosen template, and switch the workbench to it.',
+                title: t('tour.ws-dialog-submit.title'),
+                body: t('tour.ws-dialog-submit.body'),
                 target: '#bowire-ws-create-submit',
                 advance: 'on-event:workspace-created'
             }
@@ -1195,16 +1195,16 @@
     function _gettingStartedSteps() {
         var welcomeStep = {
             id: 'welcome',
-            title: 'Welcome to Bowire',
-            body: 'A multi-protocol API workbench — gRPC, REST, GraphQL, WebSocket, SSE, MQTT, all in one place.\n\nThis quick tour walks you from a blank workbench to your first response in five steps. You can skip anytime; we won\'t bring it up again.',
+            title: t('tour.welcome.title'),
+            body: t('tour.welcome.body'),
             target: null,
             advance: 'next-button'
         };
         var laterSteps = [
             {
                 id: 'add-url',
-                title: 'Step 2 — Point at your API',
-                body: 'Open the Workspaces rail and add the URL of the API you want to call. Bowire works with any URL that exposes a discovery surface — OpenAPI / Swagger, gRPC reflection, GraphQL introspection — or a schema file you upload.\n\nGood test URLs to try: petstore3.swagger.io/api/v3/openapi.json, countries.trevorblades.com.',
+                title: t('tour.add-url.title'),
+                body: t('tour.add-url.body'),
                 target: '[data-rail-mode-id="workspaces"]',
                 navigate: function () {
                     if (typeof railMode !== 'undefined') {
@@ -1221,8 +1221,8 @@
             },
             {
                 id: 'discover',
-                title: 'Step 3 — Discover services',
-                body: 'Switch to the Discover rail. Once Bowire fetches your URL, it lists every service + method it found — grouped by protocol, searchable, filterable.\n\nClick a method to open it in a new tab.',
+                title: t('tour.discover.title'),
+                body: t('tour.discover.body'),
                 target: '[data-rail-mode-id="discover"]',
                 navigate: function () {
                     if (typeof railMode !== 'undefined') {
@@ -1236,15 +1236,15 @@
             },
             {
                 id: 'execute',
-                title: 'Step 4 — Send the request',
-                body: 'Once you have a method open, fill in the request form (or paste JSON) and hit Execute. Ctrl+Enter from anywhere in the request pane fires it too.\n\nThe response lands underneath — JSON, status, timing, headers — and the call is captured in your history so you can replay it later.',
+                title: t('tour.execute.title'),
+                body: t('tour.execute.body'),
                 target: '.bowire-execute-btn',
                 advance: 'next-button'
             },
             {
                 id: 'wrap-up',
-                title: 'You\'re set',
-                body: 'That\'s the core loop: workspace → URL → discover → invoke. From here you can record a session and turn it into a mock, build collections, write tests, or wire envs + secrets.\n\nPress F1 anywhere for in-app docs. Ctrl+/ shows every keyboard shortcut. Have fun.',
+                title: t('tour.wrap-up.title'),
+                body: t('tour.wrap-up.body'),
                 target: null,
                 advance: 'next-button'
             }
@@ -1291,33 +1291,33 @@
         return [
             {
                 id: 'mock-intro',
-                title: 'Build a mock from a recording',
-                body: 'Mocks let you replay a captured session as a local HTTP server — handy for offline development, demos, or wiring an integration test against a frozen response set.\n\nYou need a recording first. If you don\'t have one yet, capture a few calls from Discover; the tour points you there.',
+                title: t('tour.mock-intro.title'),
+                body: t('tour.mock-intro.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'mock-go-recordings',
-                title: 'Step 1 — Open the Recordings rail',
-                body: 'Switch to the Recordings rail. If you already have a saved recording it shows in the sidebar; otherwise the empty card walks you through capturing one from Discover.',
+                title: t('tour.mock-go-recordings.title'),
+                body: t('tour.mock-go-recordings.body'),
                 target: '[data-rail-mode-id="recordings"]',
                 navigate: function () { _tourGoToRail('recordings'); },
                 advance: 'next-button'
             },
             {
                 id: 'mock-use-as-mock',
-                title: 'Step 2 — Use as mock',
-                body: 'Pick a recording, then hit "Use as mock" in its detail toolbar. Bowire spins up a local MockServer on a free port and copies the URL to your clipboard.',
+                title: t('tour.mock-use-as-mock.title'),
+                body: t('tour.mock-use-as-mock.body'),
                 target: '#bowire-main-recordings',
                 cta: {
-                    label: 'Waiting for mock to start…'
+                    label: t('tour.mock-use-as-mock.cta')
                 },
                 advance: 'on-event:mock-started'
             },
             {
                 id: 'mock-switch-to-mocks',
-                title: 'Step 3 — Inspect the running mock',
-                body: 'The Intercept rail\'s "Mock servers" sub-tab lists every mock host you\'ve started. Pick one to see its URL, copy it again, open the live request log, or stop the server.\n\nFire requests against the mock\'s port from your other tools and watch them stream in.',
+                title: t('tour.mock-switch-to-mocks.title'),
+                body: t('tour.mock-switch-to-mocks.body'),
                 target: '[data-rail-mode-id="intercept"]',
                 navigate: function () {
                     try { localStorage.setItem('bowire_intercept_sub_tab', 'mock-servers'); } catch { /* ignore */ }
@@ -1327,8 +1327,8 @@
             },
             {
                 id: 'mock-wrap-up',
-                title: 'That\'s the mock loop',
-                body: 'Recording → Use as mock → invoke against the mock port. From here you can chain it: benchmark the mock, share its URL with the team, or stop it from the Intercept rail\'s Mock servers sub-tab when you\'re done.',
+                title: t('tour.mock-wrap-up.title'),
+                body: t('tour.mock-wrap-up.body'),
                 target: null,
                 advance: 'next-button'
             }
@@ -1355,36 +1355,36 @@
         return [
             {
                 id: 'env-intro',
-                title: 'Set up environments',
-                body: 'Environments scope variables, auth tokens, and secrets per deployment stage — staging vs. prod vs. local — so you can re-point an entire workspace at a different backend by toggling the active env.',
+                title: t('tour.env-intro.title'),
+                body: t('tour.env-intro.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'env-new',
-                title: 'Step 1 — Create an environment',
-                body: 'Hit "+ New environment" on the workspace\'s envs overview. Give it a stage name like "staging" or "prod". The new env shows up in the workspace tree and in the topbar env dropdown.',
+                title: t('tour.env-new.title'),
+                body: t('tour.env-new.body'),
                 target: '#bowire-workspace-env-new-btn',
                 advance: 'on-event:environment-created'
             },
             {
                 id: 'env-add-vars',
-                title: 'Step 2 — Add variables',
-                body: 'Open the env editor (click the env name in the tree). Each row is a key=value pair — type a host, a token, a tenant id. Values are stored locally; mark a row as a secret to keep it out of exports.\n\nYou can paste a .env file in too — Bowire parses KEY=value lines.',
+                title: t('tour.env-add-vars.title'),
+                body: t('tour.env-add-vars.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'env-reference',
-                title: 'Step 3 — Reference vars in a request',
-                body: 'Anywhere a string field accepts input (URLs, headers, request body) you can write {{varName}} and Bowire substitutes the active env\'s value at send-time. Flip the active env from the topbar dropdown and the same request hits a different backend.',
+                title: t('tour.env-reference.title'),
+                body: t('tour.env-reference.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'env-wrap-up',
-                title: 'You\'re set',
-                body: 'That\'s envs: create → add vars → reference. Use the topbar env dropdown to switch active env on the fly; the workspace tree shows the env count next to each workspace so you can see the spread at a glance.',
+                title: t('tour.env-wrap-up.title'),
+                body: t('tour.env-wrap-up.body'),
                 target: null,
                 advance: 'next-button'
             }
@@ -1410,44 +1410,44 @@
         return [
             {
                 id: 'bench-intro',
-                title: 'Benchmark a method',
-                body: 'A benchmark repeats N calls at K concurrency and reports latency percentiles (p50 / p95 / p99) plus the status distribution.\n\nThree shapes: single method (one unary call), collection (replay every item), or recording (replay every step). This tour walks the single-method shape.',
+                title: t('tour.bench-intro.title'),
+                body: t('tour.bench-intro.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'bench-go-rail',
-                title: 'Step 1 — Open the Benchmarks rail',
-                body: 'Switch to Benchmarks. The sidebar lists saved specs; the main pane shows the configurator for the selected one.',
+                title: t('tour.bench-go-rail.title'),
+                body: t('tour.bench-go-rail.body'),
                 target: '[data-rail-mode-id="benchmarks"]',
                 navigate: function () { _tourGoToRail('benchmarks'); },
                 advance: 'next-button'
             },
             {
                 id: 'bench-new',
-                title: 'Step 2 — New benchmark',
-                body: 'Hit "New benchmark" on the empty card to create a fresh spec, then pick a method from the target dropdown. Or kick the tour off from Discover with the "Benchmark" button on any method.',
+                title: t('tour.bench-new.title'),
+                body: t('tour.bench-new.body'),
                 target: '#bowire-bench-new-btn',
                 advance: 'next-button'
             },
             {
                 id: 'bench-configure',
-                title: 'Step 3 — Set N + concurrency',
-                body: 'Two knobs do most of the work: total iterations (N) and concurrent workers (VUs). Start small — 100 / 5 finishes in a few seconds and is enough to spot obvious regressions.\n\nFor sustained-load testing, switch the phase from iteration-bounded to duration-bounded (run for 60s @ 10 VUs) and read the steady-state RPS.',
+                title: t('tour.bench-configure.title'),
+                body: t('tour.bench-configure.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'bench-run',
-                title: 'Step 4 — Run it',
-                body: 'Click Run. The progress bar ticks up as iterations land; cancellation is one click away if something\'s wrong.\n\nWhen it finishes, the result panel below the configurator shows p50 / p95 / p99 latency, status-code distribution, and a sparkline of per-iteration durations. Re-run with tweaks; the last N runs stay in history so you can A/B them.',
+                title: t('tour.bench-run.title'),
+                body: t('tour.bench-run.body'),
                 target: null,
                 advance: 'on-event:benchmark-run-complete'
             },
             {
                 id: 'bench-wrap-up',
-                title: 'You\'re benchmarking',
-                body: 'That\'s the loop: pick a target → set N + concurrency → run → read percentiles. Benchmark history sticks around per spec so you can see if today\'s change made things faster.',
+                title: t('tour.bench-wrap-up.title'),
+                body: t('tour.bench-wrap-up.body'),
                 target: null,
                 advance: 'next-button'
             }
@@ -1475,37 +1475,37 @@
         return [
             {
                 id: 'rec-intro',
-                title: 'Capture a recording',
-                body: 'A recording is an ordered sequence of live calls Bowire captures while you drive the API. You can replay it later, spin it up as a mock host, or run it as a benchmark.\n\nThis tour walks the capture loop: arm → invoke → stop → save.',
+                title: t('tour.rec-intro.title'),
+                body: t('tour.rec-intro.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'rec-go-rail',
-                title: 'Step 1 — Open the Recordings rail',
-                body: 'Switch to the Recordings rail. The sidebar lists saved recordings; the main pane shows the selected one or — when empty — the Start CTA you\'ll use next.',
+                title: t('tour.rec-go-rail.title'),
+                body: t('tour.rec-go-rail.body'),
                 target: '[data-rail-mode-id="recordings"]',
                 navigate: function () { _tourGoToRail('recordings'); },
                 advance: 'next-button'
             },
             {
                 id: 'rec-start',
-                title: 'Step 2 — Start recording',
-                body: 'Hit "Start recording" on the empty card. Bowire arms the capture pipeline and jumps you into Discover so the next thing you click can be recorded. A red dot in the topbar shows recording is live.',
+                title: t('tour.rec-start.title'),
+                body: t('tour.rec-start.body'),
                 target: '#bowire-main-recordings',
                 advance: 'next-button'
             },
             {
                 id: 'rec-invoke',
-                title: 'Step 3 — Invoke a few methods',
-                body: 'From Discover, pick a method, fill the request, hit Execute. Each Execute is appended to the recording as one step. Chain a few calls together — that\'s your captured session.',
+                title: t('tour.rec-invoke.title'),
+                body: t('tour.rec-invoke.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'rec-wrap-up',
-                title: 'Step 4 — Stop and reuse',
-                body: 'Click the red dot (or hit "Stop recording" on the Recordings rail) when you\'re done. The captured session lands in the sidebar with its steps.\n\nFrom the detail toolbar you can rename it, replay it, "Use as mock" to spin up a fake host on the captured responses, or feed it to a benchmark.',
+                title: t('tour.rec-wrap-up.title'),
+                body: t('tour.rec-wrap-up.body'),
                 target: null,
                 advance: 'next-button'
             }
@@ -1530,37 +1530,37 @@
         return [
             {
                 id: 'col-intro',
-                title: 'Build a collection',
-                body: 'A collection is a folder of saved requests you can replay as a set — think Postman runner. Useful for smoke tests, demo scripts, or a personal "things I run every Monday" stash.\n\nThis tour walks the build loop: create → add requests → run.',
+                title: t('tour.col-intro.title'),
+                body: t('tour.col-intro.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'col-go-rail',
-                title: 'Step 1 — Open Compose',
-                body: 'The Compose rail hosts the canonical Collections + Presets surface (the standalone Collections rail was retired in v2.1). Switch to Compose; the side panel on the right lists every collection in the active workspace.',
+                title: t('tour.col-go-rail.title'),
+                body: t('tour.col-go-rail.body'),
                 target: '[data-rail-mode-id="compose"]',
                 navigate: function () { _tourGoToRail('compose'); },
                 advance: 'next-button'
             },
             {
                 id: 'col-new',
-                title: 'Step 2 — New collection',
-                body: 'Hit the + icon in the Library sidebar toolbar. A fresh, empty collection lands in the list with the focus on its name — type a label like "petstore-smoke" or "auth-flows".\n\nOr import a Postman collection / OpenAPI spec via the Workspaces rail to seed one from existing material.',
+                title: t('tour.col-new.title'),
+                body: t('tour.col-new.body'),
                 target: '.bowire-compose-side-section-collections',
                 advance: 'next-button'
             },
             {
                 id: 'col-add-items',
-                title: 'Step 3 — Add requests',
-                body: 'Two ways to fill a collection: from Discover, right-click any method → "Save to collection"; or from Compose, the request builder\'s "Save" button lets you pick the target collection. Items show up in order in the detail pane.',
+                title: t('tour.col-add-items.title'),
+                body: t('tour.col-add-items.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'col-wrap-up',
-                title: 'Step 4 — Run as a set',
-                body: 'When the collection has items, the detail pane\'s Run button replays them top-to-bottom and reports pass/fail per item. Hit it on every code change to catch regressions; export it as a .json to share with the team.',
+                title: t('tour.col-wrap-up.title'),
+                body: t('tour.col-wrap-up.body'),
                 target: null,
                 advance: 'next-button'
             }
@@ -1585,37 +1585,37 @@
         return [
             {
                 id: 'flow-intro',
-                title: 'Build a flow',
-                body: 'Flows chain API calls together: the response of one step becomes the input of the next. Use them for login → fetch → mutate sequences, smoke pipelines that need response-derived ids, or any "I always run these three in a row" workflow.',
+                title: t('tour.flow-intro.title'),
+                body: t('tour.flow-intro.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'flow-go-rail',
-                title: 'Step 1 — Open the Flows rail',
-                body: 'Switch to the Flows rail. The sidebar lists saved flows; the canvas in the main pane is where you wire the nodes once a flow is selected.',
+                title: t('tour.flow-go-rail.title'),
+                body: t('tour.flow-go-rail.body'),
                 target: '[data-rail-mode-id="flows"]',
                 navigate: function () { _tourGoToRail('flows'); },
                 advance: 'next-button'
             },
             {
                 id: 'flow-new',
-                title: 'Step 2 — New flow',
-                body: 'Hit "New flow" on the empty card. The canvas opens with a single start node. From the node palette (left edge of the canvas) drag a Request node onto it — that\'s your first call.',
+                title: t('tour.flow-new.title'),
+                body: t('tour.flow-new.body'),
                 target: '#bowire-flow-canvas-empty',
                 advance: 'next-button'
             },
             {
                 id: 'flow-chain',
-                title: 'Step 3 — Chain steps',
-                body: 'Add a second Request node and wire the start node\'s output into it. Inside the second request\'s URL or body, reference the first step\'s response with {{step1.response.body.<field>}}. Bowire substitutes the value at run-time.\n\nCondition, Loop, Delay, and Variable nodes let you branch / iterate / wait / capture intermediate values.',
+                title: t('tour.flow-chain.title'),
+                body: t('tour.flow-chain.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'flow-wrap-up',
-                title: 'Step 4 — Run + export',
-                body: 'The Run button in the canvas header executes the flow top-to-bottom and shows per-step results. Export as .bwf to share, or "Export as collection" to lift the request nodes into a Collection that runs in CI.',
+                title: t('tour.flow-wrap-up.title'),
+                body: t('tour.flow-wrap-up.body'),
                 target: null,
                 advance: 'next-button'
             }
@@ -1640,37 +1640,37 @@
         return [
             {
                 id: 'compose-intro',
-                title: 'Compose a request',
-                body: 'Compose is the freeform request builder — type a URL, pick a method, fire. Useful when you don\'t want to (or can\'t) discover a schema first, when you\'re probing an unknown endpoint, or when you need a one-off call outside any collection.',
+                title: t('tour.compose-intro.title'),
+                body: t('tour.compose-intro.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'compose-go-rail',
-                title: 'Step 1 — Open the Compose rail',
-                body: 'Switch to the Compose rail. Each request opens as its own tab in the strip across the top — Ctrl+L from anywhere opens a fresh one.',
+                title: t('tour.compose-go-rail.title'),
+                body: t('tour.compose-go-rail.body'),
                 target: '[data-rail-mode-id="compose"]',
                 navigate: function () { _tourGoToRail('compose'); },
                 advance: 'next-button'
             },
             {
                 id: 'compose-new',
-                title: 'Step 2 — New request',
-                body: 'Hit "New request" on the empty card. A fresh request tab opens with the cursor on the URL field. Type any URL — Bowire infers the protocol (REST / GraphQL / WebSocket / SSE / MQTT) from the scheme.',
+                title: t('tour.compose-new.title'),
+                body: t('tour.compose-new.body'),
                 target: '#bowire-main-compose',
                 advance: 'next-button'
             },
             {
                 id: 'compose-fill',
-                title: 'Step 3 — Method + body',
-                body: 'Pick the HTTP method from the dropdown, switch to the Body tab if you need a payload (JSON / form / raw — Bowire renders the right editor). Headers, params, auth, env-variable references all sit in their own tabs alongside Body.',
+                title: t('tour.compose-fill.title'),
+                body: t('tour.compose-fill.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'compose-wrap-up',
-                title: 'Step 4 — Execute',
-                body: 'Hit Execute (Ctrl+Enter from anywhere in the request pane). The response lands below with status, timing, headers, and a syntax-highlighted body. Save the request into a Collection from the same toolbar for replay later.',
+                title: t('tour.compose-wrap-up.title'),
+                body: t('tour.compose-wrap-up.body'),
                 target: '.bowire-execute-btn',
                 advance: 'next-button'
             }
@@ -1695,15 +1695,15 @@
         return [
             {
                 id: 'traffic-intro',
-                title: 'Capture traffic',
-                body: 'The Intercept rail\'s Captured sub-tab shows live HTTP flows intercepted by Bowire — every request that hits the host, with timing, status, request + response bodies. Useful when you\'re debugging a misbehaving client or learning how an app actually talks to its backend.',
+                title: t('tour.traffic-intro.title'),
+                body: t('tour.traffic-intro.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'traffic-go-rail',
-                title: 'Step 1 — Open the Intercept rail',
-                body: 'Switch to the Intercept rail. The Captured sub-tab streams flows in real time; the main pane shows the selected flow\'s request + response detail.',
+                title: t('tour.traffic-go-rail.title'),
+                body: t('tour.traffic-go-rail.body'),
                 target: '[data-rail-mode-id="intercept"]',
                 navigate: function () {
                     try { localStorage.setItem('bowire_intercept_sub_tab', 'captured'); } catch { /* ignore */ }
@@ -1713,22 +1713,22 @@
             },
             {
                 id: 'traffic-source',
-                title: 'Step 2 — Point a traffic source at Bowire',
-                body: 'Two deployment shapes:\n\n• Embedded — Bowire is mounted via MapBowire() in your ASP.NET host. Add app.UseBowireInterceptor() to the pipeline. Every request through that host shows up here.\n\n• Standalone — run "bowire proxy" or "bowire interceptor" in a terminal as a sidecar and point your client at its URL. Bowire intercepts and forwards while capturing.',
+                title: t('tour.traffic-source.title'),
+                body: t('tour.traffic-source.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'traffic-invoke',
-                title: 'Step 3 — Drive some traffic',
-                body: 'Hit the wired-up endpoint from your client (browser, curl, your app). Each flow lands in the sidebar as it happens — status code coloured by class (2xx green / 4xx amber / 5xx red), method + path on each row.',
+                title: t('tour.traffic-invoke.title'),
+                body: t('tour.traffic-invoke.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'traffic-wrap-up',
-                title: 'Step 4 — Reuse the capture',
-                body: 'Pick a row to inspect the request + response in the main pane. "Send to recording" lifts the flow into a Bowire recording for replay / fuzzing; "Mock this route" generates a mock rule that intercepts the next matching call. The flows pane is a ring buffer — older entries roll off as new ones arrive.',
+                title: t('tour.traffic-wrap-up.title'),
+                body: t('tour.traffic-wrap-up.body'),
                 target: null,
                 advance: 'next-button'
             }
@@ -1754,37 +1754,37 @@
         return [
             {
                 id: 'sec-intro',
-                title: 'Scan for security risks',
-                body: 'The Security rail runs threat-modelling over the API surface Bowire discovered: ranks endpoints by attack-surface risk, surfaces unauth\'d mutations, mass-assignment shapes, weak auth signals.\n\nHeuristic mode is on by default — sub-millisecond rules engine, no AI required. Flip the tier if you have an AI configured for semantic scoring on top.',
+                title: t('tour.sec-intro.title'),
+                body: t('tour.sec-intro.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'sec-need-endpoints',
-                title: 'Step 1 — Get endpoints into Discover',
-                body: 'The threat-model reads from the same service tree Discover shows. You need at least one URL added (or a schema uploaded) so there are endpoints to rank. If Discover is empty, do that first — the empty-card on Security walks you there with "Open Discover".',
+                title: t('tour.sec-need-endpoints.title'),
+                body: t('tour.sec-need-endpoints.body'),
                 target: '[data-rail-mode-id="discover"]',
                 advance: 'next-button'
             },
             {
                 id: 'sec-go-rail',
-                title: 'Step 2 — Open the Security rail',
-                body: 'Switch back to Security. With endpoints present, the threat-model surface shows the tier toggle (Heuristic / AI-assisted) and a Run button.',
+                title: t('tour.sec-go-rail.title'),
+                body: t('tour.sec-go-rail.body'),
                 target: '[data-rail-mode-id="security"]',
                 navigate: function () { _tourGoToRail('security'); },
                 advance: 'next-button'
             },
             {
                 id: 'sec-run',
-                title: 'Step 3 — Run the scan',
-                body: 'Pick a tier — start with Heuristic, it\'s instant and gives you a baseline. Hit Run. The endpoints get ranked by risk score with one-line rationale per row: "POST mutates state, no auth required", "DELETE on path with id parameter", &c.',
+                title: t('tour.sec-run.title'),
+                body: t('tour.sec-run.body'),
                 target: null,
                 advance: 'next-button'
             },
             {
                 id: 'sec-wrap-up',
-                title: 'You\'re scanning',
-                body: 'Click any ranked row to drill into the rule hits + remediation hint. Use the per-row "Generate test" button to spin up a security regression test against that endpoint.\n\nThe right-side Security drawer keeps the panel reachable from any rail so a scan-finding can stay open while you investigate in Discover or Compose.',
+                title: t('tour.sec-wrap-up.title'),
+                body: t('tour.sec-wrap-up.body'),
                 target: null,
                 advance: 'next-button'
             }
