@@ -91,7 +91,7 @@
             var verbForTitle = (fr.method && fr.method.trim()) ? fr.method.trim().toUpperCase() : 'GET';
             info.appendChild(el('div', {
                 className: 'bowire-header-method bowire-freeform-rest-title',
-                title: 'Ad-hoc REST — pick verb + URL below'
+                title: t('main.adhocRest')
             },
                 el('span', { className: 'bowire-freeform-rest-verb-chip', textContent: verbForTitle }),
                 el('span', { className: 'bowire-freeform-rest-url-preview',
@@ -113,7 +113,7 @@
                 type: 'text',
                 className: 'bowire-header-summary bowire-freeform-header-service-input',
                 value: fr.service || '',
-                placeholder: 'service (optional)',
+                placeholder: t('main.servicePlaceholder'),
                 spellcheck: 'false',
                 title: (fr._lineageHint && fr._lineageHint.sourceMethod)
                     ? 'Cloned from ' + fr._lineageHint.sourceMethod
@@ -213,8 +213,8 @@
         freeformAddToWrap.appendChild(el('button', {
             id: 'bowire-freeform-addto-btn',
             className: 'bowire-header-addto-btn' + (freeformAddToMenuOpen ? ' active' : ''),
-            title: 'Add this request to a collection',
-            'aria-label': 'Add to collection',
+            title: t('main.addToCollectionTitle'),
+            'aria-label': t('main.addToCollection'),
             'aria-haspopup': 'menu',
             'aria-expanded': freeformAddToMenuOpen ? 'true' : 'false',
             innerHTML: svgIcon('plus'),
@@ -246,7 +246,7 @@
                     lineage: fr._lineageHint || { kind: 'compose' }
                 };
             }
-            addToMenu.appendChild(el('div', { className: 'bowire-header-addto-section', textContent: 'Collection' }));
+            addToMenu.appendChild(el('div', { className: 'bowire-header-addto-section', textContent: t('sidebar.new.collection') }));
             var freefCols = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList))
                 ? collectionsList : [];
             if (freefCols.length > 0) {
@@ -259,7 +259,7 @@
                             if (typeof addToCollection === 'function') {
                                 addToCollection(col.id, snap);
                                 if (typeof toast === 'function') {
-                                    toast('Added to "' + col.name + '"', 'success');
+                                    toast(t('drop.added', { collection: col.name }), 'success');
                                 }
                             }
                             freeformAddToMenuOpen = false;
@@ -284,10 +284,10 @@
                 role: 'menuitem',
                 onClick: function () {
                     if (typeof bowirePrompt !== 'function') return;
-                    bowirePrompt('Collection name', {
-                        title: 'New collection',
-                        placeholder: 'e.g. Smoke tests',
-                        confirmText: 'Create'
+                    bowirePrompt(t('main.collectionName'), {
+                        title: t('sidebar.collections.new'),
+                        placeholder: t('main.collectionPlaceholder'),
+                        confirmText: t('wsTemplates.dialog.create')
                     }).then(function (name) {
                         if (name === null) return;
                         var trimmed = String(name || '').trim();
@@ -297,7 +297,7 @@
                         var snap = _snapshotFreeform();
                         addToCollection(col.id, snap);
                         if (typeof toast === 'function') {
-                            toast('Saved to "' + col.name + '"', 'success');
+                            toast(t('main.savedTo', { collection: col.name }), 'success');
                         }
                         freeformAddToMenuOpen = false;
                         render();
@@ -305,7 +305,7 @@
                 }
             },
                 el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('plus') }),
-                el('span', { textContent: 'New collection…' })
+                el('span', { textContent: t('sidebar.newCollection') })
             ));
             freeformAddToWrap.appendChild(addToMenu);
         }
@@ -315,7 +315,7 @@
         rightCluster.appendChild(el('button', {
             id: 'bowire-freeform-cancel-btn',
             className: 'bowire-header-action-btn',
-            textContent: 'Cancel',
+            textContent: t('common.cancel'),
             title: (fr._lineageHint && fr._lineageHint.sourceMethod)
                 ? 'Cancel — cloned from ' + fr._lineageHint.sourceMethod
                 : 'Discard this draft',
@@ -365,7 +365,7 @@
         } else {
             urlBar.appendChild(el('span', {
                 className: 'bowire-freeform-url-bar-label',
-                textContent: 'URL'
+                textContent: t('main.url')
             }));
         }
         if (fr.urlMode !== 'source') fr.urlMode = 'inline';
@@ -392,9 +392,9 @@
                             render();
                         },
                         {
-                            title: 'Switch to Source mode',
-                            confirmText: 'Save & switch',
-                            cancelText: 'Discard & switch',
+                            title: t('main.switchToSource'),
+                            confirmText: t('main.saveAndSwitch'),
+                            cancelText: t('main.discardAndSwitch'),
                             onCancel: function () {
                                 fr.serverUrl = hasAnySources ? serverUrls[0] : '';
                                 fr.urlMode = 'source';
@@ -423,8 +423,8 @@
             modeWrap.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-freeform-url-mode-btn' + (fr.urlMode === 'inline' ? ' is-active' : ''),
-                title: 'Self-contained URL — lives inline on this request',
-                textContent: 'Inline',
+                title: t('main.inlineTitle'),
+                textContent: t('main.inline'),
                 onClick: function () { _setUrlMode('inline'); }
             }));
             modeWrap.appendChild(el('button', {
@@ -434,7 +434,7 @@
                     ? 'Bind URL to a workspace-managed Source'
                     : 'No Source URLs in this workspace yet',
                 disabled: !hasAnySources,
-                textContent: 'From Source',
+                textContent: t('main.fromSource'),
                 onClick: function () { _setUrlMode('source'); }
             }));
             urlBar.appendChild(modeWrap);
@@ -473,7 +473,7 @@
                 ? resolveSplitMode(splitMode) : (splitMode || 'horizontal')
         });
         var reqPane = el('div', { className: 'bowire-pane bowire-freeform-req-pane' });
-        reqPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Request' }));
+        reqPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: t('main.request') }));
         // Tab strip — Payload / Metadata / Mock, same classes as
         // discovered-method's request-pane tabs.
         var reqTabs = el('div', { id: 'bowire-freeform-request-tabs', className: 'bowire-tabs' });
@@ -495,7 +495,7 @@
         requestAnimationFrame(function () {
             var live = document.getElementById('bowire-freeform-request-tabs');
             if (live && typeof bowireWireTabOverflow === 'function') {
-                bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: 'More tabs' });
+                bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: t('main.moreTabs') });
             }
         });
 
@@ -506,7 +506,7 @@
         });
         var bodyEditor = el('textarea', {
             className: 'bowire-editor',
-            placeholder: 'Enter JSON request body…',
+            placeholder: t('main.jsonBodyPlaceholder'),
             spellcheck: 'false',
             style: 'min-height:200px'
         });
@@ -545,7 +545,7 @@
                 type: 'text',
                 className: 'bowire-freeform-input',
                 value: p.key,
-                placeholder: 'Header name',
+                placeholder: t('headers.namePlaceholder'),
                 spellcheck: 'false',
                 onInput: function (e) { metaPairs[idx].key = e.target.value; _writeMeta(); }
             }));
@@ -553,7 +553,7 @@
                 type: 'text',
                 className: 'bowire-freeform-input',
                 value: p.value,
-                placeholder: 'Value',
+                placeholder: t('headers.valuePlaceholder'),
                 spellcheck: 'false',
                 onInput: function (e) { metaPairs[idx].value = e.target.value; _writeMeta(); }
             }));
@@ -568,23 +568,23 @@
             className: 'bowire-tab-content' + (freeformActiveRequestTab === 'mock' ? ' active' : '')
         });
         var mockStatusRow = el('div', { className: 'bowire-freeform-row' });
-        mockStatusRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: 'Status' }));
+        mockStatusRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: t('main.status') }));
         mockStatusRow.appendChild(el('input', {
             id: 'bowire-freeform-mock-status-input',
             type: 'text',
             className: 'bowire-freeform-input',
             value: fr.mockStatus,
-            placeholder: 'OK',
+            placeholder: t('main.okPlaceholder'),
             spellcheck: 'false',
             onInput: function (e) { fr.mockStatus = e.target.value; }
         }));
         mockTabContent.appendChild(mockStatusRow);
         var mockBodyRow = el('div', { className: 'bowire-freeform-row bowire-freeform-body-row' });
-        mockBodyRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: 'Response' }));
+        mockBodyRow.appendChild(el('label', { className: 'bowire-freeform-label', textContent: t('rb.response.heading') }));
         var mockEditor = el('textarea', {
             id: 'bowire-freeform-mock-body',
             className: 'bowire-editor',
-            placeholder: 'JSON response body the mock server will return…',
+            placeholder: t('main.mockBodyPlaceholder'),
             spellcheck: 'false',
             style: 'min-height:160px'
         });
@@ -600,7 +600,7 @@
         // Response pane — last response output, problem+json, or
         // empty hint.
         var resPane = el('div', { className: 'bowire-pane bowire-freeform-res-pane' });
-        resPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Response' }));
+        resPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: t('rb.response.heading') }));
         if (responseError || responseData) {
             if (responseError) {
                 var errOut = el('div', { className: 'bowire-response-output error' });
@@ -618,7 +618,7 @@
         } else {
             resPane.appendChild(el('div', {
                 className: 'bowire-response-empty',
-                textContent: 'Execute the request to see the response here.'
+                textContent: t('main.responseEmpty')
             }));
         }
         // Stable id so the rAF callback below can re-resolve the live
@@ -651,23 +651,23 @@
             onClick: function () { executeFreeformRequest(); }
         },
             el('span', { innerHTML: svgIcon('play'), style: 'width:14px;height:14px;display:flex' }),
-            el('span', { textContent: 'Execute' })
+            el('span', { textContent: t('main.execute') })
         ));
         actionBar.appendChild(el('button', {
             id: 'bowire-freeform-save-mock-btn',
             className: 'bowire-repeat-btn',
-            title: 'Save this request + response as a mock step in the active recording',
+            title: t('main.saveMockStepTitle'),
             onClick: function () { saveFreeformAsMockStep(); }
         },
             el('span', { innerHTML: svgIcon('record'), style: 'width:14px;height:14px;display:flex' }),
-            el('span', { textContent: 'Save as Mock Step' })
+            el('span', { textContent: t('main.saveMockStep') })
         ));
         actionBar.appendChild(el('button', {
             id: 'bowire-freeform-save-btn',
             className: 'bowire-repeat-btn',
-            title: 'Save this request to a collection',
+            title: t('main.saveToCollectionTitle'),
             onClick: function () {
-                if (!fr.service || !fr.method) { toast('Enter a service and method name', 'error'); return; }
+                if (!fr.service || !fr.method) { toast(t('main.needsServiceMethod'), 'error'); return; }
                 if (collectionsList.length === 0) {
                     var col = createCollection();
                     addToCollection(col.id, {
@@ -694,11 +694,11 @@
                         urlMode: fr.urlMode || 'inline'
                     });
                 }
-                toast('Saved to collection', 'success');
+                toast(t('collections.saved'), 'success');
             }
         },
             el('span', { innerHTML: svgIcon('folder'), style: 'width:14px;height:14px;display:flex' }),
-            el('span', { textContent: 'Save to Collection' })
+            el('span', { textContent: t('main.saveToCollection') })
         ));
         pane.appendChild(actionBar);
     }
@@ -712,15 +712,15 @@
         var isRestAdHoc = fr.protocol === 'rest';
         if (isRestAdHoc) {
             if (!fr.serverUrl || !fr.serverUrl.trim()) {
-                toast('Enter a request URL', 'error');
+                toast(t('main.needsUrl'), 'error');
                 return;
             }
             if (!fr.method) {
-                toast('Pick an HTTP verb', 'error');
+                toast(t('main.needsVerb'), 'error');
                 return;
             }
         } else if (!fr.service || !fr.method) {
-            toast('Enter a service and method name', 'error');
+            toast(t('main.needsServiceMethod'), 'error');
             return;
         }
 
@@ -814,12 +814,12 @@
         if (!freeformRequest) return;
         var fr = freeformRequest;
         if (!fr.service || !fr.method) {
-            toast('Enter a service and method name', 'error');
+            toast(t('main.needsServiceMethod'), 'error');
             return;
         }
         var responseText = fr.mockResponse || responseData || '';
         if (!responseText) {
-            toast('Enter a Mock Response or click Execute first', 'error');
+            toast(t('main.needsMockResponse'), 'error');
             freeformMockExpanded = true;
             render();
             return;
@@ -839,7 +839,7 @@
             durationMs: 0
         });
         if (!bowireEnsureRecordingAndCapture(step, 'Manual mocks')) return;
-        toast('Saved as mock step', 'success');
+        toast(t('main.savedMockStep'), 'success');
         render();
     }
 
@@ -921,11 +921,11 @@
         if (!isGlobals && !selectedEnv) {
             pane.appendChild(el('div', { className: 'bowire-env-editor-empty' },
                 el('div', { className: 'bowire-env-editor-empty-icon', innerHTML: svgIcon('globe') }),
-                el('div', { textContent: 'Select an environment on the left or create a new one' }),
+                el('div', { textContent: t('main.env.pick') }),
                 el('button', {
                     id: 'bowire-env-create-btn',
                     className: 'bowire-env-editor-create-btn',
-                    textContent: '+ Create Environment',
+                    textContent: t('main.env.create'),
                     onClick: function () {
                         if (typeof openCreateEnvironmentDialog !== 'function') return;
                         openCreateEnvironmentDialog(function (env) {
@@ -944,7 +944,7 @@
         var envColor = !isGlobals ? (selectedEnv.color || '#6366f1') : null;
         if (isGlobals) {
             headerRow.appendChild(el('span', { className: 'bowire-env-editor-icon', innerHTML: svgIcon('globe') }));
-            headerRow.appendChild(el('h2', { className: 'bowire-env-editor-title', textContent: 'Global Variables' }));
+            headerRow.appendChild(el('h2', { className: 'bowire-env-editor-title', textContent: t('main.env.globalVars') }));
         } else {
             // Header mirrors the workspace settings detail: small colour
             // dot leads, name input as the in-place editable title, then
@@ -983,15 +983,15 @@
                     // across both surfaces.
                     className: 'bowire-ws-detail-name',
                     value: selectedEnv.name,
-                    'aria-label': 'Environment name',
+                    'aria-label': t('main.env.nameAria'),
                     'data-bowire-no-vars-chip': '1',
                     'data-bowire-no-vars-ac': '1',
                     onChange: function (e) { updateEnvironment(envSidebarSelectedId, { name: e.target.value }); }
                 }),
                 _renderHeaderTrail([
-                    { label: 'Workspaces', onClick: _goToWorkspacesOverview },
+                    { label: t('sidebar.ws.title'), onClick: _goToWorkspacesOverview },
                     { label: envOwnerWsName, onClick: function () { _goToWorkspaceSettings(envOwnerWsId); } },
-                    { label: 'Environments', onClick: function () { _goToEnvironmentsOverview(envOwnerWsId); } }
+                    { label: t('sidebar.envs.title'), onClick: function () { _goToEnvironmentsOverview(envOwnerWsId); } }
                 ])
             ));
         }
@@ -1001,8 +1001,8 @@
         headerRow.appendChild(el('button', {
             id: 'bowire-env-export-btn',
             className: 'bowire-env-editor-action-btn',
-            title: 'Export all environments as JSON',
-            textContent: 'Export',
+            title: t('main.env.exportTitle'),
+            textContent: t('collections.export'),
             onClick: function () {
                 var json = exportEnvironments();
                 var blob = new Blob([json], { type: 'application/json' });
@@ -1016,8 +1016,8 @@
         headerRow.appendChild(el('button', {
             id: 'bowire-env-import-btn',
             className: 'bowire-env-editor-action-btn',
-            title: 'Import environments from JSON file',
-            textContent: 'Import',
+            title: t('main.env.importTitle'),
+            textContent: t('main.import'),
             onClick: function () {
                 var input = document.createElement('input');
                 input.type = 'file';
@@ -1027,10 +1027,10 @@
                     try {
                         var text = await input.files[0].text();
                         importEnvironments(text);
-                        toast('Environments imported', 'success');
+                        toast(t('main.env.imported'), 'success');
                         render();
                     } catch (e) {
-                        toast('Import failed: ' + e.message, 'error');
+                        toast(t('collections.importFailed', { reason: e.message }), 'error');
                     }
                 };
                 input.click();
@@ -1042,34 +1042,34 @@
                 headerRow.appendChild(el('button', {
                     id: 'bowire-env-set-active-btn',
                     className: 'bowire-env-editor-action-btn',
-                    textContent: 'Set Active',
+                    textContent: t('main.env.setActive'),
                     onClick: function () { setActiveEnvId(envSidebarSelectedId); render(); }
                 }));
             } else {
                 headerRow.appendChild(el('span', {
                     className: 'bowire-env-editor-active-badge',
-                    textContent: 'Active'
+                    textContent: t('settings.ws.active')
                 }));
             }
             headerRow.appendChild(el('button', {
                 id: 'bowire-env-delete-btn',
                 className: 'bowire-env-editor-action-btn bowire-env-editor-danger',
-                title: 'Delete this environment',
-                'aria-label': 'Delete this environment',
+                title: t('main.env.deleteTitle'),
+                'aria-label': t('main.env.deleteTitle'),
                 innerHTML: svgIcon('trash'),
                 onClick: function () {
-                    bowireConfirm('Delete environment "' + selectedEnv.name + '"?', function () {
+                    bowireConfirm(t('sidebar.envs.deleteConfirm', { name: selectedEnv.name }), function () {
                         var backup = JSON.parse(JSON.stringify(selectedEnv));
                         deleteEnvironment(envSidebarSelectedId);
                         envSidebarSelectedId = activeId || '__globals__';
                         render();
-                        toast('Deleted environment "' + (backup.name || 'unnamed') + '"', 'info', {
+                        toast(t('main.env.deleted', { name: backup.name || t('collections.unnamed') }), 'info', {
                             undo: function () { restoreEnvironment(backup); envSidebarSelectedId = backup.id; render(); },
                             logAction: { kind: 'env-delete',
                                 title: 'Deleted environment "' + (backup.name || 'unnamed') + '"',
                                 undoSpec: { env: backup } }
                         });
-                    }, { title: 'Delete Environment', danger: true, confirmText: 'Delete' });
+                    }, { title: t('sidebar.envs.deleteHeading'), danger: true, confirmText: t('common.delete') });
                 }
             }));
         }
@@ -1081,14 +1081,14 @@
         // Same swatch palette as the env editor used to inline. ----
         if (!isGlobals) {
             var envSwatchColors = [
-                { color: '#6366f1', label: 'Default' },
-                { color: '#10b981', label: 'Green' },
-                { color: '#f59e0b', label: 'Yellow' },
-                { color: '#ef4444', label: 'Red' },
-                { color: '#3b82f6', label: 'Blue' },
-                { color: '#8b5cf6', label: 'Purple' },
-                { color: '#78716c', label: 'Brown' },
-                { color: '#000000', label: 'Black' }
+                { color: '#6366f1', label: t('main.colour.default') },
+                { color: '#10b981', label: t('main.colour.green') },
+                { color: '#f59e0b', label: t('main.colour.yellow') },
+                { color: '#ef4444', label: t('main.colour.red') },
+                { color: '#3b82f6', label: t('main.colour.blue') },
+                { color: '#8b5cf6', label: t('main.colour.purple') },
+                { color: '#78716c', label: t('main.colour.brown') },
+                { color: '#000000', label: t('main.colour.black') }
             ];
             var envColorRowInner = el('div', { className: 'bowire-env-color-row' });
             envSwatchColors.forEach(function (sw) {
@@ -1108,12 +1108,12 @@
                 type: 'color',
                 className: 'bowire-env-color-picker',
                 value: envColor,
-                title: 'Custom colour',
-                'aria-label': 'Custom environment colour',
+                title: t('main.colour.custom'),
+                'aria-label': t('main.colour.customEnvAria'),
                 onInput: function (e) { updateEnvironment(envSidebarSelectedId, { color: e.target.value }); render(); }
             }));
             pane.appendChild(el('div', { className: 'bowire-env-editor-color-section' },
-                el('div', { className: 'bowire-env-editor-section-label', textContent: 'Color' }),
+                el('div', { className: 'bowire-env-editor-section-label', textContent: t('main.colour.label') }),
                 envColorRowInner
             ));
         }
@@ -1129,10 +1129,10 @@
         if (!isGlobals) {
             var tabs = el('div', { className: 'bowire-env-editor-tabs' });
             var tabDefs = [
-                { id: 'variables', label: 'Variables', icon: 'braces' },
-                { id: 'secrets', label: 'Secrets', icon: 'key' },
-                { id: 'auth', label: 'Auth', icon: 'lock' },
-                { id: 'compare', label: 'Compare', icon: 'diff' }
+                { id: 'variables', label: t('rb.tab.vars'), icon: 'braces' },
+                { id: 'secrets', label: t('main.tab.secrets'), icon: 'key' },
+                { id: 'auth', label: t('rb.tab.auth'), icon: 'lock' },
+                { id: 'compare', label: t('sidebar.compare'), icon: 'diff' }
             ];
             for (var ti = 0; ti < tabDefs.length; ti++) {
                 (function (td) {
@@ -1174,7 +1174,7 @@
             var secWrap = el('div', { className: 'bowire-env-editor-vars' });
             secWrap.appendChild(el('div', {
                 className: 'bowire-env-editor-subtitle',
-                textContent: 'Reference as {{secret.NAME}} in any input. Session-only — cleared on reload. Workspace defaults under Workspace › Variables apply when this environment has no override.'
+                textContent: t('main.env.secretsLede')
             }));
             secWrap.appendChild(_renderKvSection('Secrets', envSecretsMap, function (next) {
                 var oldNames = Object.keys(envSecretsMap);
@@ -1222,8 +1222,8 @@
         var table = el('div', { className: 'bowire-env-editor-table' });
 
         table.appendChild(el('div', { className: 'bowire-env-editor-row bowire-env-editor-col-header' },
-            el('span', { textContent: 'Variable' }),
-            el('span', { textContent: 'Value' }),
+            el('span', { textContent: t('env.variable') }),
+            el('span', { textContent: t('rb.auth.value') }),
             el('span')
         ));
 
@@ -1268,14 +1268,14 @@
                 type: 'text',
                 className: 'bowire-env-editor-key',
                 value: key,
-                placeholder: 'variable name',
+                placeholder: t('main.env.varNamePlaceholder'),
                 spellcheck: 'false',
                 'data-bowire-no-vars-chip': '1',
                 'data-bowire-no-vars-ac': '1'
             });
             var valInput = el('textarea', {
                 className: 'bowire-env-editor-val',
-                placeholder: 'value (Ctrl+Enter for multi-line)',
+                placeholder: t('main.env.varValuePlaceholder'),
                 spellcheck: 'false',
                 rows: '1'
             });
@@ -1353,7 +1353,7 @@
             row.appendChild(valInput);
             row.appendChild(el('button', {
                 className: 'bowire-env-editor-remove',
-                title: 'Remove variable',
+                title: t('main.env.removeVar'),
                 textContent: '\u00d7',
                 // Skip the Remove button in tab order \u2014 the operator's
                 // Tab walks key \u2192 value \u2192 next row's key \u2192 next row's
@@ -1391,7 +1391,7 @@
             id: 'bowire-env-add-variable-btn',
             className: 'bowire-ws-detail-action',
             style: 'margin-top:8px',
-            textContent: '+ Add variable',
+            textContent: t('main.env.addVar'),
             onClick: function (e) {
                 // Walk up to the live table from the clicked button so
                 // morphdom-preserved-table reuse stays correct (the
@@ -1456,7 +1456,7 @@
                     var newId = importWorkspaceJson(payload, { mode: 'new' });
                     workspacesSelectedId = newId;
                     close();
-                    toast('Workspace imported', 'success');
+                    toast(t('drawer.workspaceImported'), 'success');
                     if (typeof switchWorkspace === 'function' && newId) {
                         switchWorkspace(newId);
                     } else {
@@ -1481,30 +1481,30 @@
             'aria-modal': 'true',
             style: 'min-width:380px'
         },
-            el('div', { className: 'bowire-confirm-title', textContent: 'Import workspace' }),
+            el('div', { className: 'bowire-confirm-title', textContent: t('main.ws.importTitle') }),
             el('div', { className: 'bowire-confirm-message', textContent: summary }),
             el('div', { className: 'bowire-confirm-actions', style: 'flex-wrap:wrap;gap:6px' },
                 el('button', {
                     className: 'bowire-confirm-btn cancel',
-                    textContent: 'Cancel',
+                    textContent: t('common.cancel'),
                     onClick: close
                 }),
                 el('button', {
                     className: 'bowire-confirm-btn danger',
-                    textContent: 'Replace "' + targetWs.name + '"',
-                    title: 'Wipe the target workspace and load the file into it',
+                    textContent: t('main.ws.replace', { name: targetWs.name }),
+                    title: t('main.ws.replaceTitle'),
                     onClick: function () { runImport('replace'); }
                 }),
                 el('button', {
                     className: 'bowire-confirm-btn',
-                    textContent: 'Merge into "' + targetWs.name + '"',
-                    title: 'Concat lists and assign maps into the current workspace',
+                    textContent: t('main.ws.merge', { name: targetWs.name }),
+                    title: t('main.ws.mergeTitle'),
                     onClick: function () { runImport('merge-into'); }
                 }),
                 el('button', {
                     className: 'bowire-confirm-btn',
-                    textContent: 'New workspace',
-                    title: 'Create a new workspace and load the file into it (recommended)',
+                    textContent: t('drawer.newWorkspaceTitle'),
+                    title: t('main.ws.newTitle'),
                     onClick: function () { runImport('new'); }
                 })
             )
@@ -1545,7 +1545,7 @@
     function _renderHeaderTrail(crumbs) {
         var nav = el('nav', {
             className: 'bowire-ws-detail-trail',
-            'aria-label': 'Breadcrumb'
+            'aria-label': t('main.breadcrumb')
         });
         crumbs.forEach(function (c, idx) {
             if (idx > 0) {
@@ -1620,12 +1620,12 @@
     function _renderWorkspaceBreadcrumb(ws, segments) {
         var nav = el('nav', {
             className: 'bowire-ws-breadcrumb',
-            'aria-label': 'Workspace navigation'
+            'aria-label': t('main.ws.nav')
         });
         var wsCrumb = el('button', {
             type: 'button',
             className: 'bowire-ws-breadcrumb-crumb bowire-ws-breadcrumb-workspace',
-            title: 'Open ' + ws.name + ' settings',
+            title: t('main.ws.openSettingsOf', { name: ws.name }),
             onClick: function () {
                 workspaceTreeSelection = { wsId: ws.id, kind: 'workspace' };
                 render();
@@ -1742,7 +1742,7 @@
                 headline: 'No workspaces yet',
                 body: 'A workspace is your project folder — it holds the URLs you discover, the environments + variables + secrets you reference, and the collections / recordings / benchmarks you build. Create one to start organising sources, environments and recordings.',
                 actions: [{
-                    label: 'New workspace…',
+                    label: t('sidebar.ws.new'),
                     primary: true,
                     onClick: function () {
                         if (typeof openCreateWorkspaceDialog === 'function') {
@@ -1787,19 +1787,19 @@
         var headerRight = el('div', { className: 'bowire-ws-detail-header-actions' });
         headerRight.appendChild(el('span', {
             className: 'bowire-ws-detail-sort-label',
-            textContent: 'Sort: ' + curSortLabel
+            textContent: t('main.ws.sortLabel', { sort: curSortLabel })
         }));
         if (canReset && typeof resetWorkspacesSort === 'function') {
             headerRight.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-ws-detail-sort-reset',
-                title: 'Reset workspace sort to alphabetical',
-                'aria-label': 'Reset workspace sort to alphabetical',
-                textContent: 'Reset sort',
+                title: t('main.ws.resetSortTitle'),
+                'aria-label': t('main.ws.resetSortTitle'),
+                textContent: t('main.ws.resetSort'),
                 onClick: function () {
                     resetWorkspacesSort();
                     if (typeof toast === 'function') {
-                        toast('Workspace sort reset to alphabetical.', 'info');
+                        toast(t('sidebar.ws.sortReset'), 'info');
                     }
                     render();
                 }
@@ -1808,7 +1808,8 @@
         main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
             el('span', { className: 'bowire-ws-detail-glyph', innerHTML: headerGlyph }),
             el('div', { className: 'bowire-ws-detail-title-stack' },
-                el('div', { className: 'bowire-ws-detail-title-static', textContent: 'Workspaces (' + workspaces.length + ')' })
+                el('div', { className: 'bowire-ws-detail-title-static',
+                    textContent: t('main.ws.overviewTitle', { count: workspaces.length }) })
             ),
             headerRight
         ));
@@ -1820,7 +1821,7 @@
         if (workspacesSortBy === 'manual') {
             section.appendChild(el('div', {
                 className: 'bowire-ws-detail-sort-hint',
-                textContent: 'Manual sort — drag the grip handle on a row to reorder. The order is shared across the sidebar, the topbar dropdown, and this overview.'
+                textContent: t('main.ws.manualSortHint')
             }));
         }
         var list = el('div', { className: 'bowire-env-overview-list' });
@@ -1873,7 +1874,7 @@
             if (manualMode) {
                 row.appendChild(el('span', {
                     className: 'bowire-env-overview-grip',
-                    title: 'Drag to reorder',
+                    title: t('rb.kv.dragTitle'),
                     'aria-hidden': 'true',
                     innerHTML: svgIcon('grip')
                 }));
@@ -1930,7 +1931,7 @@
                 type: 'button',
                 className: 'bowire-env-overview-name',
                 textContent: w.name || '(unnamed)',
-                title: 'Open workspace settings',
+                title: t('sidebar.ws.settingsTitle'),
                 onClick: function () { _goToWorkspaceSettings(w.id); }
             }));
             row.appendChild(el('span', {
@@ -1990,7 +1991,7 @@
         section.appendChild(el('button', {
             className: 'bowire-ws-detail-action bowire-ws-detail-action-primary',
             style: 'margin-top:12px',
-            textContent: 'New workspace…',
+            textContent: t('sidebar.ws.new'),
             onClick: function () {
                 if (typeof openCreateWorkspaceDialog === 'function') {
                     openCreateWorkspaceDialog(function (created) {
@@ -2064,7 +2065,7 @@
                     type: 'text',
                     className: 'bowire-ws-detail-name',
                     value: ws.name,
-                    'aria-label': 'Workspace name',
+                    'aria-label': t('drawer.workspaceName'),
                     'data-bowire-no-vars-chip': '1',
                     'data-bowire-no-vars-ac': '1',
                     onChange: function (e) {
@@ -2092,14 +2093,14 @@
                     }
                 }),
                 _renderHeaderTrail([
-                    { label: 'Workspaces', onClick: _goToWorkspacesOverview }
+                    { label: t('sidebar.ws.title'), onClick: _goToWorkspacesOverview }
                 ])
             ),
             isActive
-                ? el('span', { className: 'bowire-ws-detail-badge', textContent: 'Active' })
+                ? el('span', { className: 'bowire-ws-detail-badge', textContent: t('settings.ws.active') })
                 : el('button', {
                     className: 'bowire-ws-detail-switch-btn',
-                    textContent: 'Switch to this workspace',
+                    textContent: t('sidebar.ws.switchTo'),
                     onClick: function () {
                         var live = _liveWs();
                         if (live) switchWorkspace(live.id);
@@ -2124,8 +2125,8 @@
         // pane and see the listing.
         headerActions.appendChild(el('button', {
             className: 'bowire-ws-detail-action-btn',
-            textContent: 'Manage workspaces',
-            title: 'Show the list of every workspace',
+            textContent: t('common.manageWorkspaces'),
+            title: t('main.ws.manageTitle'),
             onClick: _goToWorkspacesOverview
         }));
         // R3a — Workspaces detail → Settings transition. Deep-link
@@ -2137,8 +2138,8 @@
         // selection source.
         headerActions.appendChild(el('button', {
             className: 'bowire-ws-detail-action-btn',
-            textContent: 'Per-workspace overrides…',
-            title: 'Edit per-workspace setting overrides in the Settings panel',
+            textContent: t('main.ws.overrides'),
+            title: t('main.ws.overridesTitle'),
             onClick: function () {
                 if (typeof openSettings === 'function') {
                     openSettings('workspace-overrides');
@@ -2179,7 +2180,7 @@
         var saveAsBtn = el('button', {
             id: 'bowire-ws-saveas-btn',
             className: 'bowire-ws-detail-action-btn',
-            title: 'Save this workspace as a copy, template, or export file',
+            title: t('main.ws.saveAsTitle'),
             onClick: function (e) {
                 e.stopPropagation();
                 var prev = document.querySelector('.bowire-ws-saveas-menu');
@@ -2188,13 +2189,13 @@
                 menu.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-ws-saveas-menu-item',
-                    title: 'Create a copy of this workspace under a new name (URLs, envs, collections, recordings, flows, pins).',
+                    title: t('main.ws.duplicateTitle'),
                     onClick: function () {
                         menu.remove();
                         var live = _liveWs();
                         if (!live || typeof duplicateWorkspace !== 'function') return;
-                        bowirePrompt('Name for the duplicate', {
-                            title: 'Duplicate workspace',
+                        bowirePrompt(t('sidebar.ws.duplicateName'), {
+                            title: t('sidebar.ws.duplicateTitle'),
                             defaultValue: live.name + ' (copy)',
                             okLabel: 'Duplicate'
                         }, function (newName) {
@@ -2208,21 +2209,21 @@
                     }
                 },
                     el('span', { className: 'bowire-ws-saveas-menu-icon', innerHTML: svgIcon('copy') }),
-                    el('span', { className: 'bowire-ws-saveas-menu-label', textContent: 'Duplicate as new workspace…' })
+                    el('span', { className: 'bowire-ws-saveas-menu-label', textContent: t('main.ws.duplicate') })
                 ));
                 if (typeof saveWorkspaceAsTemplate === 'function') {
                     menu.appendChild(el('button', {
                         type: 'button',
                         className: 'bowire-ws-saveas-menu-item',
-                        title: 'Snapshot this workspace as a reusable template — appears in "Your templates" on the next create-workspace dialog.',
+                        title: t('main.ws.saveTemplateTitle'),
                         onClick: function () {
                             menu.remove();
                             var live = _liveWs();
                             if (!live) return;
-                            bowirePrompt('Template name', {
-                                title: 'Save as template',
+                            bowirePrompt(t('sidebar.ws.templateName'), {
+                                title: t('sidebar.ws.saveTemplate'),
                                 defaultValue: live.name + ' template',
-                                confirmText: 'Save',
+                                confirmText: t('common.save'),
                                 validator: function (val) {
                                     return String(val || '').trim() ? null : 'Name required';
                                 }
@@ -2231,38 +2232,40 @@
                                 try {
                                     saveWorkspaceAsTemplate(live.id, name, '', 'layers');
                                     if (typeof toast === 'function') {
-                                        toast('Saved "' + name + '" — available in the next create-workspace dialog.', 'success');
+                                        toast(t('sidebar.ws.templateSaved', { name: name }), 'success');
                                     }
                                 } catch (e) {
                                     if (typeof toast === 'function') {
-                                        toast('Save failed: ' + (e && e.message ? e.message : 'unknown error'), 'error');
+                                        toast(t('sidebar.ws.saveFailed', {
+                                reason: (e && e.message) ? e.message : t('sidebar.unknownError')
+                            }), 'error');
                                     }
                                 }
                             });
                         }
                     },
                         el('span', { className: 'bowire-ws-saveas-menu-icon', innerHTML: svgIcon('bookmark') }),
-                        el('span', { className: 'bowire-ws-saveas-menu-label', textContent: 'Save as template…' })
+                        el('span', { className: 'bowire-ws-saveas-menu-label', textContent: t('main.ws.saveTemplate') })
                     ));
                 }
                 if (typeof downloadWorkspaceExport === 'function') {
                     menu.appendChild(el('button', {
                         type: 'button',
                         className: 'bowire-ws-saveas-menu-item',
-                        title: 'Download the workspace as a single .bww file (URLs, collections, recordings, favorites, benchmarks, flows, presets — NO secrets).',
+                        title: t('main.ws.exportTitle'),
                         onClick: function () {
                             menu.remove();
                             var live = _liveWs();
                             if (!live) return;
                             if (downloadWorkspaceExport(live.id)) {
-                                if (typeof toast === 'function') toast('Workspace exported', 'success');
+                                if (typeof toast === 'function') toast(t('main.ws.exported'), 'success');
                             } else {
-                                if (typeof toast === 'function') toast('Export failed — see console', 'error');
+                                if (typeof toast === 'function') toast(t('main.ws.exportFailed'), 'error');
                             }
                         }
                     },
                         el('span', { className: 'bowire-ws-saveas-menu-icon', innerHTML: svgIcon('download') }),
-                        el('span', { className: 'bowire-ws-saveas-menu-label', textContent: 'Export to .bww file' })
+                        el('span', { className: 'bowire-ws-saveas-menu-label', textContent: t('main.ws.exportBww') })
                     ));
                 }
                 document.body.appendChild(menu);
@@ -2285,7 +2288,7 @@
                 }, 0);
             }
         },
-            el('span', { textContent: 'Save as' }),
+            el('span', { textContent: t('main.ws.saveAs') }),
             el('span', { innerHTML: svgIcon('chevronDown'), style: 'display:inline-flex;align-items:center;margin-left:4px' })
         );
         saveAsWrap.appendChild(saveAsBtn);
@@ -2306,10 +2309,10 @@
         // Auth — a different mental model (per-call credentials) —
         // lands AFTER, not between the two related ones.
         var wsTabDefs = [
-            { id: 'general',   label: 'General',   icon: 'settings' },
-            { id: 'variables', label: 'Variables', icon: 'braces' },
-            { id: 'secrets',   label: 'Secrets',   icon: 'key' },
-            { id: 'auth',      label: 'Auth',      icon: 'lock' }
+            { id: 'general',   label: t('settings.general'),   icon: 'settings' },
+            { id: 'variables', label: t('rb.tab.vars'), icon: 'braces' },
+            { id: 'secrets',   label: t('main.tab.secrets'),   icon: 'key' },
+            { id: 'auth',      label: t('rb.tab.auth'),      icon: 'lock' }
         ];
         wsTabDefs.forEach(function (td) {
             var btn = el('button', {
@@ -2334,7 +2337,7 @@
             main.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
                 style: 'margin:8px 0',
-                textContent: 'Workspace defaults that every Environment in this workspace inherits. An Environment can add its own or override these. Reference as {{NAME}}.'
+                textContent: t('main.ws.varsLede')
             }));
             var liveWsForVars = _liveWs() || ws;
             var varsMap = liveWsForVars.vars || {};
@@ -2359,7 +2362,7 @@
             main.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
                 style: 'margin:8px 0',
-                textContent: 'Workspace-level default auth — applied to every request unless the active environment defines its own. Use this for "every env in this workspace hits the same API gateway with the same token" setups.'
+                textContent: t('main.ws.authLede')
             }));
             if (typeof renderAuthSection === 'function') {
                 main.appendChild(renderAuthSection(
@@ -2387,7 +2390,7 @@
             main.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
                 style: 'margin:8px 0',
-                textContent: 'Session-only secrets — pass-through values for {{secret.NAME}} resolutions. Never written to disk, never exported.'
+                textContent: t('main.ws.secretsLede')
             }));
             var secretsMap = (typeof getWorkspaceSecrets === 'function') ? getWorkspaceSecrets(ws.id) : {};
             main.appendChild(_renderKvSection('Secrets', secretsMap, function (next) {
@@ -2424,16 +2427,16 @@
                 var aiBanner = el('div', { className: 'bowire-ws-detail-ai-override' });
                 aiBanner.appendChild(el('span', {
                     className: 'bowire-ws-detail-ai-override-tag',
-                    textContent: 'AI override'
+                    textContent: t('main.ws.aiOverride')
                 }));
                 aiBanner.appendChild(el('span', {
                     className: 'bowire-ws-detail-ai-override-desc',
-                    textContent: 'This workspace overrides the global AI default — currently using '
+                    textContent: t('main.ws.aiOverrideNote')
                         + (_aiSt.providerId || 'unknown') + ' / ' + (_aiSt.model || 'no model') + '.'
                 }));
                 aiBanner.appendChild(el('button', {
                     className: 'bowire-ws-detail-ai-override-link',
-                    textContent: 'Open Assistant Settings',
+                    textContent: t('main.ws.openAiSettings'),
                     onClick: function () {
                         if (typeof openSettings === 'function') openSettings('ai');
                     }
@@ -2492,8 +2495,8 @@
             type: 'color',
             className: 'bowire-ws-detail-color-picker',
             value: ws.color || '#6366f1',
-            title: 'Custom colour',
-            'aria-label': 'Custom workspace colour',
+            title: t('main.colour.custom'),
+            'aria-label': t('main.colour.customWsAria'),
             onInput: function (e) {
                 var live = _liveWs();
                 if (live) {
@@ -2504,17 +2507,17 @@
             }
         }));
         var colorRow = el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Color' }),
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.colour.label') }),
             colorRowInner
         );
         main.appendChild(colorRow);
 
         var descRow = el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Description' }),
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.ws.description') }),
             el('textarea', {
                 className: 'bowire-ws-detail-desc',
                 value: ws.description || '',
-                placeholder: 'Notes — what this workspace is for, who shares it, …',
+                placeholder: t('main.ws.descriptionPlaceholder'),
                 rows: '3',
                 onChange: function (e) {
                     var live = _liveWs();
@@ -2549,7 +2552,7 @@
                 max: '300',
                 placeholder: globalStored || '15',
                 style: 'width:80px',
-                'aria-label': 'Schema Watch interval for this workspace',
+                'aria-label': t('main.ws.watchAria'),
                 onChange: function (e) {
                     var live = _liveWs();
                     if (!live || typeof wsKeyFor !== 'function') return;
@@ -2562,19 +2565,17 @@
                 }
             });
             main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-                el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Schema watch' }),
+                el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.ws.watch') }),
                 el('div', { style: 'display:flex;align-items:center;gap:6px' },
                     input,
                     el('span', {
-                        textContent: 'seconds between polls',
+                        textContent: t('main.ws.watchUnit'),
                         style: 'font-size:12px;color:var(--bowire-text-tertiary)'
                     })
                 ),
                 el('div', {
                     className: 'bowire-ws-detail-stat-hint',
-                    textContent: 'Overrides the global Settings → General interval for this '
-                        + 'workspace. Leave empty to inherit (' + (globalStored || '15') + ' s). '
-                        + 'Detected changes land in the 7-day change log on the statusbar.'
+                    textContent: t('main.ws.watchHint', { seconds: globalStored || '15' })
                 })
             ));
         })();
@@ -2626,7 +2627,7 @@
         var mockCount = isActive && typeof mocksList !== 'undefined' && Array.isArray(mocksList)
             ? mocksList.length : '—';
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Contents' }),
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.ws.contents') }),
             el('div', { className: 'bowire-ws-detail-stats' },
                 statTile('URLs', urlCount,
                     isActive
@@ -2663,7 +2664,7 @@
             ? getWorkspaceStorageMode(ws) : 'disk';
         var browserOnly = storageMode === 'browser-only';
         var storageSection = el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Storage' }),
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.ws.storage') }),
             el('label', { className: 'bowire-ws-detail-storage-toggle' },
                 el('input', {
                     type: 'checkbox',
@@ -2677,7 +2678,7 @@
                     }
                 }),
                 el('span', { className: 'bowire-ws-detail-storage-toggle-label',
-                    textContent: 'Browser-only — skip disk writes' }),
+                    textContent: t('main.ws.browserOnly') }),
                 el('span', { className: 'bowire-ws-detail-storage-toggle-hint',
                     textContent: browserOnly
                         ? 'localStorage is the only store. Browser clear = data loss; ~5-10 MB quota.'
@@ -2697,12 +2698,12 @@
                 ? getWorkspaceStorageRoot(ws) : null;
             storageSection.appendChild(el('div', { className: 'bowire-ws-detail-storage-root' },
                 el('label', { className: 'bowire-ws-detail-storage-root-label',
-                    textContent: 'Storage root' }),
+                    textContent: t('main.ws.storageRoot') }),
                 el('input', {
                     type: 'text',
                     className: 'bowire-ws-detail-storage-root-input',
                     value: currentRoot || '',
-                    placeholder: 'Default: ~/.bowire/workspaces/' + ws.id + '/',
+                    placeholder: t('main.ws.storageRootPlaceholder', { id: ws.id }),
                     onBlur: function (e) {
                         var live = _liveWs();
                         if (!live || typeof setWorkspaceStorageRoot !== 'function') return;
@@ -2716,7 +2717,7 @@
                     }
                 }),
                 el('span', { className: 'bowire-ws-detail-storage-toggle-hint',
-                    textContent: 'Absolute path to a workspace folder on disk (e.g. a checked-out git repo). Leave empty for the default per-user location.' })
+                    textContent: t('main.ws.storageRootHint') })
             ));
             // #155 follow-up — disk-mode workspaces carry recordings
             // and collections on disk; the .bww download / Import
@@ -2728,7 +2729,7 @@
             },
                 el('span', {
                     className: 'bowire-ws-detail-storage-cli-hint-label',
-                    textContent: 'CLI round-trip:'
+                    textContent: t('main.ws.cliRoundTrip')
                 }),
                 el('code', {
                     className: 'bowire-ws-detail-storage-cli-hint-code',
@@ -2736,9 +2737,7 @@
                 }),
                 el('span', {
                     className: 'bowire-ws-detail-storage-cli-hint-tail',
-                    textContent: ' captures every per-entity file on disk; ' +
-                        '\'workspace import\' materialises the export into the per-entity layout. ' +
-                        'Use this for sharing or archiving disk-mode workspaces.'
+                    textContent: t('main.ws.cliRoundTripHint')
                 })
             ));
         }
@@ -2755,16 +2754,16 @@
         var currentProxyEndpoint = (typeof getWorkspaceProxyEndpoint === 'function')
             ? getWorkspaceProxyEndpoint(ws.id) : '';
         var proxySection = el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Proxy' }),
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.ws.proxy') }),
             el('div', { className: 'bowire-ws-detail-storage-root' },
                 el('label', { className: 'bowire-ws-detail-storage-root-label',
-                    textContent: 'External proxy endpoint' }),
+                    textContent: t('main.ws.proxyEndpoint') }),
                 el('input', {
                     type: 'text',
                     className: 'bowire-ws-detail-storage-root-input',
                     value: currentProxyEndpoint,
                     placeholder: 'http://proxy.example.internal:8889',
-                    'aria-label': 'External proxy endpoint URL',
+                    'aria-label': t('main.ws.proxyEndpointAria'),
                     onBlur: function (e) {
                         var live = _liveWs();
                         if (!live || typeof setWorkspaceProxyEndpoint !== 'function') return;
@@ -2781,7 +2780,7 @@
                     }
                 }),
                 el('span', { className: 'bowire-ws-detail-storage-toggle-hint',
-                    textContent: 'URL of an externally-running `bowire proxy` the Proxy rail should talk to. Leave empty for standalone CLI default (loopback). Embedded hosts (MapBowire) need this set to use the rail.' })
+                    textContent: t('main.ws.proxyHint') })
             )
         );
         main.appendChild(proxySection);
@@ -2801,11 +2800,11 @@
         var pinIds = Object.keys(currentPins).sort();
 
         var pinsSection = el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Required plugins' }));
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.ws.requiredPlugins') }));
         pinsSection.appendChild(el('p', {
             className: 'bowire-ws-detail-stat-hint',
             style: 'margin-bottom:10px',
-            textContent: 'Pins the protocols this workspace expects. A team member opening it gets a banner if any are missing; use \'*\' for any version, or a semver like \'1.5.0\' / \'>=1.4.0\'.'
+            textContent: t('main.ws.pinsHint')
         }));
 
         // Current pins table — minimal, no header row when empty so
@@ -2815,7 +2814,7 @@
             pinsSection.appendChild(el('p', {
                 className: 'bowire-pane-empty',
                 style: 'margin:6px 0 12px;',
-                textContent: 'No pins declared — this workspace accepts any protocol set.'
+                textContent: t('main.ws.noPins')
             }));
         } else {
             var list = el('div', { className: 'bowire-ws-detail-pins-list' });
@@ -2826,7 +2825,7 @@
                     type: 'text',
                     className: 'bowire-ws-detail-pins-version',
                     value: currentPins[pid],
-                    'aria-label': 'Version constraint for ' + pid,
+                    'aria-label': t('main.ws.versionFor', { protocol: pid }),
                     onBlur: function (e) {
                         var live = _liveWs();
                         if (!live || typeof setWorkspacePluginPins !== 'function') return;
@@ -2841,7 +2840,7 @@
                 }));
                 row.appendChild(el('button', {
                     className: 'bowire-ws-detail-pins-remove',
-                    'aria-label': 'Remove pin for ' + pid,
+                    'aria-label': t('main.ws.removePinFor', { protocol: pid }),
                     textContent: '✕',
                     onClick: function () {
                         var live = _liveWs();
@@ -2868,7 +2867,7 @@
         if (catalogIds.length > 0) {
             var addRow = el('div', { className: 'bowire-ws-detail-pins-addrow' });
             var addSelect = el('select', { className: 'bowire-ws-detail-pins-addselect',
-                'aria-label': 'Protocol to pin' });
+                'aria-label': t('main.ws.protocolToPin') });
             catalogIds.forEach(function (id) {
                 addSelect.appendChild(el('option', { value: id, textContent: id }));
             });
@@ -2876,11 +2875,11 @@
                 type: 'text',
                 className: 'bowire-ws-detail-pins-addversion',
                 value: '*',
-                'aria-label': 'Version constraint'
+                'aria-label': t('main.ws.versionConstraint')
             });
             var addBtn = el('button', {
                 className: 'bowire-presets-btn',
-                textContent: 'Add pin',
+                textContent: t('main.ws.addPin'),
                 onClick: function () {
                     var live = _liveWs();
                     if (!live || typeof setWorkspacePluginPins !== 'function') return;
@@ -2913,7 +2912,7 @@
             pinsSection.appendChild(el('button', {
                 className: 'bowire-presets-btn',
                 style: 'margin-top:10px;',
-                textContent: 'Pin all currently loaded protocols (' + loadedNotPinned.length + ')',
+                textContent: t('main.ws.pinAllLoaded', { count: loadedNotPinned.length }),
                 onClick: function () {
                     var live = _liveWs();
                     if (!live || typeof setWorkspacePluginPins !== 'function') return;
@@ -2935,13 +2934,13 @@
         var createdStr = ws.createdAt ? new Date(ws.createdAt).toLocaleString() : '—';
         var openedStr = ws.lastOpenedAt ? new Date(ws.lastOpenedAt).toLocaleString() : '—';
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Metadata' }),
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.ws.metadata') }),
             el('div', { className: 'bowire-ws-detail-meta-grid' },
-                el('div', { textContent: 'ID' }),
+                el('div', { textContent: t('main.ws.id') }),
                 el('div', { className: 'bowire-ws-detail-meta-value', textContent: ws.id }),
-                el('div', { textContent: 'Created' }),
+                el('div', { textContent: t('main.ws.created') }),
                 el('div', { className: 'bowire-ws-detail-meta-value', textContent: createdStr }),
-                el('div', { textContent: 'Last opened' }),
+                el('div', { textContent: t('main.ws.lastOpened') }),
                 el('div', { className: 'bowire-ws-detail-meta-value', textContent: openedStr })
             )
         ));
@@ -2957,30 +2956,30 @@
         // bundle, or import another. Secrets are intentionally excluded
         // from the export (session-only, would leak credentials).
         var shareSection = el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Share' })
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.ws.share') })
         );
         shareSection.appendChild(el('p', {
             className: 'bowire-ws-detail-stat-hint',
             style: 'margin-bottom:10px',
-            textContent: 'Export packages URLs, collections, recordings, favorites, benchmarks, flows and presets into a single JSON file. Secrets are NOT included.'
+            textContent: t('main.ws.shareHint')
         }));
         var shareRow = el('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' });
         shareRow.appendChild(el('button', {
             className: 'bowire-presets-btn',
-            textContent: 'Export workspace…',
+            textContent: t('main.ws.exportAction'),
             onClick: function () {
                 var live = _liveWs();
                 if (!live) return;
                 if (!downloadWorkspaceExport(live.id)) {
-                    toast('Export failed — see console', 'error');
+                    toast(t('main.ws.exportFailed'), 'error');
                     return;
                 }
-                toast('Workspace exported', 'success');
+                toast(t('main.ws.exported'), 'success');
             }
         }));
         shareRow.appendChild(el('button', {
             className: 'bowire-presets-btn',
-            textContent: 'Import workspace…',
+            textContent: t('drawer.importWorkspace'),
             onClick: function () {
                 var input = document.createElement('input');
                 input.type = 'file';
@@ -2993,7 +2992,7 @@
                         var payload;
                         try { payload = JSON.parse(reader.result); }
                         catch (e) {
-                            toast('Could not parse the file as JSON', 'error');
+                            toast(t('main.ws.notJson'), 'error');
                             return;
                         }
                         var live = _liveWs();
@@ -3011,10 +3010,10 @@
         // (deleteWorkspace falls back to the empty no-workspace state); the
         // confirm copy spells out the consequence when this is the last one.
         main.appendChild(el('div', { className: 'bowire-ws-detail-section bowire-ws-detail-danger' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Danger zone' }),
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.ws.dangerZone') }),
             el('button', {
                 className: 'bowire-settings-action-btn bowire-ws-detail-delete-btn',
-                textContent: 'Delete this workspace',
+                textContent: t('main.ws.deleteThis'),
                 onClick: function () {
                     var live = _liveWs();
                     if (!live) return;
@@ -3053,7 +3052,7 @@
                                 if (sidechannel) {
                                     try { delete _lastWorkspaceDeleteSnapshot[wsId]; } catch { /* ignore */ }
                                 }
-                                toast('Deleted workspace "' + snapshotName + '"', 'info', {
+                                toast(t('sidebar.ws.deleted', { name: snapshotName }), 'info', {
                                     undo: function () {
                                         var trashed = (typeof workspacesTrash !== 'undefined'
                                             && Array.isArray(workspacesTrash))
@@ -3116,16 +3115,16 @@
         var isActive = ws.id === activeWorkspaceId;
 
         main.appendChild(_renderWorkspaceBreadcrumb(ws, [
-            { label: 'Sources' }
+            { label: t('sidebar.sources.title') }
         ]));
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
-        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'URLs' }));
+        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.ws.urls') }));
 
         if (!isActive) {
             section.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
-                textContent: 'Switch to this workspace to manage its URLs and schema files.'
+                textContent: t('main.ws.switchToManage')
             }));
             main.appendChild(section);
             return main;
@@ -3139,7 +3138,7 @@
             section.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
                 style: 'margin-bottom:8px',
-                textContent: 'No URLs yet. Add one below to start discovery.'
+                textContent: t('main.ws.noUrlsYet')
             }));
         } else {
             var srcList = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-bottom:8px' });
@@ -3176,8 +3175,8 @@
                     el('span', { style: 'font-size:11px;color:var(--bowire-text-tertiary);flex-shrink:0', textContent: svcN + ' svc' + (svcN === 1 ? '' : 's') }),
                     el('button', {
                         className: 'bowire-ws-detail-action',
-                        title: 'Open this URL in Discover',
-                        textContent: 'Discover',
+                        title: t('main.ws.openInDiscover'),
+                        textContent: t('sidebar.discover'),
                         onClick: function () {
                             railMode = 'discover';
                             sidebarView = 'services';
@@ -3187,11 +3186,11 @@
                     }),
                     el('button', {
                         className: 'bowire-ws-detail-action bowire-ws-detail-danger',
-                        title: 'Remove this URL from the workspace',
-                        textContent: 'Remove',
+                        title: t('main.ws.removeUrlTitle'),
+                        textContent: t('sidebar.removeConfirm'),
                         onClick: function () {
-                            bowireConfirm('Remove URL "' + name + '"?', {
-                                confirmText: 'Remove',
+                            bowireConfirm(t('main.ws.removeUrlAsk', { name: name }), {
+                                confirmText: t('sidebar.removeConfirm'),
                                 danger: true
                             }).then(function (ok) {
                                 if (!ok) return;
@@ -3226,7 +3225,7 @@
             section.appendChild(el('div', {
                 className: 'bowire-ws-detail-section-label',
                 style: 'margin-top:14px',
-                textContent: 'Catalogue'
+                textContent: t('main.ws.catalogue')
             }));
             var browser = renderCatalogueBrowser({ inline: true });
             if (browser) section.appendChild(browser);
@@ -3244,8 +3243,8 @@
             if (typeof refreshCatalogueNow === 'function') {
                 emptyRow.appendChild(el('button', {
                     className: 'bowire-ws-detail-action',
-                    textContent: 'Refresh',
-                    title: 'Re-fetch the catalogue from the provider',
+                    textContent: t('sidebar.sources.refresh'),
+                    title: t('catalogue.refreshTitle'),
                     onClick: function () { refreshCatalogueNow(); }
                 }));
             }
@@ -3256,12 +3255,12 @@
             section.appendChild(el('button', {
                 className: 'bowire-ws-detail-action',
                 style: 'margin-top:8px',
-                textContent: '+ Add URL',
+                textContent: t('main.ws.addUrl'),
                 onClick: function () {
-                    bowirePrompt('Server URL', {
-                        title: 'Add URL',
-                        placeholder: 'e.g. https://petstore3.swagger.io/api/v3/openapi.json',
-                        confirmText: 'Add'
+                    bowirePrompt(t('main.ws.serverUrl'), {
+                        title: t('main.ws.addUrlTitle'),
+                        placeholder: t('main.ws.urlPlaceholder'),
+                        confirmText: t('sidebar.ws.addConfirm')
                     }).then(function (raw) {
                         if (!raw) return;
                         var trimmed = String(raw).trim();
@@ -3285,8 +3284,8 @@
             section.appendChild(el('button', {
                 className: 'bowire-ws-detail-link',
                 style: 'margin-top:8px;background:none;border:none;padding:0;color:var(--bowire-text-tertiary);font-size:11px;cursor:pointer;text-decoration:underline',
-                textContent: 'Configure a catalogue…',
-                title: 'Point Bowire at a file, an HTTP endpoint, Consul, Kubernetes or an agent hub and browse services instead of typing URLs',
+                textContent: t('main.ws.configureCatalogue'),
+                title: t('main.ws.configureCatalogueTitle'),
                 onClick: function () { openSettings('configure-discovery'); }
             }));
         }
@@ -3298,7 +3297,7 @@
         section.appendChild(el('div', {
             className: 'bowire-ws-detail-section-label',
             style: 'margin-top:14px',
-            textContent: 'Schema files'
+            textContent: t('main.ws.schemaFiles')
         }));
         if (typeof renderProtoUploadPanel === 'function') {
             section.appendChild(renderProtoUploadPanel());
@@ -3342,8 +3341,8 @@
                     }),
                     el('button', {
                         className: 'bowire-ws-detail-action bowire-ws-detail-danger',
-                        title: 'Remove ' + k,
-                        textContent: 'Remove',
+                        title: t('main.ws.removeNamed', { name: k }),
+                        textContent: t('sidebar.removeConfirm'),
                         onClick: function () {
                             var next = Object.assign({}, map);
                             delete next[k];
@@ -3366,20 +3365,20 @@
 
         section.appendChild(el('button', {
             className: 'bowire-ws-detail-action',
-            textContent: '+ Add ' + (masked ? 'secret' : 'variable'),
+            textContent: t(masked ? 'main.ws.addSecret' : 'main.env.addVar'),
             onClick: function () {
                 bowirePrompt(masked ? 'Secret name' : 'Variable name', {
                     title: masked ? 'Add secret' : 'Add variable',
                     placeholder: masked ? 'e.g. GH_TOKEN' : 'e.g. baseUrl',
-                    confirmText: 'Next'
+                    confirmText: t('main.next')
                 }).then(function (name) {
                     if (!name) return;
                     var trimmed = String(name).trim();
                     if (!trimmed) return;
-                    bowirePrompt('Value for ' + trimmed, {
+                    bowirePrompt(t('main.ws.valueFor', { name: trimmed }), {
                         title: masked ? 'Set secret value' : 'Set variable value',
                         placeholder: masked ? '(value is not stored on disk)' : 'value',
-                        confirmText: 'Save'
+                        confirmText: t('common.save')
                     }).then(function (value) {
                         if (value == null) return;
                         var next = Object.assign({}, map);
@@ -3408,7 +3407,7 @@
             : (typeof readWorkspaceJsonList === 'function' ? readWorkspaceJsonList(ws.id, COLLECTIONS_KEY) : []);
 
         main.appendChild(_renderWorkspaceBreadcrumb(ws, [
-            { label: 'Collections' }
+            { label: t('sidebar.collections.title') }
         ]));
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
@@ -3419,7 +3418,7 @@
         if (cols.length === 0) {
             section.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
-                textContent: 'Collections bundle saved requests so you can replay them as a set. Create one below to start.'
+                textContent: t('main.ws.collectionsLede')
             }));
         } else {
             var list = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-top:6px' });
@@ -3447,7 +3446,7 @@
         section.appendChild(el('button', {
             className: 'bowire-ws-detail-action',
             style: 'margin-top:8px',
-            textContent: '+ New collection',
+            textContent: t('main.ws.newCollection'),
             onClick: function () {
                 if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
                 if (typeof createCollection !== 'function') return;
@@ -3475,12 +3474,12 @@
             // of silently editing the wrong workspace's data.
             main.appendChild(el('p', {
                 className: 'bowire-pane-empty bowire-main-pad',
-                textContent: 'Switch to ' + ws.name + ' to edit this collection.'
+                textContent: t('main.ws.switchToEditCollection', { name: ws.name })
             }));
             main.appendChild(el('button', {
                 className: 'bowire-ws-detail-action',
                 style: 'margin:0 var(--bowire-main-gutter)',
-                textContent: 'Switch to ' + ws.name,
+                textContent: t('main.ws.switchToShort', { name: ws.name }),
                 onClick: function () { switchWorkspace(ws.id); }
             }));
             return main;
@@ -3493,7 +3492,7 @@
             return _renderWorkspaceCollectionsOverview(ws);
         }
         main.appendChild(_renderWorkspaceBreadcrumb(ws, [
-            { label: 'Collections', onClick: function () {
+            { label: t('sidebar.collections.title'), onClick: function () {
                 workspaceTreeSelection = { wsId: ws.id, kind: 'collections' };
                 render();
             } },
@@ -3516,7 +3515,7 @@
             : (typeof readWorkspaceJsonList === 'function' ? readWorkspaceJsonList(ws.id, RECORDINGS_KEY) : []);
 
         main.appendChild(_renderWorkspaceBreadcrumb(ws, [
-            { label: 'Recordings' }
+            { label: t('sidebar.recordings.title') }
         ]));
 
         var section = el('div', { className: 'bowire-ws-detail-section' });
@@ -3527,7 +3526,7 @@
         if (recs.length === 0) {
             section.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
-                textContent: 'Recordings capture a sequence of live calls so you can replay them, build mocks, or run them as benchmarks. Start one from Discover, or use the + below.'
+                textContent: t('main.ws.recordingsLede')
             }));
         } else {
             var list = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-top:6px' });
@@ -3555,7 +3554,7 @@
         section.appendChild(el('button', {
             className: 'bowire-ws-detail-action',
             style: 'margin-top:8px',
-            textContent: '+ Start recording',
+            textContent: t('main.ws.startRecording'),
             onClick: function () {
                 if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
                 if (typeof startRecording === 'function') {
@@ -3576,12 +3575,12 @@
         if (!isActive) {
             main.appendChild(el('p', {
                 className: 'bowire-pane-empty bowire-main-pad',
-                textContent: 'Switch to ' + ws.name + ' to open this recording.'
+                textContent: t('main.ws.switchToOpenRecording', { name: ws.name })
             }));
             main.appendChild(el('button', {
                 className: 'bowire-ws-detail-action',
                 style: 'margin:0 var(--bowire-main-gutter)',
-                textContent: 'Switch to ' + ws.name,
+                textContent: t('main.ws.switchToShort', { name: ws.name }),
                 onClick: function () { switchWorkspace(ws.id); }
             }));
             return main;
@@ -3594,7 +3593,7 @@
             return _renderWorkspaceRecordingsOverview(ws);
         }
         main.appendChild(_renderWorkspaceBreadcrumb(ws, [
-            { label: 'Recordings', onClick: function () {
+            { label: t('sidebar.recordings.title'), onClick: function () {
                 workspaceTreeSelection = { wsId: ws.id, kind: 'recordings' };
                 render();
             } },
@@ -3644,9 +3643,10 @@
         main.appendChild(el('div', { className: 'bowire-ws-detail-header' },
             el('span', { className: 'bowire-env-editor-glyph', innerHTML: envOverviewGlyph }),
             el('div', { className: 'bowire-ws-detail-title-stack' },
-                el('div', { className: 'bowire-ws-detail-title-static', textContent: 'Environments (' + envs.length + ')' }),
+                el('div', { className: 'bowire-ws-detail-title-static',
+                    textContent: t('main.ws.environmentsTitle', { count: envs.length }) }),
                 _renderHeaderTrail([
-                    { label: 'Workspaces', onClick: _goToWorkspacesOverview },
+                    { label: t('sidebar.ws.title'), onClick: _goToWorkspacesOverview },
                     { label: ws.name || '(unnamed)', onClick: function () { _goToWorkspaceSettings(ws.id); } }
                 ])
             )
@@ -3667,7 +3667,7 @@
                 body: 'Environments scope variables, auth tokens, and secrets per deployment stage. Create one for "staging", another for "prod", and toggle the active env from the topbar to re-point your requests.',
                 actions: [
                     {
-                        label: 'New environment',
+                        label: t('sidebar.envs.new'),
                         primary: true,
                         onClick: function () {
                             if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
@@ -3690,7 +3690,7 @@
                         // reference {{var}} in a request. Force-mode so
                         // the affordance re-runs after dismissal.
                         id: 'bowire-envs-empty-tour-btn',
-                        label: 'Take a tour',
+                        label: t('common.takeTour'),
                         onClick: function () {
                             if (typeof window !== 'undefined'
                                 && typeof window.bowireStartSetupEnvironmentsTour === 'function') {
@@ -3725,7 +3725,7 @@
                     type: 'button',
                     className: 'bowire-env-overview-name',
                     textContent: e.name || '(unnamed)',
-                    title: 'Open env editor',
+                    title: t('main.ws.openEnvEditor'),
                     onClick: function () {
                         if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
                         workspaceTreeSelection = { wsId: ws.id, kind: 'env', value: e.id };
@@ -3793,16 +3793,16 @@
                 tools.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-env-overview-tool',
-                    title: 'Rename environment',
-                    'aria-label': 'Rename environment',
+                    title: t('sidebar.envs.rename'),
+                    'aria-label': t('sidebar.envs.rename'),
                     innerHTML: svgIcon('pencil'),
                     onClick: function () {
                         var envId = e.id;
                         var oldName = e.name || '';
-                        bowirePrompt('Rename environment', {
-                            title: 'Rename',
+                        bowirePrompt(t('sidebar.envs.rename'), {
+                            title: t('sidebar.renameShort'),
                             defaultValue: oldName,
-                            confirmText: 'Rename',
+                            confirmText: t('sidebar.renameShort'),
                             validator: function (val) {
                                 var trimmed = String(val || '').trim();
                                 if (!trimmed) return 'Name required';
@@ -3810,7 +3810,7 @@
                                 if (typeof _isEnvironmentNameTaken === 'function'
                                     && _isEnvironmentNameTaken(trimmed, envId)) {
                                     if (typeof toast === 'function') {
-                                        toast('An environment named "' + trimmed + '" already exists.', 'error');
+                                        toast(t('env.nameTaken', { name: trimmed }), 'error');
                                     }
                                     return 'Duplicate';
                                 }
@@ -3827,8 +3827,8 @@
                 tools.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-env-overview-tool bowire-env-overview-tool-danger',
-                    title: 'Delete environment',
-                    'aria-label': 'Delete environment',
+                    title: t('sidebar.envs.deleteHeading'),
+                    'aria-label': t('sidebar.envs.deleteHeading'),
                     innerHTML: svgIcon('trash'),
                     onClick: function () {
                         var envId = e.id;
@@ -3839,7 +3839,7 @@
                                 if (typeof deleteEnvironment === 'function') deleteEnvironment(envId);
                                 render();
                             },
-                            { title: 'Delete environment', confirmText: 'Delete', danger: true }
+                            { title: t('sidebar.envs.deleteHeading'), confirmText: t('common.delete'), danger: true }
                         );
                     }
                 }));
@@ -3856,7 +3856,7 @@
             id: 'bowire-workspace-env-new-btn',
             className: 'bowire-ws-detail-action',
             style: 'margin-top:8px',
-            textContent: '+ New environment',
+            textContent: t('main.ws.newEnvironment'),
             onClick: function () {
                 if (ws.id !== activeWorkspaceId) switchWorkspace(ws.id);
                 if (typeof openCreateEnvironmentDialog !== 'function') return;
@@ -3883,12 +3883,12 @@
         if (!isActive) {
             main.appendChild(el('p', {
                 className: 'bowire-pane-empty bowire-main-pad',
-                textContent: 'Switch to ' + ws.name + ' to edit this environment.'
+                textContent: t('main.ws.switchToEditEnvironment', { name: ws.name })
             }));
             main.appendChild(el('button', {
                 className: 'bowire-ws-detail-action',
                 style: 'margin:0 var(--bowire-main-gutter)',
-                textContent: 'Switch to ' + ws.name,
+                textContent: t('main.ws.switchToShort', { name: ws.name }),
                 onClick: function () { switchWorkspace(ws.id); }
             }));
             return main;
@@ -3984,20 +3984,20 @@
             var emptyActions = [];
             if (canBrowse) {
                 emptyActions.push({
-                    label: 'Browse catalogue (' + catN + ')',
+                    label: t('main.ws.browseCatalogue', { count: catN }),
                     primary: true,
                     onClick: function () { openCatalogueBrowserDialog({}); }
                 });
             }
             emptyActions.push({
-                label: 'Add a URL manually',
+                label: t('main.ws.addUrlManually'),
                 primary: !canBrowse,
                 onClick: function () {
                     if (typeof bowirePrompt !== 'function') return;
-                    bowirePrompt('Server URL', {
-                        title: 'Add URL',
-                        placeholder: 'e.g. https://petstore3.swagger.io/api/v3/openapi.json',
-                        confirmText: 'Add'
+                    bowirePrompt(t('main.ws.serverUrl'), {
+                        title: t('main.ws.addUrlTitle'),
+                        placeholder: t('main.ws.urlPlaceholder'),
+                        confirmText: t('sidebar.ws.addConfirm')
                     }).then(function (raw) {
                         if (!raw) return;
                         var trimmed = String(raw).trim();
@@ -4074,8 +4074,8 @@
                 type: 'text',
                 className: 'bowire-ws-detail-name',
                 value: meta.name || _stripUrlPrefix(u),
-                placeholder: 'Optional display name (defaults to host)',
-                'aria-label': 'Display name',
+                placeholder: t('main.src.displayNamePlaceholder'),
+                'aria-label': t('main.src.displayName'),
                 'data-bowire-no-vars-chip': '1',
                 'data-bowire-no-vars-ac': '1',
                 onChange: function (e) {
@@ -4092,7 +4092,7 @@
         // discovery actually hits; the input above is the operator-
         // visible name.
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'URL' }),
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.url') }),
             el('input', {
                 type: 'text',
                 className: 'bowire-url-header-value',
@@ -4123,7 +4123,7 @@
         // a color wheel.
         var palette = ['#6366f1', '#22c55e', '#f59e0b', '#ec4899', '#06b6d4', '#a855f7', '#ef4444', '#64748b'];
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Color' }),
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.colour.label') }),
             el('div', { className: 'bowire-ws-detail-color-row' },
                 palette.map(function (c) {
                     return el('button', {
@@ -4136,7 +4136,7 @@
                 meta.color ? el('button', {
                     className: 'bowire-ws-detail-color-swatch',
                     style: 'background:transparent; border:1px dashed var(--bowire-border); color:var(--bowire-text-tertiary); font-size:14px;',
-                    title: 'Clear color',
+                    title: t('main.colour.clear'),
                     textContent: '×',
                     onClick: function () { setUrlMeta(u, { color: null }); render(); }
                 }) : null
@@ -4144,19 +4144,19 @@
         ));
 
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Discovery' }),
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.src.discovery') }),
             el('div', { className: 'bowire-ws-detail-stats' },
                 el('div', { className: 'bowire-ws-detail-stat' },
                     el('div', { className: 'bowire-ws-detail-stat-value', textContent: String(svcList.length) }),
-                    el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'Services' })
+                    el('div', { className: 'bowire-ws-detail-stat-label', textContent: t('settings.about.services') })
                 ),
                 el('div', { className: 'bowire-ws-detail-stat' },
                     el('div', { className: 'bowire-ws-detail-stat-value', textContent: String(methodN) }),
-                    el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'Methods' })
+                    el('div', { className: 'bowire-ws-detail-stat-label', textContent: t('settings.about.methods') })
                 ),
                 el('div', { className: 'bowire-ws-detail-stat' },
                     el('div', { className: 'bowire-ws-detail-stat-value', textContent: String(Object.keys(protoCounts).length || '—') }),
-                    el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'Protocols' }),
+                    el('div', { className: 'bowire-ws-detail-stat-label', textContent: t('settings.protocols.title') }),
                     el('div', { className: 'bowire-ws-detail-stat-hint', textContent: Object.keys(protoCounts).join(', ') || 'no protocols detected' })
                 )
             )
@@ -4172,18 +4172,18 @@
             var diagBody = renderDiscoveryDiagnostics(u, { forceOpen: true });
             if (diagBody) {
                 main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-                    el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Discovery diagnostics' }),
+                    el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.src.diagnostics') }),
                     diagBody
                 ));
             }
         }
 
         var actions = el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Actions' }),
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.src.actions') }),
             el('div', { style: 'display:flex; gap:8px; flex-wrap:wrap;' },
                 el('button', {
                     className: 'bowire-settings-action-btn',
-                    textContent: 'Refresh discovery',
+                    textContent: t('main.src.refreshDiscovery'),
                     onClick: function () {
                         // refreshServices() / onServerUrlChanged() never
                         // existed (legacy hook names). fetchServices() is
@@ -4196,7 +4196,7 @@
                 }),
                 el('button', {
                     className: 'bowire-settings-action-btn',
-                    textContent: 'Open in Discover',
+                    textContent: t('main.openInDiscover'),
                     onClick: function () {
                         railMode = 'discover';
                         sidebarView = 'services';
@@ -4213,7 +4213,7 @@
         // so the operator can manage schemas next to the URL they
         // belong to instead of context-switching to Discover.
         var schemaSection = el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Schema files' }));
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.ws.schemaFiles') }));
 
         // List schemas associated with this URL (matched by OriginUrl).
         // Per-URL filter keeps the section relevant — global schemas
@@ -4254,7 +4254,7 @@
                     ? 'Upload schema files'
                     : 'Add more schema files' }),
             el('div', { className: 'bowire-sources-dropzone-hint',
-                textContent: '.proto for gRPC  ·  .json / .yaml for OpenAPI / Swagger  ·  drop or click' })
+                textContent: t('main.src.dropHint') })
         );
         schemaSection.appendChild(schemaDrop);
 
@@ -4287,7 +4287,7 @@
                     type: 'text',
                     className: 'bowire-url-header-key',
                     value: k,
-                    placeholder: 'Header name',
+                    placeholder: t('headers.namePlaceholder'),
                     onChange: function (e) {
                         var newKey = String(e.target.value || '').trim();
                         if (!newKey || newKey === k) return;
@@ -4301,7 +4301,7 @@
                     type: 'text',
                     className: 'bowire-url-header-value',
                     value: headers[k],
-                    placeholder: 'Value (supports {{vars}})',
+                    placeholder: t('main.src.headerValuePlaceholder'),
                     onChange: function (e) {
                         setUrlHeader(u, k, String(e.target.value || ''));
                     }
@@ -4309,7 +4309,7 @@
                 el('button', {
                     type: 'button',
                     className: 'bowire-list-row-delete',
-                    title: 'Remove header',
+                    title: t('main.src.removeHeader'),
                     innerHTML: svgIcon('trash'),
                     style: 'opacity:1;',
                     onClick: function () {
@@ -4323,24 +4323,24 @@
             headerRows.appendChild(el('p', {
                 className: 'bowire-sources-hint',
                 style: 'color:var(--bowire-text-tertiary); font-size:12px; margin:0;',
-                textContent: 'No headers configured. Add one to send it with every request to this URL.'
+                textContent: t('main.src.noHeaders')
             }));
         }
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Per-URL headers' }),
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.src.perUrlHeaders') }),
             headerRows,
             el('button', {
                 className: 'bowire-settings-action-btn',
                 style: 'align-self:flex-start; margin-top:4px;',
-                textContent: '+ Add header',
+                textContent: t('main.src.addHeader'),
                 onClick: function () {
-                    bowirePrompt('Header name', {
-                        title: 'Add header',
+                    bowirePrompt(t('headers.namePlaceholder'), {
+                        title: t('main.src.addHeaderTitle'),
                         placeholder: 'Authorization',
-                        confirmText: 'Add',
+                        confirmText: t('sidebar.ws.addConfirm'),
                     }).then(function (name) {
                         if (!name) return;
-                        if (headers[name] !== undefined) { toast('Header already exists', 'info'); return; }
+                        if (headers[name] !== undefined) { toast(t('main.src.headerExists'), 'info'); return; }
                         setUrlHeader(u, name, '');
                         render();
                     });
@@ -4350,10 +4350,10 @@
 
         if (!config.lockServerUrl && serverUrls.length > 1) {
             main.appendChild(el('div', { className: 'bowire-ws-detail-section bowire-ws-detail-danger' },
-                el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Danger zone' }),
+                el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.ws.dangerZone') }),
                 el('button', {
                     className: 'bowire-settings-action-btn bowire-ws-detail-delete-btn',
-                    textContent: 'Remove this URL',
+                    textContent: t('sidebar.sources.removeUrl'),
                     onClick: function () {
                         var snapshot = u;
                         bowireConfirm(
@@ -4369,7 +4369,7 @@
                                 if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
                                 render();
                             },
-                            { title: 'Remove URL', confirmText: 'Remove', danger: true }
+                            { title: t('sidebar.sources.removeUrlShort'), confirmText: t('sidebar.removeConfirm'), danger: true }
                         );
                     }
                 })
@@ -4570,7 +4570,7 @@
                 var items = [];
                 if (available) {
                     items.push({
-                        label: 'Open in Discover',
+                        label: t('main.openInDiscover'),
                         onClick: function () {
                             railMode = 'discover';
                             try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
@@ -4594,7 +4594,7 @@
                 if (available && typeof addTargetToEnvelopePicker === 'function') {
                     items.push({ separator: true });
                     items.push({
-                        label: 'Add to envelope…',
+                        label: t('sidebar.method.addToEnvelope'),
                         onClick: function (ev) {
                             // Default-JSON body from the method's input
                             // type so the seeded envelope is runnable
@@ -4644,8 +4644,10 @@
             headerRow.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-home-tile-star',
-                title: 'Remove from favorites',
-                'aria-label': 'Remove ' + serviceName + '.' + methodName + ' from favorites',
+                title: t('sidebar.favorites.remove'),
+                'aria-label': t('main.removeFromFavourites', {
+                    method: serviceName + '.' + methodName
+                }),
                 innerHTML: svgIcon('starFilled'),
                 onClick: function (ev) {
                     ev.stopPropagation();
@@ -4779,7 +4781,7 @@
                             // updating tour.js's getting-started
                             // steps.
                             id: 'bowire-welcome-create-btn',
-                            label: 'New workspace…',
+                            label: t('sidebar.ws.new'),
                             primary: true,
                             onClick: function () {
                                 if (typeof openCreateWorkspaceDialog === 'function') {
@@ -4807,7 +4809,7 @@
                         // funnels through the list rather than dead-
                         // ends back here.
                         {
-                            label: 'Manage workspaces',
+                            label: t('common.manageWorkspaces'),
                             onClick: function () {
                                 railMode = 'workspaces';
                                 try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
@@ -4821,7 +4823,7 @@
                         // re-run it after dismissing once.
                         {
                             id: 'bowire-welcome-tour-btn',
-                            label: 'Take a tour',
+                            label: t('common.takeTour'),
                             onClick: function () {
                                 if (typeof window !== 'undefined'
                                     && typeof window.bowireStartGettingStartedTour === 'function') {
@@ -4954,14 +4956,14 @@
             favSection.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-home-section-title bowire-home-section-title-toggle',
-                title: 'Show full favorites list',
+                title: t('main.home.showFavorites'),
                 onClick: function () {
                     homeListDrawer = 'favorites';
                     render();
                 }
             },
                 el('span', { innerHTML: svgIcon('starFilled'), style: 'color:var(--bowire-accent)' }),
-                el('span', { textContent: 'Favorites' }),
+                el('span', { textContent: t('main.home.favorites') }),
                 el('span', { className: 'bowire-home-section-count', textContent: favCountText }),
                 el('span', {
                     className: 'bowire-home-section-toggle-caret',
@@ -4993,14 +4995,14 @@
             recentSection.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-home-section-title bowire-home-section-title-toggle',
-                title: 'Show full activity list',
+                title: t('main.home.showActivity'),
                 onClick: function () {
                     homeListDrawer = 'recent';
                     render();
                 }
             },
                 el('span', { innerHTML: svgIcon('history') }),
-                el('span', { textContent: 'Recent activity' }),
+                el('span', { textContent: t('main.home.recentActivity') }),
                 el('span', { className: 'bowire-home-section-count', textContent: recentCountText }),
                 el('span', {
                     className: 'bowire-home-section-toggle-caret',
@@ -5156,14 +5158,14 @@
         if (sidebarView === 'sources') {
             var srcMain = el('div', { id: 'bowire-main-sources', className: 'bowire-main bowire-main-sources' });
             var srcWrap = el('div', { className: 'bowire-sources-wrap' });
-            srcWrap.appendChild(el('h2', { className: 'bowire-sources-title', textContent: 'Sources' }));
+            srcWrap.appendChild(el('h2', { className: 'bowire-sources-title', textContent: t('sidebar.sources.title') }));
             srcWrap.appendChild(el('p', {
                 className: 'bowire-sources-subtitle',
                 textContent: config.lockServerUrl
                     ? 'URLs configured by the host — read-only.'
                     : 'Discovery URLs and schema files. Drop a schema below to import; type a URL to add it.'
             }));
-            srcWrap.appendChild(el('h3', { className: 'bowire-sources-section', textContent: 'Discovery URLs' }));
+            srcWrap.appendChild(el('h3', { className: 'bowire-sources-section', textContent: t('main.src.discoveryUrls') }));
             // Reuse the sidebar's URL bar at full main-pane width.
             // The renderUrlBarRow already understands the locked vs.
             // editable cases.
@@ -5362,7 +5364,7 @@
                             type: 'button',
                             className: 'bowire-header-summary-expand',
                             title: fullText,
-                            'aria-label': 'Show full description',
+                            'aria-label': t('main.showFullDescription'),
                             textContent: '…',
                             onClick: function (e) {
                                 e.stopPropagation();
@@ -5379,7 +5381,7 @@
                                     el('button', {
                                         type: 'button',
                                         className: 'bowire-header-summary-popup-close',
-                                        textContent: 'Close',
+                                        textContent: t('common.close'),
                                         onClick: function () { popup.remove(); }
                                     })
                                 );
@@ -5418,7 +5420,7 @@
                         type: 'button',
                         className: 'bowire-header-proto-icon bowire-header-proto-icon-clickable',
                         title: headerProto.name + ' — click for recent ' + headerProto.name + ' calls',
-                        'aria-label': 'Recent ' + headerProto.name + ' calls',
+                        'aria-label': t('main.recentCalls', { protocol: headerProto.name }),
                         innerHTML: headerProto.icon,
                         onClick: function (e) {
                             e.stopPropagation();
@@ -5441,12 +5443,12 @@
                             });
                             popup.appendChild(el('div', {
                                 className: 'bowire-header-recent-popup-title',
-                                textContent: 'Recent ' + headerProto.name + ' calls'
+                                textContent: t('main.recentCalls', { protocol: headerProto.name })
                             }));
                             if (entries.length === 0) {
                                 popup.appendChild(el('div', {
                                     className: 'bowire-header-recent-popup-empty',
-                                    textContent: 'No ' + headerProto.name + ' calls yet — fire one to see it here.'
+                                    textContent: t('main.noCallsYet', { protocol: headerProto.name })
                                 }));
                             } else {
                                 var list = el('div', { className: 'bowire-header-recent-popup-list' });
@@ -5455,7 +5457,7 @@
                                         type: 'button',
                                         className: 'bowire-header-recent-popup-row'
                                             + (isHistoryEntryOk(h) ? '' : ' is-error'),
-                                        title: 'Replay this call',
+                                        title: t('main.replayCall'),
                                         onClick: function () {
                                             popup.remove();
                                             if (typeof replayHistoryEntry === 'function') replayHistoryEntry(h);
@@ -5479,7 +5481,7 @@
                             popup.appendChild(el('button', {
                                 type: 'button',
                                 className: 'bowire-header-recent-popup-close',
-                                textContent: 'Close',
+                                textContent: t('common.close'),
                                 onClick: function () { popup.remove(); }
                             }));
                             document.body.appendChild(popup);
@@ -5518,8 +5520,8 @@
                         header.appendChild(el('button', {
                             type: 'button',
                             className: 'bowire-header-meta-help',
-                            title: 'Open the ' + headerProto.name + ' protocol docs in the Help rail',
-                            'aria-label': 'Help on ' + headerProto.name,
+                            title: t('main.protocolDocs', { protocol: headerProto.name }),
+                            'aria-label': t('main.helpOn', { topic: headerProto.name }),
                             textContent: '?',
                             onClick: function (e) {
                                 e.stopPropagation();
@@ -5550,8 +5552,8 @@
                     header.appendChild(el('button', {
                         type: 'button',
                         className: 'bowire-header-meta-help',
-                        title: 'Open ' + mt + ' docs in the Help rail',
-                        'aria-label': 'Help on ' + mt,
+                        title: t('main.topicDocs', { topic: mt }),
+                        'aria-label': t('main.helpOn', { topic: mt }),
                         textContent: '?',
                         onClick: function (e) {
                             e.stopPropagation();
@@ -5587,7 +5589,7 @@
                     onDblClick: function (e) {
                         e.preventDefault();
                         navigator.clipboard.writeText(fullMethodUrl).then(function () {
-                            if (typeof toast === 'function') toast('URL copied', 'success');
+                            if (typeof toast === 'function') toast(t('main.urlCopied'), 'success');
                         });
                     }
                 }));
@@ -5647,7 +5649,7 @@
                         id: 'bowire-header-presets-btn',
                         className: 'bowire-header-presets-btn',
                         title: presetList.length + ' preset' + (presetList.length === 1 ? '' : 's') + ' for this method',
-                        'aria-label': 'Saved presets',
+                        'aria-label': t('main.presets.saved'),
                         'aria-haspopup': 'menu',
                         onClick: function (e) {
                             e.stopPropagation();
@@ -5684,7 +5686,7 @@
                                     className: 'bowire-header-presets-row'
                                         + (preset.isDefault ? ' is-default' : ''),
                                     role: 'menuitem',
-                                    title: 'Apply preset',
+                                    title: t('main.presets.apply'),
                                     onClick: function (ev) {
                                         ev.stopPropagation();
                                         if (typeof applyPresetToCurrentMethod === 'function'
@@ -5714,7 +5716,7 @@
                                     title: preset.isDefault
                                         ? 'Default preset — click to clear'
                                         : 'Set as default for this method',
-                                    'aria-label': 'Toggle default preset',
+                                    'aria-label': t('main.presets.toggleDefault'),
                                     innerHTML: svgIcon(preset.isDefault ? 'starFilled' : 'star'),
                                     onClick: function (ev) {
                                         ev.stopPropagation();
@@ -5730,8 +5732,8 @@
                                 tools.appendChild(el('button', {
                                     type: 'button',
                                     className: 'bowire-header-presets-tool',
-                                    title: 'Add to collection…',
-                                    'aria-label': 'Add to collection',
+                                    title: t('sidebar.method.addToCollection'),
+                                    'aria-label': t('main.addToCollection'),
                                     innerHTML: svgIcon('folder'),
                                     onClick: function (ev) {
                                         ev.stopPropagation();
@@ -5743,7 +5745,7 @@
                                         if (cols.length === 0) {
                                             collist.appendChild(el('div', {
                                                 className: 'bowire-header-presets-collist-empty',
-                                                textContent: 'No collections yet'
+                                                textContent: t('main.presets.noCollections')
                                             }));
                                         }
                                         cols.forEach(function (col) {
@@ -5755,7 +5757,10 @@
                                                     ev2.stopPropagation();
                                                     if (typeof addToCollection === 'function') {
                                                         addToCollection(col.id, preset.config);
-                                                        toast('Added "' + (preset.name || 'preset') + '" to ' + col.name, 'success');
+                                                        toast(t('main.presets.addedTo', {
+                                name: preset.name || t('presets.untitled'),
+                                collection: col.name
+                            }), 'success');
                                                     }
                                                     menu.remove();
                                                     render();
@@ -5768,8 +5773,8 @@
                                 tools.appendChild(el('button', {
                                     type: 'button',
                                     className: 'bowire-header-presets-tool bowire-header-presets-tool-danger',
-                                    title: 'Delete preset',
-                                    'aria-label': 'Delete preset',
+                                    title: t('main.presets.delete'),
+                                    'aria-label': t('main.presets.delete'),
                                     innerHTML: svgIcon('trash'),
                                     onClick: function (ev) {
                                         ev.stopPropagation();
@@ -5791,7 +5796,7 @@
                             menu.appendChild(el('div', {
                                 className: 'bowire-header-presets-row bowire-header-presets-row-action',
                                 role: 'menuitem',
-                                title: 'Save current request as a new preset',
+                                title: t('main.presets.saveCurrent'),
                                 onClick: function (ev) {
                                     ev.stopPropagation();
                                     // #536 — was a third inline copy of the
@@ -5803,22 +5808,22 @@
                                     var snap = bowireSnapshotDiscoverRequest();
                                     if (!snap) return;
                                     menu.remove();
-                                    bowirePrompt('Preset name', {
-                                        title: 'Save as preset',
+                                    bowirePrompt(t('presets.save.promptMessage'), {
+                                        title: t('rb.presetPromptTitle'),
                                         placeholder: selectedMethod.name + ' preset',
-                                        confirmText: 'Save'
+                                        confirmText: t('common.save')
                                     }).then(function (name) {
                                         if (!name) return;
                                         if (typeof savePresetFromSnapshot === 'function') {
                                             savePresetFromSnapshot('discover', String(name).trim(), snap);
-                                            toast('Preset saved', 'success');
+                                            toast(t('rb.presetSaved'), 'success');
                                         }
                                         render();
                                     });
                                 }
                             },
                                 el('span', { className: 'bowire-header-presets-action-icon', innerHTML: svgIcon('plus') }),
-                                el('span', { textContent: 'Save as preset…' })
+                                el('span', { textContent: t('rb.savePreset') })
                             ));
                             document.body.appendChild(menu);
                             // Anchor to the trigger button.
@@ -5864,8 +5869,8 @@
                 addToWrap.appendChild(el('button', {
                     id: 'bowire-header-addto-btn',
                     className: 'bowire-header-addto-btn' + (methodAddToMenuOpen ? ' active' : ''),
-                    title: 'Add this method to…',
-                    'aria-label': 'Add this method to…',
+                    title: t('main.addMethodTo'),
+                    'aria-label': t('main.addMethodTo'),
                     'aria-haspopup': 'menu',
                     'aria-expanded': methodAddToMenuOpen ? 'true' : 'false',
                     onClick: function (e) {
@@ -5895,7 +5900,7 @@
                     // requestMessages, so it must never run from render.
 
                     // ---- Collection section ----
-                    menu.appendChild(el('div', { className: 'bowire-header-addto-section', textContent: 'Collection' }));
+                    menu.appendChild(el('div', { className: 'bowire-header-addto-section', textContent: t('sidebar.new.collection') }));
                     var existingCols = (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) ? collectionsList : [];
                     if (existingCols.length > 0) {
                         existingCols.slice(0, 6).forEach(function (col) {
@@ -5906,7 +5911,7 @@
                                     var snap = bowireSnapshotDiscoverRequest();
                                     if (!snap) return;
                                     addToCollection(col.id, snap);
-                                    toast('Added to "' + col.name + '"', 'success');
+                                    toast(t('drop.added', { collection: col.name }), 'success');
                                     _closeAddToMenu();
                                     render();
                                 }
@@ -5928,28 +5933,28 @@
                         className: 'bowire-header-addto-item bowire-header-addto-item-create',
                         role: 'menuitem',
                         onClick: function () {
-                            bowirePrompt('Collection name', {
-                                title: 'New collection',
-                                placeholder: 'e.g. Smoke tests',
-                                confirmText: 'Create'
+                            bowirePrompt(t('main.collectionName'), {
+                                title: t('sidebar.collections.new'),
+                                placeholder: t('main.collectionPlaceholder'),
+                                confirmText: t('wsTemplates.dialog.create')
                             }).then(function (name) {
                                 if (name === null) return;
                                 var trimmed = String(name || '').trim();
                                 var col = createCollection(trimmed || undefined);
                                 var snap = bowireSnapshotDiscoverRequest();
                                 if (snap) addToCollection(col.id, snap);
-                                toast('Saved to "' + col.name + '"', 'success');
+                                toast(t('main.savedTo', { collection: col.name }), 'success');
                                 _closeAddToMenu();
                                 render();
                             });
                         }
                     },
                         el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('plus') }),
-                        el('span', { textContent: 'New collection…' })
+                        el('span', { textContent: t('sidebar.newCollection') })
                     ));
 
                     // ---- Other destinations ----
-                    menu.appendChild(el('div', { className: 'bowire-header-addto-section', textContent: 'Send to' }));
+                    menu.appendChild(el('div', { className: 'bowire-header-addto-section', textContent: t('main.sendTo') }));
 
                     menu.appendChild(el('button', {
                         className: 'bowire-header-addto-item',
@@ -5957,15 +5962,15 @@
                         onClick: function () {
                             var snap = bowireSnapshotDiscoverRequest();
                             if (!snap) return;
-                            bowirePrompt('Preset name', {
-                                title: 'Save as preset',
+                            bowirePrompt(t('presets.save.promptMessage'), {
+                                title: t('rb.presetPromptTitle'),
                                 placeholder: snap.method + ' preset',
-                                confirmText: 'Save'
+                                confirmText: t('common.save')
                             }).then(function (name) {
                                 if (!name) return;
                                 if (typeof savePresetFromSnapshot === 'function') {
                                     savePresetFromSnapshot('discover', String(name).trim(), snap);
-                                    toast('Preset saved', 'success');
+                                    toast(t('rb.presetSaved'), 'success');
                                 }
                                 _closeAddToMenu();
                                 render();
@@ -5973,7 +5978,7 @@
                         }
                     },
                         el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('preset') }),
-                        el('span', { textContent: 'Save as preset' })
+                        el('span', { textContent: t('rb.presetPromptTitle') })
                     ));
 
                     // #295 Phase E — "Open in Compose" promotes the
@@ -5999,13 +6004,13 @@
                                     method: snap.method
                                 });
                                 if (typeof toast === 'function') {
-                                    toast('Opened in Compose', 'success');
+                                    toast(t('main.openedInCompose'), 'success');
                                 }
                                 render();
                             }
                         },
                             el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('compose') }),
-                            el('span', { textContent: 'Open in Compose' })
+                            el('span', { textContent: t('main.openInCompose') })
                         ));
                     }
 
@@ -6044,7 +6049,7 @@
                             }
                         },
                             el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('lightning') }),
-                            el('span', { textContent: 'Add to envelope…' })
+                            el('span', { textContent: t('sidebar.method.addToEnvelope') })
                         ));
                     }
 
@@ -6059,7 +6064,7 @@
                             onClick: function () {
                                 if (recActive) return;
                                 startRecording();
-                                toast('Recording started — invoke the method to capture', 'success');
+                                toast(t('main.recordingStarted'), 'success');
                                 _closeAddToMenu();
                                 render();
                             }
@@ -6094,7 +6099,7 @@
                         header.appendChild(el('button', {
                             className: 'bowire-header-hint-chip',
                             title: hints.length + ' hint' + (hints.length === 1 ? '' : 's') + ' for this method — click to open the Assistant',
-                            'aria-label': 'Open Assistant hints (' + hints.length + ')',
+                            'aria-label': t('main.openHints', { count: hints.length }),
                             onClick: function () {
                                 aiDrawerOpen = true;
                                 try { localStorage.setItem('bowire_ai_drawer_open', '1'); } catch { /* ignore */ }
@@ -6113,8 +6118,8 @@
             header.appendChild(el('button', {
                 id: 'bowire-header-copy-url-btn',
                 className: 'bowire-header-copy-url',
-                title: 'Copy invoke URL',
-                'aria-label': 'Copy invoke URL',
+                title: t('main.copyInvokeUrl'),
+                'aria-label': t('main.copyInvokeUrl'),
                 innerHTML: svgIcon('copy'),
                 onClick: function () {
                     var base = (selectedService && selectedService.originUrl)
@@ -6123,7 +6128,7 @@
                         + '?service=' + encodeURIComponent(selectedService ? selectedService.name : '')
                         + '&method=' + encodeURIComponent(selectedMethod.name);
                     navigator.clipboard.writeText(invokeUrl).then(function () {
-                        toast('Copied invoke URL', 'success');
+                        toast(t('main.copiedInvokeUrl'), 'success');
                     });
                 }
             }));
@@ -6161,18 +6166,18 @@
                         tabScroll.appendChild(el('div', {
                             id: 'bowire-request-tab-' + tab.id,
                             className: 'bowire-request-tab bowire-request-tab-empty' + (isActive ? ' active' : ''),
-                            title: 'New tab — pick a method to fill it',
+                            title: t('main.tabs.newTitle'),
                             'data-tab-id': tab.id,
                             onClick: function (e) {
                                 var id = e.currentTarget.dataset.tabId;
                                 if (id) switchTab(id);
                             }
                         },
-                            el('span', { className: 'bowire-request-tab-name', textContent: 'New tab' }),
+                            el('span', { className: 'bowire-request-tab-name', textContent: t('main.tabs.new') }),
                             requestTabs.length > 1 ? el('button', {
                                 className: 'bowire-request-tab-close',
                                 innerHTML: svgIcon('close'),
-                                title: 'Close tab (Ctrl+W)',
+                                title: t('main.tabs.close'),
                                 onClick: function (e) {
                                     e.stopPropagation();
                                     var parent = e.currentTarget.closest('.bowire-request-tab');
@@ -6216,13 +6221,13 @@
                             var hasRight = idx >= 0 && idx < requestTabs.length - 1;
                             showContextMenu(e.clientX, e.clientY, [
                                 {
-                                    label: 'Close',
+                                    label: t('common.close'),
                                     icon: 'close',
                                     disabled: !hasOthers,
                                     onClick: function () { closeTab(id); }
                                 },
                                 {
-                                    label: 'Close others',
+                                    label: t('main.tabs.closeOthers'),
                                     disabled: !hasOthers,
                                     onClick: function () {
                                         // Close every other tab, then make sure
@@ -6236,7 +6241,7 @@
                                     }
                                 },
                                 {
-                                    label: 'Close tabs to the right',
+                                    label: t('main.tabs.closeRight'),
                                     disabled: !hasRight,
                                     onClick: function () {
                                         var currentIdx = requestTabs.findIndex(function (tab) { return tab.id === id; });
@@ -6266,7 +6271,7 @@
                         requestTabs.length > 1 ? el('button', {
                             className: 'bowire-request-tab-close',
                             innerHTML: svgIcon('close'),
-                            title: 'Close tab (Ctrl+W)',
+                            title: t('main.tabs.close'),
                             onClick: function (e) {
                                 e.stopPropagation();
                                 var parent = e.currentTarget.closest('.bowire-request-tab');
@@ -6330,7 +6335,7 @@
                         bowireWireTabOverflow(live, {
                             tabSelector: '.bowire-request-tab',
                             fixedSelector: '.bowire-request-tab-new',
-                            label: 'More tabs'
+                            label: t('main.moreTabs')
                         });
                     }
                 });
@@ -6352,7 +6357,7 @@
         if (selectedService && selectedService.source === 'proto') {
             var protoBanner = el('div', { className: 'bowire-proto-banner' },
                 el('span', { innerHTML: svgIcon('info'), style: 'width:14px;height:14px;display:flex;flex-shrink:0' }),
-                el('span', { textContent: 'Schema loaded from .proto file. Invocation requires gRPC Server Reflection enabled on the target server.' })
+                el('span', { textContent: t('main.protoOnlyNote') })
             );
             main.appendChild(protoBanner);
         }
@@ -6501,7 +6506,7 @@
         // operator doesn't rely on the verbose "Request Body" tab
         // label to know which side they're on. Tabs below can stay
         // terse (Body / Metadata / Schema / Tests / …).
-        pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Request' }));
+        pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: t('main.request') }));
         const tabs = el('div', { id: 'bowire-request-tabs', className: 'bowire-tabs' });
         // Top-tab label — "Payload" instead of "Body" so the REST/OData
         // sub-tab strip below ("Form / Body") doesn't read as the
@@ -6517,13 +6522,13 @@
         const metaTab = el('div', {
             id: 'bowire-request-tab-metadata',
             className: `bowire-tab ${activeRequestTab === 'metadata' ? 'active' : ''}`,
-            textContent: 'Metadata',
+            textContent: t('rb.tab.metadata'),
             onClick: function () { activeRequestTab = 'metadata'; render(); }
         });
         const schemaTab = el('div', {
             id: 'bowire-request-tab-schema',
             className: `bowire-tab ${activeRequestTab === 'schema' ? 'active' : ''}`,
-            textContent: 'Schema',
+            textContent: t('main.tab.schema'),
             onClick: function () { activeRequestTab = 'schema'; render(); }
         });
 
@@ -6537,19 +6542,19 @@
         const historyTab = el('div', {
             id: 'bowire-request-tab-history',
             className: `bowire-tab ${activeRequestTab === 'history' ? 'active' : ''}`,
-            textContent: 'History',
+            textContent: t('main.tab.history'),
             onClick: function () { activeRequestTab = 'history'; render(); }
         });
         const codeTab = el('div', {
             id: 'bowire-request-tab-code',
             className: `bowire-tab ${activeRequestTab === 'code' ? 'active' : ''}`,
-            textContent: 'Code',
+            textContent: t('main.tab.code'),
             onClick: function () { activeRequestTab = 'code'; render(); }
         });
         const scriptsTab = el('div', {
             id: 'bowire-request-tab-scripts',
             className: `bowire-tab ${activeRequestTab === 'scripts' ? 'active' : ''}`,
-            textContent: 'Scripts',
+            textContent: t('main.tab.scripts'),
             onClick: function () { activeRequestTab = 'scripts'; render(); }
         });
         // Tests-DEFINITION tab. Lives request-side because assertions
@@ -6559,7 +6564,7 @@
         const testsTab = el('div', {
             id: 'bowire-request-tab-tests',
             className: `bowire-tab ${activeRequestTab === 'tests' ? 'active' : ''}`,
-            textContent: 'Tests',
+            textContent: t('drawer.tests'),
             onClick: function () { activeRequestTab = 'tests'; render(); }
         });
         tabs.appendChild(bodyTab);
@@ -6577,7 +6582,7 @@
         requestAnimationFrame(function () {
             var live = document.getElementById('bowire-request-tabs');
             if (live && typeof bowireWireTabOverflow === 'function') {
-                bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: 'More tabs' });
+                bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: t('main.moreTabs') });
             }
         });
 
@@ -6593,11 +6598,11 @@
             if (duplexConnected || sentCount > 0 || receivedCount > 0) {
                 var counters = el('div', { className: 'bowire-channel-counters' },
                     el('div', { className: 'bowire-channel-counter' },
-                        el('span', { textContent: 'Sent: ' }),
+                        el('span', { textContent: t('main.sent') }),
                         el('span', { className: 'bowire-counter-sent', textContent: String(sentCount) })
                     ),
                     el('div', { className: 'bowire-channel-counter' },
-                        el('span', { textContent: 'Received: ' }),
+                        el('span', { textContent: t('main.received') }),
                         el('span', { className: 'bowire-counter-received', textContent: String(receivedCount) })
                     )
                 );
@@ -6639,9 +6644,9 @@
             // Order matters: Query first as the default sub-tab (it's
             // what gets POSTed); Variables next (most-edited secondary);
             // Selection set last (high-level structure).
-            if (hasGqlQuery) bodySubTabs.push({ id: 'query', label: 'Query' });
-            if (hasInputFormFields) bodySubTabs.push({ id: 'form', label: 'Variables' });
-            if (hasGqlSelectionSet) bodySubTabs.push({ id: 'selection', label: 'Selection set' });
+            if (hasGqlQuery) bodySubTabs.push({ id: 'query', label: t('main.subtab.query') });
+            if (hasInputFormFields) bodySubTabs.push({ id: 'form', label: t('rb.tab.vars') });
+            if (hasGqlSelectionSet) bodySubTabs.push({ id: 'selection', label: t('main.selectionSet') });
         } else if (hasInputFormFields && !isMultiMessage && !isChannelMethod()) {
             // REST / gRPC unary / JSON-RPC / OData / SOAP — the existing
             // Form vs. JSON toggle that lived in the top-pane tab strip
@@ -6729,7 +6734,7 @@
             requestAnimationFrame(function () {
                 var live = document.getElementById('bowire-body-subtabs');
                 if (live && typeof bowireWireTabOverflow === 'function') {
-                    bowireWireTabOverflow(live, { tabSelector: '.bowire-sub-tab', label: 'More' });
+                    bowireWireTabOverflow(live, { tabSelector: '.bowire-sub-tab', label: t('common.more') });
                 }
             });
         }
@@ -6755,12 +6760,12 @@
             var sels = getGraphQLSelections();
 
             var selHeader = el('div', { className: 'bowire-pane-header' },
-                el('span', { className: 'bowire-pane-title', textContent: 'Selection set' }),
+                el('span', { className: 'bowire-pane-title', textContent: t('main.selectionSet') }),
                 el('div', { className: 'bowire-pane-actions' },
                     el('button', {
                         id: 'bowire-graphql-select-all-btn',
                         className: 'bowire-pane-btn',
-                        textContent: 'Select all (top-level)',
+                        textContent: t('main.selectAllTop'),
                         onClick: function () {
                             for (var i = 0; i < selectedMethod.outputType.fields.length; i++) {
                                 var f = selectedMethod.outputType.fields[i];
@@ -6775,7 +6780,7 @@
                     el('button', {
                         id: 'bowire-graphql-clear-btn',
                         className: 'bowire-pane-btn',
-                        textContent: 'Clear',
+                        textContent: t('rb.history.clear'),
                         onClick: function () {
                             graphqlSelections[selKey] = {};
                             delete graphqlQueryOverrides[selKey];
@@ -6798,12 +6803,12 @@
         if (hasGqlQuery && showSurface('query')) {
             var queryKey = graphqlMethodKey();
             var queryHeader = el('div', { className: 'bowire-pane-header' },
-                el('span', { className: 'bowire-pane-title', textContent: 'GraphQL Query' }),
+                el('span', { className: 'bowire-pane-title', textContent: t('main.graphqlQuery') }),
                 el('div', { className: 'bowire-pane-actions' },
                     el('button', {
                         id: 'bowire-graphql-reset-query-btn',
                         className: 'bowire-pane-btn',
-                        textContent: 'Reset to default',
+                        textContent: t('main.resetToDefault'),
                         onClick: function () {
                             delete graphqlQueryOverrides[queryKey];
                             render();
@@ -6814,7 +6819,7 @@
             var queryEditor = el('textarea', {
                 className: 'bowire-graphql-query-editor',
                 spellcheck: 'false',
-                placeholder: 'GraphQL operation — edit to change the selection set'
+                placeholder: t('main.graphqlPlaceholder')
             });
             queryEditor.value = getGraphQLQuery();
             queryEditor.addEventListener('input', function () {
@@ -6842,19 +6847,19 @@
         // optionally drop a file in before clicking Send.
         if (isWebSocketMethod() && isChannelMethod()) {
             var wsHeader = el('div', { className: 'bowire-pane-header' },
-                el('span', { className: 'bowire-pane-title', textContent: 'Frame type' }),
+                el('span', { className: 'bowire-pane-title', textContent: t('main.frameType') }),
                 el('div', { className: 'bowire-pane-actions' },
                     el('div', { className: 'bowire-toggle-group' },
                         el('button', {
                             id: 'bowire-ws-frame-text-btn',
                             className: 'bowire-toggle-btn' + (websocketFrameType === 'text' ? ' is-active' : ''),
-                            textContent: 'Text',
+                            textContent: t('main.frameText'),
                             onClick: function () { websocketFrameType = 'text'; websocketPendingBinary = null; render(); }
                         }),
                         el('button', {
                             id: 'bowire-ws-frame-binary-btn',
                             className: 'bowire-toggle-btn' + (websocketFrameType === 'binary' ? ' is-active' : ''),
-                            textContent: 'Binary',
+                            textContent: t('rb.body.binary'),
                             onClick: function () { websocketFrameType = 'binary'; render(); }
                         })
                     )
@@ -6873,13 +6878,13 @@
                         var url = reader.result || '';
                         var commaIdx = url.indexOf(',');
                         websocketPendingBinary = commaIdx >= 0 ? url.substring(commaIdx + 1) : '';
-                        toast('Loaded ' + file.name + ' (' + file.size + ' bytes) — click Send to transmit', 'success');
+                        toast(t('main.fileLoaded', { name: file.name, bytes: file.size }), 'success');
                         render();
                     };
                     reader.readAsDataURL(file);
                 });
                 var fileRow = el('div', { className: 'bowire-ws-file-row' },
-                    el('label', { className: 'bowire-ws-file-label', textContent: 'Pick a file → Send sends it as a single binary frame' }),
+                    el('label', { className: 'bowire-ws-file-label', textContent: t('main.pickFileHint') }),
                     fileInput
                 );
                 wsBox.appendChild(fileRow);
@@ -6905,12 +6910,12 @@
         } else if (isMultiMessage) {
             // Multi-message mode: header with Format All + Template All
             const paneHeader = el('div', { className: 'bowire-pane-header' },
-                el('span', { className: 'bowire-pane-title', textContent: 'JSON Messages' }),
+                el('span', { className: 'bowire-pane-title', textContent: t('main.jsonMessages') }),
                 el('div', { className: 'bowire-pane-actions' },
                     el('button', {
                         id: 'bowire-multi-msg-format-all-btn',
                         className: 'bowire-pane-btn',
-                        textContent: 'Format All',
+                        textContent: t('main.formatAll'),
                         onClick: function () {
                             var editors = $$('.bowire-message-editor');
                             for (var i = 0; i < editors.length; i++) {
@@ -6922,7 +6927,7 @@
                     el('button', {
                         id: 'bowire-multi-msg-template-all-btn',
                         className: 'bowire-pane-btn',
-                        textContent: 'Template All',
+                        textContent: t('main.templateAll'),
                         onClick: function () {
                             var editors = $$('.bowire-message-editor');
                             var tmpl = selectedMethod ? generateDefaultJson(selectedMethod.inputType, 0) : '{}';
@@ -6945,14 +6950,14 @@
 
                     // Message header with number and remove button
                     var msgHeader = el('div', { className: 'bowire-message-header' },
-                        el('span', { textContent: 'Message #' + (i + 1) })
+                        el('span', { textContent: t('main.messageNumber', { n: i + 1 }) })
                     );
                     if (requestMessages.length > 1) {
                         msgHeader.appendChild(el('button', {
                             id: 'bowire-msg-remove-' + i,
                             className: 'bowire-message-remove',
                             textContent: '\u00d7',
-                            title: 'Remove message',
+                            title: t('main.removeMessage'),
                             onClick: function () {
                                 saveMessageEditors();
                                 requestMessages.splice(i, 1);
@@ -6965,7 +6970,7 @@
                     // Message editor textarea
                     var msgEditor = el('textarea', {
                         className: 'bowire-message-editor',
-                        placeholder: 'Enter JSON message...',
+                        placeholder: t('main.jsonMessagePlaceholder'),
                         spellcheck: 'false'
                     });
                     msgEditor.value = requestMessages[i] || '{}';
@@ -7014,19 +7019,19 @@
                 }
             },
                 el('span', { textContent: '+' }),
-                el('span', { textContent: 'Add Message' })
+                el('span', { textContent: t('main.addMessage') })
             ));
 
             bodyContent.appendChild(messageList);
         } else if (requestInputMode === 'form' && hasInputFields) {
             // Single-message mode: Form view
             const paneHeader = el('div', { className: 'bowire-pane-header' },
-                el('span', { className: 'bowire-pane-title', textContent: 'Form' }),
+                el('span', { className: 'bowire-pane-title', textContent: t('rb.body.form') }),
                 el('div', { className: 'bowire-pane-actions' },
                     el('button', {
                         id: 'bowire-form-reset-btn',
                         className: 'bowire-pane-btn',
-                        textContent: 'Reset',
+                        textContent: t('main.reset'),
                         onClick: function () {
                             // Drop both the live form values and the
                             // cached per-method state so a return to
@@ -7061,7 +7066,7 @@
                     el('button', {
                         id: 'bowire-json-format-btn',
                         className: 'bowire-pane-btn',
-                        textContent: 'Format',
+                        textContent: t('main.format'),
                         onClick: function () {
                             var ed = $('.bowire-editor');
                             if (ed) { ed.value = formatJson(ed.value); requestMessages[0] = ed.value; }
@@ -7070,7 +7075,7 @@
                     el('button', {
                         id: 'bowire-json-template-btn',
                         className: 'bowire-pane-btn',
-                        textContent: 'Template',
+                        textContent: t('main.template'),
                         onClick: function () {
                             var ed = $('.bowire-editor');
                             if (ed && selectedMethod) {
@@ -7082,8 +7087,8 @@
                     el('button', {
                         id: 'bowire-json-import-btn',
                         className: 'bowire-pane-btn',
-                        textContent: 'Import',
-                        title: 'Import JSON from file (or drag & drop)',
+                        textContent: t('main.import'),
+                        title: t('main.importJsonTitle'),
                         onClick: function () {
                             var input = document.createElement('input');
                             input.type = 'file';
@@ -7097,7 +7102,7 @@
                                     try { text = JSON.stringify(JSON.parse(text), null, 2); } catch {}
                                     var ed = $('.bowire-editor');
                                     if (ed) { ed.value = text; requestMessages[0] = text; }
-                                    toast('Imported ' + file.name, 'success');
+                                    toast(t('main.imported', { name: file.name }), 'success');
                                 };
                                 reader.readAsText(file);
                             };
@@ -7118,13 +7123,15 @@
                             id: 'bowire-json-copy-cmd-btn',
                             className: 'bowire-pane-btn',
                             textContent: cmdLang.label,
-                            title: 'Copy request as ' + cmdLang.label + ' command',
+                            title: t('main.copyAsCommand', { language: cmdLang.label }),
                             onClick: function () {
                                 if (!selectedService || !selectedMethod) return;
                                 var gen = CODE_EXPORT_GENERATORS[cmdLang.id];
                                 if (!gen) return;
                                 var cmd = gen(buildCodeExportContext());
-                                navigator.clipboard.writeText(cmd).then(function () { toast('Copied ' + cmdLang.label + ' command', 'success'); });
+                                navigator.clipboard.writeText(cmd).then(function () {
+                        toast(t('main.copiedCommand', { language: cmdLang.label }), 'success');
+                    });
                             }
                         });
                     })()
@@ -7135,7 +7142,7 @@
             const defaultJson = selectedMethod ? generateDefaultJson(selectedMethod.inputType, 0) : '{}';
             const editor = el('textarea', {
                 className: 'bowire-editor',
-                placeholder: 'Enter JSON request body...',
+                placeholder: t('main.jsonBodyPlaceholder2'),
                 spellcheck: 'false'
             });
             editor.value = (requestMessages[0] && requestMessages[0].trim()) ? requestMessages[0] : defaultJson;
@@ -7178,7 +7185,7 @@
                         try { text = JSON.stringify(JSON.parse(text), null, 2); } catch {}
                         editor.value = text;
                         requestMessages[0] = text;
-                        toast('Imported ' + file.name, 'success');
+                        toast(t('main.imported', { name: file.name }), 'success');
                     };
                     reader.readAsText(file);
                 }
@@ -7218,7 +7225,7 @@
         metaEditor.appendChild(el('button', {
             id: 'bowire-metadata-add-btn',
             className: 'bowire-metadata-add',
-            textContent: '+ Add header',
+            textContent: t('main.src.addHeader'),
             onClick: function () {
                 this.parentElement.insertBefore(createMetadataRow('', ''), this);
             }
@@ -7234,23 +7241,23 @@
             // Input type
             const inputSection = el('div', { className: 'bowire-schema-section' });
             inputSection.appendChild(el('div', { className: 'bowire-schema-title' },
-                el('span', { textContent: 'Input' }),
+                el('span', { textContent: t('main.schemaInput') }),
                 el('span', { className: 'bowire-schema-type-name', textContent: selectedMethod.inputType.fullName })
             ));
             const inputFields = renderSchemaFields(selectedMethod.inputType.fields, 0);
             if (inputFields) inputSection.appendChild(inputFields);
-            else inputSection.appendChild(el('div', { className: 'bowire-schema-field', textContent: 'No fields (empty message)' }));
+            else inputSection.appendChild(el('div', { className: 'bowire-schema-field', textContent: t('main.noFields') }));
             schemaDiv.appendChild(inputSection);
 
             // Output type
             const outputSection = el('div', { className: 'bowire-schema-section' });
             outputSection.appendChild(el('div', { className: 'bowire-schema-title' },
-                el('span', { textContent: 'Output' }),
+                el('span', { textContent: t('main.schemaOutput') }),
                 el('span', { className: 'bowire-schema-type-name', textContent: selectedMethod.outputType.fullName })
             ));
             const outputFields = renderSchemaFields(selectedMethod.outputType.fields, 0);
             if (outputFields) outputSection.appendChild(outputFields);
-            else outputSection.appendChild(el('div', { className: 'bowire-schema-field', textContent: 'No fields (empty message)' }));
+            else outputSection.appendChild(el('div', { className: 'bowire-schema-field', textContent: t('main.noFields') }));
             schemaDiv.appendChild(outputSection);
         }
 
@@ -7267,7 +7274,7 @@
 
         if (allHistory.length === 0) {
             historyContent.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding: 40px' },
-                el('div', { className: 'bowire-empty-desc', textContent: 'No request history yet. Execute a request to see it here.' })
+                el('div', { className: 'bowire-empty-desc', textContent: t('main.historyEmpty') })
             ));
         } else {
             // Search + status filter bar — shown whenever there is any
@@ -7278,7 +7285,7 @@
             const searchInput = el('input', {
                 className: 'bowire-history-search-input',
                 type: 'search',
-                placeholder: 'Search history (service, method, body, status)…'
+                placeholder: t('main.historySearch')
             });
             searchInput.value = historySearchQuery;
             searchInput.addEventListener('input', function () {
@@ -7302,9 +7309,9 @@
 
             const filterPills = el('div', { className: 'bowire-history-filter-pills' });
             const buckets = [
-                { id: 'all', label: 'All' },
-                { id: 'ok', label: 'OK' },
-                { id: 'error', label: 'Errors' }
+                { id: 'all', label: t('main.filterAll') },
+                { id: 'ok', label: t('main.filterOk') },
+                { id: 'error', label: t('main.filterErrors') }
             ];
             for (var bi = 0; bi < buckets.length; bi++) {
                 (function (bucket) {
@@ -7330,7 +7337,7 @@
                     el('button', {
                         id: 'bowire-history-show-all-btn',
                         className: 'bowire-history-show-all',
-                        textContent: 'Show all',
+                        textContent: t('main.showAll'),
                         onClick: function () { showAllHistory = true; render(); }
                     })
                 );
@@ -7341,7 +7348,7 @@
                     el('button', {
                         id: 'bowire-history-filter-method-btn',
                         className: 'bowire-history-show-all',
-                        textContent: 'Filter to ' + selectedMethod.name,
+                        textContent: t('main.filterTo', { method: selectedMethod.name }),
                         onClick: function () { showAllHistory = false; render(); }
                     })
                 );
@@ -7387,8 +7394,8 @@
                     // See feedback_morphdom_stale_handler_pitfall.
                     const replayBtn = el('button', {
                         className: 'bowire-history-replay',
-                        title: 'Replay this request',
-                        'aria-label': 'Replay this request',
+                        title: t('main.replayRequest'),
+                        'aria-label': t('main.replayRequest'),
                         innerHTML: svgIcon('play'),
                         'data-replay-ts': String(h.timestamp || 0),
                         'data-replay-svc': h.service || '',
@@ -7434,8 +7441,8 @@
                     if (bodyChanged) {
                         itemContent.appendChild(el('span', {
                             className: 'bowire-history-diff-badge',
-                            title: 'Request body changed from previous call',
-                            textContent: '\u0394 body changed'
+                            title: t('main.bodyChangedTitle'),
+                            textContent: t('main.bodyChanged')
                         }));
                     }
                     prevBody = bodyPreview;
@@ -7489,7 +7496,7 @@
             historyContent.appendChild(el('button', {
                 id: 'bowire-history-clear-btn',
                 className: 'bowire-history-clear',
-                textContent: 'Clear history',
+                textContent: t('rb.history.clearTitle'),
                 onClick: clearHistory
             }));
         }
@@ -7531,23 +7538,22 @@
                     el('button', {
                         id: 'bowire-cli-shell-posix',
                         className: 'bowire-code-lang-pill' + (activeShell === 'posix' ? ' active' : ''),
-                        textContent: 'bash / zsh',
-                        title: 'Quote and continue lines the POSIX way',
+                        textContent: t('main.cli.bash'),
+                        title: t('main.cli.bashTitle'),
                         onClick: function () { cliExportShell = 'posix'; render(); }
                     }),
                     el('button', {
                         id: 'bowire-cli-shell-powershell',
                         className: 'bowire-code-lang-pill' + (activeShell === 'powershell' ? ' active' : ''),
-                        textContent: 'PowerShell',
-                        title: 'Quote and continue lines the PowerShell way',
+                        textContent: t('main.cli.powershell'),
+                        title: t('main.cli.powershellTitle'),
                         onClick: function () { cliExportShell = 'powershell'; render(); }
                     }),
                     el('button', {
                         id: 'bowire-cli-keepvars',
                         className: 'bowire-code-lang-pill' + (cliExportKeepVars ? ' active' : ''),
-                        textContent: 'Keep {{variables}}',
-                        title: 'Leave variable references in the command and pass their values as --var pairs, '
-                            + 'instead of baking the resolved values in',
+                        textContent: t('main.cli.keepVars'),
+                        title: t('main.cli.keepVarsTitle'),
                         onClick: function () { cliExportKeepVars = !cliExportKeepVars; render(); }
                     })
                 );
@@ -7559,18 +7565,18 @@
 
             var copyBtn = el('button', {
                 className: 'bowire-pane-btn bowire-pane-btn-icon',
-                title: 'Copy the generated snippet',
-                'aria-label': 'Copy the generated snippet',
+                title: t('main.cli.copyTitle'),
+                'aria-label': t('main.cli.copyTitle'),
                 innerHTML: svgIcon('copy'),
                 onClick: function () {
                     navigator.clipboard.writeText(snippet).then(function () {
-                        toast('Snippet copied to clipboard', 'success');
+                        toast(t('main.cli.copied'), 'success');
                     });
                 }
             });
 
             var codeHeader = el('div', { className: 'bowire-pane-header' },
-                el('span', { className: 'bowire-pane-title', textContent: 'Generated snippet' }),
+                el('span', { className: 'bowire-pane-title', textContent: t('main.cli.generated') }),
                 el('div', { className: 'bowire-pane-actions' }, copyBtn)
             );
 
@@ -7580,9 +7586,9 @@
             codeContent.appendChild(codeBox);
             codeContent.appendChild(el('div', {
                 className: 'bowire-code-hint',
-                textContent: 'The snippet uses the current request body, metadata, and the active environment\u2019s {{var}} substitutions. Re-generates whenever you switch language or edit the form.'
+                textContent: t('main.cli.snippetNote')
                     + (codeExportLang === 'bowire-cli'
-                        ? ' The Bowire CLI line is checked against the real `bowire call` grammar by a golden fixture, so it stays runnable as the CLI evolves. {{secret.*}} and {{keyring.*}} refs are never resolved into it.'
+                        ? ' ' + t('main.cli.snippetNoteCli')
                         : '')
             }));
         }
@@ -7610,7 +7616,7 @@
         if (selectedMethod) {
             testsContent.appendChild(typeof renderTestDefinitionsTab === 'function'
                 ? renderTestDefinitionsTab()
-                : el('div', { className: 'bowire-empty-state', textContent: 'Tests not available.' }));
+                : el('div', { className: 'bowire-empty-state', textContent: t('main.testsUnavailable') }));
         }
         pane.appendChild(testsContent);
 
@@ -7649,14 +7655,14 @@
         // the connection visible while editing.
         var protoPill = el('div', { className: 'bowire-script-proto-pill', textContent: shape.toUpperCase() + ' surface' });
         var header = el('div', { className: 'bowire-script-tab-header' },
-            el('span', { className: 'bowire-script-tab-title', textContent: 'Scripts' }),
+            el('span', { className: 'bowire-script-tab-title', textContent: t('main.tab.scripts') }),
             protoPill
         );
         wrap.appendChild(header);
 
         wrap.appendChild(_renderScriptEditorBlock({
             phase: 'pre',
-            label: 'Pre-request',
+            label: t('main.script.pre'),
             hint: preHintText,
             placeholder: preExample,
             value: scriptsState.preScript,
@@ -7666,7 +7672,7 @@
         }));
         wrap.appendChild(_renderScriptEditorBlock({
             phase: 'post',
-            label: 'Post-response',
+            label: t('main.script.post'),
             hint: postHintText,
             placeholder: postExample,
             value: scriptsState.postScript,
@@ -7732,14 +7738,14 @@
         var genBtn = el('button', {
             className: 'bowire-script-gen-btn',
             type: 'button',
-            textContent: 'Generate from intent',
-            title: 'Describe what the script should do; the assistant emits a runnable script for this protocol shape.',
+            textContent: t('main.script.generate'),
+            title: t('main.script.generateTitle'),
             onClick: function () { _openScriptGenPrompt(opts.phase, opts.shape, opts.svc, opts.mth, area); }
         });
         var clearBtn = el('button', {
             className: 'bowire-script-tool-btn',
             type: 'button',
-            textContent: 'Clear',
+            textContent: t('rb.history.clear'),
             onClick: function () {
                 if (!area.value) return;
                 area.value = '';
@@ -7776,7 +7782,7 @@
             className: 'bowire-script-caret' + (collapsed ? ' collapsed' : ''),
             textContent: collapsed ? '▸' : '▾'
         });
-        var labelEl = el('span', { className: 'bowire-script-block-label', textContent: 'Console' });
+        var labelEl = el('span', { className: 'bowire-script-block-label', textContent: t('console.label') });
         var count = el('span', { className: 'bowire-script-block-state', textContent: String(entries.length) });
         var head = el('div', {
             className: 'bowire-script-block-head',
@@ -7791,7 +7797,7 @@
         if (entries.length === 0) {
             block.appendChild(el('div', {
                 className: 'bowire-script-console-empty',
-                textContent: 'No script output yet. ctx.log() writes land here after Send.'
+                textContent: t('main.script.noOutput')
             }));
         } else {
             var list = el('div', { className: 'bowire-script-console-list' });
@@ -7807,7 +7813,7 @@
             block.appendChild(el('button', {
                 className: 'bowire-script-tool-btn',
                 type: 'button',
-                textContent: 'Clear console',
+                textContent: t('main.script.clearConsole'),
                 onClick: function () {
                     if (typeof clearScriptConsole === 'function') clearScriptConsole(svc, mth);
                     render();
@@ -7905,8 +7911,8 @@
         var existing = document.querySelector('.bowire-script-gen-modal');
         if (existing) existing.remove();
         var prompt = el('div', { className: 'bowire-script-gen-modal' });
-        var heading = el('div', { className: 'bowire-script-gen-heading', textContent: 'Generate ' + (phase === 'pre' ? 'pre-request' : 'post-response') + ' script' });
-        var sub = el('div', { className: 'bowire-script-gen-sub', textContent: 'Describe what the script should do for this ' + shape.toUpperCase() + ' method. The assistant sees the protocol shape + the available ctx.* surface and emits a runnable script.' });
+        var heading = el('div', { className: 'bowire-script-gen-heading', textContent: t(phase === 'pre' ? 'main.script.generatePre' : 'main.script.generatePost') });
+        var sub = el('div', { className: 'bowire-script-gen-sub', textContent: t('main.script.generateSub', { shape: shape.toUpperCase() }) });
         var input = el('textarea', {
             className: 'bowire-script-gen-input',
             placeholder: phase === 'pre'
@@ -7919,13 +7925,13 @@
         var cancelBtn = el('button', {
             className: 'bowire-script-tool-btn',
             type: 'button',
-            textContent: 'Cancel',
+            textContent: t('common.cancel'),
             onClick: function () { prompt.remove(); }
         });
         var submitBtn = el('button', {
             className: 'bowire-script-gen-btn',
             type: 'button',
-            textContent: 'Generate'
+            textContent: t('main.script.generateAction')
         });
         submitBtn.addEventListener('click', function () {
             var intent = (input.value || '').trim();
@@ -8243,7 +8249,7 @@
             item.appendChild(el('span', {
                 className: 'bowire-dis-pdu-badge bowire-dis-pdu-' + disPdu.pduType.toLowerCase(),
                 textContent: formatDisPduTypeLabel(disPdu.pduType),
-                title: 'PDU type ' + disPdu.pduTypeId + ' (' + disPdu.pduType + ')'
+                title: t('main.pduType', { id: disPdu.pduTypeId, name: disPdu.pduType })
             }));
             item.appendChild(el('span', {
                 className: 'bowire-stream-list-preview',
@@ -8367,7 +8373,7 @@
         });
         header.appendChild(el('span', {
             className: 'bowire-stream-detail-title',
-            textContent: 'Message #' + (idx + 1)
+            textContent: t('main.messageNumber', { n: idx + 1 })
         }));
         header.appendChild(el('span', { className: 'bowire-stream-detail-sep', textContent: '\u2022' }));
         header.appendChild(el('span', {
@@ -8419,7 +8425,7 @@
             header.appendChild(el('span', {
                 className: 'bowire-dis-pdu-badge bowire-dis-pdu-' + disPdu.pduType.toLowerCase(),
                 textContent: formatDisPduTypeLabel(disPdu.pduType),
-                title: 'PDU type ' + disPdu.pduTypeId + ' (' + disPdu.pduType + ')'
+                title: t('main.pduType', { id: disPdu.pduTypeId, name: disPdu.pduType })
             }));
             if (disPdu.entityId) {
                 header.appendChild(el('span', { className: 'bowire-stream-detail-sep', textContent: '•' }));
@@ -8508,7 +8514,7 @@
             if (udp && udp.text !== null) {
                 body.appendChild(el('div', {
                     className: 'bowire-bytes-section-label',
-                    textContent: 'UTF-8 payload (' + udp.bytes + ' bytes):'
+                    textContent: t('main.utf8Payload', { bytes: udp.bytes })
                 }));
                 var textPre = el('pre', { className: 'bowire-udp-text-pane' });
                 textPre.textContent = udp.text;
@@ -8519,7 +8525,7 @@
             var rawB64 = disPdu ? disPdu.raw : udp.raw;
             body.appendChild(el('div', {
                 className: 'bowire-bytes-section-label',
-                textContent: 'On-wire bytes (' + byteCount + '):'
+                textContent: t('main.onWireBytes', { bytes: byteCount })
             }));
             var hexPre = el('pre', { className: 'bowire-dis-hex-dump' });
             hexPre.textContent = formatDisHexDump(rawB64);
@@ -8778,7 +8784,7 @@
                 type: 'text',
                 className: 'bowire-stream-filter',
                 id: 'bowire-stream-filter-input',
-                placeholder: 'Filter messages…  (e.g. topic:foo, status:200, or any substring)',
+                placeholder: t('main.filterMessages'),
                 value: streamFilterQuery,
                 spellcheck: 'false',
                 onInput: function (e) {
@@ -8796,7 +8802,7 @@
                 var clearBtn = el('button', {
                     className: 'bowire-stream-filter-clear',
                     type: 'button',
-                    title: 'Clear filter',
+                    title: t('main.clearFilter'),
                     onClick: function () {
                         streamFilterQuery = '';
                         render();
@@ -8850,7 +8856,7 @@
         var splitter = el('div', {
             className: 'bowire-stream-splitter',
             id: 'bowire-stream-splitter',
-            title: 'Drag to resize'
+            title: t('main.dragResize')
         });
         output.appendChild(splitter);
 
@@ -9053,7 +9059,7 @@
             }),
             el('button', {
                 className: 'bowire-widget-layout-toggle',
-                title: 'Toggle layout (Tab ↔ Split)',
+                title: t('main.toggleLayout'),
                 onClick: function () {
                     var current = saved.mode;
                     var nextMode = layout.cycleLayoutMode(current, splitKindExt.kind);
@@ -9224,7 +9230,7 @@
             }),
             el('button', {
                 className: 'bowire-widget-layout-toggle',
-                title: 'Toggle layout (Tab ↔ Split)',
+                title: t('main.toggleLayout'),
                 onClick: function () {
                     var nextMode = layout.cycleLayoutMode(saved.mode, splitKindExt.kind);
                     layout.saveWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, {
@@ -9367,7 +9373,7 @@
         // toolbar so the user was stuck).
         strip.appendChild(el('button', {
             className: 'bowire-widget-layout-toggle',
-            title: 'Toggle layout (Tab ↔ Split)',
+            title: t('main.toggleLayout'),
             onClick: function () {
                 var nextMode = layout.cycleLayoutMode(
                     saved.mode, splitKindExt.kind);
@@ -9449,7 +9455,9 @@
         if (saved.mode !== 'tab') return null;
         return el('button', {
             className: 'bowire-widget-layout-toggle',
-            title: 'Switch to split layout (' + (splitKindExt.viewer && splitKindExt.viewer.label || splitKindExt.kind) + ')',
+            title: t('main.switchToSplit', {
+                kind: (splitKindExt.viewer && splitKindExt.viewer.label) || splitKindExt.kind
+            }),
             onClick: function () {
                 layout.saveWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, {
                     mode: 'split-horizontal',
@@ -9645,8 +9653,8 @@
             if (!raw) return;
             try {
                 navigator.clipboard.writeText(raw).then(
-                    function () { toast('Copied path: ' + raw, 'success'); },
-                    function () { toast('Copy failed', 'error'); }
+                    function () { toast(t('rb.response.copiedPath', { path: raw }), 'success'); },
+                    function () { toast(t('clipboard.failed'), 'error'); }
                 );
             } catch { /* clipboard API unavailable — silent */ }
         });
@@ -9735,8 +9743,8 @@
             : '${response}';
         addItem('Copy ' + chainVar, function () {
             navigator.clipboard.writeText(chainVar).then(
-                function () { toast('Copied: ' + chainVar, 'success'); },
-                function () { toast('Copy failed', 'error'); }
+                function () { toast(t('status.copied', { what: chainVar }), 'success'); },
+                function () { toast(t('clipboard.failed'), 'error'); }
             );
         });
 
@@ -9744,8 +9752,8 @@
         if (ctx.jsonPath) {
             addItem('Copy path (' + ctx.jsonPath + ')', function () {
                 navigator.clipboard.writeText(ctx.jsonPath).then(
-                    function () { toast('Copied path: ' + ctx.jsonPath, 'success'); },
-                    function () { toast('Copy failed', 'error'); }
+                    function () { toast(t('rb.response.copiedPath', { path: ctx.jsonPath }), 'success'); },
+                    function () { toast(t('clipboard.failed'), 'error'); }
                 );
             });
         }
@@ -10138,20 +10146,20 @@
 
         // Pane heading — mirrors the "Request" label on the left so
         // the seam between the two halves reads at a glance.
-        pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Response' }));
+        pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: t('rb.response.heading') }));
 
         // Tabs
         const tabs = el('div', { id: 'bowire-response-tabs', className: 'bowire-tabs' });
         tabs.appendChild(el('div', {
             id: 'bowire-response-tab-response',
             className: `bowire-tab ${activeResponseTab === 'response' ? 'active' : ''}`,
-            textContent: 'Response',
+            textContent: t('rb.response.heading'),
             onClick: function () { activeResponseTab = 'response'; render(); }
         }));
         tabs.appendChild(el('div', {
             id: 'bowire-response-tab-headers',
             className: `bowire-tab ${activeResponseTab === 'headers' ? 'active' : ''}`,
-            textContent: 'Response Metadata',
+            textContent: t('main.responseMetadata'),
             onClick: function () { activeResponseTab = 'headers'; render(); }
         }));
         // Tests tab — only meaningful for unary methods. The
@@ -10197,7 +10205,7 @@
         requestAnimationFrame(function () {
             var live = document.getElementById('bowire-response-tabs');
             if (live && typeof bowireWireTabOverflow === 'function') {
-                bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: 'More tabs' });
+                bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: t('main.moreTabs') });
             }
         });
 
@@ -10217,7 +10225,7 @@
         // Response tab
         const respContent = el('div', { className: `bowire-tab-content ${activeResponseTab === 'response' ? 'active' : ''}` });
         const respHeader = el('div', { className: 'bowire-pane-header' },
-            el('span', { className: 'bowire-pane-title', textContent: 'Result' }),
+            el('span', { className: 'bowire-pane-title', textContent: t('main.result') }),
             el('div', { className: 'bowire-pane-actions' },
                 // #536 — "Use this…" leads the cluster: once a call has
                 // succeeded, the most useful next move is turning the
@@ -10246,8 +10254,8 @@
                     return el('button', {
                         id: 'bowire-response-tree-expand-btn',
                         className: 'bowire-pane-btn bowire-pane-btn-icon',
-                        title: 'Expand all nodes',
-                        'aria-label': 'Expand all nodes',
+                        title: t('main.expandAll'),
+                        'aria-label': t('main.expandAll'),
                         innerHTML: svgIcon('expandAll'),
                         onClick: function () {
                             var nodes = document.querySelectorAll('.bowire-response-output .bowire-json-tree-node');
@@ -10260,8 +10268,8 @@
                     return el('button', {
                         id: 'bowire-response-tree-collapse-btn',
                         className: 'bowire-pane-btn bowire-pane-btn-icon',
-                        title: 'Collapse all nodes',
-                        'aria-label': 'Collapse all nodes',
+                        title: t('main.collapseAll'),
+                        'aria-label': t('main.collapseAll'),
                         innerHTML: svgIcon('collapseAll'),
                         onClick: function () {
                             var nodes = document.querySelectorAll('.bowire-response-output .bowire-json-tree-node');
@@ -10293,22 +10301,22 @@
                         }
                         var text = responseData || '';
                         navigator.clipboard.writeText(text).then(function () {
-                            toast('Copied to clipboard', 'success');
+                            toast(t('main.copiedToClipboard'), 'success');
                         });
                     }
 
                     var mainBtn = el('button', {
                         id: 'bowire-response-copy-main-btn',
                         className: 'bowire-pane-btn bowire-split-btn-main bowire-pane-btn-icon',
-                        title: 'Copy response body as-is',
-                        'aria-label': 'Copy response body as-is',
+                        title: t('main.copyRaw'),
+                        'aria-label': t('main.copyRaw'),
                         innerHTML: svgIcon('copy'),
                         onClick: function () { copyRawResponse(); }
                     });
                     var caretBtn = el('button', {
                         id: 'bowire-response-copy-caret-btn',
                         className: 'bowire-pane-btn bowire-split-btn-caret',
-                        title: 'Copy as code / command',
+                        title: t('main.copyAsCode'),
                         'aria-haspopup': 'menu',
                         textContent: '\u25BE',
                         onClick: function (e) {
@@ -10323,25 +10331,25 @@
                     if (streamMessages.length > 0) {
                         menu.appendChild(el('div', {
                             className: 'bowire-dropdown-item',
-                            textContent: 'Copy selected message',
+                            textContent: t('main.copySelectedMessage'),
                             onClick: function () {
                                 var idx = streamEffectiveIndex();
                                 var text = idx >= 0 ? streamMessageRaw(streamMessages[idx]) : '';
                                 navigator.clipboard.writeText(text).then(function () {
-                                    toast('Copied message #' + (idx + 1), 'success');
+                                    toast(t('main.copiedMessage', { n: idx + 1 }), 'success');
                                 });
                                 menu.classList.remove('visible');
                             }
                         }));
                         menu.appendChild(el('div', {
                             className: 'bowire-dropdown-item',
-                            textContent: 'Copy all messages',
+                            textContent: t('main.copyAllMessages'),
                             onClick: function () {
                                 var text = streamMessages.map(function (m) {
                                     return streamMessageRaw(m);
                                 }).join('\n');
                                 navigator.clipboard.writeText(text).then(function () {
-                                    toast('Copied ' + streamMessages.length + ' messages', 'success');
+                                    toast(t('main.copiedMessages', { count: streamMessages.length }), 'success');
                                 });
                                 menu.classList.remove('visible');
                             }
@@ -10356,20 +10364,20 @@
                     if (langs.length === 0) {
                         menu.appendChild(el('div', {
                             className: 'bowire-dropdown-item bowire-dropdown-item-disabled',
-                            textContent: 'No code-export options for this protocol'
+                            textContent: t('main.noCodeExport')
                         }));
                     } else {
                         for (var li = 0; li < langs.length; li++) {
                             (function (lang) {
                                 menu.appendChild(el('div', {
                                     className: 'bowire-dropdown-item',
-                                    textContent: 'Copy as ' + lang.label,
+                                    textContent: t('main.copyAsLang', { language: lang.label }),
                                     onClick: function () {
                                         var snippet = (typeof generateCodeSnippet === 'function')
                                             ? generateCodeSnippet(lang.id)
                                             : '';
                                         navigator.clipboard.writeText(snippet).then(function () {
-                                            toast('Copied ' + lang.label + ' snippet', 'success');
+                                            toast(t('main.copiedSnippet', { language: lang.label }), 'success');
                                         });
                                         menu.classList.remove('visible');
                                     }
@@ -10401,14 +10409,14 @@
                     var formats = [];
                     formats.push({ id: 'json', label: 'JSON' });
                     if (src === 'grpc' || src === 'proto') {
-                        formats.push({ id: 'proto', label: 'Proto Binary' });
+                        formats.push({ id: 'proto', label: t('main.protoBinary') });
                     }
                     var wrapper = el('div', { id: 'bowire-response-download-wrap', className: 'bowire-dropdown-wrapper' });
                     var btn = el('button', {
                         id: 'bowire-response-download-btn',
                         className: 'bowire-pane-btn bowire-pane-btn-icon bowire-pane-btn-icon-caret',
-                        title: 'Download the response',
-                        'aria-label': 'Download the response',
+                        title: t('main.downloadResponse'),
+                        'aria-label': t('main.downloadResponse'),
                         'aria-haspopup': 'menu',
                         innerHTML: svgIcon('download')
                             + '<span class="bowire-pane-btn-caret" aria-hidden="true">\u25BE</span>',
@@ -10447,7 +10455,7 @@
                     return el('button', {
                         className: 'bowire-pane-btn' + (diffViewOpen ? ' active' : ''),
                         textContent: diffViewOpen ? 'Close Diff' : 'Compare',
-                        title: 'Compare responses for this method (' + snaps.length + ' snapshots)',
+                        title: t('main.compareSnapshots', { count: snaps.length }),
                         onClick: function () {
                             diffViewOpen = !diffViewOpen;
                             if (!diffViewOpen) {
@@ -10483,13 +10491,13 @@
                     0));
                 loadingPane.appendChild(el('span', {
                     className: 'bowire-loading-text',
-                    textContent: 'Waiting for first message…'
+                    textContent: t('main.waitingFirst')
                 }));
                 respBody.appendChild(loadingPane);
             } else {
                 respBody.appendChild(el('div', { className: 'bowire-loading' },
                     el('div', { className: 'bowire-spinner' }),
-                    el('span', { className: 'bowire-loading-text', textContent: 'Executing...' })
+                    el('span', { className: 'bowire-loading-text', textContent: t('main.executing') })
                 ));
             }
         } else if (responseError) {
@@ -10558,7 +10566,7 @@
                         mcpContent.count + (mcpContent.count === 1 ? ' item' : ' items') }),
                     el('button', {
                         className: 'bowire-pane-btn',
-                        textContent: 'Show raw envelope',
+                        textContent: t('main.showRawEnvelope'),
                         onClick: function () { mcpRawEnvelope = true; render(); }
                     })
                 );
@@ -10570,10 +10578,10 @@
             } else {
                 if (mcpContent && mcpRawEnvelope) {
                     var rawHeader = el('div', { className: 'bowire-mcp-content-header' },
-                        el('span', { className: 'bowire-mcp-content-title', textContent: 'Raw envelope' }),
+                        el('span', { className: 'bowire-mcp-content-title', textContent: t('main.rawEnvelope') }),
                         el('button', {
                             className: 'bowire-pane-btn',
-                            textContent: 'Show tool result',
+                            textContent: t('main.showToolResult'),
                             onClick: function () { mcpRawEnvelope = false; render(); }
                         })
                     );
@@ -10594,7 +10602,7 @@
                 // and every Hoppscotch-style viewer ship.
                 const output = el('div', {
                     className: 'bowire-response-output is-interactive is-tree',
-                    title: 'Click to expand/collapse — double-click to copy path — right-click for more actions'
+                    title: t('main.jsonNodeTitle')
                 });
                 bowireWireResponseTreeGestures(output);
                 // JSON viewer + per-pane toolbar (Expand-all /
@@ -10658,8 +10666,8 @@
         } else {
             respBody.appendChild(el('div', { className: 'bowire-no-response' },
                 el('div', { className: 'bowire-no-response-icon', innerHTML: svgIcon('play') }),
-                el('div', { textContent: 'Send a request to see the response' }),
-                el('div', { style: 'font-size: 11px; opacity: 0.6', textContent: 'Press Ctrl+Enter to execute' })
+                el('div', { textContent: t('main.sendToSee') }),
+                el('div', { style: 'font-size: 11px; opacity: 0.6', textContent: t('main.pressCtrlEnter') })
             ));
         }
 
@@ -10686,12 +10694,12 @@
             toolbar.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-response-metadata-tool-btn',
-                title: 'Copy as raw text',
-                'aria-label': 'Copy as raw text',
+                title: t('main.copyAsRawText'),
+                'aria-label': t('main.copyAsRawText'),
                 innerHTML: svgIcon('copy'),
                 onClick: function () {
                     navigator.clipboard.writeText(rawText).then(function () {
-                        if (typeof toast === 'function') toast('Copied headers', 'success');
+                        if (typeof toast === 'function') toast(t('main.copiedHeaders'), 'success');
                     });
                 }
             }));
@@ -10703,9 +10711,9 @@
             var table = el('table', { className: 'bowire-response-metadata-table' });
             table.appendChild(el('thead', null,
                 el('tr', null,
-                    el('th', { textContent: 'Header' }),
-                    el('th', { textContent: 'Value' }),
-                    el('th', { className: 'bowire-response-metadata-actions-col', 'aria-label': 'Actions' })
+                    el('th', { textContent: t('headerLibrary.preview.header') }),
+                    el('th', { textContent: t('rb.auth.value') }),
+                    el('th', { className: 'bowire-response-metadata-actions-col', 'aria-label': t('main.src.actions') })
                 )
             ));
             var tbody = el('tbody');
@@ -10719,12 +10727,12 @@
                         el('button', {
                             type: 'button',
                             className: 'bowire-response-metadata-copy',
-                            title: 'Copy value',
-                            'aria-label': 'Copy ' + k,
+                            title: t('main.copyValue'),
+                            'aria-label': t('main.copyNamed', { name: k }),
                             innerHTML: svgIcon('copy'),
                             onClick: function () {
                                 navigator.clipboard.writeText(valueStr).then(function () {
-                                    if (typeof toast === 'function') toast('Copied ' + k, 'success');
+                                    if (typeof toast === 'function') toast(t('status.copied', { what: k }), 'success');
                                 });
                             }
                         })
@@ -10735,7 +10743,7 @@
             headersBody.appendChild(table);
         } else {
             headersBody.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding: 40px' },
-                el('div', { className: 'bowire-empty-desc', textContent: 'No response metadata available.' })
+                el('div', { className: 'bowire-empty-desc', textContent: t('main.noResponseMetadata') })
             ));
         }
 
