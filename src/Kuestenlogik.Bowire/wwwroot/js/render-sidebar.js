@@ -128,7 +128,7 @@
                 el('button', {
                     id: 'bowire-url-add-btn',
                     className: 'bowire-url-list-action',
-                    title: 'New source',
+                    title: t('sidebar.sources.newTitle'),
                     onClick: function () {
                         serverUrls.push('');
                         render();
@@ -140,12 +140,12 @@
                     }
                 },
                     el('span', { innerHTML: svgIcon('plus'), className: 'bowire-url-list-action-icon' }),
-                    el('span', { textContent: 'New source' })
+                    el('span', { textContent: t('sidebar.sources.new') })
                 ),
                 el('button', {
                     id: 'bowire-url-refresh-btn',
                     className: 'bowire-url-list-action',
-                    title: 'Re-discover from all URLs',
+                    title: t('sidebar.sources.refreshTitle'),
                     onClick: function () {
                         serverUrls.forEach(function (u) { connectionStatuses[u] = 'connecting'; });
                         render();
@@ -153,7 +153,7 @@
                     }
                 },
                     el('span', { innerHTML: svgIcon('repeat'), className: 'bowire-url-list-action-icon' }),
-                    el('span', { textContent: 'Refresh' })
+                    el('span', { textContent: t('sidebar.sources.refresh') })
                 )
             );
             bar.appendChild(footer);
@@ -177,7 +177,7 @@
         row.appendChild(el('div', { className: 'bowire-url-status' },
             el('span', {
                 className: 'bowire-url-dot ' + status,
-                title: 'Status: ' + status
+                title: t('sidebar.sources.status', { status: status })
             })
         ));
 
@@ -252,7 +252,7 @@
             className: 'bowire-url-input' + (locked ? ' locked' : ''),
             type: 'text',
             value: url,
-            placeholder: 'https://api.example.com/openapi.json',
+            placeholder: t('sidebar.sources.urlPlaceholder'),
             title: locked ? 'URL is fixed via --url parameter' : 'Discovery URL — gRPC server, OpenAPI doc, SignalR hub, ...'
         };
         if (locked) {
@@ -283,15 +283,15 @@
         if (locked) {
             row.appendChild(el('span', {
                 className: 'bowire-url-locked-icon',
-                title: 'Locked via --url parameter',
+                title: t('sidebar.sources.locked'),
                 innerHTML: svgIcon('lock')
             }));
         } else if (hasRemoveButton) {
             row.appendChild(el('button', {
                 id: 'bowire-url-remove-' + url.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40),
                 className: 'bowire-url-remove',
-                title: 'Remove this URL',
-                'aria-label': 'Remove this URL',
+                title: t('sidebar.sources.removeUrl'),
+                'aria-label': t('sidebar.sources.removeUrl'),
                 innerHTML: svgIcon('close'),
                 onClick: onRemove
             }));
@@ -534,14 +534,14 @@
                 e.stopPropagation();
                 if (typeof showContextMenu !== 'function') return;
                 var items = [
-                    { label: 'Open in new tab', onClick: function () {
+                    { label: t('sidebar.method.openNewTab'), onClick: function () {
                         openTab(svc, m, { inNewTab: true });
                     } },
                     { separator: true },
                     {
                         label: isFavorite(svc.name, m.name)
-                            ? 'Remove from favorites'
-                            : 'Add to favorites',
+                            ? t('sidebar.favorites.remove')
+                            : t('sidebar.favorites.add'),
                         onClick: function () {
                             toggleFavorite(svc.name, m.name);
                         }
@@ -554,12 +554,12 @@
                 // regardless of how the operator works.
                 items.push({ separator: true });
                 items.push({
-                    label: 'Add to collection…',
+                    label: t('sidebar.method.addToCollection'),
                     onClick: function () { _pickCollectionForMethod(e.clientX, e.clientY, svc, m); }
                 });
                 if (typeof addTargetToEnvelopePicker === 'function') {
                     items.push({
-                        label: 'Add to envelope…',
+                        label: t('sidebar.method.addToEnvelope'),
                         onClick: function () {
                             addTargetToEnvelopePicker(e.clientX, e.clientY, {
                                 type: 'method',
@@ -573,7 +573,7 @@
                 }
                 if (typeof createBenchmarkSpec === 'function') {
                     items.push({
-                        label: 'Benchmark this method',
+                        label: t('sidebar.method.benchmark'),
                         onClick: function () { _benchmarkMethod(svc, m); }
                     });
                 }
@@ -629,7 +629,7 @@
             executing ? el('span', {
                 className: 'bowire-method-executing',
                 innerHTML: svgIcon('play'),
-                title: 'Currently executing'
+                title: t('sidebar.executing')
             }) : null,
             el('span', {
                 className: 'bowire-method-badge',
@@ -709,8 +709,8 @@
             }
         },
             el('div', { className: 'bowire-proto-dropzone-icon', innerHTML: svgIcon('upload') }),
-            el('div', { className: 'bowire-proto-dropzone-title', textContent: 'Upload schema files' }),
-            el('div', { className: 'bowire-proto-dropzone-hint', textContent: '.proto for gRPC  ·  .json / .yaml for OpenAPI / Swagger' })
+            el('div', { className: 'bowire-proto-dropzone-title', textContent: t('sidebar.upload.title') }),
+            el('div', { className: 'bowire-proto-dropzone-hint', textContent: t('sidebar.upload.hint') })
         );
         panel.appendChild(dropZone);
 
@@ -723,14 +723,14 @@
                 el('button', {
                     id: 'bowire-proto-clear-btn',
                     className: 'bowire-proto-clear',
-                    textContent: 'Clear',
-                    title: 'Remove all uploaded schema files',
+                    textContent: t('sidebar.upload.clear'),
+                    title: t('sidebar.upload.clearTitle'),
                     onClick: async function () {
                         await Promise.all([
                             fetch(config.prefix + '/api/proto/upload', { method: 'DELETE' }),
                             fetch(config.prefix + '/api/openapi/upload', { method: 'DELETE' })
                         ]);
-                        toast('Schema files cleared', 'success');
+                        toast(t('sidebar.upload.cleared'), 'success');
                         fetchServices();
                     }
                 })
@@ -761,7 +761,7 @@
 
         if (favs.length === 0) {
             list.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding: 40px 24px' },
-                el('div', { className: 'bowire-empty-title', textContent: 'No favorites yet' }),
+                el('div', { className: 'bowire-empty-title', textContent: t('sidebar.favorites.empty') }),
                 el('div', { className: 'bowire-empty-desc', textContent:
                     'Click the ★ on a method in the Services view to pin it here.' })
             ));
@@ -907,7 +907,7 @@
                     item.appendChild(el('span', {
                         className: 'bowire-method-executing',
                         innerHTML: svgIcon('play'),
-                        title: 'Currently executing'
+                        title: t('sidebar.executing')
                     }));
                 }
 
@@ -923,7 +923,7 @@
                 // Remove button (×)
                 item.appendChild(el('button', {
                     className: 'bowire-favorites-remove',
-                    title: 'Remove from favorites',
+                    title: t('sidebar.favorites.remove'),
                     textContent: '\u00d7',
                     onClick: function (e) {
                         e.stopPropagation();
@@ -965,10 +965,10 @@
         // Drops the bespoke .bowire-env-sidebar-header markup that
         // had drifted out of sync with the other rails' headers.
         list.appendChild(renderSidebarToolbar({
-            title: 'Environments',
+            title: t('sidebar.envs.title'),
             primary: {
                 icon: 'plus',
-                title: 'Create new environment',
+                title: t('sidebar.envs.create'),
                 onClick: function () {
                     if (typeof openCreateEnvironmentDialog !== 'function') return;
                     openCreateEnvironmentDialog(function (env) {
@@ -980,12 +980,12 @@
             // #362 — search + sort once there's more than one env to
             // organise. Globals stays pinned above the filtered list.
             search: (envs.length > 1) ? {
-                placeholder: 'Search environments…',
+                placeholder: t('sidebar.envs.search'),
                 value: envSearchQuery,
                 onInput: function (v) { envSearchQuery = v; render(); }
             } : null,
             sort: (envs.length > 1) ? {
-                title: 'Sort environments',
+                title: t('sidebar.envs.sort'),
                 value: envSortBy || 'manual',
                 options: BOWIRE_LIST_SORT_OPTIONS_WITH_MANUAL.concat(BOWIRE_LIST_SORT_OPTIONS),
                 onChange: function (v) { envSortBy = v; render(); }
@@ -1009,7 +1009,7 @@
             }
         },
             el('span', { className: 'bowire-env-sidebar-item-icon', innerHTML: svgIcon('globe') }),
-            el('span', { className: 'bowire-env-sidebar-item-name', textContent: 'Globals' }),
+            el('span', { className: 'bowire-env-sidebar-item-name', textContent: t('sidebar.envs.globals') }),
             el('span', { style: 'flex:1' }),
             globalVarCount > 0
                 ? el('span', { className: 'bowire-env-sidebar-item-count', textContent: String(globalVarCount) })
@@ -1029,7 +1029,7 @@
             list.appendChild(el('div', {
                 className: 'bowire-pane-empty',
                 style: 'padding:12px 14px',
-                textContent: 'No environments match "' + envSearchQuery + '".'
+                textContent: t('sidebar.envs.noMatch', { query: envSearchQuery })
             }));
         }
         var envReorderable = !envSearchQuery && (envSortBy === 'manual' || envSortBy === '');
@@ -1069,7 +1069,7 @@
         var renameEnv = function () {
             var current = getEnvironments().find(function (e) { return e.id === envId; });
             if (!current) return;
-            bowirePrompt('Rename environment', { defaultValue: current.name }).then(function (name) {
+            bowirePrompt(t('sidebar.envs.rename'), { defaultValue: current.name }).then(function (name) {
                 if (!name) return;
                 if (updateEnvironment(envId, { name: String(name).trim() })) render();
             });
@@ -1077,17 +1077,17 @@
         var removeEnv = function () {
             var current = getEnvironments().find(function (e) { return e.id === envId; });
             if (!current) return;
-            bowireConfirm('Delete environment "' + current.name + '"?', function () {
+            bowireConfirm(t('sidebar.envs.deleteConfirm', { name: current.name }), function () {
                 var backup = JSON.parse(JSON.stringify(current));
                 deleteEnvironment(envId);
                 if (envSidebarSelectedId === envId) envSidebarSelectedId = null;
-                toast('Environment deleted', 'success', {
+                toast(t('sidebar.envs.deleted'), 'success', {
                     undo: function () {
                         if (typeof restoreEnvironment === 'function') { restoreEnvironment(backup); render(); }
                     }
                 });
                 render();
-            }, { title: 'Delete environment', confirmText: 'Delete', danger: true });
+            }, { title: t('sidebar.envs.deleteHeading'), confirmText: t('common.delete'), danger: true });
         };
 
         return renderSidebarListItem({
@@ -1102,16 +1102,16 @@
             activeTitle: 'Active environment',
             onClick: function () { envSidebarSelectedId = envId; render(); },
             tools: [
-                isActive ? null : { icon: 'check', title: 'Set as active environment', onClick: activate },
-                { icon: 'trash', title: 'Delete environment', danger: true, onClick: removeEnv }
+                isActive ? null : { icon: 'check', title: t('sidebar.envs.setActiveTitle'), onClick: activate },
+                { icon: 'trash', title: t('sidebar.envs.deleteHeading'), danger: true, onClick: removeEnv }
             ],
             onContextMenu: function (e) {
                 e.preventDefault();
-                var items = [{ label: 'Open', onClick: function () { envSidebarSelectedId = envId; render(); } }];
-                if (!isActive) items.push({ label: 'Set as active', onClick: activate });
-                items.push({ label: 'Rename…', onClick: renameEnv });
+                var items = [{ label: t('sidebar.open'), onClick: function () { envSidebarSelectedId = envId; render(); } }];
+                if (!isActive) items.push({ label: t('sidebar.envs.setActive'), onClick: activate });
+                items.push({ label: t('sidebar.rename'), onClick: renameEnv });
                 items.push({ separator: true });
-                items.push({ label: 'Delete', danger: true, onClick: removeEnv });
+                items.push({ label: t('common.delete'), danger: true, onClick: removeEnv });
                 showContextMenu(e.clientX, e.clientY, items);
             }
         });
@@ -1389,7 +1389,7 @@
             }
             if (typeof benchmarksSelectedId !== 'undefined' && spec) benchmarksSelectedId = spec.id;
             _switchRail('benchmarks');
-            toast('Benchmark created — open on Benchmarks rail', 'success');
+            toast(t('sidebar.benchCreated'), 'success');
             render();
             return true;
         }
@@ -1454,24 +1454,27 @@
             ? collectionsList : [];
         var menu = [];
         menu.push({
-            label: '+ New collection…',
+            label: t('sidebar.newCollection'),
             onClick: function () {
                 if (typeof createCollection !== 'function') return;
                 var col = createCollection((svc.name || 'Discovered') + ' requests');
                 addToCollection(col.id, _methodToCollectionItem(svc, m));
                 if (typeof collectionsList !== 'undefined') collectionsList = loadCollections();
-                toast('Added ' + m.name + ' to new collection "' + col.name + '"', 'success');
+                toast(t('sidebar.method.addedToNew', { method: m.name, collection: col.name }), 'success');
                 render();
             }
         });
         if (cols.length > 0) menu.push({ separator: true });
         cols.forEach(function (col) {
             menu.push({
-                label: col.name || 'Unnamed',
+                label: col.name || t('collections.unnamed'),
                 meta: String((col.items || []).length),
                 onClick: function () {
                     addToCollection(col.id, _methodToCollectionItem(svc, m));
-                    toast('Added ' + m.name + ' to "' + (col.name || 'collection') + '"', 'success');
+                    toast(t('sidebar.method.addedTo', {
+                        method: m.name,
+                        collection: col.name || t('parallel.sourceCollection')
+                    }), 'success');
                     render();
                 }
             });
@@ -1491,7 +1494,7 @@
         });
         if (typeof benchmarksSelectedId !== 'undefined' && spec) benchmarksSelectedId = spec.id;
         _switchRail('benchmarks');
-        toast('Benchmark created from ' + m.name + ' — open on Benchmarks rail', 'success');
+        toast(t('sidebar.benchCreatedFrom', { method: m.name }), 'success');
         render();
     }
 
@@ -1649,7 +1652,7 @@
                 }) : null,
                 _railModeAttention(m.id) ? el('span', {
                     className: 'bowire-rail-btn-attention',
-                    title: 'Unread schema changes — open the change log in the statusbar'
+                    title: t('sidebar.schemaChangesTitle')
                 }) : null
             );
             if (acceptsDrop) {
@@ -1680,8 +1683,8 @@
             type: 'button',
             id: 'bowire-rail-overflow-btn',
             className: 'bowire-rail-btn bowire-rail-overflow-btn',
-            title: 'More modes',
-            'aria-label': 'More modes',
+            title: t('sidebar.moreModes'),
+            'aria-label': t('sidebar.moreModes'),
             onClick: function (e) {
                 e.stopPropagation();
                 railOverflowOpen = !railOverflowOpen;
@@ -1768,7 +1771,7 @@
                     }) : null,
                     _railModeAttention(m.id) ? el('span', {
                         className: 'bowire-rail-btn-attention bowire-rail-overflow-popover-attention',
-                        title: 'Unread schema changes'
+                        title: t('sidebar.schemaChangesShort')
                     }) : null
                 ));
             });
@@ -1785,8 +1788,8 @@
         rail.appendChild(el('button', {
             type: 'button',
             className: 'bowire-rail-btn bowire-rail-settings',
-            title: 'Settings',
-            'aria-label': 'Settings',
+            title: t('sidebar.settings'),
+            'aria-label': t('sidebar.settings'),
             onClick: function () {
                 if (typeof openSettings === 'function') openSettings();
             }
@@ -1965,10 +1968,10 @@
     // footer link has to reach the prompt directly (#537).
     function _promptForNewSource() {
         if (typeof bowirePrompt !== 'function') return;
-        bowirePrompt('New source', {
-            title: 'New source',
-            placeholder: 'rest@https://… / graphql@…  or plain https://…',
-            confirmText: 'Add source',
+        bowirePrompt(t('sidebar.sources.newTitle'), {
+            title: t('sidebar.sources.newTitle'),
+            placeholder: t('sidebar.sources.newPlaceholder'),
+            confirmText: t('sidebar.sources.addConfirm'),
         }).then(function (raw) {
             if (!raw) return;
             if (typeof addServerUrl === 'function') addServerUrl(raw);
@@ -1996,7 +1999,7 @@
         // sort) — no more post-hoc sidebar.replaceChild / append DOM
         // mutation, so the header matches every other rail.
         sidebar.appendChild(renderSidebarToolbar({
-            title: 'Sources',
+            title: t('sidebar.sources.title'),
             primary: (!config.lockServerUrl && !selMode) ? {
                 icon: 'plus',
                 title: _catalogueCanBrowse() ? 'Browse catalogue' : 'New source',
@@ -2016,7 +2019,7 @@
             } : null,
             overflow: (hasUrls && !config.lockServerUrl && !selMode) ? [
                 {
-                    label: 'Remove all URLs',
+                    label: t('sidebar.sources.removeAll'),
                     danger: true,
                     onClick: function () {
                         var n = serverUrls.length;
@@ -2035,7 +2038,8 @@
                                 toast(n + ' URLs removed', 'success');
                                 render();
                             },
-                            { title: 'Remove all URLs', confirmText: 'Remove ' + n, danger: true }
+                            { title: t('sidebar.sources.removeAll'),
+                confirmText: t('sidebar.removeCount', { count: n }), danger: true }
                         );
                     }
                 }
@@ -2046,7 +2050,7 @@
                     {
                         icon: 'trash',
                         danger: true,
-                        title: 'Remove selected URLs',
+                        title: t('sidebar.sources.removeSelected'),
                         onClick: function () {
                             var urls = Array.from(sourcesSelected);
                             urls.forEach(function (uu) {
@@ -2076,12 +2080,12 @@
                 }
             } : null,
             search: (hasUrls && serverUrls.length > 1 && !selMode) ? {
-                placeholder: 'Search sources…',
+                placeholder: t('sidebar.sources.search'),
                 value: sourcesSearchQuery,
                 onInput: function (v) { sourcesSearchQuery = v; render(); }
             } : null,
             sort: (hasUrls && serverUrls.length > 1 && !selMode) ? {
-                title: 'Sort sources',
+                title: t('sidebar.sources.sort'),
                 value: sourcesSortBy || 'name',
                 options: BOWIRE_LIST_SORT_OPTIONS,
                 onChange: function (v) { sourcesSortBy = v; render(); }
@@ -2094,7 +2098,7 @@
             sidebar.appendChild(el('div', {
                 className: 'bowire-pane-empty',
                 style: 'padding:12px 14px',
-                textContent: 'No URLs yet.'
+                textContent: t('sidebar.sources.none')
             }));
             return sidebar;
         }
@@ -2117,7 +2121,7 @@
             list.appendChild(el('div', {
                 className: 'bowire-pane-empty',
                 style: 'padding:12px 14px',
-                textContent: 'No sources match "' + sourcesSearchQuery + '".'
+                textContent: t('sidebar.sources.noMatch', { query: sourcesSearchQuery })
             }));
             sidebar.appendChild(list);
             return sidebar;
@@ -2181,14 +2185,14 @@
                     className: 'bowire-sources-list-item-degraded'
                         + ((typeof urlDiscoveryDegraded === 'function' && urlDiscoveryDegraded(u))
                             ? ' is-degraded' : ''),
-                    title: 'Discovery is incomplete — open this source for the per-plugin diagnostics'
+                    title: t('sidebar.sources.partial')
                 }),
                 el('span', { className: 'bowire-env-list-item-meta', textContent: svcN + ' svc' + (svcN === 1 ? '' : 's') }),
                 !config.lockServerUrl ? el('button', {
                     type: 'button',
                     className: 'bowire-list-row-delete',
-                    title: 'Remove URL',
-                    'aria-label': 'Remove URL',
+                    title: t('sidebar.sources.removeUrlShort'),
+                    'aria-label': t('sidebar.sources.removeUrlShort'),
                     innerHTML: svgIcon('trash'),
                     onClick: function (e) {
                         e.stopPropagation();
@@ -2372,7 +2376,7 @@
             // tools, and the overview can't drift apart.
             addItem({
                 icon: '⚙',
-                label: 'Open settings',
+                label: t('sidebar.openSettings'),
                 onClick: function () {
                     workspacesSelectedId = w.id;
                     workspaceTreeSelection = { wsId: w.id, kind: 'workspace' };
@@ -2385,7 +2389,7 @@
             if (!isActive) {
                 addItem({
                     icon: '→',
-                    label: 'Switch to this workspace',
+                    label: t('sidebar.ws.switchTo'),
                     onClick: function () { switchWorkspace(w.id); }
                 });
             }
@@ -2413,7 +2417,7 @@
         }
         addItem({
             icon: '+',
-            label: 'New workspace…',
+            label: t('sidebar.ws.new'),
             onClick: function () {
                 openCreateWorkspaceDialog(function (created) {
                     if (created) {
@@ -2496,7 +2500,7 @@
         // somehow stale, renderMain dispatched elsewhere and the
         // overview never painted).
         var overviewOverflow = [{
-            label: 'Manage workspaces',
+            label: t('common.manageWorkspaces'),
             icon: 'list',
             onClick: function () {
                 if (typeof _goToWorkspacesOverview === 'function') _goToWorkspacesOverview();
@@ -2509,19 +2513,19 @@
         // picked.
         if (typeof resetWorkspacesSort === 'function') {
             overviewOverflow.push({
-                label: 'Reset sort to alphabetical',
+                label: t('sidebar.ws.resetSort'),
                 icon: 'sortAlpha',
                 onClick: function () {
                     resetWorkspacesSort();
                     if (typeof toast === 'function') {
-                        toast('Workspace sort reset to alphabetical.', 'info');
+                        toast(t('sidebar.ws.sortReset'), 'info');
                     }
                     render();
                 }
             });
         }
         sidebar.appendChild(renderSidebarToolbar({
-            title: 'Workspaces',
+            title: t('sidebar.ws.title'),
             onTitleClick: function () {
                 if (typeof _goToWorkspacesOverview === 'function') _goToWorkspacesOverview();
             },
@@ -2529,7 +2533,7 @@
             overflow: overviewOverflow,
             primary: {
                 icon: 'plus',
-                title: 'Create new workspace',
+                title: t('sidebar.ws.create'),
                 onClick: function () {
                     openCreateWorkspaceDialog(function (ws) {
                         workspacesSelectedId = ws.id;
@@ -2541,7 +2545,7 @@
             // (cleared on reload, matching Postman / other rails);
             // sort persists to localStorage via setWorkspacesSortBy.
             search: {
-                placeholder: 'Search workspaces…',
+                placeholder: t('sidebar.ws.search'),
                 value: workspacesSearchQuery,
                 onInput: function (v) {
                     workspacesSearchQuery = v;
@@ -2549,7 +2553,7 @@
                 }
             },
             sort: {
-                title: 'Sort workspaces',
+                title: t('sidebar.ws.sort'),
                 value: workspacesSortBy,
                 // Each option carries an icon — renderSidebarToolbar
                 // switches from native-select to a cycling icon-mode
@@ -2564,10 +2568,10 @@
                 // glyph to telegraph that this mode enables drag-
                 // drop in the overview.
                 options: [
-                    { value: 'alphabetical', label: 'Alphabetical', icon: 'sortAlpha' },
-                    { value: 'created',      label: 'Created date', icon: 'calendar' },
-                    { value: 'lastUsed',     label: 'Last used',    icon: 'clock' },
-                    { value: 'manual',       label: 'Manual (drag in overview)', icon: 'grip' }
+                    { value: 'alphabetical', label: t('sort.alphabetical'), icon: 'sortAlpha' },
+                    { value: 'created',      label: t('sort.created'), icon: 'calendar' },
+                    { value: 'lastUsed',     label: t('sort.lastUsed'),    icon: 'clock' },
+                    { value: 'manual',       label: t('sort.manualOverview'), icon: 'grip' }
                 ],
                 onChange: function (v) {
                     if (typeof setWorkspacesSortBy === 'function') setWorkspacesSortBy(v);
@@ -2605,7 +2609,7 @@
             sidebar.appendChild(el('div', {
                 className: 'bowire-pane-empty',
                 style: 'padding:12px 14px',
-                textContent: 'No workspaces match "' + workspacesSearchQuery + '".'
+                textContent: t('sidebar.ws.noMatch', { query: workspacesSearchQuery })
             }));
             return sidebar;
         }
@@ -2613,7 +2617,7 @@
         var nodes = visible.map(function (w) {
             return _buildWorkspaceTreeNode(w);
         });
-        sidebar.appendChild(renderTree(nodes, { ariaLabel: 'Workspaces' }));
+        sidebar.appendChild(renderTree(nodes, { ariaLabel: t('sidebar.ws.title') }));
 
         return sidebar;
     }
@@ -2636,8 +2640,8 @@
         defs.push({
             key: 'settings',
             icon: 'settings',
-            label: 'Workspace settings',
-            title: 'Open workspace settings',
+            label: t('sidebar.ws.settings'),
+            title: t('sidebar.ws.settingsTitle'),
             onClick: function () {
                 if (typeof _goToWorkspaceSettings === 'function') {
                     _goToWorkspaceSettings(wsId);
@@ -2647,20 +2651,20 @@
         defs.push({
             key: 'rename',
             icon: 'pencil',
-            label: 'Rename',
+            label: t('sidebar.renameShort'),
             // Brief: "+ pencil icon. Click → bowirePrompt('New name…')".
             // We use the same name-collision validator the topbar
             // dropdown / overview already use so all three surfaces
             // share one rename gate.
-            title: 'Rename workspace',
+            title: t('sidebar.ws.renameTitle'),
             onClick: function () {
                 var target = workspaces.find(function (x) { return x.id === wsId; });
                 if (!target) return;
                 var oldName = target.name;
-                bowirePrompt('New name', {
-                    title: 'Rename workspace',
+                bowirePrompt(t('sidebar.adhoc.newName'), {
+                    title: t('sidebar.ws.renameTitle'),
                     defaultValue: oldName,
-                    confirmText: 'Rename',
+                    confirmText: t('sidebar.renameShort'),
                     validator: function (val) {
                         var trimmed = String(val || '').trim();
                         if (!trimmed) return 'Name required';
@@ -2668,7 +2672,7 @@
                         if (typeof _isWorkspaceNameTaken === 'function'
                             && _isWorkspaceNameTaken(trimmed, wsId)) {
                             if (typeof toast === 'function') {
-                                toast('A workspace named "' + trimmed + '" already exists.', 'error');
+                                toast(t('workspace.nameTaken', { name: trimmed }), 'error');
                             }
                             return 'Duplicate';
                         }
@@ -2681,7 +2685,7 @@
                             // #194 — track in the action log so the
                             // rename is reversible.
                             if (typeof toast === 'function') {
-                                toast('Workspace renamed', 'success', {
+                                toast(t('sidebar.ws.renamed'), 'success', {
                                     undo: function () { renameWorkspace(wsId, prevName); render(); },
                                     logAction: {
                                         kind: 'workspace-rename',
@@ -2706,15 +2710,15 @@
             defs.push({
                 key: 'save-template',
                 icon: 'bookmark',
-                label: 'Save as template',
-                title: 'Save workspace as template — appears in the create-workspace dialog',
+                label: t('sidebar.ws.saveTemplate'),
+                title: t('sidebar.ws.saveTemplateTitle'),
                 onClick: function () {
                     var target = workspaces.find(function (x) { return x.id === wsId; });
                     var wsName = (target && target.name) || 'workspace';
-                    bowirePrompt('Template name', {
-                        title: 'Save as template',
+                    bowirePrompt(t('sidebar.ws.templateName'), {
+                        title: t('sidebar.ws.saveTemplate'),
                         defaultValue: wsName + ' template',
-                        confirmText: 'Save',
+                        confirmText: t('common.save'),
                         validator: function (val) {
                             return String(val || '').trim() ? null : 'Name required';
                         }
@@ -2723,11 +2727,13 @@
                         try {
                             saveWorkspaceAsTemplate(wsId, name, '', 'layers');
                             if (typeof toast === 'function') {
-                                toast('Saved "' + name + '" — available in the next create-workspace dialog.', 'success');
+                                toast(t('sidebar.ws.templateSaved', { name: name }), 'success');
                             }
                         } catch (e) {
                             if (typeof toast === 'function') {
-                                toast('Save failed: ' + (e && e.message ? e.message : 'unknown error'), 'error');
+                                toast(t('sidebar.ws.saveFailed', {
+                                reason: (e && e.message) ? e.message : t('sidebar.unknownError')
+                            }), 'error');
                             }
                         }
                     });
@@ -2737,15 +2743,15 @@
         defs.push({
             key: 'duplicate',
             icon: 'copy',
-            label: 'Duplicate',
-            title: 'Duplicate workspace',
+            label: t('sidebar.ws.duplicate'),
+            title: t('sidebar.ws.duplicateTitle'),
             onClick: function () {
                 var target = workspaces.find(function (x) { return x.id === wsId; });
                 if (!target || typeof duplicateWorkspace !== 'function') return;
-                bowirePrompt('Name for the duplicate', {
-                    title: 'Duplicate workspace',
+                bowirePrompt(t('sidebar.ws.duplicateName'), {
+                    title: t('sidebar.ws.duplicateTitle'),
                     defaultValue: target.name + ' (copy)',
-                    confirmText: 'Duplicate'
+                    confirmText: t('sidebar.ws.duplicate')
                 }).then(function (newName) {
                     if (!newName) return;
                     var fresh = duplicateWorkspace(wsId, newName);
@@ -2760,9 +2766,9 @@
         defs.push({
             key: 'delete',
             icon: 'trash',
-            label: 'Delete',
+            label: t('common.delete'),
             danger: true,
-            title: 'Delete workspace',
+            title: t('sidebar.ws.deleteTitle'),
             onClick: function () {
                 var target = workspaces.find(function (x) { return x.id === wsId; });
                 if (!target) {
@@ -2804,14 +2810,14 @@
                             if (sidechannel) {
                                 try { delete _lastWorkspaceDeleteSnapshot[wsId]; } catch { /* ignore */ }
                             }
-                            toast('Deleted workspace "' + snapshotName + '"', 'info', {
+                            toast(t('sidebar.ws.deleted', { name: snapshotName }), 'info', {
                                 undo: function () {
-                                    var t = (typeof workspacesTrash !== 'undefined'
+                                    var trashed = (typeof workspacesTrash !== 'undefined'
                                         && Array.isArray(workspacesTrash))
                                         ? workspacesTrash.find(function (x) { return x && x.workspace && x.workspace.id === wsId; })
                                         : null;
-                                    if (t && typeof restoreWorkspaceFromTrash === 'function') {
-                                        restoreWorkspaceFromTrash(t);
+                                    if (trashed && typeof restoreWorkspaceFromTrash === 'function') {
+                                        restoreWorkspaceFromTrash(trashed);
                                         render();
                                         return;
                                     }
@@ -2993,7 +2999,7 @@
                     openTreeSubContextMenu(ev, [
                         {
                             icon: '🗑',
-                            label: 'Remove URL',
+                            label: t('sidebar.sources.removeUrlShort'),
                             danger: true,
                             onClick: function () {
                                 bowireConfirm(
@@ -3021,7 +3027,7 @@
                                         if (typeof onServerUrlChanged === 'function') onServerUrlChanged();
                                         render();
                                     },
-                                    { title: 'Remove URL', confirmText: 'Remove', danger: true }
+                                    { title: t('sidebar.sources.removeUrlShort'), confirmText: t('sidebar.removeConfirm'), danger: true }
                                 );
                             }
                         }
@@ -3032,7 +3038,7 @@
 
         return {
             id: sourcesKey,
-            label: 'Sources',
+            label: t('sidebar.sources.title'),
             // server (rack) glyph for the backend-endpoint side — sources
             // are "what backends does this workspace talk to". Used to be
             // `globe`, which collided with Environments (deployment
@@ -3064,7 +3070,7 @@
                 openTreeSubContextMenu(ev, [
                     _catalogueCanBrowse() ? {
                         icon: '⌕',
-                        label: 'Browse catalogue…',
+                        label: t('sidebar.sources.browseCatalogue'),
                         onClick: function () {
                             openCatalogueBrowserDialog({
                                 workspace: w,
@@ -3074,17 +3080,17 @@
                     } : null,
                     {
                         icon: '+',
-                        label: 'Add URL or schema',
+                        label: t('sidebar.sources.addUrlOrSchema'),
                         onClick: function () { _quickAddUrlToWorkspace(w); }
                     },
                     {
                         icon: '⬆',
-                        label: 'Upload schema files…',
+                        label: t('sidebar.sources.uploadFiles'),
                         onClick: function () { _uploadSchemaFilesForWorkspace(w); }
                     },
                     (catAvailable && typeof refreshCatalogueNow === 'function') ? {
                         icon: '↻',
-                        label: 'Refresh catalogue',
+                        label: t('catalogue.refreshAria'),
                         onClick: function () { refreshCatalogueNow(); }
                     } : null
                 ]);
@@ -3128,7 +3134,7 @@
                     openTreeSubContextMenu(ev, [
                         {
                             icon: '🗑',
-                            label: 'Delete collection',
+                            label: t('collections.deleteHeading'),
                             danger: true,
                             onClick: function () {
                                 bowireConfirm(
@@ -3138,7 +3144,7 @@
                                         if (typeof deleteCollection === 'function') deleteCollection(c.id);
                                         render();
                                     },
-                                    { title: 'Delete collection', confirmText: 'Delete', danger: true }
+                                    { title: t('collections.deleteHeading'), confirmText: t('common.delete'), danger: true }
                                 );
                             }
                         }
@@ -3149,7 +3155,7 @@
 
         return {
             id: key,
-            label: 'Collections',
+            label: t('sidebar.collections.title'),
             icon: 'folder',
             badge: cols.length || null,
             selected: selected,
@@ -3182,7 +3188,7 @@
                 openTreeSubContextMenu(ev, [
                     {
                         icon: '+',
-                        label: 'New collection',
+                        label: t('sidebar.collections.new'),
                         onClick: function () {
                             if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
                             if (typeof createCollection !== 'function') return;
@@ -3235,7 +3241,7 @@
                     openTreeSubContextMenu(ev, [
                         {
                             icon: '🗑',
-                            label: 'Delete recording',
+                            label: t('sidebar.recordings.delete'),
                             danger: true,
                             onClick: function () {
                                 bowireConfirm(
@@ -3245,7 +3251,7 @@
                                         if (typeof deleteRecording === 'function') deleteRecording(r.id);
                                         render();
                                     },
-                                    { title: 'Delete recording', confirmText: 'Delete', danger: true }
+                                    { title: t('sidebar.recordings.delete'), confirmText: t('common.delete'), danger: true }
                                 );
                             }
                         }
@@ -3256,7 +3262,7 @@
 
         return {
             id: key,
-            label: 'Recordings',
+            label: t('sidebar.recordings.title'),
             icon: 'recording',
             badge: recs.length || null,
             selected: selected,
@@ -3286,7 +3292,7 @@
                 openTreeSubContextMenu(ev, [
                     {
                         icon: '●',
-                        label: 'Start recording',
+                        label: t('sidebar.recordings.start'),
                         onClick: function () {
                             if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
                             if (typeof startRecording === 'function') {
@@ -3350,7 +3356,7 @@
                     openTreeSubContextMenu(ev, [
                         {
                             icon: '🗑',
-                            label: 'Delete environment',
+                            label: t('sidebar.envs.deleteHeading'),
                             danger: true,
                             onClick: function () {
                                 bowireConfirm(
@@ -3360,7 +3366,7 @@
                                         if (typeof deleteEnvironment === 'function') deleteEnvironment(e.id);
                                         render();
                                     },
-                                    { title: 'Delete environment', confirmText: 'Delete', danger: true }
+                                    { title: t('sidebar.envs.deleteHeading'), confirmText: t('common.delete'), danger: true }
                                 );
                             }
                         }
@@ -3371,7 +3377,7 @@
 
         return {
             id: key,
-            label: 'Environments',
+            label: t('sidebar.envs.title'),
             icon: 'globe',
             badge: envs.length || null,
             selected: selected,
@@ -3405,7 +3411,7 @@
                 openTreeSubContextMenu(ev, [
                     {
                         icon: '+',
-                        label: 'New environment',
+                        label: t('sidebar.envs.new'),
                         onClick: function () {
                             if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
                             if (typeof openCreateEnvironmentDialog !== 'function') return;
@@ -3502,8 +3508,10 @@
         if (added.length > 0) {
             if (typeof persistServerUrls === 'function') persistServerUrls();
             if (typeof toast === 'function') {
-                toast('Added ' + added.length + ' source'
-                    + (added.length === 1 ? '' : 's') + ' to ' + w.name, 'success');
+                // #688 - one message, two shapes.
+                toast(t(added.length === 1
+                    ? 'sidebar.sources.added.one' : 'sidebar.sources.added.many',
+                    { count: added.length, workspace: w.name }), 'success');
             }
             workspaceTreeSelection = { wsId: w.id, kind: 'url', value: added[0] };
             workspaceTreeExpanded['ws:' + w.id] = true;
@@ -3552,10 +3560,10 @@
     function _promptAddUrlToWorkspace(w) {
         if (typeof bowirePrompt !== 'function') return;
         if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
-        bowirePrompt('Add URL or schema reference', {
-            title: 'Add to ' + w.name,
-            placeholder: 'https://api.example.com or rest@https://… or grpc@…',
-            confirmText: 'Add'
+        bowirePrompt(t('sidebar.ws.addUrlPrompt'), {
+            title: t('sidebar.ws.addTo', { name: w.name }),
+            placeholder: t('sidebar.ws.addUrlPlaceholder'),
+            confirmText: t('sidebar.ws.addConfirm')
         }).then(function (raw) {
             if (!raw) return;
             raw = String(raw).trim();
@@ -3617,7 +3625,7 @@
                 if (typeof fetchServices === 'function') fetchServices();
             } catch (err) {
                 console.error('[bowire-sources-ctx] schema upload failed', err);
-                if (typeof toast === 'function') toast('Schema upload failed — see console', 'error');
+                if (typeof toast === 'function') toast(t('sidebar.uploadFailed'), 'error');
             }
         };
         input.click();
@@ -3655,7 +3663,7 @@
         var heading = el('div', { className: 'bowire-ad-hoc-heading' });
         heading.appendChild(el('span', {
             className: 'bowire-ad-hoc-heading-title',
-            textContent: 'Ad-hoc requests'
+            textContent: t('sidebar.adhoc.title')
         }));
         heading.appendChild(el('span', {
             className: 'bowire-ad-hoc-heading-count',
@@ -3666,8 +3674,8 @@
         heading.appendChild(el('button', {
             type: 'button',
             className: 'bowire-ad-hoc-compose-btn',
-            title: 'Compose new ad-hoc request',
-            'aria-label': 'Compose new ad-hoc request',
+            title: t('sidebar.adhoc.compose'),
+            'aria-label': t('sidebar.adhoc.compose'),
             innerHTML: svgIcon('plus'),
             onClick: function (e) {
                 e.stopPropagation();
@@ -3681,7 +3689,7 @@
         if (!adHocRequests || adHocRequests.length === 0) {
             section.appendChild(el('div', {
                 className: 'bowire-ad-hoc-empty',
-                textContent: 'No saved requests yet. Click + to compose your first one.'
+                textContent: t('sidebar.adhoc.empty')
             }));
             return section;
         }
@@ -3732,16 +3740,16 @@
             tools.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-ad-hoc-row-tool',
-                title: 'Rename',
-                'aria-label': 'Rename request',
+                title: t('sidebar.renameShort'),
+                'aria-label': t('sidebar.adhoc.renameAria'),
                 innerHTML: svgIcon('pencil'),
                 onClick: function (e) {
                     e.stopPropagation();
                     if (typeof bowirePrompt !== 'function') return;
-                    bowirePrompt('New name', {
-                        title: 'Rename request',
+                    bowirePrompt(t('sidebar.adhoc.newName'), {
+                        title: t('sidebar.adhoc.renameAria'),
                         defaultValue: rec.name || '',
-                        confirmText: 'Rename'
+                        confirmText: t('sidebar.renameShort')
                     }).then(function (newName) {
                         if (newName && typeof renameAdHocRequest === 'function') {
                             renameAdHocRequest(rec.id, newName);
@@ -3753,8 +3761,8 @@
             tools.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-ad-hoc-row-tool bowire-ad-hoc-row-tool-danger',
-                title: 'Delete',
-                'aria-label': 'Delete request',
+                title: t('sidebar.deleteShort'),
+                'aria-label': t('sidebar.adhoc.deleteAria'),
                 innerHTML: svgIcon('trash'),
                 onClick: function (e) {
                     e.stopPropagation();
@@ -3767,7 +3775,7 @@
                         function () {
                             if (typeof deleteAdHocRequest === 'function') deleteAdHocRequest(rec.id);
                         },
-                        { title: 'Delete request', confirmText: 'Delete', danger: true }
+                        { title: t('sidebar.adhoc.deleteAria'), confirmText: t('common.delete'), danger: true }
                     );
                 }
             }));
@@ -3794,7 +3802,7 @@
             className: 'bowire-trash-header',
             onClick: function () { opts.setOpen(!opts.isOpen); render(); }
         },
-            el('span', { textContent: '🗑 Recently deleted' }),
+            el('span', { textContent: '🗑 ' + t('sidebar.trash.title') }),
             el('span', { className: 'bowire-trash-count', textContent: String(trash.length) }),
             el('span', { className: 'bowire-trash-caret', textContent: opts.isOpen ? '▾' : '▸' })
         );
@@ -3803,17 +3811,18 @@
         if (!opts.isOpen) return section;
 
         var list = el('div', { className: 'bowire-trash-list' });
-        trash.forEach(function (t, i) {
+        trash.forEach(function (entry, i) {
             var row = el('div', { className: 'bowire-trash-row' },
-                el('div', { className: 'bowire-trash-row-name', textContent: opts.nameOf(t.entry) }),
-                el('div', { className: 'bowire-trash-row-meta', textContent: 'deleted ' + new Date(t.deletedAt).toLocaleString() }),
+                el('div', { className: 'bowire-trash-row-name', textContent: opts.nameOf(entry.entry) }),
+                el('div', { className: 'bowire-trash-row-meta',
+                textContent: t('sidebar.trash.deletedAt', { when: new Date(entry.deletedAt).toLocaleString() }) }),
                 el('button', {
                     type: 'button',
                     className: 'bowire-trash-row-action',
-                    title: 'Restore',
+                    title: t('sidebar.trash.restore'),
                     textContent: '↩',
                     onClick: function () {
-                        opts.restoreAt(t);
+                        opts.restoreAt(entry);
                         trash.splice(i, 1);
                         opts.persist();
                         render();
@@ -3822,7 +3831,7 @@
                 el('button', {
                     type: 'button',
                     className: 'bowire-trash-row-action bowire-trash-row-action-danger',
-                    title: 'Delete permanently',
+                    title: t('sidebar.trash.deleteForever'),
                     textContent: '×',
                     onClick: function () {
                         trash.splice(i, 1);
@@ -3839,7 +3848,7 @@
             section.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-trash-empty-btn',
-                textContent: 'Empty trash',
+                textContent: t('sidebar.trash.empty'),
                 onClick: function () {
                     var n = trash.length;
                     bowireConfirm(
@@ -3849,7 +3858,8 @@
                             opts.persist();
                             render();
                         },
-                        { title: 'Empty trash', confirmText: 'Delete ' + n, danger: true }
+                        { title: t('sidebar.trash.empty'),
+                    confirmText: t('sidebar.deleteCount', { count: n }), danger: true }
                     );
                 }
             }));
@@ -4009,7 +4019,7 @@
         var viewSwitch = el('div', { id: 'bowire-sidebar-view-switch', className: 'bowire-sidebar-toolbar', role: 'toolbar' });
         viewSwitch.appendChild(el('span', {
             className: 'bowire-sidebar-toolbar-title',
-            textContent: 'Discover'
+            textContent: t('sidebar.discover')
         }));
         viewSwitch.appendChild(el('span', { className: 'bowire-sidebar-toolbar-spacer' }));
 
@@ -4027,8 +4037,8 @@
         var newBtn = el('button', {
             id: 'bowire-new-btn',
             className: 'bowire-sidebar-toolbar-primary',
-            title: 'New request, collection, or environment',
-            'aria-label': 'New request, collection, or environment',
+            title: t('sidebar.newAnything'),
+            'aria-label': t('sidebar.newAnything'),
             onClick: function (e) {
                 e.stopPropagation();
                 var menu = newBtnWrapper.querySelector('.bowire-new-dropdown');
@@ -4126,7 +4136,7 @@
                         dropdown.remove();
                         render();
                     }
-                }, el('span', { textContent: 'Collection' })));
+                }, el('span', { textContent: t('sidebar.new.collection') })));
 
                 // Environment
                 dropdown.appendChild(el('div', {
@@ -4140,7 +4150,7 @@
                             render();
                         });
                     }
-                }, el('span', { textContent: 'Environment' })));
+                }, el('span', { textContent: t('sidebar.new.environment') })));
 
                 // Flow — switch to flows sidebar view. The Flows rail
                 // (Kuestenlogik.Bowire.Flows) ships `loadFlows` +
@@ -4162,7 +4172,7 @@
                             dropdown.remove();
                             render();
                         }
-                    }, el('span', { textContent: 'Flow' })));
+                    }, el('span', { textContent: t('sidebar.new.flow') })));
                 }
 
                 newBtnWrapper.appendChild(dropdown);
@@ -4218,7 +4228,7 @@
                 id: 'bowire-label-mode-btn',
                 className: 'bowire-sidebar-toolbar-btn' + (routeMode ? ' is-active' : ''),
                 'aria-pressed': routeMode ? 'true' : 'false',
-                'aria-label': 'Toggle between method names and HTTP routes',
+                'aria-label': t('sidebar.toggleLabelMode'),
                 title: routeMode
                     ? 'Showing HTTP routes — click to show method names'
                     : 'Showing method names — click to show HTTP routes',
@@ -4248,15 +4258,15 @@
             viewSwitch.appendChild(el('button', {
                 id: 'bowire-compare-btn',
                 className: 'bowire-sidebar-toolbar-btn',
-                title: 'Compare two services side by side — schema + response diff',
-                'aria-label': 'Compare services',
+                title: t('sidebar.compareTitle'),
+                'aria-label': t('sidebar.compareAria'),
                 onClick: function () {
                     if (typeof openServiceCompare === 'function') openServiceCompare(null);
                 }
             },
                 el('span', { innerHTML: svgIcon('splitHorizontal'),
                     style: 'width:14px;height:14px;display:flex' }),
-                el('span', { textContent: 'Compare', style: 'margin-left:5px' })
+                el('span', { textContent: t('sidebar.compare'), style: 'margin-left:5px' })
             ));
         }
 
@@ -4317,7 +4327,7 @@
                 title: filterDisabled
                     ? 'Protocol filter only applies in the Services view'
                     : 'Filter by protocol',
-                'aria-label': 'Filter by protocol',
+                'aria-label': t('sidebar.filter.protocol'),
                 onClick: function (e) {
                     e.stopPropagation();
                     if (filterDisabled) return;
@@ -4360,16 +4370,16 @@
                         }),
                         el('span', {
                             className: 'bowire-protocol-filter-proto-name',
-                            textContent: 'Favorites only'
+                            textContent: t('sidebar.filter.favoritesOnly')
                         })
                     ));
                     popupTop.appendChild(el('div', { className: 'bowire-protocol-filter-popup-header', style: 'margin-top:6px' },
-                        el('span', { textContent: 'Filter by protocol' }),
+                        el('span', { textContent: t('sidebar.filter.protocol') }),
                         protocolFilter.size > 0
                             ? el('button', {
                                 className: 'bowire-protocol-filter-clear',
-                                textContent: 'Clear',
-                                title: 'Remove all protocol filters',
+                                textContent: t('sidebar.filter.clear'),
+                                title: t('sidebar.filter.clearProtocols'),
                                 onClick: function (e) {
                                     e.stopPropagation();
                                     protocolFilter.clear();
@@ -4435,11 +4445,11 @@
                     }
                     if (presentTypes.size > 1) {
                         popupTop.appendChild(el('div', { className: 'bowire-protocol-filter-popup-header', style: 'margin-top:6px' },
-                            el('span', { textContent: 'Filter by type' }),
+                            el('span', { textContent: t('sidebar.filter.type') }),
                             methodTypeFilter.size > 0
                                 ? el('button', {
                                     className: 'bowire-protocol-filter-clear',
-                                    textContent: 'Clear',
+                                    textContent: t('sidebar.filter.clear'),
                                     onClick: function (e) {
                                         e.stopPropagation();
                                         methodTypeFilter.clear();
@@ -4501,12 +4511,12 @@
                         }
                         if (presentUrls.size > 1) {
                             popupTop.appendChild(el('div', { className: 'bowire-protocol-filter-popup-header', style: 'margin-top:6px' },
-                                el('span', { textContent: 'Filter by URL' }),
+                                el('span', { textContent: t('sidebar.filter.url') }),
                                 urlFilter.size > 0
                                     ? el('button', {
                                         className: 'bowire-protocol-filter-clear',
-                                        textContent: 'Clear',
-                                        title: 'Remove all URL filters',
+                                        textContent: t('sidebar.filter.clear'),
+                                        title: t('sidebar.filter.clearUrls'),
                                         onClick: function (e) {
                                             e.stopPropagation();
                                             urlFilter.clear();
@@ -4615,10 +4625,10 @@
                 if (favoritesOnly) {
                     filterRow.appendChild(el('div', { className: 'bowire-filter-chip bowire-filter-chip-favorites' },
                         el('span', { className: 'bowire-filter-chip-icon', innerHTML: svgIcon('starFilled') }),
-                        el('span', { className: 'bowire-filter-chip-label', textContent: 'Favorites only' }),
+                        el('span', { className: 'bowire-filter-chip-label', textContent: t('sidebar.filter.favoritesOnly') }),
                         el('button', {
                             className: 'bowire-filter-chip-remove',
-                            title: 'Show everything again',
+                            title: t('sidebar.filter.showAll'),
                             textContent: '×',
                             onClick: function (e) {
                                 e.stopPropagation();
@@ -4644,7 +4654,7 @@
                         }),
                         el('button', {
                             className: 'bowire-filter-chip-remove',
-                            title: 'Remove this filter',
+                            title: t('sidebar.filter.removeOne'),
                             textContent: '\u00d7',
                             onClick: function (e) {
                                 e.stopPropagation();
@@ -4674,7 +4684,7 @@
                         }),
                         el('button', {
                             className: 'bowire-filter-chip-remove',
-                            title: 'Remove this type filter',
+                            title: t('sidebar.filter.removeType'),
                             textContent: '\u00d7',
                             onClick: function (e) {
                                 e.stopPropagation();
@@ -4711,7 +4721,7 @@
                         }),
                         el('button', {
                             className: 'bowire-filter-chip-remove',
-                            title: 'Remove this URL filter',
+                            title: t('sidebar.filter.removeUrl'),
                             textContent: '×',
                             onClick: function (e) {
                                 e.stopPropagation();
@@ -4736,7 +4746,7 @@
                         }),
                         el('button', {
                             className: 'bowire-filter-chip-remove',
-                            title: 'Remove name filter',
+                            title: t('sidebar.filter.removeName'),
                             textContent: '\u00d7',
                             onClick: function (e) {
                                 e.stopPropagation();
@@ -4753,7 +4763,7 @@
                 filterRow.appendChild(el('button', {
                     id: 'bowire-filter-clear-all-btn',
                     className: 'bowire-filter-clear-all',
-                    title: 'Remove all protocol and name filters',
+                    title: t('sidebar.filter.removeAll'),
                     innerHTML: svgIcon('trash'),
                     onClick: function (e) {
                         e.stopPropagation();
@@ -4801,13 +4811,13 @@
             if (isLoadingServices) {
                 list.appendChild(el('div', { className: 'bowire-loading' },
                     el('div', { className: 'bowire-spinner' }),
-                    el('span', { className: 'bowire-loading-text', textContent: 'Loading services...' })
+                    el('span', { className: 'bowire-loading-text', textContent: t('sidebar.loading') })
                 ));
             } else {
                 list.appendChild(el('div', {
                     className: 'bowire-pane-empty',
                     style: 'padding:12px 14px',
-                    textContent: 'No services discovered yet.'
+                    textContent: t('sidebar.noServices')
                 }));
             }
         } else {
@@ -4870,7 +4880,7 @@
 
             if (query && totalMatches === 0) {
                 list.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding: 32px' },
-                    el('div', { className: 'bowire-empty-title', textContent: 'No matches' }),
+                    el('div', { className: 'bowire-empty-title', textContent: t('sidebar.noMatches') }),
                     el('div', { className: 'bowire-empty-desc', textContent:
                         'Nothing matches "' + query + '". Try a different word or press Esc to clear the search.' })
                 ));
@@ -4978,8 +4988,8 @@
                         ? el('button', {
                             type: 'button',
                             className: 'bowire-source-panel-refresh-btn',
-                            title: 'Re-discover services from ' + originUrl,
-                            'aria-label': 'Refresh source',
+                            title: t('sidebar.refreshSourceTitle', { url: originUrl }),
+                            'aria-label': t('sidebar.refreshSource'),
                             onClick: function (e) {
                                 e.stopPropagation();
                                 refreshSourceServices(originUrl);
@@ -4994,7 +5004,7 @@
                             title: (panelStatus === 'connected' || panelStatus === 'connecting')
                                 ? 'Disconnect from ' + originUrl
                                 : 'Re-connect to ' + originUrl,
-                            'aria-label': 'Toggle connection',
+                            'aria-label': t('sidebar.toggleConnection'),
                             onClick: function (e) {
                                 e.stopPropagation();
                                 toggleSourceConnection(originUrl);
@@ -5053,14 +5063,14 @@
                 if (gone.length) {
                     banner.appendChild(el('span', {
                         className: 'bowire-schema-delta-gone',
-                        title: 'No longer discovered:\n' + gone.join('\n'),
+                        title: t('sidebar.goneList', { list: gone.join('\n') }),
                         textContent: gone.length === 1 ? gone[0] : gone.length + ' gone'
                     }));
                 }
                 banner.appendChild(el('button', {
                     className: 'bowire-schema-delta-dismiss',
-                    title: 'Dismiss',
-                    'aria-label': 'Dismiss schema change summary',
+                    title: t('common.dismiss'),
+                    'aria-label': t('sidebar.dismissChanges'),
                     textContent: '×',
                     onClick: function (e) {
                         e.stopPropagation();
