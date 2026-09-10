@@ -7,10 +7,13 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve, sep } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { compileFragment } from './_load-fragment.mjs';
+import {
+    fragmentSources, looksLikeProse, untranslatedCounts,
+} from './_untranslated.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOCALES = resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/locales');
@@ -247,45 +250,16 @@ test('a catalogue that is not an object is ignored rather than breaking t', () =
 // code, translated nowhere and noticed by nobody — that is exactly how
 // headerLibrary.settings.lede came to exist for two commits without a caller.
 
-// Every fragment that lands in the bundle, not only the core project's.
-//
-// #311 Phase G moved seven rails into sibling packages, and each ships its own
-// wwwroot/js into the same concatenated bundle. Scanning only the core
-// directory meant the guards checked the sweep against the files the sweep had
-// walked: a literal left in Flows or Recordings was invisible, and a key used
-// only from one of them would have read as an orphan. Six hundred strings sat
-// behind that gap.
-const SRC = resolve(__dirname, '../../../src');
-
-function fragmentDirs() {
-    return readdirSync(SRC, { withFileTypes: true })
-        .filter((e) => e.isDirectory() && e.name.startsWith('Kuestenlogik.Bowire'))
-        .map((e) => resolve(SRC, e.name, 'wwwroot', 'js'))
-        .filter((dir) => existsSync(dir));
-}
+// The fragments themselves are enumerated by _untranslated.mjs, which is also
+// what the ratchet at the foot of this file reads. One walker, so the guards
+// and the scan can never disagree about which files are in scope — the mistake
+// that hid six hundred literals in the sibling packages once already.
 
 // t('a.b.c') where the `t` is a whole identifier — not the tail of format(,
 // assert( or split(. Keys built at run time (t('x.' + field)) are collected
 // separately by their prefix, because their leaves cannot be read statically.
 const STATIC_CALL = /(?<![A-Za-z0-9_$.])t\(\s*'([a-zA-Z0-9_.-]+)'/g;
 const DYNAMIC_CALL = /(?<![A-Za-z0-9_$.])t\(\s*'([a-zA-Z0-9_.-]+\.)'\s*\+/g;
-
-function fragmentSources() {
-    const out = [];
-    for (const dir of fragmentDirs()) {
-        for (const entry of readdirSync(dir, { withFileTypes: true, recursive: true })) {
-            if (!entry.isFile() || !entry.name.endsWith('.js')) continue;
-            // _locales.js is generated from the catalogues; i18n.js declares
-            // t() rather than calling it.
-            if (entry.name === '_locales.js' || entry.name === 'i18n.js') continue;
-            const path = resolve(entry.parentPath ?? dir, entry.name);
-            // The package name makes the failure message say where to look.
-            const label = path.slice(SRC.length + 1).split(sep).join('/');
-            out.push({ file: label, text: readFileSync(path, 'utf8') });
-        }
-    }
-    return out;
-}
 
 test('every t() key in the fragments exists in the catalogue', () => {
     const missing = [];
@@ -446,4 +420,65 @@ test('tNodes interpolates the other placeholders as usual', () => {
     const node = { tag: 'strong' };
     assert.deepEqual(api.tNodes('greet', 'name', node, { count: 3 }),
         ['3 open, last was ', node, '.']);
+});
+
+// ---- the ratchet ----
+//
+// The four guards above check the strings that already went through t(): the
+// key exists, the key has a caller, nothing shadows t, nothing reads it as a
+// value. None of them says anything about a string that never went through t()
+// at all — and that is where the sweep went wrong twice. First the guards
+// scanned only the core project, which is the same set the sweep had walked, so
+// six hundred literals in the sibling packages were invisible to both. Then the
+// search knew only the named slots it had been given, so `headline:` and
+// `body:` of every empty-state card were invisible too, along with every label
+// handed to a helper positionally.
+//
+// Both times the tool drew the boundary and the files quietly disagreed. So the
+// count of what is still hard-coded is checked in, per file, and this test
+// holds it to that number. Add a literal and it fails; remove one and it fails
+// too, saying what to write instead — which puts the shrinking number in the
+// same diff as the strings it removed, rather than in somebody's head.
+
+test('no fragment gains an untranslated string, and the count only falls', () => {
+    const baseline = JSON.parse(
+        readFileSync(resolve(__dirname, 'untranslated-baseline.json'), 'utf8'));
+    const counts = untranslatedCounts();
+    const problems = [];
+
+    for (const [file, n] of Object.entries(counts)) {
+        const was = baseline[file] ?? 0;
+        if (n > was) {
+            problems.push(`${file}: ${was} -> ${n}. Route the new string through t(), `
+                + 'or mark the line // i18n-exempt: <reason> if it is not Bowire prose.');
+        }
+    }
+    for (const [file, was] of Object.entries(baseline)) {
+        const n = counts[file] ?? 0;
+        if (n < was) {
+            problems.push(`${file}: ${was} -> ${n}. Progress — run `
+                + '`node tests/Kuestenlogik.Bowire.Tests/wwwroot-js/untranslated-report.mjs '
+                + '--write` to record it.');
+        }
+    }
+
+    assert.deepEqual(problems, [], `untranslated-baseline.json is out of date:\n  ${
+        problems.join('\n  ')}`);
+});
+
+test('the detector reads prose and skips the vocabulary around it', () => {
+    // The rejections carry as much weight as the acceptances: a guard that
+    // flags 'GET', ' active' and translateX(0) is a guard somebody switches off.
+    for (const yes of ['Save', 'Pick a captured flow', 'Delay (ms)', 'On — click to turn off']) {
+        assert.ok(looksLikeProse(yes), `should be prose: ${yes}`);
+    }
+    for (const no of [
+        'GET', 'MOCK', 'ERR', 'http',              // protocol vocabulary
+        ' active', ' selected',                    // a class-name fragment
+        'bowire-rail-subtab', 'flowSelectedId',    // identifiers
+        'translateX(16px)', 'transform:translateX(0)',  // CSS
+        'https://bowire.io/docs', '/api/users/*', '{{base}}',  // addresses, patterns
+    ]) {
+        assert.ok(!looksLikeProse(no), `should not be prose: ${no}`);
+    }
 });

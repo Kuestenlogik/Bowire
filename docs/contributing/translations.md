@@ -131,6 +131,31 @@ The sentence *around* one of these is translated; the thing being named is not. 
 
 The same reasoning applies to anything Bowire *writes into data*. A workspace name, a collection name, an action-log entry: those travel through `.bww` export into somebody else's Bowire, so a default written in one language would arrive in theirs. Bowire stores them empty or in English and translates only the display.
 
+## The guard that says when the sweep is done
+
+Twice the sweep looked finished and wasn't, both times because the search drew the boundary and the files quietly disagreed. First the guards scanned only `src/Kuestenlogik.Bowire/wwwroot/js` &mdash; the same directory the sweep had walked &mdash; so six hundred literals in the sibling packages were invisible to both. Then the search knew only the slots it had been handed (`textContent`, `title`, `placeholder`, `label`, `aria-label`), so the `headline:` and `body:` of every empty-state card went unseen, along with every label passed to a helper positionally.
+
+So the count of what is still hard-coded is checked in, per file, in `tests/Kuestenlogik.Bowire.Tests/wwwroot-js/untranslated-baseline.json`, and a test holds every file to its number:
+
+```
+npm run i18n:report              # what is left, per file
+npm run i18n:report flows.js     # the individual sites in one file
+npm run i18n:baseline            # record the new, lower numbers
+```
+
+Add a literal and the test fails. Remove one and it fails too, telling you to run `npm run i18n:baseline` &mdash; which puts the shrinking number in the same commit as the strings it removed, rather than in somebody's head.
+
+When a string genuinely isn't Bowire's prose, say so where it sits:
+
+```js
+el('span', { textContent: 'MOCK' })   // i18n-exempt: sits in the method column beside GET
+```
+
+The reason belongs next to the string, not in a list elsewhere, so a reviewer can disagree with it.
+
 ## What is still English
 
-The workbench sweep is complete &mdash; every surface reads from the catalogue. What remains is the command line's own `--help` text (roughly three hundred option and command descriptions), tracked separately.
+Two things, and both are counted rather than estimated:
+
+* **The rails still being swept.** `npm run i18n:report` prints the current figure; at the time of writing it is 813 literals across 39 fragments, with Benchmarking, Flows, Recordings, Mock and the core's `render-main.js` carrying most of it. Tracked on #117.
+* **The command line's own `--help` text**, roughly three hundred option and command descriptions, tracked separately on #690 &mdash; which asks first whether it should be translated at all.
