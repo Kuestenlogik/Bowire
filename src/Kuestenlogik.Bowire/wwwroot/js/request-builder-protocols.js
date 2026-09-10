@@ -35,7 +35,7 @@
             type: 'button',
             className: 'bowire-request-builder-grpc-picker-btn'
                 + (rbGrpcMenuOpen ? ' is-open' : ''),
-            title: 'Select a gRPC service + method',
+            title: t('rbGrpc.pickerTitle'),
             'aria-haspopup': 'listbox',
             'aria-expanded': rbGrpcMenuOpen ? 'true' : 'false',
             onClick: function (e) {
@@ -66,12 +66,12 @@
         var freeRow = el('div', { className: 'bowire-request-builder-grpc-free' });
         var svcIn = el('input', {
             type: 'text', className: 'bowire-request-builder-grpc-free-input',
-            value: ps.service || '', placeholder: 'Service',
+            value: ps.service || '', placeholder: t('rbGrpc.service'),
             onInput: function (e) { ps.service = e.target.value; }
         });
         var mthIn = el('input', {
             type: 'text', className: 'bowire-request-builder-grpc-free-input',
-            value: ps.method || '', placeholder: 'Method',
+            value: ps.method || '', placeholder: t('rbGrpc.method'),
             onInput: function (e) { ps.method = e.target.value; }
         });
         freeRow.appendChild(svcIn);
@@ -92,7 +92,7 @@
         if (grpcSvcs.length === 0) {
             menu.appendChild(el('div', {
                 className: 'bowire-request-builder-grpc-empty',
-                textContent: 'No discovered gRPC services. Enter a URL above and run discovery, or type freeform Service/Method.'
+                textContent: t('rbGrpc.noServices')
             }));
         } else {
             grpcSvcs.forEach(function (svc) {
@@ -131,7 +131,7 @@
         var wrap = el('div', { className: 'bowire-request-builder-grpc-message-wrap' });
         wrap.appendChild(el('div', {
             className: 'bowire-request-builder-script-hint',
-            textContent: 'Proto-typed request message as JSON. Use {{var}} for env-var substitution.'
+            textContent: t('rbGrpc.messageHint')
         }));
         var ta = el('textarea', {
             className: 'bowire-editor bowire-request-builder-script-editor',
@@ -152,7 +152,7 @@
         var wrap = el('div', { className: 'bowire-request-builder-deadline-wrap' });
         wrap.appendChild(el('div', {
             className: 'bowire-request-builder-script-hint',
-            textContent: 'gRPC deadline (ms). After this elapsed the server should return DEADLINE_EXCEEDED. 0 = no deadline.'
+            textContent: t('rbGrpc.deadlineHint')
         }));
         var input = el('input', {
             type: 'number', min: '0', step: '500',
@@ -169,12 +169,12 @@
 
     async function _executeGrpcRequest(fr) {
         if (!fr.serverUrl || !fr.serverUrl.trim()) {
-            if (typeof toast === 'function') toast('Enter a gRPC server URL', 'error');
+            if (typeof toast === 'function') toast(t('rbGrpc.needsUrl'), 'error');
             return;
         }
         var ps = rbProtoState(fr);
         if (!ps.service || !ps.method) {
-            if (typeof toast === 'function') toast('Pick a Service and Method (or type Service/Method)', 'error');
+            if (typeof toast === 'function') toast(t('rbGrpc.needsMethod'), 'error');
             return;
         }
 
@@ -257,6 +257,9 @@
     var rbMcpKindMenuOpen = false;
     function _renderMcpKindPicker(fr) {
         var ps = rbProtoState(fr);
+        // The three MCP primitive kinds. Not translated: each maps to a wire
+        // operation (tools/call, resources/read, prompts/get) and the hint
+        // below names those operations, so the label has to match them.
         var KINDS = [
             { id: 'tool',     label: 'Tool'     },
             { id: 'resource', label: 'Resource' },
@@ -309,12 +312,12 @@
         var wrap = el('div', { className: 'bowire-request-builder-mcp-args-wrap' });
         wrap.appendChild(el('div', {
             className: 'bowire-request-builder-script-hint',
-            textContent: 'Tool / Resource / Prompt name plus its JSON arguments. Tool name maps to MCP tools/call, resource to resources/read, prompt to prompts/get.'
+            textContent: t('rbMcp.argsHint')
         }));
         wrap.appendChild(el('input', {
             type: 'text',
             className: 'bowire-request-builder-mcp-name-input',
-            placeholder: 'Tool / Resource / Prompt name',
+            placeholder: t('rbMcp.namePlaceholder'),
             value: ps.name || '',
             onInput: function (e) { ps.name = e.target.value; }
         }));
@@ -331,12 +334,12 @@
 
     async function _executeMcpRequest(fr) {
         if (!fr.serverUrl || !fr.serverUrl.trim()) {
-            if (typeof toast === 'function') toast('Enter an MCP endpoint URL', 'error');
+            if (typeof toast === 'function') toast(t('rbMcp.needsUrl'), 'error');
             return;
         }
         var ps = rbProtoState(fr);
         if (!ps.name || !ps.name.trim()) {
-            if (typeof toast === 'function') toast('Enter a ' + (ps.method || 'tool') + ' name', 'error');
+            if (typeof toast === 'function') toast(t('rbMcp.needsName', { kind: ps.method || 'tool' }), 'error');
             return;
         }
 
@@ -462,7 +465,7 @@
         var wrap = el('div', { className: 'bowire-request-builder-mqtt-topic-wrap' });
         wrap.appendChild(el('div', {
             className: 'bowire-request-builder-script-hint',
-            textContent: 'MQTT topic (slash-separated; + matches one level, # matches the rest). Use {{var}} for env-var substitution.'
+            textContent: t('rbMqtt.topicHint')
         }));
         wrap.appendChild(el('input', {
             type: 'text',
@@ -478,7 +481,7 @@
         var wrap = el('div', { className: 'bowire-request-builder-mqtt-payload-wrap' });
         wrap.appendChild(el('div', {
             className: 'bowire-request-builder-script-hint',
-            textContent: 'Message payload (string/JSON). Ignored on Subscribe.'
+            textContent: t('rbMqtt.payloadHint')
         }));
         var ta = el('textarea', {
             className: 'bowire-editor bowire-request-builder-script-editor',
@@ -495,7 +498,7 @@
         var wrap = el('div', { className: 'bowire-request-builder-mqtt-qos-wrap' });
         wrap.appendChild(el('div', {
             className: 'bowire-request-builder-script-hint',
-            textContent: 'Quality-of-service (0 = at-most-once, 1 = at-least-once, 2 = exactly-once) and retain flag (broker keeps last message for new subscribers).'
+            textContent: t('rbMqtt.qosHint')
         }));
         var qosRow = el('div', { className: 'bowire-request-builder-mqtt-qos-row' });
         [0, 1, 2].forEach(function (q) {
@@ -513,6 +516,8 @@
             checked: ps.retain ? 'checked' : undefined,
             onChange: function (e) { ps.retain = e.target.checked; }
         }));
+        // 'QoS' above and 'Retain' here are MQTT's own names for the setting
+        // and the flag - they read the same in every language.
         retainRow.appendChild(el('span', { textContent: ' Retain' }));
         wrap.appendChild(retainRow);
         return wrap;
@@ -521,11 +526,11 @@
     async function _executeMqttRequest(fr) {
         var ps = rbProtoState(fr);
         if (!fr.serverUrl || !fr.serverUrl.trim()) {
-            if (typeof toast === 'function') toast('Enter a broker URL (mqtt:// or mqtts://)', 'error');
+            if (typeof toast === 'function') toast(t('rbMqtt.needsBroker'), 'error');
             return;
         }
         if (!ps.topic || !ps.topic.trim()) {
-            if (typeof toast === 'function') toast('Enter a topic', 'error');
+            if (typeof toast === 'function') toast(t('rbMqtt.needsTopic'), 'error');
             return;
         }
 
@@ -555,7 +560,7 @@
                 try { if (rbConnState.mqttSource) rbConnState.mqttSource.close(); } catch (_) {}
                 rbConnState.mqttSource = null;
                 rbConnState.mqttSubscribed = false;
-                if (typeof toast === 'function') toast('Unsubscribed from ' + topic, 'info');
+                if (typeof toast === 'function') toast(t('rbMqtt.unsubscribed', { topic: topic }), 'info');
                 render();
                 return;
             }
@@ -587,9 +592,9 @@
                     rbConnState.mqttSource = null;
                     render();
                 };
-                if (typeof toast === 'function') toast('Subscribed to ' + topic, 'success');
+                if (typeof toast === 'function') toast(t('rbMqtt.subscribed', { topic: topic }), 'success');
             } catch (e) {
-                if (typeof toast === 'function') toast('MQTT subscribe failed: ' + e.message, 'error');
+                if (typeof toast === 'function') toast(t('rbMqtt.subscribeFailed', { reason: e.message }), 'error');
             }
             try { pushHoppHistoryEntry(fr, { status: 'Subscribed', durationMs: 0, ok: true }); }
             catch (_) {}
@@ -675,7 +680,7 @@
         var wrap = el('div', { className: 'bowire-request-builder-ws-frame-wrap' });
         wrap.appendChild(el('div', {
             className: 'bowire-request-builder-script-hint',
-            textContent: 'Outgoing frame payload. Click "Send frame" (Execute) while connected to push it down the socket. Incoming frames land in the response pane.'
+            textContent: t('rbWs.frameHint')
         }));
         var ta = el('textarea', {
             className: 'bowire-editor bowire-request-builder-script-editor',
@@ -702,7 +707,7 @@
             var frame = ps.frame || '';
             try { if (typeof substituteVars === 'function') frame = substituteVars(frame); } catch (_) {}
             if (!frame.trim()) {
-                if (typeof toast === 'function') toast('Frame is empty — enter a payload first', 'error');
+                if (typeof toast === 'function') toast(t('rbWs.emptyFrame'), 'error');
                 return;
             }
             try {
@@ -710,7 +715,7 @@
                 rbConnState.wsFrames.push({ dir: 'send', data: frame, ts: Date.now() });
                 render();
             } catch (e) {
-                if (typeof toast === 'function') toast('Send failed: ' + e.message, 'error');
+                if (typeof toast === 'function') toast(t('channel.sendFailed', { reason: e.message }), 'error');
             }
             return;
         }
@@ -727,7 +732,7 @@
 
         // Connect.
         if (!url || !url.trim()) {
-            if (typeof toast === 'function') toast('Enter a ws:// or wss:// URL', 'error');
+            if (typeof toast === 'function') toast(t('rbWs.needsUrl'), 'error');
             return;
         }
         try {
@@ -770,7 +775,7 @@
             try { pushHoppHistoryEntry(fr, { status: 'Connected', durationMs: 0, ok: true }); }
             catch (_) {}
         } catch (e) {
-            if (typeof toast === 'function') toast('WebSocket connect failed: ' + e.message, 'error');
+            if (typeof toast === 'function') toast(t('rbWs.connectFailed', { reason: e.message }), 'error');
             rbConnState.wsState = 'closed';
             rbConnState.wsSocket = null;
             render();
@@ -791,10 +796,10 @@
         var wrap = el('div', { className: 'bowire-request-builder-sse-reconnect-wrap' });
         wrap.appendChild(el('div', {
             className: 'bowire-request-builder-script-hint',
-            textContent: 'Browser-native EventSource auto-reconnects on close; this hint mirrors the server-sent retry: directive. Adjust withCredentials for cookie-bearing endpoints.'
+            textContent: t('rbSse.reconnectHint')
         }));
         var row = el('div', { className: 'bowire-request-builder-sse-reconnect-row' });
-        row.appendChild(el('span', { textContent: 'Retry (ms): ' }));
+        row.appendChild(el('span', { textContent: t('rbSse.retryLabel') }));
         row.appendChild(el('input', {
             type: 'number', min: '500', step: '500',
             value: String(ps.reconnectMs != null ? ps.reconnectMs : 3000),
@@ -811,7 +816,7 @@
             checked: ps.withCredentials ? 'checked' : undefined,
             onChange: function (e) { ps.withCredentials = e.target.checked; }
         }));
-        credRow.appendChild(el('span', { textContent: ' withCredentials (send cookies)' }));
+        credRow.appendChild(el('span', { textContent: ' ' + t('rbSse.withCredentials') }));
         wrap.appendChild(credRow);
         return wrap;
     }
@@ -821,12 +826,12 @@
         if (rbConnState.sseSource) {
             try { rbConnState.sseSource.close(); } catch (_) {}
             rbConnState.sseSource = null;
-            if (typeof toast === 'function') toast('SSE disconnected', 'info');
+            if (typeof toast === 'function') toast(t('rbSse.disconnected'), 'info');
             render();
             return;
         }
         if (!fr.serverUrl || !fr.serverUrl.trim()) {
-            if (typeof toast === 'function') toast('Enter an SSE URL', 'error');
+            if (typeof toast === 'function') toast(t('rbSse.needsUrl'), 'error');
             return;
         }
         var url = fr.serverUrl;
@@ -883,10 +888,10 @@
             };
             try { pushHoppHistoryEntry(fr, { status: 'Connected', durationMs: 0, ok: true }); }
             catch (_) {}
-            if (typeof toast === 'function') toast('SSE connected', 'success');
+            if (typeof toast === 'function') toast(t('rbSse.connected'), 'success');
             render();
         } catch (e) {
-            if (typeof toast === 'function') toast('SSE connect failed: ' + e.message, 'error');
+            if (typeof toast === 'function') toast(t('rbSse.connectFailed', { reason: e.message }), 'error');
         }
     }
 
@@ -962,7 +967,7 @@
     function _renderWsFrameLog() {
         var pane = el('div', { className: 'bowire-request-builder-response is-streaming' });
         var head = el('div', { className: 'bowire-pane-heading' });
-        head.appendChild(el('span', { textContent: 'Frames' }));
+        head.appendChild(el('span', { textContent: t('rbWs.frames') }));
         head.appendChild(el('span', {
             className: 'bowire-request-builder-ws-state-chip is-' + rbConnState.wsState,
             textContent: rbConnState.wsState
@@ -971,7 +976,7 @@
             head.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-request-builder-disconnect-btn',
-                textContent: 'Disconnect',
+                textContent: t('channel.disconnect'),
                 onClick: function () {
                     try { rbConnState.wsSocket.close(); } catch (_) {}
                 }
@@ -979,7 +984,7 @@
         }
         // #302 Phase D — download all captured frames as JSON-Lines.
         if (rbConnState.wsFrames.length > 0) {
-            head.appendChild(_streamDownloadBtn('ws-frames', rbConnState.wsFrames, function (f) {
+            head.appendChild(_streamDownloadBtn('ws-frames', t('stream.wsFrames'), rbConnState.wsFrames, function (f) {
                 return { ts: f.ts, dir: f.dir, data: f.data };
             }));
         }
@@ -987,7 +992,7 @@
         if (rbConnState.wsFrames.length === 0) {
             pane.appendChild(el('div', {
                 className: 'bowire-response-empty',
-                textContent: 'No frames yet. Click Connect to open the socket.'
+                textContent: t('rbWs.noFrames')
             }));
             return pane;
         }
@@ -1025,11 +1030,15 @@
     // a single JSON array because tail-truncated downloads stay parseable
     // line-by-line (a half-written array is invalid JSON), and `jq -c`
     // streams it naturally.
-    function _streamDownloadBtn(kind, frames, mapper) {
+    // `kind` still names the file ('ws-frames-2026-09-10_12-00-00.jsonl'), so
+    // it stays an ASCII identifier. The visible label is passed in, because
+    // splitting an identifier on its hyphens is not a way to make English,
+    // let alone anything else.
+    function _streamDownloadBtn(kind, what, frames, mapper) {
         return el('button', {
             type: 'button',
             className: 'bowire-request-builder-stream-download-btn',
-            title: 'Download captured ' + kind.replace(/-/g, ' ') + ' as JSON-Lines',
+            title: t('stream.downloadTitle', { what: what }),
             innerHTML: typeof svgIcon === 'function' ? svgIcon('download') : '⬇',
             onClick: function () {
                 try {
@@ -1051,9 +1060,9 @@
                     setTimeout(function () {
                         try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch (_) {}
                     }, 0);
-                    if (typeof toast === 'function') toast('Saved ' + name, 'success');
+                    if (typeof toast === 'function') toast(t('stream.saved', { name: name }), 'success');
                 } catch (e) {
-                    if (typeof toast === 'function') toast('Download failed: ' + (e && e.message || e), 'error');
+                    if (typeof toast === 'function') toast(t('stream.downloadFailed', { reason: (e && e.message) || e }), 'error');
                 }
             }
         });
@@ -1062,16 +1071,16 @@
     function _renderMqttFrameLog() {
         var pane = el('div', { className: 'bowire-request-builder-response is-streaming' });
         var head = el('div', { className: 'bowire-pane-heading' });
-        head.appendChild(el('span', { textContent: 'Messages' }));
+        head.appendChild(el('span', { textContent: t('rbMqtt.messages') }));
         if (rbConnState.mqttSubscribed) {
             head.appendChild(el('span', {
                 className: 'bowire-request-builder-ws-state-chip is-open',
-                textContent: 'Subscribed'
+                textContent: t('rbMqtt.subscribedChip')
             }));
         }
         // #302 Phase D — download captured MQTT messages as JSON-Lines.
         if (rbConnState.mqttFrames.length > 0) {
-            head.appendChild(_streamDownloadBtn('mqtt-messages', rbConnState.mqttFrames, function (f) {
+            head.appendChild(_streamDownloadBtn('mqtt-messages', t('stream.mqttMessages'), rbConnState.mqttFrames, function (f) {
                 return { ts: f.ts, data: f.data, err: !!f.err };
             }));
         }
@@ -1116,16 +1125,16 @@
     function _renderSseEventLog() {
         var pane = el('div', { className: 'bowire-request-builder-response is-streaming' });
         var head = el('div', { className: 'bowire-pane-heading' });
-        head.appendChild(el('span', { textContent: 'Events' }));
+        head.appendChild(el('span', { textContent: t('rbSse.events') }));
         if (rbConnState.sseSource) {
             head.appendChild(el('span', {
                 className: 'bowire-request-builder-ws-state-chip is-open',
-                textContent: 'Connected'
+                textContent: t('channel.connected')
             }));
             head.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-request-builder-disconnect-btn',
-                textContent: 'Disconnect',
+                textContent: t('channel.disconnect'),
                 onClick: function () {
                     try { rbConnState.sseSource.close(); } catch (_) {}
                     rbConnState.sseSource = null;
@@ -1135,7 +1144,7 @@
         }
         // #302 Phase D — download captured SSE events as JSON-Lines.
         if (rbConnState.sseEvents.length > 0) {
-            head.appendChild(_streamDownloadBtn('sse-events', rbConnState.sseEvents, function (ev) {
+            head.appendChild(_streamDownloadBtn('sse-events', t('stream.sseEvents'), rbConnState.sseEvents, function (ev) {
                 return { ts: ev.ts, event: ev.event || 'message', data: ev.data };
             }));
         }
