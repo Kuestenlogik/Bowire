@@ -907,7 +907,7 @@
         var now = Date.now();
         var diff = Math.max(0, now - ts);
         var sec = Math.floor(diff / 1000);
-        if (sec < 60) return 'just now';
+        if (sec < 60) return t('common.justNow');
         var min = Math.floor(sec / 60);
         if (min < 60) return min + ' min ago';
         var hr = Math.floor(min / 60);

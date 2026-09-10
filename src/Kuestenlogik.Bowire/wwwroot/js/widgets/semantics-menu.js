@@ -373,7 +373,7 @@
 
     function bowireFormatDiscriminator(opts) {
         var d = opts.discriminator;
-        if (!d || d === '*') return 'this method';
+        if (!d || d === '*') return t('semantics.thisMethod');
         return '`' + d + '`';
     }
 

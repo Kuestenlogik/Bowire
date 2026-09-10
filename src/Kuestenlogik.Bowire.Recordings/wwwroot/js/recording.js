@@ -1732,7 +1732,7 @@ toast(t(steps.length === 1 ? 'rec.importedOne' : 'rec.importedMany',
                         confirmText: t('sidebar.renameShort'),
                         validator: function (val) {
                             var trimmed = String(val || '').trim();
-                            if (!trimmed) return 'Name required';
+                            if (!trimmed) return t('common.nameRequired');
                             return null;
                         }
                     }).then(function (next) {
@@ -2579,7 +2579,7 @@ toast(trashed(removed.length === 1 ? 'rec.movedToTrashOne' : 'rec.movedToTrashMa
                     isActive: rec.id === recordingActiveId,
                     reserveActiveSlot: true,
                     activeIcon: 'record',
-                    activeTitle: 'Recording',
+                    activeTitle: t('coverage.source.recording'),
                     onContextMenu: function (e) {
                         e.preventDefault();
                         e.stopPropagation();
@@ -2677,8 +2677,8 @@ toast(trashed(removed.length === 1 ? 'rec.movedToTrashOne' : 'rec.movedToTrashMa
         if (!activeWorkspaceId && typeof renderWorkspacePrereqEmpty === 'function') {
             recMain.appendChild(renderWorkspacePrereqEmpty({
                 icon: 'recording',
-                railLabel: 'Recordings',
-                railBody: 'Recordings capture a sequence of live calls you can replay, build mocks from, or run as benchmarks.'
+                railLabel: t('sidebar.recordings.title'),
+                railBody: t('rec.railBody')
             }));
             return recMain;
         }

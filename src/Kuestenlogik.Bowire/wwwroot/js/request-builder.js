@@ -1423,9 +1423,9 @@
             // fr._requestBuilder.formBody (lazy-init).
             if (!Array.isArray(fr._requestBuilder.formBody)) fr._requestBuilder.formBody = [];
             wrap.appendChild(_renderHoppKvTable(fr._requestBuilder.formBody, {
-                keyPlaceholder: 'Field',
-                valuePlaceholder: 'Value',
-                descPlaceholder: 'Description'
+                keyPlaceholder: t('rb.kv.field'),
+                valuePlaceholder: t('rb.kv.value'),
+                descPlaceholder: t('rb.kv.description')
             }));
         } else if (fr._requestBuilder.bodyMode === 'binary') {
             // Binary mode: file picker (browser-only). Snapshot the
@@ -1604,9 +1604,9 @@
             textContent: t('rb.vars.scratch')
         }));
         wrap.appendChild(_renderHoppKvTable(fr._requestBuilder.scratchVars, {
-            keyPlaceholder: 'Variable',
-            valuePlaceholder: 'Value',
-            descPlaceholder: 'Notes'
+            keyPlaceholder: t('env.variable'),
+            valuePlaceholder: t('rb.kv.value'),
+            descPlaceholder: t('rb.kv.notes')
         }));
         return wrap;
     }
@@ -2891,17 +2891,17 @@
         renderTab: function (fr, tabId) {
             switch (tabId) {
                 case 'parameter': return _renderHoppKvTable(fr._requestBuilder.params, {
-                    keyPlaceholder: 'Parameter', valuePlaceholder: 'Value', descPlaceholder: 'Description'
+                    keyPlaceholder: t('rb.tab.parameter'), valuePlaceholder: t('rb.kv.value'), descPlaceholder: t('rb.kv.description')
                 });
                 case 'header':    return _renderHoppKvTable(fr._requestBuilder.headers, {
                     headerLibrary: true,
-                    keyPlaceholder: 'Header', valuePlaceholder: 'Value', descPlaceholder: 'Description'
+                    keyPlaceholder: t('rb.tab.header'), valuePlaceholder: t('rb.kv.value'), descPlaceholder: t('rb.kv.description')
                 });
                 case 'body':      return _renderHoppBodyTab(fr);
                 default:          return _renderCommonTabBody(fr, tabId);
             }
         },
-        executeLabel: function () { return 'Execute'; },
+        executeLabel: function () { return t('main.execute'); },
         execute: function (fr) { return _executeRestRequest(fr); }
     });
 
@@ -2944,13 +2944,13 @@
                 case 'message':  return _renderGrpcMessageTab(fr, ps);
                 case 'metadata': return _renderHoppKvTable(ps.metadata, {
                     headerLibrary: true,
-                    keyPlaceholder: 'Metadata', valuePlaceholder: 'Value', descPlaceholder: 'Description'
+                    keyPlaceholder: t('rb.kv.metadata'), valuePlaceholder: t('rb.kv.value'), descPlaceholder: t('rb.kv.description')
                 });
                 case 'deadline': return _renderGrpcDeadlineTab(fr, ps);
                 default:         return _renderCommonTabBody(fr, tabId);
             }
         },
-        executeLabel: function () { return 'Execute'; },
+        executeLabel: function () { return t('main.execute'); },
         execute: function (fr) { return _executeGrpcRequest(fr); }
     });
 
@@ -2990,12 +2990,12 @@
                 case 'arguments': return _renderMcpArgumentsTab(fr, ps);
                 case 'headers':   return _renderHoppKvTable(ps.metadata, {
                     headerLibrary: true,
-                    keyPlaceholder: 'Header', valuePlaceholder: 'Value', descPlaceholder: 'Description'
+                    keyPlaceholder: t('rb.tab.header'), valuePlaceholder: t('rb.kv.value'), descPlaceholder: t('rb.kv.description')
                 });
                 default:          return _renderCommonTabBody(fr, tabId);
             }
         },
-        executeLabel: function () { return 'Execute'; },
+        executeLabel: function () { return t('main.execute'); },
         execute: function (fr) { return _executeMcpRequest(fr); }
     });
 
@@ -3044,7 +3044,7 @@
             if (ps.action === 'subscribe') {
                 return rbConnState.mqttSubscribed ? 'Unsubscribe' : 'Subscribe';  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
             }
-            return 'Publish';
+            return 'Publish';  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
         },
         execute: function (fr) { return _executeMqttRequest(fr); }
     });
@@ -3083,16 +3083,16 @@
                 case 'frame':   return _renderWsFrameTab(fr, ps);
                 case 'headers': return _renderHoppKvTable(ps.metadata, {
                     headerLibrary: true,
-                    keyPlaceholder: 'Header', valuePlaceholder: 'Value', descPlaceholder: 'Description'
+                    keyPlaceholder: t('rb.tab.header'), valuePlaceholder: t('rb.kv.value'), descPlaceholder: t('rb.kv.description')
                 });
                 default:        return _renderCommonTabBody(fr, tabId);
             }
         },
         executeLabel: function () {
-            if (rbConnState.wsSocket && rbConnState.wsState === 'open') return 'Send frame';
-            if (rbConnState.wsState === 'connecting')                   return 'Connecting…';
-            if (rbConnState.wsSocket)                                   return 'Disconnect';
-            return 'Connect';
+            if (rbConnState.wsSocket && rbConnState.wsState === 'open') return t('rb.ws.sendFrame');
+            if (rbConnState.wsState === 'connecting')                   return t('rb.ws.connecting');
+            if (rbConnState.wsSocket)                                   return t('channel.disconnect');
+            return t('channel.connect');
         },
         execute: function (fr) { return _executeWsRequest(fr); }
     });
@@ -3129,7 +3129,7 @@
             switch (tabId) {
                 case 'headers':   return _renderHoppKvTable(ps.metadata, {
                     headerLibrary: true,
-                    keyPlaceholder: 'Header', valuePlaceholder: 'Value', descPlaceholder: 'Description'
+                    keyPlaceholder: t('rb.tab.header'), valuePlaceholder: t('rb.kv.value'), descPlaceholder: t('rb.kv.description')
                 });
                 case 'reconnect': return _renderSseReconnectTab(fr, ps);
                 default:          return _renderCommonTabBody(fr, tabId);

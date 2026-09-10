@@ -345,8 +345,8 @@
             && typeof renderWorkspacePrereqEmpty === 'function') {
             pane.appendChild(renderWorkspacePrereqEmpty({
                 icon: 'mock',
-                railLabel: 'Mock servers',
-                railBody: 'Mock servers spin up a fake host from a recording so your client can hit a stable URL instead of the real service.'
+                railLabel: t('mocks.railLabel'),
+                railBody: t('mocks.railBody')
             }));
             return pane;
         }
@@ -360,7 +360,7 @@
                 wrap.appendChild(renderPresetsBar({
                     mode: 'mocks',
                     canSave: function () { return !!mockSelectedId; },
-                    canSaveHint: 'Select a mock first',
+                    canSaveHint: t('mocks.selectFirst'),
                     snapshot: function () {
                         var sel = (mocksList || []).find(function (m) { return m.mockId === mockSelectedId; });
                         return {

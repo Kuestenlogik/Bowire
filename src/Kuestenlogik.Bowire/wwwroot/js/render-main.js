@@ -2197,7 +2197,7 @@
                         bowirePrompt(t('sidebar.ws.duplicateName'), {
                             title: t('sidebar.ws.duplicateTitle'),
                             defaultValue: live.name + ' (copy)',
-                            okLabel: 'Duplicate'
+                            okLabel: t('common.duplicate')
                         }, function (newName) {
                             if (newName === null) return;
                             var fresh = duplicateWorkspace(live.id, newName);
@@ -3806,14 +3806,14 @@
                             confirmText: t('sidebar.renameShort'),
                             validator: function (val) {
                                 var trimmed = String(val || '').trim();
-                                if (!trimmed) return 'Name required';
+                                if (!trimmed) return t('common.nameRequired');
                                 if (trimmed.toLowerCase() === String(oldName || '').trim().toLowerCase()) return null;
                                 if (typeof _isEnvironmentNameTaken === 'function'
                                     && _isEnvironmentNameTaken(trimmed, envId)) {
                                     if (typeof toast === 'function') {
                                         toast(t('env.nameTaken', { name: trimmed }), 'error');
                                     }
-                                    return 'Duplicate';
+                                    return t('common.duplicate');
                                 }
                                 return null;
                             }
@@ -8324,7 +8324,7 @@
                 (tap.consumers ? ': ' + tap.consumers.join(', ') : '');
             case 'rejected': return 'Broker rejected a produce' +
                 (tap.reason ? ' — ' + tap.reason : '');
-            case 'rebalanced': return 'Consumer group finished rebalancing';
+            case 'rebalanced': return t('main.kafka.rebalanced');
             default: return tap.event;
         }
     }
@@ -8604,7 +8604,7 @@
             bytes = new Uint8Array(bin.length);
             for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
         } catch (e) {
-            return '(base64 decode failed)';
+            return t('main.base64Failed');
         }
         var out = [];
         for (var offset = 0; offset < bytes.length; offset += 16) {

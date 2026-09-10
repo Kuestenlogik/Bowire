@@ -1387,7 +1387,7 @@
                 },
                 dismissKey: 'bowire_ai_invoke_alert_dismissed',
                 permanentDismissKey: 'bowire_ai_invoke_alert_permanent',
-                dismissLabel: 'AI observe-only banner'
+                dismissLabel: t('ai.observeOnlyBanner')
             });
             if (alertBar) panel.appendChild(alertBar);
         }

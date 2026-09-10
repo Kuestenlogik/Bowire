@@ -69,6 +69,16 @@ const SLOT_NAMES = [
     'status', 'meta',
 ].join('|');
 
+// The list above names slots exactly, and that kept missing the ones a caller
+// invents: `valuePlaceholder`, `descPlaceholder`, `executeLabel`. Three English
+// words sat on Bowire's first screen while the report read zero, because none
+// of those names was on any list. So match the *shape* of a display slot as
+// well: any property whose name ends in one of these carries text for a person.
+const SLOT_SUFFIX = [
+    'Placeholder', 'Label', 'Title', 'Text', 'Hint', 'Message', 'Caption',
+    'Heading', 'Tooltip', 'Description', 'Summary', 'Body', 'Headline',
+].join('|');
+
 // The four detectors, in the order they were learnt.
 const PATTERNS = [
     // name: 'text' — the named slots, plus the quoted 'aria-label' form.
@@ -80,6 +90,12 @@ const PATTERNS = [
     // A module-private helper taking its label first: _fieldRow('Path pattern', …),
     // _interceptMetaCell('Latency', …). This is the family the slot list missed.
     new RegExp(String.raw`(?<![A-Za-z0-9_$.])_[A-Za-z][A-Za-z0-9_$]*\(\s*${STR}`, 'g'),
+    // A slot named by its suffix: valuePlaceholder, executeLabel, errorTitle.
+    new RegExp(String.raw`(?<![A-Za-z0-9_$])[a-z][A-Za-z0-9_$]*(?:${SLOT_SUFFIX})\s*:\s*${STR}`,
+        'g'),
+    // return 'Execute'; — a label handed back rather than assigned. The
+    // rejections below drop the machine strings this also sees.
+    new RegExp(String.raw`(?<![A-Za-z0-9_$.])return\s+${STR}\s*;`, 'g'),
     // cond ? 'this' : 'that' — a sentence chosen at run time.
     new RegExp(String.raw`\?\s*${STR}\s*:\s*${STR}`, 'g'),
     // node.textContent = 'text' — the same slots, written as an assignment
@@ -157,6 +173,60 @@ export function looksLikeProse(raw) {
 }
 
 /**
+ * Every prose literal in one fragment, with the line it starts on.
+ *
+ * The scan runs over the whole file rather than line by line. It used to go
+ * line by line, which is simpler and was wrong in a way that stayed hidden:
+ * `title:` at the end of one line and its string on the next never matched,
+ * so the topbar's "Nothing to undo (Ctrl/Cmd+Z)" was invisible to a report
+ * that said zero while the browser showed it. Matching across the newline
+ * finds it; the line number comes from the match offset.
+ */
+function scan({ file, text }) {
+    const lineStarts = [0];
+    for (let i = 0; i < text.length; i++) {
+        if (text[i] === '\n') lineStarts.push(i + 1);
+    }
+    const lineOf = (offset) => {
+        let lo = 0;
+        let hi = lineStarts.length - 1;
+        while (lo < hi) {
+            const mid = (lo + hi + 1) >> 1;
+            if (lineStarts[mid] <= offset) lo = mid;
+            else hi = mid - 1;
+        }
+        return lo;
+    };
+    const lines = text.split('\n');
+    const out = [];
+    const seen = new Set();
+    for (const pattern of PATTERNS) {
+        pattern.lastIndex = 0;
+        for (const m of text.matchAll(pattern)) {
+            for (let g = 1; g < m.length; g++) {
+                const group = m[g];
+                if (group === undefined || !looksLikeProse(group)) continue;
+                // The string's own offset, not the match's: a multi-line match
+                // must be blamed on the line the text sits on, so a reader can
+                // go straight there and an // i18n-exempt beside it counts.
+                const at = m.index + m[0].indexOf(`'${group}'`);
+                const idx = lineOf(at < m.index ? m.index : at);
+                const line = lines[idx] ?? '';
+                const trimmed = line.trimStart();
+                if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
+                if (EXEMPT.test(line)) continue;
+                const key = `${idx}:${g}:${group}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                out.push({ file, line: idx + 1, text: group });
+            }
+        }
+    }
+    out.sort((a, b) => a.line - b.line);
+    return out;
+}
+
+/**
  * Count the untranslated prose literals per fragment.
  *
  * @param {{file: string, text: string}[]} [sources]
@@ -164,46 +234,14 @@ export function looksLikeProse(raw) {
  */
 export function untranslatedCounts(sources = fragmentSources()) {
     const counts = {};
-    for (const { file, text } of sources) {
-        let n = 0;
-        for (const line of text.split('\n')) {
-            const trimmed = line.trimStart();
-            // Comments explain the code; they are not shipped to anyone.
-            if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
-            if (EXEMPT.test(line)) continue;
-            for (const pattern of PATTERNS) {
-                pattern.lastIndex = 0;
-                for (const m of line.matchAll(pattern)) {
-                    for (const group of m.slice(1)) {
-                        if (group !== undefined && looksLikeProse(group)) n++;
-                    }
-                }
-            }
-        }
-        if (n > 0) counts[file] = n;
+    for (const source of sources) {
+        const n = scan(source).length;
+        if (n > 0) counts[source.file] = n;
     }
     return counts;
 }
 
 /** The same scan, but keeping the line and the text — for the report. */
 export function untranslatedSites(sources = fragmentSources()) {
-    const out = [];
-    for (const { file, text } of sources) {
-        text.split('\n').forEach((line, i) => {
-            const trimmed = line.trimStart();
-            if (trimmed.startsWith('//') || trimmed.startsWith('*')) return;
-            if (EXEMPT.test(line)) return;
-            for (const pattern of PATTERNS) {
-                pattern.lastIndex = 0;
-                for (const m of line.matchAll(pattern)) {
-                    for (const group of m.slice(1)) {
-                        if (group !== undefined && looksLikeProse(group)) {
-                            out.push({ file, line: i + 1, text: group });
-                        }
-                    }
-                }
-            }
-        });
-    }
-    return out;
+    return sources.flatMap(scan);
 }

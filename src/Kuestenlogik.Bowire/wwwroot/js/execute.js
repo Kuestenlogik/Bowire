@@ -344,8 +344,8 @@
         if (type === 'request' || type === 'send') return 'request';
         if (type === 'stream') return 'stream';
         if (type === 'channel') return 'channel';
-        if (status === 'OK' || status === 'Completed' || status === 'Connected') return 'response ok';
-        if (status && status !== 'Streaming') return 'response warn';
+        if (status === 'OK' || status === 'Completed' || status === 'Connected') return 'response ok';  // i18n-exempt: a CSS class name
+        if (status && status !== 'Streaming') return 'response warn';  // i18n-exempt: a CSS class name
         return 'response';
     }
 

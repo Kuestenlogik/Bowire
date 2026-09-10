@@ -1751,12 +1751,12 @@
 
     function methodBadgeLabel(type) {
         switch (type) {
-            case 'Unary': return 'Unary';
-            case 'ServerStreaming': return 'Server Stream';
-            case 'ClientStreaming': return 'Client Stream';
-            case 'Duplex': return 'Duplex';
-            case 'asyncapi-send': return 'AsyncAPI Send';
-            case 'asyncapi-receive': return 'AsyncAPI Receive';
+            case 'Unary': return 'Unary';  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
+            case 'ServerStreaming': return 'Server Stream';  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
+            case 'ClientStreaming': return 'Client Stream';  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
+            case 'Duplex': return 'Duplex';  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
+            case 'asyncapi-send': return 'AsyncAPI Send';  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
+            case 'asyncapi-receive': return 'AsyncAPI Receive';  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
             default: return type;
         }
     }

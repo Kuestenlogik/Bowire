@@ -848,12 +848,12 @@
             confirmText: t('env.promptConfirm'),
             validator: function (val) {
                 var trimmed = String(val || '').trim();
-                if (!trimmed) return 'Name required';
+                if (!trimmed) return t('common.nameRequired');
                 if (_isEnvironmentNameTaken(trimmed)) {
                     if (typeof toast === 'function') {
                         toast(t('env.nameTaken', { name: trimmed }), 'error');
                     }
-                    return 'Duplicate';
+                    return t('common.duplicate');
                 }
                 return null;
             }

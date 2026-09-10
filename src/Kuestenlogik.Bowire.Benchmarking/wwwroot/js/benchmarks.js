@@ -389,7 +389,7 @@
     // statusLabel} so the phase-loop can aggregate uniformly regardless
     // of target type.
     async function _invokeBenchmarkTarget(target) {
-        if (!target) return { pass: false, durationMs: 0, statusLabel: 'NoTarget' };
+        if (!target) return { pass: false, durationMs: 0, statusLabel: 'NoTarget' };  // i18n-exempt: machine status label: the aggregation key for the run summary and written verbatim into the CSV, k6-summary and OTLP exports
 
         if (target.type === 'method') {
             var targetService = (typeof services !== 'undefined' ? services : []).find(function (s) {
@@ -400,7 +400,7 @@
                 targetService = selectedService;
             }
             if (!targetService) {
-                return { pass: false, durationMs: 0, statusLabel: 'MissingService' };
+                return { pass: false, durationMs: 0, statusLabel: 'MissingService' };  // i18n-exempt: machine status label: the aggregation key for the run summary and written verbatim into the CSV, k6-summary and OTLP exports
             }
             var bodyTpl = String(target.body || '{}');
             var metaTpl = target.metadata || {};
@@ -431,7 +431,7 @@
                 var result = await resp.json();
                 var elapsed = performance.now() - t0;
                 if (result.title) {
-                    return { pass: false, durationMs: elapsed, statusLabel: 'Error' };
+                    return { pass: false, durationMs: elapsed, statusLabel: 'Error' };  // i18n-exempt: machine status label: the aggregation key for the run summary and written verbatim into the CSV, k6-summary and OTLP exports
                 }
                 return {
                     pass: true,
@@ -442,7 +442,7 @@
                 return {
                     pass: false,
                     durationMs: performance.now() - t0,
-                    statusLabel: 'NetworkError'
+                    statusLabel: 'NetworkError'  // i18n-exempt: machine status label: the aggregation key for the run summary and written verbatim into the CSV, k6-summary and OTLP exports
                 };
             }
         }
@@ -450,9 +450,9 @@
         if (target.type === 'collection-ref') {
             var col = (typeof collectionsList !== 'undefined' ? collectionsList : [])
                 .find(function (c) { return c.id === target.collectionId; });
-            if (!col) return { pass: false, durationMs: 0, statusLabel: 'MissingCollection' };
+            if (!col) return { pass: false, durationMs: 0, statusLabel: 'MissingCollection' };  // i18n-exempt: machine status label: the aggregation key for the run summary and written verbatim into the CSV, k6-summary and OTLP exports
             if (typeof _runCollectionSession !== 'function') {
-                return { pass: false, durationMs: 0, statusLabel: 'NoSessionRunner' };
+                return { pass: false, durationMs: 0, statusLabel: 'NoSessionRunner' };  // i18n-exempt: machine status label: the aggregation key for the run summary and written verbatim into the CSV, k6-summary and OTLP exports
             }
             var tc = performance.now();
             try {
@@ -463,16 +463,16 @@
                     statusLabel: (rc && rc.pass) ? 'OK' : 'Error'  // i18n-exempt: status label, aggregated into statusCounts and written to the CSV, k6-summary and OTLP exports
                 };
             } catch {
-                return { pass: false, durationMs: performance.now() - tc, statusLabel: 'NetworkError' };
+                return { pass: false, durationMs: performance.now() - tc, statusLabel: 'NetworkError' };  // i18n-exempt: machine status label: the aggregation key for the run summary and written verbatim into the CSV, k6-summary and OTLP exports
             }
         }
 
         if (target.type === 'recording-ref') {
             var rec = (typeof recordingsList !== 'undefined' ? recordingsList : [])
                 .find(function (r) { return r.id === target.recordingId; });
-            if (!rec) return { pass: false, durationMs: 0, statusLabel: 'MissingRecording' };
+            if (!rec) return { pass: false, durationMs: 0, statusLabel: 'MissingRecording' };  // i18n-exempt: machine status label: the aggregation key for the run summary and written verbatim into the CSV, k6-summary and OTLP exports
             if (typeof _runRecordingSession !== 'function') {
-                return { pass: false, durationMs: 0, statusLabel: 'NoSessionRunner' };
+                return { pass: false, durationMs: 0, statusLabel: 'NoSessionRunner' };  // i18n-exempt: machine status label: the aggregation key for the run summary and written verbatim into the CSV, k6-summary and OTLP exports
             }
             var tr = performance.now();
             try {
@@ -483,7 +483,7 @@
                     statusLabel: (rr && rr.pass) ? 'OK' : 'Error'  // i18n-exempt: status label, aggregated into statusCounts and written to the CSV, k6-summary and OTLP exports
                 };
             } catch {
-                return { pass: false, durationMs: performance.now() - tr, statusLabel: 'NetworkError' };
+                return { pass: false, durationMs: performance.now() - tr, statusLabel: 'NetworkError' };  // i18n-exempt: machine status label: the aggregation key for the run summary and written verbatim into the CSV, k6-summary and OTLP exports
             }
         }
 
@@ -493,7 +493,7 @@
             // land in the rotation without a benchmark restart.
             var poolItems = _expandRandomPool(target);
             if (poolItems.length === 0) {
-                return { pass: false, durationMs: 0, statusLabel: 'EmptyPool' };
+                return { pass: false, durationMs: 0, statusLabel: 'EmptyPool' };  // i18n-exempt: machine status label: the aggregation key for the run summary and written verbatim into the CSV, k6-summary and OTLP exports
             }
             var picked = _pickRandomSubset(poolItems, target.count || 1);
             // Aggregate per-sub-pick — pass = all pass, durationMs =
@@ -523,7 +523,7 @@
             };
         }
 
-        return { pass: false, durationMs: 0, statusLabel: 'UnknownType' };
+        return { pass: false, durationMs: 0, statusLabel: 'UnknownType' };  // i18n-exempt: machine status label: the aggregation key for the run summary and written verbatim into the CSV, k6-summary and OTLP exports
     }
 
     // Build a stable, compact label for a target — used in per-iteration
@@ -557,7 +557,7 @@
     async function _runEnvelopeIteration(spec) {
         var targets = Array.isArray(spec.targets) ? spec.targets : [];
         if (targets.length === 0) {
-            return { pass: false, durationMs: 0, statusLabel: 'NoTargets', pickedLabels: [], targetHits: [] };
+            return { pass: false, durationMs: 0, statusLabel: 'NoTargets', pickedLabels: [], targetHits: [] };  // i18n-exempt: machine status label: the aggregation key for the run summary and written verbatim into the CSV, k6-summary and OTLP exports
         }
         function hitFromResult(target, r) {
             return {
@@ -1421,7 +1421,7 @@
                     isActive: isRunning,
                     reserveActiveSlot: true,
                     activeIcon: 'play',
-                    activeTitle: 'Running',
+                    activeTitle: t('common.runningTitle'),
                     tools: [
                         { icon: isRunning ? 'stop' : 'play', title: isRunning ? t('bench.stopRun') : t('bench.run'), onClick: runOrStop },
                         { icon: 'trash', title: t('bench.delete'), danger: true, onClick: deleteSpec }
@@ -2207,8 +2207,8 @@
             });
             prereqMain.appendChild(renderWorkspacePrereqEmpty({
                 icon: 'chart',
-                railLabel: 'Benchmarks',
-                railBody: 'Benchmarks repeat N runs at K concurrency and report latency percentiles plus status distribution.'
+                railLabel: t('rail.benchmarks'),
+                railBody: t('bench.railBody')
             }));
             return prereqMain;
         }

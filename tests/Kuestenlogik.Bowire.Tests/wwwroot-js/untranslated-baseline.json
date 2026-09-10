@@ -1,1 +1,26 @@
-{}
+{
+  "Kuestenlogik.Bowire.Benchmarking/wwwroot/js/benchmark-schedules.js": 2,
+  "Kuestenlogik.Bowire.Benchmarking/wwwroot/js/benchmarks.js": 7,
+  "Kuestenlogik.Bowire.Compose/wwwroot/js/compose-rail.js": 2,
+  "Kuestenlogik.Bowire.Flows/wwwroot/js/flows.js": 6,
+  "Kuestenlogik.Bowire.Mock/wwwroot/js/mocks.js": 4,
+  "Kuestenlogik.Bowire.Recordings/wwwroot/js/recording-correlation.js": 2,
+  "Kuestenlogik.Bowire.Recordings/wwwroot/js/recording.js": 7,
+  "Kuestenlogik.Bowire.Security.Scanner/wwwroot/js/security.js": 2,
+  "Kuestenlogik.Bowire/wwwroot/js/ai.js": 2,
+  "Kuestenlogik.Bowire/wwwroot/js/catalogue.js": 1,
+  "Kuestenlogik.Bowire/wwwroot/js/code-export.js": 1,
+  "Kuestenlogik.Bowire/wwwroot/js/collections.js": 1,
+  "Kuestenlogik.Bowire/wwwroot/js/execute.js": 4,
+  "Kuestenlogik.Bowire/wwwroot/js/perf-diff.js": 6,
+  "Kuestenlogik.Bowire/wwwroot/js/prologue.js": 2,
+  "Kuestenlogik.Bowire/wwwroot/js/render-env-auth.js": 21,
+  "Kuestenlogik.Bowire/wwwroot/js/render-main.js": 48,
+  "Kuestenlogik.Bowire/wwwroot/js/render-sidebar.js": 17,
+  "Kuestenlogik.Bowire/wwwroot/js/request-builder-protocols.js": 8,
+  "Kuestenlogik.Bowire/wwwroot/js/request-builder.js": 4,
+  "Kuestenlogik.Bowire/wwwroot/js/schema-changes.js": 2,
+  "Kuestenlogik.Bowire/wwwroot/js/settings.js": 17,
+  "Kuestenlogik.Bowire/wwwroot/js/user-migration.js": 1,
+  "Kuestenlogik.Bowire/wwwroot/js/widgets/semantics-menu.js": 2
+}

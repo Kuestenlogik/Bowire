@@ -78,7 +78,7 @@ function bowireFormatUntil(iso) {
     var when = new Date(iso);
     if (isNaN(when.getTime())) return null;
     var deltaMs = when.getTime() - Date.now();
-    if (deltaMs <= 0) return 'due now';
+    if (deltaMs <= 0) return t('bench.dueNow');
     var minutes = Math.round(deltaMs / 60000);
     if (minutes < 60) return 'in ' + minutes + 'm';
     var hours = Math.floor(minutes / 60);

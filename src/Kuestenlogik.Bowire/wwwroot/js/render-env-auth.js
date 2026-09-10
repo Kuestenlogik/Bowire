@@ -1688,9 +1688,9 @@
     }
 
     function _formatRelativeTime(ts) {
-        if (!ts) return 'just now';
+        if (!ts) return t('common.justNow');
         var diff = Date.now() - ts;
-        if (diff < 0 || diff < 30 * 1000) return 'just now';
+        if (diff < 0 || diff < 30 * 1000) return t('common.justNow');
         if (diff < 60 * 1000) return Math.floor(diff / 1000) + 's ago';
         if (diff < 60 * 60 * 1000) return Math.floor(diff / 60000) + 'm ago';
         if (diff < 24 * 60 * 60 * 1000) return Math.floor(diff / 3600000) + 'h ago';
@@ -1826,11 +1826,11 @@
                 badge: 'tab',
                 entries: tabs,
                 nameOf: function (e) {
-                    if (!e) return '(unknown tab)';
+                    if (!e) return t('activity.unknownTab');
                     if (e.methodKey && e.serviceKey) return e.serviceKey + ' · ' + e.methodKey;
                     if (e.methodKey) return e.methodKey;
                     if (e.serviceKey) return e.serviceKey;
-                    return '(unnamed tab)';
+                    return t('activity.unnamedTab');
                 },
                 onRestore: function (entry) {
                     if (typeof restoreClosedTab === 'function') {
@@ -1853,7 +1853,7 @@
                 badge: 'workspace',
                 entries: ws,
                 nameOf: function (e) {
-                    if (!e || !e.workspace) return '(unnamed workspace)';
+                    if (!e || !e.workspace) return t('activity.unnamedWorkspace');
                     return e.workspace.name || '(unnamed workspace)';
                 },
                 onRestore: function (entry) {
@@ -2252,7 +2252,7 @@
                     title: statusTitle,
                     'aria-label': statusTitle
                 }),
-                closeTitle: 'Close Assistant (Ctrl+Shift+A)',
+                closeTitle: t('topbar.closeAssistant'),
                 onClose: function () {
                     aiDrawerOpen = false;
                     try { localStorage.setItem('bowire_ai_drawer_open', '0'); } catch { /* ignore */ }
@@ -2297,7 +2297,7 @@
                         + (availCnt === 1 ? '' : 's'),
                     textContent: String(availCnt)
                 }) : null,
-                closeTitle: 'Close Activity',
+                closeTitle: t('topbar.closeActivity'),
                 onClose: function () {
                     activityDrawerOpen = false;
                     try { localStorage.setItem('bowire_activity_drawer_open', '0'); }
@@ -2319,7 +2319,7 @@
                 id: 'tests',
                 label: t('drawer.tests'),
                 accessory: testsAcc,
-                closeTitle: 'Close Tests',
+                closeTitle: t('topbar.closeTests'),
                 onClose: function () {
                     testsDrawerOpen = false;
                     try { localStorage.setItem('bowire_tests_drawer_open', '0'); } catch { /* ignore */ }
@@ -5225,14 +5225,14 @@
                                     confirmText: t('sidebar.renameShort'),
                                     validator: function (val) {
                                         var trimmed = String(val || '').trim();
-                                        if (!trimmed) return 'Name required';
+                                        if (!trimmed) return t('common.nameRequired');
                                         if (trimmed.toLowerCase() === String(oldName || '').trim().toLowerCase()) return null;
                                         if (typeof _isEnvironmentNameTaken === 'function'
                                             && _isEnvironmentNameTaken(trimmed, envId)) {
                                             if (typeof toast === 'function') {
                                                 toast(t('env.nameTaken', { name: trimmed }), 'error');
                                             }
-                                            return 'Duplicate';
+                                            return t('common.duplicate');
                                         }
                                         return null;
                                     }
@@ -5396,11 +5396,11 @@
         if (activeEnvHasAuth()) {
             var authLabel = (function () {
                 var a = activeEnv && activeEnv.auth;
-                if (!a) return 'Auth';
-                if (a.type === 'bearer') return 'Bearer';
-                if (a.type === 'basic')  return 'Basic';
-                if (a.type === 'apikey') return 'API Key';
-                return 'Auth';
+                if (!a) return 'Auth';  // i18n-exempt: the name of an authentication scheme
+                if (a.type === 'bearer') return 'Bearer';  // i18n-exempt: the name of an authentication scheme
+                if (a.type === 'basic')  return 'Basic';  // i18n-exempt: the name of an authentication scheme
+                if (a.type === 'apikey') return 'API Key';  // i18n-exempt: the name of an authentication scheme
+                return 'Auth';  // i18n-exempt: the name of an authentication scheme
             })();
             bar.appendChild(el('span', {
                 className: 'bowire-env-auth-badge',

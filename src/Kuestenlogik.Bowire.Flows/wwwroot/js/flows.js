@@ -1059,7 +1059,7 @@
             isActive: isRunning,
             reserveActiveSlot: true,
             activeIcon: 'play',
-            activeTitle: 'Running',
+            activeTitle: t('common.runningTitle'),
             onClick: openFlow,
             tools: [
                 { icon: 'copy', title: t('flows.duplicate'), onClick: dupFlow },
@@ -1101,8 +1101,8 @@
             var prereqWrap = el('div', { id: 'bowire-flow-canvas-prereq', className: 'bowire-flow-canvas' });
             prereqWrap.appendChild(renderWorkspacePrereqEmpty({
                 icon: 'flow',
-                railLabel: 'Flows',
-                railBody: 'Flows chain multiple API calls and pass response data from one step into the next.'
+                railLabel: t('rail.flows'),
+                railBody: t('flows.railBody')
             }));
             return prereqWrap;
         }

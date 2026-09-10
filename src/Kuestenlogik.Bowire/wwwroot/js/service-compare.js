@@ -281,7 +281,7 @@
     function _compareUrlKey(url) { return (typeof url === 'string' && url) ? url : '(embedded)'; }
 
     function compareUrlLabel(url) {
-        if (!url) return 'Embedded host';
+        if (!url) return t('compare.embeddedHost');
         if (typeof serverUrlAliases !== 'undefined' && serverUrlAliases[url]) return serverUrlAliases[url];
         return (typeof truncateMiddle === 'function') ? truncateMiddle(url, 42) : url;
     }

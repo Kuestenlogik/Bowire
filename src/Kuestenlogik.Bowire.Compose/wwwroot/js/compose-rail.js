@@ -310,7 +310,7 @@
     //   MQTT publish topic/foo                     →  'MQTT publish'
     //   Empty URL                                  →  'Untitled'
     function designTabTitle(tab) {
-        if (!tab || !tab.request) return 'Untitled';
+        if (!tab || !tab.request) return t('compose.untitled');
         var req = tab.request;
         var pid = (req._requestBuilder && req._requestBuilder.protocol) || req.protocol || 'rest';
         var url = (req.serverUrl || '').trim();
@@ -1311,8 +1311,8 @@
             var prereqCol = el('div', { className: 'bowire-compose-main-col' });
             prereqCol.appendChild(renderWorkspacePrereqEmpty({
                 icon: 'compose',
-                railLabel: 'Compose',
-                railBody: 'Compose is the ad-hoc request builder — type a URL, pick a method, hit Execute.'
+                railLabel: t('coverage.source.compose'),
+                railBody: t('compose.railBody')
             }));
             prereqMain.appendChild(prereqCol);
             return prereqMain;

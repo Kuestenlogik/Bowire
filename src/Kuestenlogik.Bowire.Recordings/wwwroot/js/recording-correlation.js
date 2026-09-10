@@ -573,12 +573,12 @@
     // honest reading: a step reached through a bridge is qualified
     // evidence, never as good as the key itself.
     function _correlationMatchClass(match) {
-        if (match === 'derived') return 'is-weak is-derived';
+        if (match === 'derived') return 'is-weak is-derived';  // i18n-exempt: a CSS class name
         return 'is-' + (match || 'none');
     }
 
     function _correlationInspectMatch(ev, model) {
-        if (!model.key) return 'no correlation key resolved';
+        if (!model.key) return t('corr.noKeyResolved');
         if (_correlationLinkOf(ev)) {
             return 'derived — ' + model.key.name + ' = ' + model.key.value + ' is not in this step';
         }
@@ -793,7 +793,7 @@
 
     function _fmtClock(originMs) {
         try { return new Date(Number(originMs)).toLocaleTimeString(); }
-        catch { return 'absolute timebase'; }
+        catch { return t('corr.absoluteTimebase'); }
     }
 
     // ---- Import a .bwr from disk ----

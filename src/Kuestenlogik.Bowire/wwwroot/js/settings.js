@@ -1285,8 +1285,8 @@
                     // pasted URL / path instead of a package id.
                     validator: function (v) {
                         var id = String(v || '').trim();
-                        if (!id) return 'Enter a package id.';
-                        if (/[\\/\s]/.test(id)) return 'That looks like a path or URL — enter the package id only.';
+                        if (!id) return t('settings.plugin.enterId');
+                        if (/[\\/\s]/.test(id)) return t('settings.plugin.notAPath');
                         return null;
                     }
                 })
@@ -1604,7 +1604,7 @@
         switch (providerId) {
             case 'openai': return 'https://api.openai.com/v1';
             case 'openrouter': return 'https://openrouter.ai/api/v1';
-            case 'anthropic': return '(SDK default — leave blank)';
+            case 'anthropic': return t('settings.ai.sdkDefault');
             case 'mcp': return 'http://localhost:3845/mcp or stdio:claude mcp serve';
             case 'lmstudio': return 'http://localhost:1234';
             default: return 'http://localhost:11434';
@@ -1612,21 +1612,21 @@
     }
     function endpointHelpFor(providerId) {
         switch (providerId) {
-            case 'openai': return 'OpenAI API base URL. Default api.openai.com/v1 covers chat-completions; an Azure / proxy deployment slots in by overriding the URL here.';
-            case 'openrouter': return 'OpenRouter base URL — same OpenAI-compatible wire shape against a single key that fronts dozens of models.';
-            case 'anthropic': return 'Leave blank to use the SDK\'s built-in endpoint. The Anthropic.SDK package handles the wire details.';
-            case 'mcp': return 'Either an absolute http(s) URL of the MCP host (Streamable HTTP or SSE) or a "stdio:<command>" string that Bowire will spawn as a child process. Bowire picks the first tool whose name reads as a chat / completion / sampling gateway.';
-            case 'lmstudio': return 'LM Studio listens on 127.0.0.1:1234 by default. Same Ollama-compatible wire shape.';
-            default: return 'Ollama listens on 127.0.0.1:11434 by default. Use a remote host for shared GPU servers.';
+            case 'openai': return t('settings.ai.hintOpenai');
+            case 'openrouter': return t('settings.ai.hintOpenrouter');
+            case 'anthropic': return 'Leave blank to use the SDK\'s built-in endpoint. The Anthropic.SDK package handles the wire details.';  // i18n-exempt: names the Anthropic SDK package that handles the wire
+            case 'mcp': return t('settings.ai.hintMcp');
+            case 'lmstudio': return t('settings.ai.hintLmstudio');
+            default: return t('settings.ai.hintOllama');
         }
     }
     function modelPlaceholderFor(providerId) {
         switch (providerId) {
             case 'openai': return 'gpt-4o-mini';
-            case 'openrouter': return 'anthropic/claude-3.5-sonnet';
+            case 'openrouter': return 'anthropic/claude-3.5-sonnet';  // i18n-exempt: a model id
             case 'anthropic': return 'claude-opus-4-7';
-            case 'mcp': return '(host-defined)';
-            default: return 'llama3.2:3b';
+            case 'mcp': return '(host-defined)';  // i18n-exempt: a host-defined value
+            default: return 'llama3.2:3b';  // i18n-exempt: a model id
         }
     }
     function renderAiPrivacyBanner(providerId) {

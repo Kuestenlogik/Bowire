@@ -6108,7 +6108,7 @@
             return verbPart;
         }
         if (lineage && lineage.sourceMethod) return 'cloned: ' + lineage.sourceMethod;
-        return 'untitled request';
+        return t('main.untitledRequest');
     }
 
     // Persist the current freeformRequest as an ad-hoc record. If

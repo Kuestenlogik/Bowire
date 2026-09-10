@@ -1099,7 +1099,7 @@
             isActive: isActive,
             reserveActiveSlot: true,
             activeIcon: 'check',
-            activeTitle: 'Active environment',
+            activeTitle: t('main.env.active'),
             onClick: function () { envSidebarSelectedId = envId; render(); },
             tools: [
                 isActive ? null : { icon: 'check', title: t('sidebar.envs.setActiveTitle'), onClick: activate },
@@ -2529,7 +2529,7 @@
             onTitleClick: function () {
                 if (typeof _goToWorkspacesOverview === 'function') _goToWorkspacesOverview();
             },
-            titleClickTitle: 'Open Workspaces overview',
+            titleClickTitle: t('sidebar.openWorkspaces'),
             overflow: overviewOverflow,
             primary: {
                 icon: 'plus',
@@ -2667,14 +2667,14 @@
                     confirmText: t('sidebar.renameShort'),
                     validator: function (val) {
                         var trimmed = String(val || '').trim();
-                        if (!trimmed) return 'Name required';
+                        if (!trimmed) return t('common.nameRequired');
                         if (trimmed.toLowerCase() === String(oldName || '').trim().toLowerCase()) return null;
                         if (typeof _isWorkspaceNameTaken === 'function'
                             && _isWorkspaceNameTaken(trimmed, wsId)) {
                             if (typeof toast === 'function') {
                                 toast(t('workspace.nameTaken', { name: trimmed }), 'error');
                             }
-                            return 'Duplicate';
+                            return t('common.duplicate');
                         }
                         return null;
                     }
@@ -2958,7 +2958,7 @@
             // the indicator; node.onAdd drives the activate-button
             // on inactive rows — same slot, two visual modes.
             isActive: isActive,
-            activeTitle: 'Active workspace',
+            activeTitle: t('main.ws.active'),
             onAdd: !isActive ? function () {
                 switchWorkspace(w.id);
             } : null,
@@ -3061,7 +3061,7 @@
             onAdd: function () {
                 _quickAddUrlToWorkspace(w);
             },
-            addTitle: 'Add URL or schema',
+            addTitle: t('sidebar.sources.addUrlOrSchema'),
             onContext: function (ev) {
                 // #537 — openTreeSubContextMenu skips null entries, so the
                 // catalogue items can be expressed inline. They only show
@@ -3183,7 +3183,7 @@
                 persistWorkspaceTreeExpanded();
                 render();
             },
-            addTitle: 'New collection',
+            addTitle: t('sidebar.collections.new'),
             onContext: function (ev) {
                 openTreeSubContextMenu(ev, [
                     {
@@ -3287,7 +3287,7 @@
                     render();
                 }
             },
-            addTitle: 'Start recording',
+            addTitle: t('sidebar.recordings.start'),
             onContext: function (ev) {
                 openTreeSubContextMenu(ev, [
                     {
@@ -3406,7 +3406,7 @@
                     render();
                 });
             },
-            addTitle: 'New environment',
+            addTitle: t('sidebar.envs.new'),
             onContext: function (ev) {
                 openTreeSubContextMenu(ev, [
                     {

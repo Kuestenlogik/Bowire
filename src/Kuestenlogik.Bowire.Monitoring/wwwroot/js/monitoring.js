@@ -159,7 +159,7 @@
                 monitoringDetail = null;
                 render();
             } : undefined,
-            titleClickTitle: 'Back to the probe overview',
+            titleClickTitle: t('monitoring.backToOverview'),
             actions: [
                 { icon: 'repeat', title: t('monitoring.refreshNow'), onClick: function () { refreshMonitoring(); } }
             ]

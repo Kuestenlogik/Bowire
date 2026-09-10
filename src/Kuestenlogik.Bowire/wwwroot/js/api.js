@@ -1195,7 +1195,7 @@
                 safeRecordMethodRun({
                     service: service, method: method, source: 'discover',
                     startedAt: Date.now() - elapsed, durationMs: elapsed,
-                    outcome: 'error', errorMessage: 'Stream error'
+                    outcome: 'error', errorMessage: t('main.streamErrorShort')
                 });
             }
             addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: 'Stream error occurred', durationMs: elapsed });  // i18n-exempt: the action log stores rendered text, see #689
