@@ -425,7 +425,7 @@
             row.appendChild(label);
             row.appendChild(el('span', {
                 className: 'bowire-schema-changes-row-meta',
-                textContent: isFinite(t) ? _schemaChangeAge(t, nowMs) : ''
+                textContent: isFinite(ms) ? _schemaChangeAge(ms, nowMs) : ''
             }));
             list.appendChild(row);
         });

@@ -497,8 +497,8 @@
                 try { _runMigrationFromUi(); } catch (err) {
                     console.error('[vars-deprecation] migrate-now failed', err);
                 }
-                t.classList.add('bowire-toast-out');
-                setTimeout(function () { t.remove(); }, 200);
+                nudge.classList.add('bowire-toast-out');
+                setTimeout(function () { nudge.remove(); }, 200);
             }
         });
 
@@ -508,16 +508,16 @@
             onClick: function (e) {
                 e.stopPropagation();
                 snoozeLegacyVarsToast();
-                t.classList.add('bowire-toast-out');
-                setTimeout(function () { t.remove(); }, 200);
+                nudge.classList.add('bowire-toast-out');
+                setTimeout(function () { nudge.remove(); }, 200);
             }
         });
 
         if (closeBtn) {
-            t.insertBefore(migrateBtn, closeBtn);
-            t.insertBefore(snoozeBtn, closeBtn);
+            nudge.insertBefore(migrateBtn, closeBtn);
+            nudge.insertBefore(snoozeBtn, closeBtn);
         } else {
-            t.appendChild(migrateBtn);
-            t.appendChild(snoozeBtn);
+            nudge.appendChild(migrateBtn);
+            nudge.appendChild(snoozeBtn);
         }
     }

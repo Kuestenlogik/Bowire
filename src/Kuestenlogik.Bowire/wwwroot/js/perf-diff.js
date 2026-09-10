@@ -95,11 +95,11 @@
     function jsonKindOf(v) {
         if (v === null || v === undefined) return 'null';
         if (Array.isArray(v)) return 'array';
-        var t = typeof v;
-        if (t === 'object') return 'object';
-        if (t === 'boolean') return 'boolean';
-        if (t === 'number') return 'number';
-        if (t === 'string') return 'string';
+        var kind = typeof v;
+        if (kind === 'object') return 'object';
+        if (kind === 'boolean') return 'boolean';
+        if (kind === 'number') return 'number';
+        if (kind === 'string') return 'string';
         return 'value';
     }
 
@@ -239,7 +239,7 @@
         // Config row
         var configRow = el('div', { className: 'bowire-perf-config' });
 
-        var nLabel = el('label', { className: 'bowire-perf-label', textContent: 'Calls' });
+        var nLabel = el('label', { className: 'bowire-perf-label', textContent: t('bench.calls') });
         var nInput = el('input', {
             id: 'bowire-perf-calls-input',
             className: 'bowire-perf-input',
@@ -254,7 +254,7 @@
             }
         });
 
-        var cLabel = el('label', { className: 'bowire-perf-label', textContent: 'Concurrency' });
+        var cLabel = el('label', { className: 'bowire-perf-label', textContent: t('bench.concurrency') });
         var cInput = el('input', {
             id: 'bowire-perf-concurrency-input',
             className: 'bowire-perf-input',
@@ -274,14 +274,14 @@
             runBtn = el('button', {
                 id: 'bowire-perf-stop-btn',
                 className: 'bowire-perf-stop',
-                textContent: 'Stop',
+                textContent: t('bench.stop'),
                 onClick: stopBenchmark
             });
         } else {
             runBtn = el('button', {
                 id: 'bowire-perf-run-btn',
                 className: 'bowire-perf-run',
-                textContent: 'Run benchmark',
+                textContent: t('bench.run'),
                 onClick: function () {
                     var nVal = parseInt(nInput.value, 10) || 100;
                     var cVal = parseInt(cInput.value, 10) || 1;
@@ -296,7 +296,7 @@
         body.appendChild(configRow);
 
         body.appendChild(el('div', { className: 'bowire-perf-hint',
-            textContent: 'Repeats the current request body and metadata using the active environment + auth helper. {{runtime.now}}, {{runtime.uuid}} and other system variables regenerate per call.' }));
+            textContent: t('bench.hint') }));
 
         // Progress bar
         if (benchmark.running || benchmark.completed > 0) {
@@ -346,7 +346,7 @@
             // Status code distribution
             if (Object.keys(benchmark.statusCounts).length > 0) {
                 var dist = el('div', { className: 'bowire-perf-statuses' });
-                dist.appendChild(el('div', { className: 'bowire-perf-section-title', textContent: 'Status distribution' }));
+                dist.appendChild(el('div', { className: 'bowire-perf-section-title', textContent: t('bench.statusDistribution') }));
                 var distGrid = el('div', { className: 'bowire-perf-status-grid' });
                 for (var status in benchmark.statusCounts) {
                     if (Object.prototype.hasOwnProperty.call(benchmark.statusCounts, status)) {
@@ -361,16 +361,16 @@
             }
 
             // Charts
-            body.appendChild(el('div', { className: 'bowire-perf-section-title', textContent: 'Latency histogram' }));
+            body.appendChild(el('div', { className: 'bowire-perf-section-title', textContent: t('bench.histogram') }));
             body.appendChild(renderHistogram(benchmark.durations, stats));
 
-            body.appendChild(el('div', { className: 'bowire-perf-section-title', textContent: 'Latency over time' }));
+            body.appendChild(el('div', { className: 'bowire-perf-section-title', textContent: t('bench.overTime') }));
             body.appendChild(renderTimeline(benchmark.durations, stats));
         } else if (!benchmark.running && benchmark.completed === 0) {
             body.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding: 40px' },
                 el('div', { className: 'bowire-empty-icon', innerHTML: svgIcon('clock') }),
-                el('div', { className: 'bowire-empty-title', textContent: 'No benchmark yet' }),
-                el('div', { className: 'bowire-empty-desc', textContent: 'Configure the request body in the Body tab, then click Run benchmark to measure latency.' })
+                el('div', { className: 'bowire-empty-title', textContent: t('bench.emptyTitle') }),
+                el('div', { className: 'bowire-empty-desc', textContent: t('bench.emptyDesc') })
             ));
         }
 
@@ -391,7 +391,7 @@
         var BUCKETS = 24;
 
         if (durations.length === 0) {
-            return el('div', { className: 'bowire-perf-empty', textContent: 'No data' });
+            return el('div', { className: 'bowire-perf-empty', textContent: t('bench.noData') });
         }
 
         // Bucket the durations linearly between min and max
@@ -450,7 +450,7 @@
         var chartH = H - PAD_T - PAD_B;
 
         if (durations.length === 0) {
-            return el('div', { className: 'bowire-perf-empty', textContent: 'No data' });
+            return el('div', { className: 'bowire-perf-empty', textContent: t('bench.noData') });
         }
 
         var n = durations.length;
@@ -517,11 +517,11 @@
                 var connectBtn = el('button', {
                     id: 'bowire-channel-connect-btn',
                     className: 'bowire-execute-btn bowire-connect-btn',
-                    title: 'Connect (Ctrl+Enter)',
+                    title: t('channel.connectTitle'),
                     onClick: channelConnect
                 },
                     el('span', { innerHTML: svgIcon('connect'), style: 'width:14px;height:14px;display:flex' }),
-                    el('span', { textContent: 'Connect' })
+                    el('span', { textContent: t('channel.connect') })
                 );
                 bar.appendChild(connectBtn);
             } else {
@@ -529,11 +529,11 @@
                 var sendBtn = el('button', {
                     id: 'bowire-channel-send-btn',
                     className: 'bowire-execute-btn bowire-send-btn',
-                    title: 'Send (Ctrl+Enter)',
+                    title: t('channel.sendTitle'),
                     onClick: channelSend
                 },
                     el('span', { innerHTML: svgIcon('send'), style: 'width:14px;height:14px;display:flex' }),
-                    el('span', { textContent: 'Send' })
+                    el('span', { textContent: t('channel.send') })
                 );
                 bar.appendChild(sendBtn);
 
@@ -546,7 +546,7 @@
                         style: 'margin-left: 8px'
                     },
                         el('span', { innerHTML: svgIcon('stop'), style: 'width:14px;height:14px;display:flex' }),
-                        el('span', { textContent: 'Close & Get Response' })
+                        el('span', { textContent: t('channel.closeAndGet') })
                     );
                     bar.appendChild(closeBtn);
                 } else {
@@ -558,7 +558,7 @@
                         style: 'margin-left: 8px'
                     },
                         el('span', { innerHTML: svgIcon('disconnect'), style: 'width:14px;height:14px;display:flex' }),
-                        el('span', { textContent: 'Disconnect' })
+                        el('span', { textContent: t('channel.disconnect') })
                     );
                     bar.appendChild(disconnectBtn);
                 }
@@ -571,7 +571,7 @@
                 if (statusInfo.status === 'Connected') {
                     statusBar.appendChild(el('div', { className: 'bowire-status-item bowire-streaming-indicator' },
                         el('span', { className: 'bowire-pulse-dot' }),
-                        el('span', { textContent: 'Connected' })
+                        el('span', { textContent: t('channel.connected') })
                     ));
                 } else {
                     var statusDot = grpcStatusClass(statusInfo.status);
@@ -685,7 +685,7 @@
         const caret = el('button', {
             id: 'bowire-action-execute-caret-btn',
             className: 'bowire-execute-btn bowire-split-btn-caret',
-            title: 'More run options',
+            title: t('execute.moreOptions'),
             'aria-haspopup': 'menu',
             onClick: function (e) {
                 e.stopPropagation();
@@ -721,7 +721,7 @@
                     }
                 },
                     el('span', { className: 'bowire-action-execute-menu-icon', innerHTML: svgIcon('lightning') }),
-                    el('span', { textContent: 'Run as benchmark…' })
+                    el('span', { textContent: t('execute.asBenchmark') })
                 ));
                 var presetList = (typeof loadPresets === 'function')
                     ? loadPresets('discover').filter(function (p) {
@@ -736,8 +736,8 @@
                     className: 'bowire-action-execute-menu-item' + (hasPresets ? '' : ' is-disabled'),
                     disabled: hasPresets ? undefined : true,
                     title: hasPresets
-                        ? 'Pick a saved preset, apply it, then execute'
-                        : 'No presets defined for this method',
+                        ? t('execute.withPresetTitle')
+                        : t('execute.noPresets'),
                     onClick: function () {
                         menu.remove();
                         if (!hasPresets) return;
@@ -749,7 +749,7 @@
                     }
                 },
                     el('span', { className: 'bowire-action-execute-menu-icon', innerHTML: svgIcon('preset') }),
-                    el('span', { textContent: 'Run with preset…' })
+                    el('span', { textContent: t('execute.withPreset') })
                 ));
 
                 // #245 — "As new request" clones the current request
@@ -830,7 +830,7 @@
                     }
                 },
                     el('span', { className: 'bowire-action-execute-menu-icon', innerHTML: svgIcon('layers') }),
-                    el('span', { textContent: 'As new request…' })
+                    el('span', { textContent: t('execute.asNewRequest') })
                 ));
 
                 document.body.appendChild(menu);
@@ -876,7 +876,7 @@
                     el('button', {
                         id: 'bowire-transcoding-grpc-btn',
                         className: 'bowire-toggle-btn' + (currentMode === 'grpc' ? ' is-active' : ''),
-                        title: 'Invoke via gRPC (native binary protocol)',
+                        title: t('transcoding.grpcTitle'),
                         onClick: function () {
                             setTranscodingMode(selectedService.name, selectedMethod.name, 'grpc');
                             render();
@@ -886,7 +886,9 @@
                     el('button', {
                         id: 'bowire-transcoding-http-btn',
                         className: 'bowire-toggle-btn' + (currentMode === 'http' ? ' is-active' : ''),
-                        title: 'Invoke via HTTP transcoding (' + selectedMethod.httpMethod + ' ' + selectedMethod.httpPath + ')',
+                        title: t('transcoding.httpTitle', {
+                            verb: selectedMethod.httpMethod, path: selectedMethod.httpPath
+                        }),
                         onClick: function () {
                             setTranscodingMode(selectedService.name, selectedMethod.name, 'http');
                             render();
@@ -898,8 +900,7 @@
                 // REST plugin not installed — read-only badge with the HTTP info
                 bar.appendChild(el('div', {
                     className: 'bowire-transcoding-info',
-                    title: 'This method has a google.api.http transcoding annotation. '
-                        + 'Install the REST plugin (Kuestenlogik.Bowire.Protocol.Rest) to invoke it via HTTP.'
+                    title: t('transcoding.needsRest')
                 },
                     el('span', { className: 'bowire-transcoding-info-verb', textContent: selectedMethod.httpMethod }),
                     el('span', { className: 'bowire-transcoding-info-path', textContent: selectedMethod.httpPath })
@@ -914,7 +915,7 @@
             if (statusInfo.status === 'Streaming') {
                 statusBar.appendChild(el('div', { className: 'bowire-status-item bowire-streaming-indicator' },
                     el('span', { className: 'bowire-pulse-dot' }),
-                    el('span', { textContent: 'Streaming' })
+                    el('span', { textContent: t('channel.streaming') })
                 ));
             } else {
                 const statusDot = grpcStatusClass(statusInfo.status);
@@ -985,13 +986,13 @@
             },
                 el('span', { className: 'bowire-run-preset-item-name', textContent: preset.name || 'Untitled' }),
                 preset.isDefault
-                    ? el('span', { className: 'bowire-run-preset-item-tag', textContent: 'default' })
+                    ? el('span', { className: 'bowire-run-preset-item-tag', textContent: t('presets.defaultTag') })
                     : null
             ));
         });
         var cancelBtn = el('button', {
             className: 'bowire-confirm-btn cancel',
-            textContent: 'Cancel',
+            textContent: t('common.cancel'),
             onClick: function () { overlay.remove(); }
         });
         var dialog = el('div', {
@@ -1000,8 +1001,10 @@
             'aria-modal': 'true',
             'aria-labelledby': 'bowire-run-preset-title'
         },
-            el('div', { id: 'bowire-run-preset-title', className: 'bowire-confirm-title', textContent: 'Run with preset' }),
-            el('div', { className: 'bowire-confirm-message', textContent: 'Pick a saved preset for ' + selectedMethod.name + '. The body and headers are applied, then the request is sent.' }),
+            el('div', { id: 'bowire-run-preset-title', className: 'bowire-confirm-title',
+                textContent: t('execute.runPresetHeading') }),
+            el('div', { className: 'bowire-confirm-message',
+                textContent: t('execute.runPresetMessage', { method: selectedMethod.name }) }),
             list,
             el('div', { className: 'bowire-confirm-actions' }, cancelBtn)
         );
@@ -1026,11 +1029,11 @@
         return el('button', {
             id: 'bowire-console-toggle-btn',
             className: 'bowire-console-toggle' + (consoleOpen ? ' active' : ''),
-            title: 'Toggle Console (chronological log of every request and response)',
+            title: t('console.toggleTitle'),
             onClick: toggleConsole
         },
             el('span', { innerHTML: svgIcon('clock'), className: 'bowire-console-toggle-icon' }),
-            el('span', { textContent: 'Console' }),
+            el('span', { textContent: t('console.label') }),
             consoleLog.length > 0
                 ? el('span', { className: 'bowire-console-toggle-count', textContent: String(consoleLog.length) })
                 : null

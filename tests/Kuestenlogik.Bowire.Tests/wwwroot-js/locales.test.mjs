@@ -324,6 +324,36 @@ test('no fragment both shadows t and calls it', () => {
         `a fragment that calls t() must not bind the name t:\n  ${offenders.join('\n  ')}`);
 });
 
+test('no fragment reads t as a value', () => {
+    // The shadow check above catches the declaration. It does not catch what
+    // happens next: rename `var t = typeof v` to `var kind = typeof v` and
+    // miss the `if (t === 'object')` three lines down, and the comparison is
+    // now against the translator function. Always false, no error, nothing to
+    // see — and in prologue.js that exact slip would have stopped the
+    // secret-redaction walker from descending into objects at all.
+    //
+    // In a file that translates, `t` is a function and the only legitimate
+    // thing to do with it is call it. Any other reading of the bare name is a
+    // leftover.
+    const CALLS_T = /(?<![A-Za-z0-9_$.])t\(\s*['"]/;
+    // A bare `t` not followed by `(`, and not part of a longer name. The
+    // lookbehind carries the typographic apostrophe as well as the plain one:
+    // UI copy is full of "don’t" and "can’t", and U+2019 is a different
+    // character from U+0027.
+    const READS_T = /(?<![A-Za-z0-9_$.'"`’])t(?![A-Za-z0-9_$(])/;
+
+    const offenders = [];
+    for (const { file, text } of fragmentSources()) {
+        if (!CALLS_T.test(text)) continue;
+        text.split('\n').forEach((line, i) => {
+            const code = line.split('//')[0];
+            if (READS_T.test(code)) offenders.push(`${file}:${i + 1}: ${line.trim()}`);
+        });
+    }
+    assert.deepEqual(offenders, [],
+        `t is a function; these read it as a value:\n  ${offenders.join('\n  ')}`);
+});
+
 // ---- tNodes ----
 //
 // The alternative this exists to avoid: a `viewingAsPrefix` key and a
