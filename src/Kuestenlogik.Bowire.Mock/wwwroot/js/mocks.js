@@ -67,7 +67,9 @@
             })
         }).then(function (r) {
             if (!r.ok) {
-                return r.json().catch(function () { return { title: 'Mock start failed (' + r.status + ')' }; })
+                return r.json().catch(function () {
+    return { title: t('mocks.startFailedStatus', { status: r.status }) };
+})
                     .then(function (err) { throw new Error(problemTitle(err, 'Mock start failed')); });
             }
             return r.json();
@@ -97,22 +99,22 @@
                 var recSnapshot = JSON.parse(JSON.stringify(rec));
                 var summaryId = summary.mockId;
                 var summaryPort = port || 0;
-                toast('Created mock "' + _mockName + '" on port ' + summary.port, 'success', {
+                toast(t('mocks.created', { name: _mockName, port: summary.port }), 'success', {
                     undo: function () { stopMock(summaryId); },
                     logAction: {
                         kind: 'mock-create',
                         rail: 'mocks',
-                        title: 'Created mock "' + _mockName + '"',
+                        title: 'Created mock "' + _mockName + '"',  // i18n-exempt: the action log stores rendered text, see #689
                         undoSpec: { mockId: summaryId, recording: recSnapshot, port: summaryPort },
                         redo: function () { startMockFromRecording(recSnapshot, summaryPort, true); }
                     }
                 });
             } else if (typeof toast === 'function') {
-                toast('Mock running on port ' + summary.port, 'success');
+                toast(t('mocks.runningOnPort', { port: summary.port }), 'success');
             }
             return summary;
         }).catch(function (err) {
-            toast(err.message || 'Mock start failed', 'error');
+            toast(err.message || t('mocks.startFailed'), 'error');
             throw err;
         });
     }
@@ -123,11 +125,11 @@
     // artifact so the refinement editors (#561) have a target.
     function startMockFromSchema(schemaKind, schemaInline, port) {
         if (!schemaKind) {
-            if (typeof toast === 'function') toast('Pick a schema kind', 'error');
+            if (typeof toast === 'function') toast(t('mocks.pickSchemaKind'), 'error');
             return Promise.reject(new Error('Pick a schema kind'));
         }
         if (!schemaInline || !schemaInline.trim()) {
-            if (typeof toast === 'function') toast('Paste a schema first', 'error');
+            if (typeof toast === 'function') toast(t('mocks.pasteSchemaFirst'), 'error');
             return Promise.reject(new Error('Paste a schema first'));
         }
         return fetch(config.prefix + '/api/mocks', {
@@ -136,7 +138,9 @@
             body: JSON.stringify({ schemaKind: schemaKind, schemaInline: schemaInline, port: port || 0 })
         }).then(function (r) {
             if (!r.ok) {
-                return r.json().catch(function () { return { title: 'Schema mock start failed (' + r.status + ')' }; })
+                return r.json().catch(function () {
+    return { title: t('mocks.schemaStartFailedStatus', { status: r.status }) };
+})
                     .then(function (err) { throw new Error(problemTitle(err, 'Schema mock start failed')); });
             }
             return r.json();
@@ -154,7 +158,7 @@
             schemaMockDraft.text = '';
             if (typeof toast === 'function') {
                 var startedId = summary.mockId;
-                toast('Schema mock running on port ' + summary.port, 'success', {
+                toast(t('mocks.schemaRunningOnPort', { port: summary.port }), 'success', {
                     undo: function () { stopMock(startedId); }
                 });
             }
@@ -282,7 +286,7 @@
             style: 'margin-bottom:16px;padding:12px;border:1px solid var(--bowire-border-subtle);border-radius:8px'
         });
         var head = el('div', { style: 'display:flex;align-items:center;gap:8px;cursor:pointer' },
-            el('span', { className: 'bowire-sources-section', style: 'margin:0', textContent: 'Start a schema mock' }),
+            el('span', { className: 'bowire-sources-section', style: 'margin:0', textContent: t('mocks.startSchemaMock') }),
             el('span', { className: 'bowire-home-section-count', textContent: schemaMockDraft.open ? 'hide' : 'new' })
         );
         head.onclick = function () { schemaMockDraft.open = !schemaMockDraft.open; render(); };
@@ -291,15 +295,15 @@
 
         card.appendChild(el('p', {
             className: 'bowire-sources-hint',
-            textContent: 'Spin up a mock straight from a schema — no recording needed. Paste an OpenAPI document or a GraphQL SDL, then Start.'
+            textContent: t('mocks.startSchemaMockBody')
         }));
 
         var kindSel = el('select', {
             className: 'bowire-mocks-schema-kind',
             style: 'margin:4px 0 8px;padding:4px'
         },
-            el('option', { value: 'openapi', textContent: 'OpenAPI (YAML / JSON)' }),
-            el('option', { value: 'graphql', textContent: 'GraphQL (SDL)' })
+            el('option', { value: 'openapi', textContent: t('mocks.kindOpenapi') }),
+            el('option', { value: 'graphql', textContent: t('mocks.kindGraphql') })
         );
         kindSel.value = schemaMockDraft.kind;
         kindSel.onchange = function () { schemaMockDraft.kind = kindSel.value; };
@@ -307,7 +311,7 @@
         var ta = el('textarea', {
             className: 'bowire-mocks-schema-input',
             rows: 7,
-            placeholder: 'Paste your OpenAPI document or GraphQL SDL…',
+            placeholder: t('mocks.schemaPlaceholder'),
             style: 'width:100%;box-sizing:border-box;font-family:var(--bowire-font-mono);font-size:12px'
         });
         ta.value = schemaMockDraft.text;
@@ -316,7 +320,7 @@
         var startBtn = el('button', {
             className: 'bowire-empty-card-action',
             style: 'margin-top:8px',
-            textContent: 'Start mock'
+            textContent: t('mocks.startMock')
         });
         startBtn.onclick = function () {
             // Rejection already surfaced a toast inside startMockFromSchema;
@@ -325,7 +329,7 @@
         };
 
         card.appendChild(el('label', { className: 'bowire-mocks-schema-field', style: 'display:block' },
-            el('span', { style: 'display:block;font-size:12px;margin-bottom:2px', textContent: 'Schema kind' }),
+            el('span', { style: 'display:block;font-size:12px;margin-bottom:2px', textContent: t('mocks.schemaKind') }),
             kindSel));
         card.appendChild(ta);
         card.appendChild(startBtn);
@@ -395,13 +399,13 @@
         if (!selected) {
             wrap.appendChild(renderEmptyCard({
                 icon: 'mock',
-                headline: hasAny ? 'Pick a mock server' : 'No mock servers running',
+                headline: hasAny ? t('mocks.pickOne') : t('intercept.noMockServers'),
                 body: hasAny
                     ? 'Pick a running mock from the sidebar to see its URL, live request log, and stop control.'
                     : 'Mock servers are standalone replay hosts. Start one from a schema with "Start a schema mock" above (no recording needed), or switch to the Recordings rail and use "Run as mock" on a captured session. Looking for one-line response substitution inside the proxy / middleware pipeline? Use this rail’s Live overrides sub-tab.',
                 actions: hasAny ? [] : [
                     {
-                        label: 'Go to Recordings',
+                        label: t('mocks.goToRecordings'),
                         primary: true,
                         onClick: function () {
                             railMode = 'recordings';
@@ -411,7 +415,7 @@
                     },
                     {
                         id: 'bowire-mocks-empty-tour-btn',
-                        label: 'Take a tour',
+                        label: t('common.takeTour'),
                         onClick: function () {
                             if (typeof window !== 'undefined'
                                 && typeof window.bowireStartBuildMockTour === 'function') {
@@ -432,18 +436,20 @@
         }));
         wrap.appendChild(el('p', {
             className: 'bowire-sources-subtitle',
-            textContent: 'Mock host on port ' + selected.port + ' · started ' + (selected.startedAt || 'unknown')
+            textContent: t('mocks.hostSubtitle', {
+    port: selected.port, started: selected.startedAt || t('mocks.unknown')
+})
         }));
 
         var urlCard = el('div', { className: 'bowire-mocks-url-card' });
         urlCard.appendChild(el('code', { className: 'bowire-mocks-url', textContent: url }));
         urlCard.appendChild(el('button', {
             className: 'bowire-empty-card-action',
-            textContent: 'Copy URL',
+            textContent: t('mocks.copyUrl'),
             onClick: function () {
                 if (navigator.clipboard) {
                     navigator.clipboard.writeText(url).then(function () {
-                        toast('Mock URL copied: ' + url, 'success');
+                        toast(t('rec.mockUrlCopied', { url: url }), 'success');
                     });
                 }
             }
@@ -453,7 +459,7 @@
             href: url,
             target: '_blank',
             rel: 'noopener',
-            textContent: 'Open in tab'
+            textContent: t('mocks.openInTab')
         }));
         // R3a — Intercept → Mock servers detail → Discover transition.
         // Add the mock's loopback URL to the active workspace's sources
@@ -463,8 +469,8 @@
         // auto-add helper) so discovery kicks off exactly the same way.
         urlCard.appendChild(el('button', {
             className: 'bowire-empty-card-action',
-            textContent: 'Discover against this mock',
-            title: 'Add this mock URL to the active workspace and jump to the Discover rail',
+            textContent: t('mocks.discoverAgainst'),
+            title: t('mocks.discoverAgainstTitle'),
             onClick: function () {
                 try {
                     if (typeof serverUrls !== 'undefined'
@@ -495,7 +501,7 @@
         }));
         urlCard.appendChild(el('button', {
             className: 'bowire-empty-card-action bowire-recording-action-danger',
-            textContent: 'Stop mock',
+            textContent: t('mocks.stopMock'),
             onClick: function () {
                 stopMock(selected.mockId);
             }
@@ -506,11 +512,14 @@
         var logOpen = mockLogOpenFor === selected.mockId;
         var logSt = mockLogState[selected.mockId] || { total: 0, entries: [] };
         logCard.appendChild(el('div', { className: 'bowire-sources-section', style: 'display:flex;align-items:center;gap:8px' },
-            el('span', { textContent: 'Live request log' }),
-            el('span', { className: 'bowire-home-section-count', textContent: logSt.total + ' request' + (logSt.total === 1 ? '' : 's') }),
+            el('span', { textContent: t('mocks.requestLog') }),
+            // #688 - one message, two shapes.
+el('span', { className: 'bowire-home-section-count',
+    textContent: t(logSt.total === 1 ? 'mocks.requestCountOne'
+        : 'mocks.requestCountMany', { count: logSt.total }) }),
             el('button', {
                 className: 'bowire-empty-card-action',
-                textContent: logOpen ? 'Pause polling' : 'Start polling',
+                textContent: logOpen ? t('mocks.pausePolling') : t('mocks.startPolling'),
                 onClick: function () {
                     if (mockLogOpenFor === selected.mockId) {
                         mockLogOpenFor = null;
@@ -527,7 +536,7 @@
             if (!logSt.entries.length) {
                 logCard.appendChild(el('p', {
                     className: 'bowire-sources-hint',
-                    textContent: 'No requests yet. Fire one against ' + url + ' and it shows up here.'
+                    textContent: t('mocks.noRequestsYet', { url: url })
                 }));
             } else {
                 var ul = el('ul', { className: 'bowire-mocks-log-list', style: 'margin:8px 0 0;padding:0;list-style:none' });
@@ -542,7 +551,7 @@
                     if (e.fault) {
                         li.appendChild(el('span', {
                             className: 'bowire-mocks-log-fault',
-                            title: 'Injected fault',
+                            title: t('mocks.injectedFault'),
                             textContent: ' ⚡ ' + e.fault
                         }));
                     }
@@ -704,7 +713,7 @@
             if (r && !r.ok) return r.json().catch(function () { return { error: 'Apply failed (' + r.status + ')' }; })
                 .then(function (e) { throw new Error(e.error || 'Apply failed'); });
             st.dirty = false; st.error = '';
-            if (typeof toast === 'function') toast('Mock configuration applied', 'success');
+            if (typeof toast === 'function') toast(t('mocks.configApplied'), 'success');
             render();
         }).catch(function (err) { st.error = err.message || String(err); render(); });
     }
@@ -728,30 +737,35 @@
     }
 
     function cfgRemoveBtn(onClick) {
-        var b = el('button', { className: 'bowire-empty-card-action bowire-recording-action-danger', textContent: 'Remove' });
+        var b = el('button', { className: 'bowire-empty-card-action bowire-recording-action-danger', textContent: t('sidebar.removeConfirm') });
         b.onclick = onClick;
         return b;
     }
 
     function cfgActions(st, mockId, onAdd, addLabel) {
         var actions = el('div', { style: 'display:flex;gap:8px;margin-top:10px;align-items:center' });
-        var addBtn = el('button', { className: 'bowire-empty-card-action', textContent: '+ Add ' + addLabel });
+        var addBtn = el('button', { className: 'bowire-empty-card-action',
+    textContent: t('mocks.addLabel', { what: addLabel }) });
         addBtn.onclick = onAdd;
         actions.appendChild(addBtn);
         // Always clickable — an in-place field edit sets dirty WITHOUT a render,
         // so a disabled-when-clean button would strand the edit.
-        var applyBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: 'Apply' });
+        var applyBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: t('mocks.apply') });
         applyBtn.onclick = function () { applyMockConfig(mockId); };
         actions.appendChild(applyBtn);
-        if (st.dirty) actions.appendChild(el('span', { className: 'bowire-sources-hint', textContent: 'unsaved changes' }));
+        if (st.dirty) actions.appendChild(el('span', { className: 'bowire-sources-hint', textContent: t('mocks.unsaved') }));
         return actions;
     }
 
     function cfgCardHead(title, count, unit, isOpen, onToggle) {
         return el('div', { className: 'bowire-sources-section', style: 'display:flex;align-items:center;gap:8px' },
             el('span', { textContent: title }),
-            el('span', { className: 'bowire-home-section-count', textContent: count + ' ' + unit + (count === 1 ? '' : 's') }),
-            (function () { var b = el('button', { className: 'bowire-empty-card-action', textContent: isOpen ? 'Hide' : 'Edit' }); b.onclick = onToggle; return b; })()
+            // #688 - one message, two shapes. `unit` is already a translated noun,
+// singular and plural, so the caller picks the shape and this only
+// joins it to the number.
+el('span', { className: 'bowire-home-section-count',
+    textContent: t('mocks.countUnit', { count: count, unit: unit }) }),
+            (function () { var b = el('button', { className: 'bowire-empty-card-action', textContent: isOpen ? t('mocks.hide') : t('mocks.edit') }); b.onclick = onToggle; return b; })()
         );
     }
 
@@ -765,26 +779,28 @@
     }
     function restOnlyNotice() {
         return el('p', { className: 'bowire-sources-hint',
-            textContent: 'Response overrides and conditional rules apply to REST (OpenAPI) schema mocks. This mock uses a different schema kind.' });
+            textContent: t('mocks.restOnly') });
     }
     function markDirty(st) { st.dirty = true; }
 
     function renderOverridesCard(selected) {
         var st = mockConfigState(selected.mockId);
         var card = el('div', { className: 'bowire-mocks-log-card', style: 'margin-top:16px' });
-        card.appendChild(cfgCardHead('Response overrides', st.config.fieldOverrides.length, 'field', st.overridesOpen, function () {
+        card.appendChild(cfgCardHead(t('mocks.overrides'), st.config.fieldOverrides.length,
+    t(st.config.fieldOverrides.length === 1 ? 'mocks.unitFieldOne'
+        : 'mocks.unitFieldMany'), st.overridesOpen, function () {
             st.overridesOpen = !st.overridesOpen;
             if (st.overridesOpen && !st.loaded) loadMockConfig(selected.mockId).then(render);
             render();
         }));
         if (!st.overridesOpen) return card;
-        if (!st.loaded) { card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: 'Loading…' })); return card; }
+        if (!st.loaded) { card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: t('settings.loading') })); return card; }
         if (!isRestConfig(st)) { card.appendChild(restOnlyNotice()); return card; }
         if (st.error) card.appendChild(el('p', { className: 'bowire-sources-hint', style: 'color:var(--bowire-danger)', textContent: st.error }));
         card.appendChild(el('p', { className: 'bowire-sources-hint',
-            textContent: 'Override individual response field values by (service, method) and JSON path. Applies live to the REST schema mock.' }));
+            textContent: t('mocks.overridesBody') }));
         if (!st.config.fieldOverrides.length) {
-            card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: 'No overrides — the mock serves the schema-generated response.' }));
+            card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: t('mocks.noOverrides') }));
         } else {
             st.config.fieldOverrides.forEach(function (ov) { card.appendChild(renderOverrideRow(st, ridOf(ov))); });
         }
@@ -809,19 +825,21 @@
     function renderRulesCard(selected) {
         var st = mockConfigState(selected.mockId);
         var card = el('div', { className: 'bowire-mocks-log-card', style: 'margin-top:16px' });
-        card.appendChild(cfgCardHead('Conditional rules', st.config.conditionalRules.length, 'rule', st.rulesOpen, function () {
+        card.appendChild(cfgCardHead(t('mocks.rules'), st.config.conditionalRules.length,
+    t(st.config.conditionalRules.length === 1 ? 'mocks.unitRuleOne'
+        : 'mocks.unitRuleMany'), st.rulesOpen, function () {
             st.rulesOpen = !st.rulesOpen;
             if (st.rulesOpen && !st.loaded) loadMockConfig(selected.mockId).then(render);
             render();
         }));
         if (!st.rulesOpen) return card;
-        if (!st.loaded) { card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: 'Loading…' })); return card; }
+        if (!st.loaded) { card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: t('settings.loading') })); return card; }
         if (!isRestConfig(st)) { card.appendChild(restOnlyNotice()); return card; }
         if (st.error) card.appendChild(el('p', { className: 'bowire-sources-hint', style: 'color:var(--bowire-danger)', textContent: st.error }));
         card.appendChild(el('p', { className: 'bowire-sources-hint',
-            textContent: 'When a request to (service, method) matches a body predicate, serve a response variant instead of the default. Distinct from fault injection — a real response, chosen by a higher-priority match.' }));
+            textContent: t('mocks.rulesBody') }));
         if (!st.config.conditionalRules.length) {
-            card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: 'No conditional rules — every request gets the default (overridden) response.' }));
+            card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: t('mocks.noRules') }));
         } else {
             st.config.conditionalRules.forEach(function (rule) { card.appendChild(renderRuleRow(st, ridOf(rule))); });
         }
@@ -835,7 +853,7 @@
     var RULE_OPS = [
         { value: 'equals', label: 'equals' },
         { value: 'contains', label: 'contains' },
-        { value: 'matches', label: 'matches (regex)' }
+        { value: 'matches', label: t('mocks.opMatches') }
     ];
     function currentRuleOp(when) { when = when || {}; return when.matches != null ? 'matches' : (when.contains != null ? 'contains' : 'equals'); }
 
@@ -871,27 +889,27 @@
 
     // ---------- #562 require-auth toggle ----------
     var AUTH_SCHEMES = [
-        { value: 'bearer', label: 'Bearer token' },
-        { value: 'apikey', label: 'API key' },
-        { value: 'basic', label: 'Basic' }
+        { value: 'bearer', label: t('mocks.authBearer') },
+        { value: 'apikey', label: t('mocks.authApiKey') },
+        { value: 'basic', label: t('mocks.authBasic') }
     ];
 
     function renderAuthCard(selected) {
         var st = mockConfigState(selected.mockId);
         var auth = st.config.auth || (st.config.auth = {});
         var card = el('div', { className: 'bowire-mocks-log-card', style: 'margin-top:16px' });
-        var toggleBtn = el('button', { className: 'bowire-empty-card-action', textContent: st.authOpen ? 'Hide' : 'Edit' });
+        var toggleBtn = el('button', { className: 'bowire-empty-card-action', textContent: st.authOpen ? t('mocks.hide') : t('mocks.edit') });
         toggleBtn.onclick = function () {
             st.authOpen = !st.authOpen;
             if (st.authOpen && !st.loaded) loadMockConfig(selected.mockId).then(render);
             render();
         };
         card.appendChild(el('div', { className: 'bowire-sources-section', style: 'display:flex;align-items:center;gap:8px' },
-            el('span', { textContent: 'Authentication' }),
+            el('span', { textContent: t('mocks.auth') }),
             el('span', { className: 'bowire-home-section-count', textContent: auth.required ? 'required' : 'open' }),
             toggleBtn));
         if (!st.authOpen) return card;
-        if (!st.loaded) { card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: 'Loading…' })); return card; }
+        if (!st.loaded) { card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: t('settings.loading') })); return card; }
         if (st.error) card.appendChild(el('p', { className: 'bowire-sources-hint', style: 'color:var(--bowire-danger)', textContent: st.error }));
 
         var reqLabel = el('label', { style: 'display:flex;align-items:center;gap:6px;margin:4px 0' });
@@ -899,7 +917,7 @@
         reqCheck.checked = !!auth.required;
         reqCheck.onchange = function () { st.config.auth.required = reqCheck.checked; markDirty(st); render(); };
         reqLabel.appendChild(reqCheck);
-        reqLabel.appendChild(el('span', { textContent: 'Require authentication — 401 before replay without a valid credential' }));
+        reqLabel.appendChild(el('span', { textContent: t('mocks.requireAuth') }));
         card.appendChild(reqLabel);
 
         if (auth.required) {
@@ -911,7 +929,7 @@
                 loadAuthRecordings().then(function (list) { st.authRecordings = list; render(); });
             }
             var recs = Array.isArray(st.authRecordings) ? st.authRecordings : [];
-            var recOpts = [{ value: '', label: 'Inline credential' }];
+            var recOpts = [{ value: '', label: t('mocks.inlineCredential') }];
             var listed = false;
             recs.forEach(function (r) {
                 recOpts.push({ value: r.id, label: r.name || r.id });
@@ -921,7 +939,7 @@
             if (auth.authRecordingId && !listed) recOpts.push({ value: auth.authRecordingId, label: auth.authRecordingId });
 
             var recRow = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0' });
-            recRow.appendChild(el('span', { className: 'bowire-sources-hint', textContent: 'Credential source' }));
+            recRow.appendChild(el('span', { className: 'bowire-sources-hint', textContent: t('mocks.credentialSource') }));
             recRow.appendChild(faultSelect(auth.authRecordingId || '', recOpts, function (v) {
                 st.config.auth.authRecordingId = v || null;
                 // Selecting a recording clears any stale inline credential so the
@@ -930,7 +948,7 @@
                 markDirty(st); render();
             }));
             // #563 — create/remove recordings inline (CLI/UI/MCP parity: same store).
-            var newBtn = el('button', { className: 'bowire-empty-card-action', textContent: st.newRecOpen ? 'Cancel' : '+ New recording' });
+            var newBtn = el('button', { className: 'bowire-empty-card-action', textContent: st.newRecOpen ? t('common.cancel') : t('mocks.newRecording') });
             newBtn.onclick = function () {
                 st.newRecOpen = !st.newRecOpen;
                 if (st.newRecOpen && !st.newRec) st.newRec = { id: '', name: '', scheme: 'bearer', header: '', credential: '' };
@@ -965,18 +983,18 @@
                 topRow.appendChild(faultSelect(nr.scheme || 'bearer', AUTH_SCHEMES, function (v) { nr.scheme = v; }));
                 topRow.appendChild(cfgInput(nr.header, 'header (default Authorization)', function (v) { nr.header = v; }));
                 topRow.appendChild(faultSelect(nr.mode || 'static',
-                    [{ value: 'static', label: 'Static credential' }, { value: 'flow', label: 'From auth flow' }],
+                    [{ value: 'static', label: t('mocks.credStatic') }, { value: 'flow', label: t('mocks.credFlow') }],
                     function (v) { nr.mode = v; render(); }));
                 form.appendChild(topRow);
 
                 if ((nr.mode || 'static') === 'flow') {
                     var ta = el('textarea', { className: 'bowire-flow-field-input',
-                        placeholder: 'auth-flow definition JSON — Bowire runs it (outbound HTTP) and stores the captured token',
+                        placeholder: t('mocks.authFlowPlaceholder'),
                         style: 'min-height:80px;font-family:monospace' });
                     ta.value = nr.flow || '';
                     ta.oninput = function () { nr.flow = ta.value; };
                     form.appendChild(ta);
-                    var flowBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: 'Run flow & capture' });
+                    var flowBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: t('mocks.runFlowCapture') });
                     flowBtn.onclick = function () {
                         if (!nr.id || !nr.flow) { st.error = 'A flow capture needs an id and the flow JSON.'; render(); return; }
                         captureAuthRecordingFromFlow(nr.id, nr.name, nr.flow).then(onCaptured)
@@ -986,7 +1004,7 @@
                 } else {
                     var credRow = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center' });
                     credRow.appendChild(cfgInput(nr.credential, 'credential (stored locally)', function (v) { nr.credential = v; }));
-                    var saveRecBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: 'Save recording' });
+                    var saveRecBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: t('mocks.saveRecording') });
                     saveRecBtn.onclick = function () {
                         if (!nr.id || !nr.credential) { st.error = 'A recording needs an id and a credential.'; render(); return; }
                         saveAuthRecording(nr).then(onCaptured).catch(function (e) { st.error = e.message || 'Save failed'; render(); });
@@ -1012,10 +1030,10 @@
         }
 
         var actions = el('div', { style: 'display:flex;gap:8px;margin-top:10px;align-items:center' });
-        var applyBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: 'Apply' });
+        var applyBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: t('mocks.apply') });
         applyBtn.onclick = function () { applyMockConfig(selected.mockId); };
         actions.appendChild(applyBtn);
-        if (st.dirty) actions.appendChild(el('span', { className: 'bowire-sources-hint', textContent: 'unsaved changes' }));
+        if (st.dirty) actions.appendChild(el('span', { className: 'bowire-sources-hint', textContent: t('mocks.unsaved') }));
         card.appendChild(actions);
         return card;
     }
@@ -1025,16 +1043,16 @@
     // Human descriptions of the fault kinds, kept in sync with the C#
     // FaultKind enum (kebab-case-lower on the wire).
     var FAULT_KINDS = [
-        { value: 'latency-only',     label: 'Latency only' },
-        { value: 'error',            label: 'Error (short-circuit)' },
-        { value: 'partial-response', label: 'Partial response' },
-        { value: 'connection-drop',  label: 'Connection drop' }
+        { value: 'latency-only',     label: t('mocks.faultLatency') },
+        { value: 'error',            label: t('mocks.faultError') },
+        { value: 'partial-response', label: t('mocks.faultPartial') },
+        { value: 'connection-drop',  label: t('mocks.faultDrop') }
     ];
     var FAULT_DISTS = [
-        { value: 'fixed',       label: 'Fixed' },
-        { value: 'uniform',     label: 'Uniform range' },
-        { value: 'normal',      label: 'Normal (mean/stddev)' },
-        { value: 'exponential', label: 'Exponential (mean)' }
+        { value: 'fixed',       label: t('mocks.distFixed') },
+        { value: 'uniform',     label: t('mocks.distUniform') },
+        { value: 'normal',      label: t('mocks.distNormal') },
+        { value: 'exponential', label: t('mocks.distExponential') }
     ];
 
     function faultState(mockId) {
@@ -1067,7 +1085,7 @@
             }
             st.dirty = false;
             st.error = '';
-            toast('Fault rules applied to running mock', 'success');
+            toast(t('mocks.faultsApplied'), 'success');
             render();
         }).catch(function (err) {
             st.error = err.message || String(err);
@@ -1085,11 +1103,11 @@
 
         var activeCount = st.rules.filter(function (r) { return r.enabled !== false; }).length;
         card.appendChild(el('div', { className: 'bowire-sources-section', style: 'display:flex;align-items:center;gap:8px' },
-            el('span', { textContent: 'Fault injection' }),
+            el('span', { textContent: t('mocks.faultInjection') }),
             el('span', { className: 'bowire-home-section-count', textContent: activeCount + ' rule' + (activeCount === 1 ? '' : 's') }),
             el('button', {
                 className: 'bowire-empty-card-action',
-                textContent: st.open ? 'Hide' : 'Edit',
+                textContent: st.open ? t('mocks.hide') : t('mocks.edit'),
                 onClick: function () {
                     st.open = !st.open;
                     if (st.open && !st.loaded) { loadFaults(selected.mockId).then(render); }
@@ -1101,7 +1119,7 @@
         if (!st.open) return card;
 
         if (!st.loaded) {
-            card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: 'Loading rules…' }));
+            card.appendChild(el('p', { className: 'bowire-sources-hint', textContent: t('mocks.loadingRules') }));
             return card;
         }
 
@@ -1111,7 +1129,7 @@
 
         if (!st.rules.length) {
             card.appendChild(el('p', { className: 'bowire-sources-hint',
-                textContent: 'No fault rules — the mock replays faithfully. Add a rule to inject latency, errors, or truncated responses.' }));
+                textContent: t('mocks.noFaultRules') }));
         } else {
             st.rules.forEach(function (rule, idx) {
                 card.appendChild(renderFaultRule(selected.mockId, rule, idx));
@@ -1121,7 +1139,7 @@
         var actions = el('div', { style: 'display:flex;gap:8px;margin-top:10px;align-items:center' });
         actions.appendChild(el('button', {
             className: 'bowire-empty-card-action',
-            textContent: '+ Add rule',
+            textContent: t('mocks.addRule'),
             onClick: function () {
                 st.rules.push({ method: '*', kind: 'error', rate: 1.0, errorStatusCode: 503, partialBytes: 1024 });
                 st.dirty = true;
@@ -1130,7 +1148,7 @@
         }));
         var applyBtn = el('button', {
             className: 'bowire-empty-card-action bowire-empty-card-action-primary',
-            textContent: st.dirty ? 'Apply changes' : 'Applied',
+            textContent: st.dirty ? t('mocks.applyChanges') : t('mocks.applied'),
             onClick: function () { if (st.dirty) saveFaults(selected.mockId); }
         });
         if (!st.dirty) applyBtn.disabled = true;
@@ -1164,18 +1182,18 @@
 
         var head = el('div', { className: 'bowire-mocks-fault-head' });
         var enabledBox = el('input', {
-            type: 'checkbox', checked: rule.enabled !== false ? 'checked' : undefined, title: 'Enabled',
+            type: 'checkbox', checked: rule.enabled !== false ? 'checked' : undefined, title: t('mocks.enabled'),
             onChange: function (e) { rule.enabled = e.target.checked; mark(); render(); }
         });
         head.appendChild(enabledBox);
         head.appendChild(el('input', {
-            type: 'text', className: 'bowire-flow-field-input', style: 'flex:1', placeholder: 'Service/Method glob (e.g. UserService/*)',
+            type: 'text', className: 'bowire-flow-field-input', style: 'flex:1', placeholder: t('mocks.globPlaceholder'),
             value: rule.method || '*', spellcheck: 'false',
             onInput: function (e) { rule.method = e.target.value; mark(); }
         }));
         head.appendChild(faultSelect(rule.kind || 'error', FAULT_KINDS, function (v) { rule.kind = v; mark(); render(); }));
         head.appendChild(el('button', {
-            className: 'bowire-flow-card-action-btn', title: 'Remove rule', innerHTML: svgIcon('trash'),
+            className: 'bowire-flow-card-action-btn', title: t('mocks.removeRule'), innerHTML: svgIcon('trash'),
             onClick: function () { st.rules.splice(idx, 1); mark(); render(); }
         }));
         row.appendChild(head);
@@ -1194,7 +1212,7 @@
         // Latency shape — available on every kind.
         var lat = rule.latency || null;
         var latDist = lat ? lat.distribution : 'none';
-        opts.appendChild(labelled('Latency', faultSelect(latDist, [{ value: 'none', label: 'None' }].concat(FAULT_DISTS), function (v) {
+        opts.appendChild(labelled(t('mocks.latency'), faultSelect(latDist, [{ value: 'none', label: t('rb.auth.none') }].concat(FAULT_DISTS), function (v) {
             if (v === 'none') { rule.latency = null; }
             else if (v === 'fixed') { rule.latency = { distribution: 'fixed', valueMs: 200 }; }
             else if (v === 'uniform') { rule.latency = { distribution: 'uniform', minMs: 100, maxMs: 500 }; }
