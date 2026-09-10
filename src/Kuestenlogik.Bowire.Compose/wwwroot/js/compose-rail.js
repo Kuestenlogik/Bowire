@@ -119,8 +119,8 @@
     function persistDesignTabs() {
         try {
             var data = {
-                tabs: composeTabs.map(function (t) {
-                    var req = t.request || {};
+                tabs: composeTabs.map(function (tab) {
+                    var req = tab.request || {};
                     var rb = req._requestBuilder || {};
                     // Shallow clone so the original keeps its live File ref.
                     var rbClone = Object.assign({}, rb);
@@ -129,7 +129,7 @@
                     // #295 Phase D — origin persists with the tab so the
                     // badge survives a reload. Defaults to 'fresh' for
                     // legacy persisted tabs that pre-date the field.
-                    return { id: t.id, request: reqClone, origin: t.origin || { kind: 'fresh' } };
+                    return { id: tab.id, request: reqClone, origin: tab.origin || { kind: 'fresh' } };
                 }),
                 active: activeDesignTabId,
             };
@@ -157,21 +157,21 @@
         if (!data || !Array.isArray(data.tabs) || data.tabs.length === 0) return;
         var seenIds = Object.create(null);
         for (var i = 0; i < data.tabs.length; i++) {
-            var t = data.tabs[i];
-            if (!t || !t.request) continue;
-            if (seenIds[t.id]) continue;
-            seenIds[t.id] = true;
+            var tab = data.tabs[i];
+            if (!tab || !tab.request) continue;
+            if (seenIds[tab.id]) continue;
+            seenIds[tab.id] = true;
             // Re-stamp the _requestBuilder shape — the persisted version may
             // be a few migrations behind; ensureHoppState normalises it.
             try {
-                if (typeof ensureHoppState === 'function') ensureHoppState(t.request);
+                if (typeof ensureHoppState === 'function') ensureHoppState(tab.request);
             } catch (_) { /* leave shape as-is */ }
             composeTabs.push({
-                id: t.id,
-                request: t.request,
-                origin: t.origin || { kind: 'fresh' }
+                id: tab.id,
+                request: tab.request,
+                origin: tab.origin || { kind: 'fresh' }
             });
-            var n = (t.id.match(/^design_(\d+)$/) || [])[1];
+            var n = (tab.id.match(/^design_(\d+)$/) || [])[1];
             if (n) {
                 var num = parseInt(n, 10);
                 if (num > _designTabIdCounter) _designTabIdCounter = num;
@@ -198,7 +198,7 @@
         // in freeformRequest land back on the source's tab.request
         // before we clone.
         _snapshotActiveDesignTab();
-        var srcIdx = composeTabs.findIndex(function (t) { return t.id === srcId; });
+        var srcIdx = composeTabs.findIndex(function (entry) { return entry.id === srcId; });
         if (srcIdx < 0) return null;
         var src = composeTabs[srcIdx];
         var clonedRequest;
@@ -268,7 +268,7 @@
     // active Compose tab so the in-flight edits survive a tab switch.
     function _snapshotActiveDesignTab() {
         if (!activeDesignTabId) return;
-        var tab = composeTabs.find(function (t) { return t.id === activeDesignTabId; });
+        var tab = composeTabs.find(function (entry) { return entry.id === activeDesignTabId; });
         if (!tab) return;
         if (freeformRequest) tab.request = freeformRequest;
     }
@@ -276,7 +276,7 @@
     function switchDesignTab(id) {
         if (id === activeDesignTabId) return;
         _snapshotActiveDesignTab();
-        var tab = composeTabs.find(function (t) { return t.id === id; });
+        var tab = composeTabs.find(function (entry) { return entry.id === id; });
         if (!tab) return;
         activeDesignTabId = tab.id;
         freeformRequest = tab.request;
@@ -285,7 +285,7 @@
     }
 
     function closeDesignTab(id) {
-        var idx = composeTabs.findIndex(function (t) { return t.id === id; });
+        var idx = composeTabs.findIndex(function (entry) { return entry.id === id; });
         if (idx < 0) return;
         var wasActive = (id === activeDesignTabId);
         composeTabs.splice(idx, 1);
@@ -439,18 +439,18 @@
     // if it could happen.
     function replaceActiveDesignTabFromItem(item, origin) {
         if (!activeDesignTabId || !item) return false;
-        var tab = composeTabs.find(function (t) { return t.id === activeDesignTabId; });
+        var tab = composeTabs.find(function (entry) { return entry.id === activeDesignTabId; });
         if (!tab) return false;
         // Use spawn to build the canonical shape, then steal its
         // request + origin and drop the freshly created tab.
         var newId = spawnDesignTabFromItem(item, origin);
         if (!newId) return false;
-        var newTab = composeTabs.find(function (t) { return t.id === newId; });
+        var newTab = composeTabs.find(function (entry) { return entry.id === newId; });
         if (!newTab) return false;
         tab.request = newTab.request;
         tab.origin = newTab.origin;
         // Drop the duplicate.
-        var idx = composeTabs.findIndex(function (t) { return t.id === newId; });
+        var idx = composeTabs.findIndex(function (entry) { return entry.id === newId; });
         if (idx >= 0) composeTabs.splice(idx, 1);
         activeDesignTabId = tab.id;
         freeformRequest = tab.request;
@@ -526,10 +526,10 @@
         // the title typography, primary-button colour, and overflow
         // affordance stay consistent with Discover / Recordings / &c.
         sidebar.appendChild(renderSidebarToolbar({
-            title: 'Library',
+            title: t('compose.library'),
             primary: {
                 icon: 'plus',
-                title: 'New collection',
+                title: t('sidebar.collections.new'),
                 onClick: function () {
                     if (typeof bowirePrompt !== 'function') {
                         if (typeof createCollection === 'function') {
@@ -538,10 +538,10 @@
                         }
                         return;
                     }
-                    bowirePrompt('Collection name', {
-                        title: 'New collection',
-                        placeholder: 'e.g. Smoke tests',
-                        confirmText: 'Create'
+                    bowirePrompt(t('main.collectionName'), {
+                        title: t('sidebar.collections.new'),
+                        placeholder: t('main.collectionPlaceholder'),
+                        confirmText: t('wsTemplates.dialog.create')
                     }).then(function (name) {
                         if (name === null) return;
                         var trimmed = String(name || '').trim();
@@ -555,7 +555,7 @@
             // #362 — search filters collections + their items by name.
             // Shown once there's more than one collection to sift.
             search: ((collectionsList || []).length > 1) ? {
-                placeholder: 'Search library…',
+                placeholder: t('compose.searchLibrary'),
                 value: composeLibrarySearch,
                 onInput: function (v) { composeLibrarySearch = v; render(); }
             } : null
@@ -593,7 +593,7 @@
             section.appendChild(el('div', {
                 className: 'bowire-pane-empty',
                 style: 'padding:12px 14px',
-                textContent: 'No collections yet. Save a request from any live tab via the "Save to collection" action.'
+                textContent: t('compose.noCollections')
             }));
             return section;
         }
@@ -612,7 +612,7 @@
                 section.appendChild(el('div', {
                     className: 'bowire-pane-empty',
                     style: 'padding:12px 14px',
-                    textContent: 'No collections or requests match "' + composeLibrarySearch + '".'
+                    textContent: t('compose.noMatch', { query: composeLibrarySearch })
                 }));
                 return section;
             }
@@ -709,16 +709,16 @@
         head.appendChild(el('button', {
             type: 'button',
             className: 'bowire-tree-tool',
-            title: 'Rename collection',
-            'aria-label': 'Rename collection',
+            title: t('compose.renameCollection'),
+            'aria-label': t('compose.renameCollection'),
             innerHTML: svgIcon('pencil'),
             onClick: function (e) { e.stopPropagation(); _composeRenameCollection(col.id); }
         }));
         head.appendChild(el('button', {
             type: 'button',
             className: 'bowire-tree-tool bowire-tree-tool-danger',
-            title: 'Delete collection',
-            'aria-label': 'Delete collection',
+            title: t('collections.deleteHeading'),
+            'aria-label': t('collections.deleteHeading'),
             innerHTML: svgIcon('trash'),
             onClick: function (e) { e.stopPropagation(); _composeDeleteCollection(col.id); }
         }));
@@ -765,8 +765,10 @@
         render();
         if (typeof toast === 'function') {
             var col = (collectionsList || []).find(function (c) { return c.id === colId; });
-            toast('Added ' + (payload.service ? payload.service + '/' : '') + payload.method
-                + ' to "' + ((col && col.name) || 'collection') + '"', 'success');
+            toast(t('sidebar.method.addedTo', {
+                method: (payload.service ? payload.service + '/' : '') + payload.method,
+                collection: (col && col.name) || t('parallel.sourceCollection')
+            }), 'success');
         }
     }
 
@@ -796,7 +798,9 @@
         persistComposeSidePanel();
         render();
         if (typeof toast === 'function') {
-            toast('Moved to "' + (dest.name || 'collection') + '"', 'success');
+            toast(t('compose.movedTo', {
+                collection: dest.name || t('parallel.sourceCollection')
+            }), 'success');
         }
     }
 
@@ -808,7 +812,7 @@
         var itemCount = (col.items || []).length;
         return [
             {
-                label: 'Build flow from collection',
+                label: t('compose.buildFlow'),
                 icon: 'flow',
                 disabled: itemCount === 0,
                 title: itemCount === 0
@@ -824,20 +828,22 @@
                     if (typeof flowEditorSelectedId !== 'undefined') flowEditorSelectedId = flowId;
                     render();
                     if (typeof toast === 'function') {
-                        toast('Flow created from "' + (col.name || 'collection') + '" — open on Flows rail', 'success');
+                        toast(t('compose.flowCreated', {
+                    collection: col.name || t('parallel.sourceCollection')
+                }), 'success');
                     }
                 }
             },
-            { label: 'Rename…', onClick: function () { _composeRenameCollection(colId); } },
+            { label: t('sidebar.rename'), onClick: function () { _composeRenameCollection(colId); } },
             { separator: true },
-            { label: 'Delete', danger: true, onClick: function () { _composeDeleteCollection(colId); } }
+            { label: t('common.delete'), danger: true, onClick: function () { _composeDeleteCollection(colId); } }
         ];
     }
 
     function _composeRenameCollection(colId) {
         var col = (collectionsList || []).find(function (c) { return c.id === colId; });
         if (!col || typeof bowirePrompt !== 'function') return;
-        bowirePrompt('Rename collection', { defaultValue: col.name || '' }).then(function (name) {
+        bowirePrompt(t('compose.renameCollection'), { defaultValue: col.name || '' }).then(function (name) {
             var c = (collectionsList || []).find(function (x) { return x.id === colId; });
             if (!c || !name) return;
             c.name = String(name).trim();
@@ -849,12 +855,14 @@
     function _composeDeleteCollection(colId) {
         var col = (collectionsList || []).find(function (c) { return c.id === colId; });
         if (!col || typeof bowireConfirm !== 'function') return;
-        bowireConfirm('Delete collection "' + (col.name || 'unnamed') + '"?', function () {
+        bowireConfirm(t('collections.deleteConfirm', {
+            name: col.name || t('collections.unnamed')
+        }), function () {
             var backup = JSON.parse(JSON.stringify(col));
             if (typeof deleteCollection === 'function') deleteCollection(colId);
             render();
             if (typeof toast === 'function') {
-                toast('Deleted collection "' + (backup.name || 'unnamed') + '"', 'info', {
+                toast(t('collections.deleted', { name: backup.name || t('collections.unnamed') }), 'info', {
                     undo: function () {
                         if (collectionsList) collectionsList.push(backup);
                         if (typeof persistCollections === 'function') persistCollections();
@@ -862,7 +870,7 @@
                     }
                 });
             }
-        }, { title: 'Delete collection', danger: true, confirmText: 'Delete' });
+        }, { title: t('collections.deleteHeading'), danger: true, confirmText: t('common.delete') });
     }
 
     function _renderComposeCollectionItemRow(col, item) {
@@ -921,7 +929,7 @@
                 e.stopPropagation();
                 showContextMenu(e.clientX, e.clientY, [
                     {
-                        label: 'Open in new tab',
+                        label: t('sidebar.method.openNewTab'),
                         onClick: function () {
                             spawnDesignTabFromItem(item, {
                                 kind: 'collection', collectionId: col.id, itemId: item.id, name: col.name
@@ -931,13 +939,15 @@
                     },
                     { separator: true },
                     {
-                        label: 'Remove from collection',
+                        label: t('compose.removeFromCollection'),
                         danger: true,
                         onClick: function () {
                             if (typeof removeFromCollection === 'function') {
                                 removeFromCollection(col.id, item.id);
                                 render();
-                                if (typeof toast === 'function') toast('Removed from "' + (col.name || 'collection') + '"', 'info');
+                                if (typeof toast === 'function') toast(t('compose.removedFrom', {
+                    collection: col.name || t('parallel.sourceCollection')
+                }), 'info');
                             }
                         }
                     }
@@ -960,7 +970,7 @@
         var section = el('div', { className: 'bowire-compose-side-section bowire-compose-side-section-presets' });
         var head = el('div', { className: 'bowire-compose-side-section-header' });
         head.appendChild(el('span', { className: 'bowire-compose-side-section-icon', innerHTML: svgIcon('pin') }));
-        head.appendChild(el('span', { className: 'bowire-compose-side-section-label', textContent: 'Presets' }));
+        head.appendChild(el('span', { className: 'bowire-compose-side-section-label', textContent: t('compose.presets') }));
         section.appendChild(head);
 
         // Presets are per-mode. The Compose rail surfaces every mode
@@ -982,7 +992,7 @@
             section.appendChild(el('div', {
                 className: 'bowire-pane-empty',
                 style: 'padding:12px 14px',
-                textContent: 'No presets yet. Save a configuration from any mode (Discover, Mocks, Benchmarks…) to see it here.'
+                textContent: t('compose.noPresets')
             }));
         }
         return section;
@@ -1192,20 +1202,20 @@
                         kind: 'request-builder'
                     };
                 addToCollection(col.id, snap);
-                if (typeof toast === 'function') toast('Saved to "' + col.name + '"', 'success');
+                if (typeof toast === 'function') toast(t('main.savedTo', { collection: col.name }), 'success');
                 // #295 Phase D — saving promotes the tab's origin to
                 // 'collection' so the badge surfaces where the next
                 // open of this tab came from logically. We don't
                 // overwrite an existing non-fresh origin (e.g. a
                 // tab opened from Discover stays that origin even
                 // after saving).
-                var t = composeTabs.find(function (tt) { return tt.id === activeDesignTabId; });
-                if (t && (!t.origin || t.origin.kind === 'fresh')) {
-                    t.origin = { kind: 'collection', collectionId: col.id, name: col.name };
+                var activeTab = composeTabs.find(function (tt) { return tt.id === activeDesignTabId; });
+                if (activeTab && (!activeTab.origin || activeTab.origin.kind === 'fresh')) {
+                    activeTab.origin = { kind: 'collection', collectionId: col.id, name: col.name };
                     persistDesignTabs();
                 }
             } catch (e) {
-                if (typeof toast === 'function') toast('Save failed: ' + e.message, 'error');
+                if (typeof toast === 'function') toast(t('compose.saveFailed') + e.message, 'error');
             }
         }
 
@@ -1215,7 +1225,7 @@
             picker.appendChild(el('div', {
                 className: 'bowire-dropdown-item-meta',
                 style: 'padding:8px 12px;color:var(--bowire-text-tertiary);font-size:11px',
-                textContent: 'No collections yet'
+                textContent: t('main.presets.noCollections')
             }));
         } else {
             cols.forEach(function (col) {
@@ -1249,10 +1259,10 @@
                     render();
                     return;
                 }
-                bowirePrompt('Collection name', {
-                    title: 'New collection',
-                    placeholder: 'e.g. Smoke tests',
-                    confirmText: 'Create'
+                bowirePrompt(t('main.collectionName'), {
+                    title: t('sidebar.collections.new'),
+                    placeholder: t('main.collectionPlaceholder'),
+                    confirmText: t('wsTemplates.dialog.create')
                 }).then(function (name) {
                     if (name === null) { picker.remove(); return; }
                     var trimmed = String(name || '').trim();
@@ -1264,7 +1274,7 @@
             }
         },
             el('span', { className: 'bowire-dropdown-item-icon', innerHTML: svgIcon('plus') }),
-            el('span', { textContent: 'New collection…' })
+            el('span', { textContent: t('sidebar.newCollection') })
         ));
 
         // Anchor at the bottom-right of the source button. The picker
@@ -1313,13 +1323,13 @@
         rehydrateDesignTabs();
         // Drift guard — the active tab may have been closed by external
         // code that didn't update activeDesignTabId. Re-snap.
-        if (activeDesignTabId && !composeTabs.find(function (t) { return t.id === activeDesignTabId; })) {
+        if (activeDesignTabId && !composeTabs.find(function (entry) { return entry.id === activeDesignTabId; })) {
             activeDesignTabId = composeTabs.length > 0 ? composeTabs[0].id : null;
         }
         // Ensure freeformRequest mirrors the active tab so the
         // execute/autocomplete/test paths address the right request.
         if (activeDesignTabId) {
-            var activeTab = composeTabs.find(function (t) { return t.id === activeDesignTabId; });
+            var activeTab = composeTabs.find(function (entry) { return entry.id === activeDesignTabId; });
             if (activeTab) freeformRequest = activeTab.request;
         } else {
             // No active tab — clear the global so a stray render path
@@ -1366,8 +1376,8 @@
             id: 'bowire-compose-tab-pinned',
             className: 'bowire-compose-tab-pinned',
             type: 'button',
-            title: 'New request (Ctrl+L)',
-            'aria-label': 'New request',
+            title: t('compose.newRequestTitle'),
+            'aria-label': t('palette.newRequest'),
             onClick: function () {
                 spawnDesignTab();
                 render();
@@ -1423,7 +1433,7 @@
                         if (typeof showContextMenu !== 'function') return;
                         var id = e.currentTarget.dataset.tabId;
                         if (!id) return;
-                        var idx = composeTabs.findIndex(function (t) { return t.id === id; });
+                        var idx = composeTabs.findIndex(function (entry) { return entry.id === id; });
                         var hasOthers = composeTabs.length > 1;
                         var hasRight = idx >= 0 && idx < composeTabs.length - 1;
                         showContextMenu(e.clientX, e.clientY, [
@@ -1433,27 +1443,27 @@
                             // aber dort könnte man auch den tab kopieren
                             // bzw. clonen anbieten. also den tab mit
                             // seinem aktuellen inhalt/zustand kopieren.'
-                            { label: 'Duplicate tab', icon: 'copy', onClick: function () { _duplicateDesignTab(id); } },
+                            { label: t('compose.duplicateTab'), icon: 'copy', onClick: function () { _duplicateDesignTab(id); } },
                             { separator: true },
-                            { label: 'Close', icon: 'close', onClick: function () { closeDesignTab(id); } },
+                            { label: t('common.close'), icon: 'close', onClick: function () { closeDesignTab(id); } },
                             {
-                                label: 'Close others',
+                                label: t('main.tabs.closeOthers'),
                                 disabled: !hasOthers,
                                 onClick: function () {
-                                    composeTabs.slice().forEach(function (t) {
-                                        if (t.id !== id) closeDesignTab(t.id);
+                                    composeTabs.slice().forEach(function (entry) {
+                                        if (entry.id !== id) closeDesignTab(entry.id);
                                     });
                                     switchDesignTab(id);
                                 }
                             },
                             {
-                                label: 'Close tabs to the right',
+                                label: t('main.tabs.closeRight'),
                                 disabled: !hasRight,
                                 onClick: function () {
-                                    var currentIdx = composeTabs.findIndex(function (t) { return t.id === id; });
+                                    var currentIdx = composeTabs.findIndex(function (entry) { return entry.id === id; });
                                     if (currentIdx < 0) return;
-                                    composeTabs.slice(currentIdx + 1).forEach(function (t) {
-                                        closeDesignTab(t.id);
+                                    composeTabs.slice(currentIdx + 1).forEach(function (entry) {
+                                        closeDesignTab(entry.id);
                                     });
                                 }
                             }
@@ -1472,7 +1482,7 @@
                 tabEl.appendChild(el('button', {
                     className: 'bowire-request-tab-close',
                     innerHTML: svgIcon('close'),
-                    title: 'Close tab',
+                    title: t('compose.closeTab'),
                     onClick: function (e) {
                         e.stopPropagation();
                         var parent = e.currentTarget.closest('.bowire-compose-tab');
@@ -1501,14 +1511,14 @@
                 bowireWireTabOverflow(live, {
                     tabSelector: '.bowire-compose-tab',
                     fixedSelector: '.bowire-compose-tab-pinned',
-                    label: 'More tabs'
+                    label: t('main.moreTabs')
                 });
             }
         });
 
         // ---- Body ----
         if (activeDesignTabId) {
-            var activeTab2 = composeTabs.find(function (t) { return t.id === activeDesignTabId; });
+            var activeTab2 = composeTabs.find(function (entry) { return entry.id === activeDesignTabId; });
             if (activeTab2) {
                 // Mount the existing request-builder against the
                 // active tab. _appendRequestBuilderInto reads
@@ -1558,7 +1568,7 @@
                     // chip. Operator feedback unified all rails' welcome
                     // labels to plain verbs ("New workspace", "New
                     // collection", etc.).
-                    label: 'New request',
+                    label: t('palette.newRequest'),
                     primary: true,
                     onClick: function () {
                         spawnDesignTab();
@@ -1574,7 +1584,7 @@
                     // Force-mode so the operator can re-trigger from
                     // the same empty card after dismissal.
                     id: 'bowire-compose-empty-tour-btn',
-                    label: 'Take a tour',
+                    label: t('common.takeTour'),
                     onClick: function () {
                         if (typeof window !== 'undefined'
                             && typeof window.bowireStartComposeRequestTour === 'function') {

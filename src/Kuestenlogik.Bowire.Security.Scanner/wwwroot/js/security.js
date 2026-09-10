@@ -60,7 +60,7 @@
     function renderComplianceView(container, result) {
         container.textContent = '';
         if (!result) {
-            container.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: 'Run the suite to see the OWASP / CWE / CVSS compliance overview.' }));
+            container.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: t('security.complianceEmpty') }));
             return;
         }
         var c = result.compliance || { severity: {}, cwe: [], findingCount: 0, maxCvss: 0 };
@@ -68,7 +68,7 @@
         // OWASP posture strip.
         container.appendChild(el('div', { className: 'bowire-compliance-block' },
             el('div', { className: 'bowire-compliance-head' },
-                el('span', { className: 'bowire-compliance-label', textContent: 'OWASP API Top 10 posture' }),
+                el('span', { className: 'bowire-compliance-label', textContent: t('security.owaspPosture') }),
                 el('span', { className: 'bowire-compliance-meta', textContent: result.covered + '/' + result.total + ' exercised · ' + result.vulnerable + ' vulnerable' })),
             postureStrip(result.entries)));
 
@@ -78,10 +78,11 @@
             var n = (c.severity && c.severity[s]) || 0;
             if (n > 0) sevRow.appendChild(severityChip(s, n));
         });
-        if (!sevRow.childNodes.length) sevRow.appendChild(el('span', { className: 'bowire-secsuite-row-note', textContent: 'No vulnerability findings.' }));
-        if (c.maxCvss > 0) sevRow.appendChild(el('span', { className: 'bowire-compliance-cvss', textContent: 'peak CVSS ' + c.maxCvss.toFixed(1) }));
+        if (!sevRow.childNodes.length) sevRow.appendChild(el('span', { className: 'bowire-secsuite-row-note', textContent: t('security.noFindings') }));
+        if (c.maxCvss > 0) sevRow.appendChild(el('span', { className: 'bowire-compliance-cvss',
+            textContent: t('security.peakCvss', { score: c.maxCvss.toFixed(1) }) }));
         container.appendChild(el('div', { className: 'bowire-compliance-block' },
-            el('span', { className: 'bowire-compliance-label', textContent: 'Severity' }),
+            el('span', { className: 'bowire-compliance-label', textContent: t('security.severity') }),
             sevRow));
 
         // CWE breakdown.
@@ -99,18 +100,18 @@
                     el('span', { className: 'bowire-secsuite-row-note', textContent: w.maxCvss > 0 ? 'CVSS ' + w.maxCvss.toFixed(1) : '' })));
             });
             container.appendChild(el('div', { className: 'bowire-compliance-block' },
-                el('span', { className: 'bowire-compliance-label', textContent: 'CWE breakdown' }),
+                el('span', { className: 'bowire-compliance-label', textContent: t('security.cweBreakdown') }),
                 table));
         }
     }
 
     function renderOwaspSuiteSection() {
         var wrap = el('div', { className: 'bowire-secsuite' });
-        wrap.appendChild(el('h3', { className: 'bowire-secsuite-title', textContent: 'OWASP API Security Top 10 (2023)' }));
-        wrap.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: 'Run the suite against a target to see which entries are exercised, clean, or vulnerable. Add a credential to unlock the auth-dependent checks (API1 BOLA also takes a second identity).' }));
+        wrap.appendChild(el('h3', { className: 'bowire-secsuite-title', textContent: t('security.owaspTitle') }));
+        wrap.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: t('security.owaspHint') }));
 
         var targetInput = el('input', { type: 'text', className: 'bowire-form-input', placeholder: 'https://api.example.com' });
-        var authInput = el('input', { type: 'text', className: 'bowire-form-input', placeholder: 'Authorization: Bearer … (optional)' });
+        var authInput = el('input', { type: 'text', className: 'bowire-form-input', placeholder: t('security.authPlaceholder') });
         var statusEl = el('span', { className: 'bowire-secsuite-status' });
         var coverageList = el('div', { className: 'bowire-secsuite-list' });
         var complianceView = el('div', { className: 'bowire-compliance' });
@@ -129,12 +130,12 @@
             coverageList.style.display = isCov ? '' : 'none';
             complianceView.style.display = isCov ? 'none' : '';
         }
-        coverageBtn = el('button', { className: 'bowire-secsuite-tab', textContent: 'Coverage', onclick: function () { setTab('coverage'); } });
-        complianceBtn = el('button', { className: 'bowire-secsuite-tab', textContent: 'Compliance', onclick: function () { setTab('compliance'); } });
+        coverageBtn = el('button', { className: 'bowire-secsuite-tab', textContent: t('security.coverage'), onclick: function () { setTab('coverage'); } });
+        complianceBtn = el('button', { className: 'bowire-secsuite-tab', textContent: t('security.compliance'), onclick: function () { setTab('compliance'); } });
         var tabs = el('div', { className: 'bowire-secsuite-tabs' }, coverageBtn, complianceBtn);
 
         var runBtn = el('button', {
-            className: 'bowire-btn', textContent: 'Run OWASP suite',
+            className: 'bowire-btn', textContent: t('security.runOwasp'),
             onclick: function () {
                 var target = targetInput.value.trim();
                 if (!target) { statusEl.textContent = 'Enter a target URL first.'; return; }
@@ -181,11 +182,11 @@
 
     function renderSpiderSection() {
         var wrap = el('div', { className: 'bowire-secsuite' });
-        wrap.appendChild(el('h3', { className: 'bowire-secsuite-title', textContent: 'Endpoint discovery (spider)' }));
-        wrap.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: 'Discover candidate endpoints (OpenAPI / GraphQL / robots / sitemap / common paths / page links) from a base URL, then confirm the real ones and ignore the rest.' }));
+        wrap.appendChild(el('h3', { className: 'bowire-secsuite-title', textContent: t('security.spiderTitle') }));
+        wrap.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: t('security.spiderHint') }));
 
         var urlInput = el('input', { type: 'text', className: 'bowire-form-input', placeholder: 'https://api.example.com' });
-        var authInput = el('input', { type: 'text', className: 'bowire-form-input', placeholder: 'Authorization: Bearer … (optional)' });
+        var authInput = el('input', { type: 'text', className: 'bowire-form-input', placeholder: t('security.authPlaceholder') });
         var statusEl = el('span', { className: 'bowire-secsuite-status' });
         var summary = el('div', { className: 'bowire-secsuite-summary' });
         var list = el('div', { className: 'bowire-secsuite-list' });
@@ -213,15 +214,15 @@
             r.appendChild(el('span', { className: 'bowire-secsuite-row-method', textContent: c.method }));
             r.appendChild(el('span', { className: 'bowire-secsuite-row-url', textContent: c.url }));
             r.appendChild(el('span', { className: 'bowire-secsuite-row-src', textContent: c.source }));
-            r.appendChild(el('button', { className: 'bowire-btn bowire-secsuite-triage', textContent: '✓', title: 'Confirm — part of my API',
+            r.appendChild(el('button', { className: 'bowire-btn bowire-secsuite-triage', textContent: '✓', title: t('security.confirmEndpoint'),
                 onclick: function () { triage[id] = triage[id] === 'confirmed' ? undefined : 'confirmed'; paint(); refreshSummary(); } }));
-            r.appendChild(el('button', { className: 'bowire-btn bowire-btn--danger bowire-secsuite-triage', textContent: '✕', title: 'Ignore',
+            r.appendChild(el('button', { className: 'bowire-btn bowire-btn--danger bowire-secsuite-triage', textContent: '✕', title: t('security.ignoreEndpoint'),
                 onclick: function () { triage[id] = triage[id] === 'ignored' ? undefined : 'ignored'; paint(); refreshSummary(); } }));
             return r;
         }
 
         var discoverBtn = el('button', {
-            className: 'bowire-btn', textContent: 'Discover endpoints',
+            className: 'bowire-btn', textContent: t('security.discoverEndpoints'),
             onclick: function () {
                 var url = urlInput.value.trim();
                 if (!url) { statusEl.textContent = 'Enter a base URL first.'; return; }
@@ -246,7 +247,7 @@
         });
 
         var copyBtn = el('button', {
-            className: 'bowire-btn', textContent: 'Copy confirmed URLs',
+            className: 'bowire-btn', textContent: t('security.copyConfirmed'),
             onclick: function () {
                 var urls = rendered.filter(function (x) { return triage[x.id] === 'confirmed'; }).map(function (x) { return x.url; });
                 if (!urls.length) { statusEl.textContent = 'No confirmed candidates yet.'; return; }
@@ -296,11 +297,12 @@
         // Surface a persistent poll failure loudly — an unreachable / restarted
         // server or a lost session is NOT the same as "target didn't call back".
         if (_oastError) {
-            _oastFeedEl.appendChild(el('div', { className: 'bowire-oast-error', textContent: 'Callback polling failed — results below may be stale. ' + _oastError }));
+            _oastFeedEl.appendChild(el('div', { className: 'bowire-oast-error',
+                textContent: t('security.pollFailed', { reason: _oastError }) }));
         }
         if (!oastFeed.length) {
             if (!_oastError) {
-                _oastFeedEl.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: 'No callbacks yet. Plant a payload where a target might resolve or fetch it — a DNS lookup alone proves it reached the host.' }));
+                _oastFeedEl.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: t('security.oastNoCallbacks') }));
             }
             return;
         }
@@ -341,7 +343,7 @@
         var row = el('div', { className: 'bowire-secsuite-row bowire-oast-payload' });
         row.appendChild(el('code', { className: 'bowire-oast-host', textContent: host }));
         row.appendChild(el('button', {
-            className: 'bowire-btn bowire-secsuite-triage', textContent: 'Copy', title: 'Copy the callback host',
+            className: 'bowire-btn bowire-secsuite-triage', textContent: t('security.copy'), title: t('security.copyCallbackHost'),
             onclick: function () {
                 var full = host;
                 if (navigator.clipboard) navigator.clipboard.writeText(full).catch(function () { /* ignore */ });
@@ -352,7 +354,7 @@
 
     function renderOastSection() {
         var wrap = el('div', { className: 'bowire-secsuite' });
-        wrap.appendChild(el('h3', { className: 'bowire-secsuite-title', textContent: 'Out-of-band (OAST) — manual' }));
+        wrap.appendChild(el('h3', { className: 'bowire-secsuite-title', textContent: t('security.oastTitle') }));
 
         var body = el('div', { className: 'bowire-oast-body' });
         wrap.appendChild(body);
@@ -371,14 +373,15 @@
                     return;
                 }
 
-                body.appendChild(el('p', { className: 'bowire-secsuite-hint', textContent: 'Callbacks collected via ' + st.server + '. Generate a payload host, plant it by hand (a URL, a header, an XML entity, an SSRF sink), and watch below for the target reaching back.' }));
+                body.appendChild(el('p', { className: 'bowire-secsuite-hint',
+                    textContent: t('security.oastHint', { server: st.server }) }));
 
                 var statusEl = el('span', { className: 'bowire-secsuite-status' });
                 var payloadList = el('div', { className: 'bowire-secsuite-list' });
                 _oastFeedEl = el('div', { className: 'bowire-secsuite-list bowire-oast-feed' });
 
                 var genBtn = el('button', {
-                    className: 'bowire-btn', textContent: 'Generate payload',
+                    className: 'bowire-btn', textContent: t('security.generatePayload'),
                     onclick: function () {
                         genBtn.disabled = true; statusEl.textContent = 'Allocating…';
                         fetch(config.prefix + '/api/security/oast/allocate', { method: 'POST' })
@@ -406,8 +409,8 @@
                     oastGenerated.slice().reverse().forEach(function (h) { payloadList.appendChild(renderOastPayloadRow(h)); });
                 }
                 body.appendChild(el('div', { className: 'bowire-oast-cols' },
-                    el('div', {}, el('div', { className: 'bowire-compliance-label', textContent: 'Payloads' }), payloadList),
-                    el('div', {}, el('div', { className: 'bowire-compliance-label', textContent: 'Live callbacks' }), _oastFeedEl)));
+                    el('div', {}, el('div', { className: 'bowire-compliance-label', textContent: t('security.payloads') }), payloadList),
+                    el('div', {}, el('div', { className: 'bowire-compliance-label', textContent: t('security.liveCallbacks') }), _oastFeedEl)));
 
                 renderOastFeed();
                 // Pick up any callbacks already caught in a prior render of this session.
@@ -415,7 +418,7 @@
             })
             .catch(function () {
                 body.textContent = '';
-                body.appendChild(el('p', { className: 'bowire-pane-empty', textContent: 'Could not reach the OAST status endpoint.' }));
+                body.appendChild(el('p', { className: 'bowire-pane-empty', textContent: t('security.oastUnreachable') }));
             });
 
         return wrap;
@@ -425,11 +428,11 @@
 
     function renderSecuritySidebar() {
         var sidebar = el('div', { id: 'bowire-sidebar', className: 'bowire-sidebar bowire-sidebar-mode' });
-        sidebar.appendChild(renderSidebarToolbar({ title: 'Security' }));
+        sidebar.appendChild(renderSidebarToolbar({ title: t('rail.security') }));
         sidebar.appendChild(el('div', {
             className: 'bowire-pane-empty',
             style: 'padding:12px 14px',
-            textContent: 'OWASP API Top 10, endpoint discovery, threat model, fuzz, and Nuclei templates sit in the main pane. Discovered endpoints are pulled automatically from the active workspace.'
+            textContent: t('security.railHint')
         }));
         return sidebar;
     }
@@ -451,7 +454,7 @@
         } else {
             pad.appendChild(el('p', {
                 className: 'bowire-pane-empty',
-                textContent: 'AI-assisted security tools (threat-model ranking, fuzz-value suggestions) need Kuestenlogik.Bowire.Ai installed in the workbench process. Install the package + restart to enable them.'
+                textContent: t('security.needsAi')
             }));
         }
         secMain.appendChild(pad);
