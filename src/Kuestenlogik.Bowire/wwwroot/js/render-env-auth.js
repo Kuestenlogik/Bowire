@@ -60,7 +60,7 @@
             var installable = st.missing.some(function (m) { return m.packageId; });
             bar.appendChild(el('button', {
                 className: 'bowire-alert-bar-action',
-                textContent: st.installing ? 'Installing…' : 'Install',
+                textContent: st.installing ? t('rec.installing') : t('settings.plugins.installConfirm'),
                 disabled: !installable || st.installing,
                 onClick: function () { installAllWorkspacePins(); }
             }));
@@ -221,7 +221,7 @@
         // the modal doesn't read as "drop or stuck".
         panel.appendChild(el('div', { className: 'bowire-method-drop-footer' },
             el('span', { textContent: t('drop.press') }),
-            el('span', { className: 'bowire-method-drop-kbd', textContent: 'Esc' }),
+            el('span', { className: 'bowire-method-drop-kbd', textContent: 'Esc' }),  // i18n-exempt: a keyboard key
             el('span', { textContent: t('drop.toCancel') })
         ));
         shell.appendChild(panel);
@@ -380,7 +380,7 @@
         },
             el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('search') }),
             el('span', { className: 'bowire-app-drawer-item-label', textContent: t('drawer.openPalette') }),
-            el('span', { className: 'bowire-app-drawer-item-hint', textContent: 'Ctrl + /' })
+            el('span', { className: 'bowire-app-drawer-item-hint', textContent: 'Ctrl + /' })  // i18n-exempt: a keyboard shortcut
         ));
         if (typeof createWorkspace === 'function') {
             actionsSection.appendChild(el('button', {
@@ -415,7 +415,7 @@
                                     logAction: {
                                         kind: 'workspace-create',
                                         rail: 'workspaces',
-                                        title: 'Created workspace "' + _wsName + '"',
+                                        title: 'Created workspace "' + _wsName + '"',  // i18n-exempt: the action log stores rendered text, see #689
                                         undoSpec: { workspaceId: _wsId },
                                         // Redo restores from the trash bucket that
                                         // undo just dropped the workspace into —
@@ -797,8 +797,8 @@
                     type: 'button',
                     className: 'bowire-sidebar-edge-toggle bowire-sidebar-edge-toggle-'
                         + (sidebarCollapsed ? 'collapsed' : 'expanded'),
-                    title: sidebarCollapsed ? 'Show sidebar (Ctrl+B)' : 'Hide sidebar (Ctrl+B) — drag to resize',
-                    'aria-label': sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar',
+                    title: sidebarCollapsed ? t('topbar.showSidebar') : t('topbar.hideSidebar'),
+                    'aria-label': sidebarCollapsed ? t('topbar.showSidebarAria') : t('topbar.hideSidebarAria'),
                     onClick: function (e) {
                         e.stopPropagation();
                         setSidebarCollapsed(!sidebarCollapsed);
@@ -1654,8 +1654,8 @@
                     className: 'bowire-activity-time',
                     textContent: _formatRelativeTime(entry.ts) + ' · ' + entry.kind
                         + (entry.rail ? ' · ' + entry.rail : '')
-                        + (entry.status === 'undone' ? ' · undone'
-                            : (entry.status === 'expired' ? ' · expired' : ''))
+                        + (entry.status === 'undone' ? ' · ' + t('activity.undone')
+                            : (entry.status === 'expired' ? ' · ' + t('activity.expired') : ''))
                 }));
                 row.appendChild(meta);
                 if (isSelectable) {
@@ -1930,7 +1930,7 @@
             : 'Restore all';
         var emptyTitle;
         if (emptyDisabled) {
-            emptyTitle = filterActive ? 'No items match the current filter' : 'Trash is already empty';
+            emptyTitle = filterActive ? t('trash.noMatchFilter') : t('trash.alreadyEmpty');
         } else {
             emptyTitle = filterActive
                 ? 'Permanently delete only the ' + visibleCount + ' currently visible item' + (visibleCount === 1 ? '' : 's')
@@ -1939,7 +1939,7 @@
         }
         var restoreTitle;
         if (restoreDisabled) {
-            restoreTitle = filterActive ? 'No items match the current filter' : 'Trash is empty';
+            restoreTitle = filterActive ? t('trash.noMatchFilter') : t('trash.isEmpty');
         } else {
             restoreTitle = filterActive
                 ? 'Restore only the ' + visibleCount + ' currently visible item' + (visibleCount === 1 ? '' : 's')
@@ -1979,7 +1979,7 @@
                         render();
                     },
                     {
-                        title: filterActive ? 'Empty filtered trash' : 'Empty trash',
+                        title: filterActive ? t('trash.emptyFiltered') : t('sidebar.trash.empty'),
                         confirmText: t('sidebar.deleteCount', { count: visibleCount }),
                         danger: true
                     }
@@ -2010,7 +2010,7 @@
                         render();
                     },
                     {
-                        title: filterActive ? 'Restore filtered' : 'Restore all',
+                        title: filterActive ? t('trash.restoreFiltered') : t('trash.restoreAll'),
                         confirmText: t('trash.restoreCount', { count: visibleCount })
                     }
                 );
@@ -3036,7 +3036,7 @@
             title: isSchemaWatchActive()
                 ? 'Schema watch active (every ' + seconds + 's) — click to stop'
                 : 'Start schema watch (re-discover every ' + seconds + 's)',
-            'aria-label': isSchemaWatchActive() ? 'Stop schema watch' : 'Start schema watch',
+            'aria-label': isSchemaWatchActive() ? t('topbar.stopSchemaWatch') : t('topbar.startSchemaWatch'),
             onClick: function () {
                 if (isSchemaWatchActive()) { stopSchemaWatch(); }
                 else { startSchemaWatch(); }
@@ -3380,8 +3380,8 @@
         var logoBtn = el('button', {
             type: 'button',
             className: 'bowire-logo-btn' + (isOpen ? ' is-open' : ''),
-            title: isOpen ? 'Close menu' : 'Open menu',
-            'aria-label': isOpen ? 'Close menu' : 'Open menu',
+            title: isOpen ? t('topbar.closeMenu') : t('topbar.openMenu'),
+            'aria-label': isOpen ? t('topbar.closeMenu') : t('topbar.openMenu'),
             'aria-expanded': isOpen ? 'true' : 'false',
             onClick: function () {
                 if (typeof appDrawerOpen !== 'undefined') {
@@ -3750,7 +3750,7 @@
                 + (helpActive ? ' active' : '')
                 + (helpAvailable ? '' : ' bowire-theme-toggle-btn-disabled'),
             title: helpAvailable
-                ? (helpActive ? 'Leave Help (F1)' : 'Help (F1)')
+                ? (helpActive ? t('topbar.leaveHelp') : t('topbar.help'))
                 : 'Install Kuestenlogik.Bowire.Help for in-app docs (or visit bowire.io/docs)',
             'aria-label': t('topbar.help'),
             // #297 — overflow priority tag (see aboutBtn).
@@ -3830,7 +3830,7 @@
             // a made-up .bowire-topbar-icon-btn that had no rules — the
             // button collapsed to a thin sliver without an icon.
             className: 'bowire-theme-toggle-btn bowire-ai-drawer-toggle' + (aiDrawerOpen ? ' active' : ''),
-            title: aiDrawerOpen ? 'Close Assistant (Ctrl+Shift+A)' : 'Open Assistant (Ctrl+Shift+A)',
+            title: aiDrawerOpen ? t('topbar.closeAssistant') : t('topbar.openAssistant'),
             'aria-label': t('topbar.toggleAssistant'),
             // #297 — overflow priority tag.
             'data-topbar-priority': '3',
@@ -3876,7 +3876,7 @@
         var securityToggleBtn = el('button', {
             id: 'bowire-security-drawer-toggle',
             className: 'bowire-theme-toggle-btn bowire-security-drawer-toggle' + (securityDrawerOpen ? ' active' : ''),
-            title: securityDrawerOpen ? 'Close Security drawer' : 'Open Security drawer',
+            title: securityDrawerOpen ? t('topbar.closeSecurity') : t('topbar.openSecurity'),
             'aria-label': t('topbar.toggleSecurity'),
             onClick: function () {
                 securityDrawerOpen = !securityDrawerOpen;
@@ -4020,7 +4020,7 @@
             type: 'button',
             className: 'bowire-workspace-chip' + (workspaceMenuOpen ? ' active' : ''),
             title: ws ? ('Workspace: ' + ws.name) : 'No workspace — click to create one',
-            'aria-label': ws ? 'Switch workspace' : 'New workspace',
+            'aria-label': ws ? t('topbar.switchWorkspace') : t('sidebar.ws.new'),
             onClick: function (e) {
                 e.stopPropagation();
                 // Close any other topbar dropdown before toggling
@@ -4902,8 +4902,10 @@
                 var already = protocolFilter.has(p.id);
                 out.push({
                     group: 'Protocols',
-                    label: (already ? 'Remove filter: ' : 'Filter by: ') + p.name,
-                    sublabel: count + ' method' + (count === 1 ? '' : 's'),
+                    label: t(already ? 'palette.removeFilter' : 'palette.filterBy', { name: p.name }),
+                    // #688 - one message, two shapes.
+                    sublabel: t(count === 1 ? 'palette.methodCountOne' : 'palette.methodCountMany',
+                        { count: count }),
                     icon: p.icon,
                     onSelect: function () {
                         if (already) protocolFilter.delete(p.id);
@@ -5635,11 +5637,11 @@
         });
         var types = [
             { value: 'none', label: t('auth.none') },
-            { value: 'bearer', label: 'Bearer Token' },
+            { value: 'bearer', label: 'Bearer Token' },  // i18n-exempt: the name of an authentication scheme; somebody searching for one searches for that name
             { value: 'session', label: t('auth.session') },
-            { value: 'basic', label: 'Basic Auth' },
-            { value: 'apikey', label: 'API Key' },
-            { value: 'jwt', label: 'JWT (HMAC / RSA / ECDSA)' },
+            { value: 'basic', label: 'Basic Auth' },  // i18n-exempt: the name of an authentication scheme; somebody searching for one searches for that name
+            { value: 'apikey', label: 'API Key' },  // i18n-exempt: the name of an authentication scheme; somebody searching for one searches for that name
+            { value: 'jwt', label: 'JWT (HMAC / RSA / ECDSA)' },  // i18n-exempt: the name of an authentication scheme; somebody searching for one searches for that name
             { value: 'oauth2_cc', label: t('auth.oauthCc') },
             { value: 'oauth2_ac', label: t('auth.oauthAc') },
             { value: 'custom_token', label: t('auth.customToken') },
@@ -5698,8 +5700,8 @@
             locRow.appendChild(locSel);
             section.appendChild(locRow);
 
-            var keyLabel = (auth.location === 'query') ? 'Query parameter name' : 'Header name';
-            var keyPlaceholder = (auth.location === 'query') ? 'e.g. api_key' : 'e.g. X-Api-Key';
+            var keyLabel = (auth.location === 'query') ? t('rbAuth.queryParamName') : t('rbAuth.headerName');
+            var keyPlaceholder = (auth.location === 'query') ? 'e.g. api_key' : 'e.g. X-Api-Key';  // i18n-exempt: example parameter and header names
             section.appendChild(renderAuthField(keyLabel, 'bowire-auth-key', auth.key || '',
                 keyPlaceholder, 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { type: 'apikey', key: v })); }));
@@ -6048,23 +6050,26 @@
             var nowSec = Math.floor(Date.now() / 1000);
             var ttl = cached.expiresAt - nowSec;
             var statusText = ttl > 0
-                ? 'Authorized — token expires in ' + Math.max(0, ttl) + 's' + (cached.refreshToken ? ' (refreshable)' : '')
-                : 'Token expired' + (cached.refreshToken ? ' — will auto-refresh on next request' : ' — re-authorize');
+                ? t(cached.refreshToken ? 'rbAuth.authorizedRefreshable'
+                    : 'rbAuth.authorized', { seconds: Math.max(0, ttl) })
+                : t(cached.refreshToken ? 'rbAuth.expiredRefreshable'
+                    : 'rbAuth.expired');
             output.textContent = statusText;
             output.classList.add('ok');
             output.classList.remove('error');
         } else {
-            output.textContent = 'Not authorized — click Authorize to start the OAuth flow';
+            output.textContent = t('rbAuth.notAuthorized');
         }
 
         var authorizeBtn = el('button', {
             className: 'bowire-auth-preview-btn',
-            textContent: cached ? 'Re-authorize' : 'Authorize',
+            textContent: cached ? t('rbAuth.reauthorize') : t('rbAuth.authorize'),
             onClick: async function () {
                 try {
                     var fresh = await authorizeOauth2Ac(getActiveEnvId(), getAuth());
                     var ttl2 = Math.max(0, fresh.expiresAt - Math.floor(Date.now() / 1000));
-                    output.textContent = 'Authorized — token expires in ' + ttl2 + 's' + (fresh.refreshToken ? ' (refreshable)' : '');
+                    output.textContent = t(fresh.refreshToken ? 'rbAuth.authorizedRefreshable'
+    : 'rbAuth.authorized', { seconds: ttl2 });
                     output.classList.add('ok');
                     output.classList.remove('error');
                     render();

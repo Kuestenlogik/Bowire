@@ -421,7 +421,7 @@
             if (result.title) {
                 var msg = problemTitle(result);
                 channelError = msg;
-                addConsoleEntry({ type: 'error', method: fullName, status: 'Channel open failed', body: msg });
+                addConsoleEntry({ type: 'error', method: fullName, status: 'Channel open failed', body: msg });  // i18n-exempt: the action log stores rendered text, see #689
                 toast(t('channel.openFailed', { reason: msg }), 'error');
                 render();
                 return;
@@ -445,8 +445,8 @@
             sentMessages = [];
             channelStartMs = (typeof performance !== 'undefined' && performance.now)
                 ? performance.now() : Date.now();
-            statusInfo = { status: 'Connected', durationMs: 0 };
-            addConsoleEntry({ type: 'channel', method: fullName, status: 'Connected', body: 'Channel opened' });
+            statusInfo = { status: 'Connected', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
+            addConsoleEntry({ type: 'channel', method: fullName, status: 'Connected', body: 'Channel opened' });  // i18n-exempt: the action log stores rendered text, see #689
 
             // Start SSE listener for responses
             var sseUrl = config.prefix + '/api/channel/' + duplexChannelId + '/responses';
@@ -517,7 +517,7 @@
                 var doneData = {};
                 try { doneData = JSON.parse(event.data); } catch (e) {}
                 statusInfo = {
-                    status: 'Completed',
+                    status: 'Completed',  // i18n-exempt: status label, carried on the console entry and the run summary
                     durationMs: doneData.durationMs || 0
                 };
                 duplexConnected = false;
@@ -526,13 +526,13 @@
                 if (selectedService && selectedMethod) {
                     unregisterSubscription(selectedService.name, selectedMethod.name);
                 }
-                addConsoleEntry({ type: 'channel', method: fullName, status: 'Completed', durationMs: doneData.durationMs || 0, body: '(' + sentCount + ' sent, ' + receivedCount + ' received)' });
+                addConsoleEntry({ type: 'channel', method: fullName, status: 'Completed', durationMs: doneData.durationMs || 0, body: '(' + sentCount + ' sent, ' + receivedCount + ' received)' });  // i18n-exempt: the action log stores rendered text, see #689
 
                 addHistory({
                     service: selectedService.name,
                     method: selectedMethod.name,
                     methodType: selectedMethod.methodType,
-                    body: '(channel: ' + sentCount + ' sent, ' + receivedCount + ' received)',
+                    body: '(channel: ' + sentCount + ' sent, ' + receivedCount + ' received)',  // i18n-exempt: the action log stores rendered text, see #689
                     messages: [],
                     status: 'OK',
                     durationMs: doneData.durationMs || 0
@@ -550,7 +550,7 @@
                     method: selectedMethod.name,
                     methodType: selectedMethod.methodType,
                     serverUrl: _sentInvocationUrl,
-                    body: '(channel: ' + sentCount + ' sent, ' + receivedCount + ' received)',
+                    body: '(channel: ' + sentCount + ' sent, ' + receivedCount + ' received)',  // i18n-exempt: the action log stores rendered text, see #689
                     messages: [],
                     metadata: (channelMetadata && Object.keys(channelMetadata).length > 0) ? channelMetadata : null,
                     status: 'OK',
@@ -573,7 +573,7 @@
             duplexSseSource.addEventListener('error', function () {
                 if (duplexSseSource && duplexSseSource.readyState === EventSource.CLOSED) return;
                 channelError = 'Channel stream error.';
-                statusInfo = { status: 'Error', durationMs: 0 };
+                statusInfo = { status: 'Error', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
                 duplexConnected = false;
                 if (selectedService && selectedMethod) {
                     markSubscriptionError(selectedService.name, selectedMethod.name, 'Channel stream error');
@@ -585,7 +585,7 @@
                 if (selectedService && selectedMethod) {
                     unregisterSubscription(selectedService.name, selectedMethod.name);
                 }
-                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: 'Channel stream error' });
+                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: 'Channel stream error' });  // i18n-exempt: the action log stores rendered text, see #689
                 render();
             });
 
@@ -593,7 +593,7 @@
             toast(t('channel.opened'), 'success');
         } catch (e) {
             channelError = e.message;
-            addConsoleEntry({ type: 'error', method: (selectedService.name + '/' + selectedMethod.name), status: 'Channel open failed', body: e.message });
+            addConsoleEntry({ type: 'error', method: (selectedService.name + '/' + selectedMethod.name), status: 'Channel open failed', body: e.message });  // i18n-exempt: the action log stores rendered text, see #689
             toast(t('channel.openFailed', { reason: e.message }), 'error');
             render();
         }
@@ -611,7 +611,9 @@
             if (Object.keys(channelErrors).length > 0) {
                 formValidationErrors = channelErrors;
                 var n = Object.keys(channelErrors).length;
-                toast(n + (n === 1 ? ' field has' : ' fields have') + ' validation errors', 'error');
+                // #688 - one message, two shapes.
+toast(t(n === 1 ? 'rb.validationErrorsOne' : 'rb.validationErrorsMany',
+    { count: n }), 'error');
                 render();
                 return;
             }
@@ -678,7 +680,7 @@
             var result = await resp.json();
             if (result.title) {
                 var msg = problemTitle(result);
-                addConsoleEntry({ type: 'error', method: sendFullName, status: 'Send failed', body: msg });
+                addConsoleEntry({ type: 'error', method: sendFullName, status: 'Send failed', body: msg });  // i18n-exempt: the action log stores rendered text, see #689
                 toast(t('channel.sendFailed', { reason: msg }), 'error');
                 return;
             }
@@ -735,7 +737,7 @@
         }
         duplexChannelId = null;
         if (!statusInfo || statusInfo.status === 'Connected') {
-            statusInfo = { status: 'Disconnected', durationMs: 0 };
+            statusInfo = { status: 'Disconnected', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
         }
         render();
     }

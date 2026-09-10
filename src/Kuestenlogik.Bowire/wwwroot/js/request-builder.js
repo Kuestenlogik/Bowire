@@ -61,9 +61,9 @@
     ];
     var HOPP_AUTH_KINDS = [
         { id: 'none',   labelKey: 'rb.auth.none' },
-        { id: 'bearer', label: 'Bearer Token' },
-        { id: 'basic',  label: 'Basic Auth' },
-        { id: 'apikey', label: 'API Key' }
+        { id: 'bearer', label: 'Bearer Token' },  // i18n-exempt: the name of an authentication scheme; somebody searching for one searches for that name
+        { id: 'basic',  label: 'Basic Auth' },  // i18n-exempt: the name of an authentication scheme; somebody searching for one searches for that name
+        { id: 'apikey', label: 'API Key' }  // i18n-exempt: the name of an authentication scheme; somebody searching for one searches for that name
     ];
 
     // ---- #291 — Protocol registry (rbLayouts) ----
@@ -1290,7 +1290,7 @@
                 type: 'checkbox',
                 className: 'bowire-request-builder-kv-enable',
                 checked: r.enabled !== false ? 'checked' : undefined,
-                title: r.enabled !== false ? 'Enabled — included in request' : 'Disabled — skipped',
+                title: r.enabled !== false ? t('rb.rowEnabled') : t('rb.rowDisabled'),
                 style: isLast ? 'visibility:hidden' : undefined,
                 onChange: function (e) {
                     if (!isLast) {
@@ -1493,15 +1493,15 @@
         var formWrap = el('div', { className: 'bowire-request-builder-auth-form' });
         switch (fr._requestBuilder.authKind) {
             case 'bearer':
-                formWrap.appendChild(_authField('Token', fr._requestBuilder.authData.token || '', function (v) {
+                formWrap.appendChild(_authField(t('rbAuth.token'), fr._requestBuilder.authData.token || '', function (v) {
                     fr._requestBuilder.authData.token = v;
                 }));
                 break;
             case 'basic':
-                formWrap.appendChild(_authField('Username', fr._requestBuilder.authData.username || '', function (v) {
+                formWrap.appendChild(_authField(t('rbAuth.username'), fr._requestBuilder.authData.username || '', function (v) {
                     fr._requestBuilder.authData.username = v;
                 }));
-                formWrap.appendChild(_authField('Password', fr._requestBuilder.authData.password || '', function (v) {
+                formWrap.appendChild(_authField(t('rbAuth.password'), fr._requestBuilder.authData.password || '', function (v) {
                     fr._requestBuilder.authData.password = v;
                 }, 'password'));
                 break;
@@ -2551,10 +2551,10 @@
                 : Math.round(performance.now() - historyStartMs);
             if (result.title) {
                 responseError = result;
-                historyOutcome.status = (result.status != null ? result.status : 'Error');
+                historyOutcome.status = (result.status != null ? result.status : 'Error');  // i18n-exempt: status label, carried on the console entry and the run summary
                 historyOutcome.ok = false;
                 if (typeof addConsoleEntry === 'function') {
-                    addConsoleEntry({ type: 'error', method: fullName, status: 'Error',
+                    addConsoleEntry({ type: 'error', method: fullName, status: 'Error',  // i18n-exempt: the action log stores rendered text, see #689
                         body: typeof richErrorDetail === 'function'
                             ? richErrorDetail(result, 'Request failed') : (result.detail || result.title) });
                 }
@@ -2608,7 +2608,7 @@
             historyOutcome.ok = false;
             historyOutcome.durationMs = Math.round(performance.now() - historyStartMs);
             if (typeof addConsoleEntry === 'function') {
-                addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });
+                addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });  // i18n-exempt: the action log stores rendered text, see #689
             }
         }
 
@@ -3023,7 +3023,7 @@
             return [
                 { id: 'topic',   labelKey: 'rb.tab.topic'   },
                 { id: 'payload', labelKey: 'rb.tab.payload' },
-                { id: 'qos',     label: 'QoS'     },
+                { id: 'qos',     label: 'QoS'     },  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
                 { id: 'auth',    labelKey: 'rb.tab.auth' },
                 { id: 'pre',     labelKey: 'rb.tab.pre' },
                 { id: 'post',    labelKey: 'rb.tab.post' },
@@ -3042,7 +3042,7 @@
         executeLabel: function (fr) {
             var ps = rbProtoState(fr);
             if (ps.action === 'subscribe') {
-                return rbConnState.mqttSubscribed ? 'Unsubscribe' : 'Subscribe';
+                return rbConnState.mqttSubscribed ? 'Unsubscribe' : 'Subscribe';  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
             }
             return 'Publish';
         },
@@ -3056,7 +3056,7 @@
     // rbConnState.wsFrames and renders in the response pane.
     registerRequestBuilderLayout({
         id: 'websocket',
-        label: 'WebSocket',
+        label: 'WebSocket',  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
         urlPlaceholder: 'wss://echo.websocket.events  •  or ws://localhost:5080',
         defaults: function () {
             return {
@@ -3136,7 +3136,7 @@
             }
         },
         executeLabel: function () {
-            return rbConnState.sseSource ? 'Disconnect' : 'Connect';
+            return rbConnState.sseSource ? t('channel.disconnect') : t('channel.connect');
         },
         execute: function (fr) { return _executeSseRequest(fr); }
     });

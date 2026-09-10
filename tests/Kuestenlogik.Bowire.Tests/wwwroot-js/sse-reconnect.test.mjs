@@ -17,6 +17,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+// #117 — the handler translates its two frames now, and this harness builds
+// its own scope rather than going through compileFragment, so it has to
+// bring the same `t` the loader injects everywhere else.
+import { t } from './_load-fragment.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SRC = readFileSync(
@@ -53,11 +57,11 @@ function harness(readyStateSeq) {
         close() { closed = true; },
     };
 
-    const fn = new Function('rbConnState', 'src', 'render', 'SSE_MAX_RETRIES', `
+    const fn = new Function('rbConnState', 'src', 'render', 'SSE_MAX_RETRIES', 't', `
         var Date = { now: function () { return 0; } };
         ${body}
         return src.onerror;
-    `)(state, src, () => { renders++; }, ceiling);
+    `)(state, src, () => { renders++; }, ceiling, t);
 
     return {
         fire(n) { for (let k = 0; k < n; k++) { fn(); i++; } },

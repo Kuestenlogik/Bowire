@@ -228,7 +228,7 @@
                 ? result.duration_ms : Math.round(performance.now() - historyStartMs);
             if (result.title) {
                 responseError = result;
-                historyOutcome.status = result.status != null ? result.status : 'Error';
+                historyOutcome.status = result.status != null ? result.status : 'Error';  // i18n-exempt: status label, carried on the console entry and the run summary
                 historyOutcome.ok = false;
             } else {
                 responseData = result.response;
@@ -261,9 +261,9 @@
         // operation (tools/call, resources/read, prompts/get) and the hint
         // below names those operations, so the label has to match them.
         var KINDS = [
-            { id: 'tool',     label: 'Tool'     },
-            { id: 'resource', label: 'Resource' },
-            { id: 'prompt',   label: 'Prompt'   }
+            { id: 'tool',     label: 'Tool'     },  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
+            { id: 'resource', label: 'Resource' },  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
+            { id: 'prompt',   label: 'Prompt'   }  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
         ];
         var wrap = el('div', { className: 'bowire-request-builder-mcp-kind-wrap' });
         var current = KINDS.find(function (k) { return k.id === ps.method; }) || KINDS[0];
@@ -412,7 +412,7 @@
                 ? result.duration_ms : Math.round(performance.now() - historyStartMs);
             if (result.title) {
                 responseError = result;
-                historyOutcome.status = result.status != null ? result.status : 'Error';
+                historyOutcome.status = result.status != null ? result.status : 'Error';  // i18n-exempt: status label, carried on the console entry and the run summary
                 historyOutcome.ok = false;
             } else {
                 responseData = result.response;
@@ -456,7 +456,7 @@
                     ps.action = a;
                     render();
                 }
-            }, el('span', { textContent: a === 'publish' ? 'Publish' : 'Subscribe' })));
+            }, el('span', { textContent: a === 'publish' ? 'Publish' : 'Subscribe' })));  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
         });
         return wrap;
     }
@@ -470,7 +470,7 @@
         wrap.appendChild(el('input', {
             type: 'text',
             className: 'bowire-request-builder-mqtt-topic-input',
-            placeholder: 'topic/foo/bar',
+            placeholder: 'topic/foo/bar',  // i18n-exempt: an example value a user replaces
             value: ps.topic || '',
             onInput: function (e) { ps.topic = e.target.value; }
         }));
@@ -485,7 +485,7 @@
         }));
         var ta = el('textarea', {
             className: 'bowire-editor bowire-request-builder-script-editor',
-            placeholder: 'hello world',
+            placeholder: 'hello world',  // i18n-exempt: an example value a user replaces
             spellcheck: 'false'
         });
         ta.value = ps.payload || '';
@@ -507,7 +507,7 @@
                 className: 'bowire-request-builder-mqtt-qos-btn'
                     + (ps.qos === q ? ' is-active' : ''),
                 onClick: function () { ps.qos = q; render(); }
-            }, el('span', { textContent: 'QoS ' + q })));
+            }, el('span', { textContent: 'QoS ' + q })));  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
         });
         wrap.appendChild(qosRow);
         var retainRow = el('label', { className: 'bowire-request-builder-mqtt-retain-row' });
@@ -518,7 +518,7 @@
         }));
         // 'QoS' above and 'Retain' here are MQTT's own names for the setting
         // and the flag - they read the same in every language.
-        retainRow.appendChild(el('span', { textContent: ' Retain' }));
+        retainRow.appendChild(el('span', { textContent: ' Retain' }));  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
         wrap.appendChild(retainRow);
         return wrap;
     }
@@ -596,7 +596,7 @@
             } catch (e) {
                 if (typeof toast === 'function') toast(t('rbMqtt.subscribeFailed', { reason: e.message }), 'error');
             }
-            try { pushHoppHistoryEntry(fr, { status: 'Subscribed', durationMs: 0, ok: true }); }
+            try { pushHoppHistoryEntry(fr, { status: 'Subscribed', durationMs: 0, ok: true }); }  // i18n-exempt: status label, carried on the console entry and the run summary
             catch (_) {}
             render();
             return;
@@ -637,7 +637,7 @@
                 ? result.duration_ms : Math.round(performance.now() - historyStartMs);
             if (result.title) {
                 responseError = result;
-                historyOutcome.status = result.status != null ? result.status : 'Error';
+                historyOutcome.status = result.status != null ? result.status : 'Error';  // i18n-exempt: status label, carried on the console entry and the run summary
             } else {
                 responseData = result.response || '(published)';
                 historyOutcome.status = result.status || 'OK';
@@ -772,7 +772,7 @@
                 rbConnState.wsSocket = null;
                 render();
             };
-            try { pushHoppHistoryEntry(fr, { status: 'Connected', durationMs: 0, ok: true }); }
+            try { pushHoppHistoryEntry(fr, { status: 'Connected', durationMs: 0, ok: true }); }  // i18n-exempt: status label, carried on the console entry and the run summary
             catch (_) {}
         } catch (e) {
             if (typeof toast === 'function') toast(t('rbWs.connectFailed', { reason: e.message }), 'error');
@@ -869,7 +869,7 @@
                 if (rbConnState.sseRetries === 1) {
                     rbConnState.sseEvents.push({
                         event: 'error',
-                        data: closed ? '[stream error]' : '[stream error — reconnecting]',
+                        data: closed ? t('rb.streamError') : t('rb.streamErrorReconnect'),
                         ts: Date.now()
                     });
                     render();
@@ -886,7 +886,7 @@
                 });
                 render();
             };
-            try { pushHoppHistoryEntry(fr, { status: 'Connected', durationMs: 0, ok: true }); }
+            try { pushHoppHistoryEntry(fr, { status: 'Connected', durationMs: 0, ok: true }); }  // i18n-exempt: status label, carried on the console entry and the run summary
             catch (_) {}
             if (typeof toast === 'function') toast(t('rbSse.connected'), 'success');
             render();

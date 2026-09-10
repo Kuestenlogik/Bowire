@@ -12,16 +12,16 @@
     // getCodeExportLanguages' `|| CODE_EXPORT_LANGUAGES.rest` and be
     // offered a curl command that could never work against a broker.
     const CODE_EXPORT_LANGUAGES = {
-        rest:      [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }, { id: 'csharp-http', label: 'C# (HttpClient)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
-        graphql:   [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
-        mcp:       [{ id: 'curl', label: 'curl' }, { id: 'python', label: 'Python (requests)' }, { id: 'fetch', label: 'JS fetch' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
-        sse:       [{ id: 'curl-sse', label: 'curl' }, { id: 'js-eventsource', label: 'JS EventSource' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
-        grpc:      [{ id: 'grpcurl', label: 'grpcurl' }, { id: 'csharp-grpc', label: 'C# (Grpc.Net.Client)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
-        websocket: [{ id: 'wscat', label: 'wscat' }, { id: 'js-ws', label: 'JS WebSocket' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
-        signalr:   [{ id: 'csharp-signalr', label: 'C# (HubConnection)' }, { id: 'js-signalr', label: 'JS (@microsoft/signalr)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],
-        mqtt:      [{ id: 'bowire-cli', label: 'Bowire CLI' }],
-        nats:      [{ id: 'bowire-cli', label: 'Bowire CLI' }],
-        socketio:  [{ id: 'bowire-cli', label: 'Bowire CLI' }]
+        rest:      [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }, { id: 'csharp-http', label: 'C# (HttpClient)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
+        graphql:   [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
+        mcp:       [{ id: 'curl', label: 'curl' }, { id: 'python', label: 'Python (requests)' }, { id: 'fetch', label: 'JS fetch' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
+        sse:       [{ id: 'curl-sse', label: 'curl' }, { id: 'js-eventsource', label: 'JS EventSource' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
+        grpc:      [{ id: 'grpcurl', label: 'grpcurl' }, { id: 'csharp-grpc', label: 'C# (Grpc.Net.Client)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
+        websocket: [{ id: 'wscat', label: 'wscat' }, { id: 'js-ws', label: 'JS WebSocket' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
+        signalr:   [{ id: 'csharp-signalr', label: 'C# (HubConnection)' }, { id: 'js-signalr', label: 'JS (@microsoft/signalr)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
+        mqtt:      [{ id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
+        nats:      [{ id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
+        socketio:  [{ id: 'bowire-cli', label: 'Bowire CLI' }]  // i18n-exempt: the name of the tool or library the snippet is generated for
     };
 
     // Returns the list of language entries available for the currently

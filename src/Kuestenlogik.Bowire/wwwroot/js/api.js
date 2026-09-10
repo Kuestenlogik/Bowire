@@ -157,10 +157,10 @@
                     // sidebar. The throw still lands in the catch below
                     // so discoveryErrors['(embedded)'] stays populated.
                     var prob = await _readProblemBody(resp);
-                    _recordDiscoveryProblem('(embedded)', prob);
+                    _recordDiscoveryProblem('(embedded)', prob);  // i18n-exempt: an internal source label, not shown as prose
                     throw new Error(prob.title || ('HTTP ' + resp.status));
                 }
-                services = _unwrapServices('(embedded)', await resp.json());
+                services = _unwrapServices('(embedded)', await resp.json());  // i18n-exempt: an internal source label, not shown as prose
             } finally {
                 clearTimeout(timer);
             }
@@ -308,8 +308,8 @@
         return {
             route: ((m.httpMethod || '') + ' ' + (m.httpPath || '')).trim(),
             kind: (m.methodType || '')
-                + (m.clientStreaming ? '|cs' : '')
-                + (m.serverStreaming ? '|ss' : ''),
+                + (m.clientStreaming ? '|cs' : '')  // i18n-exempt: a key suffix, not shown
+                + (m.serverStreaming ? '|ss' : ''),  // i18n-exempt: a key suffix, not shown
             input: schemaMessageShape(m.inputType, 0),
             output: schemaMessageShape(m.outputType, 0),
             deprecated: !!m.deprecated,
@@ -382,10 +382,10 @@
                     } else if (a[key].deprecated !== b[key].deprecated) {
                         d.changedMethods.push({
                             service: name, key: key, type: 'deprecation',
-                            detail: a[key].deprecated ? 'marked deprecated' : 'deprecation removed'
+                            detail: a[key].deprecated ? 'marked deprecated' : 'deprecation removed'  // i18n-exempt: the schema-change log stores rendered text, see #689
                         });
                     } else if (a[key].note !== b[key].note) {
-                        d.annotatedMethods.push({ service: name, key: key, detail: 'description updated' });
+                        d.annotatedMethods.push({ service: name, key: key, detail: 'description updated' });  // i18n-exempt: the schema-change log stores rendered text, see #689
                     }
                 }
             }
@@ -540,7 +540,7 @@
                         var summary = schemaDeltaSummary(delta);
                         toast(t('schemaWatch.changed', { summary: summary }), 'info');
                         addConsoleEntry({
-                            type: 'response', method: 'Schema Watch', status: 'Changed',
+                            type: 'response', method: 'Schema Watch', status: 'Changed',  // i18n-exempt: the action log stores rendered text, see #689
                             body: summary + '\n' + schemaDeltaDetail(delta)
                         });
                     }
@@ -618,7 +618,7 @@
         // knows why it takes longer than HTTP-based protocols.
         var isMqtt = url.indexOf('mqtt') !== -1;
         if (isMqtt) {
-            addConsoleEntry({ type: 'request', method: 'MQTT Discovery', status: 'Scanning', body: 'Subscribing to # at ' + url + ' (up to 3s)...' });
+            addConsoleEntry({ type: 'request', method: 'MQTT Discovery', status: 'Scanning', body: 'Subscribing to # at ' + url + ' (up to 3s)...' });  // i18n-exempt: the action log stores rendered text, see #689
         }
         // Per-URL discovery timeout — stops one unreachable server
         // (TCP-refused, DNS-fail, hung HTTPS handshake) from wedging
@@ -815,8 +815,8 @@
             const result = await resp.json();
             if (result.title) {
                 responseError = result;
-                statusInfo = { status: 'Error', durationMs: 0, responseSize: 0 };
-                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: richErrorDetail(result, 'Request failed') });
+                statusInfo = { status: 'Error', durationMs: 0, responseSize: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
+                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: richErrorDetail(result, 'Request failed') });  // i18n-exempt: the action log stores rendered text, see #689
             } else {
                 responseData = result.response;
                 captureResponse(result.response); // for ${response.X} chaining
@@ -934,8 +934,8 @@
             });
         } catch (e) {
             responseError = e.message;
-            statusInfo = { status: 'NetworkError', durationMs: 0 };
-            addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });
+            statusInfo = { status: 'NetworkError', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
+            addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });  // i18n-exempt: the action log stores rendered text, see #689
         }
 
         // v2.2 T3 — record this invocation in the per-workspace
@@ -991,7 +991,7 @@
         streamSelectedIndex = null;
         streamAutoScroll = true;
         streamDetailMaximized = false;
-        statusInfo = { status: 'Streaming', durationMs: 0 };
+        statusInfo = { status: 'Streaming', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
         render();
 
         const startTime = performance.now();
@@ -1008,7 +1008,7 @@
         const url = `${config.prefix}/api/invoke/stream?service=${encodeURIComponent(service)}&method=${encodeURIComponent(method)}&messages=${encodeURIComponent(messagesJson)}${protocolParam}${metadataParam}${serverUrlParamForService(selectedService, true, selectedMethod)}`;
 
         var fullName = service + '/' + method;
-        addConsoleEntry({ type: 'request', method: fullName, status: 'Streaming', body: messages[0] || '{}' });
+        addConsoleEntry({ type: 'request', method: fullName, status: 'Streaming', body: messages[0] || '{}' });  // i18n-exempt: the action log stores rendered text, see #689
 
         sseSource = new EventSource(url);
         // Track the SSE subscription so the statusbar pill + per-pane
@@ -1110,7 +1110,7 @@
                     startedAt: Date.now() - elapsed, durationMs: elapsed, outcome: 'ok'
                 });
             }
-            addConsoleEntry({ type: 'response', method: fullName, status: 'Completed', durationMs: elapsed });
+            addConsoleEntry({ type: 'response', method: fullName, status: 'Completed', durationMs: elapsed });  // i18n-exempt: the action log stores rendered text, see #689
 
             // ---- Post-response script (streaming) ----
             var streamResponseObj = streamMessages.length > 0 ? streamMessages[streamMessages.length - 1] : null;
@@ -1182,7 +1182,7 @@
             if (sseSource.readyState === EventSource.CLOSED) return;
             const elapsed = Math.round(performance.now() - startTime);
             responseError = 'Stream error occurred.';
-            statusInfo = { status: 'Error', durationMs: elapsed };
+            statusInfo = { status: 'Error', durationMs: elapsed };  // i18n-exempt: status label, carried on the console entry and the run summary
             isExecuting = false;
             markJobDone(service, method);
             markSubscriptionError(service, method, 'Stream error');
@@ -1198,7 +1198,7 @@
                     outcome: 'error', errorMessage: 'Stream error'
                 });
             }
-            addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: 'Stream error occurred', durationMs: elapsed });
+            addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: 'Stream error occurred', durationMs: elapsed });  // i18n-exempt: the action log stores rendered text, see #689
             render();
         });
     }
