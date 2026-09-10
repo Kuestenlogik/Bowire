@@ -1213,7 +1213,7 @@
             markJobDone(selectedService.name, selectedMethod.name);
             unregisterSubscription(selectedService.name, selectedMethod.name);
         }
-        if (statusInfo) statusInfo.status = 'Cancelled';
+        if (statusInfo) statusInfo.status = 'Cancelled';  // i18n-exempt: status label, carried on the console entry and the run summary
         render();
     }
 
@@ -1238,7 +1238,7 @@
                 duplexConnected = false;
             }
             isExecuting = false;
-            if (statusInfo) statusInfo.status = 'Cancelled';
+            if (statusInfo) statusInfo.status = 'Cancelled';  // i18n-exempt: status label, carried on the console entry and the run summary
         } else if (entry.sseSource) {
             try { entry.sseSource.close(); } catch {}
         }

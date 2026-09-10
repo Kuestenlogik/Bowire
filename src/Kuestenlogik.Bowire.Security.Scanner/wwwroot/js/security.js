@@ -138,8 +138,8 @@
             className: 'bowire-btn', textContent: t('security.runOwasp'),
             onclick: function () {
                 var target = targetInput.value.trim();
-                if (!target) { statusEl.textContent = 'Enter a target URL first.'; return; }
-                statusEl.textContent = 'Scanning…';
+                if (!target) { statusEl.textContent = t('security.needTarget'); return; }
+                statusEl.textContent = t('security.scanning');
                 runBtn.disabled = true;
                 var auth = authInput.value.trim();
                 fetch(config.prefix + '/api/security/owasp-scan', {
@@ -157,7 +157,7 @@
                             statusEl.textContent = (res && res.detail) || 'Scan failed.';
                         }
                     })
-                    .catch(function (e) { statusEl.textContent = 'Scan failed: ' + e; })
+                    .catch(function (e) { statusEl.textContent = t('ai.scanFailed', { error: e }); })
                     .finally(function () { runBtn.disabled = false; });
             }
         });
@@ -173,7 +173,7 @@
         fetch(config.prefix + '/api/security/owasp-catalog')
             .then(function (r) { return r.json(); })
             .then(function (entries) { renderRows(entries); })
-            .catch(function () { statusEl.textContent = 'Could not load the OWASP catalog.'; });
+            .catch(function () { statusEl.textContent = t('security.owaspFailed'); });
 
         return wrap;
     }
@@ -225,8 +225,8 @@
             className: 'bowire-btn', textContent: t('security.discoverEndpoints'),
             onclick: function () {
                 var url = urlInput.value.trim();
-                if (!url) { statusEl.textContent = 'Enter a base URL first.'; return; }
-                statusEl.textContent = 'Spidering…'; discoverBtn.disabled = true;
+                if (!url) { statusEl.textContent = t('security.needBaseUrl'); return; }
+                statusEl.textContent = t('security.spidering'); discoverBtn.disabled = true;
                 triage = {}; rendered = []; list.textContent = ''; summary.textContent = '';
                 var auth = authInput.value.trim();
                 fetch(config.prefix + '/api/security/spider', {
@@ -241,7 +241,9 @@
                             refreshSummary();
                         } else { statusEl.textContent = (res && res.detail) || 'Spider failed.'; }
                     })
-                    .catch(function (e) { statusEl.textContent = 'Spider failed: ' + e; })
+                    .catch(function (e) {
+    statusEl.textContent = t('security.spiderFailed', { error: e });
+})
                     .finally(function () { discoverBtn.disabled = false; });
             }
         });
@@ -250,8 +252,8 @@
             className: 'bowire-btn', textContent: t('security.copyConfirmed'),
             onclick: function () {
                 var urls = rendered.filter(function (x) { return triage[x.id] === 'confirmed'; }).map(function (x) { return x.url; });
-                if (!urls.length) { statusEl.textContent = 'No confirmed candidates yet.'; return; }
-                if (navigator.clipboard) navigator.clipboard.writeText(urls.join('\n')).then(function () { statusEl.textContent = 'Copied ' + urls.length + ' URL(s).'; });
+                if (!urls.length) { statusEl.textContent = t('security.noCandidates'); return; }
+                if (navigator.clipboard) navigator.clipboard.writeText(urls.join('\n')).then(function () { statusEl.textContent = t('security.copiedUrls', { count: urls.length }); });
                 else statusEl.textContent = urls.join('  ');
             }
         });
@@ -383,7 +385,7 @@
                 var genBtn = el('button', {
                     className: 'bowire-btn', textContent: t('security.generatePayload'),
                     onclick: function () {
-                        genBtn.disabled = true; statusEl.textContent = 'Allocating…';
+                        genBtn.disabled = true; statusEl.textContent = t('security.allocating');
                         fetch(config.prefix + '/api/security/oast/allocate', { method: 'POST' })
                             .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
                             .then(function (res) {
@@ -392,14 +394,16 @@
                                     payloadList.insertBefore(renderOastPayloadRow(res.body.host), payloadList.firstChild);
                                     // Auto-copy the freshest payload — the operator is about to paste it.
                                     if (navigator.clipboard) navigator.clipboard.writeText(res.body.host).catch(function () { /* ignore */ });
-                                    statusEl.textContent = 'Payload ready + copied. Waiting for callbacks…';
+                                    statusEl.textContent = t('security.payloadReady');
                                     ensureOastPoll();
                                     refreshOastFeed();
                                 } else {
                                     statusEl.textContent = (res.body && res.body.error) || 'Could not allocate a payload.';
                                 }
                             })
-                            .catch(function (e) { statusEl.textContent = 'Allocate failed: ' + e; })
+                            .catch(function (e) {
+    statusEl.textContent = t('security.allocateFailed', { error: e });
+})
                             .finally(function () { genBtn.disabled = false; });
                     }
                 });

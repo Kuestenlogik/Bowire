@@ -263,7 +263,7 @@
         overlay.className = 'bowire-tour-overlay';
         overlay.setAttribute('role', 'dialog');
         overlay.setAttribute('aria-modal', 'true');
-        overlay.setAttribute('aria-label', 'Guided tour');
+        overlay.setAttribute('aria-label', t('tour.ariaLabel'));
         overlay.id = 'bowire-tour-overlay';
 
         // SVG-mask cutout. The mask defines: white = visible dim,
@@ -696,8 +696,8 @@
         var closeBtn = document.createElement('button');
         closeBtn.type = 'button';
         closeBtn.className = 'bowire-tour-close';
-        closeBtn.title = 'Close tour';
-        closeBtn.setAttribute('aria-label', 'Close tour');
+        closeBtn.title = t('tour.close');
+        closeBtn.setAttribute('aria-label', t('tour.close'));
         if (typeof svgIcon === 'function') {
             closeBtn.innerHTML = svgIcon('close');
         } else {
@@ -746,7 +746,7 @@
                     line.className = 'bowire-tour-alt';
                     var prefix = document.createElement('span');
                     prefix.className = 'bowire-tour-alt-prefix';
-                    prefix.textContent = 'Tip:';
+                    prefix.textContent = t('tour.tip');
                     line.appendChild(prefix);
                     var text = document.createElement('span');
                     text.className = 'bowire-tour-alt-text';
@@ -846,7 +846,7 @@
             var ctaBtn = document.createElement('button');
             ctaBtn.type = 'button';
             ctaBtn.className = 'bowire-tour-btn-primary';
-            ctaBtn.textContent = step.cta.label || (isLast ? 'Finish' : 'Next');
+            ctaBtn.textContent = step.cta.label || (isLast ? t('tour.finish') : t('tour.next'));
             ctaBtn.onclick = function () {
                 if (step.cta && typeof step.cta.onClick === 'function') {
                     try { step.cta.onClick(); }
@@ -889,7 +889,7 @@
             } else {
                 var waiting2 = document.createElement('span');
                 waiting2.className = 'bowire-tour-waiting';
-                waiting2.textContent = 'Waiting…';
+                waiting2.textContent = t('tour.waiting');
                 actions.appendChild(waiting2);
             }
         } else {
@@ -897,7 +897,7 @@
             var nextBtn = document.createElement('button');
             nextBtn.type = 'button';
             nextBtn.className = 'bowire-tour-btn-primary';
-            nextBtn.textContent = isLast ? 'Finish' : 'Next';
+            nextBtn.textContent = isLast ? t('tour.finish') : t('tour.next');
             nextBtn.onclick = function () { _advanceOrFinish(); };
             actions.appendChild(nextBtn);
         }

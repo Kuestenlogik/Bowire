@@ -534,14 +534,15 @@
         row.appendChild(el('button', {
             type: 'button',
             className: 'bowire-catalogue-row-add' + (already ? ' is-added' : ''),
-            textContent: already ? 'Added' : 'Add',
+            textContent: already ? t('catalogue.added') : t('catalogue.add'),
             // undefined, not false: el() writes attrs via setAttribute and
             // the DOM disables on the attribute's mere PRESENCE, so
             // `disabled="false"` would grey out every Add button.
             disabled: (already || readOnly) ? 'disabled' : undefined,
             title: readOnly
                 ? 'This catalogue is read-only — URL management is disabled by the host.'
-                : (already ? 'Already in this workspace' : 'Add ' + entryUrl + ' to this workspace'),
+                : (already ? t('catalogue.alreadyHere')
+    : t('catalogue.addToWorkspace', { url: entryUrl })),
             onClick: function (e) {
                 // Re-resolve at CLICK time from the DOM, not from the
                 // render-time closure. Both halves matter: morphdom keeps

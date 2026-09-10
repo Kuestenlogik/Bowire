@@ -155,7 +155,16 @@ The reason belongs next to the string, not in a list elsewhere, so a reviewer ca
 
 ## What is still English
 
-Two things, and both are counted rather than estimated:
+`npm run i18n:report` prints zero. Every fragment that lands in the bundle &mdash; the core project and all eleven sibling packages &mdash; reads its text from the catalogue, and the ratchet in `untranslated-baseline.json` is an empty object, so the next literal anyone adds fails the build.
 
-* **The rails still being swept.** `npm run i18n:report` prints the current figure; at the time of writing it is 813 literals across 39 fragments, with Benchmarking, Flows, Recordings, Mock and the core's `render-main.js` carrying most of it. Tracked on #117.
-* **The command line's own `--help` text**, roughly three hundred option and command descriptions, tracked separately on #690 &mdash; which asks first whether it should be translated at all.
+What remains English is deliberate, and each instance says so on its own line with `// i18n-exempt: <reason>`. There are 178, and they fall into five groups:
+
+| Group | Why |
+|---|---|
+| Action-log and console entries | They store rendered text rather than a key, so a language switch would leave a mixed-language history. Fixing that is #689. |
+| Run and replay status labels | They are the aggregation key for a run summary *and* are written verbatim into the CSV, k6-summary, OTLP and HTML-report exports. Translating one would change the artefact and break the grouping. |
+| Defaults written into data | `Workspace 2`, `New Environment`. These travel out through the `.bww` export into somebody else's Bowire, so a translated default would freeze one language into their workspace. |
+| Protocol, product and tool names | QoS, Retain, Bearer Token, OpenAPI, curl, grpcurl, MapLibre, Consul, the whole licence table. Covered by the rule above. |
+| Example values and commands | `e.g. baseUrl`, `sk-...`, `dotnet add package …`. A person replaces them or types them; they are not sentences. |
+
+The command line's own `--help` text &mdash; roughly three hundred option and command descriptions &mdash; is tracked separately on #690, which asks first whether it should be translated at all.

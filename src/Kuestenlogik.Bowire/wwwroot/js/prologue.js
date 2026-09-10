@@ -33,8 +33,8 @@
     }
 
     const config = window.__BOWIRE_CONFIG__ || {
-        title: 'Bowire',
-        description: 'Multi-protocol API workbench',
+        title: 'Bowire',  // i18n-exempt: the product name
+        description: t('app.tagline'),
         prefix: '/bowire',
         theme: 'dark',
         showInternalServices: false
@@ -2562,7 +2562,7 @@
     // suffixing; consistency with renameWorkspace's behaviour.
     function _nextDefaultWorkspaceName() {
         var n = workspaces.length + 1;
-        while (_isWorkspaceNameTaken('Workspace ' + n)) n++;
+        while (_isWorkspaceNameTaken('Workspace ' + n)) n++;  // i18n-exempt: a default written into the workspace and carried out through the .bww export; a translated one would freeze one language into somebody else's Bowire
         return 'Workspace ' + n;
     }
     // Returns the new workspace on success, or null if the explicit
@@ -6015,10 +6015,10 @@
         card.className = 'bowire-from-source-card';
         var title = document.createElement('div');
         title.className = 'bowire-from-source-title';
-        title.textContent = 'Pick a Source URL';
+        title.textContent = t('main.src.pickUrl');
         var desc = document.createElement('div');
         desc.className = 'bowire-from-source-desc';
-        desc.textContent = 'The new request will reference this URL — changes to the Source propagate to the saved item.';
+        desc.textContent = t('main.src.pickUrlBody');
         card.appendChild(title);
         card.appendChild(desc);
         var list = document.createElement('div');
@@ -6045,7 +6045,7 @@
         var cancelBtn = document.createElement('button');
         cancelBtn.type = 'button';
         cancelBtn.className = 'bowire-from-source-cancel';
-        cancelBtn.textContent = 'Cancel';
+        cancelBtn.textContent = t('common.cancel');
         cancelBtn.onclick = close;
         actions.appendChild(cancelBtn);
         card.appendChild(actions);
@@ -6366,7 +6366,7 @@
                 logAction: {
                     kind: 'collection-create',
                     rail: 'collections',
-                    title: 'Created collection "' + _colName + '"',
+                    title: 'Created collection "' + _colName + '"',  // i18n-exempt: the action log stores rendered text, see #689
                     undoSpec: { collectionId: _colId },
                     // Mirror the collection-create resolver so in-session
                     // Ctrl+Shift+Z restores the collection from
@@ -6689,7 +6689,7 @@
         resetBenchmark({ n: n, concurrency: Math.max(1, Math.min(concurrency, 20)) });
         benchmark.running = true;
         benchmark.startTime = performance.now();
-        addConsoleEntry({ type: 'request', method: fullName, status: 'Benchmark', body: 'Starting ' + n + ' calls (concurrency ' + concurrency + ')' });
+        addConsoleEntry({ type: 'request', method: fullName, status: 'Benchmark', body: 'Starting ' + n + ' calls (concurrency ' + concurrency + ')' });  // i18n-exempt: the action log stores rendered text, see #689
         render();
 
         var nextIndex = 0;
@@ -6768,7 +6768,7 @@
         addConsoleEntry({
             type: 'response',
             method: fullName,
-            status: benchmark.cancelled ? 'Cancelled' : 'Benchmark complete',
+            status: benchmark.cancelled ? 'Cancelled' : 'Benchmark complete',  // i18n-exempt: the action log stores rendered text, see #689
             durationMs: Math.round(totalMs),
             body: benchmark.success + ' OK / ' + benchmark.failure + ' failed'
         });

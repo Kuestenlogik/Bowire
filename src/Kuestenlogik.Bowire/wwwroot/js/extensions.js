@@ -1265,7 +1265,7 @@
         card.style.border = '1px dashed var(--bowire-border-muted, rgba(120, 120, 120, 0.25))';
 
         var msg = document.createElement('span');
-        msg.textContent = 'Install ';
+        msg.textContent = t('extensions.install') + ' ';
         card.appendChild(msg);
 
         var code = document.createElement('code');
@@ -1284,8 +1284,8 @@
 
         var copyBtn = document.createElement('button');
         copyBtn.type = 'button';
-        copyBtn.textContent = 'Copy';
-        copyBtn.title = 'Copy package id to clipboard';
+        copyBtn.textContent = t('extensions.copy');
+        copyBtn.title = t('extensions.copyTitle');
         copyBtn.style.marginLeft = '8px';
         copyBtn.style.padding = '2px 8px';
         copyBtn.style.font = 'inherit';
@@ -1294,8 +1294,8 @@
             try {
                 if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
                     navigator.clipboard.writeText(suggestion).then(function () {
-                        copyBtn.textContent = 'Copied!';
-                        setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1200);
+                        copyBtn.textContent = t('extensions.copied');
+                        setTimeout(function () { copyBtn.textContent = t('extensions.copy'); }, 1200);
                     });
                 }
             } catch { /* clipboard API unavailable — ignore */ }
@@ -1303,7 +1303,7 @@
         card.appendChild(copyBtn);
 
         var tail = document.createElement('span');
-        tail.textContent = ' to render `' + kind + '` annotations on a map.';
+        tail.textContent = ' ' + t('extensions.toRenderOnMap', { kind: kind });
         card.appendChild(tail);
 
         return card;

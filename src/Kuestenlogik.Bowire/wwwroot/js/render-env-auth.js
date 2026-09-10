@@ -6171,7 +6171,7 @@
             className: 'bowire-auth-preview-btn',
             textContent: t('auth.fetchToken'),
             onClick: async function () {
-                output.textContent = 'Fetching...';
+                output.textContent = t('rbAuth.fetching');
                 output.classList.remove('ok', 'error');
                 try {
                     clearOauthTokenCache();

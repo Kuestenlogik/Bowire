@@ -119,7 +119,7 @@ function renderRollupMain() {
             className: 'bowire-settings-action-btn',
             disabled: bowireRollupLoading ? 'disabled' : null,
             onClick: function () { bowireLoadRollup(); }
-        }, bowireRollupLoading ? 'Reading…' : 'Roll up')
+        }, bowireRollupLoading ? t('rollup.reading') : t('rollup.rollUp'))
     ]));
 
     if (bowireRollupError) {
@@ -129,20 +129,18 @@ function renderRollupMain() {
         // greets you with a bare paragraph.
         body.push(renderEmptyCard({
             icon: 'layers',
-            headline: 'Nothing rolled up yet',
-            body: 'Point the path above at a folder of Bowire reports — lint findings, '
-                + 'contract results, benchmark runs, scan SARIF, test JUnit — and press Roll up. '
-                + 'Directories are walked recursively.',
+            headline: t('rollup.noneYet'),
+            body: t('rollup.noneYetBody'),
         }));
     } else if (!bowireRollup.services || bowireRollup.services.length === 0) {
         body.push(renderEmptyCard({
             icon: 'layers',
-            headline: 'No Bowire reports under those paths',
+            headline: t('rollup.noReports'),
             // The skipped count is the difference between "nothing there" and
             // "things there that I could not read", and only one of those is
             // the operator's problem to fix.
             body: bowireRollup.summary && bowireRollup.summary.skipped
-                ? bowireRollup.summary.skipped + ' file(s) were read but not recognised as Bowire reports.'
+                ? t('rollup.skipped', { count: bowireRollup.summary.skipped })
                 : 'Nothing under those paths looked like a Bowire report.',
         }));
     } else {

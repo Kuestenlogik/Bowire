@@ -103,7 +103,7 @@
         var bits = [];
         if (detail) bits.push(detail);
         if (ra.deprecated !== rb.deprecated) {
-            bits.push(rb.deprecated ? 'marked deprecated' : 'deprecation removed');
+            bits.push(rb.deprecated ? t('compare.markedDeprecated') : t('compare.undeprecated'));
         }
         var changed = bits.length > 0;
         // Prose-only edits are noted but do not count as a breaking change
@@ -572,7 +572,7 @@
         d.added.forEach(function (m) { list.appendChild(_renderCompareMethodRow('added', null, m, '')); });
         d.changed.forEach(function (c) { list.appendChild(_renderCompareMethodRow('changed', c.a, c.b, c.detail, c)); });
         if (serviceCompareState.showUnchanged) {
-            d.unchanged.forEach(function (c) { list.appendChild(_renderCompareMethodRow('unchanged', c.a, c.b, c.noteOnly ? 'description updated' : '', c)); });
+            d.unchanged.forEach(function (c) { list.appendChild(_renderCompareMethodRow('unchanged', c.a, c.b, c.noteOnly ? t('compare.descriptionUpdated') : '', c)); });
         }
         if (!list.children.length) {
             list.appendChild(el('div', { className: 'bowire-compare-hint', textContent: t('compare.identicalSchemas') }));

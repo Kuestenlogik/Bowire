@@ -218,17 +218,17 @@
         }, 0);
     }
 
-    function isVarsACEligibleTarget(t) {
-        if (!t) return false;
+    function isVarsACEligibleTarget(target) {
+        if (!target) return false;
         // Opt-out: fields that aren't template-bearing (search
         // palette, workspace rename prompt, etc.) set
         // data-bowire-no-vars-ac="1" so the dropdown leaves them
         // alone.
-        if (t.dataset && t.dataset.bowireNoVarsAc === '1') return false;
-        var tag = t.tagName;
+        if (target.dataset && target.dataset.bowireNoVarsAc === '1') return false;
+        var tag = target.tagName;
         if (tag === 'TEXTAREA') return true;
         if (tag === 'INPUT') {
-            var type = (t.type || 'text').toLowerCase();
+            var type = (target.type || 'text').toLowerCase();
             return type === 'text' || type === 'search' || type === 'url' || type === 'email' || type === '';
         }
         // contenteditable not handled by the dropdown (selection
@@ -237,11 +237,11 @@
         return false;
     }
 
-    function getTargetCaret(t) {
-        return typeof t.selectionStart === 'number' ? t.selectionStart : (t.value || '').length;
+    function getTargetCaret(target) {
+        return typeof target.selectionStart === 'number' ? target.selectionStart : (target.value || '').length;
     }
-    function getTargetValue(t) {
-        return t.value != null ? String(t.value) : '';
+    function getTargetValue(target) {
+        return target.value != null ? String(target.value) : '';
     }
 
     // #125 Phase 2 v3 — find the closed {{...}} that encloses the
@@ -366,13 +366,13 @@
             btn.classList.add('bowire-vars-ref-reroll-spin');
             if (valSpan) {
                 valSpan.className = 'bowire-vars-ref-preview-value';
-                valSpan.textContent = 'rerolling…';
+                valSpan.textContent = t('vars.rerolling');
             }
             window.bowireRerollAiVar(aiName).then(function (v) {
                 if (!valSpan) return;
                 if (v === null || v === undefined || v === '') {
                     valSpan.className = 'bowire-vars-ref-preview-error';
-                    valSpan.textContent = 'Re-roll returned no value';
+                    valSpan.textContent = t('vars.rerollEmpty');
                 } else {
                     valSpan.className = 'bowire-vars-ref-preview-value';
                     valSpan.textContent = String(v);
@@ -380,7 +380,7 @@
             }).catch(function () {
                 if (valSpan) {
                     valSpan.className = 'bowire-vars-ref-preview-error';
-                    valSpan.textContent = 'Re-roll failed';
+                    valSpan.textContent = t('vars.rerollFailed');
                 }
             }).finally(function () {
                 btn.disabled = false;
@@ -558,8 +558,8 @@
         if (!varsACState) return;
         var s = varsACState.suggestions[varsACState.selectedIdx];
         if (!s) { closeVarsAC(); return; }
-        var t = varsACState.target;
-        var value = getTargetValue(t);
+        var target = varsACState.target;
+        var value = getTargetValue(target);
         var before = value.substring(0, varsACState.openIdx);
         var afterCaret = value.substring(varsACState.caret);
         // If the suggestion is a source-prefix (ends with '.'), keep
@@ -576,14 +576,14 @@
             insert = '{{' + s.insert + '}}';
             newCaret = before.length + insert.length;
         }
-        t.value = before + insert + afterCaret;
-        t.setSelectionRange(newCaret, newCaret);
+        target.value = before + insert + afterCaret;
+        target.setSelectionRange(newCaret, newCaret);
         // Fire input so listeners (incl. this autocomplete) update.
-        t.dispatchEvent(new Event('input', { bubbles: true }));
+        target.dispatchEvent(new Event('input', { bubbles: true }));
         if (isPrefix) {
             // Re-trigger the dropdown so the operator sees the
             // matches for the just-inserted prefix.
-            onVarsACInput({ target: t });
+            onVarsACInput({ target: target });
         } else {
             closeVarsAC();
         }

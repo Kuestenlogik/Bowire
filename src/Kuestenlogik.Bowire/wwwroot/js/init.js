@@ -512,7 +512,7 @@
                             + '<polyline points="20 15 20 20 15 20"/>'
                             + '<polyline points="4 15 4 20 9 20"/>'
                             + '</svg>';
-                        maxBtn.title = 'Maximize widget to fill the window';
+                        maxBtn.title = t('init.maximizeWidget');
                     }
                     return;
                 }

@@ -1185,7 +1185,9 @@
             return checked.reduce(function (n, v) { return n + (v ? 1 : 0); }, 0);
         }
         function refreshImportLabel() {
-            if (importBtn) importBtn.textContent = 'Import ' + selectedCount();
+            if (importBtn) {
+    importBtn.textContent = t('rec.importCount', { count: selectedCount() });
+}
         }
 
         candidates.forEach(function (c, idx) {

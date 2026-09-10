@@ -224,7 +224,7 @@
                 statusEl.textContent = '';
             } else if (result.ok) {
                 statusEl.classList.add('ok');
-                statusEl.textContent = '\u2713 Valid JSON';
+                statusEl.textContent = t('helpers.validJson');
             } else {
                 statusEl.classList.add('error');
                 statusEl.textContent = '\u26A0 ' + result.error;
@@ -627,7 +627,7 @@
         if (collapsePath) {
             chevSlot.classList.add(collapsed ? 'is-collapsed' : 'is-open');
             chevSlot.setAttribute('data-collapse-path', collapsePath);
-            chevSlot.setAttribute('title', collapsed ? 'Expand' : 'Collapse');
+            chevSlot.setAttribute('title', collapsed ? t('common.expand') : t('common.collapse'));
             chevSlot.textContent = collapsed ? '▶' : '▼';
         }
         gutter.appendChild(chevSlot);
@@ -1306,15 +1306,15 @@
             leading.type = 'button';
             leading.className = 'bowire-pane-divider-edge-toggle bowire-pane-divider-edge-toggle-leading';
             leading.setAttribute('data-action', 'max-leading');
-            leading.setAttribute('aria-label', 'Maximize request pane');
-            leading.title = 'Maximize request pane (click again to restore)';
+            leading.setAttribute('aria-label', t('helpers.maxRequestAria'));
+            leading.title = t('helpers.maxRequest');
             leading.innerHTML = '<span>' + CHEVRON_SVG + '</span>';
             var trailing = document.createElement('button');
             trailing.type = 'button';
             trailing.className = 'bowire-pane-divider-edge-toggle bowire-pane-divider-edge-toggle-trailing';
             trailing.setAttribute('data-action', 'max-trailing');
-            trailing.setAttribute('aria-label', 'Maximize response pane');
-            trailing.title = 'Maximize response pane (click again to restore)';
+            trailing.setAttribute('aria-label', t('helpers.maxResponseAria'));
+            trailing.title = t('helpers.maxResponse');
             trailing.innerHTML = '<span>' + CHEVRON_SVG + '</span>';
             divider.appendChild(leading);
             divider.appendChild(trailing);
@@ -2086,7 +2086,7 @@
                 type: 'button',
                 className: 'bowire-settings-toggle bowire-alert-bar-toggle' + (iv ? ' on' : ''),
                 'aria-pressed': iv ? 'true' : 'false',
-                title: opts.inlineToggle.title || (iv ? 'On — click to turn off' : 'Off — click to turn on'),
+                title: opts.inlineToggle.title || (iv ? t('common.toggleOn') : t('common.toggleOff')),
                 onClick: function () {
                     iv = !iv;
                     toggle.classList.toggle('on', iv);
@@ -2462,12 +2462,11 @@
         opts = opts || {};
         var pad = el('div', { className: 'bowire-main-pad' });
         var bodyPrefix = opts.railBody ? (opts.railBody + ' ') : '';
+var railName = opts.railLabel || t('prereq.thisRail');
         pad.appendChild(renderEmptyCard({
             icon: opts.icon || 'workspace',
-            headline: 'You need a workspace to use ' + (opts.railLabel || 'this rail') + '.',
-            body: bodyPrefix
-                + 'A workspace scopes the URLs, environments, secrets, and saved items you build here, so two projects don’t bleed into each other. Create one to unlock '
-                + (opts.railLabel || 'this rail') + '.',
+            headline: t('prereq.headline', { rail: railName }),
+            body: bodyPrefix + t('prereq.body', { rail: railName }),
             actions: [
                 {
                     id: 'bowire-prereq-create-ws-btn',
@@ -3205,7 +3204,7 @@
                     var closeBtn = document.createElement('button');
                     closeBtn.type = 'button';
                     closeBtn.className = 'bowire-tab-overflow-row-close';
-                    closeBtn.setAttribute('aria-label', 'Close');
+                    closeBtn.setAttribute('aria-label', t('common.close'));
                     closeBtn.title = origClose.title || 'Close';
                     closeBtn.innerHTML = origClose.innerHTML;
                     closeBtn.addEventListener('click', function (e) {
@@ -3574,7 +3573,7 @@
             var chevron = el('button', {
                 type: 'button',
                 className: 'bowire-tree-toggle' + (isExpanded ? ' expanded' : ''),
-                'aria-label': isExpanded ? 'Collapse' : 'Expand',
+                'aria-label': isExpanded ? t('common.collapse') : t('common.expand'),
                 innerHTML: svgIcon('chevron'),
                 onClick: function (e) {
                     e.stopPropagation();

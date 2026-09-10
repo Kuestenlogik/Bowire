@@ -505,7 +505,7 @@
             notice.className = 'bowire-map-fallback';
             notice.style.padding = '12px';
             notice.style.font = '13px system-ui, sans-serif';
-            notice.textContent = 'Map widget unavailable: MapLibre bundle did not load.';
+            notice.textContent = t('map.unavailable');
             container.appendChild(notice);
             return function () { if (notice.parentNode) notice.parentNode.removeChild(notice); };
         }
@@ -1508,7 +1508,7 @@
                 wrap.addEventListener('dblclick', function (e) { e.stopPropagation(); });
 
                 var text = document.createElement('span');
-                text.textContent = 'Show trajectory';
+                text.textContent = t('map.showTrajectory');
 
                 label.appendChild(box);
                 label.appendChild(text);
@@ -1808,7 +1808,7 @@
 
             var speed = document.createElement('select');
             speed.style.font = 'inherit';
-            speed.title = 'Playback speed';
+            speed.title = t('map.playbackSpeed');
             for (var i = 0; i < BOWIRE_PLAYBACK_SPEEDS.length; i++) {
                 var opt = document.createElement('option');
                 opt.value = String(BOWIRE_PLAYBACK_SPEEDS[i]);
@@ -1973,7 +1973,7 @@
             trackPathSelect.textContent = '';
             var none = document.createElement('option');
             none.value = '';
-            none.textContent = '(group by message type)';
+            none.textContent = t('map.groupByMessageType');
             trackPathSelect.appendChild(none);
             var seen = false;
             for (var i = 0; i < trackCandidates.length; i++) {
@@ -2054,7 +2054,7 @@
             var visibleCounts = visibleTrackCounts();
             if (trackMeta.size === 0) {
                 var empty = document.createElement('div');
-                empty.textContent = 'No tracks yet';
+                empty.textContent = t('map.noTracks');
                 empty.style.opacity = '0.6';
                 empty.style.padding = '2px 0';
                 legendBody.appendChild(empty);
@@ -2132,7 +2132,7 @@
                 caret.style.opacity = '0.7';
 
                 var title = document.createElement('strong');
-                title.textContent = 'Tracks';
+                title.textContent = t('map.tracks');
                 title.style.fontWeight = '600';
 
                 head.appendChild(caret);
@@ -2150,7 +2150,7 @@
                 });
 
                 var pathLabel = document.createElement('div');
-                pathLabel.textContent = 'Group by';
+                pathLabel.textContent = t('map.groupBy');
                 pathLabel.style.opacity = '0.7';
                 pathLabel.style.marginBottom = '2px';
 
@@ -2163,7 +2163,7 @@
 
                 var custom = document.createElement('input');
                 custom.type = 'text';
-                custom.placeholder = 'or a path, e.g. entity.id';
+                custom.placeholder = 'or a path, e.g. entity.id';  // i18n-exempt: an example path a user replaces
                 custom.value = trackIdPath;
                 custom.style.width = '100%';
                 custom.style.font = 'inherit';
@@ -2615,7 +2615,7 @@
         var maplibregl;
         try { maplibregl = await bowireLoadMapLibre(); }
         catch {
-            container.textContent = 'Map editor unavailable: MapLibre bundle did not load.';
+            container.textContent = t('map.editorUnavailable');
             return function () {};
         }
 

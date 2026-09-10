@@ -237,7 +237,7 @@
             }
         } catch (e) {
             responseError = e.message;
-            historyOutcome.status = 'NetworkError';
+            historyOutcome.status = 'NetworkError';  // i18n-exempt: status label, carried on the console entry and the run summary
             historyOutcome.ok = false;
             historyOutcome.durationMs = Math.round(performance.now() - historyStartMs);
         }
@@ -421,7 +421,7 @@
             }
         } catch (e) {
             responseError = e.message;
-            historyOutcome.status = 'NetworkError';
+            historyOutcome.status = 'NetworkError';  // i18n-exempt: status label, carried on the console entry and the run summary
             historyOutcome.ok = false;
             historyOutcome.durationMs = Math.round(performance.now() - historyStartMs);
         }
@@ -645,7 +645,7 @@
             }
         } catch (e) {
             responseError = e.message;
-            historyOutcome.status = 'NetworkError';
+            historyOutcome.status = 'NetworkError';  // i18n-exempt: status label, carried on the console entry and the run summary
             historyOutcome.durationMs = Math.round(performance.now() - historyStartMs);
         }
         try { pushHoppHistoryEntry(fr, historyOutcome); }

@@ -140,7 +140,7 @@
 
         card.appendChild(renderEmptyCard({
             icon: 'discover',
-            headline: 'Discover',
+            headline: t('landing.discover'),
             body: bodyText
         }));
 
@@ -267,7 +267,7 @@
 
         parent.appendChild(renderEmptyCard({
             icon: 'discover',
-            headline: 'Discover is empty',
+            headline: t('landing.empty'),
             body: _canBrowseCatalogue
                 ? ((typeof catalogueProviderLabel === 'function' && catalogueProviderLabel())
                     || 'The catalogue') + ' knows about ' + _catN + ' service'
@@ -838,7 +838,7 @@
         // anything yet"; calling that "Connected (embedded)" is wrong
         // and confusing.
         if (serverUrls.length === 0) {
-            return uiMode === 'embedded' ? 'Connected (embedded)' : 'Pick a method from the sidebar';
+            return uiMode === 'embedded' ? t('landing.connectedEmbedded') : t('landing.pickMethod');
         }
         if (serverUrls.length === 1) return 'Connected to ' + serverUrls[0];
         return 'Connected to ' + serverUrls.length + ' URLs';

@@ -579,8 +579,8 @@ function openHeaderLibraryEditor() {
 var HEADER_SCOPE_KINDS = [
     { id: 'global',  label: 'headerLibrary.scope.global',  hint: '' },
     { id: 'url',     label: 'headerLibrary.scope.url',     hint: 'api.example.com' },
-    { id: 'service', label: 'headerLibrary.scope.service', hint: 'UserService' },
-    { id: 'method',  label: 'headerLibrary.scope.method',  hint: 'UserService.GetUser' }
+    { id: 'service', label: 'headerLibrary.scope.service', hint: 'UserService' },  // i18n-exempt: an example service name
+    { id: 'method',  label: 'headerLibrary.scope.method',  hint: 'UserService.GetUser' }  // i18n-exempt: an example method name
 ];
 
 /** Persist, then repaint the dialog. Used by every structural edit. */

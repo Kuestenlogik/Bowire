@@ -577,7 +577,7 @@
                 if (!resultsBySession[key]) resultsBySession[key] = [];
                 resultsBySession[key].push({
                     pass: !!r.pass,
-                    status: r.status != null ? String(r.status) : (r.pass ? 'OK' : 'Error'),
+                    status: r.status != null ? String(r.status) : (r.pass ? 'OK' : 'Error'),  // i18n-exempt: status label, carried on the console entry and the run summary
                     durationMs: r.durationMs || 0,
                     stepIndex: r.targetIndex != null ? r.targetIndex : 0,
                     stepLabel: r.label || ((targets[r.targetIndex] && targets[r.targetIndex].label)
@@ -656,7 +656,7 @@
             } catch (e) {
                 allPass = false;
                 session.failCount++;
-                results.push({ pass: false, status: 'NetworkError',
+                results.push({ pass: false, status: 'NetworkError',  // i18n-exempt: status label, carried on the console entry and the run summary
                     error: e.message, stepIndex: srcIdx, stepLabel: stepLabel });
             }
         }
@@ -689,7 +689,7 @@
             } catch (e) {
                 allPass = false;
                 session.failCount++;
-                results.push({ pass: false, status: 'NetworkError',
+                results.push({ pass: false, status: 'NetworkError',  // i18n-exempt: status label, carried on the console entry and the run summary
                     error: e.message, stepIndex: i, stepLabel: stepLabel });
             }
         }
@@ -848,7 +848,7 @@
             (s.results || []).forEach(function (r) {
                 i++;
                 var d = r.durationMs || 0;
-                var status = r.status != null ? String(r.status) : (r.pass ? 'OK' : 'Error');
+                var status = r.status != null ? String(r.status) : (r.pass ? 'OK' : 'Error');  // i18n-exempt: status label, carried on the console entry and the run summary
                 if (r.pass) success++; else failure++;
                 durations.push(d);
                 statusCounts[status] = (statusCounts[status] || 0) + 1;
@@ -1292,7 +1292,7 @@
                 collectionRunState.results.push({
                     itemId: item.id,
                     pass: false,
-                    status: 'NetworkError',
+                    status: 'NetworkError',  // i18n-exempt: status label, carried on the console entry and the run summary
                     error: e.message
                 });
             }
@@ -1317,7 +1317,7 @@
         if (item.methodType && item.methodType !== 'Unary') {
             return Promise.resolve({
                 pass: false,
-                status: 'Skipped (' + item.methodType + ')',
+                status: 'Skipped (' + item.methodType + ')',  // i18n-exempt: status label, carried on the console entry and the run summary
                 durationMs: 0,
                 error: 'Only Unary methods are executed; streaming methods are skipped.'
             });
@@ -1373,7 +1373,7 @@
                 var ok = resp.ok && !json.title;
                 return {
                     pass: ok,
-                    status: json.status || (ok ? 'OK' : 'Error'),
+                    status: json.status || (ok ? 'OK' : 'Error'),  // i18n-exempt: status label, carried on the console entry and the run summary
                     durationMs: json.duration_ms || 0,
                     response: json.response,
                     error: json.title || null
@@ -1516,7 +1516,7 @@
                     toast(t('collections.deleted', { name: backup.name || t('collections.unnamed') }), 'info', {
                         undo: function () { collectionsList.push(backup); persistCollections(); render(); },
                         logAction: { kind: 'collection-delete',
-                            title: 'Deleted collection "' + (backup.name || 'unnamed') + '"' }
+                            title: 'Deleted collection "' + (backup.name || 'unnamed') + '"' }  // i18n-exempt: the action log stores rendered text, see #689
                     });
                 }, { title: t('collections.deleteHeading'), danger: true, confirmText: t('common.delete') });
             }

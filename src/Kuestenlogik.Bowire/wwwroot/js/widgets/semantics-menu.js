@@ -125,10 +125,10 @@
         }
         function onTouchStart(e) {
             if (!e.touches || e.touches.length !== 1) return;
-            var t = e.touches[0];
+            var touch = e.touches[0];
             longPressTimer = setTimeout(function () {
                 longPressTimer = null;
-                bowireOpenSemanticsMenu(t.clientX, t.clientY, treeNode, opts);
+                bowireOpenSemanticsMenu(touch.clientX, touch.clientY, treeNode, opts);
             }, BOWIRE_LONG_PRESS_MS);
         }
         function onTouchEnd() {
@@ -418,7 +418,7 @@
         var input = document.createElement('input');
         input.type = 'text';
         input.className = 'bowire-semantics-menu-custom-input';
-        input.placeholder = 'Custom kind…';
+        input.placeholder = t('semantics.customKind');
         input.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -462,11 +462,11 @@
         }
         return Promise.all(writes).then(function () {
             bowireDispatchSemanticsChanged(opts.service, opts.method);
-            try { toast('Semantic ' + semantic + ' saved (' + tier + ')', 'success'); }
+            try { toast(t('semantics.saved', { semantic: semantic, tier: tier }), 'success'); }
             catch { /* toast may not exist in test contexts */ }
         }).catch(function (err) {
             console.error('[bowire-semantics] write failed', err);
-            try { toast('Failed to save semantic annotation', 'error'); }
+            try { toast(t('semantics.saveFailed'), 'error'); }
             catch { /* swallow */ }
         });
     }
@@ -680,8 +680,9 @@
         // custom action buttons after the message text.
         if (typeof toast !== 'function') return;
         var missingLabel = missingKinds.join(' / ');
-        var t = toast('Pair with a ' + missingLabel + '?', 'info', { duration: 8000 });
-        if (!t || !t.appendChild) return;
+        var node = toast(t('semantics.pairWith', { kind: missingLabel }), 'info',
+            { duration: 8000 });
+        if (!node || !node.appendChild) return;
         var actions = document.createElement('div');
         actions.className = 'bowire-semantics-companion-actions';
         for (var i = 0; i < candidates.length; i++) {
@@ -711,9 +712,9 @@
         var none = document.createElement('button');
         none.type = 'button';
         none.className = 'bowire-toast-undo';
-        none.textContent = 'None';
+        none.textContent = t('rb.auth.none');
         actions.appendChild(none);
-        t.appendChild(actions);
+        node.appendChild(actions);
     }
 
     // ---------------------------------------------------------------
@@ -917,7 +918,9 @@
         var badge = document.createElement('span');
         badge.className = 'bowire-semantics-badge bowire-semantics-badge-'
             + (currentSource || 'auto');
-        badge.title = 'Click to refine — ' + currentTag + ' (' + currentSource + ')';
+        badge.title = t('semantics.refineTitle', {
+    tag: currentTag, source: currentSource
+});  // i18n-exempt: the tag and source names come from the schema
         badge.textContent = ' ' + currentTag + ' (' + currentSource + ')';
         return badge;
     }
@@ -1112,19 +1115,19 @@
         panel.id = 'bowire-ai-fuzz-panel';
         panel.className = 'bowire-ai-fuzz-panel';
         panel.setAttribute('role', 'dialog');
-        panel.setAttribute('aria-label', 'AI fuzz values');
+        panel.setAttribute('aria-label', t('semantics.fuzzPanel'));
         document.body.appendChild(panel);
 
         var header = document.createElement('div');
         header.className = 'bowire-ai-fuzz-header';
         var title = document.createElement('span');
         title.className = 'bowire-ai-fuzz-title';
-        title.textContent = 'AI fuzz values · ' + fieldName;
+        title.textContent = t('semantics.fuzzPanel') + ' · ' + fieldName;
         header.appendChild(title);
         var close = document.createElement('button');
         close.type = 'button';
         close.className = 'bowire-ai-fuzz-close';
-        close.setAttribute('aria-label', 'Close');
+        close.setAttribute('aria-label', t('common.close'));
         close.textContent = '×';
         close.addEventListener('click', function () { panel.remove(); });
         header.appendChild(close);
@@ -1151,7 +1154,7 @@
 
         var note = document.createElement('div');
         note.className = 'bowire-ai-fuzz-note';
-        note.textContent = 'Pick up to 5 values to replay. Severity is advisory — you classify findings, the model doesn’t.';
+        note.textContent = t('semantics.fuzzNote');
         body.appendChild(note);
 
         var list = document.createElement('div');
@@ -1162,7 +1165,9 @@
 
         function refreshRunBtn() {
             var pickedCount = Object.keys(picked).filter(function (k) { return picked[k]; }).length;
-            runBtn.textContent = 'Replay ' + pickedCount + ' value' + (pickedCount === 1 ? '' : 's');
+            // #688 - one message, two shapes.
+runBtn.textContent = t(pickedCount === 1 ? 'semantics.replayOne'
+    : 'semantics.replayMany', { count: pickedCount });
             runBtn[pickedCount === 0 || pickedCount > defaultCap ? 'setAttribute' : 'removeAttribute']('disabled', 'disabled');
         }
 
@@ -1177,7 +1182,9 @@
                 if (Object.keys(picked).filter(function (k) { return picked[k]; }).length > defaultCap) {
                     cb.checked = false;
                     delete picked[idx];
-                    if (typeof toast === 'function') toast('Max ' + defaultCap + ' values per batch.', 'info');
+                    if (typeof toast === 'function') {
+    toast(t('semantics.maxPerBatch', { max: defaultCap }), 'info');
+}
                 }
                 refreshRunBtn();
             });
@@ -1234,7 +1241,7 @@
         body.replaceChildren();
         var status = document.createElement('div');
         status.className = 'bowire-ai-fuzz-status';
-        status.textContent = 'Replaying ' + pickedValues.length + ' value(s)…';
+        status.textContent = t('semantics.replaying', { count: pickedValues.length });
         body.appendChild(status);
 
         // Reuse the same target / verb / path resolution from the
@@ -1288,7 +1295,7 @@
                   row.className = 'bowire-ai-fuzz-result-row ' + (r.outcome === 'Vulnerable' ? 'vuln' : r.outcome === 'Error' ? 'err' : 'safe');
                   var marker = document.createElement('span');
                   marker.className = 'bowire-ai-fuzz-result-marker';
-                  marker.textContent = r.outcome === 'Vulnerable' ? '[VULN]' : r.outcome === 'Error' ? '[err]' : '[ok]';
+                  marker.textContent = r.outcome === 'Vulnerable' ? '[VULN]' : r.outcome === 'Error' ? '[err]' : '[ok]';  // i18n-exempt: outcome markers that sit in a fixed-width column
                   row.appendChild(marker);
                   var pay = document.createElement('code');
                   pay.className = 'bowire-ai-fuzz-result-payload';
@@ -1307,7 +1314,7 @@
               body.appendChild(foot);
           })
           .catch(function (err) {
-              status.textContent = '⚠ Network error: ' + (err && err.message ? err.message : err);
+              status.textContent = '⚠ Network error: ' + (err && err.message ? err.message : err);  // i18n-exempt: prefixed by the browser's own error text
           });
     }
 
@@ -1335,7 +1342,7 @@
         panel.id = 'bowire-fuzz-panel';
         panel.className = 'bowire-fuzz-panel';
         panel.setAttribute('role', 'dialog');
-        panel.setAttribute('aria-label', 'Fuzz results');
+        panel.setAttribute('aria-label', t('semantics.fuzzResults'));
         document.body.appendChild(panel);
 
         // Closer button — Esc + click-outside aren't wired here
@@ -1344,7 +1351,7 @@
         var close = document.createElement('button');
         close.type = 'button';
         close.className = 'bowire-fuzz-panel-close';
-        close.setAttribute('aria-label', 'Close fuzz panel');
+        close.setAttribute('aria-label', t('semantics.closeFuzz'));
         close.textContent = '×';
         close.addEventListener('click', function () { panel.remove(); });
         panel.appendChild(close);
@@ -1356,7 +1363,7 @@
         var header = panel.querySelector('.bowire-fuzz-panel-header')
             || document.createElement('div');
         header.className = 'bowire-fuzz-panel-header';
-        header.textContent = 'Fuzz ' + opts.jsonPath + ' · ' + category + ' — ' + statusLine;
+        header.textContent = 'Fuzz ' + opts.jsonPath + ' · ' + category + ' — ' + statusLine;  // i18n-exempt: the JSON path and category are values, joined by the status line below
         if (!header.parentNode) panel.appendChild(header);
     }
 
@@ -1364,7 +1371,7 @@
         var body = panel.querySelector('.bowire-fuzz-panel-body')
             || document.createElement('div');
         body.className = 'bowire-fuzz-panel-body';
-        body.textContent = 'Error: ' + message;
+        body.textContent = t('semantics.errorPrefix', { message: message });
         if (!body.parentNode) panel.appendChild(body);
     }
 
@@ -1373,7 +1380,7 @@
         var rows = result.rows || [];
         var vulnCount = rows.filter(function (r) { return r.outcome === 'Vulnerable'; }).length;
         if (header) {
-            header.textContent = 'Fuzz ' + opts.jsonPath + ' · ' + category
+            header.textContent = 'Fuzz ' + opts.jsonPath + ' · ' + category  // i18n-exempt: the JSON path and category are values, joined by the status line below
                 + ' — ' + rows.length + ' payload(s), ' + vulnCount + ' suspicious';
         }
 
@@ -1391,7 +1398,7 @@
         if (result.baselineStatus !== undefined && result.baselineStatus !== null) {
             var baseline = document.createElement('div');
             baseline.className = 'bowire-fuzz-panel-baseline';
-            baseline.textContent = 'baseline: status=' + result.baselineStatus
+            baseline.textContent = 'baseline: status=' + result.baselineStatus  // i18n-exempt: the baseline status line is machine output
                 + ' body=' + (result.baselineBodySize || 0) + 'B latency=' + (result.baselineLatencyMs || 0) + 'ms';
             body.appendChild(baseline);
         }
@@ -1427,7 +1434,7 @@
 
         var note = document.createElement('div');
         note.className = 'bowire-fuzz-panel-note';
-        note.textContent = 'Heuristics fire on response shape, not confirmation. Verify each finding by hand before reporting.';
+        note.textContent = t('semantics.heuristicNote');
         body.appendChild(note);
     }
 
@@ -1447,8 +1454,8 @@
         var btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'bowire-fuzz-triage-btn';
-        btn.setAttribute('aria-label', 'Ask AI: is this finding real?');
-        btn.title = 'Ask AI: is this finding real, and how do I fix it?';
+        btn.setAttribute('aria-label', t('semantics.askAiAria'));
+        btn.title = t('semantics.askAiTitle');
         btn.textContent = '?';
         row.appendChild(btn);
 
@@ -1475,7 +1482,7 @@
             }
             if (inflight) return;
             inflight = true;
-            verdictBox.textContent = 'Asking the model…';
+            verdictBox.textContent = t('semantics.askingModel');
 
             var payload = {
                 title: (category || 'fuzz finding') + ' on ' + (target || 'target'),
@@ -1511,7 +1518,7 @@
                 })
                 .catch(function (err) {
                     inflight = false;
-                    verdictBox.textContent = '⚠ Network error: ' + (err && err.message ? err.message : err);
+                    verdictBox.textContent = '⚠ Network error: ' + (err && err.message ? err.message : err);  // i18n-exempt: prefixed by the browser's own error text
                     verdictBox.classList.add('error');
                 });
         });
@@ -1526,7 +1533,7 @@
 
         var scoreEl = document.createElement('div');
         scoreEl.className = 'bowire-fuzz-triage-score score-' + scoreClass;
-        scoreEl.textContent = 'AI confidence this is real: ' + score + '/100';
+        scoreEl.textContent = t('semantics.aiConfidence', { score: score });
         box.appendChild(scoreEl);
 
         if (v.reasoning) {
@@ -1538,7 +1545,7 @@
         if (v.fix) {
             var fixLabel = document.createElement('div');
             fixLabel.className = 'bowire-fuzz-triage-fix-label';
-            fixLabel.textContent = 'Suggested fix';
+            fixLabel.textContent = t('semantics.suggestedFix');
             box.appendChild(fixLabel);
             var fix = document.createElement('div');
             fix.className = 'bowire-fuzz-triage-fix';

@@ -133,7 +133,7 @@
             recordAction({
                 kind: 'favorite-remove',
                 rail: 'favorites',
-                title: 'Unfavorited ' + service + ' · ' + method,
+                title: 'Unfavorited ' + service + ' · ' + method,  // i18n-exempt: the action log stores rendered text, see #689
                 undoSpec: { service: service, method: method },
                 undo: function () {
                     _suppressFavoriteLog = true;

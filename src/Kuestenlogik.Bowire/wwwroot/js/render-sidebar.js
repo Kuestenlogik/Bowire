@@ -253,7 +253,7 @@
             type: 'text',
             value: url,
             placeholder: t('sidebar.sources.urlPlaceholder'),
-            title: locked ? 'URL is fixed via --url parameter' : 'Discovery URL — gRPC server, OpenAPI doc, SignalR hub, ...'
+            title: locked ? t('sidebar.urlLocked') : t('sidebar.urlHint')
         };
         if (locked) {
             inputAttrs.readOnly = 'readonly';
@@ -618,7 +618,7 @@
                 return el('span', {
                     className: 'bowire-method-star' + (fav ? ' active' : ''),
                     innerHTML: svgIcon(fav ? 'starFilled' : 'star'),
-                    title: fav ? 'Remove from favorites' : 'Add to favorites',
+                    title: fav ? t('sidebar.favorites.remove') : t('sidebar.favorites.add'),
                     onClick: function (e) {
                         e.stopPropagation();
                         toggleFavorite(svcName, methodName);
@@ -2002,7 +2002,7 @@
             title: t('sidebar.sources.title'),
             primary: (!config.lockServerUrl && !selMode) ? {
                 icon: 'plus',
-                title: _catalogueCanBrowse() ? 'Browse catalogue' : 'New source',
+                title: _catalogueCanBrowse() ? t('sidebar.browseCatalogue') : t('sidebar.newSource'),
                 onClick: function () {
                     // #537 — same catalogue-first branch as the workspace
                     // tree's Sources node. This rail is retired from the
@@ -2690,7 +2690,7 @@
                                     logAction: {
                                         kind: 'workspace-rename',
                                         rail: 'workspaces',
-                                        title: 'Renamed workspace "' + prevName + '" → "' + renamed + '"',
+                                        title: 'Renamed workspace "' + prevName + '" → "' + renamed + '"',  // i18n-exempt: the action log stores rendered text, see #689
                                         undoSpec: { workspaceId: wsId, prevName: prevName, nextName: renamed }
                                     }
                                 });
@@ -2833,7 +2833,7 @@
                                 logAction: {
                                     kind: 'workspace-delete',
                                     rail: 'workspaces',
-                                    title: 'Deleted workspace "' + snapshotName + '"',
+                                    title: 'Deleted workspace "' + snapshotName + '"',  // i18n-exempt: the action log stores rendered text, see #689
                                     undoSpec: {
                                         workspaceId: wsId,
                                         // W2a: snapshot carried inline so
@@ -2852,8 +2852,8 @@
                         }
                     },
                     {
-                        title: mode === 'hard' ? 'Hard-delete workspace' : 'Delete workspace',
-                        confirmText: mode === 'hard' ? 'Delete forever' : 'Delete',
+                        title: mode === 'hard' ? t('main.ws.hardDelete') : t('main.ws.delete'),
+                        confirmText: mode === 'hard' ? t('main.ws.deleteForever') : t('common.delete'),
                         danger: true
                     }
                 );

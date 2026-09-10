@@ -609,7 +609,7 @@
             bar.appendChild(el('div', {
                 className: 'bowire-status-item',
                 style: 'opacity: 0.5',
-                textContent: duplexConnected ? 'Ctrl+Enter to send' : 'Ctrl+Enter to connect'
+                textContent: duplexConnected ? t('perf.ctrlEnterSend') : t('perf.ctrlEnterConnect')
             }));
 
             // Console button was here — retired, the statusbar console
@@ -640,7 +640,7 @@
                 btnClass = 'bowire-execute-btn bowire-subscribe-btn';
             }
         } else {
-            btnText = (isExecuting) ? 'Stop' : 'Execute';
+            btnText = (isExecuting) ? t('bench.stop') : t('main.execute');
             btnIcon = (isExecuting) ? svgIcon('stop') : svgIcon('play');
             btnClass = (isExecuting) ? 'bowire-execute-btn streaming-active' : 'bowire-execute-btn';
         }

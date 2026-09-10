@@ -656,7 +656,7 @@
                         // action log to keys resolved at render time.
                         kind: 'workspace-create',
                         rail: 'workspaces',
-                        title: 'Created workspace "' + _wsName + '"',
+                        title: 'Created workspace "' + _wsName + '"',  // i18n-exempt: the action log stores rendered text, see #689
                         undoSpec: { workspaceId: _wsId },
                         redo: function () {
                             if (typeof workspacesTrash === 'undefined' || !Array.isArray(workspacesTrash)) return;
@@ -675,7 +675,7 @@
                 recordAction({
                     kind: 'workspace-create',
                     rail: 'workspaces',
-                    title: 'Created workspace "' + ws.name + '"',
+                    title: 'Created workspace "' + ws.name + '"',  // i18n-exempt: the action log stores rendered text, see #689
                     undoSpec: { workspaceId: ws.id }
                 });
             }

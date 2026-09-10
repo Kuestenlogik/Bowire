@@ -380,26 +380,26 @@
         var warnings = [];
         var WRONG = {
             rest: [
-                { pattern: /\bctx\.metadata\b/, member: 'ctx.metadata', hint: 'gRPC-only — use ctx.request.headers for REST' },
-                { pattern: /\bctx\.deadline\b/, member: 'ctx.deadline', hint: 'gRPC-only — REST has no deadline concept' },
-                { pattern: /\bctx\.publish\b/,  member: 'ctx.publish',  hint: 'MQTT-only — REST has no publish-frame settings' }
+                { pattern: /\bctx\.metadata\b/, member: 'ctx.metadata', hint: t('scripts.hint.metadataRest') },
+                { pattern: /\bctx\.deadline\b/, member: 'ctx.deadline', hint: t('scripts.hint.deadlineRest') },
+                { pattern: /\bctx\.publish\b/,  member: 'ctx.publish',  hint: t('scripts.hint.publishRest') }
             ],
             grpc: [
-                { pattern: /\bctx\.request\.headers\b/, member: 'ctx.request.headers', hint: 'REST-only — use ctx.metadata for gRPC' },
-                { pattern: /\bctx\.request\.query\b/,   member: 'ctx.request.query',   hint: 'REST-only — gRPC has no query string' },
-                { pattern: /\bctx\.publish\b/,          member: 'ctx.publish',         hint: 'MQTT-only — gRPC has no publish-frame settings' }
+                { pattern: /\bctx\.request\.headers\b/, member: 'ctx.request.headers', hint: t('scripts.hint.headersGrpc') },
+                { pattern: /\bctx\.request\.query\b/,   member: 'ctx.request.query',   hint: t('scripts.hint.queryGrpc') },
+                { pattern: /\bctx\.publish\b/,          member: 'ctx.publish',         hint: t('scripts.hint.publishGrpc') }
             ],
             mqtt: [
-                { pattern: /\bctx\.request\.headers\b/, member: 'ctx.request.headers', hint: 'REST-only — MQTT has no request headers' },
-                { pattern: /\bctx\.request\.query\b/,   member: 'ctx.request.query',   hint: 'REST-only — MQTT has no query string' },
-                { pattern: /\bctx\.metadata\b/,         member: 'ctx.metadata',        hint: 'gRPC-only — use ctx.publish for MQTT' },
-                { pattern: /\bctx\.deadline\b/,         member: 'ctx.deadline',        hint: 'gRPC-only — MQTT has no deadline concept' }
+                { pattern: /\bctx\.request\.headers\b/, member: 'ctx.request.headers', hint: t('scripts.hint.headersMqtt') },
+                { pattern: /\bctx\.request\.query\b/,   member: 'ctx.request.query',   hint: t('scripts.hint.queryMqtt') },
+                { pattern: /\bctx\.metadata\b/,         member: 'ctx.metadata',        hint: t('scripts.hint.metadataMqtt') },
+                { pattern: /\bctx\.deadline\b/,         member: 'ctx.deadline',        hint: t('scripts.hint.deadlineMqtt') }
             ],
             websocket: [
-                { pattern: /\bctx\.metadata\b/,         member: 'ctx.metadata',        hint: 'gRPC-only — WebSocket frames are unstructured' },
-                { pattern: /\bctx\.deadline\b/,         member: 'ctx.deadline',        hint: 'gRPC-only — WebSocket has no deadline concept' },
-                { pattern: /\bctx\.publish\b/,          member: 'ctx.publish',         hint: 'MQTT-only — WebSocket has no publish-frame settings' },
-                { pattern: /\bctx\.request\.query\b/,   member: 'ctx.request.query',   hint: 'REST-only — WebSocket connect-URL is set in the URL bar' }
+                { pattern: /\bctx\.metadata\b/,         member: 'ctx.metadata',        hint: t('scripts.hint.metadataWs') },
+                { pattern: /\bctx\.deadline\b/,         member: 'ctx.deadline',        hint: t('scripts.hint.deadlineWs') },
+                { pattern: /\bctx\.publish\b/,          member: 'ctx.publish',         hint: t('scripts.hint.publishWs') },
+                { pattern: /\bctx\.request\.query\b/,   member: 'ctx.request.query',   hint: t('scripts.hint.queryWs') }
             ]
         };
         var list = WRONG[shape] || [];

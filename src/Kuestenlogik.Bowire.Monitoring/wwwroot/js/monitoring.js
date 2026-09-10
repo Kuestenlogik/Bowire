@@ -108,7 +108,7 @@
         svg.setAttribute('width', String(w));
         svg.setAttribute('height', String(h));
         svg.setAttribute('role', 'img');
-        svg.setAttribute('aria-label', 'Latency per run, newest right');
+        svg.setAttribute('aria-label', t('monitoring.sparklineAria'));
         var rows = Array.isArray(history) ? history : [];
         if (rows.length === 0) return svg;
         var barW = 3, gap = 2;

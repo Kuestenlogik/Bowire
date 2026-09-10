@@ -4090,7 +4090,7 @@
                 noticesToggle.textContent = (noticesOpen ? '▾' : '▸') + ' Open-source notices';
             }
         });
-        noticesToggle.textContent = '▸ Open-source notices';
+        noticesToggle.textContent = t('settings.about.notices');
         var noticesBody = el('div', { className: 'bowire-settings-about-notices-body', style: 'display:none' });
         noticesBody.appendChild(el('p', {
             className: 'bowire-settings-about-notices-lede',
@@ -4712,7 +4712,7 @@
             textContent: t('settings.plugin.checkNow'),
             onClick: function () {
                 checkBtn.disabled = true;
-                checkBtn.textContent = 'Checking…';
+                checkBtn.textContent = t('settings.checking');
                 var qs = pluginPrereleaseToggle ? '?prerelease=true' : '';
                 fetch(config.prefix + '/api/plugins/check-updates' + qs)
                     .then(function (r) { return r.ok ? r.json() : null; })
@@ -4727,7 +4727,7 @@
                     .catch(function () { /* offline / NuGet down */ })
                     .finally(function () {
                         checkBtn.disabled = false;
-                        checkBtn.textContent = 'Check now';
+                        checkBtn.textContent = t('settings.checkNow');
                     });
             },
         });

@@ -864,7 +864,7 @@
             textContent: t('ai.template.save'),
             onClick: function () {
                 saveBtn.setAttribute('disabled', 'disabled');
-                saveBtn.textContent = 'Saving…';
+                saveBtn.textContent = t('settings.saving');
                 fetch(aiPrefix() + '/api/ai/template-save', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -877,9 +877,9 @@
                     .then(function (resp) {
                         saveBtn.removeAttribute('disabled');
                         if (resp.ok) {
-                            saveBtn.textContent = 'Saved ' + (resp.body.path || '');
+                            saveBtn.textContent = t('ai.savedTo', { path: resp.body.path || '' });
                             setTimeout(function () {
-                                saveBtn.textContent = 'Save to ~/.bowire/templates';
+                                saveBtn.textContent = t('ai.saveToTemplates');
                             }, 3000);
                         } else {
                             saveBtn.textContent = '⚠ ' + problemTitle(resp.body, 'save failed');
@@ -887,7 +887,8 @@
                     })
                     .catch(function (err) {
                         saveBtn.removeAttribute('disabled');
-                        saveBtn.textContent = '⚠ ' + (err && err.message ? err.message : 'save failed');
+                        saveBtn.textContent = '⚠ ' + (err && err.message
+    ? err.message : t('ai.saveFailed'));
                     });
             }
         });
@@ -1180,7 +1181,7 @@
                 lines.push('  Input (' + sel.inputType.name + '):');
                 for (var fi = 0; fi < sel.inputType.fields.length; fi++) {
                     var f = sel.inputType.fields[fi];
-                    lines.push('    - ' + f.name + ': ' + f.type + (f.optional ? '  (optional)' : ''));
+                    lines.push('    - ' + f.name + ': ' + f.type + (f.optional ? '  (optional)' : ''));  // i18n-exempt: part of the prompt sent to the model, not a surface
                 }
             }
             if (sel.outputType) lines.push('  Output: ' + sel.outputType.name);
@@ -1421,7 +1422,7 @@
                     text: h.text,
                     dismissKey: 'bowire_ai_hint_' + h.id + '_dismissed',
                     permanentDismissKey: 'bowire_ai_hint_' + h.id + '_permanent',
-                    dismissLabel: 'Assistant hint: ' + (h.id || 'context')
+                    dismissLabel: t('ai.hintLabel', { id: h.id || t('ai.hintContext') })
                 });
                 if (!bar) return;
                 // #280 — when a hint exposes actions, wrap the alert bar
@@ -1498,7 +1499,8 @@
                         bubble.appendChild(line);
                     });
                 } else {
-                    bubble.textContent = (m.role === 'user' ? 'You: ' : 'AI: ') + m.content;
+                    bubble.textContent = t(m.role === 'user' ? 'ai.speakerYou' : 'ai.speakerAi')
+    + ': ' + m.content;
                 }
                 transcript.appendChild(bubble);
             });
@@ -1562,7 +1564,7 @@
             var send = el('button', {
                 type: 'submit',
                 className: 'bowire-ai-chat-send',
-                textContent: chatBusy ? 'Sending…' : 'Send',
+                textContent: chatBusy ? t('ai.sending') : t('ai.send'),
                 // Belt + braces: explicit click handler in addition to
                 // the form-submit so even if the form's onSubmit is
                 // dropped or the button somehow loses its submit
@@ -1808,7 +1810,7 @@
                 statusLine.classList.add('err');
             } else if (threatState.lastRun) {
                 statusLine.textContent = threatState.lastInputCount + ' endpoint(s) considered'
-                    + (threatState.truncated ? ' (truncated to first 200)' : '')
+                    + (threatState.truncated ? ' ' + t('ai.truncated200') : '')
                     + (threatState.modelId ? ' · ' + threatState.modelId : '');
             }
             runRow.appendChild(statusLine);
@@ -1877,9 +1879,9 @@
                                         + (templates.length > 0 ? ' --templates ' + templates.join(',') : '');
                                     if (navigator.clipboard) {
                                         navigator.clipboard.writeText(cmd).then(function () {
-                                            scanBtn.textContent = 'Copied';
+                                            scanBtn.textContent = t('ai.copied');
                                             setTimeout(function () {
-                                                scanBtn.textContent = 'Copy bowire scan command';
+                                                scanBtn.textContent = t('ai.copyScanCommand');
                                             }, 1500);
                                         });
                                     }
@@ -1955,10 +1957,10 @@
             textContent: t('ai.scan.run'),
             onclick: function () {
                 var endpoints = collectScanEndpoints();
-                if (!endpoints.length) { statusEl.textContent = 'No discovered endpoints — connect to a server or load a schema in Discover first.'; return; }
+                if (!endpoints.length) { statusEl.textContent = t('ai.noEndpoints'); return; }
                 var target = (typeof serverUrl !== 'undefined' && serverUrl) ? serverUrl : '';
                 runBtn.disabled = true;
-                statusEl.textContent = 'Running…';
+                statusEl.textContent = t('ai.running');
                 results.replaceChildren();
                 fetch(aiPrefix() + '/api/ai/security-scan', {
                     method: 'POST',
@@ -1974,7 +1976,7 @@
                         statusEl.textContent = notes.length ? notes.join(' · ') : '';
                         renderScanResult(results, res.body);
                     })
-                    .catch(function (e) { statusEl.textContent = 'Scan failed: ' + e; })
+                    .catch(function (e) { statusEl.textContent = t('ai.scanFailed', { error: e }); })
                     .finally(function () { runBtn.disabled = false; });
             }
         });
@@ -2042,7 +2044,7 @@
                 if (!path) { statusEl.textContent = t('ai.owasp.needsPath'); return; }
                 var fields = (fieldsInput.value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
                 checkBtn.disabled = true;
-                statusEl.textContent = 'Checking…';
+                statusEl.textContent = t('settings.checking');
                 results.replaceChildren();
                 fetch(aiPrefix() + '/api/ai/owasp-panel', {
                     method: 'POST',
@@ -2052,10 +2054,10 @@
                     .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
                     .then(function (res) {
                         if (!res.ok) { statusEl.textContent = (res.body && res.body.error) || 'Check failed.'; return; }
-                        statusEl.textContent = res.body.aiAvailable ? '' : 'Deterministic mapping (no AI model connected).';
+                        statusEl.textContent = res.body.aiAvailable ? '' : t('ai.deterministicMapping');
                         renderOwaspPanelRows(results, res.body);
                     })
-                    .catch(function (e) { statusEl.textContent = 'Check failed: ' + e; })
+                    .catch(function (e) { statusEl.textContent = t('ai.checkFailed', { error: e }); })
                     .finally(function () { checkBtn.disabled = false; });
             }
         });
@@ -2110,7 +2112,7 @@
                 var token = (tokenInput.value || '').trim();
                 if (!token) { statusEl.textContent = t('ai.jwt.needsToken'); return; }
                 analyzeBtn.disabled = true;
-                statusEl.textContent = 'Analyzing…';
+                statusEl.textContent = t('ai.analysing');
                 results.replaceChildren();
                 var aud = (audInput.value || '').trim();
                 fetch(aiPrefix() + '/api/ai/jwt-analyze', {
@@ -2121,10 +2123,12 @@
                     .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
                     .then(function (res) {
                         if (!res.ok) { statusEl.textContent = (res.body && res.body.error) || 'Analysis failed.'; return; }
-                        statusEl.textContent = res.body.aiAvailable ? '' : 'Deterministic analysis (no AI model connected).';
+                        statusEl.textContent = res.body.aiAvailable ? '' : t('ai.deterministicAnalysis');
                         renderJwtResult(results, res.body);
                     })
-                    .catch(function (e) { statusEl.textContent = 'Analysis failed: ' + e; })
+                    .catch(function (e) {
+    statusEl.textContent = t('ai.analysisFailed', { error: e });
+})
                     .finally(function () { analyzeBtn.disabled = false; });
             }
         });
@@ -2140,7 +2144,7 @@
         if (body.algorithm) {
             container.appendChild(el('div', {
                 className: 'bowire-ai-jwt-alg',
-                textContent: 'alg: ' + body.algorithm + (body.keyId ? ' · kid: ' + body.keyId : '')
+                textContent: 'alg: ' + body.algorithm + (body.keyId ? ' · kid: ' + body.keyId : '')  // i18n-exempt: JWT header field names
             }));
         }
         var flags = body.flags || [];

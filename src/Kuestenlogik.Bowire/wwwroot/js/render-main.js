@@ -7939,14 +7939,14 @@
         });
         submitBtn.addEventListener('click', function () {
             var intent = (input.value || '').trim();
-            if (!intent) { status.textContent = 'Type a one-line intent first.'; return; }
+            if (!intent) { status.textContent = t('main.script.needIntent'); return; }
             submitBtn.disabled = true;
-            status.textContent = 'Generating…';
+            status.textContent = t('main.script.generating');
             _generateScriptFromIntent(intent, phase, shape, svc, mth)
                 .then(function (script) {
                     submitBtn.disabled = false;
                     if (!script) {
-                        status.textContent = 'No script returned. Try a more specific intent or check the AI configuration.';
+                        status.textContent = t('main.script.noScript');
                         return;
                     }
                     areaEl.value = script;
@@ -7956,7 +7956,9 @@
                 })
                 .catch(function (err) {
                     submitBtn.disabled = false;
-                    status.textContent = 'Generation failed: ' + (err && err.message ? err.message : String(err));
+                    status.textContent = t('main.script.generationFailed', {
+    error: err && err.message ? err.message : String(err)
+});
                 });
         });
         actions.appendChild(cancelBtn);

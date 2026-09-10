@@ -82,6 +82,12 @@ const PATTERNS = [
     new RegExp(String.raw`(?<![A-Za-z0-9_$.])_[A-Za-z][A-Za-z0-9_$]*\(\s*${STR}`, 'g'),
     // cond ? 'this' : 'that' — a sentence chosen at run time.
     new RegExp(String.raw`\?\s*${STR}\s*:\s*${STR}`, 'g'),
+    // node.textContent = 'text' — the same slots, written as an assignment
+    // rather than in an object literal. Found when a 'None' button in the
+    // semantics menu survived a sweep that had walked the whole file.
+    new RegExp(String.raw`\.(?:${SLOT_NAMES})\s*=\s*${STR}`, 'g'),
+    new RegExp(String.raw`setAttribute\(\s*['"](?:title|aria-label|placeholder)['"]\s*,\s*${STR}`,
+        'g'),
 ];
 
 // Words that name something outside Bowire's own text, and so are not Bowire's

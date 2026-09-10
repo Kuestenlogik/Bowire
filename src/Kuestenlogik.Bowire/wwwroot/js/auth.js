@@ -783,7 +783,7 @@
             }
             return null;
         }
-        var finalName = isDefault ? _nextDefaultEnvironmentName('New Environment') : trimmed;
+        var finalName = isDefault ? _nextDefaultEnvironmentName('New Environment') : trimmed;  // i18n-exempt: a default written into the workspace and carried out through the .bww export; a translated one would freeze one language into somebody else's Bowire
         var envs = getEnvironments();
         var color = envColorPalette[envColorIndex % envColorPalette.length];
         envColorIndex++;
@@ -818,7 +818,7 @@
                 logAction: {
                     kind: 'environment-create',
                     rail: 'environments',
-                    title: 'Created environment "' + _envName + '"',
+                    title: 'Created environment "' + _envName + '"',  // i18n-exempt: the action log stores rendered text, see #689
                     undoSpec: { env: snapshot },
                     redo: function () {
                         if (getEnvironments().find(function (e) { return e.id === snapshot.id; })) return;

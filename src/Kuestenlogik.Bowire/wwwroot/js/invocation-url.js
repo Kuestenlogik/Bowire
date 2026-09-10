@@ -155,7 +155,7 @@
             className: 'bowire-invoke-url-block'
         });
         var stateText = ov.mode === 'source' ? 'source override'
-            : (ov.mode === 'inline' ? 'custom override' : 'schema URL');
+            : (ov.mode === 'inline' ? t('invocation.customOverride') : t('invocation.schemaUrl'));
         var head = el('div', {
             className: 'bowire-invoke-url-head',
             role: 'button',

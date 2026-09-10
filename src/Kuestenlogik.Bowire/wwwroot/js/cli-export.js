@@ -110,8 +110,7 @@
             return {
                 url: '<server-url>',
                 protocolFlag: id,
-                note: 'This workbench discovered the service in-process, so there is no server URL to '
-                    + 'copy. Replace <server-url> with the address the CLI should reach it on.'
+                note: t('cliExport.embeddedNote')
             };
         }
         if (cliUrlCarriesHint(bare)) return { url: bare, protocolFlag: '', note: '' };

@@ -482,7 +482,7 @@
             type: 'button',
             className: 'bowire-console-row-expand',
             title: fullBody || 'No body to expand',
-            'aria-label': entry.expanded ? 'Collapse entry' : 'Expand entry',
+            'aria-label': entry.expanded ? t('console.collapseEntry') : t('console.expandEntry'),
             'aria-expanded': entry.expanded ? 'true' : 'false',
             textContent: entry.expanded ? '×' : '…',
             onClick: function (e) {
@@ -655,7 +655,7 @@
             id: 'bowire-console-filter-add-btn',
             className: 'bowire-console-toolbar-btn bowire-console-filter-add-btn'
                 + ((consoleFilterBarOpen || anyActive) ? ' is-on' : ''),
-            title: consoleFilterBarOpen ? 'Hide filter bar' : 'Show filter bar',
+            title: consoleFilterBarOpen ? t('console.hideFilterBar') : t('console.showFilterBar'),
             'aria-label': t('console.filter.toggleBar'),
             'aria-pressed': consoleFilterBarOpen ? 'true' : 'false',
             innerHTML: svgIcon('filter'),
@@ -796,7 +796,7 @@
         if (filtered.length === 0) {
             fresh.appendChild(el('div', { className: 'bowire-console-empty',
                 style: 'padding:12px 14px;color:var(--bowire-text-tertiary)',
-                textContent: consoleLog.length === 0 ? 'No activity yet' : 'No entries match the current filters.' }));
+                textContent: consoleLog.length === 0 ? t('console.noActivity') : t('console.noMatch') }));
         } else {
             for (var i = 0; i < filtered.length; i++) fresh.appendChild(buildConsoleRow(filtered[i]));
         }
@@ -856,7 +856,7 @@
             title: hasSel
                 ? 'Download selection (' + consoleSelected.size + ' entr' + (consoleSelected.size === 1 ? 'y' : 'ies') + ')'
                 : 'Download entire log (' + consoleLog.length + ')',
-            'aria-label': hasSel ? 'Download selection' : 'Download entire log',
+            'aria-label': hasSel ? t('console.downloadSelection') : t('console.downloadAll'),
             innerHTML: svgIcon('download'),
             onClick: function () {
                 if (hasSel) {

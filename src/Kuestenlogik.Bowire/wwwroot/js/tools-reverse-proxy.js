@@ -97,7 +97,7 @@
                 ));
                 var stopBtn = el('button', {
                     className: 'bowire-confirm-btn',
-                    textContent: busy ? 'Stopping…' : 'Stop',
+                    textContent: busy ? t('proxyTool.stopping') : t('bench.stop'),
                     disabled: busy ? 'disabled' : null,
                     onClick: function () {
                         if (busy) return;
@@ -220,7 +220,7 @@
                         }
                     }).catch(function (err) {
                         busy = false;
-                        errorText = (err && err.message) ? err.message : 'Network error.';
+                        errorText = (err && err.message) ? err.message : t('common.networkError');
                         rerender();
                     });
                 }
