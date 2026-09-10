@@ -91,7 +91,7 @@
                 type: 'button',
                 className: 'bowire-parallel-preset',
                 'data-custom': '1',
-                textContent: 'Custom',
+                textContent: t('parallel.custom'),
                 onClick: function () {
                     customMode = true;
                     Array.prototype.forEach.call(
@@ -113,7 +113,7 @@
                 min: '1',
                 max: String(PARALLEL_SESSION_CAP),
                 disabled: true,
-                'aria-label': 'Custom session count',
+                'aria-label': t('parallel.customAria'),
                 onInput: updateConfirmEnabled
             });
 
@@ -128,9 +128,9 @@
             hostsInput = el('input', {
                 type: 'text',
                 className: 'bowire-parallel-field-input',
-                placeholder: 'https://exec-eu.example, https://exec-us.example',
+                placeholder: t('parallel.hostsPlaceholder'),
                 value: savedOpts.hosts || '',
-                'aria-label': 'Hosts (comma-separated)'
+                'aria-label': t('parallel.hostsAria')
             });
             rampUpInput = el('input', {
                 type: 'number',
@@ -138,22 +138,22 @@
                 min: '0',
                 step: '1',
                 value: String(savedOpts.rampUpSeconds || 0),
-                'aria-label': 'Ramp-up seconds'
+                'aria-label': t('parallel.rampUpAria')
             });
             failureSelect = el('select', {
                 className: 'bowire-parallel-field-input',
-                'aria-label': 'Failure policy'
+                'aria-label': t('parallel.failureAria')
             },
-                el('option', { value: 'continue', textContent: 'Continue on error' }),
-                el('option', { value: 'abort', textContent: 'Abort on first failure' })
+                el('option', { value: 'continue', textContent: t('parallel.continueOnError') }),
+                el('option', { value: 'abort', textContent: t('parallel.abortOnFailure') })
             );
             failureSelect.value = savedOpts.continueOnError === false ? 'abort' : 'continue';
             envPoolInput = el('input', {
                 type: 'text',
                 className: 'bowire-parallel-field-input',
-                placeholder: 'dev, staging, prod',
+                placeholder: t('parallel.envPoolPlaceholder'),
                 value: savedOpts.envPool || '',
-                'aria-label': 'Env pool (comma-separated)'
+                'aria-label': t('parallel.envPoolAria')
             });
 
             function makeField(labelText, hint, control) {
@@ -165,12 +165,12 @@
             }
 
             var hintText = (kind === 'collection')
-                ? 'Each session walks a round-robin slice of the collection items. Variable substitution and pre/post-scripts run per-session with an isolated captured namespace.'
-                : 'Each session replays the full recording independently. Variable substitution and pre/post-scripts run per-session with an isolated captured namespace.';
+                ? t('parallel.hintCollection')
+                : t('parallel.hintRecording');
 
             confirmBtn = el('button', {
                 className: 'bowire-confirm-btn',
-                textContent: 'Run',
+                textContent: t('parallel.run'),
                 onClick: function () {
                     var n = customMode ? parseInt(String(customInput.value || '').trim(), 10) : selected;
                     if (!n || n < 1) return;
@@ -203,7 +203,7 @@
             });
             var cancelBtn = el('button', {
                 className: 'bowire-confirm-btn cancel',
-                textContent: 'Cancel',
+                textContent: t('common.cancel'),
                 onClick: function () { overlay.remove(); resolve(null); }
             });
 
@@ -274,23 +274,21 @@
                 'aria-labelledby': 'bowire-parallel-title'
             },
                 el('div', { id: 'bowire-parallel-title', className: 'bowire-confirm-title',
-                    textContent: 'Run options — ' + (sourceName || (kind === 'collection' ? 'collection' : 'recording')) }),
+                    textContent: t('parallel.dialogTitle', {
+                        source: sourceName || t(kind === 'collection'
+                            ? 'parallel.sourceCollection' : 'parallel.sourceRecording')
+                    }) }),
                 presetsBarSlot,
-                el('div', { className: 'bowire-confirm-message', textContent: 'How many parallel sessions?' }),
+                el('div', { className: 'bowire-confirm-message', textContent: t('parallel.howMany') }),
                 presetRow,
                 customInput,
                 el('div', { className: 'bowire-parallel-hint', textContent: hintText }),
-                el('div', { className: 'bowire-parallel-section-label', textContent: 'Distribution + policy (optional)' }),
-                makeField('Hosts',
-                    'Comma-separated Bowire host URLs. Empty = run in-browser; one or more = coordinator fans sessions out via /api/parallel/start.',
-                    hostsInput),
-                makeField('Ramp-up (seconds)',
-                    '0 = launch all sessions at once. >0 = spread session starts evenly over N seconds.',
-                    rampUpInput),
-                makeField('Failure policy', null, failureSelect),
-                makeField('Env pool',
-                    'Comma-separated env ids. Session k uses pool[k % len]. Empty = active env for every session.',
-                    envPoolInput),
+                el('div', { className: 'bowire-parallel-section-label',
+                    textContent: t('parallel.sectionLabel') }),
+                makeField(t('parallel.hostsLabel'), t('parallel.hostsHint'), hostsInput),
+                makeField(t('parallel.rampUpLabel'), t('parallel.rampUpHint'), rampUpInput),
+                makeField(t('parallel.failureLabel'), null, failureSelect),
+                makeField(t('parallel.envPoolLabel'), t('parallel.envPoolHint'), envPoolInput),
                 el('div', { className: 'bowire-confirm-actions' }, cancelBtn, confirmBtn)
             );
 
@@ -340,7 +338,7 @@
             ? collectionsList.find(function (c) { return c.id === sourceId; })
             : recordingsList.find(function (r) { return r.id === sourceId; });
         if (!source) {
-            toast('Source ' + kind + ' not found', 'error');
+            toast(t('parallel.sourceNotFound', { kind: kind }), 'error');
             return;
         }
 
@@ -348,7 +346,7 @@
             ? (Array.isArray(source.items) ? source.items.length : 0)
             : (Array.isArray(source.steps) ? source.steps.length : 0);
         if (totalSteps === 0) {
-            toast('Nothing to run — source is empty', 'error');
+            toast(t('parallel.sourceEmpty'), 'error');
             return;
         }
 
@@ -411,7 +409,7 @@
             durationMs: 0
         };
         render();
-        toast('Starting ' + sessionCount + ' parallel sessions on ' + sourceName, 'info');
+        toast(t('parallel.starting', { count: sessionCount, source: sourceName }), 'info');
 
         var runner = (kind === 'collection') ? _runCollectionSession : _runRecordingSession;
         var startMs = performance.now();
@@ -509,7 +507,7 @@
     async function _runDistributedParallel(kind, sourceId, sourceName, source, opts) {
         var targets = _buildParallelTargets(kind, source);
         if (targets.length === 0) {
-            toast('Nothing to run — no unary targets in this ' + kind, 'error');
+            toast(t('parallel.noUnaryTargets', { kind: kind }), 'error');
             return;
         }
         // Render one synthetic "host" tile per remote host so the
@@ -531,8 +529,9 @@
             durationMs: 0
         };
         render();
-        toast('Dispatching ' + opts.sessions + ' sessions across '
-            + opts.hosts.length + ' host' + (opts.hosts.length === 1 ? '' : 's'), 'info');
+        // #688 - one message, two shapes.
+        toast(t(opts.hosts.length === 1 ? 'parallel.dispatching.one' : 'parallel.dispatching.many',
+            { count: opts.sessions, hosts: opts.hosts.length }), 'info');
 
         var startMs = performance.now();
         var body = {
@@ -553,9 +552,9 @@
             if (!resp.ok) {
                 parallelSessionsState.status = 'done';
                 parallelSessionsState.durationMs = performance.now() - startMs;
-                toast('Distributed run failed: '
-                    + (json && json.title ? json.title : ('HTTP ' + resp.status)),
-                    'error');
+                toast(t('parallel.distributedFailed', {
+                    reason: (json && json.title) ? json.title : ('HTTP ' + resp.status)
+                }), 'error');
                 render();
                 return;
             }
@@ -620,7 +619,7 @@
         } catch (e) {
             parallelSessionsState.status = 'done';
             parallelSessionsState.durationMs = performance.now() - startMs;
-            toast('Distributed run failed: ' + (e.message || e), 'error');
+            toast(t('parallel.distributedFailed', { reason: e.message || e }), 'error');
             render();
         }
     }
@@ -715,17 +714,18 @@
         var failed = st.sessions.filter(function (s) { return s.status === 'done' && !s.pass; }).length;
         var running = st.sessions.filter(function (s) { return s.status === 'running'; }).length;
         var headerText = st.status === 'running'
-            ? running + ' running, ' + passed + ' passed, ' + failed + ' failed'
-            : passed + ' / ' + st.sessionCount + ' sessions passed'
-                + ' in ' + Math.round(st.durationMs) + ' ms';
+            ? t('parallel.summaryRunning', { running: running, passed: passed, failed: failed })
+            : t('parallel.summaryDone', {
+                passed: passed, total: st.sessionCount, ms: Math.round(st.durationMs)
+            });
         panel.appendChild(el('div', { className: 'bowire-parallel-panel-header' },
-            el('strong', { textContent: 'Parallel sessions' }),
+            el('strong', { textContent: t('parallel.panelTitle') }),
             el('span', { className: 'bowire-parallel-panel-summary', textContent: headerText }),
             st.status === 'done' ? el('button', {
                 type: 'button',
                 className: 'bowire-parallel-panel-dismiss',
-                title: 'Dismiss',
-                'aria-label': 'Dismiss parallel sessions panel',
+                title: t('common.dismiss'),
+                'aria-label': t('parallel.dismissAria'),
                 textContent: '×',
                 onClick: function () { parallelSessionsState = null; render(); }
             }) : null
@@ -755,7 +755,7 @@
             var pending = el('div', { className: 'bowire-parallel-hosts-strip' });
             st.hosts.forEach(function (host) {
                 pending.appendChild(el('div', { className: 'bowire-parallel-host-chip running',
-                        title: 'Dispatch in flight' },
+                        title: t('parallel.dispatchInFlight') },
                     el('span', { className: 'bowire-parallel-host-chip-name', textContent: host })
                 ));
             });
@@ -939,27 +939,27 @@
     function _renderParallelStepHistogram(agg) {
         var section = el('div', { className: 'bowire-parallel-histogram' });
         section.appendChild(el('div', { className: 'bowire-parallel-histogram-title',
-            textContent: 'Per-step status histogram' }));
+            textContent: t('parallel.histogramTitle') }));
 
         var stepKeys = Object.keys(agg.perStep)
             .sort(function (a, b) { return agg.perStep[a].stepIndex - agg.perStep[b].stepIndex; });
         if (stepKeys.length === 0) {
             section.appendChild(el('div', { className: 'bowire-parallel-histogram-empty',
-                textContent: 'No completed steps recorded.' }));
+                textContent: t('parallel.histogramEmpty') }));
             return section;
         }
 
         var table = el('table', { className: 'bowire-parallel-histogram-table' });
         var thead = el('thead', null,
             el('tr', null,
-                el('th', { textContent: 'Step' }),
+                el('th', { textContent: t('parallel.colStep') }),
                 el('th', { textContent: 'n' }),
                 el('th', { textContent: 'success' }),
                 el('th', { textContent: 'failure' }),
                 el('th', { textContent: 'p50' }),
                 el('th', { textContent: 'p95' }),
                 el('th', { textContent: 'p99' }),
-                el('th', { textContent: 'status mix' })
+                el('th', { textContent: t('parallel.colStatusMix') })
             )
         );
         table.appendChild(thead);
@@ -1024,11 +1024,11 @@
         // existing #233 ring).
         bar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
-            title: 'Save this run into Benchmarks for replay + diff (#131 / #233)',
+            title: t('parallel.saveToBenchmarksTitle'),
             onClick: function () { _saveParallelRunToBenchmarks(state); }
         },
             el('span', { innerHTML: typeof svgIcon === 'function' ? svgIcon('lightning') : '' }),
-            el('span', { textContent: 'Save to Benchmarks' })
+            el('span', { textContent: t('parallel.saveToBenchmarks') })
         ));
 
         // Export — same three formats as #234, accessed off the
@@ -1041,7 +1041,7 @@
                 : fmt === 'k6-summary' ? 'k6-summary' : 'OTLP';
             bar.appendChild(el('button', {
                 className: 'bowire-recording-action-btn',
-                title: 'Export results as ' + label,
+                title: t('parallel.exportAs', { format: label }),
                 onClick: function () { _exportParallelRun(state, fmt); }
             },
                 el('span', { innerHTML: typeof svgIcon === 'function' ? svgIcon('download') : '' }),
@@ -1156,7 +1156,7 @@
             try { loadBenchmarks(); } catch { /* ignore — list is empty */ }
         }
         if (typeof benchmarksList === 'undefined' || !Array.isArray(benchmarksList)) {
-            toast('Benchmarks rail not available in this build', 'error');
+            toast(t('parallel.noBenchmarksRail'), 'error');
             return;
         }
         // Stable key — every parallel-sessions run on the SAME source
@@ -1182,10 +1182,10 @@
         if (typeof benchmarksSelectedId !== 'undefined') {
             benchmarksSelectedId = savedId;
         }
-        toast('Saved parallel run to Benchmarks — open the Benchmarks rail to replay or diff',
+        toast(t('parallel.savedToBenchmarks'),
             'success', {
                 action: {
-                    label: 'Open',
+                    label: t('parallel.openBenchmarks'),
                     onClick: function () {
                         railMode = 'benchmarks';
                         try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); }
@@ -1210,21 +1210,21 @@
         var ext;
         if (format === 'csv') {
             if (typeof exportRunAsCsv !== 'function') {
-                toast('CSV exporter not available — Benchmarks rail missing', 'error');
+                toast(t('parallel.exporterMissing', { format: 'CSV' }), 'error');
                 return;
             }
             content = exportRunAsCsv(spec, 'per-method');
             mime = 'text/csv;charset=utf-8'; ext = '.results.csv';
         } else if (format === 'k6-summary') {
             if (typeof exportRunAsK6Summary !== 'function') {
-                toast('k6 exporter not available — Benchmarks rail missing', 'error');
+                toast(t('parallel.exporterMissing', { format: 'k6' }), 'error');
                 return;
             }
             content = JSON.stringify(exportRunAsK6Summary(spec), null, 2);
             mime = 'application/json'; ext = '.k6-summary.json';
         } else if (format === 'otlp') {
             if (typeof exportRunAsOtlpJson !== 'function') {
-                toast('OTLP exporter not available — Benchmarks rail missing', 'error');
+                toast(t('parallel.exporterMissing', { format: 'OTLP' }), 'error');
                 return;
             }
             content = JSON.stringify(exportRunAsOtlpJson(spec), null, 2);
@@ -1238,7 +1238,7 @@
         a.download = stem + ext;
         a.click();
         URL.revokeObjectURL(a.href);
-        toast('Exported parallel run as ' + format.toUpperCase(), 'success');
+        toast(t('parallel.exported', { format: format.toUpperCase() }), 'success');
     }
 
     // Compact host label for the per-session tile — strip scheme and
@@ -1415,11 +1415,11 @@
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: isRunning || col.items.length === 0,
-            title: 'Run all items sequentially with the current environment',
+            title: t('collections.runAllTitle'),
             onClick: function () { runCollection(col.id); }
         },
             el('span', { innerHTML: svgIcon('play') }),
-            el('span', { textContent: isRunning ? 'Running\u2026' : 'Run All' })
+            el('span', { textContent: t(isRunning ? 'collections.running' : 'collections.runAll') })
         ));
 
         // #132 minimal \u2014 fire N parallel sessions of this collection.
@@ -1429,11 +1429,11 @@
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: col.items.length === 0,
-            title: 'Run this collection in N parallel sessions at once',
+            title: t('collections.parallelTitle'),
             onClick: function () { _promptAndRunParallel('collection', col.id, col.name); }
         },
             el('span', { innerHTML: svgIcon('repeat') }),
-            el('span', { textContent: 'Parallel sessions' })
+            el('span', { textContent: t('parallel.panelTitle') })
         ));
 
         // #131 Phase 3 \u2014 "Benchmark" now opens an Add-to-envelope
@@ -1444,7 +1444,7 @@
             toolbar.appendChild(el('button', {
                 className: 'bowire-recording-action-btn',
                 disabled: col.items.length === 0,
-                title: 'Add this collection to a benchmark envelope',
+                title: t('collections.benchmarkTitle'),
                 onClick: function (e) {
                     addTargetToEnvelopePicker(e.clientX, e.clientY,
                         { type: 'collection-ref', collectionId: col.id, itemIndex: null },
@@ -1453,14 +1453,14 @@
                 }
             },
                 el('span', { innerHTML: svgIcon('lightning') }),
-                el('span', { textContent: 'Benchmark' })
+                el('span', { textContent: t('collections.benchmark') })
             ));
         }
 
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: col.items.length === 0,
-            title: 'Export as JSON',
+            title: t('collections.exportTitle'),
             onClick: function () {
                 var blob = new Blob([JSON.stringify(col, null, 2)], { type: 'application/json' });
                 var a = document.createElement('a');
@@ -1471,13 +1471,13 @@
             }
         },
             el('span', { innerHTML: svgIcon('download') }),
-            el('span', { textContent: 'Export' })
+            el('span', { textContent: t('collections.export') })
         ));
 
         // Import Postman Collection
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
-            title: 'Import a Postman Collection v2.1 JSON file',
+            title: t('collections.importTitle'),
             onClick: function () {
                 var input = document.createElement('input');
                 input.type = 'file';
@@ -1488,39 +1488,41 @@
                         var text = await input.files[0].text();
                         var imported = importPostmanCollection(text);
                         if (imported) {
-                            toast('Imported "' + imported.name + '" (' + imported.items.length + ' items)', 'success');
+                            toast(t('collections.imported', {
+                                name: imported.name, count: imported.items.length
+                            }), 'success');
                             collectionManagerSelectedId = imported.id;
                             render();
                         }
                     } catch (e) {
-                        toast('Import failed: ' + e.message, 'error');
+                        toast(t('collections.importFailed', { reason: e.message }), 'error');
                     }
                 };
                 input.click();
             }
         },
             el('span', { innerHTML: svgIcon('upload') }),
-            el('span', { textContent: 'Import Postman' })
+            el('span', { textContent: t('collections.import') })
         ));
 
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn bowire-recording-action-danger',
-            title: 'Delete this collection',
+            title: t('collections.deleteTitle'),
             onClick: function () {
-                bowireConfirm('Delete collection "' + col.name + '"?', function () {
+                bowireConfirm(t('collections.deleteConfirm', { name: col.name }), function () {
                     var backup = JSON.parse(JSON.stringify(col));
                     deleteCollection(col.id);
                     render();
-                    toast('Deleted collection "' + (backup.name || 'unnamed') + '"', 'info', {
+                    toast(t('collections.deleted', { name: backup.name || t('collections.unnamed') }), 'info', {
                         undo: function () { collectionsList.push(backup); persistCollections(); render(); },
                         logAction: { kind: 'collection-delete',
                             title: 'Deleted collection "' + (backup.name || 'unnamed') + '"' }
                     });
-                }, { title: 'Delete Collection', danger: true, confirmText: 'Delete' });
+                }, { title: t('collections.deleteHeading'), danger: true, confirmText: t('common.delete') });
             }
         },
             el('span', { innerHTML: svgIcon('trash') }),
-            el('span', { textContent: 'Delete' })
+            el('span', { textContent: t('common.delete') })
         ));
 
         pane.appendChild(toolbar);
@@ -1535,7 +1537,7 @@
         var stepsPane = el('div', { className: 'bowire-recording-steps' });
         if (col.items.length === 0) {
             stepsPane.appendChild(el('div', { className: 'bowire-recording-empty',
-                textContent: 'No items yet. Use "Save to Collection" from the request pane.' }));
+                textContent: t('collections.noItems') }));
         } else {
             for (var i = 0; i < col.items.length; i++) {
                 (function (item, idx) {
@@ -1565,8 +1567,8 @@
                     var deleteBtn = el('button', {
                         className: 'bowire-recording-step-delete',
                         innerHTML: svgIcon('trash'),
-                        title: 'Remove this item',
-                        'aria-label': 'Remove this item',
+                        title: t('collections.removeItem'),
+                        'aria-label': t('collections.removeItem'),
                         onClick: function (e) {
                             e.stopPropagation();
                             removeFromCollection(col.id, item.id);
@@ -1605,7 +1607,7 @@
         if (collectionsList.length === 0) {
             dropdown.appendChild(el('div', {
                 className: 'bowire-dropdown-item',
-                textContent: '+ New Collection',
+                textContent: t('collections.newCollection'),
                 onClick: function () {
                     var col = createCollection();
                     saveCurrentRequestToCollection(col.id);
@@ -1628,7 +1630,7 @@
             dropdown.appendChild(el('div', { style: 'border-top:1px solid var(--bowire-border);margin:4px 0' }));
             dropdown.appendChild(el('div', {
                 className: 'bowire-dropdown-item',
-                textContent: '+ New Collection',
+                textContent: t('collections.newCollection'),
                 onClick: function () {
                     var col = createCollection();
                     saveCurrentRequestToCollection(col.id);
