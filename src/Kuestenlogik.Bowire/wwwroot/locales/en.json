@@ -1786,5 +1786,17 @@
   "tour.sec-run.title": "Step 3 — Run the scan",
   "tour.sec-run.body": "Pick a tier — start with Heuristic, it's instant and gives you a baseline. Hit Run. The endpoints get ranked by risk score with one-line rationale per row: \"POST mutates state, no auth required\", \"DELETE on path with id parameter\", &c.",
   "tour.sec-wrap-up.title": "You're scanning",
-  "tour.sec-wrap-up.body": "Click any ranked row to drill into the rule hits + remediation hint. Use the per-row \"Generate test\" button to spin up a security regression test against that endpoint.\n\nThe right-side Security drawer keeps the panel reachable from any rail so a scan-finding can stay open while you investigate in Discover or Compose."
+  "tour.sec-wrap-up.body": "Click any ranked row to drill into the rule hits + remediation hint. Use the per-row \"Generate test\" button to spin up a security regression test against that endpoint.\n\nThe right-side Security drawer keeps the panel reachable from any rail so a scan-finding can stay open while you investigate in Discover or Compose.",
+
+  // the sibling rail packages: Contracts, Monitoring, Help, Map. Their
+  // fragments are stitched into the same bundle, so they share this catalogue.
+  "monitoring.title": "Monitoring",
+  "monitoring.refreshNow": "Refresh now",
+  "help.search": "Search topics…",
+  "help.openInTab": "Open this topic in a new tab",
+  "help.pickTopic": "Pick a topic on the left.",
+  "map.centre": "Center on map",
+  "map.label": "Map",
+  "map.pick": "Pick on map",
+  "monitoring.lastRun": "Last run {when} · {latency}"
 }

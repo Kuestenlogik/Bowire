@@ -148,8 +148,8 @@ function bowireRenderContractDrillIn() {
       el('button', {
         type: 'button',
         className: 'bowire-drawer-close',
-        title: 'Close',
-        'aria-label': 'Close',
+        title: t('common.close'),
+        'aria-label': t('common.close'),
         innerHTML: typeof svgIcon === 'function' ? svgIcon('close') : '×',
         onClick: function () { bowireContractDrillKey = null; render(); },
       }),

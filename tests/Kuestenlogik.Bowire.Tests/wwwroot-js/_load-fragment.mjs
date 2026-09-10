@@ -78,13 +78,17 @@ export function tNodes(key, slot, nodes, params) {
 // Built from the live functions rather than written out twice, so the two
 // copies cannot drift.
 //
-// They stay `function` declarations and `var`: this block is appended AFTER
-// the fragment, and only those hoist to the top of the compiled body. A
-// `const t` would sit in the temporal dead zone for any fragment that
-// translates at module level.
+// Two constraints shape this block. It is appended AFTER the fragment, so only
+// `function` declarations reach the top of the compiled body — a `const t`
+// would sit in the temporal dead zone for anything translating at module
+// level. And the catalogue is substituted *into* the function rather than
+// referenced from a `var` beside it: a `var` is hoisted but its assignment is
+// not, so a fragment that returns early left `t` looking up keys on
+// `undefined`. map.js does exactly that, and the failure read as
+// "Cannot read properties of undefined (reading 'map.label')" — a translation
+// bug on its face, a hoisting one underneath.
 const DEFAULT_T = `
-var __catalogue = ${JSON.stringify(CATALOGUE)};
-${t.toString().replace('CATALOGUE', '__catalogue')}
+${t.toString().replace('CATALOGUE', JSON.stringify(CATALOGUE))}
 ${tNodes.toString()}
 `;
 

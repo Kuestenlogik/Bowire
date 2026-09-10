@@ -7,9 +7,9 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, sep } from 'node:path';
 import { compileFragment } from './_load-fragment.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -247,7 +247,22 @@ test('a catalogue that is not an object is ignored rather than breaking t', () =
 // code, translated nowhere and noticed by nobody — that is exactly how
 // headerLibrary.settings.lede came to exist for two commits without a caller.
 
-const FRAGMENTS = resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js');
+// Every fragment that lands in the bundle, not only the core project's.
+//
+// #311 Phase G moved seven rails into sibling packages, and each ships its own
+// wwwroot/js into the same concatenated bundle. Scanning only the core
+// directory meant the guards checked the sweep against the files the sweep had
+// walked: a literal left in Flows or Recordings was invisible, and a key used
+// only from one of them would have read as an orphan. Six hundred strings sat
+// behind that gap.
+const SRC = resolve(__dirname, '../../../src');
+
+function fragmentDirs() {
+    return readdirSync(SRC, { withFileTypes: true })
+        .filter((e) => e.isDirectory() && e.name.startsWith('Kuestenlogik.Bowire'))
+        .map((e) => resolve(SRC, e.name, 'wwwroot', 'js'))
+        .filter((dir) => existsSync(dir));
+}
 
 // t('a.b.c') where the `t` is a whole identifier — not the tail of format(,
 // assert( or split(. Keys built at run time (t('x.' + field)) are collected
@@ -256,9 +271,20 @@ const STATIC_CALL = /(?<![A-Za-z0-9_$.])t\(\s*'([a-zA-Z0-9_.-]+)'/g;
 const DYNAMIC_CALL = /(?<![A-Za-z0-9_$.])t\(\s*'([a-zA-Z0-9_.-]+\.)'\s*\+/g;
 
 function fragmentSources() {
-    return readdirSync(FRAGMENTS)
-        .filter((f) => f.endsWith('.js') && f !== '_locales.js' && f !== 'i18n.js')
-        .map((f) => ({ file: f, text: readFileSync(resolve(FRAGMENTS, f), 'utf8') }));
+    const out = [];
+    for (const dir of fragmentDirs()) {
+        for (const entry of readdirSync(dir, { withFileTypes: true, recursive: true })) {
+            if (!entry.isFile() || !entry.name.endsWith('.js')) continue;
+            // _locales.js is generated from the catalogues; i18n.js declares
+            // t() rather than calling it.
+            if (entry.name === '_locales.js' || entry.name === 'i18n.js') continue;
+            const path = resolve(entry.parentPath ?? dir, entry.name);
+            // The package name makes the failure message say where to look.
+            const label = path.slice(SRC.length + 1).split(sep).join('/');
+            out.push({ file: label, text: readFileSync(path, 'utf8') });
+        }
+    }
+    return out;
 }
 
 test('every t() key in the fragments exists in the catalogue', () => {

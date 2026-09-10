@@ -1782,5 +1782,17 @@
   "tour.sec-run.title": "Schritt 3 — Die Prüfung laufen lassen",
   "tour.sec-run.body": "Wählen Sie eine Stufe — fangen Sie mit dem Regelwerk an, es ist sofort da und gibt Ihnen eine Grundlinie. Klicken Sie auf Starten. Die Endpunkte werden nach Risiko geordnet, mit einer Begründung je Zeile: „POST ändert Zustand, keine Anmeldung nötig\", „DELETE auf einem Pfad mit Kennungsparameter\" und so fort.",
   "tour.sec-wrap-up.title": "Sie prüfen",
-  "tour.sec-wrap-up.body": "Ein Klick auf eine geordnete Zeile zeigt die getroffenen Regeln und einen Hinweis zur Abhilfe. Über „Test erzeugen\" in der Zeile bauen Sie einen Sicherheits-Rückschrittstest gegen diesen Endpunkt.\n\nDie Sicherheits-Lade rechts hält die Fläche aus jeder Schiene erreichbar, sodass ein Befund offen bleiben kann, während Sie in Erkunden oder Verfassen nachsehen."
+  "tour.sec-wrap-up.body": "Ein Klick auf eine geordnete Zeile zeigt die getroffenen Regeln und einen Hinweis zur Abhilfe. Über „Test erzeugen\" in der Zeile bauen Sie einen Sicherheits-Rückschrittstest gegen diesen Endpunkt.\n\nDie Sicherheits-Lade rechts hält die Fläche aus jeder Schiene erreichbar, sodass ein Befund offen bleiben kann, während Sie in Erkunden oder Verfassen nachsehen.",
+
+  // Ein Schluessel fuer eine nicht installierte Schiene kostet ein paar Bytes;
+  // sieben Kataloge kosteten den Uebersetzer sieben Dateien.
+  "monitoring.title": "Beobachtung",
+  "monitoring.refreshNow": "Jetzt auffrischen",
+  "help.search": "Themen durchsuchen…",
+  "help.openInTab": "Dieses Thema in einem neuen Reiter öffnen",
+  "help.pickTopic": "Wählen Sie links ein Thema.",
+  "map.centre": "Auf der Karte zentrieren",
+  "map.label": "Karte",
+  "map.pick": "Auf der Karte wählen",
+  "monitoring.lastRun": "Letzter Lauf {when} · {latency}"
 }

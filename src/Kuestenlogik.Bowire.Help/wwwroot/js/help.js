@@ -288,7 +288,7 @@
         nav.appendChild(el('input', {
             type: 'search',
             className: 'bowire-help-search',
-            placeholder: 'Search topics…',
+            placeholder: t('help.search'),
             value: helpSearchQuery,
             'data-bowire-no-vars-chip': '1',
             'data-bowire-no-vars-ac': '1',
@@ -300,7 +300,7 @@
             if (!helpSearchHits || helpSearchHits.length === 0) {
                 nav.appendChild(el('div', {
                     className: 'bowire-help-empty',
-                    textContent: 'No matches'
+                    textContent: t('sidebar.noMatches')
                 }));
             } else {
                 var hitList = el('div', { className: 'bowire-help-hit-list' });
@@ -342,7 +342,7 @@
                         textContent: group.category
                     }));
                 }
-                group.topics.forEach(function (t) {
+                group.topics.forEach(function (topic) {
                     // Topic id rides as a data-attribute + the click
                     // handler reads it back via the live element. Without
                     // this morphdom preserved nodes across re-renders
@@ -352,8 +352,8 @@
                     // the #324 rail refactor.
                     var row = el('button', {
                         className: 'bowire-help-topic-row'
-                            + (t.id === helpSelectedId ? ' selected' : ''),
-                        'data-help-topic-id': t.id,
+                            + (topic.id === helpSelectedId ? ' selected' : ''),
+                        'data-help-topic-id': topic.id,
                         onClick: function () {
                             var id = this.getAttribute('data-help-topic-id');
                             if (id) helpLoadTopic(id);
@@ -361,12 +361,12 @@
                     });
                     row.appendChild(el('span', {
                         className: 'bowire-help-topic-row-title',
-                        textContent: t.title
+                        textContent: topic.title
                     }));
-                    if (t.summary) {
+                    if (topic.summary) {
                         row.appendChild(el('span', {
                             className: 'bowire-help-topic-row-excerpt',
-                            textContent: t.summary
+                            textContent: topic.summary
                         }));
                     }
                     nav.appendChild(row);
@@ -405,8 +405,8 @@
                 target: '_blank',
                 rel: 'noopener',
                 className: 'bowire-help-undock-btn',
-                title: 'Open this topic in a new tab',
-                'aria-label': 'Open this topic in a new tab',
+                title: t('help.openInTab'),
+                'aria-label': t('help.openInTab'),
                 innerHTML: svgIcon('externalLink')
             }));
             pad.appendChild(bar);
@@ -422,12 +422,12 @@
         } else if (!helpTopicsLoaded) {
             content.appendChild(el('div', {
                 className: 'bowire-help-empty',
-                textContent: 'Loading…'
+                textContent: t('settings.loading')
             }));
         } else {
             content.appendChild(el('div', {
                 className: 'bowire-help-empty',
-                textContent: 'Pick a topic on the left.'
+                textContent: t('help.pickTopic')
             }));
         }
         pad.appendChild(content);
@@ -443,13 +443,13 @@
         var groups = [];
         var current = null;
         for (var i = 0; i < topics.length; i++) {
-            var t = topics[i];
-            var cat = t.categoryId || null;
+            var topic = topics[i];
+            var cat = topic.categoryId || null;
             if (!current || current.category !== cat) {
                 current = { category: cat, topics: [] };
                 groups.push(current);
             }
-            current.topics.push(t);
+            current.topics.push(topic);
         }
         return groups;
     }

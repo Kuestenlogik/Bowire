@@ -153,7 +153,7 @@
         if (!monitoringLoaded && !_monitoringFetching) refreshMonitoring();
 
         sidebar.appendChild(renderSidebarToolbar({
-            title: 'Monitoring',
+            title: t('monitoring.title'),
             onTitleClick: monitoringSelectedName !== null ? function () {
                 monitoringSelectedName = null;
                 monitoringDetail = null;
@@ -161,7 +161,7 @@
             } : undefined,
             titleClickTitle: 'Back to the probe overview',
             actions: [
-                { icon: 'repeat', title: 'Refresh now', onClick: function () { refreshMonitoring(); } }
+                { icon: 'repeat', title: t('monitoring.refreshNow'), onClick: function () { refreshMonitoring(); } }
             ]
         }));
 
@@ -211,7 +211,7 @@
                 + '~/.bowire/monitoring and shows up here live: status, latency sparkline, and '
                 + 'the full outcome history per probe.',
             actions: [
-                { label: 'Refresh', primary: true, onClick: function () { refreshMonitoring(); } }
+                { label: t('sidebar.sources.refresh'), primary: true, onClick: function () { refreshMonitoring(); } }
             ]
         }));
         return pad;
@@ -239,7 +239,10 @@
             if (p.last) {
                 card.appendChild(el('div', {
                     className: 'bowire-mon-card-meta',
-                    textContent: 'Last run ' + _monitoringTimeOf(p.last) + ' · ' + _monitoringLatencyLabel(p.last)
+                    textContent: t('monitoring.lastRun', {
+                        when: _monitoringTimeOf(p.last),
+                        latency: _monitoringLatencyLabel(p.last)
+                    })
                 }));
             }
             grid.appendChild(card);
@@ -263,7 +266,10 @@
         if (last) {
             head.appendChild(el('span', {
                 className: 'bowire-mon-card-meta',
-                textContent: 'Last run ' + _monitoringTimeOf(last) + ' · ' + _monitoringLatencyLabel(last)
+                textContent: t('monitoring.lastRun', {
+                    when: _monitoringTimeOf(last),
+                    latency: _monitoringLatencyLabel(last)
+                })
             }));
         }
         wrap.appendChild(head);

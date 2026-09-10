@@ -214,9 +214,9 @@
         }
 
         var cur = root;
-        for (var t = 0; t < tokens.length; t++) {
+        for (var ti = 0; ti < tokens.length; ti++) {
             if (cur == null) return undefined;
-            var key = tokens[t];
+            var key = tokens[ti];
             if (/^\d+$/.test(key) && Array.isArray(cur)) {
                 cur = cur[parseInt(key, 10)];
             } else if (typeof cur === 'object') {
@@ -1259,22 +1259,22 @@
             var anySelected = selectedFrameIds.size > 0;
             var features = [];
             for (var k = 0; k < order.length; k++) {
-                var t = byTrack[order[k]];
+                var track = byTrack[order[k]];
                 // A LineString needs two positions to be valid geometry,
                 // and a track with one pin has no path to show anyway.
                 // MapLibre tolerates the degenerate case; GeoJSON does
                 // not, and anything reading this source through the
                 // widget's remote-control surface would be right to
                 // reject it.
-                if (t.coords.length < 2) continue;
+                if (track.coords.length < 2) continue;
                 features.push({
                     type: 'Feature',
-                    geometry: { type: 'LineString', coordinates: t.coords },
+                    geometry: { type: 'LineString', coordinates: track.coords },
                     properties: {
-                        color: t.color,
-                        discriminator: t.discriminator,
-                        trackId: t.trackId,
-                        selected: t.selected === 'yes'
+                        color: track.color,
+                        discriminator: track.discriminator,
+                        trackId: track.trackId,
+                        selected: track.selected === 'yes'
                             ? 'yes'
                             : (anySelected ? 'no-but-others-are' : 'no')
                     }
@@ -1707,8 +1707,8 @@
          * it would look like a stall.
          */
         function noteFrameOnTimeline(frame, ordinal) {
-            var t = frameTimeOf(frame, ordinal);
-            frameTimeline.push({ ordinal: ordinal, value: t.value, real: t.real });
+            var ts = frameTimeOf(frame, ordinal);
+            frameTimeline.push({ ordinal: ordinal, value: ts.value, real: ts.real });
 
             // The timeline is trimmed with the pins: an ordinal whose pins
             // the cap has dropped is a position the scrubber cannot show.
@@ -2514,13 +2514,13 @@
                     function () {
                         var toast = (window.bowireToast || window.toast);
                         if (typeof toast === 'function') {
-                            toast('Copied path: ' + chain, 'success');
+                            toast(t('rb.response.copiedPath', { path: chain }), 'success');
                         }
                     },
                     function () {
                         var toast = (window.bowireToast || window.toast);
                         if (typeof toast === 'function') {
-                            toast('Copy failed', 'error');
+                            toast(t('clipboard.failed'), 'error');
                         }
                     }
                 );
@@ -2766,9 +2766,9 @@
         if (!path) return root;
         var tokens = String(path).split('.');
         var cur = root;
-        for (var t = 0; t < tokens.length; t++) {
+        for (var ti = 0; ti < tokens.length; ti++) {
             if (cur == null) return undefined;
-            var key = tokens[t];
+            var key = tokens[ti];
             if (/^\d+$/.test(key) && Array.isArray(cur)) {
                 cur = cur[parseInt(key, 10)];
             } else if (typeof cur === 'object') {
@@ -2947,7 +2947,7 @@
         var loc = bowireMapResolveLatLon(pair, explicit);
         if (!loc) return [];
         return [{
-            label: 'Center on map',
+            label: t('map.centre'),
             // 5-decimal lat/lon ≈ 1 m precision — same shape most
             // GIS tools print and what the operator expects on the
             // status bar of a desktop map app.
@@ -3061,7 +3061,7 @@
                 scope: 'same-parent'
             },
             viewer: {
-                label: 'Map',
+                label: t('map.label'),
                 icon: 'map-pin',
                 // Phase 3.2 — the map naturally renders >1 selected
                 // pin (the existing Phase 3.1 camera + restyle logic
@@ -3073,7 +3073,7 @@
                 mount: bowireMapViewerMount
             },
             editor: {
-                label: 'Pick on map',
+                label: t('map.pick'),
                 // The coordinate editor only ever cares about a single
                 // (lat, lon) pair, so leave it on the safe default.
                 selectionMode: 'single',
