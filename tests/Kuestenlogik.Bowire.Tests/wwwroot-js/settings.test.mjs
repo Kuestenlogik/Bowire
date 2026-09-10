@@ -17,6 +17,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { t } from './_load-fragment.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SRC = readFileSync(
@@ -71,7 +72,10 @@ function loadBuildTree() {
             }
         };
     `;
-    return new Function(body)();
+    // #117 — the tree labels come from the catalogue now. This harness builds
+    // its own Function rather than going through compileFragment, so it has to
+    // be handed the translator.
+    return new Function('t', body)(t);
 }
 
 // ---- Migration ----

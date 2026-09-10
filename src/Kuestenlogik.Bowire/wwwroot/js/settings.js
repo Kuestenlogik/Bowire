@@ -112,7 +112,7 @@
             + (installedExtensions || []).length;
         nodes.push({
             id: 'settings:plugins',
-            label: 'Plugins',
+            label: t('settings.nav.plugins'),
             icon: 'plug',
             expandable: true,
             expanded: pluginsExpanded,
@@ -162,7 +162,7 @@
         var wsExpanded = isSettingsTreeNodeExpanded(wsKey_, wsActive);
         nodes.push({
             id: 'settings:workspace',
-            label: 'Workspace settings',
+            label: t('sidebar.ws.settings'),
             icon: 'layers',
             expandable: true,
             expanded: wsExpanded,
@@ -320,7 +320,7 @@
 
         // ---- Left sidebar: navigation tree ----
         var leftPanel = el('div', { className: 'bowire-settings-left' });
-        leftPanel.appendChild(renderTree(_buildSettingsTreeNodes(), { ariaLabel: 'Settings' }));
+        leftPanel.appendChild(renderTree(_buildSettingsTreeNodes(), { ariaLabel: t('sidebar.settings') }));
 
         // ---- Right panel: settings for selected category ----
         // ID includes the active tab so morphdom fully replaces the
@@ -384,13 +384,13 @@
         // ---- Modal frame ----
         var modal = el('div', { className: 'bowire-settings-modal' },
             el('div', { className: 'bowire-settings-header' },
-                el('span', { className: 'bowire-settings-title', textContent: 'Settings' }),
+                el('span', { className: 'bowire-settings-title', textContent: t('sidebar.settings') }),
                 el('button', {
                     id: 'bowire-settings-close-btn',
                     className: 'bowire-settings-close',
                     innerHTML: svgIcon('close'),
-                    title: 'Close (Esc)',
-                    'aria-label': 'Close settings',
+                    title: t('settings.closeEsc'),
+                    'aria-label': t('settings.closeAria'),
                     onClick: closeSettings
                 })
             ),
@@ -401,7 +401,7 @@
             className: 'bowire-settings-overlay',
             role: 'dialog',
             'aria-modal': 'true',
-            'aria-label': 'Settings',
+            'aria-label': t('sidebar.settings'),
             onClick: function (e) { if (e.target === overlay) closeSettings(); }
         }, modal);
 
@@ -411,7 +411,7 @@
     // ---- General Settings ----
     function renderSettingsGeneral() {
         var section = el('div', { className: 'bowire-settings-section' });
-        section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: 'General' }));
+        section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: t('settings.general') }));
 
         // #117 - Language. First row of the section, above Theme, because it
         // decides what every other label in the dialog reads. Switching it
@@ -466,9 +466,9 @@
                     }
                 });
                 var opts = [
-                    { value: 'auto', label: 'Auto (follow OS)' },
-                    { value: 'dark', label: 'Dark' },
-                    { value: 'light', label: 'Light' }
+                    { value: 'auto', label: t('settings.theme.auto') },
+                    { value: 'dark', label: t('settings.theme.dark') },
+                    { value: 'light', label: t('settings.theme.light') }
                 ];
                 for (var i = 0; i < opts.length; i++) {
                     var opt = el('option', { value: opts[i].value, textContent: opts[i].label });
@@ -581,8 +581,8 @@
                     }
                 });
                 var opts = [
-                    { value: 'top-strip', label: 'Top strip' },
-                    { value: 'rail-tint', label: 'Rail tint' }
+                    { value: 'top-strip', label: t('settings.accent.topStrip') },
+                    { value: 'rail-tint', label: t('settings.accent.railTint') }
                 ];
                 for (var ii = 0; ii < opts.length; ii++) {
                     var opt = el('option', { value: opts[ii].value, textContent: opts[ii].label });
@@ -652,7 +652,7 @@
                 // Initial state — "checking…" until fetch resolves.
                 statusBox.appendChild(el('span', {
                     style: 'font-size:12px;color:var(--bowire-text-tertiary)',
-                    textContent: 'Checking…'
+                    textContent: t('settings.checking')
                 }));
 
                 fetch(`${config.prefix}/api/mcp-adapter`)
@@ -700,10 +700,10 @@
                 var upstreamInput = el('input', {
                     type: 'url',
                     className: 'bowire-settings-input',
-                    placeholder: 'https://bowire.internal:5080',
+                    placeholder: t('settings.upstreamPlaceholder'),
                     value: savedUpstream,
                     style: 'min-width:240px;font-size:12px',
-                    'aria-label': 'Upstream Bowire URL'
+                    'aria-label': t('settings.upstreamAria')
                 });
                 function buildCommand() {
                     var upstream = (upstreamInput.value || '').trim();
@@ -725,7 +725,7 @@
                     type: 'button',
                     className: 'bowire-settings-copy-mini',
                     style: 'background:none;border:none;cursor:pointer;color:var(--bowire-text-tertiary);padding:2px;font-size:11px',
-                    title: 'Copy command',
+                    title: t('settings.copyCommand'),
                     textContent: '⧉',
                     onClick: function () {
                         navigator.clipboard.writeText(buildCommand()).then(function () {
@@ -739,7 +739,7 @@
                 wrap.appendChild(cmdRow);
                 wrap.appendChild(el('span', {
                     style: 'font-size:11px;color:var(--bowire-text-tertiary);text-align:right;max-width:280px',
-                    textContent: 'Add --token <secret> if the parent Bowire requires bearer auth.'
+                    textContent: t('settings.tokenHint')
                 }));
                 return wrap;
             }
@@ -764,7 +764,7 @@
                 return el('button', {
                     type: 'button',
                     className: 'bowire-settings-action-btn',
-                    textContent: 'Replay getting-started tour',
+                    textContent: t('settings.replayTour'),
                     onClick: function () {
                         // Clear EVERY saved-once tour flag — same
                         // bowireResetTours surface the legacy operator-
@@ -812,10 +812,10 @@
     function renderHintsAndWarnings() {
         var row = el('div', { className: 'bowire-settings-row bowire-settings-hints-row' });
         row.appendChild(el('div', { className: 'bowire-settings-row-info' },
-            el('div', { className: 'bowire-settings-row-label', textContent: 'Hints and warnings' }),
+            el('div', { className: 'bowire-settings-row-label', textContent: t('settings.hints.title') }),
             el('div', {
                 className: 'bowire-settings-row-desc',
-                textContent: 'First-time hints and banners you’ve dismissed. Bring any of them back.'
+                textContent: t('settings.hints.lede')
             })
         ));
 
@@ -824,7 +824,7 @@
         if (hints.length === 0) {
             listCol.appendChild(el('div', {
                 className: 'bowire-settings-hints-empty',
-                textContent: 'No hints dismissed.'
+                textContent: t('settings.hints.none')
             }));
         } else {
             hints.forEach(function (h) {
@@ -841,7 +841,7 @@
                 item.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-settings-hints-restore',
-                    textContent: 'Show again',
+                    textContent: t('settings.hints.showAgain'),
                     onClick: function () {
                         if (typeof undismissHint === 'function') undismissHint(h.id);
                         render();
@@ -853,7 +853,7 @@
             listCol.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-settings-hints-reset',
-                textContent: 'Reset all hints',
+                textContent: t('settings.hints.resetAll'),
                 onClick: function () {
                     if (typeof resetAllDismissedHints === 'function') resetAllDismissedHints();
                     render();
@@ -879,7 +879,7 @@
             type: 'button',
             className: 'bowire-settings-copy-mini',
             style: 'background:none;border:none;cursor:pointer;color:var(--bowire-text-tertiary);padding:2px;font-size:11px',
-            title: 'Copy command',
+            title: t('settings.copyCommand'),
             textContent: '⧉',
             onClick: function () {
                 navigator.clipboard.writeText('bowire --enable-mcp-adapter').then(function () {
@@ -893,7 +893,7 @@
         statusBox.appendChild(cmdRow);
         statusBox.appendChild(el('span', {
             style: 'font-size:11px;color:var(--bowire-text-tertiary)',
-            textContent: 'Restart Bowire with this flag, or set Bowire:EnableMcpAdapter=true in appsettings.'
+            textContent: t('settings.mcpHint')
         }));
     }
 
@@ -910,16 +910,16 @@
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
-            textContent: 'Rail modes'
+            textContent: t('settings.rails.title')
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-hint',
-            textContent: 'Show or hide rail icons in the left strip. Always-on modes are required for Bowire to work and can’t be turned off. Disabled modes stay reachable via the command palette and deep links — only the rail icon disappears.'
+            textContent: t('settings.rails.lede')
         }));
         if (typeof _railModes === 'undefined' || !Array.isArray(_railModes)) {
             section.appendChild(el('div', {
                 className: 'bowire-settings-section-empty',
-                textContent: 'Rail catalogue not loaded.'
+                textContent: t('settings.rails.notLoaded')
             }));
             return section;
         }
@@ -967,7 +967,7 @@
             if (locked) {
                 row.appendChild(el('span', {
                     className: 'bowire-settings-rail-badge',
-                    textContent: 'Built-in'
+                    textContent: t('settings.rails.builtin')
                 }));
             }
             return row;
@@ -976,7 +976,7 @@
         // Group 1 — always on
         var lockedSub = el('div', {
             className: 'bowire-settings-rail-subhead',
-            textContent: 'Always available'
+            textContent: t('settings.rails.always')
         });
         section.appendChild(lockedSub);
         var lockedList = el('div', { className: 'bowire-settings-rail-list' });
@@ -991,7 +991,7 @@
         var toggleSub = el('div', {
             className: 'bowire-settings-rail-subhead',
             style: 'margin-top:12px;',
-            textContent: 'Toggleable'
+            textContent: t('settings.rails.toggleable')
         });
         section.appendChild(toggleSub);
         var toggleList = el('div', { className: 'bowire-settings-rail-list' });
@@ -1020,11 +1020,11 @@
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
-            textContent: 'Modules'
+            textContent: t('settings.modules.title')
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-hint',
-            textContent: 'Enable or disable installed Bowire modules (AI Assistant, future variable-resolver, …). When disabled, the module’s UI hides and its hooks no-op until you turn it back on. The choice is per-workspace.'
+            textContent: t('settings.modules.lede')
         }));
 
         var cfg = (typeof config !== 'undefined' && config) ? config : {};
@@ -1032,7 +1032,7 @@
         if (modules.length === 0) {
             section.appendChild(el('div', {
                 className: 'bowire-settings-section-empty',
-                textContent: 'No modules installed. Reference a Bowire module package (e.g. Kuestenlogik.Bowire.Ai) to see entries here.'
+                textContent: t('settings.modules.none')
             }));
             return section;
         }
@@ -1094,11 +1094,11 @@
         var card = el('div', { className: 'bowire-settings-section-empty' });
         card.appendChild(el('div', {
             style: 'font-weight:500;margin-bottom:6px',
-            textContent: 'No ' + kindLabel + ' installed.'
+            textContent: t('settings.ext.noneOfKind', { kind: kindLabel })
         }));
         card.appendChild(el('div', {
             style: 'font-size:12px;color:var(--bowire-text-tertiary);margin-bottom:8px',
-            textContent: 'Install a plugin contributing at this extension point to see entries here. Use the Install button at the top of the Protocols sub-page, or `bowire plugin install <packageId>`.'
+            textContent: t('settings.ext.none')
         }));
         return card;
     }
@@ -1116,11 +1116,11 @@
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
-            textContent: 'Protocols'
+            textContent: t('settings.protocols.title')
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-hint',
-            textContent: 'Per-protocol configuration and lifecycle for every IBowireProtocol plugin (REST, gRPC, GraphQL, MCP, MQTT, WebSocket, …). Disable a protocol to hide its chips, services, and switcher entry — the plugin stays loaded for instant re-enable. Use the lifecycle buttons on the right to restart, unload, or reset a plugin’s storage.'
+            textContent: t('settings.protocols.lede')
         }));
 
         // Plugin health banner + install/check action bar at the page
@@ -1183,7 +1183,7 @@
                 textContent: (hiddenSectionExpanded ? '▾ ' : '▸ ')
                     + hiddenProtocols.length
                     + (hiddenProtocols.length === 1 ? ' hidden protocol' : ' hidden protocols'),
-                title: 'Hidden in your view only. They stay loaded and keep working.',
+                title: t('settings.protocols.hiddenNote'),
                 onClick: function () {
                     hiddenSectionExpanded = !hiddenSectionExpanded;
                     renderSettingsDialog();
@@ -1235,14 +1235,14 @@
             title: canAdminister
                 ? ''
                 : 'Only an administrator can install a plugin on this instance — it loads into the server process every session shares.',
-            textContent: 'Install plugin…',
+            textContent: t('settings.plugins.install'),
             onClick: function () { if (canAdminister) _openInstallPluginModal(); }
         }));
         bar.appendChild(el('button', {
             type: 'button',
             className: 'bowire-settings-action-btn',
             style: 'background:none;color:var(--bowire-text-tertiary)',
-            textContent: 'Check for updates',
+            textContent: t('settings.plugins.checkUpdates'),
             onClick: function () {
                 var qs = pluginPrereleaseToggle ? '?prerelease=true' : '';
                 fetch(config.prefix + '/api/plugins/check-updates' + qs)
@@ -1273,10 +1273,10 @@
     function _openInstallPluginModal() {
         Promise.resolve(
             typeof bowirePrompt === 'function'
-                ? bowirePrompt('Package id as published on NuGet — the plugin loads without a restart.', {
-                    title: 'Install a protocol plugin',
+                ? bowirePrompt(t('settings.plugins.installPrompt'), {
+                    title: t('settings.plugins.installTitle'),
                     placeholder: 'Kuestenlogik.Bowire.Protocol.Kafka',
-                    confirmText: 'Install',
+                    confirmText: t('settings.plugins.installConfirm'),
                     // Catch the two mistakes the backend can only answer
                     // with a slow NuGet round-trip: an empty id and a
                     // pasted URL / path instead of a package id.
@@ -1365,11 +1365,11 @@
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
-            textContent: 'UI Widgets'
+            textContent: t('settings.widgets.title')
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-hint',
-            textContent: 'Widgets that render semantic annotations on response payloads — coordinates on a map, time-series in a chart, &c. One IBowireUiExtension per row; settings the widget exposes appear inline; lifecycle (restart / unload / reset storage) on the right.'
+            textContent: t('settings.widgets.lede')
         }));
 
         var extensions = (installedExtensions || []).slice().sort(function (a, b) {
@@ -1422,11 +1422,11 @@
         card.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
             style: 'margin-top:0',
-            textContent: 'Suggested widget packages'
+            textContent: t('settings.widgets.suggested')
         }));
         card.appendChild(el('div', {
             className: 'bowire-settings-section-desc',
-            textContent: 'Bowire knows a package for these semantic kinds but no widget is loaded. Install the package to see annotated payloads render.'
+            textContent: t('settings.widgets.suggestedLede')
         }));
         var list = el('div', { className: 'bowire-settings-plugin-list' });
         pending.forEach(function (s) {
@@ -1483,11 +1483,11 @@
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
-            textContent: 'Formats'
+            textContent: t('settings.formats.title')
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-hint',
-            textContent: 'Detectors that recognise data shapes in response payloads (WGS84 coordinates, GeoJSON points, image bytes, timestamps, …) and tag them with a semantic kind. UI Widgets above render those kinds. Per-detector toggles + settings land in v2.2.'
+            textContent: t('settings.formats.lede')
         }));
 
         // Today the framework doesn't expose a JS-side list of loaded
@@ -1496,11 +1496,11 @@
         // appear under Plugins; once they declare per-detector
         // settings the list here will be sourced from a runtime API.
         var builtins = [
-            { id: 'kuestenlogik.wgs84-coordinate', label: 'WGS84 coordinates', desc: '{lat, lon}, {latitude, longitude}, {latitudeCoordinate, longitudeCoordinate} (TacticalAPI naming).' },
-            { id: 'kuestenlogik.geojson-point', label: 'GeoJSON points', desc: 'RFC 7946 Point geometries.' },
-            { id: 'kuestenlogik.image-bytes', label: 'Image bytes', desc: 'PNG / JPEG / GIF byte arrays surface as inline previews.' },
-            { id: 'kuestenlogik.audio-bytes', label: 'Audio bytes', desc: 'WAV / MP3 / OGG byte arrays surface as inline players.' },
-            { id: 'kuestenlogik.timestamp', label: 'Timestamps', desc: 'ISO-8601 + Unix epoch seconds / millis.' }
+            { id: 'kuestenlogik.wgs84-coordinate', label: t('settings.formats.wgs84'), desc: '{lat, lon}, {latitude, longitude}, {latitudeCoordinate, longitudeCoordinate} (TacticalAPI naming).' },
+            { id: 'kuestenlogik.geojson-point', label: t('settings.formats.geojson'), desc: t('settings.formats.geojsonDesc') },
+            { id: 'kuestenlogik.image-bytes', label: t('settings.formats.imageBytes'), desc: t('settings.formats.imageBytesDesc') },
+            { id: 'kuestenlogik.audio-bytes', label: t('settings.formats.audioBytes'), desc: t('settings.formats.audioBytesDesc') },
+            { id: 'kuestenlogik.timestamp', label: t('settings.formats.timestamps'), desc: t('settings.formats.timestampsDesc') }
         ];
         var list = el('div', { className: 'bowire-settings-module-list' });
         builtins.forEach(function (det) {
@@ -1529,7 +1529,7 @@
     // ---- Shortcuts ----
     function renderSettingsShortcuts() {
         var section = el('div', { className: 'bowire-settings-section' });
-        section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: 'Keyboard Shortcuts' }));
+        section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: t('settings.shortcuts.title') }));
 
         var shortcuts = [
             { key: 'Ctrl+Enter', desc: 'Execute request / Send message' },
@@ -1664,8 +1664,8 @@
                     var clearBtn = el('button', {
                         type: 'button',
                         className: 'bowire-settings-apikey-clear',
-                        textContent: 'Clear stored key',
-                        title: 'Remove the API key from ai-config.json. Disables the cloud provider until you paste one again.'
+                        textContent: t('settings.clearStoredKey'),
+                        title: t('settings.clearStoredKeyTitle')
                     });
                     clearBtn.onclick = function () {
                         // The sentinel lets the server distinguish
@@ -1846,12 +1846,12 @@
         // 'AI' because that's the technology vocabulary the
         // operator configures — naming it Assistant there would
         // hide what the field actually selects.
-        section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: 'Assistant' }));
+        section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: t('settings.assistant.title') }));
 
         if (!aiSettingsState.loaded) {
             section.appendChild(el('p', {
                 className: 'bowire-settings-help',
-                textContent: 'Loading AI configuration…'
+                textContent: t('settings.assistant.loading')
             }));
             loadAiSettings(false);
             return section;
@@ -1864,7 +1864,7 @@
         if (!aiSettingsState.status) {
             section.appendChild(el('p', {
                 className: 'bowire-settings-help',
-                textContent: 'The optional Kuestenlogik.Bowire.Ai package isn’t installed. The Phase‑1 hint engine in the AI side‑panel keeps working without it; install the package to add Ollama / LM Studio / cloud chat to the workbench.'
+                textContent: t('settings.assistant.notInstalled')
             }));
             section.appendChild(el('div', {
                 className: 'bowire-settings-help',
@@ -1874,7 +1874,7 @@
             section.appendChild(el('p', {
                 className: 'bowire-settings-help',
                 style: 'margin-top: 8px;',
-                textContent: 'Standalone bowire installs already ship the package — restart the workbench if you upgraded and the tab still says this.'
+                textContent: t('settings.assistant.standaloneNote')
             }));
             return section;
         }
@@ -1899,25 +1899,25 @@
             if (st.hasOverride) {
                 scopeBar.appendChild(el('span', {
                     className: 'bowire-ai-scope-tag bowire-ai-scope-tag-override',
-                    textContent: 'Workspace override'
+                    textContent: t('settings.assistant.wsOverride')
                 }));
                 scopeBar.appendChild(el('span', {
                     className: 'bowire-ai-scope-desc',
-                    textContent: 'These values apply only inside "' + wsName + '". Remove the override to inherit the global config.'
+                    textContent: t('settings.assistant.wsNote', { name: wsName })
                 }));
                 scopeBar.appendChild(el('button', {
                     className: 'bowire-settings-action-btn bowire-ai-scope-remove',
-                    textContent: 'Use global instead',
+                    textContent: t('settings.assistant.useGlobal'),
                     onClick: function () { removeAiWorkspaceOverride(); }
                 }));
             } else {
                 scopeBar.appendChild(el('span', {
                     className: 'bowire-ai-scope-tag bowire-ai-scope-tag-global',
-                    textContent: 'Global'
+                    textContent: t('settings.assistant.global')
                 }));
                 scopeBar.appendChild(el('span', {
                     className: 'bowire-ai-scope-desc',
-                    textContent: 'No workspace-specific override. The global default applies inside "' + wsName + '" (and every other workspace).'
+                    textContent: t('settings.assistant.noOverride', { name: wsName })
                 }));
             }
             section.appendChild(scopeBar);
@@ -2059,13 +2059,13 @@
         var saveGlobalBtn = el('button', {
             className: 'bowire-settings-action-btn',
             textContent: aiSettingsState.saving ? 'Saving…' : 'Save as global default',
-            title: 'Persists to ai-config.json. Workspaces without their own override inherit these values.',
+            title: t('settings.assistant.globalTitle'),
             onClick: function () { saveAiSettings('global'); }
         });
         var saveWsBtn = wsName ? el('button', {
             className: 'bowire-settings-action-btn bowire-ai-save-ws-btn',
             textContent: aiSettingsState.saving ? '…' : 'Save for "' + wsName + '" only',
-            title: 'Persists to ai-config.<workspaceId>.json. Other workspaces keep the global config.',
+            title: t('settings.assistant.wsTitle'),
             onClick: function () { saveAiSettings('workspace'); }
         }) : null;
         if (aiSettingsState.saving) {
@@ -2287,11 +2287,11 @@
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
-            textContent: 'Catalogue providers'
+            textContent: t('settings.cat.title')
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-hint',
-            textContent: 'Pick where Bowire reads its URL catalogue from. Local file, a remote JSON document, or a Consul agent. Saving from this UI overrides whatever Bowire:Discovery:Catalogue in appsettings.json sets; clearing the override falls back to appsettings.'
+            textContent: t('settings.cat.lede')
         }));
 
         // #140 — Presets bar for catalogue-source configs. Snapshots
@@ -2330,7 +2330,7 @@
         if (!discoveryState.loaded) {
             section.appendChild(el('p', {
                 className: 'bowire-settings-help',
-                textContent: 'Loading catalogue configuration…'
+                textContent: t('settings.cat.loading')
             }));
             loadDiscoverySettings(false);
             return section;
@@ -2370,10 +2370,10 @@
         // appsettings); the named options drive the form below.
         var picker = el('div', { className: 'bowire-settings-catalogue-picker' });
         var providers = [
-            { id: '', label: 'None', desc: 'No UI override — fall back to appsettings.json (or empty when neither is set).' },
-            { id: 'local', label: 'Local file', desc: 'Read entries from a JSON file on disk. Defaults to ~/.bowire/catalogue.json when no path is set.' },
-            { id: 'http', label: 'HTTP endpoint', desc: 'Fetch a catalogue document over HTTP(S). Optional Authorization header for token-gated endpoints.' },
-            { id: 'consul', label: 'Consul', desc: 'Query a Consul agent for service entries. Optional ACL token, DC, and tag filter.' },
+            { id: '', label: t('settings.cat.none'), desc: t('settings.cat.noneDesc') },
+            { id: 'local', label: t('settings.cat.local'), desc: t('settings.cat.localDesc') },
+            { id: 'http', label: t('settings.cat.http'), desc: t('settings.cat.httpDesc') },
+            { id: 'consul', label: 'Consul', desc: t('settings.cat.consulDesc') },
             // #136 — k8s + agent providers ship in sibling packages
             // (Kuestenlogik.Bowire.Catalogue.Kubernetes / .Agent).
             // The provider registry's assembly-scan picks them up
@@ -2382,8 +2382,8 @@
             // with a missing package surfaces as a clear "provider
             // not loaded" message when the registry tries to resolve
             // it, instead of silently being unavailable.
-            { id: 'kubernetes', label: 'Kubernetes', package: 'Kuestenlogik.Bowire.Catalogue.Kubernetes', desc: 'Query a Kubernetes API server for Service objects. Auto-picks in-cluster service-account / kubeconfig credentials when fields are blank.' },
-            { id: 'agent', label: 'Bowire Agent hub', package: 'Kuestenlogik.Bowire.Catalogue.Agent', desc: 'Aggregate entries from a Bowire Agent hub (depends on #128).' }
+            { id: 'kubernetes', label: 'Kubernetes', package: 'Kuestenlogik.Bowire.Catalogue.Kubernetes', desc: t('settings.cat.k8sDesc') },
+            { id: 'agent', label: t('settings.cat.agent'), package: 'Kuestenlogik.Bowire.Catalogue.Agent', desc: t('settings.cat.agentDesc') }
         ];
         // #537 — GET /api/catalogue/info now reports which provider
         // implementations are actually loaded in the host process. Before
@@ -2437,7 +2437,7 @@
             } else if (p.package) {
                 text.appendChild(el('div', {
                     className: 'bowire-settings-catalogue-provider-desc',
-                    textContent: 'Ships in ' + p.package + ' (installed).'
+                    textContent: t('settings.cat.shipsIn', { package: p.package })
                 }));
             }
             row.appendChild(text);
@@ -2465,7 +2465,7 @@
                         type: 'text',
                         className: 'bowire-settings-input',
                         value: draft.localPath || '',
-                        placeholder: '~/.bowire/catalogue.json'
+                        placeholder: t('settings.cat.localPathPlaceholder')
                     });
                     input.oninput = function () { draft.localPath = input.value; _persistDiscoveryDraft(); };
                     return input;
@@ -2478,7 +2478,7 @@
                         type: 'url',
                         className: 'bowire-settings-input',
                         value: draft.httpUrl || '',
-                        placeholder: 'https://catalogue.example.com/bowire.json'
+                        placeholder: t('settings.cat.httpUrlPlaceholder')
                     });
                     input.oninput = function () { draft.httpUrl = input.value; _persistDiscoveryDraft(); };
                     return input;
@@ -2501,7 +2501,7 @@
                         wrap.appendChild(el('button', {
                             type: 'button',
                             className: 'bowire-settings-apikey-clear',
-                            textContent: 'Clear stored header',
+                            textContent: t('settings.cat.clearHeader'),
                             onClick: function () {
                                 draft.httpAuthorization = '__clear__';
                                 draft.httpAuthorizationSet = false;
@@ -2519,7 +2519,7 @@
                         type: 'url',
                         className: 'bowire-settings-input',
                         value: draft.consulAddress || '',
-                        placeholder: 'http://localhost:8500'
+                        placeholder: t('settings.cat.consulPlaceholder')
                     });
                     input.oninput = function () { draft.consulAddress = input.value; _persistDiscoveryDraft(); };
                     return input;
@@ -2542,7 +2542,7 @@
                         wrap.appendChild(el('button', {
                             type: 'button',
                             className: 'bowire-settings-apikey-clear',
-                            textContent: 'Clear stored token',
+                            textContent: t('settings.clearStoredToken'),
                             onClick: function () {
                                 draft.consulToken = '__clear__';
                                 draft.consulTokenSet = false;
@@ -2601,7 +2601,7 @@
                         type: 'url',
                         className: 'bowire-settings-input',
                         value: draft.k8sApiServerUrl || '',
-                        placeholder: 'https://kubernetes.default.svc'
+                        placeholder: t('settings.cat.k8sPlaceholder')
                     });
                     input.oninput = function () { draft.k8sApiServerUrl = input.value; _persistDiscoveryDraft(); };
                     return input;
@@ -2624,7 +2624,7 @@
                         wrap.appendChild(el('button', {
                             type: 'button',
                             className: 'bowire-settings-apikey-clear',
-                            textContent: 'Clear stored token',
+                            textContent: t('settings.clearStoredToken'),
                             onClick: function () {
                                 draft.k8sToken = '__clear__';
                                 draft.k8sTokenSet = false;
@@ -2641,7 +2641,7 @@
                         type: 'text',
                         className: 'bowire-settings-input',
                         value: draft.k8sKubeconfigPath || '',
-                        placeholder: '~/.kube/config'
+                        placeholder: t('settings.cat.kubeconfigPlaceholder')
                     });
                     input.oninput = function () { draft.k8sKubeconfigPath = input.value; _persistDiscoveryDraft(); };
                     return input;
@@ -2665,7 +2665,7 @@
                         type: 'text',
                         className: 'bowire-settings-input',
                         value: draft.k8sLabelSelector || '',
-                        placeholder: 'bowire/discoverable=true'
+                        placeholder: t('settings.cat.k8sSelectorPlaceholder')
                     });
                     input.oninput = function () { draft.k8sLabelSelector = input.value; _persistDiscoveryDraft(); };
                     return input;
@@ -2702,7 +2702,7 @@
                         wrap.appendChild(el('button', {
                             type: 'button',
                             className: 'bowire-settings-apikey-clear',
-                            textContent: 'Clear stored CA',
+                            textContent: t('settings.cat.clearCa'),
                             onClick: function () {
                                 draft.k8sCaCertificatePem = '__clear__';
                                 draft.k8sCaCertificatePemSet = false;
@@ -2727,7 +2727,7 @@
                         type: 'url',
                         className: 'bowire-settings-input',
                         value: draft.agentHubUrl || '',
-                        placeholder: 'https://hub.bowire.internal'
+                        placeholder: t('settings.cat.agentPlaceholder')
                     });
                     input.oninput = function () { draft.agentHubUrl = input.value; _persistDiscoveryDraft(); };
                     return input;
@@ -2750,7 +2750,7 @@
                         wrap.appendChild(el('button', {
                             type: 'button',
                             className: 'bowire-settings-apikey-clear',
-                            textContent: 'Clear stored token',
+                            textContent: t('settings.clearStoredToken'),
                             onClick: function () {
                                 draft.agentBootstrapToken = '__clear__';
                                 draft.agentBootstrapTokenSet = false;
@@ -2791,7 +2791,7 @@
             className: 'bowire-settings-action-btn bowire-settings-catalogue-test',
             textContent: discoveryState.testing ? 'Testing…' : 'Test connection',
             disabled: discoveryState.testing ? true : undefined,
-            title: 'Hits GET /api/catalogue/info — checks the catalogue wiring is up. Pass = a provider is active; does not contact the upstream until you press Refresh.',
+            title: t('settings.cat.infoTitle'),
             onClick: function () { testDiscoveryConnection(); }
         });
         actionRow.appendChild(testBtn);
@@ -2800,7 +2800,7 @@
             className: 'bowire-settings-action-btn bowire-settings-catalogue-refresh',
             textContent: discoveryState.refreshing ? 'Refreshing…' : 'Refresh now',
             disabled: discoveryState.refreshing ? true : undefined,
-            title: 'Hits POST /api/catalogue/refresh — fetches the catalogue from the active provider and reports the entry count.',
+            title: t('settings.cat.refreshTitle'),
             onClick: function () { refreshDiscoveryEntries(); }
         });
         actionRow.appendChild(refreshBtn);
@@ -2834,7 +2834,9 @@
             section.appendChild(el('p', {
                 className: 'bowire-settings-help',
                 style: 'margin-top:10px;',
-                textContent: 'The active provider comes from appsettings.json (Bowire:Discovery:Catalogue:Provider = ' + (info.defaultProviderId || info.providerId) + '). Saving from this UI replaces it.'
+                textContent: t('settings.cat.activeFromAppsettings', {
+                    provider: info.defaultProviderId || info.providerId
+                })
             }));
         }
 
@@ -3025,21 +3027,21 @@
     function renderSettingsTools() {
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', { className: 'bowire-settings-section-title',
-            textContent: 'Tools' }));
+            textContent: t('settings.tools.title') }));
         section.appendChild(el('div', { className: 'bowire-settings-section-hint',
-            textContent: 'In-process tools you started from the workbench. Stops when Bowire shuts down — use `bowire proxy` for a long-running daemon.' }));
+            textContent: t('settings.tools.lede') }));
 
         // Reverse-proxy sub-section
         section.appendChild(el('h4', {
             className: 'bowire-settings-section-subtitle',
             style: 'margin-top:18px;font-size:13px;color:var(--bowire-text-secondary);text-transform:uppercase;letter-spacing:0.05em',
-            textContent: 'Reverse proxy'
+            textContent: t('reverseProxy.title')
         }));
 
         if (!(typeof window !== 'undefined' && typeof window.bowireRefreshReverseProxies === 'function')) {
             section.appendChild(el('div', {
                 className: 'bowire-settings-section-empty',
-                textContent: 'Reverse-proxy launcher not loaded — check that the Bowire bundle is up to date.'
+                textContent: t('settings.tools.proxyMissing')
             }));
             return section;
         }
@@ -3055,20 +3057,20 @@
         var actionRow = el('div', { style: 'display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap' });
         actionRow.appendChild(el('button', {
             className: 'bowire-settings-action-btn',
-            textContent: 'Start a reverse proxy…',
+            textContent: t('settings.tools.startProxy'),
             onClick: function () { window.bowireOpenReverseProxyModal(); }
         }));
         if (running.length > 0) {
             actionRow.appendChild(el('button', {
                 className: 'bowire-settings-action-btn',
-                textContent: 'Stop all',
+                textContent: t('settings.tools.stopAll'),
                 onClick: function () { window.bowireStopAllReverseProxies(); }
             }));
         }
         actionRow.appendChild(el('button', {
             className: 'bowire-settings-action-btn',
             style: 'background:none;color:var(--bowire-text-tertiary)',
-            textContent: 'Refresh',
+            textContent: t('sidebar.sources.refresh'),
             onClick: function () { window.bowireRefreshReverseProxies({ rerender: true }); }
         }));
         section.appendChild(actionRow);
@@ -3076,7 +3078,7 @@
         if (running.length === 0) {
             section.appendChild(el('div', {
                 className: 'bowire-settings-section-empty',
-                textContent: 'No reverse proxies running. Start one from the topbar Tools menu or the button above.'
+                textContent: t('settings.tools.noProxies')
             }));
             return section;
         }
@@ -3102,7 +3104,7 @@
             }));
             row.appendChild(el('button', {
                 className: 'bowire-settings-action-btn',
-                textContent: 'Stop',
+                textContent: t('bench.stop'),
                 onClick: function () { window.bowireStopReverseProxy(entry.port); }
             }));
             list.appendChild(row);
@@ -3112,7 +3114,7 @@
         section.appendChild(el('p', {
             className: 'bowire-settings-help',
             style: 'margin-top:12px',
-            textContent: 'Stops when Bowire shuts down.'
+            textContent: t('reverseProxy.stopsOnExit')
         }));
 
         return section;
@@ -3149,13 +3151,13 @@
         if (!ws) {
             section.appendChild(el('div', {
                 className: 'bowire-settings-section-empty',
-                textContent: 'No workspace selected. Pick one in the activity rail to see workspace-scoped settings.'
+                textContent: t('settings.ws.noneSelected')
             }));
         } else {
             section.appendChild(el('p', {
                 className: 'bowire-settings-row-hint',
                 style: 'margin-top:6px;margin-bottom:14px;',
-                textContent: 'Active workspace: ' + ws.name + '.'
+                textContent: t('settings.ws.activeWorkspace', { name: ws.name })
             }));
         }
         return ws;
@@ -3176,7 +3178,7 @@
         if (urls.length === 0) {
             section.appendChild(el('div', {
                 className: 'bowire-settings-section-empty',
-                textContent: 'No URLs configured. Add one in the Sources rail to start discovery.'
+                textContent: t('settings.ws.noUrls')
             }));
         } else {
             var list = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-bottom:12px' });
@@ -3221,7 +3223,7 @@
         var actions = el('div', { style: 'margin-top:8px;display:flex;gap:8px;flex-wrap:wrap' });
         actions.appendChild(el('button', {
             className: 'bowire-presets-btn',
-            textContent: 'Open Sources rail',
+            textContent: t('settings.ws.openSources'),
             onClick: function () {
                 closeSettings();
                 if (typeof railMode !== 'undefined') {
@@ -3255,16 +3257,16 @@
             style: 'margin-bottom:12px' },
             el('div', { className: 'bowire-ws-detail-stat' },
                 el('div', { className: 'bowire-ws-detail-stat-value', textContent: String(envs.length) }),
-                el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'Environments' })
+                el('div', { className: 'bowire-ws-detail-stat-label', textContent: t('sidebar.envs.title') })
             ),
             el('div', { className: 'bowire-ws-detail-stat' },
                 el('div', { className: 'bowire-ws-detail-stat-value', textContent: String(Object.keys(globals).length) }),
-                el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'Global vars' })
+                el('div', { className: 'bowire-ws-detail-stat-label', textContent: t('settings.ws.globalVars') })
             ),
             el('div', { className: 'bowire-ws-detail-stat' },
                 el('div', { className: 'bowire-ws-detail-stat-value',
                     textContent: activeEnv ? activeEnv.name : '—' }),
-                el('div', { className: 'bowire-ws-detail-stat-label', textContent: 'Active' })
+                el('div', { className: 'bowire-ws-detail-stat-label', textContent: t('settings.ws.active') })
             )
         );
         section.appendChild(summary);
@@ -3272,7 +3274,7 @@
         if (envs.length === 0 && Object.keys(globals).length === 0) {
             section.appendChild(el('div', {
                 className: 'bowire-settings-section-empty',
-                textContent: 'No environments or globals defined. Add one in the Environments rail.'
+                textContent: t('settings.ws.noEnvs')
             }));
         } else if (envs.length > 0) {
             var list = el('div', { style: 'display:flex;flex-direction:column;gap:4px;margin-bottom:12px' });
@@ -3304,7 +3306,7 @@
         var actions = el('div', { style: 'margin-top:8px;display:flex;gap:8px;flex-wrap:wrap' });
         actions.appendChild(el('button', {
             className: 'bowire-presets-btn',
-            textContent: 'Open Environments rail',
+            textContent: t('settings.ws.openEnvs'),
             onClick: function () {
                 closeSettings();
                 if (typeof railMode !== 'undefined') {
@@ -3340,18 +3342,18 @@
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
-            textContent: 'Per-Workspace overrides'
+            textContent: t('settings.overrides.title')
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-hint',
-            textContent: 'Machine-scoped settings that this workspace replaces with its own value. The override travels with the workspace (.bww); the machine-scoped default applies in every other workspace.'
+            textContent: t('settings.overrides.lede')
         }));
 
         var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
         if (!ws) {
             section.appendChild(el('div', {
                 className: 'bowire-settings-section-empty',
-                textContent: 'No workspace selected. Pick one in the activity rail to see its overrides.'
+                textContent: t('settings.overrides.noneSelected')
             }));
             return section;
         }
@@ -3369,16 +3371,18 @@
         if (aiStatus && aiStatus.hasOverride) {
             var row = el('div', { className: 'bowire-settings-row' });
             row.appendChild(el('div', { className: 'bowire-settings-row-info' },
-                el('div', { className: 'bowire-settings-row-label', textContent: 'Assistant (AI) configuration' },
+                el('div', { className: 'bowire-settings-row-label', textContent: t('settings.overrides.aiLabel') },
                     el('span', {
                         className: 'bowire-ai-scope-tag bowire-ai-scope-tag-override',
                         style: 'margin-left:8px',
-                        textContent: 'workspace override'
+                        textContent: t('settings.overrides.badge')
                     })
                 ),
                 el('div', {
                     className: 'bowire-settings-row-desc',
-                    textContent: 'This workspace uses ' + (aiStatus.providerId || '(unknown)')
+                    textContent: t('settings.overrides.aiUses', {
+                        provider: aiStatus.providerId || t('settings.unknownProvider')
+                    })
                         + ' · ' + (aiStatus.model || '(default model)')
                         + '. The global default applies in every other workspace.'
                 })
@@ -3387,7 +3391,7 @@
                 el('button', {
                     type: 'button',
                     className: 'bowire-settings-action-btn',
-                    textContent: 'Edit assistant override',
+                    textContent: t('settings.overrides.editAi'),
                     onClick: function () {
                         settingsTab = 'configure-modules';
                         renderSettingsDialog();
@@ -3403,11 +3407,11 @@
             },
                 el('div', {
                     style: 'font-weight:500;margin-bottom:6px',
-                    textContent: 'No workspace overrides set.'
+                    textContent: t('settings.overrides.none')
                 }),
                 el('div', {
                     style: 'font-size:12px;color:var(--bowire-text-tertiary)',
-                    textContent: 'Active workspace: ' + ws.name + '. When you save a machine-scoped setting "for this workspace only" — e.g. an alternate AI provider on the assistant page — the override appears here so the deviation from the machine-scoped default stays discoverable.'
+                    textContent: t('settings.overrides.activeNote', { name: ws.name })
                 })
             ));
             return section;
@@ -3459,7 +3463,7 @@
 
     function renderSettingsData() {
         var section = el('div', { className: 'bowire-settings-section' });
-        section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: 'Data Management' }));
+        section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: t('settings.data.title') }));
 
         // #97 — the standing place to see, and take back, what was decided
         // about the single-user install's data. The one-time dialog is gone
@@ -3485,8 +3489,8 @@
                     }
                 });
                 var opts = [
-                    { value: 'soft', label: 'Soft — move to Trash, recover within retention period' },
-                    { value: 'hard', label: 'Hard — delete immediately, no recovery via Trash' }
+                    { value: 'soft', label: t('settings.data.soft') },
+                    { value: 'hard', label: t('settings.data.hard') }
                 ];
                 for (var i = 0; i < opts.length; i++) {
                     var opt = el('option', { value: opts[i].value, textContent: opts[i].label });
@@ -3510,10 +3514,10 @@
                     }
                 });
                 var opts = [
-                    { value: '7',     label: '7 days' },
-                    { value: '14',    label: '14 days' },
-                    { value: '30',    label: '30 days' },
-                    { value: 'never', label: 'Never auto-purge' }
+                    { value: '7',     label: t('settings.data.days7') },
+                    { value: '14',    label: t('settings.data.days14') },
+                    { value: '30',    label: t('settings.data.days30') },
+                    { value: 'never', label: t('settings.data.neverPurge') }
                 ];
                 for (var j = 0; j < opts.length; j++) {
                     var opt = el('option', { value: opts[j].value, textContent: opts[j].label });
@@ -3544,7 +3548,7 @@
             'Clear localStorage and reload — undo restores from a pre-reset snapshot',
             'Reset All',
             function () {
-                bowireConfirm('Reset ALL Bowire data (history, favorites, environments, settings)?\n\nThe action log keeps a pre-reset snapshot so Ctrl/Cmd+Z can put it back, but only until the page reloads.', function () {
+                bowireConfirm(t('settings.data.resetAsk'), function () {
                     // #194 — snapshot every localStorage key into an
                     // array of {key, value} pairs so undo can splat
                     // it back. Snapshot necessarily includes the
@@ -3562,7 +3566,7 @@
                     } catch { /* defensive */ }
                     var keyCount = snapshot.length;
                     try { localStorage.clear(); } catch { /* ignore */ }
-                    toast('All data cleared — Ctrl/Cmd+Z to undo, reload incoming', 'success', {
+                    toast(t('settings.data.cleared'), 'success', {
                         duration: 8000,
                         undo: function () {
                             try {
@@ -3572,7 +3576,7 @@
                                     }
                                 });
                             } catch { /* ignore */ }
-                            toast('Settings restored from snapshot — reload for full effect', 'info');
+                            toast(t('settings.data.restoredSnapshot'), 'info');
                         },
                         logAction: {
                             kind: 'settings-reset', rail: 'settings',
@@ -3583,7 +3587,7 @@
                     // Wider window than the legacy 500 ms so the
                     // operator can react to the Undo button.
                     setTimeout(function () { location.reload(); }, 5000);
-                }, { title: 'Reset All Settings', danger: true, confirmText: 'Reset All' });
+                }, { title: t('settings.data.resetHeading'), danger: true, confirmText: t('settings.data.resetConfirm') });
             },
             true // danger
         ));
@@ -3601,17 +3605,17 @@
             'Remove all request history entries',
             'Clear History',
             function () {
-                bowireConfirm('Clear all call history?', function () {
+                bowireConfirm(t('settings.data.clearHistoryAsk'), function () {
                     var backup = getHistory();
                     clearHistory();
-                    toast('History cleared', 'success', {
+                    toast(t('settings.data.historyCleared'), 'success', {
                         undo: function () { restoreHistory(backup); },
                         logAction: { kind: 'history-clear', rail: 'settings',
                             title: 'Cleared call history (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)',
                             undoSpec: { entries: backup },
                             redo: function () { clearHistory(); } }
                     });
-                }, { title: 'Clear History', danger: true, confirmText: 'Clear' });
+                }, { title: t('settings.data.clearHistoryHeading'), danger: true, confirmText: t('rb.history.clear') });
             }
         ));
 
@@ -3620,18 +3624,18 @@
             'Remove all starred methods',
             'Clear Favorites',
             function () {
-                bowireConfirm('Clear all favorites?', function () {
+                bowireConfirm(t('settings.data.clearFavoritesAsk'), function () {
                     var backup = getFavorites();
                     localStorage.removeItem(wsKey(FAVORITES_KEY));
                     render();
-                    toast('Favorites cleared', 'success', {
+                    toast(t('settings.data.favoritesCleared'), 'success', {
                         undo: function () { try { localStorage.setItem(wsKey(FAVORITES_KEY), JSON.stringify(backup)); } catch {} render(); },
                         logAction: { kind: 'favorites-clear', rail: 'settings',
                             title: 'Cleared favorites (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)',
                             undoSpec: { entries: backup },
                             redo: function () { try { localStorage.removeItem(wsKey(FAVORITES_KEY)); } catch {} render(); } }
                     });
-                }, { title: 'Clear Favorites', danger: true, confirmText: 'Clear' });
+                }, { title: t('settings.data.clearFavoritesHeading'), danger: true, confirmText: t('rb.history.clear') });
             }
         ));
 
@@ -3644,9 +3648,9 @@
             'Move every recording in this workspace to the recordings trash',
             'Clear Recordings',
             function () {
-                bowireConfirm('Move all recordings to trash?', function () {
+                bowireConfirm(t('settings.data.clearRecordingsAsk'), function () {
                     if (!Array.isArray(recordingsList) || recordingsList.length === 0) {
-                        toast('No recordings to clear', 'info');
+                        toast(t('settings.data.noRecordings'), 'info');
                         return;
                     }
                     var snapshot = recordingsList.map(function (r, idx) {
@@ -3696,7 +3700,7 @@
                             undoSpec: { entries: snapshot }
                         }
                     });
-                }, { title: 'Clear Recordings', danger: true, confirmText: 'Clear' });
+                }, { title: t('settings.data.clearRecordingsHeading'), danger: true, confirmText: t('rb.history.clear') });
             }
         ));
 
@@ -3705,9 +3709,9 @@
             'Move every collection in this workspace to the collections trash',
             'Clear Collections',
             function () {
-                bowireConfirm('Move all collections to trash?', function () {
+                bowireConfirm(t('settings.data.clearCollectionsAsk'), function () {
                     if (!Array.isArray(collectionsList) || collectionsList.length === 0) {
-                        toast('No collections to clear', 'info');
+                        toast(t('settings.data.noCollections'), 'info');
                         return;
                     }
                     var snapshot = collectionsList.map(function (c, idx) {
@@ -3756,7 +3760,7 @@
                             undoSpec: { entries: snapshot }
                         }
                     });
-                }, { title: 'Clear Collections', danger: true, confirmText: 'Clear' });
+                }, { title: t('settings.data.clearCollectionsHeading'), danger: true, confirmText: t('rb.history.clear') });
             }
         ));
 
@@ -3773,10 +3777,10 @@
                             else if (typeof migrateLegacyVars === 'function') migrateLegacyVars();
                         } catch (e) {
                             console.error('[settings] vars migration failed', e);
-                            toast('Migration failed — see console.', 'error');
+                            toast(t('settings.data.migrationFailed'), 'error');
                         }
                     },
-                    { title: 'Migrate ${} → {{}}', confirmText: 'Migrate' }
+                    { title: t('settings.data.migrateHeading'), confirmText: t('settings.data.migrateConfirm') }
                 );
             }
         ));
@@ -3809,7 +3813,7 @@
                 var opts = [
                     { value: '100',  label: '100' },
                     { value: '250',  label: '250' },
-                    { value: '500',  label: '500 (default)' },
+                    { value: '500',  label: t('settings.data.limit500') },
                     { value: '1000', label: '1000' },
                     { value: '2500', label: '2500' }
                 ];
@@ -3828,11 +3832,11 @@
         var runHistorySection = el('div', { className: 'bowire-coverage-section' });
         runHistorySection.appendChild(el('h4', {
             className: 'bowire-settings-subhead',
-            textContent: 'Run history'
+            textContent: t('settings.data.runHistory')
         }));
         runHistorySection.appendChild(el('p', {
             className: 'bowire-settings-row-desc',
-            textContent: 'Recent invocations across Discover, Compose, Benchmark and Recording replay. Click a row to open the method tab.'
+            textContent: t('settings.data.runHistoryLede')
         }));
         if (typeof renderRunHistoryView === 'function') {
             var rhv = renderRunHistoryView();
@@ -3877,8 +3881,8 @@
                     }
                 });
                 var storageOpts = [
-                    { value: 'disk', label: 'Disk (default)' },
-                    { value: 'browser-only', label: 'Browser-only' }
+                    { value: 'disk', label: t('settings.data.disk') },
+                    { value: 'browser-only', label: t('settings.data.browserOnly') }
                 ];
                 for (var soi = 0; soi < storageOpts.length; soi++) {
                     var sopt = el('option', { value: storageOpts[soi].value, textContent: storageOpts[soi].label });
@@ -3904,7 +3908,7 @@
                 function () {
                     return el('button', {
                         className: 'bowire-settings-action-btn',
-                        textContent: 'Open workspace settings',
+                        textContent: t('sidebar.ws.settingsTitle'),
                         onClick: function () {
                             closeSettings();
                             if (typeof railMode !== 'undefined') {
@@ -3955,12 +3959,12 @@
 
         var modal = el('div', { className: 'bowire-about-modal' },
             el('div', { className: 'bowire-about-modal-header' },
-                el('span', { className: 'bowire-about-modal-title', textContent: 'About' }),
+                el('span', { className: 'bowire-about-modal-title', textContent: t('settings.about.title') }),
                 el('button', {
                     className: 'bowire-settings-close',
                     innerHTML: svgIcon('close'),
-                    title: 'Close (Esc)',
-                    'aria-label': 'Close about dialog',
+                    title: t('settings.closeEsc'),
+                    'aria-label': t('settings.about.closeAria'),
                     onClick: closeAbout
                 })
             ),
@@ -3971,7 +3975,7 @@
             className: 'bowire-about-overlay',
             role: 'dialog',
             'aria-modal': 'true',
-            'aria-label': 'About Bowire',
+            'aria-label': t('settings.about.aria'),
             onClick: function (e) { if (e.target === overlay) closeAbout(); }
         }, modal);
 
@@ -4013,37 +4017,37 @@
                 // version was visually separating the name from the
                 // tagline; reading it bottom-up communicates 'what is
                 // this thing' before 'which version is it'.
-                el('div', { className: 'bowire-settings-about-brand-tagline', textContent: 'The multi-protocol API workbench' }),
+                el('div', { className: 'bowire-settings-about-brand-tagline', textContent: t('settings.about.tagline') }),
                 el('div', { className: 'bowire-settings-about-brand-version', textContent: 'Version ' + (config.version || 'unknown') })
             )
         ));
 
         // ---- Runtime stats ----
-        section.appendChild(el('h4', { className: 'bowire-settings-about-subhead', textContent: 'Runtime' }));
+        section.appendChild(el('h4', { className: 'bowire-settings-about-subhead', textContent: t('settings.about.runtime') }));
 
         section.appendChild(el('div', { className: 'bowire-settings-about-row' },
-            el('span', { className: 'bowire-settings-about-label', textContent: 'Mode' }),
+            el('span', { className: 'bowire-settings-about-label', textContent: t('settings.about.mode') }),
             el('span', { textContent: uiMode })
         ));
 
         section.appendChild(el('div', { className: 'bowire-settings-about-row' },
-            el('span', { className: 'bowire-settings-about-label', textContent: 'Protocols' }),
+            el('span', { className: 'bowire-settings-about-label', textContent: t('settings.protocols.title') }),
             el('span', { textContent: protocols.map(function (p) { return p.name; }).join(', ') || 'Loading...' })
         ));
 
         section.appendChild(el('div', { className: 'bowire-settings-about-row' },
-            el('span', { className: 'bowire-settings-about-label', textContent: 'Services' }),
+            el('span', { className: 'bowire-settings-about-label', textContent: t('settings.about.services') }),
             el('span', { textContent: String(services.length) })
         ));
 
         var methods = services.reduce(function (acc, s) { return acc + (s.methods ? s.methods.length : 0); }, 0);
         section.appendChild(el('div', { className: 'bowire-settings-about-row' },
-            el('span', { className: 'bowire-settings-about-label', textContent: 'Methods' }),
+            el('span', { className: 'bowire-settings-about-label', textContent: t('settings.about.methods') }),
             el('span', { textContent: String(methods) })
         ));
 
         // ---- Project links ----
-        section.appendChild(el('h4', { className: 'bowire-settings-about-subhead', textContent: 'Project' }));
+        section.appendChild(el('h4', { className: 'bowire-settings-about-subhead', textContent: t('settings.about.project') }));
 
         var linksRow = el('div', { className: 'bowire-settings-about-links' });
         linksRow.appendChild(aboutLink('GitHub Repository',  'https://github.com/Kuestenlogik/Bowire'));
@@ -4071,7 +4075,7 @@
         var noticesBody = el('div', { className: 'bowire-settings-about-notices-body', style: 'display:none' });
         noticesBody.appendChild(el('p', {
             className: 'bowire-settings-about-notices-lede',
-            textContent: 'Bowire ships with the following third-party components. Each retains its original license; full transitive list available via dotnet list package --include-transitive.'
+            textContent: t('settings.about.thirdParty')
         }));
         for (var i = 0; i < BOWIRE_OSS_NOTICES.length; i++) {
             var n = BOWIRE_OSS_NOTICES[i];
@@ -4095,7 +4099,7 @@
         // ---- Made by Küstenlogik ----
         var lockupSrc = config.theme === 'dark' ? config.kuestenlogikLockupMono : config.kuestenlogikLockup;
         section.appendChild(el('div', { className: 'bowire-settings-about-madeby' },
-            el('div', { className: 'bowire-settings-about-madeby-label', textContent: 'Made by' }),
+            el('div', { className: 'bowire-settings-about-madeby-label', textContent: t('settings.about.madeBy') }),
             el('a', {
                 href: 'https://github.com/Kuestenlogik',
                 target: '_blank',
@@ -4316,10 +4320,10 @@
         // today; the frontend surfaces the 501 inline so the operator
         // sees the version gate clearly rather than a fake "Loaded".
         var actions = [
-            { key: 'load', label: 'Load' },
-            { key: 'unload', label: 'Unload' },
-            { key: 'restart', label: 'Restart' },
-            { key: 'reset-storage', label: 'Reset storage' }
+            { key: 'load', label: t('settings.plugin.load') },
+            { key: 'unload', label: t('settings.plugin.unload') },
+            { key: 'restart', label: t('settings.plugin.restart') },
+            { key: 'reset-storage', label: t('settings.plugin.resetStorage') }
         ];
         actions.forEach(function (a) {
             var key = pluginId + '::' + a.key;
@@ -4604,11 +4608,11 @@
         var section = el('div', { className: 'bowire-settings-plugin-manage' });
         section.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
-            textContent: 'Installed (sibling) plugins'
+            textContent: t('settings.plugin.installedTitle')
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-desc',
-            textContent: 'Sibling plugins under ' + pluginDirLabel()
+            textContent: t('settings.plugin.installedUnder', { dir: pluginDirLabel() })
                 + ' get Update / Uninstall buttons; bundled plugins (gRPC, REST, MQTT, …) ship inside the Bowire tool and update with dotnet tool update.'
         }));
 
@@ -4632,7 +4636,7 @@
         });
         prereleaseRow.appendChild(cb);
         prereleaseRow.appendChild(el('span', {
-            textContent: 'Include pre-release versions when checking for updates'
+            textContent: t('settings.plugin.prerelease')
         }));
         section.appendChild(prereleaseRow);
 
@@ -4643,7 +4647,7 @@
         if (!installedPlugins.length) {
             section.appendChild(el('p', {
                 className: 'bowire-settings-empty',
-                textContent: 'No sibling plugins installed.'
+                textContent: t('settings.plugin.none')
             }));
             return section;
         }
@@ -4686,7 +4690,7 @@
 
         var checkBtn = el('button', {
             className: 'bowire-settings-update-check-btn',
-            textContent: 'Check now',
+            textContent: t('settings.plugin.checkNow'),
             onClick: function () {
                 checkBtn.disabled = true;
                 checkBtn.textContent = 'Checking…';
@@ -4746,7 +4750,7 @@
             idLine.appendChild(el('span', {
                 className: 'bowire-settings-plugin-manage-badge',
                 textContent: 'bundled',
-                title: 'Ships with the bowire tool — updated via `dotnet tool update -g Kuestenlogik.Bowire.Tool`'
+                title: t('settings.plugin.shipsWithTool')
             }));
         }
         textBox.appendChild(idLine);
@@ -4816,13 +4820,13 @@
                 : machineWide ? 'Installed machine-wide — an administrator removes it, and it goes for every account on this host'
                 : !mayAdminister ? notAdminTitle
                 : '',
-            textContent: 'Uninstall',
+            textContent: t('settings.plugin.uninstall'),
             onClick: function () {
                 if (bundled || machineWide || !mayAdminister) return;
                 bowireConfirm(
                     'Uninstall ' + pkgId + '? The package is removed from disk and the workbench restarts to unload it.',
                     function () { runPluginAction(pkgId, 'uninstall'); },
-                    { title: 'Uninstall plugin', confirmText: 'Uninstall', danger: true }
+                    { title: t('settings.plugin.uninstallHeading'), confirmText: t('settings.plugin.uninstall'), danger: true }
                 );
             }
         });
@@ -4836,8 +4840,8 @@
             type: 'button',
             className: 'bowire-settings-plugin-btn',
             disabled: busy,
-            title: 'Show package metadata + protocol contributions',
-            textContent: 'Inspect',
+            title: t('settings.plugin.inspectTitle'),
+            textContent: t('settings.plugin.inspect'),
             onClick: function () { openPluginInspectModal(p); }
         });
         actions.appendChild(inspectBtn);
@@ -4860,7 +4864,7 @@
         header.appendChild(el('button', {
             className: 'bowire-modal-close',
             innerHTML: svgIcon('x'),
-            title: 'Close',
+            title: t('common.close'),
             onClick: function () { overlay.remove(); }
         }));
         panel.appendChild(header);
@@ -4896,12 +4900,12 @@
         // filter the catalog to entries whose packageId matches.
         var contribTitle = el('h3', {
             className: 'bowire-plugin-inspect-section',
-            textContent: 'Protocol contributions'
+            textContent: t('settings.plugin.contributions')
         });
         body.appendChild(contribTitle);
 
         var contribBox = el('div', { className: 'bowire-plugin-inspect-contrib' });
-        contribBox.appendChild(el('span', { textContent: 'Loading…' }));
+        contribBox.appendChild(el('span', { textContent: t('settings.loading') }));
         body.appendChild(contribBox);
 
         fetch(config.prefix + '/api/plugins/protocols')
@@ -4909,7 +4913,7 @@
             .then(function (data) {
                 contribBox.innerHTML = '';
                 if (!data || !data.catalog) {
-                    contribBox.appendChild(el('span', { textContent: 'Catalog unavailable.' }));
+                    contribBox.appendChild(el('span', { textContent: t('settings.plugin.catalogUnavailable') }));
                     return;
                 }
                 var hits = Object.keys(data.catalog).filter(function (proto) {
@@ -4918,7 +4922,7 @@
                 if (hits.length === 0) {
                     contribBox.appendChild(el('span', {
                         className: 'bowire-plugin-inspect-empty',
-                        textContent: 'No protocol contributions resolved from this package. (Either a non-protocol plugin, or the package id does not match the catalog mapping — try the CLI: `bowire plugin inspect ' + pkgId + '`.)'
+                        textContent: t('settings.plugin.noContributions', { package: pkgId })
                     }));
                 } else {
                     var ul = el('ul', { className: 'bowire-plugin-inspect-contrib-list' });
@@ -4938,13 +4942,13 @@
             })
             .catch(function () {
                 contribBox.innerHTML = '';
-                contribBox.appendChild(el('span', { textContent: 'Catalog fetch failed.' }));
+                contribBox.appendChild(el('span', { textContent: t('settings.plugin.catalogFailed') }));
             });
 
         // Footer hint for the deeper CLI surface
         body.appendChild(el('p', {
             className: 'bowire-plugin-inspect-cli-hint',
-            textContent: 'For deeper introspection (load context, assemblies, IBowireMockEmitter contributions), run: bowire plugin inspect ' + pkgId
+            textContent: t('settings.plugin.deeperInspect', { package: pkgId })
         }));
 
         panel.appendChild(body);
@@ -5109,7 +5113,7 @@
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-desc',
-            textContent: 'Widget that renders semantic annotations on response payloads. Loaded into the workbench as part of the bundle that ships this extension.'
+            textContent: t('settings.widgets.rowDesc')
         }));
 
         function row(label, value) {
@@ -5170,14 +5174,14 @@
             section.appendChild(el('div', {
                 className: 'bowire-settings-help',
                 style: 'margin-top:8px',
-                textContent: 'These settings are saved per workspace. Open or create a workspace to change '
+                textContent: t('settings.plugin.perWorkspace')
                     + 'them — until then the plugin uses the defaults shown.'
             }));
         }
 
         if (!plugin.settings || plugin.settings.length === 0) {
             section.appendChild(el('div', { style: 'color:var(--bowire-text-tertiary);font-size:13px;margin-top:8px',
-                textContent: 'This plugin has no configurable settings.' }));
+                textContent: t('settings.plugin.noSettings') }));
             return section;
         }
 
