@@ -155,6 +155,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [664](https://github.com/Kuestenlogik/Bowire/issues/664) | Bowire | [Method-name form on /api/invoke is not uniform across plugins](#issue-kuestenlogik-bowire-664) | ⬜ Backlog | `area:workbench` |
 | [665](https://github.com/Kuestenlogik/Bowire/issues/665) | Bowire | [SignalR ad-hoc invoke declares args:string but requires a JSON array](#issue-kuestenlogik-bowire-665) | ⬜ Backlog | `area:workbench` |
 | [666](https://github.com/Kuestenlogik/Bowire/issues/666) | Bowire | [plugin install suggests a re-run its own already-installed guard blocks](#issue-kuestenlogik-bowire-666) | ⬜ Backlog | `area:plugin-sdk` |
+| [689](https://github.com/Kuestenlogik/Bowire/issues/689) | Bowire | [Action-log entries store rendered English text instead of a key](#issue-kuestenlogik-bowire-689) | ⬜ Backlog | `area:workbench` |
 
 ## Details
 
@@ -718,6 +719,12 @@ Discovery declares the SignalR ad-hoc `invoke` method's input as: [[more]](https
 
 `bowire plugin install --file <pkg>.nupkg` installs a package whose runtime dependencies could not be resolved, reports the unmet ones as a warning, and tells the operator what to do: [[more]](https://github.com/Kuestenlogik/Bowire/issues/666)
 
+#### <a id="issue-kuestenlogik-bowire-689"></a>⬜ Backlog · [#689](https://github.com/Kuestenlogik/Bowire/issues/689) Action-log entries store rendered English text instead of a key
+
+> `area:workbench`
+
+The Activity drawer renders text that was translated once, when the action happened, and then stored. Switching the interface language afterwards leaves every existing entry in the old language, and an entry made before a translation existed stays English for ever. [[more]](https://github.com/Kuestenlogik/Bowire/issues/689)
+
 ---
 
-*Generated 2026-09-09 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-09-10 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
