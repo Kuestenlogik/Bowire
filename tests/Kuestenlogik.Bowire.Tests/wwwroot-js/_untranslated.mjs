@@ -61,6 +61,12 @@ const SLOT_NAMES = [
     'emptyLabel', 'helpText', 'errorText', 'okText', 'confirmText', 'cancelText',
     'confirmLabel', 'actionLabel', 'buttonLabel', 'linkLabel', 'ariaLabel',
     'deleteTitle',
+    // `status` and `meta` joined the list when the Flows sweep found eleven
+    // sentences under `status:` — the line a flow node shows after it runs —
+    // and the dropdown meta-chip turned out to be a display slot too. Both
+    // also carry protocol values ('OK', 'NOT_FOUND') and internal states
+    // ('idle'), which the rejections below already drop.
+    'status', 'meta',
 ].join('|');
 
 // The four detectors, in the order they were learnt.

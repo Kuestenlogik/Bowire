@@ -141,7 +141,7 @@
         if (typeof toast === 'function') {
             var snapshot = JSON.parse(JSON.stringify(flow));
             var _flowName = flow.name || 'unnamed';
-            toast('Created flow "' + _flowName + '"', 'info', {
+            toast(t('flows.created', { name: _flowName }), 'info', {
                 undo: function () {
                     deleteFlow(snapshot.id);
                     render();
@@ -149,7 +149,7 @@
                 logAction: {
                     kind: 'flow-create',
                     rail: 'flows',
-                    title: 'Created flow "' + _flowName + '"',
+                    title: 'Created flow "' + _flowName + '"',  // i18n-exempt: the action log stores rendered text, see #689
                     undoSpec: { flow: snapshot },
                     redo: function () {
                         if (flowsList.find(function (f) { return f.id === snapshot.id; })) return;
@@ -305,7 +305,7 @@
                 try {
                     var data = JSON.parse(reader.result);
                     if (!data.nodes || !Array.isArray(data.nodes)) {
-                        toast('Invalid flow file — missing nodes[].', 'error');
+                        toast(t('flows.invalidFile'), 'error');
                         return;
                     }
                     data.id = 'flow_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -318,7 +318,9 @@
                     flowEditorSelectedId = data.id;
                     render();
                 } catch (e) {
-                    toast('Failed to import flow: ' + (e && e.message ? e.message : 'unknown error'), 'error');
+                    toast(t('flows.importFailed', {
+    error: e && e.message ? e.message : t('flows.unknownError')
+}), 'error');
                 }
             };
             reader.readAsText(input.files[0]);
@@ -373,13 +375,15 @@
                 await new Promise(function (resolve) {
                     setTimeout(resolve, (node.delayMs || 1000));
                 });
-                flowRunResults[node.id] = { pass: true, status: 'Delayed ' + (node.delayMs || 1000) + 'ms' };
+                flowRunResults[node.id] = {
+    pass: true, status: t('flows.statusDelayed', { ms: node.delayMs || 1000 })
+};
 
             } else if (node.type === 'condition') {
                 var condResult = evaluateCondition(node);
                 flowRunResults[node.id] = {
                     pass: condResult,
-                    status: condResult ? 'True branch' : 'False branch',
+                    status: condResult ? t('flows.statusTrueBranch') : t('flows.statusFalseBranch'),
                     branch: condResult ? 'true' : 'false'
                 };
                 // Execute the matching branch
@@ -394,11 +398,18 @@
                     // Write into the per-run var store so substituteVars
                     // can resolve ${varName} from any later node.
                     flowVars[node.varName] = val;
-                    flowRunResults[node.id] = { pass: true, status: 'Set ' + node.varName + ' = ' + truncateForDisplay(val) };
+                    flowRunResults[node.id] = {
+    pass: true,
+    status: t('flows.statusSet', {
+        name: node.varName, value: truncateForDisplay(val)
+    })
+};
                 } else if (!node.varName) {
-                    flowRunResults[node.id] = { pass: false, status: 'Variable name is empty' };
+                    flowRunResults[node.id] = { pass: false, status: t('flows.varNameEmpty') };
                 } else {
-                    flowRunResults[node.id] = { pass: false, status: 'Path not found: ' + node.path };
+                    flowRunResults[node.id] = {
+    pass: false, status: t('flows.statusPathNotFound', { path: node.path })
+};
                 }
 
             } else if (node.type === 'loop') {
@@ -410,7 +421,12 @@
                     // pattern — "for each user in users[] do this request".
                     var sourceArr = resolveForeachSource(node.loopSource || '');
                     if (!Array.isArray(sourceArr)) {
-                        flowRunResults[node.id] = { pass: false, status: 'Foreach source is not an array: ' + (node.loopSource || '(empty)') };
+                        flowRunResults[node.id] = {
+    pass: false,
+    status: t('flows.statusNotAnArray', {
+        source: node.loopSource || t('flows.empty')
+    })
+};
                     } else {
                         var itemVar = (node.loopItemVar || 'item').trim();
                         var iterations = 0;
@@ -423,7 +439,16 @@
                                 ? JSON.stringify(sourceArr[fi])
                                 : String(sourceArr[fi]);
                             flowVars[itemVar + '_index'] = String(fi);
-                            flowRunResults[node.id] = { pass: true, status: 'Iteration ' + iterations + '/' + sourceArr.length + ' — ${' + itemVar + '} = ' + truncateForDisplay(flowVars[itemVar]), iteration: iterations };
+                            flowRunResults[node.id] = {
+    pass: true,
+    status: t('flows.statusIterationItem', {
+        n: iterations,
+        total: sourceArr.length,
+        variable: '{{' + itemVar + '}}',
+        value: truncateForDisplay(flowVars[itemVar])
+    }),
+    iteration: iterations
+};
                             render();
                             if (node.body && node.body.length > 0) {
                                 await runNodeList(node.body);
@@ -433,7 +458,14 @@
                         // node doesn't accidentally pick up the last value.
                         delete flowVars[itemVar];
                         delete flowVars[itemVar + '_index'];
-                        flowRunResults[node.id] = { pass: true, status: iterations + ' iteration' + (iterations !== 1 ? 's' : '') + ' completed (foreach)', iteration: iterations };
+                        flowRunResults[node.id] = {
+    pass: true,
+    // #688 - one message, two shapes.
+    status: t(iterations === 1
+        ? 'flows.statusDoneForeachOne' : 'flows.statusDoneForeachMany',
+        { count: iterations }),
+    iteration: iterations
+};
                     }
                 } else {
                     var maxIter = loopType === 'count' ? (node.loopCount || 1) : 100;
@@ -441,7 +473,11 @@
                     for (var li = 0; li < maxIter; li++) {
                         if (flowRunStatus !== 'running') break;
                         iterations++;
-                        flowRunResults[node.id] = { pass: true, status: 'Iteration ' + iterations + '/' + maxIter, iteration: iterations };
+                        flowRunResults[node.id] = {
+    pass: true,
+    status: t('flows.statusIteration', { n: iterations, total: maxIter }),
+    iteration: iterations
+};
                         render();
                         if (node.body && node.body.length > 0) {
                             await runNodeList(node.body);
@@ -452,11 +488,17 @@
                             if (!loopCond) break;
                         }
                     }
-                    flowRunResults[node.id] = { pass: true, status: iterations + ' iteration' + (iterations !== 1 ? 's' : '') + ' completed', iteration: iterations };
+                    flowRunResults[node.id] = {
+    pass: true,
+    // #688 - one message, two shapes.
+    status: t(iterations === 1 ? 'flows.statusDoneOne' : 'flows.statusDoneMany',
+        { count: iterations }),
+    iteration: iterations
+};
                 }
             }
         } catch (e) {
-            flowRunResults[node.id] = { pass: false, status: 'Error', error: e.message };
+            flowRunResults[node.id] = { pass: false, status: t('flows.statusError'), error: e.message };
         }
         render();
     }
@@ -476,7 +518,7 @@
             })
         }).then(function (resp) {
             return resp.json().then(function (json) {
-                var baseStatus = json.status || (resp.ok ? 'OK' : 'Error');
+                var baseStatus = json.status || (resp.ok ? 'OK' : 'Error');  // i18n-exempt: the protocol status the server reported, shown beside its own code
                 var baseOk = resp.ok && !json.title;
                 var errorTitle = json.title || null;
                 // v2.2 — response headers come back on json.metadata (server-
@@ -745,7 +787,7 @@
         if (typeof showContextMenu !== 'function') return;
         var items = [];
         items.push({
-            label: 'New flow from this',
+            label: t('flows.newFromThis'),
             icon: 'plus',
             onClick: function () {
                 var flow = createFlow(options.name);
@@ -777,7 +819,7 @@
                         // flows would alias one node across both, so
                         // editing it in one silently edits the other.
                         addNodeToFlow(f.id, JSON.parse(JSON.stringify(node)));
-                        if (typeof toast === 'function') toast('Added to "' + f.name + '"', 'success');
+                        if (typeof toast === 'function') toast(t('flows.addedTo', { name: f.name }), 'success');
                         render();
                     }
                 });
@@ -877,10 +919,10 @@
         // place every rail's primary action does.
         if (typeof renderSidebarToolbar === 'function') {
             container.appendChild(renderSidebarToolbar({
-                title: 'Flows',
+                title: t('rail.flows'),
                 primary: {
                     icon: 'plus',
-                    title: 'New flow',
+                    title: t('flows.new'),
                     onClick: function () {
                         var flow = createFlow();
                         flowEditorSelectedId = flow.id;
@@ -889,7 +931,7 @@
                 },
                 overflow: (flowsList && flowsList.length > 0) ? [
                     {
-                        label: 'Delete all flows',
+                        label: t('flows.deleteAll'),
                         danger: true,
                         onClick: function () {
                             var n = flowsList.length;
@@ -902,7 +944,8 @@
                                     toast(n + ' flow' + (n === 1 ? '' : 's') + ' deleted', 'success');
                                     render();
                                 },
-                                { title: 'Delete all flows', confirmText: 'Delete ' + n, danger: true }
+                                { title: t('flows.deleteAll'), confirmText: t('sidebar.deleteCount', { count: n }),
+    danger: true }
                             );
                         }
                     }
@@ -910,12 +953,12 @@
                 // #362 — search + sort, shown once there's more than one
                 // flow to organise (a single row needs neither).
                 search: (flowsList && flowsList.length > 1) ? {
-                    placeholder: 'Search flows…',
+                    placeholder: t('flows.search'),
                     value: flowsSearchQuery,
                     onInput: function (v) { flowsSearchQuery = v; render(); }
                 } : null,
                 sort: (flowsList && flowsList.length > 1) ? {
-                    title: 'Sort flows',
+                    title: t('flows.sort'),
                     value: flowsSortBy || 'manual',
                     // 'manual' preserves the operator's drag order (the
                     // raw flowsList order); the grip glyph telegraphs
@@ -935,7 +978,7 @@
             container.appendChild(el('div', {
                 className: 'bowire-pane-empty',
                 style: 'padding:12px 14px',
-                textContent: 'No flows yet.'
+                textContent: t('flows.noneYetPeriod')
             }));
             return;
         }
@@ -951,7 +994,7 @@
             container.appendChild(el('div', {
                 className: 'bowire-pane-empty',
                 style: 'padding:12px 14px',
-                textContent: 'No flows match "' + flowsSearchQuery + '".'
+                textContent: t('flows.noMatch', { query: flowsSearchQuery })
             }));
             return;
         }
@@ -985,7 +1028,7 @@
         var renameFlow = function () {
             var current = flowsList.find(function (f) { return f.id === flowId; });
             if (!current) return;
-            bowirePrompt('Rename flow', { defaultValue: current.name }).then(function (name) {
+            bowirePrompt(t('flows.rename'), { defaultValue: current.name }).then(function (name) {
                 var f = flowsList.find(function (x) { return x.id === flowId; });
                 if (!f || !name) return;
                 f.name = name;
@@ -995,16 +1038,16 @@
         };
         var dupFlow = function () {
             var copy = duplicateFlow(flowId);
-            if (copy) { flowEditorSelectedId = copy.id; toast('Flow duplicated', 'success'); render(); }
+            if (copy) { flowEditorSelectedId = copy.id; toast(t('flows.duplicated'), 'success'); render(); }
         };
         var removeFlow = function () {
             var f = flowsList.find(function (x) { return x.id === flowId; });
             if (!f) return;
-            bowireConfirm('Delete flow "' + f.name + '"?', function () {
+            bowireConfirm(t('flows.deleteConfirm', { name: f.name }), function () {
                 deleteFlow(flowId);
-                toast('Flow deleted', 'success');
+                toast(t('flows.deleted'), 'success');
                 render();
-            }, { title: 'Delete flow', confirmText: 'Delete', danger: true });
+            }, { title: t('flows.delete'), confirmText: t('common.delete'), danger: true });
         };
 
         var row = renderSidebarListItem({
@@ -1019,16 +1062,16 @@
             activeTitle: 'Running',
             onClick: openFlow,
             tools: [
-                { icon: 'copy', title: 'Duplicate flow', onClick: dupFlow },
-                { icon: 'trash', title: 'Delete flow', danger: true, onClick: removeFlow }
+                { icon: 'copy', title: t('flows.duplicate'), onClick: dupFlow },
+                { icon: 'trash', title: t('flows.delete'), danger: true, onClick: removeFlow }
             ],
             onContextMenu: function (e) {
                 e.preventDefault();
                 showContextMenu(e.clientX, e.clientY, [
-                    { label: 'Open', onClick: openFlow },
-                    { label: 'Rename…', onClick: renameFlow },
-                    { label: 'Duplicate', onClick: dupFlow },
-                    { label: 'Delete', danger: true, onClick: removeFlow }
+                    { label: t('sidebar.open'), onClick: openFlow },
+                    { label: t('sidebar.rename'), onClick: renameFlow },
+                    { label: t('sidebar.ws.duplicate'), onClick: dupFlow },
+                    { label: t('common.delete'), danger: true, onClick: removeFlow }
                 ]);
             }
         });
@@ -1071,13 +1114,13 @@
             var hasFlows = flowsList.length > 0;
             emptyWrap.appendChild(renderEmptyCard({
                 icon: 'flow',
-                headline: hasFlows ? 'Pick a flow' : 'No flows yet',
+                headline: hasFlows ? t('flows.pickOne') : t('flows.noneYet'),
                 body: hasFlows
                     ? 'Choose a flow from the sidebar list to edit its nodes, run it, or convert it into a collection.'
                     : 'Flows chain multiple API calls together — pass the response from one into the request body of the next. Build one from scratch or start from a recording.',
                 actions: hasFlows ? [] : [
                     {
-                        label: 'New flow',
+                        label: t('flows.new'),
                         primary: true,
                         onClick: function () {
                             var f = createFlow();
@@ -1086,7 +1129,7 @@
                         }
                     },
                     {
-                        label: 'Browse recordings',
+                        label: t('flows.browseRecordings'),
                         onClick: function () {
                             railMode = 'recordings';
                             try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
@@ -1099,7 +1142,7 @@
                     // even after the saved-once flag is set.
                     {
                         id: 'bowire-flows-empty-tour-btn',
-                        label: 'Take a tour',
+                        label: t('common.takeTour'),
                         onClick: function () {
                             if (typeof window !== 'undefined'
                                 && typeof window.bowireStartBuildFlowTour === 'function') {
@@ -1132,19 +1175,19 @@
             id: 'bowire-flow-run-btn',
             className: 'bowire-flow-canvas-run-btn' + (isRunning ? ' running' : ''),
             disabled: isRunning || countNodes(flow.nodes) === 0,
-            title: 'Run flow',
+            title: t('flows.runFlow'),
             onClick: function () { runFlow(flow.id); }
         },
             el('span', { innerHTML: svgIcon('play') }),
-            el('span', { textContent: isRunning ? 'Running\u2026' : 'Run' })
+            el('span', { textContent: isRunning ? t('flows.running') : t('flows.run') })
         ));
 
         // Export
         header.appendChild(el('button', {
             id: 'bowire-flow-export-btn',
             className: 'bowire-flow-canvas-action-btn',
-            title: 'Export as .bwf',
-            'aria-label': 'Export as .bwf',
+            title: t('flows.exportBwf'),
+            'aria-label': t('flows.exportBwf'),
             onClick: function () { exportFlow(flow.id); }
         }, el('span', { innerHTML: svgIcon('download') })));
 
@@ -1156,29 +1199,29 @@
         header.appendChild(el('button', {
             id: 'bowire-flow-export-collection-btn',
             className: 'bowire-flow-canvas-action-btn',
-            title: 'Export as collection (lifts request nodes only; condition / loop / delay / variable nodes are skipped)',
-            'aria-label': 'Export as collection',
+            title: t('flows.exportCollectionTitle'),
+            'aria-label': t('flows.exportCollection'),
             onClick: function () {
                 var colId = convertFlowToCollection(flow.id);
                 if (!colId) {
-                    toast('Flow has no request nodes to export', 'error');
+                    toast(t('flows.noRequestNodes'), 'error');
                     return;
                 }
-                toast('Collection created from flow', 'success');
+                toast(t('flows.collectionCreated'), 'success');
                 // Switch to the Collections sidebar view if available
                 // so the user lands on the new collection immediately.
                 if (typeof setSidebarView === 'function') setSidebarView('collections');
                 collectionManagerSelectedId = colId;
                 render();
             }
-        }, el('span', { textContent: '→ col' })));
+        }, el('span', { textContent: t('flows.toCollectionShort') })));
 
         // Duplicate flow
         header.appendChild(el('button', {
             id: 'bowire-flow-dup-btn',
             className: 'bowire-flow-canvas-action-btn',
-            title: 'Duplicate flow',
-            'aria-label': 'Duplicate flow',
+            title: t('flows.duplicate'),
+            'aria-label': t('flows.duplicate'),
             onClick: function () {
                 var dup = duplicateFlow(flow.id);
                 if (dup) { flowEditorSelectedId = dup.id; render(); }
@@ -1189,8 +1232,8 @@
         header.appendChild(el('button', {
             id: 'bowire-flow-import-btn',
             className: 'bowire-flow-canvas-action-btn',
-            title: 'Import .bwf flow',
-            'aria-label': 'Import .bwf flow',
+            title: t('flows.importBwf'),
+            'aria-label': t('flows.importBwf'),
             onClick: importFlow
         }, el('span', { innerHTML: svgIcon('upload') })));
 
@@ -1198,20 +1241,20 @@
         header.appendChild(el('button', {
             id: 'bowire-flow-delete-btn',
             className: 'bowire-flow-canvas-delete-btn',
-            title: 'Delete flow',
-            'aria-label': 'Delete flow',
+            title: t('flows.delete'),
+            'aria-label': t('flows.delete'),
             onClick: function () {
-                bowireConfirm('Delete flow "' + flow.name + '"?', function () {
+                bowireConfirm(t('flows.deleteConfirm', { name: flow.name }), function () {
                     var backup = JSON.parse(JSON.stringify(flow));
                     deleteFlow(flow.id);
                     render();
-                    toast('Deleted flow "' + (backup.name || 'unnamed') + '"', 'info', {
+                    toast(t('flows.deletedNamed', { name: backup.name || t('flows.unnamed') }), 'info', {
                         undo: function () { flowsList.push(backup); persistFlows(); flowEditorSelectedId = backup.id; render(); },
                         logAction: { kind: 'flow-delete',
-                            title: 'Deleted flow "' + (backup.name || 'unnamed') + '"',
+                            title: 'Deleted flow "' + (backup.name || 'unnamed') + '"',  // i18n-exempt: the action log stores rendered text, see #689
                             undoSpec: { flow: backup } }
                     });
-                }, { title: 'Delete Flow', danger: true, confirmText: 'Delete' });
+                }, { title: t('flows.delete'), danger: true, confirmText: t('common.delete') });
             }
         }, el('span', { innerHTML: svgIcon('trash') })));
 
@@ -1254,7 +1297,7 @@
     function renderFlowWatchPanel() {
         var panel = el('div', { id: 'bowire-flow-watch', className: 'bowire-flow-watch' });
         panel.appendChild(el('div', { className: 'bowire-flow-watch-header' },
-            el('span', { className: 'bowire-flow-watch-title', textContent: 'Variables' }),
+            el('span', { className: 'bowire-flow-watch-title', textContent: t('rb.tab.vars') }),
             el('span', { className: 'bowire-flow-watch-state',
                 textContent: flowRunStatus === 'running'
                     ? 'running…'
@@ -1405,7 +1448,7 @@
                 if (depth === 0) {
                     card.appendChild(el('div', {
                         className: 'bowire-flow-card-drag',
-                        title: 'Drag to reorder',
+                        title: t('rb.kv.dragTitle'),
                         innerHTML: svgIcon('grip')
                     }));
                 }
@@ -1430,11 +1473,11 @@
                 } else if (node.type === 'delay') {
                     content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: 'Delay ' + (node.delayMs || 1000) + 'ms' }));
                 } else if (node.type === 'condition') {
-                    content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: 'Condition' }));
+                    content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: t('flows.nodeCondition') }));
                     content.appendChild(el('div', { className: 'bowire-flow-card-subtitle',
                         textContent: (node.conditionPath || '') + ' ' + opLabel(node.conditionOp) + ' ' + (node.conditionValue || '') }));
                 } else if (node.type === 'variable') {
-                    content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: 'Set Variable' }));
+                    content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: t('flows.nodeVariable') }));
                     content.appendChild(el('div', { className: 'bowire-flow-card-subtitle',
                         textContent: (node.varName || '') + ' = {{prev.' + (node.path || '') + '}}' }));
                 } else if (node.type === 'loop') {
@@ -1444,7 +1487,7 @@
                         : loopTypeForLabel === 'foreach'
                             ? 'Foreach over ' + (node.loopSource || '?') + ' as ${' + (node.loopItemVar || 'item') + '}'
                             : 'Repeat ' + (node.loopCount || 1) + '\u00D7';
-                    content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: 'Loop' }));
+                    content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: t('flows.nodeLoop') }));
                     content.appendChild(el('div', { className: 'bowire-flow-card-subtitle', textContent: loopLabel }));
                 }
                 card.appendChild(content);
@@ -1462,8 +1505,8 @@
                     if (runResult.response || runResult.error) {
                         card.appendChild(el('button', {
                             className: 'bowire-flow-card-action-btn' + (isResultOpen ? ' active' : ''),
-                            title: isResultOpen ? 'Hide response' : 'Show response',
-                            'aria-label': isResultOpen ? 'Hide response' : 'Show response',
+                            title: isResultOpen ? t('flows.hideResponse') : t('flows.showResponse'),
+                            'aria-label': isResultOpen ? t('flows.hideResponse') : t('flows.showResponse'),
                             innerHTML: svgIcon('info'),
                             onClick: function (e) {
                                 e.stopPropagation();
@@ -1478,29 +1521,29 @@
                 var actions = el('div', { className: 'bowire-flow-card-actions' });
                 if (depth === 0 && idx > 0) {
                     actions.appendChild(el('button', {
-                        className: 'bowire-flow-card-action-btn', title: 'Move up',
-                        'aria-label': 'Move up',
+                        className: 'bowire-flow-card-action-btn', title: t('common.moveUp'),
+                        'aria-label': t('common.moveUp'),
                         innerHTML: svgIcon('chevronUp'),
                         onClick: function (e) { e.stopPropagation(); moveNodeInArray(arr, idx, idx - 1); persistFlows(); render(); }
                     }));
                 }
                 if (depth === 0 && idx < arr.length - 1) {
                     actions.appendChild(el('button', {
-                        className: 'bowire-flow-card-action-btn', title: 'Move down',
-                        'aria-label': 'Move down',
+                        className: 'bowire-flow-card-action-btn', title: t('common.moveDown'),
+                        'aria-label': t('common.moveDown'),
                         innerHTML: svgIcon('chevronDown'),
                         onClick: function (e) { e.stopPropagation(); moveNodeInArray(arr, idx, idx + 1); persistFlows(); render(); }
                     }));
                 }
                 actions.appendChild(el('button', {
-                    className: 'bowire-flow-card-action-btn', title: 'Duplicate',
-                    'aria-label': 'Duplicate',
+                    className: 'bowire-flow-card-action-btn', title: t('sidebar.ws.duplicate'),
+                    'aria-label': t('sidebar.ws.duplicate'),
                     innerHTML: svgIcon('copy'),
                     onClick: function (e) { e.stopPropagation(); duplicateNode(flow.id, node.id); render(); }
                 }));
                 actions.appendChild(el('button', {
-                    className: 'bowire-flow-card-action-btn danger', title: 'Remove',
-                    'aria-label': 'Remove',
+                    className: 'bowire-flow-card-action-btn danger', title: t('sidebar.removeConfirm'),
+                    'aria-label': t('sidebar.removeConfirm'),
                     innerHTML: svgIcon('trash'),
                     onClick: function (e) { e.stopPropagation(); removeNodeFromFlow(flow.id, node.id); render(); }
                 }));
@@ -1563,9 +1606,9 @@
                         var loopTypeNow = node.loopType || 'count';
                         editor.appendChild(flowField('Loop Type', 'select', loopTypeNow, function (v) { node.loopType = v; persistFlows(); render(); },
                             [
-                                { value: 'count', label: 'Count (N times)' },
-                                { value: 'while', label: 'While (condition)' },
-                                { value: 'foreach', label: 'Foreach (over array)' },
+                                { value: 'count', label: t('flows.loopCount') },
+                                { value: 'while', label: t('flows.loopWhile') },
+                                { value: 'foreach', label: t('flows.loopForeach') },
                             ]));
                         if (loopTypeNow === 'count') {
                             editor.appendChild(flowField('Iterations', 'number', String(node.loopCount || 1), function (v) { node.loopCount = parseInt(v, 10) || 1; persistFlows(); }));
@@ -1630,7 +1673,7 @@
                     // True branch
                     var trueBranchEl = el('div', { className: 'bowire-flow-branch bowire-flow-branch-true' });
                     trueBranchEl.appendChild(el('div', { className: 'bowire-flow-branch-label true' },
-                        el('span', { textContent: '\u2713 True' })
+                        el('span', { textContent: t('flows.branchTrue') })
                     ));
                     if (node.trueBranch && node.trueBranch.length > 0) {
                         renderNodeList(trueBranchEl, node.trueBranch, flow, depth + 1);
@@ -1642,7 +1685,7 @@
                     // False branch
                     var falseBranchEl = el('div', { className: 'bowire-flow-branch bowire-flow-branch-false' });
                     falseBranchEl.appendChild(el('div', { className: 'bowire-flow-branch-label false' },
-                        el('span', { textContent: '\u2717 False' })
+                        el('span', { textContent: t('flows.branchFalse') })
                     ));
                     if (node.falseBranch && node.falseBranch.length > 0) {
                         renderNodeList(falseBranchEl, node.falseBranch, flow, depth + 1);
@@ -1656,7 +1699,7 @@
                     // Merge indicator
                     container.appendChild(el('div', { className: 'bowire-flow-connector-line' }, createSvgConnector()));
                     container.appendChild(el('div', { className: 'bowire-flow-merge-indicator' },
-                        el('span', { textContent: '\u2014 merge \u2014' })
+                        el('span', { textContent: t('flows.merge') })
                     ));
                 }
 
@@ -1664,7 +1707,7 @@
                 if (node.type === 'loop') {
                     var loopBody = el('div', { className: 'bowire-flow-loop-body' });
                     loopBody.appendChild(el('div', { className: 'bowire-flow-branch-label loop' },
-                        el('span', { textContent: '\u21BA Loop Body' })
+                        el('span', { textContent: t('flows.loopBody') })
                     ));
                     if (node.body && node.body.length > 0) {
                         renderNodeList(loopBody, node.body, flow, depth + 1);
@@ -1675,7 +1718,7 @@
 
                     container.appendChild(el('div', { className: 'bowire-flow-connector-line' }, createSvgConnector()));
                     container.appendChild(el('div', { className: 'bowire-flow-merge-indicator' },
-                        el('span', { textContent: '\u2014 end loop \u2014' })
+                        el('span', { textContent: t('flows.loopEnd') })
                     ));
                 }
 
@@ -1700,16 +1743,16 @@
     function createAddZone(flow, targetArray, compact) {
         var zone = el('div', { className: 'bowire-flow-add-zone' + (compact ? ' compact' : '') });
         var types = [
-            { type: 'request', label: '+ Request', color: 'blue' },
-            { type: 'delay', label: '+ Delay', color: 'gray' },
-            { type: 'condition', label: '+ Condition', color: 'orange' },
-            { type: 'variable', label: '+ Variable', color: 'purple' },
-            { type: 'loop', label: '+ Loop', color: 'teal' }
+            { type: 'request', label: t('flows.addRequest'), color: 'blue' },
+            { type: 'delay', label: t('flows.addDelay'), color: 'gray' },
+            { type: 'condition', label: t('flows.addCondition'), color: 'orange' },
+            { type: 'variable', label: t('flows.addVariable'), color: 'purple' },
+            { type: 'loop', label: t('flows.addLoop'), color: 'teal' }
         ];
         for (var ti = 0; ti < types.length; ti++) {
-            (function (t) {
+            (function (kind) {
                 zone.appendChild(el('button', {
-                    className: 'bowire-flow-add-btn bowire-flow-add-btn-' + t.color,
+                    className: 'bowire-flow-add-btn bowire-flow-add-btn-' + kind.color,
                     onClick: function () {
                         var defaults = {
                             request: { type: 'request', protocol: protocols.length > 0 ? protocols[0].id : 'grpc', service: '', method: '', body: '{}', assertions: [] },
@@ -1718,10 +1761,10 @@
                             variable: { type: 'variable', varName: 'myVar', path: '' },
                             loop: { type: 'loop', loopType: 'count', loopCount: 3, body: [] }
                         };
-                        addNodeToFlow(flow.id, defaults[t.type], targetArray);
+                        addNodeToFlow(flow.id, defaults[kind.type], targetArray);
                         render();
                     }
-                }, el('span', { textContent: t.label })));
+                }, el('span', { textContent: kind.label })));
             })(types[ti]);
         }
         return zone;
@@ -1903,7 +1946,7 @@
         // Toggle row — only meaningful when discovery DOES have results.
         if (protoServices.length > 0) {
             wrap.appendChild(el('div', { className: 'bowire-flow-service-picker-toggle' },
-                el('label', { className: 'bowire-flow-field-label' }, el('span', { textContent: 'Service' })),
+                el('label', { className: 'bowire-flow-field-label' }, el('span', { textContent: t('flows.fieldService') })),
                 el('button', {
                     type: 'button',
                     className: 'bowire-flow-service-picker-mode' + (useCustom ? '' : ' active'),
@@ -1913,7 +1956,7 @@
                         persistFlows();
                         render();
                     },
-                    textContent: 'From discovery (' + protoServices.length + ')',
+                    textContent: t('flows.fromDiscovery', { count: protoServices.length }),
                 }),
                 el('button', {
                     type: 'button',
@@ -1924,7 +1967,7 @@
                         persistFlows();
                         render();
                     },
-                    textContent: 'Custom',
+                    textContent: t('parallel.custom'),
                 })
             ));
         }
@@ -1936,7 +1979,7 @@
         }
 
         // Discovered-mode: dropdowns.
-        var serviceOptions = [{ value: '', label: '(pick a service)' }].concat(
+        var serviceOptions = [{ value: '', label: t('flows.pickService') }].concat(
             protoServices.map(function (s) { return { value: s.name, label: s.name }; })
         );
         wrap.appendChild(flowField('Service', 'select', node.service || '', function (v) {
@@ -1965,12 +2008,12 @@
 
         var chosenService = protoServices.find(function (s) { return s.name === node.service; });
         var methodOptions = chosenService && Array.isArray(chosenService.methods)
-            ? [{ value: '', label: '(pick a method)' }].concat(
+            ? [{ value: '', label: t('flows.pickMethod') }].concat(
                 chosenService.methods.map(function (m) {
                     var label = m.name + (m.methodType && m.methodType !== 'Unary' ? '  · ' + m.methodType : '');
                     return { value: m.name, label: label };
                 }))
-            : [{ value: '', label: '(select a service first)' }];
+            : [{ value: '', label: t('flows.pickServiceFirst') }];
         wrap.appendChild(flowField('Method', 'select', node.method || '', function (v) {
             node.method = v;
             // Carry the methodType alongside the name so streaming-aware
@@ -2026,11 +2069,11 @@
         var wrap = el('div', { className: 'bowire-flow-assertions' });
 
         var header = el('div', { className: 'bowire-flow-assertions-header' },
-            el('span', { className: 'bowire-flow-assertions-title', textContent: 'Expect' }),
+            el('span', { className: 'bowire-flow-assertions-title', textContent: t('flows.expect') }),
             el('button', {
                 className: 'bowire-flow-card-action-btn',
-                title: 'Add expectation',
-                'aria-label': 'Add expectation',
+                title: t('flows.addExpectation'),
+                'aria-label': t('flows.addExpectation'),
                 innerHTML: svgIcon('plus'),
                 onClick: function (e) {
                     e.stopPropagation();
@@ -2044,7 +2087,7 @@
 
         if (node.assertions.length === 0) {
             wrap.appendChild(el('div', { className: 'bowire-flow-assertions-empty',
-                textContent: 'No expectations — step passes whenever the call returns OK.' }));
+                textContent: t('flows.noExpectations') }));
             return wrap;
         }
 
@@ -2059,7 +2102,7 @@
 
         var kindSel = el('select', {
             className: 'bowire-flow-field-input bowire-flow-assertion-kind',
-            title: 'What to check',
+            title: t('flows.whatToCheck'),
             onChange: function (e) {
                 var newKind = e.target.value;
                 node.assertions[idx].kind = newKind;
@@ -2093,11 +2136,11 @@
             },
         });
         var kindEntries = [
-            { value: 'status',    label: 'Status' },
-            { value: 'header',    label: 'Header' },
-            { value: 'body-path', label: 'Body path' },
-            { value: 'body-text', label: 'Body text' },
-            { value: 'latency',   label: 'Latency' },
+            { value: 'status',    label: t('flows.expectStatus') },
+            { value: 'header',    label: t('rb.tab.header') },
+            { value: 'body-path', label: t('flows.expectBodyPath') },
+            { value: 'body-text', label: t('flows.expectBodyText') },
+            { value: 'latency',   label: t('flows.expectLatency') },
         ];
         var currentKind = assertion.kind || 'body-path';
         for (var ki = 0; ki < kindEntries.length; ki++) {
@@ -2112,7 +2155,7 @@
         if (currentKind === 'header' || currentKind === 'body-path') {
             row.appendChild(el('input', {
                 type: 'text', className: 'bowire-flow-field-input bowire-flow-assertion-path',
-                placeholder: currentKind === 'header' ? 'content-type' : '$.user.id',
+                placeholder: currentKind === 'header' ? 'content-type' : '$.user.id',  // i18n-exempt: example values a user replaces, not prose
                 value: assertion.target || '',
                 spellcheck: 'false',
                 onInput: function (e) {
@@ -2152,8 +2195,8 @@
 
         row.appendChild(el('button', {
             className: 'bowire-flow-card-action-btn danger',
-            title: 'Remove expectation',
-            'aria-label': 'Remove expectation',
+            title: t('flows.removeExpectation'),
+            'aria-label': t('flows.removeExpectation'),
             innerHTML: svgIcon('trash'),
             onClick: function (e) {
                 e.stopPropagation();
@@ -2193,9 +2236,9 @@
                         render();
                     },
                 }),
-                el('span', { textContent: 'Snapshot' })
+                el('span', { textContent: t('flows.snapshot') })
             ),
-            el('span', { className: 'bowire-flow-assertions-hint', textContent: 'capture-once baseline · runs in bowire test' })
+            el('span', { className: 'bowire-flow-assertions-hint', textContent: t('flows.snapshotHint') })
         );
         wrap.appendChild(header);
 
@@ -2205,8 +2248,8 @@
             node.snapshot.mode = v;
             persistFlows();
         }, [
-            { value: 'exact', label: 'Exact — values must match' },
-            { value: 'structural', label: 'Structural — shape only' },
+            { value: 'exact', label: t('flows.snapshotExact') },
+            { value: 'structural', label: t('flows.snapshotStructural') },
         ]));
         wrap.appendChild(flowField('Ignore paths', 'text',
             Array.isArray(node.snapshot.ignore) ? node.snapshot.ignore.join(', ') : '',
@@ -2217,7 +2260,7 @@
                 persistFlows();
             }));
         wrap.appendChild(el('div', { className: 'bowire-flow-assertions-empty',
-            textContent: 'Dynamic fields (timestamps, ids): $.updatedAt, $.items.*.id — value ignored, shape still enforced.' }));
+            textContent: t('flows.snapshotDynamicHint') }));
         return wrap;
     }
 
@@ -2237,8 +2280,8 @@
             : 'inline';
 
         wrap.appendChild(el('div', { className: 'bowire-flow-assertions-header' },
-            el('span', { className: 'bowire-flow-assertions-title', textContent: 'Data rows' }),
-            el('span', { className: 'bowire-flow-assertions-hint', textContent: 'one run per row · runs in bowire test' })
+            el('span', { className: 'bowire-flow-assertions-title', textContent: t('flows.dataRows') }),
+            el('span', { className: 'bowire-flow-assertions-hint', textContent: t('flows.dataRowsHint') })
         ));
 
         wrap.appendChild(flowField('Source', 'select', source, function (v) {
@@ -2254,10 +2297,10 @@
             persistFlows();
             render();
         }, [
-            { value: 'none', label: 'None' },
-            { value: 'inline', label: 'Inline JSON rows' },
-            { value: 'csv', label: 'CSV file' },
-            { value: 'generator', label: 'Generator' },
+            { value: 'none', label: t('rb.auth.none') },
+            { value: 'inline', label: t('flows.dataInline') },
+            { value: 'csv', label: t('flows.dataCsv') },
+            { value: 'generator', label: t('flows.dataGenerator') },
         ]));
 
         if (source === 'none') return wrap;
@@ -2280,7 +2323,7 @@
                 persistFlows();
             }));
             wrap.appendChild(el('div', { className: 'bowire-flow-assertions-empty',
-                textContent: 'Relative to the exported flow file. First row is the header; columns become {{variables}}.' }));
+                textContent: t('flows.csvHint') }));
         } else {
             var gen = node.data.generator;
             wrap.appendChild(flowField('Kind', 'select', gen.kind || 'range', function (v) {
@@ -2290,8 +2333,8 @@
                 persistFlows();
                 render();
             }, [
-                { value: 'range', label: 'Range (from..to)' },
-                { value: 'random', label: 'Random (seeded)' },
+                { value: 'range', label: t('flows.genRange') },
+                { value: 'random', label: t('flows.genRandom') },
             ]));
             wrap.appendChild(flowField('Variable', 'text', gen.var || '', function (v) {
                 gen.var = v; persistFlows();

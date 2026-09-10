@@ -758,8 +758,8 @@
         addConsoleEntry({
             type: 'request',
             method: displayName,
-            status: 'Benchmark',
-            body: 'Starting ' + phases.length + ' phase' + (phases.length === 1 ? '' : 's')
+            status: 'Benchmark',  // i18n-exempt: the action log stores rendered text, see #689
+            body: 'Starting ' + phases.length + ' phase' + (phases.length === 1 ? '' : 's')  // i18n-exempt: the action log stores rendered text, see #689
                 + ' · ' + spec.targets.length + ' target' + (spec.targets.length === 1 ? '' : 's')
                 + ' · mode ' + (spec.mode || 'sequential')
         });
@@ -1781,7 +1781,7 @@
         var tools = el('div', { className: 'bowire-envelope-target-tools' });
         if (idx > 0) {
             tools.appendChild(el('button', {
-                type: 'button', className: 'bowire-envelope-target-tool-btn', title: t('bench.moveUp'),
+                type: 'button', className: 'bowire-envelope-target-tool-btn', title: t('common.moveUp'),
                 innerHTML: svgIcon('chevronUp'),
                 onClick: function () {
                     var moved = spec.targets.splice(idx, 1)[0];
@@ -1792,7 +1792,7 @@
         }
         if (idx < spec.targets.length - 1) {
             tools.appendChild(el('button', {
-                type: 'button', className: 'bowire-envelope-target-tool-btn', title: t('bench.moveDown'),
+                type: 'button', className: 'bowire-envelope-target-tool-btn', title: t('common.moveDown'),
                 innerHTML: svgIcon('chevronDown'),
                 onClick: function () {
                     var moved = spec.targets.splice(idx, 1)[0];
@@ -2107,7 +2107,7 @@
         var tools = el('div', { className: 'bowire-envelope-phase-tools' });
         if (idx > 0) {
             tools.appendChild(el('button', {
-                type: 'button', className: 'bowire-envelope-target-tool-btn', title: t('bench.moveUp'),
+                type: 'button', className: 'bowire-envelope-target-tool-btn', title: t('common.moveUp'),
                 innerHTML: svgIcon('chevronUp'),
                 onClick: function () {
                     var p = spec.phases.splice(idx, 1)[0]; spec.phases.splice(idx - 1, 0, p);
@@ -2117,7 +2117,7 @@
         }
         if (idx < spec.phases.length - 1) {
             tools.appendChild(el('button', {
-                type: 'button', className: 'bowire-envelope-target-tool-btn', title: t('bench.moveDown'),
+                type: 'button', className: 'bowire-envelope-target-tool-btn', title: t('common.moveDown'),
                 innerHTML: svgIcon('chevronDown'),
                 onClick: function () {
                     var p = spec.phases.splice(idx, 1)[0]; spec.phases.splice(idx + 1, 0, p);
