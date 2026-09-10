@@ -162,9 +162,9 @@
             },
             render: function () {
                 return {
-                    text: 'No workspace yet. Create one to discover services and start invoking methods — once you do, this hint feed will surface context-aware tips here.',
+                    text: t('hint.noWorkspace.text'),
                     actions: [
-                        { label: 'New workspace…', onClick: _hintOpenNewWorkspace }
+                        { label: t('hint.noWorkspace.action'), onClick: _hintOpenNewWorkspace }
                     ]
                 };
             }
@@ -185,10 +185,10 @@
             },
             render: function () {
                 return {
-                    text: 'No services discovered yet. Add a URL or upload a schema in the Sources panel — the hint feed lights up once methods land in the Discover sidebar.',
+                    text: t('hint.noServices.text'),
                     actions: [
-                        { label: 'Open Sources', onClick: _hintNavSources },
-                        { label: 'Upload schema', onClick: _hintNavSources }
+                        { label: t('hint.openSources'), onClick: _hintNavSources },
+                        { label: t('landing.noServices.uploadAction'), onClick: _hintNavSources }
                     ]
                 };
             }
@@ -206,9 +206,9 @@
             },
             render: function () {
                 return {
-                    text: 'Pick a method in the sidebar to see context-aware hints here.',
+                    text: t('hint.noMethod.text'),
                     actions: [
-                        { label: 'Focus method search', onClick: _hintFocusMethodSearch }
+                        { label: t('hint.focusSearch'), onClick: _hintFocusMethodSearch }
                     ]
                 };
             }
@@ -223,12 +223,13 @@
             match: function (c) { return !!c.method && c.responseDurationMs >= 2000; },
             render: function (c) {
                 return {
-                    text: c.method.name + ' took '
-                        + (c.responseDurationMs / 1000).toFixed(1)
-                        + 's. Consider checking server load, network distance, or whether the request shape is forcing a full table scan.',
+                    text: t('hint.slowResponse.text', {
+                        method: c.method.name,
+                        seconds: (c.responseDurationMs / 1000).toFixed(1)
+                    }),
                     actions: [
-                        { label: 'Open History', onClick: _hintOpenHistoryTab },
-                        { label: 'Run benchmark', onClick: _hintNavBenchmarks }
+                        { label: t('hint.openHistory'), onClick: _hintOpenHistoryTab },
+                        { label: t('bench.run'), onClick: _hintNavBenchmarks }
                     ]
                 };
             }
@@ -240,7 +241,7 @@
             match: function (c) { return !!c.method && c.responseBytes >= 100 * 1024; },
             render: function (c) {
                 var kb = Math.round(c.responseBytes / 1024);
-                return 'Response body is ' + kb + ' KB. Most APIs page or filter at this scale — check for a `limit`, `pageSize`, or `fields` parameter to slice the payload.';
+                return t('hint.largeResponse.text', { kb: kb });
             }
         },
         {
@@ -248,10 +249,11 @@
             level: 'warn',
             match: function (c) { return !!c.method && c.consecutiveErrors >= 3; },
             render: function (c) {
-                return c.consecutiveErrors + ' consecutive '
-                    + (c.recentSameError || 'error')
-                    + ' responses from ' + c.method.name
-                    + '. Retry isn’t helping — fix the request shape, auth, or server state before firing again.';
+                return t('hint.repeatedError.text', {
+                    count: c.consecutiveErrors,
+                    status: c.recentSameError || t('hint.repeatedError.fallbackStatus'),
+                    method: c.method.name
+                });
             }
         },
         {
@@ -265,12 +267,12 @@
             },
             render: function (c) {
                 return {
-                    text: 'Schema declared HTTP ' + c.expectedStatus
-                        + ' but the server returned ' + c.actualStatus
-                        + '. Either the schema is stale (regenerate) or the server contract drifted.',
+                    text: t('hint.statusMismatch.text', {
+                        expected: c.expectedStatus, actual: c.actualStatus
+                    }),
                     actions: [
-                        { label: 'Open response diff', onClick: _hintOpenResponseDiff },
-                        { label: 'Open schema', onClick: _hintOpenSchemaTab }
+                        { label: t('hint.openResponseDiff'), onClick: _hintOpenResponseDiff },
+                        { label: t('hint.openSchema'), onClick: _hintOpenSchemaTab }
                     ]
                 };
             }
@@ -290,8 +292,7 @@
                     && c.callsToThisMethodInLastMinute >= 2;
             },
             render: function () {
-                return 'Auth-rejected '
-                    + 'after multiple attempts. Token may be expired, scope-too-narrow, or wrong bearer prefix — re-check the Authorization header before retrying.';
+                return t('hint.authIneffective.text');
             }
         },
         {
@@ -299,9 +300,9 @@
             level: 'tip',
             match: function (c) { return c.recordingStepsForMethod >= 3; },
             render: function (c) {
-                return c.recordingStepsForMethod + ' steps of '
-                    + c.method.name
-                    + ' in the active recording. If the calls are interchangeable, you only need one — extras inflate the replay without adding coverage.';
+                return t('hint.duplicateSteps.text', {
+                    count: c.recordingStepsForMethod, method: c.method.name
+                });
             }
         },
         {
@@ -310,8 +311,9 @@
             surface: 'response',
             match: function (c) { return c.shapeDriftCount >= 2; },
             render: function (c) {
-                return c.method.name + ' returned '
-                    + c.shapeDriftCount + ' different response shapes across recent calls — fields appear or disappear between calls. Tests that bind to specific keys will be flaky; consider asserting shape before value.';
+                return t('hint.unstableShape.text', {
+                    method: c.method.name, count: c.shapeDriftCount
+                });
             }
         },
         {
@@ -323,9 +325,7 @@
                     && c.responseText !== null && c.responseText.length === 0;
             },
             render: function (c) {
-                return 'This gRPC method returned an empty response — check Server Reflection is enabled on '
-                    + (c.serverUrl || 'the host')
-                    + ' and that the method actually streams / returns a body.';
+                return t('hint.grpcEmpty.text', { host: c.serverUrl || t('hint.host') });
             }
         },
         {
@@ -335,8 +335,9 @@
                 return c.method && c.callsToThisMethodInLastMinute >= 3;
             },
             render: function (c) {
-                return 'You called ' + c.method.name + ' ' + c.callsToThisMethodInLastMinute
-                    + ' times in the last minute — save it as a recording step so you can replay it later.';
+                return t('hint.repeatCall.text', {
+                    method: c.method.name, count: c.callsToThisMethodInLastMinute
+                });
             }
         },
         {
@@ -347,10 +348,11 @@
                 return c.method && c.method.protocol === 'rest' && c.responseHasUnknownKeys;
             },
             render: function (c) {
-                return 'The response carries fields the schema does not declare ('
-                    + c.responseUnknownKeys.slice(0, 3).join(', ')
-                    + (c.responseUnknownKeys.length > 3 ? ', …' : '')
-                    + '). The schema may be stale — re-run discovery against ' + (c.serverUrl || 'the host') + '.';
+                return t('hint.extraFields.text', {
+                    fields: c.responseUnknownKeys.slice(0, 3).join(', ')
+                        + (c.responseUnknownKeys.length > 3 ? ', …' : ''),
+                    host: c.serverUrl || t('hint.host')
+                });
             }
         },
         {
@@ -360,7 +362,7 @@
                 return c.method && /Stream|Channel|Subscribe/i.test(c.method.methodType || '');
             },
             render: function () {
-                return 'Streaming method — the Response tab shows frames as they arrive. Hit "Record" before invoking to capture every frame for later replay.';
+                return t('hint.streamingTab.text');
             }
         },
         {
@@ -369,10 +371,11 @@
             match: function (c) { return c.runningMockCount > 0; },
             render: function (c) {
                 return {
-                    text: 'You have ' + c.runningMockCount + ' mock'
-                        + (c.runningMockCount === 1 ? '' : 's') + ' running — open the Mocks panel to point a second workbench at them and compare responses.',
+                    // #688 - one message, two shapes.
+                    text: t(c.runningMockCount === 1 ? 'hint.mockReplay.one' : 'hint.mockReplay.many',
+                        { count: c.runningMockCount }),
                     actions: [
-                        { label: 'Open Mocks', onClick: _hintNavMocks }
+                        { label: t('hint.openMocks'), onClick: _hintNavMocks }
                     ]
                 };
             }
@@ -383,10 +386,11 @@
             match: function (c) { return c.recordingsCount > 0 && c.runningMockCount === 0; },
             render: function (c) {
                 return {
-                    text: 'You have ' + c.recordingsCount + ' recording'
-                        + (c.recordingsCount === 1 ? '' : 's') + ' captured — open the Recordings manager and click "Run as mock" to replay them as a live endpoint.',
+                    text: t(c.recordingsCount === 1
+                        ? 'hint.recordingToMock.one' : 'hint.recordingToMock.many',
+                        { count: c.recordingsCount }),
                     actions: [
-                        { label: 'Open Recordings', onClick: _hintNavRecordings }
+                        { label: t('hint.openRecordings'), onClick: _hintNavRecordings }
                     ]
                 };
             }
@@ -399,7 +403,7 @@
                 return c.hasResponse && c.lastStatusCode === 401;
             },
             render: function () {
-                return 'The last call returned 401 — set or refresh the auth helper in the Environment panel before retrying.';
+                return t('hint.authNoToken.text');
             }
         }
     ];
@@ -670,8 +674,8 @@
             row.appendChild(body);
             row.appendChild(el('button', {
                 className: 'bowire-inline-hint-open',
-                title: 'Open the Assistant drawer',
-                textContent: 'Open Assistant',
+                title: t('ai.openDrawerTitle'),
+                textContent: t('ai.openDrawer'),
                 onClick: function () {
                     aiDrawerOpen = true;
                     try { localStorage.setItem('bowire_ai_drawer_open', '1'); } catch { /* ignore */ }
@@ -782,7 +786,7 @@
         var genBtn = el('button', {
             type: 'button',
             className: 'bowire-ai-template-gen-btn',
-            textContent: 'Generate template',
+            textContent: t('ai.template.generate'),
             onClick: function () {
                 var cls = classSelect.value;
                 var outputId = 'bowire-ai-template-out-' + endpoint.endpointId;
@@ -792,7 +796,7 @@
                 output.replaceChildren();
                 output.appendChild(el('div', {
                     className: 'bowire-ai-template-status',
-                    textContent: 'Generating ' + cls + ' template…'
+                    textContent: t('ai.template.generating', { class: cls })
                 }));
                 genBtn.setAttribute('disabled', 'disabled');
                 bowireGenerateTemplate(endpoint, cls)
@@ -822,7 +826,9 @@
         })
             .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); })
             .catch(function (err) {
-                return { ok: false, status: 0, body: { title: 'Network error: ' + (err && err.message ? err.message : err) } };
+                return { ok: false, status: 0, body: {
+                    title: t('ai.template.networkError', { reason: (err && err.message) ? err.message : err })
+                } };
             });
     }
 
@@ -843,19 +849,19 @@
         var copyBtn = el('button', {
             type: 'button',
             className: 'bowire-ai-template-copy',
-            textContent: 'Copy YAML',
+            textContent: t('ai.template.copyYaml'),
             onClick: function () {
                 if (!navigator.clipboard) return;
                 navigator.clipboard.writeText(result.body.yaml).then(function () {
-                    copyBtn.textContent = 'Copied';
-                    setTimeout(function () { copyBtn.textContent = 'Copy YAML'; }, 1500);
+                    copyBtn.textContent = t('ai.template.copied');
+                    setTimeout(function () { copyBtn.textContent = t('ai.template.copyYaml'); }, 1500);
                 });
             }
         });
         var saveBtn = el('button', {
             type: 'button',
             className: 'bowire-ai-template-save',
-            textContent: 'Save to ~/.bowire/templates',
+            textContent: t('ai.template.save'),
             onClick: function () {
                 saveBtn.setAttribute('disabled', 'disabled');
                 saveBtn.textContent = 'Saving…';
@@ -892,7 +898,10 @@
         if (result.body.modelId) {
             host.appendChild(el('div', {
                 className: 'bowire-ai-template-meta',
-                textContent: 'via ' + result.body.modelId + ' · suggested filename: ' + (result.body.suggestedFilename || '(none)')
+                textContent: t('ai.template.meta', {
+                    model: result.body.modelId,
+                    filename: result.body.suggestedFilename || t('ai.template.noFilename')
+                })
             }));
         }
     }
@@ -1344,10 +1353,10 @@
             // design (cold-start always back to off).
             var alertBar = renderAlertBar({
                 severity: 'warning',
-                text: 'Assistant is currently in observe-only mode. It can read context but not dispatch calls. Enable to allow AI to invoke calls directly.',
+                text: t('ai.observeOnly'),
                 inlineToggle: {
                     value: !!aiAllowInvoke,
-                    title: 'Allow AI to invoke methods (session only, audited)',
+                    title: t('ai.allowInvokeTitle'),
                     // Flipping to ON resolves the warning — let the bar
                     // fade itself out so the operator sees the
                     // resolution rather than the panel snapping.
@@ -1363,12 +1372,10 @@
                         // re-toggle later without hunting the sidebar.
                         aiAllowInvoke = newVal;
                         if (typeof toast === 'function') {
-                            var msg = newVal
-                                ? 'AI invocation enabled — session only, audited'
-                                : 'AI invocation disabled — observe-only mode';
+                            var msg = t(newVal ? 'ai.invokeEnabled' : 'ai.invokeDisabled');
                             toast(msg, 'info', {
                                 action: {
-                                    label: 'Open Settings',
+                                    label: t('ai.openSettings'),
                                     onClick: function () {
                                         if (typeof openSettings === 'function') openSettings('ai');
                                     }
@@ -1403,7 +1410,7 @@
         if (hints.length === 0) {
             panel.appendChild(el('p', {
                 className: 'bowire-pane-empty',
-                textContent: 'No hints fire from the current workbench state. Pick a method, fire a request, or open a recording — the panel surfaces context-aware suggestions as you go.'
+                textContent: t('ai.noHints')
             }));
         } else if (typeof renderAlertBar === 'function') {
             var hintStack = el('div', { className: 'bowire-ai-hint-list' });
@@ -1463,7 +1470,7 @@
                 // prefix "AI: " is still useful to anchor the bubble
                 // in the conversation.
                 if (m.problem) {
-                    bubble.appendChild(el('div', { className: 'bowire-ai-chat-prefix', textContent: 'AI:' }));
+                    bubble.appendChild(el('div', { className: 'bowire-ai-chat-prefix', textContent: t('ai.chat.prefix') }));
                     renderProblem(m.problem, bubble);
                 } else if (m.toolCalls) {
                     // Tool-call trace bubble (#108 Phase 2). Renders
@@ -1480,7 +1487,7 @@
                         line.appendChild(el('span', { className: 'bowire-ai-chat-tool-icon', textContent: '🔧' }));
                         line.appendChild(el('span', {
                             className: 'bowire-ai-chat-tool-name',
-                            textContent: 'Consulted ' + prettyName,
+                            textContent: t('ai.chat.consulted', { tool: prettyName }),
                         }));
                         if (tc.arguments && Object.keys(tc.arguments).length > 0) {
                             var args = el('details', { className: 'bowire-ai-chat-tool-args' });
@@ -1508,12 +1515,12 @@
                 pendingBubble.appendChild(el('span', { className: 'bowire-ai-chat-pending-dot' }));
                 pendingBubble.appendChild(el('span', {
                     className: 'bowire-ai-chat-pending-text',
-                    textContent: 'AI: thinking… (' + elapsedSec + 's)',
+                    textContent: t('ai.chat.thinking', { seconds: elapsedSec }),
                 }));
                 pendingBubble.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-ai-chat-pending-cancel',
-                    textContent: 'Cancel',
+                    textContent: t('common.cancel'),
                     onClick: function () { if (chatAbort) chatAbort.abort(); }
                 }));
                 transcript.appendChild(pendingBubble);
@@ -1549,7 +1556,7 @@
             });
             var input = el('textarea', {
                 className: 'bowire-ai-chat-input',
-                placeholder: 'Ask the model — Bowire ships the workbench context as a system prompt.',
+                placeholder: t('ai.chat.placeholder'),
                 rows: 2
             });
             var send = el('button', {
@@ -1609,10 +1616,14 @@
                     var hit = aiProbe[key];
                     if (!hit || !hit.endpoint) return;
                     var models = Array.isArray(hit.models) ? hit.models.filter(function (m) { return !!m; }) : [];
-                    var preview = models.length > 0 ? models.slice(0, 3).join(', ') + (models.length > 3 ? ', …' : '') : '(no models loaded)';
+                    var preview = models.length > 0
+                        ? models.slice(0, 3).join(', ') + (models.length > 3 ? ', …' : '')
+                        : t('ai.noModelsLoaded');
                     footer.appendChild(el('div', {
                         className: 'bowire-ai-detected',
-                        textContent: 'Detected ' + hit.provider + ' at ' + hit.endpoint + ' — ' + preview
+                        textContent: t('ai.detected', {
+                            provider: hit.provider, endpoint: hit.endpoint, models: preview
+                        })
                     }));
                 });
             }
@@ -1687,11 +1698,11 @@
                 var hasActiveWorkspace = (typeof activeWorkspaceId !== 'undefined') && !!activeWorkspaceId;
                 emptyWrap.appendChild(renderEmptyCard({
                     icon: 'shield',
-                    headline: 'Threat model needs discovered endpoints',
-                    body: 'Connect to a server (or load a schema) in Discover. The threat-model ranks the endpoints it finds there by attack-surface risk — heuristic by default, AI-assisted if you configure a model.',
+                    headline: t('ai.threat.emptyTitle'),
+                    body: t('ai.threat.emptyBody'),
                     actions: [
                         {
-                            label: 'Open Discover',
+                            label: t('ai.threat.openDiscover'),
                             primary: true,
                             onClick: function () {
                                 if (typeof railMode !== 'undefined') {
@@ -1703,11 +1714,11 @@
                             }
                         },
                         {
-                            label: 'Add a source',
+                            label: t('ai.threat.addSource'),
                             disabled: !hasActiveWorkspace,
                             title: hasActiveWorkspace
                                 ? null
-                                : 'Create a workspace first to add a source.',
+                                : t('ai.threat.needsWorkspace'),
                             onClick: function () {
                                 if (typeof railMode !== 'undefined') {
                                     railMode = 'sources';
@@ -1723,7 +1734,7 @@
                         // after the saved-once flag is set.
                         {
                             id: 'bowire-security-empty-tour-btn',
-                            label: 'Take a tour',
+                            label: t('common.takeTour'),
                             onClick: function () {
                                 if (typeof window !== 'undefined'
                                     && typeof window.bowireStartSecurityScanTour === 'function') {
@@ -1738,10 +1749,10 @@
             }
 
             var section = el('div', { className: 'bowire-ai-threat-section' });
-            section.appendChild(el('h4', { className: 'bowire-ai-threat-title', textContent: 'Threat model' }));
+            section.appendChild(el('h4', { className: 'bowire-ai-threat-title', textContent: t('ai.threat.title') }));
             section.appendChild(el('p', {
                 className: 'bowire-ai-threat-help',
-                textContent: 'Rank discovered endpoints by attack-surface risk. Heuristic by default — no AI required; toggle to use the AI if configured.'
+                textContent: t('ai.threat.help')
             }));
 
             // #112 — tier toggle. Default heuristic; opt in to AI.
@@ -1751,8 +1762,8 @@
             var heurBtn = el('button', {
                 type: 'button',
                 className: 'bowire-toggle-btn' + (!threatUseAi ? ' is-active' : ''),
-                textContent: 'Heuristic',
-                title: 'Deterministic rule engine — sub-millisecond, no model required',
+                textContent: t('ai.threat.heuristic'),
+                title: t('ai.threat.heuristicTitle'),
                 onClick: function () {
                     if (threatState.running) return;
                     threatUseAi = false;
@@ -1762,10 +1773,10 @@
             var aiBtn = el('button', {
                 type: 'button',
                 className: 'bowire-toggle-btn' + (threatUseAi ? ' is-active' : ''),
-                textContent: 'AI-assisted',
+                textContent: t('ai.threat.aiAssisted'),
                 title: hasAi
-                    ? 'Send to the configured AI for semantic ranking on top of the heuristic rules'
-                    : 'Configure a model in Settings → AI to enable',
+                    ? t('ai.threat.aiTitle')
+                    : t('ai.threat.aiNeedsModel'),
                 onClick: function () {
                     if (threatState.running || !hasAi) return;
                     threatUseAi = true;
@@ -1843,12 +1854,12 @@
                         var tplWrap = el('div', { className: 'bowire-ai-threat-templates' });
                         tplWrap.appendChild(el('span', {
                             className: 'bowire-ai-threat-templates-label',
-                            textContent: 'Suggested:'
+                            textContent: t('ai.threat.suggested')
                         }));
-                        row.suggestedTemplates.forEach(function (t) {
+                        row.suggestedTemplates.forEach(function (name) {
                             tplWrap.appendChild(el('span', {
                                 className: 'bowire-ai-threat-template-chip',
-                                textContent: t
+                                textContent: name
                             }));
                         });
                         li.appendChild(tplWrap);
@@ -1858,7 +1869,7 @@
                         var scanBtn = el('button', {
                             type: 'button',
                             className: 'bowire-ai-threat-scan-btn',
-                            textContent: 'Copy bowire scan command',
+                            textContent: t('ai.threat.copyScan'),
                             onClick: (function (ep, templates) {
                                 return function () {
                                     var cmd = 'bowire scan --url ' + (ep.serverUrl || '<server>')
@@ -1930,10 +1941,10 @@
     // #104 — one-button AI security scan section.
     function renderSecurityScanSection() {
         var wrap = el('div', { className: 'bowire-ai-scan-section bowire-secsuite-section' });
-        wrap.appendChild(el('h4', { className: 'bowire-secsuite-h', textContent: 'AI security scan' }));
+        wrap.appendChild(el('h4', { className: 'bowire-secsuite-h', textContent: t('ai.scan.title') }));
         wrap.appendChild(el('p', {
             className: 'bowire-secsuite-hint',
-            textContent: 'One run: threat-model rank → probe the highest-risk endpoints → triage findings → report. Uses the discovered endpoints from the active workspace; degrades to a heuristic ranking without a model.'
+            textContent: t('ai.scan.hint')
         }));
 
         var results = el('div', { className: 'bowire-ai-scan-results' });
@@ -1941,7 +1952,7 @@
 
         var runBtn = el('button', {
             className: 'bowire-btn',
-            textContent: 'Run AI security scan',
+            textContent: t('ai.scan.run'),
             onclick: function () {
                 var endpoints = collectScanEndpoints();
                 if (!endpoints.length) { statusEl.textContent = 'No discovered endpoints — connect to a server or load a schema in Discover first.'; return; }
@@ -1981,7 +1992,11 @@
         var findings = body.findings || [];
         container.appendChild(el('div', {
             className: 'bowire-ai-scan-summary',
-            textContent: 'Ranked ' + ranked + ' · probed ' + probed + ' · kept ' + findings.length + ' finding(s) · suppressed ' + (body.suppressedCount || 0)
+            // #688 - one message, two shapes.
+            textContent: t(findings.length === 1 ? 'ai.scan.summary.one' : 'ai.scan.summary.many', {
+                ranked: ranked, probed: probed,
+                kept: findings.length, suppressed: body.suppressedCount || 0
+            })
         }));
 
         if (findings.length) {
@@ -2004,24 +2019,27 @@
     // #106 — per-method OWASP API Top 10 panel.
     function renderOwaspPanelSection() {
         var wrap = el('div', { className: 'bowire-ai-owasp-section bowire-secsuite-section' });
-        wrap.appendChild(el('h4', { className: 'bowire-secsuite-h', textContent: 'OWASP API Top 10 — per method' }));
+        wrap.appendChild(el('h4', { className: 'bowire-secsuite-h', textContent: t('ai.owasp.title') }));
         wrap.appendChild(el('p', {
             className: 'bowire-secsuite-hint',
-            textContent: 'Map one method against the ten OWASP API 2023 entries — a tri-state status (at-risk / maybe / n-a) and a concrete probe per row, with an AI review when a model is connected.'
+            textContent: t('ai.owasp.hint')
         }));
 
-        var pathInput = el('input', { className: 'bowire-form-input', placeholder: 'Method path (e.g. /orders/{id})' });
-        var verbInput = el('input', { className: 'bowire-form-input bowire-ai-owasp-verb', placeholder: 'Verb (GET…)' });
-        var fieldsInput = el('input', { className: 'bowire-form-input', placeholder: 'Request fields, comma-separated (optional)' });
+        var pathInput = el('input', { className: 'bowire-form-input',
+            placeholder: t('ai.owasp.pathPlaceholder') });
+        var verbInput = el('input', { className: 'bowire-form-input bowire-ai-owasp-verb',
+            placeholder: t('ai.owasp.verbPlaceholder') });
+        var fieldsInput = el('input', { className: 'bowire-form-input',
+            placeholder: t('ai.owasp.fieldsPlaceholder') });
         var results = el('div', { className: 'bowire-ai-owasp-results' });
         var statusEl = el('div', { className: 'bowire-secsuite-status' });
 
         var checkBtn = el('button', {
             className: 'bowire-btn',
-            textContent: 'Check',
+            textContent: t('ai.owasp.check'),
             onclick: function () {
                 var path = (pathInput.value || '').trim();
-                if (!path) { statusEl.textContent = 'Enter a method path first.'; return; }
+                if (!path) { statusEl.textContent = t('ai.owasp.needsPath'); return; }
                 var fields = (fieldsInput.value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
                 checkBtn.disabled = true;
                 statusEl.textContent = 'Checking…';
@@ -2072,23 +2090,25 @@
     // so they're unit-testable in isolation against injected el / fetch.
     function renderJwtAnalyzerSection() {
         var wrap = el('div', { className: 'bowire-ai-jwt-section bowire-secsuite-section' });
-        wrap.appendChild(el('h4', { className: 'bowire-secsuite-h', textContent: 'JWT analyzer' }));
+        wrap.appendChild(el('h4', { className: 'bowire-secsuite-h', textContent: t('ai.jwt.title') }));
         wrap.appendChild(el('p', {
             className: 'bowire-secsuite-hint',
-            textContent: 'Paste a JWT — deterministic security flags (alg=none, weak HMAC, exp, scope creep, audience) plus an AI narrative when a model is connected.'
+            textContent: t('ai.jwt.hint')
         }));
 
-        var tokenInput = el('textarea', { className: 'bowire-form-input bowire-ai-jwt-input', placeholder: 'header.payload.signature', rows: 3 });
-        var audInput = el('input', { className: 'bowire-form-input', placeholder: 'Expected audience (optional)' });
+        var tokenInput = el('textarea', { className: 'bowire-form-input bowire-ai-jwt-input',
+            placeholder: t('ai.jwt.tokenPlaceholder'), rows: 3 });
+        var audInput = el('input', { className: 'bowire-form-input',
+            placeholder: t('ai.jwt.audPlaceholder') });
         var results = el('div', { className: 'bowire-ai-jwt-results' });
         var statusEl = el('div', { className: 'bowire-secsuite-status' });
 
         var analyzeBtn = el('button', {
             className: 'bowire-btn',
-            textContent: 'Analyze',
+            textContent: t('ai.jwt.analyze'),
             onclick: function () {
                 var token = (tokenInput.value || '').trim();
-                if (!token) { statusEl.textContent = 'Paste a JWT first.'; return; }
+                if (!token) { statusEl.textContent = t('ai.jwt.needsToken'); return; }
                 analyzeBtn.disabled = true;
                 statusEl.textContent = 'Analyzing…';
                 results.replaceChildren();
@@ -2224,10 +2244,10 @@
 
         var names = new Set();
         var re = /\{\{\s*ai\.([^}\s]+)\s*\}\}/g;
-        templates.forEach(function (t) {
-            if (typeof t !== 'string') return;
+        templates.forEach(function (tpl) {
+            if (typeof tpl !== 'string') return;
             var m;
-            while ((m = re.exec(t)) !== null) {
+            while ((m = re.exec(tpl)) !== null) {
                 names.add(m[1]);
             }
         });

@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { t } from './_load-fragment.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SRC = readFileSync(
@@ -62,7 +63,10 @@ function fakeEl() {
     };
 }
 function load() {
-    return new Function('el', `${extractFn('renderScanResult')}\nreturn renderScanResult;`);
+    // `t` rides along with `el`: renderScanResult reads its summary line from
+    // the catalogue now, and this harness builds its own Function rather than
+    // going through compileFragment, so it has to be handed the translator.
+    return new Function('el', 't', `${extractFn('renderScanResult')}\nreturn renderScanResult;`);
 }
 function texts(node, acc = []) {
     if (node.textContent) acc.push(node.textContent);
@@ -72,7 +76,7 @@ function texts(node, acc = []) {
 
 test('renderScanResult renders summary, findings, and report', () => {
     const el = fakeEl();
-    const render = load()(el);
+    const render = load()(el, t);
     const container = el('div');
     render(container, {
         ranked: [{}, {}, {}],
@@ -82,17 +86,18 @@ test('renderScanResult renders summary, findings, and report', () => {
         reportMarkdown: '# AI security scan\n\nFindings: 1 high.',
     });
 
-    const t = texts(container);
-    assert.ok(t.some((x) => x === 'Ranked 3 · probed 1 · kept 1 finding(s) · suppressed 2'), 'summary');
-    assert.ok(t.some((x) => x === '[high] BOLA on e1'), 'finding title');
-    assert.ok(t.some((x) => x.includes('real 80%')), 'finding meta');
-    assert.ok(t.some((x) => x.includes('# AI security scan')), 'report markdown');
+    // Not `t` — that name is the translator in this module now.
+    const labels = texts(container);
+    assert.ok(labels.some((x) => x === 'Ranked 3 · probed 1 · kept 1 finding · suppressed 2'), 'summary');
+    assert.ok(labels.some((x) => x === '[high] BOLA on e1'), 'finding title');
+    assert.ok(labels.some((x) => x.includes('real 80%')), 'finding meta');
+    assert.ok(labels.some((x) => x.includes('# AI security scan')), 'report markdown');
 });
 
 test('renderScanResult with no findings still shows the summary', () => {
     const el = fakeEl();
-    const render = load()(el);
+    const render = load()(el, t);
     const container = el('div');
     render(container, { ranked: [{}], probed: [], findings: [], suppressedCount: 0 });
-    assert.ok(texts(container).some((x) => x.includes('kept 0 finding(s)')));
+    assert.ok(texts(container).some((x) => x.includes('kept 0 findings')));
 });

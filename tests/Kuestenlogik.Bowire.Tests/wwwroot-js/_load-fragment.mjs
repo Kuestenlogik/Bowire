@@ -48,27 +48,44 @@ const CATALOGUE = (() => {
     return JSON.parse(text);
 })();
 
-// Mirrors i18n.js: `{name}` is substituted, `{{name}}` is Bowire's own
-// variable syntax and survives untouched. tNodes comes along because a
-// fragment that translates a sentence around an element reaches for it the
-// same way it reaches for t().
-const DEFAULT_T = `
-function t(key, params) {
-    var text = ${JSON.stringify(CATALOGUE)}[key];
+/**
+ * The English translator, mirroring i18n.js: `{name}` is substituted,
+ * `{{name}}` is Bowire's own variable syntax and survives untouched.
+ *
+ * Exported because a few suites build their own `new Function(...)` harness
+ * instead of calling compileFragment, and they need the same `t` — one
+ * implementation, so the two cannot drift.
+ */
+export function t(key, params) {
+    const text = CATALOGUE[key];
     if (typeof text !== 'string' || text === '') return key;
     if (!params) return text;
-    return text.replace(/(?<!\\{)\\{([a-zA-Z0-9_]+)\\}(?!\\})/g, function (whole, name) {
-        return Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : whole;
-    });
+    return text.replace(/(?<!\{)\{([a-zA-Z0-9_]+)\}(?!\})/g, (whole, name) =>
+        Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : whole);
 }
-function tNodes(key, slot, nodes, params) {
-    var text = t(key, params);
-    var marker = '{' + slot + '}';
-    var at = text.indexOf(marker);
+
+/** tNodes, for the same reason: a fragment that reaches for one reaches for both. */
+export function tNodes(key, slot, nodes, params) {
+    const text = t(key, params);
+    const marker = `{${slot}}`;
+    const at = text.indexOf(marker);
     if (at < 0) return [text];
-    var middle = Array.isArray(nodes) ? nodes : [nodes];
+    const middle = Array.isArray(nodes) ? nodes : [nodes];
     return [text.slice(0, at)].concat(middle, [text.slice(at + marker.length)]);
 }
+
+// The same two functions as source, for injection into a compiled fragment.
+// Built from the live functions rather than written out twice, so the two
+// copies cannot drift.
+//
+// They stay `function` declarations and `var`: this block is appended AFTER
+// the fragment, and only those hoist to the top of the compiled body. A
+// `const t` would sit in the temporal dead zone for any fragment that
+// translates at module level.
+const DEFAULT_T = `
+var __catalogue = ${JSON.stringify(CATALOGUE)};
+${t.toString().replace('CATALOGUE', '__catalogue')}
+${tNodes.toString()}
 `;
 
 /**
