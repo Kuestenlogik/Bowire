@@ -66,7 +66,7 @@
             }));
             bar.appendChild(el('button', {
                 className: 'bowire-alert-bar-action',
-                textContent: 'Edit pins',
+                textContent: t('topbar.editPins'),
                 disabled: st.installing,
                 onClick: function () {
                     // Item 3 lands the pin editor in Settings. Until
@@ -80,7 +80,7 @@
         }
         bar.appendChild(el('button', {
             className: 'bowire-alert-bar-close',
-            'aria-label': 'Dismiss',
+            'aria-label': t('common.dismiss'),
             textContent: '×',
             disabled: st.installing,
             onClick: function () { dismissWorkspacePinCheck(); }
@@ -107,19 +107,19 @@
         });
         var panel = el('aside', {
             className: 'bowire-method-drop-panel',
-            'aria-label': 'Drop on a collection'
+            'aria-label': t('drop.title')
         });
         panel.appendChild(el('div', { className: 'bowire-method-drop-header' },
             el('div', { className: 'bowire-method-drop-header-text' },
-                el('span', { className: 'bowire-method-drop-title', textContent: 'Drop on a collection' }),
+                el('span', { className: 'bowire-method-drop-title', textContent: t('drop.title') }),
                 el('span', { className: 'bowire-method-drop-method',
                     textContent: methodDragPayload.service + '.' + methodDragPayload.method })
             ),
             el('button', {
                 type: 'button',
                 className: 'bowire-method-drop-cancel',
-                title: 'Cancel (Esc)',
-                'aria-label': 'Cancel',
+                title: t('drop.cancelEsc'),
+                'aria-label': t('common.cancel'),
                 innerHTML: svgIcon('close'),
                 onClick: _cancel
             })
@@ -186,7 +186,7 @@
             }, function () {
                 if (typeof addToCollection !== 'function') return;
                 addToCollection(col.id, _itemFromPayload());
-                toast('Added to "' + col.name + '"', 'success');
+                toast(t('drop.added', { collection: col.name }), 'success');
                 methodDragPayload = null;
                 render();
             });
@@ -195,7 +195,7 @@
         if (cols.length === 0) {
             list.appendChild(el('div', {
                 className: 'bowire-method-drop-empty',
-                textContent: 'No collections yet — drop on the entry below to create one.'
+                textContent: t('drop.noCollections')
             }));
         }
         // Trailing "+ New collection" zone — drop here creates a
@@ -203,7 +203,7 @@
         // the snapshot as its first item.
         list.appendChild(makeZone({
             icon: 'plus',
-            label: 'New collection from this method',
+            label: t('drop.newFromMethod'),
             kind: 'new'
         }, function () {
             if (typeof createCollection !== 'function' || typeof addToCollection !== 'function') return;
@@ -211,7 +211,7 @@
             addToCollection(col.id, _itemFromPayload());
             collectionsList = (typeof loadCollections === 'function') ? loadCollections() : collectionsList;
             collectionManagerSelectedId = col.id;
-            toast('Created collection "' + col.name + '"', 'success');
+            toast(t('collections.created', { name: col.name }), 'success');
             methodDragPayload = null;
             render();
         }));
@@ -220,9 +220,9 @@
         // ESC-to-cancel hint at the bottom — explicit affordance so
         // the modal doesn't read as "drop or stuck".
         panel.appendChild(el('div', { className: 'bowire-method-drop-footer' },
-            el('span', { textContent: 'Press ' }),
+            el('span', { textContent: t('drop.press') }),
             el('span', { className: 'bowire-method-drop-kbd', textContent: 'Esc' }),
-            el('span', { textContent: ' to cancel' })
+            el('span', { textContent: t('drop.toCancel') })
         ));
         shell.appendChild(panel);
 
@@ -268,7 +268,7 @@
         var panel = el('aside', {
             className: 'bowire-app-drawer-panel',
             role: 'navigation',
-            'aria-label': 'Main menu',
+            'aria-label': t('drawer.mainMenu'),
             tabIndex: -1,
             onKeydown: function (e) {
                 if (e.key === 'Escape') {
@@ -306,7 +306,7 @@
             var wsSection = el('section', { className: 'bowire-app-drawer-section' });
             wsSection.appendChild(el('div', {
                 className: 'bowire-app-drawer-section-title',
-                textContent: 'Workspace'
+                textContent: t('drawer.workspace')
             }));
             if (aw) {
                 wsSection.appendChild(el('div', { className: 'bowire-app-drawer-ws-active' },
@@ -319,7 +319,7 @@
             } else {
                 wsSection.appendChild(el('div', {
                     className: 'bowire-app-drawer-ws-empty',
-                    textContent: 'No workspace selected.'
+                    textContent: t('drawer.noWorkspace')
                 }));
             }
             // Other workspaces — quick-switch shortcuts. Cap at 5 to
@@ -356,7 +356,7 @@
                 }
             },
                 el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('layers') }),
-                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Manage workspaces' })
+                el('span', { className: 'bowire-app-drawer-item-label', textContent: t('common.manageWorkspaces') })
             ));
             body.appendChild(wsSection);
         }
@@ -365,7 +365,7 @@
         var actionsSection = el('section', { className: 'bowire-app-drawer-section' });
         actionsSection.appendChild(el('div', {
             className: 'bowire-app-drawer-section-title',
-            textContent: 'Quick actions'
+            textContent: t('drawer.quickActions')
         }));
         actionsSection.appendChild(el('button', {
             type: 'button',
@@ -379,7 +379,7 @@
             }
         },
             el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('search') }),
-            el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Open command palette' }),
+            el('span', { className: 'bowire-app-drawer-item-label', textContent: t('drawer.openPalette') }),
             el('span', { className: 'bowire-app-drawer-item-hint', textContent: 'Ctrl + /' })
         ));
         if (typeof createWorkspace === 'function') {
@@ -388,9 +388,9 @@
                 className: 'bowire-app-drawer-item',
                 onClick: function () {
                     closeDrawer();
-                    bowirePrompt('Workspace name', {
-                        title: 'New workspace',
-                        confirmText: 'Create'
+                    bowirePrompt(t('drawer.workspaceName'), {
+                        title: t('drawer.newWorkspaceTitle'),
+                        confirmText: t('wsTemplates.dialog.create')
                     }).then(function (name) {
                         if (!name) return;
                         try {
@@ -407,7 +407,7 @@
                             if (ws && typeof toast === 'function') {
                                 var _wsId = ws.id;
                                 var _wsName = ws.name;
-                                toast('Created workspace "' + _wsName + '"', 'info', {
+                                toast(t('wsTemplates.created', { name: _wsName }), 'info', {
                                     undo: function () {
                                         if (typeof deleteWorkspace === 'function') deleteWorkspace(_wsId);
                                         if (typeof render === 'function') render();
@@ -424,9 +424,9 @@
                                         // works without waiting for a reload.
                                         redo: function () {
                                             if (typeof workspacesTrash === 'undefined' || !Array.isArray(workspacesTrash)) return;
-                                            var t = workspacesTrash.find(function (x) { return x && x.workspace && x.workspace.id === _wsId; });
-                                            if (t && typeof restoreWorkspaceFromTrash === 'function') {
-                                                restoreWorkspaceFromTrash(t);
+                                            var trashed = workspacesTrash.find(function (x) { return x && x.workspace && x.workspace.id === _wsId; });
+                                            if (trashed && typeof restoreWorkspaceFromTrash === 'function') {
+                                                restoreWorkspaceFromTrash(trashed);
                                                 if (typeof render === 'function') render();
                                             }
                                         }
@@ -434,13 +434,13 @@
                                 });
                             }
                         } catch (e) {
-                            if (typeof toast === 'function') toast('Failed: ' + e.message, 'error');
+                            if (typeof toast === 'function') toast(t('drawer.failed') + e.message, 'error');
                         }
                     });
                 }
             },
                 el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('plus') }),
-                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'New workspace…' })
+                el('span', { className: 'bowire-app-drawer-item-label', textContent: t('sidebar.ws.new') })
             ));
         }
         if (typeof exportWorkspaceJson === 'function' && (typeof activeWorkspace === 'function') && activeWorkspace()) {
@@ -459,12 +459,12 @@
                         a.click();
                         setTimeout(function () { URL.revokeObjectURL(a.href); }, 0);
                     } catch (e) {
-                        if (typeof toast === 'function') toast('Export failed: ' + e.message, 'error');
+                        if (typeof toast === 'function') toast(t('drawer.exportFailed') + e.message, 'error');
                     }
                 }
             },
                 el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('download') }),
-                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Export workspace' })
+                el('span', { className: 'bowire-app-drawer-item-label', textContent: t('drawer.exportWorkspace') })
             ));
         }
         if (typeof importWorkspaceJson === 'function') {
@@ -484,9 +484,9 @@
                             try {
                                 var data = JSON.parse(String(reader.result));
                                 importWorkspaceJson(data);
-                                if (typeof toast === 'function') toast('Workspace imported', 'success');
+                                if (typeof toast === 'function') toast(t('drawer.workspaceImported'), 'success');
                             } catch (e) {
-                                if (typeof toast === 'function') toast('Import failed: ' + e.message, 'error');
+                                if (typeof toast === 'function') toast(t('drawer.importFailed') + e.message, 'error');
                             }
                         };
                         reader.readAsText(f);
@@ -495,7 +495,7 @@
                 }
             },
                 el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('upload') }),
-                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Import workspace…' })
+                el('span', { className: 'bowire-app-drawer-item-label', textContent: t('drawer.importWorkspace') })
             ));
         }
         body.appendChild(actionsSection);
@@ -518,7 +518,7 @@
                 }
             },
                 el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon(themeIcon) }),
-                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Theme' }),
+                el('span', { className: 'bowire-app-drawer-item-label', textContent: t('drawer.theme') }),
                 el('span', { className: 'bowire-app-drawer-item-hint', textContent: current })
             ));
         }
@@ -532,7 +532,7 @@
                 }
             },
                 el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('settings') }),
-                el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Settings' })
+                el('span', { className: 'bowire-app-drawer-item-label', textContent: t('sidebar.settings') })
             ));
         }
         footerSection.appendChild(el('button', {
@@ -544,7 +544,7 @@
             }
         },
             el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon('help') }),
-            el('span', { className: 'bowire-app-drawer-item-label', textContent: 'Help & docs' })
+            el('span', { className: 'bowire-app-drawer-item-label', textContent: t('drawer.help') })
         ));
         // Version footer — small, secondary, no interaction.
         var version = (config && config.version) || '';
@@ -695,7 +695,7 @@
                 className: 'bowire-workspace-identity-band',
                 style: 'background:' + _identityWs.color,
                 'aria-hidden': 'true',
-                title: 'Workspace: ' + _identityWs.name
+                title: t('topbar.workspaceTitle', { name: _identityWs.name })
             }));
         }
 
@@ -1544,12 +1544,12 @@
             type: 'button',
             className: 'bowire-activity-action',
             disabled: (typeof availableActionCount === 'function' && availableActionCount() === 0) ? 'disabled' : null,
-            title: 'Undo most recent action (Ctrl/Cmd+Z)',
-            textContent: 'Undo',
+            title: t('activity.undoTitle'),
+            textContent: t('common.undo'),
             onClick: function () {
                 if (typeof undoLastAction === 'function') {
                     var u = undoLastAction();
-                    if (u && typeof toast === 'function') toast('Undone: ' + u.title, 'info');
+                    if (u && typeof toast === 'function') toast(t('actionLog.undone', { title: u.title }), 'info');
                     render();
                 }
             }
@@ -1558,12 +1558,12 @@
             type: 'button',
             className: 'bowire-activity-action',
             disabled: redoableCount === 0 ? 'disabled' : null,
-            title: 'Redo last undone action (Ctrl/Cmd+Shift+Z)',
-            textContent: 'Redo',
+            title: t('activity.redoTitle'),
+            textContent: t('activity.redo'),
             onClick: function () {
                 if (typeof redoLastAction === 'function') {
                     var r = redoLastAction();
-                    if (r && typeof toast === 'function') toast('Redone: ' + r.title, 'info');
+                    if (r && typeof toast === 'function') toast(t('actionLog.redone', { title: r.title }), 'info');
                     render();
                 }
             }
@@ -1572,14 +1572,16 @@
             header.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-activity-action bowire-activity-action-primary',
-                title: 'Roll back the ' + selCount + ' selected actions in newest-first order',
-                textContent: 'Undo ' + selCount + ' selected',
+                title: t('activity.undoSelectedTitle', { count: selCount }),
+                textContent: t('activity.undoSelected', { count: selCount }),
                 onClick: function () {
                     if (typeof undoActionsByIds !== 'function') return;
                     var rolled = undoActionsByIds(Array.from(activitySelected));
                     activitySelected.clear();
                     if (rolled.length > 0 && typeof toast === 'function') {
-                        toast('Undone ' + rolled.length + ' action' + (rolled.length === 1 ? '' : 's'), 'info');
+                        // #688 - one message, two shapes.
+                    toast(t(rolled.length === 1 ? 'activity.undoneCount.one' : 'activity.undoneCount.many',
+                        { count: rolled.length }), 'info');
                     }
                     render();
                 }
@@ -1587,8 +1589,8 @@
             header.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-activity-action',
-                title: 'Clear selection',
-                textContent: 'Clear selection',
+                title: t('activity.clearSelection'),
+                textContent: t('activity.clearSelection'),
                 onClick: function () {
                     activitySelected.clear();
                     render();
@@ -1600,8 +1602,8 @@
             type: 'button',
             className: 'bowire-activity-action bowire-activity-action-danger',
             disabled: (typeof actionLog !== 'undefined' && actionLog.length === 0) ? 'disabled' : null,
-            title: 'Clear the timeline (the underlying changes stay in place)',
-            textContent: 'Clear',
+            title: t('activity.clearTitle'),
+            textContent: t('rb.history.clear'),
             onClick: function () {
                 if (typeof clearActionLog === 'function') clearActionLog();
                 render();
@@ -1613,7 +1615,7 @@
         if (typeof actionLog === 'undefined' || actionLog.length === 0) {
             list.appendChild(el('p', {
                 className: 'bowire-drawer-empty',
-                textContent: 'No recorded actions yet. Reversible changes — deletions, renames, toggles — land here as you make them.'
+                textContent: t('activity.empty')
             }));
         } else {
             actionLog.forEach(function (entry) {
@@ -1633,7 +1635,7 @@
                         type: 'checkbox',
                         className: 'bowire-activity-row-check',
                         checked: isChecked ? 'checked' : null,
-                        'aria-label': 'Select for bulk undo',
+                        'aria-label': t('activity.selectForBulk'),
                         onChange: function (e) {
                             if (e.target.checked) activitySelected.add(entry.id);
                             else activitySelected.delete(entry.id);
@@ -1660,8 +1662,8 @@
                     row.appendChild(el('button', {
                         type: 'button',
                         className: 'bowire-activity-row-undo',
-                        title: 'Undo this action',
-                        textContent: 'Undo',
+                        title: t('activity.undoOne'),
+                        textContent: t('common.undo'),
                         onClick: function () {
                             try {
                                 entry.undoFn();
@@ -1669,11 +1671,11 @@
                                 if (entry.redoFn) actionLogRedoStack.unshift(entry);
                                 activitySelected.delete(entry.id);
                                 _persistActionLog();
-                                if (typeof toast === 'function') toast('Undone: ' + entry.title, 'info');
+                                if (typeof toast === 'function') toast(t('actionLog.undone', { title: entry.title }), 'info');
                                 render();
                             } catch (e) {
                                 console.warn('[actionLog] undo failed', entry.kind, e);
-                                if (typeof toast === 'function') toast('Undo failed: ' + entry.title, 'error');
+                                if (typeof toast === 'function') toast(t('activity.undoFailed', { title: entry.title }), 'error');
                             }
                         }
                     }));
@@ -1746,14 +1748,15 @@
             }),
             el('span', {
                 className: 'bowire-trash-modal-title',
-                textContent: 'Trash — ' + totalCount + ' item' + (totalCount === 1 ? '' : 's')
+                textContent: t(totalCount === 1 ? 'trash.heading.one' : 'trash.heading.many',
+                    { count: totalCount })
             })
         ));
         header.appendChild(el('button', {
             type: 'button',
             className: 'bowire-trash-modal-close',
-            title: 'Close (Esc)',
-            'aria-label': 'Close trash drawer',
+            title: t('settings.closeEsc'),
+            'aria-label': t('trash.closeAria'),
             innerHTML: svgIcon('close'),
             onClick: function () {
                 globalTrashOpen = false;
@@ -1775,51 +1778,51 @@
             ? workspacesTrash : [];
         var kindConfig = {
             recordings: {
-                label: 'Recordings',
+                label: t('sidebar.recordings.title'),
                 badge: 'recording',
                 entries: rec,
                 nameOf: function (e) { return e && e.name ? e.name : '(unnamed recording)'; },
-                onRestore: function (t) {
-                    if (!t || !t.entry) return;
+                onRestore: function (entry) {
+                    if (!entry || !entry.entry) return;
                     if (typeof recordingsList !== 'undefined' && Array.isArray(recordingsList)) {
-                        recordingsList.splice(Math.min(t.originalIdx || recordingsList.length,
-                            recordingsList.length), 0, t.entry);
+                        recordingsList.splice(Math.min(entry.originalIdx || recordingsList.length,
+                            recordingsList.length), 0, entry.entry);
                         if (typeof persistRecordings === 'function') persistRecordings();
                     }
-                    var idx = rec.indexOf(t);
+                    var idx = rec.indexOf(entry);
                     if (idx >= 0) rec.splice(idx, 1);
                     if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
                 },
-                onDeleteForever: function (t) {
-                    var idx = rec.indexOf(t);
+                onDeleteForever: function (entry) {
+                    var idx = rec.indexOf(entry);
                     if (idx >= 0) rec.splice(idx, 1);
                     if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
                 }
             },
             collections: {
-                label: 'Collections',
+                label: t('sidebar.collections.title'),
                 badge: 'collection',
                 entries: col,
                 nameOf: function (e) { return e && e.name ? e.name : '(unnamed collection)'; },
-                onRestore: function (t) {
-                    if (!t || !t.entry) return;
+                onRestore: function (entry) {
+                    if (!entry || !entry.entry) return;
                     if (typeof collectionsList !== 'undefined' && Array.isArray(collectionsList)) {
-                        collectionsList.splice(Math.min(t.originalIdx || collectionsList.length,
-                            collectionsList.length), 0, t.entry);
+                        collectionsList.splice(Math.min(entry.originalIdx || collectionsList.length,
+                            collectionsList.length), 0, entry.entry);
                         if (typeof persistCollections === 'function') persistCollections();
                     }
-                    var idx = col.indexOf(t);
+                    var idx = col.indexOf(entry);
                     if (idx >= 0) col.splice(idx, 1);
                     if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
                 },
-                onDeleteForever: function (t) {
-                    var idx = col.indexOf(t);
+                onDeleteForever: function (entry) {
+                    var idx = col.indexOf(entry);
                     if (idx >= 0) col.splice(idx, 1);
                     if (typeof persistCollectionsTrash === 'function') persistCollectionsTrash();
                 }
             },
             tabs: {
-                label: 'Tabs',
+                label: t('trash.tabs'),
                 badge: 'tab',
                 entries: tabs,
                 nameOf: function (e) {
@@ -1829,38 +1832,38 @@
                     if (e.serviceKey) return e.serviceKey;
                     return '(unnamed tab)';
                 },
-                onRestore: function (t) {
+                onRestore: function (entry) {
                     if (typeof restoreClosedTab === 'function') {
-                        var ok = restoreClosedTab(t);
+                        var ok = restoreClosedTab(entry);
                         if (ok) {
-                            var idx = tabs.indexOf(t);
+                            var idx = tabs.indexOf(entry);
                             if (idx >= 0) tabs.splice(idx, 1);
                             if (typeof persistTabsTrash === 'function') persistTabsTrash();
                         }
                     }
                 },
-                onDeleteForever: function (t) {
-                    var idx = tabs.indexOf(t);
+                onDeleteForever: function (entry) {
+                    var idx = tabs.indexOf(entry);
                     if (idx >= 0) tabs.splice(idx, 1);
                     if (typeof persistTabsTrash === 'function') persistTabsTrash();
                 }
             },
             workspaces: {
-                label: 'Workspaces',
+                label: t('sidebar.ws.title'),
                 badge: 'workspace',
                 entries: ws,
                 nameOf: function (e) {
                     if (!e || !e.workspace) return '(unnamed workspace)';
                     return e.workspace.name || '(unnamed workspace)';
                 },
-                onRestore: function (t) {
+                onRestore: function (entry) {
                     if (typeof restoreWorkspaceFromTrash === 'function') {
-                        restoreWorkspaceFromTrash(t);
+                        restoreWorkspaceFromTrash(entry);
                     }
                 },
-                onDeleteForever: function (t) {
+                onDeleteForever: function (entry) {
                     if (typeof purgeWorkspaceFromTrash === 'function') {
-                        purgeWorkspaceFromTrash(t);
+                        purgeWorkspaceFromTrash(entry);
                     }
                 }
             }
@@ -1871,8 +1874,8 @@
         // dispatch into the right kindConfig entry.
         var flat = [];
         ['recordings', 'collections', 'tabs', 'workspaces'].forEach(function (k) {
-            kindConfig[k].entries.forEach(function (t) {
-                if (t) flat.push({ _kind: k, _trash: t });
+            kindConfig[k].entries.forEach(function (entry) {
+                if (entry) flat.push({ _kind: k, _trash: entry });
             });
         });
 
@@ -1901,7 +1904,7 @@
             // empty-state hint.
             body.appendChild(el('div', {
                 className: 'bowire-trash-unified-empty',
-                textContent: 'Trash is empty.'
+                textContent: t('trash.empty')
             }));
         }
 
@@ -1977,7 +1980,7 @@
                     },
                     {
                         title: filterActive ? 'Empty filtered trash' : 'Empty trash',
-                        confirmText: 'Delete ' + visibleCount,
+                        confirmText: t('sidebar.deleteCount', { count: visibleCount }),
                         danger: true
                     }
                 );
@@ -2008,7 +2011,7 @@
                     },
                     {
                         title: filterActive ? 'Restore filtered' : 'Restore all',
-                        confirmText: 'Restore ' + visibleCount
+                        confirmText: t('trash.restoreCount', { count: visibleCount })
                     }
                 );
             }
@@ -2017,7 +2020,7 @@
         footer.appendChild(el('button', {
             type: 'button',
             className: 'bowire-trash-modal-action',
-            textContent: 'Cancel',
+            textContent: t('common.cancel'),
             onClick: function () {
                 globalTrashOpen = false;
                 render();
@@ -2055,9 +2058,9 @@
         var searchInput = el('input', {
             type: 'text',
             className: 'bowire-trash-search-input',
-            placeholder: 'Search trashed items…',
+            placeholder: t('trash.search'),
             value: globalTrashFilterState.query || '',
-            'aria-label': 'Search trashed items',
+            'aria-label': t('trash.searchAria'),
             onInput: function (e) {
                 var v = e.target.value || '';
                 // Debounce the re-render so typing doesn't churn
@@ -2079,8 +2082,8 @@
             searchWrap.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-trash-search-clear',
-                title: 'Clear search',
-                'aria-label': 'Clear search',
+                title: t('trash.clearSearch'),
+                'aria-label': t('trash.clearSearch'),
                 textContent: '×',
                 onClick: function () {
                     globalTrashFilterState.query = '';
@@ -2095,7 +2098,7 @@
         var chipsRow = el('div', { className: 'bowire-trash-filter-chips' });
         chipsRow.appendChild(el('span', {
             className: 'bowire-trash-filter-chips-label',
-            textContent: 'Filter:'
+            textContent: t('trash.filter')
         }));
         ['recordings', 'collections', 'tabs', 'workspaces'].forEach(function (kind) {
             var cfg = kindConfig[kind];
@@ -2149,9 +2152,9 @@
         } else {
             visible.forEach(function (row) {
                 var cfg = kindConfig[row._kind];
-                var t = row._trash;
-                var name = cfg.nameOf(t.entry);
-                var ageMs = Date.now() - (t.deletedAt || Date.now());
+                var trashed = row._trash;
+                var name = cfg.nameOf(trashed.entry);
+                var ageMs = Date.now() - (trashed.deletedAt || Date.now());
                 var ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
                 var ageLabel;
                 if (ageMs < 60 * 60 * 1000) ageLabel = 'less than an hour ago';
@@ -2186,10 +2189,10 @@
                 rowEl.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-trash-bucket-row-action',
-                    title: 'Restore',
-                    textContent: 'Restore',
+                    title: t('sidebar.trash.restore'),
+                    textContent: t('sidebar.trash.restore'),
                     onClick: function () {
-                        try { cfg.onRestore(t); }
+                        try { cfg.onRestore(trashed); }
                         catch (e) { console.warn('[trash] restore failed', row._kind, e); }
                         render();
                     }
@@ -2197,18 +2200,18 @@
                 rowEl.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-trash-bucket-row-action bowire-trash-bucket-row-action-danger',
-                    title: 'Delete forever',
-                    textContent: 'Delete forever',
+                    title: t('trash.deleteForever'),
+                    textContent: t('trash.deleteForever'),
                     onClick: function () {
                         if (typeof bowireConfirm !== 'function') return;
                         bowireConfirm(
                             'Permanently delete "' + name + '"? This cannot be undone.',
                             function () {
-                                try { cfg.onDeleteForever(t); }
+                                try { cfg.onDeleteForever(trashed); }
                                 catch (e) { console.warn('[trash] delete-forever failed', row._kind, e); }
                                 render();
                             },
-                            { title: 'Delete forever', confirmText: 'Delete', danger: true }
+                            { title: t('trash.deleteForever'), confirmText: t('common.delete'), danger: true }
                         );
                     }
                 }));
@@ -2243,7 +2246,7 @@
             }
             tabs.push({
                 id: 'assistant',
-                label: 'Assistant',
+                label: t('settings.assistant.title'),
                 accessory: el('span', {
                     className: statusClass,
                     title: statusTitle,
@@ -2260,7 +2263,7 @@
                         ? window.__bowireAi.renderPanel()
                         : el('p', {
                             className: 'bowire-drawer-empty',
-                            textContent: 'AI module not loaded.'
+                            textContent: t('drawer.aiNotLoaded')
                         });
                 }
             });
@@ -2287,7 +2290,7 @@
                 ? availableActionCount() : 0;
             tabs.push({
                 id: 'activity',
-                label: 'Activity',
+                label: t('drawer.activity'),
                 accessory: availCnt > 0 ? el('span', {
                     className: 'bowire-help-topic-count',
                     title: availCnt + ' reversible action'
@@ -2314,7 +2317,7 @@
             var testsAcc = _testsTabAccessory();
             tabs.push({
                 id: 'tests',
-                label: 'Tests',
+                label: t('drawer.tests'),
                 accessory: testsAcc,
                 closeTitle: 'Close Tests',
                 onClose: function () {
@@ -2327,13 +2330,13 @@
                         return el('div', { className: 'bowire-tests-empty bowire-main-pad' },
                             el('p', {
                                 className: 'bowire-drawer-empty',
-                                textContent: 'Pick a method from the sidebar to see and edit its assertions. Tests run automatically after every successful response.'
+                                textContent: t('drawer.testsEmpty')
                             })
                         );
                     }
                     return typeof renderTestsTab === 'function'
                         ? renderTestsTab()
-                        : el('p', { textContent: 'Tests module not loaded.' });
+                        : el('p', { textContent: t('drawer.testsNotLoaded') });
                 }
             });
         }
@@ -2342,10 +2345,10 @@
         // (e.g. user closed Assistant while Help was the active tab),
         // fall back to the first open tab.
         var activeId = rightDrawerActiveTab;
-        if (!tabs.find(function (t) { return t.id === activeId; })) {
+        if (!tabs.find(function (tab) { return tab.id === activeId; })) {
             activeId = tabs[0] ? tabs[0].id : null;
         }
-        var activeTab = tabs.find(function (t) { return t.id === activeId; });
+        var activeTab = tabs.find(function (tab) { return tab.id === activeId; });
 
         // #324 — Help retired from the drawer; the drawer falls back to
         // its standard 360 px chrome for the remaining tabs (Assistant,
@@ -2363,7 +2366,7 @@
                     id: 'bowire-right-drawer',
                     className: 'bowire-drawer bowire-right-drawer',
                     role: 'complementary',
-                    'aria-label': 'Drawer'
+                    'aria-label': t('drawer.aria')
                 });
             }
             return renderDrawer({
@@ -2383,7 +2386,7 @@
             id: 'bowire-right-drawer',
             className: 'bowire-drawer bowire-right-drawer bowire-right-drawer-tabbed',
             role: 'complementary',
-            'aria-label': activeTab ? activeTab.label : 'Drawer'
+            'aria-label': activeTab ? activeTab.label : t('drawer.aria')
         });
 
         // Tab strip header — VS Code / JetBrains style. Each tab
@@ -2394,32 +2397,32 @@
             className: 'bowire-right-drawer-tabs',
             role: 'tablist'
         });
-        tabs.forEach(function (t) {
-            var isActive = t.id === activeId;
+        tabs.forEach(function (tab) {
+            var isActive = tab.id === activeId;
             // Stable id per tab — morphdom keyed-matches the button
             // to its previous node, otherwise the OLD click listener
             // stays attached to the now-wrong tab when the tab list
             // gets re-rendered with a different active tab (the
-            // listener was a closure over the previous render's `t`).
+            // listener was a closure over the previous render's `tab`).
             var tabBtn = el('button', {
-                id: 'bowire-right-drawer-tab-' + t.id,
+                id: 'bowire-right-drawer-tab-' + tab.id,
                 type: 'button',
                 className: 'bowire-right-drawer-tab'
                     + (isActive ? ' is-active' : ''),
                 role: 'tab',
                 'aria-selected': isActive ? 'true' : 'false',
                 onClick: function () {
-                    rightDrawerActiveTab = t.id;
-                    try { localStorage.setItem('bowire_right_drawer_active_tab', t.id); }
+                    rightDrawerActiveTab = tab.id;
+                    try { localStorage.setItem('bowire_right_drawer_active_tab', tab.id); }
                     catch { /* ignore */ }
                     render();
                 }
             });
             tabBtn.appendChild(el('span', {
                 className: 'bowire-right-drawer-tab-label',
-                textContent: t.label
+                textContent: tab.label
             }));
-            if (t.accessory) tabBtn.appendChild(t.accessory);
+            if (tab.accessory) tabBtn.appendChild(tab.accessory);
             tabStrip.appendChild(tabBtn);
         });
         // Single drawer-level close on the right — Per-tab Xs caused
@@ -2451,7 +2454,7 @@
                 console.warn('[right-drawer] content render failed', e);
                 contentWrap.appendChild(el('p', {
                     className: 'bowire-drawer-empty',
-                    textContent: 'Panel failed to render.'
+                    textContent: t('drawer.renderFailed2')
                 }));
             }
         }
@@ -2511,7 +2514,7 @@
                     : 'Discovery returned services but a plugin reported a fault.'
             }, [
                 el('span', { className: 'bowire-conn-dot is-degraded' }),
-                el('span', { textContent: 'Discovery incomplete' })
+                el('span', { textContent: t('status.discoveryIncomplete') })
             ]);
         }
 
@@ -2569,7 +2572,7 @@
         // the per-URL detail popover via CSS.
         var pill = el('div', {
             className: 'bowire-conn-pill bowire-conn-pill-' + aggregate + ' bowire-conn-pill-clickable',
-            title: 'Click to manage URLs and schemas',
+            title: t('status.manageUrls'),
             onClick: function () {
                 // #152 — pill now routes to the Sources rail mode;
                 // legacy sidebarView='sources' shim retired.
@@ -2596,10 +2599,10 @@
 
         if (aggregate === 'first-run') {
             popover.appendChild(el('div', { className: 'bowire-conn-popover-empty',
-                textContent: 'No URLs configured yet. Add one via the sidebar or the welcome card.' }));
+                textContent: t('status.noUrls') }));
         } else {
             var header = el('div', { className: 'bowire-conn-popover-header' },
-                el('span', { textContent: 'Connections' }),
+                el('span', { textContent: t('status.connections') }),
                 el('span', { className: 'bowire-conn-popover-count', textContent: urlsPresent.length + ' URL' + (urlsPresent.length === 1 ? '' : 's') })
             );
             popover.appendChild(header);
@@ -2854,7 +2857,7 @@
         subs.sort(function (a, b) { return a.startedAt - b.startedAt; });
 
         var header = el('div', { className: 'bowire-subscriptions-dropdown-header' },
-            el('span', { textContent: 'Active subscriptions' }),
+            el('span', { textContent: t('status.subscriptions') }),
             el('span', {
                 className: 'bowire-subscriptions-dropdown-count',
                 textContent: '(' + subs.length + ')'
@@ -2865,7 +2868,7 @@
         if (subs.length === 0) {
             dd.appendChild(el('div', {
                 className: 'bowire-subscriptions-dropdown-empty',
-                textContent: 'No active subscriptions.'
+                textContent: t('status.noSubscriptions')
             }));
             return;
         }
@@ -2927,7 +2930,7 @@
                 var stopBtn = el('button', {
                     type: 'button',
                     className: 'bowire-subscriptions-row-stop',
-                    title: 'Stop this subscription',
+                    title: t('status.stopSubscriptionTitle'),
                     onClick: function (e) {
                         e.stopPropagation();
                         stopSubscriptionFor(sub.service, sub.method);
@@ -2943,7 +2946,7 @@
         footer.appendChild(el('button', {
             type: 'button',
             className: 'bowire-subscriptions-dropdown-stop-all',
-            textContent: 'Stop all',
+            textContent: t('settings.tools.stopAll'),
             onClick: function () {
                 var all = getActiveSubscriptions();
                 for (var i = 0; i < all.length; i++) {
@@ -2961,7 +2964,7 @@
         menu.appendChild(el('button', {
             type: 'button',
             className: 'bowire-subscriptions-row-context-item',
-            textContent: 'Stop subscription',
+            textContent: t('status.stopSubscription'),
             onClick: function () {
                 stopSubscriptionFor(sub.service, sub.method);
                 menu.remove();
@@ -2970,7 +2973,7 @@
         menu.appendChild(el('button', {
             type: 'button',
             className: 'bowire-subscriptions-row-context-item',
-            textContent: 'Switch to method',
+            textContent: t('status.switchToMethod'),
             onClick: function () {
                 if (typeof openTabByServiceMethod === 'function') {
                     openTabByServiceMethod(sub.service, sub.method);
@@ -2985,11 +2988,13 @@
         menu.appendChild(el('button', {
             type: 'button',
             className: 'bowire-subscriptions-row-context-item',
-            textContent: 'Copy method path',
+            textContent: t('status.copyMethodPath'),
             onClick: function () {
                 try {
                     navigator.clipboard.writeText(sub.service + '/' + sub.method);
-                    if (typeof toast === 'function') toast('Copied ' + sub.service + '/' + sub.method, 'success');
+                    if (typeof toast === 'function') toast(t('status.copied', {
+                    what: sub.service + '/' + sub.method
+                }), 'success');
                 } catch { /* clipboard unavailable */ }
                 menu.remove();
             }
@@ -3086,12 +3091,12 @@
             fetch(config.prefix + '/api/workspace/open-folder' + qs, { method: 'POST' })
                 .then(function (r) {
                     if (!r.ok && typeof toast === 'function') {
-                        toast('Couldn’t open the workspace folder — see the server log.', 'error');
+                        toast(t('status.folderFailed'), 'error');
                     }
                 })
                 .catch(function () {
                     if (typeof toast === 'function') {
-                        toast('Network error opening the workspace folder.', 'error');
+                        toast(t('status.folderNetwork'), 'error');
                     }
                 });
         }
@@ -3116,11 +3121,11 @@
             left.appendChild(el('span', {
                 className: 'bowire-save-pill bowire-save-pill-failed'
                     + (_savePillClickable ? ' bowire-save-pill-clickable' : ''),
-                title: 'Save failed — check browser console' + _savePillTitleSuffix,
+                title: t('status.saveFailedTitle') + _savePillTitleSuffix,
                 onClick: _savePillClickable ? _onSavePillClick : null,
             },
                 el('span', { className: 'bowire-save-pill-dot' }),
-                el('span', { textContent: 'Save failed: ' + saveState.target })
+                el('span', { textContent: t('status.saveFailed', { target: saveState.target }) })
             ));
         }
         // Active-subscriptions pill — leftmost on the statusbar so
@@ -3158,7 +3163,7 @@
             title: consoleOpen
                 ? 'Hide console (activity log)'
                 : 'Show console — request / response activity log (' + consoleLog.length + ')',
-            'aria-label': 'Toggle console',
+            'aria-label': t('status.toggleConsole'),
             onClick: function () {
                 // #164 v2 — Console toggles a bottom-attached drawer
                 // (renderConsoleBottomDrawer); render() picks it up
@@ -3195,7 +3200,7 @@
                     ? ('Activity log — ' + availCount + ' reversible action'
                         + (availCount === 1 ? '' : 's') + ' (Ctrl/Cmd+Shift+A)')
                     : 'Activity log — recent actions (Ctrl/Cmd+Shift+A)'),
-            'aria-label': 'Toggle activity log',
+            'aria-label': t('status.toggleActivity'),
             onClick: function () {
                 activityDrawerOpen = !activityDrawerOpen;
                 try { localStorage.setItem('bowire_activity_drawer_open',
@@ -3226,7 +3231,7 @@
             title: testsDrawerOpen
                 ? 'Hide tests drawer'
                 : 'Show tests drawer — assertions for the active method',
-            'aria-label': 'Toggle tests',
+            'aria-label': t('status.toggleTests'),
             onClick: function () {
                 testsDrawerOpen = !testsDrawerOpen;
                 try { localStorage.setItem('bowire_tests_drawer_open', testsDrawerOpen ? '1' : '0'); }
@@ -3254,7 +3259,7 @@
             title: splitMode === 'vertical'
                 ? 'Vertical split — click to switch to horizontal (Ctrl/Cmd+Alt+\\)'
                 : 'Horizontal split — click to switch to vertical (Ctrl/Cmd+Alt+\\)',
-            'aria-label': 'Toggle split orientation',
+            'aria-label': t('status.toggleSplit'),
             onClick: function () {
                 splitMode = splitMode === 'horizontal' ? 'vertical' : 'horizontal';
                 try { localStorage.setItem('bowire_split_mode', splitMode); } catch { /* ignore */ }
@@ -3289,7 +3294,7 @@
         var paneViewSwitcher = el('div', {
             className: 'bowire-pane-view-switcher',
             role: 'group',
-            'aria-label': 'Request / Response pane layout'
+            'aria-label': t('status.paneLayout')
         },
             paneViewBtn('leading', 'Request pane only'),
             paneViewBtn('split', 'Split — request + response'),
@@ -3419,7 +3424,7 @@
             // overlay so the field stays a plain search box.
             'data-bowire-no-vars-chip': '1',
             'data-bowire-no-vars-ac': '1',
-            placeholder: 'Search methods, recordings, mocks, modes\u2026 (Ctrl/Cmd+K)',
+            placeholder: t('topbar.searchPlaceholder'),
             value: searchQuery,
             autocomplete: 'off',
             spellcheck: 'false',
@@ -3507,7 +3512,7 @@
             searchInputEl,
             el('span', {
                 className: 'bowire-command-palette-hint',
-                title: 'Focus search',
+                title: t('topbar.focusSearch'),
                 textContent: '/'
             })
         );
@@ -3622,8 +3627,8 @@
             id: 'bowire-omnibox-trigger',
             type: 'button',
             className: 'bowire-theme-toggle-btn bowire-omnibox-trigger-btn',
-            title: 'Search methods, recordings, modes… (Ctrl/Cmd+K)',
-            'aria-label': 'Open command palette',
+            title: t('topbar.searchTitle'),
+            'aria-label': t('drawer.openPalette'),
             onClick: function () {
                 searchSuggestionsOpen = true;
                 searchSuggestionIndex = 0;
@@ -3658,8 +3663,8 @@
         var aboutBtn = el('button', {
             id: 'bowire-about-btn',
             className: 'bowire-theme-toggle-btn bowire-about-btn',
-            title: 'About Bowire',
-            'aria-label': 'About Bowire',
+            title: t('settings.about.aria'),
+            'aria-label': t('settings.about.aria'),
             // #297 — priority tag for the responsive horizontal overflow
             // pass. Lower priority = collapses first. data-topbar-label
             // feeds the ⋮ menu rows + the aria-label "More: …" summary.
@@ -3689,8 +3694,8 @@
         var toolsBtn = el('button', {
             id: 'bowire-tools-btn',
             className: 'bowire-theme-toggle-btn' + (toolsMenuOpen ? ' active' : ''),
-            title: 'Tools',
-            'aria-label': 'Tools',
+            title: t('settings.tools.title'),
+            'aria-label': t('settings.tools.title'),
             'aria-haspopup': 'menu',
             'aria-expanded': toolsMenuOpen ? 'true' : 'false',
             'data-topbar-priority': '4',
@@ -3728,7 +3733,7 @@
                     }
                 },
                     el('span', { innerHTML: svgIcon('connect'), style: 'width:14px;height:14px;display:flex' }),
-                    el('span', { textContent: 'Reverse proxy…' })
+                    el('span', { textContent: t('topbar.reverseProxy') })
                 )
             )
             : null;
@@ -3747,7 +3752,7 @@
             title: helpAvailable
                 ? (helpActive ? 'Leave Help (F1)' : 'Help (F1)')
                 : 'Install Kuestenlogik.Bowire.Help for in-app docs (or visit bowire.io/docs)',
-            'aria-label': 'Help',
+            'aria-label': t('topbar.help'),
             // #297 — overflow priority tag (see aboutBtn).
             'data-topbar-priority': '5',
             'data-topbar-label': 'Help',
@@ -3782,8 +3787,8 @@
         var settingsBtn = el('button', {
             id: 'bowire-settings-btn',
             className: 'bowire-theme-toggle-btn',
-            title: 'Settings',
-            'aria-label': 'Settings',
+            title: t('sidebar.settings'),
+            'aria-label': t('sidebar.settings'),
             onClick: openSettings
         }, el('span', {
             innerHTML: svgIcon('settings'),
@@ -3826,7 +3831,7 @@
             // button collapsed to a thin sliver without an icon.
             className: 'bowire-theme-toggle-btn bowire-ai-drawer-toggle' + (aiDrawerOpen ? ' active' : ''),
             title: aiDrawerOpen ? 'Close Assistant (Ctrl+Shift+A)' : 'Open Assistant (Ctrl+Shift+A)',
-            'aria-label': 'Toggle Assistant',
+            'aria-label': t('topbar.toggleAssistant'),
             // #297 — overflow priority tag.
             'data-topbar-priority': '3',
             'data-topbar-label': 'Assistant',
@@ -3872,7 +3877,7 @@
             id: 'bowire-security-drawer-toggle',
             className: 'bowire-theme-toggle-btn bowire-security-drawer-toggle' + (securityDrawerOpen ? ' active' : ''),
             title: securityDrawerOpen ? 'Close Security drawer' : 'Open Security drawer',
-            'aria-label': 'Toggle Security drawer',
+            'aria-label': t('topbar.toggleSecurity'),
             onClick: function () {
                 securityDrawerOpen = !securityDrawerOpen;
                 try { localStorage.setItem('bowire_security_drawer_open', securityDrawerOpen ? '1' : '0'); } catch { /* ignore */ }
@@ -3925,7 +3930,7 @@
                 if (_undoDisabled) return;
                 if (typeof undoLastAction === 'function') {
                     var u = undoLastAction();
-                    if (u && typeof toast === 'function') toast('Undone: ' + u.title, 'info');
+                    if (u && typeof toast === 'function') toast(t('actionLog.undone', { title: u.title }), 'info');
                     render();
                 }
             }
@@ -3953,7 +3958,7 @@
                 if (_redoDisabled) return;
                 if (typeof redoLastAction === 'function') {
                     var r = redoLastAction();
-                    if (r && typeof toast === 'function') toast('Redone: ' + r.title, 'info');
+                    if (r && typeof toast === 'function') toast(t('actionLog.redone', { title: r.title }), 'info');
                     render();
                 }
             }
@@ -3977,7 +3982,7 @@
                 ? 'Close trash drawer'
                 : ('Trash — ' + _trashTotal + ' item' + (_trashTotal === 1 ? '' : 's')
                     + ' across recordings / collections / closed tabs'),
-            'aria-label': 'Toggle trash drawer',
+            'aria-label': t('topbar.toggleTrash'),
             // #297 — overflow priority tag. Trash collapses before
             // Undo/Redo (rarer affordance, less muscle-memory cost).
             'data-topbar-priority': '2',
@@ -4268,14 +4273,14 @@
                                             className: 'bowire-workspace-menu-item-check is-active',
                                             innerHTML: (typeof svgIcon === 'function') ? svgIcon('check') : '✓',
                                             'aria-hidden': 'false',
-                                            title: 'Active workspace'
+                                            title: t('topbar.activeWorkspace')
                                         })
                                         : el('button', {
                                             type: 'button',
                                             className: 'bowire-workspace-menu-item-check bowire-workspace-menu-item-activate',
                                             innerHTML: (typeof svgIcon === 'function') ? svgIcon('check') : '✓',
-                                            title: 'Switch to this workspace',
-                                            'aria-label': 'Switch to this workspace',
+                                            title: t('sidebar.ws.switchTo'),
+                                            'aria-label': t('sidebar.ws.switchTo'),
                                             onClick: function (e) {
                                                 e.stopPropagation();
                                                 switchWorkspace(w.id);
@@ -4297,7 +4302,7 @@
                         }
                     },
                         el('span', { className: 'bowire-workspace-menu-item-icon', textContent: '+' }),
-                        el('span', { textContent: 'New workspace…' })
+                        el('span', { textContent: t('sidebar.ws.new') })
                     ),
                     // Secondary entry — leads to the full Workspaces
                     // overview. The dropdown carries the quick-access
@@ -4320,7 +4325,7 @@
                     },
                         el('span', { className: 'bowire-workspace-menu-item-icon',
                             innerHTML: (typeof svgIcon === 'function') ? svgIcon('list') : '☰' }),
-                        el('span', { textContent: 'Manage workspaces' })
+                        el('span', { textContent: t('common.manageWorkspaces') })
                     )
                     // Bottom "Rename current…" / "Edit current…" / "Delete
                     // current" items retired — per-row pencil / gear / trash
@@ -4429,8 +4434,8 @@
         return el('button', {
             id: 'bowire-theme-toggle-btn',
             className: 'bowire-theme-toggle-btn' + (pref === 'auto' ? ' is-auto' : ''),
-            title: 'Theme: ' + pref + ' \u2014 click for ' + nextLabel + ' (T)',
-            'aria-label': 'Theme: ' + pref,
+            title: t('topbar.themeTitle', { current: pref, next: nextLabel }),
+            'aria-label': t('topbar.themeAria', { current: pref }),
             // #297 \u2014 overflow priority tag. data-topbar-icon mirrors
             // the icon picked above so the popover row shows the same
             // glyph as the inline button.
@@ -4670,8 +4675,8 @@
         // --- Apply as name filter ---
         out.push({
             group: 'Filters',
-            label: 'Apply as name filter: "' + q + '"',
-            sublabel: 'Pins the query as a persistent filter chip',
+            label: t('palette.applyFilter', { query: q }),
+            sublabel: t('palette.filterSub'),
             icon: svgIcon('filter'),
             onSelect: function () {
                 setNameFilter(q);
@@ -4755,8 +4760,8 @@
                     if ((ws.name || '').toLowerCase().indexOf(qLower) === -1) return;
                     out.push({
                         group: 'Workspaces',
-                        label: 'Switch to: ' + ws.name,
-                        sublabel: 'Workspace',
+                        label: t('palette.switchTo', { name: ws.name }),
+                        sublabel: t('drawer.workspace'),
                         icon: svgIcon('layers'),
                         onSelect: function () {
                             searchSuggestionsOpen = false;
@@ -4777,7 +4782,7 @@
                     out.push({
                         group: 'Active mocks',
                         label: mk.recordingName || ('mock-' + mk.port),
-                        sublabel: 'port ' + mk.port,
+                        sublabel: t('palette.port', { port: mk.port }),
                         icon: svgIcon('server'),
                         onSelect: function () {
                             // v2.2 — Mocks rail folded into Intercept ->
@@ -4806,13 +4811,13 @@
         // above (search by entity name), so a "Go to" jump would
         // navigate nowhere visible.
         var railJumps = [
-            { id: 'home',         label: 'Home',              icon: 'house' },
-            { id: 'discover',     label: 'Discover',          icon: 'discover' },
-            { id: 'intercept',    label: 'Intercept',         icon: 'trafficLight' },
-            { id: 'flows',        label: 'Flows',             icon: 'flow' },
-            { id: 'benchmarks',   label: 'Benchmarks',        icon: 'chart' },
-            { id: 'security',     label: 'Security',          icon: 'shield' },
-            { id: 'workspaces',   label: 'Workspaces',        icon: 'layers' },
+            { id: 'home',         label: t('rail.home'),              icon: 'house' },
+            { id: 'discover',     label: t('sidebar.discover'),          icon: 'discover' },
+            { id: 'intercept',    label: t('rail.intercept'),         icon: 'trafficLight' },
+            { id: 'flows',        label: t('rail.flows'),             icon: 'flow' },
+            { id: 'benchmarks',   label: t('rail.benchmarks'),        icon: 'chart' },
+            { id: 'security',     label: t('rail.security'),          icon: 'shield' },
+            { id: 'workspaces',   label: t('sidebar.ws.title'),        icon: 'layers' },
         ];
         for (var rj = 0; rj < railJumps.length; rj++) {
             (function (mode) {
@@ -4821,8 +4826,8 @@
                 if (railMode === mode.id) return; // already there
                 out.push({
                     group: 'Navigate',
-                    label: 'Go to ' + mode.label,
-                    sublabel: 'Rail mode',
+                    label: t('palette.goTo', { mode: mode.label }),
+                    sublabel: t('palette.railMode'),
                     icon: svgIcon(mode.icon),
                     onSelect: function () {
                         railMode = mode.id;
@@ -4853,8 +4858,8 @@
         if (composeMatch || 'compose new request'.indexOf(qLower) >= 0) {
             out.push({
                 group: 'New',
-                label: 'Compose new request',
-                sublabel: 'Self-contained — URL lives inline on this request',
+                label: t('palette.composeNew'),
+                sublabel: t('palette.composeNewSub'),
                 icon: svgIcon('plus'),
                 onSelect: function () {
                     if (typeof startFreeformRequest === 'function') {
@@ -4870,8 +4875,8 @@
         if (hasAnySrc && (composeMatch || 'new from source'.indexOf(qLower) >= 0 || 'source'.indexOf(qLower) === 0)) {
             out.push({
                 group: 'New',
-                label: 'New from source…',
-                sublabel: 'URL bound to a workspace-managed Source',
+                label: t('palette.newFromSource'),
+                sublabel: t('palette.newFromSourceSub'),
                 icon: svgIcon('connect'),
                 onSelect: function () {
                     if (typeof openNewFromSourceDialog === 'function') {
@@ -4920,7 +4925,7 @@
                 if (env.name.toLowerCase().indexOf(qLower) === -1) return;
                 out.push({
                     group: 'Environments',
-                    label: 'Switch to environment: ' + env.name,
+                    label: t('palette.switchEnv', { name: env.name }),
                     sublabel: (Object.keys(env.vars || {}).length) + ' variable'
                         + (Object.keys(env.vars || {}).length === 1 ? '' : 's'),
                     icon: svgIcon('globe'),
@@ -4938,33 +4943,33 @@
         // tab names (General / Shortcuts / Data / Assistant / Plugins)
         // surface a jump. Selecting deep-links via openSettings(tab).
         var settingsTabs = [
-            { id: null,        label: 'Open Settings',            keywords: ['settings', 'preferences', 'options'] },
-            { id: 'general',   label: 'Settings → General',       keywords: ['settings general'] },
-            { id: 'shortcuts', label: 'Settings → Shortcuts',     keywords: ['settings shortcuts', 'keymap', 'bindings'] },
-            { id: 'data',      label: 'Settings → Data',          keywords: ['settings data', 'reset', 'clear'] },
-            { id: 'ai',        label: 'Settings → Assistant',     keywords: ['settings ai', 'assistant', 'llm'] },
-            { id: 'plugins',   label: 'Settings → Plugins',       keywords: ['settings plugins'] },
+            { id: null,        label: t('settings.openSettings'),            keywords: ['settings', 'preferences', 'options'] },
+            { id: 'general',   label: t('palette.settingsGeneral'),       keywords: ['settings general'] },
+            { id: 'shortcuts', label: t('palette.settingsShortcuts'),     keywords: ['settings shortcuts', 'keymap', 'bindings'] },
+            { id: 'data',      label: t('palette.settingsData'),          keywords: ['settings data', 'reset', 'clear'] },
+            { id: 'ai',        label: t('palette.settingsAi'),     keywords: ['settings ai', 'assistant', 'llm'] },
+            { id: 'plugins',   label: t('palette.settingsPlugins'),       keywords: ['settings plugins'] },
             // v2.2 Workspace… sub-tree — one deep-link per sub-page so
             // the command palette lands operators on the right surface
             // instead of the pre-expansion "Workspace settings" pointer.
-            { id: 'workspace-sources',      label: 'Settings → Workspace → Sources',      keywords: ['workspace sources', 'urls', 'servers', 'headers'] },
-            { id: 'workspace-environments', label: 'Settings → Workspace → Environments', keywords: ['workspace environments', 'env', 'variables'] },
-            { id: 'workspace-overrides',    label: 'Settings → Workspace → Overrides',    keywords: ['workspace overrides', 'per-workspace'] },
-            { id: 'workspace-data',         label: 'Settings → Workspace → Data',         keywords: ['workspace data', 'storage', 'clear workspace'] }
+            { id: 'workspace-sources',      label: t('palette.settingsWsSources'),      keywords: ['workspace sources', 'urls', 'servers', 'headers'] },
+            { id: 'workspace-environments', label: t('palette.settingsWsEnvs'), keywords: ['workspace environments', 'env', 'variables'] },
+            { id: 'workspace-overrides',    label: t('palette.settingsWsOverrides'),    keywords: ['workspace overrides', 'per-workspace'] },
+            { id: 'workspace-data',         label: t('palette.settingsWsData'),         keywords: ['workspace data', 'storage', 'clear workspace'] }
         ];
         for (var sti = 0; sti < settingsTabs.length; sti++) {
-            (function (t) {
-                var hay = t.label.toLowerCase() + ' ' + t.keywords.join(' ');
+            (function (cmd) {
+                var hay = cmd.label.toLowerCase() + ' ' + cmd.keywords.join(' ');
                 if (hay.indexOf(qLower) === -1) return;
                 out.push({
                     group: 'Settings',
-                    label: t.label,
-                    sublabel: 'Preferences',
+                    label: cmd.label,
+                    sublabel: t('palette.preferences'),
                     icon: svgIcon('settings'),
                     onSelect: function () {
                         searchSuggestionsOpen = false;
                         searchQuery = '';
-                        if (typeof openSettings === 'function') openSettings(t.id || undefined);
+                        if (typeof openSettings === 'function') openSettings(cmd.id || undefined);
                     }
                 });
             })(settingsTabs[sti]);
@@ -4975,8 +4980,8 @@
         if (('help'.indexOf(qLower) !== -1) || ('docs'.indexOf(qLower) !== -1)) {
             out.push({
                 group: 'Help',
-                label: 'Open Help drawer',
-                sublabel: 'Contextual + topic search',
+                label: t('palette.openHelp'),
+                sublabel: t('palette.helpSub'),
                 icon: svgIcon('help'),
                 onSelect: function () {
                     searchSuggestionsOpen = false;
@@ -4989,19 +4994,19 @@
         if (typeof helpTopics !== 'undefined' && Array.isArray(helpTopics)) {
             var topicMatches = 0;
             for (var hi = 0; hi < helpTopics.length && topicMatches < 5; hi++) {
-                (function (t) {
-                    var hay = ((t.title || '') + ' ' + (t.id || '')).toLowerCase();
+                (function (cmd) {
+                    var hay = ((cmd.title || '') + ' ' + (cmd.id || '')).toLowerCase();
                     if (hay.indexOf(qLower) === -1) return;
                     topicMatches++;
                     out.push({
                         group: 'Help',
-                        label: t.title || t.id,
-                        sublabel: 'Help topic',
+                        label: cmd.title || cmd.id,
+                        sublabel: t('palette.helpTopic'),
                         icon: svgIcon('help'),
                         onSelect: function () {
                             searchSuggestionsOpen = false;
                             searchQuery = '';
-                            if (typeof helpOpenDrawer === 'function') helpOpenDrawer(t.id);
+                            if (typeof helpOpenDrawer === 'function') helpOpenDrawer(cmd.id);
                             else render();
                         }
                     });
@@ -5016,7 +5021,7 @@
         // when?, run }. when() returns false to suppress (e.g. "Stop
         // all mocks" only when there are mocks running).
         var builtinCommands = [
-            { id: 'cmd:start-recording', label: 'Start recording',     icon: 'recording',
+            { id: 'cmd:start-recording', label: t('sidebar.recordings.start'),     icon: 'recording',
               keywords: 'record start capture',
               when: function () { return typeof startRecording === 'function'; },
               run: function () {
@@ -5024,7 +5029,7 @@
                   railMode = 'discover';
                   try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
               } },
-            { id: 'cmd:stop-all-mocks', label: 'Stop all mocks',       icon: 'stop',
+            { id: 'cmd:stop-all-mocks', label: t('palette.stopAllMocks'),       icon: 'stop',
               keywords: 'mock stop disable',
               when: function () { return typeof mocksList !== 'undefined' && Array.isArray(mocksList) && mocksList.length > 0; },
               run: function () {
@@ -5033,10 +5038,10 @@
                       if (typeof stopMock === 'function') stopMock(m.mockId);
                   });
               } },
-            { id: 'cmd:toggle-console', label: 'Toggle Console panel', icon: 'clock',
+            { id: 'cmd:toggle-console', label: t('palette.toggleConsole'), icon: 'clock',
               keywords: 'console log activity terminal',
               run: function () { if (typeof toggleConsole === 'function') toggleConsole(); } },
-            { id: 'cmd:toggle-tests',   label: 'Toggle Tests drawer',  icon: 'beaker',
+            { id: 'cmd:toggle-tests',   label: t('palette.toggleTests'),  icon: 'beaker',
               keywords: 'tests assertions',
               run: function () {
                   if (typeof testsDrawerOpen !== 'undefined') {
@@ -5045,22 +5050,22 @@
                       catch { /* ignore */ }
                   }
               } },
-            { id: 'cmd:toggle-assistant', label: 'Toggle Assistant drawer', icon: 'bot',
+            { id: 'cmd:toggle-assistant', label: t('palette.toggleAssistant'), icon: 'bot',
               keywords: 'assistant ai chat',
               run: function () {
                   aiDrawerOpen = !aiDrawerOpen;
                   try { localStorage.setItem('bowire_ai_drawer_open', aiDrawerOpen ? '1' : '0'); }
                   catch { /* ignore */ }
               } },
-            { id: 'cmd:toggle-sidebar',  label: 'Toggle sidebar',      icon: 'sidebar',
+            { id: 'cmd:toggle-sidebar',  label: t('palette.toggleSidebar'),      icon: 'sidebar',
               keywords: 'sidebar collapse expand',
               run: function () {
                   if (typeof toggleSidebarCollapsed === 'function') toggleSidebarCollapsed();
               } },
-            { id: 'cmd:open-shortcuts',  label: 'Show keyboard shortcuts', icon: 'list',
+            { id: 'cmd:open-shortcuts',  label: t('palette.showShortcuts'), icon: 'list',
               keywords: 'shortcuts cheatsheet keybindings',
               run: function () { if (typeof shortcutSheetOpen !== 'undefined') shortcutSheetOpen = true; } },
-            { id: 'cmd:reset-hints',     label: 'Reset all hints and warnings', icon: 'info',
+            { id: 'cmd:reset-hints',     label: t('palette.resetHints'), icon: 'info',
               keywords: 'hint banner notification reset clear',
               when: function () {
                   return typeof listDismissedHints === 'function' && listDismissedHints().length > 0;
@@ -5204,18 +5209,18 @@
                         tools.appendChild(el('button', {
                             type: 'button',
                             className: 'bowire-env-dropdown-item-rename',
-                            title: 'Rename environment',
-                            'aria-label': 'Rename environment',
+                            title: t('sidebar.envs.rename'),
+                            'aria-label': t('sidebar.envs.rename'),
                             innerHTML: svgIcon('pencil'),
                             onClick: function (ev) {
                                 ev.stopPropagation();
                                 var envId = env.id;
                                 var oldName = env.name || '';
                                 menu.remove();
-                                bowirePrompt('Rename environment', {
-                                    title: 'Rename',
+                                bowirePrompt(t('sidebar.envs.rename'), {
+                                    title: t('sidebar.renameShort'),
                                     defaultValue: oldName,
-                                    confirmText: 'Rename',
+                                    confirmText: t('sidebar.renameShort'),
                                     validator: function (val) {
                                         var trimmed = String(val || '').trim();
                                         if (!trimmed) return 'Name required';
@@ -5223,7 +5228,7 @@
                                         if (typeof _isEnvironmentNameTaken === 'function'
                                             && _isEnvironmentNameTaken(trimmed, envId)) {
                                             if (typeof toast === 'function') {
-                                                toast('An environment named "' + trimmed + '" already exists.', 'error');
+                                                toast(t('env.nameTaken', { name: trimmed }), 'error');
                                             }
                                             return 'Duplicate';
                                         }
@@ -5245,8 +5250,8 @@
                         tools.appendChild(el('button', {
                             type: 'button',
                             className: 'bowire-env-dropdown-item-edit',
-                            title: 'Edit environment',
-                            'aria-label': 'Edit environment',
+                            title: t('env.edit'),
+                            'aria-label': t('env.edit'),
                             innerHTML: svgIcon('settings'),
                             onClick: function (ev) {
                                 ev.stopPropagation();
@@ -5267,8 +5272,8 @@
                         tools.appendChild(el('button', {
                             type: 'button',
                             className: 'bowire-env-dropdown-item-trash',
-                            title: 'Delete environment',
-                            'aria-label': 'Delete environment',
+                            title: t('sidebar.envs.deleteHeading'),
+                            'aria-label': t('sidebar.envs.deleteHeading'),
                             innerHTML: svgIcon('trash'),
                             onClick: function (ev) {
                                 ev.stopPropagation();
@@ -5281,7 +5286,7 @@
                                         if (typeof deleteEnvironment === 'function') deleteEnvironment(envId);
                                         render();
                                     },
-                                    { title: 'Delete environment', confirmText: 'Delete', danger: true }
+                                    { title: t('sidebar.envs.deleteHeading'), confirmText: t('common.delete'), danger: true }
                                 );
                             }
                         }));
@@ -5298,8 +5303,8 @@
                         env && env.provisioned
                             ? el('span', {
                                 className: 'bowire-env-dropdown-item-meta',
-                                textContent: 'from host',
-                                title: 'Declared by the application hosting Bowire. Change it where the '
+                                textContent: t('env.fromHost'),
+                                title: t('env.fromHostTitle')
                                     + 'host is configured — edits here would not survive a restart.'
                             })
                             : null,
@@ -5428,7 +5433,7 @@
         var bar = el('div', { className: 'bowire-env-compare-bar' });
         bar.appendChild(el('span', {
             className: 'bowire-env-compare-label',
-            textContent: 'Compare with'
+            textContent: t('env.compareWith')
         }));
         var select = el('select', {
             id: 'bowire-env-compare-select',
@@ -5443,7 +5448,7 @@
                 render();
             }
         });
-        select.appendChild(el('option', { value: '', textContent: '(none)' }));
+        select.appendChild(el('option', { value: '', textContent: t('env.compareNone') }));
         for (var i = 0; i < allEnvs.length; i++) {
             var opt = allEnvs[i];
             if (opt.id === currentEnv.id) continue;
@@ -5466,7 +5471,7 @@
 
         if (!envB) {
             pane.appendChild(el('div', { className: 'bowire-env-diff-empty',
-                textContent: 'Select an environment to compare against.' }));
+                textContent: t('env.comparePick') }));
             return pane;
         }
 
@@ -5522,14 +5527,14 @@
 
         if (rows.length === 0) {
             pane.appendChild(el('div', { className: 'bowire-env-diff-empty',
-                textContent: 'Both environments are empty.' }));
+                textContent: t('env.compareBothEmpty') }));
             return pane;
         }
 
         var table = el('table', { className: 'bowire-env-diff-table' });
         var thead = el('thead');
         thead.appendChild(el('tr', {},
-            el('th', { textContent: 'Variable' }),
+            el('th', { textContent: t('env.variable') }),
             el('th', { textContent: envA.name }),
             el('th', { textContent: envB.name })
         ));
@@ -5559,14 +5564,14 @@
 
         section.appendChild(el('div', { className: 'bowire-auth-header' },
             el('span', { innerHTML: svgIcon('lock'), className: 'bowire-auth-icon' }),
-            el('span', { className: 'bowire-auth-title', textContent: 'Authentication' })
+            el('span', { className: 'bowire-auth-title', textContent: t('auth.title') })
         ));
 
         var auth = getAuth() || { type: 'none' };
 
         // Type dropdown
         var typeRow = el('div', { className: 'bowire-auth-row' });
-        typeRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: 'Type' }));
+        typeRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: t('auth.type') }));
         var typeSelect = el('select', {
             className: 'bowire-auth-select',
             onChange: function (e) {
@@ -5629,17 +5634,17 @@
             }
         });
         var types = [
-            { value: 'none', label: 'No Auth' },
+            { value: 'none', label: t('auth.none') },
             { value: 'bearer', label: 'Bearer Token' },
-            { value: 'session', label: 'Use my session token (forwards workbench login)' },
+            { value: 'session', label: t('auth.session') },
             { value: 'basic', label: 'Basic Auth' },
             { value: 'apikey', label: 'API Key' },
             { value: 'jwt', label: 'JWT (HMAC / RSA / ECDSA)' },
-            { value: 'oauth2_cc', label: 'OAuth 2.0 (client_credentials)' },
-            { value: 'oauth2_ac', label: 'OAuth 2.0 (authorization_code + PKCE)' },
-            { value: 'custom_token', label: 'Custom Token Endpoint (auto-refresh)' },
-            { value: 'aws_sigv4', label: 'AWS Signature v4 (REST only)' },
-            { value: 'mtls', label: 'mTLS (Client Certificate)' }
+            { value: 'oauth2_cc', label: t('auth.oauthCc') },
+            { value: 'oauth2_ac', label: t('auth.oauthAc') },
+            { value: 'custom_token', label: t('auth.customToken') },
+            { value: 'aws_sigv4', label: t('auth.awsSigv4') },
+            { value: 'mtls', label: t('auth.mtls') }
         ];
         for (var ti = 0; ti < types.length; ti++) {
             var opt = el('option', { value: types[ti].value, textContent: types[ti].label });
@@ -5661,7 +5666,7 @@
             // header on every invoke. No fields to fill in.
             section.appendChild(el('p', {
                 className: 'bowire-auth-session-note',
-                textContent: 'Forwards your workbench login (OIDC / SSO) to the target service as a Bearer header. Only useful when the same identity provider gates both Bowire and the target.'
+                textContent: t('auth.sessionHint')
             }));
         } else if (auth.type === 'basic') {
             section.appendChild(renderAuthField('Username', 'bowire-auth-username', auth.username || '',
@@ -5675,7 +5680,7 @@
             // services (legacy REST APIs, public APIs that want a clickable
             // URL) expect the key in the URL instead of an HTTP header.
             var locRow = el('div', { className: 'bowire-auth-row' });
-            locRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: 'Location' }));
+            locRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: t('auth.location') }));
             var locSel = el('select', {
                 className: 'bowire-auth-select',
                 onChange: function (e) {
@@ -5683,8 +5688,8 @@
                 }
             });
             [
-                { value: 'header', label: 'Header' },
-                { value: 'query', label: 'Query string' }
+                { value: 'header', label: t('rb.tab.header') },
+                { value: 'query', label: t('auth.queryString') }
             ].forEach(function (loc) {
                 var o = el('option', { value: loc.value, textContent: loc.label });
                 if ((auth.location || 'header') === loc.value) o.setAttribute('selected', 'selected');
@@ -5706,7 +5711,7 @@
             // The asymmetric algorithms switch the secret field to a PEM
             // textarea below.
             var algRow = el('div', { className: 'bowire-auth-row' });
-            algRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: 'Algorithm' }));
+            algRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: t('auth.algorithm') }));
             var algSel = el('select', {
                 className: 'bowire-auth-select',
                 onChange: function (e) {
@@ -5719,9 +5724,9 @@
                 }
             });
             var jwtAlgGroups = [
-                { label: 'HMAC (shared secret)', algs: ['HS256', 'HS384', 'HS512'] },
-                { label: 'RSA (PEM private key)', algs: ['RS256', 'RS384', 'RS512'] },
-                { label: 'ECDSA (PEM private key)', algs: ['ES256', 'ES384', 'ES512'] }
+                { label: t('auth.hmac'), algs: ['HS256', 'HS384', 'HS512'] },
+                { label: t('auth.rsa'), algs: ['RS256', 'RS384', 'RS512'] },
+                { label: t('auth.ecdsa'), algs: ['ES256', 'ES384', 'ES512'] }
             ];
             for (var jg = 0; jg < jwtAlgGroups.length; jg++) {
                 var grp = el('optgroup', { label: jwtAlgGroups[jg].label });
@@ -5754,7 +5759,7 @@
                     function (v) { setAuth(Object.assign({}, getAuth(), { secret: v })); }));
                 section.appendChild(el('div', {
                     className: 'bowire-auth-hint',
-                    textContent: 'Tip: convert OpenSSL "RSA/EC PRIVATE KEY" to PKCS#8 with: openssl pkcs8 -topk8 -nocrypt -in old.pem -out new.pem'
+                    textContent: t('auth.pkcs8Hint')
                 }));
             } else {
                 section.appendChild(renderAuthField('Secret', 'bowire-auth-secret', auth.secret || '',
@@ -5790,7 +5795,7 @@
 
             // HTTP method dropdown
             var methRow = el('div', { className: 'bowire-auth-row' });
-            methRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: 'Method' }));
+            methRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: t('rbGrpc.method') }));
             var methSel = el('select', {
                 className: 'bowire-auth-select',
                 onChange: function (e) {
@@ -5851,7 +5856,7 @@
             // Read-only redirect URI hint — users have to register this
             // exact URL with the IdP for the flow to succeed.
             var redirectRow = el('div', { className: 'bowire-auth-row' });
-            redirectRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: 'Redirect URI' }));
+            redirectRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: t('auth.redirectUri') }));
             redirectRow.appendChild(el('input', {
                 className: 'bowire-auth-input',
                 type: 'text',
@@ -5862,14 +5867,14 @@
             section.appendChild(redirectRow);
             section.appendChild(el('div', {
                 className: 'bowire-auth-hint',
-                textContent: 'Register this redirect URI with your identity provider exactly as shown. PKCE (S256) is enabled automatically — no client_secret needed for public clients.'
+                textContent: t('auth.redirectHint')
             }));
 
             section.appendChild(renderOauth2AcStatus(auth));
         } else if (auth.type === 'aws_sigv4') {
             section.appendChild(el('div', {
                 className: 'bowire-auth-hint',
-                textContent: 'AWS Sig v4 only signs REST requests. The REST plugin signs each request right before it goes on the wire — gRPC / SignalR / WebSocket calls ignore this auth type.'
+                textContent: t('auth.awsHint')
             }));
             section.appendChild(renderAuthField('Access Key ID', 'bowire-auth-aws-access', auth.accessKey || '',
                 'AKIA... (supports ${var})', 'text',
@@ -5889,7 +5894,7 @@
         } else if (auth.type === 'mtls') {
             section.appendChild(el('div', {
                 className: 'bowire-auth-hint',
-                textContent: 'mTLS attaches a client certificate to the TLS handshake. Wired into REST, gRPC, WebSocket, and SignalR — every TLS-capable transport in Bowire picks the cert up from the same auth helper.'
+                textContent: t('auth.mtlsHint')
             }));
             section.appendChild(renderAuthTextarea('Client Certificate (PEM)', auth.certificate || '',
                 '-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----',
@@ -5905,7 +5910,7 @@
                 function (v) { setAuth(Object.assign({}, getAuth(), { caCertificate: v })); }));
 
             var allowRow = el('div', { className: 'bowire-auth-row' });
-            allowRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: 'Allow self-signed' }));
+            allowRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: t('auth.allowSelfSigned') }));
             var checkboxWrap = el('div', { className: 'bowire-auth-checkbox-wrap' });
             var allowCheck = el('input', {
                 type: 'checkbox',
@@ -5916,7 +5921,7 @@
             checkboxWrap.appendChild(allowCheck);
             checkboxWrap.appendChild(el('span', {
                 className: 'bowire-auth-checkbox-hint',
-                textContent: 'Skip server certificate validation entirely. Use only against test environments — defeats the purpose of TLS in production.'
+                textContent: t('auth.selfSignedHint')
             }));
             allowRow.appendChild(checkboxWrap);
             section.appendChild(allowRow);
@@ -5930,11 +5935,11 @@
         // so Set-Cookie persists across calls.
         section.appendChild(el('div', {
             className: 'bowire-auth-section-divider',
-            textContent: 'Session cookies'
+            textContent: t('auth.sessionCookies')
         }));
 
         var cookieRow = el('div', { className: 'bowire-auth-row' });
-        cookieRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: 'Persist cookies' }));
+        cookieRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: t('auth.persistCookies') }));
         var cookieWrap = el('div', { className: 'bowire-auth-checkbox-wrap' });
         var cookieCheck = el('input', {
             type: 'checkbox',
@@ -5945,7 +5950,7 @@
         cookieWrap.appendChild(cookieCheck);
         cookieWrap.appendChild(el('span', {
             className: 'bowire-auth-checkbox-hint',
-            textContent: 'Keep Set-Cookie values across requests within this environment. Useful for session-cookie auth (PHP, Rails, classic ASP.NET). REST only.'
+            textContent: t('auth.persistCookiesHint')
         }));
         cookieRow.appendChild(cookieWrap);
         section.appendChild(cookieRow);
@@ -5956,15 +5961,15 @@
             clearRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: '' }));
             var clearBtn = el('button', {
                 className: 'bowire-auth-preview-btn',
-                textContent: 'Clear cookies',
+                textContent: t('auth.clearCookies'),
                 onClick: async function () {
                     var envId = getActiveEnvId();
                     if (!envId) return;
                     try {
                         await fetch(config.prefix + '/api/auth/cookie-jar?env=' + encodeURIComponent(envId), { method: 'DELETE' });
-                        toast('Cookies cleared for this environment.');
+                        toast(t('auth.cookiesCleared'));
                     } catch (e) {
-                        toast('Failed to clear cookies: ' + e.message, 'error');
+                        toast(t('auth.clearCookiesFailed', { reason: e.message }), 'error');
                     }
                 }
             });
@@ -6032,7 +6037,7 @@
 
     function renderOauth2AcStatus(auth) {
         var preview = el('div', { className: 'bowire-auth-preview' });
-        preview.appendChild(el('div', { className: 'bowire-auth-preview-label', textContent: 'Authorization status' }));
+        preview.appendChild(el('div', { className: 'bowire-auth-preview-label', textContent: t('auth.authStatus') }));
 
         var envId = getActiveEnvId();
         var key = oauth2AcCacheKey(envId, auth);
@@ -6075,7 +6080,7 @@
         if (cached) {
             preview.appendChild(el('button', {
                 className: 'bowire-auth-preview-btn',
-                textContent: 'Sign out',
+                textContent: t('userChip.signOut'),
                 onClick: function () {
                     clearOauth2AcTokenCacheForEnv(getActiveEnvId());
                     renderEnvManager();
@@ -6090,11 +6095,11 @@
 
     function renderCustomTokenTestButton(auth) {
         var preview = el('div', { className: 'bowire-auth-preview' });
-        preview.appendChild(el('div', { className: 'bowire-auth-preview-label', textContent: 'Token endpoint test' }));
-        var output = el('div', { className: 'bowire-auth-preview-token', textContent: 'Click Fetch token to test' });
+        preview.appendChild(el('div', { className: 'bowire-auth-preview-label', textContent: t('auth.tokenTest') }));
+        var output = el('div', { className: 'bowire-auth-preview-token', textContent: t('auth.clickFetch') });
         var btn = el('button', {
             className: 'bowire-auth-preview-btn',
-            textContent: 'Fetch token',
+            textContent: t('auth.fetchToken'),
             onClick: async function () {
                 clearCustomTokenCache();
                 try {
@@ -6130,11 +6135,11 @@
 
     function renderJwtPreview(auth) {
         var preview = el('div', { className: 'bowire-auth-preview' });
-        preview.appendChild(el('div', { className: 'bowire-auth-preview-label', textContent: 'Preview (signed token)' }));
-        var output = el('div', { className: 'bowire-auth-preview-token', textContent: 'Click Sign to preview' });
+        preview.appendChild(el('div', { className: 'bowire-auth-preview-label', textContent: t('auth.previewSigned') }));
+        var output = el('div', { className: 'bowire-auth-preview-token', textContent: t('auth.clickSign') });
         var btn = el('button', {
             className: 'bowire-auth-preview-btn',
-            textContent: 'Sign',
+            textContent: t('auth.sign'),
             onClick: async function () {
                 try {
                     var jwt = await buildJwt(auth);
@@ -6155,11 +6160,11 @@
 
     function renderOauthTestButton(auth) {
         var preview = el('div', { className: 'bowire-auth-preview' });
-        preview.appendChild(el('div', { className: 'bowire-auth-preview-label', textContent: 'Token endpoint test' }));
-        var output = el('div', { className: 'bowire-auth-preview-token', textContent: 'Click Fetch token to test' });
+        preview.appendChild(el('div', { className: 'bowire-auth-preview-label', textContent: t('auth.tokenTest') }));
+        var output = el('div', { className: 'bowire-auth-preview-token', textContent: t('auth.clickFetch') });
         var btn = el('button', {
             className: 'bowire-auth-preview-btn',
-            textContent: 'Fetch token',
+            textContent: t('auth.fetchToken'),
             onClick: async function () {
                 output.textContent = 'Fetching...';
                 output.classList.remove('ok', 'error');
