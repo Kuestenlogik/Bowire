@@ -836,7 +836,8 @@
                 }));
                 item.appendChild(el('span', {
                     className: 'bowire-settings-hints-scope',
-                    textContent: h.scope === 'permanent' ? 'permanent' : 'this session'
+                    textContent: h.scope === 'permanent'
+    ? t('settings.scopePermanent') : t('settings.scopeSession')
                 }));
                 item.appendChild(el('button', {
                     type: 'button',
@@ -873,7 +874,7 @@
         var cmdRow = el('div', { style: 'display:flex;align-items:center;gap:4px' });
         var cmdCode = el('code', {
             style: 'font-size:11px;color:var(--bowire-text-secondary);background:var(--bowire-bg-elevated);padding:2px 6px;border-radius:3px',
-            textContent: 'bowire --enable-mcp-adapter'
+            textContent: 'bowire --enable-mcp-adapter'  // i18n-exempt: the command a user types, not Bowire's prose
         });
         var copyBtn = el('button', {
             type: 'button',
@@ -939,7 +940,7 @@
                 className: 'bowire-settings-rail-row' + (locked ? ' is-locked' : ''),
                 title: locked
                     ? 'Always-on — cannot be disabled'
-                    : (enabled ? 'Currently visible on the rail' : 'Currently hidden — toggle to show')
+                    : (enabled ? t('settings.railVisible') : t('settings.railHidden'))
             });
             var input = el('input', {
                 type: 'checkbox',
@@ -1133,7 +1134,7 @@
         }
 
         if (!protocols || protocols.length === 0) {
-            section.appendChild(_renderEmptyExtensionPointCard('protocol plugins'));
+            section.appendChild(_renderEmptyExtensionPointCard(t('settings.ext.protocolPlugins')));
             // Still surface the installed-sibling list so the operator
             // sees what's on disk even when no protocol descriptors
             // have come back yet (e.g. plugin load failed — health
@@ -1182,7 +1183,9 @@
                 style: 'background:none;color:var(--bowire-text-tertiary);margin-top:18px',
                 textContent: (hiddenSectionExpanded ? '▾ ' : '▸ ')
                     + hiddenProtocols.length
-                    + (hiddenProtocols.length === 1 ? ' hidden protocol' : ' hidden protocols'),
+                    // #688 - one message, two shapes.
++ ' ' + t(hiddenProtocols.length === 1 ? 'settings.hiddenProtocolOne'
+    : 'settings.hiddenProtocolMany'),
                 title: t('settings.protocols.hiddenNote'),
                 onClick: function () {
                     hiddenSectionExpanded = !hiddenSectionExpanded;
@@ -1275,7 +1278,7 @@
             typeof bowirePrompt === 'function'
                 ? bowirePrompt(t('settings.plugins.installPrompt'), {
                     title: t('settings.plugins.installTitle'),
-                    placeholder: 'Kuestenlogik.Bowire.Protocol.Kafka',
+                    placeholder: 'Kuestenlogik.Bowire.Protocol.Kafka',  // i18n-exempt: an example package id a user replaces
                     confirmText: t('settings.plugins.installConfirm'),
                     // Catch the two mistakes the backend can only answer
                     // with a slow NuGet round-trip: an empty id and a
@@ -1310,13 +1313,26 @@
             .then(function (result) {
                 pluginActionInFlight = null;
                 pluginActionResult = result.ok
-                    ? { ok: true, summary: 'Installed ' + pkg, detail: (result.data && result.data.output) || '' }
-                    : { ok: false, summary: 'Failed to install ' + pkg, detail: (result.data && (result.data.detail || result.data.stdout || result.data.output)) || '' };
+                    ? {
+    ok: true,
+    summary: t('settings.plugin.installed', { package: pkg }),
+    detail: (result.data && result.data.output) || ''
+}
+                    : {
+    ok: false,
+    summary: t('settings.plugin.installFailed', { package: pkg }),
+    detail: (result.data
+        && (result.data.detail || result.data.stdout || result.data.output)) || ''
+};
                 fetchInstalledPlugins();
             })
             .catch(function (err) {
                 pluginActionInFlight = null;
-                pluginActionResult = { ok: false, summary: 'Failed to install ' + pkg, detail: String(err) };
+                pluginActionResult = {
+    ok: false,
+    summary: t('settings.plugin.installFailed', { package: pkg }),
+    detail: String(err)
+};
                 renderSettingsDialog();
             });
     }
@@ -1378,7 +1394,7 @@
             return ai < bi ? -1 : ai > bi ? 1 : 0;
         });
         if (extensions.length === 0) {
-            section.appendChild(_renderEmptyExtensionPointCard('UI widgets'));
+            section.appendChild(_renderEmptyExtensionPointCard(t('settings.ext.uiWidgets')));
             // Surface the suggestion table so the operator sees which
             // widget packages exist even when none are installed yet.
             section.appendChild(_renderSuggestedExtensionsCard());
@@ -1653,7 +1669,7 @@
                     value: '',
                     placeholder: notApplicable
                         ? '(not used by this provider)'
-                        : (hasExistingKey ? '••••••••••• (leave blank to keep)' : 'sk-...'),
+                        : (hasExistingKey ? t('settings.keepExisting') : 'sk-...'),  // i18n-exempt: the shape of an OpenAI key, not prose
                     autocomplete: 'off',
                     spellcheck: false
                 });
@@ -1764,7 +1780,7 @@
             })
             .catch(function (err) {
                 aiSettingsState.saving = false;
-                aiSettingsState.result = { kind: 'err', text: err && err.message ? err.message : 'Remove failed.' };
+                aiSettingsState.result = { kind: 'err', text: err && err.message ? err.message : t('settings.removeFailed') };
                 renderSettingsDialog();
             });
     }
@@ -1869,7 +1885,7 @@
             section.appendChild(el('div', {
                 className: 'bowire-settings-help',
                 style: 'font-family: var(--bowire-font-mono, monospace); margin-top: 8px;',
-                textContent: 'dotnet add package Kuestenlogik.Bowire.Ai'
+                textContent: 'dotnet add package Kuestenlogik.Bowire.Ai'  // i18n-exempt: the command a user types, not Bowire's prose
             }));
             section.appendChild(el('p', {
                 className: 'bowire-settings-help',
@@ -2058,13 +2074,14 @@
         var saveRow = el('div', { className: 'bowire-settings-row bowire-settings-ai-save-row' });
         var saveGlobalBtn = el('button', {
             className: 'bowire-settings-action-btn',
-            textContent: aiSettingsState.saving ? 'Saving…' : 'Save as global default',
+            textContent: aiSettingsState.saving ? t('settings.saving') : t('settings.saveGlobal'),
             title: t('settings.assistant.globalTitle'),
             onClick: function () { saveAiSettings('global'); }
         });
         var saveWsBtn = wsName ? el('button', {
             className: 'bowire-settings-action-btn bowire-ai-save-ws-btn',
-            textContent: aiSettingsState.saving ? '…' : 'Save for "' + wsName + '" only',
+            textContent: aiSettingsState.saving
+    ? '…' : t('settings.saveForWorkspace', { name: wsName }),
             title: t('settings.assistant.wsTitle'),
             onClick: function () { saveAiSettings('workspace'); }
         }) : null;
@@ -2073,7 +2090,7 @@
             if (saveWsBtn) saveWsBtn.setAttribute('disabled', 'disabled');
         }
         if (hostManaged) {
-            saveGlobalBtn.textContent = aiSettingsState.saving ? 'Saving…' : 'Save as global default (host-managed)';
+            saveGlobalBtn.textContent = aiSettingsState.saving ? t('settings.saving') : t('settings.saveGlobalHosted');
         }
         var resultBox = el('span', { className: 'bowire-settings-ai-result' });
         if (aiSettingsState.result) {
@@ -2354,7 +2371,7 @@
         if (info.available) {
             statusBar.appendChild(el('span', {
                 className: 'bowire-settings-catalogue-status-source',
-                textContent: override.hasOverride ? 'Source: UI override' : 'Source: appsettings.json'
+                textContent: override.hasOverride ? t('settings.sourceOverride') : t('settings.sourceAppsettings')
             }));
         }
         if (typeof discoveryState.entryCount === 'number') {
@@ -2373,7 +2390,7 @@
             { id: '', label: t('settings.cat.none'), desc: t('settings.cat.noneDesc') },
             { id: 'local', label: t('settings.cat.local'), desc: t('settings.cat.localDesc') },
             { id: 'http', label: t('settings.cat.http'), desc: t('settings.cat.httpDesc') },
-            { id: 'consul', label: 'Consul', desc: t('settings.cat.consulDesc') },
+            { id: 'consul', label: 'Consul', desc: t('settings.cat.consulDesc') },  // i18n-exempt: the name of a third-party package, licence or product
             // #136 — k8s + agent providers ship in sibling packages
             // (Kuestenlogik.Bowire.Catalogue.Kubernetes / .Agent).
             // The provider registry's assembly-scan picks them up
@@ -2382,7 +2399,7 @@
             // with a missing package surfaces as a clear "provider
             // not loaded" message when the registry tries to resolve
             // it, instead of silently being unavailable.
-            { id: 'kubernetes', label: 'Kubernetes', package: 'Kuestenlogik.Bowire.Catalogue.Kubernetes', desc: t('settings.cat.k8sDesc') },
+            { id: 'kubernetes', label: 'Kubernetes', package: 'Kuestenlogik.Bowire.Catalogue.Kubernetes', desc: t('settings.cat.k8sDesc') },  // i18n-exempt: the name of a third-party package, licence or product
             { id: 'agent', label: t('settings.cat.agent'), package: 'Kuestenlogik.Bowire.Catalogue.Agent', desc: t('settings.cat.agentDesc') }
         ];
         // #537 — GET /api/catalogue/info now reports which provider
@@ -2491,7 +2508,7 @@
                         type: 'password',
                         className: 'bowire-settings-input bowire-settings-apikey-input',
                         value: '',
-                        placeholder: draft.httpAuthorizationSet ? '••••••••••• (leave blank to keep)' : 'Bearer …',
+                        placeholder: draft.httpAuthorizationSet ? t('settings.keepExisting') : 'Bearer …',  // i18n-exempt: the shape of an Authorization header value
                         autocomplete: 'off',
                         spellcheck: false
                     });
@@ -2532,7 +2549,7 @@
                         type: 'password',
                         className: 'bowire-settings-input bowire-settings-apikey-input',
                         value: '',
-                        placeholder: draft.consulTokenSet ? '••••••••••• (leave blank to keep)' : 'Consul ACL token',
+                        placeholder: draft.consulTokenSet ? t('settings.keepExisting') : t('settings.consulToken'),
                         autocomplete: 'off',
                         spellcheck: false
                     });
@@ -2614,7 +2631,7 @@
                         type: 'password',
                         className: 'bowire-settings-input bowire-settings-apikey-input',
                         value: '',
-                        placeholder: draft.k8sTokenSet ? '••••••••••• (leave blank to keep)' : 'Bearer token',
+                        placeholder: draft.k8sTokenSet ? t('settings.keepExisting') : t('mocks.authBearer'),
                         autocomplete: 'off',
                         spellcheck: false
                     });
@@ -2740,7 +2757,7 @@
                         type: 'password',
                         className: 'bowire-settings-input bowire-settings-apikey-input',
                         value: '',
-                        placeholder: draft.agentBootstrapTokenSet ? '••••••••••• (leave blank to keep)' : 'Bearer …',
+                        placeholder: draft.agentBootstrapTokenSet ? t('settings.keepExisting') : 'Bearer …',  // i18n-exempt: the shape of an Authorization header value
                         autocomplete: 'off',
                         spellcheck: false
                     });
@@ -2781,7 +2798,7 @@
 
         var saveBtn = el('button', {
             className: 'bowire-settings-action-btn',
-            textContent: discoveryState.saving ? 'Saving…' : (draft.providerId ? 'Save and apply' : 'Clear UI override'),
+            textContent: discoveryState.saving ? t('settings.saving') : (draft.providerId ? t('settings.saveApply') : t('settings.clearOverride')),
             disabled: discoveryState.saving ? true : undefined,
             onClick: function () { saveDiscoverySettings(); }
         });
@@ -2789,7 +2806,7 @@
 
         var testBtn = el('button', {
             className: 'bowire-settings-action-btn bowire-settings-catalogue-test',
-            textContent: discoveryState.testing ? 'Testing…' : 'Test connection',
+            textContent: discoveryState.testing ? t('settings.testing') : t('settings.testConnection'),
             disabled: discoveryState.testing ? true : undefined,
             title: t('settings.cat.infoTitle'),
             onClick: function () { testDiscoveryConnection(); }
@@ -2798,7 +2815,7 @@
 
         var refreshBtn = el('button', {
             className: 'bowire-settings-action-btn bowire-settings-catalogue-refresh',
-            textContent: discoveryState.refreshing ? 'Refreshing…' : 'Refresh now',
+            textContent: discoveryState.refreshing ? t('settings.refreshing') : t('monitoring.refreshNow'),
             disabled: discoveryState.refreshing ? true : undefined,
             title: t('settings.cat.refreshTitle'),
             onClick: function () { refreshDiscoveryEntries(); }
@@ -3292,7 +3309,7 @@
                     }),
                     el('span', {
                         style: 'flex:1;font-size:12px;font-weight:' + (isActive ? '600' : '500'),
-                        textContent: env.name + (isActive ? ' · active' : '')
+                        textContent: env.name + (isActive ? ' · ' + t('settings.envActive') : '')
                     }),
                     el('span', {
                         style: 'font-size:11px;color:var(--bowire-text-tertiary)',
@@ -3580,7 +3597,7 @@
                         },
                         logAction: {
                             kind: 'settings-reset', rail: 'settings',
-                            title: 'Reset all settings (' + keyCount + ' keys snapshotted)',
+                            title: 'Reset all settings (' + keyCount + ' keys snapshotted)',  // i18n-exempt: the action log stores rendered text, see #689
                             undoSpec: { entries: snapshot }
                         }
                     });
@@ -3611,7 +3628,7 @@
                     toast(t('settings.data.historyCleared'), 'success', {
                         undo: function () { restoreHistory(backup); },
                         logAction: { kind: 'history-clear', rail: 'settings',
-                            title: 'Cleared call history (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)',
+                            title: 'Cleared call history (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)',  // i18n-exempt: the action log stores rendered text, see #689
                             undoSpec: { entries: backup },
                             redo: function () { clearHistory(); } }
                     });
@@ -3631,7 +3648,7 @@
                     toast(t('settings.data.favoritesCleared'), 'success', {
                         undo: function () { try { localStorage.setItem(wsKey(FAVORITES_KEY), JSON.stringify(backup)); } catch {} render(); },
                         logAction: { kind: 'favorites-clear', rail: 'settings',
-                            title: 'Cleared favorites (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)',
+                            title: 'Cleared favorites (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)',  // i18n-exempt: the action log stores rendered text, see #689
                             undoSpec: { entries: backup },
                             redo: function () { try { localStorage.removeItem(wsKey(FAVORITES_KEY)); } catch {} render(); } }
                     });
@@ -3696,7 +3713,7 @@
                         },
                         logAction: {
                             kind: 'recordings-clear', rail: 'recordings',
-                            title: 'Cleared recordings (' + snapshot.length + ' entries)',
+                            title: 'Cleared recordings (' + snapshot.length + ' entries)',  // i18n-exempt: the action log stores rendered text, see #689
                             undoSpec: { entries: snapshot }
                         }
                     });
@@ -3756,7 +3773,7 @@
                         },
                         logAction: {
                             kind: 'collections-clear', rail: 'collections',
-                            title: 'Cleared collections (' + snapshot.length + ' entries)',
+                            title: 'Cleared collections (' + snapshot.length + ' entries)',  // i18n-exempt: the action log stores rendered text, see #689
                             undoSpec: { entries: snapshot }
                         }
                     });
@@ -3986,17 +4003,17 @@
     // the panel doesn't spam the user with all 18 individual NuGet refs.
     // For the full transitive set, point at GitHub / nuget.org.
     var BOWIRE_OSS_NOTICES = [
-        { name: 'gRPC for .NET',                license: 'Apache-2.0', url: 'https://github.com/grpc/grpc-dotnet',                            note: 'Grpc.AspNetCore, Grpc.Net.Client, Grpc.Reflection, Google.Protobuf, Google.Api.CommonProtos' },
-        { name: 'MQTTnet',                      license: 'MIT',        url: 'https://github.com/dotnet/MQTTnet',                              note: 'MQTTnet, MQTTnet.Server' },
+        { name: 'gRPC for .NET',                license: 'Apache-2.0', url: 'https://github.com/grpc/grpc-dotnet',                            note: 'Grpc.AspNetCore, Grpc.Net.Client, Grpc.Reflection, Google.Protobuf, Google.Api.CommonProtos' },  // i18n-exempt: the name of a third-party package, licence or product
+        { name: 'MQTTnet',                      license: 'MIT',        url: 'https://github.com/dotnet/MQTTnet',                              note: 'MQTTnet, MQTTnet.Server' },  // i18n-exempt: the name of a third-party package, licence or product
         { name: 'GraphQL-Parser',               license: 'MIT',        url: 'https://github.com/graphql-dotnet/parser',                       note: '' },
-        { name: 'Microsoft.OpenApi',            license: 'MIT',        url: 'https://github.com/microsoft/OpenAPI.NET',                       note: 'Microsoft.OpenApi, Microsoft.OpenApi.YamlReader' },
+        { name: 'Microsoft.OpenApi',            license: 'MIT',        url: 'https://github.com/microsoft/OpenAPI.NET',                       note: 'Microsoft.OpenApi, Microsoft.OpenApi.YamlReader' },  // i18n-exempt: the name of a third-party package, licence or product
         { name: 'Microsoft.OData.Edm',          license: 'MIT',        url: 'https://github.com/OData/odata.net',                             note: '' },
-        { name: 'Microsoft.AspNetCore.SignalR', license: 'MIT',        url: 'https://github.com/dotnet/aspnetcore',                           note: 'Microsoft.AspNetCore.SignalR.Client' },
-        { name: 'Model Context Protocol SDK',   license: 'MIT',        url: 'https://github.com/modelcontextprotocol/csharp-sdk',             note: 'ModelContextProtocol, ModelContextProtocol.AspNetCore' },
+        { name: 'Microsoft.AspNetCore.SignalR', license: 'MIT',        url: 'https://github.com/dotnet/aspnetcore',                           note: 'Microsoft.AspNetCore.SignalR.Client' },  // i18n-exempt: the name of a third-party package, licence or product
+        { name: 'Model Context Protocol SDK',   license: 'MIT',        url: 'https://github.com/modelcontextprotocol/csharp-sdk',             note: 'ModelContextProtocol, ModelContextProtocol.AspNetCore' },  // i18n-exempt: the name of a third-party package, licence or product
         { name: 'SocketIOClient',               license: 'MIT',        url: 'https://github.com/doghappy/socket.io-client-csharp',            note: '' },
         { name: 'NuGet.Protocol',               license: 'Apache-2.0', url: 'https://github.com/NuGet/NuGet.Client',                          note: '' },
         { name: 'System.CommandLine',           license: 'MIT',        url: 'https://github.com/dotnet/command-line-api',                     note: '' },
-        { name: '.NET runtime + ASP.NET Core',  license: 'MIT',        url: 'https://github.com/dotnet/runtime',                              note: 'Foundation libraries Bowire runs on' }
+        { name: '.NET runtime + ASP.NET Core',  license: 'MIT',        url: 'https://github.com/dotnet/runtime',                              note: 'Foundation libraries Bowire runs on' }  // i18n-exempt: the name of a third-party package, licence or product
     ];
 
     function renderAboutContent() {
@@ -4012,13 +4029,15 @@
                 innerHTML: svgIcon('bowireLogo')
             }),
             el('div', { className: 'bowire-settings-about-brand-text' },
-                el('div', { className: 'bowire-settings-about-brand-name', textContent: 'Bowire' }),
+                el('div', { className: 'bowire-settings-about-brand-name', textContent: 'Bowire' }),  // i18n-exempt: the product name
                 // Order: name → tagline → version. User feedback: the
                 // version was visually separating the name from the
                 // tagline; reading it bottom-up communicates 'what is
                 // this thing' before 'which version is it'.
                 el('div', { className: 'bowire-settings-about-brand-tagline', textContent: t('settings.about.tagline') }),
-                el('div', { className: 'bowire-settings-about-brand-version', textContent: 'Version ' + (config.version || 'unknown') })
+                el('div', { className: 'bowire-settings-about-brand-version', textContent: t('settings.version', {
+    version: config.version || t('settings.versionUnknown')
+}) })
             )
         ));
 
@@ -4104,7 +4123,7 @@
                 href: 'https://github.com/Kuestenlogik',
                 target: '_blank',
                 rel: 'noopener',
-                'aria-label': 'Küstenlogik'
+                'aria-label': 'Küstenlogik'  // i18n-exempt: the company name
             },
                 el('img', { src: lockupSrc || '', alt: 'Küstenlogik', className: 'bowire-settings-about-madeby-lockup' })
             )
@@ -4309,7 +4328,7 @@
             title: hidden
                 ? 'Show this protocol in your sidebar again. Only your own view — nobody else is affected.'
                 : 'Hide this protocol from your sidebar. Only your own view: it stays loaded, still discovers, and still answers when you call it.',
-            textContent: hidden ? 'Show' : 'Hide',
+            textContent: hidden ? t('settings.show') : t('mocks.hide'),
             onClick: function () { _setProtocolHidden(pluginId, !hidden); }
         });
     }
@@ -4456,7 +4475,7 @@
         // slot the protocol row uses for its checkbox.
         var pill = el('span', {
             className: 'bowire-settings-extension-status is-' + meta.status,
-            textContent: meta.status === 'installed' ? 'Installed' : 'Suggested'
+            textContent: meta.status === 'installed' ? t('settings.installed') : t('settings.suggested')
         });
         row.appendChild(pill);
         return row;
@@ -4805,7 +4824,7 @@
                     : !mayAdminister
                         ? notAdminTitle
                         : '',
-            textContent: busy ? 'Working…' : 'Update',
+            textContent: busy ? t('settings.working') : t('settings.update'),
             onClick: function () {
                 if (!bundled && !machineWide && mayAdminister) runPluginAction(pkgId, 'update');
             }
@@ -4933,7 +4952,7 @@
                             el('span', {
                                 className: 'bowire-plugin-inspect-loaded'
                                     + (loaded ? ' is-loaded' : ' is-unloaded'),
-                                textContent: loaded ? 'loaded' : 'declared (not loaded)'
+                                textContent: loaded ? t('settings.plugin.loaded') : t('settings.plugin.declared')
                             })
                         ));
                     });
@@ -5079,8 +5098,10 @@
                     }
                     : {
                         ok: false,
-                        summary: 'Failed to ' + verb + ' ' + packageId,
-                        detail: (result.data && (result.data.detail || result.data.stdout || result.data.output)) || ''
+                        summary: t(verb === 'update' ? 'settings.plugin.updateFailed'
+                            : 'settings.plugin.uninstallFailed', { package: packageId }),
+                        detail: (result.data
+                            && (result.data.detail || result.data.stdout || result.data.output)) || ''
                     };
                 fetchInstalledPlugins();
             })
@@ -5088,7 +5109,8 @@
                 pluginActionInFlight = null;
                 pluginActionResult = {
                     ok: false,
-                    summary: 'Failed to ' + verb + ' ' + packageId,
+                    summary: t(verb === 'update' ? 'settings.plugin.updateFailed'
+                        : 'settings.plugin.uninstallFailed', { package: packageId }),
                     detail: String(err)
                 };
                 renderSettingsDialog();

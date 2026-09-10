@@ -131,10 +131,15 @@ export function looksLikeProse(raw) {
     // are #688's, and counting them here would only make that ticket's work
     // look like this one's.
     if (s !== s.trim() && /^[a-z0-9]+([-_][a-z0-9]+)*$/.test(s.trim())) return false;
-    // A URL, a path, a selector, a template, a tag, a format string.
-    if (/^(https?:|\/|\.|#|\{|<|%)/.test(s)) return false;
+    // A URL, a path, a query string, a selector, a template, a tag, a format
+    // string. The leading character is enough to tell all of them from prose.
+    if (/^(https?:|\/|\.|#|\{|<|%|\?|&)/.test(s)) return false;
     // A CSS value or declaration: translateX(16px), transform:translateX(0).
     if (/^[A-Za-z-]+\(/.test(s) || /^[a-z-]+:[^\s]/.test(s)) return false;
+    // Every CSS class in this codebase is prefixed `bowire-`, so a string that
+    // starts with it is markup, even when it carries spaces because two
+    // classes were written together.
+    if (s.startsWith('bowire-')) return false;
     // kebab-case and snake_case identifiers: class names, ids, event names.
     if (/^[a-z0-9]+([-_][a-z0-9]+)*$/.test(s)) return false;
     // A dotted or camelCase identifier with no space and no initial capital.
