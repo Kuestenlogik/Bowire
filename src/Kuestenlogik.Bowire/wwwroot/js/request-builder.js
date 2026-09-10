@@ -40,19 +40,27 @@
     var HOPP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
     // Always-present tail tabs shared across every protocol.
     var RB_COMMON_TAIL_TABS = [
-        { id: 'auth', label: 'Auth' },
-        { id: 'pre',  label: 'Pre-script' },
-        { id: 'post', label: 'Post-script' },
-        { id: 'vars', label: 'Variables' }
+        { id: 'auth', labelKey: 'rb.tab.auth' },
+        { id: 'pre',  labelKey: 'rb.tab.pre' },
+        { id: 'post', labelKey: 'rb.tab.post' },
+        { id: 'vars', labelKey: 'rb.tab.vars' }
     ];
+    // A tab entry carries either a catalogue key (Bowire's own tab names)
+    // or a literal label (a protocol's, like JSON or QoS). The lists live
+    // partly in module constants evaluated at load and partly in subTabs()
+    // functions evaluated at render, so resolving here covers both.
+    function rbLabel(entry) {
+        return entry.labelKey ? t(entry.labelKey) : entry.label;
+    }
+
     var HOPP_BODY_MODES = [
         { id: 'json',   label: 'JSON' },
-        { id: 'form',   label: 'Form'   },
-        { id: 'raw',    label: 'Raw' },
-        { id: 'binary', label: 'Binary' }
+        { id: 'form',   labelKey: 'rb.body.form' },
+        { id: 'raw',    labelKey: 'rb.body.raw' },
+        { id: 'binary', labelKey: 'rb.body.binary' }
     ];
     var HOPP_AUTH_KINDS = [
-        { id: 'none',   label: 'None'   },
+        { id: 'none',   labelKey: 'rb.auth.none' },
         { id: 'bearer', label: 'Bearer Token' },
         { id: 'basic',  label: 'Basic Auth' },
         { id: 'apikey', label: 'API Key' }
@@ -447,7 +455,7 @@
         // anymore.
         var tabs = typeof layout.subTabs === 'function' ? layout.subTabs(fr) : [];
         if (tabs.length > 0) {
-            var has = tabs.some(function (t) { return t.id === fr._requestBuilder.activeTab; });
+            var has = tabs.some(function (entry) { return entry.id === fr._requestBuilder.activeTab; });
             if (!has) fr._requestBuilder.activeTab = tabs[0].id;
         }
     }
@@ -643,7 +651,7 @@
             'data-protocol': active ? active.id : 'rest',
             'aria-haspopup': 'listbox',
             'aria-expanded': rbProtocolMenuOpen ? 'true' : 'false',
-            title: 'Wire protocol',
+            title: t('rb.protocolTitle'),
             onClick: function (e) {
                 e.stopPropagation();
                 rbProtocolMenuOpen = !rbProtocolMenuOpen;
@@ -826,7 +834,7 @@
             type: 'button',
             // See id-free rationale in _renderRequestBuilder.
             className: 'bowire-request-builder-send-caret' + (rbSendMenuOpen ? ' is-open' : ''),
-            title: 'More execute options',
+            title: t('rb.moreExecute'),
             'aria-haspopup': 'menu',
             'aria-expanded': rbSendMenuOpen ? 'true' : 'false',
             onClick: function (e) {
@@ -852,7 +860,7 @@
                 }
             },
                 el('span', { innerHTML: svgIcon('play'), style: 'width:14px;height:14px;display:flex' }),
-                el('span', { textContent: 'Execute once' })
+                el('span', { textContent: t('rb.executeOnce') })
             ));
             sendMenu.appendChild(el('button', {
                 className: 'bowire-request-builder-send-menu-item',
@@ -875,7 +883,7 @@
                 }
             },
                 el('span', { innerHTML: svgIcon('folder'), style: 'width:14px;height:14px;display:flex' }),
-                el('span', { textContent: 'Save to collection…' })
+                el('span', { textContent: t('rb.saveToCollection') })
             ));
             // #295 Phase F — Save as preset on the request-builder
             // bar. Mirrors the Discover header's affordance so a
@@ -888,23 +896,25 @@
                     onClick: function () {
                         rbSendMenuOpen = false;
                         if (typeof bowirePrompt !== 'function') return;
-                        bowirePrompt('Preset name', {
-                            title: 'Save as preset',
-                            placeholder: (fr.method || 'request') + ' preset',
-                            confirmText: 'Save'
+                        bowirePrompt(t('presets.save.promptMessage'), {
+                            title: t('rb.presetPromptTitle'),
+                            placeholder: t('rb.presetPlaceholder', {
+                                method: fr.method || t('rb.presetFallbackMethod')
+                            }),
+                            confirmText: t('common.save')
                         }).then(function (name) {
                             if (!name) return;
                             var snap = _snapshotHoppForCollection(fr);
                             savePresetFromSnapshot('discover', String(name).trim(), snap);
                             if (typeof toast === 'function') {
-                                toast('Preset saved', 'success');
+                                toast(t('rb.presetSaved'), 'success');
                             }
                             render();
                         });
                     }
                 },
                     el('span', { innerHTML: svgIcon('pin'), style: 'width:14px;height:14px;display:flex' }),
-                    el('span', { textContent: 'Save as preset…' })
+                    el('span', { textContent: t('rb.savePreset') })
                 ));
             }
             // #290 — Benchmark variant. Wired to the existing
@@ -923,7 +933,7 @@
                     }
                 },
                     el('span', { innerHTML: svgIcon('lightning'), style: 'width:14px;height:14px;display:flex' }),
-                    el('span', { textContent: 'Execute as benchmark' })
+                    el('span', { textContent: t('rb.executeAsBenchmark') })
                 ));
             }
             sendWrap.appendChild(sendMenu);
@@ -968,7 +978,7 @@
             type: 'button',
             // See id-free rationale in _renderRequestBuilder.
             className: 'bowire-request-builder-history-btn' + (rbHistoryMenuOpen ? ' is-open' : ''),
-            title: 'Recent requests (' + rbHistoryList.length + ')',
+            title: t('rb.history.title', { count: rbHistoryList.length }),
             'aria-haspopup': 'menu',
             'aria-expanded': rbHistoryMenuOpen ? 'true' : 'false',
             onClick: function (e) {
@@ -988,20 +998,19 @@
             // Header strip with a Clear-all action.
             menu.appendChild(el('div', { className: 'bowire-request-builder-history-head' },
                 el('span', { className: 'bowire-request-builder-history-head-label',
-                    textContent: 'Recent (' + rbHistoryList.length + ')' }),
+                    textContent: t('rb.history.head', { count: rbHistoryList.length }) }),
                 el('button', {
                     type: 'button',
                     className: 'bowire-request-builder-history-clear',
-                    title: 'Clear history',
+                    title: t('rb.history.clearTitle'),
                     onClick: function () {
                         // Confirmation is the operator's only seatbelt
                         // since cleared history can't be restored.
                         if (typeof bowireConfirm === 'function') {
                             bowireConfirm({
-                                title: 'Clear bar history?',
-                                body: 'Removes all ' + rbHistoryList.length
-                                    + ' entries for this workspace. Cannot be undone.',
-                                confirmLabel: 'Clear',
+                                title: t('rb.history.clearHeading'),
+                                body: t('rb.history.clearBody', { count: rbHistoryList.length }),
+                                confirmLabel: t('rb.history.clear'),
                                 onConfirm: clearHoppHistory
                             });
                         } else if (typeof bowireConfirm === 'function') {
@@ -1009,14 +1018,14 @@
                             // the whole page and is unavailable in some
                             // embedded hosts (see bowirePrompt's note).
                             bowireConfirm(
-                                'Clear ' + rbHistoryList.length + ' history entries? Cannot be undone.',
+                                t('rb.history.clearFallback', { count: rbHistoryList.length }),
                                 clearHoppHistory,
-                                { confirmText: 'Clear', danger: true });
+                                { confirmText: t('rb.history.clear'), danger: true });
                         } else {
                             clearHoppHistory();
                         }
                     },
-                    textContent: 'Clear'
+                    textContent: t('rb.history.clear')
                 })
             ));
             // Up to RB_HISTORY_CAP entries — render newest first
@@ -1128,26 +1137,26 @@
         // (defensive — startHoppRequest + rbSetProtocol both snap too,
         // but a hand-loaded request from disk may carry a stale id).
         var activeId = fr._requestBuilder.activeTab;
-        if (!tabs.some(function (t) { return t.id === activeId; })
+        if (!tabs.some(function (entry) { return entry.id === activeId; })
             && tabs.length > 0) {
             fr._requestBuilder.activeTab = tabs[0].id;
             activeId = tabs[0].id;
         }
-        tabs.forEach(function (t) {
-            var badgeCount = (typeof t.badge === 'function') ? t.badge(fr) : (t.badge || 0);
-            var isActive = activeId === t.id;
+        tabs.forEach(function (entry) {
+            var badgeCount = (typeof entry.badge === 'function') ? entry.badge(fr) : (entry.badge || 0);
+            var isActive = activeId === entry.id;
             var tab = el('button', {
                 type: 'button',
                 className: 'bowire-request-builder-subtab' + (isActive ? ' is-active' : ''),
-                'data-tab': t.id,
+                'data-tab': entry.id,
                 role: 'tab',
                 'aria-selected': isActive ? 'true' : 'false',
                 onClick: function () {
-                    fr._requestBuilder.activeTab = t.id;
+                    fr._requestBuilder.activeTab = entry.id;
                     render();
                 }
             },
-                el('span', { className: 'bowire-request-builder-subtab-label', textContent: t.label }),
+                el('span', { className: 'bowire-request-builder-subtab-label', textContent: rbLabel(entry) }),
                 badgeCount > 0
                     ? el('span', { className: 'bowire-request-builder-subtab-badge', textContent: String(badgeCount) })
                     : null
@@ -1248,7 +1257,7 @@
             // native HTML5 DnD on the row itself).
             row.appendChild(el('span', {
                 className: 'bowire-request-builder-kv-drag',
-                title: 'Drag to reorder',
+                title: t('rb.kv.dragTitle'),
                 textContent: '⋮⋮'
             }));
             row.appendChild(el('input', {
@@ -1294,7 +1303,7 @@
             row.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-request-builder-kv-del',
-                title: 'Remove row',
+                title: t('rb.kv.removeRow'),
                 style: isLast ? 'visibility:hidden' : undefined,
                 innerHTML: svgIcon('close'),
                 onClick: function () {
@@ -1404,7 +1413,7 @@
                     fr._requestBuilder.bodyMode = m.id;
                     render();
                 }
-            }, el('span', { textContent: m.label }));
+            }, el('span', { textContent: rbLabel(m) }));
             modeStrip.appendChild(btn);
         });
         wrap.appendChild(modeStrip);
@@ -1437,7 +1446,7 @@
             if (fr._requestBuilder.binaryName) {
                 wrap.appendChild(el('div', {
                     className: 'bowire-request-builder-body-binary-name',
-                    textContent: 'Selected: ' + fr._requestBuilder.binaryName
+                    textContent: t('rb.binarySelected', { name: fr._requestBuilder.binaryName })
                 }));
             }
         } else {
@@ -1472,7 +1481,7 @@
             kindRow.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-request-builder-auth-kind-btn' + (fr._requestBuilder.authKind === k.id ? ' is-active' : ''),
-                textContent: k.label,
+                textContent: rbLabel(k),
                 onClick: function () {
                     fr._requestBuilder.authKind = k.id;
                     render();
@@ -1497,10 +1506,10 @@
                 }, 'password'));
                 break;
             case 'apikey':
-                formWrap.appendChild(_authField('Key', fr._requestBuilder.authData.key || '', function (v) {
+                formWrap.appendChild(_authField(t('rb.auth.key'), fr._requestBuilder.authData.key || '', function (v) {
                     fr._requestBuilder.authData.key = v;
                 }));
-                formWrap.appendChild(_authField('Value', fr._requestBuilder.authData.value || '', function (v) {
+                formWrap.appendChild(_authField(t('rb.auth.value'), fr._requestBuilder.authData.value || '', function (v) {
                     fr._requestBuilder.authData.value = v;
                 }));
                 break;
@@ -1508,7 +1517,7 @@
             default:
                 formWrap.appendChild(el('div', {
                     className: 'bowire-request-builder-auth-empty',
-                    textContent: 'No auth — requests go out without an Authorization header. {{var}} substitution still applies to URL + headers.'
+                    textContent: t('rb.auth.noneHint')
                 }));
                 break;
         }
@@ -1570,12 +1579,12 @@
         if (rows.length === 0) {
             wrap.appendChild(el('div', {
                 className: 'bowire-request-builder-vars-empty',
-                textContent: 'No environment variables yet. Use the Workspaces → Environments rail to create some, or type {{var}} in the URL and the prompt will offer to seed it.'
+                textContent: t('rb.vars.empty')
             }));
         } else {
             wrap.appendChild(el('div', {
                 className: 'bowire-request-builder-vars-hint',
-                textContent: 'Read-only snapshot from the active environment. Edit values in Workspaces → Environments.'
+                textContent: t('rb.vars.hint')
             }));
             var list = el('div', { className: 'bowire-request-builder-vars-list' });
             rows.forEach(function (r) {
@@ -1592,7 +1601,7 @@
         if (!Array.isArray(fr._requestBuilder.scratchVars)) fr._requestBuilder.scratchVars = [];
         wrap.appendChild(el('div', {
             className: 'bowire-request-builder-vars-section',
-            textContent: 'Scratch overrides (this request only)'
+            textContent: t('rb.vars.scratch')
         }));
         wrap.appendChild(_renderHoppKvTable(fr._requestBuilder.scratchVars, {
             keyPlaceholder: 'Variable',
@@ -1646,7 +1655,7 @@
     function _renderHoppResponse() {
         var fr = freeformRequest;
         var pane = el('div', { className: 'bowire-request-builder-response' });
-        pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: 'Response' }));
+        pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: t('rb.response.heading') }));
         if (responseError) {
             var errOut = el('div', { className: 'bowire-response-output error' });
             var prob = (typeof responseError === 'object' && typeof normalizeProblem === 'function')
@@ -1654,14 +1663,16 @@
             if (prob && typeof renderProblem === 'function') renderProblem(prob, errOut);
             else errOut.textContent = (typeof responseError === 'string')
                 ? responseError
-                : (typeof problemTitle === 'function' ? problemTitle(responseError, 'Request failed') : 'Request failed');
+                : (typeof problemTitle === 'function'
+                    ? problemTitle(responseError, t('rb.response.failed'))
+                    : t('rb.response.failed'));
             pane.appendChild(errOut);
             return pane;
         }
         if (!responseData) {
             pane.appendChild(el('div', {
                 className: 'bowire-response-empty',
-                textContent: 'Execute the request to see the response here. Tip: Ctrl+Enter sends.'
+                textContent: t('rb.response.empty')
             }));
             return pane;
         }
@@ -1727,33 +1738,33 @@
         strip.appendChild(info);
         // Action cluster — Search, Wrap, Expand-all, Collapse-all, Copy, Download.
         var actions = el('div', { className: 'bowire-response-meta-actions' });
-        actions.appendChild(_metaActionBtn('search', 'Search (Ctrl/Cmd+F)', rv.searchOpen, function () {
+        actions.appendChild(_metaActionBtn('search', t('rb.meta.search'), rv.searchOpen, function () {
             rv.searchOpen = !rv.searchOpen;
             if (!rv.searchOpen) rv.search = '';
             render();
         }));
-        actions.appendChild(_metaActionBtn('wrap', 'Wrap long lines', rv.wrap, function () {
+        actions.appendChild(_metaActionBtn('wrap', t('rb.meta.wrap'), rv.wrap, function () {
             rv.wrap = !rv.wrap;
             render();
         }));
-        actions.appendChild(_metaActionBtn('expand', 'Expand all', false, function () {
+        actions.appendChild(_metaActionBtn('expand', t('rb.meta.expand'), false, function () {
             rv.togglesByPath = new Set();  // empty = nothing collapsed
             render();
         }));
-        actions.appendChild(_metaActionBtn('collapse', 'Collapse all', false, function () {
+        actions.appendChild(_metaActionBtn('collapse', t('rb.meta.collapse'), false, function () {
             rv.togglesByPath = _allContainerPaths(responseData);
             render();
         }));
-        actions.appendChild(_metaActionBtn('copy', 'Copy response body', false, function () {
+        actions.appendChild(_metaActionBtn('copy', t('rb.meta.copy'), false, function () {
             try {
                 var txt = typeof responseData === 'string' ? responseData : JSON.stringify(responseData, null, 2);
                 navigator.clipboard.writeText(txt).then(
-                    function () { if (typeof toast === 'function') toast('Response copied', 'success'); },
-                    function () { if (typeof toast === 'function') toast('Copy failed', 'error'); }
+                    function () { if (typeof toast === 'function') toast(t('clipboard.responseCopied'), 'success'); },
+                    function () { if (typeof toast === 'function') toast(t('clipboard.failed'), 'error'); }
                 );
             } catch (_) { /* clipboard errors get swallowed */ }
         }));
-        actions.appendChild(_metaActionBtn('download', 'Download response', false, function () {
+        actions.appendChild(_metaActionBtn('download', t('rb.meta.download'), false, function () {
             _downloadResponseBody(fr);
         }));
         // #536 — same "Use this…" handoff the Discover response pane
@@ -1798,25 +1809,25 @@
         var strip = el('div', { className: 'bowire-response-tab-strip' });
         var tabs = [
             { id: 'json',    label: 'JSON' },
-            { id: 'raw',     label: 'Raw' },
-            { id: 'headers', label: 'Headers',
+            { id: 'raw',     labelKey: 'rb.response.raw' },
+            { id: 'headers', labelKey: 'rb.tab.headers',
               badge: headers ? Object.keys(headers).length : 0 },
-            { id: 'tests',   label: 'Test results' }
+            { id: 'tests',   labelKey: 'rb.response.tests' }
         ];
         for (var i = 0; i < tabs.length; i++) {
-            var t = tabs[i];
-            var active = rv.tab === t.id;
+            var entry = tabs[i];
+            var active = rv.tab === entry.id;
             var tab = el('button', {
                 type: 'button',
                 className: 'bowire-response-tab-btn' + (active ? ' is-active' : ''),
                 onClick: (function (id) {
                     return function () { rv.tab = id; render(); };
-                })(t.id)
-            }, t.label);
-            if (t.badge && t.badge > 0) {
+                })(entry.id)
+            }, rbLabel(entry));
+            if (entry.badge && entry.badge > 0) {
                 tab.appendChild(el('span', {
                     className: 'bowire-response-tab-badge',
-                    textContent: String(t.badge)
+                    textContent: String(entry.badge)
                 }));
             }
             strip.appendChild(tab);
@@ -1828,7 +1839,7 @@
         var bar = el('div', { className: 'bowire-response-search-bar' });
         var input = el('input', {
             type: 'text',
-            placeholder: 'Find in response…',
+            placeholder: t('rb.response.findPlaceholder'),
             value: rv.search || '',
             className: 'bowire-response-search-input',
             onInput: function (e) {
@@ -1847,7 +1858,7 @@
         bar.appendChild(el('button', {
             type: 'button',
             className: 'bowire-response-search-close',
-            title: 'Close search (Esc)',
+            title: t('search.close'),
             innerHTML: typeof svgIcon === 'function' ? svgIcon('close') : '×',
             onClick: function () {
                 rv.searchOpen = false;
@@ -1910,8 +1921,8 @@
             var raw = target.getAttribute('data-json-path') || '';
             if (!raw) return;
             navigator.clipboard.writeText(raw).then(
-                function () { if (typeof toast === 'function') toast('Copied path: ' + raw, 'success'); },
-                function () { if (typeof toast === 'function') toast('Copy failed', 'error'); }
+                function () { if (typeof toast === 'function') toast(t('rb.response.copiedPath', { path: raw }), 'success'); },
+                function () { if (typeof toast === 'function') toast(t('clipboard.failed'), 'error'); }
             );
         });
         // Re-apply search highlights once mounted in the DOM.
@@ -1936,7 +1947,7 @@
         // empty-state copy so the tab doesn't read as broken.
         wrap.appendChild(el('div', {
             className: 'bowire-response-empty',
-            textContent: 'Pre/post-script assertion results appear here. (Surface a structured log via `ctx.assert.*` in a post-script.)'
+            textContent: t('rb.response.testsEmpty')
         }));
         return wrap;
     }
@@ -1946,7 +1957,7 @@
         if (!rv.breadcrumbPath) {
             bar.appendChild(el('span', {
                 className: 'bowire-response-breadcrumb-hint',
-                textContent: 'Click a line to see its JSON path.'
+                textContent: t('rb.response.breadcrumbHint')
             }));
             return bar;
         }
@@ -1954,7 +1965,7 @@
         bar.appendChild(el('span', {
             className: 'bowire-response-breadcrumb-root',
             textContent: '$',
-            title: 'Root',
+            title: t('rb.response.root'),
             onClick: function () { rv.breadcrumbPath = ''; render(); }
         }));
         for (var i = 0; i < segs.length; i++) {
@@ -1986,7 +1997,7 @@
         if (!rv.breadcrumbPath) {
             bar.appendChild(el('span', {
                 className: 'bowire-response-breadcrumb-hint',
-                textContent: 'Click a line to see its JSON path.'
+                textContent: t('rb.response.breadcrumbHint')
             }));
             return;
         }
@@ -1994,7 +2005,7 @@
         bar.appendChild(el('span', {
             className: 'bowire-response-breadcrumb-root',
             textContent: '$',
-            title: 'Root',
+            title: t('rb.response.root'),
             onClick: function () { rv.breadcrumbPath = ''; render(); }
         }));
         for (var i = 0; i < segs.length; i++) {
@@ -2047,7 +2058,7 @@
         try {
             var raw = responseData;
             if (raw == null) {
-                if (typeof toast === 'function') toast('Nothing to download', 'info');
+                if (typeof toast === 'function') toast(t('download.nothing'), 'info');
                 return;
             }
             var contentType = '';
@@ -2077,9 +2088,9 @@
             var name = _downloadFilenameForRequest(fr, ext);
             var blob = new Blob([body], { type: mime + ';charset=utf-8' });
             _triggerDownload(blob, name);
-            if (typeof toast === 'function') toast('Saved ' + name, 'success');
+            if (typeof toast === 'function') toast(t('stream.saved', { name: name }), 'success');
         } catch (e) {
-            if (typeof toast === 'function') toast('Download failed: ' + (e && e.message || e), 'error');
+            if (typeof toast === 'function') toast(t('stream.downloadFailed', { reason: (e && e.message) || e }), 'error');
         }
     }
 
@@ -2203,11 +2214,11 @@
         var msg = el('div', { className: 'bowire-request-builder-discover-hint-body' });
         msg.appendChild(el('div', {
             className: 'bowire-request-builder-discover-hint-title',
-            textContent: 'Discover the schema for this URL?'
+            textContent: t('rb.discover.title')
         }));
         msg.appendChild(el('div', {
             className: 'bowire-request-builder-discover-hint-sub',
-            textContent: 'Adds ' + url + ' as a Source and enables schema-aware operations (param hints, autocomplete, generated forms) on subsequent calls.'
+            textContent: t('rb.discover.body', { url: url })
         }));
         wrap.appendChild(msg);
         // Action cluster — primary 'Auto-discover' button + the
@@ -2217,15 +2228,15 @@
         actions.appendChild(el('button', {
             type: 'button',
             className: 'bowire-request-builder-discover-hint-btn',
-            textContent: 'Auto-discover',
-            title: 'Add this URL as a Source and run discovery',
+            textContent: t('rb.discover.run'),
+            title: t('rb.discover.runTitle'),
             onClick: function () { _runAutoDiscoverForUrl(url); }
         }));
         actions.appendChild(el('button', {
             type: 'button',
             className: 'bowire-request-builder-discover-hint-skip',
-            textContent: 'Don’t ask again',
-            title: 'Stop offering discovery for this URL in this workspace',
+            textContent: t('rb.discover.never'),
+            title: t('rb.discover.neverTitle'),
             onClick: function () {
                 if (typeof markAutoDiscoverAsked === 'function') {
                     markAutoDiscoverAsked(url, 'skip');
@@ -2265,7 +2276,7 @@
             }
         } catch (e) {
             if (typeof toast === 'function') {
-                toast('Could not add ' + url + ' as a Source: ' + e.message, 'error');
+                toast(t('rb.discover.addFailed', { url: url, reason: e.message }), 'error');
             }
             render();
             return;
@@ -2278,7 +2289,7 @@
             try { refreshSourceServices(url); }
             catch (e) {
                 if (typeof toast === 'function') {
-                    toast('Discovery kickoff failed: ' + e.message, 'error');
+                    toast(t('rb.discover.kickoffFailed', { reason: e.message }), 'error');
                 }
             }
         } else if (typeof fetchServicesForUrl === 'function') {
@@ -2294,7 +2305,7 @@
             }).catch(function () { render(); });
         }
         if (typeof toast === 'function') {
-            toast('Discovering ' + url + '…', 'info');
+            toast(t('rb.discover.running', { url: url }), 'info');
         }
         render();
     }
@@ -2340,7 +2351,7 @@
             try {
                 await layout.execute(fr);
             } catch (e) {
-                if (typeof toast === 'function') toast(layout.label + ' execute failed: ' + e.message, 'error');
+                if (typeof toast === 'function') toast(t('rb.executeFailed', { protocol: layout.label, reason: e.message }), 'error');
             }
             return;
         }
@@ -2350,7 +2361,7 @@
 
     async function _executeRestRequest(fr) {
         if (!fr.serverUrl || !fr.serverUrl.trim()) {
-            if (typeof toast === 'function') toast('Enter a URL', 'error');
+            if (typeof toast === 'function') toast(t('rb.needsUrl'), 'error');
             return;
         }
         if (!fr.method) fr.method = 'GET';
@@ -2415,7 +2426,7 @@
                 // Binary upload not yet wired to /api/invoke; surface
                 // a hint so the operator knows the path needs work.
                 if (typeof toast === 'function') {
-                    toast('Binary uploads via the Request builder are not yet wired through /api/invoke — coming in a follow-up', 'info');
+                    toast(t('rb.binaryNotWired'), 'info');
                 }
                 bodyStr = '';
             } else {
@@ -2457,7 +2468,7 @@
                 headers = preCtx.request.headers || headers;
                 bodyStr = preCtx.request.body || bodyStr;
             } catch (e) {
-                if (typeof toast === 'function') toast('Pre-script failed: ' + e.message, 'error');
+                if (typeof toast === 'function') toast(t('rb.preScriptFailed', { reason: e.message }), 'error');
                 return;
             }
         }
@@ -2522,7 +2533,7 @@
                         invokeBody.metadata = headers;
                     }
                 } catch (e) {
-                    if (typeof toast === 'function') toast('Binary read failed: ' + e.message, 'error');
+                    if (typeof toast === 'function') toast(t('rb.binaryReadFailed', { reason: e.message }), 'error');
                     isExecuting = false;
                     if (typeof markJobDone === 'function') markJobDone('request-builder', verb);
                     render();
@@ -2587,7 +2598,7 @@
                         // eslint-disable-next-line no-new-func
                         new Function('ctx', fr._requestBuilder.postScript)(postCtx);
                     } catch (e) {
-                        if (typeof toast === 'function') toast('Post-script failed: ' + e.message, 'error');
+                        if (typeof toast === 'function') toast(t('rb.postScriptFailed', { reason: e.message }), 'error');
                     }
                 }
             }
@@ -2660,13 +2671,13 @@
     function runHoppAsBenchmark(fr) {
         ensureHoppState(fr);
         if (!fr.serverUrl || !fr.serverUrl.trim()) {
-            if (typeof toast === 'function') toast('Enter a URL before benchmarking', 'error');
+            if (typeof toast === 'function') toast(t('rb.bench.needsUrl'), 'error');
             return;
         }
         if (typeof createBenchmarkSpec !== 'function'
             || typeof runBenchmarkSpec !== 'function') {
             if (typeof toast === 'function') {
-                toast('Benchmarks module not loaded in this host', 'error');
+                toast(t('rb.bench.notLoaded'), 'error');
             }
             return;
         }
@@ -2722,7 +2733,7 @@
                 // silently-empty body the benchmark would happily hammer
                 // the upstream with.
                 if (typeof toast === 'function') {
-                    toast('Binary uploads can\'t be benchmarked from the Request builder — Execute once instead, or move the request to a collection', 'info');
+                    toast(t('rb.bench.noBinary'), 'info');
                 }
                 return;
             } else {
@@ -2783,7 +2794,7 @@
             benchmarksSelectedId = spec.id;
         }
         if (typeof toast === 'function') {
-            toast('Benchmarking ' + verb + ' (4 × 30 calls)…', 'info');
+            toast(t('rb.bench.running', { verb: verb }), 'info');
         }
         render();
 
@@ -2794,7 +2805,7 @@
         try {
             runBenchmarkSpec(spec, function () { render(); });
         } catch (e) {
-            if (typeof toast === 'function') toast('Benchmark failed: ' + e.message, 'error');
+            if (typeof toast === 'function') toast(t('rb.bench.failed', { reason: e.message }), 'error');
         }
     }
 
@@ -2870,10 +2881,10 @@
         secondControl: function (fr) { return _renderRestMethodDropdown(fr); },
         subTabs: function (fr) {
             return [
-                { id: 'parameter', label: 'Parameter',
+                { id: 'parameter', labelKey: 'rb.tab.parameter',
                   badge: function (f) { return _activeKvCount(f._requestBuilder.params); } },
-                { id: 'body',      label: 'Body' },
-                { id: 'header',    label: 'Header',
+                { id: 'body',      labelKey: 'rb.tab.body' },
+                { id: 'header',    labelKey: 'rb.tab.header',
                   badge: function (f) { return _activeKvCount(f._requestBuilder.headers); } }
             ].concat(RB_COMMON_TAIL_TABS);
         },
@@ -2917,14 +2928,14 @@
         secondControl: function (fr) { return _renderGrpcMethodPicker(fr); },
         subTabs: function (fr) {
             return [
-                { id: 'message',  label: 'Message'  },
-                { id: 'metadata', label: 'Metadata',
+                { id: 'message',  labelKey: 'rb.tab.message'  },
+                { id: 'metadata', labelKey: 'rb.tab.metadata',
                   badge: function (f) { return _activeKvCount(rbProtoState(f).metadata); } },
-                { id: 'auth',     label: 'Auth' },
-                { id: 'deadline', label: 'Deadline' },
-                { id: 'pre',      label: 'Pre-script' },
-                { id: 'post',     label: 'Post-script' },
-                { id: 'vars',     label: 'Variables' }
+                { id: 'auth',     labelKey: 'rb.tab.auth' },
+                { id: 'deadline', labelKey: 'rb.tab.deadline' },
+                { id: 'pre',      labelKey: 'rb.tab.pre' },
+                { id: 'post',     labelKey: 'rb.tab.post' },
+                { id: 'vars',     labelKey: 'rb.tab.vars' }
             ];
         },
         renderTab: function (fr, tabId) {
@@ -2964,13 +2975,13 @@
         secondControl: function (fr) { return _renderMcpKindPicker(fr); },
         subTabs: function (fr) {
             return [
-                { id: 'arguments', label: 'Arguments' },
-                { id: 'headers',   label: 'Headers',
+                { id: 'arguments', labelKey: 'rb.tab.arguments' },
+                { id: 'headers',   labelKey: 'rb.tab.headers',
                   badge: function (f) { return _activeKvCount(rbProtoState(f).metadata); } },
-                { id: 'auth',      label: 'Auth' },
-                { id: 'pre',       label: 'Pre-script' },
-                { id: 'post',      label: 'Post-script' },
-                { id: 'vars',      label: 'Variables' }
+                { id: 'auth',      labelKey: 'rb.tab.auth' },
+                { id: 'pre',       labelKey: 'rb.tab.pre' },
+                { id: 'post',      labelKey: 'rb.tab.post' },
+                { id: 'vars',      labelKey: 'rb.tab.vars' }
             ];
         },
         renderTab: function (fr, tabId) {
@@ -3010,13 +3021,13 @@
         secondControl: function (fr) { return _renderMqttActionPicker(fr); },
         subTabs: function (fr) {
             return [
-                { id: 'topic',   label: 'Topic'   },
-                { id: 'payload', label: 'Payload' },
+                { id: 'topic',   labelKey: 'rb.tab.topic'   },
+                { id: 'payload', labelKey: 'rb.tab.payload' },
                 { id: 'qos',     label: 'QoS'     },
-                { id: 'auth',    label: 'Auth' },
-                { id: 'pre',     label: 'Pre-script' },
-                { id: 'post',    label: 'Post-script' },
-                { id: 'vars',    label: 'Variables' }
+                { id: 'auth',    labelKey: 'rb.tab.auth' },
+                { id: 'pre',     labelKey: 'rb.tab.pre' },
+                { id: 'post',    labelKey: 'rb.tab.post' },
+                { id: 'vars',    labelKey: 'rb.tab.vars' }
             ];
         },
         renderTab: function (fr, tabId) {
@@ -3057,13 +3068,13 @@
         secondControl: function (fr) { return _renderWsConnectControl(fr); },
         subTabs: function (fr) {
             return [
-                { id: 'frame',   label: 'Frame'   },
-                { id: 'headers', label: 'Headers',
+                { id: 'frame',   labelKey: 'rb.tab.frame'   },
+                { id: 'headers', labelKey: 'rb.tab.headers',
                   badge: function (f) { return _activeKvCount(rbProtoState(f).metadata); } },
-                { id: 'auth',    label: 'Auth' },
-                { id: 'pre',     label: 'Pre-script' },
-                { id: 'post',    label: 'Post-script' },
-                { id: 'vars',    label: 'Variables' }
+                { id: 'auth',    labelKey: 'rb.tab.auth' },
+                { id: 'pre',     labelKey: 'rb.tab.pre' },
+                { id: 'post',    labelKey: 'rb.tab.post' },
+                { id: 'vars',    labelKey: 'rb.tab.vars' }
             ];
         },
         renderTab: function (fr, tabId) {
@@ -3104,13 +3115,13 @@
         secondControl: function () { return null; },
         subTabs: function (fr) {
             return [
-                { id: 'headers',   label: 'Headers',
+                { id: 'headers',   labelKey: 'rb.tab.headers',
                   badge: function (f) { return _activeKvCount(rbProtoState(f).metadata); } },
-                { id: 'auth',      label: 'Auth' },
-                { id: 'reconnect', label: 'Reconnect' },
-                { id: 'pre',       label: 'Pre-script' },
-                { id: 'post',      label: 'Post-script' },
-                { id: 'vars',      label: 'Variables' }
+                { id: 'auth',      labelKey: 'rb.tab.auth' },
+                { id: 'reconnect', labelKey: 'rb.tab.reconnect' },
+                { id: 'pre',       labelKey: 'rb.tab.pre' },
+                { id: 'post',      labelKey: 'rb.tab.post' },
+                { id: 'vars',      labelKey: 'rb.tab.vars' }
             ];
         },
         renderTab: function (fr, tabId) {

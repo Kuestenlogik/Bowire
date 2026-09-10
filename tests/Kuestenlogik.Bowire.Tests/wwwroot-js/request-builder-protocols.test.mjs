@@ -142,7 +142,10 @@ test('each registered protocol layout exposes execute + executeLabel', () => {
     }
 });
 
-test('each protocol layout subTabs returns a non-empty list of {id,label}', () => {
+test('each protocol layout subTabs returns a non-empty list of named tabs', () => {
+    // #117 — a tab carries EITHER a catalogue key (Bowire's own tab names,
+    // resolved by rbLabel at render time) or a literal label (a protocol's
+    // own word, like JSON or QoS). One of the two, never neither.
     const sb = loadProtocols();
     const layouts = sb._getLayouts();
     const fr = { _requestBuilder: { protocol: 'grpc', params: [], headers: [], byProtocol: {} } };
@@ -151,9 +154,10 @@ test('each protocol layout subTabs returns a non-empty list of {id,label}', () =
         const tabs = layouts[id].subTabs(fr);
         assert.ok(Array.isArray(tabs), id + '.subTabs returns array');
         assert.ok(tabs.length >= 1, id + ' has tabs');
-        for (const t of tabs) {
-            assert.equal(typeof t.id, 'string');
-            assert.equal(typeof t.label, 'string');
+        for (const tab of tabs) {
+            assert.equal(typeof tab.id, 'string');
+            const named = typeof tab.labelKey === 'string' || typeof tab.label === 'string';
+            assert.ok(named, `${id}.${tab.id} has neither labelKey nor label`);
         }
     }
 });
