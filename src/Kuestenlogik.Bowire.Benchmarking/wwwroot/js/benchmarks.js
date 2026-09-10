@@ -460,7 +460,7 @@
                 return {
                     pass: !!(rc && rc.pass),
                     durationMs: performance.now() - tc,
-                    statusLabel: (rc && rc.pass) ? 'OK' : 'Error'
+                    statusLabel: (rc && rc.pass) ? 'OK' : 'Error'  // i18n-exempt: status label, aggregated into statusCounts and written to the CSV, k6-summary and OTLP exports
                 };
             } catch {
                 return { pass: false, durationMs: performance.now() - tc, statusLabel: 'NetworkError' };
@@ -480,7 +480,7 @@
                 return {
                     pass: !!(rr && rr.pass),
                     durationMs: performance.now() - tr,
-                    statusLabel: (rr && rr.pass) ? 'OK' : 'Error'
+                    statusLabel: (rr && rr.pass) ? 'OK' : 'Error'  // i18n-exempt: status label, aggregated into statusCounts and written to the CSV, k6-summary and OTLP exports
                 };
             } catch {
                 return { pass: false, durationMs: performance.now() - tr, statusLabel: 'NetworkError' };
@@ -564,7 +564,7 @@
                 key: _benchmarkTargetKey(target),
                 label: _benchmarkTargetLabel(target),
                 durationMs: r && typeof r.durationMs === 'number' ? r.durationMs : 0,
-                statusLabel: r && r.statusLabel ? r.statusLabel : (r && r.pass ? 'OK' : 'Error'),
+                statusLabel: r && r.statusLabel ? r.statusLabel : (r && r.pass ? 'OK' : 'Error'),  // i18n-exempt: status label, aggregated into statusCounts and written to the CSV, k6-summary and OTLP exports
                 pass: !!(r && r.pass)
             };
         }
@@ -643,7 +643,7 @@
                 } else {
                     benchmark.failure++;
                 }
-                var lbl = rs.statusLabel || (rs.pass ? 'OK' : 'Error');
+                var lbl = rs.statusLabel || (rs.pass ? 'OK' : 'Error');  // i18n-exempt: status label, aggregated into statusCounts and written to the CSV, k6-summary and OTLP exports
                 benchmark.statusCounts[lbl] = (benchmark.statusCounts[lbl] || 0) + 1;
                 // #231 — Track the concrete endpoint labels actually
                 // invoked on this iteration so the post-run UI can slice
@@ -703,10 +703,10 @@
     async function _envelopePrefetchAi(spec) {
         if (typeof window.bowirePrefetchAiVars !== 'function') return;
         var tpls = [];
-        (spec.targets || []).forEach(function (t) {
-            if (t.type !== 'method') return;
-            tpls.push(String(t.body || '{}'));
-            var m = t.metadata || {};
+        (spec.targets || []).forEach(function (target) {
+            if (target.type !== 'method') return;
+            tpls.push(String(target.body || '{}'));
+            var m = target.metadata || {};
             for (var k in m) {
                 if (Object.prototype.hasOwnProperty.call(m, k)) tpls.push(String(m[k] || ''));
             }
@@ -777,7 +777,7 @@
         addConsoleEntry({
             type: 'response',
             method: displayName,
-            status: benchmark.cancelled ? 'Cancelled' : 'Benchmark complete',
+            status: benchmark.cancelled ? 'Cancelled' : 'Benchmark complete',  // i18n-exempt: the action log stores rendered text, see #689
             durationMs: Math.round(totalMs),
             body: benchmark.success + ' OK / ' + benchmark.failure + ' failed'
         });
@@ -836,10 +836,10 @@
                 if (ts.length === 0 && Array.isArray(spec.targets)) {
                     // Single-target envelope — synthesise one slot
                     // so the recorder still fires for it.
-                    ts = spec.targets.filter(function (t) { return t && t.type === 'method'; })
-                        .map(function (t) {
+                    ts = spec.targets.filter(function (methodTarget) { return methodTarget && methodTarget.type === 'method'; })
+                        .map(function (methodTarget) {
                             return {
-                                target: t,
+                                target: methodTarget,
                                 success: thisRun.success || 0,
                                 failure: thisRun.failure || 0
                             };
@@ -1043,7 +1043,10 @@
             role: 'button',
             tabindex: '0',
             'aria-expanded': expanded ? 'true' : 'false',
-            title: 'Compare run #' + runsList.length + ' vs #' + (runsList.length - 1)
+            title: t('bench.compareRuns', {
+    current: runsList.length,
+    previous: runsList.length - 1
+})
                 + ' · click to ' + (expanded ? 'collapse' : 'expand'),
             onClick: function () {
                 benchmarkDiffBannerExpanded[spec.id] = !benchmarkDiffBannerExpanded[spec.id];
@@ -1141,9 +1144,9 @@
             var table = el('table', { className: 'bowire-bench-diff-table' });
             var thead = el('thead', {});
             thead.appendChild(el('tr', {},
-                el('th', { textContent: 'Metric' }),
-                el('th', { textContent: 'Previous' }),
-                el('th', { textContent: 'Current' }),
+                el('th', { textContent: t('bench.metric') }),
+                el('th', { textContent: t('bench.previous') }),
+                el('th', { textContent: t('bench.current') }),
                 el('th', { textContent: 'Δ' })
             ));
             table.appendChild(thead);
@@ -1291,10 +1294,10 @@
         loadBenchmarks();
 
         sidebar.appendChild(renderSidebarToolbar({
-            title: 'Benchmarks',
+            title: t('rail.benchmarks'),
             primary: {
                 icon: 'plus',
-                title: 'New benchmark',
+                title: t('bench.new'),
                 onClick: function () {
                     var spec = createBenchmarkSpec();
                     benchmarksSelectedId = spec.id;
@@ -1303,25 +1306,25 @@
             },
             overflow: (function () {
                 var items = [];
-                items.push({ label: 'Import from Artillery JSON…', icon: 'replay',
+                items.push({ label: t('bench.importArtillery'), icon: 'replay',
                     onClick: function () { importEnvelopeFrom('artillery'); } });
-                items.push({ label: 'Import from Postman Collection…', icon: 'replay',
+                items.push({ label: t('bench.importPostman'), icon: 'replay',
                     onClick: function () { importEnvelopeFrom('postman'); } });
-                items.push({ label: 'Import Bowire envelope…', icon: 'replay',
+                items.push({ label: t('bench.importEnvelope'), icon: 'replay',
                     onClick: function () { importEnvelopeFrom('native'); } });
                 if (benchmarksSelectedId && getBenchmarkSpec(benchmarksSelectedId)) {
                     items.push({ separator: true });
-                    items.push({ label: 'Export as Artillery JSON', icon: 'send',
+                    items.push({ label: t('bench.exportArtillery'), icon: 'send',
                         onClick: function () { exportSelectedEnvelopeAs('artillery'); } });
-                    items.push({ label: 'Export as k6 script', icon: 'send',
+                    items.push({ label: t('bench.exportK6'), icon: 'send',
                         onClick: function () { exportSelectedEnvelopeAs('k6'); } });
-                    items.push({ label: 'Export as Bowire envelope', icon: 'send',
+                    items.push({ label: t('bench.exportEnvelope'), icon: 'send',
                         onClick: function () { exportSelectedEnvelopeAs('native'); } });
                 }
                 if (benchmarksList && benchmarksList.length > 0) {
                     items.push({ separator: true });
                     items.push({
-                        label: 'Delete all benchmarks',
+                        label: t('bench.deleteAll'),
                         icon: 'trash',
                         danger: true,
                         meta: String(benchmarksList.length),
@@ -1336,7 +1339,8 @@
                                     toast(n + ' benchmark' + (n === 1 ? '' : 's') + ' deleted', 'success');
                                     render();
                                 },
-                                { title: 'Delete all benchmarks', confirmText: 'Delete ' + n, danger: true }
+                                { title: t('bench.deleteAll'), confirmText: t('sidebar.deleteCount', { count: n }),
+    danger: true }
                             );
                         }
                     });
@@ -1345,12 +1349,12 @@
             })(),
             // #362 — search + sort once there's more than one to organise.
             search: (benchmarksList && benchmarksList.length > 1) ? {
-                placeholder: 'Search benchmarks…',
+                placeholder: t('bench.search'),
                 value: benchmarksSearchQuery,
                 onInput: function (v) { benchmarksSearchQuery = v; render(); }
             } : null,
             sort: (benchmarksList && benchmarksList.length > 1) ? {
-                title: 'Sort benchmarks',
+                title: t('bench.sort'),
                 value: benchmarksSortBy || 'manual',
                 options: BOWIRE_LIST_SORT_OPTIONS_WITH_MANUAL.concat(BOWIRE_LIST_SORT_OPTIONS),
                 onChange: function (v) { benchmarksSortBy = v; render(); }
@@ -1368,13 +1372,13 @@
             list.appendChild(el('div', {
                 className: 'bowire-pane-empty',
                 style: 'padding:12px 14px',
-                textContent: 'No benchmarks yet.'
+                textContent: t('bench.noneYetPeriod')
             }));
         } else if (visibleBenchmarks.length === 0) {
             list.appendChild(el('div', {
                 className: 'bowire-pane-empty',
                 style: 'padding:12px 14px',
-                textContent: 'No benchmarks match "' + benchmarksSearchQuery + '".'
+                textContent: t('bench.noMatch', { query: benchmarksSearchQuery })
             }));
         } else {
             visibleBenchmarks.forEach(function (spec) {
@@ -1417,8 +1421,8 @@
                     activeIcon: 'play',
                     activeTitle: 'Running',
                     tools: [
-                        { icon: isRunning ? 'stop' : 'play', title: isRunning ? 'Stop run' : 'Run benchmark', onClick: runOrStop },
-                        { icon: 'trash', title: 'Delete benchmark', danger: true, onClick: deleteSpec }
+                        { icon: isRunning ? 'stop' : 'play', title: isRunning ? t('bench.stopRun') : t('bench.run'), onClick: runOrStop },
+                        { icon: 'trash', title: t('bench.delete'), danger: true, onClick: deleteSpec }
                     ],
                     onClick: function () {
                         benchmarksSelectedId = spec.id;
@@ -1430,7 +1434,7 @@
                         if (typeof showContextMenu !== 'function') return;
                         showContextMenu(e.clientX, e.clientY, [
                             {
-                                label: isRunning ? 'Stop run' : 'Run benchmark',
+                                label: isRunning ? t('bench.stopRun') : t('bench.run'),
                                 onClick: function () {
                                     if (isRunning) {
                                         if (typeof stopBenchmark === 'function') stopBenchmark();
@@ -1441,12 +1445,12 @@
                                 }
                             },
                             {
-                                label: 'Rename…',
+                                label: t('sidebar.rename'),
                                 onClick: function () {
-                                    bowirePrompt('Benchmark name', {
-                                        title: 'Rename benchmark',
+                                    bowirePrompt(t('bench.name'), {
+                                        title: t('bench.rename'),
                                         defaultValue: spec.name || '',
-                                        confirmText: 'Save'
+                                        confirmText: t('common.save')
                                     }).then(function (name) {
                                         if (!name) return;
                                         spec.name = String(name).trim();
@@ -1457,7 +1461,7 @@
                             },
                             { separator: true },
                             {
-                                label: 'Delete',
+                                label: t('common.delete'),
                                 danger: true,
                                 onClick: function () {
                                     var idx = benchmarksList.indexOf(spec);
@@ -1505,7 +1509,7 @@
         loadBenchmarks();
         var items = [];
         items.push({
-            label: 'New envelope from this',
+            label: t('bench.newFromThis'),
             icon: 'plus',
             onClick: function () {
                 var seed = { targets: [target] };
@@ -1518,29 +1522,29 @@
                     railMode = 'benchmarks';
                     try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
                 }
-                toast('Envelope created', 'success');
+                toast(t('bench.envelopeCreated'), 'success');
                 render();
             }
         });
         if (benchmarksList.length > 0) {
             items.push({ separator: true });
             benchmarksList.forEach(function (env) {
-                var t = env.targets || [];
+                var targets = env.targets || [];
                 var isRunning = (typeof benchmarkActiveSpecId !== 'undefined'
                     && benchmarkActiveSpecId === env.id
                     && benchmark && benchmark.running);
                 items.push({
                     label: env.name,
-                    title: env.name + ' · ' + t.length + ' target' + (t.length === 1 ? '' : 's')
+                    title: env.name + ' · ' + targets.length + ' target' + (targets.length === 1 ? '' : 's')
                         + (isRunning ? ' · running' : ''),
                     icon: 'lightning',
-                    meta: t.length + (t.length === 1 ? ' target' : ' targets'),
+                    meta: targets.length + (targets.length === 1 ? ' target' : ' targets'),
                     indicator: isRunning ? 'running' : null,
                     onClick: function () {
                         if (!Array.isArray(env.targets)) env.targets = [];
                         env.targets.push(target);
                         persistBenchmarks();
-                        toast('Added to "' + env.name + '"', 'success');
+                        toast(t('bench.addedTo', { name: env.name }), 'success');
                         render();
                     }
                 });
@@ -1589,7 +1593,7 @@
         return el('div', {
             className: 'bowire-envelope-mode-seg-host',
             role: 'radiogroup',
-            'aria-label': 'Per-iteration target dispatch mode'
+            'aria-label': t('bench.dispatchMode')
         },
             seg('sequential', 'Sequential',
                 'Targets are invoked one after the other per VU iteration. Iteration fails on first error.'),
@@ -1606,31 +1610,31 @@
         var targets = spec.targets || [];
         if (targets.length === 0) return false;
         for (var i = 0; i < targets.length; i++) {
-            var t = targets[i];
-            if (t.type === 'method') {
+            var target = targets[i];
+            if (target.type === 'method') {
                 var svc = (typeof services !== 'undefined' ? services : [])
-                    .find(function (s) { return s.name === t.service && (!t.protocol || s.source === t.protocol); });
+                    .find(function (s) { return s.name === target.service && (!target.protocol || s.source === target.protocol); });
                 if (!svc) return false;
                 var methods = (svc && Array.isArray(svc.methods)) ? svc.methods : [];
-                if (!methods.find(function (m) { return m.name === t.method; })) return false;
-            } else if (t.type === 'collection-ref') {
+                if (!methods.find(function (m) { return m.name === target.method; })) return false;
+            } else if (target.type === 'collection-ref') {
                 if (!(typeof collectionsList !== 'undefined'
-                        ? collectionsList : []).find(function (c) { return c.id === t.collectionId; })) return false;
-            } else if (t.type === 'recording-ref') {
+                        ? collectionsList : []).find(function (c) { return c.id === target.collectionId; })) return false;
+            } else if (target.type === 'recording-ref') {
                 if (!(typeof recordingsList !== 'undefined'
-                        ? recordingsList : []).find(function (r) { return r.id === t.recordingId; })) return false;
-            } else if (t.type === 'random') {
+                        ? recordingsList : []).find(function (r) { return r.id === target.recordingId; })) return false;
+            } else if (target.type === 'random') {
                 // The pool source must exist AND yield at least one
                 // sub-target — otherwise the first iteration would
                 // bail with EmptyPool / MissingPool.
-                if (t.pool === 'collection') {
+                if (target.pool === 'collection') {
                     if (!(typeof collectionsList !== 'undefined'
-                            ? collectionsList : []).find(function (c) { return c.id === t.collectionId; })) return false;
-                } else if (t.pool === 'recording') {
+                            ? collectionsList : []).find(function (c) { return c.id === target.collectionId; })) return false;
+                } else if (target.pool === 'recording') {
                     if (!(typeof recordingsList !== 'undefined'
-                            ? recordingsList : []).find(function (r) { return r.id === t.recordingId; })) return false;
+                            ? recordingsList : []).find(function (r) { return r.id === target.recordingId; })) return false;
                 }
-                if (_expandRandomPool(t).length === 0) return false;
+                if (_expandRandomPool(target).length === 0) return false;
             }
         }
         return true;
@@ -1684,12 +1688,12 @@
 
     function _renderTargetsSection(spec) {
         var section = el('div', { className: 'bowire-ws-detail-section' });
-        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Targets' }));
+        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: t('bench.targets') }));
 
         if ((spec.targets || []).length === 0) {
             section.appendChild(el('div', {
                 className: 'bowire-envelope-targets-empty',
-                textContent: 'No targets yet — add a method, collection, or recording below.'
+                textContent: t('bench.noTargets')
             }));
         } else {
             var list = el('div', { className: 'bowire-envelope-targets' });
@@ -1706,12 +1710,12 @@
         var addBtn = el('button', {
             type: 'button',
             className: 'bowire-envelope-target-add-btn',
-            title: 'Add a target (method, collection or recording)',
+            title: t('bench.addTargetTitle'),
             onClick: function (ev) {
                 if (typeof showContextMenu !== 'function') return;
                 showContextMenu(ev.clientX, ev.clientY, [
                     {
-                        label: 'Method',
+                        label: t('bench.targetMethod'),
                         onClick: function () {
                             spec.targets.push({
                                 type: 'method',
@@ -1723,14 +1727,14 @@
                         }
                     },
                     {
-                        label: 'Collection replay',
+                        label: t('bench.targetCollection'),
                         onClick: function () {
                             spec.targets.push({ type: 'collection-ref', collectionId: null, itemIndex: null });
                             persistBenchmarks(); render();
                         }
                     },
                     {
-                        label: 'Recording replay',
+                        label: t('bench.targetRecording'),
                         onClick: function () {
                             spec.targets.push({ type: 'recording-ref', recordingId: null, stepIndex: null });
                             persistBenchmarks(); render();
@@ -1742,7 +1746,7 @@
                         // immediately runnable when the workspace has
                         // any services; operator narrows to a saved
                         // collection or recording via the inline editor.
-                        label: 'Random pool',
+                        label: t('bench.targetPool'),
                         onClick: function () {
                             spec.targets.push({
                                 type: 'random', pool: 'workspace',
@@ -1754,7 +1758,7 @@
                 ]);
             }
         },
-            el('span', { textContent: '+ Add target' }),
+            el('span', { textContent: t('bench.addTarget') }),
             el('span', { className: 'bowire-envelope-add-caret', innerHTML: svgIcon('chevronDown') })
         );
         section.appendChild(addBtn);
@@ -1777,28 +1781,28 @@
         var tools = el('div', { className: 'bowire-envelope-target-tools' });
         if (idx > 0) {
             tools.appendChild(el('button', {
-                type: 'button', className: 'bowire-envelope-target-tool-btn', title: 'Move up',
+                type: 'button', className: 'bowire-envelope-target-tool-btn', title: t('bench.moveUp'),
                 innerHTML: svgIcon('chevronUp'),
                 onClick: function () {
-                    var t = spec.targets.splice(idx, 1)[0];
-                    spec.targets.splice(idx - 1, 0, t);
+                    var moved = spec.targets.splice(idx, 1)[0];
+                    spec.targets.splice(idx - 1, 0, moved);
                     persistBenchmarks(); render();
                 }
             }));
         }
         if (idx < spec.targets.length - 1) {
             tools.appendChild(el('button', {
-                type: 'button', className: 'bowire-envelope-target-tool-btn', title: 'Move down',
+                type: 'button', className: 'bowire-envelope-target-tool-btn', title: t('bench.moveDown'),
                 innerHTML: svgIcon('chevronDown'),
                 onClick: function () {
-                    var t = spec.targets.splice(idx, 1)[0];
-                    spec.targets.splice(idx + 1, 0, t);
+                    var moved = spec.targets.splice(idx, 1)[0];
+                    spec.targets.splice(idx + 1, 0, moved);
                     persistBenchmarks(); render();
                 }
             }));
         }
         tools.appendChild(el('button', {
-            type: 'button', className: 'bowire-envelope-target-tool-btn is-danger', title: 'Remove target',
+            type: 'button', className: 'bowire-envelope-target-tool-btn is-danger', title: t('bench.removeTarget'),
             innerHTML: svgIcon('trash'),
             onClick: function () {
                 spec.targets.splice(idx, 1);
@@ -1815,7 +1819,7 @@
             var svc = (typeof services !== 'undefined' ? services : []).find(function (s) { return s.name === target.service; });
             var methodNames = (svc && Array.isArray(svc.methods)) ? svc.methods.map(function (m) { return m.name; }) : [];
 
-            body.appendChild(_inlineSelect('Service', target.service, svcNames, function (v) {
+            body.appendChild(_inlineSelect(t('bench.fieldService'), target.service, svcNames, function (v) {
                 target.service = v;
                 target.method = '';
                 // Latch the picked service's protocol onto the target
@@ -1827,7 +1831,7 @@
                 target.protocol = pickedSvc ? (pickedSvc.source || null) : null;
                 persistBenchmarks(); render();
             }));
-            body.appendChild(_inlineSelect('Method', target.method, methodNames, function (v) {
+            body.appendChild(_inlineSelect(t('bench.targetMethod'), target.method, methodNames, function (v) {
                 target.method = v;
                 // Auto-seed the body template from the method's input
                 // type when the row first picks up a real method — but
@@ -1845,7 +1849,7 @@
                 persistBenchmarks(); render();
             }));
             body.appendChild(el('div', { className: 'bowire-envelope-field' },
-                el('div', { className: 'bowire-envelope-field-label', textContent: 'Body template' }),
+                el('div', { className: 'bowire-envelope-field-label', textContent: t('bench.bodyTemplate') }),
                 el('textarea', {
                     className: 'bowire-envelope-field-textarea',
                     rows: '4', spellcheck: 'false',
@@ -1858,12 +1862,12 @@
         } else if (target.type === 'collection-ref') {
             var colList = (typeof collectionsList !== 'undefined' ? collectionsList : []);
             var colNames = colList.map(function (c) { return c.id + '|' + c.name; });
-            body.appendChild(_inlineSelectKeyed('Collection', target.collectionId, colList, 'id', 'name', function (v) {
+            body.appendChild(_inlineSelectKeyed(t('bench.fieldCollection'), target.collectionId, colList, 'id', 'name', function (v) {
                 target.collectionId = v; persistBenchmarks(); render();
             }));
         } else if (target.type === 'recording-ref') {
             var recList = (typeof recordingsList !== 'undefined' ? recordingsList : []);
-            body.appendChild(_inlineSelectKeyed('Recording', target.recordingId, recList, 'id', 'name', function (v) {
+            body.appendChild(_inlineSelectKeyed(t('bench.fieldRecording'), target.recordingId, recList, 'id', 'name', function (v) {
                 target.recordingId = v; persistBenchmarks(); render();
             }));
         } else if (target.type === 'random') {
@@ -1871,7 +1875,7 @@
             // a different source clears the id of the previously-picked
             // source so we don't end up with a stale collectionId on a
             // 'workspace' pool.
-            body.appendChild(_inlineSelect('Pool source',
+            body.appendChild(_inlineSelect(t('bench.poolSource'),
                 target.pool || 'workspace', ['workspace', 'collection', 'recording'],
                 function (v) {
                     target.pool = v;
@@ -1881,12 +1885,12 @@
                 }));
             if (target.pool === 'collection') {
                 var rCol = (typeof collectionsList !== 'undefined' ? collectionsList : []);
-                body.appendChild(_inlineSelectKeyed('Collection', target.collectionId, rCol, 'id', 'name', function (v) {
+                body.appendChild(_inlineSelectKeyed(t('bench.fieldCollection'), target.collectionId, rCol, 'id', 'name', function (v) {
                     target.collectionId = v; persistBenchmarks(); render();
                 }));
             } else if (target.pool === 'recording') {
                 var rRec = (typeof recordingsList !== 'undefined' ? recordingsList : []);
-                body.appendChild(_inlineSelectKeyed('Recording', target.recordingId, rRec, 'id', 'name', function (v) {
+                body.appendChild(_inlineSelectKeyed(t('bench.fieldRecording'), target.recordingId, rRec, 'id', 'name', function (v) {
                     target.recordingId = v; persistBenchmarks(); render();
                 }));
             }
@@ -1896,7 +1900,7 @@
             // ceiling makes the constraint visible.
             var poolSize = _expandRandomPool(target).length;
             var maxPick = Math.max(1, poolSize);
-            body.appendChild(_numberField('Pick per iteration',
+            body.appendChild(_numberField(t('bench.pickPerIteration'),
                 Math.max(1, target.count || 1), 1, maxPick, function (v) {
                     target.count = v; persistBenchmarks(); render();
                 }));
@@ -1965,12 +1969,12 @@
 
     function _renderPhasesSection(spec) {
         var section = el('div', { className: 'bowire-ws-detail-section' });
-        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Phases' }));
+        section.appendChild(el('div', { className: 'bowire-ws-detail-section-label', textContent: t('bench.phases') }));
 
         if ((spec.phases || []).length === 0) {
             section.appendChild(el('div', {
                 className: 'bowire-envelope-targets-empty',
-                textContent: 'No phases yet — add one to define the load profile.'
+                textContent: t('bench.noPhases')
             }));
         } else {
             var list = el('div', { className: 'bowire-envelope-phases' });
@@ -1983,8 +1987,8 @@
         section.appendChild(el('button', {
             type: 'button',
             className: 'bowire-envelope-phase-add-btn',
-            textContent: '+ Phase',
-            title: 'Add a load phase',
+            textContent: t('bench.addPhase'),
+            title: t('bench.addPhaseTitle'),
             onClick: function () {
                 spec.phases.push(defaultEnvelopePhase({ vus: 4, totalIterations: 100 }));
                 persistBenchmarks();
@@ -2040,7 +2044,7 @@
         var kind = _phaseKind(phase);
         var kindSel = el('select', {
             className: 'bowire-envelope-field-select',
-            title: 'Phase profile',
+            title: t('bench.phaseProfile'),
             onChange: function (e) {
                 var k = e.target.value;
                 if (k === 'iter') {
@@ -2063,38 +2067,39 @@
             }
         });
         [
-            { v: 'iter',    t: 'Fixed iterations' },
-            { v: 'time',    t: 'Hold for duration' },
-            { v: 'ramp',    t: 'Ramp VUs' },
-            { v: 'arrival', t: 'Arrival rate (rps)' }
+            { v: 'iter',    label: t('bench.phaseIterations') },
+            { v: 'time',    label: t('bench.phaseDuration') },
+            { v: 'ramp',    label: t('bench.phaseRamp') },
+            { v: 'arrival', label: t('bench.phaseArrival') }
         ].forEach(function (o) {
-            kindSel.appendChild(el('option', { value: o.v, textContent: o.t, selected: o.v === kind ? 'selected' : null }));
+            kindSel.appendChild(el('option', { value: o.v, textContent: o.label,
+    selected: o.v === kind ? 'selected' : null }));
         });
 
         var fields = el('div', { className: 'bowire-envelope-phase-fields' });
-        fields.appendChild(_numberField('VUs', phase.vus, 1, 64, function (v) {
+        fields.appendChild(_numberField(t('bench.vus'), phase.vus, 1, 64, function (v) {
             phase.vus = v; persistBenchmarks(); render();
         }));
         if (kind === 'iter') {
-            fields.appendChild(_numberField('Iterations', phase.totalIterations || 100, 1, 1000000, function (v) {
+            fields.appendChild(_numberField(t('bench.iterations'), phase.totalIterations || 100, 1, 1000000, function (v) {
                 phase.totalIterations = v; persistBenchmarks(); render();
             }));
         } else if (kind === 'time') {
-            fields.appendChild(_durationField('Duration', phase.durationMs || 30000, function (v) {
+            fields.appendChild(_durationField(t('bench.duration'), phase.durationMs || 30000, function (v) {
                 phase.durationMs = v; persistBenchmarks(); render();
             }));
         } else if (kind === 'ramp') {
-            fields.appendChild(_numberField('Target VUs', phase.rampToVus || (phase.vus * 2), 1, 64, function (v) {
+            fields.appendChild(_numberField(t('bench.targetVus'), phase.rampToVus || (phase.vus * 2), 1, 64, function (v) {
                 phase.rampToVus = v; persistBenchmarks(); render();
             }));
-            fields.appendChild(_durationField('Duration', phase.durationMs || 30000, function (v) {
+            fields.appendChild(_durationField(t('bench.duration'), phase.durationMs || 30000, function (v) {
                 phase.durationMs = v; persistBenchmarks(); render();
             }));
         } else if (kind === 'arrival') {
-            fields.appendChild(_numberField('Rate (rps)', phase.arrivalRate || 10, 1, 10000, function (v) {
+            fields.appendChild(_numberField(t('bench.rate'), phase.arrivalRate || 10, 1, 10000, function (v) {
                 phase.arrivalRate = v; persistBenchmarks(); render();
             }));
-            fields.appendChild(_durationField('Duration', phase.durationMs || 30000, function (v) {
+            fields.appendChild(_durationField(t('bench.duration'), phase.durationMs || 30000, function (v) {
                 phase.durationMs = v; persistBenchmarks(); render();
             }));
         }
@@ -2102,7 +2107,7 @@
         var tools = el('div', { className: 'bowire-envelope-phase-tools' });
         if (idx > 0) {
             tools.appendChild(el('button', {
-                type: 'button', className: 'bowire-envelope-target-tool-btn', title: 'Move up',
+                type: 'button', className: 'bowire-envelope-target-tool-btn', title: t('bench.moveUp'),
                 innerHTML: svgIcon('chevronUp'),
                 onClick: function () {
                     var p = spec.phases.splice(idx, 1)[0]; spec.phases.splice(idx - 1, 0, p);
@@ -2112,7 +2117,7 @@
         }
         if (idx < spec.phases.length - 1) {
             tools.appendChild(el('button', {
-                type: 'button', className: 'bowire-envelope-target-tool-btn', title: 'Move down',
+                type: 'button', className: 'bowire-envelope-target-tool-btn', title: t('bench.moveDown'),
                 innerHTML: svgIcon('chevronDown'),
                 onClick: function () {
                     var p = spec.phases.splice(idx, 1)[0]; spec.phases.splice(idx + 1, 0, p);
@@ -2122,7 +2127,7 @@
         }
         if (spec.phases.length > 1) {
             tools.appendChild(el('button', {
-                type: 'button', className: 'bowire-envelope-target-tool-btn is-danger', title: 'Remove phase',
+                type: 'button', className: 'bowire-envelope-target-tool-btn is-danger', title: t('bench.removePhase'),
                 innerHTML: svgIcon('trash'),
                 onClick: function () {
                     spec.phases.splice(idx, 1); persistBenchmarks(); render();
@@ -2221,13 +2226,13 @@
             var hasAny = benchmarksList.length > 0;
             emptyWrap.appendChild(renderEmptyCard({
                 icon: 'chart',
-                headline: hasAny ? 'Pick a benchmark' : 'No benchmarks yet',
+                headline: hasAny ? t('bench.pickOne') : t('bench.noneYet'),
                 body: hasAny
                     ? 'Pick one in the sidebar to see its config and last run, or start a new benchmark from a method, collection or recording.'
                     : 'A benchmark repeats N runs at K concurrency and reports latency percentiles + status distribution. Three shapes: single method (one unary call), collection (replay every item), recording (replay every step). Each source has a Benchmark button that prefills the right shape — start there, or create an empty spec.',
                 actions: hasAny ? [{
                     id: 'bowire-bench-new-btn',
-                    label: 'New benchmark',
+                    label: t('bench.new'),
                     primary: true,
                     onClick: function () {
                         var s = createBenchmarkSpec();
@@ -2240,7 +2245,7 @@
                         // tour to spotlight the New-benchmark CTA on the
                         // empty card.
                         id: 'bowire-bench-new-btn',
-                        label: 'New benchmark',
+                        label: t('bench.new'),
                         primary: true,
                         onClick: function () {
                             var s = createBenchmarkSpec();
@@ -2249,7 +2254,7 @@
                         }
                     },
                     {
-                        label: 'Pick a method',
+                        label: t('bench.pickMethod'),
                         onClick: function () {
                             railMode = 'discover';
                             try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
@@ -2257,7 +2262,7 @@
                         }
                     },
                     {
-                        label: 'Pick a collection',
+                        label: t('bench.pickCollection'),
                         onClick: function () {
                             railMode = 'collections';
                             try { localStorage.setItem('bowire_rail_mode', 'collections'); } catch { /* ignore */ }
@@ -2265,7 +2270,7 @@
                         }
                     },
                     {
-                        label: 'Pick a recording',
+                        label: t('bench.pickRecording'),
                         onClick: function () {
                             railMode = 'recordings';
                             try { localStorage.setItem('bowire_rail_mode', 'recordings'); } catch { /* ignore */ }
@@ -2277,7 +2282,7 @@
                     // even after the saved-once flag is set.
                     {
                         id: 'bowire-bench-empty-tour-btn',
-                        label: 'Take a tour',
+                        label: t('common.takeTour'),
                         onClick: function () {
                             if (typeof window !== 'undefined'
                                 && typeof window.bowireStartRunBenchmarkTour === 'function') {
@@ -2311,7 +2316,7 @@
                 type: 'text',
                 className: 'bowire-ws-detail-name',
                 value: spec.name,
-                'aria-label': 'Benchmark name',
+                'aria-label': t('bench.name'),
                 onChange: function (e) {
                     var v = String(e.target.value || '').trim();
                     if (v) { spec.name = v; persistBenchmarks(); render(); }
@@ -2320,10 +2325,11 @@
             el('button', {
                 className: 'bowire-ws-detail-switch-btn',
                 style: 'color:var(--bowire-danger)',
-                title: 'Delete this benchmark',
-                textContent: 'Delete',
+                title: t('bench.deleteThis'),
+                textContent: t('common.delete'),
                 onClick: function () {
-                    bowireConfirm('Delete benchmark "' + spec.name + '"?', { confirmText: 'Delete', danger: true })
+                    bowireConfirm(t('bench.deleteConfirm', { name: spec.name }),
+    { confirmText: t('common.delete'), danger: true })
                         .then(function (ok) {
                             if (ok) { deleteBenchmarkSpec(spec.id); render(); }
                         });
@@ -2385,7 +2391,7 @@
 
         // ---- Mode toggle (sequential | parallel) ----
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-            el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Mode' }),
+            el('div', { className: 'bowire-ws-detail-section-label', textContent: t('bench.mode') }),
             _renderModeSegmented(spec)
         ));
 
@@ -2403,7 +2409,7 @@
                 className: 'bowire-ws-detail-switch-btn',
                 style: 'background:' + (isThisRunning ? 'var(--bowire-danger)' : 'var(--bowire-accent)') + ';color:#fff',
                 disabled: !canRun && !isThisRunning ? 'disabled' : null,
-                textContent: isThisRunning ? 'Stop' : 'Run benchmark',
+                textContent: isThisRunning ? t('bench.stop') : t('bench.run'),
                 onClick: function () {
                     if (isThisRunning) { stopBenchmark(); return; }
                     runBenchmarkSpec(spec, function () { render(); });
@@ -2418,7 +2424,7 @@
                 : (!canRun
                     ? el('span', {
                         className: 'bowire-ws-detail-stat-hint',
-                        textContent: 'Add at least one resolvable target to enable Run.'
+                        textContent: t('bench.needTarget')
                     })
                     : null)
         );
@@ -2473,21 +2479,21 @@
                 className: 'bowire-ws-detail-section',
                 style: 'display:flex;align-items:center;justify-content:space-between;gap:8px'
             },
-                el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Results' }),
+                el('div', { className: 'bowire-ws-detail-section-label', textContent: t('bench.results') }),
                 el('div', { style: 'display:inline-flex;align-items:stretch' },
                     el('button', {
                         type: 'button',
                         className: 'bowire-envelope-target-add-btn',
-                        title: 'Export per-method CSV (semicolon-separated, UTF-8 BOM)',
+                        title: t('bench.exportCsvTitle'),
                         style: 'border-top-right-radius:0;border-bottom-right-radius:0',
                         onClick: function () { exportSelectedRunAs('csv'); }
                     },
-                        el('span', { textContent: 'Export as CSV' })
+                        el('span', { textContent: t('bench.exportCsv') })
                     ),
                     el('button', {
                         type: 'button',
                         className: 'bowire-envelope-target-add-btn',
-                        title: 'Pick another export format',
+                        title: t('bench.pickFormat'),
                         style: 'border-top-left-radius:0;border-bottom-left-radius:0;border-left:none;padding-left:6px;padding-right:8px',
                         onClick: function (ev) {
                             if (typeof showContextMenu !== 'function') {
@@ -2495,14 +2501,14 @@
                                 return;
                             }
                             showContextMenu(ev.clientX, ev.clientY, [
-                                { label: 'Export as CSV (per method)', icon: 'send',
+                                { label: t('bench.exportCsvMethod'), icon: 'send',
                                     onClick: function () { exportSelectedRunAs('csv'); } },
-                                { label: 'Export as CSV (per iteration)', icon: 'send',
+                                { label: t('bench.exportCsvIteration'), icon: 'send',
                                     onClick: function () { exportSelectedRunAs('csv-iterations'); } },
                                 { separator: true },
-                                { label: 'Export as k6-summary JSON', icon: 'send',
+                                { label: t('bench.exportK6Summary'), icon: 'send',
                                     onClick: function () { exportSelectedRunAs('k6-summary'); } },
-                                { label: 'Export as OTLP metrics JSON', icon: 'send',
+                                { label: t('bench.exportOtlp'), icon: 'send',
                                     onClick: function () { exportSelectedRunAs('otlp'); } }
                             ]);
                         }
@@ -2514,7 +2520,7 @@
             main.appendChild(exportBar);
 
             main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-                el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Latency (last run)' }),
+                el('div', { className: 'bowire-ws-detail-section-label', textContent: t('bench.latencyLastRun') }),
                 el('div', { className: 'bowire-ws-detail-stats' },
                     statTile('p50', _fmtMs(s.p50)),
                     statTile('p90', _fmtMs(s.p90)),
@@ -2524,7 +2530,7 @@
                 )
             ));
             main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-                el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Throughput' }),
+                el('div', { className: 'bowire-ws-detail-section-label', textContent: t('bench.throughput') }),
                 el('div', { className: 'bowire-ws-detail-stats' },
                     statTile('rps', (Math.round(s.throughput * 10) / 10) + '/s'),
                     statTile('elapsed', (Math.round(s.totalSeconds * 10) / 10) + ' s'),
@@ -2555,7 +2561,7 @@
                     );
                 });
                 main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-                    el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Status distribution' }),
+                    el('div', { className: 'bowire-ws-detail-section-label', textContent: t('bench.statusDistribution') }),
                     el('div', {}, histRows)
                 ));
             }
@@ -2625,7 +2631,7 @@
                         );
                     });
                     main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
-                        el('div', { className: 'bowire-ws-detail-section-label', textContent: 'Per-endpoint breakdown' }),
+                        el('div', { className: 'bowire-ws-detail-section-label', textContent: t('bench.perEndpoint') }),
                         el('div', {}, rows)
                     ));
                 }
@@ -2634,7 +2640,7 @@
             main.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
                 style: 'padding:16px 0',
-                textContent: 'No run yet. Configure the load above and hit Run.'
+                textContent: t('bench.noRunYet')
             }));
         }
 
@@ -2744,20 +2750,20 @@
         });
 
         var flow = [];
-        (spec.targets || []).forEach(function (t) {
-            if (t.type === 'method') {
-                flow.push(_envelopeMethodTargetToArtilleryStep(t));
-            } else if (t.type === 'collection-ref') {
+        (spec.targets || []).forEach(function (target) {
+            if (target.type === 'method') {
+                flow.push(_envelopeMethodTargetToArtilleryStep(target));
+            } else if (target.type === 'collection-ref') {
                 var col = (typeof collectionsList !== 'undefined' ? collectionsList : [])
-                    .find(function (c) { return c.id === t.collectionId; });
+                    .find(function (c) { return c.id === target.collectionId; });
                 if (col && Array.isArray(col.items)) {
                     col.items.forEach(function (it) {
                         flow.push(_envelopeMethodTargetToArtilleryStep(it));
                     });
                 }
-            } else if (t.type === 'recording-ref') {
+            } else if (target.type === 'recording-ref') {
                 var rec = (typeof recordingsList !== 'undefined' ? recordingsList : [])
-                    .find(function (r) { return r.id === t.recordingId; });
+                    .find(function (r) { return r.id === target.recordingId; });
                 if (rec && Array.isArray(rec.steps)) {
                     rec.steps.forEach(function (st) {
                         flow.push(_envelopeMethodTargetToArtilleryStep({
@@ -2769,7 +2775,7 @@
                         }));
                     });
                 }
-            } else if (t.type === 'random') {
+            } else if (target.type === 'random') {
                 // #231 — Artillery has no native random-pick; the
                 // closest fit is `requestFromList` which picks one step
                 // at random from an inline list per VU. We emit it
@@ -2779,10 +2785,10 @@
                 // round-trip back to a 'random' target needs a
                 // dedicated Bowire-envelope export (the Bowire-native
                 // round-trip preserves the type natively).
-                var poolItems = _expandRandomPool(t);
+                var poolItems = _expandRandomPool(target);
                 if (poolItems.length > 0) {
                     var randomSteps = poolItems.map(_envelopeMethodTargetToArtilleryStep);
-                    for (var rp = 0; rp < Math.max(1, t.count || 1); rp++) {
+                    for (var rp = 0; rp < Math.max(1, target.count || 1); rp++) {
                         flow.push({ requestFromList: randomSteps });
                     }
                 }
@@ -2889,23 +2895,23 @@
         var targetCalls = [];
         var randomPoolIdx = 0;
         var randomPoolDecls = [];
-        (spec.targets || []).forEach(function (t) {
-            if (t.type === 'method') {
+        (spec.targets || []).forEach(function (target) {
+            if (target.type === 'method') {
                 targetCalls.push(
                     "    http.post(\n" +
                     "        baseUrl + '/api/invoke',\n" +
                     "        JSON.stringify({\n" +
-                    "            service: '" + (t.service || '') + "',\n" +
-                    "            method: '" + (t.method || '') + "',\n" +
-                    "            protocol: " + (t.protocol ? "'" + t.protocol + "'" : 'null') + ",\n" +
-                    "            messages: [" + JSON.stringify(t.body || '{}') + "],\n" +
-                    "            metadata: " + JSON.stringify(t.metadata || null) + "\n" +
+                    "            service: '" + (target.service || '') + "',\n" +
+                    "            method: '" + (target.method || '') + "',\n" +
+                    "            protocol: " + (target.protocol ? "'" + target.protocol + "'" : 'null') + ",\n" +
+                    "            messages: [" + JSON.stringify(target.body || '{}') + "],\n" +
+                    "            metadata: " + JSON.stringify(target.metadata || null) + "\n" +
                     "        }),\n" +
                     "        { headers: { 'Content-Type': 'application/json' } }\n" +
                     "    );"
                 );
-            } else if (t.type === 'random') {
-                var poolItems = _expandRandomPool(t);
+            } else if (target.type === 'random') {
+                var poolItems = _expandRandomPool(target);
                 if (poolItems.length === 0) return;
                 var poolVar = '__bowirePool' + (randomPoolIdx++);
                 var poolPayloads = poolItems.map(function (sub) {
@@ -2925,7 +2931,7 @@
                     // shape we want inlined into the generated script.
                     "const " + poolVar + " = " + JSON.stringify(poolPayloads, null, 2) + ";"
                 );
-                var pickN = Math.max(1, t.count || 1);
+                var pickN = Math.max(1, target.count || 1);
                 targetCalls.push(
                     "    // #231 random pool — shuffle in place, pick first " + pickN + "\n" +
                     "    {\n" +
@@ -3039,7 +3045,7 @@
             }, 0);
         } catch (e) {
             console.warn('[bowire] envelope download failed', e);
-            toast('Download failed', 'error');
+            toast(t('download.failed'), 'error');
         }
     }
 
@@ -3059,7 +3065,7 @@
                     var parsed = JSON.parse(reader.result || '{}');
                     onParsed(parsed);
                 } catch (e) {
-                    toast(label + ' import failed: ' + e.message, 'error');
+                    toast(t('bench.importFailed', { format: label, error: e.message }), 'error');
                 }
             };
             reader.readAsText(file);
@@ -3069,21 +3075,21 @@
 
     function exportSelectedEnvelopeAs(format) {
         var spec = getBenchmarkSpec(benchmarksSelectedId);
-        if (!spec) { toast('Pick an envelope to export', 'error'); return; }
+        if (!spec) { toast(t('bench.pickToExport'), 'error'); return; }
         var stem = (spec.name || 'envelope').replace(/[^\w\-]+/g, '_');
         if (format === 'artillery') {
             var artillery = exportEnvelopeAsArtillery(spec);
             _downloadEnvelopeArtifact(stem + '.artillery.json', 'application/json',
                 JSON.stringify(artillery, null, 2));
-            toast('Exported as Artillery JSON', 'success');
+            toast(t('bench.exportedArtillery'), 'success');
         } else if (format === 'k6') {
             var k6 = exportEnvelopeAsK6(spec);
             _downloadEnvelopeArtifact(stem + '.k6.js', 'application/javascript', k6);
-            toast('Exported as k6 script', 'success');
+            toast(t('bench.exportedK6'), 'success');
         } else if (format === 'native') {
             _downloadEnvelopeArtifact(stem + '.bowire-envelope.json', 'application/json',
                 JSON.stringify(spec, null, 2));
-            toast('Exported as Bowire envelope', 'success');
+            toast(t('bench.exportedEnvelope'), 'success');
         }
     }
 
@@ -3202,15 +3208,15 @@
             lines2.push(_csvRow(row));
         } else {
             keys.forEach(function (k) {
-                var t = targetStats[k];
-                var ds = t.durations || [];
+                var stat = targetStats[k];
+                var ds = stat.durations || [];
                 var sum = 0;
                 for (var i = 0; i < ds.length; i++) sum += ds[i];
                 var avg = ds.length > 0 ? sum / ds.length : 0;
                 var min = ds.length > 0 ? ds[0] : 0;
                 var max = ds.length > 0 ? ds[ds.length - 1] : 0;
-                var rps = elapsedSec > 0 ? (t.count / elapsedSec) : 0;
-                var row = [t.label, t.count, t.errors,
+                var rps = elapsedSec > 0 ? (stat.count / elapsedSec) : 0;
+                var row = [stat.label, stat.count, stat.errors,
                     Math.round(_percentileSorted(ds, 50) * 100) / 100,
                     Math.round(_percentileSorted(ds, 95) * 100) / 100,
                     Math.round(_percentileSorted(ds, 99) * 100) / 100,
@@ -3218,7 +3224,7 @@
                     Math.round(max * 100) / 100,
                     Math.round(avg * 100) / 100,
                     Math.round(rps * 100) / 100];
-                statusKeys.forEach(function (sk) { row.push((t.statusCounts || {})[sk] || 0); });
+                statusKeys.forEach(function (sk) { row.push((stat.statusCounts || {})[sk] || 0); });
                 lines2.push(_csvRow(row));
             });
         }
@@ -3352,17 +3358,17 @@
                 cancelled: !!last.cancelled,
                 statusCounts: last.statusCounts || {},
                 targets: Object.keys(last.targetStats || {}).map(function (k) {
-                    var t = last.targetStats[k];
-                    var ds = t.durations || [];
+                    var stat = last.targetStats[k];
+                    var ds = stat.durations || [];
                     return {
-                        key: t.key,
-                        label: t.label,
-                        count: t.count,
-                        errors: t.errors,
+                        key: stat.key,
+                        label: stat.label,
+                        count: stat.count,
+                        errors: stat.errors,
                         p50: _percentileSorted(ds, 50),
                         p95: _percentileSorted(ds, 95),
                         p99: _percentileSorted(ds, 99),
-                        statusCounts: t.statusCounts || {}
+                        statusCounts: stat.statusCounts || {}
                     };
                 })
             },
@@ -3471,26 +3477,26 @@
         var keys = Object.keys(last.targetStats || {});
         if (keys.length > 0) {
             keys.forEach(function (k) {
-                var t = last.targetStats[k];
-                var attrs = [_otlpAttr('bowire.target.key', t.key), _otlpAttr('bowire.target.label', t.label)];
-                dataPoints.push(_otlpHistogramPoint(t.durations || [], startMs, endMs, attrs));
+                var stat = last.targetStats[k];
+                var attrs = [_otlpAttr('bowire.target.key', stat.key), _otlpAttr('bowire.target.label', stat.label)];
+                dataPoints.push(_otlpHistogramPoint(stat.durations || [], startMs, endMs, attrs));
                 counterPoints.push({
                     attributes: attrs,
                     startTimeUnixNano: _otlpUnixNano(startMs),
                     timeUnixNano: _otlpUnixNano(endMs),
-                    asInt: String(t.count || 0)
+                    asInt: String(stat.count || 0)
                 });
                 counterPoints.push({
                     attributes: attrs.concat([_otlpAttr('outcome', 'error')]),
                     startTimeUnixNano: _otlpUnixNano(startMs),
                     timeUnixNano: _otlpUnixNano(endMs),
-                    asInt: String(t.errors || 0)
+                    asInt: String(stat.errors || 0)
                 });
                 throughputPoints.push({
                     attributes: attrs,
                     startTimeUnixNano: _otlpUnixNano(startMs),
                     timeUnixNano: _otlpUnixNano(endMs),
-                    asDouble: elapsedSec > 0 ? (t.count / elapsedSec) : 0
+                    asDouble: elapsedSec > 0 ? (stat.count / elapsedSec) : 0
                 });
             });
         }
@@ -3528,7 +3534,7 @@
                     metrics: [
                         {
                             name: 'bowire_bench.iteration.duration_ms',
-                            description: 'Per-iteration latency for a Bowire benchmark envelope',
+                            description: 'Per-iteration latency for a Bowire benchmark envelope',  // i18n-exempt: written into the exported OTLP metrics document, not shown in Bowire
                             unit: 'ms',
                             histogram: {
                                 aggregationTemporality: 2, // CUMULATIVE
@@ -3537,7 +3543,7 @@
                         },
                         {
                             name: 'bowire_bench.iteration.count',
-                            description: 'Iterations executed (split by outcome via the `outcome` attribute)',
+                            description: 'Iterations executed (split by outcome via the `outcome` attribute)',  // i18n-exempt: written into the exported OTLP metrics document, not shown in Bowire
                             unit: '1',
                             sum: {
                                 aggregationTemporality: 2,
@@ -3547,7 +3553,7 @@
                         },
                         {
                             name: 'bowire_bench.run.throughput',
-                            description: 'Iterations per second over the run duration',
+                            description: 'Iterations per second over the run duration',  // i18n-exempt: written into the exported OTLP metrics document, not shown in Bowire
                             unit: '1/s',
                             gauge: { dataPoints: throughputPoints }
                         }
@@ -3564,51 +3570,51 @@
     // (button always present; click guarded).
     function exportSelectedRunAs(format) {
         var spec = getBenchmarkSpec(benchmarksSelectedId);
-        if (!spec) { toast('Pick an envelope to export', 'error'); return; }
-        if (!spec.lastRun) { toast('No run results yet — hit Run first', 'error'); return; }
+        if (!spec) { toast(t('bench.pickToExport'), 'error'); return; }
+        if (!spec.lastRun) { toast(t('bench.noResultsYet'), 'error'); return; }
         var stem = (spec.name || 'run').replace(/[^\w\-]+/g, '_');
         if (format === 'csv') {
             var csv = exportRunAsCsv(spec, 'per-method');
             _downloadEnvelopeArtifact(stem + '.results.csv', 'text/csv;charset=utf-8', csv);
-            toast('Exported results as CSV', 'success');
+            toast(t('bench.exportedCsv'), 'success');
         } else if (format === 'csv-iterations') {
             var csvIter = exportRunAsCsv(spec, 'per-iteration');
             _downloadEnvelopeArtifact(stem + '.iterations.csv', 'text/csv;charset=utf-8', csvIter);
-            toast('Exported per-iteration CSV', 'success');
+            toast(t('bench.exportedCsvIteration'), 'success');
         } else if (format === 'k6-summary') {
             var k6 = exportRunAsK6Summary(spec);
             _downloadEnvelopeArtifact(stem + '.k6-summary.json', 'application/json',
                 JSON.stringify(k6, null, 2));
-            toast('Exported as k6-summary JSON', 'success');
+            toast(t('bench.exportedK6Summary'), 'success');
         } else if (format === 'otlp') {
             var otlp = exportRunAsOtlpJson(spec);
             _downloadEnvelopeArtifact(stem + '.otlp.json', 'application/json',
                 JSON.stringify(otlp, null, 2));
-            toast('Exported as OTLP metrics (file)', 'success');
+            toast(t('bench.exportedOtlp'), 'success');
         }
     }
 
     function importEnvelopeFrom(format) {
         if (format === 'artillery') {
-            _pickEnvelopeJsonFile('Artillery', function (parsed) {
+            _pickEnvelopeJsonFile('Artillery', function (parsed) {  // i18n-exempt: the name of the format being read, not Bowire's prose
                 var spec = importEnvelopeFromArtillery(parsed);
                 benchmarksSelectedId = spec.id;
                 railMode = 'benchmarks';
                 try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
-                toast('Imported Artillery config', 'success');
+                toast(t('bench.importedArtillery'), 'success');
                 render();
             });
         } else if (format === 'postman') {
-            _pickEnvelopeJsonFile('Postman', function (parsed) {
+            _pickEnvelopeJsonFile('Postman', function (parsed) {  // i18n-exempt: the name of the format being read, not Bowire's prose
                 var spec = importEnvelopeFromPostman(parsed);
                 benchmarksSelectedId = spec.id;
                 railMode = 'benchmarks';
                 try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch { /* ignore */ }
-                toast('Imported Postman collection', 'success');
+                toast(t('bench.importedPostman'), 'success');
                 render();
             });
         } else if (format === 'native') {
-            _pickEnvelopeJsonFile('Bowire envelope', function (parsed) {
+            _pickEnvelopeJsonFile('Bowire envelope', function (parsed) {  // i18n-exempt: the name of the format being read, not Bowire's prose
                 // Native imports preserve everything — just clone the
                 // raw object with a fresh id so it doesn't collide
                 // with an existing entry.
@@ -3617,7 +3623,7 @@
                 benchmarksList.push(parsed);
                 persistBenchmarks();
                 benchmarksSelectedId = parsed.id;
-                toast('Imported envelope', 'success');
+                toast(t('bench.importedEnvelope'), 'success');
                 render();
             });
         }

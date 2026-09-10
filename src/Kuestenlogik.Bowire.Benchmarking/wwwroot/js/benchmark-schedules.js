@@ -105,7 +105,7 @@ function bowireRenderScheduleRow(entry) {
         }, nextText),
         el('button', {
             class: 'bowire-schedule-toggle',
-            title: entry.enabled ? 'Pause this schedule' : 'Resume this schedule',
+            title: entry.enabled ? t('bench.pauseSchedule') : t('bench.resumeSchedule'),
             'data-schedule-id': entry.id,
             onclick: function () {
                 // Re-resolve the id from the DOM at click time: morphdom
@@ -115,7 +115,7 @@ function bowireRenderScheduleRow(entry) {
                 var current = (bowireBenchmarkSchedules || []).filter(function (s) { return s.id === id; })[0];
                 bowireToggleBenchmarkSchedule(id, current ? !current.enabled : true);
             }
-        }, entry.enabled ? 'Pause' : 'Resume')
+        }, entry.enabled ? t('intercept.pause') : t('intercept.resume'))
     ]);
 
     var meta = el('div', { class: 'bowire-schedule-meta' },
@@ -135,10 +135,10 @@ function bowireRenderScheduleRow(entry) {
                 + ' · ' + last.count + ' ok, ' + last.errors + ' failed'
                 + ' (' + last.triggeredBy + ')')
         ]));
-        (last.thresholds || []).forEach(function (t) {
-            if (t.ok) return;
+        (last.thresholds || []).forEach(function (th) {
+            if (th.ok) return;
             kids.push(el('div', { class: 'bowire-schedule-breach' },
-                t.spec + ' — actual ' + bowireFormatScheduleMs(t.actual)));
+                th.spec + ' — actual ' + bowireFormatScheduleMs(th.actual)));
         });
     } else {
         kids.push(el('div', { class: 'bowire-schedule-last' }, 'never run'));
@@ -155,7 +155,7 @@ function renderBenchmarkSchedules() {
                 class: 'bowire-schedule-refresh',
                 disabled: bowireBenchmarkSchedulesLoading ? 'disabled' : null,
                 onclick: function () { bowireLoadBenchmarkSchedules(); }
-            }, bowireBenchmarkSchedulesLoading ? 'Loading…' : 'Refresh')
+            }, bowireBenchmarkSchedulesLoading ? t('settings.loading') : t('sidebar.sources.refresh'))
         ])
     ];
 
