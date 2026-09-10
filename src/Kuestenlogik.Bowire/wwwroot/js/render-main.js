@@ -768,8 +768,8 @@
             var result = await resp.json();
             if (result.title) {
                 responseError = result;
-                statusInfo = { status: 'Error', durationMs: result.duration_ms || 0 };
-                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: richErrorDetail(result, 'Request failed') });
+                statusInfo = { status: 'Error', durationMs: result.duration_ms || 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
+                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: richErrorDetail(result, 'Request failed') });  // i18n-exempt: the action log stores rendered text, see #689
             } else {
                 responseData = result.response;
                 statusInfo = { status: result.status, durationMs: result.duration_ms || 0 };
@@ -797,7 +797,7 @@
             }
         } catch (e) {
             responseError = e.message;
-            addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });
+            addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });  // i18n-exempt: the action log stores rendered text, see #689
         }
 
         isExecuting = false;
@@ -1066,7 +1066,7 @@
                         toast(t('main.env.deleted', { name: backup.name || t('collections.unnamed') }), 'info', {
                             undo: function () { restoreEnvironment(backup); envSidebarSelectedId = backup.id; render(); },
                             logAction: { kind: 'env-delete',
-                                title: 'Deleted environment "' + (backup.name || 'unnamed') + '"',
+                                title: 'Deleted environment "' + (backup.name || 'unnamed') + '"',  // i18n-exempt: the action log stores rendered text, see #689
                                 undoSpec: { env: backup } }
                         });
                     }, { title: t('sidebar.envs.deleteHeading'), danger: true, confirmText: t('common.delete') });
@@ -1176,7 +1176,7 @@
                 className: 'bowire-env-editor-subtitle',
                 textContent: t('main.env.secretsLede')
             }));
-            secWrap.appendChild(_renderKvSection('Secrets', envSecretsMap, function (next) {
+            secWrap.appendChild(_renderKvSection(t('main.tab.secrets'), envSecretsMap, function (next) {
                 var oldNames = Object.keys(envSecretsMap);
                 var newNames = Object.keys(next);
                 oldNames.forEach(function (n) {
@@ -1739,8 +1739,8 @@
             var emptyWrap = el('div', { className: 'bowire-main-pad' });
             emptyWrap.appendChild(renderEmptyCard({
                 icon: 'layers',
-                headline: 'No workspaces yet',
-                body: 'A workspace is your project folder — it holds the URLs you discover, the environments + variables + secrets you reference, and the collections / recordings / benchmarks you build. Create one to start organising sources, environments and recordings.',
+                headline: t('main.ws.noneYet'),
+                body: t('main.ws.emptyBody'),
                 actions: [{
                     label: t('sidebar.ws.new'),
                     primary: true,
@@ -1945,8 +1945,8 @@
             row.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-env-overview-check' + (isActive ? ' is-active' : ''),
-                title: isActive ? 'Active workspace' : 'Switch to this workspace',
-                'aria-label': isActive ? 'Active workspace' : 'Switch to this workspace',
+                title: isActive ? t('main.ws.active') : t('main.ws.switchTo'),
+                'aria-label': isActive ? t('main.ws.active') : t('main.ws.switchTo'),
                 'aria-pressed': isActive ? 'true' : 'false',
                 textContent: '✓',
                 onClick: function (ev) {
@@ -2081,7 +2081,7 @@
                                     recordAction({
                                         kind: 'workspace-rename',
                                         rail: 'workspaces',
-                                        title: 'Renamed workspace "' + prevName + '" → "' + v + '"',
+                                        title: 'Renamed workspace "' + prevName + '" → "' + v + '"',  // i18n-exempt: the action log stores rendered text, see #689
                                         undoSpec: { workspaceId: targetId, prevName: prevName, nextName: v },
                                         undo: function () { renameWorkspace(targetId, prevName); render(); },
                                         redo: function () { renameWorkspace(targetId, v); render(); }
@@ -2154,7 +2154,7 @@
             var _dirty = (typeof hasUnflushedChanges === 'function') && hasUnflushedChanges();
             var saveBtn = el('button', {
                 className: 'bowire-ws-detail-action-btn',
-                textContent: _dirty ? 'Save now' : 'Saved',
+                textContent: _dirty ? t('main.ws.saveNow') : t('main.ws.saved'),
                 title: _dirty
                     ? 'Force-flush every persist slot. Same as Cmd/Ctrl+S.'
                     : 'Nothing pending — every autosave slot is already on disk.',
@@ -2341,7 +2341,7 @@
             }));
             var liveWsForVars = _liveWs() || ws;
             var varsMap = liveWsForVars.vars || {};
-            main.appendChild(_renderKvSection('Variables', varsMap, function (next) {
+            main.appendChild(_renderKvSection(t('rb.tab.vars'), varsMap, function (next) {
                 var live = _liveWs();
                 if (live) {
                     live.vars = next;
@@ -2393,7 +2393,7 @@
                 textContent: t('main.ws.secretsLede')
             }));
             var secretsMap = (typeof getWorkspaceSecrets === 'function') ? getWorkspaceSecrets(ws.id) : {};
-            main.appendChild(_renderKvSection('Secrets', secretsMap, function (next) {
+            main.appendChild(_renderKvSection(t('main.tab.secrets'), secretsMap, function (next) {
                 var oldNames = Object.keys(secretsMap);
                 var newNames = Object.keys(next);
                 oldNames.forEach(function (n) {
@@ -2467,7 +2467,7 @@
                                 recordAction({
                                     kind: 'workspace-color',
                                     rail: 'workspaces',
-                                    title: 'Changed workspace colour',
+                                    title: 'Changed workspace colour',  // i18n-exempt: the action log stores rendered text, see #689
                                     undoSpec: { workspaceId: targetId, prevColor: prevColor, nextColor: c },
                                     undo: function () {
                                         var w = workspaces.find(function (x) { return x.id === targetId; });
@@ -2629,25 +2629,26 @@
         main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
             el('div', { className: 'bowire-ws-detail-section-label', textContent: t('main.ws.contents') }),
             el('div', { className: 'bowire-ws-detail-stats' },
-                statTile('URLs', urlCount,
+                statTile(t('main.ws.urls'), urlCount,
                     isActive
-                        ? (urlCount === 0 ? 'add one below' : connectedCount + ' connected')
-                        : 'switch to load',
+                        ? (urlCount === 0 ? t('main.ws.addBelow')
+                            : t('main.ws.connectedCount', { count: connectedCount }))
+                        : t('main.ws.switchToLoad'),
                     isActive ? 'discover' : null),
-                statTile('Environments', envCount,
-                    envCount === 0 ? 'add one in the tree' : 'in this workspace',
+                statTile(t('sidebar.envs.title'), envCount,
+                    envCount === 0 ? t('main.ws.addInTree') : t('main.ws.inThis'),
                     isActive ? 'environments' : null),
-                statTile('Recordings', recordingCount,
-                    isActive ? 'in this workspace' : 'switch to load',
+                statTile(t('sidebar.recordings.title'), recordingCount,
+                    isActive ? t('main.ws.inThis') : t('main.ws.switchToLoad'),
                     isActive ? 'recordings' : null),
-                statTile('Collections', collectionCount,
-                    isActive ? 'in this workspace' : 'switch to load',
+                statTile(t('sidebar.collections.title'), collectionCount,
+                    isActive ? t('main.ws.inThis') : t('main.ws.switchToLoad'),
                     isActive ? 'collections' : null),
-                statTile('Favorites', favCount,
-                    isActive ? 'starred methods' : 'switch to load',
+                statTile(t('main.home.favorites'), favCount,
+                    isActive ? t('main.ws.starredMethods') : t('main.ws.switchToLoad'),
                     isActive ? 'home' : null),
-                statTile('Mocks', mockCount,
-                    isActive ? 'running now' : 'switch to load',
+                statTile(t('intercept.mocksTab'), mockCount,
+                    isActive ? t('main.ws.runningNow') : t('main.ws.switchToLoad'),
                     isActive ? 'mocks' : null)
             )
         ));
@@ -2733,7 +2734,7 @@
                 }),
                 el('code', {
                     className: 'bowire-ws-detail-storage-cli-hint-code',
-                    textContent: 'bowire workspace export <file.json>'
+                    textContent: 'bowire workspace export <file.json>'  // i18n-exempt: the command a user types, not Bowire's prose
                 }),
                 el('span', {
                     className: 'bowire-ws-detail-storage-cli-hint-tail',
@@ -3074,7 +3075,7 @@
                                     logAction: {
                                         kind: 'workspace-delete',
                                         rail: 'workspaces',
-                                        title: 'Deleted workspace "' + snapshotName + '"',
+                                        title: 'Deleted workspace "' + snapshotName + '"',  // i18n-exempt: the action log stores rendered text, see #689
                                         undoSpec: {
                                             workspaceId: wsId,
                                             workspace: sidechannel ? sidechannel.workspace : null,
@@ -3087,8 +3088,8 @@
                             }
                         },
                         {
-                            title: mode === 'hard' ? 'Hard-delete workspace' : 'Delete workspace',
-                            confirmText: mode === 'hard' ? 'Delete forever' : 'Delete',
+                            title: mode === 'hard' ? t('main.ws.hardDelete') : t('main.ws.delete'),
+                            confirmText: mode === 'hard' ? t('main.ws.deleteForever') : t('common.delete'),
                             danger: true
                         }
                     );
@@ -3331,7 +3332,7 @@
                     el('input', {
                         type: masked ? 'password' : 'text',
                         value: map[k] || '',
-                        placeholder: masked ? '(secret)' : 'value',
+                        placeholder: masked ? t('main.kv.secretMask') : t('main.kv.value'),
                         style: 'flex:1;min-width:0;font-family:var(--bowire-mono);font-size:12px;background:transparent;border:1px solid var(--bowire-border);border-radius:var(--bowire-radius-sm);padding:4px 6px;color:var(--bowire-text)',
                         onChange: function (e) {
                             var next = Object.assign({}, map);
@@ -3367,17 +3368,17 @@
             className: 'bowire-ws-detail-action',
             textContent: t(masked ? 'main.ws.addSecret' : 'main.env.addVar'),
             onClick: function () {
-                bowirePrompt(masked ? 'Secret name' : 'Variable name', {
-                    title: masked ? 'Add secret' : 'Add variable',
-                    placeholder: masked ? 'e.g. GH_TOKEN' : 'e.g. baseUrl',
+                bowirePrompt(masked ? t('main.kv.secretName') : t('main.kv.variableName'), {
+                    title: masked ? t('main.kv.addSecret') : t('main.kv.addVariable'),
+                    placeholder: masked ? 'e.g. GH_TOKEN' : 'e.g. baseUrl',  // i18n-exempt: example values a user replaces
                     confirmText: t('main.next')
                 }).then(function (name) {
                     if (!name) return;
                     var trimmed = String(name).trim();
                     if (!trimmed) return;
                     bowirePrompt(t('main.ws.valueFor', { name: trimmed }), {
-                        title: masked ? 'Set secret value' : 'Set variable value',
-                        placeholder: masked ? '(value is not stored on disk)' : 'value',
+                        title: masked ? t('main.kv.setSecret') : t('main.kv.setVariable'),
+                        placeholder: masked ? t('main.kv.notOnDisk') : t('main.kv.value'),
                         confirmText: t('common.save')
                     }).then(function (value) {
                         if (value == null) return;
@@ -3413,7 +3414,7 @@
         var section = el('div', { className: 'bowire-ws-detail-section' });
         section.appendChild(el('div', { className: 'bowire-ws-detail-section-label',
             textContent: cols.length === 0
-                ? ownedEmpty('Collections')
+                ? ownedEmpty(t('main.noun.collections'))
                 : ownedLabel('Collections') + ' (' + cols.length + ')' }));
         if (cols.length === 0) {
             section.appendChild(el('p', {
@@ -3521,7 +3522,7 @@
         var section = el('div', { className: 'bowire-ws-detail-section' });
         section.appendChild(el('div', { className: 'bowire-ws-detail-section-label',
             textContent: recs.length === 0
-                ? ownedEmpty('Recordings')
+                ? ownedEmpty(t('main.noun.recordings'))
                 : ownedLabel('Recordings') + ' (' + recs.length + ')' }));
         if (recs.length === 0) {
             section.appendChild(el('p', {
@@ -3663,8 +3664,8 @@
             var envEmptyWrap = el('div', { style: 'margin-top:8px' });
             envEmptyWrap.appendChild(renderEmptyCard({
                 icon: 'globe',
-                headline: ownedEmpty('Environments'),
-                body: 'Environments scope variables, auth tokens, and secrets per deployment stage. Create one for "staging", another for "prod", and toggle the active env from the topbar to re-point your requests.',
+                headline: ownedEmpty(t('main.noun.environments')),
+                body: t('main.env.emptyBody'),
                 actions: [
                     {
                         label: t('sidebar.envs.new'),
@@ -3772,8 +3773,8 @@
                 row.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-env-overview-check' + (isActive ? ' is-active' : ''),
-                    title: isActive ? 'Active environment' : 'Set as active environment',
-                    'aria-label': isActive ? 'Active environment' : 'Set as active environment',
+                    title: isActive ? t('main.env.active') : t('main.env.setActiveTitle'),
+                    'aria-label': isActive ? t('main.env.active') : t('main.env.setActiveTitle'),
                     'aria-pressed': isActive ? 'true' : 'false',
                     textContent: '✓',
                     onClick: function (ev) {
@@ -4015,7 +4016,7 @@
             main.appendChild(el('div', { className: 'bowire-main-pad' },
                 renderEmptyCard({
                     icon: 'server',
-                    headline: canBrowse ? 'Pick a service from the catalogue' : 'No sources yet',
+                    headline: canBrowse ? t('main.src.pickService') : t('main.src.noneYet'),
                     body: canBrowse
                         ? ((typeof catalogueProviderLabel === 'function' && catalogueProviderLabel())
                             || 'The catalogue') + ' knows about ' + catN + ' service'
@@ -4039,9 +4040,9 @@
         // api.js, a different fragment.
         var isDegraded = (typeof urlDiscoveryDegraded === 'function') && urlDiscoveryDegraded(u);
         var statusLabel = status === 'connected'
-                            ? (isDegraded ? 'Connected — discovery incomplete' : 'Connected')
-                        : status === 'disconnected' ? 'Disconnected'
-                        : status === 'discovering' ? 'Discovering' : status;
+                            ? (isDegraded ? t('main.src.connectedDegraded') : t('channel.connected'))
+                        : status === 'disconnected' ? t('main.src.disconnected')
+                        : status === 'discovering' ? t('main.src.discovering') : status;
         var svcList = (typeof services !== 'undefined')
             ? services.filter(function (s) {
                 // Only count services that actually carry methods —
@@ -4268,7 +4269,7 @@
                     }),
                     el('span', {
                         className: 'bowire-sources-schema-kind',
-                        textContent: svc.source === 'proto' ? 'gRPC (.proto)' : 'OpenAPI'
+                        textContent: svc.source === 'proto' ? 'gRPC (.proto)' : 'OpenAPI'  // i18n-exempt: the schema format the source was read from
                     })
                 ));
             });
@@ -4336,7 +4337,7 @@
                 onClick: function () {
                     bowirePrompt(t('headers.namePlaceholder'), {
                         title: t('main.src.addHeaderTitle'),
-                        placeholder: 'Authorization',
+                        placeholder: 'Authorization',  // i18n-exempt: an HTTP header name
                         confirmText: t('sidebar.ws.addConfirm'),
                     }).then(function (name) {
                         if (!name) return;
@@ -4459,7 +4460,7 @@
         // own rail with a per-tab strip, so the operator's discover
         // view stays untouched.
         if (typeof gotoComposeAndSpawn === 'function') {
-            card('send', 'Just fire a request', 'Single-line bar (Ctrl+L)', function () {
+            card('send', t('main.card.fire'), t('main.card.fireHint'), function () {
                 gotoComposeAndSpawn();
                 requestAnimationFrame(function () {
                     var inp = document.querySelector('.bowire-request-builder-url-input');
@@ -4470,7 +4471,8 @@
         var hasSourceUrls = (typeof serverUrls !== 'undefined'
             && Array.isArray(serverUrls) && serverUrls.length > 0);
         if (hasSourceUrls && !locked && !embedded) {
-            card('connect', 'New from source…', 'URL bound to a managed Source', function () {
+            card('connect', t('main.card.fromSource'), t('main.card.fromSourceHint'),
+    function () {
                 if (typeof openNewFromSourceDialog === 'function') {
                     openNewFromSourceDialog();
                 } else if (typeof startFreeformRequest === 'function') {
@@ -4484,7 +4486,8 @@
         // for the operator to add — hide the card so the panel
         // doesn't advertise an action that can't run.
         if (!locked && !embedded) {
-            card('connect', firstRun ? 'Add a URL' : 'Add URL', 'Configure a source', function () {
+            card('connect', firstRun ? t('main.card.addAUrl') : t('main.card.addUrl'),
+    t('main.card.addUrlHint'), function () {
                 railMode = 'workspaces';
                 try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
                 if (typeof workspacesSelectedId !== 'undefined') workspacesSelectedId = activeWorkspaceId;
@@ -4509,7 +4512,7 @@
         // recording would silently do nothing — hide the card until
         // discovery yields at least one service.
         if (hasServices) {
-            card('record', 'Record session', 'Capture live calls', function () {
+            card('record', t('main.card.record'), t('main.card.recordHint'), function () {
                 if (typeof startRecording === 'function') {
                     startRecording();
                     railMode = 'discover';
@@ -4584,7 +4587,7 @@
                     var fav = false;
                     try { fav = isFavorite(serviceName, methodName); } catch { /* ignore */ }
                     items.push({
-                        label: fav ? 'Remove from favorites' : 'Add to favorites',
+                        label: fav ? t('sidebar.favorites.remove') : t('sidebar.favorites.add'),
                         onClick: function () {
                             toggleFavorite(serviceName, methodName);
                             render();
@@ -4771,8 +4774,8 @@
                     // welcome sehe ich das workspace icon, ich müsste
                     // aber doch das haus des rails sehen.'
                     icon: 'house',
-                    headline: 'Create your first workspace',
-                    body: 'A workspace is your project folder — it holds the URLs you discover, the environments + variables + secrets you reference, and the collections / recordings / benchmarks you build. Most operators name them after the project ("Petstore Staging", "Internal CMS"). You can switch + add more from the workspace chip in the topbar later.',
+                    headline: t('main.ws.createFirst'),
+                    body: t('main.ws.createFirstBody'),
                     actions: [
                         {
                             // #281 — stable id used as the
@@ -4973,8 +4976,8 @@
             if (favs.length === 0) {
                 favSection.appendChild(renderEmptyCard({
                     icon: 'star',
-                    headline: 'No favorites yet',
-                    body: 'Star a method from the sidebar or any recent entry below — it lands here for one-click access across every workflow.'
+                    headline: t('main.home.noFavorites'),
+                    body: t('main.home.noFavoritesBody')
                 }));
             } else {
                 var favGrid = el('div', { className: 'bowire-home-grid' });
@@ -5012,8 +5015,8 @@
             if (recent.length === 0) {
                 recentSection.appendChild(renderEmptyCard({
                     icon: 'console',
-                    headline: 'No recent activity',
-                    body: 'Open methods in Discover and they land here in MRU order.'
+                    headline: t('main.home.noRecent'),
+                    body: t('main.home.noRecentBody')
                 }));
             } else {
                 var recentGrid = el('div', { className: 'bowire-home-grid' });
@@ -5039,7 +5042,7 @@
             // family instead of a one-off.
             if (homeListDrawer && typeof renderDrawer === 'function') {
                 var drawerKind = homeListDrawer;
-                var drawerTitle = drawerKind === 'favorites' ? 'Favorites' : 'Recent activity';
+                var drawerTitle = drawerKind === 'favorites' ? t('main.home.favorites') : t('main.home.recentActivity');
                 var drawerItems = drawerKind === 'favorites' ? favs : recent;
                 var closeDrawer = function () { homeListDrawer = null; render(); };
                 homeMain.appendChild(renderDrawer({
@@ -5607,8 +5610,8 @@
                     var isStar = isFavorite(svcName, mthName);
                     header.appendChild(el('button', {
                         className: 'bowire-header-fav-btn' + (isStar ? ' active' : ''),
-                        title: isStar ? 'Remove from favorites' : 'Add to favorites',
-                        'aria-label': isStar ? 'Remove from favorites' : 'Add to favorites',
+                        title: isStar ? t('sidebar.favorites.remove') : t('sidebar.favorites.add'),
+                        'aria-label': isStar ? t('sidebar.favorites.remove') : t('sidebar.favorites.add'),
                         onClick: function () {
                             toggleFavorite(svcName, mthName);
                             render();
@@ -6060,7 +6063,7 @@
                             className: 'bowire-header-addto-item' + (recActive ? ' bowire-header-addto-item-disabled' : ''),
                             role: 'menuitem',
                             disabled: recActive ? true : undefined,
-                            title: recActive ? 'Already recording — new calls land in the active recording' : 'Start a new recording; subsequent calls land there',
+                            title: recActive ? t('main.rec.already') : t('main.rec.startHint'),
                             onClick: function () {
                                 if (recActive) return;
                                 startRecording();
@@ -6070,7 +6073,7 @@
                             }
                         },
                             el('span', { className: 'bowire-header-addto-item-icon', innerHTML: svgIcon('record') }),
-                            el('span', { textContent: recActive ? 'Recording in progress' : 'Start recording' })
+                            el('span', { textContent: recActive ? t('main.rec.inProgress') : t('sidebar.recordings.start') })
                         ));
                     }
 
@@ -6295,7 +6298,7 @@
                 className: 'bowire-request-tab-new',
                 title: selectedMethod && selectedService
                     ? 'Pin current method into a new tab (Shift-click for empty tab)'
-                    : (hasUrl ? 'New tab — pick a method' : 'New tab'),
+                    : (hasUrl ? t('main.tab.newPickMethod') : t('main.tab.new')),
                 onClick: function (e) {
                     var forceEmpty = e && e.shiftKey;
                     // Primary: copy the active tab's method into a fresh
@@ -6590,7 +6593,8 @@
         if (isChannelMethod()) {
             var statusClass = duplexConnected ? 'bowire-channel-connected' : 'bowire-channel-disconnected';
             var dotClass = duplexConnected ? 'bowire-pulse-dot' : 'bowire-channel-dot-grey';
-            var statusText = duplexConnected ? 'Channel Open' : (statusInfo && statusInfo.status === 'Completed' ? 'Completed' : 'Disconnected');
+            var statusText = duplexConnected ? t('main.stream.channelOpen') : (statusInfo && statusInfo.status === 'Completed'
+    ? t('main.stream.completed') : t('main.src.disconnected'));
             var channelStatus = el('div', { className: 'bowire-channel-status ' + statusClass },
                 el('span', { className: dotClass }),
                 el('span', { textContent: statusText })
@@ -8258,7 +8262,7 @@
         } else if (udp) {
             item.appendChild(el('span', {
                 className: 'bowire-udp-badge' + (udp.text !== null ? ' bowire-udp-text' : ' bowire-udp-binary'),
-                textContent: udp.text !== null ? 'UDP' : 'UDP·BIN',
+                textContent: udp.text !== null ? 'UDP' : 'UDP·BIN',  // i18n-exempt: the protocol badge beside the frame
                 title: udp.text !== null
                     ? 'UTF-8 text datagram from ' + udp.source
                     : 'Binary datagram from ' + udp.source
@@ -8454,7 +8458,7 @@
             header.appendChild(el('span', { className: 'bowire-stream-detail-sep', textContent: '•' }));
             header.appendChild(el('span', {
                 className: 'bowire-udp-badge' + (udp.text !== null ? ' bowire-udp-text' : ' bowire-udp-binary'),
-                textContent: udp.text !== null ? 'UDP' : 'UDP·BIN'
+                textContent: udp.text !== null ? 'UDP' : 'UDP·BIN'  // i18n-exempt: the protocol badge beside the frame
             }));
             header.appendChild(el('span', { className: 'bowire-stream-detail-sep', textContent: '•' }));
             header.appendChild(el('span', {
@@ -8487,12 +8491,12 @@
                         ? 'Show the message list'
                         : 'Hide the message list — full detail view';
                     var label = btn.querySelector('span');
-                    if (label) label.textContent = streamDetailMaximized ? '\u25A3 Show list' : '\u25A1 Hide list';
+                    if (label) label.textContent = streamDetailMaximized ? t('main.stream.showList') : t('main.stream.hideList');
                 }
             }
         });
         maxBtn.appendChild(el('span', {
-            textContent: streamDetailMaximized ? '\u25A3 Show list' : '\u25A1 Hide list'
+            textContent: streamDetailMaximized ? t('main.stream.showList') : t('main.stream.hideList')
         }));
         header.appendChild(maxBtn);
 
@@ -8722,7 +8726,7 @@
             id: 'bowire-stream-filter-toggle',
             title: streamFilterPanelOpen
                 ? 'Hide filter panel'
-                : (hasFilter ? 'Filter is active \u2014 click to edit' : 'Open the filter panel'),
+                : (hasFilter ? t('main.stream.filterActive') : t('main.stream.openFilter')),
             onClick: function () {
                 streamFilterPanelOpen = !streamFilterPanelOpen;
                 render();
@@ -8753,7 +8757,7 @@
             onClick: function () { setStreamAutoScroll(!streamAutoScroll); }
         });
         autoBtn.appendChild(el('span', {
-            textContent: streamAutoScroll ? '\u25C9 Follow latest' : '\u25CB Pinned'
+            textContent: streamAutoScroll ? t('main.stream.followLatest') : t('main.stream.pinned')
         }));
         toolbar.appendChild(autoBtn);
 
@@ -10032,7 +10036,7 @@
                 ? 'Following the latest message \u2014 click to pin the current selection'
                 : 'Pinned to current selection \u2014 click to follow the latest';
             var label = btn.querySelector('span');
-            if (label) label.textContent = streamAutoScroll ? '\u25C9 Follow latest' : '\u25CB Pinned';
+            if (label) label.textContent = streamAutoScroll ? t('main.stream.followLatest') : t('main.stream.pinned');
         }
         if (streamAutoScroll) {
             streamSelectedIndex = null;
@@ -10454,7 +10458,7 @@
                     if (snaps.length < 2) return el('span');
                     return el('button', {
                         className: 'bowire-pane-btn' + (diffViewOpen ? ' active' : ''),
-                        textContent: diffViewOpen ? 'Close Diff' : 'Compare',
+                        textContent: diffViewOpen ? t('main.closeDiff') : t('sidebar.compare'),
                         title: t('main.compareSnapshots', { count: snaps.length }),
                         onClick: function () {
                             diffViewOpen = !diffViewOpen;
@@ -10561,9 +10565,11 @@
             if (mcpContent && !mcpRawEnvelope) {
                 var header = el('div', { className: 'bowire-mcp-content-header' },
                     el('span', { className: 'bowire-mcp-content-title', textContent:
-                        mcpContent.isError ? '\u26A0 Tool error' : 'Tool result' }),
+                        mcpContent.isError ? t('main.mcp.toolError') : t('main.mcp.toolResult') }),
                     el('span', { className: 'bowire-mcp-content-meta', textContent:
-                        mcpContent.count + (mcpContent.count === 1 ? ' item' : ' items') }),
+                        // #688 - one message, two shapes.
+t(mcpContent.count === 1 ? 'main.mcp.itemOne' : 'main.mcp.itemMany',
+    { count: mcpContent.count }) }),
                     el('button', {
                         className: 'bowire-pane-btn',
                         textContent: t('main.showRawEnvelope'),

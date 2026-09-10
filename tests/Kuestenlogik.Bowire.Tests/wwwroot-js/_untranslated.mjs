@@ -106,8 +106,15 @@ const EXEMPT = /\/\/\s*i18n-exempt\b/;
  * The rejections are as much a part of the definition as the acceptances,
  * because a detector that flags every string is a detector nobody runs.
  */
-export function looksLikeProse(s) {
-    if (typeof s !== 'string' || s.length < 2) return false;
+export function looksLikeProse(raw) {
+    if (typeof raw !== 'string' || raw.length < 2) return false;
+    // The scan reads source text, so a character written as an escape arrives
+    // as the escape: '▾' looks like the letters u25BE and sailed through
+    // the "two adjacent letters" test as prose. Decode first, and a bare glyph
+    // is a bare glyph again — while '▣ Show list' stays the sentence it is.
+    const s = raw.replace(/\\u([0-9a-fA-F]{4})/g,
+        (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+    if (s.length < 2) return false;
     if (VOCABULARY.has(s)) return false;
     // A string padded with a space is one of two very different things: a
     // class-name fragment glued onto a base class (`'bowire-row' + (on ?

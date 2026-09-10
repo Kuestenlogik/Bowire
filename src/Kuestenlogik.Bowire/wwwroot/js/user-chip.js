@@ -47,9 +47,11 @@
      * nothing.
      */
     function ownedEmpty(noun) {
-        return isMultiTenant()
-            ? 'You have no ' + noun.toLowerCase() + ' yet'
-            : 'No ' + noun.toLowerCase() + ' yet';
+        // `noun` arrives already translated and already plural. It used to
+        // arrive as an English capitalised word that this lowercased, which
+        // put both the word order and the plural inside the code.
+        return t(isMultiTenant() ? 'main.ownedEmptyYours' : 'main.ownedEmptyNone',
+            { noun: noun });
     }
 
     /** The name to show — never the raw subject, which is usually a GUID. */
@@ -95,7 +97,7 @@
 
         rows.push(el('div', {
             className: 'bowire-user-chip-role',
-            textContent: bowireIdentity.isAdmin ? 'Administrator' : 'Member',
+            textContent: bowireIdentity.isAdmin ? t('userChip.administrator') : t('userChip.member'),
         }));
 
         // The whole point of the chip for a person looking at their own

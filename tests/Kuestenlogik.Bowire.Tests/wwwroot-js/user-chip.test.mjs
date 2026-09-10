@@ -393,7 +393,7 @@ test('a single-user install leaves the wording alone', async () => {
     const f = await ready({ multiTenant: false });
 
     assert.equal(f.label('Recordings'), 'Recordings');
-    assert.equal(f.empty('Recordings'), 'No recordings yet');
+    assert.equal(f.empty('recordings'), 'No recordings yet');
 });
 
 test('an empty account reads differently from an empty server', async () => {
@@ -402,8 +402,17 @@ test('an empty account reads differently from an empty server', async () => {
     const shared = await ready(ADA);
     const alone = await ready({ multiTenant: false });
 
-    assert.equal(shared.empty('Environments'), 'You have no environments yet');
-    assert.equal(alone.empty('Environments'), 'No environments yet');
+    assert.equal(shared.empty('environments'), 'You have no environments yet');
+    assert.equal(alone.empty('environments'), 'No environments yet');
+});
+
+test('the noun goes in as the caller wants it read', async () => {
+    // #117 — this used to lowercase an English capitalised noun, which put
+    // the plural and the casing inside the code. German capitalises its
+    // nouns, so the caller now hands over the finished word and this only
+    // picks the sentence around it.
+    const shared = await ready(ADA);
+    assert.equal(shared.empty('Umgebungen'), 'You have no Umgebungen yet');
 });
 
 test('the wording is unknown until the server has answered', () => {
