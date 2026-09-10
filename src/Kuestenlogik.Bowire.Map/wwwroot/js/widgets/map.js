@@ -1872,7 +1872,7 @@
             p.stepFwd.disabled = playbackState === 'live' || idx >= count - 1;
             p.live.disabled = playbackState === 'live';
             p.play.textContent = playbackState === 'playing' ? '❚❚' : '▶';
-            p.play.title = playbackState === 'playing' ? 'Pause' : 'Play';
+            p.play.title = playbackState === 'playing' ? t('map.pause') : t('map.play');
 
             p.readout.textContent = playbackState === 'live'
                 ? 'live · ' + count

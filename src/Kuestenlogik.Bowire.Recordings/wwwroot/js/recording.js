@@ -221,7 +221,7 @@
         // result has nowhere to land.
         if (!activeWorkspaceId) {
             if (typeof toast === 'function') {
-                toast('Activate a workspace first — recordings live inside a workspace.', 'error');
+                toast(t('rec.needWorkspace'), 'error');
             }
             return;
         }
@@ -243,7 +243,7 @@
             lastEmpty.createdAt = Date.now();
             recordingActiveId = lastEmpty.id;
             persistRecordings();
-            addConsoleEntry({ type: 'response', method: lastEmpty.name, status: 'Recording resumed (empty)' });
+            addConsoleEntry({ type: 'response', method: lastEmpty.name, status: 'Recording resumed (empty)' });  // i18n-exempt: the action log stores rendered text, see #689
             render();
             return;
         }
@@ -270,7 +270,7 @@
         recordingsList.push(rec);
         recordingActiveId = rec.id;
         persistRecordings();
-        addConsoleEntry({ type: 'response', method: rec.name, status: 'Recording started' });
+        addConsoleEntry({ type: 'response', method: rec.name, status: 'Recording started' });  // i18n-exempt: the action log stores rendered text, see #689
         // #194 — toast the create so the operator gets immediate
         // confirmation + a 4 s Undo affordance. logAction joins the
         // workbench-wide action log so Ctrl/Cmd+Z + the Activity drawer
@@ -283,7 +283,7 @@
         if (typeof toast === 'function') {
             var _recId = rec.id;
             var _recName = rec.name;
-            toast('Created recording "' + _recName + '"', 'info', {
+            toast(t('rec.created', { name: _recName }), 'info', {
                 undo: function () {
                     if (typeof deleteRecording === 'function') deleteRecording(_recId);
                     if (typeof render === 'function') render();
@@ -291,7 +291,7 @@
                 logAction: {
                     kind: 'recording-create',
                     rail: 'recordings',
-                    title: 'Created recording "' + _recName + '"',
+                    title: 'Created recording "' + _recName + '"',  // i18n-exempt: the action log stores rendered text, see #689
                     undoSpec: { recordingId: _recId },
                     // Mirror the recording-create resolver (prologue.js)
                     // so in-session Ctrl+Shift+Z restores from trash
@@ -301,12 +301,12 @@
                         if (recordingsList.find(function (r) { return r.id === _recId; })) return;
                         if (!Array.isArray(recordingsTrash)) return;
                         for (var i = 0; i < recordingsTrash.length; i++) {
-                            var t = recordingsTrash[i];
-                            if (!t || !t.entry || t.entry.id !== _recId) continue;
-                            var idx = (typeof t.originalIdx === 'number')
-                                ? Math.min(t.originalIdx, recordingsList.length)
+                            var trashed = recordingsTrash[i];
+                            if (!trashed || !trashed.entry || trashed.entry.id !== _recId) continue;
+                            var idx = (typeof trashed.originalIdx === 'number')
+                                ? Math.min(trashed.originalIdx, recordingsList.length)
                                 : recordingsList.length;
-                            recordingsList.splice(idx, 0, t.entry);
+                            recordingsList.splice(idx, 0, trashed.entry);
                             recordingsTrash.splice(i, 1);
                             if (typeof persistRecordings === 'function') persistRecordings();
                             if (typeof persistRecordingsTrash === 'function') persistRecordingsTrash();
@@ -333,7 +333,7 @@
             recordingManagerSelectedId = rec.id;
         }
         persistRecordings();
-        addConsoleEntry({ type: 'response', method: rec.name, status: 'Recording resumed' });
+        addConsoleEntry({ type: 'response', method: rec.name, status: 'Recording resumed' });  // i18n-exempt: the action log stores rendered text, see #689
         render();
     }
 
@@ -393,9 +393,9 @@
         }
         persistRecordings();
         if (stepCount === 0) {
-            addConsoleEntry({ type: 'response', method: name, status: 'Recording dropped (0 steps)' });
+            addConsoleEntry({ type: 'response', method: name, status: 'Recording dropped (0 steps)' });  // i18n-exempt: the action log stores rendered text, see #689
         } else {
-            addConsoleEntry({ type: 'response', method: name, status: 'Recording stopped (' + stepCount + ' step' + (stepCount !== 1 ? 's' : '') + ')' });
+            addConsoleEntry({ type: 'response', method: name, status: 'Recording stopped (' + stepCount + ' step' + (stepCount !== 1 ? 's' : '') + ')' });  // i18n-exempt: the action log stores rendered text, see #689
         }
         render();
     }
@@ -693,7 +693,7 @@
                 recordingReplayState.results.push({
                     stepId: step.id,
                     pass: false,
-                    status: 'NetworkError',
+                    status: 'NetworkError',  // i18n-exempt: replay status, written into the exported HTML report and the generated assertions
                     error: e.message
                 });
                 if (typeof safeRecordMethodRun === 'function' && step.service && step.method) {
@@ -725,7 +725,7 @@
         if (step.methodType && step.methodType !== 'Unary') {
             return Promise.resolve({
                 pass: false,
-                status: 'Skipped (' + step.methodType + ')',
+                status: 'Skipped (' + step.methodType + ')',  // i18n-exempt: replay status, written into the exported HTML report and the generated assertions
                 durationMs: 0,
                 error: 'Only Unary methods are replayed; streaming methods are skipped.'
             });
@@ -785,7 +785,7 @@
             if (!preResult.ok) {
                 return Promise.resolve({
                     pass: false,
-                    status: 'ScriptError',
+                    status: 'ScriptError',  // i18n-exempt: replay status, written into the exported HTML report and the generated assertions
                     durationMs: 0,
                     error: 'Pre-request script failed: ' + preResult.error
                 });
@@ -855,7 +855,7 @@
                         },
                         response: {
                             body: parsedBody,
-                            status: json.status || (ok ? 'OK' : 'Error'),
+                            status: json.status || (ok ? 'OK' : 'Error'),  // i18n-exempt: replay status, written into the exported HTML report and the generated assertions
                             durationMs: json.duration_ms || 0,
                             headers: json.metadata || {}
                         },
@@ -865,7 +865,7 @@
                     if (!postResult.ok) {
                         return {
                             pass: false,
-                            status: 'ScriptAssertFailed',
+                            status: 'ScriptAssertFailed',  // i18n-exempt: replay status, written into the exported HTML report and the generated assertions
                             durationMs: json.duration_ms || 0,
                             response: json.response,
                             error: 'Post-response script failed: ' + postResult.error
@@ -874,7 +874,7 @@
                 }
                 return {
                     pass: ok,
-                    status: json.status || (ok ? 'OK' : 'Error'),
+                    status: json.status || (ok ? 'OK' : 'Error'),  // i18n-exempt: replay status, written into the exported HTML report and the generated assertions
                     durationMs: json.duration_ms || 0,
                     response: json.response,
                     error: json.title || null
@@ -1152,14 +1152,14 @@
             var file = input.files[0];
             var text;
             try { text = await file.text(); }
-            catch (e) { toast('Could not read file: ' + e.message, 'error'); return; }
+            catch (e) { toast(t('rec.readFileFailed', { error: e.message }), 'error'); return; }
 
             var parsed;
             try { parsed = _harParse(text); }
-            catch (e) { toast('HAR import failed: ' + e.message, 'error'); return; }
+            catch (e) { toast(t('rec.harImportFailed', { error: e.message }), 'error'); return; }
 
             if (parsed.candidates.length === 0) {
-                toast('No replayable entries found in the HAR file.', 'info');
+                toast(t('rec.harNoEntries'), 'info');
                 return;
             }
             var baseName = (file.name || parsed.name || 'Imported HAR').replace(/\.har$|\.json$/i, '');
@@ -1217,9 +1217,9 @@
             el('span', { className: 'bowire-har-import-summary',
                 textContent: candidates.length + (candidates.length === 1 ? ' entry' : ' entries') }),
             el('span', { className: 'bowire-har-import-spacer' }),
-            el('button', { type: 'button', className: 'bowire-har-import-link', textContent: 'Select all',
+            el('button', { type: 'button', className: 'bowire-har-import-link', textContent: t('rec.selectAll'),
                 onClick: function () { setAll(true); } }),
-            el('button', { type: 'button', className: 'bowire-har-import-link', textContent: 'Select none',
+            el('button', { type: 'button', className: 'bowire-har-import-link', textContent: t('rec.selectNone'),
                 onClick: function () { setAll(false); } })
         );
 
@@ -1246,16 +1246,19 @@
             for (var i = 0; i < candidates.length; i++) {
                 if (checked[i]) steps.push(candidates[i].step);
             }
-            if (steps.length === 0) { toast('Nothing selected.', 'info'); return; }
+            if (steps.length === 0) { toast(t('rec.nothingSelected'), 'info'); return; }
 
             if (targetRec && mode === 'append') {
                 if (!Array.isArray(targetRec.steps)) targetRec.steps = [];
                 targetRec.steps = targetRec.steps.concat(steps);
                 persistRecordings();
                 if (typeof addConsoleEntry === 'function') {
-                    addConsoleEntry({ type: 'response', method: targetRec.name, status: 'Appended ' + steps.length + ' HAR steps' });
+                    addConsoleEntry({ type: 'response', method: targetRec.name, status: 'Appended ' + steps.length + ' HAR steps' });  // i18n-exempt: the action log stores rendered text, see #689
                 }
-                toast('Appended ' + steps.length + ' step' + (steps.length === 1 ? '' : 's') + ' to "' + (targetRec.name || 'recording') + '"', 'success');
+                // #688 - one message, two shapes.
+toast(t(steps.length === 1 ? 'rec.appendedOne' : 'rec.appendedMany', {
+    count: steps.length, name: targetRec.name || t('rec.fallbackName')
+}), 'success');
                 render();
                 return;
             }
@@ -1263,7 +1266,9 @@
             var rec = {
                 id: nextRecordingId(),
                 name: baseName || harName || 'Imported HAR',
-                description: 'Imported from HAR (' + steps.length + (steps.length === 1 ? ' entry' : ' entries') + ')',
+                // #688 - one message, two shapes.
+description: t(steps.length === 1 ? 'rec.harImportedOne' : 'rec.harImportedMany',
+    { count: steps.length }),
                 createdAt: Date.now(),
                 recordingFormatVersion: 2,
                 schemaSnapshot: { annotations: [] },
@@ -1273,9 +1278,11 @@
             persistRecordings();
             if (typeof recordingManagerSelectedId !== 'undefined') recordingManagerSelectedId = rec.id;
             if (typeof addConsoleEntry === 'function') {
-                addConsoleEntry({ type: 'response', method: rec.name, status: 'Imported ' + steps.length + ' HAR steps' });
+                addConsoleEntry({ type: 'response', method: rec.name, status: 'Imported ' + steps.length + ' HAR steps' });  // i18n-exempt: the action log stores rendered text, see #689
             }
-            toast('Imported "' + rec.name + '" (' + steps.length + ' step' + (steps.length === 1 ? '' : 's') + ')', 'success', {
+            // #688 - one message, two shapes.
+toast(t(steps.length === 1 ? 'rec.importedOne' : 'rec.importedMany',
+    { name: rec.name, count: steps.length }), 'success', {
                 undo: function () {
                     var i = recordingsList.findIndex(function (r) { return r.id === rec.id; });
                     if (i >= 0) { recordingsList.splice(i, 1); persistRecordings(); render(); }
@@ -1290,7 +1297,7 @@
         });
         refreshImportLabel();
         var cancelBtn = el('button', {
-            className: 'bowire-confirm-btn cancel', textContent: 'Cancel',
+            className: 'bowire-confirm-btn cancel', textContent: t('common.cancel'),
             onClick: function () { settle(false); }
         });
 
@@ -1298,9 +1305,9 @@
             className: 'bowire-confirm-dialog bowire-har-import-dialog',
             role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'bowire-har-import-title'
         },
-            el('div', { id: 'bowire-har-import-title', className: 'bowire-confirm-title', textContent: 'Import HAR' }),
+            el('div', { id: 'bowire-har-import-title', className: 'bowire-confirm-title', textContent: t('rec.importHar') }),
             el('div', { className: 'bowire-confirm-message',
-                textContent: 'Pick the entries to import. Static assets (images, fonts, CSS, JS) are unticked by default.' }),
+                textContent: t('rec.harPickHint') }),
             quickBar,
             list,
             modeRow,
@@ -1457,7 +1464,7 @@
             + '</style></head><body>'
             + '<h1>Recording report \u2014 <span class="name">' + esc(rec.name) + '</span></h1>'
             + '<div class="subtitle">Generated ' + esc(generated.toISOString())
-            +   ' \u00b7 ' + (hasReplay ? 'Replay results' : 'Captured statuses')
+            +   ' \u00b7 ' + (hasReplay ? 'Replay results' : 'Captured statuses')  // i18n-exempt: part of the generated HTML report, an English CI artefact
             +   ' \u00b7 ' + rec.steps.length + ' step' + (rec.steps.length !== 1 ? 's' : '') + '</div>'
             + '<div class="summary">'
             +   '<div class="card ' + (failCount === 0 ? 'ok' : 'bad') + '">'
@@ -1550,27 +1557,29 @@
             });
         }).then(function (resp) {
             if (!resp.ok) {
-                toast('Use as mock failed: ' + problemTitle(resp.body, 'HTTP ' + resp.status), 'error');
+                toast(t('rec.useAsMockFailed', {
+    error: problemTitle(resp.body, 'HTTP ' + resp.status)
+}), 'error');
                 return;
             }
             var url = resp.body && resp.body.url ? resp.body.url : null;
             if (!url) {
-                toast('Mock started but no URL returned', 'error');
+                toast(t('rec.mockNoUrl'), 'error');
                 return;
             }
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(url).then(function () {
-                    toast('Mock URL copied: ' + url, 'success');
+                    toast(t('rec.mockUrlCopied', { url: url }), 'success');
                 }).catch(function () {
-                    toast('Mock running at ' + url + ' (copy failed)', 'success');
+                    toast(t('rec.mockRunningNoCopy', { url: url }), 'success');
                 });
             } else {
-                toast('Mock running at ' + url, 'success');
+                toast(t('rec.mockRunning', { url: url }), 'success');
             }
             addConsoleEntry({
                 type: 'response',
                 method: rec.name,
-                status: 'Mock running on port ' + resp.body.port,
+                status: 'Mock running on port ' + resp.body.port,  // i18n-exempt: the action log stores rendered text, see #689
                 body: url,
             });
             // #303 — advance the build-a-mock tour. Mirrors the same
@@ -1585,7 +1594,9 @@
                 });
             }
         }).catch(function (err) {
-            toast('Use as mock failed: ' + (err && err.message ? err.message : err), 'error');
+            toast(t('rec.useAsMockFailed', {
+    error: err && err.message ? err.message : err
+}), 'error');
         });
     }
 
@@ -1602,17 +1613,17 @@
         // Header
         modal.appendChild(el('div', { className: 'bowire-env-modal-header' },
             el('h2', { className: 'bowire-env-modal-title',
-                textContent: allDone ? 'Plugins installed' : 'Plugins required for replay' })));
+                textContent: allDone ? t('rec.pluginsInstalled') : t('rec.pluginsNeeded') })));
 
         var body = el('div', { className: 'bowire-env-modal-body bowire-plugin-check-body' });
 
         if (allDone) {
             // Post-install success: tell the user the next step.
             body.appendChild(el('p', { className: 'bowire-plugin-check-intro',
-                textContent: 'The plugins were installed into ~/.bowire/plugins/. Restart Bowire so the new protocols are picked up by the registry.' }));
+                textContent: t('rec.pluginsRestart') }));
         } else {
             body.appendChild(el('p', { className: 'bowire-plugin-check-intro',
-                textContent: 'This recording references protocols that aren’t loaded in your Bowire host. Install the matching plugins to replay it.' }));
+                textContent: t('rec.pluginsMissing') }));
         }
 
         var listEl = el('ul', { className: 'bowire-plugin-check-list' });
@@ -1620,14 +1631,14 @@
             var status = pluginCheckState.perPackage[entry.id] || (entry.packageId ? 'pending' : 'unknown');
             var statusBadge;
             if (status === 'installing') {
-                statusBadge = el('span', { className: 'bowire-plugin-check-status installing', textContent: 'installing…' });
+                statusBadge = el('span', { className: 'bowire-plugin-check-status installing', textContent: t('rec.pluginInstalling') });
             } else if (status === 'done') {
-                statusBadge = el('span', { className: 'bowire-plugin-check-status done', textContent: '✓ installed' });
+                statusBadge = el('span', { className: 'bowire-plugin-check-status done', textContent: t('rec.pluginDone') });
             } else if (status === 'failed') {
-                statusBadge = el('span', { className: 'bowire-plugin-check-status failed', textContent: '✗ failed' });
+                statusBadge = el('span', { className: 'bowire-plugin-check-status failed', textContent: t('rec.pluginFailed') });
             } else if (status === 'unknown') {
                 statusBadge = el('span', { className: 'bowire-plugin-check-status unknown',
-                    textContent: 'third-party — install manually' });
+                    textContent: t('rec.pluginThirdParty') });
             } else {
                 statusBadge = el('span', { className: 'bowire-plugin-check-status pending', textContent: 'pending' });
             }
@@ -1652,21 +1663,21 @@
         if (allDone) {
             footer.appendChild(el('button', {
                 className: 'bowire-env-modal-btn bowire-env-modal-btn-primary',
-                textContent: 'Close',
+                textContent: t('common.close'),
                 onClick: dismissPluginCheck
             }));
         } else {
             var installable = pluginCheckState.missing.some(function (m) { return m.packageId; });
             var installBtn = el('button', {
                 className: 'bowire-env-modal-btn bowire-env-modal-btn-primary',
-                textContent: pluginCheckState.installing ? 'Installing…' : 'Install plugins',
+                textContent: pluginCheckState.installing ? t('rec.installing') : t('rec.installPlugins'),
                 disabled: !installable || pluginCheckState.installing,
                 onClick: installAllMissing
             });
             footer.appendChild(installBtn);
             footer.appendChild(el('button', {
                 className: 'bowire-env-modal-btn',
-                textContent: 'Cancel',
+                textContent: t('common.cancel'),
                 disabled: pluginCheckState.installing,
                 onClick: dismissPluginCheck
             }));
@@ -1678,7 +1689,7 @@
             className: 'bowire-env-modal-overlay bowire-plugin-check-overlay',
             role: 'dialog',
             'aria-modal': 'true',
-            'aria-label': 'Plugin check',
+            'aria-label': t('rec.pluginCheck'),
             onClick: function (e) {
                 if (e.target === overlay && !pluginCheckState.installing) dismissPluginCheck();
             }
@@ -1708,15 +1719,15 @@
             el('button', {
                 type: 'button',
                 className: 'bowire-pane-header-tool',
-                title: 'Rename recording',
-                'aria-label': 'Rename recording',
+                title: t('rec.rename'),
+                'aria-label': t('rec.rename'),
                 innerHTML: svgIcon('pencil'),
                 onClick: function () {
                     var current = rec.name || '';
-                    bowirePrompt('Rename recording', {
-                        title: 'Rename',
+                    bowirePrompt(t('rec.rename'), {
+                        title: t('sidebar.renameShort'),
                         defaultValue: current,
-                        confirmText: 'Rename',
+                        confirmText: t('sidebar.renameShort'),
                         validator: function (val) {
                             var trimmed = String(val || '').trim();
                             if (!trimmed) return 'Name required';
@@ -1734,18 +1745,18 @@
             el('button', {
                 type: 'button',
                 className: 'bowire-pane-header-tool bowire-pane-header-tool-danger',
-                title: 'Delete recording',
-                'aria-label': 'Delete recording',
+                title: t('sidebar.recordings.delete'),
+                'aria-label': t('sidebar.recordings.delete'),
                 innerHTML: svgIcon('trash'),
                 onClick: function () {
-                    bowireConfirm('Delete recording "' + rec.name + '"?', function () {
+                    bowireConfirm(t('rec.deleteConfirm', { name: rec.name }), function () {
                         var snapshot = JSON.parse(JSON.stringify(rec));
                         var originalIdx = recordingsList.findIndex(function (r) { return r.id === rec.id; });
                         deleteRecording(rec.id);
                         // #194 — wire through the action log so
                         // Ctrl/Cmd+Z + the Activity drawer surface the
                         // inverse after the toast Undo button expires.
-                        toast('Deleted recording "' + (snapshot.name || 'unnamed') + '"', 'info', {
+                        toast(t('rec.deleted', { name: snapshot.name || t('rec.unnamed') }), 'info', {
                             undo: function () {
                                 if (!recordingsList.find(function (r) { return r.id === snapshot.id; })) {
                                     var idx = Math.min(originalIdx < 0 ? recordingsList.length : originalIdx,
@@ -1768,12 +1779,12 @@
                             logAction: {
                                 kind: 'recording-delete',
                                 rail: 'recordings',
-                                title: 'Deleted recording "' + (snapshot.name || 'unnamed') + '"',
+                                title: 'Deleted recording "' + (snapshot.name || 'unnamed') + '"',  // i18n-exempt: the action log stores rendered text, see #689
                                 undoSpec: { entry: snapshot, originalIdx: originalIdx },
                                 redo: function () { deleteRecording(snapshot.id); render(); }
                             }
                         });
-                    }, { title: 'Delete Recording', danger: true, confirmText: 'Delete' });
+                    }, { title: t('sidebar.recordings.delete'), danger: true, confirmText: t('common.delete') });
                 }
             })
         ));
@@ -1810,21 +1821,21 @@
         runGroup.appendChild(el('button', {
             className: 'bowire-recording-action-btn bowire-recording-action-primary',
             disabled: isReplaying || !_hasSteps,
-            title: 'Replay every step in order with the current environment variables',
+            title: t('rec.replayTitle'),
             onClick: function () { replayRecording(rec.id); }
         },
             el('span', { innerHTML: svgIcon('replay') }),
-            el('span', { textContent: isReplaying ? 'Replaying…' : 'Replay' })
+            el('span', { textContent: isReplaying ? t('rec.replaying') : t('rec.replay') })
         ));
         // #132 minimal — fire N parallel sessions of this recording.
         runGroup.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: !_hasSteps,
-            title: 'Replay this recording in N parallel sessions at once',
+            title: t('rec.parallelTitle'),
             onClick: function () { _promptAndRunParallel('recording', rec.id, rec.name); }
         },
             el('span', { innerHTML: svgIcon('repeat') }),
-            el('span', { textContent: 'Parallel sessions' })
+            el('span', { textContent: t('rec.parallelSessions') })
         ));
         toolbar.appendChild(runGroup);
 
@@ -1835,11 +1846,11 @@
         buildGroup.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: !_hasSteps,
-            title: 'Spin up a local mock server that returns this recording verbatim. URL is copied to your clipboard.',
+            title: t('rec.useAsMockTitle'),
             onClick: function () { useRecordingAsMock(rec); }
         },
             el('span', { innerHTML: svgIcon('server') }),
-            el('span', { textContent: 'Use as mock' })
+            el('span', { textContent: t('rec.useAsMock') })
         ));
         // #56 Phase 2 — start a mock from this recording. POST hits
         // /api/mocks; on success the workbench switches to the Mocks
@@ -1847,7 +1858,7 @@
         buildGroup.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: rec.steps.length === 0 || !window.__bowireMocks,
-            title: 'Boot a mock server from this recording on a fresh port. View it in the Mocks panel.',
+            title: t('rec.runAsMockTitle'),
             onClick: function () {
                 if (!window.__bowireMocks) return;
                 window.__bowireMocks.startFromRecording(rec, 0).then(function () {
@@ -1856,14 +1867,14 @@
             }
         },
             el('span', { innerHTML: svgIcon('plug') }),
-            el('span', { textContent: 'Run as mock' })
+            el('span', { textContent: t('rec.runAsMock') })
         ));
         // #131 Phase 3 — "Benchmark" opens an Add-to-envelope picker.
         if (typeof addTargetToEnvelopePicker === 'function') {
             buildGroup.appendChild(el('button', {
                 className: 'bowire-recording-action-btn',
                 disabled: !_hasSteps,
-                title: 'Add this recording to a benchmark envelope',
+                title: t('rec.toBenchmarkTitle'),
                 onClick: function (e) {
                     addTargetToEnvelopePicker(e.clientX, e.clientY,
                         { type: 'recording-ref', recordingId: rec.id, stepIndex: null },
@@ -1872,7 +1883,7 @@
                 }
             },
                 el('span', { innerHTML: svgIcon('lightning') }),
-                el('span', { textContent: 'Benchmark' })
+                el('span', { textContent: t('collections.benchmark') })
             ));
         }
         // R3a — Recordings detail → Benchmarking transition. Skips the
@@ -1887,7 +1898,7 @@
             buildGroup.appendChild(el('button', {
                 className: 'bowire-recording-action-btn',
                 disabled: !_hasSteps,
-                title: 'Create a benchmark spec wired to this recording and open the Benchmarking rail',
+                title: t('rec.rerunWithLoadTitle'),
                 onClick: function () {
                     var spec = createBenchmarkSpec({
                         kind: 'recording',
@@ -1900,31 +1911,31 @@
                     if (typeof benchmarksSelectedId !== 'undefined') benchmarksSelectedId = spec.id;
                     render();
                     if (typeof toast === 'function') {
-                        toast('Benchmark spec "' + spec.name + '" — open on Benchmarking rail', 'success');
+                        toast(t('rec.benchmarkSpecCreated', { name: spec.name }), 'success');
                     }
                 }
             },
                 el('span', { innerHTML: svgIcon('lightning') }),
-                el('span', { textContent: 'Re-run with load' })
+                el('span', { textContent: t('rec.rerunWithLoad') })
             ));
         }
         buildGroup.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: !_hasSteps,
-            title: 'Append status + response equality assertions to every (service, method) in this recording',
+            title: t('rec.toTestsTitle'),
             onClick: function () {
                 var added = convertRecordingToTests(rec.id);
-                addConsoleEntry({ type: 'response', method: rec.name, status: 'Added ' + added + ' test assertions' });
+                addConsoleEntry({ type: 'response', method: rec.name, status: 'Added ' + added + ' test assertions' });  // i18n-exempt: the action log stores rendered text, see #689
                 render();
             }
         },
             el('span', { innerHTML: svgIcon('check') }),
-            el('span', { textContent: 'Convert to Tests' })
+            el('span', { textContent: t('rec.toTests') })
         ));
         buildGroup.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
             disabled: !_hasSteps,
-            title: 'Project this recording into a visual flow (Request nodes per step). Edit + replay from the Flow tab.',
+            title: t('rec.toFlowTitle'),
             onClick: function () {
                 var flowId = convertRecordingToFlow(rec.id);
                 if (!flowId) return;
@@ -1933,11 +1944,11 @@
                 if (typeof setSidebarView === 'function') setSidebarView('flows');
                 flowEditorSelectedId = flowId;
                 render();
-                toast('Flow created from recording', 'success');
+                toast(t('rec.flowCreated'), 'success');
             }
         },
             el('span', { innerHTML: svgIcon('flow') }),
-            el('span', { textContent: 'Convert to Flow' })
+            el('span', { textContent: t('rec.toFlow') })
         ));
         toolbar.appendChild(buildGroup);
 
@@ -1951,7 +1962,7 @@
         var exportBtn = el('button', {
             className: 'bowire-recording-action-btn bowire-recording-action-export',
             disabled: !_hasSteps,
-            title: 'Export this recording',
+            title: t('rec.exportTitle'),
             onClick: function (e) {
                 e.stopPropagation();
                 recordingExportMenuOpenId = exportMenuOpen ? null : rec.id;
@@ -1959,7 +1970,7 @@
             }
         },
             el('span', { innerHTML: svgIcon('download') }),
-            el('span', { textContent: 'Export' }),
+            el('span', { textContent: t('collections.export') }),
             el('span', { className: 'bowire-recording-export-caret', innerHTML: svgIcon('chevron') })
         );
         exportBtnWrapper.appendChild(exportBtn);
@@ -1981,11 +1992,11 @@
                     el('span', { className: 'bowire-recording-export-menu-item-hint', textContent: hint })
                 ));
             }
-            _exportItem('HAR', 'Chrome DevTools / Postman / Insomnia compatible',
+            _exportItem('HAR', t('rec.exportHarHint'),
                 function () { exportRecordingAsHar(rec.id); });
-            _exportItem('HTML report', 'Self-contained CI artifact',
+            _exportItem(t('rec.exportHtml'), t('rec.exportHtmlHint'),
                 function () { exportRecordingAsHtml(rec.id); });
-            _exportItem('JSON', 'Raw Bowire recording format',
+            _exportItem('JSON', t('rec.exportJsonHint'),
                 function () { exportRecordingAsJson(rec.id); });
             exportBtnWrapper.appendChild(exportMenu);
         }
@@ -1995,11 +2006,11 @@
         // the preview; "create new recording" stays the default.
         exportGroup.appendChild(el('button', {
             className: 'bowire-recording-action-btn',
-            title: 'Import a HAR file (Chrome DevTools / Playwright / Charles) as steps',
+            title: t('rec.importHarTitle'),
             onClick: function () { importHarFromFile(rec); }
         },
             el('span', { innerHTML: svgIcon('upload') }),
-            el('span', { textContent: 'Import HAR' })
+            el('span', { textContent: t('rec.importHar') })
         ));
         // #539 — the rail could import HAR but not its own format, so a
         // .bwr shared by a colleague (or produced by `bowire import har`
@@ -2008,11 +2019,11 @@
         if (typeof importRecordingFromFile === 'function') {
             exportGroup.appendChild(el('button', {
                 className: 'bowire-recording-action-btn',
-                title: 'Import a Bowire recording (.bwr / exported JSON) as a new recording',
+                title: t('rec.importBwrTitle'),
                 onClick: function () { importRecordingFromFile(); }
             },
                 el('span', { innerHTML: svgIcon('upload') }),
-                el('span', { textContent: 'Import .bwr' })
+                el('span', { textContent: t('rec.importBwr') })
             ));
         }
         toolbar.appendChild(exportGroup);
@@ -2048,7 +2059,7 @@
             var detailTabs = el('div', { className: 'bowire-tabs bowire-recording-detail-tabs' });
             detailTabs.appendChild(el('div', {
                 className: 'bowire-tab' + (_detailTab === 'steps' ? ' active' : ''),
-                textContent: 'Steps',
+                textContent: t('rec.steps'),
                 onClick: function () {
                     setRecordingDetailTab(recordingManagerSelectedId, 'steps');
                     render();
@@ -2060,7 +2071,7 @@
                 title: _hasSteps
                     ? 'One lane per protocol on a shared time axis, correlated on a shared id'
                     : 'Nothing to correlate — this recording has no steps yet',
-                textContent: 'Correlated timeline',
+                textContent: t('rec.timeline'),
                 onClick: function () {
                     var live = recordingsList.find(function (r) { return r.id === recordingManagerSelectedId; });
                     // Same three step shapes the toolbar gates on;
@@ -2141,8 +2152,8 @@
         if (typeof spawnDesignTabFromItem === 'function') {
             tools.appendChild(el('button', {
                 className: 'bowire-recording-step-tool',
-                title: 'Open this step in a new Compose tab',
-                'aria-label': 'Open this step in Compose',
+                title: t('rec.openInCompose'),
+                'aria-label': t('rec.openInComposeAria'),
                 innerHTML: svgIcon('compose'),
                 onClick: function (e) {
                     e.stopPropagation();
@@ -2172,7 +2183,7 @@
                         name: rec.name
                     });
                     if (typeof toast === 'function') {
-                        toast('Replaying in Compose', 'success');
+                        toast(t('rec.replayingInCompose'), 'success');
                     }
                     render();
                 }
@@ -2181,8 +2192,8 @@
         tools.appendChild(el('button', {
             className: 'bowire-recording-step-tool bowire-recording-step-delete',
             innerHTML: svgIcon('trash'),
-            title: 'Remove this step',
-            'aria-label': 'Remove this step',
+            title: t('rec.removeStep'),
+            'aria-label': t('rec.removeStep'),
             onClick: function (e) {
                 e.stopPropagation();
                 deleteRecordingStep(rec.id, step.id);
@@ -2257,14 +2268,14 @@
                 || (typeof rec.stepCount === 'number' && rec.stepCount > 0);
             var items = [];
             items.push({
-                label: 'Replay',
+                label: t('rec.replay'),
                 disabled: !hasSteps,
                 onClick: function () {
                     if (typeof replayRecording === 'function') replayRecording(rec.id);
                 }
             });
             items.push({
-                label: rec.id === recordingActiveId ? 'Stop recording' : 'Continue recording',
+                label: rec.id === recordingActiveId ? t('rec.stop') : t('rec.continue'),
                 onClick: function () {
                     if (rec.id === recordingActiveId) {
                         if (typeof stopRecording === 'function') stopRecording();
@@ -2278,7 +2289,7 @@
             // in the detail pane, so opening it from the sidebar has to
             // bring the pane along.
             items.push({
-                label: 'Correlated timeline',
+                label: t('rec.timeline'),
                 disabled: !hasSteps || typeof renderRecordingTimeline !== 'function',
                 onClick: function () {
                     if (typeof setRecordingDetailTab !== 'function') return;
@@ -2293,12 +2304,12 @@
             });
             items.push({ separator: true });
             items.push({
-                label: 'Rename…',
+                label: t('sidebar.rename'),
                 onClick: function () {
-                    bowirePrompt('Recording name', {
-                        title: 'Rename recording',
+                    bowirePrompt(t('rec.name'), {
+                        title: t('rec.rename'),
                         defaultValue: rec.name || '',
-                        confirmText: 'Save'
+                        confirmText: t('common.save')
                     }).then(function (newName) {
                         if (!newName) return;
                         if (typeof renameRecording === 'function') renameRecording(rec.id, newName);
@@ -2306,7 +2317,7 @@
                 }
             });
             items.push({
-                label: 'Use as mock',
+                label: t('rec.useAsMock'),
                 disabled: !hasSteps,
                 onClick: function () {
                     if (typeof useRecordingAsMock === 'function') useRecordingAsMock(rec);
@@ -2315,7 +2326,7 @@
             // #362 — explicit cross-rail handoff to Benchmarks (was only
             // reachable by rebuilding the target by hand on that rail).
             items.push({
-                label: 'Benchmark this recording',
+                label: t('rec.benchmarkThis'),
                 disabled: !hasSteps || typeof createBenchmarkSpec !== 'function',
                 onClick: function () {
                     if (typeof createBenchmarkSpec !== 'function') return;
@@ -2328,29 +2339,31 @@
                     railMode = 'benchmarks';
                     try { localStorage.setItem('bowire_rail_mode', 'benchmarks'); } catch (_) { /* ignore */ }
                     if (typeof setSidebarView === 'function') setSidebarView('benchmarks');
-                    toast('Benchmark created from "' + (rec.name || 'recording') + '" — open on Benchmarks rail', 'success');
+                    toast(t('rec.benchmarkCreated', {
+    name: rec.name || t('rec.fallbackName')
+}), 'success');
                     render();
                 }
             });
             items.push({
-                label: 'Convert to collection',
+                label: t('rec.toCollection'),
                 disabled: !hasSteps || typeof recordingToCollectionItems !== 'function',
                 onClick: function () {
                     if (typeof recordingToCollectionItems !== 'function') return;
                     var items2 = recordingToCollectionItems(rec);
-                    if (items2.length === 0) { toast('No unary steps to convert', 'error'); return; }
+                    if (items2.length === 0) { toast(t('rec.noUnarySteps'), 'error'); return; }
                     if (typeof createCollection !== 'function' || typeof addToCollection !== 'function') return;
                     var col = createCollection((rec.name || 'Recording') + ' (from recording)');
                     items2.forEach(function (it) { addToCollection(col.id, it); });
                     collectionsList = loadCollections();
                     collectionManagerSelectedId = col.id;
-                    toast('Created collection (' + items2.length + ' items)', 'success');
+                    toast(t('rec.collectionCreated', { count: items2.length }), 'success');
                     render();
                 }
             });
             items.push({ separator: true });
             items.push({
-                label: 'Delete',
+                label: t('common.delete'),
                 danger: true,
                 onClick: function () {
                     if (typeof deleteRecording === 'function') deleteRecording(rec.id);
@@ -2380,9 +2393,9 @@
             toast(removed.length + ' recording' + (removed.length === 1 ? '' : 's') + ' moved to trash', 'success', {
                 undo: function () {
                     for (var u = 0; u < removed.length; u++) {
-                        var t = removed[u];
-                        recordingsList.splice(Math.min(t.originalIdx, recordingsList.length), 0, t.entry);
-                        var tIdx = recordingsTrash.findIndex(function (x) { return x.entry && x.entry.id === t.entry.id; });
+                        var trashed = removed[u];
+                        recordingsList.splice(Math.min(trashed.originalIdx, recordingsList.length), 0, trashed.entry);
+                        var tIdx = recordingsTrash.findIndex(function (x) { return x.entry && x.entry.id === trashed.entry.id; });
                         if (tIdx >= 0) recordingsTrash.splice(tIdx, 1);
                     }
                     persistRecordings();
@@ -2402,7 +2415,7 @@
                 allItems = allItems.concat(recordingToCollectionItems(rec));
             });
             if (allItems.length === 0) {
-                toast('No unary steps to convert', 'error');
+                toast(t('rec.noUnarySteps'), 'error');
                 return;
             }
             var name = picks.length === 1
@@ -2414,7 +2427,9 @@
             collectionManagerSelectedId = col.id;
             recordingsSelected.clear();
             recordingsSelectionAnchor = null;
-            toast('Created collection "' + name + '" (' + allItems.length + ' items)', 'success');
+            toast(t('rec.collectionCreatedNamed', {
+    name: name, count: allItems.length
+}), 'success');
             render();
         }
 
@@ -2423,12 +2438,12 @@
         // overflow; selection state swaps to bulk Delete / Convert
         // to collection + Clear.
         sidebar.appendChild(renderSidebarToolbar({
-            title: 'Recordings',
+            title: t('sidebar.recordings.title'),
             primary: {
                 // 'stop' is the real rounded-square glyph; 'square' isn't a
                 // catalogue icon and fell back to the generic placeholder.
                 icon: isRecording() ? 'stop' : 'record',
-                title: isRecording() ? 'Stop the current recording' : 'Start a new recording',
+                title: isRecording() ? t('rec.stopCurrent') : t('rec.startNew'),
                 onClick: function () {
                     if (isRecording()) stopRecording();
                     else startRecording();
@@ -2438,7 +2453,7 @@
             },
             overflow: recordingsList.length > 0 ? [
                 {
-                    label: 'Move all to trash',
+                    label: t('rec.trashAll'),
                     danger: true,
                     onClick: function () {
                         var n = recordingsList.length;
@@ -2454,10 +2469,13 @@
                                 for (var k = removed.length - 1; k >= 0; k--) recordingsTrash.unshift(removed[k]);
                                 persistRecordings();
                                 persistRecordingsTrash();
-                                toast(removed.length + ' recordings moved to trash', 'success');
+                                // #688 - one message, two shapes.
+toast(trashed(removed.length === 1 ? 'rec.movedToTrashOne' : 'rec.movedToTrashMany',
+    { count: removed.length }), 'success');
                                 render();
                             },
-                            { title: 'Move all to trash', confirmText: 'Move ' + n, danger: true }
+                            { title: t('rec.trashAll'), confirmText: t('rec.moveCount', { count: n }),
+    danger: true }
                         );
                     }
                 }
@@ -2467,7 +2485,7 @@
                 actions: [
                     {
                         icon: 'folder',
-                        title: 'Convert selected recordings into a new collection',
+                        title: t('rec.selectedToCollection'),
                         onClick: function () {
                             _bulkConvertToCollection(Array.from(recordingsSelected));
                         }
@@ -2475,7 +2493,7 @@
                     {
                         icon: 'trash',
                         danger: true,
-                        title: 'Move selected to trash',
+                        title: t('rec.trashSelected'),
                         onClick: function () {
                             _bulkDelete(Array.from(recordingsSelected));
                         }
@@ -2489,12 +2507,12 @@
             } : null,
             // #362 — search + sort once there's more than one recording.
             search: (recordingsList.length > 1 && recordingsSelected.size === 0) ? {
-                placeholder: 'Search recordings…',
+                placeholder: t('rec.search'),
                 value: recordingsSearchQuery,
                 onInput: function (v) { recordingsSearchQuery = v; render(); }
             } : null,
             sort: (recordingsList.length > 1 && recordingsSelected.size === 0) ? {
-                title: 'Sort recordings',
+                title: t('rec.sort'),
                 value: recordingsSortBy || 'manual',
                 options: BOWIRE_LIST_SORT_OPTIONS_WITH_MANUAL.concat(BOWIRE_LIST_SORT_OPTIONS),
                 onChange: function (v) { recordingsSortBy = v; render(); }
@@ -2510,7 +2528,7 @@
             sidebar.appendChild(el('div', {
                 className: 'bowire-pane-empty',
                 style: 'padding:12px 14px',
-                textContent: 'No recordings yet.'
+                textContent: t('rec.noneYetPeriod')
             }));
         } else {
             var list = el('div', { id: 'bowire-recordings-list', className: 'bowire-env-list' });
@@ -2533,7 +2551,7 @@
                 list.appendChild(el('div', {
                     className: 'bowire-pane-empty',
                     style: 'padding:12px 14px',
-                    textContent: 'No recordings match "' + recordingsSearchQuery + '".'
+                    textContent: t('rec.noMatch', { query: recordingsSearchQuery })
                 }));
             }
             visibleRecordings.forEach(function (rec, idx) {
@@ -2585,7 +2603,7 @@
                         }
                         render();
                     },
-                    deleteTitle: 'Delete recording',
+                    deleteTitle: t('sidebar.recordings.delete'),
                     onDelete: function () {
                         var dIdx = recordingsList.indexOf(rec);
                         if (dIdx < 0) return;
@@ -2596,11 +2614,11 @@
                         recordingsTrash.unshift({ entry: backup, deletedAt: Date.now(), originalIdx: dIdx });
                         persistRecordings();
                         persistRecordingsTrash();
-                        toast('Recording moved to trash', 'success', {
+                        toast(t('rec.movedToTrash'), 'success', {
                             undo: function () {
-                                var t = recordingsTrash.shift();
-                                if (t) {
-                                    recordingsList.splice(Math.min(dIdx, recordingsList.length), 0, t.entry);
+                                var trashed = recordingsTrash.shift();
+                                if (trashed) {
+                                    recordingsList.splice(Math.min(dIdx, recordingsList.length), 0, trashed.entry);
                                     persistRecordings();
                                     persistRecordingsTrash();
                                     render();
@@ -2634,8 +2652,8 @@
             trashArray: recordingsTrash,
             isOpen: recordingsTrashOpen,
             setOpen: function (v) { recordingsTrashOpen = v; },
-            restoreAt: function (t) {
-                recordingsList.splice(Math.min(t.originalIdx || recordingsList.length, recordingsList.length), 0, t.entry);
+            restoreAt: function (trashed) {
+                recordingsList.splice(Math.min(trashed.originalIdx || recordingsList.length, recordingsList.length), 0, trashed.entry);
                 persistRecordings();
             },
             persist: function () { persistRecordingsTrash(); },
@@ -2673,26 +2691,26 @@
             var noRecs = recordingsList.length === 0;
             emptyWrap.appendChild(renderEmptyCard({
                 icon: 'recording',
-                headline: noRecs ? 'No recordings yet' : 'Pick a recording',
+                headline: noRecs ? t('rec.noneYet') : t('rec.pickOne'),
                 body: noRecs
                     ? 'Recordings capture a sequence of live calls so you can replay them, build mocks, or run them as benchmarks. Start one, then invoke methods from Discover.'
                     : 'Pick a recording from the sidebar list to see its steps and actions.',
                 actions: noRecs ? [
-                    { label: 'Start recording', primary: true, onClick: function () {
+                    { label: t('sidebar.recordings.start'), primary: true, onClick: function () {
                         startRecording();
                         railMode = 'discover';
                         try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch (_) { /* ignore */ }
                         render();
                     } },
-                    { label: 'Browse Discover', onClick: function () {
+                    { label: t('rec.browseDiscover'), onClick: function () {
                         railMode = 'discover';
                         try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch (_) { /* ignore */ }
                         render();
                     } },
-                    { label: 'Import HAR', onClick: function () {
+                    { label: t('rec.importHar'), onClick: function () {
                         if (typeof importHarFromFile === 'function') importHarFromFile();
                     } },
-                    { id: 'bowire-recordings-empty-tour-btn', label: 'Take a tour', onClick: function () {
+                    { id: 'bowire-recordings-empty-tour-btn', label: t('common.takeTour'), onClick: function () {
                         if (typeof window !== 'undefined'
                             && typeof window.bowireStartCaptureRecordingTour === 'function') {
                             window.bowireStartCaptureRecordingTour({ force: true });

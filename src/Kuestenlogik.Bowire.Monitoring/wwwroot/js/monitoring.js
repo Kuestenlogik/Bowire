@@ -169,7 +169,7 @@
             sidebar.appendChild(el('div', {
                 className: 'bowire-pane-empty',
                 style: 'padding:12px 14px',
-                textContent: monitoringLoaded ? 'No probe outcomes yet.' : 'Loading probes…'
+                textContent: monitoringLoaded ? t('monitoring.noOutcomesPeriod') : t('monitoring.loadingProbes')
             }));
             return sidebar;
         }
@@ -205,11 +205,8 @@
         });
         pad.appendChild(renderEmptyCard({
             icon: 'pulse',
-            headline: monitoringLoaded ? 'No probe outcomes yet' : 'Loading probe ledger…',
-            body: 'Monitoring renders the outcome ledger that `bowire monitor run <probes>` writes. '
-                + 'Start a monitor process against your probe file — every run lands in '
-                + '~/.bowire/monitoring and shows up here live: status, latency sparkline, and '
-                + 'the full outcome history per probe.',
+            headline: monitoringLoaded ? t('monitoring.noOutcomes') : t('monitoring.loadingLedger'),
+            body: t('monitoring.emptyBody'),
             actions: [
                 { label: t('sidebar.sources.refresh'), primary: true, onClick: function () { refreshMonitoring(); } }
             ]

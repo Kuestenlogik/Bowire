@@ -109,8 +109,21 @@ const EXEMPT = /\/\/\s*i18n-exempt\b/;
 export function looksLikeProse(s) {
     if (typeof s !== 'string' || s.length < 2) return false;
     if (VOCABULARY.has(s)) return false;
-    // ' active', ' selected': a class-name fragment glued onto a base class.
-    if (s !== s.trim()) return false;
+    // A string padded with a space is one of two very different things: a
+    // class-name fragment glued onto a base class (`'bowire-row' + (on ?
+    // ' active' : '')`) or a piece of a sentence glued around a value
+    // (`'Correlating ' + n + ' steps…'`). The first is not prose; the second
+    // is the worst kind of prose there is, because the word order lives in
+    // the code where no translator can reach it.
+    //
+    // What separates them is what is left after the padding: a class fragment
+    // is a bare lowercase or kebab token, a sentence fragment carries a
+    // capital, a space or punctuation. Rejecting every padded string — which
+    // this did at first — waved real sentences through. The bare plural nouns
+    // (' step' / ' steps') fall on the class-fragment side and stay out; they
+    // are #688's, and counting them here would only make that ticket's work
+    // look like this one's.
+    if (s !== s.trim() && /^[a-z0-9]+([-_][a-z0-9]+)*$/.test(s.trim())) return false;
     // A URL, a path, a selector, a template, a tag, a format string.
     if (/^(https?:|\/|\.|#|\{|<|%)/.test(s)) return false;
     // A CSS value or declaration: translateX(16px), transform:translateX(0).

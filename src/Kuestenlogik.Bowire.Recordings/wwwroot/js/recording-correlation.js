@@ -144,7 +144,9 @@
             render();
         }).catch(function (err) {
             recordingCorrelationCache[cacheKey] = {
-                error: 'Could not reach /api/recordings/correlate: ' + (err && err.message ? err.message : 'network error')
+                error: t('corr.unreachable', {
+    error: err && err.message ? err.message : t('corr.networkError')
+})
             };
             delete recordingCorrelationPending[cacheKey];
             render();
@@ -196,7 +198,7 @@
         if (pending) {
             wrap.appendChild(el('div', {
                 className: 'bowire-recording-timeline-note',
-                textContent: 'Correlating ' + _correlationStepCount(rec) + ' steps…'
+                textContent: t('corr.correlating', { count: _correlationStepCount(rec) })
             }));
             return wrap;
         }
@@ -206,14 +208,14 @@
             // explicit button rather than a fetch fired from the render
             // path, which would be a state write during render.
             wrap.appendChild(_correlationNotice(
-                'Timeline not built yet',
-                'Correlating walks every payload in this recording, so it runs on demand rather than on every render.',
-                'Build timeline',
+                t('corr.notBuilt'),
+                t('corr.notBuiltBody'),
+                t('corr.buildTimeline'),
                 function () { _correlationRebuild(false); }));
             return wrap;
         }
         if (model.error) {
-            wrap.appendChild(_correlationNotice('Correlation unavailable', model.error, 'Retry',
+            wrap.appendChild(_correlationNotice(t('corr.unavailable'), model.error, t('intercept.retry'),
                 function () { _correlationRebuild(true); }));
             return wrap;
         }
@@ -223,11 +225,9 @@
         var warnings = Array.isArray(model.warnings) ? model.warnings : [];
         if (!model.key) {
             wrap.appendChild(el('div', { className: 'bowire-recording-timeline-banner' },
-                el('strong', { textContent: 'No correlation signal found. ' }),
+                el('strong', { textContent: t('corr.noSignalLead') }),
                 el('span', {
-                    textContent: 'No correlation header and no id-shaped value shared by two or more steps. '
-                        + 'The whole recording is treated as one transaction — the lanes below are still a '
-                        + 'faithful time chart, they just carry no per-step verdict.'
+                    textContent: t('corr.noSignalBody')
                 })
             ));
         }
@@ -256,7 +256,7 @@
         if (laneList.length === 0) {
             lanes.appendChild(el('div', {
                 className: 'bowire-recording-timeline-note',
-                textContent: 'This recording has no steps to place on a timeline.'
+                textContent: t('corr.noSteps')
             }));
         }
         laneList.forEach(function (lane) {
@@ -320,9 +320,12 @@
             type: 'button',
             className: 'bowire-recording-timeline-key-chip' + (model.key ? '' : ' is-empty'),
             title: model.key
-                ? ('Correlating on the ' + (model.key.source === 'header' ? 'correlation header' : 'payload field')
-                    + ' "' + model.key.name + '". Click to pick a different key.')
-                : 'No correlation key resolved. Click to pick one manually.',
+                ? t('corr.chipTitle', {
+                    kind: model.key.source === 'header'
+                        ? t('corr.sourceHeader') : t('corr.sourceField'),
+                    name: model.key.name
+                })
+                : t('corr.chipTitleNone'),
             onClick: function (e) {
                 e.stopPropagation();
                 recordingCorrelationKeyMenuOpen = !recordingCorrelationKeyMenuOpen;
@@ -345,7 +348,7 @@
             if (suggestions.length === 0) {
                 menu.appendChild(el('div', {
                     className: 'bowire-recording-timeline-key-menu-empty',
-                    textContent: 'No candidate key — no value is shared by two or more steps.'
+                    textContent: t('corr.noCandidate')
                 }));
             }
             suggestions.forEach(function (s) {
@@ -354,9 +357,13 @@
                 menu.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-recording-timeline-key-menu-item' + (active ? ' active' : ''),
-                    title: (s.source === 'header' ? 'Correlation header' : 'Shared payload field')
-                        + ' · ' + s.stepCount + ' step' + (s.stepCount === 1 ? '' : 's')
-                        + ' · ' + (Array.isArray(s.protocols) ? s.protocols.join(', ') : ''),
+                    // #688 - one message, two shapes.
+                    title: t(s.stepCount === 1 ? 'corr.candidateOne' : 'corr.candidateMany', {
+                        kind: s.source === 'header'
+                            ? t('corr.sourceHeaderCap') : t('corr.sourceFieldCap'),
+                        count: s.stepCount,
+                        protocols: Array.isArray(s.protocols) ? s.protocols.join(', ') : ''
+                    }),
                     dataset: { corrName: String(s.name), corrValue: String(s.value) }
                 },
                     el('span', { className: 'bowire-recording-timeline-key-menu-mark',
@@ -371,12 +378,12 @@
             menu.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-recording-timeline-key-menu-item',
-                title: 'Forget the pinned key and go back to the best automatic guess',
+                title: t('corr.forgetPinned'),
                 dataset: { corrAuto: '1' }
             },
                 el('span', { className: 'bowire-recording-timeline-key-menu-mark', textContent: '' }),
                 el('span', { className: 'bowire-recording-timeline-key-menu-label',
-                    textContent: 'Auto — best guess' }),
+                    textContent: t('corr.autoGuess') }),
                 el('span', { className: 'bowire-recording-timeline-key-menu-meta', textContent: '' })
             ));
             chipWrap.appendChild(menu);
@@ -387,16 +394,25 @@
         var stepTotal = Array.isArray(model.events) ? model.events.length : 0;
         var derivedTotal = (typeof model.derivedStepCount === 'number') ? model.derivedStepCount : 0;
         var stats = el('div', { className: 'bowire-recording-timeline-stats' },
-            el('span', { textContent: 'matched ' + (model.matchedStepCount || 0) + '/' + stepTotal + ' steps' }),
-            el('span', { textContent: (model.matchedProtocolCount || 0) + '/' + protoTotal + ' protocols' }));
+            el('span', {
+                textContent: t('corr.matchedSteps', {
+                    matched: model.matchedStepCount || 0, total: stepTotal
+                })
+            }),
+            el('span', {
+                textContent: t('corr.matchedProtocols', {
+                    matched: model.matchedProtocolCount || 0, total: protoTotal
+                })
+            }));
         if (derivedTotal > 0) {
             stats.appendChild(el('span', {
-                title: 'Steps that do not carry the key at all and were joined through a value they '
-                    + 'share with a step that does. Each one names its bridge below the lanes.',
-                textContent: derivedTotal + ' derived'
+                title: t('corr.derivedTitle'),
+                textContent: t('corr.derivedCount', { count: derivedTotal })
             }));
         }
-        stats.appendChild(el('span', { textContent: _fmtDuration(model.spanMs) + ' span' }));
+        stats.appendChild(el('span', {
+    textContent: t('corr.span', { duration: _fmtDuration(model.spanMs) })
+}));
         stats.appendChild(el('span', {
             title: model.timebase === 'absolute'
                 ? 'capturedAt carries wall-clock timestamps'
@@ -410,9 +426,9 @@
         bar.appendChild(el('button', {
             type: 'button',
             className: 'bowire-recording-timeline-copy',
-            title: 'Copy the raw correlation model as JSON (same shape as `bowire recording correlate --json`)',
+            title: t('corr.copyJsonTitle'),
             onClick: _correlationCopyJson
-        }, el('span', { textContent: 'Copy JSON' })));
+        }, el('span', { textContent: t('corr.copyJson') })));
 
         return bar;
     }
@@ -426,9 +442,9 @@
         if (!live || live.error) return;
         if (!navigator.clipboard || !navigator.clipboard.writeText) return;
         navigator.clipboard.writeText(JSON.stringify(live, null, 2)).then(function () {
-            if (typeof toast === 'function') toast('Correlation model copied', 'success');
+            if (typeof toast === 'function') toast(t('corr.copied'), 'success');
         }).catch(function () {
-            if (typeof toast === 'function') toast('Clipboard blocked by the browser', 'error');
+            if (typeof toast === 'function') toast(t('corr.clipboardBlocked'), 'error');
         });
     }
 
@@ -592,17 +608,19 @@
         var strip = el('div', { className: 'bowire-recording-timeline-links' });
         strip.appendChild(el('div', {
             className: 'bowire-recording-timeline-links-head',
-            textContent: 'Joined through a shared value — these steps do not carry the key itself'
+            textContent: t('corr.derivedHead')
         }));
         derived.forEach(function (ev) {
             var link = _correlationLinkOf(ev);
             var alt = (typeof link.alternativeCount === 'number' && link.alternativeCount > 0)
-                ? ' · +' + link.alternativeCount + ' other value'
-                    + (link.alternativeCount === 1 ? '' : 's') + ' would have served'
+                // #688 - one message, two shapes.
+                ? ' · ' + t(link.alternativeCount === 1
+                    ? 'corr.otherValueOne' : 'corr.otherValueMany',
+                    { count: link.alternativeCount })
                 : '';
             strip.appendChild(el('div', {
                 className: 'bowire-recording-timeline-links-row',
-                title: 'Click to pin this step',
+                title: t('corr.pinStep'),
                 dataset: { stepId: String(ev.stepId) }
             },
                 el('span', { className: 'bowire-recording-step-protocol', textContent: ev.protocol }),
@@ -612,12 +630,13 @@
                 }),
                 el('span', {
                     className: 'bowire-recording-timeline-links-via',
-                    textContent: 'via ' + link.name + ' = ' + link.value
+                    textContent: t('corr.via', { name: link.name, value: link.value })
                 }),
                 el('span', {
                     className: 'bowire-recording-timeline-links-from',
-                    textContent: 'shared with ' + link.viaProtocol + ' step '
-                        + ((link.viaStepIndex || 0) + 1) + alt
+                    textContent: t('corr.sharedWith', {
+                        protocol: link.viaProtocol, step: (link.viaStepIndex || 0) + 1
+                    }) + alt
                 })
             ));
         });
@@ -686,13 +705,15 @@
                 el('span', { className: 'bowire-recording-step-protocol', textContent: ev.protocol }),
                 el('span', {
                     className: 'bowire-recording-timeline-inspect-title',
-                    textContent: 'Step ' + (ev.stepIndex + 1) + ' — ' + (ev.service || '') + ' / ' + (ev.method || '')
+                    textContent: t('corr.stepTitle', {
+    n: ev.stepIndex + 1, service: ev.service || '', method: ev.method || ''
+})
                 }),
                 el('button', {
                     type: 'button',
                     className: 'bowire-recording-timeline-inspect-close',
-                    title: 'Close',
-                    'aria-label': 'Close step details',
+                    title: t('common.close'),
+                    'aria-label': t('corr.closeDetails'),
                     innerHTML: svgIcon('close'),
                     onClick: function (e) {
                         e.stopPropagation();
@@ -794,12 +815,15 @@
                 try { imported = _parseRecordingEnvelope(String(reader.result)); }
                 catch (err) {
                     if (typeof toast === 'function') {
-                        toast('Could not read "' + file.name + '": ' + (err && err.message ? err.message : 'invalid JSON'), 'error');
+                        toast(t('corr.readFailed', {
+    name: file.name,
+    error: err && err.message ? err.message : t('corr.invalidJson')
+}), 'error');
                     }
                     return;
                 }
                 if (imported.length === 0) {
-                    if (typeof toast === 'function') toast('No recordings found in "' + file.name + '"', 'error');
+                    if (typeof toast === 'function') toast(t('corr.noRecordingsIn', { name: file.name }), 'error');
                     return;
                 }
                 var firstId = null;
@@ -813,8 +837,9 @@
                 persistRecordings();
                 recordingManagerSelectedId = firstId;
                 if (typeof toast === 'function') {
-                    toast('Imported ' + imported.length + ' recording'
-                        + (imported.length === 1 ? '' : 's') + ' from "' + file.name + '"', 'success');
+                    // #688 - one message, two shapes.
+                    toast(t(imported.length === 1 ? 'corr.importedOne' : 'corr.importedMany',
+                        { count: imported.length, name: file.name }), 'success');
                 }
                 render();
             };

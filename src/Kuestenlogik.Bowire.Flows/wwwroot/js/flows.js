@@ -1471,7 +1471,8 @@
                     }
                     content.appendChild(el('div', { className: 'bowire-flow-card-subtitle', textContent: subtitle }));
                 } else if (node.type === 'delay') {
-                    content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: 'Delay ' + (node.delayMs || 1000) + 'ms' }));
+                    content.appendChild(el('div', { className: 'bowire-flow-card-title',
+    textContent: t('flows.nodeDelay', { ms: node.delayMs || 1000 }) }));
                 } else if (node.type === 'condition') {
                     content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: t('flows.nodeCondition') }));
                     content.appendChild(el('div', { className: 'bowire-flow-card-subtitle',

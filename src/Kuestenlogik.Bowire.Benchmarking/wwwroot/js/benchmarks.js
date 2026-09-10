@@ -1066,7 +1066,7 @@
 
         head.appendChild(el('span', {
             className: 'bowire-bench-diff-title',
-            textContent: 'vs previous run · ' + relTime(diff.ranAtPrev)
+            textContent: t('bench.vsPrevious', { when: relTime(diff.ranAtPrev) })
         }));
 
         function metricChip(label, classify, formatValue, currValue, invert) {
@@ -1203,9 +1203,11 @@
             // it in localStorage).
             banner.appendChild(el('div', {
                 className: 'bowire-bench-diff-footer',
-                textContent: 'Threshold ' + _benchmarkRegressionThresholdPct()
-                    + '% · history ' + runsList.length + '/' + _benchmarkHistoryCap()
-                    + ' runs · click banner to collapse'
+                textContent: t('bench.diffFooter', {
+                    threshold: _benchmarkRegressionThresholdPct(),
+                    kept: runsList.length,
+                    cap: _benchmarkHistoryCap()
+                })
             }));
         }
         return banner;
@@ -1535,8 +1537,10 @@
                     && benchmark && benchmark.running);
                 items.push({
                     label: env.name,
-                    title: env.name + ' · ' + targets.length + ' target' + (targets.length === 1 ? '' : 's')
-                        + (isRunning ? ' · running' : ''),
+                    // #688 - one message, two shapes.
+                    title: t(targets.length === 1 ? 'bench.envelopeTitleOne'
+                        : 'bench.envelopeTitleMany', { name: env.name, count: targets.length })
+                        + (isRunning ? ' · ' + t('bench.running') : ''),
                     icon: 'lightning',
                     meta: targets.length + (targets.length === 1 ? ' target' : ' targets'),
                     indicator: isRunning ? 'running' : null,
@@ -1654,7 +1658,7 @@
             var svcMissing = !((typeof services !== 'undefined' ? services : [])
                 .find(function (s) { return s.name === target.service; }));
             return (target.service || '—') + '/' + (target.method || '—')
-                + (svcMissing && target.service ? ' (not in discovery)' : '');
+                + (svcMissing && target.service ? ' ' + t('bench.notInDiscovery') : '');
         }
         if (target.type === 'collection-ref') {
             var col = (typeof collectionsList !== 'undefined' ? collectionsList : [])
@@ -2532,10 +2536,11 @@
             main.appendChild(el('div', { className: 'bowire-ws-detail-section' },
                 el('div', { className: 'bowire-ws-detail-section-label', textContent: t('bench.throughput') }),
                 el('div', { className: 'bowire-ws-detail-stats' },
-                    statTile('rps', (Math.round(s.throughput * 10) / 10) + '/s'),
-                    statTile('elapsed', (Math.round(s.totalSeconds * 10) / 10) + ' s'),
-                    statTile('total', last.total + '', last.success + ' OK · ' + last.failure + ' err'
-                        + (last.cancelled ? ' · cancelled' : ''))
+                    statTile(t('bench.statRps'), (Math.round(s.throughput * 10) / 10) + '/s'),
+                    statTile(t('bench.statElapsed'), (Math.round(s.totalSeconds * 10) / 10) + ' s'),
+                    statTile(t('bench.statTotal'), last.total + '',
+                        t('bench.statOkErr', { ok: last.success, err: last.failure })
+                        + (last.cancelled ? ' · ' + t('bench.cancelled') : ''))
                 )
             ));
             // Status histogram — counts per status name.

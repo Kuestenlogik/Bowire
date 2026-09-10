@@ -171,7 +171,7 @@ function renderContractsMain() {
       className: 'bowire-settings-action-btn',
       disabled: bowireContractMatrixLoading ? 'disabled' : null,
       onClick: function () { bowireLoadContractMatrix(); },
-    }, bowireContractMatrixLoading ? 'Loading…' : 'Refresh matrix'),
+    }, bowireContractMatrixLoading ? t('settings.loading') : t('contracts.refreshMatrix')),
   ]));
 
   if (bowireContractMatrixError) {
@@ -183,20 +183,21 @@ function renderContractsMain() {
     // (`IconKey => "certificate"`), so the card echoes the strip.
     body.push(renderEmptyCard({
       icon: 'certificate',
-      headline: 'No contract results yet',
-      body: 'Run `bowire contract verify` against a provider, then refresh. '
-        + 'The matrix folds whatever results it finds into one row per consumer.',
+      headline: t('contracts.noResults'),
+      body: t('contracts.noResultsBody'),
     }));
   } else if (!bowireContractMatrix.consumers || bowireContractMatrix.consumers.length === 0) {
     body.push(renderEmptyCard({
       icon: 'certificate',
-      headline: 'No verification results found',
-      body: 'Results were read but none carried a consumer and provider pair. '
-        + 'Check that the verification wrote where this rail reads.',
+      headline: t('contracts.noVerifications'),
+      body: t('contracts.noVerificationsBody'),
     }));
   } else {
     body.push(el('div', { className: 'bowire-contract-summary' },
-      bowireContractMatrix.passedCells + ' passing · ' + bowireContractMatrix.failedCells + ' failing'));
+      t('contracts.summary', {
+  passed: bowireContractMatrix.passedCells,
+  failed: bowireContractMatrix.failedCells
+})));
     body.push(bowireRenderContractGrid());
     var drill = bowireRenderContractDrillIn();
     if (drill) body.push(drill);
