@@ -156,6 +156,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [665](https://github.com/Kuestenlogik/Bowire/issues/665) | Bowire | [SignalR ad-hoc invoke declares args:string but requires a JSON array](#issue-kuestenlogik-bowire-665) | ⬜ Backlog | `area:workbench` |
 | [666](https://github.com/Kuestenlogik/Bowire/issues/666) | Bowire | [plugin install suggests a re-run its own already-installed guard blocks](#issue-kuestenlogik-bowire-666) | ⬜ Backlog | `area:plugin-sdk` |
 | [689](https://github.com/Kuestenlogik/Bowire/issues/689) | Bowire | [Action-log entries store rendered English text instead of a key](#issue-kuestenlogik-bowire-689) | ⬜ Backlog | `area:workbench` |
+| [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 
 ## Details
 
@@ -724,6 +725,12 @@ Discovery declares the SignalR ad-hoc `invoke` method's input as: [[more]](https
 > `area:workbench`
 
 The Activity drawer renders text that was translated once, when the action happened, and then stored. Switching the interface language afterwards leaves every existing entry in the old language, and an entry made before a translation existed stays English for ever. [[more]](https://github.com/Kuestenlogik/Bowire/issues/689)
+
+#### <a id="issue-kuestenlogik-bowire-690"></a>⬜ Backlog · [#690](https://github.com/Kuestenlogik/Bowire/issues/690) Translate the CLI help surface, or decide not to
+
+> `area:cli`
+
+`bowire --help` is still English in every locale. The machinery it needs already exists — `BowireLocale` resolves `BOWIRE_LOCALE` / `LC_ALL` / `LANG` / the OS culture and reads the same catalogues the workbench does — but nothing in the help surface calls it yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/690)
 
 ---
 
