@@ -67,6 +67,10 @@ const SLOT_NAMES = [
     // also carry protocol values ('OK', 'NOT_FOUND') and internal states
     // ('idle'), which the rejections below already drop.
     'status', 'meta',
+    // `desc` joined them when the shortcuts table turned up untranslated
+    // under the pseudo-locale: nine descriptions in a slot whose name is an
+    // abbreviation of one already on the list.
+    'desc',
 ].join('|');
 
 // The list above names slots exactly, and that kept missing the ones a caller

@@ -425,12 +425,12 @@
         // Source prefixes — typed when query is empty or matches the
         // prefix prefix.
         var sources = [
-            { label: 'env.', kind: 'source', desc: 'Environment variable', insert: 'env.' },
-            { label: 'prev.', kind: 'source', desc: 'Previous response field', insert: 'prev.' },
-            { label: 'runtime.', kind: 'source', desc: 'Runtime built-in (now, uuid, …)', insert: 'runtime.' },
-            { label: 'step1.', kind: 'source', desc: 'Recording step N response', insert: 'step1.' },
-            { label: 'secret.', kind: 'source', desc: 'OS keyring (Phase 2 — masked today)', insert: 'secret.' },
-            { label: 'ai.', kind: 'source', desc: 'AI-suggested value (Phase 2 stub)', insert: 'ai.' },
+            { label: 'env.', kind: 'source', desc: t('vars.srcEnv'), insert: 'env.' },
+            { label: 'prev.', kind: 'source', desc: t('vars.srcPrev'), insert: 'prev.' },
+            { label: 'runtime.', kind: 'source', desc: t('vars.srcRuntime'), insert: 'runtime.' },
+            { label: 'step1.', kind: 'source', desc: t('vars.srcStep'), insert: 'step1.' },
+            { label: 'secret.', kind: 'source', desc: t('vars.srcSecret'), insert: 'secret.' },
+            { label: 'ai.', kind: 'source', desc: t('vars.srcAi'), insert: 'ai.' },
         ];
         sources.forEach(function (s) {
             if (q === '' || s.label.toLowerCase().indexOf(q) === 0) {
@@ -443,7 +443,8 @@
         runtimes.forEach(function (r) {
             var full = 'runtime.' + r;
             if (q === '' || full.toLowerCase().indexOf(q) !== -1) {
-                out.push({ label: full, kind: 'runtime', desc: 'Runtime ' + r, insert: full });
+                out.push({ label: full, kind: 'runtime',
+    desc: t('vars.srcRuntimeOne', { name: r }), insert: full });
             }
         });
 

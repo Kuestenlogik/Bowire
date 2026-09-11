@@ -294,15 +294,15 @@
         if (!showShortcutsOverlay) return;
 
         var shortcuts = [
-            { key: 'Ctrl+Enter', desc: 'Execute request / Send message' },
-            { key: '?', desc: 'Show/hide shortcuts' },
-            { key: 'Esc', desc: 'Close overlay / Stop streaming / Disconnect' },
-            { key: '/', desc: 'Focus search field' },
-            { key: 't', desc: 'Toggle theme (dark/light)' },
-            { key: 'f', desc: 'Toggle Form/JSON mode' },
-            { key: 'r', desc: 'Repeat last call' },
-            { key: 'j', desc: 'Next method (sidebar)' },
-            { key: 'k', desc: 'Previous method (sidebar)' }
+            { key: 'Ctrl+Enter', desc: t('keys.execute') },
+            { key: '?', desc: t('keys.toggleShortcuts') },
+            { key: 'Esc', desc: t('keys.escOverlay') },
+            { key: '/', desc: t('keys.focusSearch') },
+            { key: 't', desc: t('keys.toggleThemeDarkLight') },
+            { key: 'f', desc: t('keys.toggleFormJson') },
+            { key: 'r', desc: t('keys.repeatLast') },
+            { key: 'j', desc: t('keys.nextMethod') },
+            { key: 'k', desc: t('keys.prevMethod') }
         ];
 
         var grid = el('div', { className: 'bowire-shortcuts-grid' });

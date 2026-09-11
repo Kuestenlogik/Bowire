@@ -3391,5 +3391,38 @@
   "lint.discoveredOne": "{count} service discovered",
   "lint.discoveredMany": "{count} services discovered",
   "bench.scheduledRuns": "Scheduled runs",
-  "bench.pressRefresh": "Press Refresh to load scheduled runs."
+  "bench.pressRefresh": "Press Refresh to load scheduled runs.",
+
+  // the seconds unit and the catalogue entry count.
+  "settings.seconds": "seconds",
+  "settings.cat.entryOne": "{count} entry",
+  "settings.cat.entryMany": "{count} entries",
+
+  // the two keyboard-shortcut tables and the variable-completion sources,
+  // all in a slot called `desc`.
+  "keys.execute": "Execute request / Send message",
+  "keys.toggleOverlay": "Show/hide shortcuts overlay",
+  "keys.escDialog": "Close dialog / Stop streaming / Disconnect",
+  "keys.focusPalette": "Focus command palette",
+  "keys.toggleThemeCycle": "Toggle theme (Auto → Dark → Light)",
+  "keys.toggleFormJson": "Toggle Form/JSON mode",
+  "keys.repeatLast": "Repeat last call",
+  "keys.nextMethod": "Next method (sidebar)",
+  "keys.prevMethod": "Previous method (sidebar)",
+  "keys.toggleShortcuts": "Show/hide shortcuts",
+  "keys.escOverlay": "Close overlay / Stop streaming / Disconnect",
+  "keys.focusSearch": "Focus search field",
+  "keys.toggleThemeDarkLight": "Toggle theme (dark/light)",
+  "vars.srcEnv": "Environment variable",
+  "vars.srcPrev": "Previous response field",
+  "vars.srcRuntime": "Runtime built-in (now, uuid, …)",
+  "vars.srcStep": "Recording step N response",
+  "vars.srcSecret": "OS keyring (Phase 2 — masked today)",
+  "vars.srcAi": "AI-suggested value (Phase 2 stub)",
+  "vars.srcRuntimeOne": "Runtime {name}",
+
+  // the Home rail's two section counters.
+  "main.home.countOf": "{shown} of {total}",
+  "main.home.entryOne": "{count} entry",
+  "main.home.entryMany": "{count} entries"
 }

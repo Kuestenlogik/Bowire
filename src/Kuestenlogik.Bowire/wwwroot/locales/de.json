@@ -3391,5 +3391,38 @@
   "lint.discoveredOne": "{count} Dienst erkundet",
   "lint.discoveredMany": "{count} Dienste erkundet",
   "bench.scheduledRuns": "Geplante Läufe",
-  "bench.pressRefresh": "Drücken Sie auf Auffrischen, um die geplanten Läufe zu laden."
+  "bench.pressRefresh": "Drücken Sie auf Auffrischen, um die geplanten Läufe zu laden.",
+
+  // Die Sprachnamen im Waehler stehen bewusst in ihrer eigenen Sprache.
+  "settings.seconds": "Sekunden",
+  "settings.cat.entryOne": "{count} Eintrag",
+  "settings.cat.entryMany": "{count} Einträge",
+
+  // Die Tastennamen selbst — Ctrl+Enter, Esc — bleiben: sie stehen so auf
+  // der Tastatur.
+  "keys.execute": "Anfrage ausführen / Nachricht senden",
+  "keys.toggleOverlay": "Die Kurzübersicht ein- und ausblenden",
+  "keys.escDialog": "Dialog schließen / Strom anhalten / Verbindung trennen",
+  "keys.focusPalette": "Den Zeiger in die Befehlspalette setzen",
+  "keys.toggleThemeCycle": "Erscheinungsbild umschalten (Auto → Dunkel → Hell)",
+  "keys.toggleFormJson": "Zwischen Formular und JSON umschalten",
+  "keys.repeatLast": "Den letzten Aufruf wiederholen",
+  "keys.nextMethod": "Nächste Methode (Seitenleiste)",
+  "keys.prevMethod": "Vorige Methode (Seitenleiste)",
+  "keys.toggleShortcuts": "Die Kurzübersicht zeigen und verbergen",
+  "keys.escOverlay": "Auflage schließen / Strom anhalten / Verbindung trennen",
+  "keys.focusSearch": "Den Zeiger in das Suchfeld setzen",
+  "keys.toggleThemeDarkLight": "Erscheinungsbild umschalten (dunkel/hell)",
+  "vars.srcEnv": "Variable der Umgebung",
+  "vars.srcPrev": "Feld der vorigen Antwort",
+  "vars.srcRuntime": "Von der Laufzeit (now, uuid, …)",
+  "vars.srcStep": "Antwort des N-ten Aufzeichnungsschritts",
+  "vars.srcSecret": "Schlüsselbund des Betriebssystems (Stufe 2 — heute nur verdeckt)",
+  "vars.srcAi": "Von der KI vorgeschlagener Wert (Stumpf der Stufe 2)",
+  "vars.srcRuntimeOne": "Laufzeitwert {name}",
+
+  // Zwei Formen, weil der Zaehler bei eins anders liest.
+  "main.home.countOf": "{shown} von {total}",
+  "main.home.entryOne": "{count} Eintrag",
+  "main.home.entryMany": "{count} Einträge"
 }

@@ -622,7 +622,8 @@
                 var stored = localStorage.getItem('bowire_watch_interval');
                 if (stored) input.value = stored;
                 return el('div', { style: 'display:flex;align-items:center;gap:6px' },
-                    input, el('span', { textContent: 'seconds', style: 'font-size:12px;color:var(--bowire-text-tertiary)' }));
+                    input, el('span', { textContent: t('settings.seconds'),
+    style: 'font-size:12px;color:var(--bowire-text-tertiary)' }));
             }
         ));
 
@@ -1543,15 +1544,15 @@
         section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: t('settings.shortcuts.title') }));
 
         var shortcuts = [
-            { key: 'Ctrl+Enter', desc: 'Execute request / Send message' },
-            { key: '?', desc: 'Show/hide shortcuts overlay' },
-            { key: 'Esc', desc: 'Close dialog / Stop streaming / Disconnect' },
-            { key: '/', desc: 'Focus command palette' },
-            { key: 't', desc: 'Toggle theme (Auto → Dark → Light)' },
-            { key: 'f', desc: 'Toggle Form/JSON mode' },
-            { key: 'r', desc: 'Repeat last call' },
-            { key: 'j', desc: 'Next method (sidebar)' },
-            { key: 'k', desc: 'Previous method (sidebar)' }
+            { key: 'Ctrl+Enter', desc: t('keys.execute') },
+            { key: '?', desc: t('keys.toggleOverlay') },
+            { key: 'Esc', desc: t('keys.escDialog') },
+            { key: '/', desc: t('keys.focusPalette') },
+            { key: 't', desc: t('keys.toggleThemeCycle') },
+            { key: 'f', desc: t('keys.toggleFormJson') },
+            { key: 'r', desc: t('keys.repeatLast') },
+            { key: 'j', desc: t('keys.nextMethod') },
+            { key: 'k', desc: t('keys.prevMethod') }
         ];
 
         var table = el('div', { className: 'bowire-settings-shortcuts' });
@@ -2378,7 +2379,10 @@
         if (typeof discoveryState.entryCount === 'number') {
             statusBar.appendChild(el('span', {
                 className: 'bowire-settings-catalogue-status-count',
-                textContent: discoveryState.entryCount + ' entries'
+                // #688 - one message, two shapes.
+textContent: t(discoveryState.entryCount === 1
+    ? 'settings.cat.entryOne' : 'settings.cat.entryMany',
+    { count: discoveryState.entryCount })
             }));
         }
         section.appendChild(statusBar);

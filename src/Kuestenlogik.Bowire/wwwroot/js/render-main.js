@@ -4949,9 +4949,11 @@
             var favs = (typeof getFavorites === 'function') ? getFavorites() : [];
             var favSection = el('div', { className: 'bowire-home-section bowire-home-section-favs' });
             var favCappedCount = Math.min(favs.length, 9);
+            // #688 - one message, two shapes.
             var favCountText = favs.length > favCappedCount
-                ? favCappedCount + ' of ' + favs.length
-                : favs.length + (favs.length === 1 ? ' entry' : ' entries');
+                ? t('main.home.countOf', { shown: favCappedCount, total: favs.length })
+                : t(favs.length === 1 ? 'main.home.entryOne'
+                    : 'main.home.entryMany', { count: favs.length });
             // Title click opens the right-side overlay drawer with the
             // full list. The grid in Home stays capped at 9 so Home
             // itself never needs to scroll; the drawer is where the
@@ -4990,9 +4992,11 @@
 
             var recentSection = el('div', { className: 'bowire-home-section bowire-home-section-recent' });
             var recentCappedCount = Math.min(recent.length, 9);
+            // #688 - one message, two shapes.
             var recentCountText = recent.length > recentCappedCount
-                ? recentCappedCount + ' of ' + recent.length
-                : recent.length + (recent.length === 1 ? ' entry' : ' entries');
+                ? t('main.home.countOf', { shown: recentCappedCount, total: recent.length })
+                : t(recent.length === 1 ? 'main.home.entryOne'
+                    : 'main.home.entryMany', { count: recent.length });
             // Title click opens the right-side overlay drawer with
             // the full activity history.
             recentSection.appendChild(el('button', {
