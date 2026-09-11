@@ -1519,15 +1519,18 @@
         if (fail > 0) {
             label = pass + '/' + tests.length;
             cls = 'bowire-tests-tab-accessory bowire-tests-tab-accessory-fail';
-            title = fail + ' failing · ' + pass + ' passing · ' + untested + ' untested';
+            title = t('tests.tabMixed',
+                { fail: fail, pass: pass, untested: untested });
         } else if (untested === tests.length) {
             label = String(tests.length);
             cls = 'bowire-tests-tab-accessory';
-            title = tests.length + ' assertion' + (tests.length === 1 ? '' : 's') + ' — none run yet';
+            // #688 - one message, two shapes.
+            title = t(tests.length === 1 ? 'tests.tabNoneRunOne'
+                : 'tests.tabNoneRunMany', { count: tests.length });
         } else {
             label = pass + '/' + tests.length;
             cls = 'bowire-tests-tab-accessory bowire-tests-tab-accessory-pass';
-            title = pass + ' passing · ' + untested + ' untested';
+            title = t('tests.tabPassing', { pass: pass, untested: untested });
         }
         return el('span', { className: cls, title: title, textContent: label });
     }
@@ -2150,11 +2153,10 @@
             if (flat.length === 0) {
                 hint = 'Trash is empty.';
             } else if (globalTrashFilterState.query) {
-                hint = 'No items match "' + globalTrashFilterState.query + '". '
-                    + 'Adjust the search or filter chips.';
+                hint = t('trash.noMatchQuery',
+                    { query: globalTrashFilterState.query });
             } else {
-                hint = 'No items match the current filter. '
-                    + 'Click a chip to include that type.';
+                hint = t('trash.noMatchFilterHint');
             }
             list.appendChild(el('div', {
                 className: 'bowire-trash-unified-empty',
@@ -2312,8 +2314,9 @@
                 label: t('drawer.activity'),
                 accessory: availCnt > 0 ? el('span', {
                     className: 'bowire-help-topic-count',
-                    title: availCnt + ' reversible action'
-                        + (availCnt === 1 ? '' : 's'),
+                    // #688 - one message, two shapes.
+                    title: t(availCnt === 1 ? 'help.reversibleOne'
+                        : 'help.reversibleMany', { count: availCnt }),
                     textContent: String(availCnt)
                 }) : null,
                 closeTitle: t('topbar.closeActivity'),
@@ -2573,7 +2576,8 @@
                 summary = counts.error + ' / ' + urlsPresent.length + ' failed';
             } else if (counts.connecting > 0) {
                 aggregate = 'connecting';
-                summary = counts.connecting + ' / ' + urlsPresent.length + ' connecting…';
+                summary = t('status.connectingCount',
+                    { count: counts.connecting, total: urlsPresent.length });
             } else if (counts.connected === urlsPresent.length) {
                 aggregate = 'connected';
                 summary = (urlsPresent.length === 1
@@ -2622,7 +2626,12 @@
         } else {
             var header = el('div', { className: 'bowire-conn-popover-header' },
                 el('span', { textContent: t('status.connections') }),
-                el('span', { className: 'bowire-conn-popover-count', textContent: urlsPresent.length + ' URL' + (urlsPresent.length === 1 ? '' : 's') })
+                // #688 - one message, two shapes.
+                el('span', {
+                    className: 'bowire-conn-popover-count',
+                    textContent: t(urlsPresent.length === 1 ? 'conn.urlOne'
+                        : 'conn.urlMany', { count: urlsPresent.length })
+                })
             );
             popover.appendChild(header);
 
@@ -2741,7 +2750,8 @@
                         if (attempts.length > shown) {
                             row.appendChild(el('div', {
                                 className: 'bowire-conn-popover-row-attempt',
-                                textContent: '+' + (attempts.length - shown) + ' more — click to open Sources'
+                                textContent: t('conn.moreAttempts',
+                                    { count: attempts.length - shown })
                             }));
                         }
                     }
@@ -5341,7 +5351,6 @@
                                 className: 'bowire-env-dropdown-item-meta',
                                 textContent: t('env.fromHost'),
                                 title: t('env.fromHostTitle')
-                                    + 'host is configured — edits here would not survive a restart.'
                             })
                             : null,
                         tools
@@ -5438,7 +5447,7 @@
             })();
             bar.appendChild(el('span', {
                 className: 'bowire-env-auth-badge',
-                title: authLabel + ' auth applied to every request from this environment',
+                title: t('env.authBadgeTitle', { scheme: authLabel }),
                 innerHTML: svgIcon('lock')
             }));
         }
@@ -5552,13 +5561,15 @@
             el('span', { className: 'bowire-env-diff-summary-title',
                 textContent: envA.name + ' vs ' + envB.name }),
             el('span', { className: 'bowire-env-diff-chip equal',
-                textContent: summary.equal + ' equal' }),
+                textContent: t('env.diffEqual', { count: summary.equal }) }),
             el('span', { className: 'bowire-env-diff-chip changed',
-                textContent: summary.changed + ' changed' }),
+                textContent: t('env.diffChanged', { count: summary.changed }) }),
             el('span', { className: 'bowire-env-diff-chip only-a',
-                textContent: summary.onlyA + ' only in ' + envA.name }),
+                textContent: t('env.diffOnlyIn',
+                    { count: summary.onlyA, env: envA.name }) }),
             el('span', { className: 'bowire-env-diff-chip only-b',
-                textContent: summary.onlyB + ' only in ' + envB.name })
+                textContent: t('env.diffOnlyIn',
+                    { count: summary.onlyB, env: envB.name }) })
         ));
 
         if (rows.length === 0) {

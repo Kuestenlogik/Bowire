@@ -467,19 +467,25 @@
         switch (origin.kind) {
             case 'collection':
                 iconName = 'folder';
-                title = 'From collection' + (origin.name ? ' — ' + origin.name : '');
+                title = t('compose.fromCollection')
+                    + (origin.name ? ' — ' + origin.name : '');
                 break;
             case 'preset':
                 iconName = 'star';
-                title = 'From preset' + (origin.name ? ' — ' + origin.name : '');
+                title = t('compose.fromPreset')
+                    + (origin.name ? ' — ' + origin.name : '');
                 break;
             case 'discover':
                 iconName = 'search';
-                title = 'From Discover' + (origin.method ? ' — ' + (origin.service || '') + '/' + origin.method : '');
+                title = t('compose.fromDiscover')
+                    + (origin.method
+                        ? ' — ' + (origin.service || '') + '/' + origin.method
+                        : '');
                 break;
             case 'recording':
                 iconName = 'replay';
-                title = 'From recording' + (origin.name ? ' — ' + origin.name : '')
+                title = t('compose.fromRecording')
+                    + (origin.name ? ' — ' + origin.name : '')
                     + (typeof origin.stepIndex === 'number'
     ? ' ' + t('compose.stepN', { n: origin.stepIndex + 1 }) : '');
                 break;

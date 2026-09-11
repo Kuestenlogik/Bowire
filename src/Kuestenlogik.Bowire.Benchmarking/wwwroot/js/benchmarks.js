@@ -779,6 +779,7 @@
             method: displayName,
             status: benchmark.cancelled ? 'Cancelled' : 'Benchmark complete',  // i18n-exempt: the action log stores rendered text, see #689
             durationMs: Math.round(totalMs),
+            // i18n-exempt: the action log stores rendered text, see #689
             body: benchmark.success + ' OK / ' + benchmark.failure + ' failed'
         });
 
@@ -1047,7 +1048,8 @@
     current: runsList.length,
     previous: runsList.length - 1
 })
-                + ' · click to ' + (expanded ? 'collapse' : 'expand'),
+                + ' · ' + t(expanded ? 'bench.clickCollapse'
+                    : 'bench.clickExpand'),
             onClick: function () {
                 benchmarkDiffBannerExpanded[spec.id] = !benchmarkDiffBannerExpanded[spec.id];
                 render();
@@ -2390,9 +2392,13 @@
         var phasesCount = (spec.phases || []).length;
         main.appendChild(el('div', {
             className: 'bowire-ws-detail-stat-hint',
-            textContent: targetsCount + ' target' + (targetsCount === 1 ? '' : 's')
-                + ' · ' + phasesCount + ' phase' + (phasesCount === 1 ? '' : 's')
-                + ' · mode: ' + (spec.mode || 'sequential')
+            // #688 - one message, two shapes, twice over.
+            textContent: t(targetsCount === 1 ? 'bench.specTargetOne'
+                : 'bench.specTargetMany', { count: targetsCount })
+                + ' · ' + t(phasesCount === 1 ? 'bench.specPhaseOne'
+                    : 'bench.specPhaseMany', { count: phasesCount })
+                + ' · ' + t('bench.specMode',
+                    { mode: spec.mode || 'sequential' })
         }));
 
         // ---- Mode toggle (sequential | parallel) ----
@@ -2424,8 +2430,12 @@
             isThisRunning
                 ? el('span', {
                     className: 'bowire-ws-detail-stat-hint',
-                    textContent: benchmark.completed + ' / ' + benchmark.total + '  ·  '
-                        + benchmark.success + ' OK  ·  ' + benchmark.failure + ' err'
+                    textContent: t('bench.progressMeta', {
+                        done: benchmark.completed,
+                        total: benchmark.total,
+                        ok: benchmark.success,
+                        err: benchmark.failure
+                    })
                 })
                 : (!canRun
                     ? el('span', {

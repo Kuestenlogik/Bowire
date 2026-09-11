@@ -1310,7 +1310,7 @@ runBtn.textContent = t(pickedCount === 1 ? 'semantics.replayOne'
               body.appendChild(resultList);
               var foot = document.createElement('div');
               foot.className = 'bowire-ai-fuzz-foot';
-              foot.textContent = leafName + ' · severity is advisory; verify suspicious rows by hand before reporting.';
+              foot.textContent = t('fuzz.severityAdvisory', { field: leafName });
               body.appendChild(foot);
           })
           .catch(function (err) {
@@ -1398,8 +1398,10 @@ runBtn.textContent = t(pickedCount === 1 ? 'semantics.replayOne'
         if (result.baselineStatus !== undefined && result.baselineStatus !== null) {
             var baseline = document.createElement('div');
             baseline.className = 'bowire-fuzz-panel-baseline';
-            baseline.textContent = 'baseline: status=' + result.baselineStatus  // i18n-exempt: the baseline status line is machine output
-                + ' body=' + (result.baselineBodySize || 0) + 'B latency=' + (result.baselineLatencyMs || 0) + 'ms';
+            // The fuzzer's own baseline measurement, one line of numbers. Kept
+            // on one source line so the exemption covers every piece of it:
+            // the detector reads the line a literal sits on.
+            baseline.textContent = 'baseline: status=' + result.baselineStatus + ' body=' + (result.baselineBodySize || 0) + 'B latency=' + (result.baselineLatencyMs || 0) + 'ms';  // i18n-exempt: machine output
             body.appendChild(baseline);
         }
 

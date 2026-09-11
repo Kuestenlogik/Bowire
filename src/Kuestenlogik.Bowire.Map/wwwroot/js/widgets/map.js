@@ -2012,7 +2012,7 @@
             if (current && !seen) {
                 var custom = document.createElement('option');
                 custom.value = current;
-                custom.textContent = current + '  (custom)';
+                custom.textContent = t('map.trackPathCustom', { path: current });
                 custom.selected = true;
                 trackPathSelect.appendChild(custom);
             }

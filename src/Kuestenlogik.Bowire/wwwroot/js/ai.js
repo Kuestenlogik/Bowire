@@ -1812,7 +1812,10 @@
                 statusLine.textContent = '⚠ ' + threatState.error;
                 statusLine.classList.add('err');
             } else if (threatState.lastRun) {
-                statusLine.textContent = threatState.lastInputCount + ' endpoint(s) considered'
+                // #688 - one message, two shapes.
+                statusLine.textContent = t(threatState.lastInputCount === 1
+                    ? 'ai.threatConsideredOne' : 'ai.threatConsideredMany',
+                    { count: threatState.lastInputCount })
                     + (threatState.truncated ? ' ' + t('ai.truncated200') : '')
                     + (threatState.modelId ? ' · ' + threatState.modelId : '');
             }
@@ -2009,7 +2012,14 @@
             findings.forEach(function (f) {
                 var li = el('li', { className: 'bowire-ai-scan-finding bowire-sev-' + (f.severity || 'medium').toLowerCase() });
                 li.appendChild(el('span', { className: 'bowire-scan-finding-title', textContent: '[' + (f.severity || '?') + '] ' + (f.title || f.ruleId || 'finding') }));
-                li.appendChild(el('span', { className: 'bowire-scan-finding-meta', textContent: (f.endpointId || '') + ' · ' + (f.ruleId || '') + ' · real ' + (f.realScore != null ? f.realScore : '?') + '%' }));
+                li.appendChild(el('span', {
+                    className: 'bowire-scan-finding-meta',
+                    textContent: t('ai.scanFindingMeta', {
+                        endpoint: f.endpointId || '',
+                        rule: f.ruleId || '',
+                        score: f.realScore != null ? f.realScore : '?'
+                    })
+                }));
                 list.appendChild(li);
             });
             container.appendChild(list);

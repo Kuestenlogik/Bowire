@@ -655,7 +655,14 @@
             var list = _unwrapServices(url, data);
             if (isMqtt) {
                 var topicCount = list.reduce(function (acc, s) { return acc + (s.methods ? s.methods.length : 0); }, 0);
-                addConsoleEntry({ type: 'response', method: 'MQTT Discovery', status: 'OK', body: topicCount + ' topics discovered at ' + url });
+                addConsoleEntry({
+                    type: 'response',
+                    method: 'MQTT Discovery',  // i18n-exempt: the protocol's own name
+                    status: 'OK',  // i18n-exempt: a protocol status word
+                    // #688 - one message, two shapes.
+                    body: t(topicCount === 1 ? 'api.mqttTopicsOne'
+                        : 'api.mqttTopicsMany', { count: topicCount, url: url })
+                });
             }
             // Make sure every service is tagged with its origin so per-service
             // routing works even if the server forgot to set it.

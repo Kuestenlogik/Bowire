@@ -2598,8 +2598,10 @@ var railName = opts.railLabel || t('prereq.thisRail');
             row.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-sidebar-toolbar-title bowire-sidebar-toolbar-title-link',
-                title: opts.titleClickTitle || 'Open ' + (opts.title || '') + ' overview',
-                'aria-label': opts.titleClickTitle || 'Open ' + (opts.title || '') + ' overview',
+                title: opts.titleClickTitle
+                    || t('sidebar.openOverview', { what: opts.title || '' }),
+                'aria-label': opts.titleClickTitle
+                    || t('sidebar.openOverview', { what: opts.title || '' }),
                 textContent: opts.title || '',
                 onClick: opts.onTitleClick
             }));

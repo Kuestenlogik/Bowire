@@ -258,6 +258,138 @@ export function looksLikeProse(raw) {
     return /[A-Za-z]{2}/.test(s);
 }
 
+// A display slot OPENING an expression: `title:`, `'aria-label':`,
+// `node.textContent =`, `executeLabel:`. The concatenation detector asks this
+// of the expression it walked back to, not of the line.
+const SLOT_HEAD = new RegExp(String.raw`^\s*(?:['"]?(?:${SLOT_NAMES}|aria-label)['"]?`
+    + String.raw`|[A-Za-z0-9_$]*(?:${SLOT_SUFFIX})`
+    + String.raw`|[A-Za-z0-9_$.]*\.(?:${SLOT_NAMES}))\s*[:=](?!=)`);
+
+/**
+ * Every single-quoted string in a source, with its bounds — skipping comments,
+ * double-quoted strings, templates and regex literals, so a quote that is not
+ * a quote does not shift everything after it.
+ *
+ * Without this the detector reads `className: 'x', textContent: '+'` as a
+ * string containing ", textContent: " — the run between the CLOSING quote of
+ * one literal and the OPENING quote of the next. A regex has no way to tell
+ * those apart; a scanner does, because it has been counting since the top of
+ * the file.
+ */
+function singleQuoted(text) {
+    const out = [];
+    let prev = '\n';
+    let i = 0;
+    while (i < text.length) {
+        const c = text[i];
+        if (c === '/' && text[i + 1] === '/') {
+            while (i < text.length && text[i] !== '\n') i++;
+            continue;
+        }
+        if (c === '/' && text[i + 1] === '*') {
+            const end = text.indexOf('*/', i + 2);
+            i = end < 0 ? text.length : end + 2;
+            continue;
+        }
+        if (c === '/' && '(,=:[!&|?{};\n'.includes(prev)) {
+            i++;                                        // regex literal
+            let inClass = false;
+            while (i < text.length && text[i] !== '\n') {
+                if (text[i] === '\\') { i += 2; continue; }
+                if (text[i] === '[') inClass = true;
+                else if (text[i] === ']') inClass = false;
+                if (text[i] === '/' && !inClass) { i++; break; }
+                i++;
+            }
+            prev = '/';
+            continue;
+        }
+        if (c === '"' || c === '`') {
+            const quote = c;
+            i++;
+            while (i < text.length) {
+                if (text[i] === '\\') { i += 2; continue; }
+                if (text[i] === '\n' && quote === '"') break;
+                if (text[i] === quote) { i++; break; }
+                i++;
+            }
+            prev = quote;
+            continue;
+        }
+        if (c === "'") {
+            const start = i;
+            let value = '';
+            i++;
+            while (i < text.length) {
+                if (text[i] === '\\') { value += text.slice(i, i + 2); i += 2; continue; }
+                if (text[i] === '\n') break;             // unterminated — give up
+                if (text[i] === "'") { i++; break; }
+                value += text[i++];
+            }
+            out.push({ value, start, end: i });
+            prev = "'";
+            continue;
+        }
+        if (!/\s/.test(c)) prev = c;
+        i++;
+    }
+    return out;
+}
+
+/**
+ * Prose spliced into a sentence with `+`, inside something that displays it.
+ *
+ * When a sentence is built around a value there is no literal after `title:`
+ * to match, so every slot pattern above looks straight past
+ *
+ *     title: subs.length + ' active subscription' + … + ' — click for details',
+ *
+ * and four tooltips kept an English clause through the whole sweep. One read
+ * "Arbeitsbereiche sortieren: Anlagedatum — click for Zuletzt benutzt".
+ *
+ * Two questions per literal, and both are needed. Does it hang off a `+`?
+ * Without that the detector reads every `'Bearer ' + token` in the codebase.
+ * And does a display slot open the expression it sits in? Asking that of the
+ * line instead of the expression lets `style: 'width:' + pct + '%', title: …`
+ * through on the strength of a `title:` further along the same line.
+ */
+function concatSites(text) {
+    /**
+     * The expression a literal belongs to: walk back past balanced brackets to
+     * the punctuation that opened it, and return what stands between.
+     */
+    const expressionHead = (from) => {
+        let depth = 0;
+        let i = from - 1;
+        for (; i >= 0; i--) {
+            const c = text[i];
+            if (c === ')' || c === ']' || c === '}') depth++;
+            else if (c === '(' || c === '[' || c === '{') {
+                if (depth === 0) break;
+                depth--;
+            } else if (depth === 0 && (c === ',' || c === ';')) break;
+        }
+        // Blank the strings inside it: their content is not this expression's
+        // syntax, and a `,` or `:` in a sentence would end the walk early.
+        return text.slice(i + 1, from).replace(/'(?:[^'\\]|\\.)*'/g, "''");
+    };
+
+    const out = [];
+    for (const lit of singleQuoted(text)) {
+        // Hanging off a `+` in either direction is what makes it a fragment of
+        // a sentence rather than the whole of one.
+        if (!/^\s*\+/.test(text.slice(lit.end, lit.end + 8))
+            && !/\+\s*$/.test(text.slice(Math.max(0, lit.start - 8), lit.start))) continue;
+        const head = expressionHead(lit.start);
+        if (!SLOT_HEAD.test(head)) continue;
+        // A key assembled from pieces — `t('headerLibrary.row.' + field + …)`.
+        // The literal is part of a catalogue key, not something anyone reads.
+        if (/(?<![A-Za-z0-9_$.])t\(\s*''\s*\+/.test(head)) continue;
+        out.push({ group: lit.value, offset: lit.start });
+    }
+    return out;
+}
+
 /**
  * Every prose literal in one fragment, with the line it starts on.
  *
@@ -284,29 +416,39 @@ function scan({ file, text }) {
         return lo;
     };
     const lines = text.split('\n');
-    const out = [];
-    const seen = new Set();
+
+    // Both detectors hand over the same thing — a candidate string and where
+    // it sits — so the rejections, the comment skip and the exemption comment
+    // are applied once, below.
+    const found = [];
     for (const pattern of PATTERNS) {
         pattern.lastIndex = 0;
         for (const m of text.matchAll(pattern)) {
             for (let g = 1; g < m.length; g++) {
-                const group = m[g];
-                if (group === undefined || !looksLikeProse(group)) continue;
+                if (m[g] === undefined) continue;
                 // The string's own offset, not the match's: a multi-line match
                 // must be blamed on the line the text sits on, so a reader can
                 // go straight there and an // i18n-exempt beside it counts.
-                const at = m.index + m[0].indexOf(`'${group}'`);
-                const idx = lineOf(at < m.index ? m.index : at);
-                const line = lines[idx] ?? '';
-                const trimmed = line.trimStart();
-                if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
-                if (EXEMPT.test(line)) continue;
-                const key = `${idx}:${g}:${group}`;
-                if (seen.has(key)) continue;
-                seen.add(key);
-                out.push({ file, line: idx + 1, text: group });
+                const at = m.index + m[0].indexOf(`'${m[g]}'`);
+                found.push({ group: m[g], offset: at < m.index ? m.index : at });
             }
         }
+    }
+    found.push(...concatSites(text));
+
+    const out = [];
+    const seen = new Set();
+    for (const { group, offset } of found) {
+        if (group === undefined || !looksLikeProse(group)) continue;
+        const idx = lineOf(offset);
+        const line = lines[idx] ?? '';
+        const trimmed = line.trimStart();
+        if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
+        if (EXEMPT.test(line)) continue;
+        const key = `${idx}:${group}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ file, line: idx + 1, text: group });
     }
     out.sort((a, b) => a.line - b.line);
     return out;

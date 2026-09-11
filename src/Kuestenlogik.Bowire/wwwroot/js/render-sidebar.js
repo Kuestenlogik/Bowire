@@ -2962,7 +2962,9 @@
             selected: wsSelected,
             expandable: true,
             expanded: wsExpanded,
-            title: isActive ? w.name + ' (active workspace)' : w.name,
+            title: isActive
+                ? t('sidebar.ws.activeTitle', { name: w.name })
+                : w.name,
             onClick: function () {
                 workspacesSelectedId = w.id;
                 workspaceTreeSelection = { wsId: w.id, kind: 'workspace' };

@@ -269,9 +269,13 @@
             icon: 'discover',
             headline: t('landing.empty'),
             body: _canBrowseCatalogue
-                ? ((typeof catalogueProviderLabel === 'function' && catalogueProviderLabel())
-                    || 'The catalogue') + ' knows about ' + _catN + ' service'
-                    + (_catN === 1 ? '' : 's') + ' — pick the ones you want to work with.'
+                // #688 - one message, two shapes.
+                ? t(_catN === 1 ? 'landing.catalogueKnowsOne'
+                    : 'landing.catalogueKnowsMany', {
+                    source: (typeof catalogueProviderLabel === 'function'
+                        && catalogueProviderLabel()) || t('main.catalogue'),
+                    count: _catN
+                })
                 : t('landing.pickWorkspace'),
             actions: _firstRunActions
         }));
@@ -497,7 +501,8 @@
 
         var connected = serverUrls.filter(function (u) { return connectionStatuses[u] === 'connected'; }).length;
         card.appendChild(el('div', { className: 'bowire-landing-section-title',
-            textContent: connected + ' of ' + serverUrls.length + ' discovery URLs connected' }));
+            textContent: t('landing.urlsConnected',
+                { connected: connected, total: serverUrls.length }) }));
 
         var statusList = el('div', { className: 'bowire-landing-status-list' });
         for (var i = 0; i < serverUrls.length; i++) {

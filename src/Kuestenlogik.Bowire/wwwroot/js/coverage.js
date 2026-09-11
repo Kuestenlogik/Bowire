@@ -466,8 +466,10 @@
         var totalCount = entries.length;
         var filteredCount = filtered.length;
         wrap.appendChild(el('div', { className: 'bowire-coverage-meta',
-            textContent: visible.length + ' of ' + filteredCount + ' filtered runs shown'
-                + (totalCount !== filteredCount ? ' (' + totalCount + ' total)' : '')
+            textContent: t('coverage.shownOf',
+                { shown: visible.length, filtered: filteredCount })
+                + (totalCount !== filteredCount
+                    ? t('coverage.ofTotal', { total: totalCount }) : '')
         }));
 
         if (visible.length === 0) {

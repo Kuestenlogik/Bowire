@@ -371,8 +371,11 @@
                     el('span', { className: 'bowire-recording-timeline-key-menu-label',
                         textContent: s.name + ' = ' + s.value }),
                     el('span', { className: 'bowire-recording-timeline-key-menu-meta',
-                        textContent: (Array.isArray(s.protocols) ? s.protocols.length : 0) + ' proto · '
-                            + s.stepCount + ' steps' })
+                        textContent: t('rec.keyMenuMeta', {
+                            protocols: Array.isArray(s.protocols)
+                                ? s.protocols.length : 0,
+                            steps: s.stepCount
+                        }) })
                 ));
             });
             menu.appendChild(el('button', {

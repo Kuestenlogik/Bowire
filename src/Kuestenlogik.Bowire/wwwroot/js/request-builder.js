@@ -826,7 +826,7 @@
             // See id-free rationale in _renderRequestBuilder.
             className: 'bowire-request-builder-send-btn',
             'data-protocol': layout ? layout.id : 'rest',
-            title: execLabel + ' (Ctrl+Enter)',
+            title: t('perf.executeTitle', { label: execLabel }),
             onClick: function () { executeHoppRequest(); }
         },
             el('span', { innerHTML: svgIcon('play'), style: 'width:14px;height:14px;display:flex' }),

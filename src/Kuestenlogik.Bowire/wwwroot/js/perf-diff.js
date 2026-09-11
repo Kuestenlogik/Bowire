@@ -674,7 +674,7 @@
             className: btnClass + ' bowire-split-btn-main',
             title: (isStreaming && !streamSubLive)
                 ? t('perf.subscribeTitle')
-                : btnText + ' (Ctrl+Enter)',
+                : t('perf.executeTitle', { label: btnText }),
             onClick: btnOnClick
         },
             el('span', { innerHTML: btnIcon, style: 'width:14px;height:14px;display:flex' }),

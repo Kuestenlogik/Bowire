@@ -23,8 +23,11 @@
         if (!pluginUpdateCheckStatus.enabled || count <= 0) return null;
         return el('span', {
             className: 'bowire-plugin-update-badge',
-            title: count + ' plugin update(s) available — open Settings → Plugins',
-            'aria-label': count + ' plugin updates available',
+            // #688 - one message, two shapes.
+            title: t(count === 1 ? 'plugins.updateBadgeOne'
+                : 'plugins.updateBadgeMany', { count: count }),
+            'aria-label': t(count === 1 ? 'plugins.updateAriaOne'
+                : 'plugins.updateAriaMany', { count: count }),
             textContent: count > 9 ? '9+' : String(count),
         });
     }

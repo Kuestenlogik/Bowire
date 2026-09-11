@@ -6767,6 +6767,7 @@
             method: fullName,
             status: benchmark.cancelled ? 'Cancelled' : 'Benchmark complete',  // i18n-exempt: the action log stores rendered text, see #689
             durationMs: Math.round(totalMs),
+            // i18n-exempt: the action log stores rendered text, see #689
             body: benchmark.success + ' OK / ' + benchmark.failure + ' failed'
         });
         render();

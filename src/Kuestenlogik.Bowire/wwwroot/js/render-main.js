@@ -135,7 +135,7 @@
             type: 'button',
             id: 'bowire-freeform-protocol-btn',
             className: 'bowire-freeform-proto-btn' + (freeformProtocolPickerOpen ? ' is-open' : ''),
-            title: currentProto.name + ' — click to switch protocol',
+            title: t('main.protoSwitchTitle', { protocol: currentProto.name }),
             'aria-haspopup': 'listbox',
             'aria-expanded': freeformProtocolPickerOpen ? 'true' : 'false',
             onClick: function (e) {
@@ -275,7 +275,8 @@
                     addToMenu.appendChild(el('div', {
                         className: 'bowire-header-addto-item-meta',
                         style: 'padding:4px 12px 0',
-                        textContent: '+ ' + (freefCols.length - 6) + ' more in Collections'
+                        textContent: t('main.moreInCollections',
+                            { count: freefCols.length - 6 })
                     }));
                 }
             }
@@ -3237,8 +3238,10 @@
                 el('span', {
                     className: 'bowire-ws-detail-stat-hint',
                     style: 'margin:0',
-                    textContent: ((typeof catalogueProviderLabel === 'function' && catalogueProviderLabel())
-                        || 'The catalogue') + ' returned no entries.'
+                    textContent: t('main.catalogueEmpty', {
+                        source: (typeof catalogueProviderLabel === 'function'
+                            && catalogueProviderLabel()) || t('main.catalogue')
+                    })
                 })
             );
             if (typeof refreshCatalogueNow === 'function') {
@@ -4018,9 +4021,13 @@
                     icon: 'server',
                     headline: canBrowse ? t('main.src.pickService') : t('main.src.noneYet'),
                     body: canBrowse
-                        ? ((typeof catalogueProviderLabel === 'function' && catalogueProviderLabel())
-                            || 'The catalogue') + ' knows about ' + catN + ' service'
-                            + (catN === 1 ? '' : 's') + '. Add the ones this workspace talks to.'
+                        // #688 - one message, two shapes.
+                        ? t(catN === 1 ? 'main.catalogueKnowsOne'
+                            : 'main.catalogueKnowsMany', {
+                            source: (typeof catalogueProviderLabel === 'function'
+                                && catalogueProviderLabel()) || t('main.catalogue'),
+                            count: catN
+                        })
                         : t('main.src.noUrlsYet'),
                     actions: emptyActions
                 })
@@ -5383,7 +5390,8 @@
                                 if (prev) prev.remove();
                                 var popup = el('div', { className: 'bowire-header-summary-popup', role: 'dialog' },
                                     el('div', { className: 'bowire-header-summary-popup-title',
-                                        textContent: selectedMethod.name + ' — description' }),
+                                        textContent: t('main.methodDescTitle',
+                                            { method: selectedMethod.name }) }),
                                     el('div', { className: 'bowire-header-summary-popup-body', textContent: fullText }),
                                     el('button', {
                                         type: 'button',
@@ -5655,7 +5663,9 @@
                         type: 'button',
                         id: 'bowire-header-presets-btn',
                         className: 'bowire-header-presets-btn',
-                        title: presetList.length + ' preset' + (presetList.length === 1 ? '' : 's') + ' for this method',
+                        // #688 - one message, two shapes.
+                        title: t(presetList.length === 1 ? 'main.presetsOne'
+                            : 'main.presetsMany', { count: presetList.length }),
                         'aria-label': t('main.presets.saved'),
                         'aria-haspopup': 'menu',
                         onClick: function (e) {
@@ -5932,7 +5942,8 @@
                             menu.appendChild(el('div', {
                                 className: 'bowire-header-addto-item-meta',
                                 style: 'padding:4px 12px 0',
-                                textContent: '+ ' + (existingCols.length - 6) + ' more in Collections'
+                                textContent: t('main.moreInCollections',
+                            { count: existingCols.length - 6 })
                             }));
                         }
                     }
@@ -6105,7 +6116,9 @@
                     if (hints && hints.length > 0) {
                         header.appendChild(el('button', {
                             className: 'bowire-header-hint-chip',
-                            title: hints.length + ' hint' + (hints.length === 1 ? '' : 's') + ' for this method — click to open the Assistant',
+                            // #688 - one message, two shapes.
+                            title: t(hints.length === 1 ? 'main.hintChipOne'
+                                : 'main.hintChipMany', { count: hints.length }),
                             'aria-label': t('main.openHints', { count: hints.length }),
                             onClick: function () {
                                 aiDrawerOpen = true;
@@ -7343,7 +7356,15 @@
             // Filter info bar
             if (selectedMethod && !showAllHistory) {
                 const filterInfo = el('div', { className: 'bowire-history-filter-info' },
-                    el('span', { textContent: filtered.length + ' call' + (filtered.length !== 1 ? 's' : '') + ' for ' + selectedMethod.name + ' (' + allHistory.length + ' total)' }),
+                    // #688 - one message, two shapes.
+                    el('span', {
+                        textContent: t(filtered.length === 1 ? 'main.historyForOne'
+                            : 'main.historyForMany', {
+                            count: filtered.length,
+                            method: selectedMethod.name,
+                            total: allHistory.length
+                        })
+                    }),
                     el('button', {
                         id: 'bowire-history-show-all-btn',
                         className: 'bowire-history-show-all',
@@ -7354,7 +7375,10 @@
                 historyContent.appendChild(filterInfo);
             } else if (showAllHistory && selectedMethod) {
                 const filterInfo = el('div', { className: 'bowire-history-filter-info' },
-                    el('span', { textContent: allHistory.length + ' total calls' }),
+                    el('span', {
+                        textContent: t('main.historyTotal',
+                            { count: allHistory.length })
+                    }),
                     el('button', {
                         id: 'bowire-history-filter-method-btn',
                         className: 'bowire-history-show-all',
@@ -10190,13 +10214,13 @@
                 ? getAssertionSummary(selectedService.name, selectedMethod.name)
                 : null;
             if (summary && summary.total > 0) {
-                if (summary.untested === summary.total) {
-                    testsLabel = 'Test results (' + summary.total + ')';
-                } else if (summary.failed > 0) {
-                    testsLabel = 'Test results (' + summary.passed + '/' + summary.total + ' \u2717)';
-                } else {
-                    testsLabel = 'Test results (' + summary.passed + '/' + summary.total + ' \u2713)';
-                }
+                // One key, three tallies: only the count inside the
+                // brackets differs, and the tick or cross is a glyph.
+                var tally = summary.untested === summary.total
+                    ? String(summary.total)
+                    : summary.passed + '/' + summary.total
+                        + (summary.failed > 0 ? ' \u2717' : ' \u2713');
+                testsLabel = t('main.testResults', { tally: tally });
             }
             tabs.appendChild(el('div', {
                 id: 'bowire-response-tab-tests',

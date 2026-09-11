@@ -69,7 +69,14 @@
         container.appendChild(el('div', { className: 'bowire-compliance-block' },
             el('div', { className: 'bowire-compliance-head' },
                 el('span', { className: 'bowire-compliance-label', textContent: t('security.owaspPosture') }),
-                el('span', { className: 'bowire-compliance-meta', textContent: result.covered + '/' + result.total + ' exercised · ' + result.vulnerable + ' vulnerable' })),
+                el('span', {
+                    className: 'bowire-compliance-meta',
+                    textContent: t('security.postureMeta', {
+                        covered: result.covered,
+                        total: result.total,
+                        vulnerable: result.vulnerable
+                    })
+                })),
             postureStrip(result.entries)));
 
         // Severity histogram + peak CVSS.
@@ -96,7 +103,12 @@
                 table.appendChild(el('div', { className: 'bowire-secsuite-row' },
                     idNode,
                     severityChip(w.maxSeverity, w.count),
-                    el('span', { className: 'bowire-secsuite-row-title', textContent: w.count + ' finding(s)' }),
+                    // #688 - one message, two shapes.
+                    el('span', {
+                        className: 'bowire-secsuite-row-title',
+                        textContent: t(w.count === 1 ? 'security.findingOne'
+                            : 'security.findingMany', { count: w.count })
+                    }),
                     el('span', { className: 'bowire-secsuite-row-note', textContent: w.maxCvss > 0 ? 'CVSS ' + w.maxCvss.toFixed(1) : '' })));  // i18n-exempt: the CVSS score, named by the standard
             });
             container.appendChild(el('div', { className: 'bowire-compliance-block' },
@@ -151,7 +163,11 @@
                         if (res && res.entries) {
                             renderRows(res.entries);
                             renderComplianceView(complianceView, res);
-                            statusEl.textContent = res.covered + '/' + res.total + ' exercised · ' + res.vulnerable + ' with findings';
+                            statusEl.textContent = t('security.scanMeta', {
+                                covered: res.covered,
+                                total: res.total,
+                                vulnerable: res.vulnerable
+                            });
                         } else {
                             renderComplianceView(complianceView, null);
                             statusEl.textContent = (res && res.detail) || 'Scan failed.';
@@ -237,7 +253,10 @@
                     .then(function (res) {
                         if (res && res.candidates) {
                             res.candidates.forEach(function (c) { list.appendChild(row(c)); });
-                            statusEl.textContent = res.count + ' candidate(s) discovered.';
+                            // #688 - one message, two shapes.
+                            statusEl.textContent = t(res.count === 1
+                                ? 'security.candidateOne'
+                                : 'security.candidateMany', { count: res.count });
                             refreshSummary();
                         } else { statusEl.textContent = (res && res.detail) || 'Spider failed.'; }
                     })

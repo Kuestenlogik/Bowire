@@ -99,12 +99,17 @@
                 case 'matches':
                     if (actual == null) { pass = false; break; }
                     try { pass = new RegExp(String(expected)).test(String(actual)); }
-                    catch (e) { pass = false; message = 'invalid regex: ' + e.message; }
+                    catch (e) {
+                        pass = false;
+                        message = t('assert.invalidRegex', { reason: e.message });
+                    }
                     break;
                 case 'exists':    pass = actual !== undefined && actual !== null; break;
                 case 'notexists': pass = actual === undefined || actual === null; break;
                 case 'type':      pass = typeOf(actual) === String(expected); break;
-                default:          pass = false; message = 'unknown operator: ' + op;
+                default:
+                    pass = false;
+                    message = t('assert.unknownOperator', { op: op });
             }
         } catch (e) {
             pass = false;
@@ -188,8 +193,12 @@
                     method: method.name,
                     messages: [bodyTemplate],
                     metadata: {},
-                    assert: tests.map(function (t) {
-                        return { path: t.path, op: t.op, expected: t.expected };
+                    assert: tests.map(function (assertion) {
+                        return {
+                            path: assertion.path,
+                            op: assertion.op,
+                            expected: assertion.expected
+                        };
                     })
                 }
             ]

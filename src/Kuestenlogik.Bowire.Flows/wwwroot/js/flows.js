@@ -1480,7 +1480,10 @@
                 } else if (node.type === 'variable') {
                     content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: t('flows.nodeVariable') }));
                     content.appendChild(el('div', { className: 'bowire-flow-card-subtitle',
-                        textContent: (node.varName || '') + ' = {{prev.' + (node.path || '') + '}}' }));
+                        // i18n-exempt: the variable expression the node writes,
+                        // shown as it will appear in the request.
+                        textContent: (node.varName || '') + ' = {{prev.'
+                            + (node.path || '') + '}}' }));
                 } else if (node.type === 'loop') {
                     var loopTypeForLabel = node.loopType || 'count';
                     var loopLabel = loopTypeForLabel === 'while'

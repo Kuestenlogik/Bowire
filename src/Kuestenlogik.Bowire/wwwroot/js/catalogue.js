@@ -470,7 +470,10 @@
                     className: 'bowire-catalogue-empty',
                     textContent: catalogueHasEntries()
                         ? t('catalogue.noMatch')
-                        : (catalogueProviderLabel() || 'The catalogue') + ' returned no entries.'
+                        : t('main.catalogueEmpty', {
+                            source: catalogueProviderLabel()
+                                || t('main.catalogue')
+                        })
                 }));
                 return;
             }

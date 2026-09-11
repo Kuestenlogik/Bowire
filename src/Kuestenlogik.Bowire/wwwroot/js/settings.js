@@ -2043,7 +2043,12 @@
                 // host, not yet pulled, &c.).
                 var seen = {};
                 if (draft.model && models.indexOf(draft.model) === -1) {
-                    sel.appendChild(el('option', { value: draft.model, textContent: draft.model + ' (current)', selected: true }));
+                    sel.appendChild(el('option', {
+                        value: draft.model,
+                        textContent: t('settings.ai.modelCurrent',
+                            { model: draft.model }),
+                        selected: true
+                    }));
                     seen[draft.model] = true;
                 }
                 models.forEach(function (m) {
@@ -2057,7 +2062,10 @@
                 wrap.appendChild(el('span', {
                     className: 'bowire-settings-help',
                     style: 'margin-left: 8px;',
-                    textContent: models.length + ' detected on ' + (hit.endpoint || 'local provider')
+                    textContent: t('settings.ai.modelsDetected', {
+                        count: models.length,
+                        endpoint: hit.endpoint || t('settings.ai.localProvider')
+                    })
                 }));
                 return wrap;
             }));
@@ -4096,10 +4104,11 @@ textContent: t(discoveryState.entryCount === 1
             onClick: function () {
                 noticesOpen = !noticesOpen;
                 noticesBody.style.display = noticesOpen ? '' : 'none';
-                noticesToggle.textContent = (noticesOpen ? '▾' : '▸') + ' Open-source notices';
+                noticesToggle.textContent = (noticesOpen ? '▾' : '▸')
+                    + ' ' + t('settings.about.notices');
             }
         });
-        noticesToggle.textContent = t('settings.about.notices');
+        noticesToggle.textContent = '▸ ' + t('settings.about.notices');
         var noticesBody = el('div', { className: 'bowire-settings-about-notices-body', style: 'display:none' });
         noticesBody.appendChild(el('p', {
             className: 'bowire-settings-about-notices-lede',
@@ -4366,7 +4375,7 @@ textContent: t(discoveryState.entryCount === 1
                 type: 'button',
                 className: 'bowire-settings-plugin-btn',
                 disabled: busy ? true : undefined,
-                title: a.label + ' — backend returns 501 today; available in v2.2.',
+                title: t('settings.plugin.notYetTitle', { action: a.label }),
                 textContent: busy ? t('settings.working') : a.label,
                 onClick: function () { _runPluginLifecycleAction(pluginId, a.key); }
             });
@@ -4598,9 +4607,9 @@ textContent: t(discoveryState.entryCount === 1
         var banner = el('div', { className: 'bowire-settings-plugin-health' });
         banner.appendChild(el('div', {
             className: 'bowire-settings-plugin-health-title',
-            textContent: unhealthy.length === 1
-                ? t('settings.plugin.oneFailed')
-                : unhealthy.length + ' plugins failed to load'
+            // #688 - one message, two shapes.
+            textContent: t(unhealthy.length === 1 ? 'settings.plugin.oneFailed'
+                : 'settings.plugin.manyFailed', { count: unhealthy.length })
         }));
         for (var i = 0; i < unhealthy.length; i++) {
             (function (r) {
@@ -4640,8 +4649,8 @@ textContent: t(discoveryState.entryCount === 1
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-desc',
-            textContent: t('settings.plugin.installedUnder', { dir: pluginDirLabel() })
-                + ' get Update / Uninstall buttons; bundled plugins (gRPC, REST, MQTT, …) ship inside the Bowire tool and update with dotnet tool update.'
+            textContent: t('settings.plugin.installedUnder',
+                { dir: pluginDirLabel() })
         }));
 
         // Update-check status banner — shows whether the daily
@@ -5140,7 +5149,7 @@ textContent: t(discoveryState.entryCount === 1
         var name = extensionDisplayName(ext.id || ext.Id || '');
         section.appendChild(el('h3', {
             className: 'bowire-settings-section-title',
-            textContent: name + ' (UI extension)'
+            textContent: t('settings.ext.sectionTitle', { name: name })
         }));
         section.appendChild(el('div', {
             className: 'bowire-settings-section-desc',
@@ -5168,7 +5177,8 @@ textContent: t(discoveryState.entryCount === 1
     function renderPluginSettings(plugin) {
         var section = el('div', { className: 'bowire-settings-section' });
         section.appendChild(el('h3', { className: 'bowire-settings-section-title',
-            textContent: plugin.name + ' Settings' }));
+            textContent: t('settings.plugin.sectionTitle',
+                { name: plugin.name }) }));
 
         // Per-plugin enable/disable toggle. Mirrors the row in the
         // Plugins category but lives on the plugin's own page so users
@@ -5206,7 +5216,6 @@ textContent: t(discoveryState.entryCount === 1
                 className: 'bowire-settings-help',
                 style: 'margin-top:8px',
                 textContent: t('settings.plugin.perWorkspace')
-                    + 'them — until then the plugin uses the defaults shown.'
             }));
         }
 

@@ -1158,10 +1158,10 @@
   "settings.overrides.activeNote": "Aktiver Arbeitsbereich: {name}. Sichern Sie eine Einstellung des Rechners „nur für diesen Arbeitsbereich“ — etwa einen anderen KI-Dienst auf der Assistentenseite —, erscheint die Abweichung hier, damit sie auffindbar bleibt.",
   "settings.overrides.aiUses": "Dieser Arbeitsbereich nutzt {provider}",
   "settings.unknownProvider": "(unbekannt)",
-  "settings.plugin.installedUnder": "Zusatzpakete unter {dir}",
+  "settings.plugin.installedUnder": "Zusatzpakete unter {dir} bekommen Knöpfe zum Auffrischen und Entfernen; die mitgelieferten (gRPC, REST, MQTT, …) stecken im Bowire-Werkzeug selbst und ziehen mit dotnet tool update nach.",
   "settings.plugin.noContributions": "Aus diesem Paket ließen sich keine Protokollbeiträge auflösen. (Entweder ist es kein Protokoll-Zusatzpaket, oder die Paketkennung passt nicht zur Zuordnung im Verzeichnis — versuchen Sie die Kommandozeile: `bowire plugin inspect {package}`.)",
   "settings.plugin.deeperInspect": "Für einen tieferen Blick (Ladebereich, Assemblies, IBowireMockEmitter-Beiträge): bowire plugin inspect {package}",
-  "settings.plugin.perWorkspace": "Diese Einstellungen werden je Arbeitsbereich gesichert. Öffnen oder legen Sie einen Arbeitsbereich an, um zu ändern: ",
+  "settings.plugin.perWorkspace": "Diese Einstellungen werden je Arbeitsbereich gesichert. Öffnen oder legen Sie einen Arbeitsbereich an, um sie zu ändern — bis dahin gelten die gezeigten Vorgaben.",
   "settings.data.resetAsk": "ALLE Bowire-Daten zurücksetzen (Verlauf, Favoriten, Umgebungen, Einstellungen)?\n\nDas Aktionsprotokoll hält einen Abzug von davor bereit, sodass Strg/Cmd+Z es zurückholt — aber nur bis die Seite neu lädt.",
   "settings.data.migrateHeading": "${} → {{}} umstellen",
 
@@ -1311,7 +1311,7 @@
   "palette.port": "Anschluss {port}",
   "palette.goTo": "Gehe zu {mode}",
   "palette.switchEnv": "Zur Umgebung wechseln: {name}",
-  "env.fromHostTitle": "Von der Anwendung erklärt, die Bowire beherbergt. Ändern Sie es dort, wo ",
+  "env.fromHostTitle": "Von der Anwendung erklärt, die Bowire beherbergt. Ändern Sie es dort, wo der Wirt eingestellt wird — Änderungen hier überstehen keinen Neustart.",
   "auth.clearCookiesFailed": "Die Kekse ließen sich nicht löschen: {reason}",
 
   // Die keywords der Palette bleiben englisch: sie werden gegen die Eingabe
@@ -2722,7 +2722,6 @@
   "main.script.noScript": "Es kam kein Skript zurück. Beschreiben Sie es genauer oder prüfen Sie die Einstellungen der KI.",
   "main.src.pickUrl": "Wählen Sie die Adresse einer Quelle",
   "main.src.pickUrlBody": "Die neue Anfrage bezieht sich auf diese Adresse — Änderungen an der Quelle wirken bis in den gesicherten Eintrag.",
-  "settings.about.notices": "▸ Hinweise zu quelloffener Software",
   "settings.checkNow": "Jetzt prüfen",
   "vars.rerolling": "wird neu gewürfelt…",
   "vars.rerollEmpty": "Das neue Würfeln lieferte keinen Wert",
@@ -3446,5 +3445,101 @@
   "subs.pillMany": "{count} laufende Abonnements — klicken für Einzelheiten",
   "main.protoPillTitle": "{protocol} — klicken für die letzten {protocol}-Aufrufe",
   "schemaChanges.pillUnreadOne": "{count} ungelesene Schemaänderung — klicken für das Protokoll",
-  "schemaChanges.pillUnreadMany": "{count} ungelesene Schemaänderungen — klicken für das Protokoll"
+  "schemaChanges.pillUnreadMany": "{count} ungelesene Schemaänderungen — klicken für das Protokoll",
+
+  // Die Zahl steht als Steckplatz im Satz; die Wortstellung gehoert dem
+  // Uebersetzer und nicht dem Pluszeichen.
+  "tests.tabMixed": "{fail} fehlgeschlagen · {pass} bestanden · {untested} ungeprüft",
+  "tests.tabNoneRunOne": "{count} Zusicherung — noch keine gelaufen",
+  "tests.tabNoneRunMany": "{count} Zusicherungen — noch keine gelaufen",
+  "tests.tabPassing": "{pass} bestanden · {untested} ungeprüft",
+  "trash.noMatchQuery": "Nichts passt zu „{query}“. Passen Sie die Suche oder die Filterplaketten an.",
+  "trash.noMatchFilterHint": "Nichts passt zum eingestellten Filter. Klicken Sie eine Plakette an, um diese Art aufzunehmen.",
+  "help.reversibleOne": "{count} umkehrbare Aktion",
+  "help.reversibleMany": "{count} umkehrbare Aktionen",
+  "status.connectingCount": "{count} / {total} verbinden sich …",
+  "conn.urlOne": "{count} Adresse",
+  "conn.urlMany": "{count} Adressen",
+  "conn.moreAttempts": "+{count} weitere — klicken, um die Quellen zu öffnen",
+
+  // „nur in {env}" traegt beide Seiten des Vergleichs — ein Schluessel, 
+  // zweimal gerufen.
+  "env.authBadgeTitle": "{scheme}-Anmeldung, auf jede Anfrage aus dieser Umgebung angewendet",
+  "env.diffEqual": "{count} gleich",
+  "env.diffChanged": "{count} geändert",
+  "env.diffOnlyIn": "{count} nur in {env}",
+
+  // „{name} Settings" wird im Deutschen zu „Einstellungen zu {name}": das 
+  // vorangestellte Substantiv gibt es hier nicht.
+  "settings.ai.modelCurrent": "{model} (zurzeit)",
+  "settings.ai.modelsDetected": "{count} bei {endpoint} gefunden",
+  "settings.ai.localProvider": "dem hiesigen Anbieter",
+  "settings.about.notices": "Hinweise zu quelloffener Software",
+  "settings.plugin.notYetTitle": "{action} — die Gegenstelle antwortet heute mit 501; ab Fassung 2.2.",
+  "settings.plugin.manyFailed": "{count} Erweiterungen ließen sich nicht laden",
+  "settings.ext.sectionTitle": "{name} (Erweiterung der Oberfläche)",
+  "settings.plugin.sectionTitle": "Einstellungen zu {name}",
+
+  // „(insgesamt {total})" steht im Deutschen hinter der Zahl, nicht davor —
+  // deshalb der eigene Steckplatz statt zweier Textstuecke.
+  "main.protoSwitchTitle": "{protocol} — klicken, um das Protokoll zu wechseln",
+  "main.moreInCollections": "+ {count} weitere in den Sammlungen",
+  "main.catalogue": "Das Verzeichnis",
+  "main.catalogueEmpty": "{source} lieferte keine Einträge.",
+  "main.catalogueKnowsOne": "{source} kennt {count} Dienst. Nehmen Sie die auf, mit denen dieser Arbeitsbereich spricht.",
+  "main.catalogueKnowsMany": "{source} kennt {count} Dienste. Nehmen Sie die auf, mit denen dieser Arbeitsbereich spricht.",
+  "main.methodDescTitle": "{method} — Beschreibung",
+  "main.presetsOne": "{count} Vorlage für diese Methode",
+  "main.presetsMany": "{count} Vorlagen für diese Methode",
+  "main.hintChipOne": "{count} Hinweis zu dieser Methode — klicken, um den Assistenten zu öffnen",
+  "main.hintChipMany": "{count} Hinweise zu dieser Methode — klicken, um den Assistenten zu öffnen",
+  "main.historyForOne": "{count} Aufruf von {method} (insgesamt {total})",
+  "main.historyForMany": "{count} Aufrufe von {method} (insgesamt {total})",
+  "main.historyTotal": "{count} Aufrufe insgesamt",
+  "main.testResults": "Testergebnisse ({tally})",
+
+  // „mode: {mode}" behaelt den Wert englisch — er steht so in der 
+  // Beschreibung des Pruefstandslaufs und wird so zurueckgeschrieben.
+  "coverage.shownOf": "{shown} von {filtered} gefilterten Läufen gezeigt",
+  "coverage.ofTotal": " (von {total} insgesamt)",
+  "sidebar.openOverview": "Übersicht zu {what} öffnen",
+  "landing.catalogueKnowsOne": "{source} kennt {count} Dienst — wählen Sie die aus, mit denen Sie arbeiten möchten.",
+  "landing.catalogueKnowsMany": "{source} kennt {count} Dienste — wählen Sie die aus, mit denen Sie arbeiten möchten.",
+  "landing.urlsConnected": "{connected} von {total} Erkundungsadressen verbunden",
+  "perf.executeTitle": "{label} (Strg+Eingabe)",
+  "plugins.updateBadgeOne": "Für {count} Erweiterung gibt es eine neue Fassung — Einstellungen → Erweiterungen öffnen",
+  "plugins.updateBadgeMany": "Für {count} Erweiterungen gibt es neue Fassungen — Einstellungen → Erweiterungen öffnen",
+  "plugins.updateAriaOne": "Für {count} Erweiterung gibt es eine neue Fassung",
+  "plugins.updateAriaMany": "Für {count} Erweiterungen gibt es neue Fassungen",
+  "sidebar.ws.activeTitle": "{name} (aktiver Arbeitsbereich)",
+  "assert.invalidRegex": "ungültiger regulärer Ausdruck: {reason}",
+  "fuzz.severityAdvisory": "{field} · der Schweregrad ist ein Hinweis; prüfen Sie auffällige Zeilen von Hand, bevor Sie sie melden.",
+  "compose.fromCollection": "Aus einer Sammlung",
+  "compose.fromPreset": "Aus einer Vorlage",
+  "compose.fromDiscover": "Aus dem Erkunden",
+  "compose.fromRecording": "Aus einer Aufzeichnung",
+  "map.trackPathCustom": "{path}  (eigener)",
+  "rec.keyMenuMeta": "{protocols} Protokolle · {steps} Schritte",
+  "bench.clickCollapse": "klicken zum Einklappen",
+  "bench.clickExpand": "klicken zum Ausklappen",
+  "bench.specTargetOne": "{count} Ziel",
+  "bench.specTargetMany": "{count} Ziele",
+  "bench.specPhaseOne": "{count} Abschnitt",
+  "bench.specPhaseMany": "{count} Abschnitte",
+  "bench.specMode": "Betriebsart: {mode}",
+  "bench.progressMeta": "{done} / {total}  ·  {ok} in Ordnung  ·  {err} Fehler",
+  "security.postureMeta": "{covered}/{total} geprüft · {vulnerable} verwundbar",
+  "security.findingOne": "{count} Befund",
+  "security.findingMany": "{count} Befunde",
+  "security.scanMeta": "{covered}/{total} geprüft · {vulnerable} mit Befunden",
+  "security.candidateOne": "{count} Kandidat gefunden.",
+  "security.candidateMany": "{count} Kandidaten gefunden.",
+
+  // Im Deutschen steht ein Leerzeichen vor dem Prozentzeichen.
+  "ai.threatConsideredOne": "{count} Endpunkt betrachtet",
+  "ai.threatConsideredMany": "{count} Endpunkte betrachtet",
+  "ai.scanFindingMeta": "{endpoint} · {rule} · echt {score} %",
+  "api.mqttTopicsOne": "{count} Thema bei {url} erkundet",
+  "api.mqttTopicsMany": "{count} Themen bei {url} erkundet",
+  "assert.unknownOperator": "unbekannter Operator: {op}"
 }
