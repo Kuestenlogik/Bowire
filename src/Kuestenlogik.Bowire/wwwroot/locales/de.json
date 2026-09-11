@@ -3424,5 +3424,19 @@
   // Zwei Formen, weil der Zaehler bei eins anders liest.
   "main.home.countOf": "{shown} von {total}",
   "main.home.entryOne": "{count} Eintrag",
-  "main.home.entryMany": "{count} Einträge"
+  "main.home.entryMany": "{count} Einträge",
+
+  // Die Altersangabe steckt als {age} im Satz, damit die Wortstellung dem
+  // Uebersetzer gehoert und nicht dem Pluszeichen.
+  "trash.ageUnderHour": "vor weniger als einer Stunde",
+  "trash.ageHours": "vor {hours} h",
+  "trash.ageDayOne": "vor {count} Tag",
+  "trash.ageDayMany": "vor {count} Tagen",
+  "trash.ttlNoteOne": "Gelöscht {age} — wird in {count} Tag geleert",
+  "trash.ttlNoteMany": "Gelöscht {age} — wird in {count} Tagen geleert",
+  "trash.kindWorkspace": "Arbeitsbereich",
+  "ai.statusConnected": "Verbunden · {provider} · {model}",
+  "ai.statusNotInstalled": "Das KI-Paket ist nicht eingerichtet — kein Chat. Die Hinweise gehen weiter.",
+  "ai.statusNoModel": "Kein Modell eingestellt — öffnen Sie Einstellungen → Assistent, um eines zu verbinden.",
+  "hint.dontShowAgain": "Nicht mehr zeigen"
 }

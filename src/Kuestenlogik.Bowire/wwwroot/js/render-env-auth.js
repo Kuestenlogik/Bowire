@@ -1858,7 +1858,7 @@
             },
             workspaces: {
                 label: t('sidebar.ws.title'),
-                badge: 'workspace',
+                badge: t('trash.kindWorkspace'),
                 entries: ws,
                 nameOf: function (e) {
                     if (!e || !e.workspace) return t('activity.unnamedWorkspace');
@@ -2165,12 +2165,18 @@
                 var ageMs = Date.now() - (trashed.deletedAt || Date.now());
                 var ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
                 var ageLabel;
-                if (ageMs < 60 * 60 * 1000) ageLabel = 'less than an hour ago';
-                else if (ageMs < 24 * 60 * 60 * 1000) ageLabel = Math.floor(ageMs / 3600000) + 'h ago';
-                else ageLabel = ageDays + ' day' + (ageDays === 1 ? '' : 's') + ' ago';
+                if (ageMs < 60 * 60 * 1000) ageLabel = t('trash.ageUnderHour');
+                else if (ageMs < 24 * 60 * 60 * 1000) {
+                    ageLabel = t('trash.ageHours', { hours: Math.floor(ageMs / 3600000) });
+                } else {
+                    // #688 - one message, two shapes.
+                    ageLabel = t(ageDays === 1 ? 'trash.ageDayOne' : 'trash.ageDayMany',
+                        { count: ageDays });
+                }
                 var purgeIn = Math.max(0, 30 - ageDays);
-                var ttlNote = 'Deleted ' + ageLabel
-                    + ' — will be purged in ' + purgeIn + ' day' + (purgeIn === 1 ? '' : 's');
+                // #688 - one message, two shapes.
+                var ttlNote = t(purgeIn === 1 ? 'trash.ttlNoteOne' : 'trash.ttlNoteMany',
+                    { age: ageLabel, count: purgeIn });
 
                 var rowEl = el('div', {
                     className: 'bowire-trash-bucket-row bowire-trash-unified-row',
@@ -2243,14 +2249,16 @@
             var statusClass, statusTitle;
             if (aiSt && aiSt.hasClient) {
                 statusClass = 'bowire-ai-status-dot bowire-ai-status-dot-connected';
-                statusTitle = 'Connected · ' + (aiSt.providerId || 'unknown')
-                    + ' · ' + (aiSt.model || '(default model)');
+                statusTitle = t('ai.statusConnected', {
+                    provider: aiSt.providerId || t('settings.versionUnknown'),
+                    model: aiSt.model || t('settings.ai.defaultModel')
+                });
             } else if (aiSt === null) {
                 statusClass = 'bowire-ai-status-dot bowire-ai-status-dot-missing';
-                statusTitle = 'AI package not installed — chat unavailable. Hints still work.';
+                statusTitle = t('ai.statusNotInstalled');
             } else {
                 statusClass = 'bowire-ai-status-dot bowire-ai-status-dot-idle';
-                statusTitle = 'No model configured — open Settings → Assistant to connect one.';
+                statusTitle = t('ai.statusNoModel');
             }
             tabs.push({
                 id: 'assistant',

@@ -2166,7 +2166,7 @@
                     type: 'button',
                     role: 'menuitem',
                     className: 'bowire-alert-bar-close-menu-item',
-                    textContent: "Don't show again",
+                    textContent: t('hint.dontShowAgain'),
                     onClick: function (e) {
                         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
                         if (typeof dismissHint === 'function') {

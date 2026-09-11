@@ -3424,5 +3424,19 @@
   // the Home rail's two section counters.
   "main.home.countOf": "{shown} of {total}",
   "main.home.entryOne": "{count} entry",
-  "main.home.entryMany": "{count} entries"
+  "main.home.entryMany": "{count} entries",
+
+  // the trash drawer's age and purge note, the assistant's status dot, and the
+  // hint card's dismissal.
+  "trash.ageUnderHour": "less than an hour ago",
+  "trash.ageHours": "{hours}h ago",
+  "trash.ageDayOne": "{count} day ago",
+  "trash.ageDayMany": "{count} days ago",
+  "trash.ttlNoteOne": "Deleted {age} — will be purged in {count} day",
+  "trash.ttlNoteMany": "Deleted {age} — will be purged in {count} days",
+  "trash.kindWorkspace": "workspace",
+  "ai.statusConnected": "Connected · {provider} · {model}",
+  "ai.statusNotInstalled": "AI package not installed — chat unavailable. Hints still work.",
+  "ai.statusNoModel": "No model configured — open Settings → Assistant to connect one.",
+  "hint.dontShowAgain": "Don't show again"
 }
