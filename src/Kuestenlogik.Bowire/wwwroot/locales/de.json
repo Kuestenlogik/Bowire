@@ -3374,5 +3374,22 @@
 
   // Die Beispieladressen bleiben; nur der Hinweis daneben ist uebersetzbar.
   "rbGrpc.urlPlaceholder": "https://grpc.example.com:443  •  {{grpcUrl}} greift auf die Umgebung zu",
-  "rbMqtt.urlPlaceholder": "mqtts://broker.hivemq.com:8883  •  {{broker}} greift auf die Umgebung zu"
+  "rbMqtt.urlPlaceholder": "mqtts://broker.hivemq.com:8883  •  {{broker}} greift auf die Umgebung zu",
+
+  // Treffer ist im Deutschen in beiden Zahlen gleich; der Schluessel bleibt
+  // trotzdem doppelt, damit eine Sprache mit zwei Formen sie hat.
+  "sidebar.footEnvOne": "{count} Umgebung",
+  "sidebar.footEnvMany": "{count} Umgebungen",
+  "sidebar.footFlowOne": "{count} Ablauf",
+  "sidebar.footFlowMany": "{count} Abläufe",
+  "sidebar.footFavOne": "{count} Favorit",
+  "sidebar.footFavMany": "{count} Favoriten",
+  "sidebar.footServiceOne": "{count} Dienst",
+  "sidebar.footServiceMany": "{count} Dienste",
+  "sidebar.footMatchOne": "{count} Treffer",
+  "sidebar.footMatchMany": "{count} Treffer",
+  "lint.discoveredOne": "{count} Dienst erkundet",
+  "lint.discoveredMany": "{count} Dienste erkundet",
+  "bench.scheduledRuns": "Geplante Läufe",
+  "bench.pressRefresh": "Drücken Sie auf Auffrischen, um die geplanten Läufe zu laden."
 }

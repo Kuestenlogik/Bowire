@@ -105,7 +105,10 @@
         runBtn.addEventListener('click', runLint);
         pad.appendChild(el('div', { className: 'bowire-lint-controls' },
             runBtn,
-            el('span', { className: 'bowire-lint-count', textContent: count + ' service' + (count === 1 ? '' : 's') + ' discovered' })));
+            // #688 - one message, two shapes.
+el('span', { className: 'bowire-lint-count',
+    textContent: t(count === 1 ? 'lint.discoveredOne' : 'lint.discoveredMany',
+        { count: count }) })));
 
         pad.appendChild(_renderLintResults());
 

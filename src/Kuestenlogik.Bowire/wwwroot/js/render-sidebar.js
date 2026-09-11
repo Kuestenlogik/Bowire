@@ -5242,16 +5242,24 @@
         var footerLabel;
         if (sidebarView === 'environments') {
             var envCountForFooter = getEnvironments().length;
-            footerLabel = envCountForFooter + ' environment' + (envCountForFooter === 1 ? '' : 's');
+            // #688 - one message, two shapes.
+footerLabel = t(envCountForFooter === 1 ? 'sidebar.footEnvOne'
+    : 'sidebar.footEnvMany', { count: envCountForFooter });
         } else if (sidebarView === 'flows') {
             var flowCountForFooter = typeof flowsList !== 'undefined' ? flowsList.length : 0;
-            footerLabel = flowCountForFooter + ' flow' + (flowCountForFooter === 1 ? '' : 's');
+            // #688 - one message, two shapes.
+footerLabel = t(flowCountForFooter === 1 ? 'sidebar.footFlowOne'
+    : 'sidebar.footFlowMany', { count: flowCountForFooter });
         } else if (sidebarView === 'favorites') {
             var favCountForFooter = getFavorites().length;
-            footerLabel = favCountForFooter + ' favorite' + (favCountForFooter === 1 ? '' : 's');
+            // #688 - one message, two shapes.
+footerLabel = t(favCountForFooter === 1 ? 'sidebar.footFavOne'
+    : 'sidebar.footFavMany', { count: favCountForFooter });
         } else {
             var footerServiceCount = getFilteredServices().length;
-            footerLabel = `${footerServiceCount} service${footerServiceCount !== 1 ? 's' : ''}`;
+            // #688 - one message, two shapes.
+footerLabel = t(footerServiceCount === 1 ? 'sidebar.footServiceOne'
+    : 'sidebar.footServiceMany', { count: footerServiceCount });
         }
         // When a search / name filter is active (services view only), show
         // the match tally so the user sees how many methods their query
@@ -5278,7 +5286,9 @@
                     if (ok) matchTally++;
                 }
             }
-            footerLabel = matchTally + ' match' + (matchTally === 1 ? '' : 'es');
+            // #688 - one message, two shapes.
+footerLabel = t(matchTally === 1 ? 'sidebar.footMatchOne'
+    : 'sidebar.footMatchMany', { count: matchTally });
         }
         // "Take Tour" button retired from the sidebar footer — the
         // canonical entry points live in the Discover empty-state

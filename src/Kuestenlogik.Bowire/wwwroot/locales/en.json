@@ -3374,5 +3374,22 @@
 
   // the gRPC and MQTT URL placeholders, beside the REST one.
   "rbGrpc.urlPlaceholder": "https://grpc.example.com:443  •  use {{grpcUrl}} for env vars",
-  "rbMqtt.urlPlaceholder": "mqtts://broker.hivemq.com:8883  •  use {{broker}} for env vars"
+  "rbMqtt.urlPlaceholder": "mqtts://broker.hivemq.com:8883  •  use {{broker}} for env vars",
+
+  // the sidebar footer's five counters, the lint count and the schedule box —
+  // found by walking every rail under the pseudo-locale.
+  "sidebar.footEnvOne": "{count} environment",
+  "sidebar.footEnvMany": "{count} environments",
+  "sidebar.footFlowOne": "{count} flow",
+  "sidebar.footFlowMany": "{count} flows",
+  "sidebar.footFavOne": "{count} favorite",
+  "sidebar.footFavMany": "{count} favorites",
+  "sidebar.footServiceOne": "{count} service",
+  "sidebar.footServiceMany": "{count} services",
+  "sidebar.footMatchOne": "{count} match",
+  "sidebar.footMatchMany": "{count} matches",
+  "lint.discoveredOne": "{count} service discovered",
+  "lint.discoveredMany": "{count} services discovered",
+  "bench.scheduledRuns": "Scheduled runs",
+  "bench.pressRefresh": "Press Refresh to load scheduled runs."
 }

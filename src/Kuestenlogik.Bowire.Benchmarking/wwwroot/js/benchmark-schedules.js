@@ -150,7 +150,7 @@ function bowireRenderScheduleRow(entry) {
 function renderBenchmarkSchedules() {
     var body = [
         el('div', { class: 'bowire-schedule-toolbar' }, [
-            el('strong', {}, 'Scheduled runs'),
+            el('strong', {}, t('bench.scheduledRuns')),
             el('button', {
                 class: 'bowire-schedule-refresh',
                 disabled: bowireBenchmarkSchedulesLoading ? 'disabled' : null,
@@ -162,7 +162,7 @@ function renderBenchmarkSchedules() {
     if (bowireBenchmarkSchedulesError) {
         body.push(el('div', { class: 'bowire-schedule-error' }, bowireBenchmarkSchedulesError));
     } else if (!bowireBenchmarkSchedules) {
-        body.push(el('div', { class: 'bowire-schedule-empty' }, 'Press Refresh to load scheduled runs.'));
+        body.push(el('div', { class: 'bowire-schedule-empty' }, t('bench.pressRefresh')));
     } else if (bowireBenchmarkSchedules.length === 0) {
         body.push(el('div', { class: 'bowire-schedule-empty' },
             'No scheduled runs. Add one with: bowire bench schedule add <id> --cron "0 3 * * *" --target Svc/Method -url rest@http://…'));
