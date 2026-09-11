@@ -56,6 +56,15 @@ A test fails the build when a catalogue drifts from English:
 | No empty values | An empty value also falls back &mdash; so it looks like a translation exists when none does. Leave the key out while scaffolding, or fill it. |
 | Same placeholders | A translation that drops `{url}` renders a sentence with a hole in it; one that invents `{name}` renders a literal brace. Neither shows up in a key-set check. |
 | Keys are `area.thing.part` | What lets you work through one surface at a time, and what keeps a flat file navigable at a thousand entries. |
+| No key declared twice | JSON has no duplicate keys, and `JSON.parse` takes the last one without a word &mdash; so a second entry does not collide, it deletes the first. Twelve keys had drifted into two entries, six carrying different sentences, and six surfaces were showing another surface's text with every other test passing. Parsing cannot find this, so the guard reads the lines. |
+
+Three more guards watch the code rather than the catalogues. All three are about a translation that *cannot arrive*, which is invisible to a screenshot in the language the workbench happens to be in:
+
+| Check | Why |
+|---|---|
+| No fragment binds the name `t` | Every fragment shares one IIFE, and the translator is a one-letter name in it &mdash; also the obvious name for a loop counter or a callback parameter. `toast()` held `var t = el('div', …)` with `t('common.dismiss')` inside it, and every toast in Bowire threw until the local was renamed. |
+| A bundle outside the IIFE brings its own `t` | The mirror image. The map widget loads from the extension-asset endpoint as its own `<script>`, so the core's `t` is not in scope; its nineteen swept strings threw `ReferenceError` on the first mount. Outside bundles reach the catalogue through `BowireExtensions.t`. Which packages are outside is read out of `BowireHtmlGenerator.IsRailLikeAssembly`, so the two cannot drift. |
+| No `t()` resolves at load time | A call no function encloses runs once, when the bundle loads, and `setLocale` does not reload &mdash; so it shows the boot language for the rest of the session. Seven select-option tables were built that way. Write `get label() { return t('sort.name'); }` instead of `label: t('sort.name')`. |
 
 ## Placeholders
 
@@ -108,7 +117,25 @@ With a value to interpolate:
 el('p', { textContent: t('landing.wrongProtocol.title', { protocol: name }) })
 ```
 
-Prefer one key with a placeholder over string concatenation. `'No ' + name + ' services found'` cannot be translated into a language that orders those words differently.
+Prefer one key with a placeholder over string concatenation. `'No ' + name + ' services found'` cannot be translated into a language that orders those words differently &mdash; and the guard rejects it: a prose literal hanging off a `+` inside a display slot counts as untranslated, the same as a bare one.
+
+That rule is worth stating the other way round, because it is the failure it was written for: **a key must be a whole sentence.** Three keys had ended mid-clause with the rest of the sentence sitting in English beside the call:
+
+```js
+// no — the translator gets a beginning with no end, and cannot move a word
+//      without breaking the join
+title: t('env.fromHostTitle') + 'host is configured — edits here would not survive a restart.'
+
+// yes — one key, the whole sentence, word order theirs
+title: t('env.fromHostTitle')
+```
+
+A value in the middle is what placeholders are for. A tally that changes the wording is what two keys are for (see #688):
+
+```js
+// #688 - one message, two shapes.
+title: t(count === 1 ? 'main.presetsOne' : 'main.presetsMany', { count: count })
+```
 
 Adding a key to `en.json` and not to the others is fine &mdash; the parity test only fails on keys a translation *has* that English does not, and on empty values in keys it does have. Translators catch up afterwards.
 
@@ -155,7 +182,14 @@ The reason belongs next to the string, not in a list elsewhere, so a reviewer ca
 
 ## Checking coverage: the pseudo-locale
 
-The ratchet above finds what its patterns were taught to look for, and in the sweep that produced this catalogue it read **zero six times** while the running workbench still showed English. Each gap was a call shape nobody had told the scanner about &mdash; a slot named by a suffix, a lone branch of a ternary, a label handed to a helper positionally, a rail label that arrives from the host rather than from JavaScript at all.
+The ratchet above finds what its patterns were taught to look for, and in the sweep that produced this catalogue it read **zero six times** while the running workbench still showed English. Each gap was a call shape nobody had told the scanner about &mdash; a slot named by a suffix, a lone branch of a ternary, a label handed to a helper positionally, a sentence assembled around a value with `+`, a rail label that arrives from the host rather than from JavaScript at all.
+
+Two gaps it cannot close by widening, because there is nothing on screen to see:
+
+- **A string that throws before it renders.** The map widget's nineteen were swept correctly and every one failed at runtime, because that bundle loads outside the IIFE where `t` lives. The browser console said so; no scanner could.
+- **A string that resolves at load.** A `t()` no function encloses is right in whichever language the session started in, and the pseudo-locale is *set* before the reload that installs it. Only a language change mid-session shows the freeze.
+
+Both now have guards of their own (see the table above). The pseudo-locale is for the rest.
 
 A scanner cannot answer "is anything untranslated?". The product can:
 
@@ -178,7 +212,7 @@ What legitimately stays unbracketed: the product's own name and version, the use
 
 `npm run i18n:report` prints zero. Every fragment that lands in the bundle &mdash; the core project and all eleven sibling packages &mdash; reads its text from the catalogue, and the ratchet in `untranslated-baseline.json` is an empty object, so the next literal anyone adds fails the build.
 
-What remains English is deliberate, and each instance says so on its own line with `// i18n-exempt: <reason>`. There are 178, and they fall into five groups:
+What remains English is deliberate, and each instance says so on its own line with `// i18n-exempt: <reason>`. There are around 270, and they fall into five groups:
 
 | Group | Why |
 |---|---|
