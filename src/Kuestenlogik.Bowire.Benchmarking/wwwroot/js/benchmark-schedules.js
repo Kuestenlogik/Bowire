@@ -35,8 +35,8 @@ async function bowireLoadBenchmarkSchedules() {
             // say so plainly rather than showing an empty list that reads
             // as "no schedules".
             bowireBenchmarkSchedulesError = resp.status === 404
-                ? 'Scheduling is not available on this host.'
-                : 'Could not load schedules (' + resp.status + ').';
+                ? t('bench.noScheduling')
+                : t('bench.schedulesFailed', { status: resp.status });
             bowireBenchmarkSchedules = null;
         } else {
             bowireBenchmarkSchedules = await resp.json();
@@ -101,7 +101,7 @@ function bowireRenderScheduleRow(entry) {
         el('span', { class: 'bowire-schedule-name' }, entry.name || entry.id),
         el('span', {
             class: 'bowire-schedule-next' + (entry.enabled ? '' : ' bowire-schedule-paused'),
-            title: entry.nextRun ? 'Next run ' + entry.nextRun : ''
+            title: entry.nextRun ? t('bench.nextRun', { when: entry.nextRun }) : ''
         }, nextText),
         el('button', {
             class: 'bowire-schedule-toggle',

@@ -1456,8 +1456,8 @@
             var ed = el('textarea', {
                 className: 'bowire-editor bowire-request-builder-body-editor',
                 placeholder: fr._requestBuilder.bodyMode === 'json'
-                    ? 'JSON request body — use {{var}} for env-var substitution'
-                    : 'Raw request body…',
+                    ? t('rb.bodyJson')
+                    : t('rb.bodyRaw'),
                 spellcheck: 'false'
             });
             ed.value = fr.body || '';
@@ -1543,8 +1543,8 @@
         wrap.appendChild(el('div', {
             className: 'bowire-request-builder-script-hint',
             textContent: phase === 'pre'
-                ? 'JavaScript that runs BEFORE the request leaves. Use ctx.request to mutate headers/body, ctx.env to read env vars, ctx.vars.captured.X = v to persist a value.'
-                : 'JavaScript that runs AFTER the response lands. Inspect ctx.response.body / .status / .headers; assert with ctx.assert.ok(...); persist with ctx.vars.captured.X = v.'
+                ? t('rb.preScriptHint')
+                : t('rb.postScriptHint')
         }));
         var ta = el('textarea', {
             className: 'bowire-editor bowire-request-builder-script-editor',

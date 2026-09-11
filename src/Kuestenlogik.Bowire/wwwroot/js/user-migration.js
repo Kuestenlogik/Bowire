@@ -55,7 +55,7 @@
                     userMigrationOffer.querySelector('.bowire-migration-error');
                 if (note) {
                     note.textContent =
-                        'That did not go through. Your existing data is untouched — try again.';
+                        t('userMigration.failed');
                 }
                 // Called from Settings there is no dialog to write into, and
                 // a failure nobody is told about is the one failure mode this

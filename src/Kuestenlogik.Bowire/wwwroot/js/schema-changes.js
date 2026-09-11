@@ -294,7 +294,7 @@
                 + (unread > 0 ? ' bowire-schema-changes-pill-unread' : ''),
             title: (unread > 0
                 ? unread + ' unread schema change' + (unread !== 1 ? 's' : '')
-                : 'Schema changes in the last ' + SCHEMA_CHANGE_RETENTION_DAYS + ' days')
+                : t('schemaChanges.retention', { days: SCHEMA_CHANGE_RETENTION_DAYS }))
                 + ' — click for the change log',
             onClick: function (e) {
                 e.stopPropagation();
@@ -392,8 +392,10 @@
                     + (isUnread ? ' is-unread' : '')
                     + (removed ? ' is-gone' : ''),
                 title: removed
-                    ? 'Removed from the schema — nothing to navigate to'
-                    : 'Open ' + entry.service + (entry.method ? ' / ' + entry.method : '') + ' in Discover',
+                    ? t('schemaChanges.removed')
+                    : t('schemaChanges.openIn', {
+    target: entry.service + (entry.method ? ' / ' + entry.method : '')
+}),
                 onClick: removed ? null : function () {
                     var dd2 = document.getElementById('bowire-schema-changes-dropdown');
                     if (dd2) dd2.remove();

@@ -96,6 +96,32 @@ const PATTERNS = [
     // return 'Execute'; — a label handed back rather than assigned. The
     // rejections below drop the machine strings this also sees.
     new RegExp(String.raw`(?<![A-Za-z0-9_$.])return\s+${STR}\s*;`, 'g'),
+    // A lone branch of a two-way choice, alone on its line:
+    //
+    //     title: disabled
+    //         ? 'Nothing to undo (Ctrl/Cmd+Z)'
+    //         : ('Undo: ' + label + ' (Ctrl/Cmd+Z)'),
+    //
+    // The pair pattern below needs both branches to be plain strings, and the
+    // slot patterns need the string to follow the colon with only whitespace
+    // between — a `?` in the way defeats both. The topbar's undo, redo and
+    // trash tooltips sat in English behind exactly that shape while the report
+    // read zero. A line that begins with ? or : and a quoted string is a value
+    // being chosen; the rejections below drop the machine ones.
+    new RegExp(String.raw`^[ 	]*[?:]\s*${STR}`, 'gm'),
+    // The true branch of a two-way choice, wherever it sits:
+    //
+    //     'aria-label': disabled ? 'Undo (nothing to undo)' : ('Undo: ' + label),
+    //
+    // One line, so the rule above does not apply; a condition between the
+    // colon and the string, so the slot rules do not either; and only one
+    // branch is a plain string, so the pair rule does not. The topbar's undo
+    // and redo aria-labels sat in English behind exactly this. The optional
+    // bracket catches `? ('Workspace: ' + name)`.
+    // The lookbehind keeps the `?` inside a string literal out: `return '?';`
+    // would otherwise start a match at that character and read to the next
+    // quote anywhere in the file.
+    new RegExp(String.raw`(?<!['"])\?\s*\(?\s*${STR}`, 'g'),
     // cond ? 'this' : 'that' — a sentence chosen at run time.
     new RegExp(String.raw`\?\s*${STR}\s*:\s*${STR}`, 'g'),
     // node.textContent = 'text' — the same slots, written as an assignment

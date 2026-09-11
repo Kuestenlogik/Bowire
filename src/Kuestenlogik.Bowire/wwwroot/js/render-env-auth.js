@@ -25,8 +25,8 @@
             summary = ids.slice(0, 3).join(', ') + ' and ' + (ids.length - 3) + ' more';
         }
         var text = embedded
-            ? 'Workspace expects ' + summary + ' — read-only diff.'
-            : 'Workspace needs ' + summary + ' — not loaded.';
+            ? t('main.ws.expects', { summary: summary })
+            : t('main.ws.needs', { summary: summary });
 
         var bar = el('div', { className: 'bowire-alert-bar', role: 'status', 'aria-live': 'polite' });
         bar.appendChild(el('span', { className: 'bowire-alert-bar-dot', 'aria-hidden': 'true' }));
@@ -600,6 +600,13 @@
         const app = document.getElementById('bowire-app');
         if (!app) return;
 
+        // The shell's own label is written into the HTML by the host, before
+        // anyone knows which language this session wants, and morphdom runs
+        // with childrenOnly so it never touches the root's attributes. Set it
+        // here; the English attribute in the HTML stays as the no-script
+        // fallback.
+        app.setAttribute('aria-label', t('app.ariaLabel'));
+
         // Force-home rule retired. Pinning the operator to Home
         // whenever workspaces.length === 0 trapped rail clicks: any
         // attempt to leave Home re-fired the guard, snapping railMode
@@ -790,8 +797,8 @@
                     className: splitterCls,
                     id: 'bowire-sidebar-splitter',
                     title: sidebarCollapsed
-                        ? 'Show sidebar (Ctrl+B)'
-                        : 'Drag to resize the sidebar — drag past the minimum to collapse, or double-click to toggle'
+                        ? t('topbar.showSidebar')
+                        : t('topbar.dragSidebar')
                 });
                 splitter.appendChild(el('button', {
                     type: 'button',
@@ -1201,7 +1208,8 @@
             overflowBtn.classList.add('has-overflow');
         }
         var labels = hidden.map(function (h) { return h.label; });
-        var ariaText = labels.length > 0 ? ('More: ' + labels.join(', ')) : 'More';
+        var ariaText = labels.length > 0
+    ? t('topbar.moreList', { list: labels.join(', ') }) : t('topbar.more');
         overflowBtn.setAttribute('aria-label', ariaText);
         overflowBtn.setAttribute('title', ariaText);
     }
@@ -1923,28 +1931,28 @@
         var emptyDisabled = visibleCount === 0;
         var restoreDisabled = visibleCount === 0;
         var emptyLabel = filterActive
-            ? 'Empty filtered (' + visibleCount + ')'
-            : 'Empty trash';
+            ? t('trash.emptyFilteredCount', { count: visibleCount })
+            : t('sidebar.trash.empty');
         var restoreLabel = filterActive
-            ? 'Restore filtered (' + visibleCount + ')'
-            : 'Restore all';
+            ? t('trash.restoreFilteredCount', { count: visibleCount })
+            : t('trash.restoreAll');
         var emptyTitle;
         if (emptyDisabled) {
             emptyTitle = filterActive ? t('trash.noMatchFilter') : t('trash.alreadyEmpty');
         } else {
             emptyTitle = filterActive
-                ? 'Permanently delete only the ' + visibleCount + ' currently visible item' + (visibleCount === 1 ? '' : 's')
-                + ' — filtered-out items stay in the trash'
-                : 'Permanently delete every trashed item';
+                ? t(visibleCount === 1 ? 'trash.purgeVisibleOne'
+                    : 'trash.purgeVisibleMany', { count: visibleCount })
+                : t('trash.purgeEveryTitle');
         }
         var restoreTitle;
         if (restoreDisabled) {
             restoreTitle = filterActive ? t('trash.noMatchFilter') : t('trash.isEmpty');
         } else {
             restoreTitle = filterActive
-                ? 'Restore only the ' + visibleCount + ' currently visible item' + (visibleCount === 1 ? '' : 's')
-                + ' — filtered-out items stay in the trash'
-                : 'Restore every trashed item back to its original list';
+                ? t(visibleCount === 1 ? 'trash.restoreVisibleOne'
+                    : 'trash.restoreVisibleMany', { count: visibleCount })
+                : t('trash.restoreEveryTitle');
         }
         footer.appendChild(el('button', {
             type: 'button',
@@ -1956,10 +1964,10 @@
                 if (emptyDisabled) return;
                 if (typeof bowireConfirm !== 'function') return;
                 var prompt = filterActive
-                    ? 'Permanently delete the ' + visibleCount + ' currently visible item'
-                        + (visibleCount === 1 ? '' : 's')
-                        + '? Filtered-out items stay in the trash. This cannot be undone.'
-                    : 'Permanently delete all ' + visibleCount + ' trashed items? This cannot be undone.';
+                    ? t(visibleCount === 1 ? 'trash.purgeVisibleAskOne'
+                            : 'trash.purgeVisibleAskMany',
+                            { count: visibleCount })
+                    : t('trash.purgeAllAsk', { count: visibleCount });
                 bowireConfirm(
                     prompt,
                     function () {
@@ -1996,10 +2004,10 @@
                 if (restoreDisabled) return;
                 if (typeof bowireConfirm !== 'function') return;
                 var prompt = filterActive
-                    ? 'Restore the ' + visibleCount + ' currently visible item'
-                        + (visibleCount === 1 ? '' : 's')
-                        + '? Filtered-out items stay in the trash.'
-                    : 'Restore all ' + visibleCount + ' trashed items?';
+                    ? t(visibleCount === 1 ? 'trash.restoreVisibleAskOne'
+                            : 'trash.restoreVisibleAskMany',
+                            { count: visibleCount })
+                    : t('trash.restoreAllAsk', { count: visibleCount });
                 bowireConfirm(
                     prompt,
                     function () {
@@ -2205,7 +2213,7 @@
                     onClick: function () {
                         if (typeof bowireConfirm !== 'function') return;
                         bowireConfirm(
-                            'Permanently delete "' + name + '"? This cannot be undone.',
+                            t('trash.purgeConfirm', { name: name }),
                             function () {
                                 try { cfg.onDeleteForever(trashed); }
                                 catch (e) { console.warn('[trash] delete-forever failed', row._kind, e); }
@@ -2502,7 +2510,7 @@
                 for (var pi = 0; pi < embAttempts.length; pi++) {
                     var at = embAttempts[pi];
                     if (at && at.outcome === 'partial' && at.message) {
-                        partials.push((at.plugin || at.pluginId || '?') + ': ' + at.message);
+                        partials.push((at.plugin || at.pluginId || '?') + ': ' + at.message);  // i18n-exempt: the plugin id and the message it reported
                     }
                 }
             }
@@ -2510,8 +2518,8 @@
             return el('span', {
                 className: 'bowire-conn-pill is-degraded',
                 title: partials.length
-                    ? 'Discovery returned services, but:\n' + partials.join('\n')
-                    : 'Discovery returned services but a plugin reported a fault.'
+                    ? t('main.src.partialList', { list: partials.join('\n') })
+                    : t('main.src.partial')
             }, [
                 el('span', { className: 'bowire-conn-dot is-degraded' }),
                 el('span', { textContent: t('status.discoveryIncomplete') })
@@ -2559,7 +2567,7 @@
                 aggregate = 'connected';
                 summary = (urlsPresent.length === 1
                     ? truncateMiddle(urlsPresent[0], 28)
-                    : 'All ' + urlsPresent.length + ' connected') + degradedSuffix;
+                    : t('main.src.allConnected', { count: urlsPresent.length })) + degradedSuffix;
             } else {
                 aggregate = 'partial';
                 summary = counts.connected + ' / ' + urlsPresent.length + ' connected' + degradedSuffix;
@@ -2887,7 +2895,8 @@
                 var row = el('div', {
                     className: 'bowire-subscriptions-row bowire-subscriptions-row-' + st,
                     title: sub.service + '.' + sub.method
-                        + (sub.channelError ? ('\nError: ' + sub.channelError) : ''),
+                        + (sub.channelError
+    ? ('\n' + t('main.errorPrefix', { error: sub.channelError })) : ''),
                     onClick: function () {
                         // Switch to the row's method via openTab so
                         // the operator can inspect its frames in the
@@ -3034,8 +3043,8 @@
             id: 'bowire-schema-watch-btn',
             className: 'bowire-theme-toggle-btn' + (isSchemaWatchActive() ? ' is-watching' : ''),
             title: isSchemaWatchActive()
-                ? 'Schema watch active (every ' + seconds + 's) — click to stop'
-                : 'Start schema watch (re-discover every ' + seconds + 's)',
+                ? t('topbar.schemaWatchOn', { seconds: seconds })
+                : t('topbar.schemaWatchOff', { seconds: seconds }),
             'aria-label': isSchemaWatchActive() ? t('topbar.stopSchemaWatch') : t('topbar.startSchemaWatch'),
             onClick: function () {
                 if (isSchemaWatchActive()) { stopSchemaWatch(); }
@@ -3102,7 +3111,7 @@
         }
         var _savePillClickable = canOpenWorkspaceFolder;
         var _savePillTitleSuffix = _savePillClickable
-            ? '\nClick to open this workspace’s folder'
+            ? '\n' + t('main.ws.openFolder')
             : '';
 
         var left = el('div', { className: 'bowire-statusbar-left' });
@@ -3111,11 +3120,13 @@
             left.appendChild(el('span', {
                 className: 'bowire-save-pill bowire-save-pill-saved'
                     + (_savePillClickable ? ' bowire-save-pill-clickable' : ''),
-                title: (ws ? ('Saved to ' + ws.name) : 'Saved to localStorage') + _savePillTitleSuffix,
+                title: (ws ? t('main.ws.savedTo', { name: ws.name })
+    : t('main.ws.savedToLocal')) + _savePillTitleSuffix,
                 onClick: _savePillClickable ? _onSavePillClick : null,
             },
                 el('span', { className: 'bowire-save-pill-dot' }),
-                el('span', { textContent: ws ? ('Saved to ' + ws.name) : ('Saved ' + saveState.target) })
+                el('span', { textContent: ws ? t('main.ws.savedTo', { name: ws.name })
+    : t('main.ws.savedTarget', { target: saveState.target }) })
             ));
         } else if (saveState && saveState.kind === 'failed') {
             left.appendChild(el('span', {
@@ -3161,8 +3172,8 @@
             id: 'bowire-statusbar-console-btn',
             className: 'bowire-theme-toggle-btn' + (consoleOpen ? ' active' : ''),
             title: consoleOpen
-                ? 'Hide console (activity log)'
-                : 'Show console — request / response activity log (' + consoleLog.length + ')',
+                ? t('topbar.hideConsole')
+                : t('topbar.showConsole', { count: consoleLog.length }),
             'aria-label': t('status.toggleConsole'),
             onClick: function () {
                 // #164 v2 — Console toggles a bottom-attached drawer
@@ -3195,11 +3206,12 @@
             id: 'bowire-statusbar-activity-btn',
             className: 'bowire-theme-toggle-btn' + (activityDrawerOpen ? ' active' : ''),
             title: activityDrawerOpen
-                ? 'Hide activity drawer'
+                ? t('topbar.hideActivity')
                 : (availCount > 0
-                    ? ('Activity log — ' + availCount + ' reversible action'
-                        + (availCount === 1 ? '' : 's') + ' (Ctrl/Cmd+Shift+A)')
-                    : 'Activity log — recent actions (Ctrl/Cmd+Shift+A)'),
+                    // #688 - one message, two shapes.
+                        ? t(availCount === 1 ? 'topbar.activityOne' : 'topbar.activityMany',
+    { count: availCount })
+                    : t('topbar.showActivity')),
             'aria-label': t('status.toggleActivity'),
             onClick: function () {
                 activityDrawerOpen = !activityDrawerOpen;
@@ -3229,8 +3241,8 @@
             id: 'bowire-statusbar-tests-btn',
             className: 'bowire-theme-toggle-btn' + (testsDrawerOpen ? ' active' : ''),
             title: testsDrawerOpen
-                ? 'Hide tests drawer'
-                : 'Show tests drawer — assertions for the active method',
+                ? t('topbar.hideTests')
+                : t('topbar.showTests'),
             'aria-label': t('status.toggleTests'),
             onClick: function () {
                 testsDrawerOpen = !testsDrawerOpen;
@@ -3257,8 +3269,8 @@
             id: 'bowire-split-toggle-btn',
             className: 'bowire-theme-toggle-btn',
             title: splitMode === 'vertical'
-                ? 'Vertical split — click to switch to horizontal (Ctrl/Cmd+Alt+\\)'
-                : 'Horizontal split — click to switch to vertical (Ctrl/Cmd+Alt+\\)',
+                ? t('topbar.splitVertical')
+                : t('topbar.splitHorizontal'),
             'aria-label': t('status.toggleSplit'),
             onClick: function () {
                 splitMode = splitMode === 'horizontal' ? 'vertical' : 'horizontal';
@@ -3605,8 +3617,8 @@
                 // touched a method yet, type to search"; with query →
                 // "I tried to match it and found nothing".
                 var emptyText = searchQuery.length > 0
-                    ? ('No matches for "' + searchQuery + '"')
-                    : 'No recently-used methods yet \u2014 start typing to search';
+                    ? t('palette.noMatchesFor', { query: searchQuery })
+                    : t('palette.noRecentMethods');
                 var emptyDropdown = el('div', {
                     id: 'bowire-command-palette-dropdown',
                     className: 'bowire-command-palette-dropdown empty'
@@ -3751,7 +3763,7 @@
                 + (helpAvailable ? '' : ' bowire-theme-toggle-btn-disabled'),
             title: helpAvailable
                 ? (helpActive ? t('topbar.leaveHelp') : t('topbar.help'))
-                : 'Install Kuestenlogik.Bowire.Help for in-app docs (or visit bowire.io/docs)',
+                : t('topbar.helpNotInstalled'),
             'aria-label': t('topbar.help'),
             // #297 — overflow priority tag (see aboutBtn).
             'data-topbar-priority': '5',
@@ -3916,9 +3928,9 @@
             disabled: _undoDisabled ? 'disabled' : null,
             'aria-disabled': _undoDisabled ? 'true' : 'false',
             title: _undoDisabled
-                ? 'Nothing to undo (Ctrl/Cmd+Z)'
+                ? t('topbar.nothingToUndo')
                 : ('Undo: ' + _undoLabel + ' (Ctrl/Cmd+Z)'),
-            'aria-label': _undoDisabled ? 'Undo (nothing to undo)' : ('Undo: ' + _undoLabel),
+            'aria-label': _undoDisabled ? t('topbar.undoAriaNothing') : ('Undo: ' + _undoLabel),
             // #297 — overflow priority tag. Undo + Redo are the last
             // collapsible buttons because they're the most discoverable
             // editor-context affordances; Trash is rarer.
@@ -3946,9 +3958,9 @@
             disabled: _redoDisabled ? 'disabled' : null,
             'aria-disabled': _redoDisabled ? 'true' : 'false',
             title: _redoDisabled
-                ? 'Nothing to redo (Ctrl/Cmd+Shift+Z)'
+                ? t('topbar.nothingToRedo')
                 : ('Redo: ' + _redoLabel + ' (Ctrl/Cmd+Shift+Z)'),
-            'aria-label': _redoDisabled ? 'Redo (nothing to redo)' : ('Redo: ' + _redoLabel),
+            'aria-label': _redoDisabled ? t('topbar.redoAriaNothing') : ('Redo: ' + _redoLabel),
             // #297 — overflow priority tag.
             'data-topbar-priority': '1',
             'data-topbar-label': 'Redo',
@@ -3979,9 +3991,10 @@
             className: 'bowire-theme-toggle-btn bowire-topbar-history-btn'
                 + (globalTrashOpen ? ' active' : ''),
             title: globalTrashOpen
-                ? 'Close trash drawer'
-                : ('Trash — ' + _trashTotal + ' item' + (_trashTotal === 1 ? '' : 's')
-                    + ' across recordings / collections / closed tabs'),
+                ? t('topbar.closeTrash')
+                // #688 - one message, two shapes.
+                : t(_trashTotal === 1 ? 'topbar.trashOne' : 'topbar.trashMany',
+                    { count: _trashTotal }),
             'aria-label': t('topbar.toggleTrash'),
             // #297 — overflow priority tag. Trash collapses before
             // Undo/Redo (rarer affordance, less muscle-memory cost).
@@ -4019,7 +4032,8 @@
             id: 'bowire-workspace-chip',
             type: 'button',
             className: 'bowire-workspace-chip' + (workspaceMenuOpen ? ' active' : ''),
-            title: ws ? ('Workspace: ' + ws.name) : 'No workspace — click to create one',
+            title: ws ? t('main.ws.titled', { name: ws.name })
+    : t('topbar.noWorkspaceCreate'),
             'aria-label': ws ? t('topbar.switchWorkspace') : t('sidebar.ws.new'),
             onClick: function (e) {
                 e.stopPropagation();
@@ -4075,11 +4089,15 @@
             className: 'bowire-theme-toggle-btn bowire-topbar-right-overflow-btn'
                 + (topbarRightOverflowOpen ? ' active' : ''),
             title: hiddenItems.length > 0
-                ? ('More: ' + hiddenItems.map(function (h) { return h.label; }).join(', '))
-                : 'More',
+                ? t('topbar.moreList', {
+                    list: hiddenItems.map(function (h) { return h.label; }).join(', ')
+                })
+                : t('topbar.more'),
             'aria-label': hiddenItems.length > 0
-                ? ('More: ' + hiddenItems.map(function (h) { return h.label; }).join(', '))
-                : 'More',
+                ? t('topbar.moreList', {
+                    list: hiddenItems.map(function (h) { return h.label; }).join(', ')
+                })
+                : t('topbar.more'),
             'aria-haspopup': 'menu',
             'aria-expanded': topbarRightOverflowOpen ? 'true' : 'false',
             onClick: function (e) {
@@ -4605,10 +4623,11 @@
             var prompt = q.substring(1).trim();
             out.push({
                 group: 'Assistant',
-                label: prompt ? ('Ask Assistant: ' + prompt) : 'Ask Assistant…',
+                label: prompt ? t('palette.askAssistantWith', { prompt: prompt })
+    : t('palette.askAssistantShort'),
                 sublabel: prompt
-                    ? 'Opens the Assistant drawer with this prompt'
-                    : 'Type your question after the ? prefix',
+                    ? t('palette.askAssistant')
+                    : t('palette.askHint'),
                 icon: svgIcon('spark'),
                 onSelect: function () {
                     searchSuggestionsOpen = false;
@@ -5160,8 +5179,8 @@
             className: 'bowire-env-dropdown-btn'
                 + (noWorkspaceActive ? ' bowire-env-dropdown-btn-disabled' : ''),
             title: noWorkspaceActive
-                ? 'Activate a workspace first — environments live inside a workspace'
-                : 'Active environment — click to switch',
+                ? t('main.env.needWorkspace')
+                : t('main.env.activeSwitch'),
             'aria-disabled': noWorkspaceActive ? 'true' : null,
             onClick: function (e) {
                 e.stopPropagation();
@@ -5283,7 +5302,7 @@
                                 var envName = env.name || '(unnamed)';
                                 menu.remove();
                                 bowireConfirm(
-                                    'Delete environment "' + envName + '"? Variables stored in this environment are removed.',
+                                    t('main.env.deleteConfirm', { name: envName }),
                                     function () {
                                         if (typeof deleteEnvironment === 'function') deleteEnvironment(envId);
                                         render();
@@ -5344,8 +5363,8 @@
                     className: 'bowire-env-dropdown-item bowire-env-dropdown-item-action'
                         + (canCreateEnv ? '' : ' bowire-env-dropdown-item-disabled'),
                     title: canCreateEnv
-                        ? 'Create a new environment in the active workspace'
-                        : 'Activate a workspace first — environments live inside a workspace',
+                        ? t('main.env.createInActive')
+                        : t('main.env.needWorkspace'),
                     'aria-disabled': canCreateEnv ? null : 'true',
                     onClick: canCreateEnv ? function () {
                         menu.remove();
@@ -5368,8 +5387,8 @@
                 },
                     el('span', { className: 'bowire-env-dropdown-item-icon', textContent: '+' }),
                     el('span', { textContent: canCreateEnv
-                        ? 'New environment…'
-                        : 'New environment… (activate a workspace first)' })
+                        ? t('sidebar.envs.new')
+                        : t('main.env.newNeedsWs') })
                 ));
 
                 envBtnWrapper.appendChild(menu);
@@ -5383,7 +5402,7 @@
                 innerHTML: _envGlyph(activeColor)
             }),
             el('span', { className: 'bowire-env-btn-text', textContent: noWorkspaceActive
-                ? 'No workspace'
+                ? t('topbar.noWorkspace')
                 : (activeEnv ? activeEnv.name : 'Workspace defaults') }),
             noWorkspaceActive
                 ? null
@@ -5827,13 +5846,13 @@
 
             section.appendChild(renderAuthField('Token JSON path', 'bowire-auth-tokenpath', auth.tokenJsonPath || 'token',
                 'e.g. token, data.access_token, auth.jwt', 'text',
-                function (v) { setAuth(Object.assign({}, getAuth(), { tokenJsonPath: v })); clearCustomTokenCache(); }));
+                function (v) { setAuth(Object.assign({}, getAuth(), { tokenJsonPath: v })); clearCustomTokenCache(); }));  // i18n-exempt: an example of the prefix format
 
             section.appendChild(renderAuthField('Expiry JSON path (optional)', 'bowire-auth-expirypath', auth.expiresInJsonPath || '',
                 'e.g. expiresIn, expires_in (TTL in seconds)', 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { expiresInJsonPath: v })); clearCustomTokenCache(); }));
 
-            section.appendChild(renderAuthField('Authorization prefix', 'bowire-auth-tokenprefix', auth.tokenPrefix == null ? 'Bearer ' : auth.tokenPrefix,
+            section.appendChild(renderAuthField(t('rbAuth.tokenPrefix'), 'bowire-auth-tokenprefix', auth.tokenPrefix == null ? 'Bearer ' : auth.tokenPrefix,  // i18n-exempt: the Authorization scheme prefix
                 'e.g. "Bearer " (with trailing space) or empty', 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { tokenPrefix: v })); }));
 
@@ -5995,7 +6014,7 @@
         var container = el('div', { className: 'bowire-graphql-selection-tree' + (depth > 0 ? ' nested' : '') });
         if (!messageInfo || !messageInfo.fields || messageInfo.fields.length === 0) {
             container.appendChild(el('div', { className: 'bowire-graphql-selection-empty', textContent:
-                '(no fields discovered — schema may not expose this output type)' }));
+                t('main.noFieldsDiscovered') }));
             return container;
         }
 

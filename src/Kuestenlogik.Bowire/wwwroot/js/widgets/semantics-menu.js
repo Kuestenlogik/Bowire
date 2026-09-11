@@ -1303,7 +1303,7 @@ runBtn.textContent = t(pickedCount === 1 ? 'semantics.replayOne'
                   row.appendChild(pay);
                   var detail = document.createElement('span');
                   detail.className = 'bowire-ai-fuzz-result-detail';
-                  detail.textContent = r.detail || (r.status ? 'status=' + r.status : '');
+                  detail.textContent = r.detail || (r.status ? 'status=' + r.status : '');  // i18n-exempt: the machine status the probe reported
                   row.appendChild(detail);
                   resultList.appendChild(row);
               });
@@ -1409,9 +1409,9 @@ runBtn.textContent = t(pickedCount === 1 ? 'semantics.replayOne'
             row.className = 'bowire-fuzz-panel-row bowire-fuzz-row-' + (r.outcome || 'safe').toLowerCase();
             var marker = document.createElement('span');
             marker.className = 'bowire-fuzz-panel-row-marker';
-            marker.textContent = r.outcome === 'Vulnerable' ? '[VULN]'
-                              : r.outcome === 'Error' ? '[err]'
-                              : '[ok]';
+            marker.textContent = r.outcome === 'Vulnerable' ? '[VULN]'  // i18n-exempt: an outcome marker that sits in a fixed-width column
+                              : r.outcome === 'Error' ? '[err]'  // i18n-exempt: an outcome marker that sits in a fixed-width column
+                              : '[ok]';  // i18n-exempt: an outcome marker that sits in a fixed-width column
             row.appendChild(marker);
             var payloadEl = document.createElement('code');
             payloadEl.className = 'bowire-fuzz-panel-row-payload';

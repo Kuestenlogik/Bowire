@@ -21,8 +21,8 @@
     function renderOwaspRow(entry) {
         var note = entry.status === 'Vulnerable' ? ((entry.vulnCount || 0) + ' finding(s)')
             : entry.status === 'Safe' ? 'clean'
-            : entry.status === 'Error' ? 'probe error'
-            : 'not exercised';
+            : entry.status === 'Error' ? t('security.probeError')
+            : t('security.notExercised');
         return el('div', { className: 'bowire-secsuite-row' },
             owaspBadge(entry.status || 'NotCovered'),
             el('a', { className: 'bowire-secsuite-row-id', href: entry.reference, target: '_blank', rel: 'noopener noreferrer', textContent: entry.id }),
@@ -97,7 +97,7 @@
                     idNode,
                     severityChip(w.maxSeverity, w.count),
                     el('span', { className: 'bowire-secsuite-row-title', textContent: w.count + ' finding(s)' }),
-                    el('span', { className: 'bowire-secsuite-row-note', textContent: w.maxCvss > 0 ? 'CVSS ' + w.maxCvss.toFixed(1) : '' })));
+                    el('span', { className: 'bowire-secsuite-row-note', textContent: w.maxCvss > 0 ? 'CVSS ' + w.maxCvss.toFixed(1) : '' })));  // i18n-exempt: the CVSS score, named by the standard
             });
             container.appendChild(el('div', { className: 'bowire-compliance-block' },
                 el('span', { className: 'bowire-compliance-label', textContent: t('security.cweBreakdown') }),
@@ -369,8 +369,8 @@
                 body.textContent = '';
                 if (!st || !st.configured) {
                     var msg = st && st.error
-                        ? 'OAST server rejected: ' + st.error
-                        : 'No interaction server is configured. Start one — `bowire oast serve --domain oast.example.com --public-ip <ip>` — then launch the workbench with `--oast-server http://oast.example.com` (or set Bowire__Oast__Server). The same server the scanner’s --oast-server uses.';
+                        ? t('security.oastRejected', { error: st.error })
+                        : t('security.noOastServer');
                     body.appendChild(el('p', { className: 'bowire-pane-empty', textContent: msg }));
                     return;
                 }

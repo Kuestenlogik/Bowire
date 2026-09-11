@@ -198,8 +198,8 @@
             type: 'text',
             value: aliasValue,
             placeholder: 'alias',
-            title: locked ? 'Alias locked — URL is fixed via --url parameter'
-                          : 'Short name for this URL (unique per workspace). Used in the discover tree, connection popover, and filters.',
+            title: locked ? t('sidebar.aliasLocked')
+                          : t('sidebar.aliasHint'),
             spellcheck: 'false',
             autocomplete: 'off'
         });
@@ -605,8 +605,8 @@
                 return el('span', {
                     className: 'bowire-schema-delta-mark is-' + marker,
                     title: marker === 'added'
-                        ? 'Appeared since the last schema-watch poll'
-                        : 'Request or response shape changed since the last schema-watch poll',
+                        ? t('sidebar.schemaNew')
+                        : t('sidebar.schemaChanged'),
                     textContent: marker === 'added' ? '+' : '~'
                 });
             })(typeof schemaWatchMarkerFor === 'function' ? schemaWatchMarkerFor(svc.name, m) : null),
@@ -763,7 +763,7 @@
             list.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding: 40px 24px' },
                 el('div', { className: 'bowire-empty-title', textContent: t('sidebar.favorites.empty') }),
                 el('div', { className: 'bowire-empty-desc', textContent:
-                    'Click the ★ on a method in the Services view to pin it here.' })
+                    t('sidebar.favHint') })
             ));
             return;
         }
@@ -811,7 +811,7 @@
                         + (favIsExecuting ? ' executing' : ''),
                     title: available
                         ? (row.method.summary || row.method.description || row.method.name)
-                        : 'This service is no longer in the discovered set — click × to remove',
+                        : t('sidebar.serviceGone'),
                     onClick: function () {
                         if (!available) return;
                         openTab(row.svc, row.method);
@@ -1602,7 +1602,7 @@
                     : (m.label
                         + (hasCount ? ' (' + count + ')' : '')
                         + (isActive && modeHasSidebar
-                            ? '\n(double-click to ' + (sidebarCollapsed ? 'expand' : 'collapse') + ' the sidebar)'
+                            ? '\n' + t(sidebarCollapsed ? 'sidebar.dblExpand' : 'sidebar.dblCollapse')
                             : '')),
                 'aria-label': isDisabled
                     ? (m.label + ' (disabled — no active workspace)')
@@ -1741,7 +1741,7 @@
                     'data-rail-mode-id': m.id,
                     disabled: poDisabled ? 'disabled' : null,
                     'aria-disabled': poDisabled ? 'true' : 'false',
-                    title: poDisabled ? 'Create a workspace first to use this rail' : undefined,
+                    title: poDisabled ? t('sidebar.needWorkspaceRail') : undefined,
                     className: 'bowire-rail-overflow-popover-item'
                         + (isActive ? ' active' : '')
                         + (poDisabled ? ' bowire-rail-btn-disabled' : ''),
@@ -2024,7 +2024,7 @@
                     onClick: function () {
                         var n = serverUrls.length;
                         bowireConfirm(
-                            'Remove all ' + n + ' URLs from this workspace?',
+                            t('sidebar.removeAllUrls', { count: n }),
                             function () {
                                 serverUrls.length = 0;
                                 urlHeaders = {};
@@ -2167,7 +2167,7 @@
                 }),
                 el('span', {
                     className: 'bowire-conn-pill-dot bowire-conn-pill-dot-' + status,
-                    style: dotColor ? ('background:' + dotColor + ';') : '',
+                    style: dotColor ? ('background:' + dotColor + ';') : '',  // i18n-exempt: a CSS declaration
                 }),
                 el('span', { className: 'bowire-env-list-item-name', textContent: displayName }),
                 el('span', { style: 'flex:1' }),
@@ -2786,10 +2786,10 @@
                 // to do. Soft-delete keeps the v2.1 copy verbatim.
                 var mode = (typeof getWorkspaceDeleteMode === 'function')
                     ? getWorkspaceDeleteMode() : 'soft';
-                var hardMsg = 'This workspace will be deleted IMMEDIATELY. Undo will work for the next ~200 actions, but it won’t be in the Trash. Continue?';
+                var hardMsg = t('main.ws.hardDeleteAsk');
                 var softMsg = isLast
-                    ? 'Delete the last workspace "' + target.name + '"? You will return to the empty no-workspace state — the underlying URLs / envs / recordings for this workspace are removed.'
-                    : 'Delete workspace "' + target.name + '"? The underlying URLs / envs / recordings for this workspace are removed.';
+                    ? t('sidebar.deleteLastWsConfirm', { name: target.name })
+                    : t('sidebar.deleteWsConfirm', { name: target.name });
                 var msg = mode === 'hard' ? hardMsg : softMsg;
                 bowireConfirm(
                     msg,
@@ -2962,7 +2962,7 @@
             onAdd: !isActive ? function () {
                 switchWorkspace(w.id);
             } : null,
-            addTitle: !isActive ? 'Switch to this workspace' : null,
+            addTitle: !isActive ? t('main.ws.switchTo') : null,
             addIcon: 'check',
             onDrop: function (dt) { _handleWorkspaceDrop(w, dt); },
             children: children
@@ -3003,7 +3003,7 @@
                             danger: true,
                             onClick: function () {
                                 bowireConfirm(
-                                    'Remove URL "' + u + '" from this workspace? Stored headers + cached schema for this source are dropped.',
+                                    t('sidebar.removeUrlConfirm', { url: u }),
                                     function () {
                                         if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
                                         // removeServerUrl was never defined as
@@ -3138,7 +3138,7 @@
                             danger: true,
                             onClick: function () {
                                 bowireConfirm(
-                                    'Delete collection "' + (c.name || c.id) + '"? Items stored in this collection are removed.',
+                                    t('sidebar.deleteCollectionConfirm', { name: c.name || c.id }),
                                     function () {
                                         if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
                                         if (typeof deleteCollection === 'function') deleteCollection(c.id);
@@ -3245,7 +3245,7 @@
                             danger: true,
                             onClick: function () {
                                 bowireConfirm(
-                                    'Delete recording "' + (r.name || r.id) + '"? Captured steps are removed.',
+                                    t('sidebar.deleteRecordingConfirm', { name: r.name || r.id }),
                                     function () {
                                         if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
                                         if (typeof deleteRecording === 'function') deleteRecording(r.id);
@@ -3360,7 +3360,7 @@
                             danger: true,
                             onClick: function () {
                                 bowireConfirm(
-                                    'Delete environment "' + (e.name || e.id) + '"? Variables stored in this environment are removed.',
+                                    t('main.env.deleteConfirm', { name: e.name || e.id }),
                                     function () {
                                         if (w.id !== activeWorkspaceId) switchWorkspace(w.id);
                                         if (typeof deleteEnvironment === 'function') deleteEnvironment(e.id);
@@ -3771,7 +3771,7 @@
                         return;
                     }
                     bowireConfirm(
-                        'Delete request "' + (rec.name || rec.id) + '"?',
+                        t('sidebar.deleteRequestConfirm', { name: rec.name || rec.id }),
                         function () {
                             if (typeof deleteAdHocRequest === 'function') deleteAdHocRequest(rec.id);
                         },
@@ -3852,7 +3852,7 @@
                 onClick: function () {
                     var n = trash.length;
                     bowireConfirm(
-                        'Permanently delete all ' + n + ' items in trash? This cannot be undone.',
+                        t('trash.purgeAllConfirm', { count: n }),
                         function () {
                             trash.length = 0;
                             opts.persist();
@@ -4230,8 +4230,8 @@
                 'aria-pressed': routeMode ? 'true' : 'false',
                 'aria-label': t('sidebar.toggleLabelMode'),
                 title: routeMode
-                    ? 'Showing HTTP routes — click to show method names'
-                    : 'Showing method names — click to show HTTP routes',
+                    ? t('sidebar.showingRoutes')
+                    : t('sidebar.showingMethods'),
                 onClick: function () {
                     setMethodLabelMode(methodLabelMode === 'route' ? 'name' : 'route');
                     render();
@@ -4325,8 +4325,8 @@
                     + (totalFilterCount > 0 ? ' has-active' : '')
                     + (protocolFilterOpen && !filterDisabled ? ' open' : ''),
                 title: filterDisabled
-                    ? 'Protocol filter only applies in the Services view'
-                    : 'Filter by protocol',
+                    ? t('sidebar.filterServicesOnly')
+                    : t('sidebar.filterByProtocol'),
                 'aria-label': t('sidebar.filter.protocol'),
                 onClick: function (e) {
                     e.stopPropagation();
@@ -4882,7 +4882,7 @@
                 list.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding: 32px' },
                     el('div', { className: 'bowire-empty-title', textContent: t('sidebar.noMatches') }),
                     el('div', { className: 'bowire-empty-desc', textContent:
-                        'Nothing matches "' + query + '". Try a different word or press Esc to clear the search.' })
+                        t('sidebar.nothingMatches', { query: query }) })
                 ));
             }
 
@@ -5002,8 +5002,8 @@
                             type: 'button',
                             className: 'bowire-source-panel-conn-btn bowire-conn-pill-' + panelStatus,
                             title: (panelStatus === 'connected' || panelStatus === 'connecting')
-                                ? 'Disconnect from ' + originUrl
-                                : 'Re-connect to ' + originUrl,
+                                ? t('sidebar.disconnectFrom', { url: originUrl })
+                                : t('sidebar.reconnectTo', { url: originUrl }),
                             'aria-label': t('sidebar.toggleConnection'),
                             onClick: function (e) {
                                 e.stopPropagation();

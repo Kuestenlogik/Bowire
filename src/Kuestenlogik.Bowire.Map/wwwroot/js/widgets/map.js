@@ -1875,7 +1875,7 @@
             p.play.title = playbackState === 'playing' ? t('map.pause') : t('map.play');
 
             p.readout.textContent = playbackState === 'live'
-                ? 'live · ' + count
+                ? t('map.liveCount', { count: count })
                 : (idx + 1) + ' / ' + count;
         }
 

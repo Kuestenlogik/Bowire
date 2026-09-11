@@ -3669,7 +3669,7 @@ var railName = opts.railLabel || t('prereq.thisRail');
             row.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-tree-add'
-                    + (node.addIcon ? ' bowire-tree-add-' + node.addIcon : ''),
+                    + (node.addIcon ? ' bowire-tree-add-' + node.addIcon : ''),  // i18n-exempt: a CSS class name built from an icon id
                 title: node.addTitle || 'Add',
                 'aria-label': node.addTitle || 'Add',
                 innerHTML: svgIcon(node.addIcon || 'plus'),
@@ -3717,9 +3717,9 @@ var railName = opts.railLabel || t('prereq.thisRail');
             for (var i = 0; i < problem.links.length; i++) {
                 var lnk = problem.links[i];
                 if (!lnk || !lnk.href) continue;
-                var label = lnk.rel === 'configure' ? 'Configure'
-                          : lnk.rel === 'docs' ? 'Open docs'
-                          : lnk.rel === 'retry' ? 'Retry'
+                var label = lnk.rel === 'configure' ? t('problem.configure')
+                          : lnk.rel === 'docs' ? t('problem.openDocs')
+                          : lnk.rel === 'retry' ? t('intercept.retry')
                           : (lnk.rel || 'Open');
                 actions.appendChild(el('a', {
                     className: 'bowire-problem-action',

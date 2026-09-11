@@ -116,7 +116,7 @@
                 placeholder: t('main.servicePlaceholder'),
                 spellcheck: 'false',
                 title: (fr._lineageHint && fr._lineageHint.sourceMethod)
-                    ? 'Cloned from ' + fr._lineageHint.sourceMethod
+                    ? t('main.clonedFrom', { method: fr._lineageHint.sourceMethod })
                     : '',
                 onInput: function (e) { fr.service = e.target.value; }
             }));
@@ -317,8 +317,8 @@
             className: 'bowire-header-action-btn',
             textContent: t('common.cancel'),
             title: (fr._lineageHint && fr._lineageHint.sourceMethod)
-                ? 'Cancel — cloned from ' + fr._lineageHint.sourceMethod
-                : 'Discard this draft',
+                ? t('main.cancelCloned', { method: fr._lineageHint.sourceMethod })
+                : t('main.discardDraft'),
             onClick: cancelFreeformRequest
         }));
 
@@ -380,7 +380,7 @@
                 && serverUrls.indexOf(fr.serverUrl) < 0) {
                 if (typeof bowireConfirm === 'function') {
                     bowireConfirm(
-                        'Save "' + fr.serverUrl + '" as a workspace Source URL first?',
+                        t('main.saveAsSourceFirst', { url: fr.serverUrl }),
                         function () {
                             try {
                                 if (serverUrls.indexOf(fr.serverUrl) < 0) {
@@ -431,8 +431,8 @@
                 type: 'button',
                 className: 'bowire-freeform-url-mode-btn' + (fr.urlMode === 'source' ? ' is-active' : ''),
                 title: hasAnySources
-                    ? 'Bind URL to a workspace-managed Source'
-                    : 'No Source URLs in this workspace yet',
+                    ? t('main.bindUrl')
+                    : t('main.noSourceUrls'),
                 disabled: !hasAnySources,
                 textContent: t('main.fromSource'),
                 onClick: function () { _setUrlMode('source'); }
@@ -1166,8 +1166,8 @@
                     ? function (v) { saveGlobalVars(v); }
                     : function (v) { updateEnvironment(envSidebarSelectedId, { vars: v }); },
                 isGlobals
-                    ? 'Available in every environment. Override per-environment with the same key name.'
-                    : 'Use {{name}} in request body, metadata or server URL. Workspace defaults under Workspace › Variables apply when this environment has no override.'
+                    ? t('main.kv.globalHint')
+                    : t('main.kv.envHint')
             ));
         } else if (activeTab === 'secrets' && selectedEnv) {
             var envSecretsMap = (typeof getEnvSecrets === 'function') ? getEnvSecrets(selectedEnv.id) : {};
@@ -1466,8 +1466,8 @@
                     importWorkspaceJson(payload, { mode: mode, target: targetWs.id });
                     close();
                     toast(mode === 'replace'
-                        ? 'Workspace "' + targetWs.name + '" replaced'
-                        : 'Merged into "' + targetWs.name + '"', 'success');
+                        ? t('main.ws.replaced', { name: targetWs.name })
+                        : t('main.ws.merged', { name: targetWs.name }), 'success');
                     try { window.location.reload(); } catch { /* ignore */ }
                 }
             } catch (e) {
@@ -2156,8 +2156,8 @@
                 className: 'bowire-ws-detail-action-btn',
                 textContent: _dirty ? t('main.ws.saveNow') : t('main.ws.saved'),
                 title: _dirty
-                    ? 'Force-flush every persist slot. Same as Cmd/Ctrl+S.'
-                    : 'Nothing pending — every autosave slot is already on disk.',
+                    ? t('main.ws.flushHint')
+                    : t('main.ws.nothingPending'),
                 onClick: function () {
                     if (typeof flushAllPersists === 'function') flushAllPersists();
                 }
@@ -2682,8 +2682,8 @@
                     textContent: t('main.ws.browserOnly') }),
                 el('span', { className: 'bowire-ws-detail-storage-toggle-hint',
                     textContent: browserOnly
-                        ? 'localStorage is the only store. Browser clear = data loss; ~5-10 MB quota.'
-                        : 'Default: ~/.bowire/workspaces/' + ws.id + '/. Browser cache as best-effort, survives quota errors.' })
+                        ? t('main.ws.localOnly')
+                        : t('main.ws.diskStore', { id: ws.id }) })
             )
         );
 
@@ -3025,10 +3025,10 @@
                     // copy; soft-delete keeps the v2.1 copy verbatim.
                     var mode = (typeof getWorkspaceDeleteMode === 'function')
                         ? getWorkspaceDeleteMode() : 'soft';
-                    var hardMsg = 'This workspace will be deleted IMMEDIATELY. Undo will work for the next ~200 actions, but it won’live be in the Trash. Continue?';
+                    var hardMsg = t('main.ws.hardDeleteAsk');
                     var softMsg = isLast
-                        ? 'Delete the last workspace "' + wsName + '"? You will return to the empty no-workspace state — URLs / envs / recordings scoped to this workspace are removed.'
-                        : 'Delete workspace "' + wsName + '"? URLs / envs / recordings scoped to this workspace are removed.';
+                        ? t('main.ws.deleteLastConfirm', { name: wsName })
+                        : t('main.ws.deleteConfirm', { name: wsName });
                     var msg = mode === 'hard' ? hardMsg : softMsg;
                     bowireConfirm(
                         msg,
@@ -3359,8 +3359,8 @@
                 className: 'bowire-ws-detail-stat-hint',
                 style: 'margin-bottom:8px',
                 textContent: masked
-                    ? 'No secrets yet. Secrets are session-only — Phase 5 wraps an OS keyring.'
-                    : 'No variables yet.'
+                    ? t('main.kv.noSecrets')
+                    : t('main.kv.noVariables')
             }));
         }
 
@@ -3835,7 +3835,7 @@
                         var envId = e.id;
                         var envName = e.name || '(unnamed)';
                         bowireConfirm(
-                            'Delete environment "' + envName + '"? Variables stored in this environment are removed.',
+                            t('main.env.deleteConfirm', { name: envName }),
                             function () {
                                 if (typeof deleteEnvironment === 'function') deleteEnvironment(envId);
                                 render();
@@ -4021,7 +4021,7 @@
                         ? ((typeof catalogueProviderLabel === 'function' && catalogueProviderLabel())
                             || 'The catalogue') + ' knows about ' + catN + ' service'
                             + (catN === 1 ? '' : 's') + '. Add the ones this workspace talks to.'
-                        : 'No URLs configured yet. Add one via the + button in the sidebar to start discovery.',
+                        : t('main.src.noUrlsYet'),
                     actions: emptyActions
                 })
             ));
@@ -4069,7 +4069,7 @@
             el('span', {
                 className: 'bowire-conn-pill-dot bowire-conn-pill-dot-' + status,
                 style: 'width:20px;height:20px;border-radius:50%;flex-shrink:0;'
-                    + (dotColor ? ('background:' + dotColor + ';') : '')
+                    + (dotColor ? ('background:' + dotColor + ';') : '')  // i18n-exempt: a CSS declaration
             }),
             el('input', {
                 type: 'text',
@@ -4252,8 +4252,8 @@
             el('div', { className: 'bowire-sources-dropzone-icon', innerHTML: svgIcon('upload') }),
             el('div', { className: 'bowire-sources-dropzone-title',
                 textContent: matchingSchemas.length === 0
-                    ? 'Upload schema files'
-                    : 'Add more schema files' }),
+                    ? t('main.src.uploadSchemas')
+                    : t('main.src.addMoreSchemas') }),
             el('div', { className: 'bowire-sources-dropzone-hint',
                 textContent: t('main.src.dropHint') })
         );
@@ -4358,7 +4358,7 @@
                     onClick: function () {
                         var snapshot = u;
                         bowireConfirm(
-                            'Remove "' + snapshot + '" from the workspace? Discovered services for this URL are dropped from the in-memory cache.',
+                            t('main.src.removeConfirm', { url: snapshot }),
                             function () {
                                 if (typeof removeServerUrl === 'function') removeServerUrl(snapshot);
                                 else {
@@ -4557,8 +4557,8 @@
             'data-protocol': proto || 'default',
             'data-direction': dir,
             title: available
-                ? 'Open in Discover · right-click for actions'
-                : 'Method no longer in discovery — connect to its server to use it',
+                ? t('main.openInDiscover')
+                : t('main.methodGone'),
             onClick: function () {
                 if (!available) return;
                 railMode = 'discover';
@@ -5165,8 +5165,8 @@
             srcWrap.appendChild(el('p', {
                 className: 'bowire-sources-subtitle',
                 textContent: config.lockServerUrl
-                    ? 'URLs configured by the host — read-only.'
-                    : 'Discovery URLs and schema files. Drop a schema below to import; type a URL to add it.'
+                    ? t('main.src.hostManaged')
+                    : t('main.src.urlsHint')
             }));
             srcWrap.appendChild(el('h3', { className: 'bowire-sources-section', textContent: t('main.src.discoveryUrls') }));
             // Reuse the sidebar's URL bar at full main-pane width.
@@ -5184,9 +5184,9 @@
         var mainViewKey = sidebarView === 'environments'
             ? 'env'
             : sidebarView === 'flows'
-                ? 'flows-' + ((typeof flowEditorSelectedId !== 'undefined' && flowEditorSelectedId) || 'none')
+                ? 'flows-' + ((typeof flowEditorSelectedId !== 'undefined' && flowEditorSelectedId) || 'none')  // i18n-exempt: a state key, not shown
                 : sidebarView === 'intercept'
-                    ? 'intercept-' + (typeof interceptSubView !== 'undefined' ? interceptSubView : 'captured')
+                    ? 'intercept-' + (typeof interceptSubView !== 'undefined' ? interceptSubView : 'captured')  // i18n-exempt: a state key, not shown
                         + '-' + (typeof interceptedFlowSelectedId !== 'undefined' ? (interceptedFlowSelectedId || 'none') : 'none')
                     : freeformRequest
                         ? 'freeform'
@@ -5717,8 +5717,8 @@
                                     className: 'bowire-header-presets-default'
                                         + (preset.isDefault ? ' is-on' : ''),
                                     title: preset.isDefault
-                                        ? 'Default preset — click to clear'
-                                        : 'Set as default for this method',
+                                        ? t('main.preset.defaultOn')
+                                        : t('main.preset.setDefault'),
                                     'aria-label': t('main.presets.toggleDefault'),
                                     innerHTML: svgIcon(preset.isDefault ? 'starFilled' : 'star'),
                                     onClick: function (ev) {
@@ -6033,8 +6033,8 @@
                             role: 'menuitem',
                             disabled: lastCallOk ? undefined : true,
                             title: lastCallOk
-                                ? 'Add this method to a benchmark envelope'
-                                : 'Execute a successful call first — envelopes need a known-good request',
+                                ? t('main.toBenchmark')
+                                : t('main.needGoodCall'),
                             onClick: function (ev) {
                                 if (!lastCallOk) return;
                                 var snap = bowireSnapshotDiscoverRequest();
@@ -6297,7 +6297,7 @@
             tabScroll.appendChild(el('button', {
                 className: 'bowire-request-tab-new',
                 title: selectedMethod && selectedService
-                    ? 'Pin current method into a new tab (Shift-click for empty tab)'
+                    ? t('main.tab.pinCurrent')
                     : (hasUrl ? t('main.tab.newPickMethod') : t('main.tab.new')),
                 onClick: function (e) {
                     var forceEmpty = e && e.shiftKey;
@@ -6515,7 +6515,9 @@
         // sub-tab strip below ("Form / Body") doesn't read as the
         // nonsensical "Body > Body". Multi-message methods keep their
         // count-aware "Messages (N)" label.
-        const bodyTabLabel = isMultiMessage ? 'Messages (' + requestMessages.length + ')' : 'Payload';
+        const bodyTabLabel = isMultiMessage
+    ? t('main.tab.messages', { count: requestMessages.length })
+    : t('main.tab.payload');
         const bodyTab = el('div', {
             id: 'bowire-request-tab-body',
             className: `bowire-tab ${activeRequestTab === 'body' ? 'active' : ''}`,
@@ -6895,7 +6897,7 @@
 
                 if (websocketPendingBinary) {
                     wsBox.appendChild(el('div', { className: 'bowire-ws-pending', textContent:
-                        '\u2713 Binary payload ready (' + websocketPendingBinary.length + ' base64 chars)' }));
+                        t('main.binaryReady', { chars: websocketPendingBinary.length }) }));
                 }
             }
 
@@ -7361,8 +7363,8 @@
 
             if (filtered.length === 0) {
                 var emptyText = (historySearchQuery || historyStatusFilter !== 'all')
-                    ? 'No history matches the current search / filter.'
-                    : 'No history for this method yet.';
+                    ? t('main.history.noMatch')
+                    : t('main.history.none');
                 historyContent.appendChild(el('div', { className: 'bowire-empty-state', style: 'padding: 40px' },
                     el('div', { className: 'bowire-empty-desc', textContent: emptyText })
                 ));
@@ -7920,8 +7922,8 @@
         var input = el('textarea', {
             className: 'bowire-script-gen-input',
             placeholder: phase === 'pre'
-                ? 'sign the body with my HMAC secret using sha256'
-                : 'capture the response token and assert status is OK',
+                ? t('main.script.exampleSign')
+                : t('main.script.exampleCapture'),
             rows: 2
         });
         var status = el('div', { className: 'bowire-script-gen-status' });
@@ -8004,7 +8006,7 @@
             '- Use only members the surface above lists.',
             '- Prefer ctx.env.get(...) over hard-coded secrets.',
             '- Keep the snippet idempotent where possible.',
-            methodSchema ? ('Method schema: ' + methodSchema) : ''
+            methodSchema ? t('main.methodSchema', { schema: methodSchema }) : ''
         ].filter(Boolean).join('\n');
         var body = {
             messages: [
@@ -8266,8 +8268,8 @@
                 className: 'bowire-udp-badge' + (udp.text !== null ? ' bowire-udp-text' : ' bowire-udp-binary'),
                 textContent: udp.text !== null ? 'UDP' : 'UDP·BIN',  // i18n-exempt: the protocol badge beside the frame
                 title: udp.text !== null
-                    ? 'UTF-8 text datagram from ' + udp.source
-                    : 'Binary datagram from ' + udp.source
+                    ? t('main.udp.textFrom', { source: udp.source })
+                    : t('main.udp.binaryFrom', { source: udp.source })
             }));
             item.appendChild(el('span', {
                 className: 'bowire-stream-list-preview',
@@ -8480,8 +8482,8 @@
             className: 'bowire-stream-toolbar-btn' + (streamDetailMaximized ? ' is-on' : ''),
             id: 'bowire-stream-maximize-btn',
             title: streamDetailMaximized
-                ? 'Show the message list'
-                : 'Hide the message list — full detail view',
+                ? t('main.stream.showListTitle')
+                : t('main.stream.hideListTitle'),
             onClick: function () {
                 streamDetailMaximized = !streamDetailMaximized;
                 var out = document.getElementById('bowire-stream-output');
@@ -8490,8 +8492,8 @@
                 if (btn) {
                     btn.classList.toggle('is-on', streamDetailMaximized);
                     btn.title = streamDetailMaximized
-                        ? 'Show the message list'
-                        : 'Hide the message list — full detail view';
+                        ? t('main.stream.showListTitle')
+                        : t('main.stream.hideListTitle');
                     var label = btn.querySelector('span');
                     if (label) label.textContent = streamDetailMaximized ? t('main.stream.showList') : t('main.stream.hideList');
                 }
@@ -8672,7 +8674,7 @@
             id: 'bowire-stream-state-badge',
             'data-bowire-state': state,
             title: entry && entry.channelError
-                ? ('Error: ' + entry.channelError)
+                ? t('main.errorPrefix', { error: entry.channelError })
                 : (label + ' · ' + count + ' message' + (count === 1 ? '' : 's'))
         });
         pill.appendChild(el('span', {
@@ -8727,7 +8729,7 @@
             className: 'bowire-stream-toolbar-btn' + ((streamFilterPanelOpen || hasFilter) ? ' is-on' : ''),
             id: 'bowire-stream-filter-toggle',
             title: streamFilterPanelOpen
-                ? 'Hide filter panel'
+                ? t('main.stream.hideFilter')
                 : (hasFilter ? t('main.stream.filterActive') : t('main.stream.openFilter')),
             onClick: function () {
                 streamFilterPanelOpen = !streamFilterPanelOpen;
@@ -8740,8 +8742,8 @@
         });
         filterToggle.appendChild(el('span', {
             textContent: hasFilter
-                ? '\u25bc Filter \u00b7 on'
-                : '\u25bc Filter'
+                ? t('main.stream.filterOn')
+                : t('main.stream.filter')
         }));
         toolbar.appendChild(filterToggle);
 
@@ -8754,8 +8756,8 @@
             className: 'bowire-stream-toolbar-btn' + (streamAutoScroll ? ' is-on' : ''),
             id: 'bowire-stream-autoscroll-btn',
             title: streamAutoScroll
-                ? 'Following the latest message \u2014 click to pin the current selection'
-                : 'Pinned to current selection \u2014 click to follow the latest',
+                ? t('main.stream.followingTitle')
+                : t('main.stream.pinnedTitle'),
             onClick: function () { setStreamAutoScroll(!streamAutoScroll); }
         });
         autoBtn.appendChild(el('span', {
@@ -9039,8 +9041,8 @@
             el('button', {
                 className: 'bowire-widget-pane-maximize',
                 title: widgetPaneMaximized
-                    ? 'Restore widget to its slot (Esc)'
-                    : 'Maximize widget to fill the window',
+                    ? t('main.widget.restore')
+                    : t('init.maximizeWidget'),
                 onClick: function () {
                     // Toggle the CSS class directly without calling
                     // render(). Every render() pass tears the widget
@@ -9058,8 +9060,8 @@
                     if (pane) pane.classList.toggle('is-maximized', widgetPaneMaximized);
                     this.innerHTML = bowireLayoutIcon(widgetPaneMaximized ? 'minimize' : 'maximize');
                     this.title = widgetPaneMaximized
-                        ? 'Restore widget to its slot (Esc)'
-                        : 'Maximize widget to fill the window';
+                        ? t('main.widget.restore')
+                        : t('init.maximizeWidget');
                 },
                 innerHTML: bowireLayoutIcon(widgetPaneMaximized ? 'minimize' : 'maximize')
             }),
@@ -9221,16 +9223,16 @@
             el('button', {
                 className: 'bowire-widget-pane-maximize',
                 title: widgetPaneMaximized
-                    ? 'Restore widget to its slot (Esc)'
-                    : 'Maximize widget to fill the window',
+                    ? t('main.widget.restore')
+                    : t('init.maximizeWidget'),
                 onClick: function () {
                     widgetPaneMaximized = !widgetPaneMaximized;
                     var p = document.querySelector('.bowire-widget-pane');
                     if (p) p.classList.toggle('is-maximized', widgetPaneMaximized);
                     this.innerHTML = bowireLayoutIcon(widgetPaneMaximized ? 'minimize' : 'maximize');
                     this.title = widgetPaneMaximized
-                        ? 'Restore widget to its slot (Esc)'
-                        : 'Maximize widget to fill the window';
+                        ? t('main.widget.restore')
+                        : t('init.maximizeWidget');
                 },
                 innerHTML: bowireLayoutIcon(widgetPaneMaximized ? 'minimize' : 'maximize')
             }),
@@ -9745,8 +9747,8 @@
 
         // Item 1 — Copy ${response.X}
         var chainVar = ctx.jsonPath
-            ? '${response.' + ctx.jsonPath + '}'
-            : '${response}';
+            ? '${response.' + ctx.jsonPath + '}'  // i18n-exempt: Bowire's own variable syntax, inserted into the script
+            : '${response}';  // i18n-exempt: Bowire's own variable syntax, inserted into the script
         addItem('Copy ' + chainVar, function () {
             navigator.clipboard.writeText(chainVar).then(
                 function () { toast(t('status.copied', { what: chainVar }), 'success'); },
@@ -10035,8 +10037,8 @@
         if (btn) {
             btn.classList.toggle('is-on', streamAutoScroll);
             btn.title = streamAutoScroll
-                ? 'Following the latest message \u2014 click to pin the current selection'
-                : 'Pinned to current selection \u2014 click to follow the latest';
+                ? t('main.stream.followingTitle')
+                : t('main.stream.pinnedTitle');
             var label = btn.querySelector('span');
             if (label) label.textContent = streamAutoScroll ? t('main.stream.followLatest') : t('main.stream.pinned');
         }
@@ -10301,7 +10303,8 @@
                             var idx = streamEffectiveIndex();
                             var text = idx >= 0 ? streamMessageRaw(streamMessages[idx]) : '';
                             navigator.clipboard.writeText(text).then(function () {
-                                toast(idx >= 0 ? ('Copied message #' + (idx + 1)) : 'Copied response', 'success');
+                                toast(idx >= 0 ? t('main.copiedMessage', { n: idx + 1 })
+    : t('main.copiedResponse'), 'success');
                             });
                             return;
                         }
@@ -10550,7 +10553,7 @@
             if (gqlErrors) {
                 var banner = el('div', { className: 'bowire-graphql-errors-banner' },
                     el('div', { className: 'bowire-graphql-errors-title', textContent:
-                        '\u26A0 GraphQL errors (' + gqlErrors.length + ')' })
+                        t('main.gqlErrors', { count: gqlErrors.length }) })
                 );
                 for (var ei = 0; ei < gqlErrors.length; ei++) {
                     var errMsg = (gqlErrors[ei] && gqlErrors[ei].message) || JSON.stringify(gqlErrors[ei]);
@@ -10623,7 +10626,7 @@ t(mcpContent.count === 1 ? 'main.mcp.itemOne' : 'main.mcp.itemMany',
                 // wrapping `renderResponseWithWidgets` does below.
                 var unaryViewer = renderJsonViewer(responseData, { wrap: false });
                 var ctMeta = (selectedService && selectedMethod && responseData)
-                    ? 'application/json'
+                    ? 'application/json'  // i18n-exempt: a MIME type
                     : '';
                 var methodName = (selectedMethod && selectedMethod.name)
                     ? selectedMethod.name.replace(/[^A-Za-z0-9_-]+/g, '-')

@@ -936,7 +936,7 @@
                         onClick: function () {
                             var n = flowsList.length;
                             bowireConfirm(
-                                'Delete all ' + n + ' flows?',
+                                t('flows.deleteAllConfirm', { count: n }),
                                 function () {
                                     flowsList.length = 0;
                                     flowEditorSelectedId = null;
@@ -1116,8 +1116,8 @@
                 icon: 'flow',
                 headline: hasFlows ? t('flows.pickOne') : t('flows.noneYet'),
                 body: hasFlows
-                    ? 'Choose a flow from the sidebar list to edit its nodes, run it, or convert it into a collection.'
-                    : 'Flows chain multiple API calls together — pass the response from one into the request body of the next. Build one from scratch or start from a recording.',
+                    ? t('flows.pickHint')
+                    : t('flows.emptyHint'),
                 actions: hasFlows ? [] : [
                     {
                         label: t('flows.new'),
@@ -1300,9 +1300,9 @@
             el('span', { className: 'bowire-flow-watch-title', textContent: t('rb.tab.vars') }),
             el('span', { className: 'bowire-flow-watch-state',
                 textContent: flowRunStatus === 'running'
-                    ? 'running…'
+                    ? t('flows.runningLower')
                     : flowRunStatus === 'done'
-                        ? 'last run complete'
+                        ? t('flows.lastRunComplete')
                         : 'idle' })
         ));
 
@@ -1310,8 +1310,8 @@
         if (entries.length === 0) {
             panel.appendChild(el('div', { className: 'bowire-flow-watch-empty',
                 textContent: flowRunStatus === null
-                    ? 'No variables yet — Variable / Foreach nodes show their live bindings here during the run.'
-                    : 'No flow-var bindings produced by this run.'
+                    ? t('flows.noVarsYet')
+                    : t('flows.noVarsFromRun')
             }));
             return panel;
         }
@@ -1484,10 +1484,17 @@
                 } else if (node.type === 'loop') {
                     var loopTypeForLabel = node.loopType || 'count';
                     var loopLabel = loopTypeForLabel === 'while'
-                        ? 'While ' + (node.conditionPath || '') + ' ' + opLabel(node.conditionOp) + ' ' + (node.conditionValue || '')
+                        ? t('flows.whileSummary', {
+    path: node.conditionPath || '',
+    op: opLabel(node.conditionOp),
+    value: node.conditionValue || ''
+})
                         : loopTypeForLabel === 'foreach'
-                            ? 'Foreach over ' + (node.loopSource || '?') + ' as ${' + (node.loopItemVar || 'item') + '}'
-                            : 'Repeat ' + (node.loopCount || 1) + '\u00D7';
+                            ? t('flows.foreachSummary', {
+    source: node.loopSource || '?',
+    variable: '{{' + (node.loopItemVar || 'item') + '}}'
+})
+                            : t('flows.repeatSummary', { count: node.loopCount || 1 });
                     content.appendChild(el('div', { className: 'bowire-flow-card-title', textContent: t('flows.nodeLoop') }));
                     content.appendChild(el('div', { className: 'bowire-flow-card-subtitle', textContent: loopLabel }));
                 }
@@ -2163,7 +2170,7 @@
                     node.assertions[idx].target = e.target.value;
                     // Keep .path in sync so legacy code paths still resolve.
                     node.assertions[idx].path = currentKind === 'header'
-                        ? 'header:' + e.target.value
+                        ? 'header:' + e.target.value  // i18n-exempt: a filter expression, not prose
                         : e.target.value;
                     persistFlows();
                 },

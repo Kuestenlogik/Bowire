@@ -673,7 +673,7 @@
                 : (isExecuting && isStreaming ? 'bowire-action-stop-btn' : 'bowire-action-execute-btn'),
             className: btnClass + ' bowire-split-btn-main',
             title: (isStreaming && !streamSubLive)
-                ? 'Subscribe (Ctrl+Enter) — opens a server-streaming subscription'
+                ? t('perf.subscribeTitle')
                 : btnText + ' (Ctrl+Enter)',
             onClick: btnOnClick
         },
@@ -703,8 +703,8 @@
                     className: 'bowire-action-execute-menu-item' + (canBench ? '' : ' is-disabled'),
                     disabled: canBench ? undefined : true,
                     title: canBench
-                        ? 'Create a benchmark spec from this request and open it'
-                        : 'Execute a successful call first — benchmarks need a known-good request',
+                        ? t('perf.toBenchmark')
+                        : t('perf.needGoodCall'),
                     onClick: function (e) {
                         menu.remove();
                         if (!canBench) return;
@@ -774,8 +774,8 @@
                     className: 'bowire-action-execute-menu-item' + (canClone ? '' : ' is-disabled'),
                     disabled: canClone ? undefined : true,
                     title: canClone
-                        ? 'Open a New Request editor pre-filled from this method — edit URL / method / body, then Execute or Save'
-                        : 'Pick a discovered method first',
+                        ? t('perf.openNewRequest')
+                        : t('perf.pickMethodFirst'),
                     onClick: function () {
                         menu.remove();
                         if (!canClone) return;
@@ -969,7 +969,7 @@
             list.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-run-preset-item' + (preset.isDefault ? ' is-default' : ''),
-                title: preset.isDefault ? 'Default preset for this method' : preset.name,
+                title: preset.isDefault ? t('perf.defaultPreset') : preset.name,
                 onClick: function () {
                     overlay.remove();
                     if (typeof applyPresetToCurrentMethod === 'function'
@@ -1069,8 +1069,8 @@
             id: active ? 'bowire-recording-stop-btn' : 'bowire-recording-start-btn',
             className: 'bowire-console-toggle bowire-recording-toggle' + (active ? ' active' : ''),
             title: active
-                ? 'Recording — click to stop. Shift-click to switch to Recordings mode.'
-                : 'Start recording a sequence of calls. Shift-click to switch to Recordings mode.',
+                ? t('perf.recordingOn')
+                : t('perf.recordingStart'),
             onClick: function (e) {
                 if (e.shiftKey) {
                     // #133 Phase 3 — switch to the rail mode instead

@@ -141,7 +141,7 @@ function renderRollupMain() {
             // the operator's problem to fix.
             body: bowireRollup.summary && bowireRollup.summary.skipped
                 ? t('rollup.skipped', { count: bowireRollup.summary.skipped })
-                : 'Nothing under those paths looked like a Bowire report.',
+                : t('rollup.nothingRecognised'),
         }));
     } else {
         var head = el('tr', {}, [

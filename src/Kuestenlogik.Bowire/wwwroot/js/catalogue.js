@@ -288,7 +288,8 @@
         if (catalogueAdoptedUrls) catalogueAdoptedUrls[entryUrl] = false;
         if (typeof persistServerUrls === 'function') persistServerUrls();
         if (typeof toast === 'function') {
-            toast(wasNew ? ('Added ' + entryUrl) : (entryUrl + ' is already in this workspace'),
+            toast(wasNew ? t('catalogue.added2', { url: entryUrl })
+    : t('catalogue.alreadyIn', { url: entryUrl }),
                 wasNew ? 'success' : 'info');
         }
         // Only probe when we actually introduced a new target — clicking
@@ -379,8 +380,7 @@
                     };
                     if (pending.length > 25 && typeof bowireConfirm === 'function') {
                         bowireConfirm(
-                            'Add all ' + pending.length + ' catalogue entries to this workspace? '
-                            + 'Discovery probes every one of them.',
+                            t('catalogue.addAllConfirmBody', { count: pending.length }),
                             run,
                             { title: t('catalogue.addAllHeading'),
                                 confirmText: t('catalogue.addAllConfirm', { count: pending.length }) }
@@ -469,7 +469,7 @@
                 list.appendChild(el('p', {
                     className: 'bowire-catalogue-empty',
                     textContent: catalogueHasEntries()
-                        ? 'No entry matches this filter.'
+                        ? t('catalogue.noMatch')
                         : (catalogueProviderLabel() || 'The catalogue') + ' returned no entries.'
                 }));
                 return;
@@ -540,7 +540,7 @@
             // `disabled="false"` would grey out every Add button.
             disabled: (already || readOnly) ? 'disabled' : undefined,
             title: readOnly
-                ? 'This catalogue is read-only — URL management is disabled by the host.'
+                ? t('catalogue.readOnly')
                 : (already ? t('catalogue.alreadyHere')
     : t('catalogue.addToWorkspace', { url: entryUrl })),
             onClick: function (e) {
@@ -600,8 +600,8 @@
         paint();
 
         var title = opts.workspace && opts.workspace.name
-            ? 'Add to ' + opts.workspace.name
-            : 'Browse catalogue';
+            ? t('catalogue.addToNamed', { name: opts.workspace.name })
+            : t('sidebar.browseCatalogue');
 
         var footer = el('div', { className: 'bowire-catalogue-footer' });
         if (typeof opts.onManual === 'function' && catalogueVisibility() === 'editable') {

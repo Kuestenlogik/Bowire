@@ -123,7 +123,7 @@
             try {
                 var token3 = await fetchCustomToken(auth);
                 if (token3 && !metadataHasKey(out, 'Authorization')) {
-                    var prefix = (auth.tokenPrefix == null ? 'Bearer ' : auth.tokenPrefix);
+                    var prefix = (auth.tokenPrefix == null ? 'Bearer ' : auth.tokenPrefix);  // i18n-exempt: the Authorization scheme prefix
                     out['Authorization'] = prefix + token3;
                 }
             } catch (e) {

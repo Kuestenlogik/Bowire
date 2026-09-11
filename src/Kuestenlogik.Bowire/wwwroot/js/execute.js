@@ -580,8 +580,8 @@
         btn.classList.toggle('is-on', !consoleAutoScroll);
         btn.setAttribute('aria-pressed', !consoleAutoScroll ? 'true' : 'false');
         btn.title = consoleAutoScroll
-            ? 'Auto-scroll is active — click to pin view'
-            : 'View pinned — click to follow tail';
+            ? t('console.autoScrollOn')
+            : t('console.viewPinned');
     }
 
     // Shared label tables used by both the chip row (toolbar) and
@@ -826,8 +826,8 @@
             id: 'bowire-console-pin-btn',
             className: 'bowire-console-toolbar-btn' + (!consoleAutoScroll ? ' is-on' : ''),
             title: consoleAutoScroll
-                ? 'Auto-scroll is active — click to pin view'
-                : 'View pinned — click to follow tail',
+                ? t('console.autoScrollOn')
+                : t('console.viewPinned'),
             'aria-label': t('console.autoScroll'),
             'aria-pressed': !consoleAutoScroll ? 'true' : 'false',
             innerHTML: svgIcon('pin'),
@@ -854,8 +854,10 @@
             type: 'button',
             className: 'bowire-console-toolbar-btn',
             title: hasSel
-                ? 'Download selection (' + consoleSelected.size + ' entr' + (consoleSelected.size === 1 ? 'y' : 'ies') + ')'
-                : 'Download entire log (' + consoleLog.length + ')',
+                // #688 - one message, two shapes.
+                ? t(consoleSelected.size === 1 ? 'console.downloadSelectionOne'
+    : 'console.downloadSelectionMany', { count: consoleSelected.size })
+: t('console.downloadAllCount', { count: consoleLog.length }),
             'aria-label': hasSel ? t('console.downloadSelection') : t('console.downloadAll'),
             innerHTML: svgIcon('download'),
             onClick: function () {

@@ -384,8 +384,10 @@ test('a shared instance says the lists are yours', async () => {
     // a machine other people also use.
     const f = await ready(ADA);
 
-    assert.equal(f.label('Recordings'), 'Your recordings');
-    assert.equal(f.label('Collections'), 'Your collections');
+    // #117 — the noun goes in as the caller wants it read, here and in
+    // ownedEmpty; neither lowercases an English word any more.
+    assert.equal(f.label('recordings'), 'Your recordings');
+    assert.equal(f.label('Sammlungen'), 'Your Sammlungen');
 });
 
 test('a single-user install leaves the wording alone', async () => {

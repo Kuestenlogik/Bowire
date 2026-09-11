@@ -196,7 +196,7 @@
             var headersObj = Object.assign({ 'Content-Type': 'application/json' }, ctx.metadata);
             var headersJs = JSON.stringify(headersObj, null, 2);
             var bodyArg = (verb !== 'GET' && verb !== 'DELETE' && verb !== 'HEAD')
-                ? ',\n  body: ' + JSON.stringify(buildHttpBody(ctx))
+                ? ',\n  body: ' + JSON.stringify(buildHttpBody(ctx))  // i18n-exempt: part of the generated snippet
                 : '';
             return 'const response = await fetch(' + JSON.stringify(url) + ', {\n' +
                 '  method: ' + JSON.stringify(verb) + ',\n' +

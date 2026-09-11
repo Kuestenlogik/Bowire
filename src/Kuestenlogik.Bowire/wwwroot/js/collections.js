@@ -607,12 +607,14 @@
             parallelSessionsState.status = 'done';
             parallelSessionsState.durationMs = performance.now() - startMs;
             toast(
-                'Distributed run finished — '
-                + (json.passCount || 0) + ' passed, '
-                + (json.failCount || 0) + ' failed'
-                + ' across ' + (json.hosts || []).length + ' host'
-                + ((json.hosts || []).length === 1 ? '' : 's')
-                + ' in ' + Math.round(parallelSessionsState.durationMs) + ' ms',
+                // #688 - one message, two shapes.
+                t((json.hosts || []).length === 1
+                    ? 'parallel.distributedDoneOne' : 'parallel.distributedDoneMany', {
+                    passed: json.passCount || 0,
+                    failed: json.failCount || 0,
+                    hosts: (json.hosts || []).length,
+                    ms: Math.round(parallelSessionsState.durationMs)
+                }),
                 (json.failCount || 0) === 0 ? 'success' : 'error'
             );
             render();

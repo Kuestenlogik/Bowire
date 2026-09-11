@@ -2107,7 +2107,7 @@
             // origin) and is never empty.
             name: (uiMode === 'embedded' && config && config.hostName)
                 ? config.hostName
-                : 'Personal',
+                : 'Personal',  // i18n-exempt: a default written into the workspace and carried out through the .bww export
             color: '#6366f1',
             createdAt: Date.now(),
             lastOpenedAt: Date.now(),
@@ -2548,8 +2548,7 @@
         if (!hit) return false;
         if (typeof toast === 'function') {
             toast(
-                'A workspace named "' + (hit.workspace.name || name)
-                + '" is in the trash — restore it or purge it from the trash first.',
+                t('main.ws.inTrash', { name: hit.workspace.name || name }),
                 'error',
                 { duration: 6000 }
             );
@@ -4595,7 +4594,7 @@
         }
         // Reset dirty tracker — every persist slot just got written.
         _hasUnflushedChanges = false;
-        markSaved(fail > 0 ? ('flush (' + ok + ' ok, ' + fail + ' err)') : 'all');
+        markSaved(fail > 0 ? ('flush (' + ok + ' ok, ' + fail + ' err)') : 'all');  // i18n-exempt: a save-state marker, not shown as prose
         // The markSaved above re-set _hasUnflushedChanges=true because
         // _flushInProgress is now false. Clear it again — the flush
         // itself isn't new dirty state.
@@ -4674,9 +4673,7 @@
             setTimeout(function () {
                 if (typeof toast === 'function') {
                     toast(
-                        'Bowire upgraded from v' + stored + ' to v' + current
-                        + ' — workbench layout reset to defaults. Your data '
-                        + '(workspaces, recordings, environments, collections, …) is untouched.',
+                        t('main.upgraded', { from: stored, to: current }),
                         'info',
                         { duration: 8000 }
                     );

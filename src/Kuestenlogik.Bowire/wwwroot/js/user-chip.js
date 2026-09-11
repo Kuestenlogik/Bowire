@@ -37,7 +37,10 @@
 
     /** "Your recordings" where several people share an instance, else "Recordings". */
     function ownedLabel(noun) {
-        return isMultiTenant() ? 'Your ' + noun.toLowerCase() : noun;
+        // Same shape as ownedEmpty below, and the same fix: `noun` arrives
+        // already translated, so neither the word order nor the casing has
+        // to be guessed from English here.
+        return isMultiTenant() ? t('main.ownedYours', { noun: noun }) : noun;
     }
 
     /**

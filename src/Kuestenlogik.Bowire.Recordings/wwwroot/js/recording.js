@@ -2071,8 +2071,8 @@ toast(t(steps.length === 1 ? 'rec.importedOne' : 'rec.importedMany',
                 className: 'bowire-tab' + (_detailTab === 'timeline' ? ' active' : '')
                     + (_hasSteps ? '' : ' disabled'),
                 title: _hasSteps
-                    ? 'One lane per protocol on a shared time axis, correlated on a shared id'
-                    : 'Nothing to correlate — this recording has no steps yet',
+                    ? t('rec.timelineHint')
+                    : t('rec.nothingToCorrelate'),
                 textContent: t('rec.timeline'),
                 onClick: function () {
                     var live = recordingsList.find(function (r) { return r.id === recordingManagerSelectedId; });
@@ -2105,8 +2105,8 @@ toast(t(steps.length === 1 ? 'rec.importedOne' : 'rec.importedMany',
         if (rec.steps.length === 0) {
             stepsPane.appendChild(el('div', { className: 'bowire-recording-empty',
                 textContent: rec.id === recordingActiveId
-                    ? 'Recording in progress. Make a few calls and they will appear here.'
-                    : 'This recording has no steps yet.' }));
+                    ? t('rec.inProgressHint')
+                    : t('rec.noSteps') }));
         } else {
             for (var i = 0; i < rec.steps.length; i++) {
                 stepsPane.appendChild(renderRecordingStepRow(rec, i));
@@ -2460,7 +2460,7 @@ toast(t(steps.length === 1 ? 'rec.importedOne' : 'rec.importedMany',
                     onClick: function () {
                         var n = recordingsList.length;
                         bowireConfirm(
-                            'Move all ' + n + ' recordings to trash?',
+                            t('rec.trashAllConfirm', { count: n }),
                             function () {
                                 var removed = recordingsList.map(function (r, idx) {
                                     return { entry: r, originalIdx: idx, deletedAt: Date.now() };
@@ -2695,8 +2695,8 @@ toast(trashed(removed.length === 1 ? 'rec.movedToTrashOne' : 'rec.movedToTrashMa
                 icon: 'recording',
                 headline: noRecs ? t('rec.noneYet') : t('rec.pickOne'),
                 body: noRecs
-                    ? 'Recordings capture a sequence of live calls so you can replay them, build mocks, or run them as benchmarks. Start one, then invoke methods from Discover.'
-                    : 'Pick a recording from the sidebar list to see its steps and actions.',
+                    ? t('rec.emptyHint')
+                    : t('rec.pickHint'),
                 actions: noRecs ? [
                     { label: t('sidebar.recordings.start'), primary: true, onClick: function () {
                         startRecording();

@@ -167,7 +167,7 @@
         } catch (e) {
             services = [];
             discoveryErrors['(embedded)'] = e.name === 'AbortError'
-                ? 'Discovery timed out after 12 s'
+                ? t('main.src.discoveryTimeout')
                 : e.message;
         }
 
@@ -666,7 +666,7 @@
         } catch (e) {
             connectionStatuses[url] = 'error';
             discoveryErrors[url] = e.name === 'AbortError'
-                ? 'Discovery timed out after 12 s'
+                ? t('main.src.discoveryTimeout')
                 : (e.message || 'Connection failed');
             return [];
         } finally {

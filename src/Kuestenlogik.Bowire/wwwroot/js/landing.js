@@ -135,7 +135,7 @@
         var summary = buildServiceSummary();
         var connectLine = buildConnectedHeadline();
         var bodyText = (connectLine === 'Pick a method from the sidebar')
-            ? 'Pick a method from the sidebar tree to compose a request and invoke it. The sidebar lists every service and method we discovered.'
+            ? t('landing.pickHint')
             : connectLine + (summary ? ' — ' + summary + '.' : '.');
 
         card.appendChild(renderEmptyCard({
@@ -272,7 +272,7 @@
                 ? ((typeof catalogueProviderLabel === 'function' && catalogueProviderLabel())
                     || 'The catalogue') + ' knows about ' + _catN + ' service'
                     + (_catN === 1 ? '' : 's') + ' — pick the ones you want to work with.'
-                : 'Pick a workspace and add a URL or schema file from there.',
+                : t('landing.pickWorkspace'),
             actions: _firstRunActions
         }));
     }
@@ -373,7 +373,7 @@
         // under the literal '(embedded)' key api.js writes.
         var diagKey = serverUrls[0] || Object.keys(discoveryErrors)[0] || '(embedded)';
         var errMsg = discoveryErrors[diagKey] || Object.values(discoveryErrors)[0] || 'Connection failed';
-        var titleTarget = diagKey === '(embedded)' ? 'this host' : diagKey;
+        var titleTarget = diagKey === '(embedded)' ? t('landing.thisHost') : diagKey;
 
         card.appendChild(el('div', { className: 'bowire-landing-error-icon', innerHTML: svgIcon('disconnect') }));
         card.appendChild(el('div', { className: 'bowire-landing-error-title',
@@ -717,10 +717,10 @@
         row.appendChild(el('span', { className: 'bowire-landing-status-dot' }));
         row.appendChild(el('span', { className: 'bowire-landing-status-url', textContent: url || '(empty)' }));
 
-        var label = status === 'connected' ? 'Connected'
-                  : status === 'connecting' ? 'Connecting…'
+        var label = status === 'connected' ? t('channel.connected')
+                  : status === 'connecting' ? t('rb.ws.connecting')
                   : status === 'error' ? (discoveryErrors[url] || 'Failed')
-                  : 'Disconnected';
+                  : t('main.src.disconnected');
         row.appendChild(el('span', { className: 'bowire-landing-status-label', textContent: label }));
 
         if (status === 'error' || status === 'disconnected') {

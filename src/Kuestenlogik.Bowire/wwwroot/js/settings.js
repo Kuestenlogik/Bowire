@@ -939,7 +939,7 @@
             var row = el('label', {
                 className: 'bowire-settings-rail-row' + (locked ? ' is-locked' : ''),
                 title: locked
-                    ? 'Always-on — cannot be disabled'
+                    ? t('settings.alwaysOn')
                     : (enabled ? t('settings.railVisible') : t('settings.railHidden'))
             });
             var input = el('input', {
@@ -1047,8 +1047,8 @@
             var row = el('label', {
                 className: 'bowire-settings-module-row',
                 title: enabled
-                    ? 'Currently active in this workspace'
-                    : 'Currently disabled in this workspace — toggle to enable'
+                    ? t('settings.activeHere')
+                    : t('settings.disabledHere')
             });
             var input = el('input', {
                 type: 'checkbox',
@@ -1237,7 +1237,7 @@
             disabled: canAdminister ? undefined : true,
             title: canAdminister
                 ? ''
-                : 'Only an administrator can install a plugin on this instance — it loads into the server process every session shares.',
+                : t('settings.adminOnlyInstall'),
             textContent: t('settings.plugins.install'),
             onClick: function () { if (canAdminister) _openInstallPluginModal(); }
         }));
@@ -1659,8 +1659,8 @@
         var notApplicable = !isAiCloudProvider(draft.providerId);
         return renderSettingsRow('API key',
             notApplicable
-                ? 'Not applicable for this provider. Local providers need no key; the MCP path inherits auth from the configured host.'
-                : 'BYOK — your provider key. Stays in ai-config.json on this machine; never proxied through Küstenlogik. Leave blank to keep the existing key (shown as "set" below).',
+                ? t('settings.ai.noKeyNeeded')
+                : t('settings.ai.byokHint'),
             function () {
                 var wrap = el('div', { className: 'bowire-settings-apikey-wrap' });
                 var input = el('input', {
@@ -1668,7 +1668,7 @@
                     className: 'bowire-settings-input bowire-settings-apikey-input',
                     value: '',
                     placeholder: notApplicable
-                        ? '(not used by this provider)'
+                        ? t('settings.ai.notUsed')
                         : (hasExistingKey ? t('settings.keepExisting') : 'sk-...'),  // i18n-exempt: the shape of an OpenAI key, not prose
                     autocomplete: 'off',
                     spellcheck: false
@@ -1831,8 +1831,8 @@
                     aiSettingsState.result = {
                         kind: 'ok',
                         text: resp.body.hostManaged
-                            ? 'Saved to disk. Host-managed runtime — applies on next host start.'
-                            : 'Saved. Next AI request uses the new provider / model.'
+                            ? t('settings.ai.savedHosted')
+                            : t('settings.ai.saved')
                     };
                     // Nudge the AI side-panel so its footer + composer
                     // reflect the new binding without waiting for the
@@ -1946,10 +1946,13 @@
             ? 'bowire-ai-settings-status host-managed'
             : (st.hasClient ? 'bowire-ai-settings-status live' : 'bowire-ai-settings-status idle');
         var statusText = hostManaged
-            ? 'Host-managed: the embedding host registered its own IChatClient. Saved values apply on next host start.'
+            ? t('settings.ai.hostManaged')
             : (st.hasClient
-                ? 'Connected: ' + (st.providerId || '(unknown)') + ' · ' + (st.model || '(default model)')
-                : 'No live client. The next save reconfigures the runtime.');
+                ? t('settings.ai.connected', {
+                    provider: st.providerId || t('settings.versionUnknown'),
+                    model: st.model || t('settings.ai.defaultModel')
+                })
+                : t('settings.ai.noClient'));
         section.appendChild(el('div', { className: statusClass, textContent: statusText }));
 
         // Provider dropdown (Phase 2 local + Phase 3 BYOK cloud +
@@ -2364,8 +2367,11 @@
             ? 'bowire-settings-catalogue-status live'
             : 'bowire-settings-catalogue-status idle';
         var statusText = info.available
-            ? 'Active: ' + (info.providerName || info.providerId || '(unknown)')
-            : 'No catalogue provider active. Pick one below to wire it up.';
+            ? t('settings.cat.active', {
+            provider: info.providerName || info.providerId
+                || t('settings.versionUnknown')
+        })
+            : t('settings.cat.noneActive');
         var statusBar = el('div', { className: statusClass });
         statusBar.appendChild(el('span', { className: 'bowire-settings-catalogue-status-text', textContent: statusText }));
         if (info.available) {
@@ -2448,8 +2454,8 @@
                 text.appendChild(el('div', {
                     className: 'bowire-settings-catalogue-provider-missing',
                     textContent: p.package
-                        ? ('Package not installed — run `bowire plugin install ' + p.package + '` and restart.')
-                        : 'This provider is not loaded in the running host.'
+                        ? t('settings.plugin.notInstalled', { package: p.package })
+                        : t('settings.cat.notLoaded')
                 }));
             } else if (p.package) {
                 text.appendChild(el('div', {
@@ -2707,8 +2713,8 @@
                         className: 'bowire-settings-input',
                         rows: '3',
                         placeholder: draft.k8sCaCertificatePemSet
-                            ? '••••••••••• (leave blank to keep)'
-                            : '-----BEGIN CERTIFICATE-----\n…',
+                            ? t('settings.keepExisting')
+                            : '-----BEGIN CERTIFICATE-----\n…',  // i18n-exempt: the shape of a PEM certificate
                         spellcheck: false,
                         style: 'font-family:var(--bowire-font-mono);font-size:11px'
                     });
@@ -2871,12 +2877,12 @@
                 // Empty string = "keep existing"; explicit "__clear__"
                 // wipes the stored secret server-side; anything else
                 // overwrites.
-                authorization: d.httpAuthorization === '' ? '__keep__' : d.httpAuthorization
+                authorization: d.httpAuthorization === '' ? '__keep__' : d.httpAuthorization  // i18n-exempt: a sentinel the server reads, never shown
             };
         } else if (d.providerId === 'consul') {
             payload.consul = {
                 address: d.consulAddress || null,
-                token: d.consulToken === '' ? '__keep__' : d.consulToken,
+                token: d.consulToken === '' ? '__keep__' : d.consulToken,  // i18n-exempt: a sentinel the server reads, never shown
                 datacenter: d.consulDatacenter || null,
                 tag: d.consulTag || null,
                 scheme: d.consulScheme || 'http'
@@ -2884,18 +2890,18 @@
         } else if (d.providerId === 'kubernetes') {
             payload.kubernetes = {
                 apiServerUrl: d.k8sApiServerUrl || null,
-                token: (d.k8sToken === '' || d.k8sToken === undefined) ? '__keep__' : d.k8sToken,
+                token: (d.k8sToken === '' || d.k8sToken === undefined) ? '__keep__' : d.k8sToken,  // i18n-exempt: a sentinel the server reads, never shown
                 kubeconfigPath: d.k8sKubeconfigPath || null,
                 namespace: d.k8sNamespace || null,
                 labelSelector: d.k8sLabelSelector || null,
                 scheme: d.k8sScheme || 'http',
-                caCertificatePem: (d.k8sCaCertificatePem === '' || d.k8sCaCertificatePem === undefined) ? '__keep__' : d.k8sCaCertificatePem,
+                caCertificatePem: (d.k8sCaCertificatePem === '' || d.k8sCaCertificatePem === undefined) ? '__keep__' : d.k8sCaCertificatePem,  // i18n-exempt: a sentinel the server reads, never shown
                 skipTlsVerification: !!d.k8sSkipTlsVerification
             };
         } else if (d.providerId === 'agent') {
             payload.agent = {
                 hubUrl: d.agentHubUrl || null,
-                bootstrapToken: (d.agentBootstrapToken === '' || d.agentBootstrapToken === undefined) ? '__keep__' : d.agentBootstrapToken,
+                bootstrapToken: (d.agentBootstrapToken === '' || d.agentBootstrapToken === undefined) ? '__keep__' : d.agentBootstrapToken,  // i18n-exempt: a sentinel the server reads, never shown
                 stubResponse: d.agentStubResponse || null
             };
         }
@@ -2931,8 +2937,12 @@
                     discoveryState.saveResult = {
                         kind: 'ok',
                         text: d.providerId
-                            ? 'Saved. Active provider: ' + (resp.body && (resp.body.providerName || resp.body.providerId) || d.providerId) + '.'
-                            : 'UI override cleared. Falling back to appsettings.'
+                            ? t('settings.cat.savedActive', {
+                        provider: (resp.body
+                            && (resp.body.providerName || resp.body.providerId))
+                            || d.providerId
+                    })
+                            : t('settings.cat.overrideCleared')
                     };
                     // Reload status + override so the UI mirrors the
                     // server's view of the world.
@@ -3787,7 +3797,7 @@
             'Migrate',
             function () {
                 bowireConfirm(
-                    'Rewrite every ${name} placeholder in this workspace to {{name}}?\n\nThis touches recordings, collections, freeform requests, flows, environment variables and globals. The change persists to disk immediately.',
+                    t('settings.migrateVarsConfirm'),
                     function () {
                         try {
                             if (typeof _runMigrationFromUi === 'function') _runMigrationFromUi();
@@ -3883,8 +3893,8 @@
         section.appendChild(renderSettingsRow(
             'Storage mode',
             browserOnly
-                ? 'Browser-only \u2014 localStorage is the only store. Browser clear = data loss; ~5-10 MB quota.'
-                : 'Disk \u2014 data lives under ~/.bowire/workspaces/' + ws.id + '/. Browser cache is best-effort and survives quota errors.',
+                ? t('settings.data.browserOnly')
+                : t('settings.data.diskStore', { id: ws.id }),
             function () {
                 var select = el('select', {
                     className: 'bowire-settings-select',
@@ -3920,8 +3930,8 @@
             section.appendChild(renderSettingsRow(
                 'Storage root',
                 currentRoot
-                    ? 'Current override: ' + currentRoot
-                    : 'Default: ~/.bowire/workspaces/' + ws.id + '/. Edit in the workspaces rail.',
+                    ? t('settings.data.currentOverride', { path: currentRoot })
+                    : t('settings.data.defaultRoot', { id: ws.id }),
                 function () {
                     return el('button', {
                         className: 'bowire-settings-action-btn',
@@ -4326,8 +4336,8 @@
             type: 'button',
             className: 'bowire-settings-plugin-btn bowire-settings-plugin-hide-toggle',
             title: hidden
-                ? 'Show this protocol in your sidebar again. Only your own view — nobody else is affected.'
-                : 'Hide this protocol from your sidebar. Only your own view: it stays loaded, still discovers, and still answers when you call it.',
+                ? t('settings.protoShow')
+                : t('settings.protoHide'),
             textContent: hidden ? t('settings.show') : t('mocks.hide'),
             onClick: function () { _setProtocolHidden(pluginId, !hidden); }
         });
@@ -4358,7 +4368,7 @@
                 className: 'bowire-settings-plugin-btn',
                 disabled: busy ? true : undefined,
                 title: a.label + ' — backend returns 501 today; available in v2.2.',
-                textContent: busy ? 'Working…' : a.label,
+                textContent: busy ? t('settings.working') : a.label,
                 onClick: function () { _runPluginLifecycleAction(pluginId, a.key); }
             });
             group.appendChild(btn);
@@ -4590,7 +4600,7 @@
         banner.appendChild(el('div', {
             className: 'bowire-settings-plugin-health-title',
             textContent: unhealthy.length === 1
-                ? '1 plugin failed to load'
+                ? t('settings.plugin.oneFailed')
                 : unhealthy.length + ' plugins failed to load'
         }));
         for (var i = 0; i < unhealthy.length; i++) {
@@ -4699,7 +4709,7 @@
         if (s.cached && s.cached.CheckedAt) {
             var n = pluginUpdateBadgeCount();
             lines.push('Last run: ' + new Date(s.cached.CheckedAt).toLocaleString()
-                + ' — ' + (n === 0 ? 'all plugins up to date.'
+                + ' — ' + (n === 0 ? t('settings.plugin.allUpToDate')
                     : n + ' update(s) available.'));
         }
         box.appendChild(el('div', {
@@ -4818,9 +4828,9 @@
                 + (hasUpdate ? ' bowire-settings-plugin-btn-accent' : ''),
             disabled: bundled || machineWide || busy || !mayAdminister,
             title: bundled
-                ? 'Bundled plugin — run `dotnet tool update -g Kuestenlogik.Bowire.Tool` to update'
+                ? t('settings.plugin.bundledHint')
                 : machineWide
-                    ? 'Installed machine-wide — an administrator updates it. To run a newer build yourself, install it from the catalogue: your copy takes precedence over the machine-wide one.'
+                    ? t('settings.plugin.machineWideHint')
                     : !mayAdminister
                         ? notAdminTitle
                         : '',
@@ -4835,15 +4845,15 @@
             type: 'button',
             className: 'bowire-settings-plugin-btn bowire-settings-plugin-btn-danger',
             disabled: bundled || machineWide || busy || !mayAdminister,
-            title: bundled ? 'Bundled plugins cannot be uninstalled separately'
-                : machineWide ? 'Installed machine-wide — an administrator removes it, and it goes for every account on this host'
+            title: bundled ? t('settings.plugin.bundledNoUninstall')
+                : machineWide ? t('settings.plugin.machineWideNoUninstall')
                 : !mayAdminister ? notAdminTitle
                 : '',
             textContent: t('settings.plugin.uninstall'),
             onClick: function () {
                 if (bundled || machineWide || !mayAdminister) return;
                 bowireConfirm(
-                    'Uninstall ' + pkgId + '? The package is removed from disk and the workbench restarts to unload it.',
+                    t('settings.plugin.uninstallConfirm', { package: pkgId }),
                     function () { runPluginAction(pkgId, 'uninstall'); },
                     { title: t('settings.plugin.uninstallHeading'), confirmText: t('settings.plugin.uninstall'), danger: true }
                 );
@@ -4899,13 +4909,13 @@
         }
         row('Version', plugin.version || plugin.Version);
         row('Source', plugin.source === 'bundled'
-            ? 'bundled (ships with the bowire tool)'
+            ? t('settings.plugin.bundled')
             : plugin.tier === 'machine'
                 // No path here: the row is about where *this* plugin lives,
                 // and joinPluginPath answers for the user tier, which is the
                 // one directory it is definitely not in.
-                ? 'machine-wide (installed for every account on this host)'
-                : 'sibling (' + joinPluginPath(pkgId) + ')');
+                ? t('settings.machineWide')
+                : t('settings.pluginSibling', { path: joinPluginPath(pkgId) }));
         if (plugin.installedAt || plugin.InstalledAt) {
             row('Installed', plugin.installedAt || plugin.InstalledAt);
         }
@@ -5092,8 +5102,8 @@
                     ? {
                         ok: true,
                         summary: verb === 'update'
-                            ? 'Updated ' + packageId
-                            : 'Uninstalled ' + packageId,
+                            ? t('settings.plugin.updated', { package: packageId })
+                            : t('settings.plugin.uninstalled', { package: packageId }),
                         detail: (result.data && result.data.output) || ''
                     }
                     : {

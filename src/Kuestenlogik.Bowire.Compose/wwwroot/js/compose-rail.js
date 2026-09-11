@@ -480,7 +480,8 @@
             case 'recording':
                 iconName = 'replay';
                 title = 'From recording' + (origin.name ? ' — ' + origin.name : '')
-                    + (typeof origin.stepIndex === 'number' ? ' (step ' + (origin.stepIndex + 1) + ')' : '');
+                    + (typeof origin.stepIndex === 'number'
+    ? ' ' + t('compose.stepN', { n: origin.stepIndex + 1 }) : '');
                 break;
             default:
                 return null;
@@ -816,8 +817,8 @@
                 icon: 'flow',
                 disabled: itemCount === 0,
                 title: itemCount === 0
-                    ? 'This collection has no saved requests yet'
-                    : 'Project each saved request as a Request node on a fresh flow, then jump to the Flows rail',
+                    ? t('compose.noSavedRequests')
+                    : t('compose.toFlowTitle'),
                 onClick: function () {
                     if (typeof convertCollectionToFlow !== 'function') return;
                     var flowId = convertCollectionToFlow(colId);

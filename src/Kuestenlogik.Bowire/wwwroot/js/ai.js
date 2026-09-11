@@ -1607,8 +1607,8 @@
             footer.appendChild(el('span', {
                 className: 'bowire-ai-status bowire-ai-status-idle',
                 textContent: pkgMissing
-                    ? 'No AI provider — install Kuestenlogik.Bowire.Ai to enable chat (Ollama / LM Studio / BYOK cloud).'
-                    : 'AI package installed, no model connected.'
+                    ? t('ai.noProvider')
+                    : t('ai.noModel')
             }));
             // Probe-driven detection: surfaces the running Ollama /
             // LM-Studio instance on the same host so the user gets a
@@ -1798,8 +1798,8 @@
                 type: 'button',
                 className: 'bowire-ai-threat-run',
                 textContent: threatState.running
-                    ? 'Ranking… (' + elapsedThreatSec + 's)'
-                    : 'Run threat model',
+                    ? t('ai.ranking', { seconds: elapsedThreatSec })
+                    : t('ai.runThreatModel'),
                 onClick: function () { runThreatModel().then(rerenderThreatModel); }
             });
             if (threatState.running) runBtn.setAttribute('disabled', 'disabled');
@@ -1876,7 +1876,7 @@
                                 return function () {
                                     var cmd = 'bowire scan --url ' + (ep.serverUrl || '<server>')
                                         + ' --path ' + ep.path
-                                        + (templates.length > 0 ? ' --templates ' + templates.join(',') : '');
+                                        + (templates.length > 0 ? ' --templates ' + templates.join(',') : '');  // i18n-exempt: part of the command being assembled
                                     if (navigator.clipboard) {
                                         navigator.clipboard.writeText(cmd).then(function () {
                                             scanBtn.textContent = t('ai.copied');

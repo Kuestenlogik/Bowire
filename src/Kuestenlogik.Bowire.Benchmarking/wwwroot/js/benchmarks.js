@@ -217,9 +217,9 @@
         loadBenchmarks();
         seed = seed || {};
         var kind = seed.kind || 'single';
-        var defaultName = kind === 'collection' ? 'Benchmark collection'
-                        : kind === 'recording' ? 'Benchmark recording'
-                        : 'New benchmark';
+        var defaultName = kind === 'collection' ? t('bench.fromCollection')
+                        : kind === 'recording' ? t('bench.fromRecording')
+                        : t('bench.new');
 
         // Envelope-shape (v2). Legacy mirror fields (kind, service,
         // method, body, metadata, protocol, sourceId, n, concurrency,
@@ -1333,7 +1333,7 @@
                         onClick: function () {
                             var n = benchmarksList.length;
                             bowireConfirm(
-                                'Delete all ' + n + ' benchmarks?',
+                                t('bench.deleteAllConfirm', { count: n }),
                                 function () {
                                     benchmarksList.length = 0;
                                     benchmarksSelectedId = null;
@@ -1915,8 +1915,10 @@
                 el('div', {
                     className: 'bowire-ws-detail-stat-hint',
                     textContent: poolSize === 0
-                        ? 'Pool is empty — pick a discovered service / saved collection / recording with at least one entry.'
-                        : 'Pool size: ' + poolSize + ' endpoint' + (poolSize === 1 ? '' : 's')
+                        ? t('bench.poolEmpty')
+                        // #688 - one message, two shapes.
+: t(poolSize === 1 ? 'bench.poolSizeOne' : 'bench.poolSizeMany',
+    { count: poolSize })
                             + '. Each iteration shuffles the pool and picks the first ' + Math.min(maxPick, target.count || 1) + '.'
                 })
             ));
@@ -1954,8 +1956,8 @@
         select.appendChild(el('option', {
             value: '',
             textContent: value && !items.find(function (i) { return i[idKey] === value; })
-                ? 'Missing · ' + value
-                : '— Pick —',
+                ? t('bench.missingValue', { value: value })
+                : t('bench.pickPlaceholder'),
             selected: !value ? 'selected' : null
         }));
         items.forEach(function (item) {
@@ -2232,8 +2234,8 @@
                 icon: 'chart',
                 headline: hasAny ? t('bench.pickOne') : t('bench.noneYet'),
                 body: hasAny
-                    ? 'Pick one in the sidebar to see its config and last run, or start a new benchmark from a method, collection or recording.'
-                    : 'A benchmark repeats N runs at K concurrency and reports latency percentiles + status distribution. Three shapes: single method (one unary call), collection (replay every item), recording (replay every step). Each source has a Benchmark button that prefills the right shape — start there, or create an empty spec.',
+                    ? t('bench.pickHint')
+                    : t('bench.emptyHint'),
                 actions: hasAny ? [{
                     id: 'bowire-bench-new-btn',
                     label: t('bench.new'),

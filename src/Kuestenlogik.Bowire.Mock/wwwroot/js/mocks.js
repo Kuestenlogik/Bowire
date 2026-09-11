@@ -190,7 +190,7 @@
     function loadMockLog(mockId) {
         var st = mockLogState[mockId] || (mockLogState[mockId] = { entries: [], total: 0, capacity: 0, lastSeq: 0 });
         var qs = 'limit=200' + (st.lastSeq ? '&since=' + st.lastSeq : '');
-        return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId) + '/requests?' + qs)
+        return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId) + '/requests?' + qs)  // i18n-exempt: a query string
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {
                 if (!data || !Array.isArray(data.entries)) return st;
@@ -401,8 +401,8 @@
                 icon: 'mock',
                 headline: hasAny ? t('mocks.pickOne') : t('intercept.noMockServers'),
                 body: hasAny
-                    ? 'Pick a running mock from the sidebar to see its URL, live request log, and stop control.'
-                    : 'Mock servers are standalone replay hosts. Start one from a schema with "Start a schema mock" above (no recording needed), or switch to the Recordings rail and use "Run as mock" on a captured session. Looking for one-line response substitution inside the proxy / middleware pipeline? Use this rail’s Live overrides sub-tab.',
+                    ? t('intercept.pickMockServerBody')
+                    : t('mocks.emptyHint'),
                 actions: hasAny ? [] : [
                     {
                         label: t('mocks.goToRecordings'),
@@ -1018,8 +1018,8 @@ el('span', { className: 'bowire-home-section-count',
             var usingRecording = !!auth.authRecordingId;
             card.appendChild(el('p', { className: 'bowire-sources-hint',
                 textContent: usingRecording
-                    ? 'The credential is resolved from the selected recording at apply-time; the scheme/header below apply unless the recording overrides them.'
-                    : 'Bearer/Basic read the Authorization header; an API key reads the named header. Leave the credential blank to accept any credential of the scheme.' }));
+                    ? t('mocks.credFromRecording')
+                    : t('mocks.credHint') }));
             var row = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center' });
             row.appendChild(faultSelect(auth.scheme || 'bearer', AUTH_SCHEMES, function (v) { st.config.auth.scheme = v; markDirty(st); render(); }));
             row.appendChild(cfgInput(auth.header, 'header (default Authorization)', function (v) { st.config.auth.header = v; markDirty(st); }));

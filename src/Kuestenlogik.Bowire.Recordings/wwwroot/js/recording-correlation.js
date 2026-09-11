@@ -132,7 +132,7 @@
                 return resp.json().catch(function () { return null; }).then(function (body) {
                     return {
                         error: resp.status === 404
-                            ? 'This server does not expose /api/recordings/correlate — it is older than the workbench, or was built without the Recordings package.'
+                            ? t('corr.noEndpoint')
                             : ((body && (body.detail || body.title)) || ('Correlation failed (HTTP ' + resp.status + ').'))
                     };
                 });
@@ -314,7 +314,7 @@
 
         var keyLabel = model.key
             ? (model.key.name + ' = ' + model.key.value)
-            : 'no signal';
+            : t('corr.noSignal');
         var chipWrap = el('div', { className: 'bowire-recording-timeline-key-wrap' });
         chipWrap.appendChild(el('button', {
             type: 'button',
@@ -415,11 +415,11 @@
 }));
         stats.appendChild(el('span', {
             title: model.timebase === 'absolute'
-                ? 'capturedAt carries wall-clock timestamps'
-                : 'capturedAt carries offsets from an arbitrary zero — no wall clock to show',
+                ? t('corr.wallClock')
+                : t('corr.noWallClock'),
             textContent: model.timebase === 'absolute'
                 ? _fmtClock(model.originMs)
-                : 'relative timebase'
+                : t('corr.relativeTimebase')
         }));
         bar.appendChild(stats);
 
@@ -479,7 +479,7 @@
                 title: derivedInLane > 0
                     ? (derivedInLane + ' of these do not carry the key at all — they were joined through a '
                         + 'shared value, listed under the lanes.')
-                    : 'Steps in this lane that are on the correlated transaction.',
+                    : t('corr.laneTitle'),
                 textContent: lane.matchedCount + '/' + lane.stepCount
             })
         ));
@@ -552,7 +552,7 @@
         } else {
             parts.push(model.key
                 ? (_matchWord(ev.match) + ' match on ' + model.key.name)
-                : 'no correlation key');
+                : t('corr.noKeyShort'));
         }
         return parts.join('\n');
     }

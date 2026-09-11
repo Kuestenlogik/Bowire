@@ -154,7 +154,7 @@
             id: 'bowire-invoke-url-' + String(service.name + '::' + method.name).replace(/[^A-Za-z0-9]+/g, '_'),
             className: 'bowire-invoke-url-block'
         });
-        var stateText = ov.mode === 'source' ? 'source override'
+        var stateText = ov.mode === 'source' ? t('invocation.sourceOverride')
             : (ov.mode === 'inline' ? t('invocation.customOverride') : t('invocation.schemaUrl'));
         var head = el('div', {
             className: 'bowire-invoke-url-head',
@@ -194,7 +194,7 @@
                 type: 'button',
                 className: 'bowire-invoke-url-mode-btn' + (ov.mode === m[0] ? ' is-active' : ''),
                 disabled: m[2] ? 'disabled' : null,
-                title: m[2] ? 'No workspace Source URLs to pick from' : null,
+                title: m[2] ? t('invocation.noSourceUrls') : null,
                 onClick: m[2] ? null : function () { setMode(m[0]); }
             }, el('span', { textContent: m[1] })));
         });

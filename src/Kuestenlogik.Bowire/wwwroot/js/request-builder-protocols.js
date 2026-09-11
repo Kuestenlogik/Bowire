@@ -662,12 +662,12 @@
     function _renderWsConnectControl(fr) {
         var wrap = el('div', { className: 'bowire-request-builder-ws-control-wrap' });
         var stateLabel = rbConnState.wsState === 'open'
-            ? 'Connected'
+            ? t('channel.connected')
             : rbConnState.wsState === 'connecting'
-                ? 'Connecting…'
+                ? t('rb.ws.connecting')
                 : rbConnState.wsState === 'closing'
-                    ? 'Closing…'
-                    : 'Disconnected';
+                    ? t('rb.ws.closing')
+                    : t('main.src.disconnected');
         wrap.appendChild(el('span', {
             className: 'bowire-request-builder-ws-state-chip'
                 + ' is-' + rbConnState.wsState,
@@ -880,8 +880,8 @@
                 rbConnState.sseEvents.push({
                     event: 'error',
                     data: closed
-                        ? '[stream closed by the browser]'
-                        : '[gave up after ' + rbConnState.sseRetries + ' reconnect attempts]',
+                        ? t('rb.streamClosed')
+                        : t('rb.gaveUpAfter', { count: rbConnState.sseRetries }),
                     ts: Date.now()
                 });
                 render();
@@ -1101,8 +1101,8 @@
             pane.appendChild(el('div', {
                 className: 'bowire-response-empty',
                 textContent: rbConnState.mqttSubscribed
-                    ? 'Subscribed — waiting for messages…'
-                    : 'Click Publish to send a message, or switch to Subscribe.'
+                    ? t('rb.mqtt.subscribed')
+                    : t('rb.mqtt.hint')
             }));
             return pane;
         }
@@ -1153,8 +1153,8 @@
             pane.appendChild(el('div', {
                 className: 'bowire-response-empty',
                 textContent: rbConnState.sseSource
-                    ? 'Connected — waiting for events…'
-                    : 'Click Connect to open the event stream.'
+                    ? t('rb.sse.connected')
+                    : t('rb.sse.hint')
             }));
             return pane;
         }
