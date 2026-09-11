@@ -153,6 +153,27 @@ el('span', { textContent: 'MOCK' })   // i18n-exempt: sits in the method column 
 
 The reason belongs next to the string, not in a list elsewhere, so a reviewer can disagree with it.
 
+## Checking coverage: the pseudo-locale
+
+The ratchet above finds what its patterns were taught to look for, and in the sweep that produced this catalogue it read **zero six times** while the running workbench still showed English. Each gap was a call shape nobody had told the scanner about &mdash; a slot named by a suffix, a lone branch of a ternary, a label handed to a helper positionally, a rail label that arrives from the host rather than from JavaScript at all.
+
+A scanner cannot answer "is anything untranslated?". The product can:
+
+```js
+localStorage.setItem('bowire_locale', 'qps');
+location.reload();
+```
+
+Every string that comes *through the catalogue* is then wrapped in `⟦…⟧` with its vowels accented: `Execute` renders as `⟦Ëxëcûtë⟧`. **Anything on screen without the brackets never went through `t()`.** Walk the surface you changed, and the untranslated text announces itself.
+
+Two things survive the marking untouched, because breaking them would break the thing the check exists to verify: `{name}` placeholders, which `interpolate` fills, and `{{name}}`, which is Bowire's own variable syntax and must reach the screen unexpanded.
+
+The accents also lengthen the text by roughly a fifth, so a label that only just fits in English shows its truncation here rather than in the first translation that ships.
+
+`qps` is not offered in the language selector &mdash; picked by accident it would read as a broken install. Set it in `localStorage` as above; `setLocale('auto')` or picking a language in Settings clears it.
+
+What legitimately stays unbracketed: the product's own name and version, the user's own data (workspace and collection names), protocol vocabulary (`GET`, `REST`), keyboard shortcuts, and theme values.
+
 ## What is still English
 
 `npm run i18n:report` prints zero. Every fragment that lands in the bundle &mdash; the core project and all eleven sibling packages &mdash; reads its text from the catalogue, and the ratchet in `untranslated-baseline.json` is an empty object, so the next literal anyone adds fails the build.

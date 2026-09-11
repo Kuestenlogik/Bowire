@@ -77,7 +77,7 @@
     //     renderTab:  (fr, tabId) => Node,
     //     executeLabel: (fr) => string,
     //     execute:    (fr) => Promise<void>,
-    //     urlPlaceholder?: string,
+    //     urlPlaceholderKey?: string,
     //     supportsHistory?: boolean      // default true
     //   }
     //
@@ -758,8 +758,11 @@
 
         // URL input + variable overlay
         var urlWrap = el('div', { className: 'bowire-request-builder-url-wrap' });
-        var urlPlaceholder = (layout && layout.urlPlaceholder)
-            || 'https://api.example.com/users  •  use {{baseUrl}} for env vars';
+        // #117 - der Schluessel, nicht der Text: die Tabelle entsteht beim
+        // Laden, und setLocale laedt nicht neu. Ein hier schon uebersetzter
+        // Platzhalter friere die Sprache des Starts ein.
+        var urlPlaceholder = t((layout && layout.urlPlaceholderKey)
+            || 'rb.urlPlaceholder');
         var urlInput = el('input', {
             // No `id` — see the header note on _renderRequestBuilder.
             type: 'text',
@@ -2876,7 +2879,7 @@
     registerRequestBuilderLayout({
         id: 'rest',
         label: 'REST',
-        urlPlaceholder: 'https://api.example.com/users  •  use {{baseUrl}} for env vars',
+        urlPlaceholderKey: 'rb.urlPlaceholder',
         defaults: function () { return {}; },
         secondControl: function (fr) { return _renderRestMethodDropdown(fr); },
         subTabs: function (fr) {
@@ -2915,7 +2918,7 @@
     registerRequestBuilderLayout({
         id: 'grpc',
         label: 'gRPC',
-        urlPlaceholder: 'https://grpc.example.com:443  •  use {{grpcUrl}} for env vars',
+        urlPlaceholderKey: 'rbGrpc.urlPlaceholder',
         defaults: function () {
             return {
                 service: '',     // e.g. 'UserService'
@@ -3007,7 +3010,7 @@
     registerRequestBuilderLayout({
         id: 'mqtt',
         label: 'MQTT',
-        urlPlaceholder: 'mqtts://broker.hivemq.com:8883  •  use {{broker}} for env vars',
+        urlPlaceholderKey: 'rbMqtt.urlPlaceholder',
         defaults: function () {
             return {
                 action: 'publish',  // 'publish' | 'subscribe'

@@ -31,6 +31,62 @@ function registerLocaleCatalogue(locale, entries) {
 
 var LOCALE_KEY = 'bowire_locale';
 
+// #117 — the pseudo-locale.
+//
+// Six times in this sweep the scanner reported zero while the running
+// workbench still showed English, and six times the gap was a call shape
+// nobody had told the scanner about. A scanner can only find what it was
+// taught to look for; the product knows the answer already.
+//
+// So: set the locale to `qps` and every string that comes *through the
+// catalogue* is wrapped in ⟦…⟧ with its vowels accented. Anything on screen
+// without the brackets never went through t(). That makes the boundary the
+// product rather than a regular expression, and it costs a translator nothing
+// because they never see it — it is not offered in the language selector.
+//
+//     localStorage.setItem('bowire_locale', 'qps'); location.reload();
+//
+// The accents also stretch the text, so a label that only just fits in
+// English shows its truncation here rather than in the first translation
+// that ships.
+var PSEUDO_LOCALE = 'qps';
+
+var PSEUDO_MAP = {
+    a: 'á', e: 'ë', i: 'ï', o: 'ö', u: 'û', y: 'ÿ',
+    A: 'Á', E: 'Ë', I: 'Ï', O: 'Ö', U: 'Û', Y: 'Ÿ'
+};
+
+/**
+ * Mark a string as having come from the catalogue.
+ *
+ * Placeholders survive untouched — both `{name}`, which interpolate() fills,
+ * and `{{name}}`, which is Bowire's own variable syntax and has to reach the
+ * screen intact. Accenting either would break the very thing the marking is
+ * meant to verify.
+ */
+function pseudoise(text) {
+    var out = '';
+    var rest = String(text);
+    var re = /\{\{?[a-zA-Z0-9_]+\}?\}/g;
+    var at = 0;
+    var m;
+    while ((m = re.exec(rest)) !== null) {
+        out += accent(rest.slice(at, m.index)) + m[0];
+        at = m.index + m[0].length;
+    }
+    out += accent(rest.slice(at));
+    return '⟦' + out + '⟧';
+}
+
+function accent(chunk) {
+    var out = '';
+    for (var i = 0; i < chunk.length; i++) {
+        var ch = chunk.charAt(i);
+        out += PSEUDO_MAP[ch] || ch;
+    }
+    return out;
+}
+
 /**
  * Which locale should the workbench speak?
  *
@@ -46,6 +102,9 @@ function resolveLocale(preferred, available) {
         if (have[lower]) return lower;
         var base = lower.split('-')[0];
         return have[base] ? base : null;
+    }
+    if (preferred && String(preferred).toLowerCase() === PSEUDO_LOCALE) {
+        return PSEUDO_LOCALE;
     }
     var chosen = pick(preferred);
     if (chosen) return chosen;
@@ -119,6 +178,14 @@ function interpolate(text, params) {
  * silence would ship unnoticed.
  */
 function t(key, params) {
+    if (activeLocale === PSEUDO_LOCALE) {
+        var source = localeCatalogues.en;
+        var raw = source ? source[key] : undefined;
+        // A key with no English entry stays bare, exactly as it would in any
+        // other locale: seeing the key itself is the signal that it is missing.
+        if (raw === undefined) return key;
+        return interpolate(pseudoise(raw), params);
+    }
     var fromLocale = localeCatalogues[activeLocale];
     var text = fromLocale ? fromLocale[key] : undefined;
     if (text === undefined || text === '') {

@@ -2536,7 +2536,7 @@
         var summary;
         if (urlsPresent.length === 0) {
             aggregate = 'first-run';
-            summary = 'Pick a URL';
+            summary = t('main.src.pickUrlShort');
         } else {
             var counts = { connected: 0, connecting: 0, error: 0, disconnected: 0 };
             // A URL whose HTTP call succeeded but whose probe came back
@@ -3308,9 +3308,9 @@
             role: 'group',
             'aria-label': t('status.paneLayout')
         },
-            paneViewBtn(t('main.pane.requestOnly'), 'Request pane only'),
-            paneViewBtn(t('main.pane.split'), 'Split — request + response'),
-            paneViewBtn(t('main.pane.responseOnly'), 'Response pane only')
+            paneViewBtn('leading', t('main.pane.requestOnly')),
+            paneViewBtn('split', t('main.pane.split')),
+            paneViewBtn('trailing', t('main.pane.responseOnly'))
         );
         // Seed the active highlight from the live layout state (falls back
         // to 'split' before initResizer's rAF registers the hook; that

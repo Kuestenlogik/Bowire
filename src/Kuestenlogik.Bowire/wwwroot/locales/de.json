@@ -3355,5 +3355,24 @@
   "settings.autoWorkspaceForcedOn": "Vom Wirt vorgegeben (appsettings oder Kommandozeile) — zurzeit an.",
   "settings.autoWorkspaceForcedOff": "Vom Wirt vorgegeben (appsettings oder Kommandozeile) — zurzeit aus.",
   "settings.autoWorkspaceEmbedded": "Eingebettet ist das vorgegeben: der erste Lauf legt einen Arbeitsbereich an, benannt nach der Anwendung des Wirts, und landet im Erkunden, wo dessen eigene Schnittstelle schon steht. Ausgeschaltet bekommen Sie stattdessen das leere Start mit der Aufforderung, einen Arbeitsbereich anzulegen. Wirkt nach einem Neuladen bei frischer Installation.",
-  "settings.autoWorkspaceDesc": "Beim ersten Lauf einen Arbeitsbereich „Personal“ anlegen, statt das leere Start mit der Aufforderung zu zeigen, einen anzulegen. Wirkt nach einem Neuladen bei frischer Installation."
+  "settings.autoWorkspaceDesc": "Beim ersten Lauf einen Arbeitsbereich „Personal“ anlegen, statt das leere Start mit der Aufforderung zu zeigen, einen anzulegen. Wirkt nach einem Neuladen bei frischer Installation.",
+
+  // Die Schienennamen kommen vom Wirt; die Zuordnung auf einen Schluessel steht
+  // als geschlossene Tabelle in render-sidebar.js.
+  "rail.lint": "Prüfung",
+  "rail.contracts": "Verträge",
+  "rail.rollup": "Zusammenfassung",
+  "rail.workspaces": "Arbeitsbereiche",
+  "rail.help": "Hilfe",
+
+  // Der Name davor ist der des Eintrags und kommt aus den Daten.
+  "compose.openInNewTab": "{name} — klicken öffnet es in einem neuen Reiter",
+  "main.src.pickUrlShort": "Wählen Sie eine Adresse",
+
+  // Die Beispieladresse bleibt; {{baseUrl}} ist Bowires Schreibweise.
+  "rb.urlPlaceholder": "https://api.example.com/users  •  {{baseUrl}} greift auf die Umgebung zu",
+
+  // Die Beispieladressen bleiben; nur der Hinweis daneben ist uebersetzbar.
+  "rbGrpc.urlPlaceholder": "https://grpc.example.com:443  •  {{grpcUrl}} greift auf die Umgebung zu",
+  "rbMqtt.urlPlaceholder": "mqtts://broker.hivemq.com:8883  •  {{broker}} greift auf die Umgebung zu"
 }

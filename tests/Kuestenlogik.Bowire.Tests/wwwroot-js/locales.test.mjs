@@ -482,3 +482,52 @@ test('the detector reads prose and skips the vocabulary around it', () => {
         assert.ok(!looksLikeProse(no), `should not be prose: ${no}`);
     }
 });
+
+// ---- the pseudo-locale ----
+//
+// The ratchet above can only catch what its patterns were taught to look for,
+// and six times in this sweep it read zero while the workbench still showed
+// English. `qps` inverts the question: instead of asking a regular expression
+// which strings went through t(), it marks the ones that did and lets the
+// screen answer.
+
+test('the pseudo-locale marks what came through the catalogue', () => {
+    const api = withCatalogues({ en: { greet: 'Execute' } });
+    api.setLocale('qps');
+    assert.equal(api.t('greet'), '⟦Ëxëcûtë⟧');
+});
+
+test('the pseudo-locale leaves both kinds of placeholder alone', () => {
+    // `{n}` is interpolate's, `{{base}}` is Bowire's own variable syntax and
+    // reaches the screen unexpanded. Accenting either would break the very
+    // thing the marking exists to check.
+    const api = withCatalogues({ en: { row: 'Step {n} of {total} — {{base}} ok' } });
+    api.setLocale('qps');
+    assert.equal(api.t('row', { n: 2, total: 5 }), '⟦Stëp 2 öf 5 — {{base}} ök⟧');
+});
+
+test('a key with no English entry stays bare under the pseudo-locale', () => {
+    // Same signal as in every other locale: the key itself on screen means
+    // the catalogue has nothing for it.
+    const api = withCatalogues({ en: {} });
+    api.setLocale('qps');
+    assert.equal(api.t('nothing.here'), 'nothing.here');
+});
+
+test('the pseudo-locale is reachable but not offered in the selector', () => {
+    // It would read as a broken language to anyone who picked it by accident.
+    const api = withCatalogues({ en: { a: 'x' }, de: { a: 'y' } });
+    assert.equal(api.resolveLocale('qps'), 'qps');
+    assert.ok(!api.availableLocales().includes('qps'));
+});
+
+test('tNodes still finds its slot under the pseudo-locale', () => {
+    // tNodes splits on `{slot}`, so the marking has to keep that marker
+    // findable or every sentence with an inline node loses its node.
+    const api = withCatalogues({ en: { greet: 'Viewing as {name}.' } });
+    api.setLocale('qps');
+    const node = { tag: 'strong' };
+    const parts = api.tNodes('greet', 'name', node);
+    assert.equal(parts.length, 3, 'the sentence still splits around the slot');
+    assert.equal(parts[1], node);
+});

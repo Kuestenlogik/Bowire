@@ -1179,14 +1179,42 @@
     // The 'intercepted' rail (#153) is contributed server-side via
     // BuiltInRails.cs alongside the other built-ins — no special
     // JS-side handling here.
+    // #117 — the rail labels arrive from the host in
+    // __BOWIRE_CONFIG__.rails, written into the HTML before anyone knows
+    // which language this session wants. A closed table maps the id onto a
+    // catalogue key; a key built as 't('rail.' + r.id)' would be
+    // unfindable, and the guard that checks every key has a caller would
+    // read all fourteen as orphans. A rail the host adds that is not in
+    // the table keeps the label the host gave it.
+    var RAIL_LABEL_KEYS = {
+        home: 'rail.home',
+        discover: 'sidebar.discover',
+        compose: 'coverage.source.compose',
+        recordings: 'sidebar.recordings.title',
+        flows: 'rail.flows',
+        lint: 'rail.lint',
+        contracts: 'rail.contracts',
+        rollup: 'rail.rollup',
+        intercept: 'rail.intercept',
+        benchmarks: 'rail.benchmarks',
+        monitoring: 'monitoring.title',
+        security: 'rail.security',
+        workspaces: 'rail.workspaces',
+        help: 'rail.help'
+    };
+
     var _railModes = (function () {
         var cfg = (typeof window !== 'undefined' && window.__BOWIRE_CONFIG__) || {};
         var raw = Array.isArray(cfg.rails) ? cfg.rails : [];
         return raw.map(function (r) {
+            var labelKey = RAIL_LABEL_KEYS[r.id];
             return {
                 id: r.id,
                 icon: r.icon,
-                label: r.label,
+                // Resolved at read time, not here: setLocale does not reload,
+                // so a label translated once at boot would freeze the language
+                // this table was built in.
+                get label() { return labelKey ? t(labelKey) : r.label; },
                 group: r.group,
                 sidebar: r.sidebar || { kind: 'none' },
                 hideFromRail: !!r.hideFromRail,

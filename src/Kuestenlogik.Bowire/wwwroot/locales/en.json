@@ -3356,5 +3356,23 @@
   "settings.autoWorkspaceForcedOn": "Forced by the host (appsettings / CLI) — currently on.",
   "settings.autoWorkspaceForcedOff": "Forced by the host (appsettings / CLI) — currently off.",
   "settings.autoWorkspaceEmbedded": "On by default when Bowire is embedded: a first run seeds one workspace named after the host app and lands on Discover, where this host's own API is already listed. Turn it off to get the empty Home + Create-Workspace CTA instead. Takes effect after a reload of a fresh install.",
-  "settings.autoWorkspaceDesc": "Seed a default \"Personal\" workspace on first run instead of showing the empty Home + Create-Workspace CTA. Takes effect after a reload of a fresh install."
+  "settings.autoWorkspaceDesc": "Seed a default \"Personal\" workspace on first run instead of showing the empty Home + Create-Workspace CTA. Takes effect after a reload of a fresh install.",
+
+  // the rails the host names but the catalogue had no key for yet.
+  "rail.lint": "Lint",
+  "rail.contracts": "Contracts",
+  "rail.rollup": "Rollup",
+  "rail.workspaces": "Workspaces",
+  "rail.help": "Help",
+
+  // two the pseudo-locale found and no pattern had.
+  "compose.openInNewTab": "{name} — click to open in a new tab",
+  "main.src.pickUrlShort": "Pick a URL",
+
+  // the URL bar's placeholder: an example address and Bowire's own hint.
+  "rb.urlPlaceholder": "https://api.example.com/users  •  use {{baseUrl}} for env vars",
+
+  // the gRPC and MQTT URL placeholders, beside the REST one.
+  "rbGrpc.urlPlaceholder": "https://grpc.example.com:443  •  use {{grpcUrl}} for env vars",
+  "rbMqtt.urlPlaceholder": "mqtts://broker.hivemq.com:8883  •  use {{broker}} for env vars"
 }

@@ -895,7 +895,7 @@
         }
         var row = el('div', {
             className: 'bowire-compose-side-item',
-            title: title + ' — click to open in a new tab',
+            title: t('compose.openInNewTab', { name: title }),
             draggable: 'true',
             onClick: function () {
                 spawnDesignTabFromItem(item, {
@@ -1038,7 +1038,7 @@
         var cfg = preset.config || {};
         var row = el('div', {
             className: 'bowire-compose-side-item',
-            title: preset.name + ' — click to open in a new tab',
+            title: t('compose.openInNewTab', { name: preset.name }),
             draggable: 'true',
             onClick: function () {
                 spawnDesignTabFromItem(cfg, {
