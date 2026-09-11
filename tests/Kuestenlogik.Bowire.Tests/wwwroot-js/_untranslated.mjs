@@ -22,6 +22,37 @@ import { dirname, resolve, sep } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const SRC = resolve(__dirname, '../../../src');
 
+/**
+ * The packages whose JS does NOT get spliced into the workbench IIFE.
+ *
+ * BowireHtmlGenerator.IsRailLikeAssembly is the authority: every Bowire-
+ * namespaced assembly contributes its `.wwwroot.js.*.js` resources to the
+ * bundle except the ones named there. Map is on that list because its widget
+ * loads through the extension-asset endpoint as its own <script> — which is
+ * why the core's one-letter `t` is not in its scope, and why calling it bare
+ * threw on the first map mount.
+ *
+ * Read out of the C# rather than repeated here, so the two cannot drift: add a
+ * package to that exclusion list and this guard follows it the same day.
+ */
+export function outsideIifePackages() {
+    const gen = resolve(SRC, 'Kuestenlogik.Bowire', 'BowireHtmlGenerator.cs');
+    const text = readFileSync(gen, 'utf8');
+    const body = text.slice(text.indexOf('IsRailLikeAssembly'));
+    const end = body.indexOf('CollectRailJsPayload');
+    const scope = end < 0 ? body : body.slice(0, end);
+    const names = [...scope.matchAll(/string\.Equals\(name,\s*"([^"]+)"/g)]
+        .map((m) => m[1])
+        // Core and Tool are excluded for a different reason — core's fragments
+        // ship inline, Tool has none. Neither has a wwwroot/js of its own that
+        // loads separately, so neither is a candidate here.
+        .filter((n) => n !== 'Kuestenlogik.Bowire' && n !== 'Kuestenlogik.Bowire.Tool');
+    if (names.length === 0) {
+        throw new Error('no exclusions parsed from IsRailLikeAssembly — has it moved?');
+    }
+    return names;
+}
+
 /** Every wwwroot/js directory that feeds the bundle, core and siblings alike. */
 export function fragmentDirs() {
     return readdirSync(SRC, { withFileTypes: true })
@@ -30,10 +61,16 @@ export function fragmentDirs() {
         .filter((dir) => existsSync(dir));
 }
 
-/** Every fragment, labelled by its path relative to src/ so failures say where. */
+/**
+ * Every fragment, labelled by its path relative to src/ so failures say where,
+ * and by whether it shares the workbench IIFE — the one thing that decides
+ * where its `t` comes from.
+ */
 export function fragmentSources() {
+    const outside = new Set(outsideIifePackages());
     const out = [];
     for (const dir of fragmentDirs()) {
+        const pkg = dir.slice(SRC.length + 1).split(sep)[0];
         for (const entry of readdirSync(dir, { withFileTypes: true, recursive: true })) {
             if (!entry.isFile() || !entry.name.endsWith('.js')) continue;
             // _locales.js is generated from the catalogues; i18n.js declares t().
@@ -42,6 +79,7 @@ export function fragmentSources() {
             out.push({
                 file: path.slice(SRC.length + 1).split(sep).join('/'),
                 text: readFileSync(path, 'utf8'),
+                outsideIife: outside.has(pkg),
             });
         }
     }

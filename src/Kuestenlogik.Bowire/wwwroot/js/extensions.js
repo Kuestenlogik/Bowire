@@ -232,6 +232,24 @@
         registerResponseTreeMenuContributor: function (fn) {
             if (typeof fn === 'function') bowireResponseTreeMenuContributors.push(fn);
         },
+        // ---- Translation (#117) ----
+        //
+        // An external bundle loads as its own <script>, outside the
+        // workbench IIFE, so the core's one-letter `t` is not in its
+        // scope — a bundle that calls it throws ReferenceError on the
+        // first mount, which is exactly how the map widget's nineteen
+        // strings were found. Extensions need the same catalogue the
+        // core reads: their keys live in the core's en.json/de.json (a
+        // second catalogue per package would be a second answer to
+        // "what language is this session in?").
+        //
+        // Delegating rather than assigning `t` itself matters: setLocale
+        // swaps the active catalogue behind this handle, so a bundle
+        // that captured the function once still follows the language.
+        t: function (key, params) { return t(key, params); },
+        tNodes: function (key, slot, nodes, params) {
+            return tNodes(key, slot, nodes, params);
+        },
         // Inspection surface used by /tests + by hot-reload code.
         _internal: {
             byId: function (id) { return bowireExtensions.byId[id] || null; },

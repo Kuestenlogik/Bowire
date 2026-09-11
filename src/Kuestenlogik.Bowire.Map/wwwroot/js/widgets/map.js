@@ -12,6 +12,28 @@
 // ----------------------------------------------------------------------
 
     /**
+     * #117 — the translator, reached through the extension contract.
+     *
+     * This bundle loads as its own <script>, outside the workbench IIFE,
+     * so the core's `t` is not in scope here; calling it bare threw
+     * ReferenceError on the first map mount. `BowireExtensions.t` is the
+     * published way in, and it is looked up per call rather than captured
+     * once, for two reasons: the bundle can be served before the core has
+     * finished installing the handle, and setLocale swaps the catalogue
+     * behind it — a captured reference would still work, an old copy of
+     * the resolved text would not.
+     *
+     * Falling back to the key keeps an older core (one that predates the
+     * handle) serving a newer bundle: the widget renders with key names
+     * showing, which is ugly and obvious, rather than not rendering.
+     */
+    function t(key, params) {
+        var api = window.BowireExtensions;
+        if (api && typeof api.t === 'function') return api.t(key, params);
+        return key;
+    }
+
+    /**
      * Track whether the MapLibre script tag has been injected. Multiple
      * map widgets mounted in the same session share one MapLibre lib;
      * the first widget pays the load cost, every other widget reuses
@@ -3061,7 +3083,11 @@
                 scope: 'same-parent'
             },
             viewer: {
-                label: t('map.label'),
+                // #117 — a getter, not a value. Registration runs once at
+                // bundle load; setLocale does not reload, so a label resolved
+                // here would show whatever language this session booted in
+                // for the rest of it.
+                get label() { return t('map.label'); },
                 icon: 'map-pin',
                 // Phase 3.2 — the map naturally renders >1 selected
                 // pin (the existing Phase 3.1 camera + restyle logic
@@ -3073,7 +3099,7 @@
                 mount: bowireMapViewerMount
             },
             editor: {
-                label: t('map.pick'),
+                get label() { return t('map.pick'); },
                 // The coordinate editor only ever cares about a single
                 // (lat, lon) pair, so leave it on the safe default.
                 selectionMode: 'single',

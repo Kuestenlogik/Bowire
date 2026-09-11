@@ -317,8 +317,12 @@ test('no fragment both shadows t and calls it', () => {
     const CALLS_T = /(?<![A-Za-z0-9_$.])t\(\s*['"]/;
 
     const offenders = [];
-    for (const { file, text } of fragmentSources()) {
+    for (const { file, text, outsideIife } of fragmentSources()) {
         if (!CALLS_T.test(text)) continue;   // not swept yet — its turn will come
+        // A bundle that loads outside the IIFE has no translator to shadow —
+        // it has to bring its own. The test below is the one that applies
+        // there, and it is the mirror of this one.
+        if (outsideIife) continue;
         const shadows = [];
         text.split('\n').forEach((line, i) => {
             if (line.trim().startsWith('//')) return;
@@ -329,6 +333,41 @@ test('no fragment both shadows t and calls it', () => {
 
     assert.deepEqual(offenders, [],
         `a fragment that calls t() must not bind the name t:\n  ${offenders.join('\n  ')}`);
+});
+
+test('a bundle outside the IIFE brings its own t', () => {
+    // The mirror image of the shadow guard, and the bug it was written for.
+    //
+    // The map widget ships as its own <script> from the extension-asset
+    // endpoint rather than being spliced into the workbench IIFE, so the
+    // core's `t` is not in its scope. The i18n sweep translated its nineteen
+    // strings anyway; every one of them threw ReferenceError the first time a
+    // map mounted. Nothing caught it — the file parses, the catalogue has all
+    // nineteen keys, and the guard that checks every key has a caller was
+    // satisfied by exactly the calls that could not run.
+    //
+    // So: inside the IIFE, never bind the name. Outside it, always bind the
+    // name — via `BowireExtensions.t`, which is the published contract, not by
+    // reaching into the core's closure (there is no way in, which is the
+    // point).
+    const CALLS_T = /(?<![A-Za-z0-9_$.])t\(\s*['"]/;
+    const BINDS_T = /(?:function\s+t\s*\(|(?:var|let|const)\s+t\s*=)/;
+
+    const offenders = [];
+    for (const { file, text, outsideIife } of fragmentSources()) {
+        if (!outsideIife || !CALLS_T.test(text)) continue;
+        if (!BINDS_T.test(text)) {
+            offenders.push(`${file} — calls t() with no binding in scope`);
+            continue;
+        }
+        if (!text.includes('BowireExtensions')) {
+            offenders.push(`${file} — binds t() without going through BowireExtensions`);
+        }
+    }
+
+    assert.deepEqual(offenders, [],
+        `a bundle outside the IIFE must define t via BowireExtensions.t:\n  `
+        + `${offenders.join('\n  ')}`);
 });
 
 test('no fragment reads t as a value', () => {
@@ -348,12 +387,19 @@ test('no fragment reads t as a value', () => {
     // UI copy is full of "don’t" and "can’t", and U+2019 is a different
     // character from U+0027.
     const READS_T = /(?<![A-Za-z0-9_$.'"`’])t(?![A-Za-z0-9_$(])/;
+    // The one legitimate `t` that is neither a call nor a leftover: the
+    // property that publishes the translator to bundles loading outside the
+    // IIFE (`BowireExtensions.t`). Written narrowly — a property named t
+    // holding a function, alone on its line — so `foo({ t: someLocal })` and
+    // `cond ? a : t` stay caught.
+    const PUBLISHES_T = /^\s*t:\s*function\s*\(/;
 
     const offenders = [];
     for (const { file, text } of fragmentSources()) {
         if (!CALLS_T.test(text)) continue;
         text.split('\n').forEach((line, i) => {
             const code = line.split('//')[0];
+            if (PUBLISHES_T.test(code)) return;
             if (READS_T.test(code)) offenders.push(`${file}:${i + 1}: ${line.trim()}`);
         });
     }
