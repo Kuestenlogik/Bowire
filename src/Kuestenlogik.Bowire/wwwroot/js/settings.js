@@ -4709,16 +4709,20 @@ textContent: t(discoveryState.entryCount === 1
 
         var lines = [];
         if (s.enabled) {
-            lines.push('Daily plugin-update check is enabled (every '
-                + (s.intervalHours || 24) + ' h).');
+            lines.push(t('settings.plugin.checkOn',
+                { hours: s.intervalHours || 24 }));
         } else {
-            lines.push('Daily plugin-update check is OFF — opt in via --update-check or Bowire:PluginUpdateCheck:Enabled=true. Manual checks via the button below always work.');
+            lines.push(t('settings.plugin.checkOff'));
         }
         if (s.cached && s.cached.CheckedAt) {
             var n = pluginUpdateBadgeCount();
-            lines.push('Last run: ' + new Date(s.cached.CheckedAt).toLocaleString()
-                + ' — ' + (n === 0 ? t('settings.plugin.allUpToDate')
-                    : n + ' update(s) available.'));
+            // #688 - one message, two shapes.
+            lines.push(t('settings.plugin.lastRun', {
+                when: new Date(s.cached.CheckedAt).toLocaleString(),
+                result: n === 0 ? t('settings.plugin.allUpToDate')
+                    : t(n === 1 ? 'settings.plugin.updateAvailableOne'
+                        : 'settings.plugin.updateAvailableMany', { count: n })
+            }));
         }
         box.appendChild(el('div', {
             className: 'bowire-settings-update-check-text',

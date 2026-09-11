@@ -549,9 +549,14 @@
             // Not "derived match on shipId" — shipId is precisely what is
             // NOT in this step. Saying otherwise is the kind of small lie
             // that makes an operator stop trusting the whole view.
-            parts.push('derived — ' + (model.key ? model.key.name : 'the key') + ' is not in this step');
-            parts.push('linked by ' + link.name + ' = ' + link.value
-                + ', shared with ' + link.viaProtocol + ' step ' + ((link.viaStepIndex || 0) + 1));
+            parts.push(t('rec.corr.derived',
+                { key: model.key ? model.key.name : t('rec.corr.theKey') }));
+            parts.push(t('rec.corr.linkedBy', {
+                name: link.name,
+                value: link.value,
+                protocol: link.viaProtocol,
+                step: (link.viaStepIndex || 0) + 1
+            }));
         } else {
             parts.push(model.key
                 ? (_matchWord(ev.match) + ' match on ' + model.key.name)

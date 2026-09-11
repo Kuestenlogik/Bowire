@@ -3541,5 +3541,16 @@
   "ai.scanFindingMeta": "{endpoint} · {rule} · echt {score} %",
   "api.mqttTopicsOne": "{count} Thema bei {url} erkundet",
   "api.mqttTopicsMany": "{count} Themen bei {url} erkundet",
-  "assert.unknownOperator": "unbekannter Operator: {op}"
+  "assert.unknownOperator": "unbekannter Operator: {op}",
+
+  // „geteilt mit Schritt {step} von {protocol}" dreht die Reihenfolge um —
+  // im Deutschen steht die Ordnungszahl vor dem Protokoll.
+  "settings.plugin.checkOn": "Die tägliche Prüfung auf neue Fassungen ist eingeschaltet (alle {hours} h).",
+  "settings.plugin.checkOff": "Die tägliche Prüfung auf neue Fassungen ist aus — einschalten mit --update-check oder Bowire:PluginUpdateCheck:Enabled=true. Von Hand geht sie mit dem Knopf darunter jederzeit.",
+  "settings.plugin.lastRun": "Zuletzt gelaufen: {when} — {result}",
+  "settings.plugin.updateAvailableOne": "{count} neue Fassung verfügbar.",
+  "settings.plugin.updateAvailableMany": "{count} neue Fassungen verfügbar.",
+  "rec.corr.derived": "abgeleitet — {key} steht in diesem Schritt nicht",
+  "rec.corr.theKey": "der Schlüssel",
+  "rec.corr.linkedBy": "verknüpft über {name} = {value}, geteilt mit Schritt {step} von {protocol}"
 }

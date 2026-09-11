@@ -3541,5 +3541,15 @@
   "ai.scanFindingMeta": "{endpoint} · {rule} · real {score}%",
   "api.mqttTopicsOne": "{count} topic discovered at {url}",
   "api.mqttTopicsMany": "{count} topics discovered at {url}",
-  "assert.unknownOperator": "unknown operator: {op}"
+  "assert.unknownOperator": "unknown operator: {op}",
+
+  // the plugin-update status lines and the correlation key's provenance note.
+  "settings.plugin.checkOn": "Daily plugin-update check is enabled (every {hours} h).",
+  "settings.plugin.checkOff": "Daily plugin-update check is OFF — opt in via --update-check or Bowire:PluginUpdateCheck:Enabled=true. Manual checks via the button below always work.",
+  "settings.plugin.lastRun": "Last run: {when} — {result}",
+  "settings.plugin.updateAvailableOne": "{count} update available.",
+  "settings.plugin.updateAvailableMany": "{count} updates available.",
+  "rec.corr.derived": "derived — {key} is not in this step",
+  "rec.corr.theKey": "the key",
+  "rec.corr.linkedBy": "linked by {name} = {value}, shared with {protocol} step {step}"
 }

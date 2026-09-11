@@ -195,6 +195,9 @@
     // a schema section (added/removed/changed), then per-method response
     // field diffs. Pure over its argument — reads state, never the DOM.
     function buildCompareMarkdown(state) {
+        // i18n-exempt (whole function): a markdown report for the PR bot,
+        // not a screen. It lands in a comment on somebody's pull request
+        // alongside the diff, where English is the surrounding language.
         var lines = [];
         var aLabel = compareSideLabel(state, 'a');
         var bLabel = compareSideLabel(state, 'b');

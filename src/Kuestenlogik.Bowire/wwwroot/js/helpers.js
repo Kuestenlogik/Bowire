@@ -1839,6 +1839,11 @@
      * falls through to a single-line block carrying the string.
      */
     function richErrorDetail(result, fallback) {
+        // i18n-exempt (whole function): what this returns goes to
+        // addConsoleEntry, which stores rendered text rather than a key —
+        // the same #689 group its call sites are already marked with. The
+        // field names it labels (status, detail, type, instance) are
+        // problem+json's, not Bowire's.
         var lines = [];
         if (typeof result === 'string' && result) {
             return result;
