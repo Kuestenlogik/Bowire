@@ -72,20 +72,20 @@
             // familiar from every desktop OS — kept the scope-clear
             // sibling ('Workspace…') so the contrast still does the
             // disclaimer work.
-            header('System settings'),
-            leaf('general', 'General', 'settings'),
+            header(t('settings.nav.system')),
+            leaf('general', t('settings.general'), 'settings'),
             // Label was 'Rail modes' until v2.1; renamed to 'Rails'
             // because the rail strip is now the primary navigation
             // primitive (operators talk about 'rails', not 'rail
             // modes'). Internal tab id stays 'rails' so existing deep
             // links + saved settings keep working.
-            leaf('rails', 'Rails', 'layers'),
-            leaf('shortcuts', 'Shortcuts', 'list'),
+            leaf('rails', t('settings.nav.rails'), 'layers'),
+            leaf('shortcuts', t('settings.nav.shortcuts'), 'list'),
             // Data is app-wide, NOT workspace-scoped: theme, rail
             // preferences, the workspace LIST itself, action log,
             // last-active workspace all live in localStorage. Stays
             // under This machine where the scope is unambiguous.
-            leaf('data', 'Data', 'trash')
+            leaf('data', t('settings.nav.data'), 'trash')
         ];
 
         // Plugins group — one child per extension point. Each sub-page
@@ -96,12 +96,12 @@
         // Tab ids keep the 'configure-' prefix because operators with
         // deep links from v2.1 should keep landing on the same page.
         var pluginsChildren = [
-            leaf('configure-protocols', 'Protocols', 'plug'),
-            leaf('configure-widgets', 'UI Widgets', 'layers'),
-            leaf('configure-modules', 'Modules', 'spark'),
-            leaf('configure-formats', 'Formats', 'list'),
-            leaf('configure-tools', 'Tools', 'plug'),
-            leaf('configure-discovery', 'Discovery providers', 'search')
+            leaf('configure-protocols', t('settings.protocols.title'), 'plug'),
+            leaf('configure-widgets', t('settings.nav.widgets'), 'layers'),
+            leaf('configure-modules', t('settings.modules.title'), 'spark'),
+            leaf('configure-formats', t('settings.formats.title'), 'list'),
+            leaf('configure-tools', t('settings.tools.title'), 'plug'),
+            leaf('configure-discovery', t('settings.nav.discovery'), 'search')
         ];
         var pluginsKey = 'plugins';
         var pluginsActive = settingsTab.indexOf('configure-') === 0
@@ -148,14 +148,14 @@
         // environments rail / workspace-detail storage section) instead
         // of inventing new UI — the audit note called for extraction,
         // not fresh chrome. Overrides stays put (existing renderer).
-        nodes.push(header('Workspace…'));
+        nodes.push(header(t('settings.nav.workspace')));
         var wsKey_ = 'workspace';
         var wsChildren = [
-            leaf('workspace-sources', 'Sources / URLs', 'globe'),
-            leaf('workspace-environments', 'Environments', 'globe'),
-            leaf('workspace-headers', 'Header library', 'braces'),
-            leaf('workspace-overrides', 'Per-Workspace overrides', 'settings'),
-            leaf('workspace-data', 'Data', 'trash')
+            leaf('workspace-sources', t('settings.nav.sources'), 'globe'),
+            leaf('workspace-environments', t('sidebar.envs.title'), 'globe'),
+            leaf('workspace-headers', t('settings.nav.headers'), 'braces'),
+            leaf('workspace-overrides', t('settings.nav.overrides'), 'settings'),
+            leaf('workspace-data', t('settings.nav.data'), 'trash')
         ];
         var wsActive = settingsTab.indexOf('workspace-') === 0
             || settingsTab === 'workspace';
@@ -453,8 +453,8 @@
 
         // Theme
         section.appendChild(renderSettingsRow(
-            'Theme',
-            'Color scheme for the UI',
+            t('drawer.theme'),
+            t('settings.themeDesc'),
             function () {
                 var select = el('select', {
                     id: 'bowire-settings-theme-select',
@@ -482,8 +482,8 @@
         // Auto-interpret JSON in payloads
         var autoInterpret = localStorage.getItem('bowire_auto_interpret') !== 'false';
         section.appendChild(renderSettingsToggle(
-            'Auto-interpret JSON',
-            'Parse JSON payloads in WebSocket, MQTT, and SSE responses for pretty display',
+            t('settings.autoJson'),
+            t('settings.autoJsonDesc'),
             autoInterpret,
             function (val) {
                 localStorage.setItem('bowire_auto_interpret', val ? 'true' : 'false');
@@ -513,7 +513,7 @@
                 + 'of a fresh install.';
         }
         section.appendChild(renderSettingsToggle(
-            'Auto-create initial workspace',
+            t('settings.autoWorkspace'),
             autoCreateDesc,
             _autoCreate.value,
             function (val) {
@@ -561,8 +561,8 @@
         var identityEnabled = localStorage.getItem('bowire_workspace_identity_enabled') === 'true';
         var identityVariant = localStorage.getItem('bowire_workspace_identity_variant') || 'top-strip';
         section.appendChild(renderSettingsToggle(
-            'Workspace identity cue',
-            'Show a peripheral indicator in the active workspace’s colour.',
+            t('settings.identityCue'),
+            t('settings.identityCueDesc'),
             identityEnabled,
             function (val) {
                 localStorage.setItem('bowire_workspace_identity_enabled', val ? 'true' : 'false');
@@ -570,8 +570,8 @@
             }
         ));
         section.appendChild(renderSettingsRow(
-            'Identity cue style',
-            'Presentation used when the identity cue is on.',
+            t('settings.identityCueStyle'),
+            t('settings.identityCueStyleDesc'),
             function () {
                 var select = el('select', {
                     className: 'bowire-settings-select',
@@ -598,8 +598,8 @@
         // the schema came from). Machine-wide UI preference, default off.
         var alwaysShowInvocationUrl = localStorage.getItem('bowire_always_show_invocation_url') === 'true';
         section.appendChild(renderSettingsToggle(
-            'Always show invocation URL override',
-            'Expand the “Invocation URL” disclosure on every discovered method, instead of only when you open it. Handy when the API you call lives at a different host than its schema.',
+            t('settings.alwaysInvokeUrl'),
+            t('settings.alwaysInvokeUrlDesc'),
             alwaysShowInvocationUrl,
             function (val) {
                 localStorage.setItem('bowire_always_show_invocation_url', val ? 'true' : 'false');
@@ -609,8 +609,8 @@
 
         // Schema Watch interval
         section.appendChild(renderSettingsRow(
-            'Schema Watch interval',
-            'Time to wait after one re-discovery finishes before starting the next. A discovery over every plugin takes seconds, so this is a gap, not a fixed cadence.',
+            t('settings.watchInterval'),
+            t('settings.watchIntervalDesc'),
             function () {
                 var input = el('input', {
                     id: 'bowire-settings-watch-interval-input',
@@ -641,8 +641,8 @@
         // GET {prefix}/api/mcp-adapter — a 200 means the adapter is
         // mounted, a 404 means the route doesn't exist (adapter off).
         section.appendChild(renderSettingsRow(
-            'MCP adapter',
-            'Expose Bowire’s discover / invoke / record primitives as MCP tools so AI agents (Claude, Cursor, Copilot) can drive the workbench.',
+            t('settings.mcpAdapter'),
+            t('settings.mcpAdapterDesc'),
             function () {
                 var statusBox = el('div', {
                     id: 'bowire-settings-mcp-adapter-status',
@@ -687,8 +687,8 @@
         // a repeat visit doesn't force a re-type. No backend probe —
         // forwarder mode is a CLI feature, not a runtime toggle.
         section.appendChild(renderSettingsRow(
-            'MCP forwarder',
-            'Relay every incoming MCP tool call to a heavier Bowire on another host. Useful when an AI agent runs on a laptop but the schemas + recordings live on a build server.',
+            t('settings.mcpForwarder'),
+            t('settings.mcpForwarderDesc'),
             function () {
                 var wrap = el('div', {
                     id: 'bowire-settings-mcp-forwarder',
@@ -758,8 +758,8 @@
         // trigger picks it up. Operators that dismissed the tour can
         // bring it back without hand-editing localStorage.
         section.appendChild(renderSettingsRow(
-            'Guided tour',
-            'Replay the Getting-started tour that walks new operators through workspaces / Discover / Compose / Recordings.',
+            t('tour.ariaLabel'),
+            t('settings.tourDesc'),
             function () {
                 return el('button', {
                     type: 'button',
@@ -1657,7 +1657,7 @@
     function renderAiApiKeyRow(draft, status, hostManaged) {
         var hasExistingKey = !!(status && status.hasApiKey);
         var notApplicable = !isAiCloudProvider(draft.providerId);
-        return renderSettingsRow('API key',
+        return renderSettingsRow(t('settings.apiKey'),
             notApplicable
                 ? t('settings.ai.noKeyNeeded')
                 : t('settings.ai.byokHint'),
@@ -1959,8 +1959,8 @@
         // Phase 4 MCP-client reversal). Each option's tooltip names
         // the package that contributes the factory — standalone bowire
         // bundles all of them, embedded hosts opt in granularly.
-        section.appendChild(renderSettingsRow('Provider',
-            'Backend that serves chat completions. Local (Ollama / LM Studio) keeps prompts on this machine; BYOK cloud (OpenAI / Anthropic / OpenRouter) calls the provider directly from this host; MCP routes through your existing MCP host.',
+        section.appendChild(renderSettingsRow(t('settings.provider'),
+            t('settings.providerDesc'),
             function () {
                 var sel = el('select', { className: 'bowire-settings-select' });
                 var options = [
@@ -1999,7 +1999,7 @@
         // Endpoint text input. Placeholder + helper text are
         // provider-specific so MCP users see the stdio: form and
         // cloud users see the canonical base URL.
-        section.appendChild(renderSettingsRow('Endpoint',
+        section.appendChild(renderSettingsRow(t('settings.endpoint'),
             endpointHelpFor(draft.providerId),
             function () {
                 var input = el('input', {
@@ -2022,8 +2022,8 @@
         // Model: dropdown sourced from probe results when available,
         // free-text otherwise. Probe response shapes for the two
         // providers expose their loaded-model lists.
-        section.appendChild(renderSettingsRow('Model',
-            'Model id served by the provider. Use \'ollama pull <name>\' first; LM Studio uses the currently-loaded model. Empty falls back to the provider’s own default.',
+        section.appendChild(renderSettingsRow(t('settings.model'),
+            t('settings.modelDesc'),
             function () {
                 var key = draft.providerId === 'lmstudio' ? 'lmstudio' : 'ollama';
                 var hit = probe[key];
@@ -2066,8 +2066,8 @@
                 return wrap;
             }));
 
-        section.appendChild(renderSettingsToggle('Auto-detect local providers',
-            'Probe 127.0.0.1:11434 (Ollama) and 127.0.0.1:1234 (LM Studio) on AI panel paint. Each probe times out at 300 ms. Off = fully offline, no local network calls.',
+        section.appendChild(renderSettingsToggle(t('settings.autoDetect'),
+            t('settings.autoDetectDesc'),
             draft.autoDetectLocal,
             function (v) { draft.autoDetectLocal = v; }));
 
@@ -2112,8 +2112,8 @@
         // UI for the switch, but localStorage stays out of the loop —
         // every reload starts back at off.
         section.appendChild(renderSettingsToggle(
-            'Allow AI to invoke methods',
-            'When on, the assistant can dispatch real calls via the bowire_invoke tool — every invocation is audited to ~/.bowire/.ai-actions.jsonl. Session-only: every workbench restart goes back to off.',
+            t('settings.aiInvoke'),
+            t('settings.aiInvokeDesc'),
             typeof aiAllowInvoke !== 'undefined' && !!aiAllowInvoke,
             function (newVal) {
                 if (typeof aiAllowInvoke !== 'undefined') aiAllowInvoke = newVal;
@@ -2127,8 +2127,8 @@
         // started Ollama can see the detected models without closing
         // and reopening the dialog.
         section.appendChild(renderSettingsAction(
-            'Refresh detection',
-            'Re-probe local providers and pull the current server-side configuration. Use this after starting Ollama / LM Studio.',
+            t('settings.refreshDetection'),
+            t('settings.refreshDetectionDesc'),
             'Refresh',
             function () { loadAiSettings(true); }
         ));
@@ -2481,8 +2481,8 @@
 
         // Provider-specific config fields.
         if (draft.providerId === 'local') {
-            section.appendChild(renderSettingsRow('Catalogue path',
-                'Absolute or relative path to the JSON document. Leave blank to fall back to ~/.bowire/catalogue.json.',
+            section.appendChild(renderSettingsRow(t('settings.cat.path'),
+                t('settings.cat.pathDesc'),
                 function () {
                     var input = el('input', {
                         type: 'text',
@@ -2494,8 +2494,8 @@
                     return input;
                 }));
         } else if (draft.providerId === 'http') {
-            section.appendChild(renderSettingsRow('Catalogue URL',
-                'HTTPS endpoint returning the catalogue document shape ({ "version": 1, "entries": [...] }). Required.',
+            section.appendChild(renderSettingsRow(t('settings.cat.url'),
+                t('settings.cat.urlDesc'),
                 function () {
                     var input = el('input', {
                         type: 'url',
@@ -2506,8 +2506,8 @@
                     input.oninput = function () { draft.httpUrl = input.value; _persistDiscoveryDraft(); };
                     return input;
                 }));
-            section.appendChild(renderSettingsRow('Authorization header',
-                'Sent verbatim as the Authorization request header (e.g. "Bearer eyJ..."). Leave blank to keep the existing stored value; clear to remove the stored value.',
+            section.appendChild(renderSettingsRow(t('settings.cat.authHeader'),
+                t('settings.cat.authHeaderDesc'),
                 function () {
                     var wrap = el('div', { className: 'bowire-settings-apikey-wrap' });
                     var input = el('input', {
@@ -2535,8 +2535,8 @@
                     return wrap;
                 }));
         } else if (draft.providerId === 'consul') {
-            section.appendChild(renderSettingsRow('Consul address',
-                'Consul agent base URL — e.g. http://localhost:8500. Required.',
+            section.appendChild(renderSettingsRow(t('settings.cat.consulAddress'),
+                t('settings.cat.consulAddressDesc'),
                 function () {
                     var input = el('input', {
                         type: 'url',
@@ -2547,8 +2547,8 @@
                     input.oninput = function () { draft.consulAddress = input.value; _persistDiscoveryDraft(); };
                     return input;
                 }));
-            section.appendChild(renderSettingsRow('ACL token',
-                'Optional X-Consul-Token sent on every catalogue request. Leave blank to keep the existing stored value.',
+            section.appendChild(renderSettingsRow(t('settings.cat.aclToken'),
+                t('settings.cat.aclTokenDesc'),
                 function () {
                     var wrap = el('div', { className: 'bowire-settings-apikey-wrap' });
                     var input = el('input', {
@@ -2575,8 +2575,8 @@
                     }
                     return wrap;
                 }));
-            section.appendChild(renderSettingsRow('Datacenter (optional)',
-                'When set, every catalogue API call is made with ?dc=<value>. Leave blank to let Consul pick the local DC.',
+            section.appendChild(renderSettingsRow(t('settings.cat.datacenter'),
+                t('settings.cat.datacenterDesc'),
                 function () {
                     var input = el('input', {
                         type: 'text',
@@ -2587,8 +2587,8 @@
                     input.oninput = function () { draft.consulDatacenter = input.value; _persistDiscoveryDraft(); };
                     return input;
                 }));
-            section.appendChild(renderSettingsRow('Tag filter (optional)',
-                'When set, only services carrying this tag are surfaced. Useful for scoping to env:staging or team:payments.',
+            section.appendChild(renderSettingsRow(t('settings.cat.tagFilter'),
+                t('settings.cat.tagFilterDesc'),
                 function () {
                     var input = el('input', {
                         type: 'text',
@@ -2599,8 +2599,8 @@
                     input.oninput = function () { draft.consulTag = input.value; _persistDiscoveryDraft(); };
                     return input;
                 }));
-            section.appendChild(renderSettingsRow('URL scheme',
-                'Consul does not carry the scheme intrinsically; pick http or https for the materialised service URLs.',
+            section.appendChild(renderSettingsRow(t('settings.cat.urlScheme'),
+                t('settings.cat.urlSchemeDesc'),
                 function () {
                     var select = el('select', { className: 'bowire-settings-select' });
                     ['http', 'https'].forEach(function (s) {
@@ -2617,8 +2617,8 @@
             // these are blank. The intent here is to override the
             // defaults for hosts that need explicit coords (sidecar
             // installs, tests, dev laptops with multiple clusters).
-            section.appendChild(renderSettingsRow('API server URL',
-                'Explicit Kubernetes API server URL (e.g. https://kubernetes.default.svc). Leave blank to auto-detect in-cluster env vars or kubeconfig.',
+            section.appendChild(renderSettingsRow(t('settings.cat.k8sApiUrl'),
+                t('settings.cat.k8sApiUrlDesc'),
                 function () {
                     var input = el('input', {
                         type: 'url',
@@ -2629,8 +2629,8 @@
                     input.oninput = function () { draft.k8sApiServerUrl = input.value; _persistDiscoveryDraft(); };
                     return input;
                 }));
-            section.appendChild(renderSettingsRow('Bearer token',
-                'Service-account / kubeconfig token. Leave blank to keep the existing stored value (or to fall back to in-cluster / kubeconfig auto-detection).',
+            section.appendChild(renderSettingsRow(t('mocks.authBearer'),
+                t('settings.cat.k8sTokenDesc'),
                 function () {
                     var wrap = el('div', { className: 'bowire-settings-apikey-wrap' });
                     var input = el('input', {
@@ -2657,8 +2657,8 @@
                     }
                     return wrap;
                 }));
-            section.appendChild(renderSettingsRow('Kubeconfig path',
-                'Path to a kubeconfig file. Leave blank to fall back to $KUBECONFIG / ~/.kube/config.',
+            section.appendChild(renderSettingsRow(t('settings.cat.kubeconfigPath'),
+                t('settings.cat.kubeconfigPathDesc'),
                 function () {
                     var input = el('input', {
                         type: 'text',
@@ -2669,8 +2669,8 @@
                     input.oninput = function () { draft.k8sKubeconfigPath = input.value; _persistDiscoveryDraft(); };
                     return input;
                 }));
-            section.appendChild(renderSettingsRow('Namespace',
-                'Namespace to query. Defaults to "default" outside a pod; the pod\'s own namespace when running in-cluster.',
+            section.appendChild(renderSettingsRow(t('settings.cat.namespace'),
+                t('settings.cat.namespaceDesc'),
                 function () {
                     var input = el('input', {
                         type: 'text',
@@ -2681,8 +2681,8 @@
                     input.oninput = function () { draft.k8sNamespace = input.value; _persistDiscoveryDraft(); };
                     return input;
                 }));
-            section.appendChild(renderSettingsRow('Label selector (optional)',
-                'Standard k8s label selector — e.g. "bowire/discoverable=true". Forwarded verbatim as the labelSelector query param.',
+            section.appendChild(renderSettingsRow(t('settings.cat.labelSelector'),
+                t('settings.cat.labelSelectorDesc'),
                 function () {
                     var input = el('input', {
                         type: 'text',
@@ -2693,8 +2693,8 @@
                     input.oninput = function () { draft.k8sLabelSelector = input.value; _persistDiscoveryDraft(); };
                     return input;
                 }));
-            section.appendChild(renderSettingsRow('Service URL scheme',
-                'k8s Services don\'t carry the scheme intrinsically; pick http or https for the materialised service URLs.',
+            section.appendChild(renderSettingsRow(t('settings.cat.k8sUrlScheme'),
+                t('settings.cat.k8sUrlSchemeDesc'),
                 function () {
                     var select = el('select', { className: 'bowire-settings-select' });
                     ['http', 'https'].forEach(function (s) {
@@ -2705,8 +2705,8 @@
                     select.onchange = function () { draft.k8sScheme = select.value; _persistDiscoveryDraft(); };
                     return select;
                 }));
-            section.appendChild(renderSettingsRow('CA certificate (PEM)',
-                'PEM-encoded CA bundle for the API server\'s TLS cert. Leave blank for the in-cluster CA / OS trust store.',
+            section.appendChild(renderSettingsRow(t('settings.cat.caCert'),
+                t('settings.cat.caCertDesc'),
                 function () {
                     var wrap = el('div', { className: 'bowire-settings-apikey-wrap' });
                     var input = el('textarea', {
@@ -2735,16 +2735,16 @@
                     }
                     return wrap;
                 }));
-            section.appendChild(renderSettingsToggle('Skip TLS verification',
-                'Local test clusters only (kind / k3d / minikube with self-signed certs). NEVER enable for production clusters.',
+            section.appendChild(renderSettingsToggle(t('settings.cat.skipTls'),
+                t('settings.cat.skipTlsDesc'),
                 draft.k8sSkipTlsVerification,
                 function (val) {
                     draft.k8sSkipTlsVerification = !!val;
                     _persistDiscoveryDraft();
                 }));
         } else if (draft.providerId === 'agent') {
-            section.appendChild(renderSettingsRow('Hub URL',
-                'URL of the Bowire Agent hub (#128). The provider GETs {HubUrl}/hub/agents/catalogue on every refresh.',
+            section.appendChild(renderSettingsRow(t('settings.cat.hubUrl'),
+                t('settings.cat.hubUrlDesc'),
                 function () {
                     var input = el('input', {
                         type: 'url',
@@ -2755,7 +2755,7 @@
                     input.oninput = function () { draft.agentHubUrl = input.value; _persistDiscoveryDraft(); };
                     return input;
                 }));
-            section.appendChild(renderSettingsRow('Bootstrap token',
+            section.appendChild(renderSettingsRow(t('settings.cat.bootstrapToken'),
                 'Sent verbatim as the Authorization request header. Leave blank to keep the existing stored value.',
                 function () {
                     var wrap = el('div', { className: 'bowire-settings-apikey-wrap' });
@@ -2783,8 +2783,8 @@
                     }
                     return wrap;
                 }));
-            section.appendChild(renderSettingsRow('Stub response (optional)',
-                'JSON snapshot to feed the parser with instead of hitting the hub. Useful for validating the wire-shape contract before #128 ships.',
+            section.appendChild(renderSettingsRow(t('settings.cat.stubResponse'),
+                t('settings.cat.stubResponseDesc'),
                 function () {
                     var input = el('textarea', {
                         className: 'bowire-settings-input',
@@ -3504,8 +3504,8 @@
 
         // ---- v2.2 W2 — Workspace deletion mode + Trash retention ----
         section.appendChild(renderSettingsRow(
-            'Workspace deletion',
-            'Soft moves the workspace to Trash so it can be restored within the retention window. Hard deletes immediately; Undo still works briefly via the action log, but the entry won’t be in the Trash.',
+            t('settings.data.wsDeletion'),
+            t('settings.data.wsDeletionDesc'),
             function () {
                 var current = _readDeleteMode();
                 var select = el('select', {
@@ -3529,8 +3529,8 @@
         ));
 
         section.appendChild(renderSettingsRow(
-            'Trash retention',
-            'How long soft-deleted workspaces (and other trashed entries) stay in the Trash before auto-purge. Ignored when deletion mode is Hard.',
+            t('settings.data.retention'),
+            t('settings.data.retentionDesc'),
             function () {
                 var current = _readTrashRetention();
                 var select = el('select', {
@@ -3571,8 +3571,8 @@
         _appendRunHistoryDataRows(section);
 
         section.appendChild(renderSettingsAction(
-            'Reset all settings',
-            'Clear localStorage and reload — undo restores from a pre-reset snapshot',
+            t('settings.data.resetAll'),
+            t('settings.data.resetAllDesc'),
             'Reset All',
             function () {
                 bowireConfirm(t('settings.data.resetAsk'), function () {
@@ -3628,8 +3628,8 @@
     // Mutates the passed section by appending rows; returns nothing.
     function _appendWorkspaceScopedDataActions(section) {
         section.appendChild(renderSettingsAction(
-            'Clear call history',
-            'Remove all request history entries',
+            t('settings.data.clearHistory'),
+            t('settings.data.clearHistoryDesc'),
             'Clear History',
             function () {
                 bowireConfirm(t('settings.data.clearHistoryAsk'), function () {
@@ -3647,8 +3647,8 @@
         ));
 
         section.appendChild(renderSettingsAction(
-            'Clear favorites',
-            'Remove all starred methods',
+            t('settings.data.clearFavorites'),
+            t('settings.data.clearFavoritesDesc'),
             'Clear Favorites',
             function () {
                 bowireConfirm(t('settings.data.clearFavoritesAsk'), function () {
@@ -3671,8 +3671,8 @@
         // an undo restores every entry to its original index, and
         // also records the bulk op in the action log.
         section.appendChild(renderSettingsAction(
-            'Clear recordings',
-            'Move every recording in this workspace to the recordings trash',
+            t('settings.data.clearRecordings'),
+            t('settings.data.clearRecordingsDesc'),
             'Clear Recordings',
             function () {
                 bowireConfirm(t('settings.data.clearRecordingsAsk'), function () {
@@ -3732,8 +3732,8 @@
         ));
 
         section.appendChild(renderSettingsAction(
-            'Clear collections',
-            'Move every collection in this workspace to the collections trash',
+            t('settings.data.clearCollections'),
+            t('settings.data.clearCollectionsDesc'),
             'Clear Collections',
             function () {
                 bowireConfirm(t('settings.data.clearCollectionsAsk'), function () {
@@ -3792,8 +3792,8 @@
         ));
 
         section.appendChild(renderSettingsAction(
-            'Migrate ${name} → {{name}}',
-            'Rewrite legacy ${name} placeholders to the canonical {{name}} syntax (#145)',
+            'Migrate ${name} → {{name}}',  // i18n-exempt: Bowire's own variable syntax on both sides of the arrow
+            t('settings.data.migrateVarsDesc'),
             'Migrate',
             function () {
                 bowireConfirm(
@@ -3821,8 +3821,8 @@
     // deep-links.
     function _appendRunHistoryDataRows(section) {
         section.appendChild(renderSettingsRow(
-            'Run history cap',
-            'How many recent method-runs to keep in the per-workspace run-log. Older entries are FIFO-evicted. Powers the coverage chips on the Discover sidebar + the Run history view below.',
+            t('settings.data.runHistoryCap'),
+            t('settings.data.runHistoryCapDesc'),
             function () {
                 var current;
                 try { current = parseInt(localStorage.getItem('bowire_run_history_cap'), 10); } catch (_) { current = NaN; }
@@ -3891,7 +3891,7 @@
             ? getWorkspaceStorageMode(ws) : 'disk';
         var browserOnly = storageMode === 'browser-only';
         section.appendChild(renderSettingsRow(
-            'Storage mode',
+            t('settings.data.storageMode'),
             browserOnly
                 ? t('settings.data.browserOnly')
                 : t('settings.data.diskStore', { id: ws.id }),
@@ -3928,7 +3928,7 @@
             var currentRoot = (typeof getWorkspaceStorageRoot === 'function')
                 ? (getWorkspaceStorageRoot(ws) || '') : '';
             section.appendChild(renderSettingsRow(
-                'Storage root',
+                t('settings.data.storageRoot'),
                 currentRoot
                     ? t('settings.data.currentOverride', { path: currentRoot })
                     : t('settings.data.defaultRoot', { id: ws.id }),
@@ -4079,10 +4079,10 @@
         section.appendChild(el('h4', { className: 'bowire-settings-about-subhead', textContent: t('settings.about.project') }));
 
         var linksRow = el('div', { className: 'bowire-settings-about-links' });
-        linksRow.appendChild(aboutLink('GitHub Repository',  'https://github.com/Kuestenlogik/Bowire'));
-        linksRow.appendChild(aboutLink('Documentation',      'https://bowire.io/docs/'));
-        linksRow.appendChild(aboutLink('License (Apache-2.0)','https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE'));
-        linksRow.appendChild(aboutLink('Issues',             'https://github.com/Kuestenlogik/Bowire/issues'));
+        linksRow.appendChild(aboutLink(t('settings.about.repo'),  'https://github.com/Kuestenlogik/Bowire'));
+        linksRow.appendChild(aboutLink(t('settings.about.docs'),      'https://bowire.io/docs/'));
+        linksRow.appendChild(aboutLink('License (Apache-2.0)','https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE'));  // i18n-exempt: the licence name as the SPDX identifier gives it
+        linksRow.appendChild(aboutLink(t('settings.about.issues'),             'https://github.com/Kuestenlogik/Bowire/issues'));
         section.appendChild(linksRow);
 
         // ---- Open-source notices (collapsible, default-collapsed) ----
@@ -4907,8 +4907,8 @@
             dl.appendChild(el('dt', { textContent: label }));
             dl.appendChild(el('dd', { textContent: String(value) }));
         }
-        row('Version', plugin.version || plugin.Version);
-        row('Source', plugin.source === 'bundled'
+        row(t('settings.plugin.version'), plugin.version || plugin.Version);
+        row(t('intercept.metaSource'), plugin.source === 'bundled'
             ? t('settings.plugin.bundled')
             : plugin.tier === 'machine'
                 // No path here: the row is about where *this* plugin lives,
@@ -4917,11 +4917,11 @@
                 ? t('settings.machineWide')
                 : t('settings.pluginSibling', { path: joinPluginPath(pkgId) }));
         if (plugin.installedAt || plugin.InstalledAt) {
-            row('Installed', plugin.installedAt || plugin.InstalledAt);
+            row(t('settings.installed'), plugin.installedAt || plugin.InstalledAt);
         }
         if (plugin.sources || plugin.Sources) {
             var s = plugin.sources || plugin.Sources;
-            row('Feed sources', Array.isArray(s) ? s.join(', ') : String(s));
+            row(t('settings.plugin.feeds'), Array.isArray(s) ? s.join(', ') : String(s));
         }
         body.appendChild(dl);
 
@@ -5153,15 +5153,15 @@
                 el('span', { className: 'bowire-settings-extension-meta-label', textContent: label }),
                 el('span', { className: 'bowire-settings-extension-meta-value', textContent: value }));
         }
-        section.appendChild(row('Extension id', ext.id || ext.Id || '—'));
+        section.appendChild(row(t('settings.ext.id'), ext.id || ext.Id || '—'));
         var pkg = ext.packageId || ext.PackageId || '';
-        if (pkg) section.appendChild(row('Package', pkg));
+        if (pkg) section.appendChild(row(t('settings.ext.package'), pkg));
         var kinds = ext.kinds || ext.Kinds || [];
-        if (kinds.length) section.appendChild(row('Semantic kinds', kinds.join(', ')));
+        if (kinds.length) section.appendChild(row(t('settings.ext.kinds'), kinds.join(', ')));
         var caps = ext.capabilities || ext.Capabilities || [];
-        if (caps.length) section.appendChild(row('Capabilities', caps.join(', ').toUpperCase()));
+        if (caps.length) section.appendChild(row(t('settings.ext.capabilities'), caps.join(', ').toUpperCase()));
         var api = ext.bowireApi || ext.BowireApi || '';
-        if (api) section.appendChild(row('Bowire API', api));
+        if (api) section.appendChild(row('Bowire API', api));  // i18n-exempt: the name of the Bowire extension API
 
         return section;
     }
@@ -5178,8 +5178,8 @@
         // tab so they don't end up looking at a sidebar entry that's
         // about to disappear.
         section.appendChild(renderSettingsToggle(
-            'Enabled',
-            'When disabled, this protocol’s services are hidden from the sidebar, chip suggestions, and the protocol switcher. The plugin stays loaded server-side so flipping it back on is instant.',
+            t('mocks.enabled'),
+            t('settings.protoEnabledDesc'),
             isProtocolEnabled(plugin.id),
             function (v) {
                 setProtocolEnabled(plugin.id, v);
