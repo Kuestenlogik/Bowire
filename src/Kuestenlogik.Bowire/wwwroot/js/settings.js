@@ -465,11 +465,11 @@
                         renderSettingsDialog();
                     }
                 });
-                var opts = [
-                    { value: 'auto', label: t('settings.theme.auto') },
-                    { value: 'dark', label: t('settings.theme.dark') },
-                    { value: 'light', label: t('settings.theme.light') }
-                ];
+                // #117 — themeLabel is the one mapping from the stored value
+                // onto a word; the tooltip and the drawer hint read it too.
+                var opts = ['auto', 'dark', 'light'].map(function (v) {
+                    return { value: v, label: themeLabel(v) };
+                });
                 for (var i = 0; i < opts.length; i++) {
                     var opt = el('option', { value: opts[i].value, textContent: opts[i].label });
                     if (opts[i].value === themePreference) opt.selected = true;
@@ -3892,7 +3892,7 @@ textContent: t(discoveryState.entryCount === 1
         section.appendChild(renderSettingsRow(
             t('settings.data.storageMode'),
             browserOnly
-                ? t('settings.data.browserOnly')
+                ? t('settings.data.browserOnlyDesc')
                 : t('settings.data.diskStore', { id: ws.id }),
             function () {
                 var select = el('select', {

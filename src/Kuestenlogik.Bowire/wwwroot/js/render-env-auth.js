@@ -519,7 +519,10 @@
             },
                 el('span', { className: 'bowire-app-drawer-item-icon', innerHTML: svgIcon(themeIcon) }),
                 el('span', { className: 'bowire-app-drawer-item-label', textContent: t('drawer.theme') }),
-                el('span', { className: 'bowire-app-drawer-item-hint', textContent: current })
+                el('span', {
+                    className: 'bowire-app-drawer-item-hint',
+                    textContent: themeLabel(current)
+                })
             ));
         }
         if (typeof openSettings === 'function') {
@@ -2822,7 +2825,9 @@
             type: 'button',
             className: 'bowire-subscriptions-pill bowire-subscriptions-pill-' + aggState,
             id: 'bowire-subscriptions-pill',
-            title: subs.length + ' active subscription' + (subs.length === 1 ? '' : 's') + ' — click for details',
+            // #688 - one message, two shapes.
+            title: t(subs.length === 1 ? 'subs.pillOne' : 'subs.pillMany',
+                { count: subs.length }),
             onClick: function (e) {
                 e.stopPropagation();
                 toggleSubscriptionsDropdown();
@@ -3691,7 +3696,7 @@
             // data-topbar-icon names the svgIcon entry the popover
             // re-renders into its row.
             'data-topbar-priority': '5',
-            'data-topbar-label': 'About',
+            'data-topbar-label': t('settings.about.title'),
             'data-topbar-icon': 'info',
             'data-topbar-group': 'info',
             onClick: openAbout
@@ -3719,7 +3724,7 @@
             'aria-haspopup': 'menu',
             'aria-expanded': toolsMenuOpen ? 'true' : 'false',
             'data-topbar-priority': '4',
-            'data-topbar-label': 'Tools',
+            'data-topbar-label': t('settings.tools.title'),
             'data-topbar-icon': 'plug',
             'data-topbar-group': 'info',
             onClick: function (e) {
@@ -3770,12 +3775,12 @@
                 + (helpActive ? ' active' : '')
                 + (helpAvailable ? '' : ' bowire-theme-toggle-btn-disabled'),
             title: helpAvailable
-                ? (helpActive ? t('topbar.leaveHelp') : t('topbar.help'))
+                ? (helpActive ? t('topbar.leaveHelp') : t('topbar.helpTitle'))
                 : t('topbar.helpNotInstalled'),
             'aria-label': t('topbar.help'),
             // #297 — overflow priority tag (see aboutBtn).
             'data-topbar-priority': '5',
-            'data-topbar-label': 'Help',
+            'data-topbar-label': t('topbar.help'),
             'data-topbar-icon': 'help',
             'data-topbar-group': 'info',
             onClick: function () {
@@ -3854,7 +3859,7 @@
             'aria-label': t('topbar.toggleAssistant'),
             // #297 — overflow priority tag.
             'data-topbar-priority': '3',
-            'data-topbar-label': 'Assistant',
+            'data-topbar-label': t('settings.assistant.title'),
             'data-topbar-icon': 'bot',
             'data-topbar-group': 'ai',
             onClick: function () {
@@ -3943,7 +3948,7 @@
             // collapsible buttons because they're the most discoverable
             // editor-context affordances; Trash is rarer.
             'data-topbar-priority': '1',
-            'data-topbar-label': 'Undo',
+            'data-topbar-label': t('common.undo'),
             'data-topbar-icon': 'undo',
             'data-topbar-group': 'history',
             onClick: function () {
@@ -3971,7 +3976,7 @@
             'aria-label': _redoDisabled ? t('topbar.redoAriaNothing') : ('Redo: ' + _redoLabel),
             // #297 — overflow priority tag.
             'data-topbar-priority': '1',
-            'data-topbar-label': 'Redo',
+            'data-topbar-label': t('activity.redo'),
             'data-topbar-icon': 'redo',
             'data-topbar-group': 'history',
             onClick: function () {
@@ -4007,7 +4012,7 @@
             // #297 — overflow priority tag. Trash collapses before
             // Undo/Redo (rarer affordance, less muscle-memory cost).
             'data-topbar-priority': '2',
-            'data-topbar-label': 'Trash',
+            'data-topbar-label': t('topbar.trash'),
             'data-topbar-group': 'history',
             'data-topbar-icon': 'trash',
             onClick: function () {
@@ -4460,13 +4465,15 @@
         return el('button', {
             id: 'bowire-theme-toggle-btn',
             className: 'bowire-theme-toggle-btn' + (pref === 'auto' ? ' is-auto' : ''),
-            title: t('topbar.themeTitle', { current: pref, next: nextLabel }),
-            'aria-label': t('topbar.themeAria', { current: pref }),
+            title: t('topbar.themeTitle', {
+                current: themeLabel(pref), next: themeLabel(nextLabel)
+            }),
+            'aria-label': t('topbar.themeAria', { current: themeLabel(pref) }),
             // #297 \u2014 overflow priority tag. data-topbar-icon mirrors
             // the icon picked above so the popover row shows the same
             // glyph as the inline button.
             'data-topbar-priority': '4',
-            'data-topbar-label': 'Theme',
+            'data-topbar-label': t('drawer.theme'),
             'data-topbar-group': 'appearance',
             'data-topbar-icon': iconName,
             onClick: function () {

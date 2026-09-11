@@ -592,11 +592,14 @@
         error:    'Err',
         channel:  'Chan'
     };
+    // #117 — getters, not values. The table is built once at load and
+    // setLocale does not reload, so a resolved label would show the boot
+    // language for the rest of the session.
     var CONSOLE_TIME_OPTS = [
-        { v: 1,  label: t('console.filter.last1') },
-        { v: 5,  label: t('console.filter.last5') },
-        { v: 15, label: t('console.filter.last15') },
-        { v: 60, label: t('console.filter.last60') }
+        { v: 1,  get label() { return t('console.filter.last1'); } },
+        { v: 5,  get label() { return t('console.filter.last5'); } },
+        { v: 15, get label() { return t('console.filter.last15'); } },
+        { v: 60, get label() { return t('console.filter.last60'); } }
     ];
 
     // Build the chip cluster + filter-add trigger. Returns two DOM

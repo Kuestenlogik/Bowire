@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { compileFragment } from './_load-fragment.mjs';
 import {
-    fragmentSources, looksLikeProse, untranslatedCounts,
+    fragmentSources, frozenTranslations, looksLikeProse, untranslatedCounts,
 } from './_untranslated.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -81,6 +81,34 @@ test('the comment strip does not eat a // inside a value', () => {
 test('en.json is the source of truth and is not empty', () => {
     assert.ok(files.includes('en.json'), 'en.json must exist');
     assert.ok(keysOf(english).length > 0, 'en.json carries no strings');
+});
+
+test('no catalogue declares a key twice', () => {
+    // JSON has no duplicate keys, and JSON.parse takes the last one without a
+    // word — so a second entry does not collide, it silently deletes the
+    // first. Twelve keys had drifted into two entries during the sweep, six of
+    // them carrying different sentences, and six surfaces were showing another
+    // surface's text with every test passing: parity holds (both catalogues
+    // "have" the key), the key has a caller, and nothing reads the entry that
+    // lost.
+    //
+    // Parsing cannot find this — the evidence is gone by then. So read the
+    // lines.
+    const DECLARATION = /^\s*"((?:[^"\\]|\\.)*)"\s*:/;
+    const offenders = [];
+    for (const file of files) {
+        const text = readFileSync(resolve(LOCALES, file), 'utf8');
+        const seen = new Map();
+        stripComments(text).split('\n').forEach((line, i) => {
+            const m = DECLARATION.exec(line);
+            if (!m || m[1].startsWith('_')) return;
+            if (seen.has(m[1])) offenders.push(`${file}: "${m[1]}" (lines ${seen.get(m[1])} and ${i + 1})`);
+            else seen.set(m[1], i + 1);
+        });
+    }
+
+    assert.deepEqual(offenders, [],
+        `a second entry silently replaces the first:\n  ${offenders.join('\n  ')}`);
 });
 
 test('at least one translation ships', () => {
@@ -333,6 +361,27 @@ test('no fragment both shadows t and calls it', () => {
 
     assert.deepEqual(offenders, [],
         `a fragment that calls t() must not bind the name t:\n  ${offenders.join('\n  ')}`);
+});
+
+test('no fragment resolves a translation at load time', () => {
+    // The third way a swept file still shows the wrong language, after the
+    // shadow and the missing binding: `t(...)` that no function encloses. It
+    // runs once, when the bundle loads, and setLocale does not reload — so the
+    // text is the boot language for the rest of the session.
+    //
+    // Seven select-option tables were built that way, nineteen labels in all:
+    // sort modes, console time filters, mock rule operators, auth schemes,
+    // fault kinds and distributions. Nothing caught them, and nothing could:
+    // they are correct in whichever language the workbench started in, and the
+    // pseudo-locale gets set before the reload that installs it. Only a
+    // language change mid-session shows the freeze.
+    //
+    // The fix is a getter — `get label() { return t(...); }` — which reads
+    // almost the same and resolves where the label is read.
+    const frozen = fragmentSources().flatMap(frozenTranslations);
+
+    assert.deepEqual(frozen, [],
+        `these resolve once at load; make them getters:\n  ${frozen.join('\n  ')}`);
 });
 
 test('a bundle outside the IIFE brings its own t', () => {

@@ -850,10 +850,13 @@ el('span', { className: 'bowire-home-section-count',
         return card;
     }
 
+    // #117 — getters, not values. The table is built once at load and
+    // setLocale does not reload, so a resolved label would show the boot
+    // language for the rest of the session.
     var RULE_OPS = [
         { value: 'equals', label: 'equals' },
         { value: 'contains', label: 'contains' },
-        { value: 'matches', label: t('mocks.opMatches') }
+        { value: 'matches', get label() { return t('mocks.opMatches'); } }
     ];
     function currentRuleOp(when) { when = when || {}; return when.matches != null ? 'matches' : (when.contains != null ? 'contains' : 'equals'); }
 
@@ -888,10 +891,13 @@ el('span', { className: 'bowire-home-section-count',
     }
 
     // ---------- #562 require-auth toggle ----------
+    // #117 — getters, not values. The table is built once at load and
+    // setLocale does not reload, so a resolved label would show the boot
+    // language for the rest of the session.
     var AUTH_SCHEMES = [
-        { value: 'bearer', label: t('mocks.authBearer') },
-        { value: 'apikey', label: t('mocks.authApiKey') },
-        { value: 'basic', label: t('mocks.authBasic') }
+        { value: 'bearer', get label() { return t('mocks.authBearer'); } },
+        { value: 'apikey', get label() { return t('mocks.authApiKey'); } },
+        { value: 'basic', get label() { return t('mocks.authBasic'); } }
     ];
 
     function renderAuthCard(selected) {
@@ -1042,17 +1048,20 @@ el('span', { className: 'bowire-home-section-count',
 
     // Human descriptions of the fault kinds, kept in sync with the C#
     // FaultKind enum (kebab-case-lower on the wire).
+    // #117 — getters, not values. The table is built once at load and
+    // setLocale does not reload, so a resolved label would show the boot
+    // language for the rest of the session.
     var FAULT_KINDS = [
-        { value: 'latency-only',     label: t('mocks.faultLatency') },
-        { value: 'error',            label: t('mocks.faultError') },
-        { value: 'partial-response', label: t('mocks.faultPartial') },
-        { value: 'connection-drop',  label: t('mocks.faultDrop') }
+        { value: 'latency-only',     get label() { return t('mocks.faultLatency'); } },
+        { value: 'error',            get label() { return t('mocks.faultError'); } },
+        { value: 'partial-response', get label() { return t('mocks.faultPartial'); } },
+        { value: 'connection-drop',  get label() { return t('mocks.faultDrop'); } }
     ];
     var FAULT_DISTS = [
-        { value: 'fixed',       label: t('mocks.distFixed') },
-        { value: 'uniform',     label: t('mocks.distUniform') },
-        { value: 'normal',      label: t('mocks.distNormal') },
-        { value: 'exponential', label: t('mocks.distExponential') }
+        { value: 'fixed',       get label() { return t('mocks.distFixed'); } },
+        { value: 'uniform',     get label() { return t('mocks.distUniform'); } },
+        { value: 'normal',      get label() { return t('mocks.distNormal'); } },
+        { value: 'exponential', get label() { return t('mocks.distExponential'); } }
     ];
 
     function faultState(mockId) {

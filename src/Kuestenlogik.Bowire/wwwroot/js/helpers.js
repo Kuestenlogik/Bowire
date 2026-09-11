@@ -2695,9 +2695,15 @@ var railName = opts.railLabel || t('prereq.thisRail');
                     var sortBtn = el('button', {
                         type: 'button',
                         className: 'bowire-sidebar-filterbar-sort-btn',
-                        title: (opts.sort.title || 'Sort') + ': ' + curOpt.label
-                            + ' — click for ' + nextOpt.label,
-                        'aria-label': (opts.sort.title || 'Sort') + ': ' + curOpt.label,
+                        title: t('sort.btnTitle', {
+                            what: opts.sort.title || t('sort.fallbackTitle'),
+                            current: curOpt.label,
+                            next: nextOpt.label
+                        }),
+                        'aria-label': t('sort.btnAria', {
+                            what: opts.sort.title || t('sort.fallbackTitle'),
+                            current: curOpt.label
+                        }),
                         innerHTML: svgIcon(curOpt.icon),
                         onClick: function () {
                             if (typeof opts.sort.onChange === 'function') {
@@ -3260,9 +3266,28 @@ var railName = opts.railLabel || t('prereq.thisRail');
     // list rail cycles Name → Created with the same glyphs the
     // Workspaces reference uses. Rails that lack a created-timestamp
     // just filter with the alpha option.
+    // #117 — the theme preference is stored as 'auto' / 'dark' / 'light', and
+    // three surfaces put that stored value in front of a person: the Settings
+    // select, the topbar tooltip ("Theme: dark — click for light") and the app
+    // drawer's trailing hint. The select had the mapping inline, so the other
+    // two showed the raw value and the tooltip put an English word inside a
+    // German sentence. One function, so a fourth reader cannot get it wrong.
+    //
+    // An unknown value passes through: a preference this build does not know
+    // is better read as itself than as a blank.
+    function themeLabel(pref) {
+        if (pref === 'auto') return t('settings.theme.auto');
+        if (pref === 'dark') return t('settings.theme.dark');
+        if (pref === 'light') return t('settings.theme.light');
+        return pref;
+    }
+
+    // #117 — getters, not values. The table is built once at load and
+    // setLocale does not reload, so a resolved label would show the boot
+    // language for the rest of the session.
     var BOWIRE_LIST_SORT_OPTIONS = [
-        { value: 'name',    label: t('sort.name'), icon: 'sortAlpha' },
-        { value: 'created', label: t('sort.newest'), icon: 'calendar' }
+        { value: 'name',    get label() { return t('sort.name'); }, icon: 'sortAlpha' },
+        { value: 'created', get label() { return t('sort.newest'); }, icon: 'calendar' }
     ];
 
     // #362 — one filter+sort pass shared by every list rail so search
@@ -3373,8 +3398,11 @@ var railName = opts.railLabel || t('prereq.thisRail');
     // #362 — the shared sort options prefixed with a Manual (drag) mode.
     // Rails that support drag-reorder use this so the grip glyph +
     // 'Manual' label read identically everywhere.
+    // #117 — getters, not values. The table is built once at load and
+    // setLocale does not reload, so a resolved label would show the boot
+    // language for the rest of the session.
     var BOWIRE_LIST_SORT_OPTIONS_WITH_MANUAL = [
-        { value: 'manual', label: t('sort.manual'), icon: 'grip' }
+        { value: 'manual', get label() { return t('sort.manual'); }, icon: 'grip' }
     ];
 
     function renderSidebarListItem(opts) {

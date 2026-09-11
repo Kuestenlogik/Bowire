@@ -292,10 +292,12 @@
             id: 'bowire-schema-changes-pill',
             className: 'bowire-schema-changes-pill'
                 + (unread > 0 ? ' bowire-schema-changes-pill-unread' : ''),
-            title: (unread > 0
-                ? unread + ' unread schema change' + (unread !== 1 ? 's' : '')
-                : t('schemaChanges.retention', { days: SCHEMA_CHANGE_RETENTION_DAYS }))
-                + ' — click for the change log',
+            // #688 - one message, two shapes.
+            title: unread > 0
+                ? t(unread === 1 ? 'schemaChanges.pillUnreadOne'
+                    : 'schemaChanges.pillUnreadMany', { count: unread })
+                : t('schemaChanges.pillIdle',
+                    { days: SCHEMA_CHANGE_RETENTION_DAYS }),
             onClick: function (e) {
                 e.stopPropagation();
                 toggleSchemaChangesDropdown();

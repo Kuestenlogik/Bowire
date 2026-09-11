@@ -373,7 +373,7 @@
                             if (catalogueAdoptedUrls) catalogueAdoptedUrls[u] = false;
                         });
                         if (typeof persistServerUrls === 'function') persistServerUrls();
-                        if (typeof toast === 'function') toast(t('catalogue.added', { count: pending.length }), 'success');
+                        if (typeof toast === 'function') toast(t('catalogue.addedCount', { count: pending.length }), 'success');
                         if (typeof fetchServices === 'function') fetchServices();
                         if (typeof opts.onAdded === 'function') opts.onAdded(null);
                         if (typeof render === 'function') render();

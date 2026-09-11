@@ -331,3 +331,161 @@ export function untranslatedCounts(sources = fragmentSources()) {
 export function untranslatedSites(sources = fragmentSources()) {
     return sources.flatMap(scan);
 }
+
+// ---------------------------------------------------------------------------
+// #117 — t() where nobody can reach it a second time.
+//
+// Every fragment runs inside the one IIFE prologue.js opens and declares no
+// function of its own around its tables, so a `t(...)` that no function
+// encloses is evaluated exactly once: when the bundle loads. setLocale swaps
+// the active catalogue without reloading the page, so whatever that call
+// resolved to is the boot language, frozen for the rest of the session.
+//
+// Seven select-option tables were built that way — sort modes, console time
+// filters, mock rule operators, auth schemes, fault kinds and distributions.
+// Each read correctly in whichever language the workbench started in, which is
+// why nineteen frozen labels survived the whole sweep unnoticed: nothing shows
+// them wrong until someone changes language mid-session, and the pseudo-locale
+// is set before the reload that installs it.
+//
+// The measure is FUNCTION depth, not brace depth. `var OPTS = [{ label: t(…) }]`
+// sits two braces deep and still runs at load; the fix,
+// `get label() { return t(…); }`, adds no brace a reader would notice but puts
+// the call behind a function that runs when the label is read.
+// ---------------------------------------------------------------------------
+
+/**
+ * For every offset in a JS source: how many function bodies enclose it, and
+ * whether it is code at all rather than the inside of a string, template,
+ * comment or regex literal.
+ *
+ * Both answers come out of one pass because they are the same walk. The second
+ * matters as much as the first — without it the guard reads the `t('` inside
+ * the comment that explains why rail labels are NOT built that way, and fails
+ * on prose.
+ *
+ * Telling a function body from an object literal or a plain block is the whole
+ * job, and it comes down to what sits before the brace: `=>`, or a `)` whose
+ * `(` was not opened by if / for / while / switch / catch. Deliberately a
+ * scanner rather than a parser — it answers one question, and has to stay
+ * readable for whoever the guard fails on.
+ */
+function scanFunctionDepths(text) {
+    const depth = new Int32Array(text.length + 1);
+    const isCode = new Uint8Array(text.length + 1);
+    const braces = [];         // one entry per open `{`: is it a function body?
+    const parens = [];         // one entry per open `(`: the keyword before it
+    const BLOCK_HEADS = new Set(['if', 'for', 'while', 'switch', 'catch', 'with']);
+    let funcDepth = 0;
+    let prev = '\n';           // last significant char — tells `/` apart
+    let lastParenKind = null;  // what the most recently CLOSED `(` belonged to
+    let i = 0;
+    const mark = (code) => {
+        depth[i] = funcDepth;
+        isCode[i] = code ? 1 : 0;
+        i++;
+    };
+    /** The identifier immediately before offset `at`, if any. */
+    const wordBefore = (at) => {
+        let j = at - 1;
+        while (j >= 0 && /\s/.test(text[j])) j--;
+        let end = j + 1;
+        while (j >= 0 && /[A-Za-z0-9_$]/.test(text[j])) j--;
+        return text.slice(j + 1, end);
+    };
+
+    while (i < text.length) {
+        const c = text[i];
+        if (c === '/' && text[i + 1] === '/') {
+            while (i < text.length && text[i] !== '\n') mark(false);
+            continue;
+        }
+        if (c === '/' && text[i + 1] === '*') {
+            const end = text.indexOf('*/', i + 2);
+            const stop = end < 0 ? text.length : end + 2;
+            while (i < stop) mark(false);
+            continue;
+        }
+        if (c === '"' || c === "'" || c === '`') {
+            mark(false);
+            while (i < text.length) {
+                if (text[i] === '\\') { mark(false); mark(false); continue; }
+                // An unterminated quote would otherwise eat the rest of the
+                // file; only a template literal legitimately spans lines.
+                if (text[i] === '\n' && c !== '`') break;
+                const closing = text[i] === c;
+                mark(false);
+                if (closing) break;
+            }
+            prev = c;
+            continue;
+        }
+        if (c === '/' && '(,=:[!&|?{};\n'.includes(prev)) {
+            mark(false);                              // regex literal
+            let inClass = false;
+            while (i < text.length && text[i] !== '\n') {
+                if (text[i] === '\\') { mark(false); mark(false); continue; }
+                if (text[i] === '[') inClass = true;
+                else if (text[i] === ']') inClass = false;
+                const closing = text[i] === '/' && !inClass;
+                mark(false);
+                if (closing) break;
+            }
+            prev = '/';
+            continue;
+        }
+        if (c === '(') {
+            parens.push(BLOCK_HEADS.has(wordBefore(i)) ? 'block' : 'params');
+        } else if (c === ')') {
+            lastParenKind = parens.pop() ?? null;
+        } else if (c === '{') {
+            // `=>` or a parameter list before the brace makes it a body.
+            const body = (prev === '>' && text.lastIndexOf('=', i) >= 0
+                    && /=>\s*$/.test(text.slice(Math.max(0, i - 40), i)))
+                || (prev === ')' && lastParenKind === 'params');
+            braces.push(body);
+            if (body) funcDepth++;
+        } else if (c === '}') {
+            if (braces.pop()) funcDepth--;
+        }
+        if (!/\s/.test(c)) prev = c;
+        mark(true);
+    }
+    depth[text.length] = funcDepth;
+    return { depth, isCode };
+}
+
+const T_CALL = /(?<![A-Za-z0-9_$.])t\(\s*['"]/g;
+
+/**
+ * Every `t('…')` a fragment resolves at load time, as `file:line: source`.
+ *
+ * A bundle outside the IIFE is skipped: it brings its own `t` and registers
+ * from its own top level, so "no function encloses this" means something else
+ * there — map-translation.test.mjs covers that case directly instead.
+ */
+export function frozenTranslations({ file, text, outsideIife }) {
+    if (outsideIife) return [];
+    const { depth, isCode } = scanFunctionDepths(text);
+    const lines = text.split('\n');
+    const starts = [];
+    let at = 0;
+    for (const line of lines) { starts.push(at); at += line.length + 1; }
+
+    const out = [];
+    T_CALL.lastIndex = 0;
+    let m;
+    while ((m = T_CALL.exec(text)) !== null) {
+        if (!isCode[m.index] || depth[m.index] !== 0) continue;
+        // Which line the offset landed on.
+        let lo = 0;
+        let hi = starts.length - 1;
+        while (lo < hi) {
+            const mid = (lo + hi + 1) >> 1;
+            if (starts[mid] <= m.index) lo = mid; else hi = mid - 1;
+        }
+        out.push(`${file}:${lo + 1}: ${lines[lo].trim().slice(0, 90)}`);
+    }
+    return out;
+}
+

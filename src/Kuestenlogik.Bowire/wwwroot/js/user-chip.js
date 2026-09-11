@@ -156,7 +156,7 @@
             'aria-label': t('userChip.signedInAs', { name: userChipName() }),
             'aria-expanded': userChipOpen ? 'true' : 'false',
             'data-topbar-priority': '2',
-            'data-topbar-label': 'Account',
+            'data-topbar-label': t('topbar.account'),
             'data-topbar-group': 'account',
             onClick: function (e) {
                 if (e && e.stopPropagation) e.stopPropagation();

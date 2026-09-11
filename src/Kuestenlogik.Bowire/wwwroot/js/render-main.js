@@ -4557,7 +4557,7 @@
             'data-protocol': proto || 'default',
             'data-direction': dir,
             title: available
-                ? t('main.openInDiscover')
+                ? t('main.openInDiscoverTile')
                 : t('main.methodGone'),
             onClick: function () {
                 if (!available) return;
@@ -5426,7 +5426,7 @@
                     var protoBtn = el('button', {
                         type: 'button',
                         className: 'bowire-header-proto-icon bowire-header-proto-icon-clickable',
-                        title: headerProto.name + ' — click for recent ' + headerProto.name + ' calls',
+                        title: t('main.protoPillTitle', { protocol: headerProto.name }),
                         'aria-label': t('main.recentCalls', { protocol: headerProto.name }),
                         innerHTML: headerProto.icon,
                         onClick: function (e) {
