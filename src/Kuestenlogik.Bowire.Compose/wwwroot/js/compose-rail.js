@@ -135,7 +135,7 @@
             };
             localStorage.setItem(wsKey('bowire_compose_tabs'), JSON.stringify(data));
         } catch (e) {
-            if (typeof markSaveFailed === 'function') markSaveFailed('compose tabs', e);
+            if (typeof markSaveFailed === 'function') markSaveFailed(t('save.composeTabs'), e);
         }
     }
 

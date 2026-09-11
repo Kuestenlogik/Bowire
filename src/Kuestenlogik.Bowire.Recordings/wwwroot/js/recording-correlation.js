@@ -669,7 +669,7 @@
                 'The key’s own name and value were both found in this step’s payload.'),
             swatch('is-weak', 'weak',
                 'The value turned up on some other id-shaped field. Low-cardinality ids collide, so this tier stays visibly separate.'),
-            swatch('is-weak is-derived', 'derived',
+            swatch('is-weak is-derived', t('corr.derivedSwatch'),  // i18n-exempt: two CSS class names written together
                 'The key is absent, but this step shares a distinctive id-shaped value with a step the key matched '
                 + 'strongly. A bridge value has to be id-shaped at both ends, at least 6 characters, never carried by '
                 + 'a non-id field, and on only a minority of the steps — which is why a bare 1 never links anything, '
@@ -731,7 +731,7 @@
         );
         var link = _correlationLinkOf(ev);
         if (link) {
-            panel.appendChild(field('linked via',
+            panel.appendChild(field(t('corr.linkedVia'),
                 link.name + ' = ' + link.value
                 + '  ·  shared with ' + link.viaProtocol + ' step ' + ((link.viaStepIndex || 0) + 1)
                 + ' (' + (link.viaService || '') + ' / ' + (link.viaMethod || '') + ')'));

@@ -191,9 +191,9 @@
             textContent: t('landing.tips.title')
         }));
         var tips = el('div', { className: 'bowire-landing-tips' });
-        tips.appendChild(renderTipLine('search', 'Press Shift+/ to focus the command palette'));
-        tips.appendChild(renderTipLine('send', 'Press Ctrl+Enter to invoke the selected method'));
-        tips.appendChild(renderTipLine('repeat', 'Press R to repeat the last call'));
+        tips.appendChild(renderTipLine('search', t('landing.tipPalette')));
+        tips.appendChild(renderTipLine('send', t('landing.tipInvoke')));
+        tips.appendChild(renderTipLine('repeat', t('landing.tipRepeat')));
         card.appendChild(tips);
 
         parent.appendChild(card);
@@ -297,26 +297,27 @@
         // "here are the services we already know about", not "go build a
         // workspace". The workspace card keeps its place right after it.
         // With no catalogue this block is skipped and the hero is exactly
-        // what it was.
+        // what it was.  // i18n-exempt: a documentation path
         var heroCatN = (typeof catalogueEntryCount === 'function') ? catalogueEntryCount() : 0;
         if (heroCatN > 0
             && typeof catalogueVisibility === 'function' && catalogueVisibility() === 'editable'
             && typeof openCatalogueBrowserDialog === 'function') {
             grid.appendChild(renderFirstRunCard(
                 'server',
-                'Browse your service catalogue',
+                t('landing.browseCatalogue'),
                 ((typeof catalogueProviderLabel === 'function' && catalogueProviderLabel())
-                    || 'Your catalogue') + ' lists ' + heroCatN + ' service'
-                    + (heroCatN === 1 ? '' : 's') + ' this install can reach. Add the ones you need — no URLs to type.',
-                'Open catalogue',
+                    || t('landing.yourCatalogue')) + ' ' + t(
+    heroCatN === 1 ? 'landing.catalogueListsOne' : 'landing.catalogueListsMany',
+                        { count: heroCatN }),
+                t('landing.openCatalogue'),
                 function () { openCatalogueBrowserDialog({}); }
             ));
         }
         grid.appendChild(renderFirstRunCard(
             'layers',
-            'Configure your workspace',
-            'A workspace is your project folder — URLs, environments, secrets, recordings all live in it. Open the workspace detail to add your first source.',
-            'Open workspace',
+            t('landing.configureWorkspace'),
+            t('landing.configureWorkspaceBody'),
+            t('landing.openWorkspace'),
             function () {
                 railMode = 'workspaces';
                 try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
@@ -328,9 +329,9 @@
         ));
         grid.appendChild(renderFirstRunCard(
             'compass',
-            'Browse Discover',
-            'Already pointed Bowire at a service? Jump straight into Discover to pick a method and send your first request.',
-            'Open Discover',
+            t('rec.browseDiscover'),
+            t('landing.browseDiscoverBody'),
+            t('landing.openDiscover'),
             function () {
                 railMode = 'discover';
                 try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }

@@ -297,7 +297,7 @@
                         label: t('proxy.readDocs'),
                         onClick: function () {
                             if (typeof helpOpenDrawer === 'function') {
-                                helpOpenDrawer('features/proxy');
+                                helpOpenDrawer('features/proxy');  // i18n-exempt: a documentation path
                             }
                         }
                     }
@@ -482,8 +482,8 @@
 
     function renderHttpExchange(detail) {
         const wrap = el('div', { className: 'bowire-proxy-detail-exchange' });
-        wrap.appendChild(renderExchangeSide('Request', detail.requestHeaders, detail.requestBody, detail.requestBodyBase64));
-        wrap.appendChild(renderExchangeSide('Response', detail.responseHeaders, detail.responseBody, detail.responseBodyBase64));
+        wrap.appendChild(renderExchangeSide(t('proxy.exchangeRequest'), detail.requestHeaders, detail.requestBody, detail.requestBodyBase64));
+        wrap.appendChild(renderExchangeSide(t('proxy.exchangeResponse'), detail.responseHeaders, detail.responseBody, detail.responseBodyBase64));
         return wrap;
     }
 

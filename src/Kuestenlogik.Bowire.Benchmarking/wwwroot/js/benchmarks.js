@@ -200,7 +200,7 @@
         }
         try {
             localStorage.setItem(wsKey(BENCHMARKS_KEY), JSON.stringify(benchmarksList || []));
-            markSaved('Benchmarks');
+            markSaved(t('rail.benchmarks'));
         } catch (e) {
             console.warn('[bowire] failed to persist benchmarks', e);
         }
@@ -1189,7 +1189,7 @@
                     || /^[45]/.test(entry.key);
                 var dir = entry.delta > 0 ? 'up' : 'down';
                 var classify = { dir: dir, pct: null };
-                row('status · ' + entry.key,
+                row('status · ' + entry.key,  // i18n-exempt: the machine status key of the row
                     entry.before, entry.now, classify,
                     function (v) { return String(v); },
                     !isErr); // for non-error keys, up is good
@@ -1599,9 +1599,9 @@
             role: 'radiogroup',
             'aria-label': t('bench.dispatchMode')
         },
-            seg('sequential', 'Sequential',
+            seg('sequential', t('bench.modeSequential'),
                 'Targets are invoked one after the other per VU iteration. Iteration fails on first error.'),
-            seg('parallel', 'Parallel',
+            seg('parallel', t('bench.modeParallel'),
                 'Targets are all invoked at once per VU iteration. Iteration succeeds when every target succeeds.')
         );
     }

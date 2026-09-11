@@ -1355,7 +1355,7 @@
         // resolver doesn't expose an enumeration.
         ['now', 'nowMs', 'timestamp', 'uuid', 'random'].forEach(function (k) { add(k, 'system'); });
         // Response chaining
-        add('response', 'last response (whole body)');
+        add(t('flows.varLastResponse'), 'last response (whole body)');
         if (lastResponseJson && typeof lastResponseJson === 'object') {
             var keys = Array.isArray(lastResponseJson)
                 ? lastResponseJson.slice(0, 5).map(function (_, i) { return String(i); })
@@ -1561,7 +1561,7 @@
                 if (isExpanded) {
                     var editor = el('div', { className: 'bowire-flow-card-editor' });
                     if (node.type === 'request') {
-                        editor.appendChild(flowField('Protocol', 'select', node.protocol || '', function (v) {
+                        editor.appendChild(flowField(t('flows.fieldProtocol'), 'select', node.protocol || '', function (v) {
                             // Changing the protocol invalidates any previously-picked
                             // service / method: services are scoped to a protocol via
                             // s.source, so the old name almost certainly doesn't exist
@@ -1588,8 +1588,8 @@
                         // tree yet (recordings from a different server,
                         // schema-less HTTP endpoints, ...).
                         editor.appendChild(renderServiceMethodPicker(node));
-                        editor.appendChild(flowField('Server URL', 'text', node.serverUrl || '', function (v) { node.serverUrl = v; persistFlows(); }));
-                        editor.appendChild(flowField('Body', 'textarea', node.body || '{}', function (v) { node.body = v; persistFlows(); }));
+                        editor.appendChild(flowField(t('flows.fieldServerUrl'), 'text', node.serverUrl || '', function (v) { node.serverUrl = v; persistFlows(); }));
+                        editor.appendChild(flowField(t('flows.fieldBody'), 'textarea', node.body || '{}', function (v) { node.body = v; persistFlows(); }));
                         // Inline assertions: turn the request-node into
                         // a fully-validated probe without an extra chain
                         // of downstream Condition-nodes.
@@ -1600,35 +1600,35 @@
                         editor.appendChild(renderSnapshotEditor(node));
                         editor.appendChild(renderDataEditor(node));
                     } else if (node.type === 'delay') {
-                        editor.appendChild(flowField('Delay (ms)', 'number', String(node.delayMs || 1000), function (v) { node.delayMs = parseInt(v, 10) || 1000; persistFlows(); }));
+                        editor.appendChild(flowField(t('flows.fieldDelay'), 'number', String(node.delayMs || 1000), function (v) { node.delayMs = parseInt(v, 10) || 1000; persistFlows(); }));
                     } else if (node.type === 'condition') {
-                        editor.appendChild(flowField('Path', 'text', node.conditionPath || '', function (v) { node.conditionPath = v; persistFlows(); }));
-                        editor.appendChild(flowField('Operator', 'select', node.conditionOp || 'eq', function (v) { node.conditionOp = v; persistFlows(); },
+                        editor.appendChild(flowField(t('flows.fieldPath'), 'text', node.conditionPath || '', function (v) { node.conditionPath = v; persistFlows(); }));
+                        editor.appendChild(flowField(t('flows.fieldOperator'), 'select', node.conditionOp || 'eq', function (v) { node.conditionOp = v; persistFlows(); },
                             [{ value: 'eq', label: '==' }, { value: 'neq', label: '!=' }, { value: 'gt', label: '>' }, { value: 'lt', label: '<' },
                              { value: 'contains', label: 'contains' }, { value: 'exists', label: 'exists' }]));
-                        editor.appendChild(flowField('Value', 'text', node.conditionValue || '', function (v) { node.conditionValue = v; persistFlows(); }));
+                        editor.appendChild(flowField(t('rb.kv.value'), 'text', node.conditionValue || '', function (v) { node.conditionValue = v; persistFlows(); }));
                     } else if (node.type === 'variable') {
-                        editor.appendChild(flowField('Variable Name', 'text', node.varName || '', function (v) { node.varName = v; persistFlows(); }));
-                        editor.appendChild(flowField('Response Path', 'text', node.path || '', function (v) { node.path = v; persistFlows(); }));
+                        editor.appendChild(flowField(t('flows.fieldVarName'), 'text', node.varName || '', function (v) { node.varName = v; persistFlows(); }));
+                        editor.appendChild(flowField(t('flows.fieldResponsePath'), 'text', node.path || '', function (v) { node.path = v; persistFlows(); }));
                     } else if (node.type === 'loop') {
                         var loopTypeNow = node.loopType || 'count';
-                        editor.appendChild(flowField('Loop Type', 'select', loopTypeNow, function (v) { node.loopType = v; persistFlows(); render(); },
+                        editor.appendChild(flowField(t('flows.fieldLoopType'), 'select', loopTypeNow, function (v) { node.loopType = v; persistFlows(); render(); },
                             [
                                 { value: 'count', label: t('flows.loopCount') },
                                 { value: 'while', label: t('flows.loopWhile') },
                                 { value: 'foreach', label: t('flows.loopForeach') },
                             ]));
                         if (loopTypeNow === 'count') {
-                            editor.appendChild(flowField('Iterations', 'number', String(node.loopCount || 1), function (v) { node.loopCount = parseInt(v, 10) || 1; persistFlows(); }));
+                            editor.appendChild(flowField(t('flows.fieldIterations'), 'number', String(node.loopCount || 1), function (v) { node.loopCount = parseInt(v, 10) || 1; persistFlows(); }));
                         } else if (loopTypeNow === 'foreach') {
-                            editor.appendChild(flowField('Source ($.users / $)', 'text', node.loopSource || '', function (v) { node.loopSource = v; persistFlows(); }));
-                            editor.appendChild(flowField('Item Variable', 'text', node.loopItemVar || 'item', function (v) { node.loopItemVar = v; persistFlows(); }));
+                            editor.appendChild(flowField(t('flows.fieldLoopSource'), 'text', node.loopSource || '', function (v) { node.loopSource = v; persistFlows(); }));
+                            editor.appendChild(flowField(t('flows.fieldItemVar'), 'text', node.loopItemVar || 'item', function (v) { node.loopItemVar = v; persistFlows(); }));
                         } else {
-                            editor.appendChild(flowField('Path', 'text', node.conditionPath || '', function (v) { node.conditionPath = v; persistFlows(); }));
-                            editor.appendChild(flowField('Operator', 'select', node.conditionOp || 'eq', function (v) { node.conditionOp = v; persistFlows(); },
+                            editor.appendChild(flowField(t('flows.fieldPath'), 'text', node.conditionPath || '', function (v) { node.conditionPath = v; persistFlows(); }));
+                            editor.appendChild(flowField(t('flows.fieldOperator'), 'select', node.conditionOp || 'eq', function (v) { node.conditionOp = v; persistFlows(); },
                                 [{ value: 'eq', label: '==' }, { value: 'neq', label: '!=' }, { value: 'gt', label: '>' }, { value: 'lt', label: '<' },
                                  { value: 'contains', label: 'contains' }, { value: 'exists', label: 'exists' }]));
-                            editor.appendChild(flowField('Value', 'text', node.conditionValue || '', function (v) { node.conditionValue = v; persistFlows(); }));
+                            editor.appendChild(flowField(t('rb.kv.value'), 'text', node.conditionValue || '', function (v) { node.conditionValue = v; persistFlows(); }));
                         }
                     }
                     card.appendChild(editor);
@@ -1981,8 +1981,8 @@
         }
 
         if (useCustom) {
-            wrap.appendChild(flowField('Service', 'text', node.service || '', function (v) { node.service = v; persistFlows(); }));
-            wrap.appendChild(flowField('Method', 'text', node.method || '', function (v) { node.method = v; persistFlows(); }));
+            wrap.appendChild(flowField(t('flows.fieldService'), 'text', node.service || '', function (v) { node.service = v; persistFlows(); }));
+            wrap.appendChild(flowField(t('bench.targetMethod'), 'text', node.method || '', function (v) { node.method = v; persistFlows(); }));
             return wrap;
         }
 
@@ -1990,7 +1990,7 @@
         var serviceOptions = [{ value: '', label: t('flows.pickService') }].concat(
             protoServices.map(function (s) { return { value: s.name, label: s.name }; })
         );
-        wrap.appendChild(flowField('Service', 'select', node.service || '', function (v) {
+        wrap.appendChild(flowField(t('flows.fieldService'), 'select', node.service || '', function (v) {
             node.service = v;
             // Clear method when service changes — the previous selection
             // probably doesn't exist on the new service.
@@ -2022,7 +2022,7 @@
                     return { value: m.name, label: label };
                 }))
             : [{ value: '', label: t('flows.pickServiceFirst') }];
-        wrap.appendChild(flowField('Method', 'select', node.method || '', function (v) {
+        wrap.appendChild(flowField(t('bench.targetMethod'), 'select', node.method || '', function (v) {
             node.method = v;
             // Carry the methodType alongside the name so streaming-aware
             // codepaths (collection conversion at line 584, future runner
@@ -2252,14 +2252,14 @@
 
         if (!hasConfig || !enabled) return wrap;
 
-        wrap.appendChild(flowField('Mode', 'select', node.snapshot.mode || 'exact', function (v) {
+        wrap.appendChild(flowField(t('bench.mode'), 'select', node.snapshot.mode || 'exact', function (v) {
             node.snapshot.mode = v;
             persistFlows();
         }, [
             { value: 'exact', label: t('flows.snapshotExact') },
             { value: 'structural', label: t('flows.snapshotStructural') },
         ]));
-        wrap.appendChild(flowField('Ignore paths', 'text',
+        wrap.appendChild(flowField(t('flows.fieldIgnorePaths'), 'text',
             Array.isArray(node.snapshot.ignore) ? node.snapshot.ignore.join(', ') : '',
             function (v) {
                 node.snapshot.ignore = v.split(',')
@@ -2292,7 +2292,7 @@
             el('span', { className: 'bowire-flow-assertions-hint', textContent: t('flows.dataRowsHint') })
         ));
 
-        wrap.appendChild(flowField('Source', 'select', source, function (v) {
+        wrap.appendChild(flowField(t('flows.fieldSource'), 'select', source, function (v) {
             if (v === 'none') {
                 delete node.data;
             } else if (v === 'inline') {
@@ -2314,7 +2314,7 @@
         if (source === 'none') return wrap;
 
         if (source === 'inline') {
-            wrap.appendChild(flowField('Rows (JSON array)', 'textarea',
+            wrap.appendChild(flowField(t('flows.fieldRows'), 'textarea',
                 JSON.stringify(node.data.inline || [], null, 2),
                 function (v) {
                     try {
@@ -2326,7 +2326,7 @@
                     } catch (err) { /* mid-edit invalid JSON — keep last good rows */ }
                 }));
         } else if (source === 'csv') {
-            wrap.appendChild(flowField('CSV path', 'text', node.data.csv || '', function (v) {
+            wrap.appendChild(flowField(t('flows.fieldCsvPath'), 'text', node.data.csv || '', function (v) {
                 node.data.csv = v;
                 persistFlows();
             }));
@@ -2334,7 +2334,7 @@
                 textContent: t('flows.csvHint') }));
         } else {
             var gen = node.data.generator;
-            wrap.appendChild(flowField('Kind', 'select', gen.kind || 'range', function (v) {
+            wrap.appendChild(flowField(t('flows.fieldKind'), 'select', gen.kind || 'range', function (v) {
                 node.data.generator = v === 'range'
                     ? { kind: 'range', var: gen.var || 'i', from: 1, to: 10 }
                     : { kind: 'random', var: gen.var || 'value', count: 5, seed: 42, min: 0, max: 100 };
@@ -2344,34 +2344,34 @@
                 { value: 'range', label: t('flows.genRange') },
                 { value: 'random', label: t('flows.genRandom') },
             ]));
-            wrap.appendChild(flowField('Variable', 'text', gen.var || '', function (v) {
+            wrap.appendChild(flowField(t('env.variable'), 'text', gen.var || '', function (v) {
                 gen.var = v; persistFlows();
             }));
             if ((gen.kind || 'range') === 'range') {
-                wrap.appendChild(flowField('From', 'number', String(gen.from != null ? gen.from : 1), function (v) {
+                wrap.appendChild(flowField(t('flows.fieldFrom'), 'number', String(gen.from != null ? gen.from : 1), function (v) {
                     gen.from = parseInt(v, 10) || 0; persistFlows();
                 }));
-                wrap.appendChild(flowField('To', 'number', String(gen.to != null ? gen.to : 10), function (v) {
+                wrap.appendChild(flowField(t('flows.fieldTo'), 'number', String(gen.to != null ? gen.to : 10), function (v) {
                     gen.to = parseInt(v, 10) || 0; persistFlows();
                 }));
             } else {
-                wrap.appendChild(flowField('Count', 'number', String(gen.count || 5), function (v) {
+                wrap.appendChild(flowField(t('flows.fieldCount'), 'number', String(gen.count || 5), function (v) {
                     gen.count = parseInt(v, 10) || 1; persistFlows();
                 }));
-                wrap.appendChild(flowField('Seed', 'number', String(gen.seed || 0), function (v) {
+                wrap.appendChild(flowField(t('flows.fieldSeed'), 'number', String(gen.seed || 0), function (v) {
                     gen.seed = parseInt(v, 10) || 0; persistFlows();
                 }));
-                wrap.appendChild(flowField('Min', 'number', String(gen.min || 0), function (v) {
+                wrap.appendChild(flowField(t('flows.fieldMin'), 'number', String(gen.min || 0), function (v) {
                     gen.min = parseInt(v, 10) || 0; persistFlows();
                 }));
-                wrap.appendChild(flowField('Max', 'number', String(gen.max != null ? gen.max : 100), function (v) {
+                wrap.appendChild(flowField(t('flows.fieldMax'), 'number', String(gen.max != null ? gen.max : 100), function (v) {
                     gen.max = parseInt(v, 10) || 0; persistFlows();
                 }));
             }
         }
 
         if (source === 'inline' || source === 'csv') {
-            wrap.appendChild(flowField('Label column', 'text', node.data.labelColumn || '', function (v) {
+            wrap.appendChild(flowField(t('flows.fieldLabelColumn'), 'text', node.data.labelColumn || '', function (v) {
                 if (v) node.data.labelColumn = v; else delete node.data.labelColumn;
                 persistFlows();
             }));

@@ -1297,7 +1297,8 @@
                     // links). Fallback to text when the body is empty
                     // (network blip — caught case below should be hit
                     // instead but be defensive).
-                    var problem = normalizeProblem(resp.body) || normalizeProblem('Assistant request failed (HTTP ' + resp.status + ').');
+                    var problem = normalizeProblem(resp.body)
+    || normalizeProblem(t('ai.requestFailed', { status: resp.status }));
                     chatHistory.push({ role: 'assistant', problem: problem });
                 }
             })
@@ -1313,7 +1314,9 @@
                 } else {
                     chatHistory.push({
                         role: 'assistant',
-                        problem: normalizeProblem('Network error: ' + (err && err.message ? err.message : err))
+                        problem: normalizeProblem(t('ai.networkError', {
+    error: err && err.message ? err.message : err
+}))
                     });
                 }
             })

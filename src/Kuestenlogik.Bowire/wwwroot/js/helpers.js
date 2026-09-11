@@ -942,7 +942,7 @@
         });
 
         // ---- buttons ----
-        var expandBtn = _jsonToolbarBtn('⤢', 'Expand all', false, function () {
+        var expandBtn = _jsonToolbarBtn('⤢', t('json.expandAll'), false, function () {
             var toggles = viewer.__bowireTogglesByPath;
             if (!(toggles instanceof Set)) return;
             toggles.clear();
@@ -951,7 +951,7 @@
             }
             if (local.search) _applyJsonSearch(viewer, local.search);
         });
-        var collapseBtn = _jsonToolbarBtn('⊟', 'Collapse all', false, function () {
+        var collapseBtn = _jsonToolbarBtn('⊟', t('json.collapseAll'), false, function () {
             var toggles = viewer.__bowireTogglesByPath;
             if (!(toggles instanceof Set)) return;
             var all = bowireAllContainerPaths(raw);
@@ -962,16 +962,16 @@
             }
             if (local.search) _applyJsonSearch(viewer, local.search);
         });
-        var wrapBtn = _jsonToolbarBtn('↩', 'Wrap long lines', local.wrap, function () {
+        var wrapBtn = _jsonToolbarBtn('↩', t('json.wrapLines'), local.wrap, function () {
             local.wrap = !local.wrap;
             viewer.classList.toggle('is-wrap', local.wrap);
             wrapBtn.classList.toggle('is-on', local.wrap);
         });
-        var searchBtn = _jsonToolbarBtn('⌕', 'Search (Ctrl/Cmd+F)', false, function () {
+        var searchBtn = _jsonToolbarBtn('⌕', t('json.search'), false, function () {
             if (local.searchOpen) closeSearch();
             else openSearch();
         });
-        var copyBtn = _jsonToolbarBtn('⧉', 'Copy response body', false, function () {
+        var copyBtn = _jsonToolbarBtn('⧉', t('json.copyBody'), false, function () {
             try {
                 var txt = typeof raw === 'string'
                     ? raw
@@ -990,7 +990,7 @@
                 );
             } catch (_) { /* clipboard errors get swallowed */ }
         });
-        var downloadBtn = _jsonToolbarBtn('⬇', 'Download response', false, function () {
+        var downloadBtn = _jsonToolbarBtn('⬇', t('json.download'), false, function () {
             _downloadJsonViewerBody(raw, opts);
         });
 

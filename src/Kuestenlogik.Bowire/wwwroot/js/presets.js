@@ -64,7 +64,7 @@
         if (!mode || !_presetsCache[mode]) return;
         try {
             localStorage.setItem(_presetsStorageKey(mode), JSON.stringify(_presetsCache[mode]));
-            markSaved('preset (' + mode + ')');
+            markSaved(t('save.preset', { mode: mode }));
         } catch (e) {
             console.warn('[presets] persist failed for ' + mode, e);
         }

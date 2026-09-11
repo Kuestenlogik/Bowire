@@ -256,7 +256,7 @@
 
     function _writeUserTemplates(list) {
         try { localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(list)); }
-        catch (e) { try { markSaveFailed('workspace templates', e); } catch { /* ignore */ } }
+        catch (e) { try { markSaveFailed(t('save.workspaceTemplates'), e); } catch { /* ignore */ } }
     }
 
     function _wrapUserTemplate(stored) {

@@ -1236,8 +1236,10 @@
                 return el('label', { className: 'bowire-har-import-mode-opt' }, radio, el('span', { textContent: label }));
             }
             modeRow = el('div', { className: 'bowire-har-import-mode' },
-                modeOption('new', 'Create new recording'),
-                modeOption('append', 'Append to "' + (targetRec.name || 'recording') + '"')
+                modeOption('new', t('rec.modeNew')),
+                modeOption('append', t('rec.modeAppend', {
+    name: targetRec.name || t('rec.fallbackName')
+}))
             );
         }
 

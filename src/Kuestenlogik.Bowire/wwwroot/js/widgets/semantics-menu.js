@@ -238,7 +238,7 @@
         if (opts.currentTag
             && opts.currentTag !== 'none'
             && (opts.currentSource === 'auto' || opts.currentSource === 'plugin')) {
-            menu.appendChild(bowireMenuItem('Accept', function () {
+            menu.appendChild(bowireMenuItem(t('semantics.accept'), function () {
                 bowireWriteAnnotation(opts, opts.currentTag).then(function () {
                     bowireMaybeSuggestCompanion(opts, opts.currentTag, treeNode);
                 });
@@ -246,7 +246,7 @@
         }
 
         // Reinterpret as ▸ submenu (built-ins + Custom).
-        var reinterpret = bowireSubmenuItem('Reinterpret as ▸');
+        var reinterpret = bowireSubmenuItem(t('semantics.reinterpret'));
         for (var i = 0; i < bowireBuiltInSemanticTags.length; i++) {
             (function (kind) {
                 reinterpret.submenu.appendChild(bowireMenuItem(kind, function () {
@@ -263,7 +263,7 @@
         menu.appendChild(reinterpret.element);
 
         // Suppress — writes the explicit 'none' tag at the chosen tier.
-        menu.appendChild(bowireMenuItem('Suppress', function () {
+        menu.appendChild(bowireMenuItem(t('semantics.suppress'), function () {
             bowireWriteAnnotation(opts, 'none');
         }));
 
@@ -275,7 +275,7 @@
         // cmdinj). Choosing one POSTs to the endpoint with the current
         // request body + the right-clicked field's JSONPath, then
         // opens the result panel below.
-        var fuzz = bowireSubmenuItem('Fuzz this field ▸');
+        var fuzz = bowireSubmenuItem(t('semantics.fuzzField'));
         var fuzzCategories = [
             ['sqli', 'SQL injection'],
             ['xss', 'Cross-site scripting'],
@@ -296,7 +296,7 @@
         // submenu above. Only renders when an IChatClient is
         // registered (the menu callback checks at click-time so we
         // don't gate on a status refresh during menu paint).
-        var aiFuzz = bowireMenuItem('AI: suggest fuzz values', function () {
+        var aiFuzz = bowireMenuItem(t('semantics.aiFuzz'), function () {
             bowireCloseSemanticsMenu();
             bowireRunAiFuzzAgainstField(opts);
         });
@@ -332,7 +332,7 @@
         // subsequent click on Accept / Reinterpret / Suppress reads
         // the value back.
         if (opts.scope === undefined) opts.scope = 'this-discriminator';
-        var scope = bowireSubmenuItem('Scope ▸');
+        var scope = bowireSubmenuItem(t('semantics.scope'));
         var scopeOptions = [
             ['this-discriminator', 'Just ' + bowireFormatDiscriminator(opts) + ' in this method'],
             ['this-method-where-path-exists', 'All message types in this method where this path exists'],
@@ -965,11 +965,11 @@
         var parsed;
         try { parsed = JSON.parse(body); }
         catch {
-            notify('Cannot fuzz: request body is not valid JSON. Edit the body, then retry.', 'error');
+            notify(t('semantics.fuzzBadJson'), 'error');
             return;
         }
         if (!bowireFuzzFieldExists(parsed, opts.jsonPath)) {
-            notify('Cannot fuzz: field ' + opts.jsonPath + ' not found in the current request body. Right-click happened on a response field?', 'error');
+            notify(t('semantics.fuzzFieldMissing', { path: opts.jsonPath }), 'error');
             return;
         }
 

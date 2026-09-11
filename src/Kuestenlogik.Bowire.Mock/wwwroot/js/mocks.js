@@ -1201,13 +1201,13 @@ el('span', { className: 'bowire-home-section-count',
         var opts = el('div', { className: 'bowire-mocks-fault-opts' });
         // Kind-specific knobs.
         if (rule.kind === 'error') {
-            opts.appendChild(labelled('Status', faultNumber(rule.errorStatusCode || 503, '503', function (v) { rule.errorStatusCode = v | 0; mark(); })));
+            opts.appendChild(labelled(t('intercept.metaStatus'), faultNumber(rule.errorStatusCode || 503, '503', function (v) { rule.errorStatusCode = v | 0; mark(); })));
         }
         if (rule.kind === 'partial-response' || rule.kind === 'connection-drop') {
-            opts.appendChild(labelled('Bytes', faultNumber(rule.partialBytes != null ? rule.partialBytes : 1024, '1024', function (v) { rule.partialBytes = v | 0; mark(); })));
+            opts.appendChild(labelled(t('mocks.faultBytes'), faultNumber(rule.partialBytes != null ? rule.partialBytes : 1024, '1024', function (v) { rule.partialBytes = v | 0; mark(); })));
         }
         if (rule.kind !== 'latency-only') {
-            opts.appendChild(labelled('Rate', faultNumber(rule.rate != null ? rule.rate : 1.0, '1.0', function (v) { rule.rate = v; mark(); })));
+            opts.appendChild(labelled(t('mocks.faultRate'), faultNumber(rule.rate != null ? rule.rate : 1.0, '1.0', function (v) { rule.rate = v; mark(); })));
         }
         // Latency shape — available on every kind.
         var lat = rule.latency || null;

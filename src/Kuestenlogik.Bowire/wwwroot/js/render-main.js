@@ -485,9 +485,9 @@
                 onClick: function () { freeformActiveRequestTab = id; render(); }
             });
         }
-        reqTabs.appendChild(_ffTab('body', 'Payload'));
-        reqTabs.appendChild(_ffTab('metadata', 'Metadata'));
-        reqTabs.appendChild(_ffTab('mock', 'Mock'));
+        reqTabs.appendChild(_ffTab('body', t('main.tab.payload')));
+        reqTabs.appendChild(_ffTab('metadata', t('rb.kv.metadata')));
+        reqTabs.appendChild(_ffTab('mock', t('main.tab.mock')));
         reqPane.appendChild(reqTabs);
         // Overflow popover — three tabs rarely overflow today, but the
         // request pane gets narrowed via the splitter and we want the
@@ -3415,7 +3415,7 @@
         section.appendChild(el('div', { className: 'bowire-ws-detail-section-label',
             textContent: cols.length === 0
                 ? ownedEmpty(t('main.noun.collections'))
-                : ownedLabel('Collections') + ' (' + cols.length + ')' }));
+                : ownedLabel(t('main.noun.collectionsCap')) + ' (' + cols.length + ')' }));
         if (cols.length === 0) {
             section.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
@@ -3523,7 +3523,7 @@
         section.appendChild(el('div', { className: 'bowire-ws-detail-section-label',
             textContent: recs.length === 0
                 ? ownedEmpty(t('main.noun.recordings'))
-                : ownedLabel('Recordings') + ' (' + recs.length + ')' }));
+                : ownedLabel(t('main.noun.recordingsCap')) + ' (' + recs.length + ')' }));
         if (recs.length === 0) {
             section.appendChild(el('p', {
                 className: 'bowire-ws-detail-stat-hint',
@@ -4440,7 +4440,7 @@
         // rename / URL retirement propagates to the saved item. Both
         // open the same freeform builder; the difference is the URL
         // row's mode + the persisted shape.
-        card('plus', 'Compose new request', 'Self-contained — URL inline', function () {
+        card('plus', t('landing.composeNew'), t('landing.composeNewHint'), function () {
             if (typeof startFreeformRequest === 'function') startFreeformRequest({ urlMode: 'inline' });
             else {
                 railMode = 'discover';
@@ -4494,7 +4494,7 @@
                 render();
             });
         }
-        card('list', 'Import collection', 'Postman / OpenAPI', function () {
+        card('list', t('landing.importCollection'), t('landing.importCollectionHint'), function () {
             // Collections rail retired (v2.1) — route to Compose;
             // the operator opens the side panel's Collections section
             // and uses 'Import Postman' on a fresh row, or runs the
@@ -4521,7 +4521,7 @@
                 }
             });
         }
-        card('server', 'Build a mock', 'Replay recordings', function () {
+        card('server', t('landing.buildMock'), t('landing.buildMockHint'), function () {
             // v2.2 — Mocks rail folded into Intercept -> Mock servers sub-tab.
             railMode = 'intercept';
             try { localStorage.setItem('bowire_rail_mode', 'intercept'); } catch { /* ignore */ }
@@ -4531,7 +4531,7 @@
             if (typeof interceptSubView !== 'undefined') interceptSubView = 'mock-servers';
             render();
         });
-        card('compass', 'Browse Discover', 'Explore services', function () {
+        card('compass', t('rec.browseDiscover'), t('landing.browseDiscoverHint'), function () {
             railMode = 'discover';
             try { localStorage.setItem('bowire_rail_mode', 'discover'); } catch { /* ignore */ }
             sidebarView = 'services';
@@ -4873,18 +4873,18 @@
                 // — without it the cards row floats labelless above
                 // Favorites / Recent, which the operator reads as a
                 // missing section title.
-                firstRunBand.appendChild(_renderHomeBandTitle('rocket', 'Start'));
+                firstRunBand.appendChild(_renderHomeBandTitle('rocket', t('main.home.start')));
                 firstRunBand.appendChild(_renderHomeStartGrid(true));
                 homeWrap.appendChild(firstRunBand);
             } else {
                 var hasContinueItems = recent.length > 0 || collections.length > 0 || recordings.length > 0;
                 if (hasContinueItems) {
                     var continueBand = el('div', { className: 'bowire-home-band' });
-                    continueBand.appendChild(_renderHomeBandTitle('replay', 'Continue'));
+                    continueBand.appendChild(_renderHomeBandTitle('replay', t('main.home.continue')));
                     var continueGrid = el('div', { className: 'bowire-home-continue-grid' });
                     if (recent.length > 0) {
                         continueGrid.appendChild(_renderContinueTile(
-                            'compass', 'Last method', recent[0].service + ' / ' + recent[0].method,
+                            'compass', t('main.home.lastMethod'), recent[0].service + ' / ' + recent[0].method,
                             'Open in Discover',
                             function () {
                                 var r = recent[0];
@@ -4904,7 +4904,7 @@
                     if (collections.length > 0) {
                         var col = collections[0];
                         continueGrid.appendChild(_renderContinueTile(
-                            'list', 'Last collection', col.name,
+                            'list', t('main.home.lastCollection'), col.name,
                             (col.items && col.items.length) + ' item' + (col.items && col.items.length === 1 ? '' : 's'),
                             function () {
                                 // Collections rail retired (v2.1) — open Compose
@@ -4922,7 +4922,7 @@
                     if (recordings.length > 0) {
                         var rec = recordings[0];
                         continueGrid.appendChild(_renderContinueTile(
-                            'recording', 'Last recording', rec.name || ('Recording ' + rec.id),
+                            'recording', t('main.home.lastRecording'), rec.name || ('Recording ' + rec.id),
                             (rec.steps && rec.steps.length) + ' step' + (rec.steps && rec.steps.length === 1 ? '' : 's'),
                             function () {
                                 if (typeof recordingManagerSelectedId !== 'undefined') recordingManagerSelectedId = rec.id;
@@ -4937,7 +4937,7 @@
 
                 // ---- Band 2: Start ----
                 var startBand = el('div', { className: 'bowire-home-band' });
-                startBand.appendChild(_renderHomeBandTitle('rocket', 'Start'));
+                startBand.appendChild(_renderHomeBandTitle('rocket', t('main.home.start')));
                 startBand.appendChild(_renderHomeStartGrid(false));
                 homeWrap.appendChild(startBand);
             }
@@ -8144,7 +8144,7 @@
                         return clamp(inner, maxLen);
                     }
                     if (parsed.type === 'binary' && typeof parsed.base64 === 'string') {
-                        return clamp('[binary] ' + parsed.base64, maxLen);
+                        return clamp('[binary] ' + parsed.base64, maxLen);  // i18n-exempt: a marker in front of a base64 blob
                     }
                 }
             } catch { /* fall through to raw preview */ }
@@ -9749,7 +9749,7 @@
         var chainVar = ctx.jsonPath
             ? '${response.' + ctx.jsonPath + '}'  // i18n-exempt: Bowire's own variable syntax, inserted into the script
             : '${response}';  // i18n-exempt: Bowire's own variable syntax, inserted into the script
-        addItem('Copy ' + chainVar, function () {
+        addItem(t('main.copyVar', { name: chainVar }), function () {
             navigator.clipboard.writeText(chainVar).then(
                 function () { toast(t('status.copied', { what: chainVar }), 'success'); },
                 function () { toast(t('clipboard.failed'), 'error'); }
@@ -9758,7 +9758,7 @@
 
         // Item 2 — Copy path
         if (ctx.jsonPath) {
-            addItem('Copy path (' + ctx.jsonPath + ')', function () {
+            addItem(t('main.copyPathOf', { path: ctx.jsonPath }), function () {
                 navigator.clipboard.writeText(ctx.jsonPath).then(
                     function () { toast(t('rb.response.copiedPath', { path: ctx.jsonPath }), 'success'); },
                     function () { toast(t('clipboard.failed'), 'error'); }

@@ -198,7 +198,7 @@
             var bodyArg = (verb !== 'GET' && verb !== 'DELETE' && verb !== 'HEAD')
                 ? ',\n  body: ' + JSON.stringify(buildHttpBody(ctx))  // i18n-exempt: part of the generated snippet
                 : '';
-            return 'const response = await fetch(' + JSON.stringify(url) + ', {\n' +
+            return 'const response = await fetch(' + JSON.stringify(url) + ', {\n' +  // i18n-exempt: the generated snippet
                 '  method: ' + JSON.stringify(verb) + ',\n' +
                 '  headers: ' + indentLines(headersJs, '  ').trimStart() + bodyArg + '\n' +
                 '});\n' +

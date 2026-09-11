@@ -378,7 +378,7 @@
             coveredRecent + ' of ' + summary.total + ' methods exercised in the last 7 days',
             coveredRecent,
             'recent'));
-        summaryCard.appendChild(metric('stale (≤30d)',  summary.stale,     'stale'));
+        summaryCard.appendChild(metric(t('coverage.stale30d'), summary.stale, 'stale'));
         summaryCard.appendChild(metric('failing',        summary.failing,   'failing'));
         summaryCard.appendChild(metric('uncovered',      summary.uncovered, 'uncovered'));
         wrap.appendChild(summaryCard);

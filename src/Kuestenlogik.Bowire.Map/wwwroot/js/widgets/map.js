@@ -1769,26 +1769,26 @@
                 return b;
             }
 
-            var playBtn = button('▶', 'Play');
+            var playBtn = button('▶', t('map.play'));
             playBtn.addEventListener('click', function () {
                 setPlaybackState(playbackState === 'playing' ? 'paused' : 'playing');
             });
 
-            var stepBack = button('⏮', 'Step back one frame');
+            var stepBack = button('⏮', t('map.stepBack'));
             stepBack.addEventListener('click', function () {
                 setPlaybackState('paused');
                 var idx = indexOfOrdinal(cursorOrdinal);
                 if (idx > 0) setCursor(frameTimeline[idx - 1].ordinal);
             });
 
-            var stepFwd = button('⏭', 'Step forward one frame');
+            var stepFwd = button('⏭', t('map.stepForward'));
             stepFwd.addEventListener('click', function () {
                 setPlaybackState('paused');
                 var idx = indexOfOrdinal(cursorOrdinal);
                 if (idx < frameTimeline.length - 1) setCursor(frameTimeline[idx + 1].ordinal);
             });
 
-            var liveBtn = button('Live', 'Follow the stream again');
+            var liveBtn = button('Live', t('map.followStream'));  // i18n-exempt: the protocol's own word for the live tail
             liveBtn.style.minWidth = '46px';
             liveBtn.addEventListener('click', function () { setPlaybackState('live'); });
 

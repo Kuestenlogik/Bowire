@@ -32,7 +32,7 @@
     function _saveAllInvocationOverrides(map) {
         try {
             localStorage.setItem(wsKey(METHOD_INVOCATION_URL_KEY), JSON.stringify(map));
-            if (typeof markSaved === 'function') markSaved('invocation URL');
+            if (typeof markSaved === 'function') markSaved(t('save.invocationUrl'));
         } catch (e) {
             if (typeof console !== 'undefined') console.warn('[#253] invocation override persist failed', e);
         }

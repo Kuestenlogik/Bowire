@@ -122,12 +122,12 @@
         }
         return {
             ok: function (value, message) {
-                if (!value) fail('assert.ok failed' + (message ? ': ' + message : ''));
+                if (!value) fail('assert.ok failed' + (message ? ': ' + message : ''));  // i18n-exempt: the assertion API's own name, shown to whoever wrote the script
             },
             equal: function (actual, expected, message) {
                 // eslint-disable-next-line eqeqeq
                 if (actual != expected) {
-                    fail('assert.equal failed' + (message ? ': ' + message : '')
+                    fail('assert.equal failed' + (message ? ': ' + message : '')  // i18n-exempt: the assertion API's own name, shown to whoever wrote the script
                         + ' (actual=' + JSON.stringify(actual)
                         + ', expected=' + JSON.stringify(expected) + ')');
                 }
@@ -135,15 +135,15 @@
             notEqual: function (actual, expected, message) {
                 // eslint-disable-next-line eqeqeq
                 if (actual == expected) {
-                    fail('assert.notEqual failed' + (message ? ': ' + message : ''));
+                    fail('assert.notEqual failed' + (message ? ': ' + message : ''));  // i18n-exempt: the assertion API's own name, shown to whoever wrote the script
                 }
             },
             deepEqual: function (actual, expected, message) {
                 var a = '', b = '';
                 try { a = JSON.stringify(actual); b = JSON.stringify(expected); }
-                catch (e) { fail('assert.deepEqual could not serialise values: ' + e.message); }
+                catch (e) { fail('assert.deepEqual could not serialise values: ' + e.message); }  // i18n-exempt: the assertion API's own name, shown to whoever wrote the script
                 if (a !== b) {
-                    fail('assert.deepEqual failed' + (message ? ': ' + message : '')
+                    fail('assert.deepEqual failed' + (message ? ': ' + message : '')  // i18n-exempt: the assertion API's own name, shown to whoever wrote the script
                         + ' (actual=' + a + ', expected=' + b + ')');
                 }
             }
@@ -298,7 +298,7 @@
         Object.assign(ctx, ext);
 
         try {
-            var fn = new Function('ctx', '"use strict";\n' + opts.source);
+            var fn = new Function('ctx', '"use strict";\n' + opts.source);  // i18n-exempt: the parameter name and the strict-mode prologue of generated code
             fn(ctx);
             return { ok: true };
         } catch (err) {
@@ -358,7 +358,7 @@
         }
 
         try {
-            var fn = new Function('ctx', '"use strict";\n' + opts.source);
+            var fn = new Function('ctx', '"use strict";\n' + opts.source);  // i18n-exempt: the parameter name and the strict-mode prologue of generated code
             fn(ctx);
             return { ok: true };
         } catch (err) {

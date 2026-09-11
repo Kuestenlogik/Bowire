@@ -138,8 +138,8 @@
         var toPersist = (typeof isCatalogueUrl === 'function')
             ? serverUrls.filter(function (u) { return !isCatalogueUrl(u); })
             : serverUrls;
-        try { localStorage.setItem(wsKey(SERVER_URLS_KEY), JSON.stringify(toPersist)); markSaved('URLs'); }
-        catch (e) { markSaveFailed('URLs', e); }
+        try { localStorage.setItem(wsKey(SERVER_URLS_KEY), JSON.stringify(toPersist)); markSaved(t('save.urls')); }
+        catch (e) { markSaveFailed(t('save.urls'), e); }
     }
 
     // ---- Per-URL aliases ---------------------------------------------
@@ -160,8 +160,8 @@
     })();
 
     function persistServerUrlAliases() {
-        try { localStorage.setItem(wsKey(SERVER_URL_ALIASES_KEY), JSON.stringify(serverUrlAliases)); markSaved('URL aliases'); }
-        catch (e) { markSaveFailed('URL aliases', e); }
+        try { localStorage.setItem(wsKey(SERVER_URL_ALIASES_KEY), JSON.stringify(serverUrlAliases)); markSaved(t('save.urlAliases')); }
+        catch (e) { markSaveFailed(t('save.urlAliases'), e); }
     }
 
     // Best-effort short label for a URL — host + last meaningful path
@@ -1316,8 +1316,8 @@
         if (rawUrlHeaders) urlHeaders = JSON.parse(rawUrlHeaders) || {};
     } catch { /* corrupt; reset */ }
     function persistUrlHeaders() {
-        try { localStorage.setItem(wsKey('bowire_url_headers'), JSON.stringify(urlHeaders)); markSaved('URL headers'); }
-        catch (e) { markSaveFailed('URL headers', e); }
+        try { localStorage.setItem(wsKey('bowire_url_headers'), JSON.stringify(urlHeaders)); markSaved(t('save.urlHeaders')); }
+        catch (e) { markSaveFailed(t('save.urlHeaders'), e); }
     }
     function getUrlHeaders(url) {
         if (!url) return {};
@@ -1355,8 +1355,8 @@
         if (rawUrlMeta) urlMeta = JSON.parse(rawUrlMeta) || {};
     } catch { /* corrupt; reset */ }
     function persistUrlMeta() {
-        try { localStorage.setItem(wsKey('bowire_url_meta'), JSON.stringify(urlMeta)); markSaved('URL meta'); }
-        catch (e) { markSaveFailed('URL meta', e); }
+        try { localStorage.setItem(wsKey('bowire_url_meta'), JSON.stringify(urlMeta)); markSaved(t('save.urlMeta')); }
+        catch (e) { markSaveFailed(t('save.urlMeta'), e); }
     }
     function getUrlMeta(url) {
         if (!url) return {};
@@ -1691,8 +1691,8 @@
         _enabledRailsCache = current;
         try {
             localStorage.setItem(ENABLED_RAILS_KEY, JSON.stringify(current));
-            markSaved('rail modes');
-        } catch (e) { markSaveFailed('rail modes', e); }
+            markSaved(t('save.railModes'));
+        } catch (e) { markSaveFailed(t('save.railModes'), e); }
     }
     function isRailEnabled(id) {
         if (ALWAYS_ON_RAIL_MODES.indexOf(id) >= 0) return true;
@@ -6090,8 +6090,8 @@
         }
     } catch { /* corrupt → reset */ }
     function persistAdHocRequests() {
-        try { localStorage.setItem(wsKey(AD_HOC_REQUESTS_KEY), JSON.stringify(adHocRequests)); markSaved('ad-hoc requests'); }
-        catch (e) { markSaveFailed('ad-hoc requests', e); }
+        try { localStorage.setItem(wsKey(AD_HOC_REQUESTS_KEY), JSON.stringify(adHocRequests)); markSaved(t('save.adHoc')); }
+        catch (e) { markSaveFailed(t('save.adHoc'), e); }
     }
 
     function _newAdHocId() {

@@ -691,7 +691,7 @@
             );
         }
         consoleTypeFilter.forEach(function (id) {
-            bar.appendChild(buildChip('type:' + id, function () { consoleTypeFilter.delete(id); }));
+            bar.appendChild(buildChip('type:' + id, function () { consoleTypeFilter.delete(id); }));  // i18n-exempt: a filter expression, not prose
         });
         if (consoleTimeFilterMin > 0) {
             bar.appendChild(buildChip(consoleTimeFilterMin + 'm', function () { consoleTimeFilterMin = 0; }));

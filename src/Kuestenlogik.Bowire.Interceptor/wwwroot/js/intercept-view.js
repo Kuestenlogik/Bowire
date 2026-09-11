@@ -226,10 +226,10 @@
         }
 
         var tabStrip = el('div', { id: 'bowire-intercept-subtabs', className: 'bowire-rail-subtabs' },
-            _subTabBtn('captured',       'Captured',       flowCount),
-            _subTabBtn('live-overrides', 'Live overrides', overrideCount),
-            _subTabBtn('mock-servers',   'Mock servers',   serverCount),
-            _subTabBtn('settings',       'Settings')
+            _subTabBtn('captured',       t('intercept.capturedTab'),       flowCount),
+            _subTabBtn('live-overrides', t('intercept.liveOverridesTab'), overrideCount),
+            _subTabBtn('mock-servers',   t('intercept.mockServersTab'),   serverCount),
+            _subTabBtn('settings',       t('sidebar.settings'))
         );
         var actionsBar = el('div', { className: 'bowire-rail-subtabs-actions' },
             el('button', {
@@ -288,7 +288,7 @@
 
         if (interceptSubView === 'live-overrides') {
             if (!interceptorEnabled) {
-                container.appendChild(renderInterceptActivationEmptyState('Live overrides'));
+                container.appendChild(renderInterceptActivationEmptyState(t('intercept.liveOverridesTab')));
                 return;
             }
             if (typeof renderInterceptedMocksListInto === 'function') {
@@ -302,7 +302,7 @@
         }
         if (interceptSubView === 'settings') {
             if (!interceptorEnabled) {
-                container.appendChild(renderInterceptActivationEmptyState('Settings'));
+                container.appendChild(renderInterceptActivationEmptyState(t('sidebar.settings')));
                 return;
             }
             renderInterceptSettingsListInto(container);
@@ -310,7 +310,7 @@
         }
         // Captured
         if (!interceptorEnabled) {
-            container.appendChild(renderInterceptActivationEmptyState('Captured'));
+            container.appendChild(renderInterceptActivationEmptyState(t('intercept.capturedTab')));
             return;
         }
         renderInterceptCapturedListBodyInto(container);
@@ -715,7 +715,7 @@
                     className: 'bowire-env-editor-action-btn',
                     onClick: function () {
                         if (typeof helpOpenDrawer === 'function') {
-                            helpOpenDrawer('features/proxy');
+                            helpOpenDrawer('features/proxy');  // i18n-exempt: a documentation path
                         }
                     }
                 }, el('span', { textContent: t('intercept.openDocs') }))
@@ -766,7 +766,7 @@
                 className: 'bowire-env-editor-action-btn',
                 onClick: function () {
                     if (typeof helpOpenDrawer === 'function') {
-                        helpOpenDrawer('features/proxy');
+                        helpOpenDrawer('features/proxy');  // i18n-exempt: a documentation path
                     }
                 }
             }, el('span', { textContent: t('intercept.openDocs') }))

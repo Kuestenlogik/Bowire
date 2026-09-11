@@ -500,17 +500,12 @@
         var hostForced = _autoCreate.source === 'host';
         var autoCreateDesc;
         if (hostForced) {
-            autoCreateDesc = 'Forced by the host (appsettings / CLI) — currently '
-                + (_autoCreate.value ? 'on' : 'off') + '.';
+            autoCreateDesc = t(_autoCreate.value
+                ? 'settings.autoWorkspaceForcedOn' : 'settings.autoWorkspaceForcedOff');
         } else if (uiMode === 'embedded') {
-            autoCreateDesc = 'On by default when Bowire is embedded: a first run seeds one '
-                + 'workspace named after the host app and lands on Discover, where this host\'s '
-                + 'own API is already listed. Turn it off to get the empty Home + '
-                + 'Create-Workspace CTA instead. Takes effect after a reload of a fresh install.';
+            autoCreateDesc = t('settings.autoWorkspaceEmbedded');
         } else {
-            autoCreateDesc = 'Seed a default "Personal" workspace on first run instead of '
-                + 'showing the empty Home + Create-Workspace CTA. Takes effect after a reload '
-                + 'of a fresh install.';
+            autoCreateDesc = t('settings.autoWorkspaceDesc');
         }
         section.appendChild(renderSettingsToggle(
             t('settings.autoWorkspace'),
