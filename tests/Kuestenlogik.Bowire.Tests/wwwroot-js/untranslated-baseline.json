@@ -1,1 +1,26 @@
-{}
+{
+  "Kuestenlogik.Bowire.Benchmarking/wwwroot/js/benchmarks.js": 4,
+  "Kuestenlogik.Bowire.Compose/wwwroot/js/compose-rail.js": 1,
+  "Kuestenlogik.Bowire.Flows/wwwroot/js/flows.js": 35,
+  "Kuestenlogik.Bowire.Interceptor/wwwroot/js/intercept-view.js": 9,
+  "Kuestenlogik.Bowire.Interceptor/wwwroot/js/proxy-view.js": 3,
+  "Kuestenlogik.Bowire.Map/wwwroot/js/widgets/map.js": 5,
+  "Kuestenlogik.Bowire.Mock/wwwroot/js/mocks.js": 3,
+  "Kuestenlogik.Bowire.Recordings/wwwroot/js/recording-correlation.js": 2,
+  "Kuestenlogik.Bowire.Recordings/wwwroot/js/recording.js": 2,
+  "Kuestenlogik.Bowire/wwwroot/js/ai.js": 2,
+  "Kuestenlogik.Bowire/wwwroot/js/code-export.js": 1,
+  "Kuestenlogik.Bowire/wwwroot/js/coverage.js": 1,
+  "Kuestenlogik.Bowire/wwwroot/js/execute.js": 1,
+  "Kuestenlogik.Bowire/wwwroot/js/helpers.js": 6,
+  "Kuestenlogik.Bowire/wwwroot/js/invocation-url.js": 1,
+  "Kuestenlogik.Bowire/wwwroot/js/landing.js": 6,
+  "Kuestenlogik.Bowire/wwwroot/js/presets.js": 1,
+  "Kuestenlogik.Bowire/wwwroot/js/prologue.js": 12,
+  "Kuestenlogik.Bowire/wwwroot/js/render-env-auth.js": 37,
+  "Kuestenlogik.Bowire/wwwroot/js/render-main.js": 18,
+  "Kuestenlogik.Bowire/wwwroot/js/scripts.js": 7,
+  "Kuestenlogik.Bowire/wwwroot/js/settings.js": 121,
+  "Kuestenlogik.Bowire/wwwroot/js/widgets/semantics-menu.js": 8,
+  "Kuestenlogik.Bowire/wwwroot/js/workspace-templates.js": 1
+}

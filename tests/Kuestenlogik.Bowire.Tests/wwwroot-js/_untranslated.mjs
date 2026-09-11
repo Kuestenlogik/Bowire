@@ -87,9 +87,24 @@ const PATTERNS = [
     // toast('…'), bowireConfirm('…'), bowirePrompt('…'), alert('…').
     new RegExp(
         String.raw`(?<![A-Za-z0-9_$.])(?:toast|bowireConfirm|bowirePrompt|alert)\(\s*${STR}`, 'g'),
-    // A module-private helper taking its label first: _fieldRow('Path pattern', …),
-    // _interceptMetaCell('Latency', …). This is the family the slot list missed.
-    new RegExp(String.raw`(?<![A-Za-z0-9_$.])_[A-Za-z][A-Za-z0-9_$]*\(\s*${STR}`, 'g'),
+    // Any helper taking its label first: _fieldRow('Path pattern', …),
+    // renderSettingsRow('Theme', 'Color scheme for the UI', …), statTile('URLs', …).
+    //
+    // This used to require a leading underscore, on the theory that a label
+    // handed over positionally belongs to a module-private helper. Half the
+    // Settings dialog disagreed: renderSettingsRow and renderSettingsToggle
+    // carry their label and their description as the first two arguments and
+    // are named without one. Match any call; the rejections below drop
+    // getElementById('bowire-app') and el('div') and their kind.
+    // `new Error('…')` is a diagnostic for whoever reads the stack, not a
+    // surface, so the negative lookbehind keeps constructors out.
+    new RegExp(
+        String.raw`(?<!new\s)(?<![A-Za-z0-9_$.])[A-Za-z_$][A-Za-z0-9_$]*\(\s*${STR}`,
+        'g'),
+    // …and its second argument, which is where those two helpers put the
+    // sentence under the label.
+    new RegExp(
+        String.raw`(?<![A-Za-z0-9_$.])[A-Za-z_$][A-Za-z0-9_$]*\(\s*${STR}\s*,\s*${STR}`, 'g'),
     // A slot named by its suffix: valuePlaceholder, executeLabel, errorTitle.
     new RegExp(String.raw`(?<![A-Za-z0-9_$])[a-z][A-Za-z0-9_$]*(?:${SLOT_SUFFIX})\s*:\s*${STR}`,
         'g'),
@@ -191,7 +206,10 @@ export function looksLikeProse(raw) {
     // kebab-case and snake_case identifiers: class names, ids, event names.
     if (/^[a-z0-9]+([-_][a-z0-9]+)*$/.test(s)) return false;
     // A dotted or camelCase identifier with no space and no initial capital.
-    if (/^[A-Za-z0-9_$.]+$/.test(s) && !/\s/.test(s) && /^[a-z]/.test(s)) return false;
+    // Hyphens belong in here: a catalogue key like tour.add-url.body is an
+    // identifier, and leaving them out made every t('tour.*') call read as
+    // prose the moment the scan started looking at call arguments.
+    if (/^[A-Za-z0-9_$.-]+$/.test(s) && !/\s/.test(s) && /^[a-z]/.test(s)) return false;
     // An all-caps token with no space: a badge, a verb, an enum name.
     if (/^[A-Z0-9_]+$/.test(s)) return false;
     // Needs two adjacent letters somewhere to be words rather than punctuation.
