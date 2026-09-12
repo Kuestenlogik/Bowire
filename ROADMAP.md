@@ -12,11 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation and the rough edges: DE + EN catalogues, header library, first-run and sidecar fixes *(due 2026-11-03)*
 
-**17/30 done** · 1 in progress · 12 backlog
+**18/30 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [692](https://github.com/Kuestenlogik/Bowire/issues/692) | Bowire | [A sidecar manifest cannot name an interpreter: the executable never resolves through PATH](#issue-kuestenlogik-bowire-692) | 🟡 In progress | `area:plugin-sdk` |
 | [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog | `area:workbench` |
 | [247](https://github.com/Kuestenlogik/Bowire/issues/247) | Bowire | [Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas](#issue-kuestenlogik-bowire-247) | ⬜ Backlog | `area:workbench` |
 | [249](https://github.com/Kuestenlogik/Bowire/issues/249) | Bowire | [Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module](#issue-kuestenlogik-bowire-249) | ⬜ Backlog | `area:workbench` |
@@ -46,6 +45,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ✅ Done | `area:workbench` |
 | [684](https://github.com/Kuestenlogik/Bowire/issues/684) | Bowire | [Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench](#issue-kuestenlogik-bowire-684) | ✅ Done | `area:cli` |
 | [686](https://github.com/Kuestenlogik/Bowire/issues/686) | Bowire | [el() turns a false boolean attribute into a set attribute, so disabled: false disables the control](#issue-kuestenlogik-bowire-686) | ✅ Done | `area:workbench` |
+| [692](https://github.com/Kuestenlogik/Bowire/issues/692) | Bowire | [A sidecar manifest cannot name an interpreter: the executable never resolves through PATH](#issue-kuestenlogik-bowire-692) | ✅ Done | `area:plugin-sdk` |
 
 ### v2.9 — MCP completion + agent hub *(due 2026-11-24)*
 
@@ -169,12 +169,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ## Details
 
 ### v2.8 — Localisation and the rough edges: DE + EN catalogues, header library, first-run and sidecar fixes *(due 2026-11-03)*
-
-#### <a id="issue-kuestenlogik-bowire-692"></a>🟡 In progress · [#692](https://github.com/Kuestenlogik/Bowire/issues/692) A sidecar manifest cannot name an interpreter: the executable never resolves through PATH
-
-> `area:plugin-sdk`
-
-A sidecar manifest cannot name an interpreter. `SidecarJsonRpcTransport.Start` resolves the executable as [[more]](https://github.com/Kuestenlogik/Bowire/issues/692)
 
 #### <a id="issue-kuestenlogik-bowire-216"></a>⬜ Backlog · [#216](https://github.com/Kuestenlogik/Bowire/issues/216) Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage
 
@@ -345,6 +339,12 @@ Starting Bowire while an instance is already listening does not fail gracefully 
 > `area:workbench`
 
 `el()` in `helpers.js` skips `undefined` and `null` and routes everything else through `setAttribute`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/686)
+
+#### <a id="issue-kuestenlogik-bowire-692"></a>✅ Done · [#692](https://github.com/Kuestenlogik/Bowire/issues/692) A sidecar manifest cannot name an interpreter: the executable never resolves through PATH
+
+> `area:plugin-sdk`
+
+A sidecar manifest cannot name an interpreter. `SidecarJsonRpcTransport.Start` resolves the executable as [[more]](https://github.com/Kuestenlogik/Bowire/issues/692)
 
 ### v2.9 — MCP completion + agent hub *(due 2026-11-24)*
 
