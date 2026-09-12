@@ -10,7 +10,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-11-03)*
+### v2.8 — Localisation and the rough edges: DE + EN catalogues, header library, first-run and sidecar fixes *(due 2026-11-03)*
 
 **17/29 done** · 12 backlog
 
@@ -145,6 +145,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [34](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34) | Bootcamp | [Ship each exercise as two downloads: the shell with its TODOs, and the solution](#issue-kuestenlogik-bowire-bootcamp-34) | ⬜ Backlog | `area:bootcamp` |
+| [66](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/66) | Protocol.TacticalApi | [Status OK for a call the server refused: the ResponseHeader is never read](#issue-kuestenlogik-bowire-protocol-tacticalapi-66) | ⬜ Backlog | `area:plugin-sdk` |
+| [67](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/67) | Protocol.TacticalApi | [gRPC-Web is unsupported, and it is Rheinmetall's documented default port](#issue-kuestenlogik-bowire-protocol-tacticalapi-67) | ⬜ Backlog | `area:plugin-sdk` |
+| [68](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/68) | Protocol.TacticalApi | [The protos' required fields, oneof exclusivity and sparse-update rule never reach the request form](#issue-kuestenlogik-bowire-protocol-tacticalapi-68) | ⬜ Backlog | `area:plugin-sdk` |
+| [69](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/69) | Protocol.TacticalApi | [The write envelope every upstream example sets is in neither our docs nor our sample](#issue-kuestenlogik-bowire-protocol-tacticalapi-69) | ⬜ Backlog | `area:plugin-sdk` |
 | [92](https://github.com/Kuestenlogik/Bowire.Samples/issues/92) | Samples | [Ship each sample as its own ready-to-run download](#issue-kuestenlogik-bowire-samples-92) | ⬜ Backlog | `area:docs` |
 | [620](https://github.com/Kuestenlogik/Bowire/issues/620) | Bowire | [Benchmark: measure time to first chunk, not just the whole round trip](#issue-kuestenlogik-bowire-620) | ⬜ Backlog | `area:cli` |
 | [621](https://github.com/Kuestenlogik/Bowire/issues/621) | Bowire | [Benchmark: gate on values the response reports, not just on the clock](#issue-kuestenlogik-bowire-621) | ⬜ Backlog | `area:cli` |
@@ -160,10 +164,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [689](https://github.com/Kuestenlogik/Bowire/issues/689) | Bowire | [Action-log entries store rendered English text instead of a key](#issue-kuestenlogik-bowire-689) | ⬜ Backlog | `area:workbench` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 | [692](https://github.com/Kuestenlogik/Bowire/issues/692) | Bowire | [A sidecar manifest cannot name an interpreter: the executable never resolves through PATH](#issue-kuestenlogik-bowire-692) | ⬜ Backlog | `area:plugin-sdk` |
+| [693](https://github.com/Kuestenlogik/Bowire/issues/693) | Bowire | [A sidecar's settings() reaches nothing: the host never reads them](#issue-kuestenlogik-bowire-693) | ⬜ Backlog | `area:plugin-sdk` |
 
 ## Details
 
-### v2.8 — Workbench UX polish: freeform REST, header library, i18n *(due 2026-11-03)*
+### v2.8 — Localisation and the rough edges: DE + EN catalogues, header library, first-run and sidecar fixes *(due 2026-11-03)*
 
 #### <a id="issue-kuestenlogik-bowire-216"></a>⬜ Backlog · [#216](https://github.com/Kuestenlogik/Bowire/issues/216) Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage
 
@@ -663,6 +668,30 @@ Bowire's mock is **replay-first**: a recording becomes an endpoint, a schema bec
 
 Two downloads per exercise, from the Releases page: [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34)
 
+#### <a id="issue-kuestenlogik-bowire-protocol-tacticalapi-66"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.TacticalApi#66](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/66) Status OK for a call the server refused: the ResponseHeader is never read
+
+> `area:plugin-sdk`
+
+A TacticalAPI call that the server **refused** is reported to the operator as a success. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/66)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-tacticalapi-67"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.TacticalApi#67](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/67) gRPC-Web is unsupported, and it is Rheinmetall's documented default port
+
+> `area:plugin-sdk`
+
+Rheinmetall's documented default transport is gRPC-Web, and we cannot speak it. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/67)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-tacticalapi-68"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.TacticalApi#68](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/68) The protos' required fields, oneof exclusivity and sparse-update rule never reach the request form
+
+> `area:plugin-sdk`
+
+The contract documents which fields are mandatory, which are mutually exclusive, and that an update must be **sparse** — and none of it reaches the operator's request form. The form therefore invites exactly the request that destroys data. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/68)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-tacticalapi-69"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.TacticalApi#69](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/69) The write envelope every upstream example sets is in neither our docs nor our sample
+
+> `area:plugin-sdk`
+
+Every write in Rheinmetall's reference client sets the same envelope, and neither our docs nor our sample show it. An operator copying our sample produces requests TacNet will refuse, or accept with a misleading provenance. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi/issues/69)
+
 #### <a id="issue-kuestenlogik-bowire-samples-92"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#92](https://github.com/Kuestenlogik/Bowire.Samples/issues/92) Ship each sample as its own ready-to-run download
 
 > `area:docs`
@@ -752,6 +781,12 @@ The Activity drawer renders text that was translated once, when the action happe
 > `area:plugin-sdk`
 
 A sidecar manifest cannot name an interpreter. `SidecarJsonRpcTransport.Start` resolves the executable as [[more]](https://github.com/Kuestenlogik/Bowire/issues/692)
+
+#### <a id="issue-kuestenlogik-bowire-693"></a>⬜ Backlog · [#693](https://github.com/Kuestenlogik/Bowire/issues/693) A sidecar's settings() reaches nothing: the host never reads them
+
+> `area:plugin-sdk`
+
+A sidecar plugin can describe its settings, and nothing receives them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/693)
 
 ---
 
