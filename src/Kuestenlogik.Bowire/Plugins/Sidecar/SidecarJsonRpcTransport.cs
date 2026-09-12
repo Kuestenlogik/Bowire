@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -65,19 +66,106 @@ internal sealed class SidecarJsonRpcTransport : ISidecarTransport
     /// <summary>True once the underlying process has exited (cleanly or otherwise).</summary>
     public bool HasExited => _process.HasExited;
 
+    /// <summary>Where a manifest's <c>executable</c> is looked for.</summary>
+    internal enum ExecutableSource
+    {
+        /// <summary>An absolute path, or a path resolved against the plugin directory.</summary>
+        PluginDirectory,
+
+        /// <summary>A bare name handed to the OS to look up on <c>PATH</c>.</summary>
+        SearchPath,
+    }
+
+    // Both separators, always. A manifest is written once and installed
+    // on every platform, so "bin\sidecar" names a path on Linux too and
+    // must not be mistaken for a bare name there.
+    private static readonly char[] s_pathSeparators = ['/', '\\'];
+
+    private static bool IsBareName(string executable)
+        => executable.IndexOfAny(s_pathSeparators) < 0;
+
+    /// <summary>
+    /// Resolve a manifest's <c>executable</c> to the file name the
+    /// process should start with.
+    /// </summary>
+    /// <remarks>
+    /// <para>Two steps, in this order:</para>
+    /// <list type="number">
+    /// <item><description>the plugin's own directory — an absolute path,
+    /// or a relative path that exists under <paramref name="pluginDir"/>;</description></item>
+    /// <item><description><c>PATH</c>, but only for a bare name (no
+    /// directory separator). That step is what lets a manifest say
+    /// <c>"executable": "python3", "args": ["plugin.py"]</c> and work on
+    /// every platform, rather than resolving to a non-existent
+    /// <c>&lt;pluginDir&gt;/python3</c>.</description></item>
+    /// </list>
+    /// <para>
+    /// The order is the security-relevant part: the plugin directory is
+    /// the trusted location, so a binary the plugin ships always wins
+    /// over a same-named program on <c>PATH</c>. <c>PATH</c> is only
+    /// reached when the plugin ships no such file.
+    /// </para>
+    /// <para>
+    /// The lookup itself is left to the OS — passing a name without a
+    /// separator as <see cref="ProcessStartInfo.FileName"/> is what makes
+    /// it search <c>PATH</c> (and, on Windows, apply <c>PATHEXT</c>, so
+    /// <c>python3</c> finds <c>python3.exe</c>). Doing it by hand here
+    /// would mean reimplementing both.
+    /// </para>
+    /// </remarks>
+    internal static (string FileName, ExecutableSource Source) ResolveExecutable(
+        string executable, string pluginDir)
+    {
+        ArgumentNullException.ThrowIfNull(executable);
+        ArgumentNullException.ThrowIfNull(pluginDir);
+
+        if (Path.IsPathRooted(executable))
+            return (executable, ExecutableSource.PluginDirectory);
+
+        var pluginLocal = Path.Combine(pluginDir, executable);
+        if (File.Exists(pluginLocal) || !IsBareName(executable))
+            return (pluginLocal, ExecutableSource.PluginDirectory);
+
+        return (executable, ExecutableSource.SearchPath);
+    }
+
+    /// <summary>
+    /// Failure message naming every place the executable was looked for.
+    /// The OS error on its own ("The specified executable is not a valid
+    /// application for this OS platform") says nothing about which of the
+    /// two steps was taken, which is precisely what the reader needs.
+    /// </summary>
+    private static string DescribeStartFailure(
+        string executable, string pluginDir, ExecutableSource source, string reason)
+    {
+        var pluginLocal = Path.Combine(pluginDir, executable);
+        var tried = source switch
+        {
+            ExecutableSource.SearchPath =>
+                "tried '" + pluginLocal + "' (the plugin ships no such file), then '"
+                + executable + "' on PATH",
+            _ when Path.IsPathRooted(executable) =>
+                "tried '" + executable + "'",
+            _ =>
+                "tried '" + pluginLocal + "'; PATH was not searched because '"
+                + executable + "' names a path rather than a bare command",
+        };
+        return "Couldn't start the sidecar executable '" + executable + "': " + tried + ". " + reason;
+    }
+
     /// <summary>
     /// Spawn the sidecar process for <paramref name="manifest"/> and
     /// start the read loop. The plugin directory is the working
-    /// directory and the base for the relative <c>executable</c> path.
+    /// directory and the first place the <c>executable</c> is looked
+    /// for; a bare name the plugin doesn't ship falls back to
+    /// <c>PATH</c> — see <see cref="ResolveExecutable"/>.
     /// </summary>
     public static SidecarJsonRpcTransport Start(SidecarPluginManifest manifest, string pluginDir)
     {
         ArgumentNullException.ThrowIfNull(manifest);
         ArgumentNullException.ThrowIfNull(pluginDir);
 
-        var exePath = Path.IsPathRooted(manifest.Executable)
-            ? manifest.Executable
-            : Path.Combine(pluginDir, manifest.Executable);
+        var (exePath, exeSource) = ResolveExecutable(manifest.Executable, pluginDir);
 
         var psi = new ProcessStartInfo
         {
@@ -111,9 +199,25 @@ internal sealed class SidecarJsonRpcTransport : ISidecarTransport
             }
         }
 
-        var proc = Process.Start(psi)
-            ?? throw new InvalidOperationException(
-                "Process.Start returned null for sidecar executable '" + exePath + "'");
+        Process? proc;
+        try
+        {
+            proc = Process.Start(psi);
+        }
+        catch (Win32Exception ex)
+        {
+            // The OS couldn't launch it: missing file, missing execute
+            // bit, wrong architecture. Re-throw naming the places we
+            // looked, keeping the original as the inner exception.
+            throw new InvalidOperationException(
+                DescribeStartFailure(manifest.Executable, pluginDir, exeSource, ex.Message), ex);
+        }
+
+        if (proc is null)
+        {
+            throw new InvalidOperationException(DescribeStartFailure(
+                manifest.Executable, pluginDir, exeSource, "Process.Start returned null."));
+        }
 
         var transport = new SidecarJsonRpcTransport(proc, manifest.ShutdownTimeoutMs);
         transport._readLoop = Task.Run(transport.ReadLoopAsync);

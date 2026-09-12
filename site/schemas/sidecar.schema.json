@@ -47,7 +47,7 @@
     },
     "executable": {
       "type": "string",
-      "description": "Path to the sidecar executable, relative to the plugin directory. Required for the stdio transport."
+      "description": "The sidecar executable: a path relative to the plugin directory, or a bare command name (no directory separator) looked up on PATH — so an interpreted sidecar can name its interpreter, e.g. \"python3\" with args [\"plugin.py\"]. A file the plugin ships always wins over a PATH namesake. Required for the stdio transport."
     },
     "args": {
       "type": "array",

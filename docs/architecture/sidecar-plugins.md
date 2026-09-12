@@ -114,7 +114,7 @@ oras push ghcr.io/acme/zenoh-sidecar:1.0.0 \
 | `protocol.name` | yes | Display name (e.g. `Zenoh`). |
 | `protocol.iconSvg` | no | Inline SVG. Initial-handshake `initialize` response can override. |
 | `transport` | no | `"stdio"` (default) or `"http"`. Picks the wire — see below. |
-| `executable` | stdio | Path to the executable, relative to the plugin directory. Required for `stdio`. |
+| `executable` | stdio | A path relative to the plugin directory, or a bare command name looked up on `PATH` — see [Resolving `executable`](#resolving-executable). Required for `stdio`. |
 | `args` | no | Args appended to the executable command line (stdio). |
 | `envPrefix` | no | Env-var prefix forwarded to the subprocess (stdio). Default: `BOWIRE_`. |
 | `shutdownTimeoutMs` | no | Grace period after `shutdown` before SIGKILL (stdio). Default: `3000`. |
@@ -127,6 +127,39 @@ The manifest has a published JSON Schema at
 `$schema` key for completion + validation as you author `sidecar.json`. The
 schema enforces the transport rule — `executable` is required for `stdio`,
 `url` for `http`.
+
+### Resolving `executable`
+
+A sidecar does not have to be a compiled binary the plugin ships. An
+interpreted one names its interpreter, and the arguments name the script:
+
+```json
+{ "executable": "python3", "args": ["echo_plugin.py"] }
+```
+
+The host resolves `executable` in two steps, in this order:
+
+1. **The plugin directory.** An absolute path is taken as given. A
+   relative path is resolved against the plugin directory, and wins
+   whenever the file is there.
+2. **`PATH`.** Only for a **bare name** — one containing neither `/` nor
+   `\`. The name is handed to the OS unchanged, which searches `PATH`
+   and, on Windows, applies `PATHEXT` (so `python3` finds `python3.exe`).
+
+The order is deliberate, and it is the security-relevant part: the plugin
+directory is the trusted location, so a binary the plugin ships is never
+shadowed by a program of the same name that happens to be on `PATH`. The
+fallback is reached only when the plugin ships no such file.
+
+Both separators count on both platforms — a manifest is written once and
+installed everywhere, so `bin\sidecar` names a path on Linux too rather
+than a command to look up. A path that resolves to nothing therefore
+fails without consulting `PATH`, and the error says so.
+
+The practical consequence: a sidecar written in Python, Node or Ruby
+needs neither a shebang plus an executable bit (Unix only) nor a
+`run.sh` wrapper (Unix only). It names its interpreter and runs
+everywhere.
 
 ## Transports
 
@@ -292,8 +325,10 @@ are duplex by nature.
 
 ## Lifecycle
 
-1. **Spawn** — Bowire launches the executable with stdin / stdout
-   piped, stderr inherited (so sidecar logs land in the host's
+1. **Spawn** — Bowire resolves `executable` (plugin directory first,
+   then `PATH` for a bare name — see [Resolving
+   `executable`](#resolving-executable)) and launches it with stdin /
+   stdout piped, stderr inherited (so sidecar logs land in the host's
    console). The env is the host's env filtered by `envPrefix`.
 2. **Initialize** — host sends `initialize`; sidecar replies with
    metadata. The plugin shows up in the workbench only after this

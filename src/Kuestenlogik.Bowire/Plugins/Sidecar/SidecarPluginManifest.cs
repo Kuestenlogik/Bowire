@@ -13,7 +13,7 @@ namespace Kuestenlogik.Bowire.Plugins.Sidecar;
 /// </summary>
 /// <param name="PackageId">Reverse-DNS package id (e.g. <c>Acme.Bowire.Protocol.Zenoh</c>).</param>
 /// <param name="Protocol">Protocol metadata the manifest declares before the sidecar starts.</param>
-/// <param name="Executable">Path to the sidecar executable, relative to the plugin directory. Required for the <c>stdio</c> transport.</param>
+/// <param name="Executable">The sidecar executable: a path relative to the plugin directory, or a bare command name looked up on <c>PATH</c> (so an interpreted sidecar can name its interpreter). Resolved by <c>SidecarJsonRpcTransport.ResolveExecutable</c>. Required for the <c>stdio</c> transport.</param>
 /// <param name="Args">Extra args appended to the executable command line. <c>null</c> = none.</param>
 /// <param name="EnvPrefix">Env-var prefix forwarded to the subprocess. Default <c>BOWIRE_</c>.</param>
 /// <param name="ShutdownTimeoutMs">Grace period after <c>shutdown</c> before force-kill (stdio). Default 3000.</param>
