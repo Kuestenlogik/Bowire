@@ -3,7 +3,7 @@
 
 using System.Text.Json;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Testing;
 
 /// <summary>
 /// #117 — the English catalogue, for contract tests that used to pin a
@@ -23,8 +23,14 @@ namespace Kuestenlogik.Bowire.Tests;
 /// side and read the text from here, where a changed sentence is fine and a
 /// missing placeholder is not.
 /// </para>
+/// <para>
+/// It sits in the shared test-support library rather than in one test project
+/// because the sweep does not respect project boundaries: the Mock rail's own
+/// contract tests hit the same wall as the core ones, and a second copy of the
+/// reader would be a second place to remember.
+/// </para>
 /// </remarks>
-internal static class EnglishCatalogue
+public static class EnglishCatalogue
 {
     private static readonly Lazy<Dictionary<string, string>> Catalogue = new(Load);
 

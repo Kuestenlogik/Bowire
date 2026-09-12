@@ -56,6 +56,11 @@ public sealed class BrowserUiHostPortInUseTests
             BrowserUiHost.ProbePortAsync = (_, _) => Task.FromResult(BrowserUiHost.PortOccupant.Bowire);
             BrowserUiHost.OpenBrowserAsync = (url, _) => { opened.Add(url); return Task.CompletedTask; };
 
+            // The adopt path opens a browser, and a runner suppresses that
+            // through CI / DOTNET_RUNNING_IN_CONTAINER / UserInteractive —
+            // so the launch half has to be enabled here or asked about.
+            using var launch = BrowserLaunchEnvironment.Allow();
+
             var rc = await BrowserUiHost.RunAsync(
                 [],
                 Config(new() { ["Bowire:Port"] = "5080" }),
@@ -67,7 +72,11 @@ public sealed class BrowserUiHostPortInUseTests
             // one. A non-zero code here would fail a script that starts
             // Bowire idempotently.
             Assert.Equal(0, rc);
-            Assert.Equal(["http://localhost:5080/"], opened);
+            if (BrowserLaunchEnvironment.LaunchExpected)
+                Assert.Equal(["http://localhost:5080/"], opened);
+
+            // The URL is on stdout either way — that is what makes the
+            // suppressed-launch case usable rather than silent.
             Assert.Contains("already running", stdout.ToString(), StringComparison.Ordinal);
             Assert.Contains("http://localhost:5080/", stdout.ToString(), StringComparison.Ordinal);
         }

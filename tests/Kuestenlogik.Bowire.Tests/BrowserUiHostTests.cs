@@ -132,21 +132,16 @@ public sealed class BrowserUiHostTests
                 return 0;
             };
 
-            // CI env var would normally suppress auto-open — clear it for
-            // this test so the "browser enabled" branch is reachable
-            // regardless of where the test runs.
-            var origCi = Environment.GetEnvironmentVariable("CI");
-            var origContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
-            try
+            // A runner would normally suppress auto-open — lift that for this
+            // test so the "browser enabled" branch is reachable regardless of
+            // where it runs.
+            using (BrowserLaunchEnvironment.Allow())
             {
-                Environment.SetEnvironmentVariable("CI", null);
-                Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", null);
-
                 // Only assert the launch URL when the runtime says it'd
                 // actually be allowed to spawn a browser. Headless CI
                 // boxes leave UserInteractive=false; we keep the test
                 // useful there by just confirming RunAsync returned 0.
-                if (Environment.UserInteractive)
+                if (BrowserLaunchEnvironment.LaunchExpected)
                 {
                     var rc = await BrowserUiHost.RunAsync(
                         [],
@@ -175,11 +170,6 @@ public sealed class BrowserUiHostTests
                     Assert.Equal(0, rc);
                 }
             }
-            finally
-            {
-                Environment.SetEnvironmentVariable("CI", origCi);
-                Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", origContainer);
-            }
         }
         finally
         {
@@ -204,10 +194,8 @@ public sealed class BrowserUiHostTests
                 return Task.FromResult(0);
             };
 
-            var origCi = Environment.GetEnvironmentVariable("CI");
-            try
+            using (BrowserLaunchEnvironment.Allow())
             {
-                Environment.SetEnvironmentVariable("CI", null);
                 // The browser launch sits behind a Task.Run that catches
                 // any exception; we just need to confirm RunAsync doesn't
                 // surface the failure.
@@ -218,10 +206,6 @@ public sealed class BrowserUiHostTests
                     ct: CancellationToken.None);
                 Assert.Equal(0, rc);
                 Assert.True(hostStarted.Task.IsCompletedSuccessfully);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("CI", origCi);
             }
         }
         finally

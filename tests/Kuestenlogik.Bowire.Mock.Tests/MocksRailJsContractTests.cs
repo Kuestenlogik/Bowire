@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire.Mock.Management;
+using Kuestenlogik.Bowire.Testing;
 
 namespace Kuestenlogik.Bowire.Mock.Tests;
 
@@ -69,7 +70,12 @@ public sealed class MocksRailJsContractTests
         // #562: the require-auth card + toggle, applied through the #561 flow.
         var js = Fragment.Value;
         Assert.Contains("function renderAuthCard", js, StringComparison.Ordinal);
-        Assert.Contains("Require authentication", js, StringComparison.Ordinal);
+
+        // #117 — the key, not the sentence. The label moved into the
+        // catalogue, so the toggle's wording is the translator's to change
+        // and only its presence is ours to pin.
+        Assert.Contains("t('mocks.requireAuth')", js, StringComparison.Ordinal);
+        Assert.False(string.IsNullOrWhiteSpace(EnglishCatalogue.Value["mocks.requireAuth"]));
 
         // The card is only wired up if it is mounted into the detail pane AND
         // serializeMockConfig actually carries `auth` to the wire — dropping
@@ -99,7 +105,15 @@ public sealed class MocksRailJsContractTests
         var js = Fragment.Value;
         Assert.Contains("function saveAuthRecording", js, StringComparison.Ordinal);
         Assert.Contains("function deleteAuthRecording", js, StringComparison.Ordinal);
-        Assert.Contains("'+ New recording'", js, StringComparison.Ordinal);
+
+        // The affordance that opens the inline form, pinned by key (#117).
+        // It toggles with common.cancel, which is the shape that matters:
+        // one button, two states, no second entry point.
+        Assert.Contains("t('mocks.newRecording')", js, StringComparison.Ordinal);
+        Assert.Contains("t('common.cancel')", js, StringComparison.Ordinal);
+        var catalogue = EnglishCatalogue.Value;
+        Assert.False(string.IsNullOrWhiteSpace(catalogue["mocks.newRecording"]));
+        Assert.NotEqual(catalogue["mocks.newRecording"], catalogue["common.cancel"]);
     }
 
     [Fact]
@@ -110,7 +124,13 @@ public sealed class MocksRailJsContractTests
         var js = Fragment.Value;
         Assert.Contains("function captureAuthRecordingFromFlow", js, StringComparison.Ordinal);
         Assert.Contains("'/capture'", js, StringComparison.Ordinal);
-        Assert.Contains("From auth flow", js, StringComparison.Ordinal);
+
+        // Two modes in one picker, pinned by key (#117): dropping either
+        // leaves the form with no way to say which kind it is.
+        Assert.Contains("t('mocks.credFlow')", js, StringComparison.Ordinal);
+        Assert.Contains("t('mocks.credStatic')", js, StringComparison.Ordinal);
+        var catalogue = EnglishCatalogue.Value;
+        Assert.NotEqual(catalogue["mocks.credStatic"], catalogue["mocks.credFlow"]);
     }
 
     private static string LoadFragment()

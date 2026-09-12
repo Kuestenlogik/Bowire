@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Kuestenlogik.Bowire.Testing;
 
 namespace Kuestenlogik.Bowire.Tests.Semantics.Endpoints;
 

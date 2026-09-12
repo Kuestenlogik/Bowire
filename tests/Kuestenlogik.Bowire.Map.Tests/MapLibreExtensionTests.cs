@@ -293,11 +293,30 @@ public sealed class MapLibreOfflineLockdownTests
         // core). The viewer-first / editor-second order is significant
         // because reshaping that block is the same kind of risk as
         // reshaping the public ctx surface.
-        var pattern = new Regex(
-            @"viewer:\s*\{[^}]*selectionMode:\s*'multi'[^}]*mount:\s*bowireMapViewerMount" +
-            @"[^}]*\}[^}]*editor:\s*\{[^}]*selectionMode:\s*'single'[^}]*mount:\s*bowireMapEditorMount",
-            RegexOptions.Singleline);
-        Assert.Matches(pattern, bundle);
+        // Read as two spans rather than as one regex over `[^}]*`: #117 gave
+        // both entries a `get label() { return t('…'); }`, and a brace inside
+        // the block is exactly what a "no closing brace in between" class
+        // cannot cross. The spans say the same thing and survive a getter.
+        var viewer = bundle.IndexOf("viewer: {", StringComparison.Ordinal);
+        var editor = bundle.IndexOf("editor: {", StringComparison.Ordinal);
+        Assert.True(viewer >= 0, "the widget registers no `viewer:` surface.");
+        Assert.True(
+            editor > viewer,
+            "the `editor:` surface must register after `viewer:` — reshaping that order is the same kind of risk as reshaping the public ctx surface.");
+
+        var viewerBlock = bundle[viewer..editor];
+        Assert.Contains("selectionMode: 'multi'", viewerBlock, StringComparison.Ordinal);
+        Assert.Contains("mount: bowireMapViewerMount", viewerBlock, StringComparison.Ordinal);
+
+        var editorBlock = bundle[editor..];
+        Assert.Contains("selectionMode: 'single'", editorBlock, StringComparison.Ordinal);
+        Assert.Contains("mount: bowireMapEditorMount", editorBlock, StringComparison.Ordinal);
+
+        // Neither mode leaks into the other half: the viewer truncating to
+        // [lastSelected], or the editor fielding N pins, is the failure this
+        // test exists for and both are invisible in a one-sided assertion.
+        Assert.DoesNotContain("selectionMode: 'single'", viewerBlock, StringComparison.Ordinal);
+        Assert.DoesNotContain("selectionMode: 'multi'", editorBlock, StringComparison.Ordinal);
     }
 
     [Fact]

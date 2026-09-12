@@ -23,6 +23,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- EnglishCatalogue moved here out of this project (#117) so the Mock
+         rail pins can read the same catalogue. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Testing\Kuestenlogik.Bowire.Testing.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Cli\Kuestenlogik.Bowire.Cli.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Mcp\Kuestenlogik.Bowire.Mcp.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Security.Scanner\Kuestenlogik.Bowire.Security.Scanner.csproj" />

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.RegularExpressions;
+using Kuestenlogik.Bowire.Testing;
 
 namespace Kuestenlogik.Bowire.Tests;
 
