@@ -1,4 +1,4 @@
-// Copyright 2026 Küstenlogik
+﻿// Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire.Plugins.Sidecar;
@@ -15,63 +15,10 @@ namespace Kuestenlogik.Bowire.Tests.Plugins;
 /// </summary>
 public class SidecarBowireProtocolIntegrationTests
 {
-    /// <summary>
-    /// Resolve the fake-sidecar executable's on-disk path. The two
-    /// projects share artifacts/bin/ layout under the shared
-    /// Directory.Build.props, so we navigate from the test assembly's
-    /// own location up to <c>artifacts/bin/Kuestenlogik.Bowire.SidecarFake</c>
-    /// and pick the matching TFM + Debug/Release folder.
-    /// </summary>
-    private static string LocateFakeExecutable()
-    {
-        // The fake exe's output layout under artifacts/bin varies with
-        // how it was built — flat (`SidecarFake/bowire-sidecar-fake`)
-        // when pulled in as a P2P dependency, or nested under a
-        // Debug/Release[/tfm] folder for a standalone build. Rather than
-        // reconstruct the exact path (which differs between local Debug
-        // and CI Release), walk up to artifacts/bin and recursively
-        // search the fake's tree for the apphost binary.
-        var baseDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-
-        DirectoryInfo? binRoot = new(baseDir);
-        while (binRoot is not null && binRoot.Name != "bin")
-            binRoot = binRoot.Parent;
-        if (binRoot is null)
-            throw new InvalidOperationException("Could not locate artifacts/bin from " + baseDir);
-
-        var fakeRoot = Path.Combine(binRoot.FullName, "Kuestenlogik.Bowire.SidecarFake");
-        if (!Directory.Exists(fakeRoot))
-            throw new InvalidOperationException("Fake sidecar bin dir missing: " + fakeRoot);
-
-        var exeName = OperatingSystem.IsWindows() ? "bowire-sidecar-fake.exe" : "bowire-sidecar-fake";
-        var matches = Directory.GetFiles(fakeRoot, exeName, SearchOption.AllDirectories);
-        if (matches.Length == 0)
-            throw new InvalidOperationException(
-                $"Fake sidecar exe '{exeName}' not found anywhere under {fakeRoot}");
-
-        // When several configs were built, prefer the one matching the
-        // current build configuration so a Release test run doesn't pick
-        // up a stale Debug binary (and vice-versa).
-        var config = GetBuildConfiguration();
-        var configSegment = Path.DirectorySeparatorChar + config + Path.DirectorySeparatorChar;
-        var preferred = matches.FirstOrDefault(m =>
-            m.Contains(configSegment, StringComparison.OrdinalIgnoreCase));
-        return preferred ?? matches[0];
-    }
-
-    private static string GetBuildConfiguration()
-    {
-#if DEBUG
-        return "Debug";
-#else
-        return "Release";
-#endif
-    }
-
     private static SidecarBowireProtocol BuildPlugin(
         IReadOnlyList<string>? args = null, ILogger? logger = null)
     {
-        var exe = LocateFakeExecutable();
+        var exe = SidecarFake.Locate();
         var pluginDir = Path.GetDirectoryName(exe)!;
         var manifest = new SidecarPluginManifest(
             PackageId: "Kuestenlogik.Bowire.Tests.SidecarFake",
@@ -104,7 +51,7 @@ public class SidecarBowireProtocolIntegrationTests
         }
         finally
         {
-            await ShutdownAsync(plugin);
+            await SidecarFake.ShutdownAsync(plugin);
         }
     }
 
@@ -129,7 +76,7 @@ public class SidecarBowireProtocolIntegrationTests
         }
         finally
         {
-            await ShutdownAsync(plugin);
+            await SidecarFake.ShutdownAsync(plugin);
         }
     }
 
@@ -160,7 +107,7 @@ public class SidecarBowireProtocolIntegrationTests
         }
         finally
         {
-            await ShutdownAsync(plugin);
+            await SidecarFake.ShutdownAsync(plugin);
         }
     }
 
@@ -209,7 +156,7 @@ public class SidecarBowireProtocolIntegrationTests
         }
         finally
         {
-            await ShutdownAsync(plugin);
+            await SidecarFake.ShutdownAsync(plugin);
         }
     }
 
@@ -233,7 +180,7 @@ public class SidecarBowireProtocolIntegrationTests
         }
         finally
         {
-            await ShutdownAsync(plugin);
+            await SidecarFake.ShutdownAsync(plugin);
         }
     }
 
@@ -254,7 +201,7 @@ public class SidecarBowireProtocolIntegrationTests
         }
         finally
         {
-            await ShutdownAsync(plugin);
+            await SidecarFake.ShutdownAsync(plugin);
         }
     }
 
@@ -273,7 +220,7 @@ public class SidecarBowireProtocolIntegrationTests
         }
         finally
         {
-            await ShutdownAsync(plugin);
+            await SidecarFake.ShutdownAsync(plugin);
         }
     }
 
@@ -292,7 +239,7 @@ public class SidecarBowireProtocolIntegrationTests
         }
         finally
         {
-            await ShutdownAsync(plugin);
+            await SidecarFake.ShutdownAsync(plugin);
         }
     }
 
@@ -308,23 +255,4 @@ public class SidecarBowireProtocolIntegrationTests
         }
     }
 
-    /// <summary>
-    /// SidecarBowireProtocol holds the transport internally — call
-    /// EnsureStartedAsync to grab it and dispose so each test releases
-    /// its subprocess cleanly. Without this the test process keeps the
-    /// fake sidecar alive until GC.
-    /// </summary>
-    private static async Task ShutdownAsync(SidecarBowireProtocol plugin)
-    {
-        try
-        {
-            var transport = await plugin.EnsureStartedAsync(CancellationToken.None);
-            await transport.DisposeAsync();
-        }
-        catch
-        {
-            // Best-effort — if EnsureStartedAsync itself failed there
-            // was no process to dispose anyway.
-        }
-    }
 }

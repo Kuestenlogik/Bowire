@@ -1,4 +1,4 @@
-// A tiny fake sidecar plugin that follows the JSON-RPC-over-stdio
+﻿// A tiny fake sidecar plugin that follows the JSON-RPC-over-stdio
 // contract documented in docs/architecture/sidecar-plugins.md.
 // Used by SidecarBowireProtocolIntegrationTests as a process target
 // so the test can exercise spawn / initialize / discover / invoke /
@@ -27,9 +27,13 @@ using System.Text.Json.Nodes;
 //   --protocol-version <n>  advertise this sidecar contract version (default 1)
 //   --no-channels           advertise capabilities.channels = false
 //   --legacy                omit protocolVersion + capabilities entirely (pre-#416 sidecar)
+//   --settings              advertise two settings in the initialize reply (#693);
+//                           invoke then echoes the settings the host sent back in
+//                           its metadata, so a test can see a value arrive
 var advertiseHandshake = true;
 var protocolVersion = 1;
 var channelsCapability = true;
+var advertiseSettings = false;
 for (var ai = 0; ai < args.Length; ai++)
 {
     switch (args[ai])
@@ -38,6 +42,8 @@ for (var ai = 0; ai < args.Length; ai++)
             protocolVersion = pv; ai++; break;
         case "--no-channels": channelsCapability = false; break;
         case "--legacy": advertiseHandshake = false; break;
+        // #693: advertise two settings so the host has something to map.
+        case "--settings": advertiseSettings = true; break;
     }
 }
 
@@ -70,6 +76,13 @@ while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) is not null)
                     iconSvg = "<svg/>",
                     protocolVersion,
                     capabilities = new { discover = true, invoke = true, invokeStream = true, channels = channelsCapability },
+                    settings = advertiseSettings
+                        ? new object[]
+                        {
+                            new { key = "probeWindow", label = "Probe window", type = "number", defaultValue = 5 },
+                            new { key = "verbose", label = "Verbose", description = "Log every frame", type = "bool", defaultValue = false },
+                        }
+                        : null,
                 });
             }
             else
@@ -117,12 +130,15 @@ while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) is not null)
         case "invoke":
             var msgs = p?["jsonMessages"] as JsonArray;
             var first = msgs?.Count > 0 ? msgs[0]?.GetValue<string>() : "";
+            // #693: hand the settings the host sent straight back, so a
+            // test can assert that a value set in the dialog arrived here.
+            var received = p?["settings"] as JsonObject;
             await Reply(id, new
             {
                 response = "echo: " + first,
                 durationMs = 1L,
                 status = "OK",
-                metadata = new { source = "fake" },
+                metadata = new { source = "fake", settings = received?.ToJsonString() ?? "" },
             });
             break;
 

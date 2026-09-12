@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Plugins;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -20,9 +21,20 @@ internal static class BowireDiscoveryEndpoints
         this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
     {
         // List available protocol plugins (id, name, icon)
-        endpoints.MapGet($"{basePath}/api/protocols", (HttpContext ctx) =>
+        endpoints.MapGet($"{basePath}/api/protocols", async (HttpContext ctx) =>
         {
             var registry = BowireEndpointHelpers.GetRegistry();
+
+            // #693 — a sidecar's settings live in a subprocess that is
+            // spawned lazily, so the synchronous Settings property below
+            // has nothing to report until the handshake has happened. Give
+            // every plugin that says it needs preparation the chance, then
+            // read. Plugins that don't implement the seam — every .NET one
+            // — are untouched, and a sidecar that won't start reports no
+            // settings rather than failing the list.
+            foreach (var deferred in registry.Protocols.OfType<IBowireDeferredSettings>())
+                await deferred.PrepareSettingsAsync(ctx.RequestAborted).ConfigureAwait(false);
+
             var protocols = registry.Protocols.Select(p => new
             {
                 id = p.Id,

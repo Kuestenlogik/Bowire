@@ -216,7 +216,11 @@ Reply:
   "id":"zenoh",
   "iconSvg":"<svg...>",
   "protocolVersion":1,
-  "capabilities":{"discover":true,"invoke":true,"invokeStream":true,"channels":true}
+  "capabilities":{"discover":true,"invoke":true,"invokeStream":true,"channels":true},
+  "settings":[
+    {"key":"probeWindow","label":"Probe window","type":"number","defaultValue":5},
+    {"key":"verbose","label":"Verbose","description":"Log every frame","type":"bool","defaultValue":false}
+  ]
 }}
 ```
 
@@ -231,6 +235,66 @@ warning — update your SDK to advertise `protocolVersion` + `capabilities`.
 is omitted, so a legacy sidecar behaves unchanged. Setting a flag to
 `false` lets the host skip a call the sidecar doesn't implement — currently
 `channels:false` makes `openChannel` return null without a round-trip.
+
+**Settings (#693).** Optional. Each entry becomes a control in the
+plugin's section of the Settings dialog, the same way a .NET plugin's
+`IBowireProtocol.Settings` does. Fields:
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `key` | yes | Unique within the plugin. An entry without one is dropped — it has nowhere to be stored. |
+| `label` | no | What the operator reads. Defaults to `key`. |
+| `description` | no | Shown below the label. |
+| `type` | no | `"bool"` (default), `"string"`, `"number"`, `"select"`. |
+| `defaultValue` | no | Any JSON value. |
+| `options` | select | `[{value, label}]` — a `select` without them has nothing to pick from. |
+| `labelKey`, `descriptionKey` | no | Catalogue keys (#691). The workbench prefers the key when its catalogue has an entry, and falls back to the text. A third-party plugin has no entry in Bowire's catalogue and sends neither. |
+
+Fields the host does not know are ignored rather than rejected, so an SDK
+can add one before a host reads it. That is how `required` behaves today:
+the Node and Go SDKs send it, the Python SDK does not, and the host has no
+such concept.
+
+**This is the only place settings are declared**, and that is deliberate.
+The manifest could carry them too — it is read without starting anything —
+but then a plugin author would maintain the same list in two files and
+learn which one wins the first time they disagreed. One source means the
+host has to start the sidecar before it can answer the question.
+
+Since the spawn is lazy, the answer is not available until something has
+called the plugin. The host closes that gap through
+`IBowireDeferredSettings`: a surface that is about to read the settings
+(the Settings dialog's `GET /api/protocols`) asks every plugin to prepare
+itself first. A .NET plugin does not implement that interface and is
+untouched; a sidecar that will not start reports no settings rather than
+failing the list, and the failure is logged.
+
+**How a value reaches the sidecar.** A .NET plugin reads its own values
+from `IBowirePluginSettings`, pulling when it needs one so that a change
+arrives without a restart. A sidecar cannot reach that store, so the host
+reads on its behalf and puts the result in a `settings` object on the
+params of `discover`, `invoke`, `invokeStream` and `openChannel`:
+
+```json
+{"jsonrpc":"2.0","id":7,"method":"invoke","params":{
+  "serverUrl":"zenoh://demo", "service":"Pub", "method":"Pub/put",
+  "jsonMessages":["{}"], "showInternalServices":false,
+  "settings":{"probeWindow":"7"}
+}}
+```
+
+Read fresh per call rather than captured at spawn — that is what gives a
+sidecar the same property the .NET seam has, a changed setting taking
+effect without restarting the process. Values are strings, whatever the
+declared `type`; the sidecar parses what it declared. Only keys that are
+actually **set** travel: the sidecar declared the defaults and still knows
+them, so an absent key means "use yours", and a sidecar whose settings
+nobody touched sees no `settings` field at all.
+
+Env vars are not the channel for this. `envPrefix` forwards the *host's*
+environment to the subprocess, which is a different mechanism, and a value
+placed in the environment is fixed for the life of the process — exactly
+the restart-to-change behaviour the per-call form avoids.
 
 A failed `initialize` (id mismatch, incompatible `protocolVersion`, missing
 dependency, etc.) returns a JSON-RPC error; the host marks the plugin as
@@ -250,13 +314,13 @@ out.
 ### `discover` (host → sidecar, request)
 
 Maps to `IBowireProtocol.DiscoverAsync`. Params: `{serverUrl,
-showInternalServices}`. Reply: an array of `BowireServiceInfo` shapes
+showInternalServices, settings}`. Reply: an array of `BowireServiceInfo` shapes
 serialized as the same JSON the .NET plugins emit.
 
 ### `invoke` (host → sidecar, request)
 
 Maps to `IBowireProtocol.InvokeAsync`. Params: `{serverUrl, service,
-method, jsonMessages, showInternalServices, metadata}`. Reply: the
+method, jsonMessages, showInternalServices, metadata, settings}`. Reply: the
 `InvokeResult` shape (`response`, `durationMs`, `status`, `metadata`).
 
 ### `invokeStream` (host → sidecar, request + notifications)

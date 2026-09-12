@@ -1,4 +1,4 @@
-// Copyright 2026 Küstenlogik
+﻿// Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Runtime.CompilerServices;
@@ -45,7 +45,7 @@ namespace Kuestenlogik.Bowire.Plugins.Sidecar;
 // the registry). Mirroring IDisposable through IBowireProtocol just
 // for one disposable field would ripple through every plugin.
 #pragma warning disable CA1001
-public sealed class SidecarBowireProtocol : IBowireProtocol
+public sealed class SidecarBowireProtocol : IBowireProtocol, IBowireDeferredSettings
 #pragma warning restore CA1001
 {
     /// <summary>
@@ -65,6 +65,11 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private ISidecarTransport? _transport;
     private InitializeResult? _initResult;
+    // #693 — the values behind the settings the sidecar declares. A .NET
+    // plugin resolves this itself from the provider it is handed; a
+    // sidecar cannot, so the host asks on its behalf and puts the answer
+    // on the wire. Null when running outside a host that registered one.
+    private IBowirePluginSettings? _settingsValues;
 
     private static readonly JsonSerializerOptions s_jsonOpts = new()
     {
@@ -87,7 +92,97 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
         // whose manifest didn't supply an iconSvg.
         ?? """<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M9 7V4"/><path d="M15 7V4"/><path d="M5 7h14v4a5 5 0 01-5 5h-4a5 5 0 01-5-5z"/><path d="M12 16v5"/></svg>""";
 
-    public void Initialize(IServiceProvider? serviceProvider) { /* lazy spawn in EnsureStartedAsync */ }
+    /// <summary>
+    /// Settings the sidecar declared in its <c>initialize</c> reply (#693).
+    /// </summary>
+    /// <remarks>
+    /// Empty until the handshake has happened, because until then there is
+    /// no truthful answer — the declaration lives in a process that has not
+    /// been started. A caller that wants the real list calls
+    /// <see cref="PrepareSettingsAsync"/> first; that is what the Settings
+    /// dialog does. Keeping the declaration in the sidecar rather than
+    /// mirroring it into the manifest means there is one place to change it
+    /// when it changes.
+    /// </remarks>
+    public IReadOnlyList<BowirePluginSetting> Settings =>
+        _initResult?.Settings is { Count: > 0 } declared
+            ? [.. declared.Where(s => !string.IsNullOrEmpty(s.Key)).Select(ToHostSetting)]
+            : [];
+
+    /// <inheritdoc />
+    public async Task PrepareSettingsAsync(CancellationToken ct = default)
+    {
+        // A sidecar that won't start contributes no settings, exactly as
+        // before. Failing here would take the whole Settings dialog down
+        // with one broken plugin.
+#pragma warning disable CA1031 // Do not catch general exception types
+        try
+        {
+            await EnsureStartedAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            if (_logger is not null)
+                SidecarProtocolLog.SettingsProbeFailed(_logger, _manifest.Protocol.Id, ex.Message);
+        }
+#pragma warning restore CA1031
+    }
+
+    private static BowirePluginSetting ToHostSetting(SidecarSetting s) =>
+        new(
+            Key: s.Key!,
+            // A setting with no label still has to be findable in the
+            // dialog, and its key is the only other thing it has.
+            Label: string.IsNullOrEmpty(s.Label) ? s.Key! : s.Label,
+            Description: s.Description,
+            Type: string.IsNullOrEmpty(s.Type) ? "bool" : s.Type,
+            DefaultValue: s.DefaultValue,
+            Options: s.Options is { Count: > 0 } opts
+                ? [.. opts.Where(o => o.Value is not null)
+                          .Select(o => new BowirePluginSettingOption(
+                              o.Value!, string.IsNullOrEmpty(o.Label) ? o.Value! : o.Label)
+                          { LabelKey = o.LabelKey })]
+                : null)
+        {
+            LabelKey = s.LabelKey,
+            DescriptionKey = s.DescriptionKey,
+        };
+
+    /// <summary>
+    /// The values currently set for the settings this sidecar declared
+    /// (#693), or <c>null</c> when it declared none or none are set.
+    /// </summary>
+    /// <remarks>
+    /// Read fresh on every call rather than cached at spawn. A .NET plugin
+    /// asks the store when it needs a value, so a change reaches it without
+    /// a restart; sending the current values with each request gives a
+    /// sidecar the same property. Only keys that are actually set travel —
+    /// the sidecar declared the defaults and still knows them, so an absent
+    /// key means "yours".
+    /// </remarks>
+    private Dictionary<string, string>? CurrentSettingValues()
+    {
+        if (_settingsValues is null) return null;
+        if (_initResult?.Settings is not { Count: > 0 } declared) return null;
+
+        Dictionary<string, string>? values = null;
+        foreach (var setting in declared)
+        {
+            if (string.IsNullOrEmpty(setting.Key)) continue;
+            if (_settingsValues.GetValue(Id, setting.Key) is not { } value) continue;
+            (values ??= new(StringComparer.Ordinal))[setting.Key] = value;
+        }
+        return values;
+    }
+
+    public void Initialize(IServiceProvider? serviceProvider)
+    {
+        // Lazy spawn still happens in EnsureStartedAsync. What we take
+        // here is the seam a .NET plugin would use itself (#640): the
+        // sidecar has no way to reach the store, so the host reads it on
+        // the sidecar's behalf and puts the values on the wire.
+        _settingsValues = serviceProvider?.GetService(typeof(IBowirePluginSettings)) as IBowirePluginSettings;
+    }
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default)
@@ -99,6 +194,9 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
             {
                 serverUrl,
                 showInternalServices,
+                // #693 - the values behind the settings this sidecar
+                // declared. Absent when it declared none or none are set.
+                settings = CurrentSettingValues(),
             }, ct).ConfigureAwait(false);
 
             if (result.ValueKind != JsonValueKind.Array)
@@ -149,6 +247,9 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
                 jsonMessages,
                 showInternalServices,
                 metadata,
+                // #693 - the values behind the settings this sidecar
+                // declared. Absent when it declared none or none are set.
+                settings = CurrentSettingValues(),
             }, ct).ConfigureAwait(false);
 
             sw.Stop();
@@ -195,6 +296,9 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
                 jsonMessages,
                 showInternalServices,
                 metadata,
+                // #693 - the values behind the settings this sidecar
+                // declared. Absent when it declared none or none are set.
+                settings = CurrentSettingValues(),
             }, ct).ConfigureAwait(false);
 
             while (await reader.WaitToReadAsync(ct).ConfigureAwait(false))
@@ -248,6 +352,9 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
                 method,
                 showInternalServices,
                 metadata,
+                // #693 - the values behind the settings this sidecar
+                // declared. Absent when it declared none or none are set.
+                settings = CurrentSettingValues(),
             }, ct).ConfigureAwait(false);
         }
         // Sidecar openChannel rejection — any RPC error / transport
@@ -416,7 +523,37 @@ public sealed class SidecarBowireProtocol : IBowireProtocol
         string? Id,
         string? IconSvg,
         int? ProtocolVersion = null,
-        SidecarCapabilities? Capabilities = null);
+        SidecarCapabilities? Capabilities = null,
+        IReadOnlyList<SidecarSetting>? Settings = null);
+
+    /// <summary>
+    /// One entry of the <c>settings</c> array a sidecar puts in its
+    /// <c>initialize</c> reply (#693) — the wire shape of
+    /// <see cref="BowirePluginSetting"/>.
+    /// </summary>
+    /// <remarks>
+    /// Every field but <c>key</c> is optional, because the three SDKs that
+    /// implement the hook do not agree on what they send: Python omits
+    /// <c>required</c>, Node and Go send it and the host has no such
+    /// concept, and none of them sends <c>options</c>. Unknown fields are
+    /// ignored rather than rejected, so an SDK can add one before the host
+    /// reads it.
+    /// </remarks>
+    internal sealed record SidecarSetting(
+        string? Key,
+        string? Label = null,
+        string? Description = null,
+        string? Type = null,
+        JsonElement? DefaultValue = null,
+        IReadOnlyList<SidecarSettingOption>? Options = null,
+        string? LabelKey = null,
+        string? DescriptionKey = null);
+
+    /// <summary>Wire shape of <see cref="BowirePluginSettingOption"/>.</summary>
+    internal sealed record SidecarSettingOption(
+        string? Value,
+        string? Label = null,
+        string? LabelKey = null);
 
     /// <summary>
     /// Optional capability flags a sidecar advertises in its <c>initialize</c>
@@ -442,4 +579,11 @@ internal static partial class SidecarProtocolLog
         Message = "Sidecar plugin '{PluginId}' did not advertise a protocol version in its initialize reply; " +
             "treating it as legacy sidecar contract v1. Update the sidecar SDK to send protocolVersion + capabilities.")]
     public static partial void LegacySidecarNoProtocolVersion(ILogger logger, string pluginId);
+
+    [LoggerMessage(
+        EventId = 2,
+        Level = LogLevel.Warning,
+        Message = "Sidecar plugin '{PluginId}' could not be started while collecting settings, so it contributes " +
+            "none to the Settings dialog: {Reason}")]
+    public static partial void SettingsProbeFailed(ILogger logger, string pluginId, string reason);
 }
