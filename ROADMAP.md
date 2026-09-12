@@ -144,6 +144,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [34](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34) | Bootcamp | [Ship each exercise as two downloads: the shell with its TODOs, and the solution](#issue-kuestenlogik-bowire-bootcamp-34) | ⬜ Backlog | `area:bootcamp` |
+| [92](https://github.com/Kuestenlogik/Bowire.Samples/issues/92) | Samples | [Ship each sample as its own ready-to-run download](#issue-kuestenlogik-bowire-samples-92) | ⬜ Backlog | `area:docs` |
 | [620](https://github.com/Kuestenlogik/Bowire/issues/620) | Bowire | [Benchmark: measure time to first chunk, not just the whole round trip](#issue-kuestenlogik-bowire-620) | ⬜ Backlog | `area:cli` |
 | [621](https://github.com/Kuestenlogik/Bowire/issues/621) | Bowire | [Benchmark: gate on values the response reports, not just on the clock](#issue-kuestenlogik-bowire-621) | ⬜ Backlog | `area:cli` |
 | [622](https://github.com/Kuestenlogik/Bowire/issues/622) | Bowire | [Benchmark: several targets in one run, so routing choices are comparable](#issue-kuestenlogik-bowire-622) | ⬜ Backlog | `area:cli` |
@@ -157,6 +159,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [666](https://github.com/Kuestenlogik/Bowire/issues/666) | Bowire | [plugin install suggests a re-run its own already-installed guard blocks](#issue-kuestenlogik-bowire-666) | ⬜ Backlog | `area:plugin-sdk` |
 | [689](https://github.com/Kuestenlogik/Bowire/issues/689) | Bowire | [Action-log entries store rendered English text instead of a key](#issue-kuestenlogik-bowire-689) | ⬜ Backlog | `area:workbench` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
+| [692](https://github.com/Kuestenlogik/Bowire/issues/692) | Bowire | [A sidecar manifest cannot name an interpreter: the executable never resolves through PATH](#issue-kuestenlogik-bowire-692) | ⬜ Backlog | `area:plugin-sdk` |
 
 ## Details
 
@@ -654,6 +657,18 @@ Bowire's mock is **replay-first**: a recording becomes an endpoint, a schema bec
 
 ### Backlog (not yet scheduled)
 
+#### <a id="issue-kuestenlogik-bowire-bootcamp-34"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#34](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34) Ship each exercise as two downloads: the shell with its TODOs, and the solution
+
+> `area:bootcamp`
+
+Two downloads per exercise, from the Releases page: [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34)
+
+#### <a id="issue-kuestenlogik-bowire-samples-92"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#92](https://github.com/Kuestenlogik/Bowire.Samples/issues/92) Ship each sample as its own ready-to-run download
+
+> `area:docs`
+
+Each sample downloadable on its own, built and ready to run, from the repo's Releases page — instead of "clone the whole repo, find the folder, work out which project to start". [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/92)
+
 #### <a id="issue-kuestenlogik-bowire-620"></a>⬜ Backlog · [#620](https://github.com/Kuestenlogik/Bowire/issues/620) Benchmark: measure time to first chunk, not just the whole round trip
 
 > `area:cli`
@@ -731,6 +746,12 @@ The Activity drawer renders text that was translated once, when the action happe
 > `area:cli`
 
 `bowire --help` is still English in every locale. The machinery it needs already exists — `BowireLocale` resolves `BOWIRE_LOCALE` / `LC_ALL` / `LANG` / the OS culture and reads the same catalogues the workbench does — but nothing in the help surface calls it yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/690)
+
+#### <a id="issue-kuestenlogik-bowire-692"></a>⬜ Backlog · [#692](https://github.com/Kuestenlogik/Bowire/issues/692) A sidecar manifest cannot name an interpreter: the executable never resolves through PATH
+
+> `area:plugin-sdk`
+
+A sidecar manifest cannot name an interpreter. `SidecarJsonRpcTransport.Start` resolves the executable as [[more]](https://github.com/Kuestenlogik/Bowire/issues/692)
 
 ---
 
