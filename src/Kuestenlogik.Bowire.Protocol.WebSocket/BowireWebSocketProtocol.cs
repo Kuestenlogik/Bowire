@@ -40,6 +40,10 @@ public sealed class BowireWebSocketProtocol : IBowireProtocol, IInlineWebSocketC
 
     public string Name => "WebSocket";
     public string Description => "Raw WebSocket — bidirectional message stream with optional sub-protocol negotiation.";
+
+    // #691 - the catalogue key beside the text; the text stays
+    // as the fallback for a host whose catalogue lacks the entry.
+    public string DescriptionKey => "plugin.websocket.description";
     public string Id => "websocket";
 
     // Community WebSocket logo (gilbarbara/logos set, also on Iconify).
@@ -49,10 +53,18 @@ public sealed class BowireWebSocketProtocol : IBowireProtocol, IInlineWebSocketC
     [
         new("autoInterpretJson", "Auto-interpret JSON",
             "Parse JSON payloads in text frames for structured display",
-            "bool", true),
+            "bool", true)
+        {
+            LabelKey = "plugin.websocket.autoInterpretJson.label",
+            DescriptionKey = "plugin.websocket.autoInterpretJson.desc",
+        },
         new("showBinaryAsHex", "Show binary as hex",
             "Display binary frames as hex dump instead of base64",
             "bool", true)
+        {
+            LabelKey = "plugin.websocket.showBinaryAsHex.label",
+            DescriptionKey = "plugin.websocket.showBinaryAsHex.desc",
+        }
     ];
 
     public void Initialize(IServiceProvider? serviceProvider)

@@ -31,6 +31,10 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireProtocolService
 
     public string Name => "gRPC";
     public string Description => "Proto-based unary, server-stream, client-stream, and duplex calls over HTTP/2.";
+
+    // #691 - the catalogue key beside the text; the text stays
+    // as the fallback for a host whose catalogue lacks the entry.
+    public string DescriptionKey => "plugin.grpc.description";
     public string Id => "grpc";
 
     /// <summary>

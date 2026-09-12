@@ -631,3 +631,47 @@ export function frozenTranslations({ file, text, outsideIife }) {
     return out;
 }
 
+// ---------------------------------------------------------------------------
+// #691 — catalogue keys the C# side names.
+//
+// A plugin's setting labels and its one-line description are written in C# and
+// travel to the browser over /api/protocols and /api/plugins as text, with an
+// optional catalogue key beside each. The workbench renders them through
+// backendText(), which reads the key out of the API response — so no JS source
+// ever spells one out, and the "every key has a caller" guard would read all
+// thirty-odd as orphans and invite somebody to delete them.
+//
+// Their callers are real; they just live in the other language. Read them out
+// of the C# rather than listing them here, so adding a plugin setting with a
+// key needs no second edit in the tests.
+// ---------------------------------------------------------------------------
+
+// The three shapes a key is written in: `LabelKey = "…"` in an object
+// initialiser (how a plugin setting carries one — see the binary-compatibility
+// note on BowirePluginSetting), `DescriptionKey => "…"` as an interface
+// property, and `LabelKey: "…"` as a named argument, which nothing uses today
+// but is what a reader would try first.
+const BACKEND_KEY = /(?:LabelKey|DescriptionKey)\s*(?:=>|=|:)\s*"([^"]+)"/g;
+
+/** Every catalogue key declared by a C# source under src/. */
+export function backendDeclaredKeys() {
+    const keys = new Set();
+    const walk = (dir) => {
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+            const path = resolve(dir, entry.name);
+            if (entry.isDirectory()) {
+                // bin / obj hold copies of the same sources plus generated
+                // code; walking them doubles the work and finds nothing new.
+                if (entry.name === 'bin' || entry.name === 'obj') continue;
+                walk(path);
+            } else if (entry.name.endsWith('.cs')) {
+                const text = readFileSync(path, 'utf8');
+                if (!text.includes('Key')) continue;
+                for (const [, key] of text.matchAll(BACKEND_KEY)) keys.add(key);
+            }
+        }
+    };
+    walk(SRC);
+    return keys;
+}
+

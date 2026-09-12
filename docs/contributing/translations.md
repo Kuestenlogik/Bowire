@@ -208,6 +208,35 @@ The accents also lengthen the text by roughly a fifth, so a label that only just
 
 What legitimately stays unbracketed: the product's own name and version, the user's own data (workspace and collection names), protocol vocabulary (`GET`, `REST`), keyboard shortcuts, and theme values.
 
+## For plugin authors: text your plugin sends
+
+A protocol plugin's setting labels, their descriptions and its own one-line summary are written in C# and reach the browser over `/api/protocols` and `/api/plugins` **already rendered**. Nothing on the JavaScript side can translate what it never sees as a key, so each of them may carry one:
+
+```csharp
+public IReadOnlyList<BowirePluginSetting> Settings =>
+[
+    new("scanDuration", "Subject scan duration",
+        "How long to subscribe to '>' during discovery (seconds)",
+        "number", 3)
+    {
+        LabelKey = "plugin.nats.scanDuration.label",
+        DescriptionKey = "plugin.nats.scanDuration.desc",
+    },
+];
+
+public string Description => "NATS Core publish/subscribe + request/reply.";
+public string DescriptionKey => "plugin.nats.description";
+```
+
+The English text stays where it is. It is the fallback, not a leftover: the workbench prefers the key when its catalogue has an entry and shows the text when it does not — which is the case for **every third-party plugin**, since they have no entry in Bowire's catalogue and no way to add one. Supplying no key at all is a supported choice, not an omission.
+
+Two things follow from that:
+
+- **The keys are `init` properties, never constructor parameters.** Appending a parameter to `BowirePluginSetting`'s primary constructor is source-compatible and *not* binary-compatible: the old `.ctor` stops existing, and every already-installed plugin compiled against it throws `MissingMethodException` the first time the settings endpoint touches it. That is not theoretical — the first attempt at this did exactly that, and a `500` from `/api/protocols` took the whole Settings page down.
+- **A key that the catalogue has never heard of falls back too**, so a plugin built against a newer Bowire renders its own English rather than the key name.
+
+Keys for the in-box protocols follow `plugin.<protocol-id>.<setting-key>.label` / `.desc`, and `plugin.<protocol-id>.description`. The guard that checks every catalogue key has a caller reads these out of the C# sources, so adding one needs no second edit in the tests.
+
 ## What is still English
 
 `npm run i18n:report` prints zero. Every fragment that lands in the bundle &mdash; the core project and all eleven sibling packages &mdash; reads its text from the catalogue, and the ratchet in `untranslated-baseline.json` is an empty object, so the next literal anyone adds fails the build.

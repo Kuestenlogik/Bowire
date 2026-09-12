@@ -33,6 +33,10 @@ public sealed class BowireMqttProtocol : IBowireProtocol
 {
     public string Name => "MQTT";
     public string Description => "Publish / subscribe over MQTT 3.1.1 + 5 brokers.";
+
+    // #691 - the catalogue key beside the text; the text stays
+    // as the fallback for a host whose catalogue lacks the entry.
+    public string DescriptionKey => "plugin.mqtt.description";
     public string Id => "mqtt";
 
     // Official mqtt.org logo (simpleicons).
@@ -42,10 +46,18 @@ public sealed class BowireMqttProtocol : IBowireProtocol
     [
         new("autoInterpretJson", "Auto-interpret JSON",
             "Parse JSON payloads for structured display instead of raw text",
-            "bool", true),
+            "bool", true)
+        {
+            LabelKey = "plugin.mqtt.autoInterpretJson.label",
+            DescriptionKey = "plugin.mqtt.autoInterpretJson.desc",
+        },
         new("scanDuration", "Topic scan duration",
             "How long to subscribe to # during discovery (seconds)",
             "number", 3)
+        {
+            LabelKey = "plugin.mqtt.scanDuration.label",
+            DescriptionKey = "plugin.mqtt.scanDuration.desc",
+        }
     ];
 
     /// <summary>

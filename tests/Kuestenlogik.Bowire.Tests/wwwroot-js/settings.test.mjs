@@ -221,3 +221,70 @@ test('_buildSettingsTreeNodes: legacy tab "workspace" does NOT flag the parent a
     const parent = nodes.find(n => n.id === 'settings:workspace');
     assert.equal(parent.selected, false);
 });
+
+// ---------------------------------------------------------------------------
+// #691 — text the backend sends, with an optional catalogue key beside it.
+//
+// A plugin's setting labels, its descriptions and its one-line summary are
+// written in C# and arrive over /api/protocols and /api/plugins already
+// rendered in English. `backendText` is the whole of the contract on this
+// side: prefer the key when the catalogue knows it, keep the text when it
+// does not.
+//
+// The second half is the part that matters for third-party plugins. They have
+// no entry in Bowire's catalogue and no way to add one, so whatever this does
+// has to leave their English string working exactly as it did before.
+// ---------------------------------------------------------------------------
+
+function loadBackendText(catalogue) {
+    const body = `
+        function t(key) {
+            return Object.prototype.hasOwnProperty.call(CATALOGUE, key)
+                ? CATALOGUE[key] : key;
+        }
+        ${extractFunction('backendText')}
+        return backendText;
+    `;
+    return new Function('CATALOGUE', body)(catalogue || {});
+}
+
+test('backendText: the catalogue entry wins over the English text', () => {
+    const backendText = loadBackendText({
+        'plugin.nats.scanDuration.label': 'Dauer der Betreffsuche',
+    });
+    assert.equal(
+        backendText('Subject scan duration', 'plugin.nats.scanDuration.label'),
+        'Dauer der Betreffsuche');
+});
+
+test('backendText: a plugin that sends no key keeps its own text', () => {
+    // The third-party case. No key, no catalogue entry, no change.
+    const backendText = loadBackendText({});
+    assert.equal(backendText('Retry budget', undefined), 'Retry budget');
+    assert.equal(backendText('Retry budget', null), 'Retry budget');
+    assert.equal(backendText('Retry budget', ''), 'Retry budget');
+});
+
+test('backendText: a key the catalogue has never heard of falls back', () => {
+    // A plugin built against a newer Bowire, or one whose key was renamed.
+    // t() returns the key itself when it misses, and showing
+    // "plugin.acme.retries.label" on screen would be worse than the English
+    // the plugin already gave us.
+    const backendText = loadBackendText({});
+    assert.equal(
+        backendText('Retry budget', 'plugin.acme.retries.label'),
+        'Retry budget');
+});
+
+test('backendText: no text and no key renders empty, not "undefined"', () => {
+    const backendText = loadBackendText({});
+    assert.equal(backendText(undefined, undefined), '');
+    assert.equal(backendText(null, null), '');
+});
+
+test('backendText: a key with no text behind it still translates', () => {
+    // Description is optional on BowirePluginSetting; a plugin may send a key
+    // and leave the text empty rather than repeating itself in English.
+    const backendText = loadBackendText({ 'plugin.acme.retries.desc': 'Wie oft erneut' });
+    assert.equal(backendText('', 'plugin.acme.retries.desc'), 'Wie oft erneut');
+});

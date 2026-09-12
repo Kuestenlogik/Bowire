@@ -40,6 +40,10 @@ public sealed class BowireOtlpProtocol : IBowireProtocol
 
     public string Name => "OTLP";
     public string Description => "OpenTelemetry Protocol passive listener — receive traces / metrics / logs from services under test.";
+
+    // #691 - the catalogue key beside the text; the text stays
+    // as the fallback for a host whose catalogue lacks the entry.
+    public string DescriptionKey => "plugin.otlp.description";
     public string Id => "otlp";
 
     // Stylised "OTLP" mark — a hexagonal node + three radiating

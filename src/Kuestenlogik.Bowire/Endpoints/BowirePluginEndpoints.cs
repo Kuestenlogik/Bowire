@@ -65,15 +65,22 @@ internal static class BowirePluginEndpoints
                     g => g.ToList(),
                     StringComparer.OrdinalIgnoreCase);
 
-            static (string displayName, string description) DescribeAssembly(
+            // #691 — descriptionKey travels beside description so the
+            // workbench can translate it. The key is taken from the same
+            // protocol the description came from, not the first one that
+            // has any key: an assembly contributing two protocols would
+            // otherwise pair one's key with the other's text.
+            static (string displayName, string description, string descriptionKey) DescribeAssembly(
                 string packageId, IReadOnlyDictionary<string, List<IBowireProtocol>> map)
             {
                 if (!map.TryGetValue(packageId, out var list) || list.Count == 0)
-                    return ("", "");
+                    return ("", "", "");
                 var names = list.Select(p => p.Name).Where(n => !string.IsNullOrEmpty(n)).Distinct(StringComparer.Ordinal).ToArray();
                 var displayName = string.Join(" / ", names);
-                var description = list.Select(p => p.Description ?? "").FirstOrDefault(d => !string.IsNullOrEmpty(d)) ?? "";
-                return (displayName, description);
+                var described = list.FirstOrDefault(p => !string.IsNullOrEmpty(p.Description));
+                return (displayName,
+                    described?.Description ?? "",
+                    described?.DescriptionKey ?? "");
             }
 
             // ---- Sibling plugins (writable, lifecycle-acted-on) ----
@@ -136,13 +143,18 @@ internal static class BowirePluginEndpoints
                     }
                     if (IsMissingOrEmptyString(dict, "displayName"))
                     {
-                        var (dn, _) = DescribeAssembly(siblingPackageId, byAssembly);
+                        var (dn, _, _) = DescribeAssembly(siblingPackageId, byAssembly);
                         if (!string.IsNullOrEmpty(dn)) dict["displayName"] = dn;
                     }
                     if (IsMissingOrEmptyString(dict, "description"))
                     {
-                        var (_, de) = DescribeAssembly(siblingPackageId, byAssembly);
+                        var (_, de, dk) = DescribeAssembly(siblingPackageId, byAssembly);
                         if (!string.IsNullOrEmpty(de)) dict["description"] = de;
+                        // #691 — only when the description came from the
+                        // registry too. A plugin.json that carries its own
+                        // description has no catalogue key for it.
+                        if (!string.IsNullOrEmpty(de) && !string.IsNullOrEmpty(dk))
+                            dict["descriptionKey"] = dk;
                     }
                     dict["source"] = "sibling";
                     // Which tier it came from (#28 Phase D). The UI needs it
@@ -191,12 +203,13 @@ internal static class BowirePluginEndpoints
                 var plus = version.IndexOf('+', StringComparison.Ordinal);
                 if (plus > 0) version = version[..plus];
 
-                var (displayName, description) = DescribeAssembly(name, byAssembly);
+                var (displayName, description, descriptionKey) = DescribeAssembly(name, byAssembly);
                 plugins.Add(new
                 {
                     packageId = name,
                     displayName,
                     description,
+                    descriptionKey,
                     version,
                     source = "bundled",
                 });

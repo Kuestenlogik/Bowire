@@ -40,6 +40,10 @@ public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
 
     public string Name => "SSE";
     public string Description => "Server-Sent Events — subscribe to a one-way server-pushed event stream.";
+
+    // #691 - the catalogue key beside the text; the text stays
+    // as the fallback for a host whose catalogue lacks the entry.
+    public string DescriptionKey => "plugin.sse.description";
     public string Id => "sse";
 
     // SSE has no official logo; one-way broadcast glyph matches the site card.

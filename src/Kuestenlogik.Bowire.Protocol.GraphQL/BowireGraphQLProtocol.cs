@@ -50,6 +50,10 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
 
     public string Name => "GraphQL";
     public string Description => "Query / Mutation / Subscription over HTTP and WebSocket.";
+
+    // #691 - the catalogue key beside the text; the text stays
+    // as the fallback for a host whose catalogue lacks the entry.
+    public string DescriptionKey => "plugin.graphql.description";
     public string Id => "graphql";
 
     // Official GraphQL logo (simpleicons) in brand pink.

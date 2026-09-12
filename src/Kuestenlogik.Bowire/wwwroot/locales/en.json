@@ -3551,5 +3551,42 @@
   "settings.plugin.updateAvailableMany": "{count} updates available.",
   "rec.corr.derived": "derived — {key} is not in this step",
   "rec.corr.theKey": "the key",
-  "rec.corr.linkedBy": "linked by {name} = {value}, shared with {protocol} step {step}"
+  "rec.corr.linkedBy": "linked by {name} = {value}, shared with {protocol} step {step}",
+
+  // #691 - the plugin settings and protocol descriptions the backend sends.
+  // The C# side still carries the English text; these entries are what a
+  // translated session shows instead.
+  "plugin.mqtt.autoInterpretJson.label": "Auto-interpret JSON",
+  "plugin.mqtt.autoInterpretJson.desc": "Parse JSON payloads for structured display instead of raw text",
+  "plugin.mqtt.scanDuration.label": "Topic scan duration",
+  "plugin.mqtt.scanDuration.desc": "How long to subscribe to # during discovery (seconds)",
+  "plugin.nats.autoInterpretJson.label": "Auto-interpret JSON",
+  "plugin.nats.autoInterpretJson.desc": "Parse JSON payloads for structured display instead of raw text",
+  "plugin.nats.scanDuration.label": "Subject scan duration",
+  "plugin.nats.scanDuration.desc": "How long to subscribe to '>' during discovery (seconds)",
+  "plugin.pulsar.namespaces.label": "Namespaces to scan",
+  "plugin.pulsar.namespaces.desc": "Comma-separated tenant/namespace pairs (default: public/default)",
+  "plugin.pulsar.subscribeFromLatest.label": "Subscribe from latest",
+  "plugin.pulsar.subscribeFromLatest.desc": "Stream only messages produced after subscribe; off = replay backlog",
+  "plugin.soap.defaultSoapVersion.label": "Default SOAP version",
+  "plugin.soap.defaultSoapVersion.desc": "Envelope namespace used when the WSDL doesn't pin one",
+  "plugin.websocket.autoInterpretJson.label": "Auto-interpret JSON",
+  "plugin.websocket.autoInterpretJson.desc": "Parse JSON payloads in text frames for structured display",
+  "plugin.websocket.showBinaryAsHex.label": "Show binary as hex",
+  "plugin.websocket.showBinaryAsHex.desc": "Display binary frames as hex dump instead of base64",
+  "plugin.graphql.description": "Query / Mutation / Subscription over HTTP and WebSocket.",
+  "plugin.grpc.description": "Proto-based unary, server-stream, client-stream, and duplex calls over HTTP/2.",
+  "plugin.jsonrpc.description": "JSON-RPC 2.0 over HTTP or WebSocket — named methods with positional or keyword arguments.",
+  "plugin.mcp.description": "Model Context Protocol — Claude / Cursor / Copilot tool + resource server discovery + invoke.",
+  "plugin.mqtt.description": "Publish / subscribe over MQTT 3.1.1 + 5 brokers.",
+  "plugin.nats.description": "NATS Core publish/subscribe + request/reply over the NATS protocol.",
+  "plugin.odata.description": "OData V4 entity-set queries, actions, and metadata-driven discovery.",
+  "plugin.otlp.description": "OpenTelemetry Protocol passive listener — receive traces / metrics / logs from services under test.",
+  "plugin.pulsar.description": "Apache Pulsar publish + consume with multi-tenant topics + subscriptions.",
+  "plugin.rest.description": "OpenAPI / Swagger — discover + invoke HTTP services described by an OpenAPI document.",
+  "plugin.signalr.description": "ASP.NET Core SignalR hubs over WebSocket / Server-Sent-Events / long-polling.",
+  "plugin.soap.description": "Legacy SOAP services — WSDL discovery + envelope invoke.",
+  "plugin.socketio.description": "Engine.IO-based bidirectional event emitter — Node.js ecosystem.",
+  "plugin.sse.description": "Server-Sent Events — subscribe to a one-way server-pushed event stream.",
+  "plugin.websocket.description": "Raw WebSocket — bidirectional message stream with optional sub-protocol negotiation."
 }

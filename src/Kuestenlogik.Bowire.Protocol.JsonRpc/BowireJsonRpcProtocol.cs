@@ -47,6 +47,10 @@ public sealed class BowireJsonRpcProtocol : IBowireProtocol, IDisposable
 
     public string Name => "JSON-RPC";
     public string Description => "JSON-RPC 2.0 over HTTP or WebSocket — named methods with positional or keyword arguments.";
+
+    // #691 - the catalogue key beside the text; the text stays
+    // as the fallback for a host whose catalogue lacks the entry.
+    public string DescriptionKey => "plugin.jsonrpc.description";
     public string Id => "jsonrpc";
 
     public void Initialize(IServiceProvider? serviceProvider)

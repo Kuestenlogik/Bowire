@@ -67,6 +67,10 @@ public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnos
 
     public string Name => "MCP";
     public string Description => "Model Context Protocol — Claude / Cursor / Copilot tool + resource server discovery + invoke.";
+
+    // #691 - the catalogue key beside the text; the text stays
+    // as the fallback for a host whose catalogue lacks the entry.
+    public string DescriptionKey => "plugin.mcp.description";
     public string Id => "mcp";
 
     // Initialize stays a no-op: the SDK owns its own HttpClient through

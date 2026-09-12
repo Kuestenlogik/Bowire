@@ -46,6 +46,10 @@ public sealed class BowireODataProtocol : IBowireProtocol, IDisposable
 
     public string Name => "OData";
     public string Description => "OData V4 entity-set queries, actions, and metadata-driven discovery.";
+
+    // #691 - the catalogue key beside the text; the text stays
+    // as the fallback for a host whose catalogue lacks the entry.
+    public string DescriptionKey => "plugin.odata.description";
     public string Id => "odata";
 
     // OData has no official SVG; cylinder glyph ("queryable dataset") matches the site.

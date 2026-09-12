@@ -28,14 +28,26 @@ internal static class BowireDiscoveryEndpoints
                 id = p.Id,
                 name = p.Name,
                 icon = p.IconSvg,
+                // #691 — the *Key fields carry a catalogue key alongside the
+                // English text. The workbench prefers the key when its
+                // catalogue has an entry and falls back to the text, so a
+                // plugin that supplies neither renders as it always did.
+                descriptionKey = p.DescriptionKey,
                 settings = p.Settings.Select(s => new
                 {
                     key = s.Key,
                     label = s.Label,
+                    labelKey = s.LabelKey,
                     description = s.Description,
+                    descriptionKey = s.DescriptionKey,
                     type = s.Type,
                     defaultValue = s.DefaultValue,
-                    options = s.Options?.Select(o => new { value = o.Value, label = o.Label })
+                    options = s.Options?.Select(o => new
+                    {
+                        value = o.Value,
+                        label = o.Label,
+                        labelKey = o.LabelKey
+                    })
                 })
             });
             return Results.Json(protocols, BowireEndpointHelpers.JsonOptions);

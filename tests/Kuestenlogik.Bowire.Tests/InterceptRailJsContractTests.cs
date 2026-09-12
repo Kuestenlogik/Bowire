@@ -126,10 +126,22 @@ public sealed class InterceptRailJsContractTests
         // Embedded so the operator instantly knows which deployment
         // the rail is wired to. The fragment reads uiMode === 'embedded'
         // (set from BowireOptions.Mode via __BOWIRE_CONFIG__.embeddedMode).
+        // #117 — the two sentences moved into the catalogue, so the
+        // fragment names keys rather than English. The contract is the same
+        // one either way: two different notes, chosen by the mode. Checking
+        // the keys here and the texts below keeps it honest without pinning
+        // the wording, which a translator is allowed to change.
         var fragment = InterceptFragment.Value;
-        Assert.Contains("Embedded — Bowire is mounted in-process", fragment, StringComparison.Ordinal);
-        Assert.Contains("Standalone — Bowire runs as a CLI tool", fragment, StringComparison.Ordinal);
+        Assert.Contains("intercept.embeddedNote", fragment, StringComparison.Ordinal);
+        Assert.Contains("intercept.standaloneNote", fragment, StringComparison.Ordinal);
         Assert.Contains("uiMode === 'embedded'", fragment, StringComparison.Ordinal);
+
+        var catalogue = EnglishCatalogue.Value;
+        var embedded = catalogue["intercept.embeddedNote"];
+        var standalone = catalogue["intercept.standaloneNote"];
+        Assert.False(string.IsNullOrWhiteSpace(embedded));
+        Assert.False(string.IsNullOrWhiteSpace(standalone));
+        Assert.NotEqual(embedded, standalone);
     }
 
     [Fact]

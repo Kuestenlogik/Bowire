@@ -38,6 +38,10 @@ public sealed class BowirePulsarProtocol : IBowireProtocol, IDisposable
 
     public string Name => "Pulsar";
     public string Description => "Apache Pulsar publish + consume with multi-tenant topics + subscriptions.";
+
+    // #691 - the catalogue key beside the text; the text stays
+    // as the fallback for a host whose catalogue lacks the entry.
+    public string DescriptionKey => "plugin.pulsar.description";
     public string Id => "pulsar";
 
     // Apache Pulsar logo — stylised lighthouse beam. Kept monochrome so
@@ -49,10 +53,18 @@ public sealed class BowirePulsarProtocol : IBowireProtocol, IDisposable
     [
         new("namespaces", "Namespaces to scan",
             "Comma-separated tenant/namespace pairs (default: public/default)",
-            "string", "public/default"),
+            "string", "public/default")
+        {
+            LabelKey = "plugin.pulsar.namespaces.label",
+            DescriptionKey = "plugin.pulsar.namespaces.desc",
+        },
         new("subscribeFromLatest", "Subscribe from latest",
             "Stream only messages produced after subscribe; off = replay backlog",
-            "bool", true),
+            "bool", true)
+        {
+            LabelKey = "plugin.pulsar.subscribeFromLatest.label",
+            DescriptionKey = "plugin.pulsar.subscribeFromLatest.desc",
+        },
     ];
 
     public void Initialize(IServiceProvider? serviceProvider)

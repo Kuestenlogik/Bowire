@@ -12,7 +12,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { compileFragment } from './_load-fragment.mjs';
 import {
-    fragmentSources, frozenTranslations, looksLikeProse, untranslatedCounts,
+    backendDeclaredKeys, fragmentSources, frozenTranslations, looksLikeProse,
+    untranslatedCounts,
 } from './_untranslated.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -313,6 +314,13 @@ test('every catalogue key has a caller', () => {
             statics.add(key);
         }
     }
+    // #691 — a plugin's setting labels and its one-line description are
+    // named in C#, not here: `LabelKey: "plugin.nats.scanDuration.label"`.
+    // The workbench renders them through backendText(), which takes the key
+    // from the API response, so this side never spells one out. Their caller
+    // is real, it just lives in the other language.
+    for (const key of backendDeclaredKeys()) statics.add(key);
+
     const orphans = keysOf(english).filter(
         (k) => !statics.has(k) && !prefixes.some((p) => k.startsWith(p)));
     assert.deepEqual(orphans, [], `catalogue keys nothing reads:\n  ${orphans.join('\n  ')}`);

@@ -29,6 +29,14 @@ public interface IBowireProtocol
     /// </summary>
     string Description => "";
 
+    /// <summary>
+    /// #691 — optional catalogue key for <see cref="Description"/>. When
+    /// the workbench's active locale has an entry for it, that entry is
+    /// shown; otherwise <see cref="Description"/> is, exactly as before.
+    /// Third-party plugins leave it empty and keep today's behaviour.
+    /// </summary>
+    string DescriptionKey => "";
+
     /// <summary>Called after registration to inject the app's service provider (embedded mode).</summary>
     void Initialize(IServiceProvider? serviceProvider) { }
 

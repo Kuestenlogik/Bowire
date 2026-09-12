@@ -95,13 +95,18 @@ public sealed class ExtensionBootstrapJsContractTests
         // The placeholder is generic across kinds — the message text
         // interpolates the kind so the user knows what data the
         // suggested package would render.
+        // #117 — the message moved into the catalogue, so the bundle
+        // passes the kind as a placeholder rather than splicing it into a
+        // string. The contract is unchanged: whatever the sentence says, the
+        // kind has to appear inside it.
         var bundle = JsBundle.Value;
         Assert.Contains("function bowireRenderPlaceholder", bundle, StringComparison.Ordinal);
-        Assert.Contains("Install ", bundle, StringComparison.Ordinal);
-        // The kind name shows up inside backticks in the tail message.
         Assert.Matches(
-            new Regex(@"to render `'\s*\+\s*kind\s*\+\s*'`"),
+            new Regex(@"t\(\s*'extensions\.toRenderOnMap'\s*,\s*\{\s*kind\s*:"),
             bundle);
+
+        var message = EnglishCatalogue.Value["extensions.toRenderOnMap"];
+        Assert.Contains("{kind}", message, StringComparison.Ordinal);
     }
 
     [Fact]

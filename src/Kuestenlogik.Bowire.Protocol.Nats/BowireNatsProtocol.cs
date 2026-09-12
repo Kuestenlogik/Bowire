@@ -39,6 +39,10 @@ public sealed class BowireNatsProtocol : IBowireProtocol
 {
     public string Name => "NATS";
     public string Description => "NATS Core publish/subscribe + request/reply over the NATS protocol.";
+
+    // #691 - the catalogue key beside the text; the text stays
+    // as the fallback for a host whose catalogue lacks the entry.
+    public string DescriptionKey => "plugin.nats.description";
     public string Id => "nats";
 
     // Official nats.io logo (rounded N glyph, brand colour).
@@ -48,10 +52,18 @@ public sealed class BowireNatsProtocol : IBowireProtocol
     [
         new("autoInterpretJson", "Auto-interpret JSON",
             "Parse JSON payloads for structured display instead of raw text",
-            "bool", true),
+            "bool", true)
+        {
+            LabelKey = "plugin.nats.autoInterpretJson.label",
+            DescriptionKey = "plugin.nats.autoInterpretJson.desc",
+        },
         new("scanDuration", "Subject scan duration",
             "How long to subscribe to '>' during discovery (seconds)",
-            "number", 3),
+            "number", 3)
+        {
+            LabelKey = "plugin.nats.scanDuration.label",
+            DescriptionKey = "plugin.nats.scanDuration.desc",
+        },
     ];
 
     /// <summary>

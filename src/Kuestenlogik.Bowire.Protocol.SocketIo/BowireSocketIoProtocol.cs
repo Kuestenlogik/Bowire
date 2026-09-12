@@ -15,6 +15,10 @@ public sealed class BowireSocketIoProtocol : IBowireProtocol
 {
     public string Name => "Socket.IO";
     public string Description => "Engine.IO-based bidirectional event emitter — Node.js ecosystem.";
+
+    // #691 - the catalogue key beside the text; the text stays
+    // as the fallback for a host whose catalogue lacks the entry.
+    public string DescriptionKey => "plugin.socketio.description";
     public string Id => "socketio";
 
     /// <summary>

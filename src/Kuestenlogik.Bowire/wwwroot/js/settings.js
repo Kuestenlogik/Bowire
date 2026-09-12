@@ -4779,7 +4779,10 @@ textContent: t(discoveryState.entryCount === 1
         // DisplayName falls back to the assembly name so third-party
         // plugins without a manifest still render meaningfully.
         var displayName = p.displayName || p.DisplayName || '';
-        var description = p.description || p.Description || '';
+        // #691 — the description comes from the backend already rendered;
+        // descriptionKey is how it says the catalogue has a translation.
+        var description = backendText(p.description || p.Description || '',
+            p.descriptionKey || p.DescriptionKey);
 
         var textBox = el('div', { className: 'bowire-settings-plugin-manage-text' });
         var idLine = el('div', { className: 'bowire-settings-plugin-manage-id-line' });
@@ -5148,6 +5151,25 @@ textContent: t(discoveryState.entryCount === 1
      * mere presence; making them runtime-disableable is a separate
      * scope.
      */
+    // #691 — text that arrives from the backend already rendered.
+    //
+    // A plugin's setting labels, its descriptions and its own one-liner are
+    // written in C# and travel over /api/protocols and /api/plugins as
+    // English strings. No guard on this side can see that they are English,
+    // because the strings are not in this source; the pseudo-locale found
+    // them, which is what it is for.
+    //
+    // So each of them may carry a catalogue key beside the text. The key
+    // wins when the catalogue has an entry for it — t() returns the key
+    // itself when it does not, and that is precisely the case where the
+    // English text is the better answer. Third-party plugins send no key at
+    // all and keep rendering exactly as they did.
+    function backendText(text, key) {
+        if (!key) return text || '';
+        var translated = t(key);
+        return translated === key ? (text || '') : translated;
+    }
+
     function renderExtensionSettings(ext) {
         var section = el('div', { className: 'bowire-settings-section' });
         var name = extensionDisplayName(ext.id || ext.Id || '');
@@ -5237,11 +5259,15 @@ textContent: t(discoveryState.entryCount === 1
                         ? current === 'true'
                         : !!setting.defaultValue;
                     section.appendChild(renderSettingsToggle(
-                        setting.label, setting.description || '', val,
+                        backendText(setting.label, setting.labelKey),
+                        backendText(setting.description, setting.descriptionKey), val,
                         function (v) { savePluginSetting(plugin.id, setting.key, v ? 'true' : 'false'); }
                     ));
                 } else if (setting.type === 'number') {
-                    section.appendChild(renderSettingsRow(setting.label, setting.description || '', function () {
+                    section.appendChild(renderSettingsRow(
+                        backendText(setting.label, setting.labelKey),
+                        backendText(setting.description, setting.descriptionKey),
+                        function () {
                         var stored = pluginSettingValue(plugin.id, setting.key);
                         return el('input', {
                             id: 'bowire-plugin-setting-' + plugin.id + '-' + setting.key,
@@ -5254,7 +5280,10 @@ textContent: t(discoveryState.entryCount === 1
                         });
                     }));
                 } else if (setting.type === 'select' && setting.options) {
-                    section.appendChild(renderSettingsRow(setting.label, setting.description || '', function () {
+                    section.appendChild(renderSettingsRow(
+                        backendText(setting.label, setting.labelKey),
+                        backendText(setting.description, setting.descriptionKey),
+                        function () {
                         var stored = pluginSettingValue(plugin.id, setting.key);
                         var cur = stored !== null && stored !== undefined
                             ? stored
@@ -5265,14 +5294,21 @@ textContent: t(discoveryState.entryCount === 1
                             onChange: function (e) { savePluginSetting(plugin.id, setting.key, e.target.value); }
                         });
                         for (var oi = 0; oi < setting.options.length; oi++) {
-                            var opt = el('option', { value: setting.options[oi].value, textContent: setting.options[oi].label });
+                            var opt = el('option', {
+                                value: setting.options[oi].value,
+                                textContent: backendText(setting.options[oi].label,
+                                    setting.options[oi].labelKey)
+                            });
                             if (setting.options[oi].value === cur) opt.selected = true;
                             select.appendChild(opt);
                         }
                         return select;
                     }));
                 } else {
-                    section.appendChild(renderSettingsRow(setting.label, setting.description || '', function () {
+                    section.appendChild(renderSettingsRow(
+                        backendText(setting.label, setting.labelKey),
+                        backendText(setting.description, setting.descriptionKey),
+                        function () {
                         var stored = pluginSettingValue(plugin.id, setting.key);
                         return el('input', {
                             id: 'bowire-plugin-setting-' + plugin.id + '-' + setting.key,

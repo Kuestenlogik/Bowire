@@ -39,6 +39,10 @@ public sealed class BowireSoapProtocol : IBowireProtocol, IDisposable
     public string Name => "SOAP";
     public string Description => "Legacy SOAP services — WSDL discovery + envelope invoke.";
 
+    // #691 - the catalogue key beside the text; the text stays
+    // as the fallback for a host whose catalogue lacks the entry.
+    public string DescriptionKey => "plugin.soap.description";
+
     /// <summary>
     /// Resolved in <see cref="Initialize"/>; null when the host registered
     /// none, which is every call before #640 and still the CLI's case.
@@ -71,7 +75,11 @@ public sealed class BowireSoapProtocol : IBowireProtocol, IDisposable
     [
         new("defaultSoapVersion", "Default SOAP version",
             "Envelope namespace used when the WSDL doesn't pin one",
-            "string", "1.1"),
+            "string", "1.1")
+        {
+            LabelKey = "plugin.soap.defaultSoapVersion.label",
+            DescriptionKey = "plugin.soap.defaultSoapVersion.desc",
+        },
     ];
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
