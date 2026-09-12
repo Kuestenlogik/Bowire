@@ -37,6 +37,7 @@
     <Project Path="tests/Kuestenlogik.Bowire.Ai.Anthropic.Tests/Kuestenlogik.Bowire.Ai.Anthropic.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Ai.Mcp.Tests/Kuestenlogik.Bowire.Ai.Mcp.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Flows.Tests/Kuestenlogik.Bowire.Flows.Tests.csproj" />
+    <Project Path="tests/Kuestenlogik.Bowire.SchemaDesigner.Tests/Kuestenlogik.Bowire.SchemaDesigner.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Help.Tests/Kuestenlogik.Bowire.Help.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Testing.Tests/Kuestenlogik.Bowire.Testing.Tests.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.Otlp/Kuestenlogik.Bowire.Protocol.Otlp.csproj" />
@@ -60,6 +61,7 @@
     <Project Path="src/Kuestenlogik.Bowire.Contracts/Kuestenlogik.Bowire.Contracts.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Recordings/Kuestenlogik.Bowire.Recordings.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Flows/Kuestenlogik.Bowire.Flows.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.SchemaDesigner/Kuestenlogik.Bowire.SchemaDesigner.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Interceptor/Kuestenlogik.Bowire.Interceptor.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Benchmarking/Kuestenlogik.Bowire.Benchmarking.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Monitoring/Kuestenlogik.Bowire.Monitoring.csproj" />

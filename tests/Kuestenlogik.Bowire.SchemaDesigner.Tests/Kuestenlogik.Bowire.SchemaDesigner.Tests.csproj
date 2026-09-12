@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!--
+      Coverage for the #247 Schema Designer graph builder: the
+      descriptor-set -> node/edge projection, map-field and nested-type
+      handling, well-known-type filtering, and the usage counts the
+      rail's filters read. Tests live in their own assembly so the
+      package's analyzers don't see test types (matches Flows / Help).
+    -->
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <PackageReference Include="Google.Protobuf" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.SchemaDesigner\Kuestenlogik.Bowire.SchemaDesigner.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #247 — Schema Designer rail package.
+         Ships default-off (#249 Phase 2): the rail descriptor carries
+         DefaultEnabled => false, so an existing operator sees no new
+         icon until they opt in under Settings -> Rail modes. -->
+    <Description>Bowire Schema Designer rail — a graph view of a discovered schema's type relationships. Adds the Schema Designer rail descriptor, its graph endpoint and its per-rail JS fragment to the workbench.</Description>
+    <PackageId>Kuestenlogik.Bowire.SchemaDesigner</PackageId>
+    <PackageTags>bowire;rail;schema;graph;workbench;plugin</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The graph is built from a FileDescriptorSet, so this package
+         parses protobuf descriptors. It does NOT reference the gRPC
+         plugin: the descriptor bytes arrive on the wire, and the
+         parser is all that is needed to read them. -->
+    <PackageReference Include="Google.Protobuf" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- #311 — per-rail JS fragment. See Bowire.Recordings for the discovery contract. -->
+    <EmbeddedResource Include="wwwroot\js\schema-designer.js"
+                      LogicalName="Kuestenlogik.Bowire.SchemaDesigner.wwwroot.js.schema-designer.js" />
+  </ItemGroup>
+</Project>

@@ -4335,6 +4335,12 @@ var railName = opts.railLabel || t('prereq.thisRail');
             // shield without internal decoration so it reads at 16 px
             // without competing with the bot icon's two-eye anchor.
             shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+            // Graph — Schema Designer rail (#247). One parent node with
+            // two children plus a sibling link, which is the shape the
+            // rail actually shows: a type, what it references, and the
+            // cross-reference a flat tree cannot draw. Filled dots keep
+            // it legible at 16 px where hollow circles turn to mush.
+            graph: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5v4M12 10.5l-5 4M12 10.5l5 4M7 16.5h10"/><circle cx="12" cy="4.5" r="2" fill="currentColor"/><circle cx="6" cy="17" r="2" fill="currentColor"/><circle cx="18" cy="17" r="2" fill="currentColor"/></svg>',
             // Bowire brand mark — full horizontal knot + Circle-B
             // derived from images/bowire_logo.svg. Uses currentColor
             // so the surrounding CSS `color:` rule drives the fill

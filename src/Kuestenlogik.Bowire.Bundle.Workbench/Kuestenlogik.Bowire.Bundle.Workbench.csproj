@@ -49,6 +49,12 @@
          keeps `bowire contract` and gains the matrix rail out of the box;
          embedded hosts opt in by referencing the package, like any rail. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Contracts\Kuestenlogik.Bowire.Contracts.csproj" />
+    <!-- #247 — Schema Designer rail: the type-graph view of a discovered
+         schema, plus its /api/schema/graph endpoint. In the bundle so the
+         standalone tool can offer it, but the rail descriptor carries
+         DefaultEnabled => false (#249), so it arrives unticked under
+         Settings -> Rail modes rather than as a new icon on the strip. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.SchemaDesigner\Kuestenlogik.Bowire.SchemaDesigner.csproj" />
     <!-- v2.1 (#325): the Proxy + Intercepted + Traffic rails AND the
          interceptor middleware + reverse-proxy host + /api/intercepted
          endpoints were lifted into a single Kuestenlogik.Bowire.Interceptor
