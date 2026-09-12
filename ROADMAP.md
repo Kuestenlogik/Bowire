@@ -10,7 +10,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.8 — Localisation and the rough edges: DE + EN catalogues, header library, first-run and sidecar fixes *(due 2026-11-03)*
+### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
 
 **18/29 done** · 11 backlog
 
@@ -168,7 +168,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Details
 
-### v2.8 — Localisation and the rough edges: DE + EN catalogues, header library, first-run and sidecar fixes *(due 2026-11-03)*
+### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
 
 #### <a id="issue-kuestenlogik-bowire-216"></a>⬜ Backlog · [#216](https://github.com/Kuestenlogik/Bowire/issues/216) Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage
 
