@@ -12,10 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
 
-**18/29 done** · 11 backlog
+**18/30 done** · 1 in progress · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [693](https://github.com/Kuestenlogik/Bowire/issues/693) | Bowire | [A sidecar's settings() reaches nothing: the host never reads them](#issue-kuestenlogik-bowire-693) | 🟡 In progress | `area:plugin-sdk` |
 | [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog | `area:workbench` |
 | [247](https://github.com/Kuestenlogik/Bowire/issues/247) | Bowire | [Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas](#issue-kuestenlogik-bowire-247) | ⬜ Backlog | `area:workbench` |
 | [249](https://github.com/Kuestenlogik/Bowire/issues/249) | Bowire | [Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module](#issue-kuestenlogik-bowire-249) | ⬜ Backlog | `area:workbench` |
@@ -164,11 +165,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [666](https://github.com/Kuestenlogik/Bowire/issues/666) | Bowire | [plugin install suggests a re-run its own already-installed guard blocks](#issue-kuestenlogik-bowire-666) | ⬜ Backlog | `area:plugin-sdk` |
 | [689](https://github.com/Kuestenlogik/Bowire/issues/689) | Bowire | [Action-log entries store rendered English text instead of a key](#issue-kuestenlogik-bowire-689) | ⬜ Backlog | `area:workbench` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
-| [693](https://github.com/Kuestenlogik/Bowire/issues/693) | Bowire | [A sidecar's settings() reaches nothing: the host never reads them](#issue-kuestenlogik-bowire-693) | ⬜ Backlog | `area:plugin-sdk` |
 
 ## Details
 
 ### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
+
+#### <a id="issue-kuestenlogik-bowire-693"></a>🟡 In progress · [#693](https://github.com/Kuestenlogik/Bowire/issues/693) A sidecar's settings() reaches nothing: the host never reads them
+
+> `area:plugin-sdk`
+
+A sidecar plugin can describe its settings, and nothing receives them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/693)
 
 #### <a id="issue-kuestenlogik-bowire-216"></a>⬜ Backlog · [#216](https://github.com/Kuestenlogik/Bowire/issues/216) Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage
 
@@ -783,12 +789,6 @@ The Activity drawer renders text that was translated once, when the action happe
 > `area:cli`
 
 `bowire --help` is still English in every locale. The machinery it needs already exists — `BowireLocale` resolves `BOWIRE_LOCALE` / `LC_ALL` / `LANG` / the OS culture and reads the same catalogues the workbench does — but nothing in the help surface calls it yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/690)
-
-#### <a id="issue-kuestenlogik-bowire-693"></a>⬜ Backlog · [#693](https://github.com/Kuestenlogik/Bowire/issues/693) A sidecar's settings() reaches nothing: the host never reads them
-
-> `area:plugin-sdk`
-
-A sidecar plugin can describe its settings, and nothing receives them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/693)
 
 ---
 
